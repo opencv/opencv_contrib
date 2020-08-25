@@ -462,26 +462,25 @@ static bool sparseSolve(const BlockSparseMat& jtj, const std::vector<float>& jtb
     return result;
 }
 
-//TODO URGENT: when we write DualQuaternion() we mean one, not zero, until UnitDualQuaternion rewriting
 static DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
 {
     float wdamp = nNodes - wsum;
-    return DualQuaternion() * wdamp * coeff;
+    //TODO URGENT: shortcut for dq
+    return UnitDualQuaternion().dq() * wdamp * coeff;
 }
 
 
 // residual norm for sigma estimation
 static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const bool disableCentering)
 {
-    DualQuaternion dqAct = actNode.transform;
-    DualQuaternion dqPas = pasNode.transform;
+    UnitDualQuaternion dqAct = actNode.transform;
+    UnitDualQuaternion dqPas = pasNode.transform;
     Point3f cAct = actNode.pos;
     Point3f cPas = pasNode.pos;
     int nAct = actNode.place, nPas = pasNode.place;
 
-    DualQuaternion dqActCentered, dqPasCentered;
-    //TODO URGENT: getAffineUnit
-    Point3f tPas = dqPas.getAffineUnit().translation();
+    UnitDualQuaternion dqActCentered, dqPasCentered;
+    Point3f tPas = dqPas.getT();
     if (disableCentering)
     {
         dqActCentered = dqAct;
@@ -489,19 +488,16 @@ static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const
     }
     else
     {
-        //TODO URGENT: dq.centered()
         dqActCentered = dqAct.centered(cAct);
         dqPasCentered = dqPas.centered(cPas);
     }
 
-    // TODO URGENT: dq.applyUnit()
-    Vec3f vMoveActC = dqActCentered.applyUnit(cPas);
+    Vec3f vMoveActC = dqActCentered.apply(cPas);
 
     Vec3f vMovePasC;
     if (disableCentering)
     {
-        // TODO URGENT: dq.applyUnit()
-        vMovePasC = dqPasCentered.applyUnit(cPas);
+        vMovePasC = dqPasCentered.apply(cPas);
     }
     else
     {
@@ -523,17 +519,16 @@ static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
                      const float regTermWeight, const float huberSigma,
                      const bool disableCentering, const bool useExp, const bool useNormApply)
 {
-    DualQuaternion dqAct = actNode.transform;
-    DualQuaternion dqPas = pasNode.transform;
+    UnitDualQuaternion dqAct = actNode.transform;
+    UnitDualQuaternion dqPas = pasNode.transform;
     Point3f cAct = actNode.pos;
     Point3f cPas = pasNode.pos;
     int nAct = actNode.place, nPas = pasNode.place;
     cv::Matx<float, 8, 6> jAct = actNode.cachedJac;
     cv::Matx<float, 8, 6> jPas = pasNode.cachedJac;
 
-    DualQuaternion dqActCentered, dqPasCentered;
-    //TODO URGENT: getAffineUnit
-    Point3f tPas = dqPas.getAffineUnit().translation();
+    UnitDualQuaternion dqActCentered, dqPasCentered;
+    Point3f tPas = dqPas.getT();
     if (disableCentering)
     {
         dqActCentered = dqAct;
@@ -541,18 +536,16 @@ static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
     }
     else
     {
-        //TODO URGENT: dq.centered()
         dqActCentered = dqAct.centered(cAct);
         dqPasCentered = dqPas.centered(cPas);
     }
     
     Matx<float, 3, 8> jNormApplyActC, jNormApplyPasC, jUnitApplyActC, jUnitApplyPasC;
 
-    // TODO URGENT: dq.j_normapply(point), dq.j_apply(point) as methods
-    jNormApplyActC = my_dq.j_normapply(dqActCentered.qreal(), dqActCentered.dual(), cPas);
-    jUnitApplyActC = my_dq.j_apply(dqActCentered, cPas);
-    jNormApplyPasC = my_dq.j_normapply(dqPasCentered.qreal(), dqPasCentered.dual(), cPas);
-    jUnitApplyPasC = my_dq.j_apply(dqPasCentered, cPas);
+    jNormApplyActC = dqActCentered.dq().j_normapply(cPas);
+    jUnitApplyActC = dqActCentered.j_apply(cPas);
+    jNormApplyPasC = dqPasCentered.dq().j_normapply(cPas);
+    jUnitApplyPasC = dqPasCentered.j_apply(cPas);
 
     Matx<float, 3, 8> jApplyActC, jApplyPasC;
     if (useNormApply)
@@ -567,15 +560,13 @@ static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
     }
 
     Matx<float, 3, 6> jMoveActC = jApplyActC * jAct;
-    // TODO URGENT: dq.applyUnit()
-    Vec3f vMoveActC = dqActCentered.applyUnit(cPas);
+    Vec3f vMoveActC = dqActCentered.apply(cPas);
 
     Matx<float, 3, 6> jMovePasC;
     Vec3f vMovePasC;
     if (disableCentering)
     {
-        // TODO URGENT: dq.applyUnit()
-        vMovePasC = dqPasCentered.applyUnit(cPas);
+        vMovePasC = dqPasCentered.apply(cPas);
         jMovePasC = jApplyPasC * jPas;
     }
     else
@@ -648,7 +639,7 @@ static void fillVertex(BlockSparseMat& jtj, std::vector<float>& jtb,
     size_t knn = nodes.size();
 
     // run through DQB
-    DualQuaternion dqsum = DualQuaternion::zero();
+    DualQuaternion dqsum;
     float wsum = 0;
      
     std::vector<int> places(knn);
@@ -666,20 +657,18 @@ static void fillVertex(BlockSparseMat& jtj, std::vector<float>& jtb,
             c = node.pos;
         }
 
-        // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
-        // TODO URGENT: centered
-        DualQuaternion centered = node.transform.centered(c);
+        // center(x) := (1+e*1/2*c)*x*(1-e*1/2*c)
+        UnitDualQuaternion centered = node.transform.centered(c);
         places[k] = node.place;
         jPerNodeWeighted[node.place] = w * node.cachedJac;
-        dqsum += w * centered;
+        dqsum += w * centered.dq();
         wsum += w;
     }
 
     dqsum += dampedDQ(knn, wsum, damping);
 
     // jacobian of normalization+application to a point
-    // TODO URGENT: jNormApply(point) as a method of dq
-    Matx<float, 3, 8> jNormApply = my_dq.j_normapply(dqsum.qreal, dqsum.dual, inp);
+    Matx<float, 3, 8> jNormApply = dqsum.j_normapply(inp);
 
     std::vector<Matx<float, 3, 6>> jPerNode(knn);
 
@@ -841,8 +830,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     //inp, pointPlaneDistance, outVolN
 
     cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
-    DualQuaternion cam2vol = DualQuaternion(volume->pose.inv()) * DualQuaternion(pose);
-    DualQuaternion vol2cam = DualQuaternion(pose) * DualQuaternion(volume->pose.inv());
+
+    Affine3f cam2vol = volume->pose.inv() * pose;
+    Affine3f vol2cam = pose * volume->pose.inv();
 
     // Precalculate knns and dists
     const int knn = warp.k;
@@ -861,18 +851,18 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             //TODO: Mat::ptr() instead
             Point3f inrp = fromPtype(oldPoints.at<ptype>(y, x));
             ptsInWarpedRendered[y * size.width + x] = toPtype(inrp);
-            Point3f inWarped = cam2vol.getAffine() * inrp;
+            Point3f inWarped = cam2vol * inrp;
             ptsInWarped[y * size.width + x] = toPtype(inWarped);
             Point3f inrn = fromPtype(oldNormals.at<ptype>(y, x));
             ptsInWarpedRenderedNormals[y * size.width + x] = toPtype(inrn);
-            ptsInWarpedNormals[y * size.width + x] = toPtype(cam2vol.getAffine().rotation() * inrn);
+            ptsInWarpedNormals[y * size.width + x] = toPtype(cam2vol.rotation() * inrn);
 
             // Get newPoint and newNormal
             Point3f outp = fromPtype(newPoints.at<ptype>(y, x));
             Point3f outn = fromPtype(newNormals.at<ptype>(y, x));
             // Transform them to coords in volume
-            Point3f outVolP = cam2vol.getAffine() * outp;
-            Point3f outVolN = cam2vol.getAffine().rotation() * outn;
+            Point3f outVolP = cam2vol * outp;
+            Point3f outVolN = cam2vol.rotation() * outn;
             ptsOutVolP[y * size.width + x] = toPtype(outVolP);
             ptsOutVolN[y * size.width + x] = toPtype(outVolN);
 
@@ -1024,8 +1014,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 Ptr<WarpNode> node = levelNodes[ixn];
                 int place = node->place;
 
-                // TODO URGENT: j_rt
-                node->cachedJac = node->transform.j_rt(node->pos, atZero, disableCentering, useExp, needR, needT);
+                node->cachedJac = node->transform.jRt(node->pos, atZero, disableCentering, useExp, needR, needT);
             }
         }
 
@@ -1140,8 +1129,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 float& v = jtj.refElem(i, i);
                 v += lambdaLevMarq * (v + coeffILM);
             }
-            //TODO: true LevMarq changes lambda according to error
+            //TODO: try LevMarq changes lambda according to error
             //and falls back to prev if error is too big, see g2o docs about it
+            // like that: If (E < error(x)) { x = xold; lambda *= 2; } else { lambda /= 2; }
         }
 
         std::vector<float> x;
@@ -1153,7 +1143,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         // Update nodes using x
 
         // for sign fix
-        DualQuaternion ref;
+        UnitDualQuaternion ref;
         float refnorm = std::numeric_limits<float>::max();
 
         for (int level = 0; level < graph.size(); level++)
@@ -1171,19 +1161,19 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                     blockNode[i] = x[6 * place + i];
                 }
 
-                DualQuaternion dq = node->transform;
+                UnitDualQuaternion dq = node->transform;
                 Point3d c = node->pos;
 
                 //TODO: maybe calc Jacobians w/o exp and then apply using exp?? highly experimental
-                DualQuaternion dqit;
+                UnitDualQuaternion dqit;
                 if (useExp)
                 {
                     // the order is the opposite to !useExp
                     Quaternion dualx(0, blockNode[0], blockNode[1], blockNode[2]);
                     Quaternion realx(0, blockNode[3], blockNode[4], blockNode[5]);
 
-                    //TODO URGENT: THIS
-                    dqit = DualQuaternion(realx, dualx).exp();
+                    //TODO URGENT: this
+                    dqit = UnitDualQuaternion(realx, dualx).exp();
                 }
                 else
                 {
@@ -1196,15 +1186,16 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                     //TODO URGENT: this using DQs
                     Affine3f aff(rotParams * 2, transParams);
 
-                    dqit = DualQuaternion(aff);
+                    dqit = UnitDualQuaternion(aff);
                 }
                 
-                DualQuaternion dqnew = dqit * dq;
+                // sic! (2nd transform) * (1st transform)
+                UnitDualQuaternion dqnew = dqit * dq;
                 node->transform = dqnew;
 
                 if (signFixRelative && level == 0)
                 {
-                    float norm = dqnew.dot(dqnew);
+                    float norm = dqnew.dq().dot(dqnew.dq());
                     if (norm < refnorm)
                     {
                         refnorm = norm;
@@ -1218,9 +1209,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 for (int ixn = 0; ixn < levelNodes.size(); ixn++)
                 {
                     Ptr<WarpNode> node = levelNodes[ixn];
-                    DualQuaternion& dq = node->transform;
+                    UnitDualQuaternion& dq = node->transform;
 
-                    dq = ref.dot(dq) >= 0 ? dq : -dq;
+                    dq = ref.dq().dot(dq.dq()) >= 0 ? dq : -dq;
                 }
             }
         }
@@ -1261,9 +1252,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                         Point3f c = node->pos;
 
                         //TODO URGENT: centered
-                        DualQuaternion dqi = node->transform.centered(node->pos);
+                        UnitDualQuaternion dqi = node->transform.centered(node->pos);
 
-                        dqsum += w * dqi;
+                        dqsum += w * dqi.dq();
                         wsum += w;
                         nValid++;
                     }
@@ -1271,24 +1262,21 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
 
                 dqsum += dampedDQ(knn, wsum, damping);
 
-                DualQuaternion dqn = dqsum.normalized();
+                UnitDualQuaternion dqn = dqsum.normalized();
                 // We don't use commondq here, it's done at other stages of pipeline
-                DualQuaternion dqfull = dqn; // dqfull = dqn * commondq;
+                UnitDualQuaternion dqfull = dqn; // dqfull = dqn * commondq;
 
-                //TODO URGENT: get_rt_unit
-                //TODO URGENT: make function dq.apply(point3f)
-                Affine3f rt = dqfull.getAffine();
+                Affine3f rt = dqfull.getRt();
 
                 Point3f warpedP = rt * inp;
                 ptsInWarped[y * size.width + x] = toPtype(warpedP);
-                //TODO URGENT: dq.inv()
-                Point3f inrp = vol2cam.getAffine() * warpedP;
+                Point3f inrp = vol2cam * warpedP;
                 ptsInWarpedRendered[y*size.width+x] = toPtype(inrp);
 
                 // Fill transformed normals
                 Point3f warpedN = rt.rotation() * inn;
                 ptsInWarpedNormals[y * size.width + x] = toPtype(warpedN);
-                Point3f inrn = vol2cam.getAffine().rotation() * warpedN;
+                Point3f inrn = vol2cam.rotation() * warpedN;
                 ptsInWarpedRenderedNormals[y * size.width + x] = toPtype(inrn);
 
                 // Calculate current step error
@@ -1408,8 +1396,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             for (int ixn = 0; ixn < levelNodes.size(); ixn++)
             {
                 Ptr<WarpNode> node = levelNodes[ixn];
-                //TODO URGENT: factored out
-                node->transform = node->transform.factored_out(node->transform, node->pos);
+                node->transform = node->transform.factoredOut(node->transform, node->pos);
             }
         }
     }

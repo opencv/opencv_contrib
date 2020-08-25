@@ -16,7 +16,7 @@ struct WarpNode
     // node's center
     Point3f pos;
     float radius;
-    DualQuaternion transform;
+    UnitDualQuaternion transform;
     // where it is in params vector
     int place;
     // cached jacobian
@@ -33,15 +33,10 @@ struct WarpNode
         return expf(-L2/(2.f*radius));
     }
 
-    //TODO URGENT: make dq.centered() instead
     // Returns transform applied to node's center
-    Affine3f rt_centered() const
+    UnitDualQuaternion centeredRt() const
     {
-        Affine3f r = Affine3f().translate(-pos)
-                               .rotate(transform.rotation())
-                               .translate(pos)
-                               .translate(transform.translation());
-        return r;
+        return transform.centered(pos);
     }
 };
 
@@ -108,11 +103,12 @@ public:
         return nodeIndex;
     }  
 
-    void setAllRT(Affine3f warpRT)
+    void setAllRT(Affine3f warpRt)
     {
+        UnitDualQuaternion u(warpRt);
         for (auto n : nodes)
         {
-            n->transform = warpRT;
+            n->transform = u;
         }
     }
 
