@@ -40,6 +40,11 @@
 //
 //M*/
 
+// Details on this algorithm can be found in:
+// Green, O., 2017. "Efficient scalable median filtering using histogram-based operations",
+//                   IEEE Transactions on Image Processing, 27(5), pp.2217-2228.
+
+
 #if !defined CUDA_DISABLER
 
 #include "opencv2/core/cuda/common.hpp"

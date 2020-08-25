@@ -28,7 +28,7 @@ static void tutorial2()
     /// Rodrigues vector
     Vec3d rot_vec = Vec3d::all(0);
     double translation_phase = 0.0, translation = 0.0;
-    while(!myWindow.wasStopped())
+    for(unsigned num = 0; num < 50; ++num)
     {
         /* Rotation using rodrigues */
         /// Rotate around (1,1,1)
@@ -45,7 +45,7 @@ static void tutorial2()
 
         myWindow.setWidgetPose("Cube Widget", pose);
 
-        myWindow.spinOnce(1, true);
+        myWindow.spinOnce(100, true);
     }
 }
 

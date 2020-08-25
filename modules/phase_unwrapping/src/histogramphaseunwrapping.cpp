@@ -712,7 +712,10 @@ void HistogramPhaseUnwrapping_Impl::addIncrement( OutputArray unwrappedPhaseMap 
     int rows = params.height;
     int cols = params.width;
     if( uPhaseMap.empty() )
+    {
         uPhaseMap.create(rows, cols, CV_32FC1);
+        uPhaseMap = Scalar::all(0);
+    }
     int nbrOfPixels = static_cast<int>(pixels.size());
     for( int i = 0; i < nbrOfPixels; ++i )
     {

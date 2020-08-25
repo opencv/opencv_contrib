@@ -452,6 +452,9 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
     // calculate local homographies for each marker
     vector< Mat > transformations;
     transformations.resize(nMarkers);
+
+    vector< bool > validTransform(nMarkers, false);
+
     for(unsigned int i = 0; i < nMarkers; i++) {
         vector< Point2f > markerObjPoints2D;
         int markerId = _markerIds.getMat().at< int >(i);
@@ -464,6 +467,10 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                 Point2f(_board->objPoints[boardIdx][j].x, _board->objPoints[boardIdx][j].y);
 
         transformations[i] = getPerspectiveTransform(markerObjPoints2D, _markerCorners.getMat(i));
+
+        // set transform as valid if transformation is non-singular
+        double det = determinant(transformations[i]);
+        validTransform[i] = std::abs(det) > 1e-6;
     }
 
     unsigned int nCharucoCorners = (unsigned int)_board->chessboardCorners.size();
@@ -484,7 +491,9 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                     break;
                 }
             }
-            if(markerIdx != -1) {
+            if (markerIdx != -1 &&
+                validTransform[markerIdx])
+            {
                 vector< Point2f > in, out;
                 in.push_back(objPoint2D);
                 perspectiveTransform(in, out, transformations[markerIdx]);
@@ -886,6 +895,61 @@ void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners,
             putText(_image, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
         }
     }
+}
+
+/**
+   @param board layout of ChArUco board.
+ * @param image charucoIds list of identifiers for each corner in charucoCorners.
+ * @return bool value, 1 (true) for detected corners form a line, 0 for non-linear.
+      solvePnP will fail if the corners are collinear (true).
+  * Check that the set of charuco markers in _charucoIds does not identify a straight line on
+    the charuco board.  Axis parallel, as well as diagonal and other straight lines detected.
+  */
+ bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _charucoIds){
+
+    unsigned int nCharucoCorners = (unsigned int)_charucoIds.getMat().total();
+
+    if (nCharucoCorners <= 2)
+        return true;
+
+    // only test if there are 3 or more corners
+    CV_Assert( _board->chessboardCorners.size() >= _charucoIds.getMat().total());
+
+    Vec<double, 3> point0( _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].x,
+            _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].y,
+            1);
+
+    Vec<double, 3> point1( _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].x,
+            _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].y,
+            1);
+
+    // create a line from the first two points.
+    Vec<double, 3> testLine = point0.cross(point1);
+
+    Vec<double, 3> testPoint(0, 0, 1);
+
+    double divisor = sqrt(testLine[0]*testLine[0] + testLine[1]*testLine[1]);
+
+    CV_Assert( divisor != 0);
+
+    // normalize the line with normal
+    testLine /= divisor;
+
+    double dotProduct;
+    for (unsigned int i = 2; i < nCharucoCorners; i++){
+        testPoint(0) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].x;
+        testPoint(1) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].y;
+
+        // if testPoint is on testLine, dotProduct will be zero (or very, very close)
+        dotProduct = testPoint.dot(testLine);
+
+        if (std::abs(dotProduct) > 1e-6){
+            return false;
+        }
+    }
+
+    // no points found that were off of testLine, return true that all points collinear.
+    return true;
 }
 }
 }

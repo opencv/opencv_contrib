@@ -66,7 +66,7 @@ PERF_TEST_P( descript_params, census_sparse_descriptor,
     {
         censusTransform(left,9,out1,CV_SPARSE_CENSUS);
     }
-    SANITY_CHECK(out1);
+    SANITY_CHECK_NOTHING();
 }
 PERF_TEST_P( descript_params, star_census_transform,
             testing::Combine(
@@ -88,7 +88,7 @@ PERF_TEST_P( descript_params, star_census_transform,
     {
         starCensusTransform(left,9,out1);
     }
-    SANITY_CHECK(out1);
+    SANITY_CHECK_NOTHING();
 }
 PERF_TEST_P( descript_params, modified_census_transform,
             testing::Combine(
@@ -112,7 +112,7 @@ PERF_TEST_P( descript_params, modified_census_transform,
     {
         modifiedCensusTransform(left,9,out1,CV_MODIFIED_CENSUS_TRANSFORM);
     }
-    SANITY_CHECK(out1);
+    SANITY_CHECK_NOTHING();
 }
 PERF_TEST_P( descript_params, center_symetric_census,
             testing::Combine(
@@ -136,7 +136,7 @@ PERF_TEST_P( descript_params, center_symetric_census,
     {
         symetricCensusTransform(left,7,out1,CV_CS_CENSUS);
     }
-    SANITY_CHECK(out1);
+    SANITY_CHECK_NOTHING();
 }
 
 

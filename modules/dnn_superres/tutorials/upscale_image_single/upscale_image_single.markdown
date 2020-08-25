@@ -1,21 +1,39 @@
 Upscaling images: single-output {#tutorial_dnn_superres_upscale_image_single}
 ===========================
 
-In this tutorial you will learn how to use the 'dnn_superres' interface to upscale an image via pre-trained neural networks.
+In this tutorial you will learn how to use the 'dnn_superres' interface to upscale an image via pre-trained neural networks. It works in C++ and Python.
 
 Building
 ----
 
-When building OpenCV, run the following command to build the 'dnn_superres' module:
+When building OpenCV, run the following command to build all the contrib module:
 
 ```make
-cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -Dopencv_dnn_superres=ON <opencv_source_dir>
+cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/
+```
+
+Or only build the dnn_superres module:
+
+```make
+cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/dnn_superres
 ```
 
 Or make sure you check the dnn_superres module in the GUI version of CMake: cmake-gui.
 
 Source Code of the sample
 -----------
+
+You can run the sample code by doing
+
+```run
+<path_of_your_opencv_build_directory>/bin/example_dnn_superres_dnn_superres <path_to_image.png> <algo_string> <upscale_int> <model_path.pb>
+```
+
+Example:
+
+```run
+/home/opencv/build/bin/example_dnn_superres_dnn_superres /home/image.png edsr 2 /home/EDSR_x2.pb
+```
 
 @includelineno dnn_superres/samples/dnn_superres.cpp
 
@@ -60,6 +78,33 @@ Explanation
 
     Now we can upscale any image. Load an image via the standard 'imread' function and create a new Mat for the destination image. Then simple
     upscale. Your upscaled image is located in 'img_new'.
+
+An example in python
+-----------
+@code{.py}
+import cv2
+from cv2 import dnn_superres
+
+# Create an SR object - only function that differs from c++ code
+sr = dnn_superres.DnnSuperResImpl_create()
+
+# Read image
+image = cv2.imread('./image.png')
+
+# Read the desired model
+path = "EDSR_x4.pb"
+sr.readModel(path)
+
+# Set the desired model and scale to get correct pre- and post-processing
+sr.setModel("edsr", 4)
+
+# Upscale the image
+result = sr.upsample(image)
+
+# Save the image
+cv2.imwrite("./upscaled.png", result)
+@endcode
+
 
 Original: ![](images/input.jpg)
 Upscaled Image via FSRCNN: ![](images/fsrcnnOutput.jpg)

@@ -31,19 +31,24 @@ int main(int argc, char *argv[])
     std::string path = string(argv[4]);
 
     //Parse the scaling factors
-    std::stringstream ss(scales_str);
     std::vector<int> scales;
-    std::string token;
     char delim = ',';
-    while (std::getline(ss, token, delim)) {
-        scales.push_back(atoi(token.c_str()));
+    {
+        std::stringstream ss(scales_str);
+        std::string token;
+        while (std::getline(ss, token, delim)) {
+            scales.push_back(atoi(token.c_str()));
+        }
     }
 
     //Parse the output node names
-    ss = std::stringstream(output_names_str);
     std::vector<String> node_names;
-    while (std::getline(ss, token, delim)) {
-        node_names.push_back(token);
+    {
+        std::stringstream ss(output_names_str);
+        std::string token;
+        while (std::getline(ss, token, delim)) {
+            node_names.push_back(token);
+        }
     }
 
     // Load the image

@@ -9,6 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
+#include <opencv2/rgbd/volume.hpp>
 
 namespace cv {
 namespace kinfu {
@@ -17,9 +18,49 @@ namespace kinfu {
 
 struct CV_EXPORTS_W Params
 {
-    /** @brief Default parameters
-    A set of parameters which provides better model quality, can be very slow.
-    */
+
+    CV_WRAP Params(){}
+
+    /**
+     * @brief Constructor for Params
+     * Sets the initial pose of the TSDF volume.
+     * @param volumeIntialPoseRot rotation matrix
+     * @param volumeIntialPoseTransl translation vector
+     */
+    CV_WRAP Params(Matx33f volumeIntialPoseRot, Vec3f volumeIntialPoseTransl)
+    {
+      setInitialVolumePose(volumeIntialPoseRot,volumeIntialPoseTransl);
+    }
+
+    /**
+     * @brief Constructor for Params
+     * Sets the initial pose of the TSDF volume.
+     * @param volumeIntialPose 4 by 4 Homogeneous Transform matrix to set the intial pose of TSDF volume
+     */
+    CV_WRAP Params(Matx44f volumeIntialPose)
+    {
+      setInitialVolumePose(volumeIntialPose);
+    }
+
+    /**
+     * @brief Set Initial Volume Pose
+     * Sets the initial pose of the TSDF volume.
+     * @param R rotation matrix
+     * @param t translation vector
+     */
+    CV_WRAP void setInitialVolumePose(Matx33f R, Vec3f t);
+
+    /**
+     * @brief Set Initial Volume Pose
+     * Sets the initial pose of the TSDF volume.
+     * @param homogen_tf 4 by 4 Homogeneous Transform matrix to set the intial pose of TSDF volume
+     */
+    CV_WRAP void setInitialVolumePose(Matx44f homogen_tf);
+
+    /**
+     * @brief Default parameters
+     * A set of parameters which provides better model quality, can be very slow.
+     */
     CV_WRAP static Ptr<Params> defaultParams();
 
     /** @brief Coarse parameters
@@ -28,11 +69,18 @@ struct CV_EXPORTS_W Params
     */
     CV_WRAP static Ptr<Params> coarseParams();
 
+    /** @brief HashTSDF parameters
+      A set of parameters suitable for use with HashTSDFVolume
+    */
+    CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
+
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
 
+    CV_PROP_RW cv::kinfu::VolumeType volumeType;
+
     /** @brief camera intrinsics */
-    CV_PROP Matx33f intr;
+    CV_PROP_RW Matx33f intr;
 
     /** @brief pre-scale per 1 meter for input values
 
@@ -93,14 +141,14 @@ struct CV_EXPORTS_W Params
     // float gradient_delta_factor;
 
     /** @brief light pose for rendering in meters */
-    CV_PROP Vec3f lightPose;
+    CV_PROP_RW Vec3f lightPose;
 
     /** @brief distance theshold for ICP in meters */
     CV_PROP_RW float icpDistThresh;
     /** angle threshold for ICP in radians */
     CV_PROP_RW float icpAngleThresh;
     /** number of ICP iterations for each pyramid level */
-    CV_PROP std::vector<int> icpIterations;
+    CV_PROP_RW std::vector<int> icpIterations;
 
     /** @brief Threshold for depth truncation in meters
 

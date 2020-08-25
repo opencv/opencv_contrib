@@ -24,12 +24,12 @@ namespace rapid
 /**
  * Debug draw markers of matched correspondences onto a lineBundle
  * @param bundle the lineBundle
- * @param srcLocations the according source locations
- * @param newLocations matched source locations
+ * @param cols column coordinates in the line bundle
  * @param colors colors for the markers. Defaults to white.
  */
-CV_EXPORTS_W void drawCorrespondencies(InputOutputArray bundle, InputArray srcLocations,
-                                       InputArray newLocations, InputArray colors = noArray());
+CV_EXPORTS_W void drawCorrespondencies(InputOutputArray bundle, InputArray cols,
+                                       InputArray colors = noArray());
+
 /**
  * Debug draw search lines onto an image
  * @param img the output image
@@ -83,20 +83,22 @@ CV_EXPORTS_W void extractLineBundle(int len, InputArray ctl2d, InputArray img, O
  * Find corresponding image locations by searching for a maximal sobel edge along the search line (a single
  * row in the bundle)
  * @param bundle the line bundle
- * @param srcLocations the according source image location
- * @param newLocations image locations with maximal edge along the search line
+ * @param cols correspondence-position per line in line-bundle-space
  * @param response the sobel response for the selected point
  */
-CV_EXPORTS_W void findCorrespondencies(InputArray bundle, InputArray srcLocations, OutputArray newLocations,
+CV_EXPORTS_W void findCorrespondencies(InputArray bundle, OutputArray cols,
                                        OutputArray response = noArray());
 
 /**
- * Filter corresponding 2d and 3d points based on mask
+ * Collect corresponding 2d and 3d points based on correspondencies and mask
+ * @param cols correspondence-position per line in line-bundle-space
+ * @param srcLocations the source image location
  * @param pts2d 2d points
  * @param pts3d 3d points
  * @param mask mask containing non-zero values for the elements to be retained
  */
-CV_EXPORTS_W void filterCorrespondencies(InputOutputArray pts2d, InputOutputArray pts3d, InputArray mask);
+CV_EXPORTS_W void convertCorrespondencies(InputArray cols, InputArray srcLocations, OutputArray pts2d,
+                                          InputOutputArray pts3d = noArray(), InputArray mask = noArray());
 
 /**
  * High level function to execute a single rapid @cite harris1990rapid iteration
@@ -104,7 +106,7 @@ CV_EXPORTS_W void filterCorrespondencies(InputOutputArray pts2d, InputOutputArra
  * 1. @ref extractControlPoints
  * 2. @ref extractLineBundle
  * 3. @ref findCorrespondencies
- * 4. @ref filterCorrespondencies
+ * 4. @ref convertCorrespondencies
  * 5. @ref solvePnPRefineLM
  *
  * @param img the video frame
@@ -115,10 +117,38 @@ CV_EXPORTS_W void filterCorrespondencies(InputOutputArray pts2d, InputOutputArra
  * @param K camera matrix
  * @param rvec rotation between mesh and camera. Input values are used as an initial solution.
  * @param tvec translation between mesh and camera. Input values are used as an initial solution.
+ * @param rmsd the 2d reprojection difference
  * @return ratio of search lines that could be extracted and matched
  */
 CV_EXPORTS_W float rapid(InputArray img, int num, int len, InputArray pts3d, InputArray tris, InputArray K,
-                         InputOutputArray rvec, InputOutputArray tvec);
+                         InputOutputArray rvec, InputOutputArray tvec, CV_OUT double* rmsd = 0);
+
+/// Abstract base class for stateful silhouette trackers
+class CV_EXPORTS_W Tracker : public Algorithm
+{
+public:
+    virtual ~Tracker();
+    CV_WRAP virtual float
+    compute(InputArray img, int num, int len, InputArray K, InputOutputArray rvec, InputOutputArray tvec,
+            const TermCriteria& termcrit = TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS, 5, 1.5)) = 0;
+    CV_WRAP virtual void clearState() = 0;
+};
+
+/// wrapper around @ref rapid function for uniform access
+class CV_EXPORTS_W Rapid : public Tracker
+{
+public:
+    CV_WRAP static Ptr<Rapid> create(InputArray pts3d, InputArray tris);
+};
+
+/** implements "Optimal local searching for fast and robust textureless 3D object tracking in highly
+ * cluttered backgrounds" @cite seo2013optimal
+ */
+class CV_EXPORTS_W OLSTracker : public Tracker
+{
+public:
+    CV_WRAP static Ptr<OLSTracker> create(InputArray pts3d, InputArray tris, int histBins = 8, uchar sobelThesh = 10);
+};
 //! @}
 } /* namespace rapid */
 } /* namespace cv */

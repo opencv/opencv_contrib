@@ -6,10 +6,16 @@ In this tutorial you will learn how to use the 'dnn_superres' interface to upsca
 Building
 ----
 
-When building OpenCV, run the following command to build the 'dnn_superres' module:
+When building OpenCV, run the following command to build all the contrib module:
 
 ```make
-cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -Dopencv_dnn_superres=ON <opencv_source_dir>
+cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/
+```
+
+Or only build the dnn_superres module:
+
+```make
+cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/dnn_superres
 ```
 
 Or make sure you check the dnn_superres module in the GUI version of CMake: cmake-gui.

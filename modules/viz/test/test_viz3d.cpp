@@ -59,7 +59,7 @@ TEST(Viz_viz3d, DISABLED_develop)
     //cv::Mat cloud = cv::viz::readCloud(get_dragon_ply_file_path());
     //---->>>>> </to_test_in_future>
 
-    viz.spin();
+    viz.spinOnce(500, true);
 }
 
 }} // namespace

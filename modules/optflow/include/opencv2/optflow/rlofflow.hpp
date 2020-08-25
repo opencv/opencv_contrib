@@ -66,12 +66,12 @@ public:
     RLOFOpticalFlowParameter()
         :solverType(ST_BILINEAR)
         ,supportRegionType(SR_CROSS)
-        ,normSigma0(3.2f)
-        ,normSigma1(7.f)
+        ,normSigma0(std::numeric_limits<float>::max())
+        ,normSigma1(std::numeric_limits<float>::max())
         ,smallWinSize(9)
         ,largeWinSize(21)
         ,crossSegmentationThreshold(25)
-        ,maxLevel(5)
+        ,maxLevel(4)
         ,useInitialFlow(false)
         ,useIlluminationModel(true)
         ,useGlobalMotionPrior(true)
@@ -90,13 +90,13 @@ public:
     */
 
     float normSigma0;
-    /**< &sigma paramter of the shrinked Hampel norm introduced in @cite Senst2012. If
+    /**< &sigma parameter of the shrinked Hampel norm introduced in @cite Senst2012. If
      * &sigma = std::numeric_limist<float>::max() the least-square estimator will be used
      * instead of the M-estimator. Althoug M-estimator is more robust against outlier in the support
      * region the least-square can be fast in computation.
     */
     float normSigma1;
-    /**< &sigma paramter of the shrinked Hampel norm introduced in @cite Senst2012. If
+    /**< &sigma parameter of the shrinked Hampel norm introduced in @cite Senst2012. If
      * &sigma = std::numeric_limist<float>::max() the least-square estimator will be used
      * instead of the M-estimator. Althoug M-estimator is more robust against outlier in the support
      * region the least-square can be fast in computation.
@@ -150,6 +150,14 @@ public:
      *   n-th percentil (given by this value [0 ... 100]) of the motion vectors magnitude.
      *   See @cite Senst2016 for more details.
     */
+
+    //! @brief Enable M-estimator or disable and use least-square estimator.
+    /** Enables M-estimator by setting sigma parameters to (3.2, 7.0). Disabling M-estimator can reduce
+     *  runtime, while enabling can improve the accuracy.
+     *  @param val If true M-estimator is used. If false least-square estimator is used.
+     *    @see setNormSigma0, setNormSigma1
+    */
+    CV_WRAP void setUseMEstimator(bool val);
 
     CV_WRAP void setSolverType(SolverType val);
     CV_WRAP SolverType getSolverType() const;
@@ -216,9 +224,8 @@ public:
  * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
  * Parameters have been described in @cite Senst2012 @cite Senst2013 @cite Senst2014 and @cite Senst2016.
  *
- * @note SIMD parallelization is only available when compiling with SSE4.1. If the grid size is set to (1,1) and the
- * forward backward threshold <= 0 that the dense optical flow field is purely.
- * computed with the RLOF.
+ * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 than pixelwise dense optical flow field is
+ * computed by RLOF without using interpolation.
  *
  * @see optflow::calcOpticalFlowDenseRLOF(), optflow::RLOFOpticalFlowParameter
 */

@@ -97,10 +97,12 @@ cv::viz::Mesh cv::viz::Mesh::load(const String& file, int type)
     // Now handle the polygons
     vtkSmartPointer<vtkCellArray> polygons = polydata->GetPolys();
     mesh.polygons.create(1, polygons->GetSize(), CV_32SC1);
+    mesh.polygons = 0;
     int* poly_ptr = mesh.polygons.ptr<int>();
 
     polygons->InitTraversal();
-    vtkIdType nr_cell_points, *cell_points;
+    vtkIdType nr_cell_points;
+    CellIterT cell_points;
     while (polygons->GetNextCell(nr_cell_points, cell_points))
     {
         *poly_ptr++ = nr_cell_points;

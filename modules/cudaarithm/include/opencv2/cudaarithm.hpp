@@ -274,6 +274,10 @@ CV_EXPORTS_W void bitwise_xor(InputArray src1, InputArray src2, OutputArray dst,
  */
 CV_EXPORTS void rshift(InputArray src, Scalar_<int> val, OutputArray dst, Stream& stream = Stream::Null());
 
+CV_WRAP inline void rshift(InputArray src, Scalar val, OutputArray dst, Stream& stream = Stream::Null()) {
+    rshift(src, Scalar_<int>(val), dst, stream);
+}
+
 /** @brief Performs pixel by pixel right left of an image by a constant value.
 
 @param src Source matrix. Supports 1, 3 and 4 channels images with CV_8U , CV_16U or CV_32S
@@ -283,6 +287,10 @@ depth.
 @param stream Stream for the asynchronous version.
  */
 CV_EXPORTS void lshift(InputArray src, Scalar_<int> val, OutputArray dst, Stream& stream = Stream::Null());
+
+CV_WRAP inline void lshift(InputArray src, Scalar val, OutputArray dst, Stream& stream = Stream::Null()) {
+    lshift(src, Scalar_<int>(val), dst, stream);
+}
 
 /** @brief Computes the per-element minimum of two matrices (or a matrix and a scalar).
 
@@ -858,7 +866,7 @@ public:
     @param ccorr Flags to evaluate cross-correlation instead of convolution.
     @param stream Stream for the asynchronous version.
      */
-    virtual void convolve(InputArray image, InputArray templ, OutputArray result, bool ccorr = false, Stream& stream = Stream::Null()) = 0;
+    CV_WRAP virtual void convolve(InputArray image, InputArray templ, OutputArray result, bool ccorr = false, Stream& stream = Stream::Null()) = 0;
 };
 
 /** @brief Creates implementation for cuda::Convolution .

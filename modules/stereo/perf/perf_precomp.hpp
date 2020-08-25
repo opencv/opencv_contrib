@@ -6,9 +6,6 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/stereo.hpp"
-#include "opencv2/features2d.hpp"
-#include "opencv2/core/utility.hpp"
-#include "opencv2/calib3d.hpp"
 
 namespace opencv_test {
 using namespace cv::stereo;

@@ -470,16 +470,32 @@ void calcLocalOpticalFlowCore(
         {
             if (param.useIlluminationModel)
             {
-                cv::parallel_for_(cv::Range(0, npoints),
-                    plk::radial::TrackerInvoker(
-                        prevImage, derivI, currImage, tRGBPrevPyr, tRGBNextPyr,
-                        prevPts, nextPts, &status[0], &err[0], &gainPts[0],
-                        level, maxLevel, winSizes,
-                        param.maxIteration,
-                        param.useInitialFlow,
-                        param.supportRegionType,
-                        param.minEigenValue,
-                        param.crossSegmentationThreshold));
+                if (param.solverType == SolverType::ST_STANDART)
+                {
+                    cv::parallel_for_(cv::Range(0, npoints),
+                        plk::radial::TrackerInvoker(
+                            prevImage, derivI, currImage, tRGBPrevPyr, tRGBNextPyr,
+                            prevPts, nextPts, &status[0], &err[0], &gainPts[0],
+                            level, maxLevel, winSizes,
+                            param.maxIteration,
+                            param.useInitialFlow,
+                            param.supportRegionType,
+                            param.minEigenValue,
+                            param.crossSegmentationThreshold));
+                }
+                else
+                {
+                    cv::parallel_for_(cv::Range(0, npoints),
+                        beplk::radial::TrackerInvoker(
+                            prevImage, derivI, currImage, tRGBPrevPyr, tRGBNextPyr,
+                            prevPts, nextPts, &status[0], &err[0], &gainPts[0],
+                            level, maxLevel, winSizes,
+                            param.maxIteration,
+                            param.useInitialFlow,
+                            param.supportRegionType,
+                            param.crossSegmentationThreshold,
+                            param.minEigenValue));
+                }
             }
             else
             {

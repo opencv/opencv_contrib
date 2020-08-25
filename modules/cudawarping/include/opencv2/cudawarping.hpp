@@ -112,7 +112,7 @@ CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=
 @param src Source image. CV_8U , CV_16U , CV_32S , or CV_32F depth and 1, 3, or 4 channels are
 supported.
 @param dst Destination image with the same type as src . The size is dsize .
-@param M *2x3* transformation matrix.
+@param M *2x3* Mat or UMat transformation matrix.
 @param dsize Size of the destination image.
 @param flags Combination of interpolation methods (see resize) and the optional flag
 WARP_INVERSE_MAP specifying that M is an inverse transformation ( dst=\>src ). Only
@@ -123,12 +123,22 @@ INTER_NEAREST , INTER_LINEAR , and INTER_CUBIC interpolation methods are support
 
 @sa warpAffine
  */
-CV_EXPORTS_W void warpAffine(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
+CV_EXPORTS void warpAffine(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null());
+
+CV_WRAP inline void warpAffine(InputArray src, OutputArray dst, UMat M, Size dsize, int flags = INTER_LINEAR,
+    int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
+    warpAffine(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
+}
+
+CV_WRAP inline void warpAffine(InputArray src, OutputArray dst, Mat M, Size dsize, int flags = INTER_LINEAR,
+    int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
+    warpAffine(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
+}
 
 /** @brief Builds transformation maps for affine transformation.
 
-@param M *2x3* transformation matrix.
+@param M *2x3* Mat or UMat transformation matrix.
 @param inverse Flag specifying that M is an inverse transformation ( dst=\>src ).
 @param dsize Size of the destination image.
 @param xmap X values with CV_32FC1 type.
@@ -137,14 +147,22 @@ CV_EXPORTS_W void warpAffine(InputArray src, OutputArray dst, InputArray M, Size
 
 @sa cuda::warpAffine , cuda::remap
  */
-CV_EXPORTS_W void buildWarpAffineMaps(InputArray M, bool inverse, Size dsize, OutputArray xmap, OutputArray ymap, Stream& stream = Stream::Null());
+CV_EXPORTS void buildWarpAffineMaps(InputArray M, bool inverse, Size dsize, OutputArray xmap, OutputArray ymap, Stream& stream = Stream::Null());
+
+CV_WRAP inline void buildWarpAffineMaps(UMat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+    buildWarpAffineMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
+}
+
+CV_WRAP inline void buildWarpAffineMaps(Mat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+    buildWarpAffineMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
+}
 
 /** @brief Applies a perspective transformation to an image.
 
 @param src Source image. CV_8U , CV_16U , CV_32S , or CV_32F depth and 1, 3, or 4 channels are
 supported.
 @param dst Destination image with the same type as src . The size is dsize .
-@param M *3x3* transformation matrix.
+@param M *3x3* Mat or UMat transformation matrix.
 @param dsize Size of the destination image.
 @param flags Combination of interpolation methods (see resize ) and the optional flag
 WARP_INVERSE_MAP specifying that M is the inverse transformation ( dst =\> src ). Only
@@ -155,12 +173,22 @@ INTER_NEAREST , INTER_LINEAR , and INTER_CUBIC interpolation methods are support
 
 @sa warpPerspective
  */
-CV_EXPORTS_W void warpPerspective(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
+CV_EXPORTS void warpPerspective(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null());
+
+CV_WRAP inline void warpPerspective(InputArray src, OutputArray dst, UMat M, Size dsize, int flags = INTER_LINEAR,
+    int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
+    warpPerspective(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
+}
+
+CV_WRAP inline void warpPerspective(InputArray src, OutputArray dst, Mat M, Size dsize, int flags = INTER_LINEAR,
+    int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
+    warpPerspective(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
+}
 
 /** @brief Builds transformation maps for perspective transformation.
 
-@param M *3x3* transformation matrix.
+@param M *3x3* Mat or UMat transformation matrix.
 @param inverse Flag specifying that M is an inverse transformation ( dst=\>src ).
 @param dsize Size of the destination image.
 @param xmap X values with CV_32FC1 type.
@@ -169,7 +197,15 @@ CV_EXPORTS_W void warpPerspective(InputArray src, OutputArray dst, InputArray M,
 
 @sa cuda::warpPerspective , cuda::remap
  */
-CV_EXPORTS_W void buildWarpPerspectiveMaps(InputArray M, bool inverse, Size dsize, OutputArray xmap, OutputArray ymap, Stream& stream = Stream::Null());
+CV_EXPORTS void buildWarpPerspectiveMaps(InputArray M, bool inverse, Size dsize, OutputArray xmap, OutputArray ymap, Stream& stream = Stream::Null());
+
+CV_WRAP inline void buildWarpPerspectiveMaps(UMat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+    buildWarpPerspectiveMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
+}
+
+CV_WRAP inline void buildWarpPerspectiveMaps(Mat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+    buildWarpPerspectiveMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
+}
 
 /** @brief Rotates an image around the origin (0,0) and then shifts it.
 

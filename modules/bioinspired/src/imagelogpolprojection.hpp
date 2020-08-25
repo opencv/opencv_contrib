@@ -142,10 +142,10 @@ public:
     /**
     * init function depending on the projection type
     * @param reductionFactor: the size reduction factor of the ouptup image in regard of the size of the input image, must be superior to 1
-    * @param samplingStrenght: specifies the strenght of the log compression effect (magnifying coefficient)
+    * @param samplingStrength: specifies the strength of the log compression effect (magnifying coefficient)
     * @return true if the init was performed without any errors
     */
-    bool initProjection(const double reductionFactor, const double samplingStrenght);
+    bool initProjection(const double reductionFactor, const double samplingStrength);
 
     /**
     * main funtion of the class: run projection function
@@ -206,8 +206,8 @@ private:
 
     // is the object able to manage color flag
     bool _colorModeCapable;
-    // sampling strenght factor
-    double _samplingStrenght;
+    // sampling strength factor
+    double _samplingStrength;
     // sampling reduction factor
     double _reductionFactor;
 
@@ -231,8 +231,8 @@ private:
     // specifies if init was done correctly
     bool _initOK;
     // private init projections functions called by "initProjection(...)" function
-    bool _initLogRetinaSampling(const double reductionFactor, const double samplingStrenght);
-    bool _initLogPolarCortexSampling(const double reductionFactor, const double samplingStrenght);
+    bool _initLogRetinaSampling(const double reductionFactor, const double samplingStrength);
+    bool _initLogPolarCortexSampling(const double reductionFactor, const double samplingStrength);
 
     ImageLogPolProjection(const ImageLogPolProjection&);
     ImageLogPolProjection& operator=(const ImageLogPolProjection&);
