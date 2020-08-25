@@ -425,13 +425,17 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
+        // Obtain vertex data in cube's coordinates (voxelSize included)
+        // and use them to update warp field
         //TODO: what if to use marchCubes() instead?
         UMat wfPoints;
         volume->fetchPointsNormals(wfPoints, noArray(), true);
         warpfield.updateNodesFromPoints(wfPoints);
 
+        // Render it using current cam pose but _with_ warping
         Mat _depthRender, estdDepth, _vertRender, _normRender;
-        renderSurface(_depthRender, _vertRender, _normRender, false);
+        // TODO: check if we really need to turn it off
+        renderSurface(_depthRender, _vertRender, _normRender, true);
         _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
         std::vector<T> estdPoints, estdNormals;
@@ -474,7 +478,10 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         for(int iter = 0; iter < 1; iter++)
         {
-            renderSurface(_depthRender, _vertRender, _normRender);
+            //TODO URGENT: different scales
+
+            // Render surface with vol pose, cam pose, ICP pose and warping
+            renderSurface(_depthRender, _vertRender, _normRender, true);
             _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
             makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
