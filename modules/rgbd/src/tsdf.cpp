@@ -57,7 +57,7 @@ static inline float tsdfToFloat(TsdfType num)
 }
 
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
-                       int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
+                       WeightType _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
       volResolution(_resolution),
       maxWeight(_maxWeight)
@@ -375,7 +375,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
                         // update TSDF
                         value  = floatToTsdf((tsdfToFloat(value)*weight+ tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = min(weight + 1, volume.maxWeight);
+                        weight = min(int(weight + 1), int(volume.maxWeight));
                     }
                 }
             }
@@ -429,17 +429,17 @@ struct IntegrateInvoker : ParallelLoopBody
                 startZ = max(0, startZ);
                 endZ   = min(volume.volResolution.z, endZ);
                 
-                Point3f camPixVec;
-                Point2f projected = proj(camSpacePt, camPixVec);
-                float o = 0.004f;
-                float pixNorm = sqrt(camPixVec.dot(camPixVec)) + o;
+                //Point3f camPixVec;
+                //Point2f projected = proj(camSpacePt, camPixVec);
+                //float o = 0.004f;
+                //float pixNorm = sqrt(camPixVec.dot(camPixVec)) + o;
                 for(int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     //Point3f camSpacePt = vol2cam * volPt;
                     
-                    pixNorm += o;
+                    //pixNorm += o;
                     
                     camSpacePt += zStep;
                     if(camSpacePt.z <= 0)
@@ -453,7 +453,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         continue;
 
                     // norm(camPixVec) produces double which is too slow
-                    //float pixNorm = sqrt(camPixVec.dot(camPixVec));
+                    float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
@@ -468,7 +468,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
                         // update TSDF
                         value  = floatToTsdf((tsdfToFloat(value)*weight+ tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = min(weight + 1, volume.maxWeight);
+                        weight = min(int(weight + 1), int(volume.maxWeight));
                     }
                 }
             }
@@ -562,7 +562,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
-
+/*
     float vx[6];
     for (int i = 0; i < 6; i++)
         vx[i] = tsdfToFloat(volData[_neighbourCoords[i] + coordBase].tsdf);
@@ -574,8 +574,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float v0 = v00 + ty * (v01 - v00);
 
     return v0 + tx * (v10 - v00);
-
-/*
+*/
     float vx[8];
     for (int i = 0; i < 8; i++)
         vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
@@ -589,7 +588,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float v1 = v10 + ty*(v11 - v10);
 
     return v0 + tx*(v1 - v0);
-*/
+
 }
 #endif
 
@@ -688,7 +687,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     {
         const int dim = volDims[c];
         float& nv = an[c];
-
+        /*
         float vx[6];
         for (int i = 0; i < 6; i++)
             vx[i] = tsdfToFloat(volData[_neighbourCoords[i] + coordBase].tsdf);
@@ -700,8 +699,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         float v0 = v00 + ty * (v01 - v00);
 
         nv = v0 + tx * (v10 - v00);
+        */
         
-        /*
         float vx[8];
         for(int i = 0; i < 8; i++)
             vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
@@ -716,7 +715,6 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         float v1 = v10 + ty*(v11 - v10);
 
         nv = v0 + tx*(v1 - v0);
-        */
     }
 
     float nv = sqrt(an[0] * an[0] +
@@ -1208,7 +1206,7 @@ TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycast
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
 {
-    volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_32FC2);
+    volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_8UC2 /*CV_32FC2*/);
 
     reset();
 }

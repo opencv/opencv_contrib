@@ -21,7 +21,7 @@ namespace kinfu
 // * WeightType can be uint16
 
 typedef int8_t TsdfType;
-typedef int WeightType;
+typedef uchar WeightType;
 
 struct TsdfVoxel
 {
@@ -36,7 +36,7 @@ class TSDFVolume : public Volume
    public:
     // dimension in voxels, size in meters
     TSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
-               int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
+               WeightType _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
     virtual ~TSDFVolume() = default;
 
    public:

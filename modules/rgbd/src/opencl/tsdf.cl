@@ -7,7 +7,7 @@
 typedef __INT8_TYPE__ int8_t;
 
 typedef int8_t TsdfType;
-typedef int WeightType;
+typedef uchar WeightType;
 
 struct TsdfVoxel
 {
