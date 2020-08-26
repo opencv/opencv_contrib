@@ -348,6 +348,122 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     return nv < 0.0001f ? nan3 : normal/nv;
 }
 
+inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
+{
+    cv::Point3f neighbourCoords[] = {
+                                Point3f(0, 0, 0),
+                                Point3f(0, 0, 1),
+                                Point3f(0, 1, 0),
+                                Point3f(0, 1, 1),
+                                Point3f(1, 0, 0),
+                                Point3f(1, 0, 1),
+                                Point3f(1, 1, 0),
+                                Point3f(1, 1, 1) };
+    for (int i = 0; i < 8; i++)
+        neighbourCoords[i] *= voxelSize;
+    
+    auto interpolate = [](cv::Point3f point, float vx[8])
+    {
+        int ix = cvFloor(point.x);
+        int iy = cvFloor(point.y);
+        int iz = cvFloor(point.z);
+
+        float tx = point.x - ix;
+        float ty = point.y - iy;
+        float tz = point.z - iz;
+
+        float v00 = vx[0] + tz * (vx[1] - vx[0]);
+        float v01 = vx[2] + tz * (vx[3] - vx[2]);
+        float v10 = vx[4] + tz * (vx[5] - vx[4]);
+        float v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+        float v0 = v00 + ty * (v01 - v00);
+        float v1 = v10 + ty * (v11 - v10);
+
+        return v0 + tx * (v1 - v0);
+    };
+
+    Point3f pointVec(point);
+    Point3f normal = Point3f(0, 0, 0);
+
+    Point3f c0_pointPrev = pointVec, c0_pointNext = pointVec;
+    Point3f c1_pointPrev = pointVec, c1_pointNext = pointVec;
+    Point3f c2_pointPrev = pointVec, c2_pointNext = pointVec;
+    
+    c0_pointPrev.x -= voxelSize; c0_pointNext.x += voxelSize;
+    c1_pointPrev.y -= voxelSize; c1_pointNext.y += voxelSize;
+    c2_pointPrev.z -= voxelSize; c2_pointNext.z += voxelSize;
+
+    float c0_n_vx[8], c1_n_vx[8], c2_n_vx[8];
+    float c0_p_vx[8], c1_p_vx[8], c2_p_vx[8];
+
+    for (int i = 0; i < 8; i++)
+        c0_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c0_pointNext).tsdf);
+    
+    for (int i = 0; i < 8; i++)
+        c0_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c0_pointPrev).tsdf);
+    
+    for (int i = 0; i < 8; i++)
+        if (i % 4 > 1)
+            c1_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c1_pointNext).tsdf);
+        else 
+            c1_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c1_pointPrev).tsdf);
+
+    for (int i = 0; i < 8; i++)
+        if (i % 2 == 1)
+            c2_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c2_pointNext).tsdf);
+        else
+            c2_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c2_pointPrev).tsdf);
+
+    c1_n_vx[0] = c0_p_vx[6];
+    c1_n_vx[1] = c0_p_vx[7];
+    c1_p_vx[2] = c0_n_vx[2];
+    c1_p_vx[3] = c0_n_vx[3];
+    c1_n_vx[4] = c0_p_vx[4];
+    c1_n_vx[5] = c0_p_vx[7];
+    c1_p_vx[6] = c0_n_vx[0];
+    c1_p_vx[7] = c0_n_vx[1];
+
+    c2_n_vx[0] = c0_p_vx[5];
+    c2_p_vx[1] = c0_p_vx[7];
+    c2_n_vx[2] = c0_n_vx[1];
+    c2_p_vx[3] = c0_n_vx[3];
+    c2_n_vx[4] = c0_p_vx[4];
+    c2_p_vx[5] = c0_p_vx[6];
+    c2_n_vx[6] = c0_n_vx[0];
+    c2_p_vx[7] = c0_n_vx[2];
+
+    normal.x = interpolate(c0_pointNext, c0_n_vx) - interpolate(c0_pointPrev, c0_p_vx);
+    normal.y = interpolate(c1_pointNext, c1_n_vx) - interpolate(c1_pointPrev, c1_p_vx);
+    normal.z = interpolate(c2_pointNext, c2_n_vx) - interpolate(c2_pointPrev, c2_p_vx);
+
+    float nv = sqrt(normal.x * normal.x +
+        normal.y * normal.y +
+        normal.z * normal.z);
+    return nv < 0.0001f ? nan3 : normal / nv;
+
+    /*
+    for (int c = 0; c < 3; c++)
+    {
+        pointPrev[c] -= voxelSize;
+        pointNext[c] += voxelSize;
+
+#if USE_INTERPOLATION_IN_GETNORMAL
+        normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
+#else
+        normal[c] = tsdfToFloat(at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf);
+#endif
+        pointPrev[c] = pointVec[c];
+        pointNext[c] = pointVec[c];
+    }
+
+    float nv = sqrt(normal[0] * normal[0] +
+        normal[1] * normal[1] +
+        normal[2] * normal[2]);
+    return nv < 0.0001f ? nan3 : normal / nv;
+    */
+}
+
 struct HashRaycastInvoker : ParallelLoopBody
 {
     HashRaycastInvoker(Points& _points, Normals& _normals, const Matx44f& cameraPose,
@@ -432,7 +548,8 @@ struct HashRaycastInvoker : ParallelLoopBody
                         if (!cvIsNaN(tInterp) && !cvIsInf(tInterp))
                         {
                             Point3f pv = orig + tInterp * rayDirV;
-                            Point3f nv = volume.getNormalVoxel(pv);
+                            //Point3f nv = volume.getNormalVoxel(pv);
+                            Point3f nv = volume._getNormalVoxel(pv);
 
                             if (!isNaN(nv))
                             {
