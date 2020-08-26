@@ -1012,6 +1012,8 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
         CV_Error(Error::StsBadArg, "invalid or non Scalar property");
         break;
     }
+    RTShader::ShaderGenerator::getSingleton().invalidateMaterial(
+        RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, name, RESOURCEGROUP_NAME);
 }
 
 void setMaterialProperty(const String& name, int prop, const String& value)
@@ -1033,6 +1035,8 @@ void setMaterialProperty(const String& name, int prop, const String& value)
     }
 
     rpass->getTextureUnitStates()[texUnit]->setTextureName(value);
+    RTShader::ShaderGenerator::getSingleton().invalidateMaterial(
+        RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, name, RESOURCEGROUP_NAME);
 }
 
 static bool setShaderProperty(const GpuProgramParametersSharedPtr& params, const String& prop,
