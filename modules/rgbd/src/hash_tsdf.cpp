@@ -441,27 +441,6 @@ inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
         normal.y * normal.y +
         normal.z * normal.z);
     return nv < 0.0001f ? nan3 : normal / nv;
-
-    /*
-    for (int c = 0; c < 3; c++)
-    {
-        pointPrev[c] -= voxelSize;
-        pointNext[c] += voxelSize;
-
-#if USE_INTERPOLATION_IN_GETNORMAL
-        normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
-#else
-        normal[c] = tsdfToFloat(at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf);
-#endif
-        pointPrev[c] = pointVec[c];
-        pointNext[c] = pointVec[c];
-    }
-
-    float nv = sqrt(normal[0] * normal[0] +
-        normal[1] * normal[1] +
-        normal[2] * normal[2]);
-    return nv < 0.0001f ? nan3 : normal / nv;
-    */
 }
 
 struct HashRaycastInvoker : ParallelLoopBody
