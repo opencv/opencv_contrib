@@ -572,13 +572,18 @@ TEST(GOTURN, memory_usage)
   cv::Rect2d roi(145, 70, 85, 85);
   cv::Mat frame;
 
-  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(TrackerGOTURN::Params{cvtest::findDataFile("../dnn/gsoc2016-goturn/goturn.prototxt"), cvtest::findDataFile("../dnn/gsoc2016-goturn/goturn.caffemodel")});
-  string folder = cvtest::findDataFile("tracking/david/data/david.webm");
-  cv::VideoCapture video( folder );
+  std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
+  std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
+
+  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(TrackerGOTURN::Params(model, weights));
+  string inputVideo = cvtest::findDataFile("tracking/david/data/david.webm");
+  cv::VideoCapture video(inputVideo);
 
   video >> frame;
   tracker->init(frame, roi);
-  for (;; ) {
+  for (int nframes = 0; ; ++nframes)
+  {
+      cout << "Frame: " << nframes << std::endl;
       video >> frame;
       if (frame.empty())
           break;
