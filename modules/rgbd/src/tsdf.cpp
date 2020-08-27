@@ -922,7 +922,7 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-void TSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, Size frameSize,
+void TSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, const Size& frameSize,
                             OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
@@ -1185,7 +1185,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
 }
 
 
-void TSDFVolumeGPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, Size frameSize,
+void TSDFVolumeGPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, const Size& frameSize,
                             OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();

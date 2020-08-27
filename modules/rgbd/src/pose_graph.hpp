@@ -156,7 +156,7 @@ struct PoseGraphEdge
                   const Matx66f& _information = Matx66f::eye())
         : sourceNodeId(_sourceNodeId),
           targetNodeId(_targetNodeId),
-          transformation(_transformation.rotation(), _transformation.translation()),
+          transformation(_transformation),
           information(_information)
     {
     }
@@ -176,7 +176,7 @@ struct PoseGraphEdge
    public:
     int sourceNodeId;
     int targetNodeId;
-    Pose3d transformation;
+    Affine3f transformation;
     Matx66f information;
 };
 

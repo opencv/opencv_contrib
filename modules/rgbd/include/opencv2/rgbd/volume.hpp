@@ -29,12 +29,12 @@ class CV_EXPORTS_W Volume
     virtual ~Volume(){};
 
     virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
-                           const kinfu::Intr& intrinsics, const int frameId = 0)   = 0;
-    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, Size frameSize,
-                         OutputArray points, OutputArray normals) const            = 0;
-    virtual void fetchNormals(InputArray points, OutputArray _normals) const       = 0;
-    virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const = 0;
-    virtual void reset()                                                           = 0;
+                           const kinfu::Intr& intrinsics, const int frameId = 0)               = 0;
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
+                         const Size& frameSize, OutputArray points, OutputArray normals) const = 0;
+    virtual void fetchNormals(InputArray points, OutputArray _normals) const                   = 0;
+    virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const             = 0;
+    virtual void reset()                                                                       = 0;
 
    public:
     const float voxelSize;
@@ -49,7 +49,7 @@ enum class VolumeType
     HASHTSDF = 1
 };
 
-struct VolumeParams
+struct CV_EXPORTS_W VolumeParams
 {
     /** @brief Type of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
@@ -106,8 +106,8 @@ struct VolumeParams
 
 CV_EXPORTS_W Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
 CV_EXPORTS_W Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
-                              float _raycastStepFactor, float _truncDist, int _maxWeight,
-                              float _truncateThreshold, Vec3i _resolution);
+                                    float _raycastStepFactor, float _truncDist, int _maxWeight,
+                                    float _truncateThreshold, Vec3i _resolution);
 
 }  // namespace kinfu
 }  // namespace cv

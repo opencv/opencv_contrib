@@ -57,7 +57,7 @@ class TSDFVolumeCPU : public TSDFVolume
 
     virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
                            const kinfu::Intr& intrinsics, const int frameId = 0) override;
-    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, Size frameSize,
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
                          OutputArray points, OutputArray normals) const override;
 
     virtual void fetchNormals(InputArray points, OutputArray _normals) const override;
@@ -90,7 +90,7 @@ class TSDFVolumeGPU : public TSDFVolume
 
     virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
                            const kinfu::Intr& intrinsics, const int frameId = 0) override;
-    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, Size frameSize,
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
                          OutputArray _points, OutputArray _normals) const override;
 
     virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const override;

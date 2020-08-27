@@ -107,8 +107,9 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
 
         const Matx66f& informationMatrix = currEdge.information;
 
-        ceres::CostFunction* costFunction =
-            Pose3dErrorFunctor::create(currEdge.transformation, informationMatrix);
+        ceres::CostFunction* costFunction = Pose3dErrorFunctor::create(
+            Pose3d(currEdge.transformation.rotation(), currEdge.transformation.translation()),
+            informationMatrix);
 
         problem.AddResidualBlock(costFunction, lossFunction, sourcePose.t.data(),
                                  sourcePose.r.coeffs().data(), targetPose.t.data(),

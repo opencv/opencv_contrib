@@ -53,8 +53,8 @@ class Submap
                          OutputArray points, OutputArray normals);
     virtual void updatePyrPointsNormals(const int pyramidLevels);
 
-    virtual size_t getTotalAllocatedBlocks() const { return volume.getTotalVolumeUnits(); };
-    virtual size_t getVisibleBlocks(int currFrameId) const
+    virtual int getTotalAllocatedBlocks() const { return int(volume.getTotalVolumeUnits()); };
+    virtual int getVisibleBlocks(int currFrameId) const
     {
         return volume.getVisibleBlocks(currFrameId, FRAME_VISIBILITY_THRESHOLD);
     }
@@ -257,11 +257,11 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
     static constexpr int MAX_TRACKING_ATTEMPTS = 25;
 
     //! thresh = HUBER_THRESH
-    auto huberWeight = [](float residual, float thresh = 0.1f) -> float {
+    auto huberWeight = [](double residual, double thresh = 0.1) -> double {
         float rAbs = abs(residual);
         if (rAbs < thresh)
             return 1.0;
-        float numerator = sqrt(2 * thresh * rAbs - thresh * thresh);
+        double numerator = sqrt(2 * thresh * rAbs - thresh * thresh);
         return numerator / rAbs;
     };
 
@@ -277,16 +277,10 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
     fromSubmapData.trackingAttempts++;
     fromSubmapData.constraints.push_back(candidateConstraint);
 
-    /* std::cout << "Candidate constraint from: " << fromSubmap->id << " to " << toSubmap->id << "\n" */
-    /*           << candidateConstraint.matrix << "\n"; */
-    /* std::cout << "Constraint observations size: " << fromSubmapData.constraints.size() << "\n"; */
-
-    std::vector<float> weights(fromSubmapData.constraints.size() + 1, 1.0f);
+    std::vector<double> weights(fromSubmapData.constraints.size() + 1, 1.0f);
 
     Affine3f prevConstraint = fromSubmap->getConstraint(toSubmap->id).estimatedPose;
     int prevWeight          = fromSubmap->getConstraint(toSubmap->id).weight;
-
-    /* std::cout << "Previous constraint pose: \n" << prevConstraint.matrix << "\n previous Weight: " << prevWeight << "\n"; */
 
     // Iterative reweighted least squares with huber threshold to find the inliers in the past observations
     Vec6f meanConstraint;
@@ -305,14 +299,13 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
         cv::vconcat(prevConstraint.rvec(), prevConstraint.translation(), constraintVec);
         meanConstraint += weights.back() * prevWeight * constraintVec;
         sumWeight += prevWeight;
-        /* std::cout << "meanConstraint before average: " << meanConstraint << " sumWeight: " << sumWeight << "\n"; */
         meanConstraint /= float(sumWeight);
 
-        float residual = 0.0f;
-        float diff     = 0;
+        double residual = 0.0;
+        double diff     = 0.0;
         for (int j = 0; j < int(weights.size()); j++)
         {
-            float w;
+            int w;
             if (j == int(weights.size() - 1))
             {
                 cv::vconcat(prevConstraint.rvec(), prevConstraint.translation(), constraintVec);
@@ -322,16 +315,12 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
             {
                 Affine3f currObservation = fromSubmapData.constraints[j];
                 cv::vconcat(currObservation.rvec(), currObservation.translation(), constraintVec);
-                w = 1.0f;
+                w = 1;
             }
 
-            /* std::cout << "meanConstraint: " << meanConstraint << " ConstraintVec: " << constraintVec << "\n"; */
             cv::Vec6f residualVec = (constraintVec - meanConstraint);
-            /* std::cout << "Residual Vec: " << residualVec << "\n"; */
             residual         = norm(residualVec);
             double newWeight = huberWeight(residual);
-            /* std::cout << "iteration: " << i << " residual: " << residual << " " << j */
-            /*           << "th weight before update: " << weights[j] << " after update: " << newWeight << "\n"; */
             diff += w * abs(newWeight - weights[j]);
             weights[j] = newWeight;
         }
