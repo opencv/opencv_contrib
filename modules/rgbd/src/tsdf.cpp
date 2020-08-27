@@ -11,57 +11,33 @@
 namespace cv {
 
 namespace kinfu {
-/*
-static inline TsdfType floatToTsdf_INTR(float num)
-{
-    Cv32suf u;
-    u.f = num;
-    u.u += 7 << 23; // multiply by 128 == add 7 to exponent
-    u.u ^= 1u << 31; // negate
-    int tsdf = (int)u.f;
-    tsdf = tsdf ? tsdf : (num < 0 ? 1 : -1);
-    return tsdf >= 128 ? 127 : tsdf;
-}
-
-static inline float tsdfToFloat(TsdfType num)
-{
-    if(!num) return 0.f;
-    Cv32suf u;
-    u.f = float(num);
-    u.u -= 7 << 23; // divide by 128 == sub 7 from exponent
-    u.u ^= 1u << 31; // negate
-    return u.f;
-}
-*/
 
 static inline v_float32x4 tsdfToFloat_INTR(v_int32x4 num)
 {
-    //v_float32x4 num128 = v_setall_f32(-128);
-    //return v_cvt_f32(num) / num128;
-    v_float32x4 num128 = v_setall_f32(-0.0078125f); // = (-1/128)
+    v_float32x4 num128 = v_setall_f32(-1.f / 128.f); 
     return v_cvt_f32(num) * num128;
 }
 
 static inline TsdfType floatToTsdf(float num)
 {
     //CV_Assert(-1 < num <= 1);
-    int8_t res = int8_t(num * (-128));
+    int8_t res = int8_t(num * (-128.f));
     res = res ? res : (num < 0 ? 1 : -1);
     return res;
 }
 
 static inline float tsdfToFloat(TsdfType num)
 {
-    //return float(num) / (-128);
-    return float(num) * (-0.0078125f); // * (-1/128)
+    return float(num) * (-1.f / 128.f);
 }
 
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
-                       WeightType _maxWeight, Point3i _resolution, bool zFirstMemOrder)
+                       int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
       volResolution(_resolution),
       maxWeight(_maxWeight)
 {
+    CV_Assert(_maxWeight < 255);
     // Unlike original code, this should work with any volume size
     // Not only when (x,y,z % 32) == 0
     volSize   = Point3f(volResolution) * voxelSize;
@@ -96,20 +72,11 @@ TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor
         volDims.dot(Vec4i(1, 1, 0)),
         volDims.dot(Vec4i(1, 1, 1))
     );
-
-    Vec6i _neighbourCoords = Vec6i(
-        volDims.dot(Vec4i(0, 0, 0)),
-        volDims.dot(Vec4i(0, 0, 1)),
-        volDims.dot(Vec4i(0, 1, 0)),
-        volDims.dot(Vec4i(0, 1, 1)),
-        volDims.dot(Vec4i(1, 0, 0)),
-        volDims.dot(Vec4i(1, 0, 1))
-    );
 }
 
 // dimension in voxels, size in meters
 TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
-                             float _truncDist, WeightType _maxWeight, Vec3i _resolution,
+                             float _truncDist, int _maxWeight, Vec3i _resolution,
                              bool zFirstMemOrder)
     : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
                  zFirstMemOrder)
@@ -562,19 +529,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
-/*
-    float vx[6];
-    for (int i = 0; i < 6; i++)
-        vx[i] = tsdfToFloat(volData[_neighbourCoords[i] + coordBase].tsdf);
 
-    float v00 = vx[0] + tz * (vx[1] - vx[0]);
-    float v01 = vx[2] + tz * (vx[3] - vx[2]);
-    float v10 = vx[4] + tz * (vx[5] - vx[4]);
-
-    float v0 = v00 + ty * (v01 - v00);
-
-    return v0 + tx * (v10 - v00);
-*/
     float vx[8];
     for (int i = 0; i < 8; i++)
         vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
@@ -687,19 +642,6 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     {
         const int dim = volDims[c];
         float& nv = an[c];
-        /*
-        float vx[6];
-        for (int i = 0; i < 6; i++)
-            vx[i] = tsdfToFloat(volData[_neighbourCoords[i] + coordBase].tsdf);
-
-        float v00 = vx[0] + tz * (vx[1] - vx[0]);
-        float v01 = vx[2] + tz * (vx[3] - vx[2]);
-        float v10 = vx[4] + tz * (vx[5] - vx[4]);
-
-        float v0 = v00 + ty * (v01 - v00);
-
-        nv = v0 + tx * (v10 - v00);
-        */
         
         float vx[8];
         for(int i = 0; i < 8; i++)
@@ -1206,7 +1148,7 @@ TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycast
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
 {
-    volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_8UC2 /*CV_32FC2*/);
+    volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_8UC2);
 
     reset();
 }

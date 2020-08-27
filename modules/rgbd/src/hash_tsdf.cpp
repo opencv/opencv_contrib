@@ -26,14 +26,14 @@ namespace kinfu
 static inline TsdfType floatToTsdf(float num)
 {
     //CV_Assert(-1 < num <= 1);
-    int8_t res = int8_t(num * (-128));
+    int8_t res = int8_t(num * (-128.f));
     res = res ? res : (num < 0 ? 1 : -1);
     return res;
 }
 
 static inline float tsdfToFloat(TsdfType num)
 {
-    return float(num) * (-0.0078125f); // * (-1/128)
+    return float(num) * (-1.f / 128.f);
 }
 
 HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,

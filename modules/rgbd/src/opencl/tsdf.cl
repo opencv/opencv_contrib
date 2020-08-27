@@ -27,36 +27,6 @@ static inline float tsdfToFloat(TsdfType num)
     return ( (float) num ) / (-128);
 }
 
-/*
-typedef union Cv32suf
-{
-    int i;
-    unsigned u;
-    float f;
-}
-Cv32suf;
-
-static inline TsdfType floatToTsdf(float num)
-{
-    Cv32suf u;
-    u.f = num;
-    u.u += 7 << 23; // multiply by 128 == add 7 to exponent
-    u.u ^= 1u << 31; // negate
-    int tsdf = (int)u.f;
-    tsdf = tsdf ? tsdf : (num < 0 ? 1 : -1);
-    return tsdf >= 128 ? 127 : tsdf;
-}
-
-static inline float tsdfToFloat(TsdfType num)
-{
-    if(!num) return 0.f;
-    Cv32suf u;
-    u.f = (float) num;
-    u.u -= 7 << 23; // divide by 128 == sub 7 from exponent
-    u.u ^= 1u << 31; // negate
-    return u.f;
-}
-*/
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
