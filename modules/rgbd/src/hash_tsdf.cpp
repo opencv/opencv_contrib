@@ -202,118 +202,24 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const M
     });
 }
 
-Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx_(Point3f p) const
+Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx_(const Point3f& p) const
 {
     return Vec3i(cvFloor(p.x / volumeUnitSize), cvFloor(p.y / volumeUnitSize), cvFloor(p.z / volumeUnitSize));
 }
 
-Point3f HashTSDFVolumeCPU::volumeUnitIdxToVolume_(Vec3i volumeUnitIdx) const
+Point3f HashTSDFVolumeCPU::volumeUnitIdxToVolume_(const Vec3i& volumeUnitIdx) const
 {
     return Point3f(volumeUnitIdx[0] * volumeUnitSize, volumeUnitIdx[1] * volumeUnitSize, volumeUnitIdx[2] * volumeUnitSize);
 }
 
-Point3f HashTSDFVolumeCPU::voxelCoordToVolume_(Vec3i voxelIdx) const
+Point3f HashTSDFVolumeCPU::voxelCoordToVolume_(const Vec3i& voxelIdx) const
 {
     return Point3f(voxelIdx[0] * voxelSize, voxelIdx[1] * voxelSize, voxelIdx[2] * voxelSize);
 }
 
-Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord_(Point3f point) const
+Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord_(const Point3f& point) const
 {
     return Vec3i(cvFloor(point.x * voxelSizeInv), cvFloor(point.y * voxelSizeInv), cvFloor(point.z * voxelSizeInv));
-}
-
-inline TsdfVoxel HashTSDFVolumeCPU::at_(const Vec3i& volumeIdx) const
-{
-    Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution), cvFloor(volumeIdx[1] / volumeUnitResolution),
-                                cvFloor(volumeIdx[2] / volumeUnitResolution));
-
-    VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf   = 1.f;
-        dummy.weight = 0;
-        return dummy;
-    }
-    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
-
-    Vec3i volUnitLocalIdx =
-        volumeIdx - Vec3i(volumeUnitIdx[0] * volumeUnitResolution, volumeUnitIdx[1] * volumeUnitResolution,
-                          volumeUnitIdx[2] * volumeUnitResolution);
-
-    volUnitLocalIdx = Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return volumeUnit->at(volUnitLocalIdx);
-}
-
-inline TsdfVoxel HashTSDFVolumeCPU::at_(const Point3f& point) const
-{
-    Vec3i volumeUnitIdx              = volumeToVolumeUnitIdx(point);
-    VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf   = 1.f;
-        dummy.weight = 0;
-        return dummy;
-    }
-    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
-
-    Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
-    Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
-    volUnitLocalIdx       = Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return volumeUnit->at(volUnitLocalIdx);
-}
-
-inline TsdfType HashTSDFVolumeCPU::interpolateVoxel_(const Point3f& point) const
-{
-    Point3f neighbourCoords[] = { Point3f(0, 0, 0), Point3f(0, 0, 1), Point3f(0, 1, 0), Point3f(0, 1, 1),
-                                  Point3f(1, 0, 0), Point3f(1, 0, 1), Point3f(1, 1, 0), Point3f(1, 1, 1) };
-
-    int ix = cvFloor(point.x);
-    int iy = cvFloor(point.y);
-    int iz = cvFloor(point.z);
-
-    float tx = point.x - ix;
-    float ty = point.y - iy;
-    float tz = point.z - iz;
-
-    TsdfType vx[8];
-    for (int i = 0; i < 8; i++)
-        vx[i] = at(neighbourCoords[i] * voxelSize + point).tsdf;
-
-    TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
-    TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
-    TsdfType v10 = vx[4] + tz * (vx[5] - vx[4]);
-    TsdfType v11 = vx[6] + tz * (vx[7] - vx[6]);
-
-    TsdfType v0 = v00 + ty * (v01 - v00);
-    TsdfType v1 = v10 + ty * (v11 - v10);
-
-    return v0 + tx * (v1 - v0);
-}
-
-inline Point3f HashTSDFVolumeCPU::getNormalVoxel_(Point3f point) const
-{
-    Vec3f pointVec(point);
-    Vec3f normal = Vec3f(0, 0, 0);
-
-    Vec3f pointPrev = point;
-    Vec3f pointNext = point;
-
-    for (int c = 0; c < 3; c++)
-    {
-        pointPrev[c] -= voxelSize;
-        pointNext[c] += voxelSize;
-
-        normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
-        /* normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev)); */
-
-        pointPrev[c] = pointVec[c];
-        pointNext[c] = pointVec[c];
-    }
-    // std::cout << normal << std::endl;
-    float nv = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
-    return nv < 0.0001f ? nan3 : normal / nv;
 }
 
 struct HashRaycastInvoker : ParallelLoopBody
@@ -425,7 +331,7 @@ struct HashRaycastInvoker : ParallelLoopBody
     const Intr::Reprojector reproj;
 };
 
-void HashTSDFVolumeCPU::raycast_(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, Size frameSize,
+void HashTSDFVolumeCPU::raycast_(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
                                  OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();

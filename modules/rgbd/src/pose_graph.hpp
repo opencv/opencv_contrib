@@ -99,31 +99,50 @@ struct PoseGraphNode
 {
    public:
     explicit PoseGraphNode(int _nodeId, const Affine3f& _pose)
-        : nodeId(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
+        : nodeId(_nodeId), isFixed(false), pose(_pose)
     {
+#if defined(HAVE_EIGEN)
+        se3Pose = Pose3d(_pose.rotation(), _pose.translation());
+#endif
     }
     virtual ~PoseGraphNode() = default;
 
     int getId() const { return nodeId; }
-    inline Affine3d getPose() const
+    inline Affine3f getPose() const
     {
-        const Eigen::Matrix3d& rotation    = pose.r.toRotationMatrix();
-        const Eigen::Vector3d& translation = pose.t;
+        return pose;
+    }
+    void setPose(const Affine3f& _pose)
+    {
+        pose = _pose;
+#if defined(HAVE_EIGEN)
+        se3Pose = Pose3d(pose.rotation(), pose.translation());
+#endif
+    }
+#if defined(HAVE_EIGEN)
+    void setPose(const Pose3d& _pose)
+    {
+        se3Pose = _pose;
+        const Eigen::Matrix3d& rotation    = se3Pose.r.toRotationMatrix();
+        const Eigen::Vector3d& translation = se3Pose.t;
         Matx33d rot;
         Vec3d trans;
         eigen2cv(rotation, rot);
         eigen2cv(translation, trans);
         Affine3d poseMatrix(rot, trans);
-        return poseMatrix;
+        pose = poseMatrix;
     }
-    void setPose(const Pose3d& _pose) { pose = _pose; }
+#endif
     void setFixed(bool val = true) { isFixed = val; }
     bool isPoseFixed() const { return isFixed; }
 
    public:
     int nodeId;
     bool isFixed;
-    Pose3d pose;
+    Affine3f pose;
+#if defined(HAVE_EIGEN)
+    Pose3d se3Pose;
+#endif
 };
 
 /*! \class PoseGraphEdge
@@ -138,7 +157,7 @@ struct PoseGraphEdge
                   const Matx66f& _information = Matx66f::eye())
         : sourceNodeId(_sourceNodeId),
           targetNodeId(_targetNodeId),
-          transformation(_transformation.rotation(), _transformation.translation()),
+          transformation(_transformation),
           information(_information)
     {
     }
@@ -158,45 +177,45 @@ struct PoseGraphEdge
    public:
     int sourceNodeId;
     int targetNodeId;
-    Pose3d transformation;
+    Affine3f transformation;
     Matx66f information;
 };
 
 //! @brief Reference: A tutorial on SE(3) transformation parameterizations and on-manifold
 //! optimization Jose Luis Blanco Compactly represents the jacobian of the SE3 generator
 // clang-format off
-static const std::array<Matx44f, 6> generatorJacobian = {
-    // alpha
-    Matx44f(0, 0,  0, 0,
-            0, 0, -1, 0,
-            0, 1,  0, 0,
-            0, 0,  0, 0),
-    // beta
-    Matx44f( 0, 0, 1, 0,
-             0, 0, 0, 0,
-            -1, 0, 0, 0,
-             0, 0, 0, 0),
-    // gamma
-    Matx44f(0, -1, 0, 0,
-            1,  0, 0, 0,
-            0,  0, 0, 0,
-            0,  0, 0, 0),
-    // x
-    Matx44f(0, 0, 0, 1,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0),
-    // y
-    Matx44f(0, 0, 0, 0,
-            0, 0, 0, 1,
-            0, 0, 0, 0,
-            0, 0, 0, 0),
-    // z
-    Matx44f(0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 1,
-            0, 0, 0, 0)
-};
+/* static const std::array<Matx44f, 6> generatorJacobian = { */
+/*     // alpha */
+/*     Matx44f(0, 0,  0, 0, */
+/*             0, 0, -1, 0, */
+/*             0, 1,  0, 0, */
+/*             0, 0,  0, 0), */
+/*     // beta */
+/*     Matx44f( 0, 0, 1, 0, */
+/*              0, 0, 0, 0, */
+/*             -1, 0, 0, 0, */
+/*              0, 0, 0, 0), */
+/*     // gamma */
+/*     Matx44f(0, -1, 0, 0, */
+/*             1,  0, 0, 0, */
+/*             0,  0, 0, 0, */
+/*             0,  0, 0, 0), */
+/*     // x */
+/*     Matx44f(0, 0, 0, 1, */
+/*             0, 0, 0, 0, */
+/*             0, 0, 0, 0, */
+/*             0, 0, 0, 0), */
+/*     // y */
+/*     Matx44f(0, 0, 0, 0, */
+/*             0, 0, 0, 1, */
+/*             0, 0, 0, 0, */
+/*             0, 0, 0, 0), */
+/*     // z */
+/*     Matx44f(0, 0, 0, 0, */
+/*             0, 0, 0, 0, */
+/*             0, 0, 0, 1, */
+/*             0, 0, 0, 0) */
+/* }; */
 // clang-format on
 
 class PoseGraph
@@ -213,7 +232,7 @@ class PoseGraph
     PoseGraph& operator=(const PoseGraph& _poseGraph) = default;
 
     void addNode(const PoseGraphNode& node) { nodes.push_back(node); }
-    void addEdge(const PoseGraphEdge& edge);
+    void addEdge(const PoseGraphEdge& edge) { edges.push_back(edge); }
 
     bool nodeExists(int nodeId) const
     {
@@ -224,8 +243,8 @@ class PoseGraph
 
     bool isValid() const;
 
-    int getNumNodes() const { return nodes.size(); }
-    int getNumEdges() const { return edges.size(); }
+    int getNumNodes() const { return int(nodes.size()); }
+    int getNumEdges() const { return int(edges.size()); }
 
    public:
     NodeVector nodes;
