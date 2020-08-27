@@ -359,15 +359,13 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Point3f& point) const
         dummy.weight = 0;
         return dummy;
     }
-    cv::Ptr<TSDFVolumeCPU> volumeUnit =
-        std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
 
     cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
-    volUnitLocalIdx =
-        cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
+    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
     
-    return volumeUnit->at(volUnitLocalIdx);
+    //return volumeUnit->at(volUnitLocalIdx);
 
     const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
     Vec4i volDims = volumeUnit->volDims;
