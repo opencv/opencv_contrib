@@ -4,24 +4,23 @@
 
 #include "pose_graph.hpp"
 
+#include <iostream>
 #include <limits>
 #include <unordered_set>
 #include <vector>
 
 #if defined(CERES_FOUND)
-#include "ceres/ceres.h"
+#include <ceres/ceres.h>
 #endif
 
 namespace cv
 {
 namespace kinfu
 {
-void PoseGraph::addEdge(const PoseGraphEdge& edge) { edges.push_back(edge); }
-
 bool PoseGraph::isValid() const
 {
-    int numNodes = int(nodes.size());
-    int numEdges = int(edges.size());
+    int numNodes = getNumNodes();
+    int numEdges = getNumEdges();
 
     if (numNodes <= 0 || numEdges <= 0)
         return false;
@@ -82,7 +81,7 @@ bool PoseGraph::isValid() const
     return isGraphConnected && !invalidEdgeNode;
 }
 
-#if defined(CERES_FOUND)
+#if defined(CERES_FOUND) && defined(HAVE_EIGEN)
 void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& problem)
 {
     int numEdges = poseGraph.getNumEdges();
@@ -103,8 +102,8 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
         const PoseGraphEdge& currEdge = poseGraph.edges.at(currEdgeNum);
         int sourceNodeId              = currEdge.getSourceNodeId();
         int targetNodeId              = currEdge.getTargetNodeId();
-        Pose3d& sourcePose            = poseGraph.nodes.at(sourceNodeId).pose;
-        Pose3d& targetPose            = poseGraph.nodes.at(targetNodeId).pose;
+        Pose3d& sourcePose            = poseGraph.nodes.at(sourceNodeId).se3Pose;
+        Pose3d& targetPose            = poseGraph.nodes.at(targetNodeId).se3Pose;
 
         const Matx66f& informationMatrix = currEdge.information;
 
@@ -123,8 +122,8 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
         PoseGraphNode& currNode = poseGraph.nodes.at(currNodeId);
         if (currNode.isPoseFixed())
         {
-            problem.SetParameterBlockConstant(currNode.pose.t.data());
-            problem.SetParameterBlockConstant(currNode.pose.r.coeffs().data());
+            problem.SetParameterBlockConstant(currNode.se3Pose.t.data());
+            problem.SetParameterBlockConstant(currNode.se3Pose.r.coeffs().data());
         }
     }
 }
@@ -146,7 +145,7 @@ void Optimizer::optimizeCeres(PoseGraph& poseGraph)
     std::cout << "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges"
               << std::endl;
 
-#if defined(CERES_FOUND)
+#if defined(CERES_FOUND) && defined(HAVE_EIGEN)
     ceres::Problem problem;
     createOptimizationProblem(poseGraph, problem);
 
@@ -161,7 +160,7 @@ void Optimizer::optimizeCeres(PoseGraph& poseGraph)
 
     std::cout << "Is solution usable: " << summary.IsSolutionUsable() << std::endl;
 #else
-    CV_Error(Error::StsNotImplemented, "Ceres required for Pose Graph optimization");
+    CV_Error(Error::StsNotImplemented, "Ceres and Eigen required for Pose Graph optimization");
 #endif
 }
 

@@ -84,29 +84,35 @@ struct CV_EXPORTS_W Params
     kinfu::VolumeParams volumeParams;
 };
 
-/** @brief KinectFusion implementation
+/** @brief Large Scale Dense Depth Fusion implementation
 
-  This class implements a 3d reconstruction algorithm described in
-  @cite kinectfusion paper.
+  This class implements a 3d reconstruction algorithm for larger environments using
+  Spatially hashed TSDF volume "Submaps".
+  It also runs a periodic posegraph optimization to minimize drift in tracking over long sequences.
+  Currently the algorithm does not implement a relocalization or loop closure module.
+  Potentially a Bag of words implementation or RGBD relocalization as described in
+  Glocker et al. ISMAR 2013 will be implemented
 
   It takes a sequence of depth images taken from depth sensor
   (or any depth images source such as stereo camera matching algorithm or even raymarching
   renderer). The output can be obtained as a vector of points and their normals or can be
   Phong-rendered from given camera pose.
 
-  An internal representation of a model is a voxel cuboid that keeps TSDF values
-  which are a sort of distances to the surface (for details read the @cite kinectfusion article
+  An internal representation of a model is a spatially hashed voxel cube that stores TSDF values
+  which represent the distance to the closest surface (for details read the @cite kinectfusion article
   about TSDF). There is no interface to that representation yet.
 
-  LargeKinfu uses OpenCL acceleration automatically if available.
+  For posegraph optimization, a Submap abstraction over the Volume class is created.
+  New submaps are added to the model when there is low visibility overlap between current viewing frustrum
+  and the existing volume/model. Multiple submaps are simultaneously tracked and a posegraph is created and
+  optimized periodically.
+
+  LargeKinfu does not use any OpenCL acceleration yet.
   To enable or disable it explicitly use cv::setUseOptimized() or cv::ocl::setUseOpenCL().
 
-  This implementation is based on [kinfu-remake](https://github.com/Nerei/kinfu_remake).
+  This implementation is inspired from Kintinuous, InfiniTAM and other SOTA algorithms
 
-  Note that the KinectFusion algorithm was patented and its use may be restricted by
-  the list of patents mentioned in README.md file in this module directory.
-
-  That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
+  You need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
 */
 class CV_EXPORTS_W LargeKinfu
 {

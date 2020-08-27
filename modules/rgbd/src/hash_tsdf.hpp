@@ -55,7 +55,7 @@ class HashTSDFVolume : public Volume
         return static_cast<const Derived*>(this)->getVisibleBlocks_(currFrameId, frameThreshold);
     }
 
-    TsdfVoxel at(const Vec3i& volumeIdx) const
+    virtual TsdfVoxel at(const Vec3i& volumeIdx) const
     {
         const Derived* derived = static_cast<const Derived*>(this);
         return derived->at_(volumeIdx);
