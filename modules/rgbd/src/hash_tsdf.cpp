@@ -377,6 +377,42 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Point3f& point) const
     return volumeUnit->volume.ptr<TsdfVoxel>()[coordBase];
 }
 
+inline float HashTSDFVolumeCPU::_interpolate(const cv::Point3f& point, float vx[8]) const
+{
+    int ix = cvFloor(point.x);
+    int iy = cvFloor(point.y);
+    int iz = cvFloor(point.z);
+
+    float tx = point.x - ix;
+    float ty = point.y - iy;
+    float tz = point.z - iz;
+
+#if USE_INTRINSICS
+    v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]);
+    v_float32x4 v1357(vx[1], vx[3], vx[5], vx[7]);
+
+    v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
+
+    v_float32x4 v00_10 = vxx;
+    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
+    float v0 = v0_1.get0();
+    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+    float v1 = v0_1.get0();
+#else
+    float v00 = vx[0] + tz * (vx[1] - vx[0]);
+    float v01 = vx[2] + tz * (vx[3] - vx[2]);
+    float v10 = vx[4] + tz * (vx[5] - vx[4]);
+    float v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+    float v0 = v00 + ty * (v01 - v00);
+    float v1 = v10 + ty * (v11 - v10);
+#endif
+
+    return v0 + tx * (v1 - v0);
+}
+
 inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
 {
     cv::Point3f neighbourCoords[] = {
@@ -390,27 +426,6 @@ inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
                                 Point3f(1, 1, 1) };
     for (int i = 0; i < 8; i++)
         neighbourCoords[i] *= voxelSize;
-    
-    auto _interpolate = [](cv::Point3f point, float vx[8])
-    {
-        int ix = cvFloor(point.x);
-        int iy = cvFloor(point.y);
-        int iz = cvFloor(point.z);
-
-        float tx = point.x - ix;
-        float ty = point.y - iy;
-        float tz = point.z - iz;
-
-        float v00 = vx[0] + tz * (vx[1] - vx[0]);
-        float v01 = vx[2] + tz * (vx[3] - vx[2]);
-        float v10 = vx[4] + tz * (vx[5] - vx[4]);
-        float v11 = vx[6] + tz * (vx[7] - vx[6]);
-
-        float v0 = v00 + ty * (v01 - v00);
-        float v1 = v10 + ty * (v11 - v10);
-
-        return v0 + tx * (v1 - v0);
-    };
 
     Point3f pointVec(point);
     Point3f normal = Point3f(0, 0, 0);
