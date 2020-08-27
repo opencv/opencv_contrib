@@ -348,6 +348,37 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     return nv < 0.0001f ? nan3 : normal/nv;
 }
 
+inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Point3f& point) const
+{
+    cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
+    VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
+    if (it == volumeUnits.end())
+    {
+        TsdfVoxel dummy;
+        dummy.tsdf = floatToTsdf(1.f);
+        dummy.weight = 0;
+        return dummy;
+    }
+    cv::Ptr<TSDFVolumeCPU> volumeUnit =
+        std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+
+    cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
+    cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
+    volUnitLocalIdx =
+        cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
+    
+    return volumeUnit->at(volUnitLocalIdx);
+
+    const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
+    Vec4i volDims = volumeUnit->volDims;
+    int coordBase =
+        volUnitLocalIdx[0] * volDims[0] + 
+        volUnitLocalIdx[1] * volDims[1] + 
+        volUnitLocalIdx[2] * volDims[2];
+    //return volData[coordBase];
+    return volumeUnit->volume.ptr<TsdfVoxel>()[coordBase];
+}
+
 inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
 {
     cv::Point3f neighbourCoords[] = {
@@ -362,7 +393,7 @@ inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
     for (int i = 0; i < 8; i++)
         neighbourCoords[i] *= voxelSize;
     
-    auto interpolate = [](cv::Point3f point, float vx[8])
+    auto _interpolate = [](cv::Point3f point, float vx[8])
     {
         int ix = cvFloor(point.x);
         int iy = cvFloor(point.y);
@@ -398,22 +429,28 @@ inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
     float c0_p_vx[8], c1_p_vx[8], c2_p_vx[8];
 
     for (int i = 0; i < 8; i++)
-        c0_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c0_pointNext).tsdf);
+        //c0_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c0_pointNext).tsdf);
+        c0_n_vx[i] = tsdfToFloat(_at(neighbourCoords[i] + c0_pointNext).tsdf);
     
     for (int i = 0; i < 8; i++)
-        c0_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c0_pointPrev).tsdf);
+        //c0_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c0_pointPrev).tsdf);
+        c0_p_vx[i] = tsdfToFloat(_at(neighbourCoords[i] + c0_pointPrev).tsdf);
     
     for (int i = 0; i < 8; i++)
         if (i % 4 > 1)
-            c1_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c1_pointNext).tsdf);
+            //c1_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c1_pointNext).tsdf);
+            c1_n_vx[i] = tsdfToFloat(_at(neighbourCoords[i] + c1_pointNext).tsdf);
         else 
-            c1_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c1_pointPrev).tsdf);
+            //c1_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c1_pointPrev).tsdf);
+            c1_p_vx[i] = tsdfToFloat(_at(neighbourCoords[i] + c1_pointPrev).tsdf);
 
     for (int i = 0; i < 8; i++)
         if (i % 2 == 1)
-            c2_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c2_pointNext).tsdf);
+            //c2_n_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c2_pointNext).tsdf);
+            c2_n_vx[i] = tsdfToFloat(_at(neighbourCoords[i] + c2_pointNext).tsdf);
         else
-            c2_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c2_pointPrev).tsdf);
+            //c2_p_vx[i] = tsdfToFloat(at(neighbourCoords[i] + c2_pointPrev).tsdf);
+            c2_p_vx[i] = tsdfToFloat(_at(neighbourCoords[i] + c2_pointPrev).tsdf);
 
     c1_n_vx[0] = c0_p_vx[6];
     c1_n_vx[1] = c0_p_vx[7];
@@ -433,9 +470,9 @@ inline Point3f HashTSDFVolumeCPU::_getNormalVoxel(Point3f point) const
     c2_n_vx[6] = c0_n_vx[0];
     c2_p_vx[7] = c0_n_vx[2];
 
-    normal.x = interpolate(c0_pointNext, c0_n_vx) - interpolate(c0_pointPrev, c0_p_vx);
-    normal.y = interpolate(c1_pointNext, c1_n_vx) - interpolate(c1_pointPrev, c1_p_vx);
-    normal.z = interpolate(c2_pointNext, c2_n_vx) - interpolate(c2_pointPrev, c2_p_vx);
+    normal.x = _interpolate(c0_pointNext, c0_n_vx) - _interpolate(c0_pointPrev, c0_p_vx);
+    normal.y = _interpolate(c1_pointNext, c1_n_vx) - _interpolate(c1_pointPrev, c1_p_vx);
+    normal.z = _interpolate(c2_pointNext, c2_n_vx) - _interpolate(c2_pointPrev, c2_p_vx);
 
     float nv = sqrt(normal.x * normal.x +
         normal.y * normal.y +

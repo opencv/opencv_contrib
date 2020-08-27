@@ -88,6 +88,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
+    virtual TsdfVoxel _at(const cv::Point3f& point) const;
 
     inline float interpolateVoxel(const cv::Point3f& point) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
