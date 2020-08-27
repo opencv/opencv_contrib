@@ -420,7 +420,7 @@ void CCheckerImpl::setPatchCenters(std::vector<Point2f> _patchCenters)
 }
 void CCheckerImpl::setPatchBoundingBoxes(std::vector<Point2f> _patchBoundingBoxes)
 {
-    //Use of this function is not recommended as it can cause contradictory information in patBoundingBoxes and bo
+    //Use of this function is not recommended as it can cause contradictory information in patBoundingBoxes and box
     patchBoundingBoxes = _patchBoundingBoxes;
 
 }
