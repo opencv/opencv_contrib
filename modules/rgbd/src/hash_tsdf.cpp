@@ -350,7 +350,11 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 
 inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Point3f& point) const
 {
-    cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
+    //cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
+    cv::Vec3i volumeUnitIdx = cv::Vec3i(cvFloor(point.x / volumeUnitSize),
+                                        cvFloor(point.y / volumeUnitSize),
+                                        cvFloor(point.z / volumeUnitSize));
+    
     VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
     if (it == volumeUnits.end())
     {
@@ -359,22 +363,40 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Point3f& point) const
         dummy.weight = 0;
         return dummy;
     }
-    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
-
-    cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
-    cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
-    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
     
-    //return volumeUnit->at(volUnitLocalIdx);
+    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+    //auto volumeUnit = Ptr<TSDFVolumeCPU>(it->second.pVolume);
+    //cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
+    cv::Point3f volumeUnitPos = cv::Point3f(volumeUnitIdx[0] * volumeUnitSize, 
+                                            volumeUnitIdx[1] * volumeUnitSize,
+                                            volumeUnitIdx[2] * volumeUnitSize);
+    //cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
+    cv::Point3f _point = point - volumeUnitPos;
+    cv::Vec3i volUnitLocalIdx = cv::Vec3i(cvFloor(_point.x * voxelSizeInv), 
+                                          cvFloor(_point.y * voxelSizeInv),
+                                          cvFloor(_point.z * voxelSizeInv));
+    
+    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]), 
+                                abs(volUnitLocalIdx[1]), 
+                                abs(volUnitLocalIdx[2]));
+    
+    
 
     const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
-    Vec4i volDims = volumeUnit->volDims;
-    int coordBase =
-        volUnitLocalIdx[0] * volDims[0] + 
-        volUnitLocalIdx[1] * volDims[1] + 
-        volUnitLocalIdx[2] * volDims[2];
-    //return volData[coordBase];
-    return volumeUnit->volume.ptr<TsdfVoxel>()[coordBase];
+    //auto volData = volumeUnit->volume.ptr<TsdfVoxel>();
+    //auto volData = (cv::Ptr<TSDFVolumeCPU>(it->second.pVolume))->volume.ptr<TsdfVoxel>();
+    //auto tmp = (cv::Ptr<TSDFVolumeCPU>(it->second.pVolume));
+    //auto volData = tmp->volume.ptr<TsdfVoxel>();
+
+    Vec4i _volDims = volumeUnit->volDims;
+    Vec4i volDims = (it->second.pVolume)->volDims;
+
+    int coordBase = volUnitLocalIdx[0] * volDims[0] + 
+                    volUnitLocalIdx[1] * volDims[1] + 
+                    volUnitLocalIdx[2] * volDims[2];
+    return volData[coordBase];
+    //return volumeUnit->volume.ptr<TsdfVoxel>()[coordBase];
+    //return volumeUnit->at(volUnitLocalIdx);
 }
 
 inline float HashTSDFVolumeCPU::_interpolate(const cv::Point3f& point, float vx[8]) const
