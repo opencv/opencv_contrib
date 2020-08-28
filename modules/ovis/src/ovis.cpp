@@ -1016,11 +1016,12 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
         RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, name, RESOURCEGROUP_NAME);
 }
 
-void setMaterialProperty(const String& name, int prop, const String& value)
+static TextureUnitState* _getTextureUnitForUpdate(const String& material, int prop)
 {
     CV_Assert_N(prop >= MATERIAL_TEXTURE0, prop <= MATERIAL_TEXTURE3, _app);
 
-    MaterialPtr mat = MaterialManager::getSingleton().getByName(name, RESOURCEGROUP_NAME);
+    CV_Assert(_app);
+    auto mat = MaterialManager::getSingleton().getByName(material, RESOURCEGROUP_NAME);
     CV_Assert(mat);
 
     Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
@@ -1028,15 +1029,32 @@ void setMaterialProperty(const String& name, int prop, const String& value)
     size_t texUnit = prop - MATERIAL_TEXTURE0;
     CV_Assert(texUnit <= rpass->getTextureUnitStates().size());
 
+    RTShader::ShaderGenerator::getSingleton().invalidateMaterial(
+        RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, material, RESOURCEGROUP_NAME);
+
     if (rpass->getTextureUnitStates().size() <= texUnit)
     {
-        rpass->createTextureUnitState(value);
-        return;
+        return rpass->createTextureUnitState();
     }
 
-    rpass->getTextureUnitStates()[texUnit]->setTextureName(value);
-    RTShader::ShaderGenerator::getSingleton().invalidateMaterial(
-        RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, name, RESOURCEGROUP_NAME);
+    return rpass->getTextureUnitStates()[texUnit];
+}
+
+void setMaterialProperty(const String& name, int prop, const String& value)
+{
+    auto tu = _getTextureUnitForUpdate(name, prop);
+    tu->setTextureName(value);
+}
+
+void setMaterialProperty(const String& name, int prop, InputArray value)
+{
+    auto tu = _getTextureUnitForUpdate(name, prop);
+
+    auto texName = tu->getTextureName();
+    if(texName.empty()) texName = name;
+
+    _createTexture(texName, value.getMat());
+    tu->setTextureName(texName);
 }
 
 static bool setShaderProperty(const GpuProgramParametersSharedPtr& params, const String& prop,
