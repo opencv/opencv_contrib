@@ -54,57 +54,61 @@ struct CV_EXPORTS_W VolumeParams
     /** @brief Type of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
-    VolumeType type;
+    CV_PROP_RW VolumeType type;
 
     /** @brief Resolution of voxel space
         Number of voxels in each dimension.
+        Applicable only for TSDF Volume.
+        HashTSDF volume only supports equal resolution in all three dimensions
     */
-    Vec3i resolution;
+    CV_PROP_RW Vec3i resolution;
 
     /** @brief Resolution of volumeUnit in voxel space
         Number of voxels in each dimension for volumeUnit
         Applicable only for hashTSDF.
     */
-    int unitResolution = 0;
+    CV_PROP_RW int unitResolution = {0};
 
     /** @brief Initial pose of the volume in meters */
     Affine3f pose;
 
     /** @brief Length of voxels in meters */
-    float voxelSize;
+    CV_PROP_RW float voxelSize;
 
     /** @brief TSDF truncation distance
         Distances greater than value from surface will be truncated to 1.0
     */
-    float tsdfTruncDist;
+    CV_PROP_RW float tsdfTruncDist;
 
     /** @brief Max number of frames to integrate per voxel
-        Each voxel stops integration after the maxWeight is crossed
+        Represents the max number of frames over which a running average
+        of the TSDF is calculated for a voxel
     */
-    int maxWeight;
+    CV_PROP_RW int maxWeight;
 
     /** @brief Threshold for depth truncation in meters
         Truncates the depth greater than threshold to 0
     */
-    float depthTruncThreshold;
+    CV_PROP_RW float depthTruncThreshold;
 
     /** @brief Length of single raycast step
         Describes the percentage of voxel length that is skipped per march
     */
-    float raycastStepFactor;
+    CV_PROP_RW float raycastStepFactor;
 
     /** @brief Default set of parameters that provide higher quality reconstruction
         at the cost of slow performance.
     */
-    static Ptr<VolumeParams> defaultParams(VolumeType _volumeType);
+    CV_WRAP static Ptr<VolumeParams> defaultParams(VolumeType _volumeType);
 
     /** @brief Coarse set of parameters that provides relatively higher performance
         at the cost of reconstrution quality.
     */
-    static Ptr<VolumeParams> coarseParams(VolumeType _volumeType);
+    CV_WRAP static Ptr<VolumeParams> coarseParams(VolumeType _volumeType);
 };
 
-CV_EXPORTS_W Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
+
+Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
 CV_EXPORTS_W Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
                                     float _raycastStepFactor, float _truncDist, int _maxWeight,
                                     float _truncateThreshold, Vec3i _resolution);

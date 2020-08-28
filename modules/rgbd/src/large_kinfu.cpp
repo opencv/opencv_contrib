@@ -28,8 +28,8 @@ Ptr<Params> Params::defaultParams()
 
         float fx, fy, cx, cy;
         fx = fy = 525.f;
-        cx      = p.frameSize.width / 2 - 0.5f;
-        cy      = p.frameSize.height / 2 - 0.5f;
+        cx      = p.frameSize.width / 2.0f - 0.5f;
+        cy      = p.frameSize.height / 2.0f - 0.5f;
         p.intr  = Matx33f(fx, 0, cx, 0, fy, cy, 0, 0, 1);
 
         // 5000 for the 16-bit PNG files

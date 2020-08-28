@@ -186,7 +186,6 @@ struct GetAbInvoker : ParallelLoopBody
 
     virtual void operator ()(const Range& range) const override
     {
-        int localNumInliers = 0;
 #if USE_INTRINSICS
         CV_Assert(ptype::channels == 4);
 
@@ -299,7 +298,6 @@ struct GetAbInvoker : ParallelLoopBody
                     continue;
 
                 // build point-wise vector ab = [ A | b ]
-                localNumInliers = localNumInliers + 1;
                 v_float32x4 VxNv = crossProduct(newP, oldN);
                 Point3f VxN;
                 VxN.x = VxNv.get0();
@@ -450,7 +448,6 @@ struct GetAbInvoker : ParallelLoopBody
                 //try to optimize
                 Point3f VxN = newP.cross(oldN);
                 float ab[7] = {VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(-diff)};
-                localNumInliers++;
                 // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
                 // which is [A^T*A | A^T*b]
                 // and gather sum

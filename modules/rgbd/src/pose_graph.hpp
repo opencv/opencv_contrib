@@ -93,6 +93,7 @@ struct Pose3d
         r.normalize();
     }
 };
+#endif
 
 struct PoseGraphNode
 {
@@ -249,7 +250,7 @@ class PoseGraph
     NodeVector nodes;
     EdgeVector edges;
 };
-#endif
+
 namespace Optimizer
 {
 void optimizeCeres(PoseGraph& poseGraph);

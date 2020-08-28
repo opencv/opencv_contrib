@@ -257,11 +257,11 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
     static constexpr int MAX_TRACKING_ATTEMPTS = 25;
 
     //! thresh = HUBER_THRESH
-    auto huberWeight = [](double residual, double thresh = 0.1) -> double {
+    auto huberWeight = [](float residual, float thresh = 0.1f) -> float {
         float rAbs = abs(residual);
         if (rAbs < thresh)
             return 1.0;
-        double numerator = sqrt(2 * thresh * rAbs - thresh * thresh);
+        float numerator = sqrt(2 * thresh * rAbs - thresh * thresh);
         return numerator / rAbs;
     };
 
@@ -277,7 +277,7 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
     fromSubmapData.trackingAttempts++;
     fromSubmapData.constraints.push_back(candidateConstraint);
 
-    std::vector<double> weights(fromSubmapData.constraints.size() + 1, 1.0f);
+    std::vector<float> weights(fromSubmapData.constraints.size() + 1, 1.0f);
 
     Affine3f prevConstraint = fromSubmap->getConstraint(toSubmap->id).estimatedPose;
     int prevWeight          = fromSubmap->getConstraint(toSubmap->id).weight;
@@ -301,8 +301,8 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
         sumWeight += prevWeight;
         meanConstraint /= float(sumWeight);
 
-        double residual = 0.0;
-        double diff     = 0.0;
+        float residual = 0.0f;
+        float diff     = 0.0f;
         for (int j = 0; j < int(weights.size()); j++)
         {
             int w;
@@ -319,8 +319,8 @@ int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId,
             }
 
             cv::Vec6f residualVec = (constraintVec - meanConstraint);
-            residual         = norm(residualVec);
-            double newWeight = huberWeight(residual);
+            residual         = float(norm(residualVec));
+            float newWeight = huberWeight(residual);
             diff += w * abs(newWeight - weights[j]);
             weights[j] = newWeight;
         }

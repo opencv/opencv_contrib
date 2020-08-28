@@ -10,8 +10,9 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/rgbd/io_utils.hpp>
 #include <opencv2/rgbd/large_kinfu.hpp>
+
+#include "io_utils.hpp"
 
 using namespace cv;
 using namespace cv::kinfu;
@@ -55,7 +56,7 @@ static const char* keys = {
     "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
     " in coarse mode points and normals are displayed }"
-    "{idle   | | Do not run KinFu, just display depth frames }"
+    "{idle   | | Do not run LargeKinfu, just display depth frames }"
     "{record | | Write depth frames to specified file list"
     " (the same format as for the 'depth' key) }"
 };
@@ -63,7 +64,7 @@ static const char* keys = {
 static const std::string message =
     "\nThis demo uses live depth input or RGB-D dataset taken from"
     "\nhttps://vision.in.tum.de/data/datasets/rgbd-dataset"
-    "\nto demonstrate KinectFusion implementation"
+    "\nto demonstrate Submap based large environment reconstruction"
     "\nThis module uses the newer hashtable based TSDFVolume (relatively fast) for larger "
     "reconstructions by default\n";
 
@@ -126,7 +127,7 @@ int main(int argc, char** argv)
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
-    // Enables OpenCL explicitly (by default can be switched-off)
+    // Disabled until there is no OpenCL accelerated HashTSDF is available
     cv::setUseOptimized(false);
 
     if (!idle)

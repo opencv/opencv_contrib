@@ -10,7 +10,8 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/rgbd/kinfu.hpp>
-#include <opencv2/rgbd/io_utils.hpp>
+
+#include "io_utils.hpp"
 
 using namespace cv;
 using namespace cv::kinfu;
