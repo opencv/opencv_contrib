@@ -3,9 +3,6 @@
 // of this distribution and at http://opencv.org/license.html
 // Copyright (C) 2020 by Archit Rungta
 
-
-// This header files hacks into the mapping code of CxxWrap to support automatic conversion between types from OpenCV ad Julia
-
 template<typename T>
 struct CxxPoint
 {

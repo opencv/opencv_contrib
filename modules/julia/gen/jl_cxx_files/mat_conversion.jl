@@ -88,19 +88,19 @@ function julia_to_cpp(img::InputArray)
     end
 end
 
-# function julia_to_cpp(var::Array{T, 1}) where {T <: InputArray}
-#     ret = CxxWrap.StdVector{CxxMat}()
-#     for x in var
-#         push!(ret, julia_to_cpp(x))
-#     end
-#     return ret
-# end
+function julia_to_cpp(var::Array{T, 1}) where {T <: InputArray}
+    ret = CxxWrap.StdVector{CxxMat}()
+    for x in var
+        push!(ret, julia_to_cpp(x))
+    end
+    return ret
+end
 
 
-# function cpp_to_julia(var::CxxWrap.StdVector{T}) where {T <: CxxMat}
-#     ret = Array{Mat, 1}()
-#     for x in var
-#         push!(ret, cpp_to_julia(x))
-#     end
-#     return ret
-# end
+function cpp_to_julia(var::CxxWrap.StdVector{T}) where {T <: CxxMat}
+    ret = Array{Mat, 1}()
+    for x in var
+        push!(ret, cpp_to_julia(x))
+    end
+    return ret
+end

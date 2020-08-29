@@ -20,7 +20,7 @@ class HashTSDFVolume : public Volume
    public:
     // dimension in voxels, size in meters
     //! Use fixed volume cuboid
-    HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+    HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
                    int _maxWeight, float _truncateThreshold, int _volumeUnitRes,
                    bool zFirstMemOrder = true);
 
@@ -67,13 +67,13 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
 {
    public:
     // dimension in voxels, size in meters
-    HashTSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
+    HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                       float _truncDist, int _maxWeight, float _truncateThreshold,
                       int _volumeUnitRes, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics) override;
-    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const override;
 
@@ -103,7 +103,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! Hashtable of individual smaller volume units
     VolumeUnitMap volumeUnits;
 };
-cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Affine3f _pose,
+cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Matx44f _pose,
                                            float _raycastStepFactor, float _truncDist,
                                            int _maxWeight, float truncateThreshold,
                                            int volumeUnitResolution = 16);

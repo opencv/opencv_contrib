@@ -139,7 +139,7 @@ private:
     cv::Ptr<Volume> volume;
 
     int frameCounter;
-    Affine3f pose;
+    Matx44f pose;
     std::vector<MatType> pyrPoints;
     std::vector<MatType> pyrNormals;
 };
@@ -151,7 +151,7 @@ KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
     pyrPoints(), pyrNormals()
 {
-    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose, params.raycast_step_factor,
+    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
                         params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
     reset();
 }
@@ -160,7 +160,7 @@ template< typename MatType >
 void KinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
-    pose = Affine3f::Identity();
+    pose = Affine3f::Identity().matrix;
     volume->reset();
 }
 
@@ -251,7 +251,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         if(!success)
             return false;
 
-        pose = pose * affine;
+        pose = (Affine3f(pose) * affine).matrix;
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -279,9 +279,10 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
     CV_TRACE_FUNCTION();
 
     Affine3f cameraPose(_cameraPose);
+    Affine3f _pose(pose);
 
     const Affine3f id = Affine3f::Identity();
-    if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
+    if((cameraPose.rotation() == _pose.rotation() && cameraPose.translation() == _pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
         renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
@@ -289,7 +290,7 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
     else
     {
         MatType points, normals;
-        volume->raycast(cameraPose, params.intr, params.frameSize, points, normals);
+        volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals);
         renderPointsNormals(points, normals, image, params.lightPose);
     }
 }
