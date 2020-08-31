@@ -22,25 +22,23 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeType _volumeType)
     params.unitResolution    = 0;  // unitResolution not used for TSDF
     float volumeSize         = 3.0f;
     params.pose = Affine3f().translate(Vec3f(-volumeSize / 2.f, -volumeSize / 2.f, 0.5f));
-    switch (params.type)
+    if(params.type == VolumeType::TSDF)
     {
-        case VolumeType::TSDF:
-            params.resolution          = Vec3i::all(512);
-            params.voxelSize           = volumeSize / 512.f;
-            params.depthTruncThreshold = 0.f;  // depthTruncThreshold not required for TSDF
-            break;
-        case VolumeType::HASHTSDF:
-            params.unitResolution      = 16;
-            params.voxelSize           = volumeSize / 512.f;
-            params.depthTruncThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
-            break;
-        default:
-            CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
-            return nullptr;
+        params.resolution          = Vec3i::all(512);
+        params.voxelSize           = volumeSize / 512.f;
+        params.depthTruncThreshold = 0.f;  // depthTruncThreshold not required for TSDF
+        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        return makePtr<VolumeParams>(params);
     }
-    params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
-
-    return makePtr<VolumeParams>(params);
+    else if(params.type == VolumeType::HASHTSDF)
+    {
+        params.unitResolution      = 16;
+        params.voxelSize           = volumeSize / 512.f;
+        params.depthTruncThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
+        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        return makePtr<VolumeParams>(params);
+    }
+    CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
 Ptr<VolumeParams> VolumeParams::coarseParams(VolumeType _volumeType)
@@ -49,33 +47,29 @@ Ptr<VolumeParams> VolumeParams::coarseParams(VolumeType _volumeType)
 
     params->raycastStepFactor = 0.75f;
     float volumeSize          = 3.0f;
-    switch (params->type)
+    if(params->type == VolumeType::TSDF)
     {
-        case VolumeType::TSDF:
-            params->resolution = Vec3i::all(128);
-            params->voxelSize  = volumeSize / 128.f;
-            break;
-        case VolumeType::HASHTSDF:
-            params->voxelSize = volumeSize / 128.f;
-            break;
-        default:
-            CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
-            return nullptr;
+        params->resolution = Vec3i::all(128);
+        params->voxelSize  = volumeSize / 128.f;
+        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        return params;
     }
-    params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
-    return params;
+    else if(params->type == VolumeType::HASHTSDF)
+    {
+        params->voxelSize = volumeSize / 128.f;
+        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        return params;
+    }
+    CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
 Ptr<Volume> makeVolume(const VolumeParams& _volumeParams)
 {
-    switch (_volumeParams.type)
-    {
-        case VolumeType::TSDF: return kinfu::makeTSDFVolume(_volumeParams); break;
-        case VolumeType::HASHTSDF: return makePtr<kinfu::HashTSDFVolumeCPU>(_volumeParams); break;
-        default:
-            CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
-            return nullptr;
-    }
+    if(_volumeParams.type == VolumeType::TSDF)
+        return kinfu::makeTSDFVolume(_volumeParams);
+    else if(_volumeParams.type == VolumeType::HASHTSDF)
+        return kinfu::makeHashTSDFVolume<HashTSDFVolumeCPU>(_volumeParams);
+    CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
 Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
@@ -93,11 +87,7 @@ Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
         return makeHashTSDFVolume<kinfu::HashTSDFVolumeCPU>(
             _voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold);
     }
-    else
-    {
-        CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
-        return nullptr;
-    }
+    CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
 }  // namespace kinfu
