@@ -191,6 +191,8 @@ Settings setSettings(bool useHashTSDF)
 
     res.scene = Scene::create(res._params->frameSize, res._params->intr, res._params->depthFactor);
     res.poses = res.scene->getPoses();
+    
+    return res;
 }
 
 PERF_TEST(Perf_TSDF, integrate)
@@ -198,7 +200,6 @@ PERF_TEST(Perf_TSDF, integrate)
     Settings settings = setSettings(false);
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
-        UMat _points, _normals;
         Matx44f pose = settings.poses[i].matrix;
         Mat depth = settings.scene->depth(pose);
         startTimer();
@@ -228,9 +229,9 @@ PERF_TEST(Perf_TSDF, raycast)
 PERF_TEST(Perf_HashTSDF, integrate)
 {
     Settings settings = setSettings(true);
+
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
-        UMat _points, _normals;
         Matx44f pose = settings.poses[i].matrix;
         Mat depth = settings.scene->depth(pose);
         startTimer();
