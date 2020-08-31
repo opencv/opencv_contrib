@@ -147,7 +147,6 @@ public:
                                             int thickness = 2);
 };
 
-
 /** @brief draws a single mcc::ColorChecker on the given image
  *         This is a functional version of the CCheckerDraw class, provided for convenience
  * \param img image in color space BGR, it gets changed by this call
@@ -157,10 +156,12 @@ public:
  * \param sideRatio ratio between the side length of drawed boxes, and the actual side of squares
  *                  keeping sideRatio = 1.0 is not recommended as the border can be a bit inaccurate
  *                  in detection, for best output keep it at less than 1.0
+ * \param drawActualDetection draw the actually detected patch,i.e,, the non occuled ones,
+ *                            useful for debugging, default (false)
  */
 CV_EXPORTS_W void drawColorChecker(InputOutputArray img, Ptr<CChecker> pChecker,
-                                  cv::Scalar color = CV_RGB(0, 255, 0), int thickness = 2, float sideRatio = 0.5,
-                                 bool drawActualDetection = false);
+                                   cv::Scalar color = CV_RGB(0, 255, 0), int thickness = 2, float sideRatio = 0.5,
+                                   bool drawActualDetection = false);
 //! @} mcc
 } // namespace mcc
 } // namespace cv

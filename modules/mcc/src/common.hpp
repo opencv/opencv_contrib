@@ -51,18 +51,17 @@ void transform_points_inverse(InputArray T, const std::vector<cv::Point2f> &X,
 template <class NumType>
 cv::Mat Vect2Mat(std::vector<std::vector<NumType>> vect)
 {
-    cv::Mat mtx = cv::Mat::zeros(vect.size(), vect[0].size(), cv::DataType<NumType>::type);
+    cv::Mat matrix = cv::Mat::zeros(vect.size(), vect[0].size(), cv::DataType<NumType>::type);
     //Mat mtx;
 
     // copy data
-    for (size_t i=0; i<vect.size(); i++)
-        for (size_t j=0; j<vect[i].size(); j++)
+    for (int i=0; i<(int)vect.size(); i++)
+        for (int j=0; j<(int)vect[i].size(); j++)
         {
-            mtx.at<NumType>(i,j) = vect[i][j];
-            //cout << vect[i][j] << " ";
+            matrix.at<NumType>(i,j) = vect[i][j];
         }
 
-    return mtx;
+    return matrix;
 }
 template <typename T>
 void circshift(std::vector<T> &A, int shiff)
