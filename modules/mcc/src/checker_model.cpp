@@ -393,9 +393,9 @@ void CCheckerImpl::setPerPatchCosts(std::vector<Point2f> _perPatchCost)
 {
     perPatchCost = _perPatchCost;
 }
-void CCheckerImpl::setBoxDetectionType(std::vector<std::vector<Point2f>> _boxDetectionType)
+void CCheckerImpl::setActualDetectedContours(std::vector<std::vector<Point2f>> _boxDetectionType)
 {
-    boxDetectionType = _boxDetectionType;
+    actualDetectedContours = _boxDetectionType;
 }
 void CCheckerImpl::setChartsRGB(Mat _chartsRGB)
 {
@@ -404,6 +404,10 @@ void CCheckerImpl::setChartsRGB(Mat _chartsRGB)
 void CCheckerImpl::setChartsYCbCr(Mat _chartsYCbCr)
 {
     chartsYCbCr = _chartsYCbCr;
+}
+void CCheckerImpl::setActualChartsColors(Mat _actualChartsColors)
+{
+    actualChartsColors = _actualChartsColors;
 }
 void CCheckerImpl::setCost(float _cost)
 {
@@ -438,9 +442,9 @@ std::vector<Point2f> CCheckerImpl::getPerPatchCosts()
 {
     return perPatchCost;
 }
-std::vector<std::vector<Point2f>> CCheckerImpl::getBoxDetectionType()
+std::vector<std::vector<Point2f>> CCheckerImpl::getActualDetectedContours()
 {
-    return boxDetectionType;
+    return actualDetectedContours;
 }
 Mat CCheckerImpl::getChartsRGB()
 {
@@ -449,6 +453,10 @@ Mat CCheckerImpl::getChartsRGB()
 Mat CCheckerImpl::getChartsYCbCr()
 {
     return chartsYCbCr;
+}
+Mat CCheckerImpl::getActualChartsColors()
+{
+    return actualChartsColors;
 }
 float CCheckerImpl::getCost()
 {
@@ -556,14 +564,14 @@ void CCheckerDrawImpl::
     {
 
         vector<vector<Point>> f;
-        for (auto i : m_pChecker->getBoxDetectionType())
+        for (auto i : m_pChecker->getActualDetectedContours())
         {
             vector<Point> x;
             for (auto j : i)
                 x.push_back(j);
             f.push_back(x);
         }
-        drawContours(img, f, -1, CV_RGB(255, 255, 0), 2);
+        drawContours(img, f , -1, CV_RGB(255, 255, 0), 2);
     }
 }
 

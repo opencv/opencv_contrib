@@ -35,6 +35,8 @@
 #include "checker_model.hpp"
 #include "debug.hpp"
 
+
+#include <iostream>
 namespace cv
 {
 namespace mcc
@@ -220,9 +222,9 @@ bool CCheckerDetectorImpl::
                     // checker color analysis
                     //-------------------------------------------------------------------
                     std::vector<Ptr<CChecker>> checkers;
+
                     checkerAnalysis(img_rgb_f, chartType, nc, colorCharts, groupedCharts, checkers, asp, params,
                                     img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
-
 #ifdef MCC_DEBUG
                     cv::Mat image_checker;
                     croppedImage.copyTo(image_checker);
@@ -235,13 +237,18 @@ bool CCheckerDetectorImpl::
 #endif
                     for (Ptr<CChecker> checker : checkers)
                     {
-                        for (cv::Point2f &corner : checker->getBox())
+                        auto box = checker->getBox();
+                        for (cv::Point2f &corner : box)
                             corner += static_cast<cv::Point2f>(region.tl());
 
-                        for (std::vector<cv::Point2f> &corners : checker->getBoxDetectionType())
+                        auto actualDetectedContours = checker->getActualDetectedContours();
+                        for (std::vector<cv::Point2f> &corners : actualDetectedContours)
                             for (cv::Point2f & corner: corners)
                                 corner += static_cast<cv::Point2f>(region.tl());
 
+                        checker->setBox(box);
+                        checker->setActualDetectedContours(actualDetectedContours);
+                        checker->calculate();
                         mtx.lock(); // push_back is not thread safe
                         m_checkers.push_back(checker);
                         mtx.unlock();
@@ -446,8 +453,14 @@ bool CCheckerDetectorImpl::
                             // checker color analysis
                             //-------------------------------------------------------------------
                             std::vector<Ptr<CChecker>> checkers;
+                            std::vector<cv::Mat> rgb_planes_inner(3), ycbcr_planes_inner(3);
+                            for(int _i= 0;_i<3;_i++)
+                            {
+                                rgb_planes_inner[_i] = rgb_planes[_i](innerRegion);
+                                ycbcr_planes_inner[_i] = ycbcr_planes[_i](innerRegion);
+                            }
                             checkerAnalysis(img_rgb_f, chartType, nc, colorCharts,groupedCharts, checkers, asp, params,
-                                            img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
+                                            img_rgb_org(innerRegion), img_ycbcr_org(innerRegion), rgb_planes_inner, ycbcr_planes_inner);
 #ifdef MCC_DEBUG
                             cv::Mat image_checker;
                             innerCroppedImage.copyTo(image_checker);
@@ -460,11 +473,17 @@ bool CCheckerDetectorImpl::
 #endif
                             for (Ptr<CChecker> checker : checkers)
                             {
-                                for (cv::Point2f &corner : checker->getBox())
+                                auto box = checker->getBox();
+                                for (cv::Point2f &corner : box)
                                     corner += static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
-                                for (std::vector<cv::Point2f> &corners : checker->getBoxDetectionType())
+
+                                auto actualDetectedContours = checker->getActualDetectedContours();
+                                for (std::vector<cv::Point2f> &corners : actualDetectedContours)
                                     for (cv::Point2f & corner: corners)
                                         corner += static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
+
+                                checker->setBox(box);
+                                checker->setActualDetectedContours(actualDetectedContours);
                                 checker->calculate();
                                 mtx.lock(); // push_back is not thread safe
                                 m_checkers.push_back(checker);
@@ -538,6 +557,8 @@ void CCheckerDetectorImpl::
 
     cv::Mat strelbox = cv::getStructuringElement(cv::MORPH_RECT, Size(5, 5));
     cv::morphologyEx(grayOut, grayOut, MORPH_OPEN, strelbox);
+
+
 }
 
 void CCheckerDetectorImpl::
@@ -994,7 +1015,6 @@ void CCheckerDetectorImpl::
     size_t N;
     std::vector<cv::Point2f> ibox;
 
-    // color chart classic model
     CChartModel cccm(chartType);
     cv::Mat lab;
     cccm.copyToColorMat(lab, 0);
@@ -1047,11 +1067,12 @@ void CCheckerDetectorImpl::
         // result
         Ptr<CChecker> checker = CChecker::create();
         checker->setBox(ibox);
-        checker->setBoxDetectionType(directlyDetectedPatches);
+        checker->setActualDetectedContours(directlyDetectedPatches);
 
         checker->setTarget(chartType);
         checker->setChartsRGB(charts_rgb);
         checker->setChartsYCbCr(charts_ycbcr);
+        checker->setActualChartsColors(Vect2Mat(cccm.chart));
         checker->setCenter(mace_center(ibox));
         checker->setCost(J[i]);
         checker->calculate(); //does some precomputation based on the inputs,

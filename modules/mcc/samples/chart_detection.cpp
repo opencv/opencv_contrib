@@ -61,6 +61,9 @@ int main(int argc, char *argv[])
     //-------------------------Actual Relevant Code-----------------------------
     //--------------------------------------------------------------------------
 
+    namedWindow("original", WINDOW_NORMAL);
+    namedWindow("image result | q or esc to quit", WINDOW_NORMAL);
+
     while (inputVideo.grab())
     {
 

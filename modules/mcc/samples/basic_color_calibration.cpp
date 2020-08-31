@@ -2,6 +2,16 @@
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/mcc.hpp>
+#include <iostream>
+
+using namespace std;
+using namespace cv;
+using namespace mcc;
+
+#include <opencv2/core.hpp>
+
+#include <opencv2/highgui.hpp>
+#include <opencv2/mcc.hpp>
 #include <opencv2/dnn.hpp>
 #include <iostream>
 
@@ -9,7 +19,7 @@ using namespace std;
 using namespace cv;
 using namespace mcc;
 
-const char *about = "Basic chart detection using neural network";
+const char *about = "Basic color calibration using simple 3x3 linear color matrix";
 const char *keys = {
     "{ help h usage ? |    | show this message }"
     "{t       | 0   | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl, default:0}"
@@ -95,7 +105,6 @@ int main(int argc, char *argv[])
         cout << "Loading Model failed: Aborting" << endl;
         return 0;
     }
-
     namedWindow("original", WINDOW_NORMAL);
     namedWindow("image result | q or esc to quit", WINDOW_NORMAL);
 
@@ -119,9 +128,32 @@ int main(int argc, char *argv[])
             for (Ptr<mcc::CChecker> checker : checkers)
             {
                 // current checker
-
                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
                 cdraw->draw(image);
+                Mat a = checker->getChartsRGB();
+                Mat b = checker->getActualChartsColors();
+
+                a = a(Range::all(), Range(1, 2)).clone(); // second column contains the mean of each color
+                a = a.reshape(1, a.rows/3);
+                a.convertTo(a, CV_32F );
+
+                b = b(Range::all(), Range(0,3)).clone(); // The first 3 are rgb
+
+                Mat x;
+                cv::solve(a, b, x,DECOMP_SVD);
+
+                int originalRows= image.rows;
+
+                cvtColor(image, image, COLOR_BGR2RGB);
+                image.convertTo(image, CV_32FC3);
+                image = image.reshape(1, image.rows*image.cols);
+
+                image = image * x;
+
+                image = image.reshape(3, originalRows);
+                image.convertTo(image, CV_8UC3);
+                cvtColor(image, image, COLOR_RGB2BGR);
+
             }
         }
 
@@ -130,7 +162,6 @@ int main(int argc, char *argv[])
         char key = (char)waitKey(waitTime);
         if (key == 27)
             break;
-
     }
 
     return 0;

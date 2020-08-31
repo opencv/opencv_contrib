@@ -47,6 +47,23 @@ void transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X,
 void transform_points_inverse(InputArray T, const std::vector<cv::Point2f> &X,
                               std::vector<cv::Point2f> &Xt);
 
+
+template <class NumType>
+cv::Mat Vect2Mat(std::vector<std::vector<NumType>> vect)
+{
+    cv::Mat mtx = cv::Mat::zeros(vect.size(), vect[0].size(), cv::DataType<NumType>::type);
+    //Mat mtx;
+
+    // copy data
+    for (size_t i=0; i<vect.size(); i++)
+        for (size_t j=0; j<vect[i].size(); j++)
+        {
+            mtx.at<NumType>(i,j) = vect[i][j];
+            //cout << vect[i][j] << " ";
+        }
+
+    return mtx;
+}
 template <typename T>
 void circshift(std::vector<T> &A, int shiff)
 {

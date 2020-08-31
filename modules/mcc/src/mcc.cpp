@@ -38,7 +38,7 @@ namespace mcc
   */
 DetectorParameters::DetectorParameters()
     : adaptiveThreshWinSizeMin(23),
-      adaptiveThreshWinSizeMax(153),
+      adaptiveThreshWinSizeMax(303),
       adaptiveThreshWinSizeStep(16),
       adaptiveThreshConstant(7),
       minContoursAreaRate(0.003),
@@ -46,9 +46,10 @@ DetectorParameters::DetectorParameters()
       confidenceThreshold(0.5),
       minContourSolidity(0.9),
       findCandidatesApproxPolyDPEpsMultiplier(0.05),
-      borderWidth(0),
+      borderWidth(20),
       B0factor(1.25f),
       maxError(0.1f),
+
       minContourPointsAllowed(4),
       minContourLengthAllowed(100),
       minInterContourDistance(100),

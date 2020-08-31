@@ -23,8 +23,6 @@ void runCCheckerDraw(Ptr<CChecker> pChecker, int rows, int cols, unsigned int nu
     Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(pChecker);
 
     cdraw->draw(img);
-    imshow("a", img);
-    cv2.waitKey(0);
 
     //make sure this contains extacly as many rectangles as in the pChecker
     vector<vector<Point>> contours;
@@ -39,7 +37,7 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_MCC24)
     Ptr<CChecker> pChecker = CChecker::create();
     pChecker->setTarget(MCC24);
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
-    ASSERT_EQ(pChecker->calculate()  == true);
+    pChecker->calculate();
 
     runCCheckerDraw(pChecker, 640, 480, 24);
 }
@@ -49,6 +47,7 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_SG140)
     pChecker->setTarget(SG140);
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
     pChecker->calculate();
+
     runCCheckerDraw(pChecker, 640, 480, 140);
 }
 TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
@@ -57,6 +56,7 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
     pChecker->setTarget(VINYL18);
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
     pChecker->calculate();
+
     runCCheckerDraw(pChecker, 640, 480, 18);
 }
 

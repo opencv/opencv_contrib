@@ -73,21 +73,16 @@ public:
     CV_WRAP static Ptr<CChecker> create();
 
 public:
-    // CV_PROP_RW TYPECHART target;             ///< type of checkercolor
-    // CV_PROP_RW std::vector<cv::Point2f> box; ///< positions of the corners
-    // CV_PROP_RW cv::Mat charts_rgb;             ///< charts profile in rgb color space
-    // CV_PROP_RW cv::Mat charts_ycbcr;         ///< charts profile in YCbCr color space
-    // CV_PROP_RW float cost;                     ///< cost to aproximate
-    // CV_PROP_RW cv::Point2f center;             ///< center of the chart.
 
     CV_WRAP virtual void setTarget(TYPECHART _target)  = 0;
     CV_WRAP virtual void setBox(std::vector<Point2f> _box) = 0;
     CV_WRAP virtual void setPerPatchCosts(std::vector<Point2f> _patchCosts) = 0;
 
     // Detected directly by the detector or found using geometry, useful to determine if a patch is occluded
-    CV_WRAP virtual void setBoxDetectionType(std::vector<std::vector<Point2f>> detectionType) = 0;
+    CV_WRAP virtual void setActualDetectedContours(std::vector<std::vector<Point2f>> detectionType) = 0;
     CV_WRAP virtual void setChartsRGB(Mat _chartsRGB) = 0;
     CV_WRAP virtual void setChartsYCbCr(Mat _chartsYCbCr) = 0;
+    CV_WRAP virtual void setActualChartsColors(Mat _actualChartsColors) = 0; // the acutal color profile
     CV_WRAP virtual void setCost(float _cost) = 0;
     CV_WRAP virtual void setCenter(Point2f _center) = 0;
     CV_WRAP virtual void setPatchCenters(std::vector<Point2f> _patchCenters) = 0;
@@ -96,13 +91,15 @@ public:
     CV_WRAP virtual TYPECHART getTarget() = 0;
     CV_WRAP virtual std::vector<Point2f> getBox() = 0;
     CV_WRAP virtual std::vector<Point2f> getPerPatchCosts() = 0;
-    CV_WRAP virtual std::vector<std::vector<Point2f>> getBoxDetectionType() = 0;
+    CV_WRAP virtual std::vector<std::vector<Point2f>> getActualDetectedContours() = 0;
     CV_WRAP virtual Mat getChartsRGB() = 0;
     CV_WRAP virtual Mat getChartsYCbCr() = 0;
+    CV_WRAP virtual Mat getActualChartsColors() = 0; // the acutal color profile
     CV_WRAP virtual float getCost() = 0;
     CV_WRAP virtual Point2f getCenter() = 0;
     CV_WRAP virtual std::vector<Point2f> getPatchCenters() = 0;
     CV_WRAP virtual std::vector<Point2f> getPatchBoundingBoxes(float sideRatio=0.5) =0;
+
 
     CV_WRAP virtual bool calculate() = 0; ///< Return false if some error occured, true otherwise
 };
