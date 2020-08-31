@@ -169,10 +169,27 @@ Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
 
-PERF_TEST(Perf_TSDF, integrate)
+std::vector<Affine3f> getPoses(Ptr<kinfu::Params> _params )
 {
     Ptr<kinfu::Params> _params;
-    _params = kinfu::Params::coarseParams();
+    if (useHashTSDF)
+        _params = kinfu::Params::hashTSDFParams(true);
+    else
+        _params = kinfu::Params::coarseParams();
+
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
+        _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
+        _params->truncateThreshold, _params->volumeDims);
+
+    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+    std::vector<Affine3f> poses = scene->getPoses();
+
+    return poses;
+}
+
+PERF_TEST(Perf_TSDF, integrate)
+{
+    Ptr<kinfu::Params> _params = kinfu::Params::coarseParams();
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
@@ -195,8 +212,7 @@ PERF_TEST(Perf_TSDF, integrate)
 
 PERF_TEST(Perf_TSDF, raycast)
 {
-    Ptr<kinfu::Params> _params;
-    _params = kinfu::Params::coarseParams();
+    Ptr<kinfu::Params> _params = kinfu::Params::coarseParams();
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
@@ -221,8 +237,7 @@ PERF_TEST(Perf_TSDF, raycast)
 
 PERF_TEST(Perf_HashTSDF, integrate)
 {
-    Ptr<kinfu::Params> _params;
-    _params = kinfu::Params::hashTSDFParams(true);
+    Ptr<kinfu::Params> _params = kinfu::Params::hashTSDFParams(true);
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
@@ -245,8 +260,7 @@ PERF_TEST(Perf_HashTSDF, integrate)
 
 PERF_TEST(Perf_HashTSDF, raycast)
 {
-    Ptr<kinfu::Params> _params;
-    _params = kinfu::Params::hashTSDFParams(true);
+    Ptr<kinfu::Params> _params = kinfu::Params::hashTSDFParams(true);
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
