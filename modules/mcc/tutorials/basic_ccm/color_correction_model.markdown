@@ -198,12 +198,16 @@ const Mat s = (Mat_<Vec3d>(24, 1) << Vec3d(214.11, 98.67, 37.97), Vec3d(231.94, 
   @endcode
 
 ```  
-The Color Checker Matrix with the size of 24x1, type of cv::Mat.
+The ColorChecker Matrix with the size of Nx1, type of cv::Mat.
 ```
 
 @code{.cpp}
 
  Color color = Macbeth_D65_2;
+ 
+ // If you use a customized ColorChecker, make sure to define the Color instance with your own reference color values and corresponding color space:
+ 
+ // Color color(ref_color_values, color_space);
 
   std::vector<double> saturated_threshold = { 0, 0.98 };
 
@@ -216,3 +220,34 @@ The Color Checker Matrix with the size of 24x1, type of cv::Mat.
 ```
 Some variables for computing ccm Matrix. The variable filename is the path of a picture to be corrected.See other parameters' detail at the Parameters.
 ```
+
+@code{.cpp}
+
+ColorCorrectionModel p1(s / 255., color, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1.e-4);
+
+ @endcode
+
+```
+the object p1 is an object of ColorCorrectionModel class. The parameters should be changed to get the best effect of color correction.
+```
+
+@code{.cpp}
+
+ std::cout <<"ccm1"<< p1.ccm << std::endl;
+
+ @endcode
+
+```
+The object p1 has the member variable ccm which means ccm matrix. Then, ccm matrix can be used to make color correction.
+```
+
+@code{.cpp}
+
+Mat img1 = p1.inferImage(filename);
+
+ @endcode
+
+```
+The object p1 has the member function infer_image to make correction correction using ccm matrix. Img1 is the result of correction correction.
+```
+
