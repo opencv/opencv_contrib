@@ -165,3 +165,54 @@ Supported Color Space:
             E_2;
             E_10;
 ```
+
+
+## Code
+
+@include mcc/samples/color_correction_model.cpp
+
+## Explanation
+
+ @code{.cpp}
+
+\#include <opencv2/core.hpp>
+
+\#include "opencv2/mcc/ccm.hpp"
+
+using namespace cv;
+
+using namespace std;
+
+using namespace ccm;
+
+  @endcode
+
+```  
+Here is sets of header and namespaces. You can set other namespace like the code above.
+```
+
+@code{.cpp}
+
+const Mat s = (Mat_<Vec3d>(24, 1) << Vec3d(214.11, 98.67, 37.97), Vec3d(231.94, 153.1, 85.27),  Vec3d(204.08, 143.71, 78.46),  Vec3d(190.58, 122.99, 30.84),  Vec3d(230.93, 148.46, 100.84),  Vec3d(228.64, 206.97, 97.5),  Vec3d(229.09, 137.07, 55.29),  Vec3d(189.21, 111.22, 92.66),  Vec3d(223.5, 96.42, 75.45),  Vec3d(201.82, 69.71, 50.9),  Vec3d(240.52, 196.47, 59.3), Vec3d(235.73, 172.13, 54.),  Vec3d(131.6, 75.04, 68.86),  Vec3d(189.04, 170.43, 42.05),  Vec3d(222.23, 74., 71.95), Vec3d(241.01, 199.1, 61.15),  Vec3d(224.99, 101.4, 100.24),  Vec3d(174.58, 152.63, 91.52),  Vec3d(248.06, 227.69, 140.5), Vec3d(241.15, 201.38, 115.58),  Vec3d(236.49, 175.87, 88.86),  Vec3d(212.19, 133.49, 54.79),  Vec3d(181.17, 102.94, 36.18), Vec3d(115.1, 53.77, 15.23));
+
+  @endcode
+
+```  
+The Color Checker Matrix with the size of 24x1, type of cv::Mat.
+```
+
+@code{.cpp}
+
+ Color color = Macbeth_D65_2;
+
+  std::vector<double> saturated_threshold = { 0, 0.98 };
+
+  cv::Mat weight_list;
+
+  std::string filename = "input1.png";
+
+ @endcode
+
+```
+Some variables for computing ccm Matrix. The variable filename is the path of a picture to be corrected.See other parameters' detail at the Parameters.
+```
