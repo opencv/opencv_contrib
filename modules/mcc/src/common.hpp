@@ -51,7 +51,7 @@ void transform_points_inverse(InputArray T, const std::vector<cv::Point2f> &X,
 template <class NumType>
 cv::Mat Vect2Mat(std::vector<std::vector<NumType>> vect)
 {
-    cv::Mat matrix = cv::Mat::zeros(vect.size(), vect[0].size(), cv::DataType<NumType>::type);
+    cv::Mat matrix = cv::Mat::zeros((int)vect.size(), (int)vect[0].size(), cv::DataType<NumType>::type);
     //Mat mtx;
 
     // copy data
