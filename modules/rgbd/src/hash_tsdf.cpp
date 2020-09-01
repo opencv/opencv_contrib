@@ -392,7 +392,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::__at(const cv::Point3f& point, cv::Vec3i vol
 {
     //cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
     VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
-    
+
     if (it == volumeUnits.end())
     {
         TsdfVoxel dummy;
@@ -412,8 +412,8 @@ inline TsdfVoxel HashTSDFVolumeCPU::__at(const cv::Point3f& point, cv::Vec3i vol
                                           cvFloor(_point.y * voxelSizeInv),
                                           cvFloor(_point.z * voxelSizeInv));
 
-    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]), 
-                                abs(volUnitLocalIdx[1]), 
+    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]),
+                                abs(volUnitLocalIdx[1]),
                                 abs(volUnitLocalIdx[2]));
 
     const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
