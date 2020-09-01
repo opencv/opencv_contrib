@@ -12,7 +12,7 @@ namespace cv {
 
 namespace kinfu {
 
-static inline v_float32x4 tsdfToFloat_INTR(v_int32x4 num)
+static inline v_float32x4 tsdfToFloat_INTR(v_int32x4& num)
 {
     v_float32x4 num128 = v_setall_f32(-1.f / 128.f);
     return v_cvt_f32(num) * num128;
