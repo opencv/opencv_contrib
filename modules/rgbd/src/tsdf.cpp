@@ -14,7 +14,7 @@ namespace kinfu {
 
 static inline v_float32x4 tsdfToFloat_INTR(v_int32x4 num)
 {
-    v_float32x4 num128 = v_setall_f32(-1.f / 128.f); 
+    v_float32x4 num128 = v_setall_f32(-1.f / 128.f);
     return v_cvt_f32(num) * num128;
 }
 
@@ -395,7 +395,7 @@ struct IntegrateInvoker : ParallelLoopBody
                 }
                 startZ = max(0, startZ);
                 endZ   = min(volume.volResolution.z, endZ);
-                
+
                 //Point3f camPixVec;
                 //Point2f projected = proj(camSpacePt, camPixVec);
                 //float o = 0.004f;
@@ -405,9 +405,9 @@ struct IntegrateInvoker : ParallelLoopBody
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     //Point3f camSpacePt = vol2cam * volPt;
-                    
+
                     //pixNorm += o;
-                    
+
                     camSpacePt += zStep;
                     if(camSpacePt.z <= 0)
                         continue;
@@ -642,7 +642,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     {
         const int dim = volDims[c];
         float& nv = an[c];
-        
+
         float vx[8];
         for(int i = 0; i < 8; i++)
             vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -

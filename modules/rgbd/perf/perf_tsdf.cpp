@@ -191,7 +191,7 @@ Settings setSettings(bool useHashTSDF)
 
     res.scene = Scene::create(res._params->frameSize, res._params->intr, res._params->depthFactor);
     res.poses = res.scene->getPoses();
-    
+
     return res;
 }
 
