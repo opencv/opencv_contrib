@@ -38,8 +38,7 @@ namespace cv
 {
 namespace ccm
 {
-std::vector<double> xyY2XYZ(const std::vector<double>& xyY);
-static std::map <IO, std::vector<double>> getIlluminant();
+
 /* *\ brief Io is the meaning of illuminant and observer. See notes of ccm.hpp
  *          for supported list for illuminant and observer*/
 class IO
@@ -51,7 +50,7 @@ public:
 
     IO() {};
 
-    IO(std::string illuminant_, std::string observer) :illuminant(illuminant_), observer(observer) {};
+    IO(std::string illuminant_, std::string observer_) :illuminant(illuminant_), observer(observer_) {};
 
     virtual ~IO() {};
 
@@ -84,6 +83,7 @@ const static std::map<IO, std::vector<double>> illuminants_xy =
     {E_2, { 1 / 3, 1 / 3 }}, {E_10, { 1 / 3, 1 / 3 }},
 };
 
+std::vector<double> xyY2XYZ(const std::vector<double>& xyY);
 std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
 {
     double Y = xyY.size() >= 3 ? xyY[2] : 1;
@@ -91,6 +91,7 @@ std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
 }
 
 /* *\ brief function to get illuminants*/
+static std::map <IO, std::vector<double>> getIlluminant();
 static std::map <IO, std::vector<double>> getIlluminant()
 {
     std::map <IO, std::vector<double>>  illuminants;

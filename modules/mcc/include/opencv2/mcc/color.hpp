@@ -34,15 +34,15 @@
 #include "opencv2/mcc/distance.hpp"
 #include "opencv2/mcc/utils.hpp"
 
-namespace cv 
+namespace cv
 {
-namespace ccm 
+namespace ccm
 {
 
 /* *\ brief Color defined by color_values and color space
 */
 
-class Color 
+class Color
 {
 public:
 
@@ -56,7 +56,7 @@ public:
     cv::Mat colored;
     std::map<ColorSpace, std::shared_ptr<Color>> history;
 
-    Color(cv::Mat colors, const ColorSpace& cs) :colors(colors), cs(cs) {};
+    Color(cv::Mat colors_, const ColorSpace& cs_) :colors(colors_), cs(cs_) {};
 
     virtual ~Color() {};
 
@@ -81,7 +81,7 @@ public:
         Operations ops;
         ops.add(cs.to).add(XYZ(cs.io).cam(other.io, method)).add(other.from);
         std::shared_ptr<Color> color(new Color(ops.run(colors), other));
-        if (save) 
+        if (save)
         {
             history[other] = color;
         }
@@ -102,7 +102,7 @@ public:
     */
     cv::Mat toGray(IO io, CAM method = BRADFORD, bool save = true)
     {
-        XYZ xyz(io); 
+        XYZ xyz(io);
         return channel(this->to(xyz, method, save).colors, 1);
     }
 

@@ -36,14 +36,14 @@
 #include "opencv2/mcc/operations.hpp"
 #include "opencv2/mcc/utils.hpp"
 
-namespace cv 
+namespace cv
 {
-namespace ccm 
+namespace ccm
 {
 
 /* *\ brief Basic class for ColorSpace.
 */
-class ColorSpace 
+class ColorSpace
 {
 public:
     IO io;
@@ -56,25 +56,25 @@ public:
 
     ColorSpace() {};
 
-    ColorSpace(IO io, std::string type, bool linear) :io(io), type(type), linear(linear) {};
+    ColorSpace(IO io_, std::string type_, bool linear_) :io(io_), type(type_), linear(linear_) {};
 
-    virtual ~ColorSpace() 
+    virtual ~ColorSpace()
     {
         l = 0;
         nl = 0;
     };
 
-    virtual bool relate(const ColorSpace& other) const 
+    virtual bool relate(const ColorSpace& other) const
     {
         return (type == other.type) && (io == other.io);
     };
 
-    virtual Operations relation(const ColorSpace& other) const 
+    virtual Operations relation(const ColorSpace& /*other*/) const
     {
         return IDENTITY_OPS;
     };
 
-    bool operator<(const ColorSpace& other)const 
+    bool operator<(const ColorSpace& other)const
     {
         return (io < other.io || (io == other.io && type < other.type) || (io == other.io && type == other.type && linear < other.linear));
     }
@@ -84,7 +84,7 @@ public:
    *        the argument values are from AdobeRGB;
    *        Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space
 */
-class RGBBase_ : public ColorSpace 
+class RGBBase_ : public ColorSpace
 {
 public:
     // primaries
@@ -109,22 +109,22 @@ public:
        *\ param other type of ColorSpace.
        *\ return Operations.
     */
-    virtual Operations relation(const ColorSpace& other) const
+    Operations relation(const ColorSpace& other) const CV_OVERRIDE
     {
-        if (linear == other.linear) 
-        { 
-            return IDENTITY_OPS; 
+        if (linear == other.linear)
+        {
+            return IDENTITY_OPS;
         }
-        if (linear) 
-        { 
-            return Operations({ Operation(fromL) }); 
+        if (linear)
+        {
+            return Operations({ Operation(fromL) });
         }
         return Operations({ Operation(toL) });
     };
 
     /* *\ brief Initial operations.
     */
-    void init() 
+    void init()
     {
         setParameter();
         calLinear();
@@ -135,7 +135,7 @@ public:
     /* *\ brief Produce color space instance with linear and non-linear versions.
        *\ param rgbl type of RGBBase_.
     */
-    void bind(RGBBase_& rgbl) 
+    void bind(RGBBase_& rgbl)
     {
         init();
         rgbl.init();
@@ -151,7 +151,7 @@ private:
     /* *\ brief Calculation of M_RGBL2XYZ_base.
        *        see ColorSpace.pdf for details.
     */
-    virtual void calM() 
+    virtual void calM()
     {
         cv::Mat XYZr, XYZg, XYZb, XYZ_rgbl, Srgb;
         XYZr = cv::Mat(xyY2XYZ({ xr, yr }), true);
@@ -170,7 +170,7 @@ private:
 
     /* *\ brief operations to or from XYZ.
     */
-    virtual void calOperations() 
+    virtual void calOperations()
     {
         // rgb -> rgbl
         toL = [this](cv::Mat rgb)->cv::Mat {return toLFunc(rgb); };
@@ -178,12 +178,12 @@ private:
         // rgbl -> rgb
         fromL = [this](cv::Mat rgbl)->cv::Mat {return fromLFunc(rgbl); };
 
-        if (linear) 
+        if (linear)
         {
             to = Operations({ Operation(M_to.t()) });
             from = Operations({ Operation(M_from.t()) });
         }
-        else 
+        else
         {
             to = Operations({ Operation(toL), Operation(M_to.t()) });
             from = Operations({ Operation(M_from.t()), Operation(fromL) });
@@ -192,33 +192,33 @@ private:
 
     virtual void calLinear() {}
 
-    virtual cv::Mat toLFunc(cv::Mat& rgb) 
-    { 
-        return cv::Mat(); 
+    virtual cv::Mat toLFunc(cv::Mat& /*rgb*/)
+    {
+        return cv::Mat();
     };
 
-    virtual cv::Mat fromLFunc(cv::Mat& rgbl) 
-    { 
-        return cv::Mat(); 
+    virtual cv::Mat fromLFunc(cv::Mat& /*rgbl*/)
+    {
+        return cv::Mat();
     };
 
 };
 
 /* *\ brief Base of Adobe RGB color space;
 */
-class AdobeRGBBase_ : public RGBBase_ 
+class AdobeRGBBase_ : public RGBBase_
 {
 public:
     using RGBBase_::RGBBase_;
     double gamma;
 
 private:
-    virtual cv::Mat toLFunc(cv::Mat& rgb) 
+    cv::Mat toLFunc(cv::Mat& rgb) CV_OVERRIDE
     {
         return gammaCorrection(rgb, gamma);
     }
 
-    virtual cv::Mat fromLFunc(cv::Mat& rgbl) 
+    cv::Mat fromLFunc(cv::Mat& rgbl) CV_OVERRIDE
     {
         return gammaCorrection(rgbl, 1. / gamma);
     }
@@ -226,7 +226,7 @@ private:
 
 /* *\ brief Base of sRGB color space;
 */
-class sRGBBase_ : public RGBBase_ 
+class sRGBBase_ : public RGBBase_
 {
 public:
     using RGBBase_::RGBBase_;
@@ -241,7 +241,7 @@ private:
     /* *\ brief linearization parameters
        *        see ColorSpace.pdf for details;
     */
-    virtual void calLinear() 
+    virtual void calLinear() CV_OVERRIDE
     {
         alpha = a + 1;
         K0 = a / (gamma - 1);
@@ -251,17 +251,17 @@ private:
 
     /* *\ brief Used by toLFunc.
     */
-    double toLFuncEW(double& x) 
+    double toLFuncEW(double& x)
     {
-        if (x > K0) 
+        if (x > K0)
         {
             return pow(((x + alpha - 1) / alpha), gamma);
         }
-        else if (x >= -K0) 
+        else if (x >= -K0)
         {
             return x / phi;
         }
-        else 
+        else
         {
             return -(pow(((-x + alpha - 1) / alpha), gamma));
         }
@@ -272,24 +272,25 @@ private:
        *\ param rgb the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat.
     */
-    cv::Mat toLFunc(cv::Mat& rgb) 
+    cv::Mat toLFunc(cv::Mat& rgb) CV_OVERRIDE
     {
-        return elementWise(rgb, [this](double a)->double {return toLFuncEW(a); });
+        return elementWise(rgb, [this](double a_)->double {return toLFuncEW(a_); });
     }
 
     /* *\ brief Used by fromLFunc.
     */
-    double fromLFuncEW(double& x) 
+    double fromLFuncEW(double& x)
     {
-        if (x > beta) 
+        if (x > beta)
         {
             return alpha * pow(x, 1 / gamma) - (alpha - 1);
         }
-        else if (x >= -beta) 
+        else if (x >= -beta)
         {
             return x * phi;
         }
-        else {
+        else
+        {
             return -(alpha * pow(-x, 1 / gamma) - (alpha - 1));
         }
     }
@@ -299,22 +300,22 @@ private:
        *\ param rgbl the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat.
     */
-    cv::Mat fromLFunc(cv::Mat& rgbl) 
+    cv::Mat fromLFunc(cv::Mat& rgbl) CV_OVERRIDE
     {
-        return elementWise(rgbl, [this](double a)->double {return fromLFuncEW(a); });
+        return elementWise(rgbl, [this](double a_)->double {return fromLFuncEW(a_); });
     }
 };
 
 /* *\ brief sRGB color space.
    *        data from https://en.wikipedia.org/wiki/SRGB.
 */
-class sRGB_ :public sRGBBase_ 
+class sRGB_ :public sRGBBase_
 {
 public:
     sRGB_(bool linear_) :sRGBBase_(D65_2, "sRGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.64;
         yr = 0.33;
@@ -329,13 +330,13 @@ private:
 
 /* *\ brief Adobe RGB color space.
 */
-class AdobeRGB_ : public AdobeRGBBase_ 
+class AdobeRGB_ : public AdobeRGBBase_
 {
 public:
     AdobeRGB_(bool linear_ = false) :AdobeRGBBase_(D65_2, "AdobeRGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.64;
         yr = 0.33;
@@ -350,13 +351,13 @@ private:
 /* *\ brief Wide-gamut RGB color space.
    *        data from https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space.
 */
-class WideGamutRGB_ : public AdobeRGBBase_ 
+class WideGamutRGB_ : public AdobeRGBBase_
 {
 public:
-    WideGamutRGB_(bool linear = false) :AdobeRGBBase_(D50_2, "WideGamutRGB", linear) {};
+    WideGamutRGB_(bool linear_ = false) :AdobeRGBBase_(D50_2, "WideGamutRGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.7347;
         yr = 0.2653;
@@ -371,13 +372,13 @@ private:
 /* *\ brief ProPhoto RGB color space.
    *        data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
 */
-class ProPhotoRGB_ : public AdobeRGBBase_ 
+class ProPhotoRGB_ : public AdobeRGBBase_
 {
 public:
-    ProPhotoRGB_(bool linear = false) :AdobeRGBBase_(D50_2, "ProPhotoRGB", linear) {};
+    ProPhotoRGB_(bool linear_ = false) :AdobeRGBBase_(D50_2, "ProPhotoRGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.734699;
         yr = 0.265301;
@@ -392,13 +393,13 @@ private:
 /* *\ brief DCI-P3 RGB color space.
    *        data from https://en.wikipedia.org/wiki/DCI-P3.
 */
-class DCI_P3_RGB_ : public AdobeRGBBase_ 
+class DCI_P3_RGB_ : public AdobeRGBBase_
 {
 public:
-    DCI_P3_RGB_(bool linear = false) :AdobeRGBBase_(D65_2, "DCI_P3_RGB", linear) {};
+    DCI_P3_RGB_(bool linear_ = false) :AdobeRGBBase_(D65_2, "DCI_P3_RGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.68;
         yr = 0.32;
@@ -413,13 +414,13 @@ private:
 /* *\ brief Apple RGB color space.
    *        data from http://www.brucelindbloom.com/index.html?WorkingSpaceInfo.html.
 */
-class AppleRGB_ : public AdobeRGBBase_ 
+class AppleRGB_ : public AdobeRGBBase_
 {
 public:
-    AppleRGB_(bool linear = false) :AdobeRGBBase_(D65_2, "AppleRGB", linear) {};
+    AppleRGB_(bool linear_ = false) :AdobeRGBBase_(D65_2, "AppleRGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.625;
         yr = 0.34;
@@ -434,13 +435,13 @@ private:
 /* *\ brief REC_709 RGB color space.
    *        data from https://en.wikipedia.org/wiki/Rec._709.
 */
-class REC_709_RGB_ : public sRGBBase_ 
+class REC_709_RGB_ : public sRGBBase_
 {
 public:
     REC_709_RGB_(bool linear_) :sRGBBase_(D65_2, "REC_709_RGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.64;
         yr = 0.33;
@@ -456,13 +457,13 @@ private:
 /* *\ brief REC_2020 RGB color space.
    *        data from https://en.wikipedia.org/wiki/Rec._2020.
 */
-class REC_2020_RGB_ : public sRGBBase_ 
+class REC_2020_RGB_ : public sRGBBase_
 {
 public:
     REC_2020_RGB_(bool linear_) :sRGBBase_(D65_2, "REC_2020_RGB", linear_) {};
 
 private:
-    void setParameter() 
+    void setParameter() CV_OVERRIDE
     {
         xr = 0.708;
         yr = 0.292;
@@ -487,10 +488,10 @@ REC_2020_RGB_ REC_2020_RGB(false), REC_2020_RGBL(true);
 
 /* *\ brief Bind RGB with RGBL.
 */
-class ColorSpaceInitial 
+class ColorSpaceInitial
 {
 public:
-    ColorSpaceInitial() 
+    ColorSpaceInitial()
     {
         sRGB.bind(sRGBL);
         AdobeRGB.bind(AdobeRGBL);
@@ -509,7 +510,7 @@ ColorSpaceInitial color_space_initial;
 
 /* *\ brief Enum of the possible types of CAMs.
 */
-enum CAM 
+enum CAM
 {
     IDENTITY,
     VON_KRIES,
@@ -528,11 +529,11 @@ const static std::map <CAM, std::vector< cv::Mat >> MAs = {
 /* *\ brief XYZ color space.
    *        Chromatic adaption matrices.
 */
-class XYZ :public ColorSpace 
+class XYZ :public ColorSpace
 {
 public:
-    XYZ(IO io) : ColorSpace(io, "XYZ", true) {};
-    Operations cam(IO dio, CAM method = BRADFORD) 
+    XYZ(IO io_) : ColorSpace(io_, "XYZ", true) {};
+    Operations cam(IO dio, CAM method = BRADFORD)
     {
         return (io == dio) ? Operations() : Operations({ Operation(cam_(io, dio, method).t()) });
     }
@@ -544,13 +545,13 @@ private:
        *\ param method type of CAM.
        *\ return the output array, type of cv::Mat.
     */
-    cv::Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const 
+    cv::Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const
     {
-        if (sio == dio) 
+        if (sio == dio)
         {
             return cv::Mat::eye(cv::Size(3, 3), CV_64FC1);
         }
-        if (cams.count(std::make_tuple(dio, sio, method)) == 1) 
+        if (cams.count(std::make_tuple(dio, sio, method)) == 1)
         {
             return cams[std::make_tuple(dio, sio, method)];
         }
@@ -575,10 +576,10 @@ const XYZ XYZ_D50_2(D50_2);
 
 /* *\ brief Lab color space.
 */
-class Lab :public ColorSpace 
+class Lab :public ColorSpace
 {
 public:
-    Lab(IO io) : ColorSpace(io, "XYZ", true) 
+    Lab(IO io_) : ColorSpace(io_, "XYZ", true)
     {
         to = { Operation([this](cv::Mat src)->cv::Mat {return tosrc(src); }) };
         from = { Operation([this](cv::Mat src)->cv::Mat {return fromsrc(src); }) };
@@ -590,7 +591,7 @@ private:
     static constexpr double t0 = delta * delta * delta;
     static constexpr double c = 4. / 29.;
 
-    cv::Vec3d fromxyz(cv::Vec3d& xyz) 
+    cv::Vec3d fromxyz(cv::Vec3d& xyz)
     {
         double x = xyz[0] / illuminants.find(io)->second[0], y = xyz[1] / illuminants.find(io)->second[1], z = xyz[2] / illuminants.find(io)->second[2];
         auto f = [this](double t)->double { return t > t0 ? std::cbrtl(t) : (m * t + c); };
@@ -602,12 +603,12 @@ private:
        *\ param src the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat
     */
-    cv::Mat fromsrc(cv::Mat& src) 
+    cv::Mat fromsrc(cv::Mat& src)
     {
         return channelWise(src, [this](cv::Vec3d a)->cv::Vec3d {return fromxyz(a); });
     }
 
-    cv::Vec3d tolab(cv::Vec3d& lab) 
+    cv::Vec3d tolab(cv::Vec3d& lab)
     {
         auto f_inv = [this](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
         double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
@@ -618,7 +619,7 @@ private:
        *\ param src the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat
     */
-    cv::Mat tosrc(cv::Mat& src) 
+    cv::Mat tosrc(cv::Mat& src)
     {
         return channelWise(src, [this](cv::Vec3d a)->cv::Vec3d {return tolab(a); });
     }

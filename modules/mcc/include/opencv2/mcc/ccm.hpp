@@ -84,7 +84,7 @@ namespace ccm
                 "RGBL" : Euclidean distance of rgbl color space;
             type: enum DISTANCE_TYPE;
             default: CIE2000;
-    linear :
+    linear_type :
             the method of linearization;
             NOTICE: see Linearization.pdf for details;
             Supported list:
@@ -106,17 +106,16 @@ namespace ccm
             NOTICE: only valid when linear is set to "gamma";
             type: double;
             default: 2.2;
-    
     deg :
             the degree of linearization polynomial;
-            NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT", 
+            NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT",
                     "COLORLOGPOLYFIT" and "GRAYLOGPOLYFIT";
             type: int;
             default: 3;
     saturated_threshold :
             the threshold to determine saturation;
-            NOTICE: it is a tuple of [low, up]; 
-                    The colors in the closed interval [low, up] are reserved to participate 
+            NOTICE: it is a tuple of [low, up];
+                    The colors in the closed interval [low, up] are reserved to participate
                     in the calculation of the loss function and initialization parameters.
             type: std::vector<double>;
             default: { 0, 0.98 };
@@ -130,7 +129,6 @@ namespace ccm
             the list of weight of each color;
             type: cv::Mat;
             default: empty array;
-    
     weights_coeff :
             the exponent number of L* component of the reference color in CIE Lab color space;
             type: double;
@@ -143,7 +141,6 @@ namespace ccm
                 'LEAST_SQUARE': least-squre method;
                 'WHITE_BALANCE': white balance method;
             type: enum INITIAL_METHOD_TYPE;
-    
     max_count, epsilon :
             used in MinProblemSolver-DownhillSolver;
             Terminal criteria to the algorithm;
@@ -178,7 +175,7 @@ namespace ccm
                 Lab_D65_2;
                 XYZ_D50_2;
                 XYZ_D65_2;
-            
+
             Supported IO (You can use Lab(io) or XYZ(io) to create color space):
                 A_2;
                 A_10;
@@ -253,13 +250,13 @@ public:
     int max_count;
     double epsilon;
 
-    ColorCorrectionModel(cv::Mat src, Color dst, RGBBase_ &cs, CCM_TYPE ccm_type, DISTANCE_TYPE distance, LINEAR_TYPE linear,
+    ColorCorrectionModel(cv::Mat src_, Color dst_, RGBBase_ &cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
                          double gamma, int deg, std::vector<double> saturated_threshold, cv::Mat weights_list, double weights_coeff,
-                         INITIAL_METHOD_TYPE initial_method_type, int max_count, double epsilon) :
-                         src(src), dst(dst), cs(cs), ccm_type(ccm_type), distance(distance), max_count(max_count), epsilon(epsilon)
+                         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
+                         src(src_), dst(dst_), cs(cs_), ccm_type(ccm_type_), distance(distance_), max_count(max_count_), epsilon(epsilon_)
     {
         cv::Mat saturate_mask = saturate(src, saturated_threshold[0], saturated_threshold[1]);
-        this->linear = getLinear(gamma, deg, this->src, this->dst, saturate_mask, this->cs, linear);
+        this->linear = getLinear(gamma, deg, this->src, this->dst, saturate_mask, this->cs, linear_type);
         calWeightsMasks(weights_list, weights_coeff, saturate_mask);
 
         src_rgbl = this->linear->linearize(maskCopyTo(this->src, mask));
@@ -385,14 +382,14 @@ public:
 
         /* *\ brief Reset dims to ccm->shape.
         */
-        int getDims() const
+        int getDims() const CV_OVERRIDE
         {
             return ccm_loss->shape;
         }
 
         /* *\ brief Reset calculation.
         */
-        double calc(const double *x) const
+        double calc(const double *x) const CV_OVERRIDE
         {
             cv::Mat ccm(ccm_loss->shape, 1, CV_64F);
             for (int i = 0; i < ccm_loss->shape; i++)
@@ -429,7 +426,7 @@ public:
         solver->setTermCriteria(termcrit);*/
         double res = solver->minimize(reshapeccm);
         ccm = reshapeccm.reshape(0, shape);
-        double loss = pow((res / masked_len), 0.5);
+        loss = pow((res / masked_len), 0.5);
         //std::cout << " ccm " << ccm << std::endl;
         //std::cout << " loss " << loss << std::endl;
     };

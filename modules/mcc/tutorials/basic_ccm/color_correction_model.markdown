@@ -69,7 +69,7 @@ distance :
             "RGB" : Euclidean distance of rgb color space;
             "RGBL" : Euclidean distance of rgbl color space;
         type: enum DISTANCE_TYPE;
-linear :
+linear_type :
         the method of linearization;
         NOTICE: see Linearization.pdf for details;
         Supported list:
@@ -92,13 +92,13 @@ gamma :
 
 deg :
         the degree of linearization polynomial;
-        NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT", 
+        NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT",
                 "COLORLOGPOLYFIT" and "GRAYLOGPOLYFIT";
         type: int;
 saturated_threshold :
         the threshold to determine saturation;
-        NOTICE: it is a tuple of [low, up]; 
-                The colors in the closed interval [low, up] are reserved to participate 
+        NOTICE: it is a tuple of [low, up];
+                The colors in the closed interval [low, up] are reserved to participate
                 in the calculation of the loss function and initialization parameters.
         type: std::vector<double>;
 ---------------------------------------------------
@@ -155,7 +155,7 @@ Supported Color Space:
             Lab_D65_2;
             XYZ_D50_2;
             XYZ_D65_2;
-        
+
         Supported IO (You can use Lab(io) or XYZ(io) to create color space):
             A_2;
             A_10;
@@ -192,7 +192,7 @@ using namespace ccm;
 
   @endcode
 
-```  
+```
 Here is sets of header and namespaces. You can set other namespace like the code above.
 ```
 
@@ -202,16 +202,16 @@ const Mat s = (Mat_<Vec3d>(24, 1) << Vec3d(214.11, 98.67, 37.97), Vec3d(231.94, 
 
   @endcode
 
-```  
+```
 The ColorChecker Matrix with the size of Nx1, type of cv::Mat.
 ```
 
 @code{.cpp}
 
  Color color = Macbeth_D65_2;
- 
+
  // If you use a customized ColorChecker, make sure to define the Color instance with your own reference color values and corresponding color space:
- 
+
  // Color color(ref_color_values, color_space);
 
   std::vector<double> saturated_threshold = { 0, 0.98 };
@@ -255,4 +255,3 @@ Mat img1 = p1.inferImage(filename);
 ```
 The object p1 has the member function infer_image to make correction correction using ccm matrix. Img1 is the result of correction correction.
 ```
-

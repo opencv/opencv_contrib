@@ -31,14 +31,14 @@
 
 #include "opencv2/mcc/color.hpp"
 
-namespace cv 
+namespace cv
 {
-namespace ccm 
+namespace ccm
 {
 
 /* *\ brief Enum of the possible types of linearization.
 */
-enum LINEAR_TYPE 
+enum LINEAR_TYPE
 {
     IDENTITY_,
     GAMMA,
@@ -50,7 +50,7 @@ enum LINEAR_TYPE
 
 /* *\ brief Polyfit model.
 */
-class Polyfit 
+class Polyfit
 {
 public:
     int deg;
@@ -60,15 +60,14 @@ public:
 
     /* *\ brief Polyfit method.
     */
-    Polyfit(cv::Mat s, cv::Mat d, int deg) :deg(deg) 
+    Polyfit(cv::Mat s, cv::Mat d, int deg_) :deg(deg_)
     {
-        int npoints = s.checkVector(1);           
-        int nypoints = d.checkVector(1);
+        int npoints = s.checkVector(1);
         cv::Mat_<double> srcX(s), srcY(d);
         cv::Mat_<double> m = cv::Mat_<double>::ones(npoints, deg + 1);
-        for (int y = 0; y < npoints; ++y) 
+        for (int y = 0; y < npoints; ++y)
         {
-            for (int x = 1; x < m.cols; ++x) 
+            for (int x = 1; x < m.cols; ++x)
             {
                 m.at<double>(y, x) = srcX.at<double>(y) * m.at<double>(y, x -1);
             }
@@ -83,10 +82,10 @@ public:
     };
 
 private:
-    double fromEW(double x) 
+    double fromEW(double x)
     {
         double res = 0;
-        for (int d = 0; d <= deg; ++d) 
+        for (int d = 0; d <= deg; ++d)
         {
             res += pow(x, d) * p.at<double>(d, 0);
         }
@@ -96,7 +95,7 @@ private:
 
 /* *\ brief Logpolyfit model.
 */
-class LogPolyfit 
+class LogPolyfit
 {
 public:
     int deg;
@@ -106,7 +105,7 @@ public:
 
     /* *\ brief Logpolyfit method.
     */
-    LogPolyfit(cv::Mat s, cv::Mat d, int deg) :deg(deg) 
+    LogPolyfit(cv::Mat s, cv::Mat d, int deg_) :deg(deg_)
     {
         cv::Mat mask_ = (s > 0) & (d > 0);
         cv::Mat src_, dst_, s_, d_;
@@ -119,7 +118,7 @@ public:
 
     virtual ~LogPolyfit() {};
 
-    cv::Mat operator()(const cv::Mat& inp) 
+    cv::Mat operator()(const cv::Mat& inp)
     {
         cv::Mat mask_ = inp >= 0;
         cv::Mat y, y_, res;
@@ -143,9 +142,9 @@ public:
     /* *\ brief Inference.
        *\ param inp the input array, type of cv::Mat.
     */
-    virtual cv::Mat linearize(cv::Mat inp) 
-    { 
-        return inp; 
+    virtual cv::Mat linearize(cv::Mat inp)
+    {
+        return inp;
     };
 
     /* *\brief Evaluate linearization model.
@@ -166,9 +165,9 @@ class LinearGamma : public Linear
 public:
     double gamma;
 
-    LinearGamma(double gamma) :gamma(gamma) {};
+    LinearGamma(double gamma_) :gamma(gamma_) {};
 
-    cv::Mat linearize(cv::Mat inp) 
+    cv::Mat linearize(cv::Mat inp) CV_OVERRIDE
     {
         return gammaCorrection(inp, gamma);
     };
@@ -178,13 +177,13 @@ public:
    *        Grayscale polynomial fitting.
 */
 template <class T>
-class LinearGray :public Linear 
+class LinearGray :public Linear
 {
 public:
     int deg;
     T p;
 
-    LinearGray(int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg) 
+    LinearGray(int deg_, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg_)
     {
         dst.getGray();
         Mat lear_gray_mask = mask & dst.grays;
@@ -199,12 +198,12 @@ public:
        *\ param src the input array, type of cv::Mat.
        *\ param dst the input array, type of cv::Mat.
     */
-    void calc(const cv::Mat& src, const cv::Mat& dst) 
+    void calc(const cv::Mat& src, const cv::Mat& dst)
     {
         p = T(src, dst, deg);
     };
 
-    cv::Mat linearize(cv::Mat inp) 
+    cv::Mat linearize(cv::Mat inp) CV_OVERRIDE
     {
         return p(inp);
     };
@@ -214,7 +213,7 @@ public:
    *        Fitting channels respectively.
 */
 template <class T>
-class LinearColor :public Linear 
+class LinearColor :public Linear
 {
 public:
     int deg;
@@ -222,14 +221,14 @@ public:
     T pg;
     T pb;
 
-    LinearColor(int deg, cv::Mat src_, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg) 
+    LinearColor(int deg_, cv::Mat src_, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg_)
     {
         Mat src = maskCopyTo(src_, mask);
         cv::Mat dst_ = maskCopyTo(dst.to(*cs.l).colors, mask);
         calc(src, dst_);
     }
 
-    void calc(const cv::Mat& src, const cv::Mat& dst) 
+    void calc(const cv::Mat& src, const cv::Mat& dst)
     {
         cv::Mat schannels[3];
         cv::Mat dchannels[3];
@@ -240,7 +239,7 @@ public:
         pb = T(schannels[2], dchannels[2], deg);
     };
 
-    cv::Mat linearize(cv::Mat inp) 
+    cv::Mat linearize(cv::Mat inp) CV_OVERRIDE
     {
         cv::Mat channels[3];
         split(inp, channels);
@@ -262,7 +261,8 @@ public:
    *\ param cs type of RGBBase_.
    *\ param linear_type type of linear.
 */
-std::shared_ptr<Linear>  getLinear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type) 
+std::shared_ptr<Linear>  getLinear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type);
+std::shared_ptr<Linear>  getLinear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type)
 {
     std::shared_ptr<Linear> p = std::make_shared<Linear>();
     switch (linear_type)

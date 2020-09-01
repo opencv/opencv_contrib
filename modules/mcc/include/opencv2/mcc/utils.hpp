@@ -39,6 +39,7 @@ namespace cv
 {
 namespace ccm
 {
+
 double gammaCorrection_(const double& element, const double& gamma);
 cv::Mat gammaCorrection(const cv::Mat& src, const double& gamma);
 cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask);
@@ -111,7 +112,7 @@ cv::Mat distanceWise(cv::Mat& src, cv::Mat& ref, F&& lambda)
 {
     cv::Mat dst = cv::Mat(src.size(), CV_64FC1);
     cv::MatIterator_<cv::Vec3d> it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>(),
-        it_ref = ref.begin<cv::Vec3d>(), end_ref = ref.end<cv::Vec3d>();
+        it_ref = ref.begin<cv::Vec3d>();
     cv::MatIterator_<double> it_dst = dst.begin<double>();
     for (; it_src != end_src; ++it_src, ++it_ref, ++it_dst)
     {
@@ -143,7 +144,7 @@ cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
 {
     cv::Mat dst(countNonZero(mask), 1, src.type());
     const int channel = src.channels();
-    auto it_mask = mask.begin<uchar>(), end_mask = mask.end<uchar>();
+    auto it_mask = mask.begin<uchar>();
     switch (channel)
     {
     case 1:
