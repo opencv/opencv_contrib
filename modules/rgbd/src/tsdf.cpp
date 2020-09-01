@@ -342,7 +342,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
                         // update TSDF
                         value  = floatToTsdf((tsdfToFloat(value)*weight+ tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = min(int(weight + 1), int(volume.maxWeight));
+                        weight = (weight + 1) < volume.maxWeight ? (weight + 1) : volume.maxWeight;
                     }
                 }
             }

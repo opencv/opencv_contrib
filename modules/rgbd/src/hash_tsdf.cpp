@@ -493,7 +493,7 @@ inline float HashTSDFVolumeCPU::_interpolate(const cv::Point3f& point, float vx[
     return v0 + tx * (v1 - v0);
 }
 
-bool vuiCheck(cv::Vec3i vui[8])
+bool HashTSDFVolumeCPU::vuiCheck(cv::Vec3i vui[8]) const
 {
     for (int i = 1; i < 8; i++)
         if (vui[i] != vui[0])
