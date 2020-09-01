@@ -35,7 +35,7 @@ TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor
                        int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
       volResolution(_resolution),
-      maxWeight(_maxWeight)
+      maxWeight( WeightType(_maxWeight) )
 {
     CV_Assert(_maxWeight < 255);
     // Unlike original code, this should work with any volume size
