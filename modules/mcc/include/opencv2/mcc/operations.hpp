@@ -33,9 +33,9 @@
 #include <vector>
 #include "opencv2/mcc/utils.hpp"
 
-namespace cv 
+namespace cv
 {
-namespace ccm 
+namespace ccm
 {
 
 typedef std::function<cv::Mat(cv::Mat)> MatFunc;
@@ -43,7 +43,7 @@ typedef std::function<cv::Mat(cv::Mat)> MatFunc;
 /* *\ brief Operation class contains some operarions used for color space
    *        conversion containing linear transformation and non-linear transformation
  */
-class Operation 
+class Operation
 {
 public:
     bool linear;
@@ -52,40 +52,40 @@ public:
 
     Operation() : linear(true), M(cv::Mat()) {};
 
-    Operation(cv::Mat M) :linear(true), M( M ) {};
+    Operation(cv::Mat M_) :linear(true), M( M_ ) {};
 
-    Operation(MatFunc f) : linear(false), f(f) {};
+    Operation(MatFunc f_) : linear(false), f(f_) {};
 
     virtual ~Operation() {};
     /* *\ brief operator function will run operation*/
-    cv::Mat operator()(cv::Mat& abc) 
+    cv::Mat operator()(cv::Mat& abc)
     {
-        if (!linear) 
-        { 
-            return f(abc); 
+        if (!linear)
+        {
+            return f(abc);
         }
-        if (M.empty()) 
-        { 
-            return abc; 
+        if (M.empty())
+        {
+            return abc;
         }
         return multiple(abc, M);
     };
 
-    /* *\ brief add function will conbine this operation 
+    /* *\ brief add function will conbine this operation
      *          with  other  linear transformation operation*/
-    void add(const Operation& other) 
+    void add(const Operation& other)
     {
-        if (M.empty()) 
+        if (M.empty())
         {
             M = other.M.clone();
         }
-        else 
+        else
         {
             M = M * other.M;
         }
     };
 
-    void clear() 
+    void clear()
     {
         M = cv::Mat();
     };
@@ -93,7 +93,7 @@ public:
 
 const Operation IDENTITY_OP( [](cv::Mat x) {return x; } );
 
-class Operations 
+class Operations
 {
 public:
     std::vector<Operation> ops;
@@ -105,23 +105,23 @@ public:
     virtual ~Operations() {};
 
     /* *\ brief add function will conbine this operation with  other  transformation operations*/
-    Operations& add(const Operations& other) 
+    Operations& add(const Operations& other)
     {
         ops.insert(ops.end(), other.ops.begin(), other.ops.end());
         return *this;
     };
 
     /* *\ brief run operations to make color conversion*/
-    cv::Mat run(cv::Mat abc) 
+    cv::Mat run(cv::Mat abc)
     {
         Operation hd;
-        for (auto& op : ops) 
+        for (auto& op : ops)
         {
-            if (op.linear) 
+            if (op.linear)
             {
                 hd.add(op);
             }
-            else 
+            else
             {
                 abc = hd(abc);
                 hd.clear();

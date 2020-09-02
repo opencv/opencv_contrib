@@ -3,6 +3,11 @@ Color Correction Model{#tutorial_ccm_color_correction_model}
 
 In this tutorial you will learn how to use the 'Color Correction Model' to do a color correction in a image.
 
+Reference
+----
+
+See details of ColorCorrection Algorithm at https://github.com/riskiest/color_calibration/tree/v4/doc/pdf/English/Algorithm.
+
 Building
 ----
 

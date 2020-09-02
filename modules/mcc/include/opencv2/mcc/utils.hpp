@@ -37,12 +37,18 @@
 
 namespace cv
 {
-namespace ccm 
+namespace ccm
 {
+double gammaCorrection_(const double& element, const double& gamma);
+cv::Mat gammaCorrection(const cv::Mat& src, const double& gamma);
+cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask);
+cv::Mat multiple(const cv::Mat& xyz, const cv::Mat& ccm);
+cv::Mat saturate(cv::Mat& src, const double& low, const double& up);
+cv::Mat rgb2gray(cv::Mat rgb);
 
 /* *\ brief function for elementWise operation
    *\ param src the input array, type of cv::Mat
-   *\ lambda a for operation 
+   *\ lambda a for operation
 */
 template<typename F>
 cv::Mat elementWise(const cv::Mat& src, F&& lambda)
@@ -63,7 +69,7 @@ cv::Mat elementWise(const cv::Mat& src, F&& lambda)
     case 3:
     {
         cv::MatIterator_<cv::Vec3d> it, end;
-        for (it = dst.begin<cv::Vec3d>(), end = dst.end<cv::Vec3d>(); it != end; ++it) 
+        for (it = dst.begin<cv::Vec3d>(), end = dst.end<cv::Vec3d>(); it != end; ++it)
         {
             for (int j = 0; j < 3; j++)
             {
@@ -81,14 +87,14 @@ cv::Mat elementWise(const cv::Mat& src, F&& lambda)
 
 /* *\ brief function for channel operation
    *\ param src the input array, type of cv::Mat
-   *\ lambda the function for operation 
+   *\ lambda the function for operation
 */
 template<typename F>
-cv::Mat channelWise(const cv::Mat& src, F&& lambda) 
+cv::Mat channelWise(const cv::Mat& src, F&& lambda)
 {
     cv::Mat dst = src.clone();
     cv::MatIterator_<cv::Vec3d> it, end;
-    for (it = dst.begin<cv::Vec3d>(), end = dst.end<cv::Vec3d>(); it != end; ++it) 
+    for (it = dst.begin<cv::Vec3d>(), end = dst.end<cv::Vec3d>(); it != end; ++it)
     {
         *it = lambda(*it);
     }
@@ -101,13 +107,13 @@ cv::Mat channelWise(const cv::Mat& src, F&& lambda)
    *\ param lambda the computing method for distance .
 */
 template<typename F>
-cv::Mat distanceWise(cv::Mat& src, cv::Mat& ref, F&& lambda) 
+cv::Mat distanceWise(cv::Mat& src, cv::Mat& ref, F&& lambda)
 {
     cv::Mat dst = cv::Mat(src.size(), CV_64FC1);
     cv::MatIterator_<cv::Vec3d> it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>(),
         it_ref = ref.begin<cv::Vec3d>(), end_ref = ref.end<cv::Vec3d>();
-    cv::MatIterator_<double> it_dst = dst.begin<double>(), end_dst = dst.end<double>();
-    for (; it_src != end_src; ++it_src, ++it_ref, ++it_dst) 
+    cv::MatIterator_<double> it_dst = dst.begin<double>();
+    for (; it_src != end_src; ++it_src, ++it_ref, ++it_dst)
     {
         *it_dst = lambda(*it_src, *it_ref);
     }
@@ -115,25 +121,25 @@ cv::Mat distanceWise(cv::Mat& src, cv::Mat& ref, F&& lambda)
 }
 
 
-double gammaCorrection_(const double& element, const double& gamma) 
+double gammaCorrection_(const double& element, const double& gamma)
 {
     return (element >= 0 ? pow(element, gamma) : -pow((-element), gamma));
 }
 
 /* *\ brief gamma correction ,see ColorSpace.pdf for details.
    *\ param src the input array,type of cv::Mat.
-   *\ param gamma a constant for gamma correction  .
+   *\ param gamma a constant for gamma correction.
 */
-cv::Mat gammaCorrection(const cv::Mat& src, const double& gamma) 
+cv::Mat gammaCorrection(const cv::Mat& src, const double& gamma)
 {
     return elementWise(src, [gamma](double element)->double {return gammaCorrection_(element, gamma); });
 }
 
-/* *\ brief maskCopyTo a function to delete unsatisfied elementwise .
+/* *\ brief maskCopyTo a function to delete unsatisfied elementwise.
    *\ param src the input array, type of cv::Mat.
    *\ param mask operation mask that used to choose satisfided elementwise.
  */
-cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask) 
+cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
 {
     cv::Mat dst(countNonZero(mask), 1, src.type());
     const int channel = src.channels();
@@ -143,10 +149,10 @@ cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
     case 1:
     {
         auto it_src = src.begin<double>(), end_src = src.end<double>();
-        auto it_dst = dst.begin<double>(), end_dst = dst.end<double>();
-        for (; it_src != end_src; ++it_src, ++it_mask) 
+        auto it_dst = dst.begin<double>();
+        for (; it_src != end_src; ++it_src, ++it_mask)
         {
-            if (*it_mask) 
+            if (*it_mask)
             {
                 (*it_dst) = (*it_src);
                 ++it_dst;
@@ -157,10 +163,10 @@ cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
     case 3:
     {
         auto it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>();
-        auto it_dst = dst.begin<cv::Vec3d>(), end_dst = dst.end<cv::Vec3d>();
-        for (; it_src != end_src; ++it_src, ++it_mask) 
+        auto it_dst = dst.begin<cv::Vec3d>();
+        for (; it_src != end_src; ++it_src, ++it_mask)
         {
-            if (*it_mask) 
+            if (*it_mask)
             {
                 (*it_dst) = (*it_src);
                 ++it_dst;
@@ -175,11 +181,11 @@ cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
     return dst;
 }
 
-/* *\ brief multiple the function used to compute an array with n channels mulipied by ccm .
+/* *\ brief multiple the function used to compute an array with n channels mulipied by ccm.
    *\ param src the input array, type of cv::Mat.
-   *\ param ccm the ccm matrix to make color correction. 
+   *\ param ccm the ccm matrix to make color correction.
 */
-cv::Mat multiple(const cv::Mat& xyz, const cv::Mat& ccm) 
+cv::Mat multiple(const cv::Mat& xyz, const cv::Mat& ccm)
 {
     cv::Mat tmp = xyz.reshape(1, xyz.rows * xyz.cols);
     cv::Mat res = tmp * ccm;
@@ -193,16 +199,16 @@ cv::Mat multiple(const cv::Mat& xyz, const cv::Mat& ccm)
    *\ param low  the threshold to choose saturated colors
    *\ param up  the threshold to choose saturated colors
 */
-cv::Mat saturate(cv::Mat& src, const double& low, const double& up) 
+cv::Mat saturate(cv::Mat& src, const double& low, const double& up)
 {
     cv::Mat dst = cv::Mat::ones(src.size(), CV_8UC1);
     cv::MatIterator_<cv::Vec3d> it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>();
-    cv::MatIterator_<uchar> it_dst = dst.begin<uchar>(), end_dst = dst.end<uchar>();
-    for (; it_src != end_src; ++it_src, ++it_dst) 
+    cv::MatIterator_<uchar> it_dst = dst.begin<uchar>();
+    for (; it_src != end_src; ++it_src, ++it_dst)
     {
-        for (int i = 0; i < 3; ++i) 
+        for (int i = 0; i < 3; ++i)
         {
-            if ((*it_src)[i] > up || (*it_src)[i] < low) 
+            if ((*it_src)[i] > up || (*it_src)[i] < low)
             {
                 *it_dst = 0.;
                 break;
@@ -218,7 +224,7 @@ const static cv::Mat m_gray = (cv::Mat_<double>(3, 1) << 0.2126, 0.7152, 0.0722)
    *         see Miscellaneous.pdf for details;
    *\ param rgb the input array, type of cv::Mat.
  */
-cv::Mat rgb2gray(cv::Mat rgb) 
+cv::Mat rgb2gray(cv::Mat rgb)
 {
     return multiple(rgb, m_gray);
 }
