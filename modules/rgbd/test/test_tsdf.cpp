@@ -97,7 +97,7 @@ struct SemisphereScene : Scene
 {
     const int framesPerCycle = 72;
     const float nCycles = 0.25f;
-    const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -1.5f));
+    const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -2.3f));
 
     Size frameSize;
     Matx33f intr;
@@ -274,7 +274,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = false;
+static const bool display = true;
 static const bool parallelCheck = false;
 
 void normalsCheck(Mat normals)
