@@ -88,15 +88,15 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
-    virtual TsdfVoxel _at(const cv::Point3f& point) const;
-    virtual TsdfVoxel __at(const cv::Point3f& point, cv::Vec3i volumeUnitIdx) const;
-    virtual TsdfVoxel ___at(const cv::Point3f& point, cv::Vec3i volumeUnitIdx, VolumeUnitMap::const_iterator it) const;
+    virtual TsdfVoxel _at_1arg(const cv::Point3f& point) const;
+    virtual TsdfVoxel _at_2arg(const cv::Point3f& point, cv::Vec3i volumeUnitIdx) const;
+    virtual TsdfVoxel _at_3arg(const cv::Point3f& point, cv::Vec3i volumeUnitIdx, VolumeUnitMap::const_iterator it) const;
+    virtual TsdfVoxel _at(const cv::Point3f& point, cv::Vec3i volumeUnitIdx, VolumeUnitMap::const_iterator it) const;
 
     inline float interpolateVoxel(const cv::Point3f& point) const;
-    inline float _interpolate(const cv::Point3f& point, float vx[8]) const;
+    inline float interpolate(const cv::Point3f& point, float vx[8]) const;
 
     Point3f getNormalVoxel(cv::Point3f p) const;
-    Point3f _getNormalVoxel(cv::Point3f p) const;
     bool vuiCheck(cv::Vec3i vui[8]) const;
 
     //! Utility functions for coordinate transformations
