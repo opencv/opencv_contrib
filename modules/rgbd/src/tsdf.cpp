@@ -351,6 +351,8 @@ struct IntegrateInvoker : ParallelLoopBody
 #else
     virtual void operator() (const Range& range) const override
     {
+        bool pixNorm_flag = false;
+        float pixNorm_o = 0.0f;
         for(int x = range.start; x < range.end; x++)
         {
             TsdfVoxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -396,17 +398,22 @@ struct IntegrateInvoker : ParallelLoopBody
                 startZ = max(0, startZ);
                 endZ   = min(volume.volResolution.z, endZ);
 
-                //Point3f camPixVec;
-                //Point2f projected = proj(camSpacePt, camPixVec);
-                //float o = 0.004f;
-                //float pixNorm = sqrt(camPixVec.dot(camPixVec)) + o;
-                for(int z = startZ; z < endZ; z++)
+                float pixNorm, pixNorm_s, pixNorm_f;
+                if (pixNorm_flag) {
+                    Point3f camPixVec;
+                    Point2f projected = proj(camSpacePt, camPixVec);
+                    pixNorm = sqrt(camPixVec.dot(camPixVec)) - pixNorm_o;
+                }
+                else {
+                    Point3f camPixVec;
+                    Point2f projected = proj(camSpacePt, camPixVec);
+                    pixNorm_s = sqrt(camPixVec.dot(camPixVec));
+                }
+                for (int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     //Point3f camSpacePt = vol2cam * volPt;
-
-                    //pixNorm += o;
 
                     camSpacePt += zStep;
                     if(camSpacePt.z <= 0)
@@ -416,11 +423,19 @@ struct IntegrateInvoker : ParallelLoopBody
                     Point2f projected = proj(camSpacePt, camPixVec);
 
                     depthType v = bilinearDepth(depth, projected);
-                    if(v == 0)
+                    if (v == 0) {
                         continue;
-
+                    }
+                    if (!pixNorm_flag && z==endZ-1)
+                        {
+                            pixNorm_o = (pixNorm - pixNorm_s) / (z - startZ);
+                            pixNorm_flag = true;
+                        }
                     // norm(camPixVec) produces double which is too slow
-                    float pixNorm = sqrt(camPixVec.dot(camPixVec));
+                    if (pixNorm_flag)
+                        pixNorm += pixNorm_o;
+                    else
+                        pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
