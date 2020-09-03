@@ -1289,8 +1289,8 @@ class CV_EXPORTS_W TrackerGOTURN : public Tracker
 public:
   struct CV_EXPORTS Params
   {
-    Params(const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
-    void read(const FileNode& /*fn*/);
+    Params();
+    void read(const FileNode& fn);
     void write(FileStorage& /*fs*/) const;
     String modelTxt = "goturn.prototxt";
     String modelBin = "goturn.caffemodel";
