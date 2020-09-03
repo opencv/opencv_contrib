@@ -1292,8 +1292,8 @@ public:
     Params(const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
     void read(const FileNode& /*fn*/);
     void write(FileStorage& /*fs*/) const;
-    String modelTxt_;
-    String modelBin_;
+    String modelTxt = "goturn.prototxt";
+    String modelBin = "goturn.caffemodel";
   };
 
   /** @brief Constructor

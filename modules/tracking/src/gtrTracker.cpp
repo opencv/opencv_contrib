@@ -47,8 +47,8 @@ namespace cv
 
 TrackerGOTURN::Params::Params(const String modelTxt, const String modelBin)
 {
-  modelTxt_ = modelTxt;
-  modelBin_ = modelBin;
+    modelBin = (String)fn["caffemodel"];
+    modelTxt = (String)fn["prototxt"];
 }
 
 void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
@@ -116,7 +116,7 @@ bool TrackerGOTURNImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
 
     //Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
-    net = dnn::readNetFromCaffe(params.modelTxt_, params.modelBin_);
+    net = dnn::readNetFromCaffe(params.modelTxt, params.modelBin);
     return true;
 }
 
