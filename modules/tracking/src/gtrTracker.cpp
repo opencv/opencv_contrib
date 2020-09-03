@@ -45,13 +45,13 @@
 namespace cv
 {
 
-TrackerGOTURN::Params::Params(const String modelTxt, const String modelBin)
+TrackerGOTURN::Params::Params(){}
+
+void TrackerGOTURN::Params::read(const cv::FileNode& fn)
 {
     modelBin = (String)fn["caffemodel"];
     modelTxt = (String)fn["prototxt"];
 }
-
-void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
 
 void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
 
