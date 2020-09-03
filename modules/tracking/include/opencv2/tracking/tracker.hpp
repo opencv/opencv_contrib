@@ -1292,8 +1292,8 @@ public:
     Params();
     void read(const FileNode& fn);
     void write(FileStorage& /*fs*/) const;
-    String modelTxt = "goturn.prototxt";
-    String modelBin = "goturn.caffemodel";
+    String modelTxt;
+    String modelBin;
   };
 
   /** @brief Constructor

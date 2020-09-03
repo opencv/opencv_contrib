@@ -590,13 +590,16 @@ TEST(GOTURN, memory_usage)
 
   video >> frame;
   tracker->init(frame, roi);
+  string ground_truth_bb;
+  std::ifstream ground_truth(cvtest::findDataFile("tracking/david/gt.txt"));
   for (int nframes = 0; nframes < 15; ++nframes)
   {
-    cout << "Frame: " << nframes << std::endl;
+    std::cout << "Frame: " << nframes << std::endl;
     video >> frame;
-    if (frame.empty())
-        break;
+    std::getline(ground_truth, ground_truth_bb);
+    std::cout << "Ground truth ROI: " << ground_truth_bb << std::endl;
     tracker->update(frame, roi);
+    std::cout << "Predicted ROI: " << roi << std::endl;
   }
 }
 
