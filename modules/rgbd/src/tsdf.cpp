@@ -401,11 +401,11 @@ struct IntegrateInvoker : ParallelLoopBody
 
                 Point3f camPixVec;
                 Point2f projected = proj(camSpacePt, camPixVec);
-                if (pixNorm_flag) 
+                if (pixNorm_flag)
                     pixNorm = sqrt(camPixVec.dot(camPixVec)) - pixNorm_o;
-                else 
+                else
                     pixNorm_s = sqrt(camPixVec.dot(camPixVec));
-                
+
                 for (int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
