@@ -352,6 +352,7 @@ struct IntegrateInvoker : ParallelLoopBody
     virtual void operator() (const Range& range) const override
     {
         bool pixNorm_flag = false;
+        float pixNorm = 0.0f, pixNorm_s = 0.0f;
         float pixNorm_o = 0.0f;
         for(int x = range.start; x < range.end; x++)
         {
@@ -398,17 +399,13 @@ struct IntegrateInvoker : ParallelLoopBody
                 startZ = max(0, startZ);
                 endZ   = min(volume.volResolution.z, endZ);
 
-                float pixNorm, pixNorm_s, pixNorm_f;
-                if (pixNorm_flag) {
-                    Point3f camPixVec;
-                    Point2f projected = proj(camSpacePt, camPixVec);
+                Point3f camPixVec;
+                Point2f projected = proj(camSpacePt, camPixVec);
+                if (pixNorm_flag) 
                     pixNorm = sqrt(camPixVec.dot(camPixVec)) - pixNorm_o;
-                }
-                else {
-                    Point3f camPixVec;
-                    Point2f projected = proj(camSpacePt, camPixVec);
+                else 
                     pixNorm_s = sqrt(camPixVec.dot(camPixVec));
-                }
+                
                 for (int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:

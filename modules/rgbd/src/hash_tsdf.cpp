@@ -635,7 +635,6 @@ struct HashRaycastInvoker : ParallelLoopBody
                         if (!cvIsNaN(tInterp) && !cvIsInf(tInterp))
                         {
                             Point3f pv = orig + tInterp * rayDirV;
-                            //Point3f nv = volume.getNormalVoxel(pv);
                             Point3f nv = volume.getNormalVoxel(pv);
 
                             if (!isNaN(nv))
