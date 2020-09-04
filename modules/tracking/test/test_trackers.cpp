@@ -573,7 +573,7 @@ TEST(GOTURN, memory_usage)
   cv::Mat frame;
 
   std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
-  std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
+  std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel");
 
   std::string dataPath =
     "%YAML:1.0\n"
