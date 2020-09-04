@@ -583,7 +583,10 @@ TEST(GOTURN, memory_usage)
   cv::FileStorage goturnStorageRead( dataPath, cv::FileStorage::READ | cv::FileStorage::MEMORY);
   cv::FileNode goturnNode = goturnStorageRead.root();
 
-  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(TrackerGOTURN::Params());
+  cv::TrackerGOTURN::Params params;
+  params.modelTxt = model;
+  params.modelBin = weights;
+  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(params);
   string inputVideo = cvtest::findDataFile("tracking/david/data/david.webm");
   cv::VideoCapture video(inputVideo);
   tracker->read(goturnNode);
