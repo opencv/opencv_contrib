@@ -53,8 +53,8 @@ TrackerGOTURN::Params::Params()
 
 void TrackerGOTURN::Params::read(const cv::FileNode& fn)
 {
-    CV_Assert(!fn["caffemodel"].empty()); 
-    CV_Assert(!fn["prototxt"].empty()); 
+    CV_Assert(!fn["caffemodel"].empty());
+    CV_Assert(!fn["prototxt"].empty());
     modelBin = (String)fn["caffemodel"];
     modelTxt = (String)fn["prototxt"];
 }
