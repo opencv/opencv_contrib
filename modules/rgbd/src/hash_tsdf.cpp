@@ -434,9 +434,19 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     c2_n_vx[6] = c0_n_vx[0];
     c2_p_vx[7] = c0_n_vx[2];
 
-    normal.x = interpolate(c0_pointNext, c0_n_vx) - interpolate(c0_pointPrev, c0_p_vx);
-    normal.y = interpolate(c1_pointNext, c1_n_vx) - interpolate(c1_pointPrev, c1_p_vx);
-    normal.z = interpolate(c2_pointNext, c2_n_vx) - interpolate(c2_pointPrev, c2_p_vx);
+    float c0_vx[8], c1_vx[8], c2_vx[8];
+    for (int i = 0; i < 8; i++)
+    {
+        c0_vx[i] = c0_n_vx[i] - c0_p_vx[i];
+        c1_vx[i] = c1_n_vx[i] - c1_p_vx[i];
+        c2_vx[i] = c2_n_vx[i] - c2_p_vx[i];
+    }
+    //normal.x = interpolate(c0_pointNext, c0_n_vx) - interpolate(c0_pointPrev, c0_p_vx);
+    //normal.y = interpolate(c1_pointNext, c1_n_vx) - interpolate(c1_pointPrev, c1_p_vx);
+    //normal.z = interpolate(c2_pointNext, c2_n_vx) - interpolate(c2_pointPrev, c2_p_vx);
+    normal.x = interpolate(c0_pointNext, c0_vx);
+    normal.y = interpolate(c1_pointNext, c1_vx);
+    normal.z = interpolate(c2_pointNext, c2_vx);
 
     float nv = sqrt(normal.x * normal.x +
         normal.y * normal.y +
