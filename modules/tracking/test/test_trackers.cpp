@@ -574,22 +574,12 @@ TEST(GOTURN, memory_usage)
 
   std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
   std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
-
-  std::string dataPath =
-    "%YAML:1.0\n"
-    "---\n"
-    "prototxt: " + model + "\n"
-    "caffemodel: " + weights + "\n";
-  cv::FileStorage goturnStorageRead( dataPath, cv::FileStorage::READ | cv::FileStorage::MEMORY);
-  cv::FileNode goturnNode = goturnStorageRead.root();
-
   cv::TrackerGOTURN::Params params;
   params.modelTxt = model;
   params.modelBin = weights;
   cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(params);
   string inputVideo = cvtest::findDataFile("tracking/david/data/david.webm");
   cv::VideoCapture video(inputVideo);
-  tracker->read(goturnNode);
 
   video >> frame;
   tracker->init(frame, roi);
