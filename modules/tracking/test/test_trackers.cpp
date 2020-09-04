@@ -575,7 +575,7 @@ TEST(GOTURN, memory_usage)
   std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
   std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
 
-  std::string dataPath = 
+  std::string dataPath =
     "%YAML:1.0\n"
     "---\n"
     "prototxt: " + model + "\n"
