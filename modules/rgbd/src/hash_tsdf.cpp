@@ -79,7 +79,9 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
     }
 
     virtual void operator()(const Range& range) const override
-    {
+    {                
+        VolumeUnitIndexSet localAccessVolUnits;
+
         for (int y = range.start; y < range.end; y += depthStride)
         {
             const depthType* depthRow = depth[y];
@@ -97,7 +99,6 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                     volPoint - cv::Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
                 cv::Vec3i upper_bound = volume.volumeToVolumeUnitIdx(
                     volPoint + cv::Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
-                VolumeUnitIndexSet localAccessVolUnits;
                 for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
                     for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
                         for (int k = lower_bound[2]; k <= lower_bound[2]; k++)
@@ -108,28 +109,28 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                                 localAccessVolUnits.emplace(tsdf_idx);
                             }
                         }
-                AutoLock al(mutex);
-                for (const auto& tsdf_idx : localAccessVolUnits)
-                {
-                    //! If the insert into the global set passes
-                    if (!volume.volumeUnits.count(tsdf_idx))
-                    {
-                        VolumeUnit volumeUnit;
-                        cv::Point3i volumeDims(volume.volumeUnitResolution,
-                                               volume.volumeUnitResolution,
-                                               volume.volumeUnitResolution);
+            }
+        }
+        AutoLock al(mutex);
+        for (const auto& tsdf_idx : localAccessVolUnits)
+        {
+            //! If the insert into the global set passes
+            if (!volume.volumeUnits.count(tsdf_idx))
+            {
+                VolumeUnit volumeUnit;
+                cv::Point3i volumeDims(volume.volumeUnitResolution,
+                                        volume.volumeUnitResolution,
+                                        volume.volumeUnitResolution);
 
-                        cv::Matx44f subvolumePose =
-                            volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx)).matrix;
-                        volumeUnit.pVolume = cv::makePtr<TSDFVolumeCPU>(
-                            volume.voxelSize, subvolumePose, volume.raycastStepFactor,
-                            volume.truncDist, volume.maxWeight, volumeDims);
-                        //! This volume unit will definitely be required for current integration
-                        volumeUnit.index             = tsdf_idx;
-                        volumeUnit.isActive          = true;
-                        volume.volumeUnits[tsdf_idx] = volumeUnit;
-                    }
-                }
+                cv::Matx44f subvolumePose =
+                    volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx)).matrix;
+                volumeUnit.pVolume = cv::makePtr<TSDFVolumeCPU>(
+                    volume.voxelSize, subvolumePose, volume.raycastStepFactor,
+                    volume.truncDist, volume.maxWeight, volumeDims);
+                //! This volume unit will definitely be required for current integration
+                volumeUnit.index             = tsdf_idx;
+                volumeUnit.isActive          = true;
+                volume.volumeUnits[tsdf_idx] = volumeUnit;
             }
         }
     }
