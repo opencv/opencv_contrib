@@ -211,7 +211,7 @@ cv::Mat saturate(cv::Mat& src, const double& low, const double& up)
         {
             if ((*it_src)[i] > up || (*it_src)[i] < low)
             {
-                *it_dst = 0.;
+                *it_dst = 0;
                 break;
             }
         }

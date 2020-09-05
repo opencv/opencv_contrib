@@ -594,7 +594,7 @@ private:
     cv::Vec3d fromxyz(cv::Vec3d& xyz)
     {
         double x = xyz[0] / illuminants.find(io)->second[0], y = xyz[1] / illuminants.find(io)->second[1], z = xyz[2] / illuminants.find(io)->second[2];
-        auto f = [this](double t)->double { return t > t0 ? std::cbrtl(t) : (m * t + c); };
+        auto f = [](double t)->double { return t > t0 ? std::cbrt(t) : (m * t + c); };
         double fx = f(x), fy = f(y), fz = f(z);
         return { 116. * fy - 16. ,500 * (fx - fy),200 * (fy - fz) };
     }
@@ -610,7 +610,7 @@ private:
 
     cv::Vec3d tolab(cv::Vec3d& lab)
     {
-        auto f_inv = [this](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
+        auto f_inv = [](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
         double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
         return { illuminants.find(io)->second[0] * f_inv(L + a),illuminants.find(io)->second[1] * f_inv(L),illuminants.find(io)->second[2] * f_inv(L - b) };
     }

@@ -391,16 +391,16 @@ public:
         */
         double calc(const double *x) const CV_OVERRIDE
         {
-            cv::Mat ccm(ccm_loss->shape, 1, CV_64F);
+            cv::Mat ccm_(ccm_loss->shape, 1, CV_64F);
             for (int i = 0; i < ccm_loss->shape; i++)
             {
-                ccm.at<double>(i, 0) = x[i];
+                ccm_.at<double>(i, 0) = x[i];
             }
-            ccm = ccm.reshape(0, ccm_loss->shape / 3);
-            Mat reshapecolor = ccm_loss->src_rgbl.reshape(1, 0) * ccm;
-            cv::Mat dist = Color(reshapecolor.reshape(3, 0), ccm_loss->cs).diff(ccm_loss->dst, ccm_loss->distance);
+            ccm_ = ccm_.reshape(0, ccm_loss->shape / 3);
+            Mat reshapecolor = ccm_loss->src_rgbl.reshape(1, 0) * ccm_;
+            cv::Mat dist_calc = Color(reshapecolor.reshape(3, 0), ccm_loss->cs).diff(ccm_loss->dst, ccm_loss->distance);
             cv::Mat dist_;
-            pow(dist, 2, dist_);
+            pow(dist_calc, 2, dist_);
             if (!ccm_loss->weights.empty())
             {
                 dist_ = ccm_loss->weights.mul(dist_);
@@ -518,7 +518,7 @@ private:
             cv::Mat weights_masked = maskCopyTo(this->weights, this->mask);
             weights = weights_masked / mean(weights_masked);
         }
-        masked_len = sum(mask)[0];
+        masked_len = (int) sum(mask)[0];
     };
 };
 

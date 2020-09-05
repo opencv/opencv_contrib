@@ -8,6 +8,10 @@ using namespace std;
 using namespace ccm;
 
 // inp the input array, type of cv::Mat.
+
+
+int main() {
+
 const Mat s = (Mat_<Vec3d>(24, 1) <<
     Vec3d(214.11, 98.67, 37.97),
     Vec3d(231.94, 153.1, 85.27),
@@ -33,9 +37,6 @@ const Mat s = (Mat_<Vec3d>(24, 1) <<
     Vec3d(212.19, 133.49, 54.79),
     Vec3d(181.17, 102.94, 36.18),
     Vec3d(115.1, 53.77, 15.23));
-
-int main() {
-
     Color color = Macbeth_D65_2;
     std::vector<double> saturated_threshold = { 0, 0.98 };
     cv::Mat weight_list;
