@@ -1292,6 +1292,8 @@ public:
     Params();
     void read(const FileNode& /*fn*/);
     void write(FileStorage& /*fs*/) const;
+    String modelTxt;
+    String modelBin;
   };
 
   /** @brief Constructor
