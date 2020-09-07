@@ -18,6 +18,7 @@
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
 
+
 namespace cv
 {
 namespace kinfu
@@ -111,6 +112,37 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                         }
             }
         }
+
+        std::vector<Vec3i> newIndices;
+        newIndices.reserve(localAccessVolUnits.size());
+        mutex.lock();
+        for (const auto& tsdf_idx : localAccessVolUnits)
+        {
+            //! If the insert into the global set passes
+            if (!volume.volumeUnits.count(tsdf_idx))
+            {
+                VolumeUnit volumeUnit;
+                //! This volume unit will definitely be required for current integration
+                volumeUnit.isActive = true;
+                // Volume allocation can be performed outside of the lock
+                volume.volumeUnits[tsdf_idx] = volumeUnit;
+                newIndices.push_back(tsdf_idx);
+            }
+        }
+        mutex.unlock();
+
+        int res = volume.volumeUnitResolution;
+        Point3i volumeDims(res, res, res);
+        for (const auto& idx : newIndices)
+        {
+            VolumeUnit& vu = volume.volumeUnits[idx];
+            Matx44f subvolumePose = volume.pose.translate(volume.volumeUnitIdxToVolume(idx)).matrix;
+            vu.pVolume = makePtr<TSDFVolumeCPU>(
+                volume.voxelSize, subvolumePose, volume.raycastStepFactor,
+                volume.truncDist, volume.maxWeight, volumeDims);
+        }
+
+        /*
         AutoLock al(mutex);
         for (const auto& tsdf_idx : localAccessVolUnits)
         {
@@ -133,6 +165,7 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                 volume.volumeUnits[tsdf_idx] = volumeUnit;
             }
         }
+        */
     }
 
     HashTSDFVolumeCPU& volume;
@@ -495,7 +528,8 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     v_float32x4 cyv0 = cyn0 - cyp0; v_float32x4 cyv1 = cyn1 - cyp1;
     v_float32x4 czv0 = czn0 - czp0; v_float32x4 czv1 = czn1 - czp1;
 
-    v_store(cxv + 0, cxv0); v_store(cxv + 4, cxv1);
+    
+    (cxv + 0, cxv0); v_store(cxv + 4, cxv1);
     v_store(cyv + 0, cyv0); v_store(cyv + 4, cyv1);
     v_store(czv + 0, czv0); v_store(czv + 4, czv1);
 #endif
