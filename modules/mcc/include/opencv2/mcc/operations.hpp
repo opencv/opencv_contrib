@@ -35,107 +35,107 @@
 
 namespace cv
 {
-namespace ccm
-{
-
-typedef std::function<cv::Mat(cv::Mat)> MatFunc;
-
-/* *\ brief Operation class contains some operarions used for color space
-   *        conversion containing linear transformation and non-linear transformation
- */
-class Operation
-{
-public:
-    bool linear;
-    cv::Mat M;
-    MatFunc f;
-
-    Operation() : linear(true), M(cv::Mat()) {};
-
-    Operation(cv::Mat M_) :linear(true), M( M_ ) {};
-
-    Operation(MatFunc f_) : linear(false), f(f_) {};
-
-    virtual ~Operation() {};
-    /* *\ brief operator function will run operation*/
-    cv::Mat operator()(cv::Mat& abc)
+    namespace ccm
     {
-        if (!linear)
+
+        typedef std::function<cv::Mat(cv::Mat)> MatFunc;
+
+        /* *\ brief Operation class contains some operarions used for color space
+           *        conversion containing linear transformation and non-linear transformation
+         */
+        class Operation
         {
-            return f(abc);
-        }
-        if (M.empty())
-        {
-            return abc;
-        }
-        return multiple(abc, M);
-    };
+        public:
+            bool linear;
+            cv::Mat M;
+            MatFunc f;
 
-    /* *\ brief add function will conbine this operation
-     *          with  other  linear transformation operation*/
-    void add(const Operation& other)
-    {
-        if (M.empty())
-        {
-            M = other.M.clone();
-        }
-        else
-        {
-            M = M * other.M;
-        }
-    };
+            Operation() : linear(true), M(cv::Mat()) {};
 
-    void clear()
-    {
-        M = cv::Mat();
-    };
-};
+            Operation(cv::Mat M_) :linear(true), M(M_) {};
 
-const Operation IDENTITY_OP( [](cv::Mat x) {return x; } );
+            Operation(MatFunc f_) : linear(false), f(f_) {};
 
-class Operations
-{
-public:
-    std::vector<Operation> ops;
-
-    Operations() :ops{ } {};
-
-    Operations(std::initializer_list<Operation> op) :ops{ op } {};
-
-    virtual ~Operations() {};
-
-    /* *\ brief add function will conbine this operation with  other  transformation operations*/
-    Operations& add(const Operations& other)
-    {
-        ops.insert(ops.end(), other.ops.begin(), other.ops.end());
-        return *this;
-    };
-
-    /* *\ brief run operations to make color conversion*/
-    cv::Mat run(cv::Mat abc)
-    {
-        Operation hd;
-        for (auto& op : ops)
-        {
-            if (op.linear)
+            virtual ~Operation() {};
+            /* *\ brief operator function will run operation*/
+            cv::Mat operator()(cv::Mat& abc)
             {
-                hd.add(op);
-            }
-            else
+                if (!linear)
+                {
+                    return f(abc);
+                }
+                if (M.empty())
+                {
+                    return abc;
+                }
+                return multiple(abc, M);
+            };
+
+            /* *\ brief add function will conbine this operation
+             *          with  other  linear transformation operation*/
+            void add(const Operation& other)
             {
+                if (M.empty())
+                {
+                    M = other.M.clone();
+                }
+                else
+                {
+                    M = M * other.M;
+                }
+            };
+
+            void clear()
+            {
+                M = cv::Mat();
+            };
+        };
+
+        const Operation IDENTITY_OP([](cv::Mat x) {return x; });
+
+        class Operations
+        {
+        public:
+            std::vector<Operation> ops;
+
+            Operations() :ops{ } {};
+
+            Operations(std::initializer_list<Operation> op) :ops{ op } {};
+
+            virtual ~Operations() {};
+
+            /* *\ brief add function will conbine this operation with  other  transformation operations*/
+            Operations& add(const Operations& other)
+            {
+                ops.insert(ops.end(), other.ops.begin(), other.ops.end());
+                return *this;
+            };
+
+            /* *\ brief run operations to make color conversion*/
+            cv::Mat run(cv::Mat abc)
+            {
+                Operation hd;
+                for (auto& op : ops)
+                {
+                    if (op.linear)
+                    {
+                        hd.add(op);
+                    }
+                    else
+                    {
+                        abc = hd(abc);
+                        hd.clear();
+                        abc = op(abc);
+                    }
+                }
                 abc = hd(abc);
-                hd.clear();
-                abc = op(abc);
-            }
-        }
-        abc = hd(abc);
-        return abc;
-    };
-};
+                return abc;
+            };
+        };
 
-const Operations IDENTITY_OPS{ IDENTITY_OP };
+        const Operations IDENTITY_OPS{ IDENTITY_OP };
 
-} // namespace ccm
+    } // namespace ccm
 } // namespace cv
 
 
