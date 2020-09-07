@@ -321,224 +321,32 @@ inline float HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
     return v0 + tx * (v1 - v0);
 }
 
-#if !USE_INTERPOLATION_IN_GETNORMAL
-
-inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
+inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitMap::const_iterator it,
+    VolumeUnitMap::const_iterator vend, int unitRes)
 {
-    Vec3f pointVec(point);
-    Vec3f normal = Vec3f(0, 0, 0);
-
-    Vec3f pointPrev = point;
-    Vec3f pointNext = point;
-
-    for (int c = 0; c < 3; c++)
-    {
-        pointPrev[c] -= voxelSize;
-        pointNext[c] += voxelSize;
-
-        normal[c] = tsdfToFloat(at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf);
-
-        pointPrev[c] = pointVec[c];
-        pointNext[c] = pointVec[c];
-    }
-
-    float nv = sqrt(normal[0] * normal[0] +
-                     normal[1] * normal[1] +
-                     normal[2] * normal[2]);
-    return nv < 0.0001f ? nan3 : normal/nv;
-}
-
-#else
-
-inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
-{
-    cv::Point3f neighbourCoords[] = {
-                                Point3f(0, 0, 0),
-                                Point3f(0, 0, 1),
-                                Point3f(0, 1, 0),
-                                Point3f(0, 1, 1),
-                                Point3f(1, 0, 0),
-                                Point3f(1, 0, 1),
-                                Point3f(1, 1, 0),
-                                Point3f(1, 1, 1) };
-    for (int i = 0; i < 8; i++)
-        neighbourCoords[i] *= voxelSize;
-
-    Point3f pointVec(point);
-    Point3f normal = Point3f(0, 0, 0);
-
-    Point3f c0_pointPrev = pointVec, c0_pointNext = pointVec;
-    Point3f c1_pointPrev = pointVec, c1_pointNext = pointVec;
-    Point3f c2_pointPrev = pointVec, c2_pointNext = pointVec;
-
-    c0_pointPrev.x -= voxelSize; c0_pointNext.x += voxelSize;
-    c1_pointPrev.y -= voxelSize; c1_pointNext.y += voxelSize;
-    c2_pointPrev.z -= voxelSize; c2_pointNext.z += voxelSize;
-
-    float c0_n_vx[8], c1_n_vx[8], c2_n_vx[8];
-    float c0_p_vx[8], c1_p_vx[8], c2_p_vx[8];
-
-    cv::Vec3i c0_n_vui[8], c0_p_vui[8];
-
-    for (int i = 0; i < 8; i++)
-        c0_n_vui[i] = volumeToVolumeUnitIdx(neighbourCoords[i] + c0_pointNext);
-    if (vuiCheck(c0_n_vui))
-    {
-        VolumeUnitMap::const_iterator it = volumeUnits.find(c0_n_vui[0]);
-        for (int i = 0; i < 8; i++)
-            c0_n_vx[i] = tsdfToFloat(_at_3arg(neighbourCoords[i] + c0_pointNext, c0_n_vui[0], it).tsdf);
-    }
-    else {
-        for (int i = 0; i < 8; i++)
-            c0_n_vx[i] = tsdfToFloat(_at_2arg(neighbourCoords[i] + c0_pointNext, c0_n_vui[i]).tsdf);
-    }
-
-    for (int i = 0; i < 8; i++)
-        c0_p_vui[i] = volumeToVolumeUnitIdx(neighbourCoords[i] + c0_pointPrev);
-    if (vuiCheck(c0_p_vui))
-    {
-        VolumeUnitMap::const_iterator it = volumeUnits.find(c0_p_vui[0]);
-        for (int i = 0; i < 8; i++)
-            c0_p_vx[i] = tsdfToFloat(_at_3arg(neighbourCoords[i] + c0_pointPrev, c0_p_vui[0], it).tsdf);
-    } else {
-        for (int i = 0; i < 8; i++)
-            c0_p_vx[i] = tsdfToFloat(_at_2arg(neighbourCoords[i] + c0_pointPrev, c0_p_vui[i]).tsdf);
-    }
-    for (int i = 0; i < 8; i++)
-        if (i % 4 > 1)
-            c1_n_vx[i] = tsdfToFloat(_at_1arg(neighbourCoords[i] + c1_pointNext).tsdf);
-        else
-            c1_p_vx[i] = tsdfToFloat(_at_1arg(neighbourCoords[i] + c1_pointPrev).tsdf);
-
-    for (int i = 0; i < 8; i++)
-        if (i % 2 == 1)
-            c2_n_vx[i] = tsdfToFloat(_at_1arg(neighbourCoords[i] + c2_pointNext).tsdf);
-        else
-            c2_p_vx[i] = tsdfToFloat(_at_1arg(neighbourCoords[i] + c2_pointPrev).tsdf);
-
-    c1_n_vx[0] = c0_p_vx[6];
-    c1_n_vx[1] = c0_p_vx[7];
-    c1_p_vx[2] = c0_n_vx[2];
-    c1_p_vx[3] = c0_n_vx[3];
-    c1_n_vx[4] = c0_p_vx[4];
-    c1_n_vx[5] = c0_p_vx[7];
-    c1_p_vx[6] = c0_n_vx[0];
-    c1_p_vx[7] = c0_n_vx[1];
-
-    c2_n_vx[0] = c0_p_vx[5];
-    c2_p_vx[1] = c0_p_vx[7];
-    c2_n_vx[2] = c0_n_vx[1];
-    c2_p_vx[3] = c0_n_vx[3];
-    c2_n_vx[4] = c0_p_vx[4];
-    c2_p_vx[5] = c0_p_vx[6];
-    c2_n_vx[6] = c0_n_vx[0];
-    c2_p_vx[7] = c0_n_vx[2];
-
-    float c0_vx[8], c1_vx[8], c2_vx[8];
-    for (int i = 0; i < 8; i++)
-    {
-        c0_vx[i] = c0_n_vx[i] - c0_p_vx[i];
-        c1_vx[i] = c1_n_vx[i] - c1_p_vx[i];
-        c2_vx[i] = c2_n_vx[i] - c2_p_vx[i];
-    }
-    //normal.x = interpolate(c0_pointNext, c0_n_vx) - interpolate(c0_pointPrev, c0_p_vx);
-    //normal.y = interpolate(c1_pointNext, c1_n_vx) - interpolate(c1_pointPrev, c1_p_vx);
-    //normal.z = interpolate(c2_pointNext, c2_n_vx) - interpolate(c2_pointPrev, c2_p_vx);
-    normal.x = interpolate(c0_pointNext, c0_vx);
-    normal.y = interpolate(c1_pointNext, c1_vx);
-    normal.z = interpolate(c2_pointNext, c2_vx);
-
-    float nv = sqrt(normal.x * normal.x +
-        normal.y * normal.y +
-        normal.z * normal.z);
-    return nv < 0.0001f ? Point3f(nan3) : normal / nv;
-}
-
-bool HashTSDFVolumeCPU::vuiCheck(cv::Vec3i vui[8]) const
-{
-    for (int i = 1; i < 8; i++)
-        if (vui[i] != vui[0])
-            return false;
-    return true;
-}
-
-inline TsdfVoxel HashTSDFVolumeCPU::_at_1arg(const cv::Point3f& point) const
-{
-    cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
-    VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
-
-    if (it == volumeUnits.end())
+    if (it == vend)
     {
         TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
+        dummy.tsdf = 1.f;
         dummy.weight = 0;
         return dummy;
     }
+    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
 
-    return _at(point, volumeUnitIdx, it);
-}
+    Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
 
-inline TsdfVoxel HashTSDFVolumeCPU::_at_2arg(const cv::Point3f& point, cv::Vec3i volumeUnitIdx) const
-{
-    VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
-
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-
-    return _at(point, volumeUnitIdx, it);
-}
-
-inline TsdfVoxel HashTSDFVolumeCPU::_at_3arg(const cv::Point3f& point, cv::Vec3i volumeUnitIdx, VolumeUnitMap::const_iterator it) const
-{
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-
-    return _at(point, volumeUnitIdx, it);
-}
-
-inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Point3f& point, cv::Vec3i volumeUnitIdx, VolumeUnitMap::const_iterator it) const
-{
-    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
-    cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
-    cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
-
-    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]),
-                                abs(volUnitLocalIdx[1]),
-                                abs(volUnitLocalIdx[2]));
-
+    // expanding at(), removing bounds check
     const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
     Vec4i volDims = volumeUnit->volDims;
-    int coordBase = volUnitLocalIdx[0] * volDims[0] +
-                    volUnitLocalIdx[1] * volDims[1] +
-                    volUnitLocalIdx[2] * volDims[2];
+    int coordBase = volUnitLocalIdx[0] * volDims[0] + volUnitLocalIdx[1] * volDims[1] + volUnitLocalIdx[2] * volDims[2];
     return volData[coordBase];
 }
 
-#endif
-
-inline float HashTSDFVolumeCPU::interpolate(const cv::Point3f& point, float vx[8]) const
-{
-    int ix = cvFloor(point.x);
-    int iy = cvFloor(point.y);
-    int iz = cvFloor(point.z);
-
-    float tx = point.x - ix;
-    float ty = point.y - iy;
-    float tz = point.z - iz;
-
 #if USE_INTRINSICS
-    v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]);
-    v_float32x4 v1357(vx[1], vx[3], vx[5], vx[7]);
+inline float interpolate(float tx, float ty, float tz, float vx[8])
+{
+    v_float32x4 v0246, v1357;
+    v_load_deinterleave(vx, v0246, v1357);
 
     v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
 
@@ -549,7 +357,13 @@ inline float HashTSDFVolumeCPU::interpolate(const cv::Point3f& point, float vx[8
     float v0 = v0_1.get0();
     v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
     float v1 = v0_1.get0();
+
+    return v0 + tx * (v1 - v0);
+}
+
 #else
+inline float interpolate(float tx, float ty, float tz, float vx[8])
+{
     float v00 = vx[0] + tz * (vx[1] - vx[0]);
     float v01 = vx[2] + tz * (vx[3] - vx[2]);
     float v10 = vx[4] + tz * (vx[5] - vx[4]);
@@ -557,9 +371,148 @@ inline float HashTSDFVolumeCPU::interpolate(const cv::Point3f& point, float vx[8
 
     float v0 = v00 + ty * (v01 - v00);
     float v1 = v10 + ty * (v11 - v10);
-#endif
 
     return v0 + tx * (v1 - v0);
+}
+#endif
+
+inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
+{
+    Vec3f normal = Vec3f(0, 0, 0);
+
+    Point3f ptVox = point * voxelSizeInv;
+    Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
+
+    // A small hash table to reduce a number of find() calls
+    bool queried[8];
+    VolumeUnitMap::const_iterator iterMap[8];
+    for (int i = 0; i < 8; i++)
+    {
+        iterMap[i] = volumeUnits.end();
+        queried[i] = false;
+    }
+
+#if !USE_INTERPOLATION_IN_GETNORMAL
+    const Vec3i offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3 
+                              { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
+    };
+    const int nVals = 6;
+
+#else
+    const Vec3i offsets[] = { { 0,  0,  0}, { 0,  0,  1}, { 0,  1,  0}, { 0,  1,  1}, //  0-3
+                              { 1,  0,  0}, { 1,  0,  1}, { 1,  1,  0}, { 1,  1,  1}, //  4-7
+                              {-1,  0,  0}, {-1,  0,  1}, {-1,  1,  0}, {-1,  1,  1}, //  8-11
+                              { 2,  0,  0}, { 2,  0,  1}, { 2,  1,  0}, { 2,  1,  1}, // 12-15
+                              { 0, -1,  0}, { 0, -1,  1}, { 1, -1,  0}, { 1, -1,  1}, // 16-19
+                              { 0,  2,  0}, { 0,  2,  1}, { 1,  2,  0}, { 1,  2,  1}, // 20-23
+                              { 0,  0, -1}, { 0,  1, -1}, { 1,  0, -1}, { 1,  1, -1}, // 24-27
+                              { 0,  0,  2}, { 0,  1,  2}, { 1,  0,  2}, { 1,  1,  2}, // 28-31
+    };
+    const int nVals = 32;
+#endif
+
+    float vals[nVals];
+    for (int i = 0; i < nVals; i++)
+    {
+        Vec3i pt = iptVox + offsets[i];
+
+        Vec3i volumeUnitIdx = Vec3i(cvFloor(float(pt[0]) / volumeUnitResolution),
+            cvFloor(float(pt[1]) / volumeUnitResolution),
+            cvFloor(float(pt[2]) / volumeUnitResolution));
+
+        int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
+        auto it = iterMap[dictIdx];
+        if (!queried[dictIdx])
+        {
+            it = volumeUnits.find(volumeUnitIdx);
+            iterMap[dictIdx] = it;
+            queried[dictIdx] = true;
+        }
+        //VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
+
+        vals[i] = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf;
+    }
+
+#if !USE_INTERPOLATION_IN_GETNORMAL
+    for (int c = 0; c < 3; c++)
+    {
+        normal[c] = vals[c * 2] - vals[c * 2 + 1];
+    }
+#else
+
+    float cxv[8], cyv[8], czv[8];
+
+    // How these numbers were obtained:
+    // 1. Take the basic interpolation sequence:
+    // 000, 001, 010, 011, 100, 101, 110, 111
+    // where each digit corresponds to shift by x, y, z axis respectively.
+    // 2. Add +1 for next or -1 for prev to each coordinate to corresponding axis
+    // 3. Search corresponding values in offsets
+    const int idxxp[8] = {  8,  9, 10, 11,  0,  1,  2,  3 };
+    const int idxxn[8] = {  4,  5,  6,  7, 12, 13, 14, 15 };
+    const int idxyp[8] = { 16, 17,  0,  1, 18, 19,  4,  5 };
+    const int idxyn[8] = {  2,  3, 20, 21,  6,  7, 22, 23 };
+    const int idxzp[8] = { 24,  0, 25,  2, 26,  4, 27,  6 };
+    const int idxzn[8] = {  1, 28,  3, 29,  5, 30,  7, 31 };
+
+#if !USE_INTRINSICS
+    for (int i = 0; i < 8; i++)
+    {
+        cxv[i] = vals[idxxn[i]] - vals[idxxp[i]];
+        cyv[i] = vals[idxyn[i]] - vals[idxyp[i]];
+        czv[i] = vals[idxzn[i]] - vals[idxzp[i]];
+    }
+#else
+
+# if CV_SIMD >= 32
+    v_float32x8 cxp = v_lut(vals, idxxp);
+    v_float32x8 cxn = v_lut(vals, idxxn);
+
+    v_float32x8 cyp = v_lut(vals, idxyp);
+    v_float32x8 cyn = v_lut(vals, idxyn);
+
+    v_float32x8 czp = v_lut(vals, idxzp);
+    v_float32x8 czn = v_lut(vals, idxzn);
+
+    v_float32x8 vcxv = cxn - cxp;
+    v_float32x8 vcyv = cyn - cyp;
+    v_float32x8 vczv = czn - czp;
+
+    v_store(cxv, vcxv);
+    v_store(cyv, vcyv);
+    v_store(czv, vczv);
+# else
+    v_float32x4 cxp0 = v_lut(vals, idxxp + 0); v_float32x4 cxp1 = v_lut(vals, idxxp + 4);
+    v_float32x4 cxn0 = v_lut(vals, idxxn + 0); v_float32x4 cxn1 = v_lut(vals, idxxn + 4);
+
+    v_float32x4 cyp0 = v_lut(vals, idxyp + 0); v_float32x4 cyp1 = v_lut(vals, idxyp + 4);
+    v_float32x4 cyn0 = v_lut(vals, idxyn + 0); v_float32x4 cyn1 = v_lut(vals, idxyn + 4);
+
+    v_float32x4 czp0 = v_lut(vals, idxzp + 0); v_float32x4 czp1 = v_lut(vals, idxzp + 4);
+    v_float32x4 czn0 = v_lut(vals, idxzn + 0); v_float32x4 czn1 = v_lut(vals, idxzn + 4);
+
+    v_float32x4 cxv0 = cxn0 - cxp0; v_float32x4 cxv1 = cxn1 - cxp1;
+    v_float32x4 cyv0 = cyn0 - cyp0; v_float32x4 cyv1 = cyn1 - cyp1;
+    v_float32x4 czv0 = czn0 - czp0; v_float32x4 czv1 = czn1 - czp1;
+
+    v_store(cxv + 0, cxv0); v_store(cxv + 4, cxv1);
+    v_store(cyv + 0, cyv0); v_store(cyv + 4, cyv1);
+    v_store(czv + 0, czv0); v_store(czv + 4, czv1);
+#endif
+
+#endif
+
+    float tx = ptVox.x - iptVox[0];
+    float ty = ptVox.y - iptVox[1];
+    float tz = ptVox.z - iptVox[2];
+
+    normal[0] = interpolate(tx, ty, tz, cxv);
+    normal[1] = interpolate(tx, ty, tz, cyv);
+    normal[2] = interpolate(tx, ty, tz, czv);
+#endif
+
+    float nv = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+    return nv < 0.0001f ? nan3 : normal / nv;
 }
 
 struct HashRaycastInvoker : ParallelLoopBody
