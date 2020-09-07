@@ -129,8 +129,8 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                 newIndices.push_back(tsdf_idx);
             }
         }
-        mutex.unlock();
 
+        mutex.unlock();
         int res = volume.volumeUnitResolution;
         Point3i volumeDims(res, res, res);
         for (const auto& idx : newIndices)
@@ -141,31 +141,6 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                 volume.voxelSize, subvolumePose, volume.raycastStepFactor,
                 volume.truncDist, volume.maxWeight, volumeDims);
         }
-
-        /*
-        AutoLock al(mutex);
-        for (const auto& tsdf_idx : localAccessVolUnits)
-        {
-            //! If the insert into the global set passes
-            if (!volume.volumeUnits.count(tsdf_idx))
-            {
-                VolumeUnit volumeUnit;
-                cv::Point3i volumeDims(volume.volumeUnitResolution,
-                                        volume.volumeUnitResolution,
-                                        volume.volumeUnitResolution);
-
-                cv::Matx44f subvolumePose =
-                    volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx)).matrix;
-                volumeUnit.pVolume = cv::makePtr<TSDFVolumeCPU>(
-                    volume.voxelSize, subvolumePose, volume.raycastStepFactor,
-                    volume.truncDist, volume.maxWeight, volumeDims);
-                //! This volume unit will definitely be required for current integration
-                volumeUnit.index             = tsdf_idx;
-                volumeUnit.isActive          = true;
-                volume.volumeUnits[tsdf_idx] = volumeUnit;
-            }
-        }
-        */
     }
 
     HashTSDFVolumeCPU& volume;
@@ -189,7 +164,8 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
     //! Compute volumes to be allocated
     AllocateVolumeUnitsInvoker allocate_i(*this, depth, intrinsics, cameraPose, depthFactor);
     Range allocateRange(0, depth.rows);
-    parallel_for_(allocateRange, allocate_i);
+    //parallel_for_(allocateRange, allocate_i);
+    allocate_i(allocateRange);
 
     //! Get volumes that are in the current camera frame
     std::vector<Vec3i> totalVolUnits;
