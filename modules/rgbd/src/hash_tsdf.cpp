@@ -430,7 +430,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
         }
         //VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
-        vals[i] = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf;
+        vals[i] = tsdfToFloat(atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf);
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
@@ -511,7 +511,9 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     normal[2] = interpolate(tx, ty, tz, czv);
 #endif
 
-    float nv = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+    float nv = sqrt(normal[0] * normal[0] + 
+                    normal[1] * normal[1] + 
+                    normal[2] * normal[2]);
     return nv < 0.0001f ? nan3 : normal / nv;
 }
 
