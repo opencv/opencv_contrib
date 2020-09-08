@@ -80,7 +80,7 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
     }
 
     virtual void operator()(const Range& range) const override
-    {                
+    {
         VolumeUnitIndexSet localAccessVolUnits;
 
         for (int y = range.start; y < range.end; y += depthStride)
@@ -402,7 +402,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
-    const Vec3i offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3 
+    const Vec3i offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3
                               { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
     };
     const int nVals = 6;
@@ -504,7 +504,6 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     v_float32x4 cyv0 = cyn0 - cyp0; v_float32x4 cyv1 = cyn1 - cyp1;
     v_float32x4 czv0 = czn0 - czp0; v_float32x4 czv1 = czn1 - czp1;
 
-    
     (cxv + 0, cxv0); v_store(cxv + 4, cxv1);
     v_store(cyv + 0, cyv0); v_store(cyv + 4, cyv1);
     v_store(czv + 0, czv0); v_store(czv + 4, czv1);
@@ -521,8 +520,8 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     normal[2] = interpolate(tx, ty, tz, czv);
 #endif
 
-    float nv = sqrt(normal[0] * normal[0] + 
-                    normal[1] * normal[1] + 
+    float nv = sqrt(normal[0] * normal[0] +
+                    normal[1] * normal[1] +
                     normal[2] * normal[2]);
     return nv < 0.0001f ? nan3 : normal / nv;
 }
