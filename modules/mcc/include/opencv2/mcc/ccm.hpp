@@ -240,7 +240,6 @@ public:
     cv::Mat ccm;
     cv::Mat ccm0;
     double loss;
-    //double loss0;
 
     int max_count;
     double epsilon;
@@ -400,53 +399,28 @@ public:
             }
             ccm_ = ccm_.reshape(0, ccm_loss->shape / 3);
             return ccm_loss->calc_loss(ccm_);
-            //Mat reshapecolor = ccm_loss->src_rgbl.reshape(1, 0) * ccm;
-            //cv::Mat dist = Color(reshapecolor.reshape(3, 0), ccm_loss->cs).diff(ccm_loss->dst, ccm_loss->distance);
-            //cv::Mat dist_;
-            //pow(dist, 2, dist_);
-            //if (!ccm_loss->weights.empty())
-            //{
-            //    dist_ = ccm_loss->weights.mul(dist_);
-            //}
-            //Scalar ss = sum(dist_);
-            //return ss[0];
         }
     };
 
-    double calc_loss_(Color color, bool DEBUG = false) {
-        cv::Mat dist = color.diff(dst, distance, DEBUG);
-       // std::cout << "dist" << dist<< std::endl;
+    double calc_loss_(Color color)
+    {
+        cv::Mat distlist = color.diff(dst, distance);
         Color lab = color.to(Lab_D50_2);
-        if (DEBUG) {
-            std::cout << "dist: " << dist << std::endl;
-            std::cout << "colors: " << color.colors << std::endl;
-            std::cout << "TYPE: " << color.cs.type << std::endl;
-            std::cout << "linear: " << color.cs.linear << std::endl;
-            std::cout << "colors_lab: " << lab.colors << std::endl;
-            //std::cout << "ccm_: " << ccm_ << std::endl;
-            //std::cout << "converted: " << converted.reshape(3, 0) << std::endl;
-        }
         cv::Mat dist_;
-        //std::cout<<"dist_"<< dist_ <<std::endl;
-        pow(dist, 2, dist_);
+        pow(distlist, 2, dist_);
         if (!weights.empty())
         {
-
             dist_ = weights.mul(dist_);
         }
         Scalar ss = sum(dist_);
         return ss[0];
     }
 
-    double calc_loss(const Mat ccm_, bool DEBUG=false) {
+    double calc_loss(const Mat ccm_)
+    {
         Mat converted = src_rgbl.reshape(1, 0) * ccm_;
-        if (DEBUG) {
-            std::cout << "src_rgbl: " << src_rgbl << std::endl;
-            std::cout << "ccm_: " << ccm_ << std::endl;
-            std::cout << "converted: " << converted.reshape(3, 0) << std::endl;
-        }
         Color color(converted.reshape(3, 0), *(cs.l));
-        return calc_loss_(color, DEBUG);
+        return calc_loss_(color);
     }
 
     /* *\ brief Fitting ccm if distance function is associated with CIE Lab color space.
@@ -455,16 +429,14 @@ public:
     */
     void fitting(void)
     {
-
-       // loss0 = calc_loss_(Color(src_rgbl, *cs.l));
         cv::Ptr<DownhillSolver> solver = cv::DownhillSolver::create();
         cv::Ptr<LossFunction> ptr_F(new LossFunction(this));
         solver->setFunction(ptr_F);
         cv::Mat reshapeccm = ccm0.clone().reshape(0, 1);
-        cv::Mat step = cv::Mat::ones(reshapeccm.size(), CV_64F) * 0.1;
-        solver->setInitStep(step );
-        /* TermCriteria termcrit = TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, max_count, epsilon);
-        solver->setTermCriteria(termcrit);*/
+        cv::Mat step = cv::Mat::ones(reshapeccm.size(), CV_64F);
+        solver->setInitStep(step);
+        TermCriteria termcrit = TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, max_count, epsilon);
+        solver->setTermCriteria(termcrit);
         double res = solver->minimize(reshapeccm);
         ccm = reshapeccm.reshape(0, shape/3);
         loss = pow((res / masked_len), 0.5);
@@ -518,13 +490,11 @@ public:
         return out_img;
     };
 
-    void report() {
-        std::cout << "CCM0: " << ccm0 << std::endl;
-        //std::cout << "Loss0: " << loss0 << std::endl;
-        std::cout << "CCM: " << ccm << std::endl;
-        std::cout << "Loss: " << loss << std::endl;
-       // std::cout << "mask: " << mask << std::endl;
-    }
+    // void report() {
+    //     std::cout << "CCM0: " << ccm0 << std::endl;
+    //     std::cout << "CCM: " << ccm << std::endl;
+    //     std::cout << "Loss: " << loss << std::endl;
+    // }
 
 private:
     cv::Mat dist;
@@ -562,12 +532,8 @@ private:
         // weights' mask
         if (!weights.empty())
         {
-
-
             cv::Mat weights_masked = maskCopyTo(this->weights, this->mask);
-            std::cout << weights_masked << std::endl;
             weights = weights_masked / mean(weights_masked)[0];
-
         }
         masked_len = (int)sum(mask)[0];
     };
