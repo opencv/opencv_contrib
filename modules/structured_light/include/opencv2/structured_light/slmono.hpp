@@ -15,9 +15,6 @@ namespace structured_light{
 class CV_EXPORTS StructuredLightMono : public virtual Algorithm 
 {
 public:
-    
-    CV_WRAP
-    static Ptr<StructuredLightMono> create(Size img_size, int patterns, int stripes_number, std::string algs_type);
 
     StructuredLightMono(Size img_size, int patterns, int stripes_number, std::string algs_type)
     {
@@ -28,7 +25,6 @@ public:
     }
 
     //generate patterns for projecting
-    CV_WRAP
     void generatePatterns(OutputArrayOfArrays patterns, float stripes_angle);
 
     //project patterns and capture with camera
@@ -36,7 +32,6 @@ public:
     //void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, bool isCaptureRefs = true);
 
     //main phase unwrapping algorithm
-    CV_WRAP
     void unwrapPhase(InputOutputArrayOfArrays refs, InputOutputArrayOfArrays imgs, OutputArray out);
 
     //read references and phases from file
