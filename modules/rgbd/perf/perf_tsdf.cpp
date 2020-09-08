@@ -169,35 +169,33 @@ Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
 
-struct Settings
+class Settings
 {
+public:
     Ptr<kinfu::Params> _params;
     Ptr<kinfu::Volume> volume;
     Ptr<Scene> scene;
     std::vector<Affine3f> poses;
+
+    Settings(bool useHashTSDF)
+    {
+        if (useHashTSDF)
+            _params = kinfu::Params::hashTSDFParams(true);
+        else
+            _params = kinfu::Params::coarseParams();
+
+        volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
+            _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
+            _params->truncateThreshold, _params->volumeDims);
+
+        scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+        poses = scene->getPoses();
+    }
 };
-
-Settings setSettings(bool useHashTSDF)
-{
-    Settings res;
-    if (useHashTSDF)
-        res._params = kinfu::Params::hashTSDFParams(true);
-    else
-        res._params = kinfu::Params::coarseParams();
-
-    res.volume = kinfu::makeVolume(res._params->volumeType, res._params->voxelSize, res._params->volumePose.matrix,
-                                res._params->raycast_step_factor, res._params->tsdf_trunc_dist, res._params->tsdf_max_weight,
-                                res._params->truncateThreshold, res._params->volumeDims);
-
-    res.scene = Scene::create(res._params->frameSize, res._params->intr, res._params->depthFactor);
-    res.poses = res.scene->getPoses();
-
-    return res;
-}
 
 PERF_TEST(Perf_TSDF, integrate)
 {
-    Settings settings = setSettings(false);
+    Settings settings(false);
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         Matx44f pose = settings.poses[i].matrix;
@@ -211,7 +209,7 @@ PERF_TEST(Perf_TSDF, integrate)
 
 PERF_TEST(Perf_TSDF, raycast)
 {
-    Settings settings = setSettings(false);
+    Settings settings(false);
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
@@ -228,7 +226,7 @@ PERF_TEST(Perf_TSDF, raycast)
 
 PERF_TEST(Perf_HashTSDF, integrate)
 {
-    Settings settings = setSettings(true);
+    Settings settings(true);
 
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
@@ -243,7 +241,7 @@ PERF_TEST(Perf_HashTSDF, integrate)
 
 PERF_TEST(Perf_HashTSDF, raycast)
 {
-    Settings settings = setSettings(true);
+    Settings settings(true);
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
