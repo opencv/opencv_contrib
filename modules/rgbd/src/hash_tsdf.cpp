@@ -503,7 +503,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     v_float32x4 cyv0 = cyn0 - cyp0; v_float32x4 cyv1 = cyn1 - cyp1;
     v_float32x4 czv0 = czn0 - czp0; v_float32x4 czv1 = czn1 - czp1;
 
-    (cxv + 0, cxv0); v_store(cxv + 4, cxv1);
+    v_store(cxv + 0, cxv0); v_store(cxv + 4, cxv1);
     v_store(cyv + 0, cyv0); v_store(cyv + 4, cyv1);
     v_store(czv + 0, czv0); v_store(czv + 4, czv1);
 #endif
