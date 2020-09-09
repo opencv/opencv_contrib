@@ -287,7 +287,7 @@ inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, Vo
     if (it == vend)
     {
         TsdfVoxel dummy;
-        dummy.tsdf = 1.f;
+        dummy.tsdf = floatToTsdf(1.f);
         dummy.weight = 0;
         return dummy;
     }
