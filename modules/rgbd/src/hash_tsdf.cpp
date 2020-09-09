@@ -295,8 +295,58 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
+float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
+{
+    const Vec3i neighbourCoords[] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+                                      {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1} };
+
+    // A small hash table to reduce a number of find() calls
+    bool queried[8];
+    VolumeUnitMap::const_iterator iterMap[8];
+    for (int i = 0; i < 8; i++)
+    {
+        iterMap[i] = volumeUnits.end();
+        queried[i] = false;
+    }
+
+    int ix = cvFloor(point.x);
+    int iy = cvFloor(point.y);
+    int iz = cvFloor(point.z);
+
+    float tx = point.x - ix;
+    float ty = point.y - iy;
+    float tz = point.z - iz;
+
+    Vec3i iv(ix, iy, iz);
+    float vx[8];
+    for (int i = 0; i < 8; i++)
+    {
+        Vec3i pt = iv + neighbourCoords[i];
+
+        Vec3i volumeUnitIdx = Vec3i(cvFloor(float(pt[0]) / volumeUnitResolution),
+            cvFloor(float(pt[1]) / volumeUnitResolution),
+            cvFloor(float(pt[2]) / volumeUnitResolution));
+
+        int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
+        auto it = iterMap[dictIdx];
+        if (!queried[dictIdx])
+        {
+            it = volumeUnits.find(volumeUnitIdx);
+            iterMap[dictIdx] = it;
+            queried[dictIdx] = true;
+        }
+        //VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
+
+        vx[i] = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf;
+    }
+
+    return interpolate(tx, ty, tz, vx);
+}
+
 inline float HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
 {
+    return interpolateVoxelPoint(point * voxelSizeInv);
+/*
     cv::Point3f neighbourCoords[] = {
                                 Point3f(0, 0, 0),
                                 Point3f(0, 0, 1),
@@ -328,6 +378,7 @@ inline float HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
     float v1 = v10 + ty * (v11 - v10);
 
     return v0 + tx * (v1 - v0);
+    */
 }
 
 inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitMap::const_iterator it,
