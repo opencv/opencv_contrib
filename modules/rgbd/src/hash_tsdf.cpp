@@ -65,96 +65,7 @@ void HashTSDFVolumeCPU::reset()
     volumeUnits.clear();
 }
 
-struct AllocateVolumeUnitsInvoker : ParallelLoopBody
-{
-    AllocateVolumeUnitsInvoker(HashTSDFVolumeCPU& _volume, const Depth& _depth, Intr intrinsics,
-                               cv::Matx44f cameraPose, float _depthFactor, int _depthStride = 4)
-        : ParallelLoopBody(),
-          volume(_volume),
-          depth(_depth),
-          reproj(intrinsics.makeReprojector()),
-          cam2vol(_volume.pose.inv() * Affine3f(cameraPose)),
-          depthFactor(1.0f / _depthFactor),
-          depthStride(_depthStride)
-    {
-    }
-
-    virtual void operator()(const Range& range) const override
-    {
-        VolumeUnitIndexSet localAccessVolUnits;
-
-        for (int y = range.start; y < range.end; y += depthStride)
-        {
-            const depthType* depthRow = depth[y];
-            for (int x = 0; x < depth.cols; x += depthStride)
-            {
-                depthType z = depthRow[x] * depthFactor;
-                if (z <= 0)
-                    continue;
-
-                Point3f camPoint = reproj(Point3f((float)x, (float)y, z));
-                Point3f volPoint = cam2vol * camPoint;
-
-                //! Find accessed TSDF volume unit for valid 3D vertex
-                cv::Vec3i lower_bound = volume.volumeToVolumeUnitIdx(
-                    volPoint - cv::Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
-                cv::Vec3i upper_bound = volume.volumeToVolumeUnitIdx(
-                    volPoint + cv::Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
-                for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
-                    for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
-                        for (int k = lower_bound[2]; k <= lower_bound[2]; k++)
-                        {
-                            const cv::Vec3i tsdf_idx = cv::Vec3i(i, j, k);
-                            if (!localAccessVolUnits.count(tsdf_idx))
-                            {
-                                localAccessVolUnits.emplace(tsdf_idx);
-                            }
-                        }
-            }
-        }
-
-        std::vector<Vec3i> newIndices;
-        newIndices.reserve(localAccessVolUnits.size());
-        mutex.lock();
-        for (const auto& tsdf_idx : localAccessVolUnits)
-        {
-            //! If the insert into the global set passes
-            if (!volume.volumeUnits.count(tsdf_idx))
-            {
-                VolumeUnit volumeUnit;
-                //! This volume unit will definitely be required for current integration
-                volumeUnit.isActive = true;
-                // Volume allocation can be performed outside of the lock
-                volume.volumeUnits[tsdf_idx] = volumeUnit;
-                newIndices.push_back(tsdf_idx);
-            }
-        }
-
-        mutex.unlock();
-        int res = volume.volumeUnitResolution;
-        Point3i volumeDims(res, res, res);
-        for (const auto& idx : newIndices)
-        {
-            VolumeUnit& vu = volume.volumeUnits[idx];
-            Matx44f subvolumePose = volume.pose.translate(volume.volumeUnitIdxToVolume(idx)).matrix;
-            vu.pVolume = makePtr<TSDFVolumeCPU>(
-                volume.voxelSize, subvolumePose, volume.raycastStepFactor,
-                volume.truncDist, volume.maxWeight, volumeDims);
-        }
-    }
-
-    HashTSDFVolumeCPU& volume;
-    const Depth& depth;
-    const Intr::Reprojector reproj;
-    const cv::Affine3f cam2vol;
-    const float depthFactor;
-    const int depthStride;
-    mutable Mutex mutex;
-};
-
-
-void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
-                                  const cv::Matx44f& cameraPose, const Intr& intrinsics)
+void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
 
@@ -162,12 +73,71 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
     Depth depth = _depth.getMat();
 
     //! Compute volumes to be allocated
-    AllocateVolumeUnitsInvoker allocate_i(*this, depth, intrinsics, cameraPose, depthFactor);
+    const int depthStride = 1;
+    const float invDepthFactor = 1.f / depthFactor;
+    const Intr::Reprojector reproj(intrinsics.makeReprojector());
+    const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
+    const Point3f truncPt(truncDist, truncDist, truncDist);
+    VolumeUnitIndexSet newIndices;
+    Mutex mutex;
     Range allocateRange(0, depth.rows);
-    //parallel_for_(allocateRange, allocate_i);
-    allocate_i(allocateRange);
+    parallel_for_(allocateRange, [&](const Range& range) {
+        VolumeUnitIndexSet localAccessVolUnits;
+        for (int y = range.start; y < range.end; y += depthStride)
+        {
+            const depthType* depthRow = depth[y];
+            for (int x = 0; x < depth.cols; x += depthStride)
+            {
+                depthType z = depthRow[x] * invDepthFactor;
+                if (z <= 0 || z > this->truncateThreshold)
+                    continue;
+                Point3f camPoint = reproj(Point3f((float)x, (float)y, z));
+                Point3f volPoint = cam2vol * camPoint;
+                //! Find accessed TSDF volume unit for valid 3D vertex
+                Vec3i lower_bound = this->volumeToVolumeUnitIdx(volPoint - truncPt);
+                Vec3i upper_bound = this->volumeToVolumeUnitIdx(volPoint + truncPt);
 
-    //! Get volumes that are in the current camera frame
+                for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
+                    for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
+                        for (int k = lower_bound[2]; k <= lower_bound[2]; k++)
+                        {
+                            const Vec3i tsdf_idx = Vec3i(i, j, k);
+                            if (!localAccessVolUnits.count(tsdf_idx))
+                            {
+                                //! This volume unit will definitely be required for current integration
+                                localAccessVolUnits.emplace(tsdf_idx);
+                            }
+                        }
+            }
+        }
+
+        mutex.lock();
+        for (const auto& tsdf_idx : localAccessVolUnits)
+        {
+            //! If the insert into the global set passes
+            if (!this->volumeUnits.count(tsdf_idx))
+            {
+                // Volume allocation can be performed outside of the lock
+                this->volumeUnits.emplace(tsdf_idx, VolumeUnit());
+                newIndices.emplace(tsdf_idx);
+            }
+        }
+        mutex.unlock();
+        });
+
+    //! Perform the allocation
+    int res = volumeUnitResolution;
+    Point3i volumeDims(res, res, res);
+    for (auto idx : newIndices)
+    {
+        VolumeUnit& vu = volumeUnits[idx];
+        Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(idx)).matrix;
+        vu.pVolume = makePtr<TSDFVolumeCPU>(voxelSize, subvolumePose, raycastStepFactor, truncDist, maxWeight, volumeDims);
+        //! This volume unit will definitely be required for current integration
+        vu.isActive = true;
+    }
+
+    //! Get keys for all the allocated volume Units
     std::vector<Vec3i> totalVolUnits;
     for (const auto& keyvalue : volumeUnits)
     {
@@ -182,12 +152,12 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
 
         for (int i = range.start; i < range.end; ++i)
         {
-            cv::Vec3i tsdf_idx         = totalVolUnits[i];
+            Vec3i tsdf_idx = totalVolUnits[i];
             VolumeUnitMap::iterator it = volumeUnits.find(tsdf_idx);
             if (it == volumeUnits.end())
                 return;
 
-            Point3f volumeUnitPos     = volumeUnitIdxToVolume(it->first);
+            Point3f volumeUnitPos = volumeUnitIdxToVolume(it->first);
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
@@ -195,20 +165,19 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
                 return;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
-            if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols &&
-                cameraPoint.y < depth.rows)
+            if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
             {
                 assert(it != volumeUnits.end());
                 it->second.isActive = true;
             }
         }
-    });
+        });
 
     //! Integrate the correct volumeUnits
     parallel_for_(Range(0, (int)totalVolUnits.size()), [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
-            cv::Vec3i tsdf_idx         = totalVolUnits[i];
+            Vec3i tsdf_idx = totalVolUnits[i];
             VolumeUnitMap::iterator it = volumeUnits.find(tsdf_idx);
             if (it == volumeUnits.end())
                 return;
@@ -222,7 +191,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
                 volumeUnit.isActive = false;
             }
         }
-    });
+        });
 }
 
 cv::Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx(cv::Point3f p) const
@@ -395,7 +364,6 @@ float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
         Vec3i pt = iv + neighbourCoords[i];
 
         Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
-
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
         if (!queried[dictIdx])
