@@ -295,6 +295,61 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
+inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitMap::const_iterator it,
+    VolumeUnitMap::const_iterator vend, int unitRes)
+{
+    if (it == vend)
+    {
+        TsdfVoxel dummy;
+        dummy.tsdf = 1.f;
+        dummy.weight = 0;
+        return dummy;
+    }
+    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+
+    Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
+
+    // expanding at(), removing bounds check
+    const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
+    Vec4i volDims = volumeUnit->volDims;
+    int coordBase = volUnitLocalIdx[0] * volDims[0] + volUnitLocalIdx[1] * volDims[1] + volUnitLocalIdx[2] * volDims[2];
+    return volData[coordBase];
+}
+
+#if USE_INTRINSICS
+inline float interpolate(float tx, float ty, float tz, float vx[8])
+{
+    v_float32x4 v0246, v1357;
+    v_load_deinterleave(vx, v0246, v1357);
+
+    v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
+
+    v_float32x4 v00_10 = vxx;
+    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
+    float v0 = v0_1.get0();
+    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+    float v1 = v0_1.get0();
+
+    return v0 + tx * (v1 - v0);
+}
+
+#else
+inline float interpolate(float tx, float ty, float tz, float vx[8])
+{
+    float v00 = vx[0] + tz * (vx[1] - vx[0]);
+    float v01 = vx[2] + tz * (vx[3] - vx[2]);
+    float v10 = vx[4] + tz * (vx[5] - vx[4]);
+    float v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+    float v0 = v00 + ty * (v01 - v00);
+    float v1 = v10 + ty * (v11 - v10);
+
+    return v0 + tx * (v1 - v0);
+}
+#endif
+
 float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
 {
     const Vec3i neighbourCoords[] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
@@ -381,60 +436,8 @@ inline float HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
     */
 }
 
-inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitMap::const_iterator it,
-    VolumeUnitMap::const_iterator vend, int unitRes)
-{
-    if (it == vend)
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = 1.f;
-        dummy.weight = 0;
-        return dummy;
-    }
-    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
 
-    Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
 
-    // expanding at(), removing bounds check
-    const TsdfVoxel* volData = volumeUnit->volume.ptr<TsdfVoxel>();
-    Vec4i volDims = volumeUnit->volDims;
-    int coordBase = volUnitLocalIdx[0] * volDims[0] + volUnitLocalIdx[1] * volDims[1] + volUnitLocalIdx[2] * volDims[2];
-    return volData[coordBase];
-}
-
-#if USE_INTRINSICS
-inline float interpolate(float tx, float ty, float tz, float vx[8])
-{
-    v_float32x4 v0246, v1357;
-    v_load_deinterleave(vx, v0246, v1357);
-
-    v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
-
-    v_float32x4 v00_10 = vxx;
-    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
-
-    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
-    float v0 = v0_1.get0();
-    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
-    float v1 = v0_1.get0();
-
-    return v0 + tx * (v1 - v0);
-}
-
-#else
-inline float interpolate(float tx, float ty, float tz, float vx[8])
-{
-    float v00 = vx[0] + tz * (vx[1] - vx[0]);
-    float v01 = vx[2] + tz * (vx[3] - vx[2]);
-    float v10 = vx[4] + tz * (vx[5] - vx[4]);
-    float v11 = vx[6] + tz * (vx[7] - vx[6]);
-
-    float v0 = v00 + ty * (v01 - v00);
-    float v1 = v10 + ty * (v11 - v10);
-
-    return v0 + tx * (v1 - v0);
-}
-#endif
 
 inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 {
