@@ -401,43 +401,7 @@ float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
 inline float HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
 {
     return interpolateVoxelPoint(point * voxelSizeInv);
-/*
-    cv::Point3f neighbourCoords[] = {
-                                Point3f(0, 0, 0),
-                                Point3f(0, 0, 1),
-                                Point3f(0, 1, 0),
-                                Point3f(0, 1, 1),
-                                Point3f(1, 0, 0),
-                                Point3f(1, 0, 1),
-                                Point3f(1, 1, 0),
-                                Point3f(1, 1, 1) };
-
-    int ix = cvFloor(point.x);
-    int iy = cvFloor(point.y);
-    int iz = cvFloor(point.z);
-
-    float tx = point.x - ix;
-    float ty = point.y - iy;
-    float tz = point.z - iz;
-
-    float vx[8];
-    for (int i = 0; i < 8; i++)
-        vx[i] = tsdfToFloat(at(neighbourCoords[i] * voxelSize + point).tsdf);
-
-    float v00 = vx[0] + tz * (vx[1] - vx[0]);
-    float v01 = vx[2] + tz * (vx[3] - vx[2]);
-    float v10 = vx[4] + tz * (vx[5] - vx[4]);
-    float v11 = vx[6] + tz * (vx[7] - vx[6]);
-
-    float v0 = v00 + ty * (v01 - v00);
-    float v1 = v10 + ty * (v11 - v10);
-
-    return v0 + tx * (v1 - v0);
-    */
 }
-
-
-
 
 inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 {
