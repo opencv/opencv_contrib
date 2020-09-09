@@ -295,6 +295,22 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
+static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
+{
+    if (!(vuRes & (vuRes - 1)))
+    {
+        // vuRes is a power of 2, let's get this power
+        const int p2 = trailingZeros32(vuRes);
+        return Vec3i(pt[0] >> p2, pt[1] >> p2, pt[2] >> p2);
+    }
+    else
+    {
+        return Vec3i(cvFloor(float(pt[0]) / vuRes),
+            cvFloor(float(pt[1]) / vuRes),
+            cvFloor(float(pt[2]) / vuRes));
+    }
+}
+
 inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitMap::const_iterator it,
     VolumeUnitMap::const_iterator vend, int unitRes)
 {
@@ -378,9 +394,7 @@ float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
     {
         Vec3i pt = iv + neighbourCoords[i];
 
-        Vec3i volumeUnitIdx = Vec3i(cvFloor(float(pt[0]) / volumeUnitResolution),
-            cvFloor(float(pt[1]) / volumeUnitResolution),
-            cvFloor(float(pt[2]) / volumeUnitResolution));
+        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
 
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
@@ -443,9 +457,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     {
         Vec3i pt = iptVox + offsets[i];
 
-        Vec3i volumeUnitIdx = Vec3i(cvFloor(float(pt[0]) / volumeUnitResolution),
-            cvFloor(float(pt[1]) / volumeUnitResolution),
-            cvFloor(float(pt[2]) / volumeUnitResolution));
+        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
 
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
