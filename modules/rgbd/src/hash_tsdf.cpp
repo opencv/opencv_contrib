@@ -81,7 +81,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     VolumeUnitIndexSet newIndices;
     Mutex mutex;
     Range allocateRange(0, depth.rows);
-    parallel_for_(allocateRange, [&](const Range& range) {
+    auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
         VolumeUnitIndexSet localAccessVolUnits;
         for (int y = range.start; y < range.end; y += depthStride)
         {
@@ -123,7 +123,8 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
         mutex.unlock();
-        });
+    };
+    parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
 
     //! Perform the allocation
     int res = volumeUnitResolution;
