@@ -32,6 +32,8 @@ for module in sys.argv[2:]:
         hdr_list.append(mod_path+"/videoio/include/opencv2/videoio.hpp")
     elif module =='opencv_highgui':
         hdr_list.append(mod_path+"/highgui/include/opencv2/highgui.hpp")
+    elif module =='opencv_calib3d':
+        hdr_list.append(mod_path+"/calib3d/include/opencv2/calib3d.hpp")
 
 if not os.path.exists('autogen_cpp'):
     os.makedirs('autogen_cpp')

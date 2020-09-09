@@ -50,21 +50,6 @@ def handle_def_arg(inp, tp = '', ns=''):
     inp = inp.strip()
 
     out = ''
-    if tp in julia_types:
-        out = inp
-    elif not inp or inp=='Mat()':
-        if tp=='Mat' or tp=='InputArray':
-            out= 'CxxMat()'
-        out = tp+'()'
-
-    elif inp=="String()":
-            out=  '""'
-
-    elif '(' in inp or ':' in inp:
-        out =  "cpp_to_julia("+get_var(inp)+"())"
-
-    else:
-        print("Default not found")
 
     if inp in jl_cpp_defmap[tp]:
         out = jl_cpp_defmap[tp][inp]
