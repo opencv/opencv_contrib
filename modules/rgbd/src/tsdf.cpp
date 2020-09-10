@@ -408,27 +408,27 @@ struct IntegrateInvoker : ParallelLoopBody
                     camSpacePt += zStep;
                     if(camSpacePt.z <= 0)
                         continue;
+
+                    Point3f camPixVec;
+                    Point2f projected = proj(camSpacePt, camPixVec);
+
+                    depthType v = bilinearDepth(depth, projected);
+                    if (v == 0) {
+                        continue;
+                    }
                     float pixNorm;
-
-                    
-                        Point3f camPixVec;
-                        Point2f projected = proj(camSpacePt, camPixVec);
-
-                        depthType v = bilinearDepth(depth, projected);
-                        if (v == 0) {
-                            continue;
-                        }
-                    if (true)
+                    if (false)
                     {
                         // norm(camPixVec) produces double which is too slow
                         pixNorm = sqrt(camPixVec.dot(camPixVec));
                     }
                     else
                     {
-                        int u = projected.x;
-                        int v = projected.y;
-
-                        pixNorm = pixNorms.at<float>(u,v); 
+                        int _u = projected.x;
+                        int _v = projected.y;
+                        if (!(_u >= 0 && _u < depth.rows && _v >= 0 && _v < depth.cols))
+                            continue;
+                        pixNorm = pixNorms.at<float>(_u, _v); 
                     }
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
@@ -469,20 +469,19 @@ Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
     int widht = depth.cols;
     Point2f fl(intrinsics.fx, intrinsics.fy);
     Point2f pp(intrinsics.cx, intrinsics.cy);
-    Mat pixNorm (widht, height, CV_32F);
+    Mat pixNorm (height, widht, CV_32F);
     std::vector<float> x(widht);
     std::vector<float> y(height);
-
     for (int i = 0; i < widht; i++)
-        x[i] = (i - pp.x) * fl.x;
+        x[i] = (i - pp.x) / fl.x;
     for (int i = 0; i < height; i++)
-        y[i] = (i - pp.y) * fl.y;
+        y[i] = (i - pp.y) / fl.y;
     
-    for (int i = 0; i < widht; i++)
+    for (int i = 0; i < height; i++)
     {
-        for (int j = 0; j < height; j++)
+        for (int j = 0; j < widht; j++)
         {
-            pixNorm.at<float>(i, j) = x[j] * x[j] + y[i] * y[i] + 1.0f;
+            pixNorm.at<float>(i, j) = sqrtf(x[j] * x[j] + y[i] * y[i] + 1.0f);
         }
     }
     return pixNorm;
@@ -500,8 +499,8 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     Mat pixNorms = preCalculationPixNorm(depth, intrinsics);
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
     Range range(0, volResolution.x);
-    parallel_for_(range, ii);
-    //ii(range);
+    //parallel_for_(range, ii);
+    ii(range);
 }
 
 #if USE_INTRINSICS
@@ -1181,7 +1180,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL_
+#ifdef HAVE_OPENCL
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1485,7 +1484,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL_
+#ifdef HAVE_OPENCL
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);
