@@ -198,8 +198,8 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 
 struct IntegrateInvoker : ParallelLoopBody
 {
-    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics, const cv::Matx44f& cameraPose,
-                     float depthFactor, std::vector<std::vector<float>> pixNorms) :
+    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics, 
+                    const cv::Matx44f& cameraPose, float depthFactor, Mat pixNorms) :
         ParallelLoopBody(),
         volume(_volume),
         depth(_depth),
@@ -425,17 +425,10 @@ struct IntegrateInvoker : ParallelLoopBody
                     }
                     else
                     {
-                        float u_f = (camSpacePt.x * intr.fx) / camSpacePt.z + intr.cx +0.5f;
-                        int u = (int) ( u_f );
-                        float v_f = (camSpacePt.y * intr.fy) / camSpacePt.z + intr.cy + 0.5f;
-                        int v = (int) ( v_f );
+                        int u = projected.x;
+                        int v = projected.y;
 
-                        if (! (u_f >= 0.0001f && u_f < 480 
-                            && v_f >= 0.0001f && v_f < 640) ) {
-                            continue;
-                        }
-                        pixNorm = pixNorms[u][v]; 
-
+                        pixNorm = pixNorms.at<float>(u,v); 
                     }
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
@@ -467,18 +460,19 @@ struct IntegrateInvoker : ParallelLoopBody
     const float truncDistInv;
     const float dfac;
     TsdfVoxel* volDataStart;
-    std::vector<std::vector<float>> pixNorms;
+    Mat pixNorms;
 };
 
-std::vector<std::vector<float>> preCalculationPixNorm(const Intr& intrinsics)
+Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 {
-    int height = 480;
-    int widht = 640;
+    int height = depth.rows;
+    int widht = depth.cols;
     Point2f fl(intrinsics.fx, intrinsics.fy);
     Point2f pp(intrinsics.cx, intrinsics.cy);
-    std::vector<std::vector<float>> pixNorm (widht);
+    Mat pixNorm (widht, height, CV_32F);
     std::vector<float> x(widht);
     std::vector<float> y(height);
+
     for (int i = 0; i < widht; i++)
         x[i] = (i - pp.x) * fl.x;
     for (int i = 0; i < height; i++)
@@ -486,12 +480,10 @@ std::vector<std::vector<float>> preCalculationPixNorm(const Intr& intrinsics)
     
     for (int i = 0; i < widht; i++)
     {
-         std::vector<float> tmp(height);
         for (int j = 0; j < height; j++)
         {
-            tmp[j] = x[j] * x[j] + y[i] * y[i] + 1.0f;
+            pixNorm.at<float>(i, j) = x[j] * x[j] + y[i] * y[i] + 1.0f;
         }
-        pixNorm[i] = tmp;
     }
     return pixNorm;
 }
@@ -505,7 +497,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
-    std::vector<std::vector<float>> pixNorms = preCalculationPixNorm(intrinsics);
+    Mat pixNorms = preCalculationPixNorm(depth, intrinsics);
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
     Range range(0, volResolution.x);
     parallel_for_(range, ii);
