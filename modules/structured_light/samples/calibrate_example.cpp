@@ -1,5 +1,6 @@
 #include <iostream>
 #include <opencv2/structured_light.hpp>
+#include <opencv2/highgui.hpp>
 
 using namespace std;
 using namespace cv;
