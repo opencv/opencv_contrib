@@ -194,6 +194,37 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
     }
 }
 #endif
+std::vector<std::vector<float>> preCalculationPixNorm(Point3i volResolution, const Intr& intrinsics)
+{
+    //int height = volResolution.x;
+    int height = 480;
+    //int widht = volResolution.y;
+    int widht = 640;
+    Point2f fl(intrinsics.fx, intrinsics.fy);
+    Point2f pp(intrinsics.cx, intrinsics.cy);
+    //Mat pixNorms(height, widht, CV_32F);
+    std::vector<std::vector<float>> pixNorm (widht);
+    std::vector<float> x(widht);
+    std::vector<float> y(height);
+    for (int i = 0; i < widht; i++)
+        x[i] = (i - pp.x) * fl.x;
+    for (int i = 0; i < height; i++)
+        y[i] = (i - pp.y) * fl.y;
+    
+    for (int i = 0; i < widht; i++)
+    {
+        std::vector<float> tmp(height);
+        for (int j = 0; j < height; j++)
+        {
+            tmp.push_back(x[j] * x[j] + y[i] * y[i] + 1.0f);
+            //tmp[j] = x[j] * x[j] + y[i] * y[i] + 1.0f;
+            //std::cout << i <<" " << j << " | " <<pixNorm[i][j] << std::endl;
+        }
+        pixNorm.push_back(tmp);
+        //pixNorm[i] = tmp;
+        //std::cout << std::endl;
+    }
+}
 
 struct IntegrateInvoker : ParallelLoopBody
 {
@@ -202,6 +233,7 @@ struct IntegrateInvoker : ParallelLoopBody
         ParallelLoopBody(),
         volume(_volume),
         depth(_depth),
+        intr(intrinsics),
         proj(intrinsics.makeProjector()),
         vol2cam(Affine3f(cameraPose.inv()) * _volume.pose),
         truncDistInv(1.f/_volume.truncDist),
@@ -351,9 +383,7 @@ struct IntegrateInvoker : ParallelLoopBody
 #else
     virtual void operator() (const Range& range) const override
     {
-        bool pixNorm_flag = false;
-        float pixNorm = 0.0f, pixNorm_s = 0.0f;
-        float pixNorm_o = 0.0f;
+        std::vector<std::vector<float>> pixNorms = preCalculationPixNorm(volume.volResolution, intr);
         for(int x = range.start; x < range.end; x++)
         {
             TsdfVoxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -399,13 +429,6 @@ struct IntegrateInvoker : ParallelLoopBody
                 startZ = max(0, startZ);
                 endZ   = min(volume.volResolution.z, endZ);
 
-                Point3f camPixVec;
-                Point2f projected = proj(camSpacePt, camPixVec);
-                if (pixNorm_flag)
-                    pixNorm = sqrt(camPixVec.dot(camPixVec)) - pixNorm_o;
-                else
-                    pixNorm_s = sqrt(camPixVec.dot(camPixVec));
-
                 for (int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
@@ -415,24 +438,40 @@ struct IntegrateInvoker : ParallelLoopBody
                     camSpacePt += zStep;
                     if(camSpacePt.z <= 0)
                         continue;
+                    float pixNorm;
 
-                    Point3f camPixVec;
-                    Point2f projected = proj(camSpacePt, camPixVec);
+                    
+                        Point3f camPixVec;
+                        Point2f projected = proj(camSpacePt, camPixVec);
 
-                    depthType v = bilinearDepth(depth, projected);
-                    if (v == 0) {
-                        continue;
-                    }
-                    if (!pixNorm_flag && z==endZ-1)
-                        {
-                            pixNorm_o = (pixNorm - pixNorm_s) / (z - startZ);
-                            pixNorm_flag = true;
+                        depthType v = bilinearDepth(depth, projected);
+                        if (v == 0) {
+                            continue;
                         }
-                    // norm(camPixVec) produces double which is too slow
-                    if (pixNorm_flag)
-                        pixNorm += pixNorm_o;
-                    else
+                    if (false)
+                    {
+                        // norm(camPixVec) produces double which is too slow
                         pixNorm = sqrt(camPixVec.dot(camPixVec));
+                    }
+                    else
+                    {
+                        float u_f = ((camSpacePt.x * intr.fx) / camSpacePt.z + intr.cx +0.5f );
+                        int u = (int) ( u_f ) ;
+                        float v_f = ( (camSpacePt.y * intr.fy) / camSpacePt.z + intr.cy + 0.5f ) ;
+                        int v = (int) ( v_f ) ;
+                        //std::cout << volume.volResolution.x << " " << volume.volResolution.y << " : ";
+                        //std::cout << u_f << " " << v_f << " | ";
+                        //std::cout << u << " " << v << " | ";
+                        if (!(u_f >= 0.0001f && u_f < 480 && v_f >= 0.0001f &&
+                            v_f < 640)) {
+                            //std::cout << u << " " << v << " | \n";
+                            continue;
+                        }
+                        //std::cout << u << " " << v << " | \n";
+                        //pixNorm = pixNorms[u][v]; 
+                        pixNorm = sqrt(camPixVec.dot(camPixVec));
+                        //std::cout << pixNorm << std::endl;
+                    }
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
@@ -457,12 +496,16 @@ struct IntegrateInvoker : ParallelLoopBody
 
     TSDFVolumeCPU& volume;
     const Depth& depth;
+    const Intr& intr;
     const Intr::Projector proj;
     const cv::Affine3f vol2cam;
     const float truncDistInv;
     const float dfac;
     TsdfVoxel* volDataStart;
 };
+
+
+
 
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
@@ -475,7 +518,8 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     Depth depth = _depth.getMat();
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
     Range range(0, volResolution.x);
-    parallel_for_(range, ii);
+    //parallel_for_(range, ii);
+    ii(range);
 }
 
 #if USE_INTRINSICS
@@ -1155,7 +1199,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1459,7 +1503,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);
