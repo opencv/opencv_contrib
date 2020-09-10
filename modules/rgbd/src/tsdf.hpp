@@ -50,6 +50,8 @@ class TSDFVolume : public Volume
     Vec8i neighbourCoords;
 };
 
+cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics);
+
 class TSDFVolumeCPU : public TSDFVolume
 {
    public:
@@ -71,7 +73,7 @@ class TSDFVolumeCPU : public TSDFVolume
 
     float interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
-    
+
 #if USE_INTRINSICS
     float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;

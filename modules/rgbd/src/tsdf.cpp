@@ -208,7 +208,7 @@ cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
         x[i] = (i - pp.x) / fl.x;
     for (int i = 0; i < height; i++)
         y[i] = (i - pp.y) / fl.y;
-    
+
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < widht; j++)
