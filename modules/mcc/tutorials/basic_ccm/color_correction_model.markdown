@@ -28,9 +28,10 @@ Or make sure you check the mcc module in the GUI version of CMake: cmake-gui.
 Source Code of the sample
 -----------
 
-Parameters
+The sample has two parts of code, the first is the color checker detector model, see details at[basic_chart_detection](https://github.com/opencv/opencv_contrib/tree/master/modules/mcc/tutorials/basic_chart_detection), the second part is to make collor calibration.
 
 ```
+Here are the parameters for ColorCorrectionModel
 src :
         detected colors of ColorChecker patches;
         NOTICE: the color type is RGB not BGR, and the color values are in [0, 1];
@@ -178,19 +179,9 @@ Supported Color Space:
 
 ## Explanation
 
- @code{.cpp}
+ The first part is to detect the ColorChecker position.
 
-\#include <opencv2/core.hpp>
-
-\#include "opencv2/mcc/ccm.hpp"
-
-using namespace cv;
-
-using namespace std;
-
-using namespace ccm;
-
-  @endcode
+@code{.cpp}#include <opencv2/core.hpp>#include <opencv2/highgui.hpp>#include <opencv2/imgcodecs.hpp>#include <opencv2/mcc.hpp>#include <opencv2/mcc/ccm.hpp>#include <iostream>using namespace std;using namespace cv;using namespace mcc;using namespace ccm;using namespace std;@endcode
 
 ```
 Here is sets of header and namespaces. You can set other namespace like the code above.
@@ -198,60 +189,50 @@ Here is sets of header and namespaces. You can set other namespace like the code
 
 @code{.cpp}
 
-const Mat s = (Mat_<Vec3d>(24, 1) << Vec3d(214.11, 98.67, 37.97), Vec3d(231.94, 153.1, 85.27),  Vec3d(204.08, 143.71, 78.46),  Vec3d(190.58, 122.99, 30.84),  Vec3d(230.93, 148.46, 100.84),  Vec3d(228.64, 206.97, 97.5),  Vec3d(229.09, 137.07, 55.29),  Vec3d(189.21, 111.22, 92.66),  Vec3d(223.5, 96.42, 75.45),  Vec3d(201.82, 69.71, 50.9),  Vec3d(240.52, 196.47, 59.3), Vec3d(235.73, 172.13, 54.),  Vec3d(131.6, 75.04, 68.86),  Vec3d(189.04, 170.43, 42.05),  Vec3d(222.23, 74., 71.95), Vec3d(241.01, 199.1, 61.15),  Vec3d(224.99, 101.4, 100.24),  Vec3d(174.58, 152.63, 91.52),  Vec3d(248.06, 227.69, 140.5), Vec3d(241.15, 201.38, 115.58),  Vec3d(236.49, 175.87, 88.86),  Vec3d(212.19, 133.49, 54.79),  Vec3d(181.17, 102.94, 36.18), Vec3d(115.1, 53.77, 15.23));
+const char *about = "Basic chart detection";const char *keys = {  "{ help h usage ? |  | show this message }" "{t    |   | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl }"   "{v    |   | Input from video file, if ommited, input comes from camera }"  "{ci    | 0  | Camera id if input doesnt come from video (-v) }"
 
-  @endcode
-
-```
-The ColorChecker Matrix with the size of Nx1, type of cv::Mat.
-```
-
-@code{.cpp}
-
- Color color = Macbeth_D65_2;
-
- // If you use a customized ColorChecker, make sure to define the Color instance with your own reference color values and corresponding color space:
-
- // Color color(ref_color_values, color_space);
-
-  std::vector<double> saturated_threshold = { 0, 0.98 };
-
-  cv::Mat weight_list;
-
-  std::string filename = "input1.png";
-
- @endcode
+  "{f    | 1  | Path of the file to process (-v) }"  "{nc    | 1  | Maximum number of charts in the image }"};@ endcode
 
 ```
-Some variables for computing ccm Matrix. The variable filename is the path of a picture to be corrected.See other parameters' detail at the Parameters.
+Some arguments for ColorChecker detection.
 ```
 
-@code{.cpp}
-
-ColorCorrectionModel p1(s / 255., color, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1.e-4);
-
- @endcode
+@code{.cpp}  CommandLineParser parser(argc, argv, keys);  parser.about(about);  int t = parser.get<int>("t");  int nc = parser.get<int>("nc");  string filepath = parser.get<string>("f");  CV_Assert(0 <= t && t <= 2);  TYPECHART chartType = TYPECHART(t);  cout << "t: " << t << " , nc: " << nc << ", \nf: " << filepath << endl;if (!parser.check()){    parser.printErrors();return 0;}  Mat image = cv::imread(filepath, IMREAD_COLOR);if (!image.data)  {  cout << "Invalid Image!" << endl;    return 1;  } @endcode
 
 ```
-the object p1 is an object of ColorCorrectionModel class. The parameters should be changed to get the best effect of color correction.
+Preparation for ColorChecker detection to get messages for the image.
 ```
 
-@code{.cpp}
+@code{.cpp}Mat imageCopy = image.clone();
 
- std::cout <<"ccm1"<< p1.ccm << std::endl;
-
- @endcode
+  Ptr<CCheckerDetector> detector = CCheckerDetector::create();  if (!detector->process(image, chartType, nc))  {  printf("ChartColor not detected \n");  return 2;  }  vector<Ptr<mcc::CChecker>> checkers = detector->getListColorChecker();@endcode
 
 ```
-The object p1 has the member variable ccm which means ccm matrix. Then, ccm matrix can be used to make color correction.
+The CCheckerDetectorobject is created and uses getListColorChecker function to get ColorChecker message.
 ```
 
-@code{.cpp}
-
-Mat img1 = p1.inferImage(filename);
-
- @endcode
+@code{.cpp} for (Ptr<mcc::CChecker> checker : checkers)  {    Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);   cdraw->draw(image);    Mat chartsRGB = checker->getChartsRGB();Mat src = chartsRGB.col(1).clone().reshape(3, 18);    src /= 255.0;    //compte color correction matrix ColorCorrectionModel model1(src, Vinyl_D50_2);}@endcode
 
 ```
-The object p1 has the member function infer_image to make correction correction using ccm matrix. Img1 is the result of correction correction.
+For every ColorChecker,we can compute a ccm matrix for color correction.model1 is an object of ColorCorrectionModel class. The parameters should be changed to get the best effect of color correction.See other parameters' detail at the Parameters.
+```
+
+@code{.cpp}cv::Mat ref = = (Mat_<Vec3d>(18, 1) <<Vec3d(1.00000000e+02, 5.20000001e-03, -1.04000000e-02),Vec3d(7.30833969e+01, -8.19999993e-01, -2.02099991e+00), Vec3d(6.24930000e+01, 4.25999999e-01, -2.23099995e+00),Vec3d(5.04640007e+01, 4.46999997e-01, -2.32399988e+00),Vec3d(3.77970009e+01, 3.59999985e-02, -1.29700005e+00),Vec3d(0.00000000e+00, 0.00000000e+00, 0.00000000e+00),Vec3d(5.15880013e+01, 7.35179977e+01, 5.15690002e+01),Vec3d(9.36989975e+01, -1.57340002e+01, 9.19420013e+01),Vec3d(6.94079971e+01, -4.65940018e+01, 5.04869995e+01),Vec3d(6.66100006e+01, -1.36789999e+01, -4.31720009e+01),Vec3d(1.17110004e+01, 1.69799995e+01, -3.71759987e+01),Vec3d(5.19739990e+01, 8.19440002e+01, -8.40699959e+00), Vec3d(4.05489998e+01, 5.04399986e+01, 2.48490009e+01), Vec3d(6.08160019e+01, 2.60690002e+01, 4.94420013e+01), Vec3d(5.22529984e+01, -1.99500008e+01, -2.39960003e+01),Vec3d(5.12859993e+01, 4.84700012e+01, -1.50579996e+01),Vec3d(6.87070007e+01, 1.22959995e+01, 1.62129993e+01),Vec3d(6.36839981e+01, 1.02930002e+01, 1.67639999e+01));
+
+ColorCorrectionModel model8(src,ref,Lab_D50_2); @endcode
+
+```
+If you use a customized ColorChecker, you can use your own reference color values and corresponding color space As shown above.
+```
+
+@code{.cpp}Mat calibratedImage = model1.inferImage(filepath); @endcode
+
+```
+The member function infer_image is to make correction correction using ccm matrix.
+```
+
+@code{.cpp}string filename = filepath.substr(filepath.find_last_of('/')+1);int dotIndex = filename.find_last_of('.');  string baseName = filename.substr(0, dotIndex);    string ext = filename.substr(dotIndex+1, filename.length()-dotIndex);    string calibratedFilePath = baseName + ".calibrated." + ext;    cv::imwrite(calibratedFilePath, calibratedImage); @endcode
+
+```
+Save the calibrated image.
 ```

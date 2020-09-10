@@ -1,81 +1,124 @@
-#include <iostream>
-#include <vector>
 #include <opencv2/core.hpp>
-#include "opencv2/mcc/ccm.hpp"
 
-using namespace cv;
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/mcc.hpp>
+#include <opencv2/mcc/ccm.hpp>
+#include <iostream>
+
 using namespace std;
+using namespace cv;
+using namespace mcc;
 using namespace ccm;
+using namespace std;
 
-// inp the input array, type of cv::Mat.
+const char *about = "Basic chart detection";
+const char *keys = {
+    "{ help h usage ? |    | show this message }"
+    "{t        |      |  chartType: 0-Standard, 1-DigitalSG, 2-Vinyl }"
+    "{v        |      | Input from video file, if ommited, input comes from camera }"
+    "{ci       | 0    | Camera id if input doesnt come from video (-v) }"
+    "{f        | 1    | Path of the file to process (-v) }"
+    "{nc       | 1    | Maximum number of charts in the image }"};
 
+int main(int argc, char *argv[])
+{
 
-int main() {
+    // ----------------------------------------------------------
+    // Scroll down a bit (~40 lines) to find actual relevant code
+    // ----------------------------------------------------------
 
-const Mat s = (Mat_<Vec3d>(24, 1) <<
-    Vec3d(214.11, 98.67, 37.97),
-    Vec3d(231.94, 153.1, 85.27),
-    Vec3d(204.08, 143.71, 78.46),
-    Vec3d(190.58, 122.99, 30.84),
-    Vec3d(230.93, 148.46, 100.84),
-    Vec3d(228.64, 206.97, 97.5),
-    Vec3d(229.09, 137.07, 55.29),
-    Vec3d(189.21, 111.22, 92.66),
-    Vec3d(223.5, 96.42, 75.45),
-    Vec3d(201.82, 69.71, 50.9),
-    Vec3d(240.52, 196.47, 59.3),
-    Vec3d(235.73, 172.13, 54.),
-    Vec3d(131.6, 75.04, 68.86),
-    Vec3d(189.04, 170.43, 42.05),
-    Vec3d(222.23, 74., 71.95),
-    Vec3d(241.01, 199.1, 61.15),
-    Vec3d(224.99, 101.4, 100.24),
-    Vec3d(174.58, 152.63, 91.52),
-    Vec3d(248.06, 227.69, 140.5),
-    Vec3d(241.15, 201.38, 115.58),
-    Vec3d(236.49, 175.87, 88.86),
-    Vec3d(212.19, 133.49, 54.79),
-    Vec3d(181.17, 102.94, 36.18),
-    Vec3d(115.1, 53.77, 15.23));
-    Color color = Macbeth_D65_2;
-    std::vector<double> saturated_threshold = { 0, 0.98 };
-    cv::Mat weight_list;
-    //std::string filename = "input1.png";
+    CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
 
+    int t = parser.get<int>("t");
+    int nc = parser.get<int>("nc");
+    string filepath = parser.get<string>("f");
 
-    ColorCorrectionModel p1(s / 255, color, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3,
-        saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1e-4);
-    //ColorCorrectionModel p2(s / 255, color, AdobeRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3,
-    //    saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1e-4);
-    //ColorCorrectionModel p3(s / 255, color, WideGamutRGB, CCM_4x3, CIE2000, GRAYPOLYFIT, 2.2, 3,
-    //    saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1e-4);
-    //ColorCorrectionModel p4(s / 255, color, ProPhotoRGB, CCM_4x3, RGBL, GRAYLOGPOLYFIT, 2.2, 3,
-    //    saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1e-4);
-    //ColorCorrectionModel p5(s / 255, color, DCI_P3_RGB, CCM_3x3, RGB, IDENTITY_, 2.2, 3,
-    //    saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1e-4);
-    //ColorCorrectionModel p6(s / 255, color, AppleRGB, CCM_3x3, CIE2000, COLORPOLYFIT, 2.2, 2,
-    //    saturated_threshold, weight_list, 2, LEAST_SQUARE, 5000, 1e-4);
-    //ColorCorrectionModel p7(s / 255, color, REC_2020_RGB, CCM_3x3, CIE94_GRAPHIC_ARTS, COLORLOGPOLYFIT, 2.2, 3,
-    //    saturated_threshold, weight_list, 0, LEAST_SQUARE, 5000, 1e-4);
+    CV_Assert(0 <= t && t <= 2);
+    TYPECHART chartType = TYPECHART(t);
 
+    cout << "t: " << t << " , nc: " << nc <<  ", \nf: " << filepath << endl;
 
-    std::cout <<"ccm1"<< p1.ccm << std::endl;
-    //std::cout << "ccm2" << p2.ccm << std::endl;
-    //std::cout << "ccm3" << p3.ccm << std::endl;
-    //std::cout << "ccm4" << p4.ccm << std::endl;
-    //std::cout << "ccm5" << p5.ccm << std::endl;
-    //std::cout << "ccm6" << p6.ccm << std::endl;
-    //std::cout << "ccm7" << p7.ccm << std::endl;
+    if (!parser.check())
+    {
+        parser.printErrors();
+        return 0;
+    }
 
+    Mat image = cv::imread(filepath, IMREAD_COLOR);
+    if (!image.data)
+    {
+        cout << "Invalid Image!" << endl;
+        return 1;
+    }
 
-    //Mat img1 = p1.inferImage(filename);
-    //Mat img2 = p2.inferImage(filename);
-    //Mat img3 = p3.inferImage(filename);
-    //Mat img4 = p4.inferImage(filename);
-    //Mat img5 = p5.inferImage(filename, true);
-    //Mat img6 = p6.inferImage(filename);
-    //Mat img7 = p7.inferImage(filename);
+    Mat imageCopy = image.clone();
+    Ptr<CCheckerDetector> detector = CCheckerDetector::create();
+    // Marker type to detect
+    if (!detector->process(image, chartType, nc))
+    {
+        printf("ChartColor not detected \n");
+        return 2;
+    }
+    // get checker
+    vector<Ptr<mcc::CChecker>> checkers = detector->getListColorChecker();
+
+    for (Ptr<mcc::CChecker> checker : checkers)
+    {
+        Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
+        cdraw->draw(image);
+        Mat chartsRGB = checker->getChartsRGB();
+        Mat src = chartsRGB.col(1).clone().reshape(3, 18);
+        src /= 255.0;
+
+        //compte color correction matrix
+        ColorCorrectionModel model1(src, Vinyl_D50_2);
+
+        /* brief More models with different parameters, try it & check the document for details.
+        */
+        // ColorCorrectionModel model2(src, Vinyl_D50_2, AdobeRGB, CCM_4x3, CIE2000, GAMMA, 2.2, 3);
+        // ColorCorrectionModel model3(src, Vinyl_D50_2, WideGamutRGB, CCM_4x3, CIE2000, GRAYPOLYFIT, 2.2, 3);
+        // ColorCorrectionModel model4(src, Vinyl_D50_2, ProPhotoRGB, CCM_4x3, RGBL, GRAYLOGPOLYFIT, 2.2, 3);
+        // ColorCorrectionModel model5(src, Vinyl_D50_2, DCI_P3_RGB, CCM_3x3, RGB, IDENTITY_, 2.2, 3);
+        // ColorCorrectionModel model6(src, Vinyl_D50_2, AppleRGB, CCM_3x3, CIE2000, COLORPOLYFIT, 2.2, 2,{ 0, 0.98 },Mat(),2);
+        // ColorCorrectionModel model7(src, Vinyl_D50_2, REC_2020_RGB, CCM_3x3,  CIE94_GRAPHIC_ARTS, COLORLOGPOLYFIT, 2.2, 3);
+
+        /* If you use a customized ColorChecker, you can use your own reference color values and corresponding color space in a way like:
+        */
+        // cv::Mat ref = = (Mat_<Vec3d>(18, 1) <<
+        // Vec3d(1.00000000e+02, 5.20000001e-03, -1.04000000e-02),
+        // Vec3d(7.30833969e+01, -8.19999993e-01, -2.02099991e+00),
+        // Vec3d(6.24930000e+01, 4.25999999e-01, -2.23099995e+00),
+        // Vec3d(5.04640007e+01, 4.46999997e-01, -2.32399988e+00),
+        // Vec3d(3.77970009e+01, 3.59999985e-02, -1.29700005e+00),
+        // Vec3d(0.00000000e+00, 0.00000000e+00, 0.00000000e+00),
+        // Vec3d(5.15880013e+01, 7.35179977e+01, 5.15690002e+01),
+        // Vec3d(9.36989975e+01, -1.57340002e+01, 9.19420013e+01),
+        // Vec3d(6.94079971e+01, -4.65940018e+01, 5.04869995e+01),
+        // Vec3d(6.66100006e+01, -1.36789999e+01, -4.31720009e+01),
+        // Vec3d(1.17110004e+01, 1.69799995e+01, -3.71759987e+01),
+        // Vec3d(5.19739990e+01, 8.19440002e+01, -8.40699959e+00),
+        // Vec3d(4.05489998e+01, 5.04399986e+01, 2.48490009e+01),
+        // Vec3d(6.08160019e+01, 2.60690002e+01, 4.94420013e+01),
+        // Vec3d(5.22529984e+01, -1.99500008e+01, -2.39960003e+01),
+        // Vec3d(5.12859993e+01, 4.84700012e+01, -1.50579996e+01),
+        // Vec3d(6.87070007e+01, 1.22959995e+01, 1.62129993e+01),
+        // Vec3d(6.36839981e+01, 1.02930002e+01, 1.67639999e+01));
+
+        // ColorCorrectionModel model8(src,ref,Lab_D50_2);
+
+        //make color correction
+        Mat calibratedImage = model1.inferImage(filepath);
+
+        // Save the calibrated image to {FILE_NAME}.calibrated.{FILE_EXT}
+        string filename = filepath.substr(filepath.find_last_of('/')+1);
+        int dotIndex = filename.find_last_of('.');
+        string baseName = filename.substr(0, dotIndex);
+        string ext = filename.substr(dotIndex+1, filename.length()-dotIndex);
+        string calibratedFilePath = baseName + ".calibrated." + ext;
+        cv::imwrite(calibratedFilePath, calibratedImage);
+    }
 
     return 0;
-
 }
