@@ -56,7 +56,6 @@ class TSDFVolumeCPU : public TSDFVolume
     // dimension in voxels, size in meters
     TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
                   int _maxWeight, Vec3i _resolution, bool zFirstMemOrder = true);
-    std::vector<std::vector<float>> preCalculationPixNorm(const Intr& intrinsics);
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics) override;

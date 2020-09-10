@@ -194,42 +194,12 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
     }
 }
 #endif
-std::vector<std::vector<float>> preCalculationPixNorm(Point3i volResolution, const Intr& intrinsics)
-{
-    //int height = volResolution.x;
-    int height = 480;
-    //int widht = volResolution.y;
-    int widht = 640;
-    Point2f fl(intrinsics.fx, intrinsics.fy);
-    Point2f pp(intrinsics.cx, intrinsics.cy);
-    //Mat pixNorms(height, widht, CV_32F);
-    std::vector<std::vector<float>> pixNorm (widht);
-    std::vector<float> x(widht);
-    std::vector<float> y(height);
-    for (int i = 0; i < widht; i++)
-        x[i] = (i - pp.x) * fl.x;
-    for (int i = 0; i < height; i++)
-        y[i] = (i - pp.y) * fl.y;
-    
-    for (int i = 0; i < widht; i++)
-    {
-        std::vector<float> tmp(height);
-        for (int j = 0; j < height; j++)
-        {
-            tmp.push_back(x[j] * x[j] + y[i] * y[i] + 1.0f);
-            //tmp[j] = x[j] * x[j] + y[i] * y[i] + 1.0f;
-            //std::cout << i <<" " << j << " | " <<pixNorm[i][j] << std::endl;
-        }
-        pixNorm.push_back(tmp);
-        //pixNorm[i] = tmp;
-        //std::cout << std::endl;
-    }
-}
+
 
 struct IntegrateInvoker : ParallelLoopBody
 {
     IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics, const cv::Matx44f& cameraPose,
-                     float depthFactor) :
+                     float depthFactor, std::vector<std::vector<float>> pixNorms) :
         ParallelLoopBody(),
         volume(_volume),
         depth(_depth),
@@ -237,7 +207,8 @@ struct IntegrateInvoker : ParallelLoopBody
         proj(intrinsics.makeProjector()),
         vol2cam(Affine3f(cameraPose.inv()) * _volume.pose),
         truncDistInv(1.f/_volume.truncDist),
-        dfac(1.f/depthFactor)
+        dfac(1.f/depthFactor),
+        pixNorms(pixNorms)
     {
         volDataStart = volume.volume.ptr<TsdfVoxel>();
     }
@@ -383,7 +354,6 @@ struct IntegrateInvoker : ParallelLoopBody
 #else
     virtual void operator() (const Range& range) const override
     {
-        std::vector<std::vector<float>> pixNorms = preCalculationPixNorm(volume.volResolution, intr);
         for(int x = range.start; x < range.end; x++)
         {
             TsdfVoxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -448,29 +418,24 @@ struct IntegrateInvoker : ParallelLoopBody
                         if (v == 0) {
                             continue;
                         }
-                    if (false)
+                    if (true)
                     {
                         // norm(camPixVec) produces double which is too slow
                         pixNorm = sqrt(camPixVec.dot(camPixVec));
                     }
                     else
                     {
-                        float u_f = ((camSpacePt.x * intr.fx) / camSpacePt.z + intr.cx +0.5f );
-                        int u = (int) ( u_f ) ;
-                        float v_f = ( (camSpacePt.y * intr.fy) / camSpacePt.z + intr.cy + 0.5f ) ;
-                        int v = (int) ( v_f ) ;
-                        //std::cout << volume.volResolution.x << " " << volume.volResolution.y << " : ";
-                        //std::cout << u_f << " " << v_f << " | ";
-                        //std::cout << u << " " << v << " | ";
-                        if (!(u_f >= 0.0001f && u_f < 480 && v_f >= 0.0001f &&
-                            v_f < 640)) {
-                            //std::cout << u << " " << v << " | \n";
+                        float u_f = (camSpacePt.x * intr.fx) / camSpacePt.z + intr.cx +0.5f;
+                        int u = (int) ( u_f );
+                        float v_f = (camSpacePt.y * intr.fy) / camSpacePt.z + intr.cy + 0.5f;
+                        int v = (int) ( v_f );
+
+                        if (! (u_f >= 0.0001f && u_f < 480 
+                            && v_f >= 0.0001f && v_f < 640) ) {
                             continue;
                         }
-                        //std::cout << u << " " << v << " | \n";
-                        //pixNorm = pixNorms[u][v]; 
-                        pixNorm = sqrt(camPixVec.dot(camPixVec));
-                        //std::cout << pixNorm << std::endl;
+                        pixNorm = pixNorms[u][v]; 
+
                     }
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
@@ -502,10 +467,34 @@ struct IntegrateInvoker : ParallelLoopBody
     const float truncDistInv;
     const float dfac;
     TsdfVoxel* volDataStart;
+    std::vector<std::vector<float>> pixNorms;
 };
 
-
-
+std::vector<std::vector<float>> preCalculationPixNorm(const Intr& intrinsics)
+{
+    int height = 480;
+    int widht = 640;
+    Point2f fl(intrinsics.fx, intrinsics.fy);
+    Point2f pp(intrinsics.cx, intrinsics.cy);
+    std::vector<std::vector<float>> pixNorm (widht);
+    std::vector<float> x(widht);
+    std::vector<float> y(height);
+    for (int i = 0; i < widht; i++)
+        x[i] = (i - pp.x) * fl.x;
+    for (int i = 0; i < height; i++)
+        y[i] = (i - pp.y) * fl.y;
+    
+    for (int i = 0; i < widht; i++)
+    {
+         std::vector<float> tmp(height);
+        for (int j = 0; j < height; j++)
+        {
+            tmp[j] = x[j] * x[j] + y[i] * y[i] + 1.0f;
+        }
+        pixNorm[i] = tmp;
+    }
+    return pixNorm;
+}
 
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
@@ -516,10 +505,11 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
-    IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
+    std::vector<std::vector<float>> pixNorms = preCalculationPixNorm(intrinsics);
+    IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
     Range range(0, volResolution.x);
-    //parallel_for_(range, ii);
-    ii(range);
+    parallel_for_(range, ii);
+    //ii(range);
 }
 
 #if USE_INTRINSICS
