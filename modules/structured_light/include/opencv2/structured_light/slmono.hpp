@@ -7,7 +7,6 @@
 #define OPENCV_structured_light_HPP
 
 #include <opencv2/core.hpp>
-//#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
 namespace cv{
