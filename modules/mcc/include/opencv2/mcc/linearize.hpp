@@ -58,26 +58,32 @@ public:
     Polyfit() {};
 
     /* *\ brief Polyfit method.
+    https://en.wikipedia.org/wiki/Polynomial_regression
+    polynomial: yi = a0 + a1*xi + a2*xi^2 + ... + an*xi^deg (i = 1,2,...,n)
+    and deduct: Ax = y
+    See linear.pdf for details
     */
-    Polyfit(cv::Mat s, cv::Mat d, int deg_) :deg(deg_)
+    Polyfit(cv::Mat x, cv::Mat y, int deg_) :deg(deg_)
     {
-        int npoints = s.checkVector(1);
-        cv::Mat_<double> srcX(s), srcY(d);
-        cv::Mat_<double> m = cv::Mat_<double>::ones(npoints, deg + 1);
-        for (int y = 0; y < npoints; ++y)
+        int n = x.cols * x.rows * x.channels();
+        x = x.reshape(1, n);
+        y = y.reshape(1, n);
+        cv::Mat_<double> A = cv::Mat_<double>::ones(n, deg + 1);
+        for (int i = 0; i < n; ++i)
         {
-            for (int x = 1; x < m.cols; ++x)
+            for (int j = 1; j < A.cols; ++j)
             {
-                m.at<double>(y, x) = srcX.at<double>(y) * m.at<double>(y, x - 1);
+                A.at<double>(i, j) = x.at<double>(i) * A.at<double>(i, j - 1);
             }
         }
-        cv::solve(m, srcY, p, DECOMP_SVD);
+        cv::Mat y_(y);
+        cv::solve(A, y_, p, DECOMP_SVD);
     }
 
     virtual ~Polyfit() {};
     cv::Mat operator()(const cv::Mat& inp)
     {
-        return elementWise(inp, [this](double a)->double {return fromEW(a); });
+        return elementWise(inp, [this](double x)->double {return fromEW(x); });
     };
 
 private:
@@ -104,12 +110,12 @@ public:
 
     /* *\ brief Logpolyfit method.
     */
-    LogPolyfit(cv::Mat s, cv::Mat d, int deg_) :deg(deg_)
+    LogPolyfit(cv::Mat x, cv::Mat y, int deg_) :deg(deg_)
     {
-        cv::Mat mask_ = (s > 0) & (d > 0);
+        cv::Mat mask_ = (x > 0) & (y > 0);
         cv::Mat src_, dst_, s_, d_;
-        src_ = maskCopyTo(s, mask_);
-        dst_ = maskCopyTo(d, mask_);
+        src_ = maskCopyTo(x, mask_);
+        dst_ = maskCopyTo(y, mask_);
         log(src_, s_);
         log(dst_, d_);
         p = Polyfit(s_, d_, deg);
