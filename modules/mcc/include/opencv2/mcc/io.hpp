@@ -102,6 +102,7 @@ static std::map <IO, std::vector<double>> getIlluminant()
 }
 
 const std::map<IO, std::vector<double> >  illuminants = getIlluminant();
+
 } // namespace ccm
 } // namespace cv
 

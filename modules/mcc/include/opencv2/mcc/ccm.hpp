@@ -221,11 +221,15 @@ class ColorCorrectionModel
 {
 public:
     // detected colors, the referenceand the RGB colorspace for conversion
-    cv::Mat src;
+    Mat src;
     Color dst;
-
+    Mat dist;
     RGBBase_& cs;
-    cv::Mat mask;
+    Mat mask;
+
+    // RGBl of detected data and the reference
+    Mat src_rgbl;
+    Mat dst_rgbl;
 
     // ccm type and shape
     CCM_TYPE ccm_type;
@@ -235,26 +239,26 @@ public:
     std::shared_ptr<Linear> linear;
     DISTANCE_TYPE distance;
 
-    cv::Mat weights;
-    cv::Mat ccm;
-    cv::Mat ccm0;
+    Mat weights;
+    Mat ccm;
+    Mat ccm0;
+    int masked_len;
     double loss;
-
     int max_count;
     double epsilon;
 
-    ColorCorrectionModel(cv::Mat src_, cv::Mat colors_, const ColorSpace& ref_cs_, RGBBase_& cs_=sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, cv::Mat weights_list = Mat(), double weights_coeff = 0,
+    ColorCorrectionModel(Mat src_, Mat colors_, const ColorSpace& ref_cs_, RGBBase_& cs_=sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
+        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4) :
         ColorCorrectionModel(src_, Color(colors_, ref_cs_), cs_, ccm_type_, distance_, linear_type,
             gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
 
-    ColorCorrectionModel(cv::Mat src_, Color dst_, RGBBase_& cs_= sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, cv::Mat weights_list = Mat(), double weights_coeff = 0,
+    ColorCorrectionModel(Mat src_, Color dst_, RGBBase_& cs_= sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
+        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4) :
         src(src_), dst(dst_), cs(cs_), ccm_type(ccm_type_), distance(distance_), max_count(max_count_), epsilon(epsilon_)
     {
-        cv::Mat saturate_mask = saturate(src, saturated_threshold[0], saturated_threshold[1]);
+        Mat saturate_mask = saturate(src, saturated_threshold[0], saturated_threshold[1]);
         this->linear = getLinear(gamma, deg, this->src, this->dst, saturate_mask, this->cs, linear_type);
         calWeightsMasks(weights_list, weights_coeff, saturate_mask);
 
@@ -264,7 +268,6 @@ public:
 
         // make no change for CCM_3x3, make change for CCM_4x3.
         src_rgbl = prepare(src_rgbl);
-
 
         // distance function may affect the loss function and the fitting function
         switch (this->distance)
@@ -296,7 +299,7 @@ public:
         *\ param inp the input array, type of cv::Mat.
         *\ return the output array, type of cv::Mat
     */
-    cv::Mat prepare(const cv::Mat& inp)
+    Mat prepare(const Mat& inp)
     {
         switch (ccm_type)
         {
@@ -306,9 +309,9 @@ public:
         case cv::ccm::CCM_4x3:
         {
             shape = 12;
-            cv::Mat arr1 = cv::Mat::ones(inp.size(), CV_64F);
-            cv::Mat arr_out(inp.size(), CV_64FC4);
-            cv::Mat arr_channels[3];
+            Mat arr1 = Mat::ones(inp.size(), CV_64F);
+            Mat arr_out(inp.size(), CV_64FC4);
+            Mat arr_channels[3];
             split(inp, arr_channels);
             merge(std::vector<Mat>{arr_channels[0], arr_channels[1], arr_channels[2], arr1}, arr_out);
             return arr_out;
@@ -319,21 +322,55 @@ public:
         }
     };
 
+    /* *\ brief Calculate weights and mask.
+        *\ param weights_list the input array, type of cv::Mat.
+        *\ param weights_coeff type of double.
+        *\ param saturate_list the input array, type of cv::Mat.
+    */
+    void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask)
+    {
+        // weights
+        if (!weights_list.empty())
+        {
+            weights = weights_list;
+        }
+        else if (weights_coeff != 0)
+        {
+            pow(dst.toLuminant(dst.cs.io), weights_coeff, weights);
+        }
+
+        // masks
+        Mat weight_mask = Mat::ones(src.rows, 1, CV_8U);
+        if (!weights.empty())
+        {
+            weight_mask = weights > 0;
+        }
+        this->mask = (weight_mask) & (saturate_mask);
+
+        // weights' mask
+        if (!weights.empty())
+        {
+            Mat weights_masked = maskCopyTo(this->weights, this->mask);
+            weights = weights_masked / mean(weights_masked)[0];
+        }
+        masked_len = (int)sum(mask)[0];
+    };
+
     /* *\ brief Fitting nonlinear - optimization initial value by white balance.
         *        see CCM.pdf for details.
-        *\ return the output array, type of cv::Mat
+        *\ return the output array, type of Mat
     */
-    cv::Mat initialWhiteBalance(void)
+    Mat initialWhiteBalance(void)
     {
-        cv::Mat schannels[3];
+        Mat schannels[3];
         split(src_rgbl, schannels);
-        cv::Mat dchannels[3];
+        Mat dchannels[3];
         split(dst_rgbl, dchannels);
         std::vector<double> initial_vec = { sum(dchannels[0])[0] / sum(schannels[0])[0], 0, 0, 0,
                                             sum(dchannels[1])[0] / sum(schannels[1])[0], 0, 0, 0,
                                             sum(dchannels[2])[0] / sum(schannels[2])[0], 0, 0, 0 };
         std::vector<double> initial_vec_(initial_vec.begin(), initial_vec.begin() + shape);
-        cv::Mat initial_white_balance = cv::Mat(initial_vec_, true).reshape(0, shape / 3);
+        Mat initial_white_balance = Mat(initial_vec_, true).reshape(0, shape / 3);
 
         return initial_white_balance;
     };
@@ -344,7 +381,7 @@ public:
     */
     void initialLeastSquare(bool fit = false)
     {
-        cv::Mat A, B, w;
+        Mat A, B, w;
         if (weights.empty())
         {
             A = src_rgbl;
@@ -353,7 +390,7 @@ public:
         else
         {
             pow(weights, 0.5, w);
-            cv::Mat w_;
+            Mat w_;
             merge(std::vector<Mat>{w, w, w}, w_);
             A = w_.mul(src_rgbl);
             B = w_.mul(dst_rgbl);
@@ -364,7 +401,7 @@ public:
         if (fit)
         {
             ccm = ccm0;
-            cv::Mat residual = A.reshape(1, A.rows) * ccm.reshape(0, shape / 3) - B.reshape(1, B.rows);
+            Mat residual = A.reshape(1, A.rows) * ccm.reshape(0, shape / 3) - B.reshape(1, B.rows);
             Scalar s = residual.dot(residual);
             double sum = s[0];
             loss = sqrt(sum / masked_len);
@@ -391,7 +428,7 @@ public:
         */
         double calc(const double* x) const CV_OVERRIDE
         {
-            cv::Mat ccm_(ccm_loss->shape, 1, CV_64F);
+            Mat ccm_(ccm_loss->shape, 1, CV_64F);
             for (int i = 0; i < ccm_loss->shape; i++)
             {
                 ccm_.at<double>(i, 0) = x[i];
@@ -403,9 +440,9 @@ public:
 
     double calc_loss_(Color color)
     {
-        cv::Mat distlist = color.diff(dst, distance);
+        Mat distlist = color.diff(dst, distance);
         Color lab = color.to(Lab_D50_2);
-        cv::Mat dist_;
+        Mat dist_;
         pow(distlist, 2, dist_);
         if (!weights.empty())
         {
@@ -431,8 +468,8 @@ public:
         cv::Ptr<DownhillSolver> solver = cv::DownhillSolver::create();
         cv::Ptr<LossFunction> ptr_F(new LossFunction(this));
         solver->setFunction(ptr_F);
-        cv::Mat reshapeccm = ccm0.clone().reshape(0, 1);
-        cv::Mat step = cv::Mat::ones(reshapeccm.size(), CV_64F);
+        Mat reshapeccm = ccm0.clone().reshape(0, 1);
+        Mat step = Mat::ones(reshapeccm.size(), CV_64F);
         solver->setInitStep(step);
         TermCriteria termcrit = TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, max_count, epsilon);
         solver->setTermCriteria(termcrit);
@@ -447,15 +484,15 @@ public:
         *\ param img the input image, type of cv::Mat.
         *\ return the output array, type of cv::Mat.
     */
-    cv::Mat infer(const cv::Mat& img, bool islinear = false)
+    Mat infer(const Mat& img, bool islinear = false)
     {
         if (!ccm.data)
         {
             throw "No CCM values!";
         }
-        cv::Mat img_lin = linear->linearize(img);
-        cv::Mat img_ccm(img_lin.size(), img_lin.type());
-        cv::Mat ccm_ = ccm.reshape(0, shape / 3);
+        Mat img_lin = linear->linearize(img);
+        Mat img_ccm(img_lin.size(), img_lin.type());
+        Mat ccm_ = ccm.reshape(0, shape / 3);
         img_ccm = multiple(prepare(img_lin), ccm_);
         if (islinear == true)
         {
@@ -471,71 +508,24 @@ public:
         *\ param islinear if linearize or not.
         *\ return the output array, type of cv::Mat.
     */
-    cv::Mat inferImage(std::string imgfile, bool islinear = false)
+    Mat inferImage(std::string imgfile, bool islinear = false)
     {
         const int inp_size = 255;
         const int out_size = 255;
-        cv::Mat img = imread(imgfile);
-        cv::Mat img_;
+        Mat img = imread(imgfile);
+        Mat img_;
         cvtColor(img, img_, COLOR_BGR2RGB);
         img_.convertTo(img_, CV_64F);
         img_ = img_ / inp_size;
-        cv::Mat out = this->infer(img_, islinear);
-        cv::Mat out_ = out * out_size;
+        Mat out = this->infer(img_, islinear);
+        Mat out_ = out * out_size;
         out_.convertTo(out_, CV_8UC3);
-        cv::Mat img_out = min(max(out_, 0), out_size);
-        cv::Mat out_img;
+        Mat img_out = min(max(out_, 0), out_size);
+        Mat out_img;
         cvtColor(img_out, out_img, COLOR_RGB2BGR);
         return out_img;
     };
 
-    // void report() {
-    //     std::cout << "CCM0: " << ccm0 << std::endl;
-    //     std::cout << "CCM: " << ccm << std::endl;
-    //     std::cout << "Loss: " << loss << std::endl;
-    // }
-
-private:
-    cv::Mat dist;
-    int masked_len;
-
-    // RGBl of detected data and the reference
-    cv::Mat src_rgbl;
-    cv::Mat dst_rgbl;
-
-    /* *\ brief Calculate weights and mask.
-        *\ param weights_list the input array, type of cv::Mat.
-        *\ param weights_coeff type of double.
-        *\ param saturate_list the input array, type of cv::Mat.
-    */
-    void calWeightsMasks(cv::Mat weights_list, double weights_coeff, cv::Mat saturate_mask)
-    {
-        // weights
-        if (!weights_list.empty())
-        {
-            weights = weights_list;
-        }
-        else if (weights_coeff != 0)
-        {
-            pow(dst.toLuminant(dst.cs.io), weights_coeff, weights);
-        }
-
-        // masks
-        cv::Mat weight_mask = cv::Mat::ones(src.rows, 1, CV_8U);
-        if (!weights.empty())
-        {
-            weight_mask = weights > 0;
-        }
-        this->mask = (weight_mask) & (saturate_mask);
-
-        // weights' mask
-        if (!weights.empty())
-        {
-            cv::Mat weights_masked = maskCopyTo(this->weights, this->mask);
-            weights = weights_masked / mean(weights_masked)[0];
-        }
-        masked_len = (int)sum(mask)[0];
-    };
 };
 
 } // namespace ccm

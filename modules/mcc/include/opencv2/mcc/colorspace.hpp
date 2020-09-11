@@ -94,8 +94,8 @@ public:
     double yb;
     MatFunc toL;
     MatFunc fromL;
-    cv::Mat M_to;
-    cv::Mat M_from;
+    Mat M_to;
+    Mat M_from;
 
     using ColorSpace::ColorSpace;
 
@@ -151,15 +151,15 @@ private:
     */
     virtual void calM()
     {
-        cv::Mat XYZr, XYZg, XYZb, XYZ_rgbl, Srgb;
-        XYZr = cv::Mat(xyY2XYZ({ xr, yr }), true);
-        XYZg = cv::Mat(xyY2XYZ({ xg, yg }), true);
-        XYZb = cv::Mat(xyY2XYZ({ xb, yb }), true);
-        merge(std::vector<cv::Mat>{ XYZr, XYZg, XYZb }, XYZ_rgbl);
+        Mat XYZr, XYZg, XYZb, XYZ_rgbl, Srgb;
+        XYZr = Mat(xyY2XYZ({ xr, yr }), true);
+        XYZg = Mat(xyY2XYZ({ xg, yg }), true);
+        XYZb = Mat(xyY2XYZ({ xb, yb }), true);
+        merge(std::vector<Mat>{ XYZr, XYZg, XYZb }, XYZ_rgbl);
         XYZ_rgbl = XYZ_rgbl.reshape(1, XYZ_rgbl.rows);
-        cv::Mat XYZw = cv::Mat(illuminants.find(io)->second, true);
+        Mat XYZw = Mat(illuminants.find(io)->second, true);
         solve(XYZ_rgbl, XYZw, Srgb);
-        merge(std::vector<cv::Mat>{ Srgb.at<double>(0)* XYZr,
+        merge(std::vector<Mat>{ Srgb.at<double>(0)* XYZr,
             Srgb.at<double>(1)* XYZg,
             Srgb.at<double>(2)* XYZb }, M_to);
         M_to = M_to.reshape(1, M_to.rows);
@@ -171,10 +171,10 @@ private:
     virtual void calOperations()
     {
         // rgb -> rgbl
-        toL = [this](cv::Mat rgb)->cv::Mat {return toLFunc(rgb); };
+        toL = [this](Mat rgb)->Mat {return toLFunc(rgb); };
 
         // rgbl -> rgb
-        fromL = [this](cv::Mat rgbl)->cv::Mat {return fromLFunc(rgbl); };
+        fromL = [this](Mat rgbl)->Mat {return fromLFunc(rgbl); };
 
         if (linear)
         {
@@ -190,14 +190,14 @@ private:
 
     virtual void calLinear() {}
 
-    virtual cv::Mat toLFunc(cv::Mat& /*rgb*/)
+    virtual Mat toLFunc(Mat& /*rgb*/)
     {
-        return cv::Mat();
+        return Mat();
     };
 
-    virtual cv::Mat fromLFunc(cv::Mat& /*rgbl*/)
+    virtual Mat fromLFunc(Mat& /*rgbl*/)
     {
-        return cv::Mat();
+        return Mat();
     };
 
 };
@@ -211,12 +211,12 @@ public:
     double gamma;
 
 private:
-    cv::Mat toLFunc(cv::Mat& rgb) CV_OVERRIDE
+    Mat toLFunc(Mat& rgb) CV_OVERRIDE
     {
         return gammaCorrection(rgb, gamma);
     }
 
-    cv::Mat fromLFunc(cv::Mat& rgbl) CV_OVERRIDE
+    Mat fromLFunc(Mat& rgbl) CV_OVERRIDE
     {
         return gammaCorrection(rgbl, 1. / gamma);
     }
@@ -270,7 +270,7 @@ private:
        *\ param rgb the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat.
     */
-    cv::Mat toLFunc(cv::Mat& rgb) CV_OVERRIDE
+    Mat toLFunc(Mat& rgb) CV_OVERRIDE
     {
         return elementWise(rgb, [this](double a_)->double {return toLFuncEW(a_); });
     }
@@ -298,7 +298,7 @@ private:
        *\ param rgbl the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat.
     */
-    cv::Mat fromLFunc(cv::Mat& rgbl) CV_OVERRIDE
+    Mat fromLFunc(Mat& rgbl) CV_OVERRIDE
     {
         return elementWise(rgbl, [this](double a_)->double {return fromLFuncEW(a_); });
     }
@@ -505,7 +505,6 @@ public:
 
 ColorSpaceInitial color_space_initial;
 
-
 /* *\ brief Enum of the possible types of CAMs.
 */
 enum CAM
@@ -515,11 +514,11 @@ enum CAM
     BRADFORD
 };
 
-static std::map <std::tuple<IO, IO, CAM>, cv::Mat > cams;
-const static cv::Mat Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
-const static cv::Mat Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-const static std::map <CAM, std::vector< cv::Mat >> MAs = {
-    {IDENTITY , { cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
+static std::map <std::tuple<IO, IO, CAM>, Mat > cams;
+const static Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+const static Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+const static std::map <CAM, std::vector< Mat >> MAs = {
+    {IDENTITY , { Mat::eye(cv::Size(3,3),CV_64FC1) , Mat::eye(cv::Size(3,3),CV_64FC1)} },
     {VON_KRIES, { Von_Kries ,Von_Kries.inv() }},
     {BRADFORD, { Bradford ,Bradford.inv() }}
 };
@@ -543,11 +542,11 @@ private:
        *\ param method type of CAM.
        *\ return the output array, type of cv::Mat.
     */
-    cv::Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const
+    Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const
     {
         if (sio == dio)
         {
-            return cv::Mat::eye(cv::Size(3, 3), CV_64FC1);
+            return Mat::eye(cv::Size(3, 3), CV_64FC1);
         }
         if (cams.count(std::make_tuple(dio, sio, method)) == 1)
         {
@@ -555,11 +554,11 @@ private:
         }
 
         // Function from http ://www.brucelindbloom.com/index.html?ColorCheckerRGB.html.
-        cv::Mat XYZws = cv::Mat(illuminants.find(dio)->second);
-        cv::Mat XYZWd = cv::Mat(illuminants.find(sio)->second);
-        cv::Mat MA = MAs.at(method)[0];
-        cv::Mat MA_inv = MAs.at(method)[1];
-        cv::Mat M = MA_inv * cv::Mat::diag((MA * XYZws) / (MA * XYZWd)) * MA;
+        Mat XYZws = Mat(illuminants.find(dio)->second);
+        Mat XYZWd = Mat(illuminants.find(sio)->second);
+        Mat MA = MAs.at(method)[0];
+        Mat MA_inv = MAs.at(method)[1];
+        Mat M = MA_inv * Mat::diag((MA * XYZws) / (MA * XYZWd)) * MA;
         cams[std::make_tuple(dio, sio, method)] = M;
         cams[std::make_tuple(sio, dio, method)] = M.inv();
         return M;
@@ -571,7 +570,6 @@ private:
 const XYZ XYZ_D65_2(D65_2);
 const XYZ XYZ_D50_2(D50_2);
 
-
 /* *\ brief Lab color space.
 */
 class Lab :public ColorSpace
@@ -579,8 +577,8 @@ class Lab :public ColorSpace
 public:
     Lab(IO io_) : ColorSpace(io_, "Lab", true)
     {
-        to = { Operation([this](cv::Mat src)->cv::Mat {return tosrc(src); }) };
-        from = { Operation([this](cv::Mat src)->cv::Mat {return fromsrc(src); }) };
+        to = { Operation([this](Mat src)->Mat {return tosrc(src); }) };
+        from = { Operation([this](Mat src)->Mat {return fromsrc(src); }) };
     }
 
 private:
@@ -601,7 +599,7 @@ private:
        *\ param src the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat
     */
-    cv::Mat fromsrc(cv::Mat& src)
+    Mat fromsrc(Mat& src)
     {
         return channelWise(src, [this](cv::Vec3d a)->cv::Vec3d {return fromxyz(a); });
     }
@@ -617,7 +615,7 @@ private:
        *\ param src the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat
     */
-    cv::Mat tosrc(cv::Mat& src)
+    Mat tosrc(Mat& src)
     {
         return channelWise(src, [this](cv::Vec3d a)->cv::Vec3d {return tolab(a); });
     }

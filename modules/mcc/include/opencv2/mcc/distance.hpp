@@ -62,8 +62,7 @@ double deltaCIEDE2000(cv::Vec3d lab1, cv::Vec3d lab2);
 double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1);
 double deltaCMC1To1(cv::Vec3d lab1, cv::Vec3d lab2);
 double deltaCMC2To1(cv::Vec3d lab1, cv::Vec3d lab2);
-cv::Mat distance(cv::Mat src, cv::Mat ref, DISTANCE_TYPE distance_type);
-
+Mat distance(Mat src, Mat ref, DISTANCE_TYPE distance_type);
 
 /* *\ brief  distance between two points in formula CIE76
    *\ param lab1 a 3D vector
@@ -266,7 +265,7 @@ double deltaCMC2To1(cv::Vec3d lab1, cv::Vec3d lab2)
     return deltaCMC(lab1, lab2, 2, 1);
 }
 
-cv::Mat distance(cv::Mat src, cv::Mat ref, DISTANCE_TYPE distance_type)
+Mat distance(Mat src, Mat ref, DISTANCE_TYPE distance_type)
 {
     switch (distance_type)
     {
@@ -292,7 +291,8 @@ cv::Mat distance(cv::Mat src, cv::Mat ref, DISTANCE_TYPE distance_type)
     }
 };
 
-}  // namespace ccm
-}  // namespace cv
+} // namespace ccm
+} // namespace cv
+
 
 #endif
