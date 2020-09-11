@@ -494,9 +494,9 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
         environment[2] == intrinsics.fx && environment[3] == intrinsics.fy &&
         environment[4] == intrinsics.cx && environment[5] == intrinsics.cy))
     {
-        environment[0] = depth.rows;    environment[1] = depth.cols;
-        environment[2] = intrinsics.fx; environment[3] = intrinsics.fy;
-        environment[4] = intrinsics.cx; environment[5] = intrinsics.cy;
+        environment[0] = (float)depth.rows; environment[1] = (float)depth.cols;
+        environment[2] = intrinsics.fx;     environment[3] = intrinsics.fy;
+        environment[4] = intrinsics.cx;     environment[5] = intrinsics.cy;
         
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
