@@ -457,7 +457,7 @@ struct IntegrateInvoker : ParallelLoopBody
     Mat pixNorms;
 };
 
-static inline cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
+static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 {
     int height = depth.rows;
     int widht = depth.cols;

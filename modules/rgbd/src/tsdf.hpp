@@ -76,12 +76,11 @@ class TSDFVolumeCPU : public TSDFVolume
     float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
 #endif
-
+    Vec6f environment;
+    Mat pixNorms;
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
     // Consist of Voxel elements
-    Vec6f environment;
-    Mat pixNorms;
     Mat volume;
 };
 
