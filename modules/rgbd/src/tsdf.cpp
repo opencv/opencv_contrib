@@ -439,20 +439,13 @@ struct IntegrateInvoker : ParallelLoopBody
                     if (v == 0) {
                         continue;
                     }
-                    float pixNorm;
-                    if (false)
-                    {
-                        // norm(camPixVec) produces double which is too slow
-                        pixNorm = sqrt(camPixVec.dot(camPixVec));
-                    }
-                    else
-                    {
-                        int _u = projected.x;
-                        int _v = projected.y;
-                        if (!(_u >= 0 && _u < depth.rows && _v >= 0 && _v < depth.cols))
-                            continue;
-                        pixNorm = pixNorms.at<float>(_u, _v);
-                    }
+
+                    int _u = projected.x;
+                    int _v = projected.y;
+                    if (!(_u >= 0 && _u < depth.rows && _v >= 0 && _v < depth.cols))
+                        continue;
+                    float pixNorm = pixNorms.at<float>(_u, _v);
+
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
@@ -498,8 +491,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     Mat pixNorms = preCalculationPixNorm(depth, intrinsics);
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
     Range range(0, volResolution.x);
-    //parallel_for_(range, ii);
-    ii(range);
+    parallel_for_(range, ii);
 }
 
 #if USE_INTRINSICS
