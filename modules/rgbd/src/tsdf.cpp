@@ -497,10 +497,10 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
         environment[0] = (float)depth.rows; environment[1] = (float)depth.cols;
         environment[2] = intrinsics.fx;     environment[3] = intrinsics.fy;
         environment[4] = intrinsics.cx;     environment[5] = intrinsics.cy;
-        
+
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
-    
+
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
     Range range(0, volResolution.x);
     parallel_for_(range, ii);
@@ -539,7 +539,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
     TsdfType vx[8];
     for(int i = 0; i < 8; i++)
         vx[i] = volData[neighbourCoords[i] + coordBase].tsdf;
-    
+
     v_float32x4 v0246 = tsdfToFloat_INTR(v_int32x4(vx[0], vx[2], vx[4], vx[6]));
     v_float32x4 v1357 = tsdfToFloat_INTR(v_int32x4(vx[1], vx[3], vx[5], vx[7]));
     v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
