@@ -50,8 +50,6 @@ class TSDFVolume : public Volume
     Vec8i neighbourCoords;
 };
 
-cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics);
-
 class TSDFVolumeCPU : public TSDFVolume
 {
    public:
@@ -82,6 +80,8 @@ class TSDFVolumeCPU : public TSDFVolume
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
     // Consist of Voxel elements
+    Vec6f environment;
+    Mat pixNorms;
     Mat volume;
 };
 

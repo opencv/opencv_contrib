@@ -195,29 +195,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 }
 #endif
 
-cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
-{
-    int height = depth.rows;
-    int widht = depth.cols;
-    Point2f fl(intrinsics.fx, intrinsics.fy);
-    Point2f pp(intrinsics.cx, intrinsics.cy);
-    Mat pixNorm (height, widht, CV_32F);
-    std::vector<float> x(widht);
-    std::vector<float> y(height);
-    for (int i = 0; i < widht; i++)
-        x[i] = (i - pp.x) / fl.x;
-    for (int i = 0; i < height; i++)
-        y[i] = (i - pp.y) / fl.y;
 
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < widht; j++)
-        {
-            pixNorm.at<float>(i, j) = sqrtf(x[j] * x[j] + y[i] * y[i] + 1.0f);
-        }
-    }
-    return pixNorm;
-}
 
 struct IntegrateInvoker : ParallelLoopBody
 {
@@ -479,6 +457,30 @@ struct IntegrateInvoker : ParallelLoopBody
     Mat pixNorms;
 };
 
+static inline cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
+{
+    int height = depth.rows;
+    int widht = depth.cols;
+    Point2f fl(intrinsics.fx, intrinsics.fy);
+    Point2f pp(intrinsics.cx, intrinsics.cy);
+    Mat pixNorm (height, widht, CV_32F);
+    std::vector<float> x(widht);
+    std::vector<float> y(height);
+    for (int i = 0; i < widht; i++)
+        x[i] = (i - pp.x) / fl.x;
+    for (int i = 0; i < height; i++)
+        y[i] = (i - pp.y) / fl.y;
+
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < widht; j++)
+        {
+            pixNorm.at<float>(i, j) = sqrtf(x[j] * x[j] + y[i] * y[i] + 1.0f);
+        }
+    }
+    return pixNorm;
+}
+
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                               const Intr& intrinsics)
@@ -488,7 +490,17 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
-    Mat pixNorms = preCalculationPixNorm(depth, intrinsics);
+    if (!(environment[0] == depth.rows  && environment[1] == depth.cols &&
+        environment[2] == intrinsics.fx && environment[3] == intrinsics.fy &&
+        environment[4] == intrinsics.cx && environment[5] == intrinsics.cy))
+    {
+        environment[0] == depth.rows;    environment[1] == depth.cols;
+        environment[2] == intrinsics.fx; environment[3] == intrinsics.fy;
+        environment[4] == intrinsics.cx; environment[5] == intrinsics.cy;
+        
+        pixNorms = preCalculationPixNorm(depth, intrinsics);
+    }
+    
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
     Range range(0, volResolution.x);
     parallel_for_(range, ii);
