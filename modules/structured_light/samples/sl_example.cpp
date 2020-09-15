@@ -35,7 +35,7 @@ void readImages(vector<string> refs_files, vector<string> imgs_files, OutputArra
     }
 }
 
-void StructuredLightMono::captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, bool isCaptureRefs)
+void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, bool isCaptureRefs)
 {
     vector<Mat>& patterns_ = *(vector<Mat>*)patterns.getObj();
     vector<Mat>& refs_ = *(vector<Mat>*)refs.getObj();
