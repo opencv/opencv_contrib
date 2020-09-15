@@ -28,15 +28,15 @@ public:
 
     //project patterns and capture with camera
     //CV_WRAP
-    //void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, bool isCaptureRefs = true);
+//    void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, bool isCaptureRefs = true);
 
     //main phase unwrapping algorithm
     void unwrapPhase(InputOutputArrayOfArrays refs, InputOutputArrayOfArrays imgs, OutputArray out);
 
     //read references and phases from file
     //CV_WRAP
-    //void readImages(std::vector<std::string> refs_files, std::vector<std::string> imgs_files, OutputArrayOfArrays refs, OutputArrayOfArrays imgs);
-       
+//    void readImages(std::vector<std::string> refs_files, std::vector<std::string> imgs_files, OutputArrayOfArrays refs, OutputArrayOfArrays imgs);
+
 private:
     
     //size of the image for whole algorithm
