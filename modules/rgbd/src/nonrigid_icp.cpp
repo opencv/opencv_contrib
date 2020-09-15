@@ -633,8 +633,8 @@ static void fillVertex(BlockSparseMat& jtj, std::vector<float>& jtb,
                        const std::vector<WarpNode>& nodes, WeightsNeighbours knns,
                        // no need to pass diff, pointPlaneDistance is enough
                        //Point3f inp, Point3f diff, Point3f outVolN,
-                       Point3f inp, float pointPlaneDistance, Point3f outVolN, 
-                       float damping, float tukeySigma, bool decorrelate, bool disableCentering)
+                       Point3f inp, float pointPlaneDistance, Point3f outVolN,
+                       float damping, float tukeySigma, float normPenalty, bool decorrelate, bool disableCentering)
 {
     size_t knn = nodes.size();
 
@@ -670,13 +670,28 @@ static void fillVertex(BlockSparseMat& jtj, std::vector<float>& jtb,
     // jacobian of normalization+application to a point
     Matx<float, 3, 8> jNormApply = dqsum.j_normapply(inp);
 
+    // jacobian of norm penalty
+    // d(norm(a+e*b))/da = na^T + e*nb^T*(I_4 - na*na^T)
+    // d(norm(a+e*b))/db = e*na^T
+    Vec2f norm = dqsum.norm();
+    float rnorm = norm[0];
+    Vec4f na = dqsum.real().coeff / rnorm;
+    Vec4f nb = dqsum.dual().coeff / rnorm;
+    Matx14f ddda = nb.t()* (Matx44f::eye() - na * na.t());
+    Matx<float, 2, 8> jNormPenalty = concatVert(concatHor(na.t(), Matx14f::zeros()),
+                                                concatHor(ddda, na.t()));
+    Vec2f normDiff(1 - norm[0], 0 - norm[1]);
+
     std::vector<Matx<float, 3, 6>> jPerNode(knn);
+
+    std::vector<Matx<float, 2, 6>> jNodeNormPenalty(knn);
 
     // emulating jNormApply * jPerNodeWeighted
     for (int k = 0; k < knn; k++)
     {
         jPerNode[k] = jNormApply * jPerNodeWeighted[k];
-    }    
+        jNodeNormPenalty[k] = jNormPenalty * jPerNodeWeighted[k];
+    }
 
     // no need to pass diff, pointPlaneDistance is enough
     //float pointPlaneDistance = outVolN.dot(diff);
@@ -696,20 +711,22 @@ static void fillVertex(BlockSparseMat& jtj, std::vector<float>& jtb,
         int kplace = places[k];
         if (decorrelate)
         {
-            jtj.refBlock(kplace, kplace) += weight * jPerNode[k].t() * nnt * jPerNode[k];
+            auto block = jPerNode[k].t() * nnt * jPerNode[k] + normPenalty * jNodeNormPenalty[k].t() * jNodeNormPenalty[k];
+            jtj.refBlock(kplace, kplace) += weight * block;
         }
         else
         {
             for (int l = 0; l < knn; l++)
             {
+                auto block = jPerNode[k].t() * nnt * jPerNode[l] + normPenalty * jNodeNormPenalty[k].t() * jNodeNormPenalty[l];
                 int lplace = places[l];
-                jtj.refBlock(kplace, lplace) += weight * jPerNode[k].t() * nnt * jPerNode[l];
+                jtj.refBlock(kplace, lplace) += weight * block;
             }
         }
 
         // no need to pass diff, pointPlaneDistance is enough
         //Vec6f jtbBlock = jPerNode[k].t() * nnt * Vec3f(diff);
-        Vec6f jtbBlock = jPerNode[k].t() * Vec3f(outVolN) * pointPlaneDistance;
+        Vec6f jtbBlock = jPerNode[k].t() * Vec3f(outVolN) * pointPlaneDistance + normPenalty * jNodeNormPenalty[k].t() * normDiff;
         for (int i = 0; i < 6; i++)
         {
             jtb[6 * kplace + i] += weight * jtbBlock[i];
@@ -801,6 +818,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     const bool addItoLM = true;
     const float lambdaLevMarq = 0.1f;
     const float coeffILM = 0.1f;
+
+    // TODO: check and find good one
+    const float normPenalty = 0.0f;
     
     /*
     newPoints: points from camera to match to
@@ -1115,7 +1135,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                     }
 
                     fillVertex(jtj, jtb, nodes, knns, inp, pointPlaneDistance, outVolN,
-                               damping, (useTukey ? vertSigma : -1.f), decorrelate, disableCentering);
+                               damping, (useTukey ? vertSigma : -1.f), normPenalty, decorrelate, disableCentering);
                     usedPixels++;
                 }
             }
