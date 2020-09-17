@@ -40,7 +40,7 @@ namespace ccm
 /* *\ brief Color defined by color_values and color space
 */
 
-class Color
+class CV_EXPORTS_W Color
 {
 public:
 
@@ -48,17 +48,14 @@ public:
         *\ param colored mask of colored color
         *\ param history storage of historical conversion
     */
-    cv::Mat colors;
+    Mat colors;
     const ColorSpace& cs;
-    cv::Mat grays;
-    cv::Mat colored;
+    Mat grays;
+    Mat colored;
     std::map<ColorSpace, std::shared_ptr<Color>> history;
 
-    Color(cv::Mat colors_, const ColorSpace& cs_, cv::Mat colored_) : colors(colors_), cs(cs_), colored(colored_)
-    {
-        grays= ~colored;
-    }
-    Color(cv::Mat colors_, const ColorSpace& cs_) :colors(colors_), cs(cs_) {};
+    Color(Mat colors_, const ColorSpace& cs_, Mat colored_);
+    Color(Mat colors_, const ColorSpace& cs_);
 
     virtual ~Color() {};
 
@@ -69,62 +66,27 @@ public:
         *\ param other type of ColorSpace.
         *\ return Color.
     */
-    Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true)
-    {
-        if (history.count(other) == 1)
-        {
-
-            return *history[other];
-        }
-        if (cs.relate(other))
-        {
-            return Color(cs.relation(other).run(colors), other);
-        }
-        Operations ops;
-        ops.add(cs.to).add(XYZ(cs.io).cam(other.io, method)).add(other.from);
-        std::shared_ptr<Color> color(new Color(ops.run(colors), other));
-        if (save)
-        {
-            history[other] = color;
-        }
-        return *color;
-    }
+    Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true);
 
     /* *\ brief Channels split.
        *\ return each channel.
     */
-    cv::Mat channel(cv::Mat m, int i)
-    {
-        cv::Mat dchannels[3];
-        split(m, dchannels);
-        return dchannels[i];
-    }
+    Mat channel(Mat m, int i);
 
     /* *\ brief To Gray.
     */
-    cv::Mat toGray(IO io, CAM method = BRADFORD, bool save = true)
-    {
-        XYZ xyz(io);
-        return channel(this->to(xyz, method, save).colors, 1);
-    }
+    Mat toGray(IO io, CAM method = BRADFORD, bool save = true);
 
     /* *\ brief To Luminant.
     */
-    cv::Mat toLuminant(IO io, CAM method = BRADFORD, bool save = true)
-    {
-        Lab lab(io);
-        return channel(this->to(lab, method, save).colors, 0);
-    }
+    Mat toLuminant(IO io, CAM method = BRADFORD, bool save = true);
 
     /* *\ brief Diff without IO.
        *\ param other type of Color.
        *\ param method type of distance.
        *\ return distance between self and other
     */
-    cv::Mat diff(Color& other, DISTANCE_TYPE method = CIE2000)
-    {
-        return diff(other, cs.io, method);
-    }
+    Mat diff(Color& other, DISTANCE_TYPE method = CIE2000);
 
     /* *\ brief Diff with IO.
        *\ param other type of Color.
@@ -132,51 +94,15 @@ public:
        *\ param method type of distance.
        *\ return distance between self and other
     */
-    cv::Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000)
-    {
-        Lab lab(io);
-        switch (method)
-        {
-        case cv::ccm::CIE76:
-        case cv::ccm::CIE94_GRAPHIC_ARTS:
-        case cv::ccm::CIE94_TEXTILES:
-        case cv::ccm::CIE2000:
-        case cv::ccm::CMC_1TO1:
-        case cv::ccm::CMC_2TO1:
-            return distance(to(lab).colors, other.to(lab).colors, method);
-        case cv::ccm::RGB:
-            return distance(to(*cs.nl).colors, other.to(*cs.nl).colors, method);
-        case cv::ccm::RGBL:
-            return distance(to(*cs.l).colors, other.to(*cs.l).colors, method);
-        default:
-            throw std::invalid_argument{ "Wrong method!" };
-            break;
-        }
-    }
+    Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000);
 
     /* *\ brief Calculate gray mask.
     */
-    void getGray(double JDN = 2.0)
-    {
-        if (!grays.empty()) {
-            return;
-        }
-        cv::Mat lab = to(Lab_D65_2).colors;
-        cv::Mat gray(colors.size(), colors.type());
-        int fromto[] = { 0,0, -1,1, -1,2 };
-        mixChannels(&lab, 1, &gray, 1, fromto, 3);
-        cv::Mat d = distance(lab, gray, CIE2000);
-        this->grays = d < JDN;
-        this->colored = ~grays;
-    }
+    void getGray(double JDN = 2.0);
 
     /* *\ brief Operator for mask copy.
     */
-    Color operator[](cv::Mat mask)
-    {
-        return Color(maskCopyTo(colors, mask), cs);
-    }
-
+    Color operator[](Mat mask);
 
 };
 
@@ -184,7 +110,7 @@ public:
 /* *\ brief Data is from https://www.imatest.com/wp-content/uploads/2011/11/Lab-data-Iluminate-D65-D50-spectro.xls
    *        see Miscellaneous.md for details.
 */
-const cv::Mat ColorChecker2005_LAB_D50_2 = (cv::Mat_<cv::Vec3d>(24, 1) <<
+const Mat ColorChecker2005_LAB_D50_2 = (Mat_<cv::Vec3d>(24, 1) <<
     cv::Vec3d(37.986, 13.555, 14.059),
     cv::Vec3d(65.711, 18.13, 17.81),
     cv::Vec3d(49.927, -4.88, -21.925),
@@ -210,7 +136,7 @@ const cv::Mat ColorChecker2005_LAB_D50_2 = (cv::Mat_<cv::Vec3d>(24, 1) <<
     cv::Vec3d(35.656, -0.421, -1.231),
     cv::Vec3d(20.461, -0.079, -0.973));
 
-const cv::Mat ColorChecker2005_LAB_D65_2 = (cv::Mat_<cv::Vec3d>(24, 1) <<
+const Mat ColorChecker2005_LAB_D65_2 = (Mat_<cv::Vec3d>(24, 1) <<
     cv::Vec3d(37.542, 12.018, 13.33),
     cv::Vec3d(65.2, 14.821, 17.545),
     cv::Vec3d(50.366, -1.573, -21.431),
@@ -236,13 +162,13 @@ const cv::Mat ColorChecker2005_LAB_D65_2 = (cv::Mat_<cv::Vec3d>(24, 1) <<
     cv::Vec3d(35.68, -0.22, -1.205),
     cv::Vec3d(20.475, 0.049, -0.972));
 
-const cv::Mat ColorChecker2005_COLORED_MASK = (cv::Mat_<uchar>(24, 1) <<
+const Mat ColorChecker2005_COLORED_MASK = (Mat_<uchar>(24, 1) <<
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1,
     0, 0, 0, 0, 0, 0);
 
-const cv::Mat Vinyl_LAB_D50_2 = (Mat_<Vec3d>(18, 1) <<
+const Mat Vinyl_LAB_D50_2 = (Mat_<Vec3d>(18, 1) <<
     Vec3d(1.00000000e+02, 5.20000001e-03, -1.04000000e-02),
     Vec3d(7.30833969e+01, -8.19999993e-01, -2.02099991e+00),
     Vec3d(6.24930000e+01, 4.25999999e-01, -2.23099995e+00),
@@ -262,21 +188,20 @@ const cv::Mat Vinyl_LAB_D50_2 = (Mat_<Vec3d>(18, 1) <<
     Vec3d(6.87070007e+01, 1.22959995e+01, 1.62129993e+01),
     Vec3d(6.36839981e+01, 1.02930002e+01, 1.67639999e+01));
 
-const cv::Mat Vinyl_COLORED_MASK = (cv::Mat_<uchar>(18, 1) <<
+const Mat Vinyl_COLORED_MASK = (Mat_<uchar>(18, 1) <<
     0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1);
 
 /* *\ brief  Macbeth ColorChecker with 2deg D50.
 */
-Color Macbeth_D50_2(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK);
+CV_EXPORTS_W extern Color Macbeth_D50_2;
 
 /* *\ brief  Macbeth ColorChecker with 2deg D65.
 */
-Color Macbeth_D65_2(ColorChecker2005_LAB_D65_2, Lab_D65_2, ColorChecker2005_COLORED_MASK);
+CV_EXPORTS_W extern Color Macbeth_D65_2;
 
-Color Vinyl_D50_2(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK);
-
+CV_EXPORTS_W extern Color Vinyl_D50_2;
 
 } // namespace ccm
 } // namespace cv

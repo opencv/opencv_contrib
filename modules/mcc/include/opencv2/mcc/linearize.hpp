@@ -49,11 +49,11 @@ enum LINEAR_TYPE
 
 /* *\ brief Polyfit model.
 */
-class Polyfit
+class CV_EXPORTS_W Polyfit
 {
 public:
     int deg;
-    cv::Mat p;
+    Mat p;
 
     Polyfit() {};
 
@@ -63,44 +63,19 @@ public:
     and deduct: Ax = y
     See linear.pdf for details
     */
-    Polyfit(cv::Mat x, cv::Mat y, int deg_) :deg(deg_)
-    {
-        int n = x.cols * x.rows * x.channels();
-        x = x.reshape(1, n);
-        y = y.reshape(1, n);
-        cv::Mat_<double> A = cv::Mat_<double>::ones(n, deg + 1);
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 1; j < A.cols; ++j)
-            {
-                A.at<double>(i, j) = x.at<double>(i) * A.at<double>(i, j - 1);
-            }
-        }
-        cv::Mat y_(y);
-        cv::solve(A, y_, p, DECOMP_SVD);
-    }
+    Polyfit(Mat x, Mat y, int deg_);
 
     virtual ~Polyfit() {};
-    cv::Mat operator()(const cv::Mat& inp)
-    {
-        return elementWise(inp, [this](double x)->double {return fromEW(x); });
-    };
+
+    Mat operator()(const Mat& inp);
 
 private:
-    double fromEW(double x)
-    {
-        double res = 0;
-        for (int d = 0; d <= deg; ++d)
-        {
-            res += pow(x, d) * p.at<double>(d, 0);
-        }
-        return res;
-    };
+    double fromEW(double x);
 };
 
 /* *\ brief Logpolyfit model.
 */
-class LogPolyfit
+class CV_EXPORTS_W LogPolyfit
 {
 public:
     int deg;
@@ -110,34 +85,16 @@ public:
 
     /* *\ brief Logpolyfit method.
     */
-    LogPolyfit(cv::Mat x, cv::Mat y, int deg_) :deg(deg_)
-    {
-        cv::Mat mask_ = (x > 0) & (y > 0);
-        cv::Mat src_, dst_, s_, d_;
-        src_ = maskCopyTo(x, mask_);
-        dst_ = maskCopyTo(y, mask_);
-        log(src_, s_);
-        log(dst_, d_);
-        p = Polyfit(s_, d_, deg);
-    }
+    LogPolyfit(Mat x, Mat y, int deg_);
 
     virtual ~LogPolyfit() {};
 
-    cv::Mat operator()(const cv::Mat& inp)
-    {
-        cv::Mat mask_ = inp >= 0;
-        cv::Mat y, y_, res;
-        log(inp, y);
-        y = p(y);
-        exp(y, y_);
-        y_.copyTo(res, mask_);
-        return res;
-    };
+    Mat operator()(const Mat& inp);
 };
 
 /* *\ brief Linearization base.
 */
-class Linear
+class CV_EXPORTS_W Linear
 {
 public:
     Linear() {};
@@ -147,10 +104,7 @@ public:
     /* *\ brief Inference.
        *\ param inp the input array, type of cv::Mat.
     */
-    virtual cv::Mat linearize(cv::Mat inp)
-    {
-        return inp;
-    };
+    virtual Mat linearize(Mat inp);
 
     /* *\brief Evaluate linearization model.
     */
@@ -161,21 +115,18 @@ public:
 /* *\ brief Linearization identity.
    *        make no change.
 */
-class LinearIdentity : public Linear {};
+class CV_EXPORTS_W LinearIdentity : public Linear {};
 
 /* *\ brief Linearization gamma correction.
 */
-class LinearGamma : public Linear
+class CV_EXPORTS_W LinearGamma : public Linear
 {
 public:
     double gamma;
 
     LinearGamma(double gamma_) :gamma(gamma_) {};
 
-    cv::Mat linearize(cv::Mat inp) CV_OVERRIDE
-    {
-        return gammaCorrection(inp, gamma);
-    };
+    Mat linearize(Mat inp) CV_OVERRIDE;
 };
 
 /* *\ brief Linearization.
@@ -188,14 +139,14 @@ public:
     int deg;
     T p;
 
-    LinearGray(int deg_, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg_)
+    LinearGray(int deg_, Mat src, Color dst, Mat mask, RGBBase_ cs) :deg(deg_)
     {
         dst.getGray();
         Mat lear_gray_mask = mask & dst.grays;
 
         // the grayscale function is approximate for src is in relative color space.
         src = rgb2gray(maskCopyTo(src, lear_gray_mask));
-        cv::Mat dst_ = maskCopyTo(dst.toGray(cs.io), lear_gray_mask);
+        Mat dst_ = maskCopyTo(dst.toGray(cs.io), lear_gray_mask);
         calc(src, dst_);
     }
 
@@ -203,12 +154,12 @@ public:
        *\ param src the input array, type of cv::Mat.
        *\ param dst the input array, type of cv::Mat.
     */
-    void calc(const cv::Mat& src, const cv::Mat& dst)
+    void calc(const Mat& src, const Mat& dst)
     {
         p = T(src, dst, deg);
     };
 
-    cv::Mat linearize(cv::Mat inp) CV_OVERRIDE
+    Mat linearize(Mat inp) CV_OVERRIDE
     {
         return p(inp);
     };
@@ -226,17 +177,17 @@ public:
     T pg;
     T pb;
 
-    LinearColor(int deg_, cv::Mat src_, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg_)
+    LinearColor(int deg_, Mat src_, Color dst, Mat mask, RGBBase_ cs) :deg(deg_)
     {
         Mat src = maskCopyTo(src_, mask);
-        cv::Mat dst_ = maskCopyTo(dst.to(*cs.l).colors, mask);
+        Mat dst_ = maskCopyTo(dst.to(*cs.l).colors, mask);
         calc(src, dst_);
     }
 
-    void calc(const cv::Mat& src, const cv::Mat& dst)
+    void calc(const Mat& src, const Mat& dst)
     {
-        cv::Mat schannels[3];
-        cv::Mat dchannels[3];
+        Mat schannels[3];
+        Mat dchannels[3];
         split(src, schannels);
         split(dst, dchannels);
         pr = T(schannels[0], dchannels[0], deg);
@@ -244,17 +195,16 @@ public:
         pb = T(schannels[2], dchannels[2], deg);
     };
 
-    cv::Mat linearize(cv::Mat inp) CV_OVERRIDE
+    Mat linearize(Mat inp) CV_OVERRIDE
     {
-        cv::Mat channels[3];
+        Mat channels[3];
         split(inp, channels);
-        std::vector<cv::Mat> channel;
-        cv::Mat res;
-        merge(std::vector<cv::Mat>{ pr(channels[0]), pg(channels[1]), pb(channels[2]) }, res);
+        std::vector<Mat> channel;
+        Mat res;
+        merge(std::vector<Mat>{ pr(channels[0]), pg(channels[1]), pb(channels[2]) }, res);
         return res;
     };
 };
-
 
 /* *\ brief Get linearization method.
    *        used in ccm model.
@@ -266,36 +216,7 @@ public:
    *\ param cs type of RGBBase_.
    *\ param linear_type type of linear.
 */
-std::shared_ptr<Linear>  getLinear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type);
-std::shared_ptr<Linear>  getLinear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type)
-{
-    std::shared_ptr<Linear> p = std::make_shared<Linear>();
-    switch (linear_type)
-    {
-    case cv::ccm::IDENTITY_:
-        p.reset(new LinearIdentity());
-        break;
-    case cv::ccm::GAMMA:
-        p.reset(new LinearGamma(gamma));
-        break;
-    case cv::ccm::COLORPOLYFIT:
-        p.reset(new LinearColor<Polyfit>(deg, src, dst, mask, cs));
-        break;
-    case cv::ccm::COLORLOGPOLYFIT:
-        p.reset(new LinearColor<LogPolyfit>(deg, src, dst, mask, cs));
-        break;
-    case cv::ccm::GRAYPOLYFIT:
-        p.reset(new LinearGray<Polyfit>(deg, src, dst, mask, cs));
-        break;
-    case cv::ccm::GRAYLOGPOLYFIT:
-        p.reset(new LinearGray<LogPolyfit>(deg, src, dst, mask, cs));
-        break;
-    default:
-        throw std::invalid_argument{ "Wrong linear_type!" };
-        break;
-    }
-    return p;
-};
+std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type);
 
 } // namespace ccm
 } // namespace cv
