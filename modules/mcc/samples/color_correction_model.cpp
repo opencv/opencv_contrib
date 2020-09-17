@@ -3,7 +3,6 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/mcc.hpp>
-#include <opencv2/mcc/ccm.hpp>
 #include <iostream>
 
 using namespace std;
@@ -113,7 +112,7 @@ int main(int argc, char *argv[])
 
         // Save the calibrated image to {FILE_NAME}.calibrated.{FILE_EXT}
         string filename = filepath.substr(filepath.find_last_of('/')+1);
-        int dotIndex = filename.find_last_of('.');
+        size_t dotIndex = filename.find_last_of('.');
         string baseName = filename.substr(0, dotIndex);
         string ext = filename.substr(dotIndex+1, filename.length()-dotIndex);
         string calibratedFilePath = baseName + ".calibrated." + ext;

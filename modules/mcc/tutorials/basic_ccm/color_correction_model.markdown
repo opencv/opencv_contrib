@@ -181,7 +181,7 @@ Supported Color Space:
 
  The first part is to detect the ColorChecker position.
 
-@code{.cpp}#include <opencv2/core.hpp>#include <opencv2/highgui.hpp>#include <opencv2/imgcodecs.hpp>#include <opencv2/mcc.hpp>#include <opencv2/mcc/ccm.hpp>#include <iostream>using namespace std;using namespace cv;using namespace mcc;using namespace ccm;using namespace std;@endcode
+@code{.cpp}#include <opencv2/core.hpp>#include <opencv2/highgui.hpp>#include <opencv2/imgcodecs.hpp>#include <opencv2/mcc.hpp>#include <iostream>using namespace std;using namespace cv;using namespace mcc;using namespace ccm;using namespace std;@endcode
 
 ```
 Here is sets of header and namespaces. You can set other namespace like the code above.
