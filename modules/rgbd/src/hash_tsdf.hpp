@@ -89,7 +89,8 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
 
-    inline TsdfType interpolateVoxel(const cv::Point3f& point) const;
+    float interpolateVoxelPoint(const Point3f& point) const;
+    inline float interpolateVoxel(const cv::Point3f& point) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
     //! Utility functions for coordinate transformations

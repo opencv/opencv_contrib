@@ -169,25 +169,39 @@ Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
 
+class Settings
+{
+public:
+    Ptr<kinfu::Params> _params;
+    Ptr<kinfu::Volume> volume;
+    Ptr<Scene> scene;
+    std::vector<Affine3f> poses;
+
+    Settings(bool useHashTSDF)
+    {
+        if (useHashTSDF)
+            _params = kinfu::Params::hashTSDFParams(true);
+        else
+            _params = kinfu::Params::coarseParams();
+
+        volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
+            _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
+            _params->truncateThreshold, _params->volumeDims);
+
+        scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+        poses = scene->getPoses();
+    }
+};
+
 PERF_TEST(Perf_TSDF, integrate)
 {
-    Ptr<kinfu::Params> _params;
-    _params = kinfu::Params::coarseParams();
-
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
-        _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
-        _params->truncateThreshold, _params->volumeDims);
-
-    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
-    std::vector<Affine3f> poses = scene->getPoses();
-
-    for (size_t i = 0; i < poses.size(); i++)
+    Settings settings(false);
+    for (size_t i = 0; i < settings.poses.size(); i++)
     {
-        UMat _points, _normals;
-        Matx44f pose = poses[i].matrix;
-        Mat depth = scene->depth(pose);
+        Matx44f pose = settings.poses[i].matrix;
+        Mat depth = settings.scene->depth(pose);
         startTimer();
-        volume->integrate(depth, _params->depthFactor, pose, _params->intr);
+        settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
     }
     SANITY_CHECK_NOTHING();
@@ -195,25 +209,48 @@ PERF_TEST(Perf_TSDF, integrate)
 
 PERF_TEST(Perf_TSDF, raycast)
 {
-    Ptr<kinfu::Params> _params;
-    _params = kinfu::Params::coarseParams();
-
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
-        _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
-        _params->truncateThreshold, _params->volumeDims);
-
-    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
-    std::vector<Affine3f> poses = scene->getPoses();
-
-    for (size_t i = 0; i < poses.size(); i++)
+    Settings settings(false);
+    for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
-        Matx44f pose = poses[i].matrix;
-        Mat depth = scene->depth(pose);
+        Matx44f pose = settings.poses[i].matrix;
+        Mat depth = settings.scene->depth(pose);
 
-        volume->integrate(depth, _params->depthFactor, pose, _params->intr);
+        settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         startTimer();
-        volume->raycast(pose, _params->intr, _params->frameSize, _points, _normals);
+        settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
+        stopTimer();
+    }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST(Perf_HashTSDF, integrate)
+{
+    Settings settings(true);
+
+    for (size_t i = 0; i < settings.poses.size(); i++)
+    {
+        Matx44f pose = settings.poses[i].matrix;
+        Mat depth = settings.scene->depth(pose);
+        startTimer();
+        settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
+        stopTimer();
+    }
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST(Perf_HashTSDF, raycast)
+{
+    Settings settings(true);
+    for (size_t i = 0; i < settings.poses.size(); i++)
+    {
+        UMat _points, _normals;
+        Matx44f pose = settings.poses[i].matrix;
+        Mat depth = settings.scene->depth(pose);
+
+        settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
+        startTimer();
+        settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
     }
     SANITY_CHECK_NOTHING();
