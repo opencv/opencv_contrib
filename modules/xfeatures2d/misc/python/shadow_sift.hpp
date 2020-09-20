@@ -10,7 +10,7 @@ Ptr<cv::SIFT> SIFT_create(int nfeatures = 0, int nOctaveLayers = 3,
         double contrastThreshold = 0.04, double edgeThreshold = 10,
         double sigma = 1.6)
 {
-    CV_LOG_ONCE_WARNING(NULL, "DEPRECATED: cv.xfeatures2d.SIFT_create() is deprecated due SIFT tranfer to the main repository. "
+    CV_LOG_ONCE_WARNING(NULL, "DEPRECATED: cv.xfeatures2d.SIFT_create() is deprecated due SIFT transfer to the main repository. "
                               "https://github.com/opencv/opencv/issues/16736"
     );
 
