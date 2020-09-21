@@ -27,6 +27,16 @@ static inline float tsdfToFloat(TsdfType num)
     return ( (float) num ) / (-128);
 }
 
+__kernel void preCalculationPixNorm (__global float * pixNorms,
+                                     __global float * xx,
+                                     __global float * yy)
+{    
+    int i = get_global_id(0);
+    int j = get_global_id(1);
+    int idx = i*480 + j;
+    pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
+}
+
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
@@ -39,7 +49,8 @@ __kernel void integrate(__global const char * depthptr,
                         const float2 cxy,
                         const float dfac,
                         const float truncDist,
-                        const int maxWeight)
+                        const int maxWeight,
+                        __global float * pixNorms)
 {
     int x = get_global_id(0);
     int y = get_global_id(1);
@@ -150,7 +161,9 @@ __kernel void integrate(__global const char * depthptr,
         if(v == 0)
             continue;
 
-        float pixNorm = length(camPixVec);
+        int idx = projected.x * 480 + projected.y;
+        float pixNorm = pixNorms[idx];
+        //float pixNorm = length(camPixVec);
 
         // difference between distances of point and of surface to camera
         float sdf = pixNorm*(v*dfac - camSpacePt.z);
