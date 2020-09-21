@@ -1231,7 +1231,8 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 
     kk.args(ocl::KernelArg::PtrReadWrite(tmp1),
         ocl::KernelArg::PtrReadWrite(xx),
-        ocl::KernelArg::PtrReadWrite(yy));
+        ocl::KernelArg::PtrReadWrite(yy),
+        depth_rows);
 
     size_t globalSize[2];
     globalSize[0] = depth_cols;
