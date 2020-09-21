@@ -1202,8 +1202,7 @@ void TSDFVolumeGPU::reset()
     volume.setTo(Scalar(0, 0));
 }
 
-UMat preCalculationPixNormGPU(int depth_rows, int depth_cols,
-    Vec2f fxy, Vec2f cxy, Point3i volResolution)
+static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy)
 {
     Mat x(1, depth_cols, CV_32F);
     Mat y(1, depth_rows, CV_32F);
@@ -1275,7 +1274,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
         frameParams[2] = intrinsics.fx;     frameParams[3] = intrinsics.fy;
         frameParams[4] = intrinsics.cx;     frameParams[5] = intrinsics.cy;
 
-        pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy, volResolution);
+        pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
     }
 
     // TODO: optimization possible
