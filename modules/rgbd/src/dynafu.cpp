@@ -25,6 +25,54 @@
 #endif
 # include <GL/gl.h>
 #endif
+
+// GL Extention definitions missing from standard Win32 gl.h
+#if defined(_WIN32) && !defined(GL_RENDERBUFFER_EXT)
+#define GL_COLOR_ATTACHMENT0_EXT 0x8CE0
+#define GL_DEPTH_ATTACHMENT_EXT 0x8D00
+#define GL_FRAMEBUFFER_EXT 0x8D40
+#define GL_RENDERBUFFER_EXT 0x8D41
+namespace {
+PROC _wglGetProcAddress(const char *name)
+{
+  auto proc = wglGetProcAddress(name);
+  if (!proc)
+    CV_Error(cv::Error::OpenGlApiCallError, cv::format("Can't load OpenGL extension [%s]", name) );
+  return proc;
+}
+
+void glGenFramebuffersEXT(GLsizei n, GLuint *framebuffers)
+{
+  static auto proc = reinterpret_cast<void(*)(GLsizei, GLuint*)>(_wglGetProcAddress(__func__));
+  proc(n, framebuffers);
+}
+void glGenRenderbuffersEXT(GLsizei n, GLuint *renderbuffers)
+{
+  static auto proc = reinterpret_cast<void(*)(GLsizei, GLuint*)>(_wglGetProcAddress(__func__));
+  proc(n, renderbuffers);
+}
+void glBindRenderbufferEXT(GLenum target, GLuint renderbuffer)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLuint)>(_wglGetProcAddress(__func__));
+  proc(target, renderbuffer);
+}
+void glBindFramebufferEXT(GLenum target, GLuint framebuffer)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLuint)>(_wglGetProcAddress(__func__));
+  proc(target, framebuffer);
+}
+void glFramebufferRenderbufferEXT(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLenum, GLenum, GLuint)>(_wglGetProcAddress(__func__));
+  proc(target, attachment, renderbuffertarget, renderbuffer);
+}
+void glRenderbufferStorageEXT(GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLenum, GLsizei, GLsizei)>(_wglGetProcAddress(__func__));
+  proc(target, internalformat, width, height);
+}
+} // anonymous namespace
+#endif // defined(_WIN32) && !defined(GL_RENDERBUFFER_EXT)
 #else
 # define NO_OGL_ERR CV_Error(cv::Error::OpenGlNotSupported, \
                     "OpenGL support not enabled. Please rebuild the library with OpenGL support");
