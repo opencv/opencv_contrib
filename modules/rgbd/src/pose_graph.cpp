@@ -130,7 +130,7 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
 }
 #endif
 
-void Optimizer::optimizeCeres(PoseGraph& poseGraph)
+void Optimizer::optimize(PoseGraph& poseGraph)
 {
     PoseGraph poseGraphOriginal = poseGraph;
 

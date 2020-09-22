@@ -253,7 +253,7 @@ class PoseGraph
 
 namespace Optimizer
 {
-void optimizeCeres(PoseGraph& poseGraph);
+void optimize(PoseGraph& poseGraph);
 
 #if defined(CERES_FOUND)
 void createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& problem);
