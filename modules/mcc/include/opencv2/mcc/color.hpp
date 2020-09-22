@@ -69,7 +69,6 @@ public:
     */
     Color to(COLOR_SPACE other, CAM method = BRADFORD, bool save = true);
     Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true);
-
     /* *\ brief Channels split.
        *\ return each channel.
     */
@@ -212,6 +211,8 @@ class CV_EXPORTS_W GetColor {
 public:
     static Color get_color(CONST_COLOR const_color);
 };
+
+
 //const Color Macbeth_D50_2(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK);
 ////const Color Macbeth_D65_2(ColorChecker2005_LAB_D65_2, Lab_D65_2, ColorChecker2005_COLORED_MASK);
 //const Color Vinyl_D50_2(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK);

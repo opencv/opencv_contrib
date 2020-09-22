@@ -25,6 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
+
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
@@ -54,7 +55,6 @@ class CV_EXPORTS_W Polyfit
 public:
     int deg;
     Mat p;
-
     Polyfit() {};
 
     /* *\ brief Polyfit method.
@@ -63,6 +63,7 @@ public:
     and deduct: Ax = y
     See linear.pdf for details
     */
+
     Polyfit(Mat x, Mat y, int deg_);
 
     virtual ~Polyfit() {};
@@ -71,11 +72,14 @@ public:
 
 private:
     double fromEW(double x);
+
 };
 
 /* *\ brief Logpolyfit model.
 */
+
 class CV_EXPORTS_W LogPolyfit
+
 {
 public:
     int deg;
@@ -85,15 +89,18 @@ public:
 
     /* *\ brief Logpolyfit method.
     */
+
     LogPolyfit(Mat x, Mat y, int deg_);
 
     virtual ~LogPolyfit() {};
 
     Mat operator()(const Mat& inp);
+
 };
 
 /* *\ brief Linearization base.
 */
+
 class CV_EXPORTS_W Linear
 {
 public:
@@ -104,7 +111,9 @@ public:
     /* *\ brief Inference.
        *\ param inp the input array, type of cv::Mat.
     */
+
     virtual Mat linearize(Mat inp);
+
 
     /* *\brief Evaluate linearization model.
     */
@@ -138,7 +147,6 @@ class LinearGray :public Linear
 public:
     int deg;
     T p;
-
     LinearGray(int deg_, Mat src, Color dst, Mat mask, RGBBase_ cs) :deg(deg_)
     {
         dst.getGray();
@@ -216,7 +224,9 @@ public:
    *\ param cs type of RGBBase_.
    *\ param linear_type type of linear.
 */
+
 std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type);
+
 
 } // namespace ccm
 } // namespace cv

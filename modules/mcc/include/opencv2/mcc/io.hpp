@@ -25,11 +25,14 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
+
 #ifndef __OPENCV_MCC_IO_HPP__
 #define __OPENCV_MCC_IO_HPP__
 
+
 #include <opencv2/core.hpp>
 #include <map>
+
 
 namespace cv
 {
@@ -37,6 +40,7 @@ namespace ccm
 {
 
 /* *\ brief Io is the meaning of illuminant and observer. See notes of ccm.hpp
+
  *          for supported list for illuminant and observer*/
 class CV_EXPORTS_W IO
 {
@@ -48,6 +52,7 @@ public:
     virtual ~IO(){};
     bool operator<(const IO& other) const;
     bool operator==(const IO& other) const;
+
 };
 
 const IO A_2("A", "2"), A_10("A", "10"),
@@ -69,6 +74,7 @@ const static std::map<IO, std::vector<double>> illuminants_xy =
 };
 
 std::vector<double> xyY2XYZ(const std::vector<double>& xyY);
+
 
 } // namespace ccm
 } // namespace cv

@@ -25,6 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
+
 #ifndef __OPENCV_MCC_COLORSPACE_HPP__
 #define __OPENCV_MCC_COLORSPACE_HPP__
 
@@ -104,18 +105,19 @@ public:
         l = 0;
         nl = 0;
     };
-
     virtual bool relate(const ColorSpace& other) const;
 
     virtual Operations relation(const ColorSpace& /*other*/) const;
 
     bool operator<(const ColorSpace& other)const;
+
 };
 
 /* *\ brief Base of RGB color space;
    *        the argument values are from AdobeRGB;
    *        Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space
 */
+
 class CV_EXPORTS_W RGBBase_ : public ColorSpace
 {
 public:
@@ -169,11 +171,13 @@ private:
 
     virtual Mat fromLFunc(Mat& /*rgbl*/);
 
+
 };
 
 /* *\ brief Base of Adobe RGB color space;
 */
 class CV_EXPORTS_W AdobeRGBBase_ : public RGBBase_
+
 {
 public:
     using RGBBase_::RGBBase_;
@@ -187,6 +191,7 @@ private:
 /* *\ brief Base of sRGB color space;
 */
 class CV_EXPORTS_W sRGBBase_ : public RGBBase_
+
 {
 public:
     using RGBBase_::RGBBase_;
@@ -206,6 +211,7 @@ private:
     */
     double toLFuncEW(double& x);
 
+
     /* *\ brief Linearization.
        *        see ColorSpace.pdf for details.
        *\ param rgb the input array, type of cv::Mat.
@@ -216,18 +222,21 @@ private:
     /* *\ brief Used by fromLFunc.
     */
     double fromLFuncEW(double& x);
+
     /* *\ brief Delinearization.
        *        see ColorSpace.pdf for details.
        *\ param rgbl the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat.
     */
     Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
+
 };
 
 /* *\ brief sRGB color space.
    *        data from https://en.wikipedia.org/wiki/SRGB.
 */
 class CV_EXPORTS_W sRGB_ :public sRGBBase_
+
 {
 public:
     sRGB_(bool linear_) :sRGBBase_(D65_2, "sRGB", linear_) {};
@@ -245,6 +254,7 @@ public:
 
 private:
     void setParameter() CV_OVERRIDE;
+
 };
 
 /* *\ brief Wide-gamut RGB color space.
@@ -262,6 +272,7 @@ private:
 /* *\ brief ProPhoto RGB color space.
    *        data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
 */
+
 class CV_EXPORTS_W ProPhotoRGB_ : public AdobeRGBBase_
 {
 public:
@@ -355,6 +366,7 @@ public:
         xyz_cs[io] = new XYZ(io);
         return xyz_cs[io];
     }*/
+
 private:
     /* *\ brief Get cam.
        *\ param sio the input IO of src.
@@ -384,6 +396,7 @@ public:
         lab_cs[io] = new Lab(io);
         return lab_cs[io];
     }*/
+
 private:
     static constexpr double delta = (6. / 29.);
     static constexpr double m = 1. / (3. * delta * delta);
@@ -391,6 +404,7 @@ private:
     static constexpr double c = 4. / 29.;
 
     cv::Vec3d fromxyz(cv::Vec3d& xyz);
+
 
     /* *\ brief Calculate From.
        *\ param src the input array, type of cv::Mat.
@@ -422,9 +436,7 @@ public:
 };
 
 
-
 } // namespace ccm
 } // namespace cv
-
 
 #endif
