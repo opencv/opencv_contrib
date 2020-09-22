@@ -39,6 +39,49 @@ namespace cv
 {
 namespace ccm
 {
+enum COLOR_SPACE {
+    sRGB,
+    sRGBL,
+    AdobeRGB,
+    AdobeRGBL,
+    WideGamutRGB,
+    WideGamutRGBL,
+    ProPhotoRGB,
+    ProPhotoRGBL,
+    DCI_P3_RGB,
+    DCI_P3_RGBL,
+    AppleRGB,
+    AppleRGBL,
+    REC_709_RGB,
+    REC_709_RGBL,
+    REC_2020_RGB,
+    REC_2020_RGBL,
+    XYZ_D65_2,
+    XYZ_D65_10,
+    XYZ_D50_2,
+    XYZ_D50_10,
+    XYZ_A_2,
+    XYZ_A_10,
+    XYZ_D55_2,
+    XYZ_D55_10,
+    XYZ_D75_2,
+    XYZ_D75_10,
+    XYZ_E_2,
+    XYZ_E_10,
+    Lab_D65_2,
+    Lab_D65_10,
+    Lab_D50_2,
+    Lab_D50_10,
+    Lab_A_2,
+    Lab_A_10,
+    Lab_D55_2,
+    Lab_D55_10,
+    Lab_D75_2,
+    Lab_D75_10,
+    Lab_E_2,
+    Lab_E_10
+};
+
 /* *\ brief Basic class for ColorSpace.
 */
 class CV_EXPORTS_W ColorSpace
@@ -277,25 +320,6 @@ private:
 };
 
 
-CV_EXPORTS_W extern sRGB_ sRGB, sRGBL;
-CV_EXPORTS_W extern AdobeRGB_ AdobeRGB, AdobeRGBL;
-CV_EXPORTS_W extern WideGamutRGB_ WideGamutRGB, WideGamutRGBL;
-CV_EXPORTS_W extern ProPhotoRGB_ ProPhotoRGB, ProPhotoRGBL;
-CV_EXPORTS_W extern DCI_P3_RGB_ DCI_P3_RGB, DCI_P3_RGBL;
-CV_EXPORTS_W extern AppleRGB_ AppleRGB, AppleRGBL;
-CV_EXPORTS_W extern REC_709_RGB_ REC_709_RGB, REC_709_RGBL;
-CV_EXPORTS_W extern REC_2020_RGB_ REC_2020_RGB, REC_2020_RGBL;
-
-/* *\ brief Bind RGB with RGBL.
-*/
-class CV_EXPORTS_W ColorSpaceInitial
-{
-public:
-    ColorSpaceInitial();
-};
-
-extern ColorSpaceInitial color_space_initial;
-
 /* *\ brief Enum of the possible types of CAMs.
 */
 enum CAM
@@ -322,6 +346,15 @@ class CV_EXPORTS_W  XYZ :public ColorSpace
 public:
     XYZ(IO io_) : ColorSpace(io_, "XYZ", true) {};
     Operations cam(IO dio, CAM method = BRADFORD);
+    static std::map <IO, XYZ*> xyz_cs;
+
+    static XYZ* get(IO io);/* {
+        if (xyz_cs.count(io) == 1) {
+            return xyz_cs[io];
+        }
+        xyz_cs[io] = new XYZ(io);
+        return xyz_cs[io];
+    }*/
 private:
     /* *\ brief Get cam.
        *\ param sio the input IO of src.
@@ -334,15 +367,23 @@ private:
 
 /* *\ brief Define XYZ_D65_2 and XYZ_D50_2.
 */
-const XYZ XYZ_D65_2(D65_2);
-const XYZ XYZ_D50_2(D50_2);
+const XYZ XYZ_D65_2_CS(D65_2);
+const XYZ XYZ_D50_2_CS(D50_2);
 
 /* *\ brief Lab color space.
 */
 class CV_EXPORTS_W Lab :public ColorSpace
 {
 public:
+    static std::map <IO, Lab*> lab_cs;
     Lab(IO io_);
+    static Lab* get(IO io);/*{
+        if (lab_cs.count(io) == 1) {
+            return lab_cs[io];
+        }
+        lab_cs[io] = new Lab(io);
+        return lab_cs[io];
+    }*/
 private:
     static constexpr double delta = (6. / 29.);
     static constexpr double m = 1. / (3. * delta * delta);
@@ -368,8 +409,19 @@ private:
 
 /* *\ brief Define Lab_D65_2 and Lab_D50_2.
 */
-const Lab Lab_D65_2(D65_2);
-const Lab Lab_D50_2(D50_2);
+const Lab Lab_D65_2_CS(D65_2);
+const Lab Lab_D50_2_CS(D50_2);
+
+//static std::map <COLOR_SPACE, ColorSpace*> map_cs ;
+
+class CV_EXPORTS_W GetCS {
+public:
+    static std::map <enum COLOR_SPACE, ColorSpace*> map_cs;
+    static RGBBase_* get_rgb(enum COLOR_SPACE cs_name);
+    static ColorSpace* get_cs(enum COLOR_SPACE cs_name);
+};
+
+
 
 } // namespace ccm
 } // namespace cv

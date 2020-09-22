@@ -111,14 +111,14 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
                             1.3, 0, 0, 1.4, 0, 0,
                             0.5, 0, 0, 0.6, 0, 0,
                             0.7, 0, 0, 0.8, 0, 0);
-    ColorCorrectionModel model1(s / 255, Macbeth_D50_2, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0, 0.98 }, weights_list_, 1.5);
+    ColorCorrectionModel model1(s / 255, GetColor::get_color(Macbeth), sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0, 0.98 }, weights_list_, 1.5);
 
     Mat weights = (Mat_<double>(8, 1) <<
                             1.15789474, 1.26315789, 1.36842105, 1.47368421,
                             0.52631579, 0.63157895, 0.73684211, 0.84210526);
     ASSERT_MAT_NEAR(model1.weights, weights, 1e-4);
 
-    Mat mask = (Mat_<u_char>(24, 1) <<
+    Mat mask = (Mat_<uchar>(24, 1) <<
                             true, false, false, true, false, false,
                             true, false, false, true, false, false,
                             true, false, false, true, false, false,
@@ -128,7 +128,7 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
 
 TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
 {
-    ColorCorrectionModel model2(s / 255, Macbeth_D50_2, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, {0.05, 0.93}, Mat(), 1.5);
+    ColorCorrectionModel model2(s / 255, GetColor::get_color(Macbeth), sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, {0.05, 0.93}, Mat(), 1.5);
 
     Mat weights = (Mat_<double>(20, 1) <<
                             0.65554256, 1.49454705, 1.00499244, 0.79735434, 1.16327759,
@@ -137,7 +137,7 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
                             1.04551645, 1.54082353, 1.02453421, 0.6015915, 0.26154558);
     ASSERT_MAT_NEAR(model2.weights, weights, 1e-4);
 
-    Mat mask = (Mat_<u_char>(24, 1) <<
+    Mat mask = (Mat_<uchar>(24, 1) <<
                             true, true, true, true, true, true,
                             true, true, true, true, false, true,
                             true, true, true, false, true, true,
