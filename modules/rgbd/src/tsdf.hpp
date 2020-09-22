@@ -20,14 +20,16 @@ namespace kinfu
 // TODO: Optimization possible:
 // * TsdfType can be FP16
 // * WeightType can be uint16
-typedef float TsdfType;
-typedef int WeightType;
+
+typedef int8_t TsdfType;
+typedef uchar WeightType;
 
 struct TsdfVoxel
 {
     TsdfType tsdf;
     WeightType weight;
 };
+
 typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
 
 class TSDFVolume : public Volume
@@ -39,6 +41,7 @@ class TSDFVolume : public Volume
     virtual ~TSDFVolume() = default;
 
    public:
+
     Point3i volResolution;
     WeightType maxWeight;
 
@@ -52,8 +55,8 @@ class TSDFVolumeCPU : public TSDFVolume
 {
    public:
     // dimension in voxels, size in meters
-    TSDFVolumeCPU(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
-                  WeightType _maxWeight, Vec3i _resolution, bool zFirstMemOrder = true);
+    TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
+                  int _maxWeight, Vec3i _resolution, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
                            const kinfu::Intr& intrinsics, const int frameId = 0) override;
@@ -66,14 +69,15 @@ class TSDFVolumeCPU : public TSDFVolume
     virtual void reset() override;
     virtual TsdfVoxel at(const Vec3i& volumeIdx) const;
 
-    TsdfType interpolateVoxel(Point3f p) const;
-    Point3f getNormalVoxel(Point3f p) const;
+    float interpolateVoxel(const cv::Point3f& p) const;
+    Point3f getNormalVoxel(const cv::Point3f& p) const;
 
 #if USE_INTRINSICS
-    TsdfType interpolateVoxel(const v_float32x4& p) const;
+    float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
 #endif
-
+    Vec6f frameParams;
+    Mat pixNorms;
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
     // Consist of Voxel elements

@@ -68,7 +68,13 @@ class HashTSDFVolume : public Volume
         return derived->at_(point);
     }
 
-    inline TsdfType interpolateVoxel(const Point3f& point) const
+    inline float interpolateVoxelPoint(const Point3f& point) const
+    {
+        const Derived* derived = static_cast<const Derived*>(this);
+        return derived->interpolateVoxelPoint_(point);
+    }
+
+    inline float interpolateVoxel_(const cv::Point3f& point) const
     {
         const Derived* derived = static_cast<const Derived*>(this);
         return derived->interpolateVoxel_(point);
@@ -170,9 +176,9 @@ class HashTSDFVolumeCPU : public HashTSDFVolume<HashTSDFVolumeCPU>
     //! 1m)
     TsdfVoxel at_(const Point3f& point) const;
 
-    TsdfType interpolateVoxel_(const Point3f& point) const;
-
-    Point3f getNormalVoxel_(const Point3f& point) const;
+    float interpolateVoxelPoint_(const Point3f& point) const;
+    float interpolateVoxel_(const cv::Point3f& point) const;
+    Point3f getNormalVoxel_(const cv::Point3f& p) const;
 
     //! Utility functions for coordinate transformations
     Vec3i volumeToVolumeUnitIdx_(const Point3f& point) const;
