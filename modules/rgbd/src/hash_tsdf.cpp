@@ -1,6 +1,7 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
+#include "precomp.hpp"
 #include "hash_tsdf.hpp"
 
 #include <atomic>
@@ -13,7 +14,6 @@
 #include "opencv2/core/cvstd.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/utils/trace.hpp"
-#include "precomp.hpp"
 #include "utils.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
@@ -23,6 +23,7 @@ namespace cv
 {
 namespace kinfu
 {
+
 static inline TsdfType floatToTsdf(float num)
 {
     //CV_Assert(-1 < num <= 1);
@@ -113,6 +114,7 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const M
                         }
             }
         }
+
         mutex.lock();
         for (const auto& tsdf_idx : localAccessVolUnits)
         {
@@ -198,6 +200,7 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const M
         }
         });
 }
+
 cv::Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx_(const cv::Point3f& p) const
 {
     return cv::Vec3i(cvFloor(p.x / volumeUnitSize), cvFloor(p.y / volumeUnitSize),
@@ -223,7 +226,8 @@ cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord_(const cv::Point3f& point) const
 
 TsdfVoxel HashTSDFVolumeCPU::at_(const Vec3i& volumeIdx) const
 {
-    Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution), cvFloor(volumeIdx[1] / volumeUnitResolution),
+    Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution),
+                                cvFloor(volumeIdx[1] / volumeUnitResolution),
                                 cvFloor(volumeIdx[2] / volumeUnitResolution));
 
     VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
@@ -236,9 +240,9 @@ TsdfVoxel HashTSDFVolumeCPU::at_(const Vec3i& volumeIdx) const
     }
     Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
 
-    Vec3i volUnitLocalIdx =
-        volumeIdx - Vec3i(volumeUnitIdx[0] * volumeUnitResolution, volumeUnitIdx[1] * volumeUnitResolution,
-                          volumeUnitIdx[2] * volumeUnitResolution);
+    Vec3i volUnitLocalIdx = volumeIdx - Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
+                                              volumeUnitIdx[1] * volumeUnitResolution,
+                                              volumeUnitIdx[2] * volumeUnitResolution);
 
     volUnitLocalIdx = Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
     return volumeUnit->at(volUnitLocalIdx);
@@ -566,7 +570,8 @@ struct HashRaycastInvoker : ParallelLoopBody
                 float tcurr = tmin;
 
                 Vec3i prevVolumeUnitIdx =
-                    Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
+                    Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(),
+                          std::numeric_limits<int>::min());
 
                 float tprev       = tcurr;
                 TsdfType prevTsdf = volume.truncDist;
