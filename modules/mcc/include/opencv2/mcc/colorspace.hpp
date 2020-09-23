@@ -34,7 +34,6 @@
 #include <iostream>
 #include "opencv2/mcc/io.hpp"
 #include "opencv2/mcc/operations.hpp"
-#include "opencv2/mcc/utils.hpp"
 
 namespace cv
 {

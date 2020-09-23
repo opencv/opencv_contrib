@@ -203,7 +203,6 @@ Mat sRGBBase_::fromLFunc(Mat& rgbl) {
 /* *\ brief sRGB color space.
  *        data from https://en.wikipedia.org/wiki/SRGB.
  */
-
 void sRGB_::setParameter() {
   xr = 0.64;
   yr = 0.33;
@@ -217,7 +216,6 @@ void sRGB_::setParameter() {
 
 /* *\ brief Adobe RGB color space.
  */
-
 void AdobeRGB_::setParameter() {
   xr = 0.64;
   yr = 0.33;
@@ -231,7 +229,6 @@ void AdobeRGB_::setParameter() {
 /* *\ brief Wide-gamut RGB color space.
  *        data from https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space.
  */
-
 void WideGamutRGB_::setParameter() {
   xr = 0.7347;
   yr = 0.2653;
@@ -245,7 +242,6 @@ void WideGamutRGB_::setParameter() {
 /* *\ brief ProPhoto RGB color space.
  *        data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
  */
-
 void ProPhotoRGB_::setParameter() {
   xr = 0.734699;
   yr = 0.265301;
@@ -274,7 +270,6 @@ void DCI_P3_RGB_::setParameter() {
  *        data from
  * http://www.brucelindbloom.com/index.html?WorkingSpaceInfo.html.
  */
-
 void AppleRGB_::setParameter() {
   xr = 0.625;
   yr = 0.34;
@@ -288,7 +283,6 @@ void AppleRGB_::setParameter() {
 /* *\ brief REC_709 RGB color space.
  *        data from https://en.wikipedia.org/wiki/Rec._709.
  */
-
 void REC_709_RGB_::setParameter() {
   xr = 0.64;
   yr = 0.33;
