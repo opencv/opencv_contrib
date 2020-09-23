@@ -39,7 +39,8 @@ Mat s = (Mat_<Vec3d>(24, 1) <<
 
 TEST(CV_ccmRunColorCorrection, test_model)
 {
-    ColorCorrectionModel model(s / 255, Color(ColorChecker2005_LAB_D50_2, Lab_D50_2));
+   // ColorCorrectionModel model(s / 255, Color(ColorChecker2005_LAB_D50_2, Lab_D50_2));
+    ColorCorrectionModel model(s / 255, Macbeth);
     Mat src_rgbl = (Mat_<Vec3d>(24, 1) <<
         Vec3d(0.68078957, 0.12382801, 0.01514889),
         Vec3d(0.81177942, 0.32550452, 0.089818),
@@ -111,8 +112,8 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
                             1.3, 0, 0, 1.4, 0, 0,
                             0.5, 0, 0, 0.6, 0, 0,
                             0.7, 0, 0, 0.8, 0, 0);
-    ColorCorrectionModel model1(s / 255, GetColor::get_color(Macbeth), sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0, 0.98 }, weights_list_, 1.5);
-
+    //ColorCorrectionModel model1(s / 255, GetColor::get_color(Macbeth), sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0, 0.98 }, weights_list_, 1.5);
+    ColorCorrectionModel model1(s / 255,Macbeth, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0, 0.98 }, weights_list_, 1.5);
     Mat weights = (Mat_<double>(8, 1) <<
                             1.15789474, 1.26315789, 1.36842105, 1.47368421,
                             0.52631579, 0.63157895, 0.73684211, 0.84210526);
@@ -128,7 +129,8 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
 
 TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
 {
-    ColorCorrectionModel model2(s / 255, GetColor::get_color(Macbeth), sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, {0.05, 0.93}, Mat(), 1.5);
+   // ColorCorrectionModel model2(s / 255, GetColor::get_color(Macbeth), sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, {0.05, 0.93}, Mat(), 1.5);
+    ColorCorrectionModel model2(s / 255, Macbeth, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0.05, 0.93 }, Mat(), 1.5);
 
     Mat weights = (Mat_<double>(20, 1) <<
                             0.65554256, 1.49454705, 1.00499244, 0.79735434, 1.16327759,

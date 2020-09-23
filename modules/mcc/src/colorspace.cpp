@@ -346,13 +346,14 @@ Mat XYZ::cam_(IO sio, IO dio, CAM method) const {
   return M;
 }
 
-std::map <IO, XYZ*> XYZ::xyz_cs = {};
+std::map <IO, std::shared_ptr<XYZ>> XYZ::xyz_cs = {};
 
-XYZ* XYZ::get(IO io) {
+std::shared_ptr<XYZ> XYZ::get(IO io) {
     if (xyz_cs.count(io) == 1) {
         return xyz_cs[io];
     }
-    xyz_cs[io] = new XYZ(io);
+    std::shared_ptr<XYZ> XYZ_CS(new XYZ(io));
+    xyz_cs[io] = XYZ_CS;
     return xyz_cs[io];
 }
 
@@ -401,27 +402,27 @@ Mat Lab::tosrc(Mat& src) {
   return channelWise(src,
                      [this](cv::Vec3d a) -> cv::Vec3d { return tolab(a); });
 }
-std::map <IO, Lab*> Lab::lab_cs = {};
-
-Lab* Lab::get(IO io) {
+std::map <IO, std::shared_ptr<Lab>> Lab::lab_cs = {};
+std::shared_ptr<Lab> Lab::get(IO io) {
     if (lab_cs.count(io) == 1) {
         return lab_cs[io];
     }
-    lab_cs[io] = new Lab(io);
+    std::shared_ptr<Lab> Lab_CS(new Lab(io));
+    lab_cs[io] = Lab_CS;
     return lab_cs[io];
 }
 
 //static std::map <COLOR_SPACE, ColorSpace*> map_cs = {};
-std::map <enum COLOR_SPACE, ColorSpace*> GetCS::map_cs = {};
+std::map <enum COLOR_SPACE, std::shared_ptr<ColorSpace>> GetCS::map_cs = {};
 
-RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
+std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     switch (cs_name)
     {
     case cv::ccm::sRGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            sRGB_* sRGB_CS = new sRGB_(false);
-            sRGB_* sRGBL_CS =new sRGB_(true);
+            std::shared_ptr<sRGB_> sRGB_CS(new sRGB_(false));
+            std::shared_ptr<sRGB_> sRGBL_CS(new sRGB_(true));
             (*sRGB_CS).bind(*sRGBL_CS);
             map_cs[sRGB] = sRGB_CS;
             map_cs[sRGBL] = sRGBL_CS;
@@ -431,10 +432,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::AdobeRGB:
     {
         if (map_cs.count(cs_name) < 1) {
-           // AdobeRGB_ AdobeRGB_CS(false), AdobeRGBL_CS(true);
-           // AdobeRGB_CS.bind(AdobeRGBL_CS);
-            AdobeRGB_* AdobeRGB_CS = new AdobeRGB_(false);
-            AdobeRGB_* AdobeRGBL_CS = new AdobeRGB_(true);
+            std::shared_ptr<AdobeRGB_> AdobeRGB_CS(new AdobeRGB_(false));
+            std::shared_ptr<AdobeRGB_> AdobeRGBL_CS(new AdobeRGB_(true));
             (*AdobeRGB_CS).bind(*AdobeRGBL_CS);
             map_cs[AdobeRGB] = AdobeRGB_CS;
             map_cs[AdobeRGBL] = AdobeRGBL_CS;
@@ -444,12 +443,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::WideGamutRGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            /*WideGamutRGB_ WideGamutRGB_CS(false), WideGamutRGBL_CS(true);
-            WideGamutRGB_CS.bind(WideGamutRGBL_CS);
-            map_cs[WideGamutRGB] = &WideGamutRGB_CS;
-            map_cs[WideGamutRGBL] = &WideGamutRGBL_CS;*/
-            WideGamutRGB_* WideGamutRGB_CS = new WideGamutRGB_(false);
-            WideGamutRGB_* WideGamutRGBL_CS = new WideGamutRGB_(false);
+            std::shared_ptr<WideGamutRGB_> WideGamutRGB_CS(new WideGamutRGB_(false));
+            std::shared_ptr<WideGamutRGB_> WideGamutRGBL_CS(new WideGamutRGB_(true));
             (*WideGamutRGB_CS).bind(*WideGamutRGBL_CS);
             map_cs[WideGamutRGB] = WideGamutRGB_CS;
             map_cs[WideGamutRGBL] = WideGamutRGBL_CS;
@@ -459,8 +454,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::ProPhotoRGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            ProPhotoRGB_* ProPhotoRGB_CS = new ProPhotoRGB_(false);
-            ProPhotoRGB_* ProPhotoRGBL_CS= new ProPhotoRGB_(true);
+            std::shared_ptr<ProPhotoRGB_> ProPhotoRGB_CS(new ProPhotoRGB_(false));
+            std::shared_ptr<ProPhotoRGB_> ProPhotoRGBL_CS(new ProPhotoRGB_(true));
             (*ProPhotoRGB_CS).bind(*ProPhotoRGBL_CS);
             map_cs[ProPhotoRGB] = ProPhotoRGB_CS;
             map_cs[ProPhotoRGBL] = ProPhotoRGBL_CS;
@@ -470,8 +465,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::DCI_P3_RGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            DCI_P3_RGB_* DCI_P3_RGB_CS = new DCI_P3_RGB_(false);
-            DCI_P3_RGB_* DCI_P3_RGBL_CS =new DCI_P3_RGB_(true);
+            std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGB_CS(new DCI_P3_RGB_(false));
+            std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGBL_CS(new DCI_P3_RGB_(true));
             (*DCI_P3_RGB_CS).bind(*DCI_P3_RGBL_CS);
             map_cs[DCI_P3_RGB] = DCI_P3_RGB_CS;
             map_cs[DCI_P3_RGBL] = DCI_P3_RGBL_CS;
@@ -481,8 +476,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::AppleRGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            AppleRGB_* AppleRGB_CS = new AppleRGB_(false);
-            AppleRGB_* AppleRGBL_CS = new AppleRGB_(true);
+            std::shared_ptr<AppleRGB_> AppleRGB_CS(new AppleRGB_(false));
+            std::shared_ptr<AppleRGB_> AppleRGBL_CS(new AppleRGB_(true));
             (*AppleRGB_CS).bind(*AppleRGBL_CS);
             map_cs[AppleRGB] = AppleRGB_CS;
             map_cs[AppleRGBL] = AppleRGBL_CS;
@@ -492,8 +487,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::REC_709_RGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            REC_709_RGB_* REC_709_RGB_CS = new REC_709_RGB_(false);
-            REC_709_RGB_* REC_709_RGBL_CS= new REC_709_RGB_(true);
+            std::shared_ptr<REC_709_RGB_> REC_709_RGB_CS(new REC_709_RGB_(false));
+            std::shared_ptr<REC_709_RGB_> REC_709_RGBL_CS(new REC_709_RGB_(true));
             (*REC_709_RGB_CS).bind(*REC_709_RGBL_CS);
             map_cs[REC_709_RGB] = REC_709_RGB_CS;
             map_cs[REC_709_RGBL] = REC_709_RGBL_CS;
@@ -503,8 +498,8 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     case cv::ccm::REC_2020_RGB:
     {
         if (map_cs.count(cs_name) < 1) {
-            REC_2020_RGB_* REC_2020_RGB_CS = new  REC_2020_RGB_(false);
-            REC_2020_RGB_* REC_2020_RGBL_CS = new REC_2020_RGB_(true);
+            std::shared_ptr<REC_2020_RGB_> REC_2020_RGB_CS(new REC_2020_RGB_(false));
+            std::shared_ptr<REC_2020_RGB_> REC_2020_RGBL_CS(new REC_2020_RGB_(true));
             (*REC_2020_RGB_CS).bind(*REC_2020_RGBL_CS);
             map_cs[REC_2020_RGB] = REC_2020_RGB_CS;
             map_cs[REC_2020_RGBL] = REC_2020_RGBL_CS;
@@ -525,18 +520,19 @@ RGBBase_* GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     default:
         throw "Only RGB color spaces are supported";
     }
-    return (RGBBase_*)(map_cs[cs_name]);
+   // return (std::shared_ptr < RGBBase_>)(*map_cs[cs_name]);
+    return (std::dynamic_pointer_cast<RGBBase_>)(map_cs[cs_name]);
 }
 
-ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
+std::shared_ptr<ColorSpace> GetCS::get_cs(enum COLOR_SPACE cs_name) {
     switch (cs_name)
     {
     case cv::ccm::sRGB:
     case cv::ccm::sRGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            sRGB_* sRGB_CS = new sRGB_(false);
-            sRGB_* sRGBL_CS = new sRGB_(true);
+            std::shared_ptr<sRGB_> sRGB_CS(new sRGB_(false));
+            std::shared_ptr<sRGB_> sRGBL_CS(new sRGB_(true));
             (*sRGB_CS).bind(*sRGBL_CS);
             map_cs[sRGB] = sRGB_CS;
             map_cs[sRGBL] = sRGBL_CS;
@@ -547,8 +543,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::AdobeRGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            AdobeRGB_* AdobeRGB_CS = new AdobeRGB_(false);
-            AdobeRGB_* AdobeRGBL_CS = new AdobeRGB_(true);
+            std::shared_ptr<AdobeRGB_> AdobeRGB_CS(new AdobeRGB_(false));
+            std::shared_ptr<AdobeRGB_> AdobeRGBL_CS(new AdobeRGB_(true));
             (*AdobeRGB_CS).bind(*AdobeRGBL_CS);
             map_cs[AdobeRGB] = AdobeRGB_CS;
             map_cs[AdobeRGBL] = AdobeRGBL_CS;
@@ -559,12 +555,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::WideGamutRGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-           /* WideGamutRGB_ WideGamutRGB_CS(false), WideGamutRGBL_CS(true);
-            WideGamutRGB_CS.bind(WideGamutRGBL_CS);
-            map_cs[WideGamutRGB] = &WideGamutRGB_CS;
-            map_cs[WideGamutRGBL] = &WideGamutRGBL_CS;*/
-            WideGamutRGB_* WideGamutRGB_CS = new WideGamutRGB_(false);
-            WideGamutRGB_* WideGamutRGBL_CS = new WideGamutRGB_(false);
+            std::shared_ptr<WideGamutRGB_> WideGamutRGB_CS(new WideGamutRGB_(false));
+            std::shared_ptr<WideGamutRGB_> WideGamutRGBL_CS(new WideGamutRGB_(true));
             (*WideGamutRGB_CS).bind(*WideGamutRGBL_CS);
             map_cs[WideGamutRGB] = WideGamutRGB_CS;
             map_cs[WideGamutRGBL] = WideGamutRGBL_CS;
@@ -576,8 +568,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::ProPhotoRGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            ProPhotoRGB_* ProPhotoRGB_CS = new ProPhotoRGB_(false);
-            ProPhotoRGB_* ProPhotoRGBL_CS = new ProPhotoRGB_(true);
+            std::shared_ptr<ProPhotoRGB_> ProPhotoRGB_CS(new ProPhotoRGB_(false));
+            std::shared_ptr<ProPhotoRGB_> ProPhotoRGBL_CS(new ProPhotoRGB_(true));
             (*ProPhotoRGB_CS).bind(*ProPhotoRGBL_CS);
             map_cs[ProPhotoRGB] = ProPhotoRGB_CS;
             map_cs[ProPhotoRGBL] = ProPhotoRGBL_CS;
@@ -588,8 +580,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::DCI_P3_RGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            DCI_P3_RGB_* DCI_P3_RGB_CS = new DCI_P3_RGB_(false);
-            DCI_P3_RGB_* DCI_P3_RGBL_CS = new DCI_P3_RGB_(true);
+            std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGB_CS(new DCI_P3_RGB_(false));
+            std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGBL_CS(new DCI_P3_RGB_(true));
             (*DCI_P3_RGB_CS).bind(*DCI_P3_RGBL_CS);
             map_cs[DCI_P3_RGB] = DCI_P3_RGB_CS;
             map_cs[DCI_P3_RGBL] = DCI_P3_RGBL_CS;
@@ -600,8 +592,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::AppleRGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            AppleRGB_* AppleRGB_CS = new AppleRGB_(false);
-            AppleRGB_* AppleRGBL_CS = new AppleRGB_(true);
+            std::shared_ptr<AppleRGB_> AppleRGB_CS(new AppleRGB_(false));
+            std::shared_ptr<AppleRGB_> AppleRGBL_CS(new AppleRGB_(true));
             (*AppleRGB_CS).bind(*AppleRGBL_CS);
             map_cs[AppleRGB] = AppleRGB_CS;
             map_cs[AppleRGBL] = AppleRGBL_CS;
@@ -612,8 +604,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::REC_709_RGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            REC_709_RGB_* REC_709_RGB_CS = new REC_709_RGB_(false);
-            REC_709_RGB_* REC_709_RGBL_CS = new REC_709_RGB_(true);
+            std::shared_ptr<REC_709_RGB_> REC_709_RGB_CS(new REC_709_RGB_(false));
+            std::shared_ptr<REC_709_RGB_> REC_709_RGBL_CS(new REC_709_RGB_(true));
             (*REC_709_RGB_CS).bind(*REC_709_RGBL_CS);
             map_cs[REC_709_RGB] = REC_709_RGB_CS;
             map_cs[REC_709_RGBL] = REC_709_RGBL_CS;
@@ -624,8 +616,8 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
     case cv::ccm::REC_2020_RGBL:
     {
         if (map_cs.count(cs_name) < 1) {
-            REC_2020_RGB_* REC_2020_RGB_CS = new  REC_2020_RGB_(false);
-            REC_2020_RGB_* REC_2020_RGBL_CS = new REC_2020_RGB_(true);
+            std::shared_ptr<REC_2020_RGB_> REC_2020_RGB_CS(new REC_2020_RGB_(false));
+            std::shared_ptr<REC_2020_RGB_> REC_2020_RGBL_CS(new REC_2020_RGB_(true));
             (*REC_2020_RGB_CS).bind(*REC_2020_RGBL_CS);
             map_cs[REC_2020_RGB] = REC_2020_RGB_CS;
             map_cs[REC_2020_RGBL] = REC_2020_RGBL_CS;
@@ -708,7 +700,7 @@ ColorSpace* GetCS::get_cs(enum COLOR_SPACE cs_name) {
         break;
     }
 
-    return map_cs.find(cs_name)->second;
+    return map_cs[cs_name];
 }
 
 }  // namespace ccm

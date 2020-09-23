@@ -160,14 +160,14 @@ Color GetColor::get_color(CONST_COLOR const_color) {
     {
     case cv::ccm::Macbeth:
     {
-        Color Macbeth_D50_2(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK);
-        return Macbeth_D50_2;
+        std::shared_ptr<Color> Macbeth_D50_2(new Color(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK));
+        return *Macbeth_D50_2;
         break;
     }
 
     case cv::ccm::Vinyl: {
-        Color Vinyl_D50_2(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK);
-        return Vinyl_D50_2;
+        std::shared_ptr<Color> Vinyl_D50_2(new Color(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK));
+        return *Vinyl_D50_2;
         break;
     }
 
