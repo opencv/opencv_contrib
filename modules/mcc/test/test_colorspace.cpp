@@ -51,21 +51,6 @@ TEST(CV_ccmColorspace, test_WideGamutRGB_M)
    ASSERT_MAT_NEAR((*GetCS::get_rgb(WideGamutRGB)).M_from, from, 1e-2);
 }
 
-// wont' work
-//TEST(CV_ccmColorspace, test_WideGamutRGB_M)
-//{
-//    Mat to = (Mat_<double>(3, 3) <<
-//            0.7161046, 0.1009296, 0.1471858,
-//            0.2581874, 0.7249378, 0.0168748,
-//            0.0000000, 0.0517813, 0.7734287);
-//    Mat from = (Mat_<double>(3, 3) <<
-//            1.4628067, -0.1840623, -0.2743606,
-//            -0.5217933, 1.4472381, 0.0677227,
-//            0.0349342, -0.0968930, 1.2884099)
-//    ASSERT_MAT_NEAR(WideGamutRGB.M_to, to, 1e-2);
-//    ASSERT_MAT_NEAR(WideGamutRGB.M_from, from, 1e-2);
-//}
-//
 TEST(CV_ccmColorspace, test_ProPhotoRGB_M)
 {
     Mat to = (Mat_<double>(3, 3) <<
