@@ -19,8 +19,8 @@ TEST(CV_ccmColorspace, test_sRGB_M)
             3.2404542, -1.5371385, -0.4985314,
             -0.9692660, 1.8760108, 0.0415560,
             0.0556434, -0.2040259, 1.0572252);
-    ASSERT_MAT_NEAR(sRGB.M_to, to, 1e-4);
-    ASSERT_MAT_NEAR(sRGB.M_from, from, 1e-4);
+    ASSERT_MAT_NEAR((*GetCS::get_rgb(sRGB)).M_to, to, 1e-4);
+    ASSERT_MAT_NEAR((*GetCS::get_rgb(sRGB)).M_from, from, 1e-4);
 }
 
 TEST(CV_ccmColorspace, test_AdobeRGB_M)
@@ -33,8 +33,8 @@ TEST(CV_ccmColorspace, test_AdobeRGB_M)
             2.0413690, -0.5649464, -0.3446944,
             -0.9692660, 1.8760108, 0.0415560,
             0.0134474, -0.1183897, 1.0154096);
-    ASSERT_MAT_NEAR(AdobeRGB.M_to, to, 1e-4);
-    ASSERT_MAT_NEAR(AdobeRGB.M_from, from, 1e-4);
+    ASSERT_MAT_NEAR((*GetCS::get_rgb(AdobeRGB)).M_to, to, 1e-4);
+    ASSERT_MAT_NEAR((*GetCS::get_rgb(AdobeRGB)).M_from, from, 1e-4);
 }
 
 TEST(CV_ccmColorspace, test_WideGamutRGB_M)
@@ -47,8 +47,8 @@ TEST(CV_ccmColorspace, test_WideGamutRGB_M)
            1.4628067, -0.1840623, -0.2743606,
            -0.5217933, 1.4472381, 0.0677227,
            0.0349342, -0.0968930, 1.2884099);
-   ASSERT_MAT_NEAR(WideGamutRGB.M_to, to, 1e-2);
-   ASSERT_MAT_NEAR(WideGamutRGB.M_from, from, 1e-2);
+   ASSERT_MAT_NEAR((*GetCS::get_rgb(WideGamutRGB)).M_to, to, 1e-2);
+   ASSERT_MAT_NEAR((*GetCS::get_rgb(WideGamutRGB)).M_from, from, 1e-2);
 }
 
 // wont' work
@@ -76,8 +76,8 @@ TEST(CV_ccmColorspace, test_ProPhotoRGB_M)
             1.3459433, -0.2556075, -0.0511118,
             -0.5445989, 1.5081673, 0.0205351,
             0.0000000, 0.0000000, 1.2118128);
-    ASSERT_MAT_NEAR(ProPhotoRGB.M_to, to, 1e-2);
-    ASSERT_MAT_NEAR(ProPhotoRGB.M_from, from, 1e-2);
+    ASSERT_MAT_NEAR((*GetCS::get_rgb(ProPhotoRGB)).M_to, to, 1e-2);
+    ASSERT_MAT_NEAR((*GetCS::get_rgb(ProPhotoRGB)).M_from, from, 1e-2);
 }
 
 } // namespace

@@ -38,8 +38,8 @@ Mat s = s_origin / 255;
 double gamma = 2.2;
 int deg = 3;
 
-Color color = Macbeth_D50_2;
-RGBBase_ cs = sRGB;
+Color color = GetColor::get_color(Macbeth);
+RGBBase_ cs = *GetCS::get_rgb(sRGB);
 Mat mask = saturate(s, 0.05, 0.93);
 
 TEST(CV_ccmLinearize, test_identity)

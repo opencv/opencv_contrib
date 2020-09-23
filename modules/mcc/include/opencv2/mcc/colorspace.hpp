@@ -25,6 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
+
 #ifndef __OPENCV_MCC_COLORSPACE_HPP__
 #define __OPENCV_MCC_COLORSPACE_HPP__
 
@@ -39,6 +40,49 @@ namespace cv
 {
 namespace ccm
 {
+enum COLOR_SPACE {
+    sRGB,
+    sRGBL,
+    AdobeRGB,
+    AdobeRGBL,
+    WideGamutRGB,
+    WideGamutRGBL,
+    ProPhotoRGB,
+    ProPhotoRGBL,
+    DCI_P3_RGB,
+    DCI_P3_RGBL,
+    AppleRGB,
+    AppleRGBL,
+    REC_709_RGB,
+    REC_709_RGBL,
+    REC_2020_RGB,
+    REC_2020_RGBL,
+    XYZ_D65_2,
+    XYZ_D65_10,
+    XYZ_D50_2,
+    XYZ_D50_10,
+    XYZ_A_2,
+    XYZ_A_10,
+    XYZ_D55_2,
+    XYZ_D55_10,
+    XYZ_D75_2,
+    XYZ_D75_10,
+    XYZ_E_2,
+    XYZ_E_10,
+    Lab_D65_2,
+    Lab_D65_10,
+    Lab_D50_2,
+    Lab_D50_10,
+    Lab_A_2,
+    Lab_A_10,
+    Lab_D55_2,
+    Lab_D55_10,
+    Lab_D75_2,
+    Lab_D75_10,
+    Lab_E_2,
+    Lab_E_10
+};
+
 /* *\ brief Basic class for ColorSpace.
 */
 class CV_EXPORTS_W ColorSpace
@@ -61,18 +105,19 @@ public:
         l = 0;
         nl = 0;
     };
-
     virtual bool relate(const ColorSpace& other) const;
 
     virtual Operations relation(const ColorSpace& /*other*/) const;
 
     bool operator<(const ColorSpace& other)const;
+
 };
 
 /* *\ brief Base of RGB color space;
    *        the argument values are from AdobeRGB;
    *        Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space
 */
+
 class CV_EXPORTS_W RGBBase_ : public ColorSpace
 {
 public:
@@ -126,11 +171,13 @@ private:
 
     virtual Mat fromLFunc(Mat& /*rgbl*/);
 
+
 };
 
 /* *\ brief Base of Adobe RGB color space;
 */
 class CV_EXPORTS_W AdobeRGBBase_ : public RGBBase_
+
 {
 public:
     using RGBBase_::RGBBase_;
@@ -144,6 +191,7 @@ private:
 /* *\ brief Base of sRGB color space;
 */
 class CV_EXPORTS_W sRGBBase_ : public RGBBase_
+
 {
 public:
     using RGBBase_::RGBBase_;
@@ -173,18 +221,21 @@ private:
     /* *\ brief Used by fromLFunc.
     */
     double fromLFuncEW(double& x);
+
     /* *\ brief Delinearization.
        *        see ColorSpace.pdf for details.
        *\ param rgbl the input array, type of cv::Mat.
        *\ return the output array, type of cv::Mat.
     */
     Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
+
 };
 
 /* *\ brief sRGB color space.
    *        data from https://en.wikipedia.org/wiki/SRGB.
 */
 class CV_EXPORTS_W sRGB_ :public sRGBBase_
+
 {
 public:
     sRGB_(bool linear_) :sRGBBase_(D65_2, "sRGB", linear_) {};
@@ -202,6 +253,7 @@ public:
 
 private:
     void setParameter() CV_OVERRIDE;
+
 };
 
 /* *\ brief Wide-gamut RGB color space.
@@ -219,6 +271,7 @@ private:
 /* *\ brief ProPhoto RGB color space.
    *        data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
 */
+
 class CV_EXPORTS_W ProPhotoRGB_ : public AdobeRGBBase_
 {
 public:
@@ -277,25 +330,6 @@ private:
 };
 
 
-CV_EXPORTS_W extern sRGB_ sRGB, sRGBL;
-CV_EXPORTS_W extern AdobeRGB_ AdobeRGB, AdobeRGBL;
-CV_EXPORTS_W extern WideGamutRGB_ WideGamutRGB, WideGamutRGBL;
-CV_EXPORTS_W extern ProPhotoRGB_ ProPhotoRGB, ProPhotoRGBL;
-CV_EXPORTS_W extern DCI_P3_RGB_ DCI_P3_RGB, DCI_P3_RGBL;
-CV_EXPORTS_W extern AppleRGB_ AppleRGB, AppleRGBL;
-CV_EXPORTS_W extern REC_709_RGB_ REC_709_RGB, REC_709_RGBL;
-CV_EXPORTS_W extern REC_2020_RGB_ REC_2020_RGB, REC_2020_RGBL;
-
-/* *\ brief Bind RGB with RGBL.
-*/
-class CV_EXPORTS_W ColorSpaceInitial
-{
-public:
-    ColorSpaceInitial();
-};
-
-extern ColorSpaceInitial color_space_initial;
-
 /* *\ brief Enum of the possible types of CAMs.
 */
 enum CAM
@@ -322,6 +356,9 @@ class CV_EXPORTS_W  XYZ :public ColorSpace
 public:
     XYZ(IO io_) : ColorSpace(io_, "XYZ", true) {};
     Operations cam(IO dio, CAM method = BRADFORD);
+    static std::map <IO, std::shared_ptr<XYZ>> xyz_cs;
+    static std::shared_ptr<XYZ> get(IO io);
+
 private:
     /* *\ brief Get cam.
        *\ param sio the input IO of src.
@@ -334,15 +371,18 @@ private:
 
 /* *\ brief Define XYZ_D65_2 and XYZ_D50_2.
 */
-const XYZ XYZ_D65_2(D65_2);
-const XYZ XYZ_D50_2(D50_2);
+const XYZ XYZ_D65_2_CS(D65_2);
+const XYZ XYZ_D50_2_CS(D50_2);
 
 /* *\ brief Lab color space.
 */
 class CV_EXPORTS_W Lab :public ColorSpace
 {
 public:
+    static std::map <IO,  std::shared_ptr<Lab>> lab_cs;
     Lab(IO io_);
+    static  std::shared_ptr<Lab> get(IO io);
+
 private:
     static constexpr double delta = (6. / 29.);
     static constexpr double m = 1. / (3. * delta * delta);
@@ -350,6 +390,7 @@ private:
     static constexpr double c = 4. / 29.;
 
     cv::Vec3d fromxyz(cv::Vec3d& xyz);
+
 
     /* *\ brief Calculate From.
        *\ param src the input array, type of cv::Mat.
@@ -368,11 +409,20 @@ private:
 
 /* *\ brief Define Lab_D65_2 and Lab_D50_2.
 */
-const Lab Lab_D65_2(D65_2);
-const Lab Lab_D50_2(D50_2);
+const Lab Lab_D65_2_CS(D65_2);
+const Lab Lab_D50_2_CS(D50_2);
+
+//static std::map <COLOR_SPACE, ColorSpace*> map_cs ;
+
+class CV_EXPORTS_W GetCS {
+public:
+    static std::map <enum COLOR_SPACE, std::shared_ptr<ColorSpace>> map_cs;
+    static std::shared_ptr<RGBBase_> get_rgb(enum COLOR_SPACE cs_name);
+    static std::shared_ptr<ColorSpace> get_cs(enum COLOR_SPACE cs_name);
+};
+
 
 } // namespace ccm
 } // namespace cv
-
 
 #endif

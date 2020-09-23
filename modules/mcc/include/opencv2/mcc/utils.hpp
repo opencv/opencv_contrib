@@ -80,6 +80,7 @@ Mat elementWise(const Mat& src, F&& lambda)
     {
     case 1:
     {
+
         MatIterator_<double> it, end;
         for (it = dst.begin<double>(), end = dst.end<double>(); it != end; ++it)
         {

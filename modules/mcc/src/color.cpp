@@ -31,18 +31,21 @@ namespace cv
 {
 namespace ccm
 {
+Color::Color(Mat colors_, enum COLOR_SPACE cs_) :colors(colors_), cs(*GetCS::get_cs(cs_)) {};
 
 Color::Color(Mat colors_, const ColorSpace& cs_, Mat colored_) : colors(colors_), cs(cs_), colored(colored_)
 {
-    grays= ~colored;
+    grays = ~colored;
 }
-
+Color::Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_) : colors(colors_), cs(*GetCS::get_cs(cs_)), colored(colored_) {
+    grays = ~colored;
+}
 Color::Color(Mat colors_, const ColorSpace& cs_) : colors(colors_), cs(cs_) {};
-
-Color Color::to(const ColorSpace& other, CAM method, bool save)
+Color Color::to(const ColorSpace& other, CAM method , bool save)
 {
     if (history.count(other) == 1)
     {
+
         return *history[other];
     }
     if (cs.relate(other))
@@ -58,6 +61,10 @@ Color Color::to(const ColorSpace& other, CAM method, bool save)
     }
     return *color;
 }
+Color Color::to( COLOR_SPACE other, CAM method, bool save)
+{
+    return to(*GetCS::get_cs(other), method, save);
+}
 
 Mat Color::channel(Mat m, int i)
 {
@@ -68,13 +75,13 @@ Mat Color::channel(Mat m, int i)
 
 Mat Color::toGray(IO io, CAM method, bool save)
 {
-    XYZ xyz(io);
+    XYZ xyz = *XYZ::get(io);
     return channel(this->to(xyz, method, save).colors, 1);
 }
 
 Mat Color::toLuminant(IO io, CAM method, bool save)
 {
-    Lab lab(io);
+    Lab lab= *Lab::get(io);
     return channel(this->to(lab, method, save).colors, 0);
 }
 
@@ -85,7 +92,7 @@ Mat Color::diff(Color& other, DISTANCE_TYPE method)
 
 Mat Color::diff(Color& other, IO io, DISTANCE_TYPE method)
 {
-    Lab lab(io);
+    Lab lab = *Lab::get(io);
     switch (method)
     {
     case cv::ccm::CIE76:
@@ -125,9 +132,26 @@ Color Color::operator[](Mat mask)
     return Color(maskCopyTo(colors, mask), cs);
 }
 
-Color Macbeth_D50_2(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK);
-Color Macbeth_D65_2(ColorChecker2005_LAB_D65_2, Lab_D65_2, ColorChecker2005_COLORED_MASK);
-Color Vinyl_D50_2(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK);
+Color GetColor::get_color(CONST_COLOR const_color) {
+    switch (const_color)
+    {
+    case cv::ccm::Macbeth:
+    {
+        std::shared_ptr<Color> Macbeth_D50_2(new Color(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK));
+        return *Macbeth_D50_2;
+        break;
+    }
 
+    case cv::ccm::Vinyl: {
+        std::shared_ptr<Color> Vinyl_D50_2(new Color(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK));
+        return *Vinyl_D50_2;
+        break;
+    }
+
+    default:
+        throw;
+        break;
+    }
+}
 } // namespace ccm
 } // namespace cv

@@ -53,7 +53,8 @@ public:
     Mat grays;
     Mat colored;
     std::map<ColorSpace, std::shared_ptr<Color>> history;
-
+    Color(Mat colors_, enum COLOR_SPACE cs_) ;
+    Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_) ;
     Color(Mat colors_, const ColorSpace& cs_, Mat colored_);
     Color(Mat colors_, const ColorSpace& cs_);
 
@@ -66,8 +67,8 @@ public:
         *\ param other type of ColorSpace.
         *\ return Color.
     */
+    Color to(COLOR_SPACE other, CAM method = BRADFORD, bool save = true);
     Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true);
-
     /* *\ brief Channels split.
        *\ return each channel.
     */
@@ -193,15 +194,17 @@ const Mat Vinyl_COLORED_MASK = (Mat_<uchar>(18, 1) <<
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1);
 
-/* *\ brief  Macbeth ColorChecker with 2deg D50.
+/* *\ brief  Macbeth and Vinyl ColorChecker with 2deg D50 .
 */
-CV_EXPORTS_W extern Color Macbeth_D50_2;
+enum CONST_COLOR {
+    Macbeth,
+    Vinyl
+};
+class CV_EXPORTS_W GetColor {
+public:
+    static Color get_color(CONST_COLOR const_color);
+};
 
-/* *\ brief  Macbeth ColorChecker with 2deg D65.
-*/
-CV_EXPORTS_W extern Color Macbeth_D65_2;
-
-CV_EXPORTS_W extern Color Vinyl_D50_2;
 
 } // namespace ccm
 } // namespace cv

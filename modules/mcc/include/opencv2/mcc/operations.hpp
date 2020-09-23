@@ -55,7 +55,6 @@ public:
     Operation(Mat M_) :linear(true), M(M_) {};
 
     Operation(MatFunc f_) : linear(false), f(f_) {};
-
     virtual ~Operation() {};
 
     /* *\ brief operator function will run operation
