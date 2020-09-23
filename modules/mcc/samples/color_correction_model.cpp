@@ -72,20 +72,20 @@ int main(int argc, char *argv[])
         src /= 255.0;
 
         //compte color correction matrix
-        ColorCorrectionModel model1(src, Vinyl_D50_2);
+        ColorCorrectionModel model1(src, Vinyl);
 
         /* brief More models with different parameters, try it & check the document for details.
         */
-        // ColorCorrectionModel model2(src, Vinyl_D50_2, AdobeRGB, CCM_4x3, CIE2000, GAMMA, 2.2, 3);
-        // ColorCorrectionModel model3(src, Vinyl_D50_2, WideGamutRGB, CCM_4x3, CIE2000, GRAYPOLYFIT, 2.2, 3);
-        // ColorCorrectionModel model4(src, Vinyl_D50_2, ProPhotoRGB, CCM_4x3, RGBL, GRAYLOGPOLYFIT, 2.2, 3);
-        // ColorCorrectionModel model5(src, Vinyl_D50_2, DCI_P3_RGB, CCM_3x3, RGB, IDENTITY_, 2.2, 3);
-        // ColorCorrectionModel model6(src, Vinyl_D50_2, AppleRGB, CCM_3x3, CIE2000, COLORPOLYFIT, 2.2, 2,{ 0, 0.98 },Mat(),2);
-        // ColorCorrectionModel model7(src, Vinyl_D50_2, REC_2020_RGB, CCM_3x3,  CIE94_GRAPHIC_ARTS, COLORLOGPOLYFIT, 2.2, 3);
+        // ColorCorrectionModel model2(src, Vinyl, AdobeRGB, CCM_4x3, CIE2000, GAMMA, 2.2, 3);
+        // ColorCorrectionModel model3(src, Vinyl, WideGamutRGB, CCM_4x3, CIE2000, GRAYPOLYFIT, 2.2, 3);
+        // ColorCorrectionModel model4(src, Vinyl, ProPhotoRGB, CCM_4x3, RGBL, GRAYLOGPOLYFIT, 2.2, 3);
+        // ColorCorrectionModel model5(src, Vinyl, DCI_P3_RGB, CCM_3x3, RGB, IDENTITY_, 2.2, 3);
+        // ColorCorrectionModel model6(src, Vinyl, AppleRGB, CCM_3x3, CIE2000, COLORPOLYFIT, 2.2, 2,{ 0, 0.98 },Mat(),2);
+        // ColorCorrectionModel model7(src, Vinyl, REC_2020_RGB, CCM_3x3,  CIE94_GRAPHIC_ARTS, COLORLOGPOLYFIT, 2.2, 3);
 
         /* If you use a customized ColorChecker, you can use your own reference color values and corresponding color space in a way like:
         */
-        // cv::Mat ref = = (Mat_<Vec3d>(18, 1) <<
+        // cv::Mat ref = (Mat_<Vec3d>(18, 1) <<
         // Vec3d(1.00000000e+02, 5.20000001e-03, -1.04000000e-02),
         // Vec3d(7.30833969e+01, -8.19999993e-01, -2.02099991e+00),
         // Vec3d(6.24930000e+01, 4.25999999e-01, -2.23099995e+00),

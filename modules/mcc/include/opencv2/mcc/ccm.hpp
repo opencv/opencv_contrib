@@ -259,10 +259,6 @@ public:
         double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, cv::Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);
 
-  /*  ColorCorrectionModel(Mat src_, Mat colors_, const ColorSpace& ref_cs_, RGBBase_& cs_ , CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
-        INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);*/
-
     ColorCorrectionModel(Mat src_, Color dst_, RGBBase_& cs_ , CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
         double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);
@@ -288,13 +284,35 @@ public:
     */
     Mat initialWhiteBalance(void);
 
-
     /* *\ brief Fitting nonlinear-optimization initial value by least square.
         *        see CCM.pdf for details
         *\ param fit if fit is True, return optimalization for rgbl distance function.
     */
     void initialLeastSquare(bool fit = false);
 
+    double calc_loss_(Color color);
+    double calc_loss(const Mat ccm_);
+
+    /* *\ brief Fitting ccm if distance function is associated with CIE Lab color space.
+        *        see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
+        *        Set terminal criteria for solver is possible.
+    */
+    void fitting(void);
+
+    /* *\ brief Infer using fitting ccm.
+        *\ param img the input image, type of cv::Mat.
+        *\ return the output array, type of cv::Mat.
+    */
+    Mat infer(const Mat& img, bool islinear = false);
+
+    /* *\ brief Infer image and output as an BGR image with uint8 type.
+        *        mainly for test or debug.
+        *        input size and output size should be 255.
+        *\ param imgfile path name of image to infer.
+        *\ param islinear if linearize or not.
+        *\ return the output array, type of cv::Mat.
+    */
+    Mat inferImage(std::string imgfile, bool islinear = false);
 
     /* *\ brief Loss function base on cv::MinProblemSolver::Function.
         *        see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
@@ -317,7 +335,6 @@ public:
         double calc(const double* x) const CV_OVERRIDE
         {
             Mat ccm_(ccm_loss->shape, 1, CV_64F);
-
             for (int i = 0; i < ccm_loss->shape; i++)
             {
                 ccm_.at<double>(i, 0) = x[i];
@@ -326,41 +343,9 @@ public:
             return ccm_loss->calc_loss(ccm_);
         }
     };
-
-    double calc_loss_(Color color);
-
-    double calc_loss(const Mat ccm_);
-
-
-    /* *\ brief Fitting ccm if distance function is associated with CIE Lab color space.
-        *        see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
-        *        Set terminal criteria for solver is possible.
-    */
-
-    void fitting(void);
-
-
-    /* *\ brief Infer using fitting ccm.
-        *\ param img the input image, type of cv::Mat.
-        *\ return the output array, type of cv::Mat.
-    */
-    Mat infer(const Mat& img, bool islinear = false);
-
-
-    /* *\ brief Infer image and output as an BGR image with uint8 type.
-        *        mainly for test or debug.
-        *        input size and output size should be 255.
-        *\ param imgfile path name of image to infer.
-        *\ param islinear if linearize or not.
-        *\ return the output array, type of cv::Mat.
-    */
-    Mat inferImage(std::string imgfile, bool islinear = false);
-
-
 };
 
 } // namespace ccm
 } // namespace cv
-
 
 #endif

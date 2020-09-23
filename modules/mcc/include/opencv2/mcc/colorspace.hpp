@@ -211,7 +211,6 @@ private:
     */
     double toLFuncEW(double& x);
 
-
     /* *\ brief Linearization.
        *        see ColorSpace.pdf for details.
        *\ param rgb the input array, type of cv::Mat.
@@ -357,15 +356,8 @@ class CV_EXPORTS_W  XYZ :public ColorSpace
 public:
     XYZ(IO io_) : ColorSpace(io_, "XYZ", true) {};
     Operations cam(IO dio, CAM method = BRADFORD);
-   // static std::map <IO, XYZ*> xyz_cs;
     static std::map <IO, std::shared_ptr<XYZ>> xyz_cs;
-    static std::shared_ptr<XYZ> get(IO io);/* {
-        if (xyz_cs.count(io) == 1) {
-            return xyz_cs[io];
-        }
-        xyz_cs[io] = new XYZ(io);
-        return xyz_cs[io];
-    }*/
+    static std::shared_ptr<XYZ> get(IO io);
 
 private:
     /* *\ brief Get cam.
@@ -389,13 +381,7 @@ class CV_EXPORTS_W Lab :public ColorSpace
 public:
     static std::map <IO,  std::shared_ptr<Lab>> lab_cs;
     Lab(IO io_);
-    static  std::shared_ptr<Lab> get(IO io);/*{
-        if (lab_cs.count(io) == 1) {
-            return lab_cs[io];
-        }
-        lab_cs[io] = new Lab(io);
-        return lab_cs[io];
-    }*/
+    static  std::shared_ptr<Lab> get(IO io);
 
 private:
     static constexpr double delta = (6. / 29.);
@@ -431,7 +417,6 @@ const Lab Lab_D50_2_CS(D50_2);
 class CV_EXPORTS_W GetCS {
 public:
     static std::map <enum COLOR_SPACE, std::shared_ptr<ColorSpace>> map_cs;
-    //static RGBBase_* get_rgb(enum COLOR_SPACE cs_name);
     static std::shared_ptr<RGBBase_> get_rgb(enum COLOR_SPACE cs_name);
     static std::shared_ptr<ColorSpace> get_cs(enum COLOR_SPACE cs_name);
 };
