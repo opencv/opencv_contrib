@@ -420,9 +420,9 @@ struct IntegrateInvoker : ParallelLoopBody
 
                     int _u = projected.x;
                     int _v = projected.y;
-                    if (!(_u >= 0 && _u < depth.rows && _v >= 0 && _v < depth.cols))
+                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
                         continue;
-                    float pixNorm = pixNorms.at<float>(_u, _v);
+                    float pixNorm = pixNorms.at<float>(_v, _u);
 
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
