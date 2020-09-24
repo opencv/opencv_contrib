@@ -1232,11 +1232,11 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     kk.args(ocl::KernelArg::PtrReadWrite(tmp1),
         ocl::KernelArg::PtrReadWrite(xx),
         ocl::KernelArg::PtrReadWrite(yy),
-        depth_rows);
+        depth_cols);
 
     size_t globalSize[2];
-    globalSize[0] = depth_cols;
-    globalSize[1] = depth_rows;
+    globalSize[0] = depth_rows;
+    globalSize[1] = depth_cols;
 
     if (!kk.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
