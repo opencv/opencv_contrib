@@ -163,7 +163,7 @@ __kernel void integrate(__global const char * depthptr,
         if(v == 0)
             continue;
 
-        int idx = projected.x * depth_rows + projected.y;
+        int idx = projected.y * depth_rows + projected.x;
         float pixNorm = pixNorms[idx];
         //float pixNorm = length(camPixVec);
 
