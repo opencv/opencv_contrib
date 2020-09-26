@@ -334,7 +334,7 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
     double x1 = begin, x2 = end;
 
     if (x1 > x2) {
-        std::runtime_error("The lower bound exceeds the upper bound.");
+        throw std::runtime_error("The lower bound exceeds the upper bound.");
     }
 
     double sqrt_eps = std::sqrt(2.2e-16);
