@@ -73,7 +73,7 @@ ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, RGBBase_& cs_, 
         switch (initial_method_type)
         {
         case cv::ccm::WHITE_BALANCE:
-            initialWhiteBalance();
+            ccm0 = initialWhiteBalance();
             break;
         case cv::ccm::LEAST_SQUARE:
             initialLeastSquare();
@@ -141,9 +141,9 @@ void ColorCorrectionModel::calWeightsMasks(Mat weights_list, double weights_coef
 
 Mat ColorCorrectionModel::initialWhiteBalance(void)
 {
-    Mat schannels[3];
+    Mat schannels[4];
     split(src_rgbl, schannels);
-    Mat dchannels[3];
+    Mat dchannels[4];
     split(dst_rgbl, dchannels);
     std::vector<double> initial_vec = { sum(dchannels[0])[0] / sum(schannels[0])[0], 0, 0, 0,
                                         sum(dchannels[1])[0] / sum(schannels[1])[0], 0, 0, 0,

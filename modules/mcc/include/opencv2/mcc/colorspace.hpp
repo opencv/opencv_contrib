@@ -39,6 +39,9 @@ namespace cv
 {
 namespace ccm
 {
+
+/** Supported Color Space.
+*/
 enum COLOR_SPACE {
     sRGB,
     sRGBL,

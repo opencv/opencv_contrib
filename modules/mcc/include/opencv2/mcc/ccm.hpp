@@ -47,22 +47,27 @@ namespace ccm
             detected colors of ColorChecker patches;
             NOTICE: the color type is RGB not BGR, and the color values are in [0, 1];
             type: cv::Mat;
-    dst :
-            the reference colors;
-            NOTICE: Built-in color card or custom color card are supported;
-                    Built-in:
-                        Macbeth_D50_2: Macbeth ColorChecker with 2deg D50;
-                        Macbeth_D65_2: Macbeth ColorChecker with 2deg D65;
-                    Custom:
-                        You should use Color
-                        For the list of color spaces supported, see the notes below;
-                        If the color type is some RGB, the format is RGB not BGR, and the color values are in [0, 1];
-            type: Color;
+    constcolor :
+            the Built-in color card;
+            Supported list:
+                Macbeth: Macbeth ColorChecker with 2deg D50;
+                Vinyl: DKK ColorChecker with 2deg D50;
+            type: enum CONST_COLOR;
+    Mat colors_ :
+           the reference color values
+           and corresponding color space
+           NOTICE: the color values are in [0, 1]
+           type: cv::Mat
+    ref_cs_ :
+           the corresponding color space
+           NOTICE: For the list of color spaces supported, see the notes below;
+                  If the color type is some RGB, the format is RGB not BGR;
+           type:enum COLOR_SPACE;
     colorspace :
             the absolute color space that detected colors convert to;
             NOTICE: it should be some RGB color space;
                     For the list of RGB color spaces supported, see the notes below;
-            type: ColorSpace;
+            type: enum COLOR_SPACE;
     ccm_type :
             the shape of color correction matrix(CCM);
             Supported list:
@@ -169,19 +174,26 @@ namespace ccm
                 Lab_D65_2;
                 XYZ_D50_2;
                 XYZ_D65_2;
-            Supported IO (You can use Lab(io) or XYZ(io) to create color space):
-                A_2;
-                A_10;
-                D50_2;
-                D50_10;
-                D55_2;
-                D55_10;
-                D65_2;
-                D65_10;
-                D75_2;
-                D75_10;
-                E_2;
-                E_10;
+                XYZ_D65_10;
+                XYZ_D50_10;
+                XYZ_A_2;
+                XYZ_A_10;
+                XYZ_D55_2;
+                XYZ_D55_10;
+                XYZ_D75_2;
+                XYZ_D75_10;
+                XYZ_E_2;
+                XYZ_E_10;
+                Lab_D65_10;
+                Lab_D50_10;
+                Lab_A_2;
+                Lab_A_10;
+                Lab_D55_2;
+                Lab_D55_10;
+                Lab_D75_2;
+                Lab_D75_10;
+                Lab_E_2;
+                Lab_E_10;
     ---------------------------------------------------
     Abbr.
         src, s: source;
