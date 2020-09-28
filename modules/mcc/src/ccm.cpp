@@ -31,18 +31,18 @@ namespace cv
 {
 namespace ccm
 {
-   ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
+ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
         double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
         ColorCorrectionModel(src_, GetColor::get_color(constcolor), *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
             gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
- ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
+ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
         double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
      ColorCorrectionModel(src_, Color(colors_, *GetCS::get_cs(ref_cs_)), *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
          gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
 
- ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
+ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
      double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
      INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
      ColorCorrectionModel(src_, dst_, *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,

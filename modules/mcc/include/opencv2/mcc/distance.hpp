@@ -35,8 +35,8 @@ namespace cv
 namespace ccm
 {
 
-/* *\brief Enum of possibale functions to calculate the distance between
-   *       colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
+/** @brief Enum of possibale functions to calculate the distance between
+           colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
 enum DISTANCE_TYPE
 {
     CIE76,
@@ -50,23 +50,23 @@ enum DISTANCE_TYPE
 };
 
 
-/* *\ brief  distance between two points in formula CIE76
-   *\ param lab1 a 3D vector
-   *\ param lab2 a 3D vector
-   *\ return distance between lab1 and lab2
+/** @brief  distance between two points in formula CIE76
+    @param lab1 a 3D vector
+    @param lab2 a 3D vector
+    @return distance between lab1 and lab2
 */
 
 double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2);
 
-/* *\ brief  distance between two points in formula CIE94
-   *\ param lab1 a 3D vector
-   *\ param lab2 a 3D vector
-   *\ param kH Hue scale
-   *\ param kC Chroma scale
-   *\ param kL Lightness scale
-   *\ param k1 first scale parameter
-   *\ param k2 second scale parameter
-   *\ return distance between lab1 and lab2
+/** @brief  distance between two points in formula CIE94
+    @param lab1 a 3D vector
+    @param lab2 a 3D vector
+    @param kH Hue scale
+    @param kC Chroma scale
+    @param kL Lightness scale
+    @param k1 first scale parameter
+    @param k2 second scale parameter
+    @return distance between lab1 and lab2
 */
 
 double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH = 1.0,
@@ -80,25 +80,25 @@ double toRad(double degree);
 double deltaCIE94Textiles(cv::Vec3d lab1, cv::Vec3d lab2);
 
 
-/* *\ brief  distance between two points in formula CIE2000
-   *\ param lab1 a 3D vector
-   *\ param lab2 a 3D vector
-   *\ param kL Lightness scale
-   *\ param kC Chroma scale
-   *\ param kH Hue scale
-   *\ return distance between lab1 and lab2
+/** @brief  distance between two points in formula CIE2000
+    @param lab1 a 3D vector
+    @param lab2 a 3D vector
+    @param kL Lightness scale
+    @param kC Chroma scale
+    @param kH Hue scale
+    @return distance between lab1 and lab2
 */
 double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1.0,
     double kC = 1.0, double kH = 1.0);
 double deltaCIEDE2000(cv::Vec3d lab1, cv::Vec3d lab2);
 
 
-/* *\ brief  distance between two points in formula CMC
-   *\ param lab1 a 3D vector
-   *\ param lab2 a 3D vector
-   *\ param kL Lightness scale
-   *\ param kC Chroma scale
-   *\ return distance between lab1 and lab2
+/** @brief  distance between two points in formula CMC
+    @param lab1 a 3D vector
+    @param lab2 a 3D vector
+    @param kL Lightness scale
+    @param kC Chroma scale
+    @return distance between lab1 and lab2
 */
 
 double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1);

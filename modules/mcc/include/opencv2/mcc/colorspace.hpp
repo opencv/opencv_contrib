@@ -85,7 +85,7 @@ enum COLOR_SPACE {
     Lab_E_10
 };
 
-/* *\ brief Basic class for ColorSpace.
+/** @brief Basic class for ColorSpace.
 */
 class CV_EXPORTS_W ColorSpace
 {
@@ -115,9 +115,9 @@ public:
 
 };
 
-/* *\ brief Base of RGB color space;
-   *        the argument values are from AdobeRGB;
-   *        Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space
+/** @brief Base of RGB color space;
+           the argument values are from AdobeRGB;
+           Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space
 */
 
 class CV_EXPORTS_W RGBBase_ : public ColorSpace
@@ -137,33 +137,33 @@ public:
 
     using ColorSpace::ColorSpace;
 
-    /* *\ brief There are 3 kinds of relationships for RGB:
-       *        1. Different types;    - no operation
-       *        1. Same type, same linear; - copy
-       *        2. Same type, different linear, self is nonlinear; - 2 toL
-       *        3. Same type, different linear, self is linear - 3 fromL
-       *\ param other type of ColorSpace.
-       *\ return Operations.
+    /** @brief There are 3 kinds of relationships for RGB:
+               1. Different types;    - no operation
+               1. Same type, same linear; - copy
+               2. Same type, different linear, self is nonlinear; - 2 toL
+               3. Same type, different linear, self is linear - 3 fromL
+        @param other type of ColorSpace.
+        @return Operations.
     */
     Operations relation(const ColorSpace& other) const CV_OVERRIDE;
 
-    /* *\ brief Initial operations.
+    /** @brief Initial operations.
     */
     void init();
-    /* *\ brief Produce color space instance with linear and non-linear versions.
-       *\ param rgbl type of RGBBase_.
+    /** @brief Produce color space instance with linear and non-linear versions.
+        @param rgbl type of RGBBase_.
     */
     void bind(RGBBase_& rgbl);
 
 private:
     virtual void setParameter() {};
 
-    /* *\ brief Calculation of M_RGBL2XYZ_base.
-       *        see ColorSpace.pdf for details.
+    /** @brief Calculation of M_RGBL2XYZ_base.
+               see ColorSpace.pdf for details.
     */
     virtual void calM();
 
-    /* *\ brief operations to or from XYZ.
+    /** @brief operations to or from XYZ.
     */
     virtual void calOperations();
 
@@ -176,7 +176,7 @@ private:
 
 };
 
-/* *\ brief Base of Adobe RGB color space;
+/** @brief Base of Adobe RGB color space;
 */
 class CV_EXPORTS_W AdobeRGBBase_ : public RGBBase_
 
@@ -190,7 +190,7 @@ private:
     Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
 };
 
-/* *\ brief Base of sRGB color space;
+/** @brief Base of sRGB color space;
 */
 class CV_EXPORTS_W sRGBBase_ : public RGBBase_
 
@@ -205,36 +205,36 @@ public:
     double K0;
 
 private:
-    /* *\ brief linearization parameters
-       *        see ColorSpace.pdf for details;
+    /** @brief linearization parameters
+               see ColorSpace.pdf for details;
     */
     virtual void calLinear() CV_OVERRIDE;
-    /* *\ brief Used by toLFunc.
+    /** @brief Used by toLFunc.
     */
     double toLFuncEW(double& x);
 
-    /* *\ brief Linearization.
-       *        see ColorSpace.pdf for details.
-       *\ param rgb the input array, type of cv::Mat.
-       *\ return the output array, type of cv::Mat.
+    /** @brief Linearization.
+               see ColorSpace.pdf for details.
+        @param rgb the input array, type of cv::Mat.
+        @return the output array, type of cv::Mat.
     */
     Mat toLFunc(Mat& rgb) CV_OVERRIDE;
 
-    /* *\ brief Used by fromLFunc.
+    /** @brief Used by fromLFunc.
     */
     double fromLFuncEW(double& x);
 
-    /* *\ brief Delinearization.
-       *        see ColorSpace.pdf for details.
-       *\ param rgbl the input array, type of cv::Mat.
-       *\ return the output array, type of cv::Mat.
+    /** @brief Delinearization.
+               see ColorSpace.pdf for details.
+        @param rgbl the input array, type of cv::Mat.
+        @return the output array, type of cv::Mat.
     */
     Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
 
 };
 
-/* *\ brief sRGB color space.
-   *        data from https://en.wikipedia.org/wiki/SRGB.
+/** @brief sRGB color space.
+           data from https://en.wikipedia.org/wiki/SRGB.
 */
 class CV_EXPORTS_W sRGB_ :public sRGBBase_
 
@@ -246,7 +246,7 @@ private:
     void setParameter() CV_OVERRIDE;
 };
 
-/* *\ brief Adobe RGB color space.
+/** @brief Adobe RGB color space.
 */
 class CV_EXPORTS_W AdobeRGB_ : public AdobeRGBBase_
 {
@@ -258,8 +258,8 @@ private:
 
 };
 
-/* *\ brief Wide-gamut RGB color space.
-   *        data from https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space.
+/** @brief Wide-gamut RGB color space.
+           data from https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space.
 */
 class CV_EXPORTS_W WideGamutRGB_ : public AdobeRGBBase_
 {
@@ -270,8 +270,8 @@ private:
     void setParameter() CV_OVERRIDE;
 };
 
-/* *\ brief ProPhoto RGB color space.
-   *        data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
+/** @brief ProPhoto RGB color space.
+           data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
 */
 
 class CV_EXPORTS_W ProPhotoRGB_ : public AdobeRGBBase_
@@ -283,8 +283,8 @@ private:
     void setParameter() CV_OVERRIDE;
 };
 
-/* *\ brief DCI-P3 RGB color space.
-   *        data from https://en.wikipedia.org/wiki/DCI-P3.
+/** @brief DCI-P3 RGB color space.
+           data from https://en.wikipedia.org/wiki/DCI-P3.
 */
 class CV_EXPORTS_W DCI_P3_RGB_ : public AdobeRGBBase_
 {
@@ -295,8 +295,8 @@ private:
     void setParameter() CV_OVERRIDE;
 };
 
-/* *\ brief Apple RGB color space.
-   *        data from http://www.brucelindbloom.com/index.html?WorkingSpaceInfo.html.
+/** @brief Apple RGB color space.
+           data from http://www.brucelindbloom.com/index.html?WorkingSpaceInfo.html.
 */
 class CV_EXPORTS_W AppleRGB_ : public AdobeRGBBase_
 {
@@ -307,8 +307,8 @@ private:
     void setParameter() CV_OVERRIDE;
 };
 
-/* *\ brief REC_709 RGB color space.
-   *        data from https://en.wikipedia.org/wiki/Rec._709.
+/** @brief REC_709 RGB color space.
+           data from https://en.wikipedia.org/wiki/Rec._709.
 */
 class CV_EXPORTS_W REC_709_RGB_ : public sRGBBase_
 {
@@ -319,8 +319,8 @@ private:
     void setParameter() CV_OVERRIDE;
 };
 
-/* *\ brief REC_2020 RGB color space.
-   *        data from https://en.wikipedia.org/wiki/Rec._2020.
+/** @brief REC_2020 RGB color space.
+           data from https://en.wikipedia.org/wiki/Rec._2020.
 */
 class CV_EXPORTS_W REC_2020_RGB_ : public sRGBBase_
 {
@@ -332,7 +332,7 @@ private:
 };
 
 
-/* *\ brief Enum of the possible types of CAMs.
+/** @brief Enum of the possible types of CAMs.
 */
 enum CAM
 {
@@ -350,8 +350,8 @@ const static std::map <CAM, std::vector< Mat >> MAs = {
     {BRADFORD, { Bradford ,Bradford.inv() }}
 };
 
-/* *\ brief XYZ color space.
-   *        Chromatic adaption matrices.
+/** @brief XYZ color space.
+           Chromatic adaption matrices.
 */
 class CV_EXPORTS_W  XYZ :public ColorSpace
 {
@@ -362,21 +362,21 @@ public:
     static std::shared_ptr<XYZ> get(IO io);
 
 private:
-    /* *\ brief Get cam.
-       *\ param sio the input IO of src.
-       *\ param dio the input IO of dst.
-       *\ param method type of CAM.
-       *\ return the output array, type of cv::Mat.
+    /** @brief Get cam.
+        @param sio the input IO of src.
+        @param dio the input IO of dst.
+        @param method type of CAM.
+        @return the output array, type of cv::Mat.
     */
     Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const;
 };
 
-/* *\ brief Define XYZ_D65_2 and XYZ_D50_2.
+/** @brief Define XYZ_D65_2 and XYZ_D50_2.
 */
 const XYZ XYZ_D65_2_CS(D65_2);
 const XYZ XYZ_D50_2_CS(D50_2);
 
-/* *\ brief Lab color space.
+/** @brief Lab color space.
 */
 class CV_EXPORTS_W Lab :public ColorSpace
 {
@@ -394,22 +394,22 @@ private:
     cv::Vec3d fromxyz(cv::Vec3d& xyz);
 
 
-    /* *\ brief Calculate From.
-       *\ param src the input array, type of cv::Mat.
-       *\ return the output array, type of cv::Mat
+    /** @brief Calculate From.
+        @param src the input array, type of cv::Mat.
+        @return the output array, type of cv::Mat
     */
     Mat fromsrc(Mat& src);
 
     cv::Vec3d tolab(cv::Vec3d& lab);
 
-    /* *\ brief Calculate To.
-       *\ param src the input array, type of cv::Mat.
-       *\ return the output array, type of cv::Mat
+    /** @brief Calculate To.
+        @param src the input array, type of cv::Mat.
+        @return the output array, type of cv::Mat
     */
     Mat tosrc(Mat& src);
 };
 
-/* *\ brief Define Lab_D65_2 and Lab_D50_2.
+/** @brief Define Lab_D65_2 and Lab_D50_2.
 */
 const Lab Lab_D65_2_CS(D65_2);
 const Lab Lab_D50_2_CS(D50_2);

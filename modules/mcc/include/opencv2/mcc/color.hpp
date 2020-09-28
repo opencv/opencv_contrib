@@ -37,16 +37,16 @@ namespace cv
 namespace ccm
 {
 
-/* *\ brief Color defined by color_values and color space
+/** @brief Color defined by color_values and color space
 */
 
 class CV_EXPORTS_W Color
 {
 public:
 
-    /* *\ param grays mask of grayscale color
-        *\ param colored mask of colored color
-        *\ param history storage of historical conversion
+    /** @param grays mask of grayscale color
+        @param colored mask of colored color
+        @param history storage of historical conversion
     */
     Mat colors;
     const ColorSpace& cs;
@@ -60,56 +60,56 @@ public:
 
     virtual ~Color() {};
 
-    /* *\ brief Change to other color space.
-        *        The conversion process incorporates linear transformations to speed up.
-        *        method is chromatic adapation method.
-        *        when save if True, get data from history first.
-        *\ param other type of ColorSpace.
-        *\ return Color.
+    /** @brief Change to other color space.
+                 The conversion process incorporates linear transformations to speed up.
+        @param other type of ColorSpace.
+        @param  method the chromatic adapation method.
+        @param save when save if True, get data from history first.
+        @return Color.
     */
     Color to(COLOR_SPACE other, CAM method = BRADFORD, bool save = true);
     Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true);
-    /* *\ brief Channels split.
-       *\ return each channel.
+    /** @brief Channels split.
+       @return each channel.
     */
     Mat channel(Mat m, int i);
 
-    /* *\ brief To Gray.
+    /** @brief To Gray.
     */
     Mat toGray(IO io, CAM method = BRADFORD, bool save = true);
 
-    /* *\ brief To Luminant.
+    /** @brief To Luminant.
     */
     Mat toLuminant(IO io, CAM method = BRADFORD, bool save = true);
 
-    /* *\ brief Diff without IO.
-       *\ param other type of Color.
-       *\ param method type of distance.
-       *\ return distance between self and other
+    /** @brief Diff without IO.
+        @param other type of Color.
+        @param method type of distance.
+        @return distance between self and other
     */
     Mat diff(Color& other, DISTANCE_TYPE method = CIE2000);
 
-    /* *\ brief Diff with IO.
-       *\ param other type of Color.
-       *\ param io type of IO.
-       *\ param method type of distance.
-       *\ return distance between self and other
+    /** @brief Diff with IO.
+        @param other type of Color.
+        @param io type of IO.
+        @param method type of distance.
+        @return distance between self and other
     */
     Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000);
 
-    /* *\ brief Calculate gray mask.
+    /** @brief Calculate gray mask.
     */
     void getGray(double JDN = 2.0);
 
-    /* *\ brief Operator for mask copy.
+    /** @brief Operator for mask copy.
     */
     Color operator[](Mat mask);
 
 };
 
 
-/* *\ brief Data is from https://www.imatest.com/wp-content/uploads/2011/11/Lab-data-Iluminate-D65-D50-spectro.xls
-   *        see Miscellaneous.md for details.
+/** @brief Data is from https://www.imatest.com/wp-content/uploads/2011/11/Lab-data-Iluminate-D65-D50-spectro.xls
+           see Miscellaneous.md for details.
 */
 const Mat ColorChecker2005_LAB_D50_2 = (Mat_<cv::Vec3d>(24, 1) <<
     cv::Vec3d(37.986, 13.555, 14.059),
@@ -194,7 +194,7 @@ const Mat Vinyl_COLORED_MASK = (Mat_<uchar>(18, 1) <<
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1);
 
-/* *\ brief  Macbeth and Vinyl ColorChecker with 2deg D50 .
+/** @brief  Macbeth and Vinyl ColorChecker with 2deg D50 .
 */
 enum CONST_COLOR {
     Macbeth,

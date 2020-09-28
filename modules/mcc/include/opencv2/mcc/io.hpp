@@ -39,9 +39,8 @@ namespace cv
 namespace ccm
 {
 
-/* *\ brief Io is the meaning of illuminant and observer. See notes of ccm.hpp
-
- *          for supported list for illuminant and observer*/
+/** @brief Io is the meaning of illuminant and observer. See notes of ccm.hpp
+           for supported list for illuminant and observer*/
 class CV_EXPORTS_W IO
 {
 public:
