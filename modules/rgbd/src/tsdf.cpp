@@ -331,7 +331,13 @@ struct IntegrateInvoker : ParallelLoopBody
                     }
 
                     // norm(camPixVec) produces double which is too slow
-                    float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
+                    // float pixNorm = pixNorms.at<float>();
+                    int _u = (int) projected.get0();
+                    int _v = (int) v_rotate_right<1>(projected).get0();
+                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
+                        continue;
+                    float pixNorm = pixNorms.at<float>(_v, _u);
+                    // float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - zCamSpace);
                     // possible alternative is:
@@ -1183,7 +1189,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1539,7 +1545,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);
