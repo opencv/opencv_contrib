@@ -227,7 +227,12 @@ StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
     for(int i = 0; i < npatterns; i++ )
     {
         int innerArea = f[pairs[i][1]].area;
+#if 0  // workaround MSVS2019 bug: error C2109: subscript requires array or pointer type
         int outerArea = f[pairs[i][0]].area - innerArea;
+#else
+        int outerArea = f[pairs[i][0]].area;
+        outerArea -= innerArea;
+#endif
         invSizes[i][0] = 1.f/outerArea;
         invSizes[i][1] = 1.f/innerArea;
     }
@@ -283,7 +288,7 @@ StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
 
                 for(int i = 0; i <= maxIdx; i++ )
                 {
-                    const iiMatType** p = (const iiMatType**)&f[i].p[0];
+                    const iiMatType** p = (const iiMatType**)f[i].p;
                     __m128i r0 = _mm_sub_epi32(_mm_loadu_si128((const __m128i*)(p[0]+ofs)),
                                                _mm_loadu_si128((const __m128i*)(p[1]+ofs)));
                     __m128i r1 = _mm_sub_epi32(_mm_loadu_si128((const __m128i*)(p[3]+ofs)),
@@ -325,7 +330,7 @@ StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
 
             for(int i = 0; i <= maxIdx; i++ )
             {
-                const iiMatType** p = (const iiMatType**)&f[i].p[0];
+                const iiMatType** p = (const iiMatType**)f[i].p;
                 vals[i] = (int)(p[0][ofs] - p[1][ofs] - p[2][ofs] + p[3][ofs] +
                     p[4][ofs] - p[5][ofs] - p[6][ofs] + p[7][ofs]);
             }
