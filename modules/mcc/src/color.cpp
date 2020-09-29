@@ -147,6 +147,11 @@ Color GetColor::get_color(CONST_COLOR const_color) {
         return *Vinyl_D50_2;
         break;
     }
+    case cv::ccm::DigitalSG: {
+        std::shared_ptr<Color> DigitalSG_D50_2(new Color(DigitalSG_LAB_D50_2, Lab_D50_2));
+        return *DigitalSG_D50_2;
+        break;
+    }
 
     default:
         throw;

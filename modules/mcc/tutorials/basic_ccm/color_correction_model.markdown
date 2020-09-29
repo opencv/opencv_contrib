@@ -39,8 +39,9 @@ Here are the parameters for ColorCorrectionModel
     constcolor :
             the Built-in color card;
             Supported list:
-                Macbeth: Macbeth ColorChecker with 2deg D50;
-                Vinyl: DKK ColorChecker with 2deg D50;
+                Macbeth: Macbeth ColorChecker ;
+                Vinyl: DKK ColorChecker ;
+                DigitalSG: DigitalSG ColorChecker with 140 squares;
             type: enum CONST_COLOR;
     Mat colors_ :
            the reference color values
@@ -52,11 +53,18 @@ Here are the parameters for ColorCorrectionModel
            NOTICE: For the list of color spaces supported, see the notes below;
                   If the color type is some RGB, the format is RGB not BGR;
            type:enum COLOR_SPACE;
-    colorspace :
+    cs_ :
             the absolute color space that detected colors convert to;
             NOTICE: it should be some RGB color space;
                     For the list of RGB color spaces supported, see the notes below;
             type: enum COLOR_SPACE;
+    dst_ :
+            the reference colors;
+            NOTICE: custom color card are supported;
+                    You should use Color
+                    For the list of color spaces supported, see the notes below;
+                    If the color type is some RGB, the format is RGB not BGR, and the color values are in [0, 1];
+
     ccm_type :
             the shape of color correction matrix(CCM);
             Supported list:
