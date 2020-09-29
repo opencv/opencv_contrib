@@ -48,7 +48,7 @@ CV_EXPORTS_W Mat gammaCorrection(const Mat& src, const double& gamma);
 CV_EXPORTS_W Mat maskCopyTo(const Mat& src, const Mat& mask);
 
 /** @brief multiple the function used to compute an array with n channels
-      mulipied by ccm. 
+      mulipied by ccm.
     @param xyz the input array, type of Mat.
     @param ccm the ccm matrix to make color correction.
  */
@@ -63,7 +63,7 @@ CV_EXPORTS_W Mat multiple(const Mat& xyz, const Mat& ccm);
 CV_EXPORTS_W Mat saturate(Mat& src, const double& low, const double& up);
 
 /** @brief rgb2gray it is an approximation grayscale function for relative RGB
-           color space, see Miscellaneous.pdf for details; 
+           color space, see Miscellaneous.pdf for details;
     @param  rgb the input array,type of Mat.
  */
 CV_EXPORTS_W Mat rgb2gray(Mat rgb);
