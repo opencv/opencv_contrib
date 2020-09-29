@@ -33,43 +33,44 @@
 namespace cv {
 namespace ccm {
 
-/* *\ brief gamma correction ,see ColorSpace.pdf for details.
- *\ param src the input array,type of Mat.
- *\ param gamma a constant for gamma correction.
- */
 CV_EXPORTS_W double gammaCorrection_(const double& element, const double& gamma);
 
+/** @brief gamma correction ,see ColorSpace.pdf for details.
+    @param src the input array,type of Mat.
+    @param gamma a constant for gamma correction.
+ */
 CV_EXPORTS_W Mat gammaCorrection(const Mat& src, const double& gamma);
 
-/* *\ brief maskCopyTo a function to delete unsatisfied elementwise.
- *\ param src the input array, type of Mat.
- *\ param mask operation mask that used to choose satisfided elementwise.
+/** @brief maskCopyTo a function to delete unsatisfied elementwise.
+    @param src the input array, type of Mat.
+    @param mask operation mask that used to choose satisfided elementwise.
  */
 CV_EXPORTS_W Mat maskCopyTo(const Mat& src, const Mat& mask);
 
-/* *\ brief multiple the function used to compute an array with n channels
- *mulipied by ccm. \ param src the input array, type of Mat. \ param ccm the
- *ccm matrix to make color correction.
+/** @brief multiple the function used to compute an array with n channels
+      mulipied by ccm. 
+    @param xyz the input array, type of Mat.
+    @param ccm the ccm matrix to make color correction.
  */
 CV_EXPORTS_W Mat multiple(const Mat& xyz, const Mat& ccm);
 
-/* *\ brief multiple the function used to get the mask of saturated colors,
+/** @brief multiple the function used to get the mask of saturated colors,
             colors between low and up will be choosed.
-   *\ param src the input array, type of Mat.
-   *\ param low  the threshold to choose saturated colors
-   *\ param up  the threshold to choose saturated colors
+    @param src the input array, type of Mat.
+    @param low  the threshold to choose saturated colors
+    @param up  the threshold to choose saturated colors
 */
 CV_EXPORTS_W Mat saturate(Mat& src, const double& low, const double& up);
 
-/* *\ brief rgb2gray it is an approximation grayscale function for relative RGB
- *color space, see Miscellaneous.pdf for details; \ param rgb the input array,
- *type of Mat.
+/** @brief rgb2gray it is an approximation grayscale function for relative RGB
+           color space, see Miscellaneous.pdf for details; 
+    @param  rgb the input array,type of Mat.
  */
 CV_EXPORTS_W Mat rgb2gray(Mat rgb);
 
-/* *\ brief function for elementWise operation
- *\ param src the input array, type of Mat
- *\ lambda a for operation
+/** @brief function for elementWise operation
+    @param src the input array, type of Mat
+    @param lambda a for operation
  */
 template<typename F>
 Mat elementWise(const Mat& src, F&& lambda)
@@ -107,9 +108,9 @@ Mat elementWise(const Mat& src, F&& lambda)
     return dst;
 }
 
-/* *\ brief function for channel operation
-   *\ param src the input array, type of Mat
-   *\ lambda the function for operation
+/** @brief function for channel operation
+      @param src the input array, type of Mat
+      @param lambda the function for operation
 */
 template<typename F>
 Mat channelWise(const Mat& src, F&& lambda)
@@ -123,10 +124,10 @@ Mat channelWise(const Mat& src, F&& lambda)
     return dst;
 }
 
-/* *\ brief function for distance operation.
- *\ param src the input array, type of Mat.
- *\ param ref another input array, type of Mat.
- *\ param lambda the computing method for distance .
+/** @brief function for distance operation.
+    @param src the input array, type of Mat.
+    @param ref another input array, type of Mat.
+    @param lambda the computing method for distance .
  */
 template<typename F>
 Mat distanceWise(Mat& src, Mat& ref, F&& lambda)

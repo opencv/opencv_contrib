@@ -36,7 +36,7 @@ namespace cv
 namespace ccm
 {
 
-/* *\ brief Enum of the possible types of linearization.
+/** @brief Enum of the possible types of linearization.
 */
 enum LINEAR_TYPE
 {
@@ -48,7 +48,7 @@ enum LINEAR_TYPE
     GRAYLOGPOLYFIT
 };
 
-/* *\ brief Polyfit model.
+/** @brief Polyfit model.
 */
 class CV_EXPORTS_W Polyfit
 {
@@ -57,7 +57,7 @@ public:
     Mat p;
     Polyfit() {};
 
-    /* *\ brief Polyfit method.
+    /** @brief Polyfit method.
     https://en.wikipedia.org/wiki/Polynomial_regression
     polynomial: yi = a0 + a1*xi + a2*xi^2 + ... + an*xi^deg (i = 1,2,...,n)
     and deduct: Ax = y
@@ -75,7 +75,7 @@ private:
 
 };
 
-/* *\ brief Logpolyfit model.
+/** @brief Logpolyfit model.
 */
 
 class CV_EXPORTS_W LogPolyfit
@@ -87,7 +87,7 @@ public:
 
     LogPolyfit() {};
 
-    /* *\ brief Logpolyfit method.
+    /** @brief Logpolyfit method.
     */
 
     LogPolyfit(Mat x, Mat y, int deg_);
@@ -98,7 +98,7 @@ public:
 
 };
 
-/* *\ brief Linearization base.
+/** @brief Linearization base.
 */
 
 class CV_EXPORTS_W Linear
@@ -108,8 +108,8 @@ public:
 
     virtual ~Linear() {};
 
-    /* *\ brief Inference.
-       *\ param inp the input array, type of cv::Mat.
+    /** @brief Inference.
+        @param inp the input array, type of cv::Mat.
     */
 
     virtual Mat linearize(Mat inp);
@@ -121,12 +121,12 @@ public:
 };
 
 
-/* *\ brief Linearization identity.
-   *        make no change.
+/** @brief Linearization identity.
+           make no change.
 */
 class CV_EXPORTS_W LinearIdentity : public Linear {};
 
-/* *\ brief Linearization gamma correction.
+/** @brief Linearization gamma correction.
 */
 class CV_EXPORTS_W LinearGamma : public Linear
 {
@@ -138,8 +138,8 @@ public:
     Mat linearize(Mat inp) CV_OVERRIDE;
 };
 
-/* *\ brief Linearization.
-   *        Grayscale polynomial fitting.
+/** @brief Linearization.
+           Grayscale polynomial fitting.
 */
 template <class T>
 class LinearGray :public Linear
@@ -158,9 +158,9 @@ public:
         calc(src, dst_);
     }
 
-    /* *\ brief monotonically increase is not guaranteed.
-       *\ param src the input array, type of cv::Mat.
-       *\ param dst the input array, type of cv::Mat.
+    /** @brief monotonically increase is not guaranteed.
+        @param src the input array, type of cv::Mat.
+        @param dst the input array, type of cv::Mat.
     */
     void calc(const Mat& src, const Mat& dst)
     {
@@ -173,8 +173,8 @@ public:
     };
 };
 
-/* *\ brief Linearization.
-   *        Fitting channels respectively.
+/** @brief Linearization.
+           Fitting channels respectively.
 */
 template <class T>
 class LinearColor :public Linear
@@ -214,15 +214,15 @@ public:
     };
 };
 
-/* *\ brief Get linearization method.
-   *        used in ccm model.
-   *\ param gamma used in LinearGamma.
-   *\ param deg degrees.
-   *\ param src the input array, type of cv::Mat.
-   *\ param dst the input array, type of cv::Mat.
-   *\ param mask the input array, type of cv::Mat.
-   *\ param cs type of RGBBase_.
-   *\ param linear_type type of linear.
+/** @brief Get linearization method.
+           used in ccm model.
+    @param gamma used in LinearGamma.
+    @param deg degrees.
+    @param src the input array, type of cv::Mat.
+    @param dst the input array, type of cv::Mat.
+    @param mask the input array, type of cv::Mat.
+    @param cs type of RGBBase_.
+    @param linear_type type of linear.
 */
 
 std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type);

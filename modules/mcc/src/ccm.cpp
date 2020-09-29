@@ -31,18 +31,18 @@ namespace cv
 {
 namespace ccm
 {
-   ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
+ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
         double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
         ColorCorrectionModel(src_, GetColor::get_color(constcolor), *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
             gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
- ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
+ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
         double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
      ColorCorrectionModel(src_, Color(colors_, *GetCS::get_cs(ref_cs_)), *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
          gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
 
- ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
+ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
      double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
      INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
      ColorCorrectionModel(src_, dst_, *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
@@ -139,18 +139,18 @@ void ColorCorrectionModel::calWeightsMasks(Mat weights_list, double weights_coef
     masked_len = (int)sum(mask)[0];
 }
 
-Mat ColorCorrectionModel::initialWhiteBalance(void)
+void ColorCorrectionModel::initialWhiteBalance(void)
 {
-    Mat schannels[3];
+    Mat schannels[4];
     split(src_rgbl, schannels);
-    Mat dchannels[3];
+    Mat dchannels[4];
     split(dst_rgbl, dchannels);
     std::vector<double> initial_vec = { sum(dchannels[0])[0] / sum(schannels[0])[0], 0, 0, 0,
                                         sum(dchannels[1])[0] / sum(schannels[1])[0], 0, 0, 0,
                                         sum(dchannels[2])[0] / sum(schannels[2])[0], 0, 0, 0 };
     std::vector<double> initial_vec_(initial_vec.begin(), initial_vec.begin() + shape);
     Mat initial_white_balance = Mat(initial_vec_, true).reshape(0, shape / 3);
-    return initial_white_balance;
+    ccm0 = initial_white_balance;
 }
 
 void ColorCorrectionModel::initialLeastSquare(bool fit)

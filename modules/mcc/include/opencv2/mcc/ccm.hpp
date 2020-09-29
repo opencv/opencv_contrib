@@ -47,22 +47,35 @@ namespace ccm
             detected colors of ColorChecker patches;
             NOTICE: the color type is RGB not BGR, and the color values are in [0, 1];
             type: cv::Mat;
-    dst :
-            the reference colors;
-            NOTICE: Built-in color card or custom color card are supported;
-                    Built-in:
-                        Macbeth_D50_2: Macbeth ColorChecker with 2deg D50;
-                        Macbeth_D65_2: Macbeth ColorChecker with 2deg D65;
-                    Custom:
-                        You should use Color
-                        For the list of color spaces supported, see the notes below;
-                        If the color type is some RGB, the format is RGB not BGR, and the color values are in [0, 1];
-            type: Color;
-    colorspace :
+    constcolor :
+            the Built-in color card;
+            Supported list:
+                Macbeth: Macbeth ColorChecker with 24 squares;
+                Vinyl: DKK ColorChecker with 12 squares and 6 rectangle;
+                DigitalSG: DigitalSG ColorChecker with 140 squares;
+            type: enum CONST_COLOR;
+    Mat colors_ :
+           the reference color values
+           and corresponding color space
+           NOTICE: the color values are in [0, 1]
+           type: cv::Mat
+    ref_cs_ :
+           the corresponding color space
+           NOTICE: For the list of color spaces supported, see the notes below;
+                  If the color type is some RGB, the format is RGB not BGR;
+           type:enum COLOR_SPACE;
+    cs_ :
             the absolute color space that detected colors convert to;
             NOTICE: it should be some RGB color space;
                     For the list of RGB color spaces supported, see the notes below;
-            type: ColorSpace;
+            type: enum COLOR_SPACE;
+    dst_ :
+            the reference colors;
+            NOTICE: custom color card are supported;
+                    You should generate Color instance using reference color values and corresponding color space
+                    For the list of color spaces supported, see the notes below;
+                    If the color type is some RGB, the format is RGB not BGR, and the color values are in [0, 1];
+
     ccm_type :
             the shape of color correction matrix(CCM);
             Supported list:
@@ -169,19 +182,26 @@ namespace ccm
                 Lab_D65_2;
                 XYZ_D50_2;
                 XYZ_D65_2;
-            Supported IO (You can use Lab(io) or XYZ(io) to create color space):
-                A_2;
-                A_10;
-                D50_2;
-                D50_10;
-                D55_2;
-                D55_10;
-                D65_2;
-                D65_10;
-                D75_2;
-                D75_10;
-                E_2;
-                E_10;
+                XYZ_D65_10;
+                XYZ_D50_10;
+                XYZ_A_2;
+                XYZ_A_10;
+                XYZ_D55_2;
+                XYZ_D55_10;
+                XYZ_D75_2;
+                XYZ_D75_10;
+                XYZ_E_2;
+                XYZ_E_10;
+                Lab_D65_10;
+                Lab_D50_10;
+                Lab_A_2;
+                Lab_A_10;
+                Lab_D55_2;
+                Lab_D55_10;
+                Lab_D75_2;
+                Lab_D75_10;
+                Lab_E_2;
+                Lab_E_10;
     ---------------------------------------------------
     Abbr.
         src, s: source;
@@ -197,7 +217,7 @@ namespace ccm
 */
 
 
-/* *\ brief Enum of the possible types of ccm.
+/** @brief Enum of the possible types of ccm.
 */
 enum CCM_TYPE
 {
@@ -205,7 +225,7 @@ enum CCM_TYPE
     CCM_4x3
 };
 
-/* *\ brief Enum of the possible types of initial method.
+/** @brief Enum of the possible types of initial method.
 */
 enum INITIAL_METHOD_TYPE
 {
@@ -214,8 +234,8 @@ enum INITIAL_METHOD_TYPE
 };
 
 
-/* *\ brief Core class of ccm model.
-    *        produce a ColorCorrectionModel instance for inference.
+/** @brief Core class of ccm model.
+           produce a ColorCorrectionModel instance for inference.
 */
 
 class CV_EXPORTS_W ColorCorrectionModel
@@ -264,58 +284,59 @@ public:
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);
 
 
-    /* *\ brief Make no change for CCM_3x3.
-        *        convert cv::Mat A to [A, 1] in CCM_4x3.
-        *\ param inp the input array, type of cv::Mat.
-        *\ return the output array, type of cv::Mat
+    /** @brief Make no change for CCM_3x3.
+               convert cv::Mat A to [A, 1] in CCM_4x3.
+        @param inp the input array, type of cv::Mat.
+        @return the output array, type of cv::Mat
     */
     Mat prepare(const Mat& inp);
 
-    /* *\ brief Calculate weights and mask.
-        *\ param weights_list the input array, type of cv::Mat.
-        *\ param weights_coeff type of double.
-        *\ param saturate_list the input array, type of cv::Mat.
+    /** @brief Calculate weights and mask.
+        @param weights_list the input array, type of cv::Mat.
+        @param weights_coeff type of double.
+        @param saturate_mask the input array, type of cv::Mat.
     */
     void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask);
 
-    /* *\ brief Fitting nonlinear - optimization initial value by white balance.
-        *        see CCM.pdf for details.
-        *\ return the output array, type of Mat
+    /** @brief Fitting nonlinear - optimization initial value by white balance.
+               see CCM.pdf for details.
+        @return the output array, type of Mat
     */
-    Mat initialWhiteBalance(void);
+    void initialWhiteBalance(void);
 
-    /* *\ brief Fitting nonlinear-optimization initial value by least square.
-        *        see CCM.pdf for details
-        *\ param fit if fit is True, return optimalization for rgbl distance function.
+    /** @brief Fitting nonlinear-optimization initial value by least square.
+               see CCM.pdf for details
+        @param fit if fit is True, return optimalization for rgbl distance function.
     */
     void initialLeastSquare(bool fit = false);
 
     double calc_loss_(Color color);
     double calc_loss(const Mat ccm_);
 
-    /* *\ brief Fitting ccm if distance function is associated with CIE Lab color space.
-        *        see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
-        *        Set terminal criteria for solver is possible.
+    /** @brief Fitting ccm if distance function is associated with CIE Lab color space.
+               see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
+               Set terminal criteria for solver is possible.
     */
     void fitting(void);
 
-    /* *\ brief Infer using fitting ccm.
-        *\ param img the input image, type of cv::Mat.
-        *\ return the output array, type of cv::Mat.
+    /** @brief Infer using fitting ccm.
+        @param img the input image, type of cv::Mat.
+        @param islinear default false.
+        @return the output array, type of cv::Mat.
     */
     Mat infer(const Mat& img, bool islinear = false);
 
-    /* *\ brief Infer image and output as an BGR image with uint8 type.
-        *        mainly for test or debug.
-        *        input size and output size should be 255.
-        *\ param imgfile path name of image to infer.
-        *\ param islinear if linearize or not.
-        *\ return the output array, type of cv::Mat.
+    /** @brief Infer image and output as an BGR image with uint8 type.
+               mainly for test or debug.
+               input size and output size should be 255.
+        @param imgfile path name of image to infer.
+        @param islinear if linearize or not.
+        @return the output array, type of cv::Mat.
     */
     Mat inferImage(std::string imgfile, bool islinear = false);
 
-    /* *\ brief Loss function base on cv::MinProblemSolver::Function.
-        *        see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
+    /** @brief Loss function base on cv::MinProblemSolver::Function.
+               see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
     */
     class LossFunction : public cv::MinProblemSolver::Function
     {
@@ -323,14 +344,14 @@ public:
         ColorCorrectionModel* ccm_loss;
         LossFunction(ColorCorrectionModel* ccm) : ccm_loss(ccm) {};
 
-        /* *\ brief Reset dims to ccm->shape.
+        /** @brief Reset dims to ccm->shape.
         */
         int getDims() const CV_OVERRIDE
         {
             return ccm_loss->shape;
         }
 
-        /* *\ brief Reset calculation.
+        /** @brief Reset calculation.
         */
         double calc(const double* x) const CV_OVERRIDE
         {

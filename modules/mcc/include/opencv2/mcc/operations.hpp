@@ -40,8 +40,8 @@ namespace ccm
 
 typedef std::function<Mat(Mat)> MatFunc;
 
-/* *\ brief Operation class contains some operarions used for color space
-   *        conversion containing linear transformation and non-linear transformation
+/** @brief Operation class contains some operarions used for color space
+           conversion containing linear transformation and non-linear transformation
    */
 class CV_EXPORTS_W Operation
 {
@@ -57,12 +57,12 @@ public:
     Operation(MatFunc f_) : linear(false), f(f_) {};
     virtual ~Operation() {};
 
-    /* *\ brief operator function will run operation
+    /** @brief operator function will run operation
     */
     Mat operator()(Mat& abc);
 
-    /* *\ brief add function will conbine this operation
-       *        with other linear transformation operation
+    /** @brief add function will conbine this operation
+               with other linear transformation operation
     */
     void add(const Operation& other);
 
@@ -82,11 +82,11 @@ public:
 
     virtual ~Operations() {};
 
-    /* *\ brief add function will conbine this operation with other transformation operations
+    /** @brief add function will conbine this operation with other transformation operations
     */
     Operations& add(const Operations& other);
 
-    /* *\ brief run operations to make color conversion
+    /** @brief run operations to make color conversion
     */
     Mat run(Mat abc);
 };
