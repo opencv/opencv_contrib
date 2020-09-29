@@ -28,13 +28,12 @@ static inline float tsdfToFloat(TsdfType num)
 }
 
 __kernel void preCalculationPixNorm (__global float * pixNorms,
-                                     __global float * xx,
-                                     __global float * yy,
+                                     const __global float * xx,
+                                     const __global float * yy,
                                      int width)
 {    
     int i = get_global_id(0);
     int j = get_global_id(1);
-    //int idx = i*480 + j;
     int idx = i*width + j;
     pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
 }
@@ -52,7 +51,7 @@ __kernel void integrate(__global const char * depthptr,
                         const float dfac,
                         const float truncDist,
                         const int maxWeight,
-                        __global float * pixNorms)
+                        const __global float * pixNorms)
 {
     int x = get_global_id(0);
     int y = get_global_id(1);

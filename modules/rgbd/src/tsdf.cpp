@@ -331,7 +331,6 @@ struct IntegrateInvoker : ParallelLoopBody
                     }
 
                     // norm(camPixVec) produces double which is too slow
-                    // float pixNorm = pixNorms.at<float>();
                     int _u = (int) projected.get0();
                     int _v = (int) v_rotate_right<1>(projected).get0();
                     if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
@@ -1212,7 +1211,7 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 {
     Mat x(1, depth_cols, CV_32F);
     Mat y(1, depth_rows, CV_32F);
-    Mat pixNorm1(1, depth_rows * depth_cols, CV_32F);
+    Mat _pixNorm(1, depth_rows * depth_cols, CV_32F);
 
     for (int i = 0; i < depth_cols; i++)
         x.at<float>(0, i) = (i - cxy[0]) / fxy[0];
@@ -1231,13 +1230,13 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
     AccessFlag af = ACCESS_READ;
-    UMat tmp1 = pixNorm1.getUMat(af);
+    UMat pixNorm = _pixNorm.getUMat(af);
     UMat xx = x.getUMat(af);
     UMat yy = y.getUMat(af);
 
-    kk.args(ocl::KernelArg::PtrReadWrite(tmp1),
-        ocl::KernelArg::PtrReadWrite(xx),
-        ocl::KernelArg::PtrReadWrite(yy),
+    kk.args(ocl::KernelArg::PtrReadWrite(pixNorm),
+        ocl::KernelArg::PtrReadOnly(xx),
+        ocl::KernelArg::PtrReadOnly(yy),
         depth_cols);
 
     size_t globalSize[2];
@@ -1247,7 +1246,7 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     if (!kk.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 
-    return tmp1;
+    return pixNorm;
 }
 
 // use depth instead of distance (optimization)
@@ -1298,7 +1297,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
            dfac,
            truncDist,
            maxWeight,
-           ocl::KernelArg::PtrReadWrite(pixNorms));
+           ocl::KernelArg::PtrReadOnly(pixNorms));
 
     size_t globalSize[2];
     globalSize[0] = (size_t)volResolution.x;
