@@ -169,7 +169,7 @@ const Mat ColorChecker2005_COLORED_MASK = (Mat_<uchar>(24, 1) <<
     1, 1, 1, 1, 1, 1,
     0, 0, 0, 0, 0, 0);
 
-const Mat Vinyl_LAB_D50_2 = (Mat_<Vec3d>(18, 1) << 
+const Mat Vinyl_LAB_D50_2 = (Mat_<Vec3d>(18, 1) <<
     Vec3d(100, 0.00520000001, -0.0104),
     Vec3d(73.0833969, -0.819999993, -2.02099991),
     Vec3d(62.493, 0.425999999, -2.23099995),
