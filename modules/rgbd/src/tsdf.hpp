@@ -103,6 +103,8 @@ class TSDFVolumeGPU : public TSDFVolume
 
     virtual void reset() override;
 
+    Vec6f frameParams;
+    UMat pixNorms;
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
     // Array elem is CV_32FC2, read as (float, int)
