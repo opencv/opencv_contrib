@@ -547,14 +547,9 @@ public:
     }
 
     Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize, float zFar,
-                              InputArray tvec, InputArray rot) CV_OVERRIDE
+                              InputArray tvec, InputArray rot, const Scalar& color) CV_OVERRIDE
     {
-        MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
-        Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
-        rpass->setEmissive(ColourValue::White);
-
         Camera* cam = sceneMgr->createCamera(name);
-        cam->setMaterial(mat);
 
         cam->setVisible(true);
         cam->setDebugDisplayEnabled(true);
@@ -562,6 +557,15 @@ public:
         cam->setFarClipDistance(zFar);
 
         _setCameraIntrinsics(cam, K, imsize);
+
+#if OGRE_VERSION < ((1 << 16) | (12 << 8) | 9)
+        MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
+        Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
+        rpass->setEmissive(convertColor(color));
+        cam->setMaterial(mat);
+#else
+        cam->setDebugColour(convertColor(color));
+#endif
 
         Quaternion q;
         Vector3 t;
@@ -697,14 +701,6 @@ public:
 
         MaterialPtr mat = MaterialManager::getSingleton().getByName(value, RESOURCEGROUP_NAME);
         CV_Assert(mat && "material not found");
-
-        Camera* cam = dynamic_cast<Camera*>(node.getAttachedObject(name));
-        if(cam)
-        {
-            CV_Assert(subEntityIdx == -1 && "Camera Entities do not have SubEntities");
-            cam->setMaterial(mat);
-            return;
-        }
 
         Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
         CV_Assert(ent && "invalid entity");
