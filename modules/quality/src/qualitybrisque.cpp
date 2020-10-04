@@ -181,20 +181,20 @@ namespace
                 brisque_mat_type shifted_structdis(imdist_scaled.size(), BRISQUE_CALC_MAT_TYPE); //(imdist_scaled.size(), CV_64FC1, 1);
 
                 // create pair-wise product for the given orientation (reqshift)
-                for (int i = 0; i < structdis.rows; i++)
+                Range colRangesrc = Range(reqshift[1], structdis.cols);
+                Range rowRangesrc = Range(reqshift[0], structdis.rows);
+                Range colRangedst = Range(0, structdis.cols - reqshift[1]);
+                Range rowRangedst = Range(0, structdis.rows - reqshift[0]);
+                if (reqshift[0] == -1)
                 {
-                    for (int j = 0; j < structdis.cols; j++)
-                    {
-                        if (i + reqshift[0] >= 0 && i + reqshift[0] < structdis.rows && j + reqshift[1] >= 0 && j + reqshift[1] < structdis.cols)
-                        {
-                            shifted_structdis.at<brisque_calc_element_type>(i,j) = structdis.at<brisque_calc_element_type>(i + reqshift[0], j + reqshift[1]);
-                        }
-                        else
-                        {
-                            shifted_structdis.at<brisque_calc_element_type>(i, j) = (brisque_calc_element_type) 0;
-                        }
-                    }
+                    rowRangesrc = Range(0, structdis.rows - 1);
+                    rowRangedst = Range(1, structdis.rows);
                 }
+
+                //select maximum allowed cols
+                //copy the 2nd row to the 6th row  max allowed cols
+                structdis(rowRangesrc, colRangesrc).copyTo(shifted_structdis(rowRangedst, colRangedst));
+                
 
                 // calculate the products of the pairs
                 cv::multiply(structdis, shifted_structdis, shifted_structdis);
