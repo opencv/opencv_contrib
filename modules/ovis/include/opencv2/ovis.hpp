@@ -146,19 +146,20 @@ public:
     /**
      * convenience method to visualize a camera position
      *
-     * the entity uses a material with the same name that can be used to change the line color.
      * @param name entity name
      * @param K intrinsic matrix
      * @param imsize image size
      * @param zFar far plane in camera coordinates
      * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param color line color
      * @return the extents of the Frustum at far plane, where the top left corner denotes the principal
      * point offset
      */
     CV_WRAP virtual Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize,
                                               float zFar, InputArray tvec = noArray(),
-                                              InputArray rot = noArray()) = 0;
+                                              InputArray rot = noArray(),
+                                              const Scalar& color = Scalar::all(1)) = 0;
 
     /**
      * creates a point light in the scene
