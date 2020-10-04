@@ -81,25 +81,21 @@ namespace
     {
         long int poscount = 0, negcount = 0;
         double possqsum = 0, negsqsum = 0, abssum = 0;
-        for (int i = 0; i < structdis.rows; i++)
-        {
-            for (int j = 0; j < structdis.cols; j++)
-            {
-                double pt = structdis.at<brisque_calc_element_type>(i, j);
-                if (pt > 0)
-                {
-                    poscount++;
-                    possqsum += pt * pt;
-                    abssum += pt;
-                }
-                else if (pt < 0)
-                {
-                    negcount++;
-                    negsqsum += pt * pt;
-                    abssum -= pt;
-                }
-            }
-        }
+        
+        brisque_mat_type posmat = cv::max(structdis, 0);
+        brisque_mat_type negmat = cv::min(structdis, 0);
+        brisque_mat_type possqmat, negsqmat, absmat;
+
+        absmat = cv::abs(structdis);
+        cv::patchNaNs(absmat, 0);
+        cv::multiply(posmat, posmat, possqmat);
+        cv::multiply(negmat, negmat, negsqmat);
+
+        possqsum = cv::sum(possqmat)[0];
+        negsqsum = cv::sum(negsqmat)[0];
+        abssum = cv::sum(absmat)[0];
+        poscount = cv::countNonZero(posmat);
+        negcount = cv::countNonZero(negmat);
 
         lsigma_best = cv::pow(negsqsum / negcount, 0.5);
         rsigma_best = cv::pow(possqsum / poscount, 0.5);
