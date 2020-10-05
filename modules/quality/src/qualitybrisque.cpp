@@ -49,7 +49,7 @@ namespace
     // brisque intermediate calculation type
     //  Linux+Mat:  CV_64F is 3X slower than CV_32F
     //  Win32+Mat:  CV_64F is 2X slower than CV_32F
-    static constexpr const int BRISQUE_CALC_MAT_TYPE = CV_32F;
+    static constexpr const int BRISQUE_CALC_MAT_TYPE = CV_64F;
     // brisque intermediate matrix element type.  float if BRISQUE_CALC_MAT_TYPE == CV_32F, double if BRISQUE_CALC_MAT_TYPE == CV_64F
     using brisque_calc_element_type = float;
 
