@@ -1296,7 +1296,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
            cxy.val,
            dfac,
            truncDist,
-           maxWeight,
+           int(maxWeight),
            ocl::KernelArg::PtrReadOnly(pixNorms));
 
     size_t globalSize[2];
