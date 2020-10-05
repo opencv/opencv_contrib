@@ -14,7 +14,6 @@
 #include <list>
 #include <set>
 #include <limits>
-
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/hal/intrin.hpp"
