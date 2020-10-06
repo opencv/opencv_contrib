@@ -63,6 +63,9 @@ struct tsdf_hash
 typedef std::unordered_set<cv::Vec3i, tsdf_hash> VolumeUnitIndexSet;
 typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitMap;
 
+typedef unsigned int volumeIndex;
+typedef std::unordered_set<cv::Vec3i, volumeIndex> VolumeUnitIndexes;
+
 class HashTSDFVolumeCPU : public HashTSDFVolume
 {
    public:
@@ -101,8 +104,11 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     cv::Vec3i volumeToVoxelCoord(cv::Point3f point) const;
 
    public:
+       Vec6f frameParams;
+       Mat pixNorms;
+       cv::Mat volumeUnits;
     //! Hashtable of individual smaller volume units
-    VolumeUnitMap volumeUnits;
+    //VolumeUnitMap volumeUnits;
 };
 cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Matx44f _pose,
                                            float _raycastStepFactor, float _truncDist,
