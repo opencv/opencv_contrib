@@ -106,7 +106,9 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
    public:
        Vec6f frameParams;
        Mat pixNorms;
+       VolumeUnitIndexes volumeUnitIndexes;
        cv::Mat volumeUnits;
+
     //! Hashtable of individual smaller volume units
     //VolumeUnitMap volumeUnits;
 };

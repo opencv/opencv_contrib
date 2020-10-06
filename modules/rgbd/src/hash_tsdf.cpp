@@ -62,7 +62,8 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float 
 void HashTSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
-    volumeUnits.clear();
+    //volumeUnits.clear();
+    volumeUnits = cv::Mat();
 }
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
