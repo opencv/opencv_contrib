@@ -789,26 +789,34 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     return nv < 0.0001f ? nan3 : normal / nv;
 }
 
-struct HashRaycastInvoker : ParallelLoopBody
+void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
+                                cv::Size frameSize, cv::OutputArray _points,
+                                cv::OutputArray _normals) const
 {
-    HashRaycastInvoker(Points& _points, Normals& _normals, const Matx44f& cameraPose,
-                       const Intr& intrinsics, const HashTSDFVolumeCPU& _volume)
-        : ParallelLoopBody(),
-          points(_points),
-          normals(_normals),
-          volume(_volume),
-          tstep(_volume.truncDist * _volume.raycastStepFactor),
-          cam2vol(volume.pose.inv() * Affine3f(cameraPose)),
-          vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
-          reproj(intrinsics.makeReprojector())
-    {
-    }
+    CV_TRACE_FUNCTION();
+    CV_Assert(frameSize.area() > 0);
 
-    virtual void operator()(const Range& range) const override
+    _points.create(frameSize, POINT_TYPE);
+    _normals.create(frameSize, POINT_TYPE);
+
+    Points points1   = _points.getMat();
+    Normals normals1 = _normals.getMat();
+
+    Points& points(points1);
+    Normals& normals(normals1);
+    const HashTSDFVolumeCPU& volume(*this);
+    const float tstep(volume.truncDist * volume.raycastStepFactor);
+    const Affine3f cam2vol(volume.pose.inv() * Affine3f(cameraPose));
+    const Affine3f vol2cam(Affine3f(cameraPose.inv()) * volume.pose);
+    const Intr::Reprojector reproj(intrinsics.makeReprojector());
+
+    const int nstripes = -1;
+
+    auto _HashRaycastInvoker = [&](const Range& range) 
     {
         const Point3f cam2volTrans = cam2vol.translation();
-        const Matx33f cam2volRot   = cam2vol.rotation();
-        const Matx33f vol2camRot   = vol2cam.rotation();
+        const Matx33f cam2volRot = cam2vol.rotation();
+        const Matx33f vol2camRot = vol2cam.rotation();
 
         const float blockSize = volume.volumeUnitSize;
 
@@ -827,27 +835,27 @@ struct HashRaycastInvoker : ParallelLoopBody
                 Point3f rayDirV =
                     normalize(Vec3f(cam2volRot * reproj(Point3f(float(x), float(y), 1.f))));
 
-                float tmin  = 0;
-                float tmax  = volume.truncateThreshold;
+                float tmin = 0;
+                float tmax = volume.truncateThreshold;
                 float tcurr = tmin;
 
                 cv::Vec3i prevVolumeUnitIdx =
                     cv::Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(),
-                              std::numeric_limits<int>::min());
+                        std::numeric_limits<int>::min());
 
-                float tprev       = tcurr;
+                float tprev = tcurr;
                 float prevTsdf = volume.truncDist;
                 cv::Ptr<TSDFVolumeCPU> currVolumeUnit;
                 while (tcurr < tmax)
                 {
-                    Point3f currRayPos          = orig + tcurr * rayDirV;
+                    Point3f currRayPos = orig + tcurr * rayDirV;
                     cv::Vec3i currVolumeUnitIdx = volume.volumeToVolumeUnitIdx(currRayPos);
 
                     VolumeUnitIndexes::const_iterator it = volume.volumeUnits.find(currVolumeUnitIdx);
 
                     float currTsdf = prevTsdf;
-                    int currWeight    = 0;
-                    float stepSize    = 0.5f * blockSize;
+                    int currWeight = 0;
+                    float stepSize = 0.5f * blockSize;
                     cv::Vec3i volUnitLocalIdx;
 
                     //! Does the subvolume exist in hashtable
@@ -859,9 +867,9 @@ struct HashRaycastInvoker : ParallelLoopBody
 
                         //! TODO: Figure out voxel interpolation
                         TsdfVoxel currVoxel = _at(volUnitLocalIdx, volume.volumes.row(it->second.index), volume.volumeDims, it->second.volDims);
-                        currTsdf            = tsdfToFloat(currVoxel.tsdf);
-                        currWeight          = currVoxel.weight;
-                        stepSize            = tstep;
+                        currTsdf = tsdfToFloat(currVoxel.tsdf);
+                        currWeight = currVoxel.weight;
+                        stepSize = tstep;
                     }
                     //! Surface crossing
                     if (prevTsdf > 0.f && currTsdf <= 0.f && currWeight > 0)
@@ -876,48 +884,23 @@ struct HashRaycastInvoker : ParallelLoopBody
                             if (!isNaN(nv))
                             {
                                 normal = vol2camRot * nv;
-                                point  = vol2cam * pv;
+                                point = vol2cam * pv;
                             }
                         }
                         break;
                     }
                     prevVolumeUnitIdx = currVolumeUnitIdx;
-                    prevTsdf          = currTsdf;
-                    tprev             = tcurr;
+                    prevTsdf = currTsdf;
+                    tprev = tcurr;
                     tcurr += stepSize;
                 }
                 ptsRow[x] = toPtype(point);
                 nrmRow[x] = toPtype(normal);
             }
         }
-    }
+    };
 
-    Points& points;
-    Normals& normals;
-    const HashTSDFVolumeCPU& volume;
-    const float tstep;
-    const Affine3f cam2vol;
-    const Affine3f vol2cam;
-    const Intr::Reprojector reproj;
-};
-
-void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
-                                cv::Size frameSize, cv::OutputArray _points,
-                                cv::OutputArray _normals) const
-{
-    CV_TRACE_FUNCTION();
-    CV_Assert(frameSize.area() > 0);
-
-    _points.create(frameSize, POINT_TYPE);
-    _normals.create(frameSize, POINT_TYPE);
-
-    Points points   = _points.getMat();
-    Normals normals = _normals.getMat();
-
-    HashRaycastInvoker ri(points, normals, cameraPose, intrinsics, *this);
-
-    const int nstripes = -1;
-    parallel_for_(Range(0, points.rows), ri, nstripes);
+    parallel_for_(Range(0, points.rows), _HashRaycastInvoker, nstripes);
 }
 
 void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
