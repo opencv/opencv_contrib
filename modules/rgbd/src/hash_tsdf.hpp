@@ -108,7 +108,7 @@ private:
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
-    TsdfVoxel HashTSDFVolumeCPU::_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
+    TsdfVoxel _atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
         VolumeUnitIndexes::const_iterator vend, int unitRes) const;
 
     float interpolateVoxelPoint(const Point3f& point) const;
