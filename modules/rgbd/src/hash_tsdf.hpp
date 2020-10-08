@@ -82,11 +82,9 @@ typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitIndexes;
 class HashTSDFVolumeCPU : public HashTSDFVolume
 {
 private:
-    void _integrate(
-        float voxelSize, cv::Matx44f _pose, float raycastStepFactor,
-        float _truncDist, int _maxWeight, Point3i volResolution, Vec4i volDims,
+    void _integrate( cv::Matx44f _pose,  Point3i volResolution, Vec4i volDims,
         InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
-        const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
+        const cv::kinfu::Intr& intrinsics, InputArray _volume);
    public:
     // dimension in voxels, size in meters
     HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
@@ -129,8 +127,7 @@ private:
        VolumeUnitIndexes volumeUnits;
        cv::Mat volumes;
        volumeIndex HashS;
-    //! Hashtable of individual smaller volume units
-    //VolumeUnitMap volumeUnits;
+
 };
 cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Matx44f _pose,
                                            float _raycastStepFactor, float _truncDist,
