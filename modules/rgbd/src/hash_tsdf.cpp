@@ -555,26 +555,7 @@ static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
     }
 }
 
-inline TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
-    VolumeUnitIndexes::const_iterator vend, cv::Mat vol, int unitRes) 
-{
-    if (it == vend)
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-    Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
-
-    // expanding at(), removing bounds check
-    const TsdfVoxel* volData = vol.row(it->second.index).ptr<TsdfVoxel>();
-    Vec4i volDims = it->second.volDims;
-    int coordBase = volUnitLocalIdx[0] * volDims[0] + volUnitLocalIdx[1] * volDims[1] + volUnitLocalIdx[2] * volDims[2];
-    return volData[coordBase];
-}
-
-TsdfVoxel HashTSDFVolumeCPU::_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
+TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
     VolumeUnitIndexes::const_iterator vend, int unitRes) const
 {
     if (it == vend)
@@ -667,8 +648,7 @@ float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
             queried[dictIdx] = true;
         }
 
-        //vx[i] = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumes, volumeUnitResolution).tsdf;
-        vx[i] = _atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf;
+        vx[i] = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf;
     }
 
     return interpolate(tx, ty, tz, vx);
@@ -730,8 +710,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
             queried[dictIdx] = true;
         }
 
-        //vals[i] = tsdfToFloat(atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumes, volumeUnitResolution).tsdf);
-        vals[i] = tsdfToFloat(_atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf);
+        vals[i] = tsdfToFloat(atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf);
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
