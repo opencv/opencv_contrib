@@ -17,7 +17,7 @@
 #include "utils.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
-
+#define VOLUMES_SIZE 32
 
 namespace cv
 {
@@ -72,13 +72,14 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float 
                      _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
 {
     HashS = 0;
+    volumes = cv::Mat(VOLUMES_SIZE, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>());
 }
 
 // zero volume, leave rest params the same
 void HashTSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
-    volumes = cv::Mat();
+    volumes = cv::Mat(VOLUMES_SIZE, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>());
     HashS = 0;
 }
 
@@ -367,13 +368,18 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.volDims = volDims;
         
         vu.pose = subvolumePose;
-        volumes.push_back(Mat(1, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>()));
+        //volumes.push_back(Mat(1, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>()));
         vu.index = HashS; HashS++;
         //volumes.ptr<Mat>(vu.index)->forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
         //    {
         //        TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
         //        v.tsdf = floatToTsdf(0.0f); v.weight = 0;
         //    });
+        if (HashS > volumes.size().height)
+        {
+            for (int i = 0; i < VOLUMES_SIZE; i++)
+                volumes.push_back(Mat(1, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>()));
+        }
         volumes.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
