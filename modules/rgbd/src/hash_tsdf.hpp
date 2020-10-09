@@ -83,7 +83,7 @@ typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitIndexes;
 class HashTSDFVolumeCPU : public HashTSDFVolume
 {
 private:
-    void _integrate( cv::Matx44f _pose,  Point3i volResolution, Vec4i volDims,
+    void integrateVolumeUnit( cv::Matx44f _pose,  Point3i volResolution, Vec4i volDims,
         InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
         const cv::kinfu::Intr& intrinsics, InputArray _volume);
    public:

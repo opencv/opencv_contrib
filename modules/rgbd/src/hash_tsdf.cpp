@@ -180,7 +180,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
     }
 }
 
-void HashTSDFVolumeCPU::_integrate( cv::Matx44f _pose, Point3i volResolution, Vec4i volDims,
+void HashTSDFVolumeCPU::integrateVolumeUnit( cv::Matx44f _pose, Point3i volResolution, Vec4i volDims,
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _volume)
 {
@@ -443,7 +443,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (volumeUnit.isActive)
             {
                 //! The volume unit should already be added into the Volume from the allocator
-                _integrate( volumeUnit.pose, volumeDims, volumeUnit.volDims, depth, 
+                integrateVolumeUnit(volumeUnit.pose, volumeDims, volumeUnit.volDims, depth,
                     depthFactor, cameraPose, intrinsics, volumes.row(volumeUnit.index));
 
                 //! Ensure all active volumeUnits are set to inactive for next integration
