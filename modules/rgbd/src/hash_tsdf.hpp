@@ -109,6 +109,9 @@ private:
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
+    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, volumeIndex indx, 
+        Point3i volResolution, Vec4i volDims) const;
+
     TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
         VolumeUnitIndexes::const_iterator vend, int unitRes) const;
 
