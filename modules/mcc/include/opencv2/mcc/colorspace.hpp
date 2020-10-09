@@ -345,7 +345,7 @@ static std::map <std::tuple<IO, IO, CAM>, Mat > cams;
 const static Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
 const static Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
 const static std::map <CAM, std::vector< Mat >> MAs = {
-    {IDENTITY , { Mat::eye(cv::Size(3,3),CV_64FC1) , Mat::eye(cv::Size(3,3),CV_64FC1)} },
+    {IDENTITY , { Mat::eye(Size(3,3),CV_64FC1) , Mat::eye(Size(3,3),CV_64FC1)} },
     {VON_KRIES, { Von_Kries ,Von_Kries.inv() }},
     {BRADFORD, { Bradford ,Bradford.inv() }}
 };
@@ -391,7 +391,7 @@ private:
     static constexpr double t0 = delta * delta * delta;
     static constexpr double c = 4. / 29.;
 
-    cv::Vec3d fromxyz(cv::Vec3d& xyz);
+    Vec3d fromxyz(Vec3d& xyz);
 
 
     /** @brief Calculate From.
@@ -400,7 +400,7 @@ private:
     */
     Mat fromsrc(Mat& src);
 
-    cv::Vec3d tolab(cv::Vec3d& lab);
+    Vec3d tolab(Vec3d& lab);
 
     /** @brief Calculate To.
         @param src the input array, type of cv::Mat.

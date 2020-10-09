@@ -29,8 +29,9 @@
 
 namespace cv {
 namespace ccm {
-
-static std::map<IO, std::vector<double>> illuminants = {
+static std::map<IO, std::vector<double>> getilluminants()
+{
+  static std::map<IO, std::vector<double>> illuminants = {
   {A_2, { 1.098466069456375, 1, 0.3558228003436005 }},
   {A_10, { 1.111420406956693, 1, 0.3519978321919493 }},
   {D50_2, { 0.9642119944211994, 1, 0.8251882845188288 }},
@@ -44,7 +45,9 @@ static std::map<IO, std::vector<double>> illuminants = {
   {E_2, { 1., 1., 1. }},
   {E_10, { 1., 1., 1. }},
 };
-
+  return illuminants;
+};
+static std::map<IO, std::vector<double>> illuminants =getilluminants();
 /* *\ brief Basic class for ColorSpace.
  */
 bool ColorSpace::relate(const ColorSpace& other) const {

@@ -40,9 +40,6 @@ TEST(CV_ccmUtils, test_rgb2gray)
 {
     Mat x = (Mat_<Vec3d>(1, 1) << Vec3d(0.2, 0.3, 0.4));
     Mat y = (Mat_<double>(1, 1) <<0.28596);
-	std::cout << x << std::endl;
-	std::cout << "vs" << std::endl;
-	std::cout << y << std::endl;
     ASSERT_MAT_NEAR(rgb2gray(x), y, 1e-4);
 }
 

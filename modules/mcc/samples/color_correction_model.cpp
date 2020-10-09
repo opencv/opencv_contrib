@@ -12,13 +12,13 @@ using namespace ccm;
 using namespace std;
 
 const char *about = "Basic chart detection";
-const char *keys = {
+const char *keys = 
     "{ help h usage ? |    | show this message }"
     "{t        |      |  chartType: 0-Standard, 1-DigitalSG, 2-Vinyl }"
     "{v        |      | Input from video file, if ommited, input comes from camera }"
     "{ci       | 0    | Camera id if input doesnt come from video (-v) }"
     "{f        | 1    | Path of the file to process (-v) }"
-    "{nc       | 1    | Maximum number of charts in the image }"};
+    "{nc       | 1    | Maximum number of charts in the image }";
 
 int main(int argc, char *argv[])
 {
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    Mat image = cv::imread(filepath, IMREAD_COLOR);
+    Mat image = imread(filepath, IMREAD_COLOR);
     if (!image.data)
     {
         cout << "Invalid Image!" << endl;
@@ -108,7 +108,11 @@ int main(int argc, char *argv[])
         // ColorCorrectionModel model8(src,ref,Lab_D50_2);
 
         //make color correction
-        Mat calibratedImage = model1.inferImage(filepath);
+        Mat img = imread(imgfile);
+        Mat img_;
+        cvtColor(img, img_, COLOR_BGR2RGB);
+        img_.convertTo(img_, CV_64F);
+        Mat calibratedImage = model1.inferImage(img_);
 
         // Save the calibrated image to {FILE_NAME}.calibrated.{FILE_EXT}
         string filename = filepath.substr(filepath.find_last_of('/')+1);
@@ -116,7 +120,7 @@ int main(int argc, char *argv[])
         string baseName = filename.substr(0, dotIndex);
         string ext = filename.substr(dotIndex+1, filename.length()-dotIndex);
         string calibratedFilePath = baseName + ".calibrated." + ext;
-        cv::imwrite(calibratedFilePath, calibratedImage);
+        imwrite(calibratedFilePath, calibratedImage);
     }
 
     return 0;
