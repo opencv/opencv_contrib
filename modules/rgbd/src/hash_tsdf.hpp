@@ -130,8 +130,8 @@ private:
        Mat pixNorms;
        //VolumeUnitIndexes volumeUnitIndexes;
        VolumeUnitIndexes volumeUnits;
-       cv::Mat volumes;
-       volumeIndex HashS;
+       cv::Mat volUnitsMatrix;
+       volumeIndex lastVolIndex;
 
 };
 cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Matx44f _pose,
