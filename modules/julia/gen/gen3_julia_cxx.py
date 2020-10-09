@@ -114,8 +114,11 @@ class FuncVariant(FuncVariant):
 
     def get_argument_opt(self, ns=''):
         # [print(arg.default_value,":",handle_def_arg(arg.default_value, handle_jl_arg(arg.tp))) for arg in self.optlist]
-        str2 =  ", ".join(["%s::%s = %s(%s)" % (arg.name, handle_jl_arg(arg.tp), handle_jl_arg(arg.tp) if (arg.tp == 'int' or arg.tp=='float' or arg.tp=='double') else '', handle_def_arg(arg.default_value, handle_jl_arg(arg.tp), ns)) for arg in self.optlist])
-        return str2
+        try:
+            str2 =  ", ".join(["%s::%s = %s(%s)" % (arg.name, handle_jl_arg(arg.tp), handle_jl_arg(arg.tp) if (arg.tp == 'int' or arg.tp=='float' or arg.tp=='double') else '', handle_def_arg(arg.default_value, handle_jl_arg(arg.tp), ns)) for arg in self.optlist])
+            return str2
+        except KeyError:
+            return ''
 
     def get_argument_def(self, classname, isalgo):
         arglist = self.inlist
