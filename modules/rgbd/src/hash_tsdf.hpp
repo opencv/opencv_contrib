@@ -33,7 +33,7 @@ class HashTSDFVolume : public Volume
     int volumeUnitResolution;
     float volumeUnitSize;
     bool zFirstMemOrder;
-    Point3i volumeDims;
+    Point3i volStrides;
     Vec4i volDims;
 };
 /*
