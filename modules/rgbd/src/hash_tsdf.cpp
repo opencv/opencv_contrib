@@ -49,6 +49,20 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     volumeDims(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution)
 {
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
+    int xdim, ydim, zdim;
+    if (zFirstMemOrder)
+    {
+        xdim = volumeDims.z * volumeDims.y;
+        ydim = volumeDims.z;
+        zdim = 1;
+    }
+    else
+    {
+        xdim = 1;
+        ydim = volumeDims.x;
+        zdim = volumeDims.x * volumeDims.y;
+    }
+    volDims = Vec4i(xdim, ydim, zdim);
 }
 
 HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
@@ -349,21 +363,8 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     {
         VolumeUnit& vu = volumeUnits[idx];
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(idx)).matrix;
-        
-        int xdim, ydim, zdim;
-        if (zFirstMemOrder)
-        {
-            xdim = volumeDims.z * volumeDims.y;
-            ydim = volumeDims.z;
-            zdim = 1;
-        }
-        else
-        {
-            xdim = 1;
-            ydim = volumeDims.x;
-            zdim = volumeDims.x * volumeDims.y;
-        }
-        vu.volDims = Vec4i(xdim, ydim, zdim);
+
+        vu.volDims = volDims;
         
         vu.pose = subvolumePose;
         volumes.push_back(Mat(1, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>()));
