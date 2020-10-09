@@ -71,7 +71,6 @@ struct VolumeUnit
     cv::Vec3i coord;
     volumeIndex index;
     cv::Matx44f pose;
-    Vec4i volDims;
     bool isActive;
 };
 

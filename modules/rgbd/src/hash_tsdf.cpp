@@ -364,8 +364,6 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     {
         VolumeUnit& vu = volumeUnits[idx];
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(idx)).matrix;
-
-        vu.volDims = volDims;
         
         vu.pose = subvolumePose;
         //volumes.push_back(Mat(1, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>()));
@@ -449,7 +447,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (volumeUnit.isActive)
             {
                 //! The volume unit should already be added into the Volume from the allocator
-                integrateVolumeUnit(volumeUnit.pose, volumeDims, volumeUnit.volDims, depth,
+                integrateVolumeUnit(volumeUnit.pose, volumeDims, volDims, depth,
                     depthFactor, cameraPose, intrinsics, volumes.row(volumeUnit.index));
 
                 //! Ensure all active volumeUnits are set to inactive for next integration
@@ -544,7 +542,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 
     volUnitLocalIdx =
         cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return _at(volUnitLocalIdx, it->second.index, volumeDims, it->second.volDims);
+    return _at(volUnitLocalIdx, it->second.index, volumeDims, volDims);
     //return _at(volUnitLocalIdx, volumes.row(it->second.index), volumeDims, it->second.volDims);
 }
 
@@ -564,7 +562,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
     volUnitLocalIdx =
         cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return _at(volUnitLocalIdx, it->second.index, volumeDims, it->second.volDims);
+    return _at(volUnitLocalIdx, it->second.index, volumeDims, volDims);
     //return _at(volUnitLocalIdx, volumes.row(it->second.index), volumeDims, it->second.volDims);
 }
 
@@ -598,7 +596,6 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
 
     // expanding at(), removing bounds check
     const TsdfVoxel* volData = volumes.ptr<TsdfVoxel>(it->second.index);
-    Vec4i volDims = it->second.volDims;
     int coordBase = volUnitLocalIdx[0] * volDims[0] + volUnitLocalIdx[1] * volDims[1] + volUnitLocalIdx[2] * volDims[2];
     return volData[coordBase];
 }
@@ -903,7 +900,7 @@ void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::
                         volUnitLocalIdx = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
 
                         //! TODO: Figure out voxel interpolation
-                        TsdfVoxel currVoxel = _at(volUnitLocalIdx, it->second.index, volume.volumeDims, it->second.volDims);
+                        TsdfVoxel currVoxel = _at(volUnitLocalIdx, it->second.index, volume.volumeDims, volDims);
                         //TsdfVoxel currVoxel = _at(volUnitLocalIdx, volume.volumes.row(it->second.index), volume.volumeDims, it->second.volDims);
                         currTsdf = tsdfToFloat(currVoxel.tsdf);
                         currWeight = currVoxel.weight;
@@ -980,7 +977,7 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                             for (int z = 0; z < volume.volumeUnitResolution; z++)
                             {
                                 cv::Vec3i voxelIdx(x, y, z);
-                                TsdfVoxel voxel = _at(voxelIdx, it->second.index, volumeDims, it->second.volDims);
+                                TsdfVoxel voxel = _at(voxelIdx, it->second.index, volumeDims, volDims);
                                 //TsdfVoxel voxel = _at(voxelIdx, volume.volumes.row(it->second.index), volumeDims, it->second.volDims);
 
                                 if (voxel.tsdf != -128 && voxel.weight != 0)
