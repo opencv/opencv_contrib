@@ -369,6 +369,11 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.pose = subvolumePose;
         volumes.push_back(Mat(1, volumeDims.x * volumeDims.y * volumeDims.z, rawType<TsdfVoxel>()));
         vu.index = HashS; HashS++;
+        //volumes.ptr<Mat>(vu.index)->forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
+        //    {
+        //        TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
+        //        v.tsdf = floatToTsdf(0.0f); v.weight = 0;
+        //    });
         volumes.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
@@ -582,10 +587,10 @@ TsdfVoxel HashTSDFVolumeCPU::_atVolumeUnit(const Vec3i& point, const Vec3i& volu
     Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
 
     // expanding at(), removing bounds check
-    const TsdfVoxel* volData = volumes.row(it->second.index).ptr<TsdfVoxel>();
+    const TsdfVoxel* volData = volumes.ptr<TsdfVoxel>();
     Vec4i volDims = it->second.volDims;
     int coordBase = volUnitLocalIdx[0] * volDims[0] + volUnitLocalIdx[1] * volDims[1] + volUnitLocalIdx[2] * volDims[2];
-    return volData[coordBase];
+    return volData[it->second.index, coordBase];
 }
 
 
