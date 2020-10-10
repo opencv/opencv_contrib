@@ -45,3 +45,8 @@ vector<MatShape>:Array{Array{Int32, 1}, 1}
 float:Float32
 Ptr<float>:Ptr{Float32}
 vector<Vec6f>:Array{Vec{Float32, 6}, 1}
+Ptr<FeatureDetector>:Ptr{Feature2D}
+Point2d:Point{Float64}
+SolvePnPMethod:SolvePnPMethod
+CirclesGridFinderParameters:CirclesGridFinderParameters
+HandEyeCalibrationMethod:HandEyeCalibrationMethod

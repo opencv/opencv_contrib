@@ -50,21 +50,6 @@ def handle_def_arg(inp, tp = '', ns=''):
     inp = inp.strip()
 
     out = ''
-    if tp in julia_types:
-        out = inp
-    elif not inp or inp=='Mat()':
-        if tp=='Mat' or tp=='InputArray':
-            out= 'CxxMat()'
-        out = tp+'()'
-
-    elif inp=="String()":
-            out=  '""'
-
-    elif '(' in inp or ':' in inp:
-        out =  "cpp_to_julia("+get_var(inp)+"())"
-
-    else:
-        print("Default not found")
 
     if inp in jl_cpp_defmap[tp]:
         out = jl_cpp_defmap[tp][inp]
@@ -129,8 +114,11 @@ class FuncVariant(FuncVariant):
 
     def get_argument_opt(self, ns=''):
         # [print(arg.default_value,":",handle_def_arg(arg.default_value, handle_jl_arg(arg.tp))) for arg in self.optlist]
-        str2 =  ", ".join(["%s::%s = %s(%s)" % (arg.name, handle_jl_arg(arg.tp), handle_jl_arg(arg.tp) if (arg.tp == 'int' or arg.tp=='float' or arg.tp=='double') else '', handle_def_arg(arg.default_value, handle_jl_arg(arg.tp), ns)) for arg in self.optlist])
-        return str2
+        try:
+            str2 =  ", ".join(["%s::%s = %s(%s)" % (arg.name, handle_jl_arg(arg.tp), handle_jl_arg(arg.tp) if (arg.tp == 'int' or arg.tp=='float' or arg.tp=='double') else '', handle_def_arg(arg.default_value, handle_jl_arg(arg.tp), ns)) for arg in self.optlist])
+            return str2
+        except KeyError:
+            return ''
 
     def get_argument_def(self, classname, isalgo):
         arglist = self.inlist

@@ -114,15 +114,16 @@ private:
                      const FT_Vector *to,
                      void * user);
 
-    // Offset value to handle the position less than 0.
-    static const unsigned int cOutlineOffset = 0x80000000;
-
     /**
-     * Convert from 26.6 real to signed integer
+     * Convert from FT_F26Dot6 to int(coodinate of OpenCV)
+     * (FT_F26Dot6 is signed 26.6 real)
      */
-    static int ftd(unsigned int fixedInt){
-        unsigned int ret = ( ( fixedInt + (1 << 5)  ) >> 6 );
-        return (int)ret - ( cOutlineOffset >> 6 );
+    static int ftd(FT_F26Dot6 fixedInt){
+        if ( fixedInt > 0 ) {
+          return ( fixedInt + 32 ) / 64 ;
+        }else{
+          return ( fixedInt - 32 ) / 64 ;
+        }
     }
 
     class PathUserData{
@@ -240,6 +241,7 @@ void FreeType2Impl::putTextOutline(
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
+    FT_Vector currentPos = {0,0};
 
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
@@ -247,15 +249,20 @@ void FreeType2Impl::putTextOutline(
 
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
-    if( _bottomLeftOrigin == true ){
-        _org.y -= _fontHeight;
-    }
-
     PathUserData *userData = new PathUserData( _img );
     userData->mColor     = _color;
     userData->mCtoL      = mCtoL;
     userData->mThickness = _thickness;
     userData->mLine_type = _line_type;
+
+    // Initilize currentPosition ( in FreeType coordinates)
+    currentPos.x = _org.x * 64;
+    currentPos.y = _org.y * 64;
+
+    // Update currentPosition with bottomLeftOrigin ( in FreeType coordinates)
+    if( _bottomLeftOrigin != true ){
+        currentPos.y += _fontHeight * 64;
+    }
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert(!FT_Load_Glyph(mFace, info[i].codepoint, 0 ));
@@ -263,27 +270,24 @@ void FreeType2Impl::putTextOutline(
         FT_GlyphSlot slot  = mFace->glyph;
         FT_Outline outline = slot->outline;
 
-        // Flip
+        // Flip ( in FreeType coordinates )
         FT_Matrix mtx = { 1 << 16 , 0 , 0 , -(1 << 16) };
         FT_Outline_Transform(&outline, &mtx);
 
-        // Move
+        // Move to current position ( in FreeType coordinates )
         FT_Outline_Translate(&outline,
-                             cOutlineOffset,
-                             cOutlineOffset );
-        // Move
-        FT_Outline_Translate(&outline,
-                             (FT_Pos)(_org.x << 6),
-                             (FT_Pos)( (_org.y + _fontHeight) << 6) );
+                             currentPos.x,
+                             currentPos.y);
 
-        // Draw
+        // Draw ( in FreeType coordinates )
         CV_Assert( !FT_Outline_Decompose(&outline, &mFn, (void*)userData) );
 
-        // Draw (Last Path)
+        // Draw (Last Path) ( in FreeType coordinates )
         mvFn( NULL, (void*)userData );
 
-        _org.x += ( mFace->glyph->advance.x ) >> 6;
-        _org.y += ( mFace->glyph->advance.y ) >> 6;
+        // Update current position ( in FreeType coordinates )
+        currentPos.x += mFace->glyph->advance.x;
+        currentPos.y += mFace->glyph->advance.y;
    }
    delete userData;
    hb_buffer_destroy (hb_buffer);
@@ -455,7 +459,7 @@ Size FreeType2Impl::getTextSize(
 
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
-    Point _org(0,0);
+    FT_Vector currentPos = {0,0};
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
@@ -465,9 +469,9 @@ Size FreeType2Impl::getTextSize(
     CV_Assert( info != NULL );
     hb_shape (mHb_font, hb_buffer, NULL, 0);
 
-    _org.y -= _fontHeight;
-    int xMin = INT_MAX, xMax = INT_MIN;
-    int yMin = INT_MAX, yMax = INT_MIN;
+    // Initilize BoundaryBox ( in OpenCV coordinates )
+    int xMin = INT_MAX, yMin = INT_MAX;
+    int xMax = INT_MIN, yMax = INT_MIN;
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert(!FT_Load_Glyph(mFace, info[i].codepoint, 0 ));
@@ -476,20 +480,16 @@ Size FreeType2Impl::getTextSize(
         FT_Outline outline = slot->outline;
         FT_BBox bbox ;
 
-        // Flip
+        // Flip ( in FreeType coordinates )
         FT_Matrix mtx = { 1 << 16 , 0 , 0 , -(1 << 16) };
         FT_Outline_Transform(&outline, &mtx);
 
-        // Move
+        // Move to current position ( in FreeType coordinates )
         FT_Outline_Translate(&outline,
-                             cOutlineOffset,
-                             cOutlineOffset );
+                             currentPos.x,
+                             currentPos.y );
 
-        // Move
-        FT_Outline_Translate(&outline,
-                             (FT_Pos)(_org.x << 6 ),
-                             (FT_Pos)((_org.y + _fontHeight) << 6 ) );
-
+        // Get BoundaryBox ( in FreeType coordinatrs )
         CV_Assert( !FT_Outline_Get_BBox( &outline, &bbox ) );
 
         // If codepoint is space(0x20), it has no glyph.
@@ -498,28 +498,26 @@ Size FreeType2Impl::getTextSize(
             (bbox.xMin == 0 ) && (bbox.xMax == 0 ) &&
             (bbox.yMin == 0 ) && (bbox.yMax == 0 )
         ){
-            bbox.xMin = (_org.x << 6);
-            bbox.xMax = (_org.x << 6 ) + ( mFace->glyph->advance.x );
+            bbox.xMin = currentPos.x ;
+            bbox.xMax = currentPos.x + ( mFace->glyph->advance.x );
             bbox.yMin = yMin;
             bbox.yMax = yMax;
-
-            bbox.xMin += cOutlineOffset;
-            bbox.xMax += cOutlineOffset;
-            bbox.yMin += cOutlineOffset;
-            bbox.yMax += cOutlineOffset;
         }
 
+        // Update current position ( in FreeType coordinates )
+        currentPos.x += mFace->glyph->advance.x;
+        currentPos.y += mFace->glyph->advance.y;
+
+        // Update BoundaryBox ( in OpenCV coordinates )
         xMin = cv::min ( xMin, ftd(bbox.xMin) );
         xMax = cv::max ( xMax, ftd(bbox.xMax) );
         yMin = cv::min ( yMin, ftd(bbox.yMin) );
         yMax = cv::max ( yMax, ftd(bbox.yMax) );
-
-        _org.x += ( mFace->glyph->advance.x ) >> 6;
-        _org.y += ( mFace->glyph->advance.y ) >> 6;
     }
 
     hb_buffer_destroy (hb_buffer);
 
+    // Calcurate width/height/baseline ( in OpenCV coordinates )
     int width  = xMax - xMin ;
     int height = -yMin ;
 
@@ -543,6 +541,7 @@ int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
     if(user == NULL ) { return 1; }
     PathUserData *p = (PathUserData*)user;
 
+    // Draw polylines( in OpenCV coordinates ).
     if( p->mPts.size() > 0 ){
         Mat dst = p->mImg.getMat();
         const Point *ptsList[] = { &(p->mPts[0]) };
@@ -564,6 +563,7 @@ int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
 
     if( to == NULL ) { return 1; }
 
+    // Store points to draw( in OpenCV coordinates ).
     p->mPts.push_back( Point ( ftd(to->x), ftd(to->y) ) );
     p->mOldP = *to;
     return 0;
@@ -575,6 +575,8 @@ int FreeType2Impl::lnFn( const FT_Vector *to, void * user)
     if(user == NULL ) { return 1; }
 
     PathUserData *p = (PathUserData *)user;
+
+    // Store points to draw( in OpenCV coordinates ).
     p->mPts.push_back( Point ( ftd(to->x), ftd(to->y) ) );
     p->mOldP = *to;
     return 0;
@@ -592,6 +594,7 @@ int FreeType2Impl::coFn( const FT_Vector *cnt,
 
     // Bezier to Line
     for(int i = 0;i <= p->mCtoL; i++){
+        // Split Bezier to lines ( in FreeType coordinates ).
         double u = (double)i * 1.0 / (p->mCtoL) ;
         double nu = 1.0 - u;
         double p0 =                  nu * nu;
@@ -600,6 +603,8 @@ int FreeType2Impl::coFn( const FT_Vector *cnt,
 
         double X = (p->mOldP.x) * p0 + cnt->x * p1 + to->x * p2;
         double Y = (p->mOldP.y) * p0 + cnt->y * p1 + to->y * p2;
+
+        // Store points to draw( in OpenCV coordinates ).
         p->mPts.push_back( Point ( ftd(X), ftd(Y) ) );
     }
     p->mOldP = *to;
@@ -620,6 +625,7 @@ int FreeType2Impl::cuFn( const FT_Vector *cnt1,
 
     // Bezier to Line
     for(int i = 0; i <= p->mCtoL ;i++){
+        // Split Bezier to lines ( in FreeType coordinates ).
         double u = (double)i * 1.0 / (p->mCtoL) ;
         double nu = 1.0 - u;
         double p0 =                  nu * nu * nu;
@@ -632,6 +638,7 @@ int FreeType2Impl::cuFn( const FT_Vector *cnt1,
         double Y = (p->mOldP.y) * p0 + (cnt1->y)    * p1 +
                    (cnt2->y   ) * p2 + (to->y  )    * p3;
 
+        // Store points to draw( in OpenCV coordinates ).
         p->mPts.push_back( Point ( ftd(X), ftd(Y) ) );
     }
     p->mOldP = *to;

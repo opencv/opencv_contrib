@@ -66,3 +66,37 @@ Float64|255.|255
 Scalar|Scalar(1)|cpp_to_julia(ScalarOXP())
 Int32|1|1
 Size{Int32}|Size()|cpp_to_julia(SizeOP())
+TermCriteria|TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 20, FLT_EPSILON)|cpp_to_julia(TermCriteriaOTermCriteriaggEPSGRGTermCriteriaggCOUNTSGYWSGFLTREPSILONP())
+Int32|RANSAC|cv_RANSAC
+Float32|8.0|8.0
+Float64|-1|-1
+Int32|21|21
+TermCriteria|TermCriteria( TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON)|TermCriteriaOGTermCriteriaggCOUNTGRGTermCriteriaggEPSSGZWSGDBLREPSILONP
+TermCriteria|TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 30, 1e-6)|TermCriteriaOTermCriteriaggCOUNTRTermCriteriaggEPSSGZWSGXeTcP
+Int32|CALIB_CB_SYMMETRIC_GRID|cv_CALIB_CB_SYMMETRIC_GRID
+InputArray|cv::Mat()|CxxMat()
+Int32|SOLVEPNP_ITERATIVE|cv_SOLVEPNP_ITERATIVE
+Float64|3|3
+Int32|CALIB_FIX_INTRINSIC|cv_CALIB_FIX_INTRINSIC
+Float64|5|5
+Float64|0.99|0.99
+Int32|CALIB_ZERO_DISPARITY|cv_CALIB_ZERO_DISPARITY
+size_t|2000|2000
+SolvePnPMethod|SOLVEPNP_ITERATIVE|cv_SOLVEPNP_ITERATIVE
+Float64|0.0|0.0
+Ptr{Feature2D}|SimpleBlobDetector::create()|SimpleBlobDetectorggcreateOP
+Int32|StereoSGBM::MODE_SGBM|StereoSGBMggMODERSGBM
+Int32|CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE|cv_CALIB_CB_ADAPTIVE_THRESH + cv_CALIB_CB_NORMALIZE_IMAGE
+Float64|3.|3
+size_t|10|10
+Int32|16|16
+Point{Float64}|Point2d(0, 0)|PointYdOWSGWP
+Int32|2000|2000
+Int32|FM_RANSAC|cv_FM_RANSAC
+Int32|100|100
+TermCriteria|TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, DBL_EPSILON)|TermCriteriaOTermCriteriaggCOUNTGRGTermCriteriaggEPSSGXWWSGDBLREPSILONP
+HandEyeCalibrationMethod|CALIB_HAND_EYE_TSAI|cv_CALIB_HAND_EYE_TSAI
+Float32|0.8F|0.8
+Int32|fisheye::CALIB_FIX_INTRINSIC|cv_fisheye_CALIB_FIX_INTRINSIC
+Float64|0.999|0.999
+Float64|0.995|0.995
