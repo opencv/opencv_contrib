@@ -66,6 +66,27 @@ static std::vector<std::string> split(const std::string &text, char sep) {
   return tokens;
 }
 
+static float readFloatPlyFormat(std::ifstream& ifs, const int& encodeType)
+{
+    float retVal;
+    // ASCII
+    if (encodeType == 0) ifs >> retVal;
+    // Little Endian
+    if (encodeType == 1) ifs.read(reinterpret_cast<char*>(&retVal), sizeof(float));
+    // Big Endian
+    if (encodeType == 2) {
+        unsigned char temp[sizeof(float)];
+        ifs.read(reinterpret_cast<char*>(temp), sizeof(float));
+        unsigned char t = temp[0];
+        temp[0] = temp[3];
+        temp[3] = t;
+        t = temp[1];
+        temp[1] = temp[2];
+        temp[2] = t;
+        retVal = reinterpret_cast<float&>(temp);
+    }
+    return retVal;
+}
 
 
 float readFloatPlyFormat(std::ifstream& ifs, const int& encodeType)
@@ -166,7 +187,7 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
         if (withNormals)
         {
             // normalize to unit norm
-            double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
+            float norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
             if (norm>0.00001)
             {
                 data[3]/=static_cast<float>(norm);

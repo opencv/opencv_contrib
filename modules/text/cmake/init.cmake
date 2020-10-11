@@ -41,9 +41,9 @@ if(NOT HAVE_TESSERACT
     set(link "${Tesseract_LIBRARIES}")
     set(def "")
     if(BUILD_SHARED_LIBS)
-      set(imp IMPORTED)
+      set(imp IMPORTED ../../rgbd/include/opencv2/rgbd/pcseg.hpp ../../rgbd/src/pcseg.cpp)
     endif()
-    add_library(ocv.3rdparty.${name} INTERFACE ${imp})
+    add_library(ocv.3rdparty.${name} INTERFACE)
     set_target_properties(ocv.3rdparty.${name} PROPERTIES
             INTERFACE_INCLUDE_DIRECTORIES "${inc}"
             INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${inc}"
