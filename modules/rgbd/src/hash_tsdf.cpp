@@ -76,7 +76,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     Depth depth = _depth.getMat();
 
     //! Compute volumes to be allocated
-    const int depthStride = 1;
+    const int depthStride = int(log2(volumeUnitResolution));
     const float invDepthFactor = 1.f / depthFactor;
     const Intr::Reprojector reproj(intrinsics.makeReprojector());
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
@@ -573,7 +573,7 @@ struct HashRaycastInvoker : ParallelLoopBody
                           std::numeric_limits<int>::min());
 
                 float tprev       = tcurr;
-                TsdfType prevTsdf = volume.truncDist;
+                float prevTsdf = volume.truncDist;
                 Ptr<TSDFVolumeCPU> currVolumeUnit;
                 while (tcurr < tmax)
                 {
