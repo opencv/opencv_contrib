@@ -33,7 +33,6 @@
 #include <string>
 #include <vector>
 #include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include "opencv2/mcc/linearize.hpp"
 
@@ -267,16 +266,16 @@ public:
     double loss;
     int max_count;
     double epsilon;
-    ColorCorrectionModel(cv::Mat src_, CONST_COLOR constcolor,  COLOR_SPACE cs_ = sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, cv::Mat weights_list = Mat(), double weights_coeff = 0,
+    ColorCorrectionModel(Mat src_, CONST_COLOR constcolor,  COLOR_SPACE cs_ = sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
+        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);
 
-    ColorCorrectionModel(cv::Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_ = sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, cv::Mat weights_list = Mat(), double weights_coeff = 0,
+    ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_ = sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
+        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);
 
-    ColorCorrectionModel(cv::Mat src_, Color dst_, COLOR_SPACE cs_ = sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, cv::Mat weights_list = Mat(), double weights_coeff = 0,
+    ColorCorrectionModel(Mat src_, Color dst_, COLOR_SPACE cs_ = sRGB, CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
+        double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
         INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4);
 
     ColorCorrectionModel(Mat src_, Color dst_, RGBBase_& cs_ , CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
@@ -329,16 +328,16 @@ public:
     /** @brief Infer image and output as an BGR image with uint8 type.
                mainly for test or debug.
                input size and output size should be 255.
-        @param imgfile path name of image to infer.
+        @param img_ image to infer, type of cv::Mat.
         @param islinear if linearize or not.
         @return the output array, type of cv::Mat.
     */
-    Mat inferImage(std::string imgfile, bool islinear = false);
+    Mat inferImage(Mat& img_, bool islinear = false);
 
     /** @brief Loss function base on cv::MinProblemSolver::Function.
                see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
     */
-    class LossFunction : public cv::MinProblemSolver::Function
+    class LossFunction : public MinProblemSolver::Function
     {
     public:
         ColorCorrectionModel* ccm_loss;

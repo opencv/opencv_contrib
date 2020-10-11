@@ -1,3 +1,4 @@
+//! [tutorial]
 #include <opencv2/core.hpp>
 
 #include <opencv2/highgui.hpp>
@@ -12,13 +13,13 @@ using namespace ccm;
 using namespace std;
 
 const char *about = "Basic chart detection";
-const char *keys = {
+const char *keys =
     "{ help h usage ? |    | show this message }"
     "{t        |      |  chartType: 0-Standard, 1-DigitalSG, 2-Vinyl }"
     "{v        |      | Input from video file, if ommited, input comes from camera }"
     "{ci       | 0    | Camera id if input doesnt come from video (-v) }"
     "{f        | 1    | Path of the file to process (-v) }"
-    "{nc       | 1    | Maximum number of charts in the image }"};
+    "{nc       | 1    | Maximum number of charts in the image }";
 
 int main(int argc, char *argv[])
 {
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
     // ----------------------------------------------------------
     // Scroll down a bit (~40 lines) to find actual relevant code
     // ----------------------------------------------------------
-
+    //! [get_messages_of_image]
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
 
@@ -45,12 +46,13 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    Mat image = cv::imread(filepath, IMREAD_COLOR);
+    Mat image = imread(filepath, IMREAD_COLOR);
     if (!image.data)
     {
         cout << "Invalid Image!" << endl;
         return 1;
     }
+    //! [get_messages_of_image]
 
     Mat imageCopy = image.clone();
     Ptr<CCheckerDetector> detector = CCheckerDetector::create();
@@ -60,19 +62,23 @@ int main(int argc, char *argv[])
         printf("ChartColor not detected \n");
         return 2;
     }
-    // get checker
+    //! [get_color_checker]
     vector<Ptr<mcc::CChecker>> checkers = detector->getListColorChecker();
-
+    //! [get_color_checker]
     for (Ptr<mcc::CChecker> checker : checkers)
     {
+        //! [creat]
         Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
         cdraw->draw(image);
         Mat chartsRGB = checker->getChartsRGB();
         Mat src = chartsRGB.col(1).clone().reshape(3, 18);
         src /= 255.0;
+        //! [creat]
 
         //compte color correction matrix
+        //! [get_ccm_Matrix]
         ColorCorrectionModel model1(src, Vinyl);
+        //! [get_ccm_Matrix]
 
         /* brief More models with different parameters, try it & check the document for details.
         */
@@ -85,6 +91,7 @@ int main(int argc, char *argv[])
 
         /* If you use a customized ColorChecker, you can use your own reference color values and corresponding color space in a way like:
         */
+        //! [reference_color_values]
         // cv::Mat ref = (Mat_<Vec3d>(18, 1) <<
         // Vec3d(100, 0.00520000001, -0.0104),
         // Vec3d(73.0833969, -0.819999993, -2.02099991),
@@ -106,18 +113,26 @@ int main(int argc, char *argv[])
         // Vec3d(63.6839981, 10.2930002, 16.7639999));
 
         // ColorCorrectionModel model8(src,ref,Lab_D50_2);
+        //! [reference_color_values]
 
-        //make color correction
-        Mat calibratedImage = model1.inferImage(filepath);
+        //! [make_color_correction]
+        Mat img_;
+        cvtColor(image, img_, COLOR_BGR2RGB);
+        img_.convertTo(img_, CV_64F);
+        Mat calibratedImage = model1.inferImage(img_);
+        //! [make_color_correction]
 
+        //! [Save_calibrated_image]
         // Save the calibrated image to {FILE_NAME}.calibrated.{FILE_EXT}
         string filename = filepath.substr(filepath.find_last_of('/')+1);
         size_t dotIndex = filename.find_last_of('.');
         string baseName = filename.substr(0, dotIndex);
         string ext = filename.substr(dotIndex+1, filename.length()-dotIndex);
         string calibratedFilePath = baseName + ".calibrated." + ext;
-        cv::imwrite(calibratedFilePath, calibratedImage);
+        imwrite(calibratedFilePath, calibratedImage);
+        //! [Save_calibrated_image]
     }
 
     return 0;
 }
+//! [tutorial]

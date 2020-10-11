@@ -91,8 +91,8 @@ Mat elementWise(const Mat& src, F&& lambda)
     }
     case 3:
     {
-        MatIterator_<cv::Vec3d> it, end;
-        for (it = dst.begin<cv::Vec3d>(), end = dst.end<cv::Vec3d>(); it != end; ++it)
+        MatIterator_<Vec3d> it, end;
+        for (it = dst.begin<Vec3d>(), end = dst.end<Vec3d>(); it != end; ++it)
         {
             for (int j = 0; j < 3; j++)
             {
@@ -116,8 +116,8 @@ template<typename F>
 Mat channelWise(const Mat& src, F&& lambda)
 {
     Mat dst = src.clone();
-    MatIterator_<cv::Vec3d> it, end;
-    for (it = dst.begin<cv::Vec3d>(), end = dst.end<cv::Vec3d>(); it != end; ++it)
+    MatIterator_<Vec3d> it, end;
+    for (it = dst.begin<Vec3d>(), end = dst.end<Vec3d>(); it != end; ++it)
     {
         *it = lambda(*it);
     }
@@ -133,8 +133,8 @@ template<typename F>
 Mat distanceWise(Mat& src, Mat& ref, F&& lambda)
 {
     Mat dst = Mat(src.size(), CV_64FC1);
-    MatIterator_<cv::Vec3d> it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>(),
-        it_ref = ref.begin<cv::Vec3d>();
+    MatIterator_<Vec3d> it_src = src.begin<Vec3d>(), end_src = src.end<Vec3d>(),
+        it_ref = ref.begin<Vec3d>();
     MatIterator_<double> it_dst = dst.begin<double>();
     for (; it_src != end_src; ++it_src, ++it_ref, ++it_dst)
     {

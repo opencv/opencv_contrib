@@ -132,23 +132,45 @@ Color Color::operator[](Mat mask)
     return Color(maskCopyTo(colors, mask), cs);
 }
 
+Mat GetColor::get_ColorChecker(const double *checker,int row){
+    Mat res(row,1, CV_64FC3);
+    for(int i = 0;i< row;++i)
+    {
+            res.at<Vec3d>(i,0)=Vec3d(checker[3*i],checker[3*i+1],checker[3*i+2]);
+        }
+    return res;
+}
+
+Mat GetColor::get_ColorChecker_MASK(const uchar *checker,int row){
+     Mat res(row,1, CV_8U);
+    for(int i = 0;i< row;++i){
+            res.at<uchar>(i,0)=checker[i];
+        }
+    return res;
+}
+
 Color GetColor::get_color(CONST_COLOR const_color) {
     switch (const_color)
     {
     case cv::ccm::Macbeth:
     {
-        std::shared_ptr<Color> Macbeth_D50_2(new Color(ColorChecker2005_LAB_D50_2, Lab_D50_2, ColorChecker2005_COLORED_MASK));
+        Mat ColorChecker2005_LAB_D50_2_ = GetColor::get_ColorChecker(*ColorChecker2005_LAB_D50_2,24);
+        Mat ColorChecker2005_COLORED_MASK_ = GetColor::get_ColorChecker_MASK(ColorChecker2005_COLORED_MASK,24);
+        std::shared_ptr<Color> Macbeth_D50_2(new Color(ColorChecker2005_LAB_D50_2_, Lab_D50_2, ColorChecker2005_COLORED_MASK_));
         return *Macbeth_D50_2;
         break;
     }
 
     case cv::ccm::Vinyl: {
-        std::shared_ptr<Color> Vinyl_D50_2(new Color(Vinyl_LAB_D50_2, Lab_D50_2, Vinyl_COLORED_MASK));
+        Mat Vinyl_LAB_D50_2__=GetColor::get_ColorChecker(*Vinyl_LAB_D50_2,18);
+        Mat Vinyl_COLORED_MASK__= GetColor::get_ColorChecker_MASK(Vinyl_COLORED_MASK,18);
+        std::shared_ptr<Color> Vinyl_D50_2(new Color(Vinyl_LAB_D50_2__, Lab_D50_2, Vinyl_COLORED_MASK__));
         return *Vinyl_D50_2;
         break;
     }
     case cv::ccm::DigitalSG: {
-        std::shared_ptr<Color> DigitalSG_D50_2(new Color(DigitalSG_LAB_D50_2, Lab_D50_2));
+        Mat DigitalSG_LAB_D50_2__= GetColor::get_ColorChecker(*DigitalSG_LAB_D50_2,140);
+        std::shared_ptr<Color> DigitalSG_D50_2(new Color( DigitalSG_LAB_D50_2__, Lab_D50_2));
         return *DigitalSG_D50_2;
         break;
     }
@@ -158,5 +180,6 @@ Color GetColor::get_color(CONST_COLOR const_color) {
         break;
     }
 }
+
 } // namespace ccm
 } // namespace cv
