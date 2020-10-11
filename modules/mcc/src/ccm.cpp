@@ -237,15 +237,10 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
     return cs.fromL(img_ccm);
 }
 
-//Mat ColorCorrectionModel::inferImage(std::string imgfile, bool islinear)
 Mat ColorCorrectionModel::inferImage(Mat& img_, bool islinear)
 {
     const int inp_size = 255;
     const int out_size = 255;
-   // Mat img = imread(imgfile);
-   // Mat img_;
-   // cvtColor(img, img_, COLOR_BGR2RGB);
-   // img_.convertTo(img_, CV_64F);
     img_ = img_ / inp_size;
     Mat out = this->infer(img_, islinear);
     Mat out_ = out * out_size;

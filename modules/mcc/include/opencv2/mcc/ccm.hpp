@@ -328,7 +328,7 @@ public:
     /** @brief Infer image and output as an BGR image with uint8 type.
                mainly for test or debug.
                input size and output size should be 255.
-        @param imgfile path name of image to infer.
+        @param img_ image to infer, type of cv::Mat.
         @param islinear if linearize or not.
         @return the output array, type of cv::Mat.
     */

@@ -111,8 +111,11 @@ TEST(CV_ccmColor, test_lab)
 
 TEST(CV_ccmColor, test_grays)
 {
-    Color color_d50_2(ColorChecker2005_LAB_D50_2, Lab_D50_2);
-    Color color_d65_2(ColorChecker2005_LAB_D65_2, Lab_D65_2);
+    Mat ColorChecker2005_LAB_D50_2_test = GetColor::get_ColorChecker(*ColorChecker2005_LAB_D50_2,24);
+    Mat ColorChecker2005_LAB_D65_2_test = GetColor::get_ColorChecker(*ColorChecker2005_LAB_D65_2,24);
+    Color color_d50_2(ColorChecker2005_LAB_D50_2_test, Lab_D50_2);
+
+    Color color_d65_2(ColorChecker2005_LAB_D65_2_test, Lab_D65_2);
 
     Mat grays = (Mat_<uchar>(24, 1) <<
                 false, false, false, false, false, false,
