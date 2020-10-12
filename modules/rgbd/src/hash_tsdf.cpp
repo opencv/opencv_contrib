@@ -17,7 +17,7 @@
 #include "utils.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
-#define VOLUMES_SIZE 512
+#define VOLUMES_SIZE 1024
 
 namespace cv
 {
@@ -299,7 +299,7 @@ void HashTSDFVolumeCPU::integrateVolumeUnit( cv::Matx44f _pose, Point3i volResol
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
-    std::cout << "integrate: " << std::endl;
+    //std::cout << "integrate: " << std::endl;
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
@@ -370,7 +370,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.index = lastVolIndex; lastVolIndex++;
         if (lastVolIndex > volUnitsData.size().height)
         {
-            std::cout << "    +"  << std::endl;
+            //std::cout << "    +"  << std::endl;
             volUnitsData.resize(lastVolIndex - 1 + VOLUMES_SIZE);
             //for (int i = 0; i < VOLUMES_SIZE; i++)
             //    volUnitsMatrix.push_back(Mat(1, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>()));
@@ -481,16 +481,18 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex 
     Point3i volResolution, Vec4i volStrides1) const
 {
     //! Out of bounds
+    /*
     if ((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
+        std::cout << "ASSERT (_at)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
         dummy.weight = 0;
         return dummy;
     }
-    //Mat volume = _volume.getMat();
+    */
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase =
         volumeIdx[0] * volStrides1[0] + volumeIdx[1] * volStrides1[1] + volumeIdx[2] * volStrides1[2];
@@ -504,14 +506,16 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
                                         cvFloor(volumeIdx[2] / volumeUnitResolution));
 
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
+    /*
     if (it == volumeUnits.end())
     {
+        std::cout << "ASSERT (at Vec3i)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf   = floatToTsdf(1.f);
         dummy.weight = 0;
         return dummy;
     }
-
+    */
     cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
                                                       volumeUnitIdx[1] * volumeUnitResolution,
                                                       volumeUnitIdx[2] * volumeUnitResolution);
@@ -525,14 +529,16 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
 {
     cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
+    /*
     if (it == volumeUnits.end())
     {
+        std::cout << "ASSERT (at Point3f)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf   = floatToTsdf(1.f);
         dummy.weight = 0;
         return dummy;
     }
-
+    */
     cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
     volUnitLocalIdx =
@@ -561,6 +567,7 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
 {
     if (it == vend)
     {
+        //std::cout << "ASSERT (atVolumeUnit)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.f);
         dummy.weight = 0;
