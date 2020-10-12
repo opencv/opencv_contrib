@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "tsdf.hpp"
+#include "tsdf_functions.hpp"
 
 namespace cv
 {

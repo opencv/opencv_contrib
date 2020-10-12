@@ -23,7 +23,7 @@ namespace cv
 {
 namespace kinfu
 {
-
+/*
 static inline TsdfType floatToTsdf(float num)
 {
     //CV_Assert(-1 < num <= 1);
@@ -36,7 +36,7 @@ static inline float tsdfToFloat(TsdfType num)
 {
     return float(num) * (-1.f / 128.f);
 }
-
+*/
 HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
     float _truncDist, int _maxWeight, float _truncateThreshold,
     int _volumeUnitRes, bool _zFirstMemOrder)
@@ -82,7 +82,7 @@ void HashTSDFVolumeCPU::reset()
     lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
 }
-
+///*
 static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 {
     int height = depth.rows;
@@ -106,6 +106,8 @@ static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
     }
     return pixNorm;
 }
+//*/
+/*
 
 static const bool fixMissingData = false;
 static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
@@ -180,7 +182,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
         return v0 + ty * (v1 - v0);
     }
 }
-
+*/
 void HashTSDFVolumeCPU::integrateVolumeUnit( cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides1,
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _volume)

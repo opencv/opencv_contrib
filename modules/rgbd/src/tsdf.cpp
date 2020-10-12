@@ -5,13 +5,14 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #include "precomp.hpp"
-#include "tsdf.hpp"
+//#include "tsdf.hpp"
+#include "tsdf_functions.hpp"
 #include "opencl_kernels_rgbd.hpp"
 
 namespace cv {
 
 namespace kinfu {
-
+/*
 static inline v_float32x4 tsdfToFloat_INTR(const v_int32x4& num)
 {
     v_float32x4 num128 = v_setall_f32(-1.f / 128.f);
@@ -30,7 +31,7 @@ static inline float tsdfToFloat(TsdfType num)
 {
     return float(num) * (-1.f / 128.f);
 }
-
+*/
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                        int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
@@ -118,6 +119,7 @@ TsdfVoxel TSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 }
 
 // SIMD version of that code is manually inlined
+/*
 #if !USE_INTRINSICS
 static const bool fixMissingData = false;
 
@@ -194,7 +196,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
     }
 }
 #endif
-
+*/
 
 
 struct IntegrateInvoker : ParallelLoopBody
@@ -461,7 +463,7 @@ struct IntegrateInvoker : ParallelLoopBody
     TsdfVoxel* volDataStart;
     Mat pixNorms;
 };
-
+///*
 static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 {
     int height = depth.rows;
@@ -485,7 +487,7 @@ static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
     }
     return pixNorm;
 }
-
+//*/
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                               const Intr& intrinsics)
