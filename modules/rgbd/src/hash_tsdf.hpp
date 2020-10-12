@@ -36,17 +36,7 @@ class HashTSDFVolume : public Volume
     Point3i volDims;
     Vec4i volStrides;
 };
-/*
-struct VolumeUnit
-{
-    VolumeUnit() : pVolume(nullptr){};
-    ~VolumeUnit() = default;
 
-    cv::Ptr<TSDFVolume> pVolume;
-    cv::Vec3i index;
-    bool isActive;
-};
-*/
 //! Spatial hashing
 struct tsdf_hash
 {
@@ -61,9 +51,6 @@ struct tsdf_hash
         return seed;
     }
 };
-
-
-//typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitMap;
 
 typedef unsigned int volumeIndex;
 struct VolumeUnit

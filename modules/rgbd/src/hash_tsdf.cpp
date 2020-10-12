@@ -17,7 +17,7 @@
 #include "utils.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
-#define VOLUMES_SIZE 32
+#define VOLUMES_SIZE 512
 
 namespace cv
 {
@@ -299,6 +299,7 @@ void HashTSDFVolumeCPU::integrateVolumeUnit( cv::Matx44f _pose, Point3i volResol
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
+    std::cout << "integrate: " << std::endl;
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
@@ -367,15 +368,12 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         
         vu.pose = subvolumePose;
         vu.index = lastVolIndex; lastVolIndex++;
-        //volumes.ptr<Mat>(vu.index)->forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
-        //    {
-        //        TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
-        //        v.tsdf = floatToTsdf(0.0f); v.weight = 0;
-        //    });
         if (lastVolIndex > volUnitsMatrix.size().height)
         {
-            for (int i = 0; i < VOLUMES_SIZE; i++)
-                volUnitsMatrix.push_back(Mat(1, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>()));
+            std::cout << "    +"  << std::endl;
+            volUnitsMatrix.resize(lastVolIndex - 1 + VOLUMES_SIZE);
+            //for (int i = 0; i < VOLUMES_SIZE; i++)
+            //    volUnitsMatrix.push_back(Mat(1, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>()));
         }
         volUnitsMatrix.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
             {
