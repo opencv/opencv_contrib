@@ -117,7 +117,7 @@ private:
        Mat pixNorms;
        //VolumeUnitIndexes volumeUnitIndexes;
        VolumeUnitIndexes volumeUnits;
-       cv::Mat volUnitsMatrix;
+       cv::Mat volUnitsData;
        volumeIndex lastVolIndex;
 
 };

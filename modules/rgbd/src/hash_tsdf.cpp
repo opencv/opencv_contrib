@@ -72,7 +72,7 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float 
                      _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
 {
     lastVolIndex = 0;
-    volUnitsMatrix = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
+    volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
 }
 
 // zero volume, leave rest params the same
@@ -80,7 +80,7 @@ void HashTSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
-    volUnitsMatrix = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
+    volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
 }
 
 static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
@@ -368,14 +368,14 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         
         vu.pose = subvolumePose;
         vu.index = lastVolIndex; lastVolIndex++;
-        if (lastVolIndex > volUnitsMatrix.size().height)
+        if (lastVolIndex > volUnitsData.size().height)
         {
             std::cout << "    +"  << std::endl;
-            volUnitsMatrix.resize(lastVolIndex - 1 + VOLUMES_SIZE);
+            volUnitsData.resize(lastVolIndex - 1 + VOLUMES_SIZE);
             //for (int i = 0; i < VOLUMES_SIZE; i++)
             //    volUnitsMatrix.push_back(Mat(1, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>()));
         }
-        volUnitsMatrix.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
+        volUnitsData.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
                 v.tsdf = floatToTsdf(0.0f); v.weight = 0;
@@ -445,7 +445,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             {
                 //! The volume unit should already be added into the Volume from the allocator
                 integrateVolumeUnit(volumeUnit.pose, volDims, volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, volUnitsMatrix.row(volumeUnit.index));
+                    depthFactor, cameraPose, intrinsics, volUnitsData.row(volumeUnit.index));
 
                 //! Ensure all active volumeUnits are set to inactive for next integration
                 volumeUnit.isActive = false;
@@ -491,7 +491,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex 
         return dummy;
     }
     //Mat volume = _volume.getMat();
-    const TsdfVoxel* volData = volUnitsMatrix.ptr<TsdfVoxel>(indx);
+    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase =
         volumeIdx[0] * volStrides1[0] + volumeIdx[1] * volStrides1[1] + volumeIdx[2] * volStrides1[2];
     return volData[coordBase];
@@ -569,7 +569,7 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
     Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
 
     // expanding at(), removing bounds check
-    const TsdfVoxel* volData = volUnitsMatrix.ptr<TsdfVoxel>(it->second.index);
+    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(it->second.index);
     int coordBase = volUnitLocalIdx[0] * volStrides[0] + volUnitLocalIdx[1] * volStrides[1] + volUnitLocalIdx[2] * volStrides[2];
     return volData[coordBase];
 }
