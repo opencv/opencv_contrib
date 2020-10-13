@@ -61,11 +61,10 @@ namespace opencv_test {
     void CV_TBMRTest::run(int)
     {
         using namespace tbmr;
-        Mat image1;
-        ts->printf(cvtest::TS::CONSOLE, "Looking in %s \n", ts->get_data_path().c_str());
-        image1 = imread(ts->get_data_path() + "graf1.pgm", IMREAD_GRAYSCALE);
+        Mat image;
+        image = imread(ts->get_data_path() + "../cv/stereomatching/datasets/tsukuba/im2.png", IMREAD_GRAYSCALE);
 
-        if (image1.empty())
+        if (image.empty())
         {
             ts->printf(cvtest::TS::LOG, "Wrong input data \n");
             ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
@@ -78,9 +77,9 @@ namespace opencv_test {
         tbmr->setMaxAreaRelative(0.01);
 
         std::vector<KeyPoint> tbmrs;
-        tbmr->detectRegions(image1, tbmrs);
+        tbmr->detectRegions(image, tbmrs);
 
-        if (tbmrs.size() != 1221)
+        if (tbmrs.size() != 351)
         {
             ts->printf(cvtest::TS::LOG, "Invalid result \n");
             ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
