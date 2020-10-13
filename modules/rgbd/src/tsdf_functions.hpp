@@ -7,7 +7,11 @@
 #ifndef __OPENCV_TSDF_FUNCTIONS_H__
 #define __OPENCV_TSDF_FUNCTIONS_H__
 
+//#include <opencv2/rgbd/volume.hpp>
+#include <precomp.hpp>
+
 #include "tsdf.hpp"
+//#include "hash_tsdf.hpp"
 
 namespace cv
 {
