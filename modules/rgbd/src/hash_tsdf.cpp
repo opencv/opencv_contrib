@@ -479,11 +479,11 @@ cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord(cv::Point3f point) const
                      cvFloor(point.z * voxelSizeInv));
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex indx, 
-    Point3i volResolution, Vec4i volStrides) const
+inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex indx) const
 {
     //! Out of bounds
     /*
+    //volResolution = volDims
     if ((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
@@ -524,7 +524,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 
     volUnitLocalIdx =
         cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return _at(volUnitLocalIdx, it->second.index, volDims, volStrides);
+    return _at(volUnitLocalIdx, it->second.index);
 }
 
 inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
@@ -545,7 +545,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
     volUnitLocalIdx =
         cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return _at(volUnitLocalIdx, it->second.index, volDims, volStrides);
+    return _at(volUnitLocalIdx, it->second.index);
 }
 
 static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
@@ -883,7 +883,7 @@ void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::
                         volUnitLocalIdx = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
 
                         //! TODO: Figure out voxel interpolation
-                        TsdfVoxel currVoxel = _at(volUnitLocalIdx, it->second.index, volume.volDims, volStrides);
+                        TsdfVoxel currVoxel = _at(volUnitLocalIdx, it->second.index);
                         currTsdf = tsdfToFloat(currVoxel.tsdf);
                         currWeight = currVoxel.weight;
                         stepSize = tstep;
@@ -959,7 +959,7 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                             for (int z = 0; z < volume.volumeUnitResolution; z++)
                             {
                                 cv::Vec3i voxelIdx(x, y, z);
-                                TsdfVoxel voxel = _at(voxelIdx, it->second.index, volDims, volStrides);
+                                TsdfVoxel voxel = _at(voxelIdx, it->second.index);
 
                                 if (voxel.tsdf != -128 && voxel.weight != 0)
                                 {
