@@ -9,14 +9,14 @@
 namespace cv {
 
 namespace kinfu {
-/*
-inline v_float32x4 tsdfToFloat_INTR(const v_int32x4& num)
+
+v_float32x4 tsdfToFloat_INTR(const v_int32x4& num)
 {
     v_float32x4 num128 = v_setall_f32(-1.f / 128.f);
     return v_cvt_f32(num) * num128;
 }
 
-inline TsdfType floatToTsdf(float num)
+TsdfType floatToTsdf(float num)
 {
     //CV_Assert(-1 < num <= 1);
     int8_t res = int8_t(num * (-128.f));
@@ -24,12 +24,12 @@ inline TsdfType floatToTsdf(float num)
     return res;
 }
 
-inline float tsdfToFloat(TsdfType num)
+float tsdfToFloat(TsdfType num)
 {
     return float(num) * (-1.f / 128.f);
 }
 
-/*
+
 cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 {
     int height = depth.rows;
@@ -55,7 +55,7 @@ cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 }
 
 const bool fixMissingData = false;
-inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
+depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 {
     const depthType defaultValue = qnan;
     if (pt.x < 0 || pt.x >= m.cols - 1 ||
@@ -128,6 +128,6 @@ inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
     }
 }
 
-*/
+
 } // namespace kinfu
 } // namespace cv
