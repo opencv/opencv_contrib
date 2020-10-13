@@ -2,8 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-
-#include "opencv2/tbmr.hpp"
+#include "precomp.hpp"
 
 namespace cv {
     namespace tbmr {
@@ -128,7 +127,6 @@ namespace cv {
                 bool* dejaVu = (bool*)calloc(imSize, sizeof(bool));
                 S = sort_indexes<order_up>(ima);
 
-                const uint8_t* ima_ptr = ima.ptr<const uint8_t>();
                 const uint* S_ptr = S.ptr<const uint>();
                 uint* parent_ptr = parent.ptr<uint>();
 
@@ -275,12 +273,12 @@ namespace cv {
                 uint* vecTbmrs = (uint*)malloc(numNodes * sizeof(uint));
                 for (uint i = 0; i < vecNodesSize; i++)
                 {
-                    std::size_t p = vecNodes[i];
+                    uint p = vecNodes[i];
                     if (numSons[p] == 1 && !isSeen[p] && imaAttribute[p][0] <= maxArea)
                     {
                         uint num_ancestors = 0;
-                        std::size_t pt = p;
-                        std::size_t po = pt;
+                        uint pt = p;
+                        uint po = pt;
                         while (numSons[pt] == 1 && imaAttribute[pt][0] <= maxArea)
                         {
                             isSeen[pt] = true;
@@ -299,7 +297,7 @@ namespace cv {
 
                 // compute best fitting ellipses
                 //------------------------------------------------------------------------
-                for (int i = 0; i < numTbmrs; i++)
+                for (uint i = 0; i < numTbmrs; i++)
                 {
                     uint p = vecTbmrs[i];
                     double area = static_cast<double>(imaAttribute[p][0]);
@@ -331,12 +329,11 @@ namespace cv {
                         double a1 = a;
                         double b1 = b;
                         double c1 = c;
-                        unsigned ai = 0;
-                        unsigned bi = 0;
-                        unsigned ci = 0;
+                        uint ai = 0;
+                        uint bi = 0;
+                        uint ci = 0;
                         if (a > 0)
                         {
-                            ai = 100000 * a;
                             if (a < 0.00005)
                                 a1 = 0;
                             else if (a < 0.0001)
@@ -345,7 +342,7 @@ namespace cv {
                             }
                             else
                             {
-                                ai = 10000 * a;
+                                ai = (uint)(10000 * a);
                                 a1 = (double)ai / 10000;
                             }
                         }
@@ -357,14 +354,13 @@ namespace cv {
                                 a1 = -0.0001;
                             else
                             {
-                                ai = 10000 * (-a);
+                                ai = (uint)(10000 * (-a));
                                 a1 = -(double)ai / 10000;
                             }
                         }
 
                         if (b > 0)
                         {
-                            bi = 100000 * b;
                             if (b < 0.00005)
                                 b1 = 0;
                             else if (b < 0.0001)
@@ -373,7 +369,7 @@ namespace cv {
                             }
                             else
                             {
-                                bi = 10000 * b;
+                                bi = (uint)(10000 * b);
                                 b1 = (double)bi / 10000;
                             }
                         }
@@ -385,14 +381,13 @@ namespace cv {
                                 b1 = -0.0001;
                             else
                             {
-                                bi = 10000 * (-b);
+                                bi = (uint)(10000 * (-b));
                                 b1 = -(double)bi / 10000;
                             }
                         }
 
                         if (c > 0)
                         {
-                            ci = 100000 * c;
                             if (c < 0.00005)
                                 c1 = 0;
                             else if (c < 0.0001)
@@ -401,7 +396,7 @@ namespace cv {
                             }
                             else
                             {
-                                ci = 10000 * c;
+                                ci = (uint)(10000 * c);
                                 c1 = (double)ci / 10000;
                             }
                         }
@@ -413,7 +408,7 @@ namespace cv {
                                 c1 = -0.0001;
                             else
                             {
-                                ci = 10000 * (-c);
+                                ci = (uint)(10000 * (-c));
                                 c1 = -(double)ci / 10000;
                             }
                         }
@@ -425,9 +420,9 @@ namespace cv {
 
                         if (l >= 1.5 && v != 0 && (mask.empty() || mask.at<uchar>(cvRound(y), cvRound(x)) != 0))
                         {
-                            float diam = 2 * a; // Major axis
+                            float diam = (float)(2 * a); // Major axis
                             //    float angle = std::atan((a / b) * (y / x));
-                            tbmrs.push_back(cv::KeyPoint(cv::Point2f(x, y), diam));
+                            tbmrs.push_back(cv::KeyPoint(cv::Point2f((float)x, (float)y), diam));
                         }
                     }
                 }
