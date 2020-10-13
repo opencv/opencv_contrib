@@ -88,4 +88,4 @@ All other types map directly to the corresponding types on C++. Unlike Python, `
 Current Functionality
 ---
 
-The bindings implement most of the functionality present in the core,imgproc,highgui,videoio,dnn and imgcodecs. The samples also implement some additional manually wrapped functionality. The complete list of automatically wrapped functionality is [here](gen/funclist.csv).
+The bindings implement most of the functionality present in the core,imgproc,highgui,videoio,dnn,calib3d and imgcodecs. The samples also implement some additional manually wrapped functionality. The complete list of automatically wrapped functionality is [here](gen/funclist.csv).

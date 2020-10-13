@@ -75,6 +75,11 @@ typedef cv::dnn::DictValue LayerId;
 typedef cv::dnn::Backend dnn_Backend;
 #endif
 
+#ifdef HAVE_OPENCV_CALIB3D
+
+#include <opencv2/calib3d.hpp>
+#endif
+
 template <typename C>
 struct get_template_type;
 template <typename C>

@@ -86,8 +86,6 @@ public:
 
     /**
      * set window background to custom image
-     *
-     * creates a texture named "<title>_Background"
      * @param image
      */
     CV_WRAP virtual void setBackground(InputArray image) = 0;
@@ -148,19 +146,20 @@ public:
     /**
      * convenience method to visualize a camera position
      *
-     * the entity uses a material with the same name that can be used to change the line color.
      * @param name entity name
      * @param K intrinsic matrix
      * @param imsize image size
      * @param zFar far plane in camera coordinates
      * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param color line color
      * @return the extents of the Frustum at far plane, where the top left corner denotes the principal
      * point offset
      */
     CV_WRAP virtual Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize,
                                               float zFar, InputArray tvec = noArray(),
-                                              InputArray rot = noArray()) = 0;
+                                              InputArray rot = noArray(),
+                                              const Scalar& color = Scalar::all(1)) = 0;
 
     /**
      * creates a point light in the scene
@@ -355,6 +354,14 @@ CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const Scalar
 CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const String& value);
 
 /**
+ * set the texture of a material to the given value
+ * @param name material name
+ * @param prop @ref MaterialProperty
+ * @param value the texture data
+ */
+CV_EXPORTS_AS(setMaterialTexture) void setMaterialProperty(const String& name, int prop, InputArray value);
+
+/**
  * set the shader property of a material to the given value
  * @param name material name
  * @param prop property name
@@ -365,7 +372,7 @@ CV_EXPORTS_W void setMaterialProperty(const String& name, const String& prop, co
 /**
  * create a 2D plane, X right, Y down, Z up
  *
- * creates a material and a texture with the same name
+ * creates a material with the same name
  * @param name name of the mesh
  * @param size size in world units
  * @param image optional texture
@@ -403,13 +410,7 @@ CV_EXPORTS_W void createGridMesh(const String& name, const Size2f& size, const S
  */
 CV_EXPORTS_W void createTriangleMesh(const String& name, InputArray vertices, InputArray normals = noArray(), InputArray indices = noArray());
 
-/**
- * updates an existing texture
- *
- * A new texture can be created with @ref createPlaneMesh
- * @param name name of the texture
- * @param image the image data
- */
+/// @deprecated use setMaterialProperty
 CV_EXPORTS_W void updateTexture(const String& name, InputArray image);
 //! @}
 }
