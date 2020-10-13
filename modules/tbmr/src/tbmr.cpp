@@ -49,12 +49,12 @@ namespace cv {
 
             void detect(InputArray image, CV_OUT std::vector<KeyPoint>& keypoints, InputArray mask = noArray()) CV_OVERRIDE;
 
-            // radix sort images -> indexes
+            // counting sort indexes (can we use cv::SortIdx instead?)
             template<bool sort_order_up = true>
-            cv::Mat sort_indexes(const cv::Mat& input)
+            cv::Mat sortIndexes(const cv::Mat& input)
             {
-                const size_t bucket_count = 1 << 8;
-                const uint mask = bucket_count - 1;
+                constexpr size_t bucket_count = 1 << 8;
+                constexpr uint mask = bucket_count - 1;
                 uint N = input.cols * input.rows;
                 cv::Mat indexes_sorted(input.rows, input.cols, CV_32S); // unsigned
 
@@ -78,7 +78,7 @@ namespace cv {
                     bucket_offsets[i + 1] += bucket_offsets[i];
 
 
-                // actual step
+                // sort step
                 for (uint i = 0; i < N; ++i)
                 {
                     uint8_t key = input_ptr[i];
@@ -108,8 +108,9 @@ namespace cv {
             }
 
 
+            // Calculate the Component tree
             template<bool order_up = true>
-            void calc_min_max_tree(cv::Mat ima, cv::Mat& parent, cv::Mat& S, std::array<uint, 6>* imaAttribute)
+            void calcMinMaxTree(cv::Mat ima, cv::Mat& parent, cv::Mat& S, std::array<uint, 6>* imaAttribute)
             {
                 int rs = ima.rows;
                 int cs = ima.cols;
@@ -125,7 +126,7 @@ namespace cv {
                 uint* rank = (uint*)calloc(imSize, sizeof(uint));
                 parent = cv::Mat(rs, cs, CV_32S); // unsigned
                 bool* dejaVu = (bool*)calloc(imSize, sizeof(bool));
-                S = sort_indexes<order_up>(ima);
+                S = sortIndexes<order_up>(ima);
 
                 const uint* S_ptr = S.ptr<const uint>();
                 uint* parent_ptr = parent.ptr<uint>();
@@ -215,7 +216,7 @@ namespace cv {
                 // calculate moments during tree construction: compound type of: (area, x, y, xy, xx, yy)
                 std::array<uint, 6>* imaAttribute = (std::array<uint, 6>*)malloc(imSize * sizeof(uint) * 6);
 
-                calc_min_max_tree<order_up>(image, parentMat, SMat, imaAttribute);
+                calcMinMaxTree<order_up>(image, parentMat, SMat, imaAttribute);
 
                 const uint8_t* ima_ptr = image.ptr<const uint8_t>();
                 const uint* S = SMat.ptr<const uint>();
@@ -457,9 +458,9 @@ namespace cv {
                 src = tempsrc;
             }
 
-            // append max-tree tbmrs
+            // append max tree tbmrs
             calculateTBMRs<true>(src, keypoints, mask);
-            // append min-tree tbmrs
+            // append min tree tbmrs
             calculateTBMRs<false>(src, keypoints, mask);
         }
 
