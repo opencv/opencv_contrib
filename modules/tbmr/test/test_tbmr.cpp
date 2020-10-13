@@ -42,7 +42,7 @@
 
 #include "test_precomp.hpp"
 #include "cvconfig.h"
-#include "opencv2/ts/ocl_test.hpp"
+//#include "opencv2/ts/ocl_test.hpp"
 
 namespace opencv_test {
 
