@@ -151,7 +151,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     {
         VolumeUnit& vu = volumeUnits[idx];
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(idx)).matrix;
-        
+
         vu.pose = subvolumePose;
         vu.index = lastVolIndex; lastVolIndex++;
         if (lastVolIndex > volumeIndex(volUnitsData.size().height))
@@ -167,7 +167,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                 v.tsdf = floatToTsdf(0.0f); v.weight = 0;
             });
         //! This volume unit will definitely be required for current integration
-        vu.isActive = true;        
+        vu.isActive = true;
     }
 
     //! Get keys for all the allocated volume Units
@@ -216,7 +216,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
-    
+
     //! Integrate the correct volumeUnits
     parallel_for_(Range(0, (int)totalVolUnits.size()), [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
@@ -613,7 +613,7 @@ void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::
 
     const int nstripes = -1;
 
-    auto _HashRaycastInvoker = [&](const Range& range) 
+    auto _HashRaycastInvoker = [&](const Range& range)
     {
         const Point3f cam2volTrans = cam2vol.translation();
         const Matx33f cam2volRot = cam2vol.rotation();
