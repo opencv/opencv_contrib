@@ -12,10 +12,10 @@ namespace cv {
         public:
             struct Params
             {
-                Params(int _min_area = 60, float _max_area_relative = 0.01)
+                Params(int _min_area = 60, double _max_area_relative = 0.01)
                 {
                     CV_Assert(_min_area >= 0);
-                    CV_Assert(_max_area_relative >= std::numeric_limits<float>::epsilon());
+                    CV_Assert(_max_area_relative >= std::numeric_limits<double>::epsilon());
 
                     minArea = _min_area;
                     maxAreaRelative = _max_area_relative;
@@ -23,7 +23,7 @@ namespace cv {
 
 
                 uint minArea;
-                float maxAreaRelative;
+                double maxAreaRelative;
             };
 
             explicit TBMR_Impl(const Params& _params) : params(_params) {}
@@ -39,18 +39,16 @@ namespace cv {
                 return params.minArea;
             }
 
-            void setMaxAreaRelative(float maxAreaRelative) CV_OVERRIDE
+            void setMaxAreaRelative(double maxAreaRelative) CV_OVERRIDE
             {
                 params.maxAreaRelative = maxAreaRelative;
             }
-            float getMaxAreaRelative() const CV_OVERRIDE
+            double getMaxAreaRelative() const CV_OVERRIDE
             {
                 return params.maxAreaRelative;
             }
 
-            void detectRegions(InputArray image, CV_OUT std::vector<KeyPoint>& tbmrs) CV_OVERRIDE;
             void detect(InputArray image, CV_OUT std::vector<KeyPoint>& keypoints, InputArray mask = noArray()) CV_OVERRIDE;
-
 
             // radix sort images -> indexes
             template<bool sort_order_up = true>
@@ -101,6 +99,15 @@ namespace cv {
 
                 return indexes_sorted;
             }
+
+            inline uint zfindroot(uint* parent, uint p)
+            {
+                if (parent[p] == p)
+                    return p;
+                else
+                    return parent[p] = zfindroot(parent, parent[p]);
+            }
+
 
             template<bool order_up = true>
             void calc_min_max_tree(cv::Mat ima, cv::Mat& parent, cv::Mat& S, std::array<uint, 6>* imaAttribute)
@@ -198,7 +205,7 @@ namespace cv {
             }
 
             template<bool order_up = true>
-            void calculateTBMRs(const cv::Mat& image, std::vector<KeyPoint>& tbmrs)
+            void calculateTBMRs(const cv::Mat& image, std::vector<KeyPoint>& tbmrs, const cv::Mat& mask)
             {
 
                 uint imSize = image.cols * image.rows;
@@ -271,7 +278,7 @@ namespace cv {
                     std::size_t p = vecNodes[i];
                     if (numSons[p] == 1 && !isSeen[p] && imaAttribute[p][0] <= maxArea)
                     {
-                        unsigned num_ancestors = 0;
+                        uint num_ancestors = 0;
                         std::size_t pt = p;
                         std::size_t po = pt;
                         while (numSons[pt] == 1 && imaAttribute[pt][0] <= maxArea)
@@ -292,26 +299,35 @@ namespace cv {
 
                 // compute best fitting ellipses
                 //------------------------------------------------------------------------
-                unsigned num_valid_TBMRs = 0;
                 for (int i = 0; i < numTbmrs; i++)
                 {
                     uint p = vecTbmrs[i];
-                    double x = (double)imaAttribute[p][1] / (double)imaAttribute[p][0]; // sum_x / area
-                    double y = (double)imaAttribute[p][2] / (double)imaAttribute[p][0]; // sum_y / area
-                    double i20 = imaAttribute[p][4] - imaAttribute[p][0] * x * x;         // sum_xx - area
-                    double i02 = imaAttribute[p][5] - imaAttribute[p][0] * y * y;         // sum_yy - area
-                    double i11 = imaAttribute[p][3] - imaAttribute[p][0] * x * y;         // sum_xy - area
+                    double area = static_cast<double>(imaAttribute[p][0]);
+                    double sum_x = static_cast<double>(imaAttribute[p][1]);
+                    double sum_y = static_cast<double>(imaAttribute[p][2]);
+                    double sum_xy = static_cast<double>(imaAttribute[p][3]);
+                    double sum_xx = static_cast<double>(imaAttribute[p][4]);
+                    double sum_yy = static_cast<double>(imaAttribute[p][5]);
+
+                    // Barycenter:
+                    double x = sum_x / area;
+                    double y = sum_y / area;
+                    // Second order moments
+                    //double X2 = sum_xx / area - x * x;
+                    //double Y2 = sum_yy / area - y * y;
+                    //double XY = sum_xy / area - x * y;
+
+                    double i20 = sum_xx - area * x * x;
+                    double i02 = sum_yy - area * y * y;
+                    double i11 = sum_xy - area * x * y;
                     double n = i20 * i02 - i11 * i11;
                     if (n != 0)
                     {
-                        double a = i02 / n;
-                        a = a * (imaAttribute[p][0] - 1) / 4;
-                        double b = -i11 / n;
-                        b = b * (imaAttribute[p][0] - 1) / 4;
-                        double c = i20 / n;
-                        c = c * (imaAttribute[p][0] - 1) / 4;
+                        double a = (i02 / n) * (area - 1) / 4;
+                        double b = (-i11 / n) * (area - 1) / 4;
+                        double c = (i20 / n) * (area - 1) / 4;
 
-                        // filter out some non meaingful ellipses
+                        // filter out some non meaningful ellipses
                         double a1 = a;
                         double b1 = b;
                         double c1 = c;
@@ -403,19 +419,15 @@ namespace cv {
                         }
                         double v = (a1 + c1 - std::sqrt(a1 * a1 + c1 * c1 + 4 * b1 * b1 - 2 * a1 * c1)) / 2;
 
-                        double l1 = (a + c + std::sqrt(a * a + c * c + 4 * b * b - 2 * a * c)) / 2;
-                        double l2 = (a + c - std::sqrt(a * a + c * c + 4 * b * b - 2 * a * c)) / 2;
-                        l1 = std::sqrt(l1);
-                        l2 = std::sqrt(l2);
-                        l1 = 1 / l1;
-                        l2 = 1 / l2;
+                        double l1 = 1. / std::sqrt((a + c + std::sqrt(a * a + c * c + 4 * b * b - 2 * a * c)) / 2);
+                        double l2 = 1. / std::sqrt((a + c - std::sqrt(a * a + c * c + 4 * b * b - 2 * a * c)) / 2);
                         double l = std::min(l1, l2);
 
-                        if (l >= 1.5 && v != 0)
+                        if (l >= 1.5 && v != 0 && (mask.empty() || mask.at<uchar>(cvRound(y), cvRound(x)) != 0))
                         {
-                            tbmrs.push_back(cv::KeyPoint(cv::Point2f(x, y), c, b, a));
-                            // num_valid_TBMRs++;
-                            // outputFile << y << " " << x << " " << c << " " << b << " " << a << std::endl;
+                            float diam = 2 * a; // Major axis
+                            //    float angle = std::atan((a / b) * (y / x));
+                            tbmrs.push_back(cv::KeyPoint(cv::Point2f(x, y), diam));
                         }
                     }
                 }
@@ -434,19 +446,12 @@ namespace cv {
             Params params;
         };
 
-        static inline uint zfindroot(uint* parent, uint p)
+        void TBMR_Impl::detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask)
         {
-            if (parent[p] == p)
-                return p;
-            else
-                return parent[p] = zfindroot(parent, parent[p]);
-        }
+            Mat mask = _mask.getMat();
+            Mat src = _image.getMat();
 
-        void TBMR_Impl::detectRegions(InputArray _src, std::vector<KeyPoint>& tbmrs)
-        {
-            Mat src = _src.getMat();
-
-            tbmrs.clear();
+            keypoints.clear();
 
             CV_Assert(!src.empty());
             CV_Assert(src.type() == CV_8UC1);
@@ -458,21 +463,12 @@ namespace cv {
             }
 
             // append max-tree tbmrs
-            calculateTBMRs<true>(src, tbmrs);
+            calculateTBMRs<true>(src, keypoints, mask);
             // append min-tree tbmrs
-            calculateTBMRs<false>(src, tbmrs);
+            calculateTBMRs<false>(src, keypoints, mask);
         }
 
-        void TBMR_Impl::detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask)
-        {
-            Mat mask = _mask.getMat();
-
-            detectRegions(_image, keypoints);
-
-            // int i, ncomps = (int)keypoints.size();
-            // keypoints.clear();
-        }
-        CV_WRAP Ptr<TBMR> TBMR::create(int _min_area, float _max_area_relative)
+        CV_WRAP Ptr<TBMR> TBMR::create(int _min_area, double _max_area_relative)
         {
             return cv::makePtr<TBMR_Impl>(TBMR_Impl::Params(_min_area, _max_area_relative));
         }

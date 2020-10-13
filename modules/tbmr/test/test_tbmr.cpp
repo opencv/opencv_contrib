@@ -77,7 +77,7 @@ namespace opencv_test {
         tbmr->setMaxAreaRelative(0.01);
 
         std::vector<KeyPoint> tbmrs;
-        tbmr->detectRegions(image, tbmrs);
+        tbmr->detect(image, tbmrs);
 
         if (tbmrs.size() != 351)
         {

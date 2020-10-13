@@ -23,9 +23,9 @@ namespace cv {
 
         In the first stage, the algorithm computes Component trees (Min-tree and Max-tree) based on the input image.
 
-        In the second stage, the Min- and Max-trees are used to extract TBMR candidates. The extraction can be compared to MSER,
-        but uses a different criterion: Instead of calculating a stable path along the tree, we look for nodes in the tree,
-        that have one child while their parent has more than one child.
+        In the second stage, the Min- and Max-trees are used to extract TBMR candidates. The extraction can be compared to MSER
+        but uses different criteria: Instead of calculating a stable path along the tree, we look for nodes in the tree,
+        that have one child while their parent has more than one child (Morse regions).
 
         The Component tree calculation is based on union-find [Berger 2007 ICIP] + rank.
 
@@ -38,28 +38,19 @@ namespace cv {
 
             /** @brief Full constructor for %TBMR detector
 
-            @param _min_area prune the area which smaller than minArea
-            @param _max_area_relative prune the area which bigger than maxArea (max_area = _max_area_relative * image_size)
+            @param _min_area prune areas smaller than minArea
+            @param _max_area_relative prune areas bigger than maxArea = _max_area_relative * input_image_size
             */
-            CV_WRAP static Ptr<TBMR> create(int _min_area = 60, float _max_area_relative = 0.01);
-
-
-            /** @brief Detect %MSER regions
-
-            @param image input image (8UC1)
-            @param tbmrs resulting list of point sets
-            */
-            CV_WRAP virtual void detectRegions(InputArray image, CV_OUT std::vector<KeyPoint>& tbmrs) = 0;
+            CV_WRAP static Ptr<TBMR> create(int _min_area = 60, double _max_area_relative = 0.01);
 
             CV_WRAP virtual void setMinArea(int minArea) = 0;
             CV_WRAP virtual int getMinArea() const = 0;
-
-            CV_WRAP virtual void setMaxAreaRelative(float maxArea) = 0;
-            CV_WRAP virtual float getMaxAreaRelative() const = 0;
+            CV_WRAP virtual void setMaxAreaRelative(double maxArea) = 0;
+            CV_WRAP virtual double getMaxAreaRelative() const = 0;
             CV_WRAP virtual String getDefaultName() const CV_OVERRIDE;
         };
 
-        //! @}
+        //! @} tbmr
 
     }
-} // namespace cv { namespace hfs {
+} // namespace cv { namespace tbmr {
