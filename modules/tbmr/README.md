@@ -2,13 +2,10 @@
 
 Author and maintainers: Steffen Ehrle (steffen.ehrle@myestro.de).
 
-Hierachical Feature Selection (HFS) is a real-time system for image segmentation. It was originally proposed in [1]. Here is the original project website: http://mmcheng.net/zh/hfs/
+Tree Based Morse Regions (TBMR) is a topological approach to local invariant feature detection motivated by Morse theory.
 
-The algorithm is executed in 3 stages. In the first stage, it obtains an over-segmented image using SLIC(simple linear iterative clustering). In the last 2 stages, it iteratively merges the over-segmented  image with merging method mentioned in EGB(Efficient Graph-based Image Segmentation) and learned SVM parameters.
-
-In our implementation, we wrapped these stages into one single member function of the interface class.
-
-Since this module used cuda in some part of  the implementation, it has to be compiled with cuda support
+The algorithm can be seen as a variant of [MSER](https://docs.opencv.org/3.4.2/d3/d28/classcv_1_1MSER.html) as both algorithms rely on Min/Max-tree.
+However TBMRs being purely topological are invariant to affine illumination change.
 
 For more details about the algorithm, please refer to the original paper: [6940260]
 
@@ -17,37 +14,21 @@ For more details about the algorithm, please refer to the original paper: [69402
 c++ interface:
 
 ```c++
+using namespace tbmr;
 // read a image
 Mat img = imread(image_path), res;
-int _h = img.rows, _w = img.cols;
 
 // create engine
-Ptr<HfsSegment> seg = HfsSegment::create( _h, _w );
+// TBMR uses only 2 parameters: MinSize and MaxSizeRel.
+// MinSize, pruning areas smaller than MinSize
+// MaxSizeRel, pruning areas bigger than MaxSize = MaxSizeRel * img.size
+Ptr<TBMR> alg = TBMR::create(30, 0.01);
 
-// perform segmentation
-// now "res" is a matrix of indices
-// change the second parameter to "True" to get a rgb image for "res"
-res = seg->performSegmentGpu(img, false);
+// perform Keypoint Extraction
+// TBMR features provide Point, diameter and angle
+std::vector<Keypoint> tbmrs;
+res = alg->detect(img, tbmrs);
 ```
-
-python interface:
-
-```python
-import cv2
-import numpy as np
-
-img = cv2.imread(image_path)
-
-# create engine
-engine = cv2.hfs.HfsSegment_create(img.shape[0], img.shape[1])
-
-# perform segmentation
-# now "res" is a matrix of indices
-# change the second parameter to "True" to get a rgb image for "res"
-res = engine.performSegmentGpu(img, False)
-```
-
-
 
 ### Reference
 
