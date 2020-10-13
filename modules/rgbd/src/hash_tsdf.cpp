@@ -83,122 +83,6 @@ void HashTSDFVolumeCPU::reset()
     volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
 }
 
-void HashTSDFVolumeCPU::integrateVolumeUnit( cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
-    InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
-    const cv::kinfu::Intr& intrinsics, InputArray _volume)
-{
-    CV_TRACE_FUNCTION();
-
-    CV_Assert(_depth.type() == DEPTH_TYPE);
-    CV_Assert(!_depth.empty());
-    cv::Affine3f vpose(_pose);
-    Depth depth = _depth.getMat();
-
-
-    Range integrateRange(0, volResolution.x);
-
-    Mat volume = _volume.getMat();
-    const Intr::Projector proj(intrinsics.makeProjector());
-    const cv::Affine3f vol2cam(Affine3f(cameraPose.inv()) * vpose);
-    const float truncDistInv(1.f / truncDist);
-    const float dfac(1.f / depthFactor);
-    TsdfVoxel* volDataStart = volume.ptr<TsdfVoxel>();;
-
-    auto IntegrateInvoker = [&](const Range& range)
-    {
-        for (int x = range.start; x < range.end; x++)
-        {
-            TsdfVoxel* volDataX = volDataStart + x * volStrides[0];
-            for (int y = 0; y < volResolution.y; y++)
-            {
-                TsdfVoxel* volDataY = volDataX + y * volStrides[1];
-                // optimization of camSpace transformation (vector addition instead of matmul at each z)
-                Point3f basePt = vol2cam * (Point3f(float(x), float(y), 0.0f) * voxelSize);
-                Point3f camSpacePt = basePt;
-                // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
-                // zStep == vol2cam*[Point3f(x, y, 1) - Point3f(x, y, 0)]*voxelSize
-                Point3f zStep = Point3f(vol2cam.matrix(0, 2),
-                    vol2cam.matrix(1, 2),
-                    vol2cam.matrix(2, 2)) * voxelSize;
-                int startZ, endZ;
-                if (abs(zStep.z) > 1e-5)
-                {
-                    int baseZ = int(-basePt.z / zStep.z);
-                    if (zStep.z > 0)
-                    {
-                        startZ = baseZ;
-                        endZ = volResolution.z;
-                    }
-                    else
-                    {
-                        startZ = 0;
-                        endZ = baseZ;
-                    }
-                }
-                else
-                {
-                    if (basePt.z > 0)
-                    {
-                        startZ = 0;
-                        endZ = volResolution.z;
-                    }
-                    else
-                    {
-                        // z loop shouldn't be performed
-                        startZ = endZ = 0;
-                    }
-                }
-                startZ = max(0, startZ);
-                endZ = min(volResolution.z, endZ);
-
-                for (int z = startZ; z < endZ; z++)
-                {
-                    // optimization of the following:
-                    //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
-                    //Point3f camSpacePt = vol2cam * volPt;
-
-                    camSpacePt += zStep;
-                    if (camSpacePt.z <= 0)
-                        continue;
-
-                    Point3f camPixVec;
-                    Point2f projected = proj(camSpacePt, camPixVec);
-
-                    depthType v = bilinearDepth(depth, projected);
-                    if (v == 0) {
-                        continue;
-                    }
-
-                    int _u = projected.x;
-                    int _v = projected.y;
-                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
-                        continue;
-                    float pixNorm = pixNorms.at<float>(_v, _u);
-
-                    // difference between distances of point and of surface to camera
-                    float sdf = pixNorm * (v * dfac - camSpacePt.z);
-                    // possible alternative is:
-                    // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
-                    if (sdf >= -truncDist)
-                    {
-                        TsdfType tsdf = floatToTsdf(fmin(1.f, sdf * truncDistInv));
-
-                        TsdfVoxel& voxel = volDataY[z * volStrides[2]];
-                        WeightType& weight = voxel.weight;
-                        TsdfType& value = voxel.tsdf;
-
-                        // update TSDF
-                        value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = min(int(weight + 1), int(maxWeight));
-                    }
-                }
-            }
-        }
-    };
-    parallel_for_(integrateRange, IntegrateInvoker);
-
-}
-
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     //std::cout << "integrate: " << std::endl;
@@ -270,7 +154,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         
         vu.pose = subvolumePose;
         vu.index = lastVolIndex; lastVolIndex++;
-        if (lastVolIndex > volUnitsData.size().height)
+        if (lastVolIndex > volumeIndex(volUnitsData.size().height))
         {
             //std::cout << "    +"  << std::endl;
             volUnitsData.resize(lastVolIndex - 1 + VOLUMES_SIZE);
@@ -346,8 +230,8 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (volumeUnit.isActive)
             {
                 //! The volume unit should already be added into the Volume from the allocator
-                integrateVolumeUnit(volumeUnit.pose, volDims, volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, volUnitsData.row(volumeUnit.index));
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, volumeUnit.pose, volDims, volStrides, depth,
+                    depthFactor, cameraPose, intrinsics, pixNorms, volUnitsData.row(volumeUnit.index));
 
                 //! Ensure all active volumeUnits are set to inactive for next integration
                 volumeUnit.isActive = false;
