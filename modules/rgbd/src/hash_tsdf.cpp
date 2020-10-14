@@ -49,6 +49,15 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     volDims(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution)
 {
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
+    
+}
+
+HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
+                                     float _truncDist, int _maxWeight, float _truncateThreshold,
+                                     int _volumeUnitRes, bool _zFirstMemOrder)
+    : HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
+                     _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
+{
     int xdim, ydim, zdim;
     if (zFirstMemOrder)
     {
@@ -63,14 +72,7 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
         zdim = volDims.x * volDims.y;
     }
     volStrides = Vec4i(xdim, ydim, zdim);
-}
 
-HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
-                                     float _truncDist, int _maxWeight, float _truncateThreshold,
-                                     int _volumeUnitRes, bool _zFirstMemOrder)
-    : HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
-                     _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
-{
     lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
 }

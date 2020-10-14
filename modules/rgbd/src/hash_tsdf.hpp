@@ -34,7 +34,6 @@ class HashTSDFVolume : public Volume
     float volumeUnitSize;
     bool zFirstMemOrder;
     Point3i volDims;
-    Vec4i volStrides;
 };
 
 //! Spatial hashing
@@ -111,6 +110,7 @@ private:
     cv::Vec3i volumeToVoxelCoord(cv::Point3f point) const;
 
    public:
+       Vec4i volStrides;
        Vec6f frameParams;
        Mat pixNorms;
        //VolumeUnitIndexes volumeUnitIndexes;
