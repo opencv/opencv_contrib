@@ -97,8 +97,7 @@ private:
     virtual TsdfVoxel at(const cv::Point3f& point) const;
     virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, volumeIndex indx) const;
 
-    TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
-        VolumeUnitIndexes::const_iterator vend, int unitRes) const;
+    TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const;
 
     float interpolateVoxelPoint(const Point3f& point) const;
     inline float interpolateVoxel(const cv::Point3f& point) const;

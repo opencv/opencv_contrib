@@ -348,10 +348,9 @@ static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
     }
 }
 
-TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it,
-    VolumeUnitIndexes::const_iterator vend, int unitRes) const
+TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const
 {
-    if (it == vend)
+    if (it == volumeUnits.end())
     {
         //std::cout << "ASSERT (atVolumeUnit)" << std::endl;
         TsdfVoxel dummy;
@@ -359,7 +358,7 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
         dummy.weight = 0;
         return dummy;
     }
-    Vec3i volUnitLocalIdx = point - volumeUnitIdx * unitRes;
+    Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
 
     // expanding at(), removing bounds check
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(it->second.index);
@@ -441,7 +440,7 @@ float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
             queried[dictIdx] = true;
         }
 
-        vx[i] = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf;
+        vx[i] = atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
     }
 
     return interpolate(tx, ty, tz, vx);
@@ -503,7 +502,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
             queried[dictIdx] = true;
         }
 
-        vals[i] = tsdfToFloat(atVolumeUnit(pt, volumeUnitIdx, it, volumeUnits.end(), volumeUnitResolution).tsdf);
+        vals[i] = tsdfToFloat(atVolumeUnit(pt, volumeUnitIdx, it).tsdf);
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
