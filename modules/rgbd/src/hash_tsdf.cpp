@@ -205,15 +205,13 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
         });
-
-    if (!(frameParams[0] == depth.rows && frameParams[1] == depth.cols &&
-        frameParams[2] == intrinsics.fx && frameParams[3] == intrinsics.fy &&
-        frameParams[4] == intrinsics.cx && frameParams[5] == intrinsics.cy))
+    
+    Vec6f newParams((float)depth.rows, (float)depth.cols,
+        intrinsics.fx, intrinsics.fy,
+        intrinsics.cx, intrinsics.cy);
+    if ( !(frameParams==newParams) )
     {
-        frameParams[0] = (float)depth.rows; frameParams[1] = (float)depth.cols;
-        frameParams[2] = intrinsics.fx;     frameParams[3] = intrinsics.fy;
-        frameParams[4] = intrinsics.cx;     frameParams[5] = intrinsics.cy;
-
+        frameParams = newParams;
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
 

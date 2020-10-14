@@ -392,14 +392,13 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
-    if (!(frameParams[0] == depth.rows  && frameParams[1] == depth.cols &&
-        frameParams[2] == intrinsics.fx && frameParams[3] == intrinsics.fy &&
-        frameParams[4] == intrinsics.cx && frameParams[5] == intrinsics.cy))
+    
+    Vec6f newParams((float)depth.rows, (float)depth.cols,
+        intrinsics.fx, intrinsics.fy,
+        intrinsics.cx, intrinsics.cy);
+    if (!(frameParams == newParams))
     {
-        frameParams[0] = (float)depth.rows; frameParams[1] = (float)depth.cols;
-        frameParams[2] = intrinsics.fx;     frameParams[3] = intrinsics.fy;
-        frameParams[4] = intrinsics.cx;     frameParams[5] = intrinsics.cy;
-
+        frameParams = newParams;
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
 
