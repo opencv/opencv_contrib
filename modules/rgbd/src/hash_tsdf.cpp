@@ -23,20 +23,7 @@ namespace cv
 {
 namespace kinfu
 {
-/*
-static inline TsdfType floatToTsdf(float num)
-{
-    //CV_Assert(-1 < num <= 1);
-    int8_t res = int8_t(num * (-128.f));
-    res = res ? res : (num < 0 ? 1 : -1);
-    return res;
-}
 
-static inline float tsdfToFloat(TsdfType num)
-{
-    return float(num) * (-1.f / 128.f);
-}
-*/
 HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
     float _truncDist, int _maxWeight, float _truncateThreshold,
     int _volumeUnitRes, bool _zFirstMemOrder)
@@ -87,7 +74,6 @@ void HashTSDFVolumeCPU::reset()
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
-    //std::cout << "integrate: " << std::endl;
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
@@ -158,10 +144,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.index = lastVolIndex; lastVolIndex++;
         if (lastVolIndex > volumeIndex(volUnitsData.size().height))
         {
-            //std::cout << "    +"  << std::endl;
             volUnitsData.resize(lastVolIndex - 1 + VOLUMES_SIZE);
-            //for (int i = 0; i < VOLUMES_SIZE; i++)
-            //    volUnitsMatrix.push_back(Mat(1, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>()));
         }
         volUnitsData.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
             {
@@ -272,7 +255,6 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex 
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
-        std::cout << "ASSERT (_at)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
         dummy.weight = 0;
@@ -295,7 +277,6 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
     /*
     if (it == volumeUnits.end())
     {
-        std::cout << "ASSERT (at Vec3i)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf   = floatToTsdf(1.f);
         dummy.weight = 0;
@@ -318,7 +299,6 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     /*
     if (it == volumeUnits.end())
     {
-        std::cout << "ASSERT (at Point3f)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf   = floatToTsdf(1.f);
         dummy.weight = 0;
@@ -352,7 +332,6 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
 {
     if (it == volumeUnits.end())
     {
-        //std::cout << "ASSERT (atVolumeUnit)" << std::endl;
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.f);
         dummy.weight = 0;

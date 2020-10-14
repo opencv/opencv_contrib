@@ -12,26 +12,7 @@
 namespace cv {
 
 namespace kinfu {
-/*
-static inline v_float32x4 tsdfToFloat_INTR(const v_int32x4& num)
-{
-    v_float32x4 num128 = v_setall_f32(-1.f / 128.f);
-    return v_cvt_f32(num) * num128;
-}
 
-static inline TsdfType floatToTsdf(float num)
-{
-    //CV_Assert(-1 < num <= 1);
-    int8_t res = int8_t(num * (-128.f));
-    res = res ? res : (num < 0 ? 1 : -1);
-    return res;
-}
-
-static inline float tsdfToFloat(TsdfType num)
-{
-    return float(num) * (-1.f / 128.f);
-}
-*/
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                        int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
