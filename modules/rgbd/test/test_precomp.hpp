@@ -19,7 +19,6 @@
 
 namespace opencv_test {
 using namespace cv::rgbd;
-
 }
 
 #endif
