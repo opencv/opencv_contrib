@@ -89,29 +89,6 @@ static float readFloatPlyFormat(std::ifstream& ifs, const int& encodeType)
 }
 
 
-float readFloatPlyFormat(std::ifstream& ifs, const int& encodeType)
-{
-    float retVal;
-    // ASCII
-    if (encodeType == 0) ifs >> retVal;
-    // Little Endian
-    if (encodeType == 1) ifs.read(reinterpret_cast<char*>(&retVal), sizeof(float));
-    // Big Endian
-    if (encodeType == 2) {
-        unsigned char temp[sizeof(float)];
-        ifs.read(reinterpret_cast<char*>(temp), sizeof(float));
-        unsigned char t = temp[0];
-        temp[0] = temp[3];
-        temp[3] = t;
-        t = temp[1];
-        temp[1] = temp[2];
-        temp[2] = t;
-        retVal = reinterpret_cast<float&>(temp);
-    }
-    return retVal;
-}
-
-
 Mat loadPLYSimple(const char* fileName, int withNormals)
 {
     Mat cloud;
