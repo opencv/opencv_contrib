@@ -68,6 +68,7 @@ ocv_add_module(
     opencv_dnn
     opencv_features2d
     opencv_objdetect
+    opencv_calib3d
 )
 
 set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2/hdr_parser.py)

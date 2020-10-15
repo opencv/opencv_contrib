@@ -18,7 +18,7 @@ namespace kinfu
 class CV_EXPORTS_W Volume
 {
    public:
-    Volume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor)
+    Volume(float _voxelSize, Matx44f _pose, float _raycastStepFactor)
         : voxelSize(_voxelSize),
           voxelSizeInv(1.0f / voxelSize),
           pose(_pose),
@@ -28,19 +28,18 @@ class CV_EXPORTS_W Volume
 
     virtual ~Volume(){};
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics)                        = 0;
-    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
-                         cv::Size frameSize, cv::OutputArray points,
-                         cv::OutputArray normals) const                                    = 0;
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const       = 0;
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
-    virtual void reset()                                                                   = 0;
+    virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
+                           const kinfu::Intr& intrinsics, const int frameId = 0)               = 0;
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
+                         const Size& frameSize, OutputArray points, OutputArray normals) const = 0;
+    virtual void fetchNormals(InputArray points, OutputArray _normals) const                   = 0;
+    virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const             = 0;
+    virtual void reset()                                                                       = 0;
 
    public:
     const float voxelSize;
     const float voxelSizeInv;
-    const cv::Affine3f pose;
+    const Affine3f pose;
     const float raycastStepFactor;
 };
 
@@ -50,9 +49,70 @@ enum class VolumeType
     HASHTSDF = 1
 };
 
-CV_EXPORTS_W cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Matx44f _pose,
-                           float _raycastStepFactor, float _truncDist, int _maxWeight,
-                           float _truncateThreshold, Vec3i _resolution);
+struct CV_EXPORTS_W VolumeParams
+{
+    /** @brief Type of Volume
+        Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
+    */
+    CV_PROP_RW VolumeType type;
+
+    /** @brief Resolution of voxel space
+        Number of voxels in each dimension.
+        Applicable only for TSDF Volume.
+        HashTSDF volume only supports equal resolution in all three dimensions
+    */
+    CV_PROP_RW Vec3i resolution;
+
+    /** @brief Resolution of volumeUnit in voxel space
+        Number of voxels in each dimension for volumeUnit
+        Applicable only for hashTSDF.
+    */
+    CV_PROP_RW int unitResolution = {0};
+
+    /** @brief Initial pose of the volume in meters */
+    Affine3f pose;
+
+    /** @brief Length of voxels in meters */
+    CV_PROP_RW float voxelSize;
+
+    /** @brief TSDF truncation distance
+        Distances greater than value from surface will be truncated to 1.0
+    */
+    CV_PROP_RW float tsdfTruncDist;
+
+    /** @brief Max number of frames to integrate per voxel
+        Represents the max number of frames over which a running average
+        of the TSDF is calculated for a voxel
+    */
+    CV_PROP_RW int maxWeight;
+
+    /** @brief Threshold for depth truncation in meters
+        Truncates the depth greater than threshold to 0
+    */
+    CV_PROP_RW float depthTruncThreshold;
+
+    /** @brief Length of single raycast step
+        Describes the percentage of voxel length that is skipped per march
+    */
+    CV_PROP_RW float raycastStepFactor;
+
+    /** @brief Default set of parameters that provide higher quality reconstruction
+        at the cost of slow performance.
+    */
+    CV_WRAP static Ptr<VolumeParams> defaultParams(VolumeType _volumeType);
+
+    /** @brief Coarse set of parameters that provides relatively higher performance
+        at the cost of reconstrution quality.
+    */
+    CV_WRAP static Ptr<VolumeParams> coarseParams(VolumeType _volumeType);
+};
+
+
+Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
+CV_EXPORTS_W Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
+                                    float _raycastStepFactor, float _truncDist, int _maxWeight,
+                                    float _truncateThreshold, Vec3i _resolution);
+
 }  // namespace kinfu
 }  // namespace cv
 #endif

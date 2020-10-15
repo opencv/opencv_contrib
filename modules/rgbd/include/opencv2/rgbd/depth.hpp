@@ -564,7 +564,7 @@ namespace rgbd
     /** Method to compute a transformation from the source frame to the destination one.
      * Some odometry algorithms do not used some data of frames (eg. ICP does not use images).
      * In such case corresponding arguments can be set as empty Mat.
-     * The method returns true if all internal computions were possible (e.g. there were enough correspondences,
+     * The method returns true if all internal computations were possible (e.g. there were enough correspondences,
      * system of equations has a solution, etc) and resulting transformation satisfies some test if it's provided
      * by the Odometry inheritor implementation (e.g. thresholds for maximum translation and rotation).
      * @param srcImage Image data of the source frame (CV_8UC1)
