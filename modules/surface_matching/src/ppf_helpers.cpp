@@ -69,6 +69,7 @@ static std::vector<std::string> split(const std::string &text, char sep) {
 static float readFloatPlyFormat(std::ifstream& ifs, const int& encodeType)
 {
     float retVal;
+    retVal = -1;
     // ASCII
     if (encodeType == 0) ifs >> retVal;
     // Little Endian

@@ -29,12 +29,12 @@ namespace cv {
             if (a >= 1.0)
                 return 0.0;
             else if (a <= -1.0)
-                return M_PI;
+                return (float) M_PI;
             else
                 return acos(a); // 0..PI
         }
 
-        // This is discribed in the paper
+        // This is described in the paper
         // Algorithm 0: Curvature calculation.
         //
         // pointsWithNormal (IN): points from one frame point cloud, with normal or without normal.
@@ -64,12 +64,12 @@ namespace cv {
                 // points without normal
             {
                 Mat pointsWithNormal2;
-                int x = ppf_match_3d::computeNormalsPC3d(pointsWithNormal, pointsWithNormal2, k, 0, Vec3f(0,0,0));
+                ppf_match_3d::computeNormalsPC3d(pointsWithNormal, pointsWithNormal2, k, 0, Vec3f(0,0,0));
                 pointsWithNormal = pointsWithNormal2;
                 channel = pointsWithNormal.size().width;
             }
 
-            // Splite points and normals
+            // Split points and normals
             for (int i=0;i<len;i++)
             {
                 Point3f p(pointsWithNormal.at<float>(i,0), pointsWithNormal.at<float>(i,1), pointsWithNormal.at<float>(i,2));
@@ -96,7 +96,7 @@ namespace cv {
                 std::vector<Point3f> nearPoints;
                 for (int j=0;j<k;j++) nearPoints.push_back(normal[indices.at<int>(i,j)]);
                 Mat pointMat = Mat(nearPoints).reshape(1);
-                // Local PCA discribed in the paper
+                // Local PCA described in the paper
                 PCA pca(pointMat, Mat(), 0);
                 int size = pca.eigenvalues.size().height;
                 float a = pca.eigenvalues.at<float>(0);
@@ -118,7 +118,7 @@ namespace cv {
         }
 
 
-        // This is discribed in the paper
+        // This is described in the paper
         // Algorithm 1: Curvature-Based Plane Segmentation.
         //
         // points (IN) : points
@@ -141,7 +141,7 @@ namespace cv {
                 std::vector<std::vector<Point3f> >& vecRetNormals
         )
         {
-            int len = points.size();
+            int len = (int) points.size();
 
             // Build KD-tree for k-nearest neighbour
             flann::KDTreeIndexParams indexParams;
@@ -158,7 +158,7 @@ namespace cv {
             // Record which plane the points belong to
             std::vector<int> idSeg(len);
 
-            // Use disjoint set to maintain segmentaion and plane merge
+            // Use disjoint set to maintain segmentation and plane merge
             for (int i=0;i<len;i++) idSeg[i] = i;
 
             while (isSegCount < len || !q.empty()) {
@@ -189,7 +189,7 @@ namespace cv {
                 kdtree.knnSearch(query, indices, dists, k);
 
                 // For each unsegmented neighbour p
-                for (int i=0;i<indices.size();i++)
+                for (int i=0;i< (int) indices.size();i++)
                 {
                     if (isSeg[indices[i]] == 1) continue;
                     if (normals[indices[i]].dot(normals[indices[i]]) == 0) continue;
@@ -209,7 +209,7 @@ namespace cv {
 
             std::map<int, std::vector<Point3f> > retPoints;
             std::map<int, std::vector<Point3f> > retNormals;
-            for (int i=0;i<idSeg.size();i++)
+            for (int i=0;i< (int) idSeg.size();i++)
             {
                 // Maintain disjoint set
                 int idx = findFather(idSeg, i);
@@ -219,7 +219,7 @@ namespace cv {
                     retPoints[idx] = tmp;
                     std::vector<Point3f> tmp2;
                     retNormals[idx] = tmp2;
-                    // First point is plane center point and normal is plane normal
+                    // First point is the plane center point and normal is plane normal
                     retPoints[idx].push_back(points[idx]);
                     retNormals[idx].push_back(normals[idx]);
                 }
@@ -266,7 +266,7 @@ namespace cv {
             float plusx, plusy;
             plusx = -side.dot(eye);
             plusy = -up.dot(eye);
-            for (int i=0;i<points.size();i++)
+            for (int i=0;i< (int) points.size();i++)
             {
                 Point2f tmp;
                 float x = side.dot(points[i]) + plusx;
@@ -278,7 +278,7 @@ namespace cv {
             return 1;
         }
 
-        // This is discribed in the paper
+        // This is described in the paper
         // Algorithm 2: Method for merging two planar segments.
         //
         // pointsA(IN, OUT): A planar segment(point cloud A)
@@ -311,11 +311,11 @@ namespace cv {
             from3dTo2dPlane(pointsB, normalsB, twodPoints);
 
             // Convex hull calculation
-            // Here is convexHull, later will changed to convex hull
+            // Here is convexHull, later will be changed to convex hull
             convexHull(Mat(twodPoints), indicesConcaveB);
 
 
-            for (int i=0;i<indicesConcaveB.size();i++)
+            for (int i=0;i< (int) indicesConcaveB.size();i++)
             {
                 Point3f h = pointsB[indicesConcaveB[i]];
                 Point3f dis = aCenter - h;
@@ -323,7 +323,7 @@ namespace cv {
                 {
                     normalA = ((int)pointsA.size())*normalA + ((int)pointsB.size())*normalB;
                     normalA /= (int)(pointsA.size() + pointsB.size());
-                    for (int j=1;j<pointsB.size();j++)
+                    for (int j=1;j< (int) pointsB.size();j++)
                     {
                         pointsA.push_back(pointsB[j]);
                         normalsA.push_back(normalsB[j]);
@@ -338,7 +338,7 @@ namespace cv {
         }
 
 
-        // This is discribed in the paper
+        // This is described in the paper
         // Algorithm 3: Method for growing planar segments.
         //
         // setPointsQ (IN, OUT) : existing planar segments(Points)
@@ -399,12 +399,12 @@ namespace cv {
                     setNormalsQ.push_back(setNormalsN[i]);
                     timestepsQ.push_back(timestepsN[i]);
                     finalQ.push_back(0);
-                    for (int j=0;j<R.size();j++)
+                    for (int j=0;j< (int) R.size();j++)
                         S.push_back(std::make_pair(setPointsQ.size()-1, R[j]));
                 }
-                // TODO remove from M, this is discribed in paper
+                // TODO remove from M, this is described in paper
                 // but M is all unsegmented points set
-                // so it may be implemented by the user in their program when using this function
+                // so maybe it should implemented by the user in their program when using this function
             }
 
             for (int i=0;i<sizeQ;i++)
@@ -413,7 +413,7 @@ namespace cv {
                 if (timestepsQ[i] > timestepThreshold)
                 {
                     finalQ[i] = 1;
-                    for (int j=0;j<setPointsQ[i].size();j++)
+                    for (int j=0;j< (int) setPointsQ[i].size();j++)
                     {
                         Point3f p = curCameraPos - setPointsQ[i][j];
                         if (p.dot(p) < timestepDisThreshold)
@@ -426,12 +426,22 @@ namespace cv {
             }
 
             // Set of similar but non-merged segments pairs
-            for (int i=0; i<S.size(); i++)
+            for (int i=0; i< (int) S.size(); i++)
                 if (finalQ[S[i].first] + finalQ[S[i].second] == 0)
                     retS.push_back(S[i]);
             return true;
         }
 
+
+        // This is described in the paper
+        // Algorithm 4: Merging segments that have grown closer
+        //
+        // pointsS(IN,OUT): set of similar but non-merged segments pairs(Points)
+        // normalsS(IN,OUT): set of similar but non-merged segments pairs(Normals)
+        // alphaS(IN): set of similar but non-merged segments pairs(alpha values)
+        // setPointsQ (IN, OUT) : existing planar segments(Points)
+        // setNormalsQ (IN, OUT) : existing planar segments(normals)
+        // timestepsQ (IN, OUT) : existing planar segments(timesteps)
         bool mergeCloseSegments(
                 std::vector< std::pair< std::vector<Point3f> ,std::vector<Point3f> > >& pointsS,
                 std::vector< std::pair< std::vector<Point3f> ,std::vector<Point3f> > >& normalsS,
@@ -443,7 +453,7 @@ namespace cv {
         {
             std::vector<bool> deletedS(pointsS.size(),0);
 
-            for (int i=0;i<pointsS.size();i++)
+            for (int i=0;i< (int) pointsS.size();i++)
             {
                 if (deletedS[i]) continue;
                 bool gotPlane = 0;
@@ -465,16 +475,18 @@ namespace cv {
                                        normalsS1);
                 if (gotPlane)
                 {
-                    for (int j=0; j<setPointsQ.size(); j++)
+                    for (int j=0; j< (int) setPointsQ.size(); j++)
                     {
                         if (setPointsQ[j][0] == pointsS1[0])
                         {
                             setPointsQ[j].clear();
+                            setNormalsQ[j].clear();
+                            timestepsQ[j] = 0;
                             break;
                         }
                     }
 
-                    for (int j=0; j<pointsS.size(); j++)
+                    for (int j=0; j< (int) pointsS.size(); j++)
                     {
                         if (i == j) continue;
                         if (deletedS[j]) continue;
@@ -500,5 +512,5 @@ namespace cv {
             return true;
         }
 
-}
+    }
 }

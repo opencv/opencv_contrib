@@ -1,3 +1,6 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
 //
 // Created by YIMIN TANG on 10/11/20.
 //
@@ -47,7 +50,7 @@ protected:
         std::vector<Point3f> normal;
         std::vector<float> curvatures;
         pcseg::calCurvatures(A,3,points,normal,curvatures);
-        for (int i=0;i<curvatures.size();i++)
+        for (int i=0;i< (int) curvatures.size();i++)
             printf("%f ",curvatures[i]);
         printf("\n");
         return 1;
@@ -102,7 +105,7 @@ protected:
         int timesteps = 0;
         bool result = pcseg::planarMerge(pointsA, normalsA, timesteps, pointsB, normalsB, 10);
         printf("%d\n", result);
-        for (int i=0;i<pointsA.size();i++) std::cout<<pointsA[i]<<' ';
+        for (int i=0;i< (int) pointsA.size();i++) std::cout<<pointsA[i]<<' ';
         return 1;
     }
 
