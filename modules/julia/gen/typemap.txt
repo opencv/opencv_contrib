@@ -1,0 +1,52 @@
+double*:NONCONVERT1
+vector<vector<Point2f>>:Array{Array{Point{Float32}, 1}, 1}
+TermCriteria:TermCriteria
+char:Char
+RotatedRect:RotatedRect
+Point2f:Point{Float32}
+Rect:Rect{Int32}
+vector<KeyPoint>:Array{KeyPoint, 1}
+double:Float64
+Point*:NONCONVERT2
+vector<Point>:Array{Point{Int32}, 1}
+vector<uchar>:Array{UInt8, 1}
+String:String
+string:String
+vector<Vec4f>:Array{Vec{Float32, 4}, 1}
+bool:Bool
+vector<Rect2d>:Array{Rect{Float64}, 1}
+LayerId:LayerId
+vector<int>:Array{Int32, 1}
+Rect*:NONCONVERT3
+MatShape:Array{Int32, 1}
+c_string:Cstring
+vector<RotatedRect>:Array{RotatedRect, 1}
+Net:Net
+size_t:size_t
+vector<double>:Array{Float64, 1}
+Point:Point{Int32}
+Mat:InputArray
+KeyPoint:KeyPoint
+Moments:Moments
+RNG*:NONCONVERT4
+int:Int32
+vector<float>:Array{Float32, 1}
+vector<Rect>:Array{Rect{Int32}, 1}
+Scalar:Scalar
+Point2f*:NONCONVERT5
+int*:NONCONVERT6
+vector<vector<Mat>>:Array{Array{InputArray, 1}, 1}
+vector<Mat>:Array{InputArray, 1}
+vector<String>:Array{String, 1}
+vector<string>:Array{String, 1}
+vector<Point2f>:Array{Point{Float32}, 1}
+Size:Size{Int32}
+vector<MatShape>:Array{Array{Int32, 1}, 1}
+float:Float32
+Ptr<float>:Ptr{Float32}
+vector<Vec6f>:Array{Vec{Float32, 6}, 1}
+Ptr<FeatureDetector>:Ptr{Feature2D}
+Point2d:Point{Float64}
+SolvePnPMethod:SolvePnPMethod
+CirclesGridFinderParameters:CirclesGridFinderParameters
+HandEyeCalibrationMethod:HandEyeCalibrationMethod

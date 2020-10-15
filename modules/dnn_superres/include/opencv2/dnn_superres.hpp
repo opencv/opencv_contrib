@@ -94,6 +94,14 @@ public:
      */
     CV_WRAP void setModel(const String& algo, int scale);
 
+    /** @brief Set computation backend
+    */
+    CV_WRAP void setPreferableBackend(int backendId);
+
+    /** @brief Set computation target
+    */
+    CV_WRAP void setPreferableTarget(int targetId);
+
     /** @brief Upsample via neural network
     @param img Image to upscale
     @param result Destination upscaled image

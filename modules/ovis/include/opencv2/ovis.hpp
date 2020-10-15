@@ -9,6 +9,31 @@
 
 /**
 @defgroup ovis OGRE 3D Visualiser
+
+ovis is a simplified rendering wrapper around [ogre3d](https://www.ogre3d.org/).
+The [Ogre terminology](https://ogrecave.github.io/ogre/api/latest/_the-_core-_objects.html) is used in the API
+and [Ogre Script](https://ogrecave.github.io/ogre/api/latest/_scripts.html) is assumed to be used for advanced customization.
+
+Besides the API you see here, there are several environment variables that control the behavior of ovis.
+They are documented in @ref createWindow.
+
+## Loading geometry
+
+You can create geometry [on the fly](@ref createTriangleMesh) or by loading Ogre `.mesh` files.
+
+### Blender
+For converting/ creating geometry [Blender](https://www.blender.org/) is recommended.
+- Blender 2.7x is better tested, but Blender 2.8x should work too
+- install [blender2ogre](https://github.com/OGRECave/blender2ogre) matching your Blender version
+- download the [Ogre MSVC SDK](https://www.ogre3d.org/download/sdk/sdk-ogre) which contains `OgreXMLConverter.exe` (in `bin/`) and set the path in the blender2ogre settings
+- get [ogre-meshviewer](https://github.com/OGRECave/ogre-meshviewer) to enable the preview function in blender2ogre as well as for verifying the exported files
+- in case the exported materials are not exactly how you want them, consult the [Ogre Manual](https://ogrecave.github.io/ogre/api/latest/_material-_scripts.html)
+
+### Assimp
+When using Ogre 1.12.9 or later, enabling the Assimp plugin allows to load arbitrary geometry.
+Simply pass `bunny.obj` instead of `bunny.mesh` as `meshname` in @ref WindowScene::createEntity.
+
+You should still use ogre-meshviewer to verify that the geometry is converted correctly.
 */
 
 namespace cv {
@@ -61,8 +86,6 @@ public:
 
     /**
      * set window background to custom image
-     *
-     * creates a texture named "<title>_Background"
      * @param image
      */
     CV_WRAP virtual void setBackground(InputArray image) = 0;
@@ -123,19 +146,20 @@ public:
     /**
      * convenience method to visualize a camera position
      *
-     * the entity uses a material with the same name that can be used to change the line color.
      * @param name entity name
      * @param K intrinsic matrix
      * @param imsize image size
      * @param zFar far plane in camera coordinates
      * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param color line color
      * @return the extents of the Frustum at far plane, where the top left corner denotes the principal
      * point offset
      */
     CV_WRAP virtual Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize,
                                               float zFar, InputArray tvec = noArray(),
-                                              InputArray rot = noArray()) = 0;
+                                              InputArray rot = noArray(),
+                                              const Scalar& color = Scalar::all(1)) = 0;
 
     /**
      * creates a point light in the scene
@@ -330,6 +354,14 @@ CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const Scalar
 CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const String& value);
 
 /**
+ * set the texture of a material to the given value
+ * @param name material name
+ * @param prop @ref MaterialProperty
+ * @param value the texture data
+ */
+CV_EXPORTS_AS(setMaterialTexture) void setMaterialProperty(const String& name, int prop, InputArray value);
+
+/**
  * set the shader property of a material to the given value
  * @param name material name
  * @param prop property name
@@ -340,7 +372,7 @@ CV_EXPORTS_W void setMaterialProperty(const String& name, const String& prop, co
 /**
  * create a 2D plane, X right, Y down, Z up
  *
- * creates a material and a texture with the same name
+ * creates a material with the same name
  * @param name name of the mesh
  * @param size size in world units
  * @param image optional texture
@@ -378,13 +410,7 @@ CV_EXPORTS_W void createGridMesh(const String& name, const Size2f& size, const S
  */
 CV_EXPORTS_W void createTriangleMesh(const String& name, InputArray vertices, InputArray normals = noArray(), InputArray indices = noArray());
 
-/**
- * updates an existing texture
- *
- * A new texture can be created with @ref createPlaneMesh
- * @param name name of the texture
- * @param image the image data
- */
+/// @deprecated use setMaterialProperty
 CV_EXPORTS_W void updateTexture(const String& name, InputArray image);
 //! @}
 }

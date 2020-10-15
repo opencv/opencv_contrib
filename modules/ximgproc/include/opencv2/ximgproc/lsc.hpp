@@ -126,7 +126,7 @@ public:
     The function merge component that is too small, assigning the previously found adjacent label
     to this component. Calling this function may change the final number of superpixels.
      */
-    CV_WRAP virtual void enforceLabelConnectivity( int min_element_size = 20 ) = 0;
+    CV_WRAP virtual void enforceLabelConnectivity( int min_element_size = 25 ) = 0;
 
 
 };
