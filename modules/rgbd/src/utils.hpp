@@ -9,6 +9,8 @@
 #ifndef __OPENCV_RGBD_UTILS_HPP__
 #define __OPENCV_RGBD_UTILS_HPP__
 
+#include "precomp.hpp"
+
 namespace cv
 {
 namespace rgbd

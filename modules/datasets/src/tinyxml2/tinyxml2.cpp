@@ -61,6 +61,8 @@ static const unsigned char TIXML_UTF_LEAD_2 = 0xbfU;
         }										\
     }
 
+namespace cv
+{
 namespace tinyxml2
 {
 
@@ -2201,3 +2203,4 @@ bool XMLPrinter::Visit( const XMLUnknown& unknown )
 }
 
 }   // namespace tinyxml2
+}   // namespace cv

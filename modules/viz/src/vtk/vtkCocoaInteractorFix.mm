@@ -49,6 +49,7 @@
 #include <vtkCocoaRenderWindowInteractor.h>
 #include <vtkObjectFactory.h>
 #include <vtkSmartPointer.h>
+#include <vtkVersion.h>
 
 namespace cv { namespace viz {
     vtkSmartPointer<vtkRenderWindowInteractor> vtkCocoaRenderWindowInteractorNew();
