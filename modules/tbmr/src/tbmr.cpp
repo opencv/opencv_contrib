@@ -301,6 +301,7 @@ namespace cv {
                 for (uint i = 0; i < numTbmrs; i++)
                 {
                     uint p = vecTbmrs[i];
+
                     double area = static_cast<double>(imaAttribute[p][0]);
                     double sum_x = static_cast<double>(imaAttribute[p][1]);
                     double sum_y = static_cast<double>(imaAttribute[p][2]);
@@ -308,14 +309,9 @@ namespace cv {
                     double sum_xx = static_cast<double>(imaAttribute[p][4]);
                     double sum_yy = static_cast<double>(imaAttribute[p][5]);
 
-                    // Barycenter:
+
                     double x = sum_x / area;
                     double y = sum_y / area;
-                    // Second order moments
-                    //double X2 = sum_xx / area - x * x;
-                    //double Y2 = sum_yy / area - y * y;
-                    //double XY = sum_xy / area - x * y;
-
                     double i20 = sum_xx - area * x * x;
                     double i02 = sum_yy - area * y * y;
                     double i11 = sum_xy - area * x * y;
@@ -417,13 +413,24 @@ namespace cv {
 
                         double l1 = 1. / std::sqrt((a + c + std::sqrt(a * a + c * c + 4 * b * b - 2 * a * c)) / 2);
                         double l2 = 1. / std::sqrt((a + c - std::sqrt(a * a + c * c + 4 * b * b - 2 * a * c)) / 2);
-                        double l = std::min(l1, l2);
+                        double minAxL = std::min(l1, l2);
+                        double majAxL = std::max(l1, l2);
 
-                        if (l >= 1.5 && v != 0 && (mask.empty() || mask.at<uchar>(cvRound(y), cvRound(x)) != 0))
+                        if (minAxL >= 1.5 && v != 0 && (mask.empty() || mask.at<uchar>(cvRound(y), cvRound(x)) != 0))
                         {
-                            float diam = (float)(2 * a); // Major axis
-                            //    float angle = std::atan((a / b) * (y / x));
-                            tbmrs.push_back(cv::KeyPoint(cv::Point2f((float)x, (float)y), diam));
+                            float theta = 0;
+                            if (b == 0)
+                                if (a < c)
+                                    theta = 0;
+                                else
+                                    theta = CV_PI / 2.;
+                            else
+                                theta = CV_PI / 2. + 0.5 * std::atan2(2 * b, (a - c));
+
+                            // we have all ellipse informations, but KeyPoint does not store ellipses. Use Elliptic_Keypoint
+                            // from xFeatures2D?
+                            float diam = std::sqrt(majAxL * majAxL + minAxL * minAxL);
+                            tbmrs.push_back(cv::KeyPoint(cv::Point2f((float)x, (float)y), majAxL, theta));
                         }
                     }
                 }
