@@ -132,7 +132,6 @@ void integrateVolumeUnit(
     const float dfac(1.f / depthFactor);
     TsdfVoxel* volDataStart = volume.ptr<TsdfVoxel>();;
 
-    
 #if USE_INTRINSICS
     auto IntegrateInvoker = [&](const Range& range)
     {
@@ -369,7 +368,7 @@ void integrateVolumeUnit(
         }
     };
 #endif
-    
+
     parallel_for_(integrateRange, IntegrateInvoker);
 
 }

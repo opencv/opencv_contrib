@@ -374,7 +374,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
-    
+
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
         intrinsics.cx, intrinsics.cy);

@@ -27,7 +27,6 @@ namespace kinfu
 HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
     float _truncDist, int _maxWeight, float _truncateThreshold,
     int _volumeUnitRes, bool _zFirstMemOrder)
-  
     : Volume(_voxelSize, _pose, _raycastStepFactor),
     maxWeight(_maxWeight),
     truncateThreshold(_truncateThreshold),
@@ -37,7 +36,6 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     volDims(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution)
 {
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
-    
 }
 
 HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist,
@@ -197,7 +195,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
         });
-    
+
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
         intrinsics.cx, intrinsics.cy);
