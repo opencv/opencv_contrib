@@ -132,6 +132,151 @@ void integrateVolumeUnit(
     const float dfac(1.f / depthFactor);
     TsdfVoxel* volDataStart = volume.ptr<TsdfVoxel>();;
 
+    
+#if USE_INTRINSICS
+    auto IntegrateInvoker = [&](const Range& range)
+    {
+        // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
+        Point3f zStepPt = Point3f(vol2cam.matrix(0, 2),
+            vol2cam.matrix(1, 2),
+            vol2cam.matrix(2, 2)) * voxelSize;
+
+        v_float32x4 zStep(zStepPt.x, zStepPt.y, zStepPt.z, 0);
+        v_float32x4 vfxy(proj.fx, proj.fy, 0.f, 0.f), vcxy(proj.cx, proj.cy, 0.f, 0.f);
+        const v_float32x4 upLimits = v_cvt_f32(v_int32x4(depth.cols - 1, depth.rows - 1, 0, 0));
+
+        for (int x = range.start; x < range.end; x++)
+        {
+            TsdfVoxel* volDataX = volDataStart + x * volStrides[0];
+            for (int y = 0; y < volResolution.y; y++)
+            {
+                TsdfVoxel* volDataY = volDataX + y * volStrides[1];
+                // optimization of camSpace transformation (vector addition instead of matmul at each z)
+                Point3f basePt = vol2cam * (Point3f((float)x, (float)y, 0) * voxelSize);
+                v_float32x4 camSpacePt(basePt.x, basePt.y, basePt.z, 0);
+
+                int startZ, endZ;
+                if (abs(zStepPt.z) > 1e-5)
+                {
+                    int baseZ = (int)(-basePt.z / zStepPt.z);
+                    if (zStepPt.z > 0)
+                    {
+                        startZ = baseZ;
+                        endZ = volResolution.z;
+                    }
+                    else
+                    {
+                        startZ = 0;
+                        endZ = baseZ;
+                    }
+                }
+                else
+                {
+                    if (basePt.z > 0)
+                    {
+                        startZ = 0;
+                        endZ = volResolution.z;
+                    }
+                    else
+                    {
+                        // z loop shouldn't be performed
+                        startZ = endZ = 0;
+                    }
+                }
+                startZ = max(0, startZ);
+                endZ = min(volResolution.z, endZ);
+                for (int z = startZ; z < endZ; z++)
+                {
+                    // optimization of the following:
+                    //Point3f volPt = Point3f(x, y, z)*voxelSize;
+                    //Point3f camSpacePt = vol2cam * volPt;
+                    camSpacePt += zStep;
+
+                    float zCamSpace = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(camSpacePt))).get0();
+                    if (zCamSpace <= 0.f)
+                        continue;
+
+                    v_float32x4 camPixVec = camSpacePt / v_setall_f32(zCamSpace);
+                    v_float32x4 projected = v_muladd(camPixVec, vfxy, vcxy);
+                    // leave only first 2 lanes
+                    projected = v_reinterpret_as_f32(v_reinterpret_as_u32(projected) &
+                        v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0, 0));
+
+                    depthType v;
+                    // bilinearly interpolate depth at projected
+                    {
+                        const v_float32x4& pt = projected;
+                        // check coords >= 0 and < imgSize
+                        v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) |
+                            v_reinterpret_as_u32(pt >= upLimits);
+                        limits = limits | v_rotate_right<1>(limits);
+                        if (limits.get0())
+                            continue;
+
+                        // xi, yi = floor(pt)
+                        v_int32x4 ip = v_floor(pt);
+                        v_int32x4 ipshift = ip;
+                        int xi = ipshift.get0();
+                        ipshift = v_rotate_right<1>(ipshift);
+                        int yi = ipshift.get0();
+
+                        const depthType* row0 = depth[yi + 0];
+                        const depthType* row1 = depth[yi + 1];
+
+                        // v001 = [v(xi + 0, yi + 0), v(xi + 1, yi + 0)]
+                        v_float32x4 v001 = v_load_low(row0 + xi);
+                        // v101 = [v(xi + 0, yi + 1), v(xi + 1, yi + 1)]
+                        v_float32x4 v101 = v_load_low(row1 + xi);
+
+                        v_float32x4 vall = v_combine_low(v001, v101);
+
+                        // assume correct depth is positive
+                        // don't fix missing data
+                        if (v_check_all(vall > v_setzero_f32()))
+                        {
+                            v_float32x4 t = pt - v_cvt_f32(ip);
+                            float tx = t.get0();
+                            t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+                            v_float32x4 ty = v_setall_f32(t.get0());
+                            // vx is y-interpolated between rows 0 and 1
+                            v_float32x4 vx = v001 + ty * (v101 - v001);
+                            float v0 = vx.get0();
+                            vx = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vx)));
+                            float v1 = vx.get0();
+                            v = v0 + tx * (v1 - v0);
+                        }
+                        else
+                            continue;
+                    }
+
+                    // norm(camPixVec) produces double which is too slow
+                    int _u = (int)projected.get0();
+                    int _v = (int)v_rotate_right<1>(projected).get0();
+                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
+                        continue;
+                    float pixNorm = pixNorms.at<float>(_v, _u);
+                    // float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
+                    // difference between distances of point and of surface to camera
+                    float sdf = pixNorm * (v * dfac - zCamSpace);
+                    // possible alternative is:
+                    // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
+                    if (sdf >= -truncDist)
+                    {
+                        TsdfType tsdf = floatToTsdf(fmin(1.f, sdf * truncDistInv));
+
+                        TsdfVoxel& voxel = volDataY[z * volStrides[2]];
+                        WeightType& weight = voxel.weight;
+                        TsdfType& value = voxel.tsdf;
+
+                        // update TSDF
+                        value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));
+                        weight = (weight + 1) < maxWeight ? (weight + 1) : maxWeight;
+                    }
+                }
+            }
+        }
+    };
+#else
     auto IntegrateInvoker = [&](const Range& range)
     {
         for (int x = range.start; x < range.end; x++)
@@ -223,7 +368,10 @@ void integrateVolumeUnit(
             }
         }
     };
+#endif
+    
     parallel_for_(integrateRange, IntegrateInvoker);
+
 }
 
 } // namespace kinfu
