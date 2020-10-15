@@ -57,6 +57,7 @@ struct VolumeUnit
     cv::Vec3i coord;
     volumeIndex index;
     cv::Matx44f pose;
+    int lastVisibleIndex = 0;
     bool isActive;
 };
 

@@ -579,9 +579,8 @@ Point3f HashTSDFVolumeCPU::getNormalVoxel(const Point3f &point) const
     return nv < 0.0001f ? nan3 : normal / nv;
 }
 
-void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
-                                cv::Size frameSize, cv::OutputArray _points,
-                                cv::OutputArray _normals) const
+void HashTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
+                                OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
