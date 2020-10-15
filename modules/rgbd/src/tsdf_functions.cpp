@@ -269,7 +269,7 @@ void integrateVolumeUnit(
 
                         // update TSDF
                         value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = (weight + 1) < maxWeight ? (weight + 1) : maxWeight;
+                        weight = (weight + 1) < maxWeight ? (weight + 1) : (WeightType) maxWeight;
                     }
                 }
             }
