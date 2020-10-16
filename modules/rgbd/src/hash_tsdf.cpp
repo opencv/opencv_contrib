@@ -252,9 +252,15 @@ cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord(const cv::Point3f& point) const
 inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const
 {
     //! Out of bounds
-    CV_DbgAssert((volumeIdx[0] >= volumeUnitResolution || volumeIdx[0] < 0) ||
+    if ((volumeIdx[0] >= volumeUnitResolution || volumeIdx[0] < 0) ||
         (volumeIdx[1] >= volumeUnitResolution || volumeIdx[1] < 0) ||
-        (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0));
+        (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0))
+    {
+        TsdfVoxel dummy;
+        dummy.tsdf = floatToTsdf(1.0f);
+        dummy.weight = 0;
+        return dummy;
+    }
 
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase =
@@ -271,7 +277,14 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
-    CV_DbgAssert(it == volumeUnits.end());
+    if (it == volumeUnits.end())
+    {
+        TsdfVoxel dummy;
+        dummy.tsdf = floatToTsdf(1.f);
+        dummy.weight = 0;
+        return dummy;
+    }
+
     cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
                                                       volumeUnitIdx[1] * volumeUnitResolution,
                                                       volumeUnitIdx[2] * volumeUnitResolution);
@@ -287,7 +300,13 @@ TsdfVoxel HashTSDFVolumeCPU::at(const Point3f& point) const
     cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
-    CV_DbgAssert(it == volumeUnits.end());
+    if (it == volumeUnits.end())
+    {
+        TsdfVoxel dummy;
+        dummy.tsdf = floatToTsdf(1.f);
+        dummy.weight = 0;
+        return dummy;
+    }
 
     cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
