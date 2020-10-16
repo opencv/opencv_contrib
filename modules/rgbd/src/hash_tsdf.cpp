@@ -254,18 +254,10 @@ cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord(const cv::Point3f& point) const
 inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex indx) const
 {
     //! Out of bounds
-    /*
-    //volResolution = volDims
-    if ((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
-        (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
-        (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.0f);
-        dummy.weight = 0;
-        return dummy;
-    }
-    */
+    CV_DbgAssert((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
+                 (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
+                 (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
+   
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase =
         volumeIdx[0] * volStrides[0] + volumeIdx[1] * volStrides[1] + volumeIdx[2] * volStrides[2];
@@ -280,15 +272,8 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
                                 cvFloor(volumeIdx[2] / volumeUnitResolution));
 
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
-    /*
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf   = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-    */
+
+    CV_DbgAssert (it == volumeUnits.end())
     cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
                                                       volumeUnitIdx[1] * volumeUnitResolution,
                                                       volumeUnitIdx[2] * volumeUnitResolution);
@@ -303,16 +288,9 @@ TsdfVoxel HashTSDFVolumeCPU::at(const Point3f& point) const
 {
     cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
-    /*
 
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf   = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-    */
+    CV_DbgAssert (it == volumeUnits.end())
+
     cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
     volUnitLocalIdx =
