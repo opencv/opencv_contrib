@@ -143,7 +143,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         vu.pose = subvolumePose;
         vu.index = lastVolIndex; lastVolIndex++;
-        if (lastVolIndex > volumeIndex(volUnitsData.size().height))
+        if (lastVolIndex > VolumeIndex(volUnitsData.size().height))
         {
             volUnitsData.resize((lastVolIndex - 1) * 2);
         }
@@ -249,7 +249,7 @@ cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord(const cv::Point3f& point) const
                      cvFloor(point.z * voxelSizeInv));
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, volumeIndex indx) const
+inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const
 {
     //! Out of bounds
     CV_DbgAssert((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||

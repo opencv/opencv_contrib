@@ -50,11 +50,11 @@ struct tsdf_hash
     }
 };
 
-typedef unsigned int volumeIndex;
+typedef unsigned int VolumeIndex;
 struct VolumeUnit
 {
     cv::Vec3i coord;
-    volumeIndex index;
+    VolumeIndex index;
     cv::Matx44f pose;
     int lastVisibleIndex = 0;
     bool isActive;
@@ -90,7 +90,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
-    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, volumeIndex indx) const;
+    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
 
     TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const;
 
@@ -112,7 +112,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
        Mat pixNorms;
        VolumeUnitIndexes volumeUnits;
        cv::Mat volUnitsData;
-       volumeIndex lastVolIndex;
+       VolumeIndex lastVolIndex;
 
 };
 
