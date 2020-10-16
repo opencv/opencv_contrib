@@ -113,7 +113,6 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
        VolumeUnitIndexes volumeUnits;
        cv::Mat volUnitsData;
        VolumeIndex lastVolIndex;
-
 };
 
 template<typename T>
