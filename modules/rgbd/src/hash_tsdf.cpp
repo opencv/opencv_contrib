@@ -145,7 +145,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.index = lastVolIndex; lastVolIndex++;
         if (lastVolIndex > volumeIndex(volUnitsData.size().height))
         {
-            volUnitsData.resize(lastVolIndex - 1 + VOLUMES_SIZE);
+            volUnitsData.resize((lastVolIndex - 1) * 2);
         }
         volUnitsData.row(vu.index).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
             {
