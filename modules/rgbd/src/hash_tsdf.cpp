@@ -58,8 +58,7 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, const Matx44f& _pose, flo
     }
     volStrides = Vec4i(xdim, ydim, zdim);
 
-    lastVolIndex = 0;
-    volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
+    reset();
 }
 
 HashTSDFVolumeCPU::HashTSDFVolumeCPU(const VolumeParams& _params, bool _zFirstMemOrder)
