@@ -32,8 +32,7 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     truncateThreshold(_truncateThreshold),
     volumeUnitResolution(_volumeUnitRes),
     volumeUnitSize(voxelSize* volumeUnitResolution),
-    zFirstMemOrder(_zFirstMemOrder),
-    volDims(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution)
+    zFirstMemOrder(_zFirstMemOrder)
 {
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
 }
@@ -46,15 +45,15 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, const Matx44f& _pose, flo
     int xdim, ydim, zdim;
     if (zFirstMemOrder)
     {
-        xdim = volDims.z * volDims.y;
-        ydim = volDims.z;
+        xdim = volumeUnitResolution * volumeUnitResolution;
+        ydim = volumeUnitResolution;
         zdim = 1;
     }
     else
     {
         xdim = 1;
-        ydim = volDims.x;
-        zdim = volDims.x * volDims.y;
+        ydim = volumeUnitResolution;
+        zdim = volumeUnitResolution * volumeUnitResolution;
     }
     volStrides = Vec4i(xdim, ydim, zdim);
 
@@ -71,7 +70,7 @@ void HashTSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
-    volUnitsData = cv::Mat(VOLUMES_SIZE, volDims.x * volDims.y * volDims.z, rawType<TsdfVoxel>());
+    volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
 }
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -217,7 +216,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (volumeUnit.isActive)
             {
                 //! The volume unit should already be added into the Volume from the allocator
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, volumeUnit.pose, volDims, volStrides, depth,
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, volumeUnit.pose, volumeUnitResolution, volStrides, depth,
                     depthFactor, cameraPose, intrinsics, pixNorms, volUnitsData.row(volumeUnit.index));
 
                 //! Ensure all active volumeUnits are set to inactive for next integration

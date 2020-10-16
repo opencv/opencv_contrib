@@ -33,7 +33,6 @@ class HashTSDFVolume : public Volume
     int volumeUnitResolution;
     float volumeUnitSize;
     bool zFirstMemOrder;
-    Point3i volDims;
 };
 
 //! Spatial hashing
