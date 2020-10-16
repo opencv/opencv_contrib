@@ -109,9 +109,33 @@ protected:
         return 1;
     }
 
-    bool test_growingPlanar()
+    // algo 1
+    bool test_showable_planarSegments_oneFrame()
     {
-        printf("\ntest_growingPlanar\n");
+        printf("\ntest_showable_planarSegments\n");
+        String file1 = "/Users/yimintang/OneDrive/Documents/seg/rgbd_dataset_freiburg1_room/plyfiles/plyfiles-1305031910.765238.ply";
+        Mat pointsWithNormal1 = ppf_match_3d::loadPLYSimple(file1.c_str(), 1);
+        int k = 15;
+        std::vector<Point3f> points, normals;
+        std::vector<float> curvatures;
+        pcseg::calCurvatures(pointsWithNormal1, k, points, normals, curvatures);
+        std::vector<std::vector<Point3f> > retPointsA, retNormalsA;
+        pcseg::planarSegments(points, normals, curvatures, k, 10.0/360*M_PI*2, 0.1, retPointsA, retNormalsA);
+        printf("retPoints size: %lu\n", retPointsA.size());
+        for (int i=0;i<retPointsA.size();i++)
+        {
+            for (int j=0;j<retPointsA[i].size();j++)
+                printf("%f %f %f %d\n", retPointsA[i][j].x,
+                       retPointsA[i][j].y,
+                       retPointsA[i][j].z, i);
+        }
+        return 1;
+    }
+
+    // algo 1
+    bool test_showable_planarSegments_twoFrame()
+    {
+        printf("\ntest_showable_planarSegments\n");
         String file1 = "/Users/yimintang/OneDrive/Documents/seg/rgbd_dataset_freiburg1_room/plyfiles/plyfiles-1305031910.765238.ply";
         String file2 = "/Users/yimintang/OneDrive/Documents/seg/rgbd_dataset_freiburg1_room/plyfiles/plyfiles-1305031911.097196.ply";
         Mat pointsWithNormal1 = ppf_match_3d::loadPLYSimple(file1.c_str(), 1);
@@ -124,10 +148,44 @@ protected:
         pcseg::planarSegments(points, normals, curvatures, k, 10.0/360*M_PI*2, 0.1, retPointsA, retNormalsA);
         printf("retPoints size: %lu\n", retPointsA.size());
 
+        pcseg::calCurvatures(pointsWithNormal2, k, points, normals, curvatures);
+        pcseg::planarSegments(points, normals, curvatures, k, 10.0/360*M_PI*2, 0.1, retPointsA, retNormalsA);
+        printf("retPoints size: %lu\n", retPointsA.size());
+        for (int i=0;i<retPointsA.size();i++)
+        {
+            for (int j=0;j<retPointsA[i].size();j++)
+                printf("%f %f %f %d\n", retPointsA[i][j].x,
+                       retPointsA[i][j].y,
+                       retPointsA[i][j].z, i);
+        }
+        return 1;
+    }
+
+
+    // algo 1
+    // algo 3
+    //      algo 2
+    // algo 4
+    //      algo 2
+    bool test_showable_planarSegments_twoFrame_growingPlanar_mergeCloseSegments()
+    {
+        printf("\ntest_growingPlanar\n");
+        String file1 = "/Users/yimintang/OneDrive/Documents/seg/rgbd_dataset_freiburg1_room/plyfiles/plyfiles-1305031910.765238.ply";
+        String file2 = "/Users/yimintang/OneDrive/Documents/seg/rgbd_dataset_freiburg1_room/plyfiles/plyfiles-1305031911.097196.ply";
+        Mat pointsWithNormal1 = ppf_match_3d::loadPLYSimple(file1.c_str(), 1);
+        Mat pointsWithNormal2 = ppf_match_3d::loadPLYSimple(file2.c_str(), 1);
+        int k = 20;
+        std::vector<Point3f> points, normals;
+        std::vector<float> curvatures;
+        pcseg::calCurvatures(pointsWithNormal1, k, points, normals, curvatures);
+        std::vector<std::vector<Point3f> > retPointsA, retNormalsA;
+        pcseg::planarSegments(points, normals, curvatures, k, 10.0/360*M_PI*2, 0.1, retPointsA, retNormalsA);
+        printf("retPointsA size: %lu\n", retPointsA.size());
+
         std::vector<std::vector<Point3f> > retPointsB, retNormalsB;
         pcseg::calCurvatures(pointsWithNormal2, k, points, normals, curvatures);
         pcseg::planarSegments(points, normals, curvatures, k, 10.0/360*M_PI*2, 0.1, retPointsB, retNormalsB);
-        printf("retPoints size: %lu\n", retPointsB.size());
+        printf("retPointsB size: %lu\n", retPointsB.size());
 
         std::vector<int> timestepsA(retPointsA.size(),0);
         std::vector<int> timestepsB(retPointsB.size(),0);
@@ -139,19 +197,28 @@ protected:
                 retPointsB, retNormalsB, timestepsB,
                 curCameraPos, retS
         );
+
+        std::vector<int> alphaS(retS.size(),0);
+        pcseg::mergeCloseSegments(retS, alphaS, retPointsA, retNormalsA, timestepsA);
+        for (int i=0;i<retPointsA.size();i++)
+        {
+            for (int j=0;j<retPointsA[i].size();j++)
+                printf("%f %f %f %d\n", retPointsA[i][j].x,
+                       retPointsA[i][j].y,
+                       retPointsA[i][j].z, i);
+        }
         return 1;
     }
-
 
     void
     run(int)
     {
         int tests_pass = 0;
         try {
-            tests_pass += test_angleBetween();
-            tests_pass += test_calCurvatures();
-            tests_pass += test_planarSegments();
-            tests_pass += test_planarMerge();
+//            tests_pass += test_showable_planarSegments_oneFrame();
+//            tests_pass += test_showable_planarSegments_twoFrame();
+            tests_pass += test_showable_planarSegments_twoFrame_growingPlanar_mergeCloseSegments();
+
         } catch (...)
         {
             ts->set_failed_test_info(cvtest::TS::FAIL_ERROR_IN_CALLED_FUNC);

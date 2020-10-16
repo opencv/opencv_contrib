@@ -29,9 +29,9 @@ namespace cv {
             if (a >= 1.0)
                 return 0.0;
             else if (a <= -1.0)
-                return (float) M_PI;
+                return (float) 0;
             else
-                return acos(a); // 0..PI
+                return acos(a) < M_PI - acos(a) ? acos(a) : M_PI - acos(a); // 0..PI/2
         }
 
         // This is described in the paper
@@ -216,12 +216,14 @@ namespace cv {
                 if (retPoints.find(idx) == retPoints.end())
                 {
                     std::vector<Point3f> tmp;
-                    retPoints[idx] = tmp;
                     std::vector<Point3f> tmp2;
-                    retNormals[idx] = tmp2;
+
                     // First point is the plane center point and normal is plane normal
-                    retPoints[idx].push_back(points[idx]);
-                    retNormals[idx].push_back(normals[idx]);
+                    tmp.push_back(points[idx]);
+                    tmp2.push_back(normals[idx]);
+
+                    retPoints[idx] = tmp;
+                    retNormals[idx] = tmp2;
                 }
                 retPoints[idx].push_back(points[i]);
                 retNormals[idx].push_back(normals[i]);
@@ -305,7 +307,7 @@ namespace cv {
 
             std::vector<Point2f > twodPoints;
             std::vector<int> indicesConcaveB;
-            if (pointsA.size() == 0 || pointsB.size()==0) return true;
+            if ( (int) pointsA.size() == 0 || (int) pointsB.size()==0) return true;
 
             // Mapping 3d to 2d for next convex hull calculation
             from3dTo2dPlane(pointsB, normalsB, twodPoints);
@@ -315,7 +317,7 @@ namespace cv {
             convexHull(Mat(twodPoints), indicesConcaveB);
 
 
-            for (int i=0;i< (int) indicesConcaveB.size();i++)
+            for (int i=0; i < (int) indicesConcaveB.size();i++)
             {
                 Point3f h = pointsB[indicesConcaveB[i]];
                 Point3f dis = aCenter - h;
@@ -391,7 +393,6 @@ namespace cv {
                         R.push_back(j);
                     }
                 }
-
                 if (!gotPlane)
                 {
                     timestepsN[i] = 0;
@@ -416,7 +417,7 @@ namespace cv {
                     for (int j=0;j< (int) setPointsQ[i].size();j++)
                     {
                         Point3f p = curCameraPos - setPointsQ[i][j];
-                        if (p.dot(p) < timestepDisThreshold)
+                        if (p.dot(p) < timestepDisThreshold * timestepDisThreshold )
                         {
                             finalQ[i] = 0;
                             break;
@@ -436,38 +437,37 @@ namespace cv {
         // This is described in the paper
         // Algorithm 4: Merging segments that have grown closer
         //
-        // pointsS(IN,OUT): set of similar but non-merged segments pairs(Points)
-        // normalsS(IN,OUT): set of similar but non-merged segments pairs(Normals)
+        // retS(IN,OUT): set of similar but non-merged segments pairs(Index)
         // alphaS(IN): set of similar but non-merged segments pairs(alpha values)
         // setPointsQ (IN, OUT) : existing planar segments(Points)
         // setNormalsQ (IN, OUT) : existing planar segments(normals)
         // timestepsQ (IN, OUT) : existing planar segments(timesteps)
         bool mergeCloseSegments(
-                std::vector< std::pair< std::vector<Point3f> ,std::vector<Point3f> > >& pointsS,
-                std::vector< std::pair< std::vector<Point3f> ,std::vector<Point3f> > >& normalsS,
-                std::vector<int> alphaS,
+                std::vector< std::pair<int,int> >& retS,
+                std::vector<int>& alphaS,
                 std::vector< std::vector<Point3f> >& setPointsQ,
                 std::vector< std::vector<Point3f> >& setNormalsQ,
                 std::vector<int>& timestepsQ
         )
         {
-            std::vector<bool> deletedS(pointsS.size(),0);
+            std::vector<bool> deletedS(retS.size(),0);
 
-            for (int i=0;i< (int) pointsS.size();i++)
+            for (int i=0;i< (int) retS.size();i++)
             {
                 if (deletedS[i]) continue;
                 bool gotPlane = 0;
-                std::vector<Point3f>& pointsS1 = pointsS[i].first;
-                std::vector<Point3f>& pointsS2 = pointsS[i].second;
-                std::vector<Point3f>& normalsS1 = normalsS[i].first;
-                std::vector<Point3f>& normalsS2 = normalsS[i].second;
+                std::vector<Point3f>& pointsS1 = setPointsQ[retS[i].first];
+                std::vector<Point3f>& pointsS2 = setPointsQ[retS[i].second];
+                std::vector<Point3f>& normalsS1 = setNormalsQ[retS[i].first];
+                std::vector<Point3f>& normalsS2 = setNormalsQ[retS[i].second];
                 if (pointsS1.size() > pointsS2.size())
                 {
+                    retS[i] = std::make_pair(retS[i].second, retS[i].first);
                     swap(pointsS1, pointsS2);
                     swap(normalsS1, normalsS2);
                 }
                 alphaS[i] = pointsS1.size();
-                int timesteps = 0;
+                int& timesteps = timestepsQ[retS[i].second];
                 gotPlane = planarMerge(pointsS2,
                                        normalsS2,
                                        timesteps,
@@ -475,40 +475,40 @@ namespace cv {
                                        normalsS1);
                 if (gotPlane)
                 {
-                    for (int j=0; j< (int) setPointsQ.size(); j++)
-                    {
-                        if (setPointsQ[j][0] == pointsS1[0])
-                        {
-                            setPointsQ[j].clear();
-                            setNormalsQ[j].clear();
-                            timestepsQ[j] = 0;
-                            break;
-                        }
-                    }
+                    pointsS1.clear();
+                    normalsS1.clear();
 
-                    for (int j=0; j< (int) pointsS.size(); j++)
+                    for (int j=0; j< (int) retS.size(); j++)
                     {
                         if (i == j) continue;
                         if (deletedS[j]) continue;
-                        std::vector<Point3f>& pointsSJ1 = pointsS[j].first;
-                        std::vector<Point3f>& pointsSJ2 = pointsS[j].second;
-                        std::vector<Point3f>& normalsSJ1 = normalsS[j].first;
-                        std::vector<Point3f>& normalsSJ2 = normalsS[j].second;
-                        if (pointsS1[0] == pointsSJ1[0])
-                        {
-                            pointsSJ1 = pointsS2;
-                            normalsSJ1 = normalsS2;
-                        }
-                        else if (pointsSJ2[0] == pointsS1[0])
-                        {
-                            pointsSJ2 = pointsS2;
-                            normalsSJ2 = normalsS2;
-                        }
-                        if (pointsSJ1[0] == pointsSJ2[0]) deletedS[j] = 1;
+                        if (retS[j].first == retS[i].first)
+                            retS[j] = std::make_pair(retS[i].second, retS[j].second);
+                        if (retS[j].second == retS[i].first)
+                            retS[j] = std::make_pair(retS[j].first, retS[i].second);
+                        if (retS[j].first == retS[j].second) deletedS[j] = 1;
                     }
                     deletedS[i] = 1;
                 }
             }
+            std::vector< std::pair<int,int> > tmpS;
+            for (int i=0;i< (int) deletedS.size();i++)
+                if (!deletedS[i]) tmpS.push_back(retS[i]);
+            retS = tmpS;
+
+            std::vector< std::vector<Point3f> > tmpsetPointsQ;
+            std::vector< std::vector<Point3f> > tmpsetNormalsQ;
+            std::vector<int> tmptimestepsQ;
+            for (int i=0; i < (int) setPointsQ.size(); i++)
+                if ((int) setPointsQ[i].size() != 0)
+                {
+                    tmpsetPointsQ.push_back(setPointsQ[i]);
+                    tmpsetNormalsQ.push_back(setNormalsQ[i]);
+                    tmptimestepsQ.push_back(timestepsQ[i]);
+                }
+            setPointsQ = tmpsetPointsQ;
+            setNormalsQ = tmpsetNormalsQ;
+            timestepsQ = tmptimestepsQ;
             return true;
         }
 

@@ -112,9 +112,8 @@ namespace cv {
          */
         CV_EXPORTS
         bool mergeCloseSegments(
-                std::vector< std::pair< std::vector<Point3f> ,std::vector<Point3f> > >& ,
-                std::vector< std::pair< std::vector<Point3f> ,std::vector<Point3f> > >& ,
-                std::vector<int> ,
+                std::vector< std::pair<int,int> >&,
+                std::vector<int>& ,
                 std::vector< std::vector<Point3f> >& ,
                 std::vector< std::vector<Point3f> >& ,
                 std::vector<int>&
