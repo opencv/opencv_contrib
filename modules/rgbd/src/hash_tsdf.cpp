@@ -253,8 +253,8 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, VolumeIndex 
 {
     //! Out of bounds
     CV_DbgAssert((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
-                 (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
-                 (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
+        (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
+        (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0));
 
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase =
@@ -271,7 +271,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
-    CV_DbgAssert (it == volumeUnits.end())
+    CV_DbgAssert(it == volumeUnits.end());
     cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
                                                       volumeUnitIdx[1] * volumeUnitResolution,
                                                       volumeUnitIdx[2] * volumeUnitResolution);
@@ -287,7 +287,7 @@ TsdfVoxel HashTSDFVolumeCPU::at(const Point3f& point) const
     cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
-    CV_DbgAssert (it == volumeUnits.end())
+    CV_DbgAssert(it == volumeUnits.end());
 
     cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
     cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
