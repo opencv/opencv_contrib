@@ -42,7 +42,8 @@ public:
       brighter side is on their left.
       @param is_edge If true, image will be considerd as edge and negrect the canny parameters.
       */
-    CV_WRAP virtual void detect(InputArray _image, OutputArray _lines, bool is_edge) = 0;
+    CV_WRAP virtual void detect(InputArray _image, OutputArray _lines,
+            bool is_edge = false) = 0;
 
     /** @brief Draws the line segments on a given image.
       @param _image The image, where the lines will be drawn. Should be bigger
