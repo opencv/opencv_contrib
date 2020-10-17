@@ -535,6 +535,8 @@ public:
     // jacobian of normalization+application to a point
     Matx<float, 3, 8> j_normapply(Vec3f v) const;
 
+    Matx<float, 2, 8> j_norm() const;
+
     // node's exponential Jacobian based on its value
     Matx<float, 8, 6> j_dq_exp_val() const;
     
@@ -665,13 +667,17 @@ public:
     // SomeCombinedType toScrew() const
 
     // Get jacobian of unit dual quaternion
-    Matx<float, 8, 6> jRt(Vec3f c, bool atZero, bool disableCentering, bool useExp, bool needR, bool needT) const;
+    Matx<float, 8, 6> jRt(Vec3f c, bool atZero, bool additiveDerivative, bool useExp, bool needR, bool needT, bool disableCentering) const;
 
     Matx<float, 3, 8> j_apply(Vec3f v) const;
 
     // node's exponential Jacobian based on its value
     Matx<float, 8, 6> j_dq_exp_val() const;
     
+    Matx<float, 8, 6> j_dq_exp_0() const;
+
+    Matx<float, 8, 6> j_rt_0() const;
+
     UnitDualQuaternion operator-() const
     {
         return { -qreal, -qdual };
@@ -908,6 +914,21 @@ Matx<float, 3, 8> DualQuaternion::j_normapply(Vec3f v) const
     return concatHor(mul * danda, mul).get_minor<3, 8>(1, 0);
 }
 
+// jacobian of norm
+Matx<float, 2, 8> DualQuaternion::j_norm() const
+{
+    // d(norm(a+e*b))/da = na^T + e*nb^T*(I_4 - na*na^T)
+    // d(norm(a+e*b))/db = e*na^T
+    Vec2f norm = this->norm();
+    float rnorm = norm[0];
+    Vec4f na = real().coeff / rnorm;
+    Vec4f nb = dual().coeff / rnorm;
+    Matx14f ddda = nb.t() * (Matx44f::eye() - na * na.t());
+    Matx<float, 2, 8> jn = concatVert(concatHor(na.t(), Matx14f::zeros()),
+                                      concatHor(ddda, na.t()));
+    return jn;
+}
+
 // node's exponential Jacobian based on its value
 Matx<float, 8, 6> DualQuaternion::j_dq_exp_val() const
 {
@@ -1006,7 +1027,7 @@ Vec3f UnitDualQuaternion::apply(Vec3f point) const
 }
 
 // Get jacobian of unit dual quaternion
-Matx<float, 8, 6> UnitDualQuaternion::jRt(Vec3f c, bool atZero, bool disableCentering, bool useExp, bool needR, bool needT) const
+Matx<float, 8, 6> UnitDualQuaternion::jRt(Vec3f c, bool atZero, bool additiveDerivative, bool useExp, bool needR, bool needT, bool disableCentering) const
 {
     UnitDualQuaternion dqEffective = atZero ? UnitDualQuaternion() : (*this);
 
@@ -1015,12 +1036,27 @@ Matx<float, 8, 6> UnitDualQuaternion::jRt(Vec3f c, bool atZero, bool disableCent
     Matx<float, 8, 6> j;
     if (useExp)
     {
-        j = j_centered(cc) * dqEffective.j_dq_exp_val();
+        Matx<float, 8, 6> jj;
+        if (additiveDerivative)
+        {
+            jj = dqEffective.j_dq_exp_val();
+        }
+        else
+        {
+            jj = dqEffective.j_dq_exp_0();
+        }
+        j = j_centered(cc) * jj;
     }
     else
     {
-        Affine3f rt = dqEffective.getRt();
-        j = j_pernode(dqEffective.real(), rt.translation(), cc);
+        if (additiveDerivative)
+        {
+            j = j_pernode(dqEffective.real(), dqEffective.getT(), cc);
+        }
+        else
+        {
+            j = dqEffective.j_rt_0();
+        }
     }
 
     // limit degrees of freedom
@@ -1056,6 +1092,36 @@ Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_val() const
 {
     DualQuaternion w = dq().log();
     return j_dq_exp_arg(w.real().vec(), w.dual().vec());
+}
+
+// Jacobian of (exp(x)*dq) at x == 0 for multiplicative derivative
+Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_0() const
+{
+    // d(exp(w==0)*rt)/dw_real = cut_1st_column( M_right(rt_real) + e*M_right(rt_dual) )
+    // d(exp(w==0)*rt)/dw_dual = cut_1st_columt( e*M_right(rt_real) )
+
+    Matx43f realp = real().m_right().get_minor<4, 3>(0, 1);
+    Matx43f dualp = dual().m_right().get_minor<4, 3>(0, 1);
+
+    Matx<float, 4, 6> dup = concatHor(  Z43, realp);
+    Matx<float, 4, 6> ddn = concatHor(realp, dualp);
+
+    return concatVert(dup, ddn);
+}
+
+// node's jacobian at 0 for (r, t) representation
+Matx<float, 8, 6> UnitDualQuaternion::j_rt_0() const
+{
+    // d(from(axis==0, t==0)*rt/d(axis) = cut_1st_column(2*(M_right(rt_real) + e*M_right(rt_dual)))
+    // d(from(axis==0, t==0)*rt/dt      = cut_1st_column(e*1/2*M_right(rt_real))
+
+    Matx43f realp = real().m_right().get_minor<4, 3>(0, 1);
+    Matx43f dualp = dual().m_right().get_minor<4, 3>(0, 1);
+
+    Matx<float, 4, 6> dup = concatHor(2 * realp, Z43);
+    Matx<float, 4, 6> ddn = concatHor(2 * dualp, 0.5 * realp);
+    
+    return concatVert(dup, ddn);
 }
 
 UnitDualQuaternion UnitDualQuaternion::operator*=(const UnitDualQuaternion& u)
