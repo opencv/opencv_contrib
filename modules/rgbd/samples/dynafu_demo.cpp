@@ -13,207 +13,15 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/rgbd.hpp>
+#include "io_utils.hpp"
 
 using namespace cv;
 using namespace cv::dynafu;
-using namespace std;
+using namespace cv::io_utils;
 
 #ifdef HAVE_OPENCV_VIZ
 #include <opencv2/viz.hpp>
 #endif
-
-static vector<string> readDepth(std::string fileList);
-
-static vector<string> readDepth(std::string fileList)
-{
-    vector<string> v;
-
-    fstream file(fileList);
-    if(!file.is_open())
-        throw std::runtime_error("Failed to read depth list");
-
-    std::string dir;
-    size_t slashIdx = fileList.rfind('/');
-    slashIdx = slashIdx != std::string::npos ? slashIdx : fileList.rfind('\\');
-    dir = fileList.substr(0, slashIdx);
-
-    while(!file.eof())
-    {
-        std::string s, imgPath;
-        std::getline(file, s);
-        if(s.empty() || s[0] == '#') continue;
-        std::stringstream ss;
-        ss << s;
-        double thumb;
-        ss >> thumb >> imgPath;
-        v.push_back(dir+'/'+imgPath);
-    }
-
-    return v;
-}
-
-struct DepthWriter
-{
-    DepthWriter(string fileList) :
-        file(fileList, ios::out), count(0), dir()
-    {
-        size_t slashIdx = fileList.rfind('/');
-        slashIdx = slashIdx != std::string::npos ? slashIdx : fileList.rfind('\\');
-        dir = fileList.substr(0, slashIdx);
-
-        if(!file.is_open())
-            throw std::runtime_error("Failed to write depth list");
-
-        file << "# depth maps saved from device" << endl;
-        file << "# useless_number filename" << endl;
-    }
-
-    void append(InputArray _depth)
-    {
-        Mat depth = _depth.getMat();
-        string depthFname = cv::format("%04d.png", count);
-        string fullDepthFname = dir + '/' + depthFname;
-        if(!imwrite(fullDepthFname, depth))
-            throw std::runtime_error("Failed to write depth to file " + fullDepthFname);
-        file << count++ << " " << depthFname << endl;
-    }
-
-    fstream file;
-    int count;
-    string dir;
-};
-
-namespace Kinect2Params
-{
-    static const Size frameSize = Size(512, 424);
-    // approximate values, no guarantee to be correct
-    static const float focal = 366.1f;
-    static const float cx = 258.2f;
-    static const float cy = 204.f;
-    static const float k1 =  0.12f;
-    static const float k2 = -0.34f;
-    static const float k3 =  0.12f;
-};
-
-struct DepthSource
-{
-public:
-    DepthSource(int cam) :
-        DepthSource("", cam)
-    { }
-
-    DepthSource(String fileListName) :
-        DepthSource(fileListName, -1)
-    { }
-
-    DepthSource(String fileListName, int cam) :
-        depthFileList(fileListName.empty() ? vector<string>() : readDepth(fileListName)),
-        frameIdx(0),
-        vc( cam >= 0 ? VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam) : VideoCapture()),
-        undistortMap1(),
-        undistortMap2(),
-        useKinect2Workarounds(true)
-    {
-    }
-
-    UMat getDepth()
-    {
-        UMat out;
-        if (!vc.isOpened())
-        {
-            if (frameIdx < depthFileList.size())
-            {
-                Mat f = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
-                f.copyTo(out);
-            }
-            else
-            {
-                return UMat();
-            }
-        }
-        else
-        {
-            vc.grab();
-            vc.retrieve(out, CAP_OPENNI_DEPTH_MAP);
-
-            // workaround for Kinect 2
-            if(useKinect2Workarounds)
-            {
-                out = out(Rect(Point(), Kinect2Params::frameSize));
-
-                UMat outCopy;
-                // linear remap adds gradient between valid and invalid pixels
-                // which causes garbage, use nearest instead
-                remap(out, outCopy, undistortMap1, undistortMap2, cv::INTER_NEAREST);
-
-                cv::flip(outCopy, out, 1);
-            }
-        }
-        if (out.empty())
-            throw std::runtime_error("Matrix is empty");
-        return out;
-    }
-
-    bool empty()
-    {
-        return depthFileList.empty() && !(vc.isOpened());
-    }
-
-    void updateParams(Params& params)
-    {
-        if (vc.isOpened())
-        {
-            // this should be set in according to user's depth sensor
-            int w = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_WIDTH);
-            int h = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
-
-            float focal = (float)vc.get(CAP_OPENNI_DEPTH_GENERATOR | CAP_PROP_OPENNI_FOCAL_LENGTH);
-
-            // it's recommended to calibrate sensor to obtain its intrinsics
-            float fx, fy, cx, cy;
-            Size frameSize;
-            if(useKinect2Workarounds)
-            {
-                fx = fy = Kinect2Params::focal;
-                cx = Kinect2Params::cx;
-                cy = Kinect2Params::cy;
-
-                frameSize = Kinect2Params::frameSize;
-            }
-            else
-            {
-                fx = fy = focal;
-                cx = w/2 - 0.5f;
-                cy = h/2 - 0.5f;
-
-                frameSize = Size(w, h);
-            }
-
-            Matx33f camMatrix = Matx33f(fx,  0, cx,
-                                        0,  fy, cy,
-                                        0,   0,  1);
-
-            params.frameSize = frameSize;
-            params.intr = camMatrix;
-            params.depthFactor = 1000.f;
-
-            Matx<float, 1, 5> distCoeffs;
-            distCoeffs(0) = Kinect2Params::k1;
-            distCoeffs(1) = Kinect2Params::k2;
-            distCoeffs(4) = Kinect2Params::k3;
-            if(useKinect2Workarounds)
-                initUndistortRectifyMap(camMatrix, distCoeffs, cv::noArray(),
-                                        camMatrix, frameSize, CV_16SC2,
-                                        undistortMap1, undistortMap2);
-        }
-    }
-
-    vector<string> depthFileList;
-    size_t frameIdx;
-    VideoCapture vc;
-    UMat undistortMap1, undistortMap2;
-    bool useKinect2Workarounds;
-};
 
 #ifdef HAVE_OPENCV_VIZ
 const std::string vizWindowName = "cloud";
@@ -265,7 +73,7 @@ int main(int argc, char **argv)
 {
     bool coarse = false;
     bool idle = false;
-    string recordPath;
+    std::string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
     parser.about(message);
@@ -312,13 +120,13 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<Params> params;
+    Ptr<kinfu::Params> params;
     Ptr<DynaFu> df;
 
     if(coarse)
-        params = Params::coarseParams();
+        params = kinfu::Params::coarseParams();
     else
-        params = Params::defaultParams();
+        params = kinfu::Params::defaultParams();
 
     // These params can be different for each depth sensor
     ds->updateParams(*params);

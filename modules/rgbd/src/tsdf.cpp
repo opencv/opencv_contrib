@@ -98,7 +98,7 @@ void TSDFVolumeCPU::reset()
     });
 }
 
-TsdfVoxel TSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
+TsdfVoxel TSDFVolumeCPU::at(const Vec3i& volumeIdx) const
 {
     //! Out of bounds
     if ((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
@@ -121,7 +121,7 @@ TsdfVoxel TSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 #if !USE_INTRINSICS
 static const bool fixMissingData = false;
 
-static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
+static inline depthType bilinearDepth(const Depth& m, Point2f pt)
 {
     const depthType defaultValue = qnan;
     if(pt.x < 0 || pt.x >= m.cols-1 ||
@@ -455,7 +455,7 @@ struct IntegrateInvoker : ParallelLoopBody
     const Depth& depth;
     const Intr& intr;
     const Intr::Projector proj;
-    const cv::Affine3f vol2cam;
+    const Affine3f vol2cam;
     const float truncDistInv;
     const float dfac;
     TsdfVoxel* volDataStart;
@@ -487,11 +487,11 @@ static cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
 }
 
 // use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
-                              const Intr& intrinsics)
+void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
+                              const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
-
+    CV_UNUSED(frameId);
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
@@ -513,7 +513,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
 
 #if USE_INTRINSICS
 // all coordinate checks should be done in inclosing cycle
-inline float TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
+inline float TSDFVolumeCPU::interpolateVoxel(const Point3f& _p) const
 {
     v_float32x4 p(_p.x, _p.y, _p.z, 0);
     return interpolateVoxel(p);
@@ -560,7 +560,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
     return v0 + tx*(v1 - v0);
 }
 #else
-inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
+inline float TSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
 {
     int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
 
@@ -594,7 +594,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
 #if USE_INTRINSICS
 //gradientDeltaFactor is fixed at 1.0 of voxel size
-inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
+inline Point3f TSDFVolumeCPU::getNormalVoxel(const Point3f& _p) const
 {
     v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
     v_float32x4 result = getNormalVoxel(p);
@@ -662,7 +662,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
     return Norm.get0() < 0.0001f ? nanv : n/Norm;
 }
 #else
-inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
+inline Point3f TSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 {
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
@@ -994,8 +994,8 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-void TSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const Intr& intrinsics, Size frameSize,
-                            cv::OutputArray _points, cv::OutputArray _normals) const
+void TSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, const Size& frameSize,
+                            OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
 
@@ -1189,7 +1189,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 ///////// GPU implementation /////////
 
 #ifdef HAVE_OPENCL
-TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
+TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
 {
@@ -1251,24 +1251,25 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 
 // use depth instead of distance (optimization)
 void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
-                              const cv::Matx44f& cameraPose, const Intr& intrinsics)
+                              const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
+    CV_UNUSED(frameId);
     CV_Assert(!_depth.empty());
 
     UMat depth = _depth.getUMat();
 
-    cv::String errorStr;
-    cv::String name           = "integrate";
+    String errorStr;
+    String name           = "integrate";
     ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options        = "-cl-mad-enable";
+    String options        = "-cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-    cv::Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+    Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
     float dfac = 1.f/depthFactor;
     Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
@@ -1308,17 +1309,17 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
 }
 
 
-void TSDFVolumeGPU::raycast(const cv::Matx44f& cameraPose, const Intr& intrinsics, Size frameSize,
-                            cv::OutputArray _points, cv::OutputArray _normals) const
+void TSDFVolumeGPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, const Size& frameSize,
+                            OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
 
     CV_Assert(frameSize.area() > 0);
 
-    cv::String errorStr;
-    cv::String name           = "raycast";
+    String errorStr;
+    String name           = "raycast";
     ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options        = "-cl-mad-enable";
+    String options        = "-cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -1384,10 +1385,10 @@ void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
         _normals.createSameSize(_points, POINT_TYPE);
         UMat normals = _normals.getUMat();
 
-        cv::String errorStr;
-        cv::String name           = "getNormals";
+        String errorStr;
+        String name           = "getNormals";
         ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-        cv::String options        = "-cl-mad-enable";
+        String options        = "-cl-mad-enable";
         ocl::Kernel k;
         k.create(name.c_str(), source, options, &errorStr);
 
@@ -1432,9 +1433,9 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 
         ocl::Kernel kscan;
 
-        cv::String errorStr;
+        String errorStr;
         ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-        cv::String options        = "-cl-mad-enable";
+        String options        = "-cl-mad-enable";
 
         kscan.create("scanSize", source, options, &errorStr);
 
@@ -1485,7 +1486,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
             throw std::runtime_error("Failed to run kernel");
 
         Mat groupedSumCpu = groupedSum.getMat(ACCESS_READ);
-        int gpuSum        = (int)cv::sum(groupedSumCpu)[0];
+        int gpuSum        = (int)sum(groupedSumCpu)[0];
         // should be no CPU copies when new kernel is executing
         groupedSumCpu.release();
 
@@ -1541,16 +1542,28 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 
 #endif
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
+Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
 #ifdef HAVE_OPENCL
-    if (cv::ocl::useOpenCL())
-        return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
-                                          _resolution);
-#endif
-    return cv::makePtr<TSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
+    if (ocl::useOpenCL())
+        return makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                       _resolution);
+#endif
+    return makePtr<TSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
+                                  _resolution);
+}
+
+Ptr<TSDFVolume> makeTSDFVolume(const VolumeParams& _params)
+{
+#ifdef HAVE_OPENCL
+    if (ocl::useOpenCL())
+        return makePtr<TSDFVolumeGPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor,
+                                      _params.tsdfTruncDist, _params.maxWeight, _params.resolution);
+#endif
+    return makePtr<TSDFVolumeCPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor,
+                                  _params.tsdfTruncDist, _params.maxWeight, _params.resolution);
+
 }
 
 } // namespace kinfu
