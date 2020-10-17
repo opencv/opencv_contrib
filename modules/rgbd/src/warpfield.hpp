@@ -13,18 +13,11 @@ namespace dynafu {
 
 struct WarpNode
 {
-    // node's center
-    Point3f pos;
-    float radius;
-    UnitDualQuaternion transform;
-    // where it is in params vector
-    int place;
-    // cached jacobian
-    cv::Matx<float, 8, 6> cachedJac;
-
     WarpNode():
         pos(), radius(), transform(), place(-1), cachedJac()
     {}
+
+    WarpNode(const WarpNode& wn) = default;
 
     float weight(Point3f x) const
     {
@@ -38,6 +31,20 @@ struct WarpNode
     {
         return transform.centered(pos);
     }
+
+    // node's center
+    Point3f pos;
+    float radius;
+    UnitDualQuaternion transform;
+    // the rest fields are used at optimization stage
+    // depending on parametrization, this field keeps:
+    // - rotation in axis-by-angle format and translation
+    // - dual and real part of dual quaternion logarithm
+    cv::Vec3f arg[2];
+    // where it is in params vector
+    int place;
+    // cached jacobian
+    cv::Matx<float, 8, 6> cachedJac;
 };
 
 
@@ -68,20 +75,34 @@ public:
         nodeIndex->knnSearch(query, indices, dists, k, cvflann::SearchParams());
     }
 
-    const std::vector<Ptr<WarpNode> >& getNodes() const
-    {
-        return nodes;
-    }
-
     const std::vector<std::vector<NodeNeighboursType> >& getRegGraph() const
     {
         return hierarchy;
+    }
+
+    const std::vector<Ptr<WarpNode> >& getNodes() const
+    {
+        return nodes;
     }
 
     const std::vector<std::vector<Ptr<WarpNode> > >& getGraphNodes() const
     {
         return regGraphNodes;
     }
+
+
+    // used at LevMarq
+    void setNodes(const std::vector<Ptr<WarpNode>>& n)
+    {
+        nodes = n;
+    }
+
+    void setRegNodes(const std::vector<std::vector<Ptr<WarpNode>>>& g)
+    {
+        regGraphNodes = g;
+    }
+
+
 
     size_t getNodesLen() const
     {
@@ -111,6 +132,37 @@ public:
             n->transform = u;
         }
     }
+
+    std::vector<Ptr<WarpNode>> cloneNodes()
+    {
+        const auto& wn = getNodes();
+        std::vector<Ptr<WarpNode>> v;
+        v.reserve(wn.size());
+        for (const auto& p : wn)
+        {
+            v.push_back(std::make_shared<WarpNode>(*p));
+        }
+        return v;
+    }
+
+    std::vector<std::vector<Ptr<WarpNode>>>& cloneGraphNodes()
+    {
+        const auto& wgn = getGraphNodes();
+        std::vector<std::vector<Ptr<WarpNode>>> vv;
+        vv.reserve(wgn.size());
+        for (const auto& vp : wgn)
+        {
+            std::vector<Ptr<WarpNode>> v;
+            v.reserve(vp.size());
+            for (const auto& p : vp)
+            {
+                v.push_back(std::make_shared<WarpNode>(*p));
+            }
+            vv.push_back(v);
+        }
+        return vv;
+    }
+
 
     int k; //k-nearest neighbours will be used
     size_t n_levels; // number of levels in the heirarchy
@@ -147,7 +199,6 @@ private:
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
 
     Mat nodesPos;
-
 };
 
 bool PtCmp(cv::Point3f a, cv::Point3f b);
