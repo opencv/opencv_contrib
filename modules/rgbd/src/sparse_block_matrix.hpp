@@ -58,7 +58,7 @@ struct BlockSparseMat
     {
         // Diagonal max length is the number of columns in the sparse matrix
         int diagLength = blockN * nBlocks;
-        cv::Mat diag   = cv::Mat::zeros(diagLength, 1, CV_32F);
+        cv::Mat diag   = cv::Mat::zeros(diagLength, 1, cv::DataType<_Tp>::type);
 
         for (int i = 0; i < diagLength; i++)
         {
@@ -67,7 +67,7 @@ struct BlockSparseMat
         return diag;
     }
 
-    float& refElem(int i, int j)
+    _Tp& refElem(int i, int j)
     {
         Point2i ib(i / blockM, j / blockN), iv(i % blockM, j % blockN);
         return refBlock(ib.x, ib.y)(iv.x, iv.y);
@@ -78,7 +78,7 @@ struct BlockSparseMat
     {
         std::vector<Eigen::Triplet<double>> tripletList;
         tripletList.reserve(ijValue.size() * blockM * blockN);
-        for (auto ijv : ijValue)
+        for (const auto ijv& : ijValue)
         {
             int xb = ijv.first.x, yb = ijv.first.y;
             MatType vblock = ijv.second;
@@ -110,7 +110,8 @@ struct BlockSparseMat
 
 //! Function to solve a sparse linear system of equations HX = B
 //! Requires Eigen
-static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat& X, Mat& predB)
+static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B,
+                        OutputArray X, OutputArray predB)
 {
     bool result = false;
 #if defined(HAVE_EIGEN)
@@ -122,7 +123,7 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
     if(!bigA.isApprox(bigAtranspose))
     {
         CV_Error(Error::StsBadArg, "H matrix is not symmetrical");
-        return result;
+        return false;
     }
 
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>> solver;
@@ -131,29 +132,31 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
     if (solver.info() != Eigen::Success)
     {
         std::cout << "failed to eigen-decompose" << std::endl;
-        result = false;
+        return false;
     }
     else
     {
         Eigen::VectorXf solutionX = solver.solve(bigB);
-        Eigen::VectorXf predBEigen = bigA * solutionX;
         if (solver.info() != Eigen::Success)
         {
             std::cout << "failed to eigen-solve" << std::endl;
-            result = false;
+            return false;
         }
         else
         {
             eigen2cv(solutionX, X);
-            eigen2cv(predBEigen, predB);
-            result = true;
+            if (predB.needed())
+            {
+                Eigen::VectorXf predBEigen = bigA * solutionX;
+                eigen2cv(predBEigen, predB);
+            }
+            return true;
         }
     }
 #else
     std::cout << "no eigen library" << std::endl;
     CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
 #endif
-    return result;
 }
 }  // namespace kinfu
 }  // namespace cv
