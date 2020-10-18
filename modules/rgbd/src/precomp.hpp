@@ -14,6 +14,8 @@
 #include <list>
 #include <set>
 #include <limits>
+#include <algorithm>
+#include <unordered_map>
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"

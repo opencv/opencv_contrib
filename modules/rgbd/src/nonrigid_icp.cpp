@@ -4,9 +4,6 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-#include <algorithm>
-#include <unordered_map>
-
 #include "precomp.hpp"
 #include "nonrigid_icp.hpp"
 
@@ -44,31 +41,16 @@ public:
     virtual ~ICPImpl() {}
 };
 
+
 ICPImpl::ICPImpl(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
 NonRigidICP(_intrinsics, _volume, _iterations)
 {}
+
 
 static inline bool fastCheck(const Point3f& p)
 {
     return !cvIsNaN(p.x);
 }
-
-
-// TODO: the following code was used like that, maybe reuse it
-/*
-data:
-
-    float med = median(residuals);
-    std::for_each(residuals.begin(), residuals.end(), [med](float& x) {x = std::abs(x - med); });
-    float sigma = MAD_SCALE * median(residuals);
-
-    float robustWeight = tukeyWeight(rd, sigma);
-
-reg:
-
-    float reg_sigma = MAD_SCALE * median(reg_residuals);
-    float robustWeight = huberWeight(r_edge, reg_sigma);
-*/
 
 
 static float median(const std::vector<float>& v)
@@ -138,7 +120,7 @@ static float huberWeightSq(float vnorm2, float sigma = 1.f)
 }
 
 /*
-TODO: remove it in the end
+TODO: remove it when everything works
 -----------------------------
 -----------------------------
 
@@ -464,7 +446,6 @@ static bool sparseSolve(const BlockSparseMat& jtj, const std::vector<float>& jtb
 static DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
 {
     float wdamp = nNodes - wsum;
-    //TODO URGENT: shortcut for dq
     return UnitDualQuaternion().dq() * wdamp * coeff;
 }
 
@@ -1436,7 +1417,12 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     CV_Assert(_newPoints.isMat());
     CV_Assert(_newNormals.isMat());
 
-    //TODO URGENT: check pixel format of these arrays, should be ptype
+    CV_Assert(_vertImage.type()  == cv::DataType<ptype>::type);
+    CV_Assert(_normImage.type()  == cv::DataType<ptype>::type);
+    CV_Assert(_oldPoints.type()  == cv::DataType<ptype>::type);
+    CV_Assert(_oldNormals.type() == cv::DataType<ptype>::type);
+    CV_Assert(_newPoints.type()  == cv::DataType<ptype>::type);
+    CV_Assert(_newNormals.type() == cv::DataType<ptype>::type);
 
     Mat vertImage = _vertImage.getMat();
     Mat normImage = _normImage.getMat();

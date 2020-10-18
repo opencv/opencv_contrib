@@ -8,6 +8,7 @@
 #define __OPENCV_DYNAFU_NONRIGID_ICP_H__
 
 #include "precomp.hpp"
+
 #include "kinfu_frame.hpp"
 #include "warpfield.hpp"
 #include "dynafu_tsdf.hpp"
