@@ -7,13 +7,6 @@
 #include "precomp.hpp"
 #include "nonrigid_icp.hpp"
 
-#if defined(HAVE_EIGEN)
-#    include <Eigen/Sparse>
-//#    include <Eigen/SparseCholesky>
-#    include <Eigen/SparseQR>
-#endif
-
-
 #define MAD_SCALE 1.4826f
 #define TUKEY_B 4.6851f
 #define HUBER_K 1.345f
@@ -330,118 +323,6 @@ struct WeightsNeighbours
     float     weights[DYNAFU_MAX_NEIGHBOURS];
 };
 
-// keeps jtj matrix between building and solving
-struct BlockSparseMat
-{
-    static const int blockSize = 6;
-    BlockSparseMat(int _nBlocks) :
-        nBlocks(_nBlocks), ijv()
-    { }
-       
-    Matx66f& refBlock(int i, int j)
-    {
-        Point2i p(i, j);
-        auto it = ijv.find(p);
-        if (it == ijv.end())
-        {
-            it = ijv.insert({ p, Matx66f()}).first;
-        }
-        return it->second;
-    }
-
-    float& refElem(int i, int j)
-    {
-        Point2i ib(i / blockSize, j / blockSize), iv(i % blockSize, j % blockSize);
-        return refBlock(ib.x, ib.y)(iv.x, iv.y);
-    }
-
-    int nBlocks;
-    std::unordered_map< Point2i, Matx66f > ijv;
-};
-
-static bool sparseSolve(const BlockSparseMat& jtj, const std::vector<float>& jtb, std::vector<float>& x)
-{
-    const float matValThreshold = 0.001f;
-
-    bool result = false;
-
-#if defined(HAVE_EIGEN)
-
-    std::cout << "starting eigen-insertion..." << std::endl;
-
-    //TODO: Consider COLAMD column reordering before solving matrix. This improves speed by a significant amount
-
-    std::vector<Eigen::Triplet<double>> tripletList;
-    tripletList.reserve(jtj.ijv.size()*jtj.blockSize*jtj.blockSize);
-    for (auto ijv : jtj.ijv)
-    {
-        int xb = ijv.first.x, yb = ijv.first.y;
-        Matx66f vblock = ijv.second;
-        for (int i = 0; i < jtj.blockSize; i++)
-        {
-            for (int j = 0; j < jtj.blockSize; j++)
-            {
-                float val = vblock(i, j);
-                if (abs(val) >= matValThreshold)
-                {
-                    tripletList.push_back(Eigen::Triplet<double>(jtj.blockSize * xb + i,
-                                                                 jtj.blockSize * yb + j,
-                                                                 val));
-                }
-            }
-        }
-    }
-    
-    Eigen::SparseMatrix<float> abig(jtj.blockSize * jtj.nBlocks, jtj.blockSize * jtj.nBlocks);
-    abig.setFromTriplets(tripletList.begin(), tripletList.end());
-
-    // TODO: do we need this?
-    abig.makeCompressed();
-
-    Eigen::VectorXf bBig(jtb);
-
-    //TODO: try this, LLT and Cholesky
-    //Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>> solver;
-    Eigen::SparseQR<Eigen::SparseMatrix<float>, Eigen::NaturalOrdering<int>> solver;
-
-    std::cout << "starting eigen-compute..." << std::endl;
-    solver.compute(abig);
-
-    if (solver.info() != Eigen::Success)
-    {
-        std::cout << "failed to eigen-decompose" << std::endl;
-        result = false;
-    }
-    else
-    {
-        std::cout << "starting eigen-solve..." << std::endl;
-
-        Eigen::VectorXf sx = solver.solve(bBig);
-        if (solver.info() != Eigen::Success)
-        {
-            std::cout << "failed to eigen-solve" << std::endl;
-            result = false;
-        }
-        else
-        {
-            x.resize(jtb.size);
-            for (size_t i = 0; i < x.size(); i++)
-            {
-                x[i] = sx[i];
-            }
-            result = true;
-        }
-    }
-
-#else
-    std::cout << "no eigen library" << std::endl;
-
-    CV_Error(Error::StsNotImplemented,
-             "Eigen library required for matrix solve, dense solver is not implemented");
-#endif
-
-    return result;
-}
 
 static DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
 {
@@ -494,7 +375,7 @@ static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const
 
 
 // Passive node's center is moved by both active and passive nodes
-static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
+static void fillEdge(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
                      const WarpNode& actNode, const WarpNode& pasNode,
                      const float regTermWeight, const float huberSigma,
                      const bool disableCentering, const bool useExp, const bool useNormApply)
@@ -589,8 +470,7 @@ static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
     // emulating jtjEdge = jEdge.t() * jEdge
     // where jEdge is a jacobian of an edge
     // act node goes positive, c node goes negative
-    BlockSparseMat jtjNode(jtj.nBlocks);
-    
+
     jtj.refBlock(nPas, nPas) +=   weight * jMovePasC.t() * jMovePasC;
     jtj.refBlock(nAct, nAct) +=   weight * jMoveActC.t() * jMoveActC;
     jtj.refBlock(nAct, nPas) += - weight * jMoveActC.t() * jMovePasC;
@@ -609,7 +489,7 @@ static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
 }
 
 
-static void fillVertex(BlockSparseMat& jtj,
+static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
                        std::vector<float>& jtb,
                        const std::vector<WarpNode>& nodes,
                        WeightsNeighbours knns,
@@ -1601,7 +1481,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     unsigned int it = 0;
     while (it < nIter)
     {
-        BlockSparseMat jtj(nNodesAll);
+        BlockSparseMat<float, 6, 6> jtj(nNodesAll);
         std::vector<float> jtb(nNodesAll * 6);
        
         // j_rt caching
@@ -1736,7 +1616,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 }
 
                 std::vector<float> x;
-                bool solved = sparseSolve(jtj, jtb, x);
+                bool solved = sparseSolve(jtj, Mat(jtb), x, noArray());
 
                 //DEBUG
                 std::cout << "#" << nIter;
@@ -1820,7 +1700,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         else
         {
             std::vector<float> x;
-            if (!sparseSolve(jtj, jtb, x))
+            if (!sparseSolve(jtj, Mat(jtb), x, noArray()))
                 break;
 
             auto nodes = warp.getNodes();

@@ -12,6 +12,7 @@
 #include "kinfu_frame.hpp"
 #include "warpfield.hpp"
 #include "dynafu_tsdf.hpp"
+#include "sparse_block_matrix.hpp"
 
 namespace cv {
 namespace dynafu {
