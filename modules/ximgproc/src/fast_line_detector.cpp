@@ -33,7 +33,7 @@ class FastLineDetectorImpl : public FastLineDetector
          *        _                                 operator in Canny()
          * @param _do_merge            false      - If true, incremental merging of segments
                                                     will be perfomred
-         * @param _input_edge          false      - If true, input image will be considerd as 
+         * @param _input_edge          false      - If true, input image will be considerd as
                                                     edge and ignore the canny parameters
          */
         FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.414213562f,

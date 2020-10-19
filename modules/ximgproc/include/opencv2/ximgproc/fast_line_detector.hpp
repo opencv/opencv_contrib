@@ -69,7 +69,7 @@ public:
                                          operator in Canny()
 @param _do_merge            false      - If true, incremental merging of segments
                                          will be perfomred
-@param _input_edge          false      - If true, input image will be considerd as 
+@param _input_edge          false      - If true, input image will be considerd as
                                          edge and ignore the canny parameters
 */
 CV_EXPORTS_W Ptr<FastLineDetector> createFastLineDetector(
