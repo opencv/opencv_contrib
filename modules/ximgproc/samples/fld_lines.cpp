@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     //                                     operator in Canny()
     // do_merge            false         - If true, incremental merging of segments
     //                                     will be perfomred
-    // input_edge          false         - If true, input image will be considerd as 
+    // input_edge          false         - If true, input image will be considerd as
     //                                     edge and ignore the canny parameters
     int length_threshold = 10;
     float distance_threshold = 1.41421356f;
