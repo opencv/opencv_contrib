@@ -166,7 +166,7 @@ TEST_F(ximgproc_FLD, edgeLines)
     {
         const unsigned int numOfLines = 1;
         GenerateEdgeLines(test_image, numOfLines);
-        Ptr<FastLineDetector> detector = createFastLineDetector(10, 1.414213562f, 50, 50, 3, false, true);
+        Ptr<FastLineDetector> detector = createFastLineDetector(10, 1.414213562f, 50, 50, 0);
         detector->detect(test_image, lines);
         if(numOfLines == lines.size()) ++passedtests;
     }

@@ -65,17 +65,16 @@ public:
                                          hysteresis procedure in Canny()
 @param _canny_th2           50         - Second threshold for
                                          hysteresis procedure in Canny()
-@param _canny_aperture_size 3          - Aperturesize for the sobel
-                                         operator in Canny()
+@param _canny_aperture_size 3          - Aperturesize for the sobel operator in Canny().
+                                         If zero, Canny() is not applied and the input
+                                         image is taken as an edge image.
 @param _do_merge            false      - If true, incremental merging of segments
                                          will be perfomred
-@param _input_edge          false      - If true, input image will be considerd as
-                                         edge and ignore the canny parameters
 */
 CV_EXPORTS_W Ptr<FastLineDetector> createFastLineDetector(
         int _length_threshold = 10, float _distance_threshold = 1.414213562f,
         double _canny_th1 = 50.0, double _canny_th2 = 50.0, int _canny_aperture_size = 3,
-        bool _do_merge = false, bool _input_edge = false);
+        bool _do_merge = false);
 
 //! @} ximgproc_fast_line_detector
 }
