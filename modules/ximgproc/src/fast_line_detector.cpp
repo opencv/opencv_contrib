@@ -32,11 +32,13 @@ class FastLineDetectorImpl : public FastLineDetector
          * @param _canny_aperture_size 3          - Aperturesize for the sobel
          *        _                                 operator in Canny()
          * @param _do_merge            false      - If true, incremental merging of segments
-                                                   will be perfomred
+                                                    will be perfomred
+         * @param _input_edge          false      - If true, input image will be considerd as 
+                                                    edge and ignore the canny parameters
          */
         FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.414213562f,
                 double _canny_th1 = 50.0, double _canny_th2 = 50.0, int _canny_aperture_size = 3,
-                bool _do_merge = false);
+                bool _do_merge = false, bool _input_edge = false);
 
         /**
          * Detect lines in the input image.
@@ -48,9 +50,8 @@ class FastLineDetectorImpl : public FastLineDetector
          * @param _lines    Return: A vector of Vec4f elements specifying the beginning and ending point of
          *                  a line. Where Vec4f is (x1, y1, x2, y2), point 1 is the start, point 2 is the end.
          *                  Returned lines are directed so that the brighter side is placed on left.
-         * @param is_edge   If true, image will be considerd as edge and negrect the canny parameters.
          */
-        void detect(InputArray _image, OutputArray _lines, bool is_edge = false) CV_OVERRIDE;
+        void detect(InputArray _image, OutputArray _lines) CV_OVERRIDE;
 
         /**
          * Draw lines on the given canvas.
@@ -68,6 +69,7 @@ class FastLineDetectorImpl : public FastLineDetector
         double canny_th1, canny_th2;
         int canny_aperture_size;
         bool do_merge;
+        bool input_edge;
 
         FastLineDetectorImpl& operator= (const FastLineDetectorImpl&); // to quiet MSVC
         template<class T>
@@ -81,9 +83,9 @@ class FastLineDetectorImpl : public FastLineDetector
 
         double distPointLine(const Mat& p, Mat& l);
 
-        void extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments );
+        void extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments);
 
-        void lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all, bool is_edge = false);
+        void lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all);
 
         void pointInboardTest(const Mat& src, Point2i& pt);
 
@@ -99,25 +101,25 @@ class FastLineDetectorImpl : public FastLineDetector
 
 CV_EXPORTS Ptr<FastLineDetector> createFastLineDetector(
         int _length_threshold, float _distance_threshold,
-        double _canny_th1, double _canny_th2, int _canny_aperture_size, bool _do_merge)
+        double _canny_th1, double _canny_th2, int _canny_aperture_size, bool _do_merge, bool _input_edge)
 {
     return makePtr<FastLineDetectorImpl>(
             _length_threshold, _distance_threshold,
-            _canny_th1, _canny_th2, _canny_aperture_size, _do_merge);
+            _canny_th1, _canny_th2, _canny_aperture_size, _do_merge, _input_edge);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 FastLineDetectorImpl::FastLineDetectorImpl(int _length_threshold, float _distance_threshold,
-        double _canny_th1, double _canny_th2, int _canny_aperture_size, bool _do_merge)
+        double _canny_th1, double _canny_th2, int _canny_aperture_size, bool _do_merge, bool _input_edge)
     :threshold_length(_length_threshold), threshold_dist(_distance_threshold),
-    canny_th1(_canny_th1), canny_th2(_canny_th2), canny_aperture_size(_canny_aperture_size), do_merge(_do_merge)
+    canny_th1(_canny_th1), canny_th2(_canny_th2), canny_aperture_size(_canny_aperture_size), do_merge(_do_merge), input_edge(_input_edge)
 {
     CV_Assert(_length_threshold > 0 && _distance_threshold > 0 &&
             _canny_th1 > 0 && _canny_th2 > 0 && _canny_aperture_size > 0);
 }
 
-void FastLineDetectorImpl::detect(InputArray _image, OutputArray _lines, bool is_edge)
+void FastLineDetectorImpl::detect(InputArray _image, OutputArray _lines)
 {
     CV_INSTRUMENT_REGION();
 
@@ -126,7 +128,7 @@ void FastLineDetectorImpl::detect(InputArray _image, OutputArray _lines, bool is
 
     std::vector<Vec4f> lines;
     std::vector<SEGMENT> segments;
-    lineDetection(image, segments, is_edge);
+    lineDetection(image, segments);
     for(size_t i = 0; i < segments.size(); ++i)
     {
         const SEGMENT seg = segments[i];
@@ -345,7 +347,7 @@ template<class T>
         pt = T(pt_tmp);
     }
 
-void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments )
+void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments)
 {
     bool is_line;
 
@@ -537,7 +539,7 @@ bool FastLineDetectorImpl::getPointChain(const Mat& img, Point pt,
     return false;
 }
 
-void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all, bool is_edge)
+void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all)
 {
     int r, c;
     imageheight=src.rows; imagewidth=src.cols;
@@ -545,7 +547,7 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
     std::vector<Point2i> points;
     std::vector<SEGMENT> segments, segments_tmp;
     Mat canny;
-    if (is_edge) canny = src;
+    if (input_edge) canny = src;
     else Canny(src, canny, canny_th1, canny_th2, canny_aperture_size);
 
     canny.colRange(0,6).rowRange(0,6) = 0;

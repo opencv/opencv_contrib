@@ -41,15 +41,18 @@ int main(int argc, char** argv)
     //                                     operator in Canny()
     // do_merge            false         - If true, incremental merging of segments
     //                                     will be perfomred
+    // input_edge          false         - If true, input image will be considerd as 
+    //                                     edge and ignore the canny parameters
     int length_threshold = 10;
     float distance_threshold = 1.41421356f;
     double canny_th1 = 50.0;
     double canny_th2 = 50.0;
     int canny_aperture_size = 3;
     bool do_merge = false;
+    bool input_edge = false;
     Ptr<FastLineDetector> fld = createFastLineDetector(length_threshold,
             distance_threshold, canny_th1, canny_th2, canny_aperture_size,
-            do_merge);
+            do_merge, input_edge);
     vector<Vec4f> lines_fld;
 
     // Because of some CPU's power strategy, it seems that the first running of
