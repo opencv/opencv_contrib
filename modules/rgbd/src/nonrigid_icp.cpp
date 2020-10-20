@@ -1455,12 +1455,12 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     float vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
 
     auto graph = warp.getRegGraph();
-    const std::vector<Ptr<WarpNode>>& nodes = warp.getNodes();
+    const std::vector<Ptr<WarpNode>>& warpNodes = warp.getNodes();
     const std::vector<std::vector<Ptr<WarpNode>>>& regNodes = warp.getGraphNodes();
-    std::vector<float> regSigmas = estimateRegSigmas(graph, nodes, regNodes,
+    std::vector<float> regSigmas = estimateRegSigmas(graph, warpNodes, regNodes,
                                                      disableCentering, parentMovesChild, childMovesParent);
 
-    float regEnergy = estimateRegEnergy(graph, nodes, regNodes, regSigmas,
+    float regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas,
                                         useHuber, disableCentering, parentMovesChild, childMovesParent);
 
     float oldEnergy = vertexEnergy + reg_term_weight * regEnergy;
@@ -1471,12 +1471,12 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     int nNodesAll = warp.getNodesLen() + warp.getRegNodesLen();
 
     // Find a place for each node params in x vector
-    placeNodesInX(nodes, regNodes);
-        
+    placeNodesInX(warpNodes, regNodes);
+
     // calc args for additive derivative
     if (additiveDerivative)
     {
-        calcArgs(nodes, regNodes, useExp);
+        calcArgs(warpNodes, regNodes, useExp);
     }
     
     // LevMarq iterations themselves
@@ -1490,13 +1490,14 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         // j_rt caching
         for (int level = 0; level < graph.size(); level++)
         {
-            auto levelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            auto levelNodes = (level == 0) ? warpNodes : regNodes[level - 1];
             for (int ixn = 0; ixn < levelNodes.size(); ixn++)
             {
                 Ptr<WarpNode> node = levelNodes[ixn];
                 int place = node->place;
 
-                node->cachedJac = node->transform.jRt(node->pos, atZero, additiveDerivative, useExp, needR, needT, disableCentering);
+                node->cachedJac = node->transform.jRt(node->pos, atZero, additiveDerivative,
+                                                      useExp, needR, needT, disableCentering);
             }
         }
 
@@ -1504,8 +1505,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         if (needReg)
         {
             // Sigmas are to be updated before each iteration only
-            regSigmas = estimateRegSigmas(graph, nodes, regNodes, disableCentering, parentMovesChild, childMovesParent);
-
+            regSigmas = estimateRegSigmas(graph, warpNodes, regNodes, disableCentering,
+                                          parentMovesChild, childMovesParent);
             for (int level = 0; level < graph.size(); level++)
             {
                 auto childLevelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
@@ -1604,7 +1605,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             }
 
             float energy;
-            std::vector<Ptr<WarpNode>> tempNodes;
+            std::vector<Ptr<WarpNode>> tempWarpNodes;
             std::vector<std::vector<Ptr<WarpNode>>> tempRegNodes;
             Mat_<float> tempCachedResiduals;
             Mat_<ptype> tempCachedOutVolN, tempPtsInWarped;
@@ -1619,23 +1620,23 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 }
 
                 std::vector<float> x;
-                bool solved = sparseSolve(jtj, Mat(jtb), x, noArray());
+                bool solved = kinfu::sparseSolve(jtj, Mat(jtb), x);
 
                 //DEBUG
                 std::cout << "#" << nIter;
 
                 if (solved)
                 {
-                    tempNodes = warp.cloneNodes();
+                    tempWarpNodes = warp.cloneNodes();
                     tempRegNodes = warp.cloneGraphNodes();
 
                     // Update nodes using x
 
-                    updateNodes(x, tempNodes, tempRegNodes, additiveDerivative,
+                    updateNodes(x, tempWarpNodes, tempRegNodes, additiveDerivative,
                                 useExp, signFix, signFixRelative);
 
                     // Warping nodes
-                    buildCachedDqSums(cachedKnns, nodes, knn, damping, tempCachedDqSums);
+                    buildCachedDqSums(cachedKnns, tempWarpNodes, knn, damping, tempCachedDqSums);
                     buildWarped(ptsIn, nrmIn, tempCachedDqSums, vol2cam,
                                 tempPtsInWarped, ptsInWarpedRendered,
                                 ptsInWarpedNormals, ptsInWarpedRenderedNormals);
@@ -1648,8 +1649,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
 
                     float vertexEnergy = estimateVertexEnergy(tempCachedResiduals, cachedWeights);
 
-                    float regEnergy = estimateRegEnergy(graph, nodes, regNodes, regSigmas,
-                        useHuber, disableCentering, parentMovesChild, childMovesParent);
+                    float regEnergy = estimateRegEnergy(graph, tempWarpNodes, tempRegNodes, regSigmas,
+                                                        useHuber, disableCentering, parentMovesChild, childMovesParent);
 
                     energy = vertexEnergy + reg_term_weight * regEnergy;
 
@@ -1690,11 +1691,10 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             }
 
             lambdaLevMarq /= lmDownFactor;
-
-            warp.setNodes(tempNodes);
+            warp.setNodes(tempWarpNodes);
             warp.setRegNodes(tempRegNodes);
             oldEnergy = energy;
-            // these things can be reused at next stages
+            // these things will be reused at next stages
             ptsInWarped = tempPtsInWarped;
             cachedResiduals = tempCachedResiduals;
             cachedOutVolN = tempCachedOutVolN;
@@ -1703,7 +1703,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         else
         {
             std::vector<float> x;
-            if (!sparseSolve(jtj, Mat(jtb), x, noArray()))
+            if (!kinfu::sparseSolve(jtj, Mat(jtb), x))
                 break;
 
             auto nodes = warp.getNodes();
@@ -1719,9 +1719,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 ptsInWarpedNormals, ptsInWarpedRenderedNormals);
             buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
             buildVertexResiduals(ptsInProjected, ptsInWarped, ptsInWarpedNormals,
-                ptsOutVolP, ptsOutVolN,
-                diffThreshold, critAngleCos,
-                cachedResiduals, cachedOutVolN);
+                                 ptsOutVolP, ptsOutVolN,
+                                 diffThreshold, critAngleCos,
+                                 cachedResiduals, cachedOutVolN);
             buildWeights(cachedResiduals, vertSigma, cachedWeights);
 
             float vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
