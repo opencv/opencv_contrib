@@ -111,7 +111,7 @@ struct BlockSparseMat
 //! Function to solve a sparse linear system of equations HX = B
 //! Requires Eigen
 static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B,
-                        OutputArray X, OutputArray predB)
+                        OutputArray X, OutputArray predB = cv::noArray())
 {
     bool result = false;
 #if defined(HAVE_EIGEN)
