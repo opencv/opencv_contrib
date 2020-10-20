@@ -1364,7 +1364,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     // the algorithm is described in [Kavan and Zara 2005], Kavan'08
     // to make it deterministic we choose a reference dq according to relative flag
     const bool signFix = false;
-    const bool signFixRelative = true;
+    const bool signFixRelative = false;
 
     // solve params
     // Used in DynaFu paper, simplifies calculation
