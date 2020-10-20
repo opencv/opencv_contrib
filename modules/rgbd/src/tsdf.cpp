@@ -384,9 +384,14 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
 
-    IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
-    Range range(0, volResolution.x);
-    parallel_for_(range, ii);
+    //IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
+    //Range range(0, volResolution.x);
+    //parallel_for_(range, ii);
+
+    integrateVolumeUnit(truncDist, voxelSize, maxWeight, cameraPose, volResolution.x, volResolution.x, depth,
+        depthFactor, cameraPose, intrinsics, pixNorms, volume);
+
+
 }
 
 #if USE_INTRINSICS
