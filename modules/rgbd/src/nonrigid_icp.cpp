@@ -1287,6 +1287,106 @@ void buildWeights(const Mat_<float>& cachedResiduals,
 }
 
 
+void fillJacobianReg(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
+                     const std::vector<std::vector<NodeNeighboursType> >& graph,
+                     const std::vector<Ptr<WarpNode>>& nodes,
+                     const std::vector<std::vector<Ptr<WarpNode>>>& regNodes,
+                     const std::vector<float>& regSigmas,
+                     const float regTermWeight, const bool useHuber,
+                     const bool disableCentering, const bool useExp, const bool useNormApply,
+                     const bool parentMovesChild, const bool childMovesParent)
+{
+    for (int level = 0; level < graph.size(); level++)
+    {
+        auto childLevelNodes = (level == 0) ? nodes : regNodes[level - 1];
+        auto levelNodes = regNodes[level];
+        auto levelChildIdx = graph[level];
+
+        for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+        {
+            Ptr<WarpNode> node = levelNodes[ixn];
+
+            auto children = levelChildIdx[ixn];
+
+            for (int ixc = 0; ixc < children.size(); ixc++)
+            {
+                Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+
+                if (parentMovesChild)
+                {
+                    fillEdge(jtj, jtb, *node, *child,
+                             regTermWeight, (useHuber ? regSigmas[level] : -1.f),
+                             disableCentering, useExp, useNormApply);
+                }
+                if (childMovesParent)
+                {
+                    fillEdge(jtj, jtb, *child, *node,
+                             regTermWeight, (useHuber ? regSigmas[level] : -1.f),
+                             disableCentering, useExp, useNormApply);
+                }
+            }
+        }
+    }
+}
+
+
+void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
+                      const Mat_<float>& cachedResiduals,
+                      const Mat_<ptype>& cachedOutVolN,
+                      const Mat& cachedDqSums,
+                      const Mat_<float>& cachedWeights,
+                      const Mat_<ptype>& ptsIn,
+                      const Mat& cachedKnns,
+                      const std::vector<Ptr<WarpNode>>& warpNodes,
+                      const bool useTukey,
+                      const float damping,
+                      const float normPenalty,
+                      const bool decorrelate,
+                      const bool disableCentering)
+{
+    Size size = cachedResiduals.size();
+    for (int y = 0; y < size.height; y++)
+    {
+        for (int x = 0; x < size.width; x++)
+        {
+            Point pt(x, y);
+
+            float pointPlaneDistance = cachedResiduals(pt);
+            Point3f outVolN = fromPtype(cachedOutVolN(pt));
+            DualQuaternion dqsum = cachedDqSums.at<DualQuaternion>(pt);
+
+            if (std::isnan(pointPlaneDistance))
+                continue;
+
+            float weight = 1.f;
+            if (useTukey)
+            {
+                weight = cachedWeights(pt);
+            }
+
+            // Get ptsIn from shaded data
+            Point3f inp = fromPtype(ptsIn(pt));
+
+            WeightsNeighbours knns = cachedKnns.at<WeightsNeighbours>(pt);
+
+            std::vector<WarpNode> nodes;
+            for (int k = 0; k < DYNAFU_MAX_NEIGHBOURS; k++)
+            {
+                int nei = knns.neighbours[k];
+                if (nei < 0)
+                    break;
+                const WarpNode node = *(warpNodes[nei]);
+                nodes.push_back(node);
+            }
+
+            fillVertex(jtj, jtb, nodes, knns,
+                       inp, pointPlaneDistance, outVolN, dqsum, weight,
+                       damping, normPenalty, decorrelate, disableCentering);
+        }
+    }
+}
+
+
 // TODO URGENT THINGS: things are to be done before expecting that stuff is compiled
 bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                                 InputArray _vertImage, InputArray _normImage,
@@ -1507,37 +1607,10 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             // Sigmas are to be updated before each iteration only
             regSigmas = estimateRegSigmas(graph, warpNodes, regNodes, disableCentering,
                                           parentMovesChild, childMovesParent);
-            for (int level = 0; level < graph.size(); level++)
-            {
-                auto childLevelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
-                auto levelNodes = warp.getGraphNodes()[level];
-                auto levelChildIdx = graph[level];
 
-                for (int ixn = 0; ixn < levelNodes.size(); ixn++)
-                {
-                    Ptr<WarpNode> node = levelNodes[ixn];
-
-                    auto children = levelChildIdx[ixn];
-
-                    for (int ixc = 0; ixc < children.size(); ixc++)
-                    {
-                        Ptr<WarpNode> child = childLevelNodes[children[ixc]];
-
-                        if (parentMovesChild)
-                        {
-                            fillEdge(jtj, jtb, *node, *child,
-                                     reg_term_weight, (useHuber ? regSigmas[level] : -1.f),
-                                     disableCentering, useExp, useNormApply);
-                        }
-                        if (childMovesParent)
-                        {
-                            fillEdge(jtj, jtb, *child, *node,
-                                     reg_term_weight, (useHuber ? regSigmas[level] : -1.f),
-                                     disableCentering, useExp, useNormApply);
-                        }
-                    }
-                }
-            }
+            fillJacobianReg(jtj, jtb, graph, warpNodes, regNodes, regSigmas,  reg_term_weight,
+                            useHuber, disableCentering, useExp, useNormApply,
+                            parentMovesChild, childMovesParent);
         }
 
         if (needData)
@@ -1551,45 +1624,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             }
             // at 0th iteration we had sigma and weights estimated
 
-            for (int y = 0; y < size.height; y++)
-            {
-                for (int x = 0; x < size.width; x++)
-                {
-                    Point pt(x, y);
-
-                    float pointPlaneDistance = cachedResiduals(pt);
-                    Point3f outVolN = fromPtype(cachedOutVolN(pt));
-                    DualQuaternion dqsum = cachedDqSums.at<DualQuaternion>(pt);
-
-                    if (std::isnan(pointPlaneDistance))
-                        continue;
-
-                    float weight = 1.f;
-                    if (useTukey)
-                    {
-                        weight = cachedWeights(pt);
-                    }
-
-                    // Get ptsIn from shaded data
-                    Point3f inp = fromPtype(ptsIn(pt));
-
-                    WeightsNeighbours knns = cachedKnns.at<WeightsNeighbours>(pt);
-
-                    std::vector<WarpNode> nodes;
-                    for (int k = 0; k < knn; k++)
-                    {
-                        int nei = knns.neighbours[k];
-                        if (nei < 0)
-                            break;
-                        const WarpNode node = *(warp.getNodes()[nei]);
-                        nodes.push_back(node);
-                    }
-
-                    fillVertex(jtj, jtb, nodes, knns,
-                               inp, pointPlaneDistance, outVolN, dqsum, weight,
-                               damping, normPenalty, decorrelate, disableCentering);
-                }
-            }
+            fillJacobianData(jtj, jtb, cachedResiduals, cachedOutVolN, cachedDqSums, cachedWeights,
+                             ptsIn, cachedKnns, warpNodes, useTukey, damping, normPenalty,
+                             decorrelate, disableCentering);
         }
 
         // Solve and get delta transform
