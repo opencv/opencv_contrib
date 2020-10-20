@@ -1387,7 +1387,6 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
 }
 
 
-// TODO URGENT THINGS: things are to be done before expecting that stuff is compiled
 bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                                 InputArray _vertImage, InputArray _normImage,
                                 InputArray _oldPoints, InputArray _oldNormals,

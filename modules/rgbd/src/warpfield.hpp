@@ -70,9 +70,12 @@ public:
 
     void findNeighbours(Point3f queryPt, std::vector<int>& indices, std::vector<float>& dists) const
     {
-        //TODO URGENT: preprocessing to get arrays with -1's
         std::vector<float> query = { queryPt.x, queryPt.y, queryPt.z };
         nodeIndex->knnSearch(query, indices, dists, k, cvflann::SearchParams());
+
+        //TODO URGENT: preprocessing to get arrays with -1's
+
+        throw "here we stop for debugging";
     }
 
     const std::vector<std::vector<NodeNeighboursType> >& getRegGraph() const
