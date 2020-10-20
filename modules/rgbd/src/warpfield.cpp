@@ -153,7 +153,7 @@ std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat,
             wn->radius = res;
         }
 
-        wn->transform = Affine3f::Identity();
+        wn->transform = UnitDualQuaternion();
 
         temp_nodes.push_back(wn);
     }
@@ -182,7 +182,7 @@ void WarpField::initTransforms(std::vector<Ptr<WarpNode> > nv)
         nodeIndex->knnSearch(query, knnIndices, knnDists, k, cvflann::SearchParams());
 
         std::vector<float> weights(knnIndices.size());
-        std::vector<Affine3f> transforms(knnIndices.size());
+        std::vector<UnitDualQuaternion> transforms(knnIndices.size());
 
         size_t i = 0;
         for(int idx: knnIndices)
@@ -191,23 +191,7 @@ void WarpField::initTransforms(std::vector<Ptr<WarpNode> > nv)
             transforms[i++] = nodes[idx]->transform;
         }
 
-        Affine3f pose = DQB(weights, transforms);
-        //TODO: check that and remove that
-        /*
-        // linearly interpolate translations
-        Vec3f translation(0,0,0);
-        float totalWeight = 0;
-        for(i = 0; i < transforms.size(); i++)
-        {
-            translation += weights[i]*transforms[i].translation();
-            totalWeight += weights[i];
-        }
-
-        if(totalWeight < 1e-5) translation = Vec3f(0, 0, 0);
-        else translation /= totalWeight;
-
-        nodePtr->transform = Affine3f(pose.rotation(), translation);
-        */
+        UnitDualQuaternion pose = DQB(weights, transforms);
         nodePtr->transform = pose;
     }
 }
@@ -286,55 +270,6 @@ Normal calculation is done the same way but translation is not applied
 Point3f WarpField::applyWarp(Point3f p, const NodeNeighboursType neighbours, int n, bool normal) const
 {
     CV_TRACE_FUNCTION();
-/*
-    if(n == 0)
-    {
-        return p;
-    }
-
-    float totalWeight = 0;
-    Point3f WarpedPt(0,0,0);
-
-    for(int i = 0; i < n; i++)
-    {
-        Ptr<WarpNode> neigh = nodes[neighbours[i]];
-        float w = neigh->weight(p);
-        if(w < 0.01)
-        {
-            continue;
-        }
-
-        Matx33f R = neigh->transform.rotation();
-        Point3f newPt(0, 0, 0);
-
-        if(normal)
-        {
-            newPt = R * p;
-        }
-        else
-        {
-            newPt = R * (p - neigh->pos) + neigh->pos;
-            Vec3f T = neigh->transform.translation();
-            newPt.x += T[0];
-            newPt.y += T[1];
-            newPt.z += T[2];
-        }
-
-        WarpedPt += newPt * w;
-        totalWeight += w;
-
-    }
-    WarpedPt /= totalWeight;
-
-    if(totalWeight == 0)
-    {
-        return p;
-    }
-    else
-    {
-        return WarpedPt;
-    }
-*/
 
     // DQB:
 
@@ -342,19 +277,19 @@ Point3f WarpField::applyWarp(Point3f p, const NodeNeighboursType neighbours, int
         return p;
 
     std::vector<float> weights(n);
-    std::vector<Affine3f> transforms(n);
+    std::vector<UnitDualQuaternion> transforms(n);
     float totalWeightSquare = 0.f;
     for(int i = 0; i < n; i++)
     {
         Ptr<WarpNode> neigh = nodes[neighbours[i]];
-        transforms[i] = neigh->rt_centered();
+        transforms[i] = neigh->centeredRt();
         float w = neigh->weight(p);
         weights[i]= w;
         totalWeightSquare = w*w;
     }
-    Affine3f rt = DQB(weights, transforms);
     if(abs(totalWeightSquare) > 0.001f)
     {
+        Affine3f rt = DQB(weights, transforms).getRt();
         if(normal)
         {
             Affine3f r(rt.rotation());
