@@ -63,6 +63,21 @@ TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycast
     : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
                  zFirstMemOrder)
 {
+    int xdim, ydim, zdim;
+    if (zFirstMemOrder)
+    {
+        xdim = volResolution.x * volResolution.x;
+        ydim = volResolution.x;
+        zdim = 1;
+    }
+    else
+    {
+        xdim = 1;
+        ydim = volResolution.x;
+        zdim = volResolution.x * volResolution.x;
+    }
+    volStrides = Vec4i(xdim, ydim, zdim);
+
     volume = Mat(1, volResolution.x * volResolution.y * volResolution.z, rawType<TsdfVoxel>());
 
     reset();
@@ -117,8 +132,10 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
         frameParams = newParams;
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
+
+
     
-    integrateVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution.x, volResolution.x, depth,
+    integrateVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution.x, volStrides, depth,
         depthFactor, cameraPose, intrinsics, pixNorms, volume);
 }
 
