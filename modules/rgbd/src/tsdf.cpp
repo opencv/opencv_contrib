@@ -117,8 +117,8 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
         frameParams = newParams;
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
-
-    integrateVolumeUnit(truncDist, voxelSize, maxWeight, cameraPose, volResolution.x, volResolution.x, depth,
+    
+    integrateVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution.x, volResolution.x, depth,
         depthFactor, cameraPose, intrinsics, pixNorms, volume);
 }
 
