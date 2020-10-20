@@ -847,7 +847,7 @@ UnitDualQuaternion DualQuaternion::normalized() const
 
 // see deduction of exp() and log() in documentation
 // correctness for non-pure DQs not guaranteed
-//TODO URGENT: make it for UnitDualQuaternions only
+//TODO: make it for UnitDualQuaternions only
 DualQuaternion DualQuaternion::exp() const
 {
     Quaternion er = qreal.exp();
@@ -1137,7 +1137,7 @@ UnitDualQuaternion UnitDualQuaternion::operator*=(const UnitDualQuaternion& u)
 ///// Tools for Dual Quaternions /////
 
 
-UnitDualQuaternion DQB(std::vector<float>& weights, std::vector<UnitDualQuaternion>& quats)
+UnitDualQuaternion DQB(const std::vector<float>& weights, const std::vector<UnitDualQuaternion>& quats)
 {
     DualQuaternion blended;
     for (size_t i = 0; i < weights.size(); i++)
@@ -1146,7 +1146,7 @@ UnitDualQuaternion DQB(std::vector<float>& weights, std::vector<UnitDualQuaterni
 }
 
 
-cv::Affine3f DQB(std::vector<float>& weights, std::vector<Affine3f>& transforms)
+cv::Affine3f DQB(const std::vector<float>& weights, const std::vector<Affine3f>& transforms)
 {
     DualQuaternion blended;
     for (size_t i = 0; i < transforms.size(); i++)
@@ -1197,70 +1197,6 @@ def dist_weight(p, c, csize):
     norm2 = np.inner(diff, diff)
     return math.exp(-(norm2)/(2*csize))
 
-# fixes dq set so that they interpolate in a short trajectory
-def dqb_sign_fixed(dqs):
-    # a way to choose pivot should be value-dependent (but any in fact)
-    # let's use the one with smallest L1 norm
-    pivot = DualQuaternion()
-    pivotNorm = sys.float_info.max # start value should be very big
-    for d in dqs:
-        assert isinstance(d, DualQuaternion), "dqs should be a list of dual quaternions!"
-        dv = np.concatenate((quaternion.as_float_array(d.real),
-                             quaternion.as_float_array(d.dual)))
-        dnorm = np.linalg.norm(dv, ord=1)
-        if dnorm < pivotNorm:
-            pivot = d
-            pivotNorm = dnorm
-
-    # dot product with pivot should be >= 0
-    # r and -r are for the same rotation
-    newDqs = []
-    for d in dqs:
-        dd = d
-        if np.dot(quaternion.as_float_array(d.real),
-                  quaternion.as_float_array(pivot.real)) < 0:
-            dd = -d
-        newDqs.append(dd)
-    return newDqs
-
-# dqs are effective quaternions, already centered
-def dq_bend(pin, dqs, cs, csize, damping, sign_fix, effective):
-    dqsum = DualQuaternion()
-    wsum = 0
-    for c, dq in zip(cs, dqs):
-        w = dist_weight(pin, c, csize)
-        dqi = dq
-        if not effective:
-            dqi = dqi.centered(c)
-        #DEBUG
-        if sign_fix:
-            dqsum += w*dqi.sign_fixed()
-        else:
-            dqsum += w*dqi
-        wsum += w
-
-    dqsum = damped_dqsum(dqsum, len(cs), wsum, damping)
-
-    dqn = dqsum.normalized()
-
-    r, t = dqn.get_rt_unit()
-    R = quaternion.as_rotation_matrix(r)
-    pout = R @ pin.T + t.vec
-
-    return pout
-
-
-
-def decorrelate(jtj, nNodes):
-    # no need this check anymore
-    #assert jtj.shape == (block*nNodes, block*nNodes), ("each dimension should be %d" % block*nNodes)
-    for i in range(nNodes):
-        for j in range(nNodes):
-            if i != j:
-                ri = slice(block*i, block*(i+1))
-                rj = slice(block*j, block*(j+1))
-                jtj[ri, rj] = 0
-    return jtj
 
 */
 
