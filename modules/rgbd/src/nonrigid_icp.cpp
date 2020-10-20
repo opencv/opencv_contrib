@@ -778,6 +778,7 @@ std::vector<float> estimateRegSigmas(const std::vector<std::vector<NodeNeighbour
 }
 
 
+// use new x as delta to update cost function values
 void updateNodes(const std::vector<float>& x,
                  std::vector<Ptr<WarpNode> >& nodes,
                  std::vector<std::vector<Ptr<WarpNode> > >& regNodes,
@@ -820,9 +821,10 @@ void updateNodes(const std::vector<float>& x,
                     node->arg[0] += dualx;
                     node->arg[1] += realx;
 
-                    // TODO URGENT: make this unit dual quat
+                    // TODO: no normalization, this dq is already normal
                     // SIC! opposite order
-                    dqnew = DualQuaternion(node->arg[1], node->arg[0]).exp();
+                    dqnew = DualQuaternion(Quaternion(0.f, node->arg[1]),
+                                           Quaternion(0.f, node->arg[0])).exp().normalized();
                 }
                 else
                 {
@@ -844,8 +846,8 @@ void updateNodes(const std::vector<float>& x,
                     Quaternion dualx(0, blockNode[0], blockNode[1], blockNode[2]);
                     Quaternion realx(0, blockNode[3], blockNode[4], blockNode[5]);
 
-                    //TODO URGENT: make this unit dual quat
-                    dqit = DualQuaternion(realx, dualx).exp();
+                    //TODO: no normalization, this dq is already normal
+                    dqit = DualQuaternion(realx, dualx).exp().normalized();
                 }
                 else
                 {
@@ -855,7 +857,7 @@ void updateNodes(const std::vector<float>& x,
                     // this function expects input vector to be a norm of full angle
                     // while it contains just 1 / 2 of an angle
 
-                    //TODO URGENT: this using DQs
+                    //TODO: dqit = UnitDualQuaternion::fromRt(rotParams*2, transParams)
                     Affine3f aff(rotParams * 2, transParams);
                     dqit = UnitDualQuaternion(aff);
                 }
@@ -908,7 +910,8 @@ void placeNodesInX(const std::vector<Ptr<WarpNode>>& nodes,
 }
 
 
-// Find a place for each node params in x vector
+// For each node find its pose representation as rotation+translation vectors
+// or as se(3) logarithm
 void calcArgs(const std::vector<Ptr<WarpNode>>& nodes,
               const std::vector<std::vector<Ptr<WarpNode>>>& regNodes,
               const bool useExp)
@@ -964,8 +967,6 @@ void buildInWarpedInitial(const Mat_<ptype>& oldPoints,
 
         for (int x = 0; x < size.width; x++)
         {
-            //TODO: Mat::ptr() instead
-            int place = y * size.width + x;
             // Since oldPoints are warped and rendered data,
             // we can get warped data in volume coords just by cam2vol transformation,
             // w/o applying warp to inp
