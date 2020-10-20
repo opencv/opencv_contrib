@@ -1376,6 +1376,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     const float lmDownFactor = 3.f;
     const float coeffILM = 0.1f;
 
+    const float factorCommon = false;
+
     // TODO: check and find good one
     const float normPenalty = 0.0f;
 
@@ -1743,46 +1745,24 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         it++;
     }
 
-    //TODO URGENT: factor out common Rt
+    if(factorCommon)
     {
-        std::vector<Point3f> inPts, outPts;
-        inPts.reserve(size.area()); outPts.reserve(size.area());
-        for (int y = 0; y < size.height; y++)
-        {
-            for (int x = 0; x < size.width; x++)
-            {
-                //TODO: Mat::ptr() instead
-                // Get ptsIn from shaded data
-                Point3f vshad = vertImage.at<Point3f>(y, x);
-                Point3f inp(vshad.x * volume->volSize.x,
-                            vshad.y * volume->volSize.y,
-                            vshad.z * volume->volSize.z);
-                Point3f outp = fromPtype(ptsInWarped(y, x));
-                if (fastCheck(inp) && fastCheck(outp))
-                {
-                    inPts.push_back(inp);
-                    outPts.push_back(outp);
-                }
-            }
-        }
-
         Matx44f commonM;
-        estimateAffine3D(inPts, outPts, commonM, noArray());
-        Affine3f common(commonM);
+        estimateAffine3D(ptsIn, ptsInWarped, commonM, noArray());
+        Affine3f af(commonM);
+        UnitDualQuaternion common(af);
 
         // Looks like procedure is the same for all levels
         for (int level = 0; level < graph.size(); level++)
         {
-            auto levelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            auto levelNodes = (level == 0) ? warpNodes : regNodes[level - 1];
             for (int ixn = 0; ixn < levelNodes.size(); ixn++)
             {
                 Ptr<WarpNode> node = levelNodes[ixn];
-                // TODO URGENT: check the correctness of the following:
-                node->transform = node->transform.factoredOut(node->transform, node->pos);
+                node->transform = node->transform.factoredOut(common, node->pos);
             }
         }
     }
-
 
     if (it != nIter)
     {
