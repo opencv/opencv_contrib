@@ -66,15 +66,15 @@ TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycast
     int xdim, ydim, zdim;
     if (zFirstMemOrder)
     {
-        xdim = volResolution.x * volResolution.x;
-        ydim = volResolution.x;
+        xdim = volResolution.z * volResolution.y;
+        ydim = volResolution.z;
         zdim = 1;
     }
     else
     {
         xdim = 1;
         ydim = volResolution.x;
-        zdim = volResolution.x * volResolution.x;
+        zdim = volResolution.x * volResolution.y;
     }
     volStrides = Vec4i(xdim, ydim, zdim);
 
@@ -133,8 +133,6 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
 
-
-    
     integrateVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution.x, volStrides, depth,
         depthFactor, cameraPose, intrinsics, pixNorms, volume);
 }
