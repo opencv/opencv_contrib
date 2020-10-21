@@ -63,6 +63,21 @@ TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycast
     : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
                  zFirstMemOrder)
 {
+    int xdim, ydim, zdim;
+    if (zFirstMemOrder)
+    {
+        xdim = volResolution.z * volResolution.y;
+        ydim = volResolution.z;
+        zdim = 1;
+    }
+    else
+    {
+        xdim = 1;
+        ydim = volResolution.x;
+        zdim = volResolution.x * volResolution.y;
+    }
+    volStrides = Vec4i(xdim, ydim, zdim);
+
     volume = Mat(1, volResolution.x * volResolution.y * volResolution.z, rawType<TsdfVoxel>());
 
     reset();
@@ -99,272 +114,6 @@ TsdfVoxel TSDFVolumeCPU::at(const Vec3i& volumeIdx) const
     return volData[coordBase];
 }
 
-
-struct IntegrateInvoker : ParallelLoopBody
-{
-    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics,
-                    const cv::Matx44f& cameraPose, float depthFactor, Mat _pixNorms) :
-        ParallelLoopBody(),
-        volume(_volume),
-        depth(_depth),
-        intr(intrinsics),
-        proj(intrinsics.makeProjector()),
-        vol2cam(Affine3f(cameraPose.inv()) * _volume.pose),
-        truncDistInv(1.f/_volume.truncDist),
-        dfac(1.f/depthFactor),
-        pixNorms(_pixNorms)
-    {
-        volDataStart = volume.volume.ptr<TsdfVoxel>();
-    }
-
-#if USE_INTRINSICS
-    virtual void operator() (const Range& range) const override
-    {
-        // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
-        Point3f zStepPt = Point3f(vol2cam.matrix(0, 2),
-                                  vol2cam.matrix(1, 2),
-                                  vol2cam.matrix(2, 2))*volume.voxelSize;
-
-        v_float32x4 zStep(zStepPt.x, zStepPt.y, zStepPt.z, 0);
-        v_float32x4 vfxy(proj.fx, proj.fy, 0.f, 0.f), vcxy(proj.cx, proj.cy, 0.f, 0.f);
-        const v_float32x4 upLimits = v_cvt_f32(v_int32x4(depth.cols-1, depth.rows-1, 0, 0));
-
-        for(int x = range.start; x < range.end; x++)
-        {
-            TsdfVoxel* volDataX = volDataStart + x*volume.volDims[0];
-            for(int y = 0; y < volume.volResolution.y; y++)
-            {
-                TsdfVoxel* volDataY = volDataX + y*volume.volDims[1];
-                // optimization of camSpace transformation (vector addition instead of matmul at each z)
-                Point3f basePt = vol2cam*(Point3f((float)x, (float)y, 0)*volume.voxelSize);
-                v_float32x4 camSpacePt(basePt.x, basePt.y, basePt.z, 0);
-
-                int startZ, endZ;
-                if(abs(zStepPt.z) > 1e-5)
-                {
-                    int baseZ = (int)(-basePt.z / zStepPt.z);
-                    if(zStepPt.z > 0)
-                    {
-                        startZ = baseZ;
-                        endZ   = volume.volResolution.z;
-                    }
-                    else
-                    {
-                        startZ = 0;
-                        endZ   = baseZ;
-                    }
-                }
-                else
-                {
-                    if (basePt.z > 0)
-                    {
-                        startZ = 0;
-                        endZ   = volume.volResolution.z;
-                    }
-                    else
-                    {
-                        // z loop shouldn't be performed
-                        startZ = endZ = 0;
-                    }
-                }
-                startZ = max(0, startZ);
-                endZ   = min(volume.volResolution.z, endZ);
-                for(int z = startZ; z < endZ; z++)
-                {
-                    // optimization of the following:
-                    //Point3f volPt = Point3f(x, y, z)*voxelSize;
-                    //Point3f camSpacePt = vol2cam * volPt;
-                    camSpacePt += zStep;
-
-                    float zCamSpace = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(camSpacePt))).get0();
-                    if(zCamSpace <= 0.f)
-                        continue;
-
-                    v_float32x4 camPixVec = camSpacePt/v_setall_f32(zCamSpace);
-                    v_float32x4 projected = v_muladd(camPixVec, vfxy, vcxy);
-                    // leave only first 2 lanes
-                    projected = v_reinterpret_as_f32(v_reinterpret_as_u32(projected) &
-                                                     v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0, 0));
-
-                    depthType v;
-                    // bilinearly interpolate depth at projected
-                    {
-                        const v_float32x4& pt = projected;
-                        // check coords >= 0 and < imgSize
-                        v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) |
-                                            v_reinterpret_as_u32(pt >= upLimits);
-                        limits = limits | v_rotate_right<1>(limits);
-                        if(limits.get0())
-                            continue;
-
-                        // xi, yi = floor(pt)
-                        v_int32x4 ip      = v_floor(pt);
-                        v_int32x4 ipshift = ip;
-                        int xi            = ipshift.get0();
-                        ipshift           = v_rotate_right<1>(ipshift);
-                        int yi            = ipshift.get0();
-
-                        const depthType* row0 = depth[yi+0];
-                        const depthType* row1 = depth[yi+1];
-
-                        // v001 = [v(xi + 0, yi + 0), v(xi + 1, yi + 0)]
-                        v_float32x4 v001 = v_load_low(row0 + xi);
-                        // v101 = [v(xi + 0, yi + 1), v(xi + 1, yi + 1)]
-                        v_float32x4 v101 = v_load_low(row1 + xi);
-
-                        v_float32x4 vall = v_combine_low(v001, v101);
-
-                        // assume correct depth is positive
-                        // don't fix missing data
-                        if(v_check_all(vall > v_setzero_f32()))
-                        {
-                            v_float32x4 t = pt - v_cvt_f32(ip);
-                            float tx      = t.get0();
-                            t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
-                            v_float32x4 ty = v_setall_f32(t.get0());
-                            // vx is y-interpolated between rows 0 and 1
-                            v_float32x4 vx = v001 + ty*(v101 - v001);
-                            float v0       = vx.get0();
-                            vx = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vx)));
-                            float v1 = vx.get0();
-                            v        = v0 + tx*(v1 - v0);
-                        }
-                        else
-                            continue;
-                    }
-
-                    // norm(camPixVec) produces double which is too slow
-                    int _u = (int) projected.get0();
-                    int _v = (int) v_rotate_right<1>(projected).get0();
-                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
-                        continue;
-                    float pixNorm = pixNorms.at<float>(_v, _u);
-                    // float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
-                    // difference between distances of point and of surface to camera
-                    float sdf = pixNorm*(v*dfac - zCamSpace);
-                    // possible alternative is:
-                    // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
-                    if(sdf >= -volume.truncDist)
-                    {
-                        TsdfType tsdf = floatToTsdf(fmin(1.f, sdf * truncDistInv));
-
-                        TsdfVoxel& voxel = volDataY[z*volume.volDims[2]];
-                        WeightType& weight      = voxel.weight;
-                        TsdfType& value  = voxel.tsdf;
-
-                        // update TSDF
-                        value  = floatToTsdf((tsdfToFloat(value)*weight+ tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = (weight + 1) < volume.maxWeight ? (weight + 1) : volume.maxWeight;
-                    }
-                }
-            }
-        }
-    }
-#else
-    virtual void operator() (const Range& range) const override
-    {
-        for(int x = range.start; x < range.end; x++)
-        {
-            TsdfVoxel* volDataX = volDataStart + x*volume.volDims[0];
-            for(int y = 0; y < volume.volResolution.y; y++)
-            {
-                TsdfVoxel* volDataY = volDataX+y*volume.volDims[1];
-                // optimization of camSpace transformation (vector addition instead of matmul at each z)
-                Point3f basePt = vol2cam*(Point3f(float(x), float(y), 0.0f)*volume.voxelSize);
-                Point3f camSpacePt = basePt;
-                // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
-                // zStep == vol2cam*[Point3f(x, y, 1) - Point3f(x, y, 0)]*voxelSize
-                Point3f zStep = Point3f(vol2cam.matrix(0, 2),
-                                        vol2cam.matrix(1, 2),
-                                        vol2cam.matrix(2, 2))*volume.voxelSize;
-                int startZ, endZ;
-                if(abs(zStep.z) > 1e-5)
-                {
-                    int baseZ = int(-basePt.z / zStep.z);
-                    if(zStep.z > 0)
-                    {
-                        startZ = baseZ;
-                        endZ   = volume.volResolution.z;
-                    }
-                    else
-                    {
-                        startZ = 0;
-                        endZ   = baseZ;
-                    }
-                }
-                else
-                {
-                    if(basePt.z > 0)
-                    {
-                        startZ = 0;
-                        endZ   = volume.volResolution.z;
-                    }
-                    else
-                    {
-                        // z loop shouldn't be performed
-                        startZ = endZ = 0;
-                    }
-                }
-                startZ = max(0, startZ);
-                endZ   = min(volume.volResolution.z, endZ);
-
-                for (int z = startZ; z < endZ; z++)
-                {
-                    // optimization of the following:
-                    //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
-                    //Point3f camSpacePt = vol2cam * volPt;
-
-                    camSpacePt += zStep;
-                    if(camSpacePt.z <= 0)
-                        continue;
-
-                    Point3f camPixVec;
-                    Point2f projected = proj(camSpacePt, camPixVec);
-
-                    depthType v = bilinearDepth(depth, projected);
-                    if (v == 0) {
-                        continue;
-                    }
-
-                    int _u = projected.x;
-                    int _v = projected.y;
-                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
-                        continue;
-                    float pixNorm = pixNorms.at<float>(_v, _u);
-
-                    // difference between distances of point and of surface to camera
-                    float sdf = pixNorm*(v*dfac - camSpacePt.z);
-                    // possible alternative is:
-                    // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
-                    if(sdf >= -volume.truncDist)
-                    {
-                        TsdfType tsdf = floatToTsdf(fmin(1.f, sdf * truncDistInv));
-
-                        TsdfVoxel& voxel = volDataY[z*volume.volDims[2]];
-                        WeightType& weight      = voxel.weight;
-                        TsdfType& value  = voxel.tsdf;
-
-                        // update TSDF
-                        value  = floatToTsdf((tsdfToFloat(value)*weight+ tsdfToFloat(tsdf)) / (weight + 1));
-                        weight = min(int(weight + 1), int(volume.maxWeight));
-                    }
-                }
-            }
-        }
-    }
-#endif
-
-    TSDFVolumeCPU& volume;
-    const Depth& depth;
-    const Intr& intr;
-    const Intr::Projector proj;
-    const Affine3f vol2cam;
-    const float truncDistInv;
-    const float dfac;
-    TsdfVoxel* volDataStart;
-    Mat pixNorms;
-};
-
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
                               const Intr& intrinsics, const int frameId)
@@ -384,9 +133,8 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
 
-    IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, pixNorms);
-    Range range(0, volResolution.x);
-    parallel_for_(range, ii);
+    integrateVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution.x, volStrides, depth,
+        depthFactor, cameraPose, intrinsics, pixNorms, volume);
 }
 
 #if USE_INTRINSICS
