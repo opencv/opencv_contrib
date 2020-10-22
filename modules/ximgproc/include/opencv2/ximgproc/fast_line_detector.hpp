@@ -65,8 +65,9 @@ public:
                                          hysteresis procedure in Canny()
 @param _canny_th2           50         - Second threshold for
                                          hysteresis procedure in Canny()
-@param _canny_aperture_size 3          - Aperturesize for the sobel
-                                         operator in Canny()
+@param _canny_aperture_size 3          - Aperturesize for the sobel operator in Canny().
+                                         If zero, Canny() is not applied and the input
+                                         image is taken as an edge image.
 @param _do_merge            false      - If true, incremental merging of segments
                                          will be perfomred
 */
