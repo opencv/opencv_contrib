@@ -33,7 +33,7 @@ class FastLineDetectorImpl : public FastLineDetector
          *                                          If zero, Canny() is not applied and the input
          *                                          image is taken as an edge image.
          * @param _do_merge            false      - If true, incremental merging of segments
-         *                                          will be perfomred
+         *                                          will be performed
          */
         FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.414213562f,
                 double _canny_th1 = 50.0, double _canny_th2 = 50.0, int _canny_aperture_size = 3,
@@ -545,9 +545,14 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
     std::vector<Point2i> points;
     std::vector<SEGMENT> segments, segments_tmp;
     Mat canny;
-    if (canny_aperture_size == 0) canny = src;
-    else Canny(src, canny, canny_th1, canny_th2, canny_aperture_size);
-
+    if (canny_aperture_size == 0)
+    {
+        canny = src;
+    }
+    else
+    {
+        Canny(src, canny, canny_th1, canny_th2, canny_aperture_size);
+    }
     canny.colRange(0,6).rowRange(0,6) = 0;
     canny.colRange(src.cols-5,src.cols).rowRange(src.rows-5,src.rows) = 0;
 
