@@ -31,6 +31,7 @@ class HashTSDFVolume : public Volume
     float truncDist;
     float truncateThreshold;
     int volumeUnitResolution;
+    Point3i volumeUnitResolutions;
     float volumeUnitSize;
     bool zFirstMemOrder;
 };
