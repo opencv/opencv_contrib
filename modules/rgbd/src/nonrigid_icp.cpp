@@ -1600,13 +1600,18 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
         if (needData)
         {
             // Sigmas are to be updated before each iteration only
+            // At 0th iteration we had sigma and weights estimated
             if (it > 0)
             {
                 vertSigma = estimateVertexSigma(cachedResiduals);
                 // re-weighting based on a sigma
                 buildWeights(cachedResiduals, vertSigma, cachedWeights);
             }
-            // at 0th iteration we had sigma and weights estimated
+            else // there's no cachedDqSums at 0th iteration, fixing it
+            {
+                buildCachedDqSums(cachedKnns, warpNodes, knn, damping, disableCentering,
+                                  cachedDqSums);
+            }
 
             fillJacobianData(jtj, jtb, cachedResiduals, cachedOutVolN, cachedDqSums, cachedWeights,
                              ptsIn, cachedKnns, warpNodes, useTukey, normPenalty,
@@ -1656,7 +1661,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                                 useExp, signFix, signFixRelative);
 
                     // Warping nodes
-                    buildCachedDqSums(cachedKnns, tempWarpNodes, knn, damping, tempCachedDqSums);
+                    buildCachedDqSums(cachedKnns, tempWarpNodes, knn, damping, disableCentering,
+                                      tempCachedDqSums);
                     buildWarped(ptsIn, nrmIn, tempCachedDqSums, vol2cam,
                                 tempPtsInWarped, ptsInWarpedRendered,
                                 ptsInWarpedNormals, ptsInWarpedRenderedNormals);
@@ -1667,10 +1673,10 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                                          tempCachedResiduals, tempCachedOutVolN);
                     buildWeights(tempCachedResiduals, vertSigma, cachedWeights);
 
-                    float vertexEnergy = estimateVertexEnergy(tempCachedResiduals, cachedWeights);
+                    vertexEnergy = estimateVertexEnergy(tempCachedResiduals, cachedWeights);
 
-                    float regEnergy = estimateRegEnergy(graph, tempWarpNodes, tempRegNodes, regSigmas,
-                                                        useHuber, disableCentering, parentMovesChild, childMovesParent);
+                    regEnergy = estimateRegEnergy(graph, tempWarpNodes, tempRegNodes, regSigmas,
+                                                  useHuber, disableCentering, parentMovesChild, childMovesParent);
 
                     energy = vertexEnergy + reg_term_weight * regEnergy;
 
@@ -1721,22 +1727,27 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             cachedDqSums = tempCachedDqSums;
         }
         else
+        // TODO: remove this branch when LevMarq works
         {
             std::vector<float> x;
             if (!kinfu::sparseSolve(jtj, Mat(jtb), x))
                 break;
 
-            auto nodes = warp.getNodes();
-            auto regNodes = warp.getGraphNodes();
+            std::vector<Ptr<WarpNode>> tempWarpNodes = warp.cloneNodes();
+            std::vector<std::vector<Ptr<WarpNode>>> tempRegNodes = warp.cloneGraphNodes();
 
-            updateNodes(x, nodes, regNodes, additiveDerivative, useExp, signFix,
+            updateNodes(x, tempWarpNodes, tempRegNodes, additiveDerivative, useExp, signFix,
                         signFixRelative);
 
+            warp.setNodes(tempWarpNodes);
+            warp.setRegNodes(tempRegNodes);
+
             // Warping nodes
-            buildCachedDqSums(cachedKnns, nodes, knn, damping, cachedDqSums);
+            buildCachedDqSums(cachedKnns, warpNodes, knn, damping, disableCentering,
+                              cachedDqSums);
             buildWarped(ptsIn, nrmIn, cachedDqSums, vol2cam,
-                ptsInWarped, ptsInWarpedRendered,
-                ptsInWarpedNormals, ptsInWarpedRenderedNormals);
+                        ptsInWarped, ptsInWarpedRendered,
+                        ptsInWarpedNormals, ptsInWarpedRenderedNormals);
             buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
             buildVertexResiduals(ptsInProjected, ptsInWarped, ptsInWarpedNormals,
                                  ptsOutVolP, ptsOutVolN,
