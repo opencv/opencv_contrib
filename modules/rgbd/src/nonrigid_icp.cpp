@@ -1204,8 +1204,8 @@ void buildVertexResiduals(const Mat_<Point2f>& ptsInProjected,
         for (int x = 0; x < size.width; x++)
         {
             bool goodv = false;
-            float pointPlaneDistance;
-            Point3f outVolN;
+            float pointPlaneDistance = 0.f;
+            Point3f outVolP, outVolN;
             // ptsIn warped and rendered from camera
             // Point3f inrp = fromPtype(ptsInWarpedRenderedRow[x]);
 
@@ -1214,7 +1214,6 @@ void buildVertexResiduals(const Mat_<Point2f>& ptsInProjected,
             if (!(cvIsNaN(outXY.x) || cvIsNaN(outXY.y)))
             {
                 // Get newPoint and newNormal
-                Point3f outVolP, outVolN;
                 bool hasP, hasN;
                 std::tie(hasP, outVolP) = interpolateP3f(outXY, ptsOutVolP[0], size.width);
                 std::tie(hasN, outVolN) = interpolateP3f(outXY, ptsOutVolN[0], size.width);
@@ -1232,7 +1231,7 @@ void buildVertexResiduals(const Mat_<Point2f>& ptsInProjected,
 
                     Point3f diff = outVolP - inWarped;
 
-                    float pointPlaneDistance = outVolN.dot(diff);
+                    pointPlaneDistance = outVolN.dot(diff);
 
                     goodv = (diff.dot(diff) <= diffThreshold) &&
                             (abs(inVolumeN.dot(outVolN)) >= critAngleCos) &&
@@ -1550,7 +1549,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     float regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas,
                                         useHuber, disableCentering, parentMovesChild, childMovesParent);
 
-    float oldEnergy = vertexEnergy + reg_term_weight * regEnergy;
+    float energy = vertexEnergy + reg_term_weight * regEnergy;
+    float oldEnergy = energy;
 
     const int knn = warp.k;
 
@@ -1625,7 +1625,6 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 diag[i] = jtj.refElem(i, i);
             }
 
-            float energy;
             std::vector<Ptr<WarpNode>> tempWarpNodes;
             std::vector<std::vector<Ptr<WarpNode>>> tempRegNodes;
             Mat_<float> tempCachedResiduals;
@@ -1745,12 +1744,12 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                                  cachedResiduals, cachedOutVolN);
             buildWeights(cachedResiduals, vertSigma, cachedWeights);
 
-            float vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
+            vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
 
-            float regEnergy = estimateRegEnergy(graph, nodes, regNodes, regSigmas,
-                useHuber, disableCentering, parentMovesChild, childMovesParent);
+            regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas, useHuber,
+                                          disableCentering, parentMovesChild, childMovesParent);
 
-            float energy = vertexEnergy + reg_term_weight * regEnergy;
+            energy = vertexEnergy + reg_term_weight * regEnergy;
 
             //TODO: visualize iteration by iteration
 
