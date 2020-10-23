@@ -46,7 +46,8 @@ static inline bool fastCheck(const Point3f& p)
 }
 
 
-static float median(const std::vector<float>& v)
+//TODO: optimize it and (or) madEstimate
+static float median(std::vector<float>& v)
 {
     size_t n = v.size()/2;
     if(n == 0) return 0;
@@ -63,6 +64,13 @@ static float median(const std::vector<float>& v)
     {
         return vn;
     }
+}
+
+static float madEstimate(std::vector<float>& v)
+{
+    float med = median(v);
+    std::for_each(v.begin(), v.end(), [med](float& x) {x = std::abs(x - med); });
+    return MAD_SCALE * median(v);
 }
 
 
@@ -637,15 +645,7 @@ float estimateVertexSigma(const Mat_<float>& cachedResiduals)
         }
     }
 
-    float vertSigma = 1.f;
-    {
-        float vertMed = median(vertResiduals);
-        std::for_each(vertResiduals.begin(), vertResiduals.end(),
-                      [vertMed](float& x) {x = std::abs(x - vertMed); });
-        vertSigma = MAD_SCALE * median(vertResiduals);
-    }
-
-    return vertSigma;
+    return madEstimate(vertResiduals);
 }
 
 
@@ -767,11 +767,8 @@ std::vector<float> estimateRegSigmas(const std::vector<std::vector<NodeNeighbour
                 }
             }
         }
-        
-        float regMed = median(regLevResiduals);
-        std::for_each(regLevResiduals.begin(), regLevResiduals.end(),
-                      [regMed](float& x) {x = std::abs(x - regMed); });
-        regSigmas[level] = MAD_SCALE * median(regLevResiduals);
+
+        regSigmas[level] = madEstimate(regLevResiduals);
     }
 
     return regSigmas;
