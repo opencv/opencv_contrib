@@ -24,7 +24,7 @@ namespace kinfu
  * \class BlockSparseMat
  * Naive implementation of Sparse Block Matrix
  */
-template<typename _Tp, int blockM, int blockN>
+template<typename _Tp, size_t blockM, size_t blockN>
 struct BlockSparseMat
 {
     struct Point2iHash
@@ -41,11 +41,11 @@ struct BlockSparseMat
     typedef Matx<_Tp, blockM, blockN> MatType;
     typedef std::unordered_map<Point2i, MatType, Point2iHash> IDtoBlockValueMap;
 
-    BlockSparseMat(int _nBlocks) : nBlocks(_nBlocks), ijValue() {}
+    BlockSparseMat(size_t _nBlocks) : nBlocks(_nBlocks), ijValue() {}
 
-    MatType& refBlock(int i, int j)
+    MatType& refBlock(size_t i, size_t j)
     {
-        Point2i p(i, j);
+        Point2i p((int)i, (int)j);
         auto it = ijValue.find(p);
         if (it == ijValue.end())
         {
@@ -67,9 +67,10 @@ struct BlockSparseMat
         return diag;
     }
 
-    _Tp& refElem(int i, int j)
+    _Tp& refElem(size_t i, size_t j)
     {
-        Point2i ib(i / blockM, j / blockN), iv(i % blockM, j % blockN);
+        Point2i ib((int)(i / blockM), (int)(j / blockN));
+        Point2i iv((int)(i % blockM), (int)(j % blockN));
         return refBlock(ib.x, ib.y)(iv.x, iv.y);
     }
 
@@ -78,7 +79,7 @@ struct BlockSparseMat
     {
         std::vector<Eigen::Triplet<double>> tripletList;
         tripletList.reserve(ijValue.size() * blockM * blockN);
-        for (const auto ijv& : ijValue)
+        for (const auto& ijv : ijValue)
         {
             int xb = ijv.first.x, yb = ijv.first.y;
             MatType vblock = ijv.second;
@@ -104,7 +105,7 @@ struct BlockSparseMat
     size_t nonZeroBlocks() const { return ijValue.size(); }
 
     static constexpr float NON_ZERO_VAL_THRESHOLD = 0.0001f;
-    int nBlocks;
+    size_t nBlocks;
     IDtoBlockValueMap ijValue;
 };
 
@@ -113,7 +114,6 @@ struct BlockSparseMat
 static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B,
                         OutputArray X, OutputArray predB = cv::noArray())
 {
-    bool result = false;
 #if defined(HAVE_EIGEN)
     Eigen::SparseMatrix<float> bigA = H.toEigen();
     Eigen::VectorXf bigB;

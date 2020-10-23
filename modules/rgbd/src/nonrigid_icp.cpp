@@ -346,7 +346,7 @@ static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const
     UnitDualQuaternion dqPas = pasNode.transform;
     Point3f cAct = actNode.pos;
     Point3f cPas = pasNode.pos;
-    int nAct = actNode.place, nPas = pasNode.place;
+    // int nAct = actNode.place, nPas = pasNode.place;
 
     UnitDualQuaternion dqActCentered, dqPasCentered;
     Point3f tPas = dqPas.getT();
@@ -392,7 +392,7 @@ static void fillEdge(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
     UnitDualQuaternion dqPas = pasNode.transform;
     Point3f cAct = actNode.pos;
     Point3f cPas = pasNode.pos;
-    int nAct = actNode.place, nPas = pasNode.place;
+    size_t nAct = actNode.place, nPas = pasNode.place;
     cv::Matx<float, 8, 6> jAct = actNode.cachedJac;
     cv::Matx<float, 8, 6> jPas = pasNode.cachedJac;
 
@@ -518,11 +518,11 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
     // run through DQB
     float wsum = 0;
      
-    std::vector<int> places(knn);
+    std::vector<size_t> places(knn);
     std::vector<Matx<float, 8, 6>> jPerNodeWeighted(knn);
     for (int k = 0; k < knn; k++)
     {
-        int nei = knns.neighbours[k];
+        //int nei = knns.neighbours[k];
         float w = knns.weights[k];
 
         const WarpNode& node = nodes[k];
@@ -567,7 +567,7 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
     // emulate jVertex^T * jVertex and jVertex^T*b
     for (int k = 0; k < knn; k++)
     {
-        int kplace = places[k];
+        size_t kplace = places[k];
         if (decorrelate)
         {
             Matx66f block = jPerNode[k].t() * nnt * jPerNode[k];
@@ -580,7 +580,7 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
             {
                 Matx66f block = jPerNode[k].t() * nnt * jPerNode[l];
                 block += normPenalty * jNodeNormPenalty[k].t() * jNodeNormPenalty[l];
-                int lplace = places[l];
+                size_t lplace = places[l];
                 jtj.refBlock(kplace, lplace) += weight * block;
             }
         }
@@ -794,7 +794,7 @@ void updateNodes(const std::vector<float>& x,
         for (int ixn = 0; ixn < levelNodes.size(); ixn++)
         {
             Ptr<WarpNode> node = levelNodes[ixn];
-            int place = node->place;
+            size_t place = node->place;
 
             // blockNode = x[6 * n:6 * (n + 1)]
             float blockNode[6];
@@ -1563,8 +1563,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
 
     const int knn = warp.k;
 
-    int nNodes = warp.getNodesLen();
-    int nNodesAll = warp.getNodesLen() + warp.getRegNodesLen();
+    size_t nNodesAll = warp.getNodesLen() + warp.getRegNodesLen();
 
     // Find a place for each node params in x vector
     placeNodesInX(warpNodes, regNodes);
@@ -1590,8 +1589,6 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             for (int ixn = 0; ixn < levelNodes.size(); ixn++)
             {
                 Ptr<WarpNode> node = levelNodes[ixn];
-                int place = node->place;
-
                 node->cachedJac = node->transform.jRt(node->pos, atZero, additiveDerivative,
                                                       useExp, needR, needT, disableCentering);
             }
