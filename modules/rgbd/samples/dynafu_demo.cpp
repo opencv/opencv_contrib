@@ -245,7 +245,7 @@ int main(int argc, char **argv)
                             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
                             //window.showWidget("cloud", cloudWidget);
                             //window.showWidget("normals", cloudNormals);
-                            vector<Point3f> nodesPts = df->getNodesPos();
+                            std::vector<Point3f> nodesPts = df->getNodesPos();
                             if(!nodesPts.empty())
                             {
                                 std::transform(nodesPts.begin(), nodesPts.end(),
