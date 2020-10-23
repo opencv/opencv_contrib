@@ -250,7 +250,7 @@ void WarpField::constructRegGraph()
 
             coarseNodeIndex->knnSearch(query, children_indices, children_dists, k,
                                        cvflann::SearchParams());
-            hierarchy[l][i].fill(-1);
+            hierarchy[l][i].fill((size_t)-1);
             std::copy(children_indices.begin(), children_indices.end(), hierarchy[l][i].begin());
         }
 

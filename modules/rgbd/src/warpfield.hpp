@@ -14,7 +14,7 @@ namespace dynafu {
 struct WarpNode
 {
     WarpNode():
-        pos(), radius(), transform(), place(-1), cachedJac()
+        pos(), radius(), transform(), place((size_t)-1), cachedJac()
     {}
 
     WarpNode(const WarpNode& wn) = default;
@@ -22,8 +22,8 @@ struct WarpNode
     float weight(Point3f x) const
     {
         Point3f diff = pos - x;
-        float L2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-        return expf(-L2/(2.f*radius));
+        float norm2 = diff.dot(diff);
+        return expf(-norm2/(2.f*radius));
     }
 
     // Returns transform applied to node's center
@@ -42,7 +42,7 @@ struct WarpNode
     // - dual and real part of dual quaternion logarithm
     cv::Vec3f arg[2];
     // where it is in params vector
-    int place;
+    size_t place;
     // cached jacobian
     cv::Matx<float, 8, 6> cachedJac;
 };
@@ -93,7 +93,6 @@ public:
         return regGraphNodes;
     }
 
-
     // used at LevMarq
     void setNodes(const std::vector<Ptr<WarpNode>>& n)
     {
@@ -104,8 +103,6 @@ public:
     {
         regGraphNodes = g;
     }
-
-
 
     size_t getNodesLen() const
     {
@@ -148,7 +145,7 @@ public:
         return v;
     }
 
-    std::vector<std::vector<Ptr<WarpNode>>>& cloneGraphNodes()
+    std::vector<std::vector<Ptr<WarpNode>>> cloneGraphNodes()
     {
         const auto& wgn = getGraphNodes();
         std::vector<std::vector<Ptr<WarpNode>>> vv;
