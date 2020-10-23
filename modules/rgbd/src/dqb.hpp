@@ -64,7 +64,7 @@ namespace dynafu {
 ///// Singularity-free primitive functions for quaternion routines /////
 
 // for quaternion exp
-float sinc(float x)
+inline float sinc(float x)
 {
     if (abs(x) < 0.01f)
         return 1.f - x * x / 6.f;
@@ -73,7 +73,7 @@ float sinc(float x)
 }
 
 // for quaternion log
-float invsinc(float x)
+inline float invsinc(float x)
 {
     if (abs(x) < 0.01f)
         return 1.f + x * x / 6.f;
@@ -82,7 +82,7 @@ float invsinc(float x)
 }
 
 // for quaternion jacobian calculation
-float csiii(float x)
+inline float csiii(float x)
 {
     // even better up to abs(x)=0.1: -1/3 + x**2/30
     if (abs(x) < 0.01f)
@@ -92,7 +92,7 @@ float csiii(float x)
 }
 
 // for dual quaternion jacobian calculation
-float one15(float x)
+inline float one15(float x)
 {
     if (abs(x) < 1.f)
         return 1.f / 15.f;
@@ -155,7 +155,7 @@ const Matx44f Z4  = Matx44f::zeros();
 const Matx33f I3  = Matx33f::eye();
 const Matx44f I4  = Matx44f::eye();
 
-Matx33f skew(Vec3f v)
+inline Matx33f skew(Vec3f v)
 {
     return {    0, -v[2],  v[1],
              v[2],     0, -v[0],
@@ -163,7 +163,7 @@ Matx33f skew(Vec3f v)
 }
 
 // jacobian for rotation quaternion from known exp arg
-Matx43f jExpRogArg(Vec3f er)
+inline Matx43f jExpRogArg(Vec3f er)
 {
     float normv = norm(er);
     float sincv = sinc(normv);
@@ -211,9 +211,7 @@ public:
         coeff(w, pure[0], pure[1], pure[2])
     { }
 
-    explicit Quaternion(const UnitQuaternion& uq) :
-        coeff(uq.coeff)
-    { }
+    explicit Quaternion(const UnitQuaternion& uq);
 
     float w() const { return coeff[0]; }
     float i() const { return coeff[1]; }
@@ -224,11 +222,7 @@ public:
     float dot(const Quaternion& q) const { return q.coeff.dot(coeff); }
     float norm() const { return sqrt(dot(*this)); }
 
-    UnitQuaternion normalized() const
-    {
-        Vec4f cs = coeff / norm();
-        return { cs[0], cs[1], cs[2], cs[3] };
-    }
+    UnitQuaternion normalized() const;
 
     Quaternion inverted() const { return conjugated() / dot(*this); }
 
@@ -423,7 +417,7 @@ private:
 
 // node's jacobian for exponential representation
 //TODO: docs, see derivations in ipynb
-Matx<float, 8, 6> j_dq_exp_arg(Vec3f w_real, Vec3f w_dual)
+inline Matx<float, 8, 6> j_dq_exp_arg(Vec3f w_real, Vec3f w_dual)
 {
     Matx43f jexp_rot = jExpRogArg(w_real);
 
@@ -448,7 +442,7 @@ Matx<float, 8, 6> j_dq_exp_arg(Vec3f w_real, Vec3f w_dual)
 
 
 // when a node is represented as dual quaternion instead of (r, t)
-Matx<float, 8, 8> j_centered(Vec3f c)
+inline Matx<float, 8, 8> j_centered(Vec3f c)
 {
     // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
     // d(center(x))/dreal = I_4 + e*1/2*M_lrdiff(c)
@@ -459,8 +453,16 @@ Matx<float, 8, 8> j_centered(Vec3f c)
 }
 
 
+// node's Jacobian for (r, t) representation
+inline Matx<float, 8, 6> j_combined(UnitQuaternion r)
+{
+    return concatVert(concatHor(r.jExpRotVal(), Z43),
+                      concatHor(           Z43, concatVert(Matx13f::zeros(), I3)));
+}
+
+
 // centered node's jacobian
-Matx<float, 8, 6> j_pernode(UnitQuaternion r, Vec3f t, Vec3f c)
+inline Matx<float, 8, 6> j_pernode(UnitQuaternion r, Vec3f t, Vec3f c)
 {
     // getting Lie derivative of dq for current r, t
     // exp(r, t)->dq by r and t
@@ -479,14 +481,6 @@ Matx<float, 8, 6> j_pernode(UnitQuaternion r, Vec3f t, Vec3f c)
     Matx<float, 8, 8> jcenter = concatVert(concatHor(  I4, Z4),
                                            concatHor(dcdr, dcdt));
     return jcenter * jcombine;
-}
-
-
-// node's Jacobian for (r, t) representation
-Matx<float, 8, 6> j_combined(UnitQuaternion r)
-{
-    return concatVert(concatHor(r.jExpRotVal(), Z43),
-                      concatHor(           Z43, concatVert(Matx13f::zeros(), I3)));
 }
 
 
@@ -509,9 +503,7 @@ public:
         qreal(_real), qdual(_dual)
     { }
 
-    explicit DualQuaternion(const UnitDualQuaternion& _udq) :
-        qreal(_udq.real()), qdual(_udq.dual())
-    { }
+    explicit DualQuaternion(const UnitDualQuaternion& _udq);
 
     Quaternion real() const { return qreal; }
     Quaternion dual() const { return qdual; }
@@ -705,12 +697,27 @@ private:
 
 // Quaternion
 
-Quaternion Quaternion::exp() const
+inline Quaternion::Quaternion(const UnitQuaternion& uq) :
+    coeff(uq.coeff)
+{ }
+
+inline UnitQuaternion Quaternion::normalized() const
+{
+    Vec4f cs = coeff / norm();
+    return { cs[0], cs[1], cs[2], cs[3] };
+}
+
+inline Quaternion operator*(float a, const Quaternion& q)
+{
+    return (Quaternion(q) *= a);
+}
+
+inline Quaternion Quaternion::exp() const
 {
     return std::exp(w()) * UnitQuaternion::fromAxisAngle(Vec3f(i(), j(), k()) * 2.f).q();
 }
 
-Quaternion Quaternion::log() const
+inline Quaternion Quaternion::log() const
 {
     float n = norm();
     Vec3f unitLog = UnitQuaternion(*this).toAxisAngle() / 2.f;
@@ -718,7 +725,7 @@ Quaternion Quaternion::log() const
 }
 
 // matrix form of quaternion multiplication from left side
-Matx44f Quaternion::m_left() const
+inline Matx44f Quaternion::m_left() const
 {
     // M_left(a)* V(b) =
     //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
@@ -732,7 +739,7 @@ Matx44f Quaternion::m_left() const
 }
 
 // matrix form of quaternion multiplication from right side
-Matx44f Quaternion::m_right() const
+inline Matx44f Quaternion::m_right() const
 {
     // M_right(b)* V(a) =
     //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
@@ -747,7 +754,7 @@ Matx44f Quaternion::m_right() const
 
 // matrix form of a*b - b*a
 // a cross product by 2 in fact
-Matx44f Quaternion::m_lrdiff() const
+inline Matx44f Quaternion::m_lrdiff() const
 {
     // M_lrdiff(a)*V(b) =
     //    = [    0 | 0_1x3
@@ -755,7 +762,7 @@ Matx44f Quaternion::m_lrdiff() const
     return concatVert(Vec4f::zeros().t(), concatHor(Vec3f::zeros(), skew(2.f * vec())));
 }
 
-Quaternion Quaternion::operator*=(const Quaternion& b)
+inline Quaternion Quaternion::operator*=(const Quaternion& b)
 {
     Quaternion a = *this;
     Vec3f av(a.i(), a.j(), a.k()), bv(b.i(), b.j(), b.k());
@@ -768,17 +775,12 @@ Quaternion Quaternion::operator*=(const Quaternion& b)
     return *this;
 }
 
-Quaternion operator*(float a, const Quaternion& q)
-{
-    return (Quaternion(q) *= a);
-}
-
 
 // UnitQuaternion
 
 
 // axisAngle = axis*angle, using sinc() to avoid singularities
-UnitQuaternion UnitQuaternion::fromAxisAngle(Vec3f axisAngle)
+inline UnitQuaternion UnitQuaternion::fromAxisAngle(Vec3f axisAngle)
 {
     // exp(v) = cos(norm(v)) + ijk*sin(norm(v))/norm(v)*v =
     // cos(norm(v)) + ijk*sinc(norm(v))*v
@@ -787,13 +789,13 @@ UnitQuaternion UnitQuaternion::fromAxisAngle(Vec3f axisAngle)
     return { cos(halfAngle), sn*axisAngle[0], sn*axisAngle[1], sn*axisAngle[2] };
 }
 
-Vec3f UnitQuaternion::toAxisAngle() const
+inline Vec3f UnitQuaternion::toAxisAngle() const
 {
     float ac = std::acos(w());
     return Vec3f(i(), j(), k()) * (invsinc(ac) * 2.f);
 }
 
-Vec3f UnitQuaternion::apply(Vec3f point) const
+inline Vec3f UnitQuaternion::apply(Vec3f point) const
 {
     // The recipe is taken from python quaternion package, here's the comment:
     // "
@@ -810,7 +812,7 @@ Vec3f UnitQuaternion::apply(Vec3f point) const
 }
 
 // jacobian for rotation quaternion from known value
-Matx43f UnitQuaternion::jExpRotVal() const
+inline Matx43f UnitQuaternion::jExpRotVal() const
 {
     Vec3f er = this->toAxisAngle() / 2.f;
     // upper part is slightly better optimized than in jExpRotArg() function
@@ -822,8 +824,16 @@ Matx43f UnitQuaternion::jExpRotVal() const
 
 // DualQuaternion
 
+inline DualQuaternion::DualQuaternion(const UnitDualQuaternion& _udq) :
+    qreal(_udq.real()), qdual(_udq.dual())
+{ }
 
-Vec2f DualQuaternion::norm() const
+inline DualQuaternion operator*(float a, const DualQuaternion& dq)
+{
+    return (DualQuaternion(dq) *= a);
+}
+
+inline Vec2f DualQuaternion::norm() const
 {
     // norm(a) + e*dot(a, b)/norm(a)
     float r = qreal.norm();
@@ -831,7 +841,7 @@ Vec2f DualQuaternion::norm() const
     return { r, d };
 }
 
-UnitDualQuaternion DualQuaternion::normalized() const
+inline UnitDualQuaternion DualQuaternion::normalized() const
 {
     // proven analytically:
     // norm(r+e*t) = norm(r) + e*dot(r,t)/norm(r)
@@ -848,7 +858,7 @@ UnitDualQuaternion DualQuaternion::normalized() const
 // see deduction of exp() and log() in documentation
 // correctness for non-pure DQs not guaranteed
 //TODO: make it for UnitDualQuaternions only
-DualQuaternion DualQuaternion::exp() const
+inline DualQuaternion DualQuaternion::exp() const
 {
     Quaternion er = qreal.exp();
     Vec4f edv = jExpRogArg(qreal.vec()) * qdual.vec();
@@ -856,7 +866,7 @@ DualQuaternion DualQuaternion::exp() const
     return { er, ed };
 }
 
-DualQuaternion DualQuaternion::log() const
+inline DualQuaternion DualQuaternion::log() const
 {
     Quaternion lr = qreal.log();
     Matx43f jexp = jExpRogArg(lr.vec());
@@ -873,7 +883,7 @@ DualQuaternion DualQuaternion::log() const
 }
 
 // works even if this dq is not a unit dual quaternion
-Affine3f DualQuaternion::getRt() const
+inline Affine3f DualQuaternion::getRt() const
 {
     Affine3f aff = UnitQuaternion(qreal).getRotation();
 
@@ -882,7 +892,7 @@ Affine3f DualQuaternion::getRt() const
     return aff;
 }
 
-DualQuaternion DualQuaternion::inverted() const
+inline DualQuaternion DualQuaternion::inverted() const
 {
     // inv(r+e*t) = inv(r) - e*inv(r)*t*inv(r)
     Quaternion invr = qreal.inverted();
@@ -890,7 +900,7 @@ DualQuaternion DualQuaternion::inverted() const
 }
 
 // jacobian of normalization+application to a point
-Matx<float, 3, 8> DualQuaternion::j_normapply(Vec3f v) const
+inline Matx<float, 3, 8> DualQuaternion::j_normapply(Vec3f v) const
 {
     Quaternion a = real(), b = dual();
     // normalize:
@@ -915,7 +925,7 @@ Matx<float, 3, 8> DualQuaternion::j_normapply(Vec3f v) const
 }
 
 // jacobian of norm
-Matx<float, 2, 8> DualQuaternion::j_norm() const
+inline Matx<float, 2, 8> DualQuaternion::j_norm() const
 {
     // d(norm(a+e*b))/da = na^T + e*nb^T*(I_4 - na*na^T)
     // d(norm(a+e*b))/db = e*na^T
@@ -930,13 +940,13 @@ Matx<float, 2, 8> DualQuaternion::j_norm() const
 }
 
 // node's exponential Jacobian based on its value
-Matx<float, 8, 6> DualQuaternion::j_dq_exp_val() const
+inline Matx<float, 8, 6> DualQuaternion::j_dq_exp_val() const
 {
     DualQuaternion w = log();
     return j_dq_exp_arg(w.real().vec(), w.dual().vec());
 }
 
-DualQuaternion DualQuaternion::operator*=(const DualQuaternion& dq)
+inline DualQuaternion DualQuaternion::operator*=(const DualQuaternion& dq)
 {
     // (a1 + e*b1)*(a2 + e*b2) = a1*a2 + e*(a1*b2 + b1*a2)
     Quaternion qq0 = qreal * dq.qreal;
@@ -946,16 +956,11 @@ DualQuaternion DualQuaternion::operator*=(const DualQuaternion& dq)
     return *this;
 }
 
-DualQuaternion operator*(float a, const DualQuaternion& dq)
-{
-    return (DualQuaternion(dq) *= a);
-}
-
 
 // UnitDualQuaternion
 
 
-explicit UnitDualQuaternion::UnitDualQuaternion(const Affine3f& rt)
+inline UnitDualQuaternion::UnitDualQuaternion(const Affine3f& rt)
 {
     // (q0 + e*q0) = (r + e*1/2*t*r)
     qreal = UnitQuaternion(rt);
@@ -965,7 +970,7 @@ explicit UnitDualQuaternion::UnitDualQuaternion(const Affine3f& rt)
 // generate a rotation around axis by alpha angle and shift by d
 // axis is given in Plucker coordinates: n is for rotation axis, m is for moment
 // n should be unit vector orthogonal to m, if it's not true then use fromScrew()
-UnitDualQuaternion::UnitDualQuaternion(float alpha, float d, Vec3f n, Vec3f m)
+inline UnitDualQuaternion::UnitDualQuaternion(float alpha, float d, Vec3f n, Vec3f m)
 {
     UnitQuaternion rot(alpha * 0.5f * n);
     Vec3f tr = d * n + (1.f - cos(alpha)) * n.cross(m) + sin(alpha) * m;
@@ -976,7 +981,7 @@ UnitDualQuaternion::UnitDualQuaternion(float alpha, float d, Vec3f n, Vec3f m)
 // make a new dq from current that :
 // shifts from c to 0, performs transformation of dq (rotation then translation),
 // then shifts back to c
-UnitDualQuaternion UnitDualQuaternion::centered(Vec3f c) const
+inline UnitDualQuaternion UnitDualQuaternion::centered(Vec3f c) const
 {
     // center(x) = (1 + e*1/2*с) * (r + e*d) * (1 - e*1/2*c) = r + e * (d + 1/2 * (c*r - r*c))
     // c*r - r*c == ijk*2*cross(c.vec(), r.vec())
@@ -984,7 +989,7 @@ UnitDualQuaternion UnitDualQuaternion::centered(Vec3f c) const
     return { qreal, qdual + Quaternion(0, cross) };
 }
 
-Affine3f UnitDualQuaternion::getRt() const
+inline Affine3f UnitDualQuaternion::getRt() const
 {
     Affine3f aff = qreal.getRotation();
     aff.translate(getT());
@@ -994,7 +999,7 @@ Affine3f UnitDualQuaternion::getRt() const
 // 1. normalize n
 // 2. make m orthogonal to n by removing its collinear-to-n part
 // 3. call unit version
-UnitDualQuaternion UnitDualQuaternion::fromScrew(float alpha, float d, Vec3f n, Vec3f m)
+inline UnitDualQuaternion UnitDualQuaternion::fromScrew(float alpha, float d, Vec3f n, Vec3f m)
 {
     Vec3f nfixed = n / cv::norm(n);
     Vec3f mfixed = m - nfixed * nfixed.dot(m);
@@ -1021,13 +1026,13 @@ SomeCombinedType toScrew() const
 }
 */
 
-Vec3f UnitDualQuaternion::apply(Vec3f point) const
+inline Vec3f UnitDualQuaternion::apply(Vec3f point) const
 {
     return qreal.apply(point) + getT();
 }
 
 // Get jacobian of unit dual quaternion
-Matx<float, 8, 6> UnitDualQuaternion::jRt(Vec3f c, bool atZero, bool additiveDerivative, bool useExp, bool needR, bool needT, bool disableCentering) const
+inline Matx<float, 8, 6> UnitDualQuaternion::jRt(Vec3f c, bool atZero, bool additiveDerivative, bool useExp, bool needR, bool needT, bool disableCentering) const
 {
     UnitDualQuaternion dqEffective = atZero ? UnitDualQuaternion() : (*this);
 
@@ -1075,7 +1080,7 @@ Matx<float, 8, 6> UnitDualQuaternion::jRt(Vec3f c, bool atZero, bool additiveDer
     return j;
 }
 
-Matx<float, 3, 8> UnitDualQuaternion::j_apply(Vec3f v) const
+inline Matx<float, 3, 8> UnitDualQuaternion::j_apply(Vec3f v) const
 {
     // d(apply(...))/dr = 2*(M_Im*M_right(v*r^) + M_left(dual)*M_conj)
     // d(apply(...))/ddual = 2*M_right(r^)
@@ -1088,14 +1093,14 @@ Matx<float, 3, 8> UnitDualQuaternion::j_apply(Vec3f v) const
 }
 
 // node's exponential Jacobian based on its value
-Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_val() const
+inline Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_val() const
 {
     DualQuaternion w = dq().log();
     return j_dq_exp_arg(w.real().vec(), w.dual().vec());
 }
 
 // Jacobian of (exp(x)*dq) at x == 0 for multiplicative derivative
-Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_0() const
+inline Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_0() const
 {
     // d(exp(w==0)*rt)/dw_real = cut_1st_column( M_right(rt_real) + e*M_right(rt_dual) )
     // d(exp(w==0)*rt)/dw_dual = cut_1st_columt( e*M_right(rt_real) )
@@ -1110,7 +1115,7 @@ Matx<float, 8, 6> UnitDualQuaternion::j_dq_exp_0() const
 }
 
 // node's jacobian at 0 for (r, t) representation
-Matx<float, 8, 6> UnitDualQuaternion::j_rt_0() const
+inline Matx<float, 8, 6> UnitDualQuaternion::j_rt_0() const
 {
     // d(from(axis==0, t==0)*rt/d(axis) = cut_1st_column(2*(M_right(rt_real) + e*M_right(rt_dual)))
     // d(from(axis==0, t==0)*rt/dt      = cut_1st_column(e*1/2*M_right(rt_real))
@@ -1124,7 +1129,7 @@ Matx<float, 8, 6> UnitDualQuaternion::j_rt_0() const
     return concatVert(dup, ddn);
 }
 
-UnitDualQuaternion UnitDualQuaternion::operator*=(const UnitDualQuaternion& u)
+inline UnitDualQuaternion UnitDualQuaternion::operator*=(const UnitDualQuaternion& u)
 {
     // (a1 + e*b1)*(a2 + e*b2) = a1*a2 + e*(a1*b2 + b1*a2)
     UnitQuaternion qq0 = qreal * u.qreal;
@@ -1137,7 +1142,7 @@ UnitDualQuaternion UnitDualQuaternion::operator*=(const UnitDualQuaternion& u)
 ///// Tools for Dual Quaternions /////
 
 
-UnitDualQuaternion DQB(const std::vector<float>& weights, const std::vector<UnitDualQuaternion>& quats)
+inline UnitDualQuaternion DQB(const std::vector<float>& weights, const std::vector<UnitDualQuaternion>& quats)
 {
     DualQuaternion blended;
     for (size_t i = 0; i < weights.size(); i++)
@@ -1146,7 +1151,7 @@ UnitDualQuaternion DQB(const std::vector<float>& weights, const std::vector<Unit
 }
 
 
-cv::Affine3f DQB(const std::vector<float>& weights, const std::vector<Affine3f>& transforms)
+inline cv::Affine3f DQB(const std::vector<float>& weights, const std::vector<Affine3f>& transforms)
 {
     DualQuaternion blended;
     for (size_t i = 0; i < transforms.size(); i++)
@@ -1158,14 +1163,14 @@ cv::Affine3f DQB(const std::vector<float>& weights, const std::vector<Affine3f>&
 // tries to fix dual quaternions before DQB so that they will form shortest paths
 // the algorithm is described in [Kavan and Zara 2005], Kavan'08
 // to make it deterministic we choose a reference dq according to relative flag
-void signFix(std::vector<DualQuaternion>& dqs, bool relative = false)
+inline void signFix(std::vector<DualQuaternion>& dqs, bool relative = false)
 {
     if (relative)
     {
         // in relative mode reference is dq with smallest squared norm
         DualQuaternion ref;
         float refnorm = std::numeric_limits<float>::max();
-        for (auto dq : dqs)
+        for (const auto& dq : dqs)
         {
             float norm = dq.dot(dq);
             if (norm < refnorm)
@@ -1188,17 +1193,6 @@ void signFix(std::vector<DualQuaternion>& dqs, bool relative = false)
         }
     }
 }
-
-//TODO URGENT: this to c++
-/*
-
-def dist_weight(p, c, csize):
-    diff = p-c.vec
-    norm2 = np.inner(diff, diff)
-    return math.exp(-(norm2)/(2*csize))
-
-
-*/
 
 } // namespace dynafu
 } // namespace cv
