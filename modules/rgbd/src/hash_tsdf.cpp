@@ -74,6 +74,13 @@ void HashTSDFVolumeCPU::reset()
     volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
 }
 
+bool _find(cv::Mat v, Vec3i tsdf_idx)
+{
+    bool res = false;
+    v.forEach<Vec3i>([&](Vec3i& v, const int*) {if (v == tsdf_idx) res = true; });
+    return res;
+}
+
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
@@ -88,11 +95,16 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
     const Point3f truncPt(truncDist, truncDist, truncDist);
     VolumeUnitIndexSet newIndices;
+    _VolumeUnitIndexSet _newIndices;
     Mutex mutex;
     Range allocateRange(0, depth.rows);
-
+    int vol_idx = 0;
+    
     auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
         VolumeUnitIndexSet localAccessVolUnits;
+        _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(1, VOLUMES_SIZE, rawType<Vec3i>());
+        
+
         for (int y = range.start; y < range.end; y += depthStride)
         {
             const depthType* depthRow = depth[y];
@@ -117,6 +129,12 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                                 //! This volume unit will definitely be required for current integration
                                 localAccessVolUnits.emplace(tsdf_idx);
                             }
+
+                            if (_find(_localAccessVolUnits, tsdf_idx))
+                            {
+                                _localAccessVolUnits.at<Vec3i>(0, vol_idx) = tsdf_idx;
+                                vol_idx++;
+                            }
                         }
             }
         }
@@ -132,6 +150,9 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                 newIndices.emplace(tsdf_idx);
             }
         }
+
+
+
         mutex.unlock();
     };
     parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);

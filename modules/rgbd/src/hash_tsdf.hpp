@@ -64,6 +64,9 @@ struct VolumeUnit
 typedef std::unordered_set<cv::Vec3i, tsdf_hash> VolumeUnitIndexSet;
 typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitIndexes;
 
+typedef cv::Mat _VolumeUnitIndexSet;
+typedef cv::Mat _VolumeUnitIndexes;
+
 class HashTSDFVolumeCPU : public HashTSDFVolume
 {
    public:
@@ -114,6 +117,8 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
        VolumeUnitIndexes volumeUnits;
        cv::Mat volUnitsData;
        VolumeIndex lastVolIndex;
+
+
 };
 
 template<typename T>
