@@ -508,10 +508,8 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
                        const DualQuaternion& dqsum,
                        const float weight,
                        // algorithm params
-                       const float damping,
                        const float normPenalty,
-                       const bool decorrelate,
-                       const bool disableCentering)
+                       const bool decorrelate)
 {
     size_t knn = nodes.size();
 
@@ -527,13 +525,6 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
 
         const WarpNode& node = nodes[k];
 
-        Point3f c;
-        if (!disableCentering)
-        {
-            c = node.pos;
-        }
-
-        // center(x) := (1+e*1/2*c)*x*(1-e*1/2*c)
         places[k] = node.place;
         jPerNodeWeighted[node.place] = w * node.cachedJac;
         wsum += w;
@@ -599,7 +590,7 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
 
 // nodes = warp.getNodes();
 DualQuaternion warpForVertex(const WeightsNeighbours& knns, const std::vector<Ptr<WarpNode>>& nodes,
-                             const int knn, const float damping)
+                             const int knn, const float damping, const bool disableCentering)
 {
     DualQuaternion dqsum;
     float wsum = 0; int nValid = 0;
@@ -611,9 +602,11 @@ DualQuaternion warpForVertex(const WeightsNeighbours& knns, const std::vector<Pt
             float w = knns.weights[k];
 
             Ptr<WarpNode> node = nodes[ixn];
-            Point3f c = node->pos;
 
-            UnitDualQuaternion dqi = node->transform.centered(node->pos);
+            // center(x) := (1+e*1/2*c)*x*(1-e*1/2*c)
+            UnitDualQuaternion dqi = disableCentering ?
+                node->transform :
+                node->transform.centered(node->pos);
 
             dqsum += w * dqi.dq();
             wsum += w;
@@ -1112,7 +1105,7 @@ void buildKnns(const WarpField& warp, const Mat_<ptype>& ptsIn,
 
 void buildCachedDqSums(const Mat& cachedKnns,
                        const std::vector<Ptr<WarpNode>>& nodes,
-                       const int knn, const float damping,
+                       const int knn, const float damping, const bool disableCentering,
                        // output params
                        Mat& cachedDqSums)
 {
@@ -1127,7 +1120,7 @@ void buildCachedDqSums(const Mat& cachedKnns,
         for (int x = 0; x < size.width; x++)
         {
             WeightsNeighbours knns = cachedKnnsRow[x];
-            DualQuaternion dqrt = warpForVertex(knns, nodes, knn, damping);
+            DualQuaternion dqrt = warpForVertex(knns, nodes, knn, damping, disableCentering);
             cachedDqSumsRow[x] = dqrt;
         }
     }
@@ -1336,10 +1329,8 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
                       const Mat& cachedKnns,
                       const std::vector<Ptr<WarpNode>>& warpNodes,
                       const bool useTukey,
-                      const float damping,
                       const float normPenalty,
-                      const bool decorrelate,
-                      const bool disableCentering)
+                      const bool decorrelate)
 {
     Size size = cachedResiduals.size();
     for (int y = 0; y < size.height; y++)
@@ -1378,7 +1369,7 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
 
             fillVertex(jtj, jtb, nodes, knns,
                        inp, pointPlaneDistance, outVolN, dqsum, weight,
-                       damping, normPenalty, decorrelate, disableCentering);
+                       normPenalty, decorrelate);
         }
     }
 }
@@ -1618,8 +1609,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
             // at 0th iteration we had sigma and weights estimated
 
             fillJacobianData(jtj, jtb, cachedResiduals, cachedOutVolN, cachedDqSums, cachedWeights,
-                             ptsIn, cachedKnns, warpNodes, useTukey, damping, normPenalty,
-                             decorrelate, disableCentering);
+                             ptsIn, cachedKnns, warpNodes, useTukey, normPenalty,
+                             decorrelate);
         }
 
         // Solve and get delta transform
