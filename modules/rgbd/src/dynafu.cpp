@@ -5,15 +5,16 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #include "precomp.hpp"
+
+#include "kinfu_frame.hpp"
+#include "fast_icp.hpp"
+
 #include "dynafu_tsdf.hpp"
 #include "warpfield.hpp"
-
-#include "fast_icp.hpp"
 #include "nonrigid_icp.hpp"
-#include "kinfu_frame.hpp"
 
 //VEEERY DEBUG
-#include "dqb.hpp"
+//#include "dqb.hpp"
 #include "opencv2/viz.hpp"
 
 #include "opencv2/core/opengl.hpp"
@@ -139,7 +140,7 @@ private:
 
 template< typename T>
 std::vector<Point3f> DynaFuImpl<T>::getNodesPos() const {
-    NodeVectorType nv = warpfield.getNodes();
+    auto nv = warpfield.getNodes();
     std::vector<Point3f> nodesPos;
     for(auto n: nv)
         nodesPos.push_back(n->pos);
@@ -321,8 +322,8 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         Vec3f axis2(0.f, 1.f, 1.f);
         axis1 *= 1.f/sqrt(axis1.dot(axis1));
         axis2 *= 1.f/sqrt(axis2.dot(axis2));
-        float angle1 = 30.f*(CV_PI/180.f);
-        float angle2 = 45.f*(CV_PI/180.f);
+        float angle1 = (float)(30.0*CV_PI/180.0);
+        float angle2 = (float)(45.0*CV_PI/180.0);
         Vec3f shift1(1.f, 0.f, 5.f);
         Vec3f shift2(8.f, 1.f, 0.0f);
         Vec3f rot1 = axis1*angle1;
@@ -526,14 +527,14 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                         0, 1, 0,
                       -ss, 0, cc};
             Vec3f mt {0.05f*cc, 0, 0.03f*ss };
-            warpfield.getNodes()[nfix]->transform = Affine3f(mr, mt);
+            warpfield.getNodes()[nfix]->transform = UnitDualQuaternion(Affine3f(mr, mt));
 
 
             std::vector<Point3f> nodesTo = nodesPts;
             for(uint i = 0; i < nodesPts.size(); i++)
             {
                 Point3f pos = nodesPts[i];
-                Point3f tr = warpfield.getNodes()[i]->transform.translation();
+                Point3f tr = warpfield.getNodes()[i]->transform.getT();
                 //TODO: other neighbors
                 nodesTo[i] = pos + tr;
             }
@@ -570,7 +571,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                 float totalWeightSquare = 0.f;
                 for(int nnum = 0; nnum < n; nnum++)
                 {
-                    int nn = neighbours[nnum];
+                    size_t nn = neighbours[nnum];
                     Ptr<WarpNode> neigh = warpfield.getNodes()[nn];
                     nodes[nnum] = neigh;
                     float w = neigh->weight(volPt);
@@ -579,7 +580,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                         throw std::runtime_error("w is nan aaaaaa");
 
                     weights[nnum]= w;
-                    transforms[nnum] = neigh->rt_centered();
+                    transforms[nnum] = neigh->centeredRt().getRt();
 
                     //Affine3f rti = neigh->transform;
                     //Point3f pos = neigh->pos;
@@ -616,7 +617,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                               params.volumePose);
             viz::WCoordinateSystem nodeCoords(0.1f);
             Point3f nodePos = volume->pose * warpfield.getNodes()[nfix]->pos;
-            Affine3f nodeRot = warpfield.getNodes()[nfix]->transform;
+            Affine3f nodeRot = warpfield.getNodes()[nfix]->transform.getRt();
             debug.showWidget("nodepos", nodeCoords, Affine3f(nodeRot.rotation()).translate(nodePos));
 
             viz::WCloud nodeCloud(nodesPts, viz::Color::red());
