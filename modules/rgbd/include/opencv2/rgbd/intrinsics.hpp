@@ -18,7 +18,8 @@ struct Intr
     /** Reprojects screen point to camera space given z coord. */
     struct Reprojector
     {
-        Reprojector() {}
+        Reprojector() : fxinv(), fyinv(), cx(), cy() {}
+
         inline Reprojector(Intr intr)
         {
             fxinv = 1.f/intr.fx, fyinv = 1.f/intr.fy;

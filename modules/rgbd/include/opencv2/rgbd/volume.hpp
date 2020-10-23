@@ -51,6 +51,8 @@ enum class VolumeType
 
 struct CV_EXPORTS_W VolumeParams
 {
+    CV_WRAP VolumeParams() = default;
+
     /** @brief Type of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
@@ -67,7 +69,7 @@ struct CV_EXPORTS_W VolumeParams
         Number of voxels in each dimension for volumeUnit
         Applicable only for hashTSDF.
     */
-    CV_PROP_RW int unitResolution = {0};
+    CV_PROP_RW int unitResolution;
 
     /** @brief Initial pose of the volume in meters */
     Affine3f pose;

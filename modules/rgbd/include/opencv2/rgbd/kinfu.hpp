@@ -19,7 +19,7 @@ namespace kinfu {
 struct CV_EXPORTS_W Params
 {
 
-    CV_WRAP Params(){}
+    CV_WRAP Params() = default;
 
     /**
      * @brief Constructor for Params
