@@ -66,6 +66,7 @@ static float median(std::vector<float>& v)
     }
 }
 
+
 static float madEstimate(std::vector<float>& v)
 {
     float med = median(v);
@@ -314,6 +315,7 @@ inline std::pair<bool, Point3f> interpolateP3f(Point2f pt, const ptype* data, si
 
     return { true, (p0 + ty * (p1 - p0)) };
 }
+
 
 // Per-pixel structure to keep neighbours and weights
 // neighbours[i] < 0 indicates last neighbour
@@ -1334,13 +1336,16 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
     Size size = cachedResiduals.size();
     for (int y = 0; y < size.height; y++)
     {
+        auto dqsumRow = cachedDqSums.ptr<DualQuaternion>(y);
+        auto knnsRow = cachedKnns.ptr<WeightsNeighbours>(y);
+
         for (int x = 0; x < size.width; x++)
         {
             Point pt(x, y);
 
             float pointPlaneDistance = cachedResiduals(pt);
             Point3f outVolN = fromPtype(cachedOutVolN(pt));
-            DualQuaternion dqsum = cachedDqSums.at<DualQuaternion>(pt);
+            DualQuaternion dqsum = dqsumRow[x];
 
             if (std::isnan(pointPlaneDistance))
                 continue;
@@ -1354,7 +1359,7 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
             // Get ptsIn from shaded data
             Point3f inp = fromPtype(ptsIn(pt));
 
-            WeightsNeighbours knns = cachedKnns.at<WeightsNeighbours>(pt);
+            WeightsNeighbours knns = knnsRow[x];
 
             std::vector<WarpNode> nodes;
             for (int k = 0; k < DYNAFU_MAX_NEIGHBOURS; k++)
