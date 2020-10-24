@@ -8,12 +8,25 @@
 #define __OPENCV_TSDF_FUNCTIONS_H__
 
 #include <opencv2/rgbd/volume.hpp>
-#include "tsdf.hpp"
+
+#include "utils.hpp"
+#include "kinfu_frame.hpp"
 
 namespace cv
 {
 namespace kinfu
 {
+typedef int8_t TsdfType;
+typedef uchar WeightType;
+
+struct TsdfVoxel
+{
+    TsdfType tsdf;
+    WeightType weight;
+};
+
+typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
+
 
 inline v_float32x4 tsdfToFloat_INTR(const v_int32x4& num)
 {

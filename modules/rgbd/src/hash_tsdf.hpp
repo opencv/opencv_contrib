@@ -9,7 +9,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "opencv2/core/cvstd.hpp"
+#include "opencv2/core/utility.hpp"
+#include "opencv2/core/utils/trace.hpp"
+
 #include "tsdf_functions.hpp"
+#include "tsdf.hpp"
 
 namespace cv
 {

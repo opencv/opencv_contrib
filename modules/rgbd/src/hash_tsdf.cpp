@@ -4,18 +4,6 @@
 #include "precomp.hpp"
 #include "hash_tsdf.hpp"
 
-#include <atomic>
-#include <functional>
-#include <iostream>
-#include <limits>
-#include <vector>
-
-#include "kinfu_frame.hpp"
-#include "opencv2/core/cvstd.hpp"
-#include "opencv2/core/utility.hpp"
-#include "opencv2/core/utils/trace.hpp"
-#include "utils.hpp"
-
 #define USE_INTERPOLATION_IN_GETNORMAL 1
 #define VOLUMES_SIZE 1024
 

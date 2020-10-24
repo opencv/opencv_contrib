@@ -16,6 +16,9 @@
 #include <limits>
 #include <algorithm>
 #include <unordered_map>
+#include <atomic>
+#include <functional>
+#include <vector>
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"

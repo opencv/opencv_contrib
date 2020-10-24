@@ -10,27 +10,12 @@
 
 #include <opencv2/rgbd/volume.hpp>
 
-#include "kinfu_frame.hpp"
-#include "utils.hpp"
+#include "tsdf_functions.hpp"
 
 namespace cv
 {
 namespace kinfu
 {
-// TODO: Optimization possible:
-// * TsdfType can be FP16
-// * WeightType can be uint16
-
-typedef int8_t TsdfType;
-typedef uchar WeightType;
-
-struct TsdfVoxel
-{
-    TsdfType tsdf;
-    WeightType weight;
-};
-
-typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
 
 class TSDFVolume : public Volume
 {
