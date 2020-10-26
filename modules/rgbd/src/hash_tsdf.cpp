@@ -72,6 +72,7 @@ void HashTSDFVolumeCPU::reset()
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    _volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     indexes = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
     poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
     activities = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
@@ -91,6 +92,21 @@ bool _find(cv::Mat v, Vec3i tsdf_idx)
     }
     //v.forEach<Vec3i>([&](Vec3i& v, const int*) {if (v == tsdf_idx) res = true; });
     return false;
+}
+
+int find_idx(cv::Mat v, Vec3i tsdf_idx)
+{
+    //bool res = false;
+    for (int i = 0; i < v.size().height; i++)
+    {
+        auto p = v.at<Vec3i>(i, 0);
+        if (p == tsdf_idx)
+        {
+            return i;
+        }
+    }
+    //v.forEach<Vec3i>([&](Vec3i& v, const int*) {if (v == tsdf_idx) res = true; });
+    return -1;
 }
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -172,15 +188,15 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
            {
                if (_lastVolIndex >= VolumeIndex(indexes.size().height))
                {
-                    //indexes.resize(_lastVolIndex * 2);
+                    indexes.resize(_lastVolIndex + 200);
                }
-   /*
+   
                this->indexes.row(_lastVolIndex).at<Vec3i>(0) = idx;
                
                _newIndices.at<VolumeIndex>(0, vol_idx) = _lastVolIndex;
                vol_idx++;
                _lastVolIndex++;
-    */          
+              
            }
         }
        
@@ -211,42 +227,45 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.lastVisibleIndex = frameId;
         vu.isActive = true;
     }
-/*
+
     for (int i = 0; i < vol_idx; i++)
     {
         if (_lastVolIndex >= VolumeIndex(_volUnitsData.size().height))
         {
-            _volUnitsData.resize(_lastVolIndex * 2);
-            poses.resize(_lastVolIndex * 2);
-            activities.resize(_lastVolIndex * 2);
-            lastVisibleIndexes.resize(_lastVolIndex * 2);
+            _volUnitsData.resize(_lastVolIndex + 200);
+            poses.resize(_lastVolIndex + 200);
+            activities.resize(_lastVolIndex + 200);
+            lastVisibleIndexes.resize(_lastVolIndex + 200);
         }
         
-        VolumeIndex idx = _newIndices.at<VolumeIndex>(0, vol_idx);
+        VolumeIndex idx = _newIndices.at<VolumeIndex>(vol_idx, 0);
 
-        Vec3i tsdf_idx = indexes.at<Vec3i>(0, idx);
+        Vec3i tsdf_idx = indexes.at<Vec3i>(idx, 0);
         
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
         
-        poses.at<cv::Matx44f>(0, idx) = subvolumePose;
-        activities.at<bool>(0, idx) = true;
-        lastVisibleIndexes.at<int>(0, idx) = frameId;
+        poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
+        activities.at<bool>(idx, 0) = true;
+        lastVisibleIndexes.at<int>(idx, 0) = frameId;
 
         _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
                 v.tsdf = floatToTsdf(0.0f); v.weight = 0;
             });
-        
+       
     }
-*/
+
 
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> totalVolUnits;
-    for (const auto& keyvalue : volumeUnits)
+//    for (const auto& keyvalue : volumeUnits) {totalVolUnits.push_back(keyvalue.first);}
+
+    for (int i = 0; i < indexes.size().height; i++)
     {
-        totalVolUnits.push_back(keyvalue.first);
+        totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));
     }
+
 
     //! Mark volumes in the camera frustum as active
     Range inFrustumRange(0, (int)volumeUnits.size());
