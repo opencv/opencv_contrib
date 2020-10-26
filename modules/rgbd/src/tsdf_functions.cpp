@@ -111,7 +111,7 @@ depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 
 void integrateVolumeUnit(
     float truncDist, float voxelSize, int maxWeight,
-    cv::Matx44f _pose, int volResolution, Vec4i volStrides,
+    cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume)
 {
@@ -122,7 +122,7 @@ void integrateVolumeUnit(
     cv::Affine3f vpose(_pose);
     Depth depth = _depth.getMat();
 
-    Range integrateRange(0, volResolution);
+    Range integrateRange(0, volResolution.x);
 
     Mat volume = _volume.getMat();
     Mat pixNorms = _pixNorms.getMat();
@@ -147,7 +147,7 @@ void integrateVolumeUnit(
         for (int x = range.start; x < range.end; x++)
         {
             TsdfVoxel* volDataX = volDataStart + x * volStrides[0];
-            for (int y = 0; y < volResolution; y++)
+            for (int y = 0; y < volResolution.y; y++)
             {
                 TsdfVoxel* volDataY = volDataX + y * volStrides[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
@@ -161,7 +161,7 @@ void integrateVolumeUnit(
                     if (zStepPt.z > 0)
                     {
                         startZ = baseZ;
-                        endZ = volResolution;
+                        endZ = volResolution.z;
                     }
                     else
                     {
@@ -174,7 +174,7 @@ void integrateVolumeUnit(
                     if (basePt.z > 0)
                     {
                         startZ = 0;
-                        endZ = volResolution;
+                        endZ = volResolution.z;
                     }
                     else
                     {
@@ -183,7 +183,7 @@ void integrateVolumeUnit(
                     }
                 }
                 startZ = max(0, startZ);
-                endZ = min(int(volResolution), endZ);
+                endZ = min(int(volResolution.z), endZ);
                 for (int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
@@ -281,7 +281,7 @@ void integrateVolumeUnit(
         for (int x = range.start; x < range.end; x++)
         {
             TsdfVoxel* volDataX = volDataStart + x * volStrides[0];
-            for (int y = 0; y < volResolution; y++)
+            for (int y = 0; y < volResolution.y; y++)
             {
                 TsdfVoxel* volDataY = volDataX + y * volStrides[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
@@ -299,7 +299,7 @@ void integrateVolumeUnit(
                     if (zStep.z > 0)
                     {
                         startZ = baseZ;
-                        endZ = volResolution;
+                        endZ = volResolution.z;
                     }
                     else
                     {
@@ -312,7 +312,7 @@ void integrateVolumeUnit(
                     if (basePt.z > 0)
                     {
                         startZ = 0;
-                        endZ = volResolution;
+                        endZ = volResolution.z;
                     }
                     else
                     {
@@ -321,7 +321,7 @@ void integrateVolumeUnit(
                     }
                 }
                 startZ = max(0, startZ);
-                endZ = min(int(volResolution), endZ);
+                endZ = min(int(volResolution.z), endZ);
 
                 for (int z = startZ; z < endZ; z++)
                 {

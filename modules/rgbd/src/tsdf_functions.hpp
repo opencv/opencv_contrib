@@ -39,7 +39,7 @@ depthType bilinearDepth(const Depth& m, cv::Point2f pt);
 
 void integrateVolumeUnit(
     float truncDist, float voxelSize, int maxWeight,
-    cv::Matx44f _pose, int volResolution, Vec4i volStrides,
+    cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
 
