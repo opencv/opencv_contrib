@@ -72,13 +72,25 @@ void HashTSDFVolumeCPU::reset()
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    indexes = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
+    poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
+    activities = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
+    lastVisibleIndexes = cv::Mat(VOLUMES_SIZE, 1, rawType<int>());
 }
 
 bool _find(cv::Mat v, Vec3i tsdf_idx)
 {
-    bool res = false;
-    v.forEach<Vec3i>([&](Vec3i& v, const int*) {if (v == tsdf_idx) res = true; });
-    return res;
+    //bool res = false;
+    for (int i = 0; i < v.size().height; i++)
+    {
+        auto p = v.at<Vec3i>(i, 0);
+        if (p == tsdf_idx)
+        {
+            return true;
+        }
+    }
+    //v.forEach<Vec3i>([&](Vec3i& v, const int*) {if (v == tsdf_idx) res = true; });
+    return false;
 }
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -95,14 +107,15 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
     const Point3f truncPt(truncDist, truncDist, truncDist);
     VolumeUnitIndexSet newIndices;
-    _VolumeUnitIndexSet _newIndices;
+    _VolumeUnitIndexSet _newIndices = cv::Mat(VOLUMES_SIZE, 1, rawType<VolumeIndex>());
     Mutex mutex;
     Range allocateRange(0, depth.rows);
+    int loc_vol_idx = 0;
     int vol_idx = 0;
-    
+
     auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
         VolumeUnitIndexSet localAccessVolUnits;
-        _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(1, VOLUMES_SIZE, rawType<Vec3i>());
+        _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
         
 
         for (int y = range.start; y < range.end; y += depthStride)
@@ -130,16 +143,16 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                                 localAccessVolUnits.emplace(tsdf_idx);
                             }
 
-                            if (_find(_localAccessVolUnits, tsdf_idx))
+                            if ( !_find(_localAccessVolUnits, tsdf_idx))
                             {
-                                _localAccessVolUnits.at<Vec3i>(0, vol_idx) = tsdf_idx;
-                                vol_idx++;
+                                _localAccessVolUnits.at<Vec3i>(loc_vol_idx, 0) = tsdf_idx;
+                                loc_vol_idx++;
                             }
                         }
             }
         }
 
-        mutex.lock();
+        //mutex.lock();
         for (const auto& tsdf_idx : localAccessVolUnits)
         {
             //! If the insert into the global set passes
@@ -151,11 +164,31 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
 
-
-
-        mutex.unlock();
+       
+        for (int i = 0; i < loc_vol_idx; i++)
+        {
+           Vec3i idx = _localAccessVolUnits.at<Vec3i>(i, 0);
+           if (!_find(indexes, idx))
+           {
+               if (_lastVolIndex >= VolumeIndex(indexes.size().height))
+               {
+                    //indexes.resize(_lastVolIndex * 2);
+               }
+   /*
+               this->indexes.row(_lastVolIndex).at<Vec3i>(0) = idx;
+               
+               _newIndices.at<VolumeIndex>(0, vol_idx) = _lastVolIndex;
+               vol_idx++;
+               _lastVolIndex++;
+    */          
+           }
+        }
+       
+        //mutex.unlock();
     };
-    parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
+    
+    //parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
+    AllocateVolumeUnitsInvoker(allocateRange);
 
     //! Perform the allocation
     for (auto idx : newIndices)
@@ -178,6 +211,35 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         vu.lastVisibleIndex = frameId;
         vu.isActive = true;
     }
+/*
+    for (int i = 0; i < vol_idx; i++)
+    {
+        if (_lastVolIndex >= VolumeIndex(_volUnitsData.size().height))
+        {
+            _volUnitsData.resize(_lastVolIndex * 2);
+            poses.resize(_lastVolIndex * 2);
+            activities.resize(_lastVolIndex * 2);
+            lastVisibleIndexes.resize(_lastVolIndex * 2);
+        }
+        
+        VolumeIndex idx = _newIndices.at<VolumeIndex>(0, vol_idx);
+
+        Vec3i tsdf_idx = indexes.at<Vec3i>(0, idx);
+        
+        Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
+        
+        poses.at<cv::Matx44f>(0, idx) = subvolumePose;
+        activities.at<bool>(0, idx) = true;
+        lastVisibleIndexes.at<int>(0, idx) = frameId;
+
+        _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
+            {
+                TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
+                v.tsdf = floatToTsdf(0.0f); v.weight = 0;
+            });
+        
+    }
+*/
 
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> totalVolUnits;

@@ -117,7 +117,13 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
        VolumeUnitIndexes volumeUnits;
        cv::Mat volUnitsData;
        VolumeIndex lastVolIndex;
-
+       
+       VolumeIndex _lastVolIndex;
+       cv::Mat indexes;
+       cv::Mat poses;
+       cv::Mat activities;
+       cv::Mat lastVisibleIndexes;
+       cv::Mat _volUnitsData;
 
 };
 
