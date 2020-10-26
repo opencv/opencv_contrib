@@ -269,6 +269,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     //! Mark volumes in the camera frustum as active
     Range inFrustumRange(0, (int)volumeUnits.size());
+    
     parallel_for_(inFrustumRange, [&](const Range& range) {
         const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         const Intr::Projector proj(intrinsics.makeProjector());
@@ -296,6 +297,35 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
         });
+    
+    parallel_for_(inFrustumRange, [&](const Range& range) {
+        const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+        const Intr::Projector proj(intrinsics.makeProjector());
+
+        for (int i = range.start; i < range.end; ++i)
+        {
+            Vec3i tsdf_idx = totalVolUnits[i];
+            
+            VolumeIndex idx = find_idx(indexes, tsdf_idx);
+            if (idx == _lastVolIndex-1) return;
+
+            Point3f volumeUnitPos = volumeUnitIdxToVolume(poses.at<Vec3i>(idx,0));
+            Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
+            
+            if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
+            {
+                activities.at<bool>(idx, 0) = false;
+                return;
+            }
+            Point2f cameraPoint = proj(volUnitInCamSpace);
+            if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
+            {
+                assert(idx == _lastVolIndex-1);
+                lastVisibleIndexes.at<int>(idx, 0) = frameId;
+                activities.at<bool>(idx, 0)        = true;
+            }
+        }
+    });
 
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
@@ -327,6 +357,31 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
         });
+
+    parallel_for_(Range(0, (int)totalVolUnits.size()), [&](const Range& range) {
+        for (int i = range.start; i < range.end; i++)
+        {
+            Vec3i tsdf_idx = totalVolUnits[i];
+            VolumeIndex idx = find_idx(indexes, tsdf_idx);
+            if (idx == _lastVolIndex-1) return;
+
+            bool& isActive = activities.at<bool>(idx, 0);
+            if (isActive)
+            {
+                //! The volume unit should already be added into the Volume from the allocator
+                Matx44f _pose = poses.at<Matx44f>(idx, 0);
+
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose, volumeUnitResolutions, volStrides, depth,
+                    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
+
+                //! Ensure all active volumeUnits are set to inactive for next integration
+                isActive = false;
+            }
+        }
+        });
+
+    //std::cout << _volUnitsData << std::endl;
+
 }
 
 cv::Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
