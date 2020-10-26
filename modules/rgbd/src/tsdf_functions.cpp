@@ -132,7 +132,7 @@ void integrateVolumeUnit(
     const float dfac(1.f / depthFactor);
     TsdfVoxel* volDataStart = volume.ptr<TsdfVoxel>();;
 
-#if !USE_INTRINSICS
+#if USE_INTRINSICS
     auto IntegrateInvoker = [&](const Range& range)
     {
         // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
