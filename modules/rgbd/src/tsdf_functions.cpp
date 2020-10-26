@@ -132,7 +132,7 @@ void integrateVolumeUnit(
     const float dfac(1.f / depthFactor);
     TsdfVoxel* volDataStart = volume.ptr<TsdfVoxel>();;
 
-#if USE_INTRINSICS
+#if !USE_INTRINSICS
     auto IntegrateInvoker = [&](const Range& range)
     {
         // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
@@ -281,7 +281,7 @@ void integrateVolumeUnit(
         for (int x = range.start; x < range.end; x++)
         {
             TsdfVoxel* volDataX = volDataStart + x * volStrides[0];
-            for (int y = 0; y < volResolution; y++)
+            for (int y = 0; y < volResolution.y; y++)
             {
                 TsdfVoxel* volDataY = volDataX + y * volStrides[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
@@ -299,7 +299,7 @@ void integrateVolumeUnit(
                     if (zStep.z > 0)
                     {
                         startZ = baseZ;
-                        endZ = volResolution;
+                        endZ = volResolution.z;
                     }
                     else
                     {
@@ -312,7 +312,7 @@ void integrateVolumeUnit(
                     if (basePt.z > 0)
                     {
                         startZ = 0;
-                        endZ = volResolution;
+                        endZ = volResolution.z;
                     }
                     else
                     {
@@ -321,7 +321,7 @@ void integrateVolumeUnit(
                     }
                 }
                 startZ = max(0, startZ);
-                endZ = min(int(volResolution), endZ);
+                endZ = min(int(volResolution.z), endZ);
 
                 for (int z = startZ; z < endZ; z++)
                 {
