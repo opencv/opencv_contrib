@@ -71,11 +71,11 @@ void HashTSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
-    volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    volUnitsData  = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     _volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
-    indexes = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
-    poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
-    activities = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
+    indexes       = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
+    poses         = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
+    activities    = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
     lastVisibleIndexes = cv::Mat(VOLUMES_SIZE, 1, rawType<int>());
 }
 
@@ -261,14 +261,13 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> totalVolUnits;
-    //for (const auto& keyvalue : volumeUnits) {totalVolUnits.push_back(keyvalue.first);}
-
-    for (int i = 0; i < indexes.size().height; i++){totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));}
+    for (const auto& keyvalue : volumeUnits) {totalVolUnits.push_back(keyvalue.first);}
+    std::vector<Vec3i> _totalVolUnits;
+    for (int i = 0; i < indexes.size().height; i++){_totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));}
 
 
     //! Mark volumes in the camera frustum as active
     Range inFrustumRange(0, (int)volumeUnits.size());
-    
     parallel_for_(inFrustumRange, [&](const Range& range) {
         const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         const Intr::Projector proj(intrinsics.makeProjector());
@@ -297,13 +296,14 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         }
         });
     
-    parallel_for_(inFrustumRange, [&](const Range& range) {
+    Range _inFrustumRange(0, (int)_totalVolUnits.size());
+    parallel_for_(_inFrustumRange, [&](const Range& range) {
         const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         const Intr::Projector proj(intrinsics.makeProjector());
 
         for (int i = range.start; i < range.end; ++i)
         {
-            Vec3i tsdf_idx = totalVolUnits[i];
+            Vec3i tsdf_idx = _totalVolUnits[i];
             
             VolumeIndex idx = find_idx(indexes, tsdf_idx);
             if (idx == _lastVolIndex-1) return;
