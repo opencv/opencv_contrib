@@ -20,6 +20,12 @@
 
 
 namespace cv {
+namespace detail {
+inline namespace tracking {
+
+//! @addtogroup tracking_detail
+//! @{
+
 namespace tbm { //Tracking-by-Matching
 ///
 /// \brief The TrackedObject struct defines properties of detected object.
@@ -553,5 +559,8 @@ public:
 CV_EXPORTS cv::Ptr<ITrackerByMatching> createTrackerByMatching(const TrackerParams &params = TrackerParams());
 
 } // namespace tbm
-} // namespace cv
+
+//! @}
+
+}}}  // namespace
 #endif // #ifndef __OPENCV_TRACKING_TRACKING_BY_MATCHING_HPP__

@@ -42,8 +42,12 @@
 #include "precomp.hpp"
 #include "trackerBoostingModel.hpp"
 
-namespace cv
-{
+#include "opencv2/tracking/tracking_legacy.hpp"
+
+namespace cv {
+namespace legacy {
+inline namespace tracking {
+using namespace impl;
 
 class TrackerBoostingImpl : public TrackerBoosting
 {
@@ -319,4 +323,4 @@ bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
   return true;
 }
 
-} /* namespace cv */
+}}}  // namespace

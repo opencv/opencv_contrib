@@ -41,8 +41,9 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  *  TrackerSampler
@@ -139,4 +140,5 @@ void TrackerSampler::clearSamples()
   samples.clear();
 }
 
-} /* namespace cv */
+
+}}}  // namespace

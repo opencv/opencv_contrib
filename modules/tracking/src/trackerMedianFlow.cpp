@@ -40,15 +40,15 @@
  //M*/
 
 #include "precomp.hpp"
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc.hpp"
+#include "opencv2/tracking/tracking_legacy.hpp"
+
 #include "tracking_utils.hpp"
 #include <algorithm>
 #include <limits.h>
 
-namespace
-{
-using namespace cv;
+namespace cv {
+inline namespace tracking {
+namespace impl {
 
 #undef MEDIAN_FLOW_TRACKER_DEBUG_LOGS
 #ifdef MEDIAN_FLOW_TRACKER_DEBUG_LOGS
@@ -72,7 +72,8 @@ using namespace cv;
  * optimize (allocation<-->reallocation)
  */
 
-class TrackerMedianFlowImpl : public TrackerMedianFlow{
+class TrackerMedianFlowImpl : public legacy::TrackerMedianFlow
+{
 public:
     TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn = TrackerMedianFlow::Params()) {params=paramsIn;isInit=false;}
     void read( const FileNode& fn ) CV_OVERRIDE;
@@ -95,6 +96,7 @@ private:
     TrackerMedianFlow::Params params;
 };
 
+static
 Mat getPatch(Mat image, Size patch_size, Point2f patch_center)
 {
     Mat patch;
@@ -119,7 +121,7 @@ Mat getPatch(Mat image, Size patch_size, Point2f patch_center)
 
 class TrackerMedianFlowModel : public TrackerModel{
 public:
-    TrackerMedianFlowModel(TrackerMedianFlow::Params /*params*/){}
+    TrackerMedianFlowModel(legacy::TrackerMedianFlow::Params /*params*/){}
     Rect2d getBoundingBox(){return boundingBox_;}
     void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
     Mat getImage(){return image_;}
@@ -391,10 +393,11 @@ void TrackerMedianFlowImpl::check_NCC(const Mat& oldImage,const Mat& newImage,
     }
 }
 
-} /* anonymous namespace */
+}}  // namespace
 
-namespace cv
-{
+namespace legacy {
+inline namespace tracking {
+
 /*
  * Parameters
  */
@@ -442,11 +445,13 @@ void TrackerMedianFlow::Params::write( cv::FileStorage& fs ) const{
     fs << "maxMedianLengthOfDisplacementDifference" << maxMedianLengthOfDisplacementDifference;
 }
 
-Ptr<TrackerMedianFlow> TrackerMedianFlow::create(const TrackerMedianFlow::Params &parameters){
-    return Ptr<TrackerMedianFlowImpl>(new TrackerMedianFlowImpl(parameters));
+Ptr<TrackerMedianFlow> TrackerMedianFlow::create(const TrackerMedianFlow::Params &parameters)
+{
+    return makePtr<impl::TrackerMedianFlowImpl>(parameters);
 }
-Ptr<TrackerMedianFlow> TrackerMedianFlow::create(){
-    return Ptr<TrackerMedianFlowImpl>(new TrackerMedianFlowImpl());
+Ptr<TrackerMedianFlow> TrackerMedianFlow::create()
+{
+    return create(TrackerMedianFlow::Params());
 }
 
-} /* namespace cv */
+}}}  // namespace

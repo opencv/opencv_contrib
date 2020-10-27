@@ -40,18 +40,12 @@
  //M*/
 
 #include "precomp.hpp"
-#include <time.h>
 #include "PFSolver.hpp"
 #include "TrackingFunctionPF.hpp"
 
-#ifdef _WIN32
-#define TIME( arg ) (((double) clock()) / CLOCKS_PER_SEC)
-#else
-#define TIME( arg ) (time( arg ))
-#endif
-
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  *  TrackerSamplerAlgorithm
@@ -114,7 +108,7 @@ TrackerSamplerCSC::TrackerSamplerCSC( const TrackerSamplerCSC::Params &parameter
 {
   className = "CSC";
   mode = MODE_INIT_POS;
-  rng = RNG( uint64( TIME( 0 ) ) );
+  rng = theRNG();
 
 }
 
@@ -410,4 +404,5 @@ bool TrackerSamplerPF::samplingImpl( const Mat& image, Rect boundingBox, std::ve
     return true;
 }
 
-} /* namespace cv */
+
+}}}  // namespace

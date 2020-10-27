@@ -46,8 +46,9 @@
  * TrackerMILModel
  */
 
-namespace cv
-{
+namespace cv {
+inline namespace tracking {
+namespace impl {
 
 TrackerMILModel::TrackerMILModel( const Rect& boundingBox )
 {
@@ -122,4 +123,4 @@ void TrackerMILModel::setMode( int trainingMode, const std::vector<Mat>& samples
   mode = trainingMode;
 }
 
-}
+}}}  // namespace

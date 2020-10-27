@@ -42,10 +42,9 @@
 #ifndef __OPENCV_TRACKER_MIL_MODEL_HPP__
 #define __OPENCV_TRACKER_MIL_MODEL_HPP__
 
-#include "opencv2/core.hpp"
-
-namespace cv
-{
+namespace cv {
+inline namespace tracking {
+namespace impl {
 
 /**
  * \brief Implementation of TrackerModel for MIL algorithm
@@ -98,6 +97,6 @@ class TrackerMILModel : public TrackerModel
   int height;  //initial height of the boundingBox
 };
 
-} /* namespace cv */
+}}}  // namespace
 
 #endif

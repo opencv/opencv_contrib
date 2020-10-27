@@ -39,14 +39,16 @@
  //
  //M*/
 
-#include "precomp.hpp"
+#include "opencv2/tracking/tracking_legacy.hpp"
 
-namespace cv
+namespace cv {
+namespace legacy {
+inline namespace tracking {
+
+Tracker::Tracker()
 {
-
-/*
- *  Tracker
- */
+    isInit = false;
+}
 
 Tracker::~Tracker()
 {
@@ -97,4 +99,42 @@ bool Tracker::update( InputArray image, Rect2d& boundingBox )
   return updateImpl( image.getMat(), boundingBox );
 }
 
-} /* namespace cv */
+
+
+class LegacyTrackerWrapper : public cv::tracking::Tracker
+{
+    const Ptr<legacy::Tracker> legacy_tracker_;
+public:
+    LegacyTrackerWrapper(const Ptr<legacy::Tracker>& legacy_tracker) : legacy_tracker_(legacy_tracker)
+    {
+        CV_Assert(legacy_tracker_);
+    }
+    virtual ~LegacyTrackerWrapper() CV_OVERRIDE {};
+
+    void init(InputArray image, const Rect& boundingBox) CV_OVERRIDE
+    {
+        CV_DbgAssert(legacy_tracker_);
+        legacy_tracker_->init(image, (Rect2d)boundingBox);
+    }
+
+    bool update(InputArray image, CV_OUT Rect& boundingBox) CV_OVERRIDE
+    {
+        CV_DbgAssert(legacy_tracker_);
+        Rect2d boundingBox2d;
+        bool res = legacy_tracker_->update(image, boundingBox2d);
+        int x1 = cvRound(boundingBox2d.x);
+        int y1 = cvRound(boundingBox2d.y);
+        int x2 = cvRound(boundingBox2d.x + boundingBox2d.width);
+        int y2 = cvRound(boundingBox2d.y + boundingBox2d.height);
+        boundingBox = Rect(x1, y1, x2 - x1, y2 - y1) & Rect(Point(0, 0), image.size());
+        return res;
+    }
+};
+
+
+CV_EXPORTS_W Ptr<cv::tracking::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker)
+{
+    return makePtr<LegacyTrackerWrapper>(legacy_tracker);
+}
+
+}}}  // namespace

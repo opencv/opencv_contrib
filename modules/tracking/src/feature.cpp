@@ -42,8 +42,9 @@
 #include "precomp.hpp"
 #include "opencv2/tracking/feature.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  * TODO This implementation is based on apps/traincascade/
@@ -309,14 +310,14 @@ void CvHaarEvaluator::FeatureHaar::generateRandomFeature( Size patchSize )
     position.y = rand() % ( patchSize.height );
     position.x = rand() % ( patchSize.width );
 
-    baseDim.width = (int) ( ( 1 - sqrt( 1 - (float) rand() / RAND_MAX ) ) * patchSize.width );
-    baseDim.height = (int) ( ( 1 - sqrt( 1 - (float) rand() / RAND_MAX ) ) * patchSize.height );
+    baseDim.width = (int) ( ( 1 - sqrt( 1 - (float) rand() * (float)(1.0 / RAND_MAX) ) ) * patchSize.width );
+    baseDim.height = (int) ( ( 1 - sqrt( 1 - (float) rand() * (float)(1.0 / RAND_MAX) ) ) * patchSize.height );
 
     //select types
     //float probType[11] = {0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0909f, 0.0950f};
     float probType[11] =
     { 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    float prob = (float) rand() / RAND_MAX;
+    float prob = (float) rand() * (float)(1.0 / RAND_MAX);
 
     if( prob < probType[0] )
     {
@@ -686,7 +687,7 @@ void CvHaarEvaluator::FeatureHaar::generateRandomFeature( Size patchSize )
       valid = true;
     }
     else
-    CV_Error(CV_StsAssert, "");
+      CV_Error(Error::StsAssert, "");
   }
 
   m_initSize = patchSize;
@@ -1069,4 +1070,4 @@ void CvLBPEvaluator::Feature::write( FileStorage &fs ) const
   fs << CC_RECT << "[:" << rect.x << rect.y << rect.width << rect.height << "]";
 }
 
-} /* namespace cv */
+}}}  // namespace

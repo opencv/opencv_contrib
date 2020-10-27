@@ -41,8 +41,9 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  *  TrackerFeatureSet
@@ -139,4 +140,5 @@ void TrackerFeatureSet::clearResponses()
   responses.clear();
 }
 
-} /* namespace cv */
+
+}}}  // namespace

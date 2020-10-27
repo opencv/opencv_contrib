@@ -45,10 +45,11 @@
 #include "opencv2/core.hpp"
 #include <limits>
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
-//! @addtogroup tracking
+//! @addtogroup tracking_detail
 //! @{
 
 //TODO based on the original implementation
@@ -113,6 +114,6 @@ class ClfOnlineStump
 
 //! @}
 
-} /* namespace cv */
+}}}  // namespace
 
 #endif
