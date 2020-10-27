@@ -25,6 +25,54 @@
 #endif
 # include <GL/gl.h>
 #endif
+
+// GL Extention definitions missing from standard Win32 gl.h
+#if defined(_WIN32) && !defined(GL_RENDERBUFFER_EXT)
+#define GL_COLOR_ATTACHMENT0_EXT 0x8CE0
+#define GL_DEPTH_ATTACHMENT_EXT 0x8D00
+#define GL_FRAMEBUFFER_EXT 0x8D40
+#define GL_RENDERBUFFER_EXT 0x8D41
+namespace {
+PROC _wglGetProcAddress(const char *name)
+{
+  auto proc = wglGetProcAddress(name);
+  if (!proc)
+    CV_Error(cv::Error::OpenGlApiCallError, cv::format("Can't load OpenGL extension [%s]", name) );
+  return proc;
+}
+
+void glGenFramebuffersEXT(GLsizei n, GLuint *framebuffers)
+{
+  static auto proc = reinterpret_cast<void(*)(GLsizei, GLuint*)>(_wglGetProcAddress(__func__));
+  proc(n, framebuffers);
+}
+void glGenRenderbuffersEXT(GLsizei n, GLuint *renderbuffers)
+{
+  static auto proc = reinterpret_cast<void(*)(GLsizei, GLuint*)>(_wglGetProcAddress(__func__));
+  proc(n, renderbuffers);
+}
+void glBindRenderbufferEXT(GLenum target, GLuint renderbuffer)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLuint)>(_wglGetProcAddress(__func__));
+  proc(target, renderbuffer);
+}
+void glBindFramebufferEXT(GLenum target, GLuint framebuffer)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLuint)>(_wglGetProcAddress(__func__));
+  proc(target, framebuffer);
+}
+void glFramebufferRenderbufferEXT(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLenum, GLenum, GLuint)>(_wglGetProcAddress(__func__));
+  proc(target, attachment, renderbuffertarget, renderbuffer);
+}
+void glRenderbufferStorageEXT(GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
+{
+  static auto proc = reinterpret_cast<void(*)(GLenum, GLenum, GLsizei, GLsizei)>(_wglGetProcAddress(__func__));
+  proc(target, internalformat, width, height);
+}
+} // anonymous namespace
+#endif // defined(_WIN32) && !defined(GL_RENDERBUFFER_EXT)
 #else
 # define NO_OGL_ERR CV_Error(cv::Error::OpenGlNotSupported, \
                     "OpenGL support not enabled. Please rebuild the library with OpenGL support");
@@ -33,76 +81,6 @@
 namespace cv {
 namespace dynafu {
 using namespace kinfu;
-
-Ptr<Params> Params::defaultParams()
-{
-    Params p;
-
-    p.frameSize = Size(640, 480);
-
-    float fx, fy, cx, cy;
-    fx = fy = 525.f;
-    cx = p.frameSize.width/2 - 0.5f;
-    cy = p.frameSize.height/2 - 0.5f;
-    p.intr = Matx33f(fx,  0, cx,
-                      0, fy, cy,
-                      0,  0,  1);
-
-    // 5000 for the 16-bit PNG files
-    // 1 for the 32-bit float images in the ROS bag files
-    p.depthFactor = 5000;
-
-    // sigma_depth is scaled by depthFactor when calling bilateral filter
-    p.bilateral_sigma_depth = 0.04f;  //meter
-    p.bilateral_sigma_spatial = 4.5; //pixels
-    p.bilateral_kernel_size = 7;     //pixels
-
-    p.icpAngleThresh = (float)(30. * CV_PI / 180.); // radians
-    p.icpDistThresh = 0.1f; // meters
-
-    p.icpIterations = {10, 5, 4};
-    p.pyramidLevels = (int)p.icpIterations.size();
-
-    p.tsdf_min_camera_movement = 0.f; //meters, disabled
-
-    p.volumeDims = Vec3i::all(512); //number of voxels
-
-    float volSize = 3.f;
-    p.voxelSize = volSize/512.f; //meters
-
-    // default pose of volume cube
-    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
-    p.tsdf_trunc_dist = 0.04f; //meters;
-    p.tsdf_max_weight = 64;   //frames
-
-    p.raycast_step_factor = 0.25f;  //in voxel sizes
-    // gradient delta factor is fixed at 1.0f and is not used
-    //p.gradient_delta_factor = 0.5f; //in voxel sizes
-
-    //p.lightPose = p.volume_pose.translation()/4; //meters
-    p.lightPose = Vec3f::all(0.f); //meters
-
-    // depth truncation is not used by default but can be useful in some scenes
-    p.truncateThreshold = 0.f; //meters
-
-    return makePtr<Params>(p);
-}
-
-Ptr<Params> Params::coarseParams()
-{
-    Ptr<Params> p = defaultParams();
-
-    p->icpIterations = {5, 3, 2};
-    p->pyramidLevels = (int)p->icpIterations.size();
-
-    float volSize = 3.f;
-    p->volumeDims = Vec3i::all(128); //number of voxels
-    p->voxelSize  = volSize/128.f;
-
-    p->raycast_step_factor = 0.75f;  //in voxel sizes
-
-    return p;
-}
 
 // T should be Mat or UMat
 template< typename T >

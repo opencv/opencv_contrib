@@ -1,0 +1,102 @@
+Float64|0.1|0.1
+Float64|1.0|1.0
+Float64|0|0
+Int32|NORM_L2|cv_NORM_L2
+Float64|0.04|0.04
+Bool|true|true
+Float32|0.0f|0
+Float64|DBL_MAX|typemax(Float64)
+Ptr{Float32}|Ptr<float>()|cpp_to_julia(PtrifloatkOP())
+Int32|CV_32F|CV_32F
+Int32|20|20
+Array{String, 1}|std::vector<String>()|cpp_to_julia(stdggvectoriStringkOP())
+Float32|1|1
+TermCriteria|TermCriteria(TermCriteria::MAX_ITER+TermCriteria::EPS,5,1)|cpp_to_julia(TermCriteriaOTermCriteriaggMAXRITERRTermCriteriaggEPSSbSXP())
+Int32|4|4
+Int32|LINE_8|cv_LINE_8
+Float32|0.5|0.5
+Float32|0.5f|0.5
+Int32|MARKER_CROSS|cv_MARKER_CROSS
+Float64|1|1
+Point{Int32}|Point(-1,-1)|cpp_to_julia(PointOTXSTXP())
+Float64|CV_PI*0.5|pi*0.5
+Int32|QT_FONT_NORMAL|cv_QT_FONT_NORMAL
+Point{Int32}|Point()|cpp_to_julia(PointOP())
+Float64|CV_PI|pi
+Float32|-1|-1
+Int32|300|300
+Int32|3|3
+String|""|""
+Scalar|Scalar()|cpp_to_julia(ScalarOP())
+Float32|1.f|1
+Array{Int32, 1}|std::vector<int>()|cpp_to_julia(stdggvectoriintkOP())
+InputArray|Mat()|CxxMat()
+Int32|BORDER_DEFAULT|cv_BORDER_DEFAULT
+Int32|CV_32S|CV_32S
+Int32|IMREAD_COLOR|cv_IMREAD_COLOR
+Float64|100|100
+Size{Int32}|Size(8, 8)|cpp_to_julia(SizeOeSGeP())
+Array{InputArray, 1}||Array{InputArray, 1}()
+Int32|GC_EVAL|cv_GC_EVAL
+Int32|8|8
+Int32|DIST_LABEL_CCOMP|cv_DIST_LABEL_CCOMP
+Int32|CAP_ANY|cv_CAP_ANY
+Float32|0|0
+Int32|-1|-1
+Float64|-DBL_MAX|-typemax(Float64)
+Scalar|Scalar::all(0)|cpp_to_julia(ScalarggallOWP())
+InputArray||CxxMat()
+Int32|QT_STYLE_NORMAL|cv_QT_STYLE_NORMAL
+Int32|INTER_LINEAR|cv_INTER_LINEAR
+Bool|false|false
+Int32|CV_64F|CV_64F
+Point{Int32}|Point(-1, -1)|cpp_to_julia(PointOTXSGTXP())
+Scalar|morphologyDefaultBorderValue()|cpp_to_julia(morphologyDefaultBorderValueOP())
+Int32|IMREAD_ANYCOLOR|cv_IMREAD_ANYCOLOR
+Int32|INT_MAX|typemax(Int32)
+String|String()|""
+Float64|1.|1
+Int32|WINDOW_AUTOSIZE|cv_WINDOW_AUTOSIZE
+Int32|DECOMP_LU|cv_DECOMP_LU
+Float64|40.0|40.0
+Int32|BORDER_CONSTANT|cv_BORDER_CONSTANT
+Array{UInt8, 1}|std::vector<uchar>()|cpp_to_julia(stdggvectoriucharkOP())
+Int32|0|0
+Float64|255.|255
+Scalar|Scalar(1)|cpp_to_julia(ScalarOXP())
+Int32|1|1
+Size{Int32}|Size()|cpp_to_julia(SizeOP())
+TermCriteria|TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 20, FLT_EPSILON)|cpp_to_julia(TermCriteriaOTermCriteriaggEPSGRGTermCriteriaggCOUNTSGYWSGFLTREPSILONP())
+Int32|RANSAC|cv_RANSAC
+Float32|8.0|8.0
+Float64|-1|-1
+Int32|21|21
+TermCriteria|TermCriteria( TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON)|TermCriteriaOGTermCriteriaggCOUNTGRGTermCriteriaggEPSSGZWSGDBLREPSILONP
+TermCriteria|TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 30, 1e-6)|TermCriteriaOTermCriteriaggCOUNTRTermCriteriaggEPSSGZWSGXeTcP
+Int32|CALIB_CB_SYMMETRIC_GRID|cv_CALIB_CB_SYMMETRIC_GRID
+InputArray|cv::Mat()|CxxMat()
+Int32|SOLVEPNP_ITERATIVE|cv_SOLVEPNP_ITERATIVE
+Float64|3|3
+Int32|CALIB_FIX_INTRINSIC|cv_CALIB_FIX_INTRINSIC
+Float64|5|5
+Float64|0.99|0.99
+Int32|CALIB_ZERO_DISPARITY|cv_CALIB_ZERO_DISPARITY
+size_t|2000|2000
+SolvePnPMethod|SOLVEPNP_ITERATIVE|cv_SOLVEPNP_ITERATIVE
+Float64|0.0|0.0
+Ptr{Feature2D}|SimpleBlobDetector::create()|SimpleBlobDetectorggcreateOP
+Int32|StereoSGBM::MODE_SGBM|StereoSGBMggMODERSGBM
+Int32|CALIB_CB_ADAPTIVE_THRESH + CALIB_CB_NORMALIZE_IMAGE|cv_CALIB_CB_ADAPTIVE_THRESH + cv_CALIB_CB_NORMALIZE_IMAGE
+Float64|3.|3
+size_t|10|10
+Int32|16|16
+Point{Float64}|Point2d(0, 0)|PointYdOWSGWP
+Int32|2000|2000
+Int32|FM_RANSAC|cv_FM_RANSAC
+Int32|100|100
+TermCriteria|TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, DBL_EPSILON)|TermCriteriaOTermCriteriaggCOUNTGRGTermCriteriaggEPSSGXWWSGDBLREPSILONP
+HandEyeCalibrationMethod|CALIB_HAND_EYE_TSAI|cv_CALIB_HAND_EYE_TSAI
+Float32|0.8F|0.8
+Int32|fisheye::CALIB_FIX_INTRINSIC|cv_fisheye_CALIB_FIX_INTRINSIC
+Float64|0.999|0.999
+Float64|0.995|0.995

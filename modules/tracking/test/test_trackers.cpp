@@ -567,6 +567,31 @@ TEST_P(DistanceAndOverlap, Scaled_Data_CSRT)
   test.run();
 }
 
+TEST(GOTURN, memory_usage)
+{
+  cv::Rect2d roi(145, 70, 85, 85);
+  cv::Mat frame;
+
+  std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
+  std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
+  cv::TrackerGOTURN::Params params;
+  params.modelTxt = model;
+  params.modelBin = weights;
+  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(params);
+  string inputVideo = cvtest::findDataFile("tracking/david/data/david.webm");
+  cv::VideoCapture video(inputVideo);
+
+  video >> frame;
+  tracker->init(frame, roi);
+  string ground_truth_bb;
+  for (int nframes = 0; nframes < 15; ++nframes)
+  {
+    std::cout << "Frame: " << nframes << std::endl;
+    video >> frame;
+    tracker->update(frame, roi);
+    std::cout << "Predicted ROI: " << roi << std::endl;
+  }
+}
 
 INSTANTIATE_TEST_CASE_P( Tracking, DistanceAndOverlap, TESTSET_NAMES);
 

@@ -10,102 +10,10 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
 
+#include "kinfu.hpp"
+
 namespace cv {
 namespace dynafu {
-
-struct CV_EXPORTS_W Params
-{
-    /** @brief Default parameters
-    A set of parameters which provides better model quality, can be very slow.
-    */
-    CV_WRAP static Ptr<Params> defaultParams();
-
-    /** @brief Coarse parameters
-    A set of parameters which provides better speed, can fail to match frames
-    in case of rapid sensor motion.
-    */
-    CV_WRAP static Ptr<Params> coarseParams();
-
-    /** @brief frame size in pixels */
-    CV_PROP_RW Size frameSize;
-
-    /** @brief camera intrinsics */
-    CV_PROP Matx33f intr;
-
-    /** @brief pre-scale per 1 meter for input values
-
-    Typical values are:
-         * 5000 per 1 meter for the 16-bit PNG files of TUM database
-         * 1000 per 1 meter for Kinect 2 device
-         * 1 per 1 meter for the 32-bit float images in the ROS bag files
-    */
-    CV_PROP_RW float depthFactor;
-
-    /** @brief Depth sigma in meters for bilateral smooth */
-    CV_PROP_RW float bilateral_sigma_depth;
-    /** @brief Spatial sigma in pixels for bilateral smooth */
-    CV_PROP_RW float bilateral_sigma_spatial;
-    /** @brief Kernel size in pixels for bilateral smooth */
-    CV_PROP_RW int   bilateral_kernel_size;
-
-    /** @brief Number of pyramid levels for ICP */
-    CV_PROP_RW int pyramidLevels;
-
-    /** @brief Resolution of voxel space
-
-    Number of voxels in each dimension.
-    */
-    CV_PROP_RW Vec3i volumeDims;
-    /** @brief Size of voxel in meters */
-    CV_PROP_RW float voxelSize;
-
-    /** @brief Minimal camera movement in meters
-
-    Integrate new depth frame only if camera movement exceeds this value.
-    */
-    CV_PROP_RW float tsdf_min_camera_movement;
-
-    /** @brief initial volume pose in meters */
-    Affine3f volumePose;
-
-    /** @brief distance to truncate in meters
-
-    Distances to surface that exceed this value will be truncated to 1.0.
-    */
-    CV_PROP_RW float tsdf_trunc_dist;
-
-    /** @brief max number of frames per voxel
-
-    Each voxel keeps running average of distances no longer than this value.
-    */
-    CV_PROP_RW int tsdf_max_weight;
-
-    /** @brief A length of one raycast step
-
-    How much voxel sizes we skip each raycast step
-    */
-    CV_PROP_RW float raycast_step_factor;
-
-    // gradient delta in voxel sizes
-    // fixed at 1.0f
-    // float gradient_delta_factor;
-
-    /** @brief light pose for rendering in meters */
-    CV_PROP Vec3f lightPose;
-
-    /** @brief distance theshold for ICP in meters */
-    CV_PROP_RW float icpDistThresh;
-    /** angle threshold for ICP in radians */
-    CV_PROP_RW float icpAngleThresh;
-    /** number of ICP iterations for each pyramid level */
-    CV_PROP std::vector<int> icpIterations;
-
-    /** @brief Threshold for depth truncation in meters
-
-    All depth values beyond this threshold will be set to zero
-    */
-    CV_PROP_RW float truncateThreshold;
-};
 
 /** @brief DynamicFusion implementation
 
@@ -132,11 +40,11 @@ struct CV_EXPORTS_W Params
 class CV_EXPORTS_W DynaFu
 {
 public:
-    CV_WRAP static Ptr<DynaFu> create(const Ptr<Params>& _params);
+    CV_WRAP static Ptr<DynaFu> create(const Ptr<kinfu::Params>& _params);
     virtual ~DynaFu();
 
     /** @brief Get current parameters */
-    virtual const Params& getParams() const = 0;
+    virtual const kinfu::Params& getParams() const = 0;
 
     /** @brief Renders a volume into an image
 
