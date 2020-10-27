@@ -51,7 +51,7 @@ struct tsdf_hash
     }
 };
 
-typedef unsigned int VolumeIndex;
+typedef int VolumeIndex;
 struct VolumeUnit
 {
     cv::Vec3i coord;
