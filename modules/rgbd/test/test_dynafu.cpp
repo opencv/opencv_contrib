@@ -41,11 +41,11 @@ static const bool display = false;
 
 void flyTest(bool hiDense, bool inequal)
 {
-    Ptr<dynafu::Params> params;
+    Ptr<kinfu::Params> params;
     if(hiDense)
-        params = dynafu::Params::defaultParams();
+        params = kinfu::Params::defaultParams();
     else
-        params = dynafu::Params::coarseParams();
+        params = kinfu::Params::coarseParams();
 
     if(inequal)
     {
