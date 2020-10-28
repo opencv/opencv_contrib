@@ -187,7 +187,6 @@ public:
             cv::Size _winSize = winSize;
             float MEstimatorScale = 1;
             int buffIdx = 0;
-            float c[8];
             cv::Mat GMc0, GMc1, GMc2, GMc3;
             cv::Vec2f Mc0, Mc1, Mc2, Mc3;
             int noIteration = 0;
@@ -572,6 +571,7 @@ public:
                     Mc3[0] =  _b0[3];
                     Mc3[1] =  _b1[3];
 
+                    float c[8] = {};
                     c[0] = -Mc0[0];
                     c[1] = -Mc1[0];
                     c[2] = -Mc2[0];
@@ -830,7 +830,6 @@ public:
             int j;
             float MEstimatorScale = 1;
             int buffIdx = 0;
-            float c[8];
             cv::Mat GMc0, GMc1, GMc2, GMc3;
             cv::Vec4f Mc0, Mc1, Mc2, Mc3;
             int noIteration = 0;
@@ -1355,6 +1354,7 @@ public:
                 Mc3[3] = -_b3[3];
 
                 //
+                float c[8] = {};
                 c[0] = -Mc0[0];
                 c[1] = -Mc1[0];
                 c[2] = -Mc2[0];
@@ -1620,7 +1620,6 @@ public:
             nextPt += halfWin;
             Point2f prevDelta(0,0);
 
-            float c[8];
             for( j = 0; j < criteria.maxCount; j++ )
             {
                 cv::Point2f delta;
@@ -1629,6 +1628,7 @@ public:
                 b = nextPt.y - cvFloor(nextPt.y);
                 float ab = a * b;
 
+                float c[8] = {};
 
                 if( (inextPt.x != cvFloor(nextPt.x) || inextPt.y != cvFloor(nextPt.y) || j == 0))
                 {
@@ -1996,7 +1996,6 @@ namespace radial {
                 cv::Point2f backUpGain = gainVec;
                 cv::Size _winSize = winSize;
                 int j;
-                float c[8];
                 cv::Mat GMc0, GMc1, GMc2, GMc3;
                 cv::Vec4f Mc0, Mc1, Mc2, Mc3;
                 int noIteration = 0;
@@ -2359,6 +2358,7 @@ namespace radial {
                         Mc3[3] = -_b3[3];
 
                         //
+                        float c[8] = {};
                         c[0] = -Mc0[0];
                         c[1] = -Mc1[0];
                         c[2] = -Mc2[0];
