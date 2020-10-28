@@ -94,6 +94,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
     virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
+    virtual TsdfVoxel new_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
 
     TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const;
 
