@@ -78,7 +78,7 @@ void HashTSDFVolumeCPU::reset()
     lastVisibleIndexes = cv::Mat(VOLUMES_SIZE, 1, rawType<int>());
 }
 
-bool _find(cv::Mat v, Vec3i tsdf_idx)
+static inline bool _find(cv::Mat v, Vec3i tsdf_idx)
 {
     //bool res = false;
     for (int i = 0; i < v.size().height; i++)
@@ -93,7 +93,7 @@ bool _find(cv::Mat v, Vec3i tsdf_idx)
     return false;
 }
 
-int find_idx(cv::Mat v, Vec3i tsdf_idx)
+static inline int find_idx(cv::Mat v, Vec3i tsdf_idx)
 {
     //bool res = false;
     for (int i = 0; i < v.size().height; i++)
