@@ -153,7 +153,7 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
                           params.raycast_step_factor)),
     pyrPoints(), pyrNormals(), warpfield()
 {
-#ifdef HAVE_OPENGL
+#ifdef HAVE_GLEW
     // Bind framebuffer for off-screen rendering
     unsigned int fbo_depth;
     glGenRenderbuffersEXT(1, &fbo_depth);

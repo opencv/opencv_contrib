@@ -4,6 +4,10 @@ find_package(Ceres QUIET)
 ocv_define_module(rgbd opencv_core opencv_calib3d opencv_imgproc OPTIONAL opencv_viz WRAP python)
 ocv_target_link_libraries(${the_module} ${CERES_LIBRARIES})
 
+if(HAVE_GLEW)
+  ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES})
+endif()
+
 if(Ceres_FOUND)
   ocv_target_compile_definitions(${the_module} PUBLIC CERES_FOUND)
 else()
