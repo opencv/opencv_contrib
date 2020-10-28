@@ -31,7 +31,6 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     maxWeight(_maxWeight),
     truncateThreshold(_truncateThreshold),
     volumeUnitResolution(_volumeUnitRes),
-    volumeUnitResolutions(_volumeUnitRes, _volumeUnitRes, _volumeUnitRes),
     volumeUnitSize(voxelSize* volumeUnitResolution),
     zFirstMemOrder(_zFirstMemOrder)
 {
@@ -372,7 +371,8 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                 //! The volume unit should already be added into the Volume from the allocator
                 Matx44f _pose = poses.at<Matx44f>(idx, 0);
 
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose, volumeUnitResolutions, volStrides, depth,
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose, 
+                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
                     depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
 
                 //! Ensure all active volumeUnits are set to inactive for next integration
