@@ -378,7 +378,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                 //! The volume unit should already be added into the Volume from the allocator
                 Matx44f _pose = poses.at<Matx44f>(idx, 0);
 
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose, 
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
                     Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
                     depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
 
