@@ -514,6 +514,23 @@ static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
     }
 }
 
+TsdfVoxel HashTSDFVolumeCPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const
+{
+    if (indx == _lastVolIndex - 1)
+    {
+        TsdfVoxel dummy;
+        dummy.tsdf = floatToTsdf(1.f);
+        dummy.weight = 0;
+        return dummy;
+    }
+    Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
+
+    // expanding at(), removing bounds check
+    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
+    int coordBase = volUnitLocalIdx[0] * volStrides[0] + volUnitLocalIdx[1] * volStrides[1] + volUnitLocalIdx[2] * volStrides[2];
+    return volData[coordBase];
+}
+
 TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const
 {
     if (it == volumeUnits.end())
@@ -755,6 +772,150 @@ Point3f HashTSDFVolumeCPU::getNormalVoxel(const Point3f &point) const
     return nv < 0.0001f ? nan3 : normal / nv;
 }
 
+Point3f HashTSDFVolumeCPU::_getNormalVoxel(const Point3f &point) const
+{
+    Vec3f normal = Vec3f(0, 0, 0);
+
+    Point3f ptVox = point * voxelSizeInv;
+    Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
+
+    // A small hash table to reduce a number of find() calls
+    bool queried[8];
+    //VolumeUnitIndexes::const_iterator iterMap[8];
+    VolumeIndex iterMap[8];
+    
+    for (int i = 0; i < 8; i++)
+    {
+        //iterMap[i] = volumeUnits.end();
+        iterMap[i] = _lastVolIndex-1;
+        queried[i] = false;
+    }
+
+#if !USE_INTERPOLATION_IN_GETNORMAL
+    const Vec3i offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3
+                              { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
+    };
+    const int nVals = 6;
+
+#else
+    const Vec3i offsets[] = { { 0,  0,  0}, { 0,  0,  1}, { 0,  1,  0}, { 0,  1,  1}, //  0-3
+                              { 1,  0,  0}, { 1,  0,  1}, { 1,  1,  0}, { 1,  1,  1}, //  4-7
+                              {-1,  0,  0}, {-1,  0,  1}, {-1,  1,  0}, {-1,  1,  1}, //  8-11
+                              { 2,  0,  0}, { 2,  0,  1}, { 2,  1,  0}, { 2,  1,  1}, // 12-15
+                              { 0, -1,  0}, { 0, -1,  1}, { 1, -1,  0}, { 1, -1,  1}, // 16-19
+                              { 0,  2,  0}, { 0,  2,  1}, { 1,  2,  0}, { 1,  2,  1}, // 20-23
+                              { 0,  0, -1}, { 0,  1, -1}, { 1,  0, -1}, { 1,  1, -1}, // 24-27
+                              { 0,  0,  2}, { 0,  1,  2}, { 1,  0,  2}, { 1,  1,  2}, // 28-31
+    };
+    const int nVals = 32;
+#endif
+
+    float vals[nVals];
+    for (int i = 0; i < nVals; i++)
+    {
+        Vec3i pt = iptVox + offsets[i];
+
+        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
+
+        int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
+        auto it = iterMap[dictIdx];
+        
+        if (!queried[dictIdx])
+        {
+            //it = volumeUnits.find(volumeUnitIdx);
+            it = find_idx(indexes, volumeUnitIdx);
+            iterMap[dictIdx] = it;
+            queried[dictIdx] = true;
+        }
+
+        vals[i] = tsdfToFloat(new_atVolumeUnit(pt, volumeUnitIdx, it).tsdf);
+    }
+
+#if !USE_INTERPOLATION_IN_GETNORMAL
+    for (int c = 0; c < 3; c++)
+    {
+        normal[c] = vals[c * 2] - vals[c * 2 + 1];
+    }
+#else
+
+    float cxv[8], cyv[8], czv[8];
+
+    // How these numbers were obtained:
+    // 1. Take the basic interpolation sequence:
+    // 000, 001, 010, 011, 100, 101, 110, 111
+    // where each digit corresponds to shift by x, y, z axis respectively.
+    // 2. Add +1 for next or -1 for prev to each coordinate to corresponding axis
+    // 3. Search corresponding values in offsets
+    const int idxxp[8] = {  8,  9, 10, 11,  0,  1,  2,  3 };
+    const int idxxn[8] = {  4,  5,  6,  7, 12, 13, 14, 15 };
+    const int idxyp[8] = { 16, 17,  0,  1, 18, 19,  4,  5 };
+    const int idxyn[8] = {  2,  3, 20, 21,  6,  7, 22, 23 };
+    const int idxzp[8] = { 24,  0, 25,  2, 26,  4, 27,  6 };
+    const int idxzn[8] = {  1, 28,  3, 29,  5, 30,  7, 31 };
+
+#if !USE_INTRINSICS
+    for (int i = 0; i < 8; i++)
+    {
+        cxv[i] = vals[idxxn[i]] - vals[idxxp[i]];
+        cyv[i] = vals[idxyn[i]] - vals[idxyp[i]];
+        czv[i] = vals[idxzn[i]] - vals[idxzp[i]];
+    }
+#else
+
+# if CV_SIMD >= 32
+    v_float32x8 cxp = v_lut(vals, idxxp);
+    v_float32x8 cxn = v_lut(vals, idxxn);
+
+    v_float32x8 cyp = v_lut(vals, idxyp);
+    v_float32x8 cyn = v_lut(vals, idxyn);
+
+    v_float32x8 czp = v_lut(vals, idxzp);
+    v_float32x8 czn = v_lut(vals, idxzn);
+
+    v_float32x8 vcxv = cxn - cxp;
+    v_float32x8 vcyv = cyn - cyp;
+    v_float32x8 vczv = czn - czp;
+
+    v_store(cxv, vcxv);
+    v_store(cyv, vcyv);
+    v_store(czv, vczv);
+# else
+    v_float32x4 cxp0 = v_lut(vals, idxxp + 0); v_float32x4 cxp1 = v_lut(vals, idxxp + 4);
+    v_float32x4 cxn0 = v_lut(vals, idxxn + 0); v_float32x4 cxn1 = v_lut(vals, idxxn + 4);
+
+    v_float32x4 cyp0 = v_lut(vals, idxyp + 0); v_float32x4 cyp1 = v_lut(vals, idxyp + 4);
+    v_float32x4 cyn0 = v_lut(vals, idxyn + 0); v_float32x4 cyn1 = v_lut(vals, idxyn + 4);
+
+    v_float32x4 czp0 = v_lut(vals, idxzp + 0); v_float32x4 czp1 = v_lut(vals, idxzp + 4);
+    v_float32x4 czn0 = v_lut(vals, idxzn + 0); v_float32x4 czn1 = v_lut(vals, idxzn + 4);
+
+    v_float32x4 cxv0 = cxn0 - cxp0; v_float32x4 cxv1 = cxn1 - cxp1;
+    v_float32x4 cyv0 = cyn0 - cyp0; v_float32x4 cyv1 = cyn1 - cyp1;
+    v_float32x4 czv0 = czn0 - czp0; v_float32x4 czv1 = czn1 - czp1;
+
+    v_store(cxv + 0, cxv0); v_store(cxv + 4, cxv1);
+    v_store(cyv + 0, cyv0); v_store(cyv + 4, cyv1);
+    v_store(czv + 0, czv0); v_store(czv + 4, czv1);
+#endif
+
+#endif
+
+    float tx = ptVox.x - iptVox[0];
+    float ty = ptVox.y - iptVox[1];
+    float tz = ptVox.z - iptVox[2];
+
+    normal[0] = interpolate(tx, ty, tz, cxv);
+    normal[1] = interpolate(tx, ty, tz, cyv);
+    normal[2] = interpolate(tx, ty, tz, czv);
+#endif
+
+    float nv = sqrt(normal[0] * normal[0] +
+                    normal[1] * normal[1] +
+                    normal[2] * normal[2]);
+    return nv < 0.0001f ? nan3 : normal / nv;
+    //return Point3f(0, 0, 0);
+}
+
 void HashTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
                                 OutputArray _points, OutputArray _normals) const
 {
@@ -993,7 +1154,18 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         {
             totalVolUnits.push_back(keyvalue.first);
         }
+
+        std::vector<std::vector<ptype>> _pVecs, _nVecs;
+
+        std::vector<Vec3i> _totalVolUnits;
+        for (int i = 0; i < indexes.size().height; i++)
+        {
+            _totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));
+        }
+
         Range fetchRange(0, (int)totalVolUnits.size());
+        Range _fetchRange(0, (int)_totalVolUnits.size());
+
         const int nstripes = -1;
 
         const HashTSDFVolumeCPU& volume(*this);
@@ -1003,8 +1175,6 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 
         auto HashFetchPointsNormalsInvoker = [&](const Range& range)
         {
-
-
             std::vector<ptype> points, normals;
             for (int i = range.start; i < range.end; i++)
             {
@@ -1044,6 +1214,57 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         };
 
         parallel_for_(fetchRange, HashFetchPointsNormalsInvoker, nstripes);
+
+        
+
+        auto _HashFetchPointsNormalsInvoker = [&](const Range& range)
+        {
+            std::vector<ptype> points, normals;
+            for (int i = range.start; i < range.end; i++)
+            {
+                cv::Vec3i tsdf_idx = _totalVolUnits[i];
+
+
+                //VolumeUnitIndexes::const_iterator it = volume.volumeUnits.find(tsdf_idx);
+                VolumeIndex idx = find_idx(indexes, tsdf_idx);
+                
+                Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
+
+
+                if (idx > 0 || idx < _lastVolIndex - 1)
+                {
+                    std::vector<ptype> localPoints;
+                    std::vector<ptype> localNormals;
+                    for (int x = 0; x < volume.volumeUnitResolution; x++)
+                        for (int y = 0; y < volume.volumeUnitResolution; y++)
+                            for (int z = 0; z < volume.volumeUnitResolution; z++)
+                            {
+                                cv::Vec3i voxelIdx(x, y, z);
+                                TsdfVoxel voxel = new_at(voxelIdx, idx);
+
+                                if (voxel.tsdf != -128 && voxel.weight != 0)
+                                {
+                                    Point3f point = base_point + volume.voxelCoordToVolume(voxelIdx);
+                                    localPoints.push_back(toPtype(point));
+                                    if (needNormals)
+                                    {
+                                        Point3f normal = volume._getNormalVoxel(point);
+                                        //Point3f normal(0,0,0);
+                                        localNormals.push_back(toPtype(normal));
+                                    }
+                                }
+                            }
+
+                    AutoLock al(mutex);
+                    _pVecs.push_back(localPoints);
+                    _nVecs.push_back(localNormals);
+                    //pVecs.push_back(localPoints);
+                    //nVecs.push_back(localNormals);
+                }
+            }
+        };
+
+        parallel_for_(_fetchRange, _HashFetchPointsNormalsInvoker, nstripes);
 
 
 
