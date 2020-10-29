@@ -121,7 +121,14 @@ class vector {
   void reserve(unsigned int size) {
     if (size > size_) {
       T *data = static_cast<T *>(allocate(size));
+#if 0
       memcpy(data, data_, sizeof(*data)*size_);
+#else
+      for (int i = 0; i < size_; ++i)
+        new (&data[i]) T(std::move(data_[i]));
+      for (int i = 0; i < size_; ++i)
+        data_[i].~T();
+#endif
       allocator_.deallocate(data_, capacity_);
       data_ = data;
       capacity_ = size;
