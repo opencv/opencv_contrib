@@ -318,7 +318,7 @@ bool EstimateHomography2DFromCorrespondences(
             HomographySymmetricGeometricCostFunctor,
             4,  // num_residuals
             9>(homography_symmetric_geometric_cost_function),
-        NULL,
+        nullptr,
         H->data());
   }
 
