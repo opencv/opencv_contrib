@@ -310,7 +310,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             Vec3i tsdf_idx = _totalVolUnits[i];
             VolumeIndex idx = find_idx(indexes, tsdf_idx);
             //std::cout << _lastVolIndex << " " << idx << " " << tsdf_idx << std::endl;
-            if (idx == _lastVolIndex - 1) return;
+            if (idx < 0 || idx == _lastVolIndex - 1) return;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(poses.at<Vec3i>(idx, 0));
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
@@ -370,7 +370,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         {
             Vec3i tsdf_idx = totalVolUnits[i];
             VolumeIndex idx = find_idx(indexes, tsdf_idx);
-            if (idx == _lastVolIndex-1) return;
+            if (idx < 0 || idx == _lastVolIndex-1) return;
 
             bool& isActive = activities.at<bool>(idx, 0);
             if (isActive)
