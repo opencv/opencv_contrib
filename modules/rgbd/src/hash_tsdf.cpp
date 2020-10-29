@@ -824,8 +824,11 @@ Point3f HashTSDFVolumeCPU::_getNormalVoxel(const Point3f &point) const
         {
             //it = volumeUnits.find(volumeUnitIdx);
             it = find_idx(indexes, volumeUnitIdx);
-            iterMap[dictIdx] = it;
-            queried[dictIdx] = true;
+            if (it >= 0 || it < _lastVolIndex)
+            {
+                iterMap[dictIdx] = it;
+                queried[dictIdx] = true;
+            }
         }
 
         vals[i] = tsdfToFloat(new_atVolumeUnit(pt, volumeUnitIdx, it).tsdf);
@@ -1231,7 +1234,7 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                 Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
 
 
-                if (idx > 0 || idx < _lastVolIndex - 1)
+                if (idx >= 0 || idx < _lastVolIndex - 1)
                 {
                     std::vector<ptype> localPoints;
                     std::vector<ptype> localNormals;
