@@ -115,6 +115,31 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
        VolumeIndex lastVolIndex;
 };
 
+#ifdef HAVE_OPENCL
+class HashTSDFVolumeGPU : public HashTSDFVolume
+{
+    HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
+        float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder = true);
+
+    HashTSDFVolumeGPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = true);
+    
+    void reset() override;
+
+    void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
+        const int frameId = 0) override;
+    void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
+        OutputArray normals) const override;
+
+public:
+    Vec4i volStrides;
+    Vec6f frameParams;
+    Mat pixNorms;
+    VolumeUnitIndexes volumeUnits;
+    cv::Mat volUnitsData;
+    VolumeIndex lastVolIndex;
+};
+#endif
+
 template<typename T>
 Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _volumeParams)
 {

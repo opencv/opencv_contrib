@@ -817,5 +817,53 @@ int HashTSDFVolumeCPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
     return numVisibleBlocks;
 }
 
+
+///////// GPU implementation /////////
+
+#ifdef HAVE_OPENCL
+/*
+HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
+    float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder)
+    :HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes, zFirstMemOrder)
+{
+    int xdim, ydim, zdim;
+    if (zFirstMemOrder)
+    {
+        xdim = volumeUnitResolution * volumeUnitResolution;
+        ydim = volumeUnitResolution;
+        zdim = 1;
+    }
+    else
+    {
+        xdim = 1;
+        ydim = volumeUnitResolution;
+        zdim = volumeUnitResolution * volumeUnitResolution;
+    }
+    volStrides = Vec4i(xdim, ydim, zdim);
+
+    reset();
+}
+
+HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstMemOrder)
+    : HashTSDFVolume(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+        _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
+{
+}
+// zero volume, leave rest params the same
+void HashTSDFVolumeGPU::reset()
+{
+    CV_TRACE_FUNCTION();
+    lastVolIndex = 0;
+    volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+}
+*/
+
+#endif
+
+
+
+
+
+
 }  // namespace kinfu
 }  // namespace cv
