@@ -193,6 +193,10 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                if (_lastVolIndex >= VolumeIndex(indexes.size().height))
                {
                     indexes.resize(_lastVolIndex * 2);
+                    _volUnitsData.resize(_lastVolIndex * 2);
+                    poses.resize(_lastVolIndex * 2);
+                    activities.resize(_lastVolIndex * 2);
+                    lastVisibleIndexes.resize(_lastVolIndex * 2);
                }
 
                this->indexes.at<Vec3i>(_lastVolIndex,0) = idx;
@@ -236,6 +240,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     for (int i = 0; i < vol_idx; i++)
     {
+        /*
         if (_lastVolIndex >= VolumeIndex(_volUnitsData.size().height))
         {
             _volUnitsData.resize(_lastVolIndex * 2);
@@ -243,6 +248,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             activities.resize(_lastVolIndex * 2);
             lastVisibleIndexes.resize(_lastVolIndex * 2);
         }
+        */
 
         VolumeIndex idx = _newIndices.at<VolumeIndex>(i, 0);
 
