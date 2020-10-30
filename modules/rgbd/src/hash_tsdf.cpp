@@ -824,7 +824,7 @@ Point3f HashTSDFVolumeCPU::_getNormalVoxel(const Point3f &point) const
         {
             //it = volumeUnits.find(volumeUnitIdx);
             it = find_idx(indexes, volumeUnitIdx);
-            if (it >= 0 || it < _lastVolIndex)
+            if (it >= 0 || it < _lastVolIndex-1)
             {
                 iterMap[dictIdx] = it;
                 queried[dictIdx] = true;
