@@ -516,7 +516,7 @@ static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
 
 TsdfVoxel HashTSDFVolumeCPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const
 {
-    if (indx == _lastVolIndex - 1)
+    if (indx < 0 || indx > _lastVolIndex-1)
     {
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.f);
@@ -526,8 +526,10 @@ TsdfVoxel HashTSDFVolumeCPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
     Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
 
     // expanding at(), removing bounds check
-    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
-    int coordBase = volUnitLocalIdx[0] * volStrides[0] + volUnitLocalIdx[1] * volStrides[1] + volUnitLocalIdx[2] * volStrides[2];
+    const TsdfVoxel* volData = _volUnitsData.ptr<TsdfVoxel>(indx);
+    int coordBase = volUnitLocalIdx[0] * volStrides[0] +
+        volUnitLocalIdx[1] * volStrides[1] +
+        volUnitLocalIdx[2] * volStrides[2];
     return volData[coordBase];
 }
 
@@ -1317,7 +1319,32 @@ void HashTSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) c
             normals(position[0], position[1]) = toPtype(n);
         };
         points.forEach(HashPushNormals);
+    }    
+    /*
+    if (_normals.needed())
+    {
+        Points points = _points.getMat();
+        CV_Assert(points.type() == POINT_TYPE);
+
+        _normals.createSameSize(_points, _points.type());
+        Normals normals = _normals.getMat();
+
+        const HashTSDFVolumeCPU& _volume = *this;
+        auto HashPushNormals             = [&](const ptype& point, const int* position) {
+            const HashTSDFVolumeCPU& volume(_volume);
+            Affine3f invPose(volume.pose.inv());
+            Point3f p = fromPtype(point);
+            Point3f n = nan3;
+            if (!isNaN(p))
+            {
+                Point3f voxelPoint = invPose * p;
+                n                  = volume.pose.rotation() * volume._getNormalVoxel(voxelPoint);
+            }
+            normals(position[0], position[1]) = toPtype(n);
+        };
+        points.forEach(HashPushNormals);
     }
+    */
 }
 
 int HashTSDFVolumeCPU::getVisibleBlocks(int currFrameId, int frameThreshold) const
