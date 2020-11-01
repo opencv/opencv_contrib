@@ -118,7 +118,8 @@ parser_2D_tracks( const libmv::Matches &matches, libmv::Tracks &tracks )
  * reconstruction pipeline.
  */
 
-static libmv_Reconstruction *libmv_solveReconstructionImpl(
+static
+std::shared_ptr<libmv_Reconstruction> libmv_solveReconstructionImpl(
   const std::vector<String> &images,
   const libmv_CameraIntrinsicsOptions* libmv_camera_intrinsics_options,
   libmv_ReconstructionOptions* libmv_reconstruction_options)
@@ -182,9 +183,10 @@ public:
 
     // Perform reconstruction
     libmv_reconstruction_ =
-      *libmv_solveReconstruction(tracks,
+      libmv_solveReconstruction(tracks,
                                  &libmv_camera_intrinsics_options_,
                                  &libmv_reconstruction_options_);
+    CV_Assert(libmv_reconstruction_);
   }
 
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
@@ -216,9 +218,10 @@ public:
     // Perform reconstruction
 
     libmv_reconstruction_ =
-      *libmv_solveReconstructionImpl(images,
+      libmv_solveReconstructionImpl(images,
                                      &libmv_camera_intrinsics_options_,
                                      &libmv_reconstruction_options_);
+    CV_Assert(libmv_reconstruction_);
   }
 
 
@@ -232,12 +235,12 @@ public:
     extractLibmvReconstructionData(K, Rs, Ts, points3d);
   }
 
-  virtual double getError() const { return libmv_reconstruction_.error; }
+  virtual double getError() const { return libmv_reconstruction_->error; }
 
   virtual void
   getPoints(OutputArray points3d) {
     const size_t n_points =
-      libmv_reconstruction_.reconstruction.AllPoints().size();
+      libmv_reconstruction_->reconstruction.AllPoints().size();
 
     points3d.create(n_points, 1, CV_64F);
 
@@ -246,7 +249,7 @@ public:
     {
       for ( int j = 0; j < 3; ++j )
         point3d[j] =
-          libmv_reconstruction_.reconstruction.AllPoints()[i].X[j];
+          libmv_reconstruction_->reconstruction.AllPoints()[i].X[j];
       Mat(point3d).copyTo(points3d.getMatRef(i));
     }
 
@@ -254,14 +257,14 @@ public:
 
   virtual cv::Mat getIntrinsics() const {
     Mat K;
-    eigen2cv(libmv_reconstruction_.intrinsics->K(), K);
+    eigen2cv(libmv_reconstruction_->intrinsics->K(), K);
     return K;
   }
 
   virtual void
   getCameras(OutputArray Rs, OutputArray Ts) {
     const size_t n_views =
-      libmv_reconstruction_.reconstruction.AllCameras().size();
+      libmv_reconstruction_->reconstruction.AllCameras().size();
 
     Rs.create(n_views, 1, CV_64F);
     Ts.create(n_views, 1, CV_64F);
@@ -270,8 +273,8 @@ public:
     Vec3d t;
     for(size_t i = 0; i < n_views; ++i)
     {
-      eigen2cv(libmv_reconstruction_.reconstruction.AllCameras()[i].R, R);
-      eigen2cv(libmv_reconstruction_.reconstruction.AllCameras()[i].t, t);
+      eigen2cv(libmv_reconstruction_->reconstruction.AllCameras()[i].R, R);
+      eigen2cv(libmv_reconstruction_->reconstruction.AllCameras()[i].t, t);
       Mat(R).copyTo(Rs.getMatRef(i));
       Mat(t).copyTo(Ts.getMatRef(i));
     }
@@ -300,7 +303,7 @@ private:
     getIntrinsics().copyTo(K.getMat());
   }
 
-  libmv_Reconstruction libmv_reconstruction_;
+  std::shared_ptr<libmv_Reconstruction> libmv_reconstruction_;
   libmv_ReconstructionOptions libmv_reconstruction_options_;
   libmv_CameraIntrinsicsOptions libmv_camera_intrinsics_options_;
 };
