@@ -92,6 +92,7 @@ namespace cv
         @note If the window with that name already exists, that window is returned. Otherwise, new window is
         created with the given name, and it is returned.
 
+
          */
         CV_EXPORTS Viz3d getWindowByName(const String &window_name);
 
