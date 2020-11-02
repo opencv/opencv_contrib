@@ -1736,50 +1736,6 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         bool needNormals(_normals.needed());
         Mutex mutex;
 
-        /*
-        auto HashFetchPointsNormalsInvoker = [&](const Range& range)
-        {
-            std::vector<ptype> points, normals;
-            for (int i = range.start; i < range.end; i++)
-            {
-                cv::Vec3i tsdf_idx = totalVolUnits[i];
-
-
-                VolumeUnitIndexes::const_iterator it = volume.volumeUnits.find(tsdf_idx);
-                Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
-                if (it != volume.volumeUnits.end())
-                {
-                    std::vector<ptype> localPoints;
-                    std::vector<ptype> localNormals;
-                    for (int x = 0; x < volume.volumeUnitResolution; x++)
-                        for (int y = 0; y < volume.volumeUnitResolution; y++)
-                            for (int z = 0; z < volume.volumeUnitResolution; z++)
-                            {
-                                cv::Vec3i voxelIdx(x, y, z);
-                                TsdfVoxel voxel = _at(voxelIdx, it->second.index);
-
-                                if (voxel.tsdf != -128 && voxel.weight != 0)
-                                {
-                                    Point3f point = base_point + volume.voxelCoordToVolume(voxelIdx);
-                                    localPoints.push_back(toPtype(point));
-                                    if (needNormals)
-                                    {
-                                        Point3f normal = volume.getNormalVoxel(point);
-                                        localNormals.push_back(toPtype(normal));
-                                    }
-                                }
-                            }
-
-                    AutoLock al(mutex);
-                    pVecs.push_back(localPoints);
-                    nVecs.push_back(localNormals);
-                }
-            }
-        };
-
-        parallel_for_(fetchRange, HashFetchPointsNormalsInvoker, nstripes);
-        */
-
 
         auto _HashFetchPointsNormalsInvoker = [&](const Range& range)
         {
@@ -1820,10 +1776,10 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                             }
 
                     AutoLock al(mutex);
-                    _pVecs.push_back(localPoints);
-                    _nVecs.push_back(localNormals);
-                    //pVecs.push_back(localPoints);
-                    //nVecs.push_back(localNormals);
+                    //_pVecs.push_back(localPoints);
+                    //_nVecs.push_back(localNormals);
+                    pVecs.push_back(localPoints);
+                    nVecs.push_back(localNormals);
                 }
             }
         };
@@ -1855,41 +1811,16 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
-    /*
+    
     if (_normals.needed())
     {
         Points points = _points.getMat();
         CV_Assert(points.type() == POINT_TYPE);
-
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
-
         const HashTSDFVolumeGPU& _volume = *this;
-        auto HashPushNormals = [&](const ptype& point, const int* position) {
-            const HashTSDFVolumeGPU& volume(_volume);
-            Affine3f invPose(volume.pose.inv());
-            Point3f p = fromPtype(point);
-            Point3f n = nan3;
-            if (!isNaN(p))
-            {
-                Point3f voxelPoint = invPose * p;
-                n = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
-            }
-            normals(position[0], position[1]) = toPtype(n);
-        };
-        points.forEach(HashPushNormals);
-    }
-    */
-    /*
-    if (_normals.needed())
-    {
-        Points points = _points.getMat();
-        CV_Assert(points.type() == POINT_TYPE);
-        _normals.createSameSize(_points, _points.type());
-        Normals normals = _normals.getMat();
-        const HashTSDFVolumeCPU& _volume = *this;
         auto HashPushNormals             = [&](const ptype& point, const int* position) {
-            const HashTSDFVolumeCPU& volume(_volume);
+            const HashTSDFVolumeGPU& volume(_volume);
             Affine3f invPose(volume.pose.inv());
             Point3f p = fromPtype(point);
             Point3f n = nan3;
@@ -1902,7 +1833,7 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
         };
         points.forEach(HashPushNormals);
     }
-    */
+    
 }
 
 int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) const
