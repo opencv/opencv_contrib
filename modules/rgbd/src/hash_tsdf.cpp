@@ -821,7 +821,7 @@ int HashTSDFVolumeCPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 ///////// GPU implementation /////////
 
 #ifdef HAVE_OPENCL
-/*
+
 HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
     float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder)
     :HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes, zFirstMemOrder)
@@ -856,7 +856,6 @@ void HashTSDFVolumeGPU::reset()
     lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
 }
-*/
 
 #endif
 

@@ -116,6 +116,10 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
 };
 
 #ifdef HAVE_OPENCL
+
+typedef cv::Mat _VolumeUnitIndexSet;
+typedef cv::Mat _VolumeUnitIndexes;
+
 class HashTSDFVolumeGPU : public HashTSDFVolume
 {
     HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
@@ -125,10 +129,9 @@ class HashTSDFVolumeGPU : public HashTSDFVolume
     
     void reset() override;
 
-    void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
-        const int frameId = 0) override;
-    void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
-        OutputArray normals) const override;
+
+    //void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const int frameId = 0) override;
+    //void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points, OutputArray normals) const override;
 
 public:
     Vec4i volStrides;
@@ -137,22 +140,39 @@ public:
     VolumeUnitIndexes volumeUnits;
     cv::Mat volUnitsData;
     VolumeIndex lastVolIndex;
+
+    VolumeIndex _lastVolIndex;
+    cv::Mat indexes;
+    cv::Mat poses;
+    cv::Mat activities;
+    cv::Mat lastVisibleIndexes;
+    cv::Mat _volUnitsData;
 };
 #endif
 
-template<typename T>
+//template<typename T>
 Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _volumeParams)
 {
-    return makePtr<T>(_volumeParams);
+#ifdef HAVE_OPENCL
+    if (ocl::useOpenCL())
+    return makePtr<HashTSDFVolumeGPU>(_volumeParams);
+#endif
+    return makePtr<HashTSDFVolumeCPU>(_volumeParams);
 }
 
-template<typename T>
+//template<typename T>
 Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                                           int _maxWeight, float truncateThreshold, int volumeUnitResolution = 16)
 {
-    return makePtr<T>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, truncateThreshold,
+#ifdef HAVE_OPENCL
+    if (ocl::useOpenCL())
+    return makePtr<HashTSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, truncateThreshold,
+                      volumeUnitResolution);
+#endif
+    return makePtr<HashTSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, truncateThreshold,
                       volumeUnitResolution);
 }
+
 }  // namespace kinfu
 }  // namespace cv
 #endif
