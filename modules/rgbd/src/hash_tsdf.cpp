@@ -854,7 +854,13 @@ void HashTSDFVolumeGPU::reset()
 {
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
+    _lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    _volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    indexes = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
+    poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
+    activities = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
+    lastVisibleIndexes = cv::Mat(VOLUMES_SIZE, 1, rawType<int>());
 }
 
 
