@@ -127,7 +127,7 @@ public:
         float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder = true);
 
     HashTSDFVolumeGPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = true);
-    
+
     void reset() override;
 
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,

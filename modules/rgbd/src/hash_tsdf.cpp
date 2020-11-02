@@ -1008,9 +1008,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> _totalVolUnits;
-    for (int i = 0; i < indexes.size().height; i++) 
-    { 
-        _totalVolUnits.push_back(indexes.at<Vec3i>(i, 0)); 
+    for (int i = 0; i < indexes.size().height; i++)
+    {
+        _totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));
     }
 
 
@@ -1595,7 +1595,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     auto _truncDist = truncDist;
     auto _HashRaycastInvoker = [&](const Range& range)
     {
-        
+
         const Point3f cam2volTrans = cam2vol.translation();
         const Matx33f cam2volRot = cam2vol.rotation();
         const Matx33f vol2camRot = vol2cam.rotation();
@@ -1660,7 +1660,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
                         TsdfVoxel currVoxel = new_at(volUnitLocalIdx, idx);
                         //TsdfVoxel currVoxel; currVoxel.tsdf = floatToTsdf(1.0f); currVoxel.weight = 0;
-                        
+
                         currTsdf = tsdfToFloat(currVoxel.tsdf);
                         currWeight = currVoxel.weight;
                         stepSize = tstep;
@@ -1675,7 +1675,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                             Point3f pv = orig + tInterp * rayDirV;
                             Point3f nv = volume._getNormalVoxel(pv);
                             //Point3f nv = nan3;
-                            
+
                             if (!isNaN(nv))
                             {
                                 normal = vol2camRot * nv;
@@ -1691,14 +1691,14 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                     tcurr += stepSize;
 
                 }
-                
+
                 _ptsRow[x] = toPtype(point);
                 _nrmRow[x] = toPtype(normal);
 
             }
 
         }
-        
+
     };
 
     parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
@@ -1811,7 +1811,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
-    
+
     if (_normals.needed())
     {
         Points points = _points.getMat();
@@ -1833,7 +1833,7 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
         };
         points.forEach(HashPushNormals);
     }
-    
+
 }
 
 int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) const
