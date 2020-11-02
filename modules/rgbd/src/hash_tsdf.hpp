@@ -156,7 +156,7 @@ public:
 
     float interpolateVoxelPoint(const Point3f& point) const;
     float interpolateVoxel(const cv::Point3f& point) const;
-    Point3f  getNormalVoxel(const cv::Point3f& p) const;
+    //Point3f  getNormalVoxel(const cv::Point3f& p) const;
     Point3f _getNormalVoxel(const cv::Point3f& p) const;
 
     //! Utility functions for coordinate transformations
