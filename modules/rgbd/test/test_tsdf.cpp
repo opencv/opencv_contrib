@@ -466,7 +466,11 @@ void valid_points_test(bool isHashTSDF)
         waitKey(20000);
     }
 
-    float percentValidity = float(profile) / float(anfas);
+    //float percentValidity = anfas == 0 ? 0 : float(profile) / float(anfas);
+    float percentValidity;
+    if (profile == 0)    percentValidity = -0.5;
+    else if (anfas == 0) percentValidity = 0;
+    else                 percentValidity = float(profile) / float(anfas);
     ASSERT_LT(0.5 - percentValidity, 0.3);
 }
 

@@ -50,7 +50,7 @@ struct tsdf_hash
     }
 };
 
-typedef unsigned int VolumeIndex;
+typedef int VolumeIndex;
 struct VolumeUnit
 {
     cv::Vec3i coord;
@@ -165,7 +165,7 @@ public:
 
     Point3f voxelCoordToVolume(const Vec3i& voxelIdx) const;
     Vec3i volumeToVoxelCoord(const Point3f& point) const;
-
+    int find_idx(cv::Mat v, Vec3i tsdf_idx, bool f = false) const;
 
 public:
     Vec4i volStrides;
