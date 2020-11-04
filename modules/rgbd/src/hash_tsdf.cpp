@@ -1501,8 +1501,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     const Intr::Reprojector reproj(intrinsics.makeReprojector());
 
     const int nstripes = -1;
- 
-    auto _truncDist = truncDist;
+
+    //auto _truncDist = truncDist;
     auto _HashRaycastInvoker = [&](const Range& range)
     {
         //std::cout << "_HashRaycastInvoker" << std::endl;
@@ -1614,8 +1614,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     };
 
-    //parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
-    _HashRaycastInvoker(Range(0, new_points.rows));
+    parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
+    //_HashRaycastInvoker(Range(0, new_points.rows));
 }
 
 void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
