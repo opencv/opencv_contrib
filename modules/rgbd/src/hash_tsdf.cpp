@@ -864,10 +864,10 @@ void HashTSDFVolumeGPU::reset()
 }
 
 
-static inline bool _find(cv::Mat v, Vec3i tsdf_idx)
+static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)
 {
     //bool res = false;
-    for (int i = 0; i < v.size().height; i++)
+    for (int i = 0; i < _lastVolIndex+1; i++)
     {
         auto p = v.at<Vec3i>(i, 0);
         if (p == tsdf_idx)
@@ -882,6 +882,7 @@ static inline bool _find(cv::Mat v, Vec3i tsdf_idx)
 inline int HashTSDFVolumeGPU::find_idx(cv::Mat v, Vec3i tsdf_idx, bool f) const
 {
     //bool res = false;
+    //std::cout << " find_idx " << tsdf_idx << std::endl;
     for (int i = 0; i < _lastVolIndex; i++)
     {
         Vec3i p = v.at<Vec3i>(i, 0);
@@ -938,7 +939,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
 
-                            if (!_find(_localAccessVolUnits, tsdf_idx))
+                            if (!_find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
                             {
                                 _localAccessVolUnits.at<Vec3i>(loc_vol_idx, 0) = tsdf_idx;
                                 //std::cout << tsdf_idx << std::endl;
@@ -954,7 +955,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         for (int i = 0; i < loc_vol_idx; i++)
         {
             Vec3i idx = _localAccessVolUnits.at<Vec3i>(i, 0);
-            if (!_find(indexes, idx))
+            if (find_idx(indexes, idx)==-1)
             {
                 //std::cout << idx << std::endl;
                 if (_lastVolIndex >= VolumeIndex(indexes.size().height))
@@ -1079,6 +1080,11 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
         });
+
+
+    //std::cout << "indexes" << std::endl;
+    //indexes.forEach<Vec3i>([](Vec3i& vv, const int*) {std::cout << "-" << vv << std::endl; });
+
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
@@ -1127,8 +1133,8 @@ inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, VolumeInd
     //! Out of bounds
     if ((volumeIdx[0] >= volumeUnitResolution || volumeIdx[0] < 0) ||
         (volumeIdx[1] >= volumeUnitResolution || volumeIdx[1] < 0) ||
-        (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0) ||
-        (indx < 0 || indx > _lastVolIndex-1) )
+        (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0))
+        //|| (indx < 0 || indx > _lastVolIndex-1) )
     {
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
@@ -1626,23 +1632,16 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
     {
         std::vector<std::vector<ptype>> pVecs, nVecs;
 
-        std::vector<Vec3i> totalVolUnits;
-        for (const auto& keyvalue : volumeUnits)
-        {
-            totalVolUnits.push_back(keyvalue.first);
-        }
-
-        std::vector<std::vector<ptype>> _pVecs, _nVecs;
-
         std::vector<Vec3i> _totalVolUnits;
         for (int i = 0; i < indexes.size().height; i++)
         {
             _totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));
         }
 
-        Range fetchRange(0, (int)totalVolUnits.size());
         Range _fetchRange(0, (int)_totalVolUnits.size());
-
+        //std::cout << "indexes" << std::endl;
+        //indexes.forEach<Vec3i>([](Vec3i& vv, const int*){std::cout << "-" << vv << std::endl;});
+        
         const int nstripes = -1;
 
         const HashTSDFVolumeGPU& volume(*this);
@@ -1659,13 +1658,16 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 
 
                 //VolumeUnitIndexes::const_iterator it = volume.volumeUnits.find(tsdf_idx);
+                //VolumeIndex idx = find_idx(indexes, tsdf_idx, true);
                 VolumeIndex idx = find_idx(indexes, tsdf_idx);
-
+                //std::cout << idx<<" " ; 
                 Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
 
 
-                if (idx >= 0 || idx < _lastVolIndex)
+                if (idx >= 0 && idx < _lastVolIndex)
                 {
+                    //<< std::endl;
+
                     std::vector<ptype> localPoints;
                     std::vector<ptype> localNormals;
                     for (int x = 0; x < volume.volumeUnitResolution; x++)
@@ -1673,33 +1675,48 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                             for (int z = 0; z < volume.volumeUnitResolution; z++)
                             {
                                 cv::Vec3i voxelIdx(x, y, z);
+                                //std::cout << idx << std::endl;
                                 TsdfVoxel voxel = new_at(voxelIdx, idx);
 
                                 if (voxel.tsdf != -128 && voxel.weight != 0)
                                 {
                                     Point3f point = base_point + volume.voxelCoordToVolume(voxelIdx);
+                                    //std::cout << point << std::endl;
+
                                     localPoints.push_back(toPtype(point));
+                                    //std::cout << Mat(localPoints) << std::endl;
                                     if (needNormals)
                                     {
-                                        Point3f normal = volume._getNormalVoxel(point);
-                                        //Point3f normal(0,0,0);
-                                        localNormals.push_back(toPtype(normal));
+                                        //Point3f normal = volume._getNormalVoxel(point);
+                                        Point3f normal(1,0,0);
+                                        if (normal.x == 0 && normal.y == 0 && normal.z) std::cout<<"looooooooooooool"<<std::endl;
+                                        //std::cout << "===" << normal << std::endl;
+                                        else
+                                            localNormals.push_back(toPtype(normal));
                                     }
                                 }
                             }
-
+                    
                     AutoLock al(mutex);
+                    //std::cout << "localPoints" << std::endl;
+                    //std::cout << Mat(localPoints) << std::endl;
                     //_pVecs.push_back(localPoints);
                     //_nVecs.push_back(localNormals);
                     pVecs.push_back(localPoints);
                     nVecs.push_back(localNormals);
+
+                    //std::cout << "pVecs" << std::endl;
+                    //std::cout << Mat(pVecs.at(0)) << std::endl;
+                    //std::cout << "nVecs" << std::endl;
+                    //std::cout << Mat(nVecs.at(0)) << std::endl;
+
                 }
             }
         };
 
-        parallel_for_(_fetchRange, _HashFetchPointsNormalsInvoker, nstripes);
-
-
+        //parallel_for_(_fetchRange, _HashFetchPointsNormalsInvoker, nstripes);
+        _HashFetchPointsNormalsInvoker(_fetchRange);
+        
 
         std::vector<ptype> points, normals;
         for (size_t i = 0; i < pVecs.size(); i++)
@@ -1707,7 +1724,8 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
             points.insert(points.end(), pVecs[i].begin(), pVecs[i].end());
             normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
         }
-
+        //std::cout << "points" << std::endl;
+        //std::cout << Mat(points) << std::endl;
         _points.create((int)points.size(), 1, POINT_TYPE);
         if (!points.empty())
             Mat((int)points.size(), 1, POINT_TYPE, &points[0]).copyTo(_points.getMat());
@@ -1724,7 +1742,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
-
+    
     if (_normals.needed())
     {
         Points points = _points.getMat();
@@ -1744,7 +1762,9 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
             }
             normals(position[0], position[1]) = toPtype(n);
         };
-        points.forEach(HashPushNormals);
+        //std::cout << "points" << std::endl;
+        //std::cout << points << std::endl;
+        //points.forEach(HashPushNormals);
     }
 
 }
