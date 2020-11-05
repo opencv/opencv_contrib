@@ -8,40 +8,123 @@ namespace cv
 {
 namespace xfeatures2d
 {
+/*!
+MSD Image Pyramid. (from msd.cpp)
+*/
+class TBMRImagePyramid
+{
+    // Multi-threaded construction of the scale-space pyramid
+    struct TBMRImagePyramidBuilder : ParallelLoopBody
+    {
+        TBMRImagePyramidBuilder(const cv::Mat &_im,
+                                std::vector<cv::Mat> *_m_imPyr,
+                                float _scaleFactor)
+        {
+            im = &_im;
+            m_imPyr = _m_imPyr;
+            scaleFactor = _scaleFactor;
+        }
+
+        void operator()(const Range &range) const CV_OVERRIDE
+        {
+            for (int lvl = range.start; lvl < range.end; lvl++)
+            {
+                float scale = 1 / std::pow(scaleFactor, (float)lvl);
+                (*m_imPyr)[lvl] = cv::Mat(cv::Size(cvRound(im->cols * scale),
+                                                   cvRound(im->rows * scale)),
+                                          im->type());
+                cv::resize(*im, (*m_imPyr)[lvl],
+                           cv::Size((*m_imPyr)[lvl].cols, (*m_imPyr)[lvl].rows),
+                           0.0, 0.0, cv::INTER_AREA);
+            }
+        }
+        const cv::Mat *im;
+        std::vector<cv::Mat> *m_imPyr;
+        float scaleFactor;
+    };
+
+  public:
+    TBMRImagePyramid(const cv::Mat &im, const int nLevels,
+                     const float scaleFactor = 1.6f);
+    ~TBMRImagePyramid();
+
+    const std::vector<cv::Mat> getImPyr() const { return m_imPyr; };
+
+  private:
+    std::vector<cv::Mat> m_imPyr;
+    int m_nLevels;
+    float m_scaleFactor;
+};
+
+TBMRImagePyramid::TBMRImagePyramid(const cv::Mat &im, const int nLevels,
+                                   const float scaleFactor)
+{
+    m_nLevels = nLevels;
+    m_scaleFactor = scaleFactor;
+    m_imPyr.clear();
+    m_imPyr.resize(nLevels);
+
+    m_imPyr[0] = im.clone();
+
+    if (m_nLevels > 1)
+    {
+        parallel_for_(Range(1, nLevels),
+                      TBMRImagePyramidBuilder(im, &m_imPyr, scaleFactor));
+    }
+}
+
+TBMRImagePyramid::~TBMRImagePyramid() {}
+
 class TBMR_Impl CV_FINAL : public TBMR
 {
   public:
     struct Params
     {
-        Params(int _min_area = 60, double _max_area_relative = 0.01)
+        Params(int _min_area = 60, float _max_area_relative = 0.01,
+               float _scale = 1.5, int _n_scale = -1)
         {
             CV_Assert(_min_area >= 0);
             CV_Assert(_max_area_relative >=
-                      std::numeric_limits<double>::epsilon());
+                      std::numeric_limits<float>::epsilon());
 
             minArea = _min_area;
             maxAreaRelative = _max_area_relative;
+            scale = _scale;
+            n_scale = _n_scale;
         }
 
         uint minArea;
-        double maxAreaRelative;
+        float maxAreaRelative;
+        int n_scale;
+        float scale;
     };
 
     explicit TBMR_Impl(const Params &_params) : params(_params) {}
 
     virtual ~TBMR_Impl() CV_OVERRIDE {}
 
-    void setMinArea(int minArea) CV_OVERRIDE { params.minArea = minArea; }
+    void setMinArea(int minArea) CV_OVERRIDE
+    {
+        params.minArea = std::max(minArea, 0);
+    }
     int getMinArea() const CV_OVERRIDE { return params.minArea; }
 
-    void setMaxAreaRelative(double maxAreaRelative) CV_OVERRIDE
+    void setMaxAreaRelative(float maxAreaRelative) CV_OVERRIDE
     {
-        params.maxAreaRelative = maxAreaRelative;
+        params.maxAreaRelative =
+            std::max(maxAreaRelative, std::numeric_limits<float>::epsilon());
     }
-    double getMaxAreaRelative() const CV_OVERRIDE
+    float getMaxAreaRelative() const CV_OVERRIDE
     {
         return params.maxAreaRelative;
     }
+    void setScaleFactor(float scale_factor) CV_OVERRIDE
+    {
+        params.scale = std::max(scale_factor, 1.f);
+    }
+    float getScaleFactor() const CV_OVERRIDE { return params.scale; }
+    void setNScales(int n_scales) CV_OVERRIDE { params.minArea = n_scales; }
+    int getNScales() const CV_OVERRIDE { return params.n_scale; }
 
     void detect(InputArray image, CV_OUT std::vector<KeyPoint> &keypoints,
                 InputArray mask = noArray()) CV_OVERRIDE;
@@ -164,7 +247,7 @@ class TBMR_Impl CV_FINAL : public TBMR
     }
 
     void calculateTBMRs(const Mat &image, std::vector<Elliptic_KeyPoint> &tbmrs,
-                        const Mat &mask)
+                        const Mat &mask, float scale, int octave)
     {
         uint imSize = image.cols * image.rows;
         uint maxArea = static_cast<uint>(params.maxAreaRelative * imSize);
@@ -403,9 +486,14 @@ class TBMR_Impl CV_FINAL : public TBMR
 
                     float size = (float)majAxL;
 
-                    tbmrs.push_back(Elliptic_KeyPoint(
-                        Point2f((float)x, (float)y), (float)theta,
-                        cv::Size2f((float)majAxL, (float)minAxL), size, 1.f));
+                    // not sure if we should scale or not scale x,y,axes,size
+                    // (as scale is stored in si)
+                    Elliptic_KeyPoint ekp(
+                        Point2f((float)x, (float)y) * scale, (float)theta,
+                        cv::Size2f((float)majAxL, (float)minAxL) * scale,
+                        size * scale, scale);
+                    ekp.octave = octave;
+                    tbmrs.push_back(ekp);
                 }
             }
         }
@@ -467,14 +555,32 @@ void TBMR_Impl::detect(InputArray _image,
     if (src.channels() != 1)
         cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
 
-    // append max tree tbmrs
-    sortIdx(src.reshape(1, 1), S,
-            SortFlags::SORT_ASCENDING | SortFlags::SORT_EVERY_ROW);
-    calculateTBMRs(src, keypoints, mask);
+    int m_cur_n_scales =
+        params.n_scale > 0
+            ? params.n_scale
+            : 1 /*todo calculate optimal scale factor from image size*/;
+    float m_scale_factor = params.scale;
 
-    // reverse instead of sort
-    flip(S, S, -1);
-    calculateTBMRs(src, keypoints, mask);
+    std::vector<Mat> pyr;
+    TBMRImagePyramid scaleSpacer(src, m_cur_n_scales, m_scale_factor);
+    pyr = scaleSpacer.getImPyr();
+
+    int oct = 0;
+    for (auto &s : pyr)
+    {
+        float scale = ((float)s.cols) / pyr.begin()->cols;
+
+        // append max tree tbmrs
+        sortIdx(s.reshape(1, 1), S,
+                SortFlags::SORT_ASCENDING | SortFlags::SORT_EVERY_ROW);
+        calculateTBMRs(s, keypoints, mask, scale, oct);
+
+        // reverse instead of sort
+        flip(S, S, -1);
+        calculateTBMRs(s, keypoints, mask, scale, oct);
+
+        oct++;
+    }
 }
 
 void TBMR_Impl::detectAndCompute(
@@ -482,20 +588,19 @@ void TBMR_Impl::detectAndCompute(
     CV_OUT std::vector<Elliptic_KeyPoint> &keypoints, OutputArray descriptors,
     bool useProvidedKeypoints)
 {
-    CV_INSTRUMENT_REGION();
-
-    CV_Error(Error::StsNotImplemented, "");
+    // We can use SIFT to compute descriptors for the extracted keypoints...
+    auto sift = SIFT::create();
+    auto dac = AffineFeature2D::create(this, sift);
+    dac->detectAndCompute(image, mask, keypoints, descriptors,
+                          useProvidedKeypoints);
 }
 
-CV_WRAP Ptr<TBMR> TBMR::create(int _min_area, double _max_area_relative)
+CV_WRAP Ptr<TBMR> TBMR::create(int _min_area, float _max_area_relative,
+                               float _scale, int _n_scale)
 {
     return cv::makePtr<TBMR_Impl>(
-        TBMR_Impl::Params(_min_area, _max_area_relative));
+        TBMR_Impl::Params(_min_area, _max_area_relative, _scale, _n_scale));
 }
 
-String TBMR::getDefaultName() const
-{
-    return (Feature2D::getDefaultName() + ".TBMR");
-}
 } // namespace xfeatures2d
 } // namespace cv
