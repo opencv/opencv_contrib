@@ -138,25 +138,17 @@ public:
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
-    size_t getTotalVolumeUnits() const { return volumeUnits.size(); }
+    VolumeIndex getTotalVolumeUnits() const { return _lastVolIndex; }
     int getVisibleBlocks(int currFrameId, int frameThreshold) const;
-
-    //! Return the voxel given the voxel index in the universal volume (1 unit = 1 voxel_length)
-    TsdfVoxel at(const Vec3i& volumeIdx) const;
 
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
-    virtual TsdfVoxel at(const cv::Point3f& point) const;
-    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
     virtual TsdfVoxel new_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
-
-    TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const;
     TsdfVoxel new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const;
 
 
     float interpolateVoxelPoint(const Point3f& point) const;
     float interpolateVoxel(const cv::Point3f& point) const;
-    //Point3f  getNormalVoxel(const cv::Point3f& p) const;
     Point3f _getNormalVoxel(const cv::Point3f& p) const;
 
     //! Utility functions for coordinate transformations
@@ -171,9 +163,6 @@ public:
     Vec4i volStrides;
     Vec6f frameParams;
     Mat pixNorms;
-    VolumeUnitIndexes volumeUnits;
-    cv::Mat volUnitsData;
-    VolumeIndex lastVolIndex;
 
     VolumeIndex _lastVolIndex;
     cv::Mat indexes;

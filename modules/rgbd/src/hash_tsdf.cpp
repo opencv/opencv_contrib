@@ -853,9 +853,7 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstM
 void HashTSDFVolumeGPU::reset()
 {
     CV_TRACE_FUNCTION();
-    lastVolIndex = 0;
     _lastVolIndex = 0;
-    volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     _volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     indexes = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
     poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
@@ -1093,24 +1091,6 @@ cv::Vec3i HashTSDFVolumeGPU::volumeToVoxelCoord(const cv::Point3f& point) const
         cvFloor(point.z * voxelSizeInv));
 }
 
-inline TsdfVoxel HashTSDFVolumeGPU::_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const
-{
-    //! Out of bounds
-    if ((volumeIdx[0] >= volumeUnitResolution || volumeIdx[0] < 0) ||
-        (volumeIdx[1] >= volumeUnitResolution || volumeIdx[1] < 0) ||
-        (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0))
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.0f);
-        dummy.weight = 0;
-        return dummy;
-    }
-
-    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
-    int coordBase =
-        volumeIdx[0] * volStrides[0] + volumeIdx[1] * volStrides[1] + volumeIdx[2] * volStrides[2];
-    return volData[coordBase];
-}
 inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const
 {
     //! Out of bounds
@@ -1132,53 +1112,6 @@ inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, VolumeInd
     return volData[coordBase];
 }
 
-inline TsdfVoxel HashTSDFVolumeGPU::at(const cv::Vec3i& volumeIdx) const
-
-{
-    Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution),
-        cvFloor(volumeIdx[1] / volumeUnitResolution),
-        cvFloor(volumeIdx[2] / volumeUnitResolution));
-
-    VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
-
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-
-    cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
-        volumeUnitIdx[1] * volumeUnitResolution,
-        volumeUnitIdx[2] * volumeUnitResolution);
-
-    volUnitLocalIdx =
-        cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return _at(volUnitLocalIdx, it->second.index);
-
-}
-
-TsdfVoxel HashTSDFVolumeGPU::at(const Point3f& point) const
-{
-    cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
-    VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
-
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-
-    cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
-    cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
-    volUnitLocalIdx =
-        cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
-    return _at(volUnitLocalIdx, it->second.index);
-}
-
 TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const
 {
     if (indx < 0 || indx > _lastVolIndex - 1)
@@ -1198,23 +1131,6 @@ TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
     return volData[coordBase];
 }
 
-TsdfVoxel HashTSDFVolumeGPU::atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const
-{
-    if (it == volumeUnits.end())
-    {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
-    }
-    Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
-
-    // expanding at(), removing bounds check
-    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(it->second.index);
-    int coordBase = volUnitLocalIdx[0] * volStrides[0] + volUnitLocalIdx[1] * volStrides[1] + volUnitLocalIdx[2] * volStrides[2];
-    return volData[coordBase];
-}
-
 float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
 {
     const Vec3i neighbourCoords[] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
@@ -1222,10 +1138,12 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
 
     // A small hash table to reduce a number of find() calls
     bool queried[8];
-    VolumeUnitIndexes::const_iterator iterMap[8];
+    //VolumeUnitIndexes::const_iterator iterMap[8];
+    VolumeIndex iterMap[8];
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = volumeUnits.end();
+        //iterMap[i] = volumeUnits.end();
+        iterMap[i] = _lastVolIndex - 1;
         queried[i] = false;
     }
 
@@ -1248,12 +1166,19 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
         auto it = iterMap[dictIdx];
         if (!queried[dictIdx])
         {
-            it = volumeUnits.find(volumeUnitIdx);
-            iterMap[dictIdx] = it;
-            queried[dictIdx] = true;
+            it = find_idx(indexes, volumeUnitIdx);
+            if (it >= 0 || it < _lastVolIndex)
+            {
+                iterMap[dictIdx] = it;
+                queried[dictIdx] = true;
+            }
+            //it = volumeUnits.find(volumeUnitIdx);
+            //iterMap[dictIdx] = it;
+            //queried[dictIdx] = true;
         }
 
-        vx[i] = atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
+        //vx[i] = atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
+        vx[i] = new_atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
     }
 
     return interpolate(tx, ty, tz, vx);
@@ -1648,10 +1573,9 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 {
     int numVisibleBlocks = 0;
     //! TODO: Iterate over map parallely?
-    for (const auto& keyvalue : volumeUnits)
+    for (int i = 0; i < _lastVolIndex; i++)
     {
-        const VolumeUnit& volumeUnit = keyvalue.second;
-        if (volumeUnit.lastVisibleIndex > (currFrameId - frameThreshold))
+        if (lastVisibleIndexes.at<int>(i, 0) > (currFrameId - frameThreshold));
             numVisibleBlocks++;
     }
     return numVisibleBlocks;
