@@ -1575,7 +1575,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
     //! TODO: Iterate over map parallely?
     for (int i = 0; i < _lastVolIndex; i++)
     {
-        if (lastVisibleIndexes.at<int>(i, 0) > (currFrameId - frameThreshold));
+        if (lastVisibleIndexes.at<int>(i, 0) > (currFrameId - frameThreshold))
             numVisibleBlocks++;
     }
     return numVisibleBlocks;
