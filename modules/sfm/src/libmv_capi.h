@@ -75,7 +75,7 @@ struct libmv_Reconstruction {
   EuclideanReconstruction reconstruction;
   /* Used for per-track average error calculation after reconstruction */
   Tracks tracks;
-  CameraIntrinsics *intrinsics;
+  std::shared_ptr<CameraIntrinsics> intrinsics;
   double error;
   bool is_valid;
 };
@@ -252,21 +252,22 @@ static void libmv_cameraIntrinsicsFillFromOptions(
  * options values.
  */
 
-static CameraIntrinsics* libmv_cameraIntrinsicsCreateFromOptions(
+static
+std::shared_ptr<CameraIntrinsics> libmv_cameraIntrinsicsCreateFromOptions(
     const libmv_CameraIntrinsicsOptions* camera_intrinsics_options) {
-  CameraIntrinsics *camera_intrinsics = NULL;
+  std::shared_ptr<CameraIntrinsics> camera_intrinsics;
   switch (camera_intrinsics_options->distortion_model) {
     case SFM_DISTORTION_MODEL_POLYNOMIAL:
-      camera_intrinsics = new PolynomialCameraIntrinsics();
+      camera_intrinsics = std::make_shared<PolynomialCameraIntrinsics>();
       break;
     case SFM_DISTORTION_MODEL_DIVISION:
-      camera_intrinsics = new DivisionCameraIntrinsics();
+      camera_intrinsics = std::make_shared<DivisionCameraIntrinsics>();
       break;
     default:
       assert(!"Unknown distortion model");
   }
   libmv_cameraIntrinsicsFillFromOptions(camera_intrinsics_options,
-                                        camera_intrinsics);
+                                        camera_intrinsics.get());
   return camera_intrinsics;
 }
 
@@ -361,19 +362,19 @@ static void finishReconstruction(
 /* Perform the complete reconstruction process
  */
 
-static libmv_Reconstruction *libmv_solveReconstruction(
+static
+std::shared_ptr<libmv_Reconstruction> libmv_solveReconstruction(
     const Tracks &libmv_tracks,
     const libmv_CameraIntrinsicsOptions* libmv_camera_intrinsics_options,
     libmv_ReconstructionOptions* libmv_reconstruction_options) {
-  libmv_Reconstruction *libmv_reconstruction =
-    new libmv_Reconstruction();
+  std::shared_ptr<libmv_Reconstruction> libmv_reconstruction = std::make_shared<libmv_Reconstruction>();
 
   Tracks tracks = libmv_tracks;
   EuclideanReconstruction &reconstruction =
     libmv_reconstruction->reconstruction;
 
   /* Retrieve reconstruction options from C-API to libmv API. */
-  CameraIntrinsics *camera_intrinsics;
+  std::shared_ptr<CameraIntrinsics> camera_intrinsics;
   camera_intrinsics = libmv_reconstruction->intrinsics =
     libmv_cameraIntrinsicsCreateFromOptions(libmv_camera_intrinsics_options);
 
@@ -426,7 +427,7 @@ static libmv_Reconstruction *libmv_solveReconstruction(
                                 libmv_reconstruction_options->refine_intrinsics,
                                 libmv::BUNDLE_NO_CONSTRAINTS,
                                 &reconstruction,
-                                camera_intrinsics);
+                                camera_intrinsics.get());
   }
 
   /* Set reconstruction scale to unity. */
@@ -434,10 +435,10 @@ static libmv_Reconstruction *libmv_solveReconstruction(
 
   finishReconstruction(tracks,
                        *camera_intrinsics,
-                       libmv_reconstruction);
+                       libmv_reconstruction.get());
 
   libmv_reconstruction->is_valid = true;
-  return (libmv_Reconstruction *) libmv_reconstruction;
+  return libmv_reconstruction;
 }
 
 #endif
