@@ -1475,10 +1475,18 @@ Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
     normal[1] = interpolate(tx, ty, tz, cyv);
     normal[2] = interpolate(tx, ty, tz, czv);
 #endif
-
+    //if (normal[0] == 0 && normal[1] == 0 && normal[2] == 0)return nan3;
+        //std::cout << "kek" << std::endl;
     float nv = sqrt(normal[0] * normal[0] +
         normal[1] * normal[1] +
         normal[2] * normal[2]);
+    //if (nv < 0.0001f)return nan3;
+    //auto _normal = normal / nv;
+    //if (normal[0] == 0 && normal[1] == 0 && normal[2] == 0)
+    //if (_normal[0] == 0 && _normal[1] == 0 && _normal[2] == 0)
+    //    std::cout << "kek" << std::endl;
+    //std::cout << normal / nv << std::endl;
+    //return normal / nv;
     return nv < 0.0001f ? nan3 : normal / nv;
     //return Point3f(0, 0, 0);
 }
@@ -1687,12 +1695,12 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                                     //std::cout << Mat(localPoints) << std::endl;
                                     if (needNormals)
                                     {
-                                        //Point3f normal = volume._getNormalVoxel(point);
-                                        Point3f normal(1,0,0);
-                                        if (normal.x == 0 && normal.y == 0 && normal.z) std::cout<<"looooooooooooool"<<std::endl;
+                                        Point3f normal = volume._getNormalVoxel(point);
+                                        //Point3f normal(1,0,0);
+                                        //if (normal.x == 0 && normal.y == 0 && normal.z==0) std::cout<<"looooooooooooool"<<std::endl;
                                         //std::cout << "===" << normal << std::endl;
-                                        else
-                                            localNormals.push_back(toPtype(normal));
+                                        
+                                        localNormals.push_back(toPtype(normal));
                                     }
                                 }
                             }
@@ -1749,6 +1757,7 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
         CV_Assert(points.type() == POINT_TYPE);
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
+        //std::cout << normals << std::endl;
         const HashTSDFVolumeGPU& _volume = *this;
         auto HashPushNormals             = [&](const ptype& point, const int* position) {
             const HashTSDFVolumeGPU& volume(_volume);
@@ -1764,7 +1773,7 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
         };
         //std::cout << "points" << std::endl;
         //std::cout << points << std::endl;
-        //points.forEach(HashPushNormals);
+        points.forEach(HashPushNormals);
     }
 
 }

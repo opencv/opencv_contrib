@@ -288,6 +288,7 @@ void normalsCheck(Mat normals)
             float length = vector[0] * vector[0] +
                 vector[1] * vector[1] +
                 vector[2] * vector[2];
+            //if (length == 0 && pvector == normals.begin<Vec4f>()) std::cout << vector << std::endl;
             ASSERT_LT(abs(1 - length), 0.0001f);
         }
     }
