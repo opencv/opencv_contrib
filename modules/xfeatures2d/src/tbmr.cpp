@@ -103,40 +103,45 @@ class TBMR_Impl CV_FINAL : public TBMR
 
     virtual ~TBMR_Impl() CV_OVERRIDE {}
 
-    void setMinArea(int minArea) CV_OVERRIDE
+    virtual void setMinArea(int minArea) CV_OVERRIDE
     {
         params.minArea = std::max(minArea, 0);
     }
     int getMinArea() const CV_OVERRIDE { return params.minArea; }
 
-    void setMaxAreaRelative(float maxAreaRelative) CV_OVERRIDE
+    virtual void setMaxAreaRelative(float maxAreaRelative) CV_OVERRIDE
     {
         params.maxAreaRelative =
             std::max(maxAreaRelative, std::numeric_limits<float>::epsilon());
     }
-    float getMaxAreaRelative() const CV_OVERRIDE
+    virtual float getMaxAreaRelative() const CV_OVERRIDE
     {
         return params.maxAreaRelative;
     }
-    void setScaleFactor(float scale_factor) CV_OVERRIDE
+    virtual void setScaleFactor(float scale_factor) CV_OVERRIDE
     {
         params.scale = std::max(scale_factor, 1.f);
     }
-    float getScaleFactor() const CV_OVERRIDE { return params.scale; }
-    void setNScales(int n_scales) CV_OVERRIDE { params.minArea = n_scales; }
-    int getNScales() const CV_OVERRIDE { return params.n_scale; }
+    virtual float getScaleFactor() const CV_OVERRIDE { return params.scale; }
+    virtual void setNScales(int n_scales) CV_OVERRIDE
+    {
+        params.minArea = n_scales;
+    }
+    virtual int getNScales() const CV_OVERRIDE { return params.n_scale; }
 
-    void detect(InputArray image, CV_OUT std::vector<KeyPoint> &keypoints,
-                InputArray mask = noArray()) CV_OVERRIDE;
+    virtual void detect(InputArray image,
+                        CV_OUT std::vector<KeyPoint> &keypoints,
+                        InputArray mask = noArray()) CV_OVERRIDE;
 
-    void detect(InputArray image,
-                CV_OUT std::vector<Elliptic_KeyPoint> &keypoints,
-                InputArray mask = noArray()) CV_OVERRIDE;
+    virtual void detect(InputArray image,
+                        CV_OUT std::vector<Elliptic_KeyPoint> &keypoints,
+                        InputArray mask = noArray()) CV_OVERRIDE;
 
-    void detectAndCompute(InputArray image, InputArray mask,
-                          CV_OUT std::vector<Elliptic_KeyPoint> &keypoints,
-                          OutputArray descriptors,
-                          bool useProvidedKeypoints = false) CV_OVERRIDE;
+    virtual void
+    detectAndCompute(InputArray image, InputArray mask,
+                     CV_OUT std::vector<Elliptic_KeyPoint> &keypoints,
+                     OutputArray descriptors,
+                     bool useProvidedKeypoints = false) CV_OVERRIDE;
 
     CV_INLINE uint zfindroot(uint *parent, uint p)
     {
