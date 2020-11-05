@@ -823,8 +823,8 @@ int HashTSDFVolumeCPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 #ifdef HAVE_OPENCL
 
 HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
-    float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder)
-    :HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes, zFirstMemOrder)
+    float _truncateThreshold, int _volumeUnitRes, bool _zFirstMemOrder)
+    :HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
 {
     int xdim, ydim, zdim;
     if (zFirstMemOrder)
