@@ -6,7 +6,7 @@
 
 namespace cv
 {
-namespace tbmr
+namespace xfeatures2d
 {
 class TBMR_Impl CV_FINAL : public TBMR
 {
@@ -45,6 +45,15 @@ class TBMR_Impl CV_FINAL : public TBMR
 
     void detect(InputArray image, CV_OUT std::vector<KeyPoint> &keypoints,
                 InputArray mask = noArray()) CV_OVERRIDE;
+
+    void detect(InputArray image,
+                CV_OUT std::vector<Elliptic_KeyPoint> &keypoints,
+                InputArray mask = noArray()) CV_OVERRIDE;
+
+    void detectAndCompute(InputArray image, InputArray mask,
+                          CV_OUT std::vector<Elliptic_KeyPoint> &keypoints,
+                          OutputArray descriptors,
+                          bool useProvidedKeypoints = false) CV_OVERRIDE;
 
     CV_INLINE uint zfindroot(uint *parent, uint p)
     {
@@ -154,7 +163,7 @@ class TBMR_Impl CV_FINAL : public TBMR
         free(dejaVu);
     }
 
-    void calculateTBMRs(const Mat &image, std::vector<KeyPoint> &tbmrs,
+    void calculateTBMRs(const Mat &image, std::vector<Elliptic_KeyPoint> &tbmrs,
                         const Mat &mask)
     {
         uint imSize = image.cols * image.rows;
@@ -378,6 +387,7 @@ class TBMR_Impl CV_FINAL : public TBMR
                                            2);
                 double minAxL = std::min(l1, l2);
                 double majAxL = std::max(l1, l2);
+
                 if (minAxL >= 1.5 && v != 0 &&
                     (mask.empty() ||
                      mask.at<uchar>(cvRound(y), cvRound(x)) != 0))
@@ -391,11 +401,11 @@ class TBMR_Impl CV_FINAL : public TBMR
                     else
                         theta = CV_PI / 2. + 0.5 * std::atan2(2 * b, (a - c));
 
-                    // we have all ellipse informations, but
-                    // KeyPoint does not store ellipses. Use
-                    // Elliptic_Keypoint from xFeatures2D?
-                    tbmrs.push_back(KeyPoint(Point2f((float)x, (float)y),
-                                             (float)majAxL, (float)theta));
+                    float size = (float)majAxL;
+
+                    tbmrs.push_back(Elliptic_KeyPoint(
+                        Point2f((float)x, (float)y), (float)theta,
+                        cv::Size2f((float)majAxL, (float)minAxL), size, 1.f));
                 }
             }
         }
@@ -410,7 +420,7 @@ class TBMR_Impl CV_FINAL : public TBMR
 
     Mat tempsrc;
 
-    // component tree representation: see
+    // component tree representation (parent,S): see
     // https://ieeexplore.ieee.org/document/6850018
     Mat parent;
     Mat S;
@@ -423,19 +433,39 @@ class TBMR_Impl CV_FINAL : public TBMR
 void TBMR_Impl::detect(InputArray _image, std::vector<KeyPoint> &keypoints,
                        InputArray _mask)
 {
+    std::vector<Elliptic_KeyPoint> kp;
+    detect(_image, kp, _mask);
+    keypoints.resize(kp.size());
+    for (size_t i = 0; i < kp.size(); ++i)
+        keypoints[i] = kp[i];
+}
+
+void TBMR_Impl::detect(InputArray _image,
+                       std::vector<Elliptic_KeyPoint> &keypoints,
+                       InputArray _mask)
+{
     Mat mask = _mask.getMat();
     Mat src = _image.getMat();
 
     keypoints.clear();
 
-    CV_Assert(!src.empty());
-    CV_Assert(src.type() == CV_8UC1);
+    if (src.empty())
+        return;
+
+    if (!mask.empty())
+    {
+        CV_Assert(mask.type() == CV_8UC1);
+        CV_Assert(mask.size == src.size);
+    }
 
     if (!src.isContinuous())
     {
         src.copyTo(tempsrc);
         src = tempsrc;
     }
+
+    if (src.channels() != 1)
+        cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
 
     // append max tree tbmrs
     sortIdx(src.reshape(1, 1), S,
@@ -445,6 +475,16 @@ void TBMR_Impl::detect(InputArray _image, std::vector<KeyPoint> &keypoints,
     // reverse instead of sort
     flip(S, S, -1);
     calculateTBMRs(src, keypoints, mask);
+}
+
+void TBMR_Impl::detectAndCompute(
+    InputArray image, InputArray mask,
+    CV_OUT std::vector<Elliptic_KeyPoint> &keypoints, OutputArray descriptors,
+    bool useProvidedKeypoints)
+{
+    CV_INSTRUMENT_REGION();
+
+    CV_Error(Error::StsNotImplemented, "");
 }
 
 CV_WRAP Ptr<TBMR> TBMR::create(int _min_area, double _max_area_relative)
@@ -457,5 +497,5 @@ String TBMR::getDefaultName() const
 {
     return (Feature2D::getDefaultName() + ".TBMR");
 }
-} // namespace tbmr
+} // namespace xfeatures2d
 } // namespace cv
