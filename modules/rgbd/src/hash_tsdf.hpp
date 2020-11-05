@@ -165,8 +165,7 @@ public:
 
     Point3f voxelCoordToVolume(const Vec3i& voxelIdx) const;
     Vec3i volumeToVoxelCoord(const Point3f& point) const;
-    int find_idx(cv::Mat v, Vec3i tsdf_idx, bool f = false) const;
-    //bool _find(cv::Mat v, Vec3i tsdf_idx) const;
+    int find_idx(cv::Mat v, Vec3i tsdf_idx) const;
 
 public:
     Vec4i volStrides;

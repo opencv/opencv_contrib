@@ -288,7 +288,6 @@ void normalsCheck(Mat normals)
             float length = vector[0] * vector[0] +
                 vector[1] * vector[1] +
                 vector[2] * vector[2];
-            //if (length == 0 && pvector == normals.begin<Vec4f>()) std::cout << vector << std::endl;
             ASSERT_LT(abs(1 - length), 0.0001f);
         }
     }
@@ -467,7 +466,6 @@ void valid_points_test(bool isHashTSDF)
         waitKey(20000);
     }
 
-    //float percentValidity = anfas == 0 ? 0 : float(profile) / float(anfas);
     float percentValidity;
     if (profile == 0)    percentValidity = -0.5;
     else if (anfas == 0) percentValidity = 0;
