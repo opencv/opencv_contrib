@@ -15,6 +15,7 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/utils/trace.hpp"
 #include "utils.hpp"
+#include "opencl_kernels_rgbd.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
 #define VOLUMES_SIZE 1024
@@ -886,6 +887,48 @@ inline int HashTSDFVolumeGPU::find_idx(cv::Mat v, Vec3i tsdf_idx) const
         }
     }
     return -1;
+}
+
+static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy)
+{
+    Mat x(1, depth_cols, CV_32F);
+    Mat y(1, depth_rows, CV_32F);
+    Mat _pixNorm(1, depth_rows * depth_cols, CV_32F);
+
+    for (int i = 0; i < depth_cols; i++)
+        x.at<float>(0, i) = (i - cxy[0]) / fxy[0];
+    for (int i = 0; i < depth_rows; i++)
+        y.at<float>(0, i) = (i - cxy[1]) / fxy[1];
+
+    cv::String errorStr;
+    cv::String name = "preCalculationPixNorm";
+    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+    cv::String options = "-cl-mad-enable";
+    ocl::Kernel kk;
+    kk.create(name.c_str(), source, options, &errorStr);
+
+
+    if (kk.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    AccessFlag af = ACCESS_READ;
+    UMat pixNorm = _pixNorm.getUMat(af);
+    UMat xx = x.getUMat(af);
+    UMat yy = y.getUMat(af);
+
+    kk.args(ocl::KernelArg::PtrReadWrite(pixNorm),
+        ocl::KernelArg::PtrReadOnly(xx),
+        ocl::KernelArg::PtrReadOnly(yy),
+        depth_cols);
+
+    size_t globalSize[2];
+    globalSize[0] = depth_rows;
+    globalSize[1] = depth_cols;
+
+    if (!kk.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
+    return pixNorm;
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
