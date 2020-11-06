@@ -38,7 +38,7 @@ __kernel void preCalculationPixNorm (__global float * pixNorms,
     pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
 }
 
-__kernel void integrate(__global const char * depthptr,
+__kernel void integrateVolumeUnit(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
                         __global struct TsdfVoxel * volumeptr,

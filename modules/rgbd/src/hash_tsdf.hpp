@@ -130,6 +130,9 @@ public:
 
     void reset() override;
 
+    void integrateVolumeUnitGPU(InputArray _depth, float depthFactor,
+        const Matx44f& cameraPose, const Intr& intrinsics, VolumeIndex idx);
+
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
@@ -163,7 +166,7 @@ public:
     Vec4i volStrides;
     Vec6f frameParams;
     Mat pixNorms;
-    UMat _pixNorms;
+    
 
     VolumeIndex _lastVolIndex;
     cv::Mat indexes;
@@ -171,6 +174,9 @@ public:
     cv::Mat activities;
     cv::Mat lastVisibleIndexes;
     cv::Mat _volUnitsData;
+
+    cv::UMat _pixNorms;
+    cv::Mat volUnitsData;
 };
 #endif
 
