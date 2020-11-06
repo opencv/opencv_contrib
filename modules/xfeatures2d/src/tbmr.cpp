@@ -125,7 +125,7 @@ class TBMR_Impl CV_FINAL : public TBMR
     virtual float getScaleFactor() const CV_OVERRIDE { return params.scale; }
     virtual void setNScales(int n_scales) CV_OVERRIDE
     {
-        params.minArea = n_scales;
+        params.n_scale = n_scales;
     }
     virtual int getNScales() const CV_OVERRIDE { return params.n_scale; }
 
@@ -557,6 +557,8 @@ void TBMR_Impl::detect(InputArray _image,
         src = tempsrc;
     }
 
+    CV_Assert(src.depth() == CV_8U);
+
     if (src.channels() != 1)
         cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
 
@@ -600,8 +602,8 @@ void TBMR_Impl::detectAndCompute(
                           useProvidedKeypoints);
 }
 
-CV_WRAP Ptr<TBMR> TBMR::create(int _min_area, float _max_area_relative,
-                               float _scale, int _n_scale)
+Ptr<TBMR> TBMR::create(int _min_area, float _max_area_relative, float _scale,
+                       int _n_scale)
 {
     return cv::makePtr<TBMR_Impl>(
         TBMR_Impl::Params(_min_area, _max_area_relative, _scale, _n_scale));
