@@ -42,6 +42,8 @@
 #ifndef __OPENCV_SFM_LIBMV_CAPI__
 #define __OPENCV_SFM_LIBMV_CAPI__
 
+#include <memory>
+
 #include "libmv/logging/logging.h"
 
 #include "libmv/correspondence/feature.h"
