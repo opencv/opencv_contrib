@@ -92,12 +92,7 @@ namespace cv
         @note If the window with that name already exists, that window is returned. Otherwise, new window is
         created with the given name, and it is returned.
 
-        @note Window names are automatically prefixed by "Viz - " if it is not done by the user.
-           @code
-            /// window and window_2 are the same windows.
-            viz::Viz3d window   = viz::getWindowByName("myWindow");
-            viz::Viz3d window_2 = viz::getWindowByName("Viz - myWindow");
-            @endcode
+
          */
         CV_EXPORTS Viz3d getWindowByName(const String &window_name);
 
