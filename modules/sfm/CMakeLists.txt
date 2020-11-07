@@ -3,23 +3,56 @@ set(the_description "SFM algorithms")
 
 
 ### LIBMV LIGHT EXTERNAL DEPENDENCIES ###
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-find_package(Gflags QUIET)
+
 find_package(Ceres QUIET)
-if(NOT Ceres_FOUND)  # Looks like Ceres find glog on the own, so separate search isn't necessary
+
+if(NOT Gflags_FOUND)  # Ceres find gflags on the own, so separate search isn't necessary
+  find_package(Gflags QUIET)
+endif()
+if(NOT Glog_FOUND)  # Ceres find glog on the own, so separate search isn't necessary
   find_package(Glog QUIET)
 endif()
 
-if((gflags_FOUND OR GFLAGS_FOUND OR GFLAGS_INCLUDE_DIRS) AND (glog_FOUND OR GLOG_FOUND OR GLOG_INCLUDE_DIRS))
-  set(_fname "${CMAKE_CURRENT_BINARY_DIR}/test_sfm_deps.cpp")
-  file(WRITE "${_fname}" "#include <glog/logging.h>\n#include <gflags/gflags.h>\nint main() { (void)(0); return 0; }\n")
-  try_compile(SFM_DEPS_OK "${CMAKE_BINARY_DIR}" "${_fname}"
-      CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:STRING=${GLOG_INCLUDE_DIRS};${GFLAGS_INCLUDE_DIRS}"
-      LINK_LIBRARIES ${GLOG_LIBRARIES} ${GFLAGS_LIBRARIES}
-      OUTPUT_VARIABLE OUTPUT
-  )
-  file(REMOVE "${_fname}")
-  message(STATUS "Checking SFM deps... ${SFM_DEPS_OK}")
+if(NOT Gflags_FOUND OR NOT Glog_FOUND)
+  # try local search scripts
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+  if(NOT Gflags_FOUND)
+    find_package(Gflags QUIET)
+  endif()
+  if(NOT Glog_FOUND)
+    find_package(Glog QUIET)
+  endif()
+endif()
+
+if(NOT DEFINED GFLAGS_INCLUDE_DIRS AND DEFINED GFLAGS_INCLUDE_DIR)
+  set(GFLAGS_INCLUDE_DIRS "${GFLAGS_INCLUDE_DIR}")
+endif()
+if(NOT DEFINED GLOG_INCLUDE_DIRS AND DEFINED GLOG_INCLUDE_DIR)
+  set(GLOG_INCLUDE_DIRS "${GLOG_INCLUDE_DIR}")
+endif()
+
+if((gflags_FOUND OR Gflags_FOUND OR GFLAGS_FOUND OR GFLAGS_INCLUDE_DIRS) AND (glog_FOUND OR Glog_FOUND OR GLOG_FOUND OR GLOG_INCLUDE_DIRS))
+  set(__cache_key "${GLOG_INCLUDE_DIRS} ~ ${GFLAGS_INCLUDE_DIRS} ~ ${GLOG_LIBRARIES} ~ ${GFLAGS_LIBRARIES}")
+  if(NOT DEFINED SFM_GLOG_GFLAGS_TEST_CACHE_KEY OR NOT (SFM_GLOG_GFLAGS_TEST_CACHE_KEY STREQUAL __cache_key))
+    set(__fname "${CMAKE_CURRENT_LIST_DIR}/cmake/checks/check_glog_gflags.cpp")
+    try_compile(
+        SFM_GLOG_GFLAGS_TEST "${CMAKE_BINARY_DIR}" "${__fname}"
+        CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:STRING=${GLOG_INCLUDE_DIRS};${GFLAGS_INCLUDE_DIRS}"
+        LINK_LIBRARIES ${GLOG_LIBRARIES} ${GFLAGS_LIBRARIES}
+        OUTPUT_VARIABLE __output
+    )
+    if(NOT SFM_GLOG_GFLAGS_TEST)
+      file(APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log
+          "Failed compilation check: ${__fname}\n"
+          "${__output}\n\n"
+      )
+    endif()
+    set(SFM_GLOG_GFLAGS_TEST "${SFM_GLOG_GFLAGS_TEST}" CACHE INTERNAL "")
+    set(SFM_GLOG_GFLAGS_TEST_CACHE_KEY "${__cache_key}" CACHE INTERNAL "")
+    message(STATUS "Checking SFM glog/gflags deps... ${SFM_GLOG_GFLAGS_TEST}")
+  endif()
+  unset(__cache_key)
+  set(SFM_DEPS_OK "${SFM_GLOG_GFLAGS_TEST}")
 else()
   set(SFM_DEPS_OK FALSE)
 endif()
@@ -57,22 +90,13 @@ set(LIBMV_LIGHT_LIBS
 if(Ceres_FOUND)
   add_definitions("-DCERES_FOUND=1")
   list(APPEND LIBMV_LIGHT_LIBS simple_pipeline)
-  list(APPEND LIBMV_LIGHT_INCLUDES "${CERES_INCLUDE_DIR}")
+  if(Ceres_VERSION VERSION_LESS 2.0.0)
+    list(APPEND LIBMV_LIGHT_INCLUDES "${CERES_INCLUDE_DIRS}")
+  endif()
 else()
   add_definitions("-DCERES_FOUND=0")
   message(STATUS "CERES support is disabled. Ceres Solver for reconstruction API is required.")
 endif()
-
-### COMPILE WITH C++11 IF CERES WAS COMPILED WITH C++11
-
-if(Ceres_FOUND)
-  list (FIND CERES_COMPILED_COMPONENTS "C++11" _index)
-  if (${_index} GREATER -1)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  endif()
-endif()
-
-### DEFINE OPENCV SFM MODULE DEPENDENCIES ###
 
 ### CREATE OPENCV SFM MODULE ###
 
@@ -85,6 +109,7 @@ ocv_add_module(sfm
   WRAP python
 )
 
+add_definitions(/DGLOG_NO_ABBREVIATED_SEVERITIES)  # avoid ERROR macro conflict in glog (ceres dependency)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS
   -Wundef
@@ -96,12 +121,6 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS
   -Wunused-function
   -Wsuggest-override
 )
-
-if(UNIX)
-  if(CMAKE_COMPILER_IS_GNUCXX OR CV_ICC)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-  endif()
-endif()
 
 ocv_include_directories( ${LIBMV_LIGHT_INCLUDES} )
 ocv_module_include_directories()
@@ -117,14 +136,16 @@ ocv_set_module_sources(HEADERS ${OPENCV_SFM_HDRS}
 
 ocv_create_module()
 
-# build libmv_light
+
+### BUILD libmv_light ###
+
 if(NOT CMAKE_VERSION VERSION_LESS 2.8.11) # See ocv_target_include_directories() implementation
   if(TARGET ${the_module})
     get_target_property(__include_dirs ${the_module} INCLUDE_DIRECTORIES)
     include_directories(${__include_dirs})
   endif()
 endif()
-include_directories(${OCV_TARGET_INCLUDE_DIRS_${the_module}})
+#include_directories(${OCV_TARGET_INCLUDE_DIRS_${the_module}})
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src/libmv_light" "${CMAKE_CURRENT_BINARY_DIR}/src/libmv")
 
 ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS})
@@ -133,6 +154,9 @@ ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS})
 ### CREATE OPENCV SFM TESTS ###
 
 ocv_add_accuracy_tests()
+if(Ceres_FOUND AND TARGET opencv_test_sfm)
+  ocv_target_link_libraries(opencv_test_sfm ${CERES_LIBRARIES})
+endif ()
 
 
 ### CREATE OPENCV SFM SAMPLES ###

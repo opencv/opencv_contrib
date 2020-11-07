@@ -113,7 +113,7 @@ bool EuclideanIntersect(const vector<Marker> &markers,
               EuclideanIntersectCostFunctor,
               2, /* num_residuals */
               3>(new EuclideanIntersectCostFunctor(marker, camera)),
-          NULL,
+          nullptr,
           &X(0));
       num_residuals++;
     }
