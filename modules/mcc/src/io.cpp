@@ -25,7 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#include "opencv2/mcc/io.hpp"
+#include "io.hpp"
 namespace cv
 {
 namespace ccm

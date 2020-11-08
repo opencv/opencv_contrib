@@ -25,7 +25,9 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#include "precomp.hpp"
+#include "colorspace.hpp"
+#include "operations.hpp"
+#include "io.hpp"
 
 namespace cv {
 namespace ccm {

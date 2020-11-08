@@ -25,12 +25,13 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#include "precomp.hpp"
+#include "color.hpp"
 
 namespace cv
 {
 namespace ccm
 {
+Color::Color():cs(std::shared_ptr<ColorSpace> ptr(new ColorSpace)) {};
 Color::Color(Mat colors_, enum COLOR_SPACE cs_) :colors(colors_), cs(*GetCS::get_cs(cs_)) {};
 
 Color::Color(Mat colors_, const ColorSpace& cs_, Mat colored_) : colors(colors_), cs(cs_), colored(colored_)
@@ -41,6 +42,9 @@ Color::Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_) : colors(colors_),
     grays = ~colored;
 }
 Color::Color(Mat colors_, const ColorSpace& cs_) : colors(colors_), cs(cs_) {};
+// Color::Color(CONST_COLOR constcolor){
+//     *this = GetColor::g  et_color(constcolor);
+// }
 Color Color::to(const ColorSpace& other, CAM method , bool save)
 {
     if (history.count(other) == 1)
