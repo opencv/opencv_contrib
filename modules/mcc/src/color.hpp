@@ -53,9 +53,10 @@ public:
     */
     Mat colors;
     const ColorSpace& cs ;
+    //ColorSpace& cs;
     Mat grays;
     Mat colored;
-    std::map<ColorSpace, std::shared_ptr<Color>> history;
+    //std::map<ColorSpace, std::shared_ptr<Color>> history;
     Color();
     Color(Mat colors_, enum COLOR_SPACE cs_);
     Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_);
@@ -116,7 +117,6 @@ public:
 class CV_EXPORTS_W GetColor {
 public:
     static Color get_color(CONST_COLOR const_color);
-    static double create();
     static Mat get_ColorChecker(const double *checker,int row);
     static Mat get_ColorChecker_MASK(const uchar *checker,int row);
 };

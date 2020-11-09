@@ -120,6 +120,7 @@ namespace ccm
         void get_color(Mat& img_, bool islinear = false);
         void get_color(CONST_COLOR constcolor);
         void get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_);
+        void get_color(Mat colors_, COLOR_SPACE ref_cs_);
 
 
         /** @brief Loss function base on cv::MinProblemSolver::Function.
@@ -160,7 +161,7 @@ namespace ccm
 //          {
 //             // run();
 //          } //写成默认参数 
-ColorCorrectionModel::Impl::Impl():cs(sRGB),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
+ColorCorrectionModel::Impl::Impl():cs(*GetCS::get_rgb(sRGB)),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
     weights(Mat()),weights_coeff(0),initial_method_type(LEAST_SQUARE),max_count(5000),epsilon(1.e-4)
          {
             // run();
@@ -332,13 +333,13 @@ Mat ColorCorrectionModel::Impl::inferImage(Mat& img_, bool islinear)
     return out_img;
 }
 void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor){
-    p->dst = GetColor::get_color(constcolor);
+    dst = GetColor::get_color(constcolor);
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_){
-    p->dst = Color(colors_, *GetCS::get_cs(ref_cs_));
+    dst = Color(colors_, *GetCS::get_cs(ref_cs_));
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_){
-    p->dst =Color(colors_, *GetCS::get_cs(cs_),colored_);
+    dst =Color(colors_, *GetCS::get_cs(cs_),colored_);
 }
 ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor): p(new Impl){
     p->src = src_;
@@ -413,9 +414,18 @@ ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE cs
 // }
 
 
+//void ColorCorrectionModel::setDst(CONST_COLOR constcolor) {
+//    p->dst = GetColor::get_color(constcolor);
+//}
+//void ColorCorrectionModel::setDst(Mat colors_, COLOR_SPACE ref_cs_) {
+//    p->dst = Color(colors_, *GetCS::get_cs(ref_cs_));
+//}
+//void ColorCorrectionModel::setDst(Mat colors_, COLOR_SPACE cs_, Mat colored_) {
+//    p->dst = Color(colors_, *GetCS::get_cs(cs_), colored_);
+//}
 
 void ColorCorrectionModel::setColorSpace(COLOR_SPACE cs_){
-    p->cs = cs_;
+    p->cs = *GetCS::get_rgb(cs_);
 }
 void ColorCorrectionModel::setCCM(CCM_TYPE ccm_type_){
     p->ccm_type = ccm_type_;
@@ -454,8 +464,8 @@ void ColorCorrectionModel::setEpsilon(double epsilon_){
 bool  ColorCorrectionModel::run(){
 
     Mat saturate_mask = saturate(p->src, p->saturated_threshold[0], p->saturated_threshold[1]);
-    p->linear = getLinear(p->gamma, p->deg, p->src, p->dst, p->saturate_mask, p->cs, p->linear_type);
-    p->calWeightsMasks(p->weights_list, p->weights_coeff, saturate_mask);
+    p->linear = getLinear(p->gamma, p->deg, p->src, p->dst, saturate_mask, (p->cs), p->linear_type);
+    p->calWeightsMasks(p->weights, p->weights_coeff, saturate_mask);
     p->src_rgbl = p->linear->linearize(maskCopyTo(p->src, p->mask));
     p->dst.colors = maskCopyTo(p->dst.colors, p->mask);
     p->dst_rgbl = p->dst.to(*(p->cs.l)).colors;
