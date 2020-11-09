@@ -255,7 +255,9 @@ class TBMR_Impl CV_FINAL : public TBMR
                         const Mat &mask, float scale, int octave)
     {
         uint imSize = image.cols * image.rows;
-        uint maxArea = static_cast<uint>(params.maxAreaRelative * imSize);
+        uint maxArea =
+            static_cast<uint>(params.maxAreaRelative * imSize * scale);
+        uint minArea = static_cast<uint>(params.minArea * scale);
 
         if (parent.empty() || parent.size != image.size)
             parent = Mat(image.rows, image.cols, CV_32S);
@@ -304,7 +306,7 @@ class TBMR_Impl CV_FINAL : public TBMR
             if (parent_ptr[p] == p || ima_ptr[p] != ima_ptr[parent_ptr[p]])
             {
                 vecNodes[numNodes++] = p;
-                if (imaAttribute[p][0] >= params.minArea) // area
+                if (imaAttribute[p][0] >= minArea) // area
                     numSons[parent_ptr[p]]++;
             }
         }
@@ -568,6 +570,11 @@ void TBMR_Impl::detect(InputArray _image,
             : 1 /*todo calculate optimal scale factor from image size*/;
     float m_scale_factor = params.scale;
 
+    // track and eliminate duplicates introduced with multi scale position ->
+    // (size)
+    Mat dupl(src.rows / 4, src.cols / 4, CV_32F, cv::Scalar::all(0));
+    float *dupl_ptr = dupl.ptr<float>();
+
     std::vector<Mat> pyr;
     TBMRImagePyramid scaleSpacer(src, m_cur_n_scales, m_scale_factor);
     pyr = scaleSpacer.getImPyr();
@@ -576,15 +583,41 @@ void TBMR_Impl::detect(InputArray _image,
     for (auto &s : pyr)
     {
         float scale = ((float)s.cols) / pyr.begin()->cols;
+        std::vector<Elliptic_KeyPoint> kpts;
 
         // append max tree tbmrs
         sortIdx(s.reshape(1, 1), S,
                 SortFlags::SORT_ASCENDING | SortFlags::SORT_EVERY_ROW);
-        calculateTBMRs(s, keypoints, mask, scale, oct);
+        calculateTBMRs(s, kpts, mask, scale, oct);
 
         // reverse instead of sort
         flip(S, S, -1);
-        calculateTBMRs(s, keypoints, mask, scale, oct);
+        calculateTBMRs(s, kpts, mask, scale, oct);
+
+        if (oct == 0)
+        {
+            for (const auto &k : kpts)
+            {
+                dupl_ptr[(int)(k.pt.x / 4) +
+                         (int)(k.pt.y / 4) * (src.cols / 4)] = k.size;
+            }
+            keypoints.insert(keypoints.end(), kpts.begin(), kpts.end());
+        }
+        else
+        {
+            for (const auto &k : kpts)
+            {
+                float &sz = dupl_ptr[(int)(k.pt.x / 4) +
+                                     (int)(k.pt.y / 4) * (src.cols / 4)];
+                // we hereby add only features that are at least 4 pixels away
+                // or have a significantly different size
+                if (std::abs(k.size - sz) / std::max(k.size, sz) >= 0.2f)
+                {
+                    sz = k.size;
+                    keypoints.push_back(k);
+                }
+            }
+        }
 
         oct++;
     }
