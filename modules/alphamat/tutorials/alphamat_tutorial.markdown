@@ -11,9 +11,9 @@ Alphamatting is the problem of extracting the foreground from an image. The extr
 
 Given an input image and its corresponding trimap, we try to extract the foreground from the background. Following is an example:
 
-Input Image: ![](samples/input_images/plant.jpg)
-Input Trimap: ![](samples/trimaps/plant.png)
-Output alpha Matte: ![](samples/output_mattes/plant_result.jpg)
+Input Image: ![](../samples/input_images/plant.jpg)
+Input Trimap: ![](../samples/trimaps/plant.png)
+Output alpha Matte: ![](../samples/output_mattes/plant_result.jpg)
 
 This project is implementation of @cite aksoy2017designing . It required implementation of parts of other papers [2,3,4].
 
