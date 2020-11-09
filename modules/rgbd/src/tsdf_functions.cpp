@@ -373,5 +373,125 @@ void integrateVolumeUnit(
 
 }
 
+
+struct Volume_NODE
+{
+    Vec3i* idx;
+    int* row;
+    struct Volume_NODE* nextVolume;
+};
+
+struct Volumes_HEAD
+{
+    int* n;
+    struct Volume_NODE* firstVolume;
+};
+
+typedef Volume_NODE* head;
+
+Volume_NODE* create_Volume_NODE(Vec3i indx)
+{
+    Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
+    *(new_volume_node->idx) = indx;
+    *(new_volume_node->row) = -1;
+
+    return new_volume_node;
+}
+
+Volume_NODE* create_Volume_NODE(Vec3i indx, int row)
+{
+    Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
+    *(new_volume_node->idx) = indx;
+    *(new_volume_node->row) = row;
+
+    return new_volume_node;
+}
+
+Volumes_HEAD* create_Volumes_HEAD()
+{
+    Volumes_HEAD* new_volume_head = (Volumes_HEAD*)malloc(sizeof(Volumes_HEAD));
+    *(new_volume_head->n) = 0;
+    new_volume_head->firstVolume = NULL;
+
+    return new_volume_head;
+}
+
+int find_Volume(Volumes_HEAD* head, Vec3i indx)
+{
+    //TODO: add difference between returning values;
+    if (head->n == 0)
+        return -1;
+    Volume_NODE* cursor = head->firstVolume;
+    while (cursor != NULL)
+    {
+        if (*(cursor->idx) == indx)
+            return *(cursor->row);
+        cursor = cursor->nextVolume;
+    }
+    return -1;
+}
+
+//typedef cv::Mat VolumesTable;
+//VolumesTable createVolumeTable()
+
+class VolumesTable
+{
+public:
+    int hash_divisor;
+    cv::Mat table;
+    
+    VolumesTable(int rows);
+    ~VolumesTable();
+
+    void update(size_t hash, Vec3i indx);
+    void update(size_t hash, Vec3i indx, int row);
+};
+
+VolumesTable::VolumesTable(int rows)
+{
+    hash_divisor = rows;
+    table = cv::Mat(rows, 1, rawType<Volumes_HEAD*>());
+}
+
+VolumesTable::~VolumesTable() {}
+
+void VolumesTable::update(size_t hash, Vec3i indx)
+{
+    int i = hash % this->hash_divisor;
+    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
+    if (head->n == 0)
+    {
+        head->firstVolume = create_Volume_NODE(indx);
+    }
+    else
+    {
+        Volume_NODE* cursor = head->firstVolume;
+        while (cursor != NULL)
+        {       
+            cursor = cursor->nextVolume;
+        }
+        cursor->nextVolume = create_Volume_NODE(indx);
+    }
+}
+
+void VolumesTable::update(size_t hash, Vec3i indx, int row)
+{
+    int i = hash % this->hash_divisor;
+    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
+    if (head->n == 0)
+    {
+        head->firstVolume = create_Volume_NODE(indx, row);
+    }
+    else
+    {
+        Volume_NODE* cursor = head->firstVolume;
+        while (cursor != NULL)
+        {
+            cursor = cursor->nextVolume;
+        }
+        cursor->nextVolume = create_Volume_NODE(indx, row);
+    }
+}
+
 } // namespace kinfu
 } // namespace cv
