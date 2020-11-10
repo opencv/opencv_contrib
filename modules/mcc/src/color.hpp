@@ -56,15 +56,17 @@ public:
     //ColorSpace& cs;
     Mat grays;
     Mat colored;
-    //std::map<ColorSpace, std::shared_ptr<Color>> history;
+    std::map<ColorSpace, std::shared_ptr<Color>> history;
     Color();
     Color(Mat colors_, enum COLOR_SPACE cs_);
     Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_);
     // Color(CONST_COLOR constcolor);
     Color(Mat colors_, const ColorSpace& cs_, Mat colored_);
     Color(Mat colors_, const ColorSpace& cs_);
-
+   // Color(const Color& obj) { colors = obj.colors; cs = obj.cs; };
     virtual ~Color() {};
+
+    
 
     /** @brief Change to other color space.
                  The conversion process incorporates linear transformations to speed up.

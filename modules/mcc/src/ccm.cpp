@@ -35,7 +35,7 @@ namespace ccm
     class ColorCorrectionModel::Impl{
     public:
         Mat src;
-        Color dst;//Color::Color(){};ColorSpace(){}; dst
+        Ptr<Color> dst;//Color::Color(){};ColorSpace(){}; dst
         Mat dist;
         RGBBase_& cs;
         Mat mask;
@@ -201,7 +201,7 @@ void ColorCorrectionModel::Impl::calWeightsMasks(Mat weights_list, double weight
     }
     else if (weights_coeff != 0)
     {
-        pow(dst.toLuminant(cs.io), weights_coeff, weights);
+        pow(dst->toLuminant(cs.io), weights_coeff, weights);
     }
 
     // masks
@@ -266,7 +266,7 @@ void ColorCorrectionModel::Impl::initialLeastSquare(bool fit)
 
 double ColorCorrectionModel::Impl::calc_loss_(Color color)
 {
-    Mat distlist = color.diff(dst, distance);
+    Mat distlist = color.diff(*dst, distance);
     Color lab = color.to(Lab_D50_2);
     Mat dist_;
     pow(distlist, 2, dist_);
@@ -333,13 +333,16 @@ Mat ColorCorrectionModel::Impl::inferImage(Mat& img_, bool islinear)
     return out_img;
 }
 void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor){
-    dst = GetColor::get_color(constcolor);
+    dst = &(GetColor::get_color(constcolor));
+    //Color dst(GetColor::get_color(constcolor));
+    //Color dst_= GetColor::get_color(constcolor);
+    //dst = dst_;
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_){
-    dst = Color(colors_, *GetCS::get_cs(ref_cs_));
+    dst = &Color(colors_, *GetCS::get_cs(ref_cs_));
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_){
-    dst =Color(colors_, *GetCS::get_cs(cs_),colored_);
+    dst = &Color(colors_, *GetCS::get_cs(cs_),colored_);
 }
 ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor): p(new Impl){
     p->src = src_;
@@ -464,11 +467,11 @@ void ColorCorrectionModel::setEpsilon(double epsilon_){
 bool  ColorCorrectionModel::run(){
 
     Mat saturate_mask = saturate(p->src, p->saturated_threshold[0], p->saturated_threshold[1]);
-    p->linear = getLinear(p->gamma, p->deg, p->src, p->dst, saturate_mask, (p->cs), p->linear_type);
+    p->linear = getLinear(p->gamma, p->deg, p->src, *(p->dst), saturate_mask, (p->cs), p->linear_type);
     p->calWeightsMasks(p->weights, p->weights_coeff, saturate_mask);
     p->src_rgbl = p->linear->linearize(maskCopyTo(p->src, p->mask));
-    p->dst.colors = maskCopyTo(p->dst.colors, p->mask);
-    p->dst_rgbl = p->dst.to(*(p->cs.l)).colors;
+    p->dst->colors = maskCopyTo(p->dst->colors, p->mask);
+    p->dst_rgbl = p->dst->to(*(p->cs.l)).colors;
 
     // make no change for CCM_3x3, make change for CCM_4x3.
     p->src_rgbl = p->prepare(p->src_rgbl);

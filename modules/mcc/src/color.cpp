@@ -31,7 +31,7 @@ namespace cv
 {
 namespace ccm
 {
-Color::Color():cs(*new ColorSpace()) {};
+Color::Color():colors(Mat()), cs(*new ColorSpace()) {};
 Color::Color(Mat colors_, enum COLOR_SPACE cs_) :colors(colors_), cs(*GetCS::get_cs(cs_)) {};
 
 Color::Color(Mat colors_, const ColorSpace& cs_, Mat colored_) : colors(colors_), cs(cs_), colored(colored_)
@@ -47,11 +47,11 @@ Color::Color(Mat colors_, const ColorSpace& cs_) : colors(colors_), cs(cs_) {};
 // }
 Color Color::to(const ColorSpace& other, CAM method , bool save)
 {
-  /*  if (history.count(other) == 1)
+    if (history.count(other) == 1)
     {
 
         return *history[other];
-    }*/
+    }
     if (cs.relate(other))
     {
         return Color(cs.relation(other).run(colors), other);
@@ -59,10 +59,10 @@ Color Color::to(const ColorSpace& other, CAM method , bool save)
     Operations ops;
     ops.add(cs.to).add(XYZ(cs.io).cam(other.io, method)).add(other.from);
     std::shared_ptr<Color> color(new Color(ops.run(colors), other));
-    //if (save)
-    //{
-    //    history[other] = color;
-    //}
+    if (save)
+    {
+        history[other] = color;
+    }
     return *color;
 }
 Color Color::to( COLOR_SPACE other, CAM method, bool save)
