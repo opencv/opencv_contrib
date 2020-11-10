@@ -417,11 +417,12 @@ Volumes_HEAD* create_Volumes_HEAD()
     return new_volume_head;
 }
 
-int find_Volume(Volumes_HEAD* head, Vec3i indx)
+int _find_Volume(Volumes_HEAD* head, Vec3i indx)
 {
     //TODO: add difference between returning values;
+    // -2 if there is not needful value
     if (head->n == 0)
-        return -1;
+        return -2;
     Volume_NODE* cursor = head->firstVolume;
     while (cursor != NULL)
     {
@@ -429,7 +430,7 @@ int find_Volume(Volumes_HEAD* head, Vec3i indx)
             return *(cursor->row);
         cursor = cursor->nextVolume;
     }
-    return -1;
+    return -2;
 }
 
 //typedef cv::Mat VolumesTable;
@@ -446,6 +447,8 @@ public:
 
     void update(size_t hash, Vec3i indx);
     void update(size_t hash, Vec3i indx, int row);
+    int find_Volume(size_t hash, Vec3i indx);
+    bool isExist(size_t hash, Vec3i indx);
 };
 
 VolumesTable::VolumesTable(int rows)
@@ -500,6 +503,22 @@ void VolumesTable::update(size_t hash, Vec3i indx, int row)
         cursor->nextVolume = create_Volume_NODE(indx, row);
     }
 }
+
+int VolumesTable::find_Volume(size_t hash, Vec3i indx)
+{
+    int i = hash % this->hash_divisor;
+    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
+    int row = _find_Volume(head, indx);
+    return row;
+}
+
+bool VolumesTable::isExist(size_t hash, Vec3i indx)
+{
+    if (this->find_Volume(hash, indx) == -2)
+        return false;
+    return true;
+}
+
 
 } // namespace kinfu
 } // namespace cv
