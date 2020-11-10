@@ -403,6 +403,7 @@ Volume_NODE* create_Volume_NODE(Vec3i indx, int row)
     Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
     *(new_volume_node->idx) = indx;
     *(new_volume_node->row) = row;
+    new_volume_node->nextVolume = NULL;
 
     return new_volume_node;
 }
@@ -468,6 +469,8 @@ void VolumesTable::update(size_t hash, Vec3i indx)
         Volume_NODE* cursor = head->firstVolume;
         while (cursor != NULL)
         {       
+            if (*(cursor->idx) == indx)
+                return;
             cursor = cursor->nextVolume;
         }
         cursor->nextVolume = create_Volume_NODE(indx);
@@ -487,6 +490,11 @@ void VolumesTable::update(size_t hash, Vec3i indx, int row)
         Volume_NODE* cursor = head->firstVolume;
         while (cursor != NULL)
         {
+            if (*(cursor->idx) == indx)
+            {
+                *(cursor->idx) = row;
+                return;
+            }
             cursor = cursor->nextVolume;
         }
         cursor->nextVolume = create_Volume_NODE(indx, row);
