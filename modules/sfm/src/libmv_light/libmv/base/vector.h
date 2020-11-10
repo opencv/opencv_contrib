@@ -121,7 +121,7 @@ class vector {
   void reserve(unsigned int size) {
     if (size > size_) {
       T *data = static_cast<T *>(allocate(size));
-#if 0
+#if defined(__GNUC__) && __GNUC__ < 5  // legacy compilers branch
       memcpy(data, data_, sizeof(*data)*size_);
 #else
       for (int i = 0; i < size_; ++i)
