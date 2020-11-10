@@ -411,7 +411,6 @@ std::shared_ptr<Lab> Lab::get(IO io) {
     return lab_cs[io];
 }
 
-//static std::map <COLOR_SPACE, ColorSpace*> map_cs = {};
 std::map <enum COLOR_SPACE, std::shared_ptr<ColorSpace>> GetCS::map_cs = {};
 
 std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name) {
@@ -519,7 +518,6 @@ std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name) {
     default:
         throw "Only RGB color spaces are supported";
     }
-   // return (std::shared_ptr < RGBBase_>)(*map_cs[cs_name]);
     return (std::dynamic_pointer_cast<RGBBase_>)(map_cs[cs_name]);
 }
 

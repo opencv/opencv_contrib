@@ -78,26 +78,25 @@ int main(int argc, char *argv[])
         //compte color correction matrix
         //! [get_ccm_Matrix]
         ColorCorrectionModel model1(src, Vinyl);
-        //! [get_ccm_Matrix]
-
-        /* brief More models with different parameters, try it & check the document for details.
+         /* brief More models with different parameters, try it & check the document for details.
         */
-        // ColorCorrectionModel model2(src, Vinyl, AdobeRGB, CCM_4x3, CIE2000, GAMMA, 2.2, 3);
-        // ColorCorrectionModel model3(src, Vinyl, WideGamutRGB, CCM_4x3, CIE2000, GRAYPOLYFIT, 2.2, 3);
-        // ColorCorrectionModel model4(src, Vinyl, ProPhotoRGB, CCM_4x3, RGBL, GRAYLOGPOLYFIT, 2.2, 3);
-        // ColorCorrectionModel model5(src, Vinyl, DCI_P3_RGB, CCM_3x3, RGB, IDENTITY_, 2.2, 3);
-        // ColorCorrectionModel model6(src, Vinyl, AppleRGB, CCM_3x3, CIE2000, COLORPOLYFIT, 2.2, 2,{ 0, 0.98 },Mat(),2);
-        // ColorCorrectionModel model7(src, Vinyl, REC_2020_RGB, CCM_3x3,  CIE94_GRAPHIC_ARTS, COLORLOGPOLYFIT, 2.2, 3);
+        // model1.setColorSpace(sRGB);
+        // model1.setCCM(CCM_4x3);
+        // model1.setDistance(CIE2000);
+        // model1.setLinear(GAMMA);
+        // model1.setLinearGamma(2.2);
+        // model1.setLinearDegree(3);
+        // model1.setSaturatedThreshold(0, 0.98);
 
         /* If you use a customized ColorChecker, you can use your own reference color values and corresponding color space in a way like:
         */
         //! [reference_color_values]
         // cv::Mat ref = (Mat_<Vec3d>(18, 1) <<
-        // Vec3d(100, 0.00520000001, -0.0104),
-        // Vec3d(73.0833969, -0.819999993, -2.02099991),
-        // Vec3d(62.493, 0.425999999, -2.23099995),
-        // Vec3d(50.4640007, 0.446999997, -2.32399988),
-        // Vec3d(37.7970009, 0.0359999985, -1.29700005),
+        // Vec3d(100, 0.0052, -0.0104),
+        // Vec3d(73.0834, -0.82, -2.021),
+        // Vec3d(62.493, 0.426, -2.231),
+        // Vec3d(50.464, 0.447, -2.324),
+        // Vec3d(37.797, 0.0359999985, -1.29700005),
         // Vec3d(0, 0, 0),
         // Vec3d(51.5880013, 73.5179977, 51.5690002),
         // Vec3d(93.6989975, -15.7340002, 91.9420013),
@@ -119,11 +118,20 @@ int main(int argc, char *argv[])
         Mat img_;
         cvtColor(image, img_, COLOR_BGR2RGB);
         img_.convertTo(img_, CV_64F);
-        Mat calibratedImage = model1.inferImage(img_);
+        const int inp_size = 255;
+        const int out_size = 255;
+        img_ = img_ / inp_size;
+        //Mat out = this->infer(img_, islinear);
+        Mat calibratedImage= model1.infer(img_);
+        Mat out_ = calibratedImage * out_size;
         //! [make_color_correction]
 
         //! [Save_calibrated_image]
         // Save the calibrated image to {FILE_NAME}.calibrated.{FILE_EXT}
+        out_.convertTo(out_, CV_8UC3);
+        Mat img_out = min(max(out_, 0), out_size);
+        Mat out_img;
+        cvtColor(img_out, out_img, COLOR_RGB2BGR);
         string filename = filepath.substr(filepath.find_last_of('/')+1);
         size_t dotIndex = filename.find_last_of('.');
         string baseName = filename.substr(0, dotIndex);
@@ -131,6 +139,7 @@ int main(int argc, char *argv[])
         string calibratedFilePath = baseName + ".calibrated." + ext;
         imwrite(calibratedFilePath, calibratedImage);
         //! [Save_calibrated_image]
+
     }
 
     return 0;

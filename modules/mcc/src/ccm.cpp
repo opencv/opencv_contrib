@@ -35,7 +35,7 @@ namespace ccm
     class ColorCorrectionModel::Impl{
     public:
         Mat src;
-        Ptr<Color> dst;//Color::Color(){};ColorSpace(){}; dst
+        std::shared_ptr<Color> dst =std::make_shared<Color>();
         Mat dist;
         RGBBase_& cs;
         Mat mask;
@@ -49,7 +49,7 @@ namespace ccm
         int shape;
 
         // linear method and distance
-        std::shared_ptr<Linear> linear;
+        std::shared_ptr<Linear> linear=std::make_shared<Linear>();
         DISTANCE_TYPE distance;
         LINEAR_TYPE linear_type;
 
@@ -129,9 +129,7 @@ namespace ccm
         class LossFunction : public MinProblemSolver::Function
         {
         public:
-            //ColorCorrectionModel* ccm_loss;
             ColorCorrectionModel::Impl * ccm_loss;
-           // LossFunction(ColorCorrectionModel* ccm) : ccm_loss(ccm) {};
             LossFunction(ColorCorrectionModel::Impl* ccm) : ccm_loss(ccm) {};
 
             /** @brief Reset dims to ccm->shape.
@@ -155,20 +153,10 @@ namespace ccm
             }
     };
 };
-// ColorCorrectionModel::Impl::Impl():cs(sRGB),ccm_type(CCM_3x3), distance(),
-//          linear_type(linear_type),gamma(gamma),deg(deg),saturated_threshold(saturated_threshold),weights_coeff(0),initial_method_type(initial_method_type),
-//          max_count(max_count_),epsilon(epsilon_)
-//          {
-//             // run();
-//          } //写成默认参数 
+ 
 ColorCorrectionModel::Impl::Impl():cs(*GetCS::get_rgb(sRGB)),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA), weights(Mat()),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
-   initial_method_type(LEAST_SQUARE),weights_coeff(0),max_count(5000),epsilon(1.e-4)
-         {
-            // run();
-         } //写成默认参数 
-// Mat src_, Color dst_, RGBBase_& cs_ , CCM_TYPE ccm_type_ = CCM_3x3, DISTANCE_TYPE distance_ = CIE2000, LINEAR_TYPE linear_type = GAMMA,
-//          double gamma = 2.2, int deg = 3, std::vector<double> saturated_threshold = { 0, 0.98 }, Mat weights_list = Mat(), double weights_coeff = 0,
-//          INITIAL_METHOD_TYPE initial_method_type = LEAST_SQUARE, int max_count_ = 5000, double epsilon_ = 1.e-4
+   initial_method_type(LEAST_SQUARE),weights_coeff(0),max_count(5000),epsilon(1.e-4){}
+
 Mat ColorCorrectionModel::Impl::prepare(const Mat& inp)
 {
     switch (ccm_type)
@@ -302,7 +290,6 @@ void ColorCorrectionModel::Impl::fitting(void)
     std::cout << " loss " << loss << std::endl;
 }
 
-//Mat ColorCorrectionModel::Impl::infer(const Mat& img, bool islinear)
 Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 {
     if (!p->ccm.data)
@@ -320,36 +307,26 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
     return p->cs.fromL(img_ccm);
 }
 
-// Mat ColorCorrectionModel::Impl::inferImage(Mat& img_, bool islinear)
-// {
-//     const int inp_size = 255;
-//     const int out_size = 255;
-//     img_ = img_ / inp_size;
-//     Mat out = this->infer(img_, islinear);
-//     Mat out_ = out * out_size;
-//     out_.convertTo(out_, CV_8UC3);
-//     Mat img_out = min(max(out_, 0), out_size);
-//     Mat out_img;
-//     cvtColor(img_out, out_img, COLOR_RGB2BGR);
-//     return out_img;
-// }
 void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor){
     //dst = &(GetColor::get_color(constcolor));
-    Color dst_ = GetColor::get_color(constcolor);
-    dst = &dst_;
+   // Color dst_ = GetColor::get_color(constcolor);
+    dst =(GetColor::get_color(constcolor));
     //Color dst(GetColor::get_color(constcolor));
     //Color dst_= GetColor::get_color(constcolor);
     //dst = dst_;
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_){
-    dst = new Color(colors_, *GetCS::get_cs(ref_cs_));
+    dst.reset( new Color(colors_, *GetCS::get_cs(ref_cs_)));
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_){
-    dst = new Color(colors_, *GetCS::get_cs(cs_),colored_);
+    dst.reset( new Color(colors_, *GetCS::get_cs(cs_),colored_));
 }
 ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor): p(new Impl){
     p->src = src_;
+    std::cout<<"**********2"<<std::endl;
     p->get_color(constcolor);
+    std::cout<<"**********"<<std::endl;
+    
     // dst= GetColor::get_color(constcolor)
 }
 ColorCorrectionModel:: ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE ref_cs_): p(new Impl){
@@ -363,72 +340,6 @@ ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE cs
     // p->get_color(colors_, *GetCS::get_cs(cs_),colored_);
     p->get_color(colors_, cs_, colored_);
 }
-// ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
-//         double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
-//         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
-//         ColorCorrectionModel(src_, GetColor::get_color(constcolor), *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
-//             gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
-// ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE  ref_cs_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
-//         double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
-//         INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
-//      ColorCorrectionModel(src_, Color(colors_, *GetCS::get_cs(ref_cs_)), *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
-//          gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
-
-// ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, COLOR_SPACE cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
-//      double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
-//      INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
-//      ColorCorrectionModel(src_, dst_, *GetCS::get_rgb(cs_), ccm_type_, distance_, linear_type,
-//          gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, max_count_, epsilon_) {}
-
-// ColorCorrectionModel::ColorCorrectionModel(Mat src_, Color dst_, RGBBase_& cs_, CCM_TYPE ccm_type_, DISTANCE_TYPE distance_, LINEAR_TYPE linear_type,
-//     double gamma, int deg, std::vector<double> saturated_threshold, Mat weights_list, double weights_coeff,
-//     INITIAL_METHOD_TYPE initial_method_type, int max_count_, double epsilon_) :
-//     src(src_), dst(dst_), cs(cs_), ccm_type(ccm_type_), distance(distance_), max_count(max_count_), epsilon(epsilon_)
-// {
-//     Mat saturate_mask = saturate(src, saturated_threshold[0], saturated_threshold[1]);
-//     this->linear = getLinear(gamma, deg, this->src, this->dst, saturate_mask, this->cs, linear_type);
-//     calWeightsMasks(weights_list, weights_coeff, saturate_mask);
-//     src_rgbl = this->linear->linearize(maskCopyTo(this->src, mask));
-//     dst.colors = maskCopyTo(dst.colors, mask);
-//     dst_rgbl = this->dst.to(*(this->cs.l)).colors;
-
-//     // make no change for CCM_3x3, make change for CCM_4x3.
-//     src_rgbl = prepare(src_rgbl);
-
-//     // distance function may affect the loss function and the fitting function
-//     switch (this->distance)
-//     {
-//     case cv::ccm::RGBL:
-//         initialLeastSquare(true);
-//         break;
-//     default:
-//         switch (initial_method_type)
-//         {
-//         case cv::ccm::WHITE_BALANCE:
-//             initialWhiteBalance();
-//             break;
-//         case cv::ccm::LEAST_SQUARE:
-//             initialLeastSquare();
-//             break;
-//         default:
-//             throw std::invalid_argument{ "Wrong initial_methoddistance_type!" };
-//             break;
-//         }
-//         break;
-//     }
-//     fitting();
-// }
-
-
-//void ColorCorrectionModel::setDst(CONST_COLOR constcolor) {
-//    p->dst = GetColor::get_color(constcolor);
-//}
-//void ColorCorrectionModel::setDst(Mat colors_, COLOR_SPACE ref_cs_) {
-//    p->dst = Color(colors_, *GetCS::get_cs(ref_cs_));
-//}
-//void ColorCorrectionModel::setDst(Mat colors_, COLOR_SPACE cs_, Mat colored_) {
-//    p->dst = Color(colors_, *GetCS::get_cs(cs_), colored_);
-//}
 
 void ColorCorrectionModel::setColorSpace(COLOR_SPACE cs_){
     p->cs = *GetCS::get_rgb(cs_);
@@ -468,7 +379,7 @@ void ColorCorrectionModel::setEpsilon(double epsilon_){
     p->epsilon = epsilon_;
 }
 void  ColorCorrectionModel::run(){
-
+   
     Mat saturate_mask = saturate(p->src, p->saturated_threshold[0], p->saturated_threshold[1]);
     p->linear = getLinear(p->gamma, p->deg, p->src, *(p->dst), saturate_mask, (p->cs), p->linear_type);
     p->calWeightsMasks(p->weights, p->weights_coeff, saturate_mask);
