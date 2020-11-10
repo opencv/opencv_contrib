@@ -328,7 +328,7 @@ public:
     void setInitialMethod(INITIAL_METHOD_TYPE initial_method_type);
     void setMaxCount(int max_count_);
     void setEpsilon(double epsilon_);
-    bool run();
+    void run();
     // /** @brief Infer using fitting ccm.
     //     @param img the input image, type of cv::Mat.
     //     @param islinear default false.

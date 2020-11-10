@@ -107,7 +107,7 @@ namespace ccm
             @param islinear default false.
             @return the output array, type of cv::Mat.
         */
-        Mat infer(const Mat& img, bool islinear = false);
+     //   Mat infer(const Mat& img, bool islinear = false);
 
         /** @brief Infer image and output as an BGR image with uint8 type.
                  mainly for test or debug.
@@ -116,7 +116,7 @@ namespace ccm
             @param islinear if linearize or not.
             @return the output array, type of cv::Mat.
         */
-        Mat inferImage(Mat& img_, bool islinear = false);
+      //  Mat inferImage(Mat& img_, bool islinear = false);
         void get_color(Mat& img_, bool islinear = false);
         void get_color(CONST_COLOR constcolor);
         void get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_);
@@ -161,8 +161,8 @@ namespace ccm
 //          {
 //             // run();
 //          } //写成默认参数 
-ColorCorrectionModel::Impl::Impl():cs(*GetCS::get_rgb(sRGB)),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
-    weights(Mat()),weights_coeff(0),initial_method_type(LEAST_SQUARE),max_count(5000),epsilon(1.e-4)
+ColorCorrectionModel::Impl::Impl():cs(*GetCS::get_rgb(sRGB)),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA), weights(Mat()),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
+   initial_method_type(LEAST_SQUARE),weights_coeff(0),max_count(5000),epsilon(1.e-4)
          {
             // run();
          } //写成默认参数 
@@ -192,16 +192,16 @@ Mat ColorCorrectionModel::Impl::prepare(const Mat& inp)
     }
 }
 
-void ColorCorrectionModel::Impl::calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask)
+void ColorCorrectionModel::Impl::calWeightsMasks(Mat weights_list, double weights_coeff_, Mat saturate_mask)
 {
     // weights
     if (!weights_list.empty())
     {
         weights = weights_list;
     }
-    else if (weights_coeff != 0)
+    else if (weights_coeff_ != 0)
     {
-        pow(dst->toLuminant(cs.io), weights_coeff, weights);
+        pow(dst->toLuminant(cs.io), weights_coeff_, weights);
     }
 
     // masks
@@ -302,47 +302,50 @@ void ColorCorrectionModel::Impl::fitting(void)
     std::cout << " loss " << loss << std::endl;
 }
 
-Mat ColorCorrectionModel::Impl::infer(const Mat& img, bool islinear)
+//Mat ColorCorrectionModel::Impl::infer(const Mat& img, bool islinear)
+Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 {
-    if (!ccm.data)
+    if (!p->ccm.data)
     {
         throw "No CCM values!";
     }
-    Mat img_lin = linear->linearize(img);
+    Mat img_lin = (p->linear)->linearize(img);
     Mat img_ccm(img_lin.size(), img_lin.type());
-    Mat ccm_ = ccm.reshape(0, shape / 3);
-    img_ccm = multiple(prepare(img_lin), ccm_);
+    Mat ccm_ = p->ccm.reshape(0, p->shape / 3);
+    img_ccm = multiple(p->prepare(img_lin), ccm_);
     if (islinear == true)
     {
         return img_ccm;
     }
-    return cs.fromL(img_ccm);
+    return p->cs.fromL(img_ccm);
 }
 
-Mat ColorCorrectionModel::Impl::inferImage(Mat& img_, bool islinear)
-{
-    const int inp_size = 255;
-    const int out_size = 255;
-    img_ = img_ / inp_size;
-    Mat out = this->infer(img_, islinear);
-    Mat out_ = out * out_size;
-    out_.convertTo(out_, CV_8UC3);
-    Mat img_out = min(max(out_, 0), out_size);
-    Mat out_img;
-    cvtColor(img_out, out_img, COLOR_RGB2BGR);
-    return out_img;
-}
+// Mat ColorCorrectionModel::Impl::inferImage(Mat& img_, bool islinear)
+// {
+//     const int inp_size = 255;
+//     const int out_size = 255;
+//     img_ = img_ / inp_size;
+//     Mat out = this->infer(img_, islinear);
+//     Mat out_ = out * out_size;
+//     out_.convertTo(out_, CV_8UC3);
+//     Mat img_out = min(max(out_, 0), out_size);
+//     Mat out_img;
+//     cvtColor(img_out, out_img, COLOR_RGB2BGR);
+//     return out_img;
+// }
 void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor){
-    dst = &(GetColor::get_color(constcolor));
+    //dst = &(GetColor::get_color(constcolor));
+    Color dst_ = GetColor::get_color(constcolor);
+    dst = &dst_;
     //Color dst(GetColor::get_color(constcolor));
     //Color dst_= GetColor::get_color(constcolor);
     //dst = dst_;
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_){
-    dst = &Color(colors_, *GetCS::get_cs(ref_cs_));
+    dst = new Color(colors_, *GetCS::get_cs(ref_cs_));
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_){
-    dst = &Color(colors_, *GetCS::get_cs(cs_),colored_);
+    dst = new Color(colors_, *GetCS::get_cs(cs_),colored_);
 }
 ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor): p(new Impl){
     p->src = src_;
@@ -464,7 +467,7 @@ void ColorCorrectionModel::setMaxCount(int max_count_){
 void ColorCorrectionModel::setEpsilon(double epsilon_){
     p->epsilon = epsilon_;
 }
-bool  ColorCorrectionModel::run(){
+void  ColorCorrectionModel::run(){
 
     Mat saturate_mask = saturate(p->src, p->saturated_threshold[0], p->saturated_threshold[1]);
     p->linear = getLinear(p->gamma, p->deg, p->src, *(p->dst), saturate_mask, (p->cs), p->linear_type);
