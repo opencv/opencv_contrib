@@ -373,201 +373,6 @@ void integrateVolumeUnit(
 
 }
 
-/*
-struct Volume_NODE
-{
-    Vec3i* idx;
-    int* row;
-    struct Volume_NODE* nextVolume;
-};
-
-struct Volumes_HEAD
-{
-    int* n;
-    struct Volume_NODE* firstVolume;
-};
-
-typedef Volume_NODE* head;
-
-Volume_NODE* create_Volume_NODE(Vec3i indx)
-{
-    Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
-    *(new_volume_node->idx) = indx;
-    *(new_volume_node->row) = -1;
-
-    return new_volume_node;
-}
-
-Volume_NODE* create_Volume_NODE(Vec3i indx, int row)
-{
-    Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
-    *(new_volume_node->idx) = indx;
-    *(new_volume_node->row) = row;
-    new_volume_node->nextVolume = NULL;
-
-    return new_volume_node;
-}
-
-Volumes_HEAD* create_Volumes_HEAD()
-{
-    Volumes_HEAD* new_volume_head = (Volumes_HEAD*)malloc(sizeof(Volumes_HEAD));
-    *(new_volume_head->n) = 0;
-    new_volume_head->firstVolume = NULL;
-
-    return new_volume_head;
-}
-
-int _find_Volume(Volumes_HEAD* head, Vec3i indx)
-{
-    //TODO: add difference between returning values;
-    // -2 if there is not needful value
-    if (head->n == 0)
-        return -2;
-    Volume_NODE* cursor = head->firstVolume;
-    while (cursor != NULL)
-    {
-        if (*(cursor->idx) == indx)
-            return *(cursor->row);
-        cursor = cursor->nextVolume;
-    }
-    return -2;
-}
-
-//typedef cv::Mat VolumesTable;
-//VolumesTable createVolumeTable()
-
-class VolumesTable
-{
-public:
-    int hash_divisor;
-    cv::Mat table;
-    
-    VolumesTable(int rows);
-    ~VolumesTable();
-
-    void update(size_t hash, Vec3i indx);
-    void update(size_t hash, Vec3i indx, int row);
-    int find_Volume(size_t hash, Vec3i indx);
-    bool isExist(size_t hash, Vec3i indx);
-};
-
-VolumesTable::VolumesTable(int rows)
-{
-    hash_divisor = rows;
-    table = cv::Mat(rows, 1, rawType<Volumes_HEAD*>());
-}
-
-VolumesTable::~VolumesTable() {}
-
-void VolumesTable::update(size_t hash, Vec3i indx)
-{
-    int i = hash % this->hash_divisor;
-    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
-    if (*(head->n) == 0)
-    {
-        head->firstVolume = create_Volume_NODE(indx);
-    }
-    else
-    {
-        Volume_NODE* cursor = head->firstVolume;
-        while (cursor != NULL)
-        {       
-            if (*(cursor->idx) == indx)
-                return;
-            cursor = cursor->nextVolume;
-        }
-        cursor->nextVolume = create_Volume_NODE(indx);
-        *(head->n)++;
-    }
-}
-
-void VolumesTable::update(size_t hash, Vec3i indx, int row)
-{
-    int i = hash % this->hash_divisor;
-    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
-    if (*(head->n) == 0)
-    {
-        head->firstVolume = create_Volume_NODE(indx, row);
-    }
-    else
-    {
-        Volume_NODE* cursor = head->firstVolume;
-        while (cursor != NULL)
-        {
-            if (*(cursor->idx) == indx)
-            {
-                *(cursor->idx) = row;
-                return;
-            }
-            cursor = cursor->nextVolume;
-        }
-        cursor->nextVolume = create_Volume_NODE(indx, row);
-        *(head->n)++;
-    }
-}
-
-int VolumesTable::find_Volume(size_t hash, Vec3i indx)
-{
-    int i = hash % this->hash_divisor;
-    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
-    int row = _find_Volume(head, indx);
-    return row;
-}
-
-bool VolumesTable::isExist(size_t hash, Vec3i indx)
-{
-    if (this->find_Volume(hash, indx) == -2)
-        return false;
-    return true;
-}
-*/
-/*
-struct Volume_NODE
-{
-    Vec3i* idx;
-    int* row;
-    bool* isActive;
-    struct Volume_NODE* nextVolume;
-};
-
-struct Volumes_HEAD
-{
-    struct Volume_NODE* firstVolume;
-};
-*/
-Volume_NODE* create_Volume_NODE()
-{
-    Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
-    *(new_volume_node->idx) = nan3;
-    *(new_volume_node->row) = -1;
-    *(new_volume_node->isActive) = false;
-    new_volume_node->nextVolume = NULL;
-
-    return new_volume_node;
-}
-
-Volumes_HEAD* create_Volumes_HEAD()
-{
-    Volumes_HEAD* new_volume_head = (Volumes_HEAD*)malloc(sizeof(Volumes_HEAD));
-    new_volume_head->firstVolume = NULL;
-
-    return new_volume_head;
-}
-
-int _find_Volume(Volumes_HEAD* head, Vec3i indx)
-{
-    //TODO: add difference between returning values;
-    // -2 if there is not needful value
-    Volume_NODE* cursor = head->firstVolume;
-    while (cursor != NULL || *(cursor->isActive))
-    {
-        if (*(cursor->idx) == indx)
-            return *(cursor->row);
-        cursor = cursor->nextVolume;
-    }
-    return -2;
-}
-
 size_t calc_hash(Vec3i x)
 {
     size_t seed = 0;
@@ -579,118 +384,77 @@ size_t calc_hash(Vec3i x)
     return seed;
 }
 
-/*
-class VolumesTable
-{
-public:
-    int hash_divisor;
-    int list_size;
-    cv::Mat table;
-    
-    VolumesTable(int rows);
-    ~VolumesTable();
-
-    void update(size_t hash, Vec3i indx);
-    void update(size_t hash, Vec3i indx, int row);
-    int find_Volume(size_t hash, Vec3i indx);
-    bool isExist(size_t hash, Vec3i indx);
-};
-*/
-/*
 VolumesTable::VolumesTable()
 {
-    hash_divisor = 1024;
-    list_size = 100;
-    table = cv::Mat(1024, 1, rawType<Volumes_HEAD*>());
-    
-    for (int i = 0; i < this->hash_divisor; i++)
+    this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
+}
+
+void VolumesTable::update(Vec3i indx)
+{
+    size_t i = calc_hash(indx) / hash_divisor;
+    size_t a = i * list_size;
+    size_t b = (i + 1) * list_size;
+    while(a < b || volumes.at<Volume_NODE>(a, 0).idx != indx)
     {
-        Volume_NODE* cursor = table.at<Volumes_HEAD*>(i, 0)->firstVolume;
-        for (int i = 0; i < this->list_size; i++)
+        Volume_NODE& v = volumes.at<Volume_NODE>(a, 0);
+        //find nan cheking for int or Vec3i 
+        if (isnan(float(v.idx[0])))
         {
-            cursor->nextVolume = create_Volume_NODE();
-            cursor = cursor->nextVolume;
-        }
-    }
-    
-}
-
-VolumesTable::VolumesTable(int rows)
-{
-    hash_divisor = rows;
-    list_size = 100;
-    table = cv::Mat(rows, 1, rawType<Volumes_HEAD*>());
-    
-    for (int i = 0; i < this->hash_divisor; i++)
-    {
-        Volumes_HEAD* h = table.at<Volumes_HEAD*>(i, 0); 
-        h = create_Volumes_HEAD();
-        Volume_NODE* cursor = h->firstVolume;
-        cursor->nextVolume;// 
-        cursor = create_Volume_NODE();
-        //for (int i = 0; i < this->list_size; i++)
-        //{
-            //cursor->nextVolume = create_Volume_NODE();
-            //cursor = cursor->nextVolume;
-        //}
-
-    }
-    
-}
-
-VolumesTable::~VolumesTable() {}
-
-void VolumesTable::update(size_t hash, Vec3i indx)
-{
-    int i = hash % this->hash_divisor;
-    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
-
-    Volume_NODE* cursor = head->firstVolume;
-    while (cursor != NULL || *(cursor->isActive))
-    {       
-        if (*(cursor->idx) == indx)
-            return;
-        cursor = cursor->nextVolume;
-    }
-    *(cursor->isActive) = true;
-    *(cursor->idx) = indx;
-}
-
-void VolumesTable::update(size_t hash, Vec3i indx, int row)
-{
-    int i = hash % this->hash_divisor;
-    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
-
-    Volume_NODE* cursor = head->firstVolume;
-    while (cursor != NULL || *(cursor->isActive))
-    {
-        if (*(cursor->idx) == indx)
-        {
-            *(cursor->row) = row;
+            v.idx = indx;
             return;
         }
-        cursor = cursor->nextVolume;
+        a++;
     }
-    *(cursor->isActive) = true;
-    *(cursor->idx) = indx;
-    *(cursor->row) = row;
 }
 
-int VolumesTable::find_Volume(size_t hash, Vec3i indx)
+void VolumesTable::update(Vec3i indx, int row)
 {
-    int i = hash % this->hash_divisor;
-    Volumes_HEAD* head = this->table.at<Volumes_HEAD*>(i, 0);
-    int row = _find_Volume(head, indx);
-    return row;
+    size_t i = calc_hash(indx) / hash_divisor;
+    size_t a = i * list_size;
+    size_t b = (i + 1) * list_size;
+    while (a < b)
+    {
+        Volume_NODE& v = volumes.at<Volume_NODE>(a, 0);
+        if (v.idx == indx)
+        {
+            v.row = row;
+            return;
+        }
+        //find nan cheking for int or Vec3i 
+        if (isnan(float(v.idx[0])))
+        {
+            v.idx = indx;
+            v.row = row;
+            return;
+        }
+        a++;
+    }
 }
 
-bool VolumesTable::isExist(size_t hash, Vec3i indx)
+int VolumesTable::find_Volume(Vec3i indx)
 {
-    if (this->find_Volume(hash, indx) == -2)
+    size_t i = calc_hash(indx) / hash_divisor;
+    size_t a = i * list_size;
+    size_t b = (i + 1) * list_size;
+    while (a < b)
+    {
+        Volume_NODE& v = volumes.at<Volume_NODE>(a, 0);
+        if (v.idx == indx)
+            return v.row;
+        //find nan cheking for int or Vec3i 
+        if (isnan(float(v.idx[0])))
+            return -2;
+        a++;
+    }
+    return -2;
+}
+bool VolumesTable::isExist(Vec3i indx)
+{
+    if (this->find_Volume(indx) == -2)
         return false;
     return true;
 }
-*/
+
 
 } // namespace kinfu
 } // namespace cv

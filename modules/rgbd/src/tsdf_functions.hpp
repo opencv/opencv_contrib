@@ -46,37 +46,28 @@ void integrateVolumeUnit(
 
 struct Volume_NODE
 {
-    Vec3i* idx;
-    int* row;
-    bool* isActive;
-    struct Volume_NODE* nextVolume;
+    Vec3i idx = nan3;
+    int row   = -1;
 };
 
-struct Volumes_HEAD
-{
-    struct Volume_NODE* firstVolume;
-};
-
-Volume_NODE* create_Volume_NODE();
-Volumes_HEAD* create_Volumes_HEAD();
-int _find_Volume(Volumes_HEAD* head, Vec3i indx);
 size_t calc_hash(Vec3i x);
 
 class VolumesTable
 {
 public:
-    int hash_divisor;
-    int list_size;
-    cv::Mat table;
-    
-    VolumesTable();
-    VolumesTable(int rows);
-    ~VolumesTable();
+    int hash_divisor = 1024;
+    int list_size    = 128;
 
-    void update(size_t hash, Vec3i indx);
-    void update(size_t hash, Vec3i indx, int row);
-    int find_Volume(size_t hash, Vec3i indx);
-    bool isExist(size_t hash, Vec3i indx);
+    cv::Mat volumes;
+
+    VolumesTable();
+    ~VolumesTable() {};
+
+
+    void update(Vec3i indx);
+    void update(Vec3i indx, int row);
+    int find_Volume(Vec3i indx);
+    bool isExist(Vec3i indx);
 };
 
 
