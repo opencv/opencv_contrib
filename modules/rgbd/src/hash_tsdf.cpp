@@ -862,6 +862,7 @@ void HashTSDFVolumeGPU::reset()
     poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
     activities = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
     lastVisibleIndexes = cv::Mat(VOLUMES_SIZE, 1, rawType<int>());
+    volumeUnits = VolumesTable(VOLUMES_SIZE);
 }
 
 static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)

@@ -167,7 +167,6 @@ public:
     Vec6f frameParams;
     Mat pixNorms;
 
-
     VolumeIndex _lastVolIndex;
     cv::Mat indexes;
     cv::Mat poses;
@@ -177,6 +176,7 @@ public:
 
     cv::UMat _pixNorms;
     cv::Mat volUnitsData;
+    VolumesTable volumeUnits;
 };
 #endif
 

@@ -43,6 +43,44 @@ void integrateVolumeUnit(
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
 
+
+struct Volume_NODE
+{
+    Vec3i* idx;
+    int* row;
+    bool* isActive;
+    struct Volume_NODE* nextVolume;
+};
+
+struct Volumes_HEAD
+{
+    struct Volume_NODE* firstVolume;
+};
+
+Volume_NODE* create_Volume_NODE();
+Volumes_HEAD* create_Volumes_HEAD();
+int _find_Volume(Volumes_HEAD* head, Vec3i indx);
+size_t calc_hash(Vec3i x);
+
+class VolumesTable
+{
+public:
+    int hash_divisor;
+    int list_size;
+    cv::Mat table;
+    
+    VolumesTable();
+    VolumesTable(int rows);
+    ~VolumesTable();
+
+    void update(size_t hash, Vec3i indx);
+    void update(size_t hash, Vec3i indx, int row);
+    int find_Volume(size_t hash, Vec3i indx);
+    bool isExist(size_t hash, Vec3i indx);
+};
+
+
+
 }  // namespace kinfu
 }  // namespace cv
 #endif

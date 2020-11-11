@@ -521,7 +521,7 @@ bool VolumesTable::isExist(size_t hash, Vec3i indx)
     return true;
 }
 */
-
+/*
 struct Volume_NODE
 {
     Vec3i* idx;
@@ -534,9 +534,7 @@ struct Volumes_HEAD
 {
     struct Volume_NODE* firstVolume;
 };
-
-typedef Volume_NODE* head;
-
+*/
 Volume_NODE* create_Volume_NODE()
 {
     Volume_NODE* new_volume_node = (Volume_NODE*)malloc(sizeof(Volume_NODE));
@@ -570,6 +568,18 @@ int _find_Volume(Volumes_HEAD* head, Vec3i indx)
     return -2;
 }
 
+size_t calc_hash(Vec3i x)
+{
+    size_t seed = 0;
+    constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    for (uint16_t i = 0; i < 3; i++)
+    {
+        seed ^= std::hash<int>()(x[i]) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+}
+
+/*
 class VolumesTable
 {
 public:
@@ -585,21 +595,47 @@ public:
     int find_Volume(size_t hash, Vec3i indx);
     bool isExist(size_t hash, Vec3i indx);
 };
+*/
+/*
+VolumesTable::VolumesTable()
+{
+    hash_divisor = 1024;
+    list_size = 100;
+    table = cv::Mat(1024, 1, rawType<Volumes_HEAD*>());
+    
+    for (int i = 0; i < this->hash_divisor; i++)
+    {
+        Volume_NODE* cursor = table.at<Volumes_HEAD*>(i, 0)->firstVolume;
+        for (int i = 0; i < this->list_size; i++)
+        {
+            cursor->nextVolume = create_Volume_NODE();
+            cursor = cursor->nextVolume;
+        }
+    }
+    
+}
 
 VolumesTable::VolumesTable(int rows)
 {
     hash_divisor = rows;
     list_size = 100;
     table = cv::Mat(rows, 1, rawType<Volumes_HEAD*>());
-    table.forEach<Volumes_HEAD*>([&](Volumes_HEAD* h, const int*) 
-        {
-            Volume_NODE* cursor = h->firstVolume;
-            for (int i = 0; i < this->list_size; i++)
-            {
-                cursor->nextVolume = create_Volume_NODE();
-                cursor = cursor->nextVolume;
-            }
-        });
+    
+    for (int i = 0; i < this->hash_divisor; i++)
+    {
+        Volumes_HEAD* h = table.at<Volumes_HEAD*>(i, 0); 
+        h = create_Volumes_HEAD();
+        Volume_NODE* cursor = h->firstVolume;
+        cursor->nextVolume;// 
+        cursor = create_Volume_NODE();
+        //for (int i = 0; i < this->list_size; i++)
+        //{
+            //cursor->nextVolume = create_Volume_NODE();
+            //cursor = cursor->nextVolume;
+        //}
+
+    }
+    
 }
 
 VolumesTable::~VolumesTable() {}
@@ -654,7 +690,7 @@ bool VolumesTable::isExist(size_t hash, Vec3i indx)
         return false;
     return true;
 }
-
+*/
 
 } // namespace kinfu
 } // namespace cv
