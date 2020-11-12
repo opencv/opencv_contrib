@@ -11,16 +11,18 @@ Alphamatting is the problem of extracting the foreground with soft boundaries fr
 
 Given an input image and its corresponding trimap, we try to extract the foreground from the background. Following is an example:
 
-Input Image: ![](../samples/input_images/plant.jpg)
+Input Image: ![](alphamat/samples/input_images/plant.jpg)
 Input image should be preferably a RGB image.
-Input Trimap: ![](../samples/trimaps/plant.png)
+
+Input Trimap: ![](alphamat/samples/trimaps/plant.png)
 The trimap image is a greyscale image that contains information about the foreground(white pixels), background(black pixels) and unknown(grey) pixels.
-Output alpha Matte: ![](../samples/output_mattes/plant_result.png)
+
+Output alpha Matte: ![](alphamat/samples/output_mattes/plant_result.png)
 The computed alpha matte is saved as a greyscale image where the pixel values indicate the opacity of the extracted foreground object. These opacity values can be used to blend the foreground object into a diffferent backgound, as shown below:
-![](./images/plant_new_backgrounds.jpg)
+![](plant_new_backgrounds.jpg)
 
 Following are some more results.
-![](./images/matting_results.jpg)
+![](matting_results.jpg)
 
 The first column is input RGB image, the second column is input trimap, third column is the extracted alpha matte and the last two columns show the foreground object blended on new backgrounds.
 
