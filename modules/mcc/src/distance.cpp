@@ -25,7 +25,8 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#include "precomp.hpp"
+//#include "precomp.hpp"
+#include "distance.hpp"
 
 namespace cv
 {

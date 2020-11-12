@@ -25,7 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-#include "precomp.hpp"
+#include "linearize.hpp"
 
 namespace cv
 {

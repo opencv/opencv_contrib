@@ -29,24 +29,25 @@
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
-#include "opencv2/mcc/color.hpp"
-
+//#include "opencv2/mcc/color.hpp"
+#include "color.hpp"
+#include "opencv2/mcc/ccm.hpp"
 namespace cv
 {
 namespace ccm
 {
 
-/** @brief Enum of the possible types of linearization.
-*/
-enum LINEAR_TYPE
-{
-    IDENTITY_,
-    GAMMA,
-    COLORPOLYFIT,
-    COLORLOGPOLYFIT,
-    GRAYPOLYFIT,
-    GRAYLOGPOLYFIT
-};
+// /** @brief Enum of the possible types of linearization.
+// */
+// enum LINEAR_TYPE
+// {
+//     IDENTITY_,
+//     GAMMA,
+//     COLORPOLYFIT,
+//     COLORLOGPOLYFIT,
+//     GRAYPOLYFIT,
+//     GRAYLOGPOLYFIT
+// };
 
 /** @brief Polyfit model.
 */
@@ -63,11 +64,8 @@ public:
     and deduct: Ax = y
     See linear.pdf for details
     */
-
     Polyfit(Mat x, Mat y, int deg_);
-
     virtual ~Polyfit() {};
-
     Mat operator()(const Mat& inp);
 
 private:
@@ -77,7 +75,6 @@ private:
 
 /** @brief Logpolyfit model.
 */
-
 class CV_EXPORTS_W LogPolyfit
 
 {
@@ -89,11 +86,8 @@ public:
 
     /** @brief Logpolyfit method.
     */
-
     LogPolyfit(Mat x, Mat y, int deg_);
-
     virtual ~LogPolyfit() {};
-
     Mat operator()(const Mat& inp);
 
 };
@@ -105,16 +99,12 @@ class CV_EXPORTS_W Linear
 {
 public:
     Linear() {};
-
     virtual ~Linear() {};
 
     /** @brief Inference.
         @param inp the input array, type of cv::Mat.
     */
-
     virtual Mat linearize(Mat inp);
-
-
     /* *\brief Evaluate linearization model.
     */
     virtual void value(void) {};

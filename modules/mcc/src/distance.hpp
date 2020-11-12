@@ -28,26 +28,24 @@
 #ifndef __OPENCV_MCC_DISTANCE_HPP__
 #define __OPENCV_MCC_DISTANCE_HPP__
 
-#include "opencv2/mcc/utils.hpp"
+#include "utils.hpp"
+#include "opencv2/mcc/ccm.hpp"
 
 namespace cv
 {
 namespace ccm
 {
-
-/** @brief Enum of possibale functions to calculate the distance between
-           colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
-enum DISTANCE_TYPE
-{
-    CIE76,
-    CIE94_GRAPHIC_ARTS,
-    CIE94_TEXTILES,
-    CIE2000,
-    CMC_1TO1,
-    CMC_2TO1,
-    RGB,
-    RGBL
-};
+// enum DISTANCE_TYPE
+// {
+//     CIE76,
+//     CIE94_GRAPHIC_ARTS,
+//     CIE94_TEXTILES,
+//     CIE2000,
+//     CMC_1TO1,
+//     CMC_2TO1,
+//     RGB,
+//     RGBL
+// };
 
 
 /** @brief  distance between two points in formula CIE76

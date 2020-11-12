@@ -32,8 +32,9 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "opencv2/mcc/io.hpp"
-#include "opencv2/mcc/operations.hpp"
+#include "operations.hpp"
+#include "io.hpp"
+#include "opencv2/mcc/ccm.hpp"
 
 namespace cv
 {
@@ -42,48 +43,48 @@ namespace ccm
 
 /** Supported Color Space.
 */
-enum COLOR_SPACE {
-    sRGB,
-    sRGBL,
-    AdobeRGB,
-    AdobeRGBL,
-    WideGamutRGB,
-    WideGamutRGBL,
-    ProPhotoRGB,
-    ProPhotoRGBL,
-    DCI_P3_RGB,
-    DCI_P3_RGBL,
-    AppleRGB,
-    AppleRGBL,
-    REC_709_RGB,
-    REC_709_RGBL,
-    REC_2020_RGB,
-    REC_2020_RGBL,
-    XYZ_D65_2,
-    XYZ_D65_10,
-    XYZ_D50_2,
-    XYZ_D50_10,
-    XYZ_A_2,
-    XYZ_A_10,
-    XYZ_D55_2,
-    XYZ_D55_10,
-    XYZ_D75_2,
-    XYZ_D75_10,
-    XYZ_E_2,
-    XYZ_E_10,
-    Lab_D65_2,
-    Lab_D65_10,
-    Lab_D50_2,
-    Lab_D50_10,
-    Lab_A_2,
-    Lab_A_10,
-    Lab_D55_2,
-    Lab_D55_10,
-    Lab_D75_2,
-    Lab_D75_10,
-    Lab_E_2,
-    Lab_E_10
-};
+// enum COLOR_SPACE {
+//     sRGB,
+//     sRGBL,
+//     AdobeRGB,
+//     AdobeRGBL,
+//     WideGamutRGB,
+//     WideGamutRGBL,
+//     ProPhotoRGB,
+//     ProPhotoRGBL,
+//     DCI_P3_RGB,
+//     DCI_P3_RGBL,
+//     AppleRGB,
+//     AppleRGBL,
+//     REC_709_RGB,
+//     REC_709_RGBL,
+//     REC_2020_RGB,
+//     REC_2020_RGBL,
+//     XYZ_D65_2,
+//     XYZ_D65_10,
+//     XYZ_D50_2,
+//     XYZ_D50_10,
+//     XYZ_A_2,
+//     XYZ_A_10,
+//     XYZ_D55_2,
+//     XYZ_D55_10,
+//     XYZ_D75_2,
+//     XYZ_D75_10,
+//     XYZ_E_2,
+//     XYZ_E_10,
+//     Lab_D65_2,
+//     Lab_D65_10,
+//     Lab_D50_2,
+//     Lab_D50_10,
+//     Lab_A_2,
+//     Lab_A_10,
+//     Lab_D55_2,
+//     Lab_D55_10,
+//     Lab_D75_2,
+//     Lab_D75_10,
+//     Lab_E_2,
+//     Lab_E_10
+// };
 
 /** @brief Basic class for ColorSpace.
 */
