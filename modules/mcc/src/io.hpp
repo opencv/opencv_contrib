@@ -61,6 +61,7 @@ const IO A_2("A", "2"), A_10("A", "10"),
     D75_2("D75", "2"), D75_10("D75", "10"),
     E_2("E", "2"), E_10("E", "10");
 
+
 // data from https://en.wikipedia.org/wiki/Standard_illuminant.
 const static std::map<IO, std::vector<double>> illuminants_xy =
 {

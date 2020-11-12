@@ -36,6 +36,10 @@ namespace ccm {
 CV_EXPORTS_W double gammaCorrection_(const double& element, const double& gamma);
 
 /** @brief gamma correction ,see ColorSpace.pdf for details.
+           \f[
+            C_l=C_n^{\gamma},\qquad C_n\ge0\\
+            C_l=-(-C_n)^{\gamma},\qquad C_n<0\\\\
+            \f]
     @param src the input array,type of Mat.
     @param gamma a constant for gamma correction.
  */

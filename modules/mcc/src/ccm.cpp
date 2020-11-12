@@ -279,6 +279,7 @@ void ColorCorrectionModel::Impl::fitting(void)
     cv::Ptr<LossFunction> ptr_F(new LossFunction(this));
     solver->setFunction(ptr_F);
     Mat reshapeccm = ccm0.clone().reshape(0, 1);
+    std::cout << " ccm0 " << ccm0 << std::endl;
     Mat step = Mat::ones(reshapeccm.size(), CV_64F);
     solver->setInitStep(step);
     TermCriteria termcrit = TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, max_count, epsilon);
@@ -308,12 +309,7 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 }
 
 void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor){
-    //dst = &(GetColor::get_color(constcolor));
-   // Color dst_ = GetColor::get_color(constcolor);
     dst =(GetColor::get_color(constcolor));
-    //Color dst(GetColor::get_color(constcolor));
-    //Color dst_= GetColor::get_color(constcolor);
-    //dst = dst_;
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_){
     dst.reset( new Color(colors_, *GetCS::get_cs(ref_cs_)));
@@ -323,21 +319,14 @@ void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat col
 }
 ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor): p(new Impl){
     p->src = src_;
-    std::cout<<"**********2"<<std::endl;
     p->get_color(constcolor);
-    std::cout<<"**********"<<std::endl;
-    
-    // dst= GetColor::get_color(constcolor)
 }
 ColorCorrectionModel:: ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE ref_cs_): p(new Impl){
     p->src = src_;
     p->get_color(colors_, ref_cs_);
-    //dst= Color(colors_, *GetCS::get_cs(ref_cs_))
 }
 ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE cs_, Mat colored_): p(new Impl){
     p->src = src_;
-    //  p->cs =  *GetCS::get_rgb(cs_);
-    // p->get_color(colors_, *GetCS::get_cs(cs_),colored_);
     p->get_color(colors_, cs_, colored_);
 }
 

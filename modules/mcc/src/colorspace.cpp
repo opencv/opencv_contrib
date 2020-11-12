@@ -57,7 +57,8 @@ bool ColorSpace::relate(const ColorSpace& other) const {
 };
 
 Operations ColorSpace::relation(const ColorSpace& /*other*/) const {
-  return IDENTITY_OPS;
+  return Operations::get_IDENTITY_OPS();
+  //return IDENTITY_OPS;
 };
 
 bool ColorSpace::operator<(const ColorSpace& other) const {
@@ -71,7 +72,8 @@ bool ColorSpace::operator<(const ColorSpace& other) const {
  */
 Operations RGBBase_::relation(const ColorSpace& other) const {
   if (linear == other.linear) {
-    return IDENTITY_OPS;
+    //return IDENTITY_OPS;
+    return Operations::get_IDENTITY_OPS();
   }
   if (linear) {
     return Operations({Operation(fromL)});

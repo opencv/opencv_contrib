@@ -78,10 +78,11 @@ int main(int argc, char *argv[])
         //compte color correction matrix
         //! [get_ccm_Matrix]
         ColorCorrectionModel model1(src, Vinyl);
+        //! [get_ccm_Matrix]
          /* brief More models with different parameters, try it & check the document for details.
         */
         // model1.setColorSpace(sRGB);
-        // model1.setCCM(CCM_4x3);
+        // model1.setCCM(CCM_3x3);
         // model1.setDistance(CIE2000);
         // model1.setLinear(GAMMA);
         // model1.setLinearGamma(2.2);
@@ -92,11 +93,11 @@ int main(int argc, char *argv[])
         */
         //! [reference_color_values]
         // cv::Mat ref = (Mat_<Vec3d>(18, 1) <<
-        // Vec3d(100, 0.0052, -0.0104),
-        // Vec3d(73.0834, -0.82, -2.021),
-        // Vec3d(62.493, 0.426, -2.231),
-        // Vec3d(50.464, 0.447, -2.324),
-        // Vec3d(37.797, 0.0359999985, -1.29700005),
+        // Vec3d(100, 0.00520000001, -0.0104),
+        // Vec3d(73.0833969, -0.819999993, -2.02099991),
+        // Vec3d(62.493, 0.425999999, -2.23099995),
+        // Vec3d(50.4640007, 0.446999997, -2.32399988),
+        // Vec3d(37.7970009, 0.0359999985, -1.29700005),
         // Vec3d(0, 0, 0),
         // Vec3d(51.5880013, 73.5179977, 51.5690002),
         // Vec3d(93.6989975, -15.7340002, 91.9420013),
