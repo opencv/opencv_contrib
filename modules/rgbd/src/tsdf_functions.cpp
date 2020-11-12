@@ -468,18 +468,19 @@ void VolumesTable::expand()
 
 int VolumesTable::find_Volume(Vec3i indx)
 {
-    size_t i = calc_hash(indx) / hash_divisor;
-    size_t a = i * list_size;
-    size_t b = (i + 1) * list_size;
-    while (a < b)
+    size_t hash = calc_hash(indx) / hash_divisor;
+    int num = 1;
+    size_t i = hash * num * list_size;
+
+    while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(a, 0);
+        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         if (v.idx == indx)
             return v.row;
         //find nan cheking for int or Vec3i 
         if (isnan(float(v.idx[0])))
             return -2;
-        a++;
+        i = v.nextVolumeRow;
     }
     return -2;
 }
