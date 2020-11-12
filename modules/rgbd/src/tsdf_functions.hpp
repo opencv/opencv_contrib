@@ -48,6 +48,7 @@ struct Volume_NODE
 {
     Vec3i idx = nan3;
     int row   = -1;
+    int nextVolumeRow = -1;
 };
 
 size_t calc_hash(Vec3i x);
@@ -55,8 +56,9 @@ size_t calc_hash(Vec3i x);
 class VolumesTable
 {
 public:
-    int hash_divisor = 1024;
-    int list_size    = 128;
+    int hash_divisor = 32768;
+    int list_size    = 4;
+    int buffferNums  = 1;
 
     cv::Mat volumes;
 
@@ -66,6 +68,8 @@ public:
 
     void update(Vec3i indx);
     void update(Vec3i indx, int row);
+    void expand();
+    int getNextVolume(int hash, int& num, int i);
     int find_Volume(Vec3i indx);
     bool isExist(Vec3i indx);
 };

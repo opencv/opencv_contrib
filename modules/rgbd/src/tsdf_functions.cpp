@@ -391,30 +391,37 @@ VolumesTable::VolumesTable()
 
 void VolumesTable::update(Vec3i indx)
 {
-    size_t i = calc_hash(indx) / hash_divisor;
-    size_t a = i * list_size;
-    size_t b = (i + 1) * list_size;
-    while(a < b || volumes.at<Volume_NODE>(a, 0).idx != indx)
+    size_t hash = calc_hash(indx) / hash_divisor;
+    int num  = 1;
+    size_t start = hash * num * list_size;
+    size_t i = start;
+    
+    while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(a, 0);
+        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        if (v.idx == indx)
+            return;
         //find nan cheking for int or Vec3i 
         if (isnan(float(v.idx[0])))
         {
             v.idx = indx;
+            v.nextVolumeRow = getNextVolume(hash, num, i);
             return;
         }
-        a++;
+        i = v.nextVolumeRow;
     }
 }
 
 void VolumesTable::update(Vec3i indx, int row)
 {
-    size_t i = calc_hash(indx) / hash_divisor;
-    size_t a = i * list_size;
-    size_t b = (i + 1) * list_size;
-    while (a < b)
+    size_t hash = calc_hash(indx) / hash_divisor;
+    int num = 1;
+    size_t start = hash * num * list_size;
+    size_t i = start;
+
+    while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(a, 0);
+        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         if (v.idx == indx)
         {
             v.row = row;
@@ -425,10 +432,38 @@ void VolumesTable::update(Vec3i indx, int row)
         {
             v.idx = indx;
             v.row = row;
+            v.nextVolumeRow = getNextVolume(hash, num, i);
             return;
         }
-        a++;
+        i = v.nextVolumeRow;
     }
+}
+
+int VolumesTable::getNextVolume(int hash, int& num, int i)
+{
+    if (i % list_size == 0)
+    {
+        if (num <= buffferNums)
+        {
+            num++;
+        }
+        else 
+        {
+            this->expand();
+            num++;
+        }
+        return hash * num * list_size;
+    }
+    else
+    {
+        return i++;
+    }
+}
+
+void VolumesTable::expand()
+{
+    this->volumes.resize(hash_divisor * (buffferNums + 1));
+    this->buffferNums++;
 }
 
 int VolumesTable::find_Volume(Vec3i indx)
