@@ -66,7 +66,7 @@ namespace ccm
         int max_count;
         double epsilon;
         Impl();
-        
+
         /** @brief Make no change for CCM_3x3.
                  convert cv::Mat A to [A, 1] in CCM_4x3.
             @param inp the input array, type of cv::Mat.
@@ -139,7 +139,7 @@ namespace ccm
             }
     };
 };
- 
+
 ColorCorrectionModel::Impl::Impl():cs(*GetCS::get_rgb(sRGB)),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA), weights(Mat()),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
    initial_method_type(LEAST_SQUARE),weights_coeff(0),max_count(5000),epsilon(1.e-4){}
 
@@ -353,7 +353,7 @@ void ColorCorrectionModel::setEpsilon(double epsilon_){
     p->epsilon = epsilon_;
 }
 void  ColorCorrectionModel::run(){
-   
+
     Mat saturate_mask = saturate(p->src, p->saturated_threshold[0], p->saturated_threshold[1]);
     p->linear = getLinear(p->gamma, p->deg, p->src, *(p->dst), saturate_mask, (p->cs), p->linear_type);
     p->calWeightsMasks(p->weights, p->weights_coeff, saturate_mask);
