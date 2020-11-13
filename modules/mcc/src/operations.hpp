@@ -44,7 +44,7 @@ typedef std::function<Mat(Mat)> MatFunc;
 /** @brief Operation class contains some operarions used for color space
            conversion containing linear transformation and non-linear transformation
    */
-class CV_EXPORTS_W Operation
+class Operation
 {
 public:
     typedef std::function<Mat(Mat)> MatFunc;
@@ -76,7 +76,7 @@ public:
 
 //const Operation IDENTITY_OP([](Mat x) {return x; });
 
-class CV_EXPORTS_W Operations
+class Operations
 {
 public:
     std::vector<Operation> ops;
