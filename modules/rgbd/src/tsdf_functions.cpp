@@ -402,7 +402,7 @@ void VolumesTable::update(Vec3i indx)
         if (v.idx == indx)
             return;
         //find nan cheking for int or Vec3i 
-        if (isnan(float(v.idx[0])))
+        if (isNaN(Point3i(v.idx)))
         {
             v.idx = indx;
             v.nextVolumeRow = getNextVolume(hash, num, i);
@@ -428,7 +428,7 @@ void VolumesTable::update(Vec3i indx, int row)
             return;
         }
         //find nan cheking for int or Vec3i 
-        if (isnan(float(v.idx[0])))
+        if (isNaN(Point3i(v.idx)))
         {
             v.idx = indx;
             v.row = row;
@@ -478,7 +478,7 @@ int VolumesTable::find_Volume(Vec3i indx)
         if (v.idx == indx)
             return v.row;
         //find nan cheking for int or Vec3i 
-        if (isnan(float(v.idx[0])))
+        if (isNaN(Point3i(v.idx)))
             return -2;
         i = v.nextVolumeRow;
     }
