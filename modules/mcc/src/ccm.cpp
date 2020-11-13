@@ -279,7 +279,6 @@ void ColorCorrectionModel::Impl::fitting(void)
     cv::Ptr<LossFunction> ptr_F(new LossFunction(this));
     solver->setFunction(ptr_F);
     Mat reshapeccm = ccm0.clone().reshape(0, 1);
-    std::cout << " ccm0 " << ccm0 << std::endl;
     Mat step = Mat::ones(reshapeccm.size(), CV_64F);
     solver->setInitStep(step);
     TermCriteria termcrit = TermCriteria(TermCriteria::MAX_ITER + TermCriteria::EPS, max_count, epsilon);
@@ -401,6 +400,7 @@ void  ColorCorrectionModel::run(){
         break;
     }
     p->fitting();
+    ccm=p->ccm;
 
 }
 

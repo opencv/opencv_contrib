@@ -326,6 +326,7 @@ enum DISTANCE_TYPE
 class CV_EXPORTS_W ColorCorrectionModel
 {
 public:
+        Mat CV_WRAP ccm;
         /** @brief Color Correction Model
             @param src detected colors of ColorChecker patches;\n
                         the color type is RGB not BGR, and the color values are in [0, 1];

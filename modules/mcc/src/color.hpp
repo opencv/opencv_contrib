@@ -43,7 +43,7 @@ namespace ccm
 /** @brief Color defined by color_values and color space
 */
 
-class CV_EXPORTS_W Color
+class Color
 {
 public:
 
@@ -113,7 +113,7 @@ public:
 };
 
 
-class CV_EXPORTS_W GetColor {
+class GetColor {
 public:
     static std::shared_ptr<Color> get_color(CONST_COLOR const_color);
     static Mat get_ColorChecker(const double *checker,int row);
