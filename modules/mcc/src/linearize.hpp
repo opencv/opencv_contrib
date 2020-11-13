@@ -51,7 +51,7 @@ namespace ccm
 
 /** @brief Polyfit model.
 */
-class CV_EXPORTS_W Polyfit
+class Polyfit
 {
 public:
     int deg;
@@ -75,7 +75,7 @@ private:
 
 /** @brief Logpolyfit model.
 */
-class CV_EXPORTS_W LogPolyfit
+class LogPolyfit
 
 {
 public:
@@ -95,7 +95,7 @@ public:
 /** @brief Linearization base.
 */
 
-class CV_EXPORTS_W Linear
+class Linear
 {
 public:
     Linear() {};
@@ -114,11 +114,11 @@ public:
 /** @brief Linearization identity.
            make no change.
 */
-class CV_EXPORTS_W LinearIdentity : public Linear {};
+class LinearIdentity : public Linear {};
 
 /** @brief Linearization gamma correction.
 */
-class CV_EXPORTS_W LinearGamma : public Linear
+class LinearGamma : public Linear
 {
 public:
     double gamma;

@@ -44,9 +44,10 @@ typedef std::function<Mat(Mat)> MatFunc;
 /** @brief Operation class contains some operarions used for color space
            conversion containing linear transformation and non-linear transformation
    */
-class CV_EXPORTS_W Operation
+class Operation
 {
 public:
+    typedef std::function<Mat(Mat)> MatFunc;
     bool linear;
     Mat M;
     MatFunc f;
@@ -68,11 +69,14 @@ public:
     void add(const Operation& other);
 
     void clear();
+    static Operation get_IDENTITY_OP(){
+        return Operation([](Mat x) {return x; });
+    }
 };
 
-const Operation IDENTITY_OP([](Mat x) {return x; });
+//const Operation IDENTITY_OP([](Mat x) {return x; });
 
-class CV_EXPORTS_W Operations
+class Operations
 {
 public:
     std::vector<Operation> ops;
@@ -90,9 +94,12 @@ public:
     /** @brief run operations to make color conversion
     */
     Mat run(Mat abc);
+    static Operations get_IDENTITY_OPS(){
+        return Operations{Operation::get_IDENTITY_OP()};
+    }
 };
 
-const Operations IDENTITY_OPS{ IDENTITY_OP };
+//const Operations IDENTITY_OPS{ IDENTITY_OP };
 
 } // namespace ccm
 } // namespace cv

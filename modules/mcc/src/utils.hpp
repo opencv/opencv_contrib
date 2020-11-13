@@ -33,26 +33,30 @@
 namespace cv {
 namespace ccm {
 
-CV_EXPORTS_W double gammaCorrection_(const double& element, const double& gamma);
+double gammaCorrection_(const double& element, const double& gamma);
 
 /** @brief gamma correction ,see ColorSpace.pdf for details.
+           \f[
+            C_l=C_n^{\gamma},\qquad C_n\ge0\\
+            C_l=-(-C_n)^{\gamma},\qquad C_n<0\\\\
+            \f]
     @param src the input array,type of Mat.
     @param gamma a constant for gamma correction.
  */
-CV_EXPORTS_W Mat gammaCorrection(const Mat& src, const double& gamma);
+Mat gammaCorrection(const Mat& src, const double& gamma);
 
 /** @brief maskCopyTo a function to delete unsatisfied elementwise.
     @param src the input array, type of Mat.
     @param mask operation mask that used to choose satisfided elementwise.
  */
-CV_EXPORTS_W Mat maskCopyTo(const Mat& src, const Mat& mask);
+Mat maskCopyTo(const Mat& src, const Mat& mask);
 
 /** @brief multiple the function used to compute an array with n channels
       mulipied by ccm.
     @param xyz the input array, type of Mat.
     @param ccm the ccm matrix to make color correction.
  */
-CV_EXPORTS_W Mat multiple(const Mat& xyz, const Mat& ccm);
+Mat multiple(const Mat& xyz, const Mat& ccm);
 
 /** @brief multiple the function used to get the mask of saturated colors,
             colors between low and up will be choosed.
@@ -60,13 +64,13 @@ CV_EXPORTS_W Mat multiple(const Mat& xyz, const Mat& ccm);
     @param low  the threshold to choose saturated colors
     @param up  the threshold to choose saturated colors
 */
-CV_EXPORTS_W Mat saturate(Mat& src, const double& low, const double& up);
+Mat saturate(Mat& src, const double& low, const double& up);
 
 /** @brief rgb2gray it is an approximation grayscale function for relative RGB
            color space, see Miscellaneous.pdf for details;
     @param  rgb the input array,type of Mat.
  */
-CV_EXPORTS_W Mat rgb2gray(Mat rgb);
+Mat rgb2gray(Mat rgb);
 
 /** @brief function for elementWise operation
     @param src the input array, type of Mat
@@ -143,7 +147,7 @@ Mat distanceWise(Mat& src, Mat& ref, F&& lambda)
     return dst;
 }
 
-CV_EXPORTS_W Mat multiple(const Mat& xyz, const Mat& ccm);
+Mat multiple(const Mat& xyz, const Mat& ccm);
 
 const static Mat m_gray = (Mat_<double>(3, 1) << 0.2126, 0.7152, 0.0722);
 
