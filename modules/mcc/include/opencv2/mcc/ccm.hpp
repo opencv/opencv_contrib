@@ -55,12 +55,12 @@ enum CCM_TYPE
 */
 enum INITIAL_METHOD_TYPE
 {
-    WHITE_BALANCE,      ///< The white balance method. The initial value is: 
+    WHITE_BALANCE,      ///< The white balance method. The initial value is:
                         /// \f$
                         /// M_{CCM}=
                         /// \begin{bmatrix}
-                        /// k_R & 0 & 0\\ 
-                        /// 0 & k_G & 0\\ 
+                        /// k_R & 0 & 0\\
+                        /// 0 & k_G & 0\\
                         /// 0 & 0 & k_B\\
                         /// \end{bmatrix}
                         /// \f$
@@ -97,41 +97,41 @@ enum COLOR_SPACE {
     REC_2020_RGB,               ///<https://en.wikipedia.org/wiki/Rec._2020
     REC_2020_RGBL,              ///<https://en.wikipedia.org/wiki/Rec._2020
     XYZ_D65_2,                  ///<https://en.wikipedia.org/wiki/CIE_1931_color_space
-    XYZ_D65_10,                 ///
-    XYZ_D50_2,                  ///
-    XYZ_D50_10,                 ///
-    XYZ_A_2,                    ///
-    XYZ_A_10,                   ///
-    XYZ_D55_2,                  ///
-    XYZ_D55_10,                  ///
-    XYZ_D75_2,                  ///
-    XYZ_D75_10,                  ///
-    XYZ_E_2,                    ///
-    XYZ_E_10,                   ///
+    XYZ_D65_10,
+    XYZ_D50_2,
+    XYZ_D50_10,
+    XYZ_A_2,
+    XYZ_A_10,
+    XYZ_D55_2,
+    XYZ_D55_10,
+    XYZ_D75_2,
+    XYZ_D75_10,
+    XYZ_E_2,
+    XYZ_E_10,
     Lab_D65_2,                  ///<https://en.wikipedia.org/wiki/CIELAB_color_space
-    Lab_D65_10,                  ///
-    Lab_D50_2,                  ///
-    Lab_D50_10,                  ///
-    Lab_A_2,                    ///
-    Lab_A_10,                   ///
-    Lab_D55_2,                  ///
-    Lab_D55_10,                  ///
-    Lab_D75_2,                  ///
-    Lab_D75_10,                  ///
-    Lab_E_2,                    ///
-    Lab_E_10,                    ///
-};                      ///
+    Lab_D65_10,
+    Lab_D50_2,
+    Lab_D50_10,
+    Lab_A_2,
+    Lab_A_10,
+    Lab_D55_2,
+    Lab_D55_10,
+    Lab_D75_2,
+    Lab_D75_10,
+    Lab_E_2,
+    Lab_E_10,
+};
 /** @brief ## Linearization
 
-The first step in color correction is to linearize the detected colors. Because the input color space has not been calibrated, we usually use some empirical methods to linearize. There are several common  linearization methods. The first is identical transformation, the second is gamma correction, and the third is polynomial fitting. 
+The first step in color correction is to linearize the detected colors. Because the input color space has not been calibrated, we usually use some empirical methods to linearize. There are several common  linearization methods. The first is identical transformation, the second is gamma correction, and the third is polynomial fitting.
 
-Linearization is generally an elementwise function. The mathematical symbols are as follows: 
+Linearization is generally an elementwise function. The mathematical symbols are as follows:
 
-\f$C\f$: any channel of a color, could be \f$R, G\f$ or \f$B\f$. 
+\f$C\f$: any channel of a color, could be \f$R, G\f$ or \f$B\f$.
 
-\f$R, G,  B\f$:  \f$R, G, B\f$ channels respectively. 
+\f$R, G,  B\f$:  \f$R, G, B\f$ channels respectively.
 
-\f$G\f$: grayscale; 
+\f$G\f$: grayscale;
 
 \f$s,sl\f$: subscript, which represents the detected data and its linearized value, the former is the input and the latter is the output;
 
@@ -143,17 +143,17 @@ Linearization is generally an elementwise function. The mathematical symbols are
 
 No change is made during the Identical transformation linearization, usually because the tristimulus values of the input RGB image is already proportional to the luminance. For example, if the input measurement data is in RAW format, the measurement data is already linear, so no linearization is required.
 
-The identity transformation formula is as follows: 
+The identity transformation formula is as follows:
 
 \f[
-C_{sl}=C_s 
+C_{sl}=C_s
 \f]
 
 ### Gamma Correction
 
-Gamma correction is a means of performing nonlinearity in RGB space, see the Color Space documentation for details. In the linearization part, the value of \f$\gamma\f$ is usually set to 2.2. You can also customize the value. 
+Gamma correction is a means of performing nonlinearity in RGB space, see the Color Space documentation for details. In the linearization part, the value of \f$\gamma\f$ is usually set to 2.2. You can also customize the value.
 
-The formula for gamma correction linearization is as follows: 
+The formula for gamma correction linearization is as follows:
 \f[
 C_{sl}=C_s^{\gamma},\qquad C_s\ge0\\
 C_{sl}=-(-C_s)^{\gamma},\qquad C_s<0\\\\
@@ -163,13 +163,13 @@ C_{sl}=-(-C_s)^{\gamma},\qquad C_s<0\\\\
 
 Polynomial fitting uses polynomials to linearize. Provided the polynomial is:
 \f[
-f(x)=a_nx^n+a_{n-1}x^{n-1}+... +a_0 
+f(x)=a_nx^n+a_{n-1}x^{n-1}+... +a_0
 \f]
-Then: 
+Then:
 \f[
 C_{sl}=f(C_s)
 \f]
-In practice, \f$n\le3\f$ is used to prevent overfitting. 
+In practice, \f$n\le3\f$ is used to prevent overfitting.
 
 There are many variants of polynomial fitting, the difference lies in the way of generating $f(x)$. It is usually necessary to use linearized reference colors and corresponding detected colors to calculate the polynomial parameters. However, not all colors can participate in the calculation. The saturation detected colors needs to be removed. See the algorithm introduction document for details.
 
@@ -197,21 +197,21 @@ f(R_{s2})=R_{dl2}\\
 With a polynomial, the above equations becomes:
 \f[
 \begin{bmatrix}
-R_{s1}^{n} & R_{s1}^{n-1} & ... & 1\\ 
-R_{s2}^{n} & R_{s2}^{n-1} & ... & 1\\ 
+R_{s1}^{n} & R_{s1}^{n-1} & ... & 1\\
+R_{s2}^{n} & R_{s2}^{n-1} & ... & 1\\
 ... & ... & ... & ...
 \end{bmatrix}
 \begin{bmatrix}
-a_{n}\\ 
-a_{n-1}\\ 
+a_{n}\\
+a_{n-1}\\
 ... \\
 a_0
 \end{bmatrix}
 =
 \begin{bmatrix}
-R_{dl1}\\ 
-R_{dl2}\\ 
-... 
+R_{dl1}\\
+R_{dl2}\\
+...
 \end{bmatrix}
 \f]
 It can be expressed as a system of linear equations:
@@ -242,21 +242,21 @@ Parameters for other channels can also be derived in a similar way.
 
 In this method[2], single polynomial is used for all channels. The polynomial is still a polyfit result from the detected colors to the linear reference colors. However, only the gray of the reference colors can participate in the calculation.
 
-Since the detected colors corresponding to the gray of reference colors is not necessarily gray, it needs to be grayed. Grayscale refers to the Y channel of the XYZ color space. The color space of the detected data is not determined and cannot be converted into the XYZ space. Therefore, the sRGB formula is used to approximate[5]. 
+Since the detected colors corresponding to the gray of reference colors is not necessarily gray, it needs to be grayed. Grayscale refers to the Y channel of the XYZ color space. The color space of the detected data is not determined and cannot be converted into the XYZ space. Therefore, the sRGB formula is used to approximate[5].
 \f[
 G_{s}=0.2126R_{s}+0.7152G_{s}+0.0722B_{s}
 \f]
-Then the polynomial parameters can be obtained by using the polyfit. 
+Then the polynomial parameters can be obtained by using the polyfit.
 \f[
 f=polyfit(G_{s}, G_{dl})
 \f]
-After \f$f\f$ is obtained, linearization can be performed. 
+After \f$f\f$ is obtained, linearization can be performed.
 
 #### Logarithmic Polynomial Fitting
 
-For gamma correction formula, we take the logarithm: 
+For gamma correction formula, we take the logarithm:
 \f[
-ln(C_{sl})={\gamma}ln(C_s),\qquad C_s\ge0\ 
+ln(C_{sl})={\gamma}ln(C_s),\qquad C_s\ge0\
 \f]
 It can be seen that there is a linear relationship between \f$ln(C_s)\f$ and \f$ln(C_{sl})\f$. It can be considered that the formula is an approximation of a polynomial relationship, that is, there exists a polynomial $f$, which makes[2]:
 \f[
@@ -274,7 +274,7 @@ b=polyfit(ln(B_s),ln(B_{dl}))\\
 \f]
 Note that the parameter of $ln$ cannot be 0. Therefore, we need to delete the channels whose values are 0 from $R_s$ and $R_{dl}$, $G_s$ and $G_{dl}$, $B_s$ and $B_{dl}$.
 
-Therefore: 
+Therefore:
 
 \f[
 ln(R_{sl})=r(ln(R_s)), \qquad R_s>0\\
@@ -285,11 +285,11 @@ ln(B_{sl})=b(ln(B_s)),\qquad B_s>0\\
 B_{sl}=0, \qquad B_s=0\\
 \f]
 
-For grayscale polynomials, there are also: 
+For grayscale polynomials, there are also:
 \f[
 f=polyfit(ln(G_{sl}),ln(G_{dl}))
 \f]
-and: 
+and:
 \f[
 ln(C_{sl})=f(ln(C_s)), \qquad C_s>0\\
 C_sl=0, \qquad C_s=0
@@ -309,11 +309,11 @@ enum LINEAR_TYPE
            colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
 enum DISTANCE_TYPE
 {
-    CIE76,                      ///The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates. 
+    CIE76,                      ///The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
     CIE94_GRAPHIC_ARTS,        ///The 1976 definition was extended to address perceptual non-uniformities.
-    CIE94_TEXTILES,             
+    CIE94_TEXTILES,
     CIE2000,
-    CMC_1TO1,                   //In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model. 
+    CMC_1TO1,                   //In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
     CMC_2TO1,
     RGB,
     RGBL
@@ -364,7 +364,7 @@ public:
             @param colored mask of colored color
         */
     ColorCorrectionModel(Mat src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
-    
+
         /** @brief set ColorSpace
             @param cs_ the absolute color space that detected colors convert to;\n
             NOTICE: it should be some RGB color space;\n
@@ -380,7 +380,7 @@ public:
             default: CCM_3x3;\n
         */
     CV_WRAP void setCCM(CCM_TYPE ccm_type);
-    /** @brief set Distance 
+    /** @brief set Distance
         @param distance the type of color distance;\n
             Supported list:"CIE2000"; "CIE94_GRAPHIC_ARTS";"CIE94_TEXTILES";
                 "CIE76";

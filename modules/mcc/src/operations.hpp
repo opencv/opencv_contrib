@@ -31,7 +31,6 @@
 
 #include <functional>
 #include <vector>
-//#include "opencv2/mcc/utils.hpp"
 #include "utils.hpp"
 
 namespace cv
