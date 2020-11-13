@@ -364,8 +364,7 @@ public:
             @param colored mask of colored color
         */
     ColorCorrectionModel(Mat src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
-    CV_WRAP class Impl;
-    CV_WRAP Ptr<Impl> p;
+    
         /** @brief set ColorSpace
             @param cs_ the absolute color space that detected colors convert to;\n
             NOTICE: it should be some RGB color space;\n
@@ -482,7 +481,9 @@ public:
     //     @return the output array, type of cv::Mat.
     // */
     CV_WRAP Mat infer(const Mat& img, bool islinear = false);
-
+private:
+    CV_WRAP class Impl;
+    CV_WRAP Ptr<Impl> p;
 
 };
 
