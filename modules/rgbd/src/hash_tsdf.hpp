@@ -176,7 +176,7 @@ public:
 
     cv::UMat _pixNorms;
     cv::Mat volUnitsData;
-    VolumesTable volumeUnits;
+    VolumesTable _indexes;
 };
 #endif
 

@@ -387,11 +387,26 @@ size_t calc_hash(Vec3i x)
 VolumesTable::VolumesTable()
 {
     this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
+    for (int i = 0; i < volumes.size().height; i++)
+    {
+        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        v.idx = nan3;
+        v.row = -1;
+        v.nextVolumeRow = -1;
+    }
+    /*
+    this->volumes.forEach<Volume_NODE>([](Volume_NODE& v, const int*)
+        {
+            v.idx = nan3;
+            v.row = -1;
+            v.nextVolumeRow = -1;
+        });
+    */
 }
 
 void VolumesTable::update(Vec3i indx)
 {
-    size_t hash = calc_hash(indx) / hash_divisor;
+    size_t hash = calc_hash(indx) % hash_divisor;
     int num  = 1;
     size_t start = hash * num * list_size;
     size_t i = start;
@@ -406,6 +421,7 @@ void VolumesTable::update(Vec3i indx)
         {
             v.idx = indx;
             v.nextVolumeRow = getNextVolume(hash, num, i);
+            indexes.push_back(indx);
             return;
         }
         i = v.nextVolumeRow;
@@ -414,7 +430,7 @@ void VolumesTable::update(Vec3i indx)
 
 void VolumesTable::update(Vec3i indx, int row)
 {
-    size_t hash = calc_hash(indx) / hash_divisor;
+    size_t hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     size_t start = hash * num * list_size;
     size_t i = start;
@@ -433,6 +449,7 @@ void VolumesTable::update(Vec3i indx, int row)
             v.idx = indx;
             v.row = row;
             v.nextVolumeRow = getNextVolume(hash, num, i);
+            indexes.push_back(indx);
             return;
         }
         i = v.nextVolumeRow;
@@ -466,15 +483,17 @@ void VolumesTable::expand()
     this->buffferNums++;
 }
 
-int VolumesTable::find_Volume(Vec3i indx)
+int VolumesTable::find_Volume(Vec3i indx) const
 {
-    size_t hash = calc_hash(indx) / hash_divisor;
+    size_t hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     size_t i = hash * num * list_size;
-
+    //std::cout << "1" << std::endl;
     while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        //std::cout << "i = " << i << std::endl;
+        Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
+        //std::cout << "  " << v.idx << std::endl;
         if (v.idx == indx)
             return v.row;
         //find nan cheking for int or Vec3i 

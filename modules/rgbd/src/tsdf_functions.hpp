@@ -61,6 +61,7 @@ public:
     int buffferNums  = 1;
 
     cv::Mat volumes;
+    std::vector<Vec3i> indexes;
 
     VolumesTable();
     ~VolumesTable() {};
@@ -70,7 +71,7 @@ public:
     void update(Vec3i indx, int row);
     void expand();
     int getNextVolume(int hash, int& num, int i);
-    int find_Volume(Vec3i indx);
+    int find_Volume(Vec3i indx) const;
     bool isExist(Vec3i indx);
 };
 
