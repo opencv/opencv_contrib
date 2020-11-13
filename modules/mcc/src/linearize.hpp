@@ -29,25 +29,12 @@
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
-//#include "opencv2/mcc/color.hpp"
 #include "color.hpp"
 #include "opencv2/mcc/ccm.hpp"
 namespace cv
 {
 namespace ccm
 {
-
-// /** @brief Enum of the possible types of linearization.
-// */
-// enum LINEAR_TYPE
-// {
-//     IDENTITY_,
-//     GAMMA,
-//     COLORPOLYFIT,
-//     COLORLOGPOLYFIT,
-//     GRAYPOLYFIT,
-//     GRAYLOGPOLYFIT
-// };
 
 /** @brief Polyfit model.
 */

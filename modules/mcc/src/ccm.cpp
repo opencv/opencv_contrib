@@ -25,7 +25,7 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-//#include "precomp.hpp"
+
 #include "opencv2/mcc/ccm.hpp"
 #include "linearize.hpp"
 namespace cv
@@ -102,21 +102,7 @@ namespace ccm
         */
         void fitting(void);
 
-        /** @brief Infer using fitting ccm.
-            @param img the input image, type of cv::Mat.
-            @param islinear default false.
-            @return the output array, type of cv::Mat.
-        */
-     //   Mat infer(const Mat& img, bool islinear = false);
 
-        /** @brief Infer image and output as an BGR image with uint8 type.
-                 mainly for test or debug.
-                input size and output size should be 255.
-            @param img_ image to infer, type of cv::Mat.
-            @param islinear if linearize or not.
-            @return the output array, type of cv::Mat.
-        */
-      //  Mat inferImage(Mat& img_, bool islinear = false);
         void get_color(Mat& img_, bool islinear = false);
         void get_color(CONST_COLOR constcolor);
         void get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_);
