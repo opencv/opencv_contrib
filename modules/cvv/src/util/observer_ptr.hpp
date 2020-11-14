@@ -11,6 +11,7 @@
 #include <cstddef>   //size_t
 #include <cstdint>   // [u]intXX_t
 #include <algorithm> // since some people like to forget that one
+#include <stdexcept>
 
 namespace cvv
 {
