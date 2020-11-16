@@ -72,8 +72,8 @@ public:
     {
         impl.init(image, boundingBox);
         model = impl.model;
-        sampler = makePtr<TrackerSampler>();
-        featureSet = makePtr<TrackerFeatureSet>();
+        sampler = makePtr<TrackerContribSampler>();
+        featureSet = makePtr<TrackerContribFeatureSet>();
         isInit = true;
         return true;
     }

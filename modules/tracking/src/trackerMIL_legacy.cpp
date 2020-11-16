@@ -39,6 +39,7 @@
  //
  //M*/
 
+#include "precomp.hpp"
 #include "opencv2/tracking/tracking_legacy.hpp"
 
 namespace cv {
@@ -49,36 +50,41 @@ namespace impl {
 class TrackerMILImpl CV_FINAL : public legacy::TrackerMIL
 {
 public:
-    cv::tracking::impl::TrackerMILImpl impl;
+    Ptr<cv::TrackerMIL> impl;
+    legacy::TrackerMIL::Params params;
 
     TrackerMILImpl(const legacy::TrackerMIL::Params &parameters)
-        : impl(parameters)
+        : impl(cv::TrackerMIL::create(parameters))
+        , params(parameters)
     {
         isInit = false;
     }
 
     void read(const FileNode& fn) CV_OVERRIDE
     {
-        static_cast<legacy::TrackerMIL::Params&>(impl.params).read(fn);
+        params.read(fn);
+        CV_Error(Error::StsNotImplemented, "Can't update legacy tracker wrapper");
     }
     void write(FileStorage& fs) const CV_OVERRIDE
     {
-        static_cast<const legacy::TrackerMIL::Params&>(impl.params).write(fs);
+        params.write(fs);
     }
 
-    bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE
+    bool initImpl(const Mat& image, const Rect2d& boundingBox2d) CV_OVERRIDE
     {
-        impl.init(image, boundingBox);
-        model = impl.model;
-        featureSet = impl.featureSet;
-        sampler = impl.sampler;
+        int x1 = cvRound(boundingBox2d.x);
+        int y1 = cvRound(boundingBox2d.y);
+        int x2 = cvRound(boundingBox2d.x + boundingBox2d.width);
+        int y2 = cvRound(boundingBox2d.y + boundingBox2d.height);
+        Rect boundingBox = Rect(x1, y1, x2 - x1, y2 - y1) & Rect(Point(0, 0), image.size());
+        impl->init(image, boundingBox);
         isInit = true;
         return true;
     }
     bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE
     {
         Rect bb;
-        bool res = impl.update(image, bb);
+        bool res = impl->update(image, bb);
         boundingBox = bb;
         return res;
     }

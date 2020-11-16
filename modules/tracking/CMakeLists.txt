@@ -22,3 +22,7 @@ ocv_define_module(tracking
 )
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow /wd4458)
+
+if(TARGET opencv_test_${name})
+  ocv_target_include_directories(opencv_test_${name} "${OpenCV_SOURCE_DIR}/modules")  # use common files from video tests
+endif()

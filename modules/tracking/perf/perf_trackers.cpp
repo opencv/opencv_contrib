@@ -87,12 +87,6 @@ void Tracking::runTrackingTest(const Ptr<Tracker>& tracker, const TrackingParams
 
 //==================================================================================================
 
-PERF_TEST_P(Tracking, MIL, testing::ValuesIn(getTrackingParams()))
-{
-    auto tracker = TrackerMIL::create();
-    runTrackingTest<Rect>(tracker, GetParam());
-}
-
 PERF_TEST_P(Tracking, Boosting, testing::ValuesIn(getTrackingParams()))
 {
     auto tracker = legacy::TrackerBoosting::create();
@@ -103,17 +97,6 @@ PERF_TEST_P(Tracking, TLD, testing::ValuesIn(getTrackingParams()))
 {
     auto tracker = legacy::TrackerTLD::create();
     runTrackingTest(tracker, GetParam());
-}
-
-PERF_TEST_P(Tracking, GOTURN, testing::ValuesIn(getTrackingParams()))
-{
-    std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
-    std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
-    TrackerGOTURN::Params params;
-    params.modelTxt = model;
-    params.modelBin = weights;
-    auto tracker = TrackerGOTURN::create(params);
-    runTrackingTest<Rect>(tracker, GetParam());
 }
 
 }} // namespace
