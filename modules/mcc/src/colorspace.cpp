@@ -58,7 +58,6 @@ bool ColorSpace::relate(const ColorSpace& other) const {
 
 Operations ColorSpace::relation(const ColorSpace& /*other*/) const {
   return Operations::get_IDENTITY_OPS();
-  //return IDENTITY_OPS;
 };
 
 bool ColorSpace::operator<(const ColorSpace& other) const {
@@ -72,7 +71,6 @@ bool ColorSpace::operator<(const ColorSpace& other) const {
  */
 Operations RGBBase_::relation(const ColorSpace& other) const {
   if (linear == other.linear) {
-    //return IDENTITY_OPS;
     return Operations::get_IDENTITY_OPS();
   }
   if (linear) {
@@ -335,8 +333,7 @@ Mat XYZ::cam_(IO sio, IO dio, CAM method) const {
     return cams[std::make_tuple(dio, sio, method)];
   }
 
-  // Function from http
-  // ://www.brucelindbloom.com/index.html?ColorCheckerRGB.html.
+  // Function from http://www.brucelindbloom.com/index.html?ColorCheckerRGB.html.
   Mat XYZws = Mat(illuminants.find(dio)->second);
   Mat XYZWd = Mat(illuminants.find(sio)->second);
   Mat MA = MAs.at(method)[0];

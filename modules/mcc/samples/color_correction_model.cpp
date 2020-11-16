@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
         // Vec3d(63.6839981, 10.2930002, 16.7639999));
 
         // ColorCorrectionModel model8(src,ref,Lab_D50_2);
+        // model8.run();
         //! [reference_color_values]
 
         //! [make_color_correction]
@@ -138,7 +139,7 @@ int main(int argc, char *argv[])
         string baseName = filename.substr(0, dotIndex);
         string ext = filename.substr(dotIndex+1, filename.length()-dotIndex);
         string calibratedFilePath = baseName + ".calibrated." + ext;
-        imwrite(calibratedFilePath, calibratedImage);
+        imwrite(calibratedFilePath, out_img);
         //! [Save_calibrated_image]
 
     }
