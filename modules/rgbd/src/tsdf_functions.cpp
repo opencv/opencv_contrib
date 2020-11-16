@@ -394,14 +394,6 @@ VolumesTable::VolumesTable()
         v.row = -1;
         v.nextVolumeRow = -1;
     }
-    /*
-    this->volumes.forEach<Volume_NODE>([](Volume_NODE& v, const int*)
-        {
-            v.idx = nan3;
-            v.row = -1;
-            v.nextVolumeRow = -1;
-        });
-    */
 }
 
 void VolumesTable::update(Vec3i indx)
@@ -417,10 +409,11 @@ void VolumesTable::update(Vec3i indx)
         if (v.idx == indx)
             return;
         //find nan cheking for int or Vec3i 
-        if (isNaN(Point3i(v.idx)))
+        //if (isNaN(Point3i(v.idx)))
+        if (v.idx == Vec3i(nan3))
         {
             v.idx = indx;
-            v.nextVolumeRow = getNextVolume(hash, num, i);
+            v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
             return;
         }
@@ -444,11 +437,12 @@ void VolumesTable::update(Vec3i indx, int row)
             return;
         }
         //find nan cheking for int or Vec3i 
-        if (isNaN(Point3i(v.idx)))
+        //if (isNaN(Point3i(v.idx)))
+        if (v.idx == Vec3i(nan3))
         {
             v.idx = indx;
             v.row = row;
-            v.nextVolumeRow = getNextVolume(hash, num, i);
+            v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
             return;
         }
@@ -456,11 +450,11 @@ void VolumesTable::update(Vec3i indx, int row)
     }
 }
 
-int VolumesTable::getNextVolume(int hash, int& num, int i)
+int VolumesTable::getNextVolume(int hash, int& num, int i, size_t start)
 {
-    if (i % list_size == 0)
+    if (i != start && i % list_size == 0)
     {
-        if (num <= buffferNums)
+        if (num < buffferNums)
         {
             num++;
         }
@@ -473,7 +467,7 @@ int VolumesTable::getNextVolume(int hash, int& num, int i)
     }
     else
     {
-        return i++;
+        return i+1;
     }
 }
 
@@ -485,19 +479,20 @@ void VolumesTable::expand()
 
 int VolumesTable::find_Volume(Vec3i indx) const
 {
+    //std::cout << "find_Volume -> ";
     size_t hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     size_t i = hash * num * list_size;
-    //std::cout << "1" << std::endl;
+    //std::cout << " [find_Volume]"; // << std::endl;
     while (i != -1)
     {
-        //std::cout << "i = " << i << std::endl;
         Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
-        //std::cout << "  " << v.idx << std::endl;
+        //std::cout << " | i = " << i << " idx=" << v.idx << " row=" << v.row << " next=" << v.nextVolumeRow << std::endl;
         if (v.idx == indx)
             return v.row;
         //find nan cheking for int or Vec3i 
-        if (isNaN(Point3i(v.idx)))
+        //if (isNaN(Point3i(v.idx)))
+        if (v.idx == Vec3i(nan3))
             return -2;
         i = v.nextVolumeRow;
     }
@@ -505,6 +500,7 @@ int VolumesTable::find_Volume(Vec3i indx) const
 }
 bool VolumesTable::isExist(Vec3i indx)
 {
+    //std::cout << "isExist -> ";
     if (this->find_Volume(indx) == -2)
         return false;
     return true;
