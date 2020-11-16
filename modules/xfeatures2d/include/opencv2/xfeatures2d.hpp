@@ -966,7 +966,7 @@ class CV_EXPORTS_W TBMR : public AffineFeature2D
 {
 public:
     CV_WRAP static Ptr<TBMR> create(int min_area = 60,
-        float max_area_relative = 0.01,
+        float max_area_relative = 0.01f,
         float scale_factor = 1.25f,
         int n_scales = -1);
 
