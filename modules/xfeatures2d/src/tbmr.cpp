@@ -99,12 +99,17 @@ class TBMR_Impl CV_FINAL : public TBMR
         }; // {-1,0}, {0,-1}, {0,1}, {1,0} yx
         std::array<Vec2i, 4> offsetsv = { Vec2i(0, -1), Vec2i(-1, 0),
                                           Vec2i(1, 0), Vec2i(0, 1) }; //  xy
-
-        uint *zpar = (uint *)malloc(imSize * sizeof(uint));
-        uint *root = (uint *)malloc(imSize * sizeof(uint));
-        uint *rank = (uint *)calloc(imSize, sizeof(uint));
+        AutoBuffer<uint> zparb(imSize);
+        AutoBuffer<uint> rootb(imSize);
+        AutoBuffer<uint> rankb(imSize);
+        memset(rankb.data(), 0, imSize * sizeof(uint));
+        uint* zpar = zparb.data();
+        uint *root = rootb.data();
+        uint *rank = rankb.data();
         parent = Mat(rs, cs, CV_32S); // unsigned
-        bool *dejaVu = (bool *)calloc(imSize, sizeof(bool));
+        AutoBuffer<bool> dejaVub(imSize);
+        memset(dejaVub.data(), 0, imSize * sizeof(bool));
+        bool* dejaVu = dejaVub.data();
 
         const uint *S_ptr = S.ptr<const uint>();
         uint *parent_ptr = parent.ptr<uint>();
@@ -179,11 +184,6 @@ class TBMR_Impl CV_FINAL : public TBMR
                 }
             }
         }
-
-        free(zpar);
-        free(root);
-        free(rank);
-        free(dejaVu);
     }
 
     void calculateTBMRs(const Mat &image, std::vector<Elliptic_KeyPoint> &tbmrs,
@@ -229,9 +229,13 @@ class TBMR_Impl CV_FINAL : public TBMR
         // as final TBMRs
         //--------------------------------------------------------------------------
 
-        uint *numSons = (uint *)calloc(imSize, sizeof(uint));
+        AutoBuffer<uint> numSonsb(imSize);
+        memset(numSonsb.data(), 0, imSize * sizeof(uint));
+        uint* numSons = numSonsb.data();
         uint vecNodesSize = imaAttribute[S_ptr[0]][0];               // area
-        uint *vecNodes = (uint *)calloc(vecNodesSize, sizeof(uint)); // area
+        AutoBuffer<uint> vecNodesb(vecNodesSize);
+        memset(vecNodesb.data(), 0, vecNodesSize * sizeof(uint));
+        uint *vecNodes = vecNodesb.data(); // area
         uint numNodes = 0;
 
         // leaf to root propagation to select the canonized nodes
@@ -246,10 +250,14 @@ class TBMR_Impl CV_FINAL : public TBMR
             }
         }
 
-        bool *isSeen = (bool *)calloc(imSize, sizeof(bool));
+        AutoBuffer<bool> isSeenb(imSize);
+        memset(isSeenb.data(), 0, imSize * sizeof(bool));
+        bool *isSeen = isSeenb.data();
 
         // parent of critical leaf node
-        bool *isParentofLeaf = (bool *)calloc(imSize, sizeof(bool));
+        AutoBuffer<bool> isParentofLeafb(imSize);
+        memset(isParentofLeafb.data(), 0, imSize * sizeof(bool));
+        bool* isParentofLeaf = isParentofLeafb.data();
 
         for (uint i = 0; i < vecNodesSize; i++)
         {
@@ -259,7 +267,8 @@ class TBMR_Impl CV_FINAL : public TBMR
         }
 
         uint numTbmrs = 0;
-        uint *vecTbmrs = (uint *)malloc(numNodes * sizeof(uint));
+        AutoBuffer<uint> vecTbmrsb(numNodes);
+        uint* vecTbmrs = vecTbmrsb.data();
         for (uint i = 0; i < vecNodesSize; i++)
         {
             uint p = vecNodes[i];
@@ -439,12 +448,6 @@ class TBMR_Impl CV_FINAL : public TBMR
                 }
             }
         }
-
-        free(numSons);
-        free(vecNodes);
-        free(isSeen);
-        free(isParentofLeaf);
-        free(vecTbmrs);
         //---------------------------------------------
     }
 
