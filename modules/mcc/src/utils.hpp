@@ -149,7 +149,7 @@ Mat distanceWise(Mat& src, Mat& ref, F&& lambda)
 
 Mat multiple(const Mat& xyz, const Mat& ccm);
 
-const static Mat m_gray = (Mat_<double>(3, 1) << 0.2126, 0.7152, 0.0722);
+static const Mat m_gray = (Mat_<double>(3, 1) << 0.2126, 0.7152, 0.0722);
 
 }  // namespace ccm
 }  // namespace cv

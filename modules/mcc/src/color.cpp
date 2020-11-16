@@ -159,7 +159,7 @@ std::shared_ptr<Color> GetColor::get_color(CONST_COLOR const_color) {
     /** @brief Data is from https://www.imatest.com/wp-content/uploads/2011/11/Lab-data-Iluminate-D65-D50-spectro.xls
            see Miscellaneous.md for details.
 */
-const double ColorChecker2005_LAB_D50_2 [24][3] =
+static const double ColorChecker2005_LAB_D50_2 [24][3] =
    { {37.986, 13.555, 14.059},
     {65.711, 18.13, 17.81},
     {49.927, -4.88, -21.925},
@@ -185,12 +185,12 @@ const double ColorChecker2005_LAB_D50_2 [24][3] =
     {35.656, -0.421, -1.231},
     {20.461, -0.079, -0.973}};
 
-const uchar ColorChecker2005_COLORED_MASK[24] =
+static const uchar ColorChecker2005_COLORED_MASK[24] =
     {1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1,
     0, 0, 0, 0, 0, 0};
-const double Vinyl_LAB_D50_2[18][3] =
+static const double Vinyl_LAB_D50_2[18][3] =
    { {100, 0.00520000001, -0.0104},
     {73.0833969, -0.819999993, -2.02099991},
     {62.493, 0.425999999, -2.23099995},
@@ -209,11 +209,11 @@ const double Vinyl_LAB_D50_2[18][3] =
     {51.2859993, 48.4700012, -15.0579996},
     {68.70700069999999, 12.2959995, 16.2129993},
     {63.6839981, 10.2930002, 16.7639999}};
-const uchar Vinyl_COLORED_MASK[18]=
+static const uchar Vinyl_COLORED_MASK[18]=
    { 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1};
-const double DigitalSG_LAB_D50_2[140][3] =
+static const double DigitalSG_LAB_D50_2[140][3] =
    { {96.55,-0.91,0.57},
     {6.43,-0.06,-0.41},
     {49.7,-0.18,0.03},
