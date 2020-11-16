@@ -1076,7 +1076,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         }
         //mutex.unlock();
     };
-    
+
     //parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
     AllocateVolumeUnitsInvoker(allocateRange);
 
@@ -1098,7 +1098,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         //Vec3i tsdf_idx = Vec3i(1, 1, 1);
         //VolumeIndex idx = 0;
         //std::cout << " " << idx;
-        
+
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
 
         poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
@@ -1180,11 +1180,11 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             //VolumeIndex idx = find_idx(indexes, tsdf_idx);
             VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
             //std::cout << " " << idx;// << std::endl;
-            
+
             if (idx < 0 || idx == _lastVolIndex - 1) return;
-            
+
             bool& isActive = activities.at<bool>(idx, 0);
-            
+
             if (isActive)
             {
                 //! The volume unit should already be added into the Volume from the allocator
@@ -1193,7 +1193,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
                     Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
                     depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
-                
+
                 //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
                 //! Ensure all active volumeUnits are set to inactive for next integration
                 isActive = false;
