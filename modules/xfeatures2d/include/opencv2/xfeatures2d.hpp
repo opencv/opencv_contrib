@@ -1044,7 +1044,7 @@ Features are ellipses (similar to MSER, however a MSER feature can never be a
 TBMR feature and vice versa).
 
 */
-class CV_EXPORTS_W TBMR : public AffineFeature2D
+class CV_EXPORTS TBMR : public AffineFeature2D
 {
   public:
     CV_WRAP static Ptr<TBMR> create(int min_area = 60,
