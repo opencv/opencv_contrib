@@ -398,10 +398,10 @@ VolumesTable::VolumesTable()
 
 void VolumesTable::update(Vec3i indx)
 {
-    size_t hash = calc_hash(indx) % hash_divisor;
+    int hash = int(calc_hash(indx) % hash_divisor);
     int num  = 1;
-    size_t start = hash * num * list_size;
-    int i = (int) start;
+    int start = hash * num * list_size;
+    int i = start;
 
     while (i != -1)
     {
@@ -423,10 +423,10 @@ void VolumesTable::update(Vec3i indx)
 
 void VolumesTable::update(Vec3i indx, int row)
 {
-    size_t hash = calc_hash(indx) % hash_divisor;
+    int hash = int(calc_hash(indx) % hash_divisor);
     int num = 1;
-    size_t start = hash * num * list_size;
-    int i = (int) start;
+    int start = hash * num * list_size;
+    int i = start;
 
     while (i != -1)
     {
@@ -450,9 +450,9 @@ void VolumesTable::update(Vec3i indx, int row)
     }
 }
 
-int VolumesTable::getNextVolume(int hash, int& num, int i, size_t start)
+int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 {
-    if (i != int(start) && i % list_size == 0)
+    if (i != start && i % list_size == 0)
     {
         if (num < buffferNums)
         {
@@ -480,9 +480,9 @@ void VolumesTable::expand()
 int VolumesTable::find_Volume(Vec3i indx) const
 {
     //std::cout << "find_Volume -> ";
-    size_t hash = calc_hash(indx) % hash_divisor;
+    int hash = int(calc_hash(indx) % hash_divisor);
     int num = 1;
-    int i = int(hash) * num * list_size;
+    int i = hash * num * list_size;
     //std::cout << " [find_Volume]"; // << std::endl;
     while (i != -1)
     {

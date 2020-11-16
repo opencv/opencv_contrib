@@ -70,7 +70,7 @@ public:
     void update(Vec3i indx);
     void update(Vec3i indx, int row);
     void expand();
-    int getNextVolume(int hash, int& num, int i, size_t start);
+    int getNextVolume(int hash, int& num, int i, int start);
     int find_Volume(Vec3i indx) const;
     bool isExist(Vec3i indx);
 };
