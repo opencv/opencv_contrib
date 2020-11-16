@@ -80,46 +80,46 @@ enum CONST_COLOR {
     DigitalSG
 };
 enum COLOR_SPACE {
-    sRGB,                       ///<https://en.wikipedia.org/wiki/SRGB
-    sRGBL,                      ///<https://en.wikipedia.org/wiki/SRGB
-    AdobeRGB,                   ///<https://en.wikipedia.org/wiki/Adobe_RGB_color_space
-    AdobeRGBL,                  ///<https://en.wikipedia.org/wiki/Adobe_RGB_color_space
-    WideGamutRGB,               ///<https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space
-    WideGamutRGBL,              ///<https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space
-    ProPhotoRGB,                ///<https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space
-    ProPhotoRGBL,               ///<https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space
-    DCI_P3_RGB,                 ///<https://en.wikipedia.org/wiki/DCI-P3
-    DCI_P3_RGBL,                ///<https://en.wikipedia.org/wiki/DCI-P3
-    AppleRGB,                   ///<https://en.wikipedia.org/wiki/RGB_color_space
-    AppleRGBL,                  ///<https://en.wikipedia.org/wiki/RGB_color_space
-    REC_709_RGB,                ///<https://en.wikipedia.org/wiki/Rec._709
-    REC_709_RGBL,               ///<https://en.wikipedia.org/wiki/Rec._709
-    REC_2020_RGB,               ///<https://en.wikipedia.org/wiki/Rec._2020
-    REC_2020_RGBL,              ///<https://en.wikipedia.org/wiki/Rec._2020
-    XYZ_D65_2,                  ///<https://en.wikipedia.org/wiki/CIE_1931_color_space
-    XYZ_D65_10,
-    XYZ_D50_2,
-    XYZ_D50_10,
-    XYZ_A_2,
-    XYZ_A_10,
-    XYZ_D55_2,
-    XYZ_D55_10,
-    XYZ_D75_2,
-    XYZ_D75_10,
-    XYZ_E_2,
-    XYZ_E_10,
-    Lab_D65_2,                  ///<https://en.wikipedia.org/wiki/CIELAB_color_space
-    Lab_D65_10,
-    Lab_D50_2,
-    Lab_D50_10,
-    Lab_A_2,
-    Lab_A_10,
-    Lab_D55_2,
-    Lab_D55_10,
-    Lab_D75_2,
-    Lab_D75_10,
-    Lab_E_2,
-    Lab_E_10,
+    sRGB,                       ///<https://en.wikipedia.org/wiki/SRGB, RGB color space
+    sRGBL,                      ///<https://en.wikipedia.org/wiki/SRGB, linear RGB color space
+    AdobeRGB,                   ///<https://en.wikipedia.org/wiki/Adobe_RGB_color_space, RGB color space
+    AdobeRGBL,                  ///<https://en.wikipedia.org/wiki/Adobe_RGB_color_space, linear RGB color space
+    WideGamutRGB,               ///<https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space, RGB color space
+    WideGamutRGBL,              ///<https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space, linear RGB color space
+    ProPhotoRGB,                ///<https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space, RGB color space
+    ProPhotoRGBL,               ///<https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space, linear RGB color space
+    DCI_P3_RGB,                 ///<https://en.wikipedia.org/wiki/DCI-P3, RGB color space
+    DCI_P3_RGBL,                ///<https://en.wikipedia.org/wiki/DCI-P3, linear RGB color space
+    AppleRGB,                   ///<https://en.wikipedia.org/wiki/RGB_color_space, RGB color space
+    AppleRGBL,                  ///<https://en.wikipedia.org/wiki/RGB_color_space, linear RGB color space
+    REC_709_RGB,                ///<https://en.wikipedia.org/wiki/Rec._709, RGB color space
+    REC_709_RGBL,               ///<https://en.wikipedia.org/wiki/Rec._709, linear RGB color space
+    REC_2020_RGB,               ///<https://en.wikipedia.org/wiki/Rec._2020, RGB color space
+    REC_2020_RGBL,              ///<https://en.wikipedia.org/wiki/Rec._2020, linear RGB color space
+    XYZ_D65_2,                  ///<https://en.wikipedia.org/wiki/CIE_1931_color_space, non-RGB color space
+    XYZ_D65_10,                 ///non-RGB color space
+    XYZ_D50_2,                  ///non-RGB color space
+    XYZ_D50_10,                 ///non-RGB color space
+    XYZ_A_2,                    ///non-RGB color space
+    XYZ_A_10,                   ///non-RGB color space
+    XYZ_D55_2,                  ///non-RGB color space
+    XYZ_D55_10,                 ///non-RGB color space
+    XYZ_D75_2,                  ///non-RGB color space
+    XYZ_D75_10,                 ///non-RGB color space
+    XYZ_E_2,                    ///non-RGB color space
+    XYZ_E_10,                   ///non-RGB color space
+    Lab_D65_2,                  ///<https://en.wikipedia.org/wiki/CIELAB_color_space, non-RGB color space
+    Lab_D65_10,                 ///non-RGB color space
+    Lab_D50_2,                  ///non-RGB color space
+    Lab_D50_10,                 ///non-RGB color space
+    Lab_A_2,                    ///non-RGB color space
+    Lab_A_10,                   ///non-RGB color space
+    Lab_D55_2,                  ///non-RGB color space
+    Lab_D55_10,                 ///non-RGB color space
+    Lab_D75_2,                  ///non-RGB color space
+    Lab_D75_10,                 ///non-RGB color space
+    Lab_E_2,                    ///non-RGB color space
+    Lab_E_10,                   ///non-RGB color space
 };
 /** @brief ## Linearization
 
