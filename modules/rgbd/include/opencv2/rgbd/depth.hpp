@@ -321,7 +321,7 @@ namespace rgbd
    */
   CV_EXPORTS_W
   void
-  rescaleDepth(InputArray in, int depth, OutputArray out);
+  rescaleDepth(InputArray in, int depth, OutputArray out, double depth_factor = 1000.0);
 
   /** Object that can compute planes in an image
    */
