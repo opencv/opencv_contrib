@@ -401,7 +401,7 @@ void VolumesTable::update(Vec3i indx)
     size_t hash = calc_hash(indx) % hash_divisor;
     int num  = 1;
     size_t start = hash * num * list_size;
-    size_t i = start;
+    int i = (int) start;
 
     while (i != -1)
     {
@@ -426,7 +426,7 @@ void VolumesTable::update(Vec3i indx, int row)
     size_t hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     size_t start = hash * num * list_size;
-    size_t i = start;
+    int i = (int) start;
 
     while (i != -1)
     {
@@ -482,7 +482,7 @@ int VolumesTable::find_Volume(Vec3i indx) const
     //std::cout << "find_Volume -> ";
     size_t hash = calc_hash(indx) % hash_divisor;
     int num = 1;
-    size_t i = hash * num * list_size;
+    int i = int(hash) * num * list_size;
     //std::cout << " [find_Volume]"; // << std::endl;
     while (i != -1)
     {
