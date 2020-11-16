@@ -452,7 +452,7 @@ void VolumesTable::update(Vec3i indx, int row)
 
 int VolumesTable::getNextVolume(int hash, int& num, int i, size_t start)
 {
-    if (i != start && i % list_size == 0)
+    if (i != int(start) && i % list_size == 0)
     {
         if (num < buffferNums)
         {
