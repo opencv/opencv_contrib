@@ -38,8 +38,6 @@ namespace cv
 namespace ccm
 {
 
-typedef std::function<Mat(Mat)> MatFunc;
-
 /** @brief Operation class contains some operarions used for color space
            conversion containing linear transformation and non-linear transformation
    */
@@ -52,9 +50,7 @@ public:
     MatFunc f;
 
     Operation() : linear(true), M(Mat()) {};
-
     Operation(Mat M_) :linear(true), M(M_) {};
-
     Operation(MatFunc f_) : linear(false), f(f_) {};
     virtual ~Operation() {};
 
@@ -69,11 +65,11 @@ public:
 
     void clear();
     static Operation get_IDENTITY_OP(){
-        return Operation([](Mat x) {return x; });
+        static Operation identity_op([](Mat x) {return x; });
+        return identity_op;
     }
 };
 
-//const Operation IDENTITY_OP([](Mat x) {return x; });
 
 class Operations
 {
@@ -81,9 +77,7 @@ public:
     std::vector<Operation> ops;
 
     Operations() :ops{ } {};
-
     Operations(std::initializer_list<Operation> op) :ops{ op } {};
-
     virtual ~Operations() {};
 
     /** @brief add function will conbine this operation with other transformation operations
@@ -97,8 +91,6 @@ public:
         return Operations{Operation::get_IDENTITY_OP()};
     }
 };
-
-//const Operations IDENTITY_OPS{ IDENTITY_OP };
 
 } // namespace ccm
 } // namespace cv
