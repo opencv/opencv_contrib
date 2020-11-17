@@ -58,7 +58,7 @@ class VolumesTable
 public:
     int hash_divisor = 32768;
     int list_size    = 4;
-    int buffferNums  = 1;
+    int bufferNums  = 1;
 
     cv::Mat volumes;
     std::vector<Vec3i> indexes;

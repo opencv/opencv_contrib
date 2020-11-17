@@ -4,6 +4,8 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
+#define NAN_NUM -2147483648;
+
 typedef __INT8_TYPE__ int8_t;
 
 typedef int8_t TsdfType;
@@ -13,6 +15,13 @@ struct TsdfVoxel
 {
     TsdfType tsdf;
     WeightType weight;
+};
+
+struct Volume_NODE
+{
+    int3 idx;
+    int row;
+    int nextVolumeRow;
 };
 
 static inline TsdfType floatToTsdf(float num)
@@ -191,8 +200,35 @@ __kernel void integrateVolumeUnit(__global const char * depthptr,
     }
 }
 
+uint calc_hash(int3 x)
+{
+    unsigned int seed = 0;
+    uint GOLDEN_RATIO = 0x9e3779b9;
+    seed += x.x + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed += x.y + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed += x.z + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    return seed;
+}
+
+int findVolume(__global struct Volume_NODE * hash_table, int3 indx, int hash_divisor)
+{
+    int hash = calc_hash(indx) % hash_divisor;
+    printf("%d \n", hash);
+    return 1;
+}
+
 __kernel void integrateAllVolumeUnits(__global const char * depthptr,
                         int depth_step, int depth_offset,
-                        int depth_rows, int depth_cols)
+                        int depth_rows, int depth_cols,
+                        __global struct Volume_NODE * hash_table,
+                        int list_size, const int bufferNums, const int hash_divisor)
 {
+    printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
+
+    findVolume(hash_table, hash_table->idx, hash_divisor);
+    hash_table->idx.x = 10;
+    findVolume(hash_table, hash_table->idx, hash_divisor);
+    //printf("%d \n", hash_table->nextVolumeRow);
+    //printf("%d \n", hash_table->row);
+    //printf("%d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
 }

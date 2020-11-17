@@ -971,7 +971,7 @@ void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFa
         dfac,
         truncDist,
         int(maxWeight),
-        ocl::KernelArg::PtrReadOnly(_pixNorms));
+        ocl::KernelArg::PtrReadOnly(_pixNorms)); 
 
     size_t globalSize[2];
     globalSize[0] = (size_t)volumeUnitResolution;
@@ -981,7 +981,7 @@ void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFa
         throw std::runtime_error("Failed to run kernel");
 }
 
-void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth)
+void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
     CV_Assert(!_depth.empty());
@@ -997,10 +997,11 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth)
 
     if (k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
+    std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
+    k.args(ocl::KernelArg::ReadOnly(depth), _indexes.volumes.getUMat(ACCESS_RW),
+       _indexes.list_size, _indexes.bufferNums, _indexes.hash_divisor);
 
-    k.args(ocl::KernelArg::ReadOnly(depth));
-
-    int resol = 50;
+    int resol = 2;
     size_t globalSize[3];
     globalSize[0] = (size_t)resol;
     globalSize[1] = (size_t)resol;
@@ -1008,7 +1009,6 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth)
 
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
-
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -1198,7 +1198,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
     //Integrate(Range(0, (int)_totalVolUnits.size()));
 
-    integrateAllVolumeUnitsGPU(depth);
+    integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
 }
 

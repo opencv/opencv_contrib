@@ -454,7 +454,7 @@ int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 {
     if (i != start && i % list_size == 0)
     {
-        if (num < buffferNums)
+        if (num < bufferNums)
         {
             num++;
         }
@@ -473,8 +473,8 @@ int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 
 void VolumesTable::expand()
 {
-    this->volumes.resize(hash_divisor * (buffferNums + 1));
-    this->buffferNums++;
+    this->volumes.resize(hash_divisor * (bufferNums + 1));
+    this->bufferNums++;
 }
 
 int VolumesTable::find_Volume(Vec3i indx) const
