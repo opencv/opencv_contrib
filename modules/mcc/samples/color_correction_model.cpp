@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
         Mat ccm = model1.getCCM();
         std::cout<<"ccm "<<ccm<<std::endl;
         double loss = model1.getLoss();
+        std::cout<<"loss "<<loss<<std::endl;
         //! [get_ccm_Matrix]
          /* brief More models with different parameters, try it & check the document for details.
         */
