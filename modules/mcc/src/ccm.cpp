@@ -272,8 +272,6 @@ void ColorCorrectionModel::Impl::fitting(void)
     double res = solver->minimize(reshapeccm);
     ccm = reshapeccm.reshape(0, shape/3);
     loss = pow((res / masked_len), 0.5);
-    std::cout << " ccm " << ccm << std::endl;
-    std::cout << " loss " << loss << std::endl;
 }
 
 Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
@@ -390,6 +388,8 @@ void  ColorCorrectionModel::run(){
 Mat ColorCorrectionModel::getCCM() const{
     return p->ccm;
 }
-
+double ColorCorrectionModel::getLoss() const{
+    return p->loss;
+}
 } // namespace ccm
 } // namespace cv

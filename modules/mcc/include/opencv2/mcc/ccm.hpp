@@ -471,6 +471,7 @@ public:
     CV_WRAP void run();
 
     CV_WRAP Mat getCCM() const;
+    CV_WRAP double getLoss() const;
 
     /** @brief Infer using fitting ccm.
         @param img the input image.
