@@ -357,7 +357,7 @@ public:
                     For the list of RGB color spaces supported, see the notes above;\n
             default: sRGB;
         */
-    CV_WRAP void setColorSpace(COLOR_SPACE cs_);
+    CV_WRAP void setColorSpace(COLOR_SPACE cs);
         /** @brief set ccm_type
             @param ccm_type :the shape of color correction matrix(CCM);\n
             Supported list: "CCM_3x3"(3x3 matrix);"CCM_4x3"( 4x3 matrix);\n
@@ -458,9 +458,9 @@ public:
         @return the output array.
     */
     CV_WRAP Mat infer(const Mat& img, bool islinear = false);
+    class Impl;
 private:
-    CV_WRAP class Impl;
-    CV_WRAP Ptr<Impl> p;
+    std::shared_ptr<Impl> p;
 
 };
 

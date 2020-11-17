@@ -47,7 +47,7 @@ public:
     std::string illuminant;
     std::string observer;
     IO(){};
-    IO(std::string illuminant_, std::string observer_) ;
+    IO(std::string illuminant, std::string observer) ;
     virtual ~IO(){};
     bool operator<(const IO& other) const;
     bool operator==(const IO& other) const;

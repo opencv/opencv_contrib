@@ -51,7 +51,7 @@ public:
     and deduct: Ax = y
     See linear.pdf for details
     */
-    Polyfit(Mat x, Mat y, int deg_);
+    Polyfit(Mat x, Mat y, int deg);
     virtual ~Polyfit() {};
     Mat operator()(const Mat& inp);
 
@@ -73,7 +73,7 @@ public:
 
     /** @brief Logpolyfit method.
     */
-    LogPolyfit(Mat x, Mat y, int deg_);
+    LogPolyfit(Mat x, Mat y, int deg);
     virtual ~LogPolyfit() {};
     Mat operator()(const Mat& inp);
 
