@@ -402,6 +402,9 @@ void HistogramPhaseUnwrapping_Impl::unwrapPhaseMap( InputArray wrappedPhaseMap,
         temp.copyTo(mask);
     }
 
+    CV_CheckTypeEQ(wPhaseMap.type(), CV_32FC1, "");
+    CV_CheckTypeEQ(mask.type(), CV_8UC1, "");
+
     computePixelsReliability(wPhaseMap, mask);
     computeEdgesReliabilityAndCreateHistogram();
 
