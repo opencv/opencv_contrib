@@ -28,19 +28,13 @@
 #ifndef __OPENCV_MCC_CCM_HPP__
 #define __OPENCV_MCC_CCM_HPP__
 
-#include <iostream>
-#include <cmath>
-#include <string>
-#include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-// #include "opencv2/mcc/linearize.hpp"
 
 namespace cv
 {
 namespace ccm
 {
-
 
 /** @brief Enum of the possible types of ccm.
 */
@@ -306,7 +300,8 @@ enum LINEAR_TYPE
 };
 
 /** @brief Enum of possibale functions to calculate the distance between
-           colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
+           colors.see https://en.wikipedia.org/wiki/Color_difference for details;
+*/
 enum DISTANCE_TYPE
 {
     CIE76,                      ///The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
@@ -326,19 +321,18 @@ enum DISTANCE_TYPE
 class CV_EXPORTS_W ColorCorrectionModel
 {
 public:
-        Mat CV_WRAP ccm;
-        /** @brief Color Correction Model
-            @param src detected colors of ColorChecker patches;\n
-                        the color type is RGB not BGR, and the color values are in [0, 1];
-                        type is cv::Mat;
-            @param constcolor the Built-in color card;\n
-                        Supported list:
-                                Macbeth(Macbeth ColorChecker) ;
-                                Vinyl(DKK ColorChecker) ;
-                                DigitalSG(DigitalSG ColorChecker with 140 squares);\n
-                        type: enum CONST_COLOR;\n
-        */
-    ColorCorrectionModel(Mat src, CONST_COLOR constcolor);
+    /** @brief Color Correction Model
+        @param src detected colors of ColorChecker patches;\n
+                    the color type is RGB not BGR, and the color values are in [0, 1];
+                    type is cv::Mat;
+        @param constcolor the Built-in color card;\n
+                    Supported list:
+                            Macbeth(Macbeth ColorChecker) ;
+                            Vinyl(DKK ColorChecker) ;
+                            DigitalSG(DigitalSG ColorChecker with 140 squares);\n
+                    type: enum CONST_COLOR;\n
+    */
+    ColorCorrectionModel(const Mat& src, CONST_COLOR constcolor);
      /** @brief Color Correction Model
             @param src detected colors of ColorChecker patches;\n
                         the color type is RGB not BGR, and the color values are in [0, 1];
@@ -350,7 +344,7 @@ public:
                         If the color type is some RGB, the format is RGB not BGR;\n
                         type:enum COLOR_SPACE;
         */
-    ColorCorrectionModel(Mat src, Mat colors, COLOR_SPACE ref_cs);
+    ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs);
     /** @brief Color Correction Model
             @param src detected colors of ColorChecker patches;\n
                         the color type is RGB not BGR, and the color values are in [0, 1];
@@ -363,7 +357,7 @@ public:
                         type:enum COLOR_SPACE;
             @param colored mask of colored color
         */
-    ColorCorrectionModel(Mat src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
+    ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
 
         /** @brief set ColorSpace
             @param cs_ the absolute color space that detected colors convert to;\n
@@ -379,7 +373,7 @@ public:
             type: enum CCM_TYPE;\n
             default: CCM_3x3;\n
         */
-    CV_WRAP void setCCM(CCM_TYPE ccm_type);
+    CV_WRAP void setCCM_TYPE(CCM_TYPE ccm_type);
     /** @brief set Distance
         @param distance the type of color distance;\n
             Supported list:"CIE2000"; "CIE94_GRAPHIC_ARTS";"CIE94_TEXTILES";
@@ -474,6 +468,8 @@ public:
     CV_WRAP void setEpsilon(double epsilon);
     /** @brief make color correction*/
     CV_WRAP void run();
+
+    CV_WRAP Mat getCCM() const;
 
     // /** @brief Infer using fitting ccm.
     //     @param img the input image, type of cv::Mat.

@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
          /* brief More models with different parameters, try it & check the document for details.
         */
         // model1.setColorSpace(sRGB);
-        // model1.setCCM(CCM_3x3);
+        // model1.setCCM_TYPE(CCM_3x3);
         // model1.setDistance(CIE2000);
         // model1.setLinear(GAMMA);
         // model1.setLinearGamma(2.2);

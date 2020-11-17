@@ -302,15 +302,15 @@ void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_){
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_){
     dst.reset( new Color(colors_, *GetCS::get_cs(cs_),colored_));
 }
-ColorCorrectionModel::ColorCorrectionModel(Mat src_, CONST_COLOR constcolor): p(new Impl){
+ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, CONST_COLOR constcolor): p(new Impl){
     p->src = src_;
     p->get_color(constcolor);
 }
-ColorCorrectionModel:: ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE ref_cs_): p(new Impl){
+ColorCorrectionModel:: ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_SPACE ref_cs_): p(new Impl){
     p->src = src_;
     p->get_color(colors_, ref_cs_);
 }
-ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE cs_, Mat colored_): p(new Impl){
+ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_SPACE cs_, Mat colored_): p(new Impl){
     p->src = src_;
     p->get_color(colors_, cs_, colored_);
 }
@@ -318,7 +318,7 @@ ColorCorrectionModel::ColorCorrectionModel(Mat src_, Mat colors_, COLOR_SPACE cs
 void ColorCorrectionModel::setColorSpace(COLOR_SPACE cs_){
     p->cs = *GetCS::get_rgb(cs_);
 }
-void ColorCorrectionModel::setCCM(CCM_TYPE ccm_type_){
+void ColorCorrectionModel::setCCM_TYPE(CCM_TYPE ccm_type_){
     p->ccm_type = ccm_type_;
 }
 void ColorCorrectionModel::setDistance(DISTANCE_TYPE distance_){
@@ -386,8 +386,9 @@ void  ColorCorrectionModel::run(){
         break;
     }
     p->fitting();
-    ccm=p->ccm;
-
+}
+Mat ColorCorrectionModel::getCCM() const{
+    return p->ccm;
 }
 
 } // namespace ccm
