@@ -132,6 +132,7 @@ public:
 
     void integrateVolumeUnitGPU(InputArray _depth, float depthFactor,
         const Matx44f& cameraPose, const Intr& intrinsics, VolumeIndex idx);
+    void integrateAllVolumeUnitsGPU(InputArray _depth);
 
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
@@ -170,7 +171,7 @@ public:
     VolumeIndex _lastVolIndex;
     cv::Mat indexes;
     cv::Mat poses;
-    cv::Mat activities;
+    cv::Mat isActive;
     cv::Mat lastVisibleIndexes;
     cv::Mat _volUnitsData;
 

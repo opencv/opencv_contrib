@@ -191,3 +191,8 @@ __kernel void integrateVolumeUnit(__global const char * depthptr,
     }
 }
 
+__kernel void integrateAllVolumeUnits(__global const char * depthptr,
+                        int depth_step, int depth_offset,
+                        int depth_rows, int depth_cols)
+{
+}

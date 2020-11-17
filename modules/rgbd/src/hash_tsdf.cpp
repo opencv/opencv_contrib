@@ -981,6 +981,36 @@ void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFa
         throw std::runtime_error("Failed to run kernel");
 }
 
+void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth)
+{
+    CV_TRACE_FUNCTION();
+    CV_Assert(!_depth.empty());
+
+    UMat depth = _depth.getUMat();
+    
+    String errorStr;
+    String name = "integrateAllVolumeUnits";
+    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+    String options = "-cl-mad-enable";
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if (k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    k.args(ocl::KernelArg::ReadOnly(depth));
+
+    int resol = 50;
+    size_t globalSize[3];
+    globalSize[0] = (size_t)resol;
+    globalSize[1] = (size_t)resol;
+    globalSize[2] = (size_t)resol;
+
+    if (!k.run(3, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
+}
+
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
 {
     //std::cout << "integrate" << std::endl;
@@ -1093,7 +1123,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         //volUnitsData.at<UMat>(idx, 0) = cv::UMat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     }
 
-    //
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> _totalVolUnits = _indexes.indexes;
     //for (int i = 0; i < indexes.size().height; i++){_totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));}
@@ -1168,6 +1197,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     };
     parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
     //Integrate(Range(0, (int)_totalVolUnits.size()));
+
+    integrateAllVolumeUnitsGPU(depth);
+
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
