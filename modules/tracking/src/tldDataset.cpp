@@ -39,10 +39,13 @@
 //
 //M*/
 
+#include "precomp.hpp"
 #include "opencv2/tracking/tldDataset.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
+
 	namespace tld
 	{
 		char tldRootPath[100];
@@ -182,4 +185,5 @@ namespace cv
 		}
 
 	}
-}
+
+}}}

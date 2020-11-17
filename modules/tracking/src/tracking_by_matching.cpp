@@ -2,6 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "precomp.hpp"
+
 #include <map>
 #include <set>
 #include <string>
@@ -25,7 +27,11 @@
 #define TBM_CHECK_LE(actual, expected) CV_CheckLE(actual, expected, "Assertion error:")
 #define TBM_CHECK_GE(actual, expected) CV_CheckGE(actual, expected, "Assertion error:")
 
-using namespace cv::tbm;
+namespace cv {
+namespace detail {
+inline namespace tracking {
+
+using namespace tbm;
 
 CosDistance::CosDistance(const cv::Size &descriptor_size)
     : descriptor_size_(descriptor_size) {
@@ -1335,3 +1341,5 @@ void TrackerByMatching::PrintConfusionMatrices() const {
         std::cout << cm << std::endl << std::endl;
     }
 }
+
+}}}  // namespace

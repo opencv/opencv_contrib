@@ -41,8 +41,9 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  *  TrackerStateEstimator
@@ -441,4 +442,4 @@ void TrackerStateEstimatorSVM::updateImpl( std::vector<ConfidenceMap>& /*confide
 
 }
 
-} /* namespace cv */
+}}}  // namespace

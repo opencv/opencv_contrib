@@ -45,10 +45,15 @@
 #include "tldDetector.hpp"
 #include "tldUtils.hpp"
 
-namespace cv
-{
-	namespace tld
-	{
+#include "opencv2/tracking/tracking_legacy.hpp"
+
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
+
+using namespace cv::legacy;
+
 		class TrackerTLDModel : public TrackerModel
 		{
 		public:
@@ -84,7 +89,6 @@ namespace cv
 			RNG rng;
 		};
 
-	}
-}
+}}}}  // namespace
 
 #endif

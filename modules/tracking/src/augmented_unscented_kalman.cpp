@@ -42,10 +42,10 @@
 #include "precomp.hpp"
 #include "opencv2/tracking/kalman_filters.hpp"
 
-namespace cv
-{
-namespace tracking
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
+inline namespace kalman_filters {
 
 void AugmentedUnscentedKalmanFilterParams::
     init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
@@ -394,5 +394,4 @@ Ptr<UnscentedKalmanFilter> createAugmentedUnscentedKalmanFilter(const AugmentedU
     return kfu;
 }
 
-} // tracking
-} // cv
+}}}}  // namespace

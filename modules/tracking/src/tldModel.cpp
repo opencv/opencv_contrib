@@ -39,14 +39,14 @@
 //
 //M*/
 
+#include "precomp.hpp"
 #include "tldModel.hpp"
 
-#include <opencv2/core/utility.hpp>
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
 
-namespace cv
-{
-	namespace tld
-	{
 		//Constructor
 		TrackerTLDModel::TrackerTLDModel(TrackerTLD::Params params, const Mat& image, const Rect2d& boundingBox, Size minSize):
 			timeStampPositiveNext(0), timeStampNegativeNext(0), minSize_(minSize), params_(params), boundingBox_(boundingBox)
@@ -361,5 +361,5 @@ namespace cv
 			dfprintf((port, "\tpositiveExamples.size() = %d\n", (int)positiveExamples.size()));
 			dfprintf((port, "\tnegativeExamples.size() = %d\n", (int)negativeExamples.size()));
 		}
-	}
-}
+
+}}}} // namespace

@@ -43,7 +43,7 @@
 #include "opencv2/tracking/kalman_filters.hpp"
 
 namespace opencv_test { namespace {
-using namespace cv::tracking;
+using namespace cv::detail;
 
 // In this two tests Augmented Unscented Kalman Filter are applied to the dynamic system from example "The reentry problem" from
 // "A New Extension of the Kalman Filter to Nonlinear Systems" by Simon J. Julier and Jeffrey K. Uhlmann.

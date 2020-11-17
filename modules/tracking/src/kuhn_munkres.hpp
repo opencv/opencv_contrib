@@ -10,6 +10,9 @@
 #include <memory>
 #include <vector>
 
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 ///
 /// \brief The KuhnMunkres class
@@ -52,4 +55,6 @@ private:
     int FindInCol(int col, int what);
     void Run();
 };
+
+}}}  // namespace
 #endif // #ifndef __OPENCV_TRACKING_KUHN_MUNKRES_HPP__

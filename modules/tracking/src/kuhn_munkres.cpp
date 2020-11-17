@@ -2,11 +2,16 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "precomp.hpp"
 #include "kuhn_munkres.hpp"
 
 #include <algorithm>
 #include <limits>
 #include <vector>
+
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 KuhnMunkres::KuhnMunkres() : n_() {}
 
@@ -166,3 +171,6 @@ void KuhnMunkres::Run() {
         }
     }
 }
+
+
+}}}  // namespace

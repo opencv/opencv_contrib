@@ -50,6 +50,7 @@
 
 #include "opencv2/datasets/track_alov.hpp"
 #include <opencv2/core/utility.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
@@ -65,7 +66,7 @@ static Mat image;
 static bool paused;
 static bool selectObjects = false;
 static bool startSelection = false;
-Rect2d boundingBox;
+static Rect boundingBox;
 
 static const char* keys =
 { "{@dataset_path     || Dataset path   }"
@@ -140,7 +141,7 @@ int main(int argc, char *argv[])
     setMouseCallback("GOTURN Tracking", onMouse, 0);
 
     //Create GOTURN tracker
-    Ptr<Tracker> tracker = TrackerGOTURN::create();
+    auto tracker = TrackerGOTURN::create();
 
     //Load and init full ALOV300++ dataset with a given datasetID, as alternative you can use loadAnnotatedOnly(..)
     //to load only frames with labelled ground truth ~ every 5-th frame
@@ -181,11 +182,7 @@ int main(int argc, char *argv[])
             if (!initialized && selectObjects)
             {
                 //Initialize the tracker and add targets
-                if (!tracker->init(frame, boundingBox))
-                {
-                    cout << "Tracker Init Error!!!";
-                    return 0;
-                }
+                tracker->init(frame, boundingBox);
                 rectangle(frame, boundingBox, Scalar(0, 0, 255), 2, 1);
                 initialized = true;
             }

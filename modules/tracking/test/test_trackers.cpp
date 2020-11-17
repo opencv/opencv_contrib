@@ -41,7 +41,16 @@
 
 #include "test_precomp.hpp"
 
+#define TEST_LEGACY
+#include <opencv2/tracking/tracking_legacy.hpp>
+
+//#define DEBUG_TEST
+#ifdef DEBUG_TEST
+#include <opencv2/highgui.hpp>
+#endif
+
 namespace opencv_test { namespace {
+//using namespace cv::tracking;
 
 #define TESTSET_NAMES testing::Values("david","dudek","faceocc2")
 
@@ -73,19 +82,52 @@ enum BBTransformations
     Scale_1_2 = 12
 };
 
+namespace {
+
+std::vector<std::string> splitString(const std::string& s_, const std::string& delimiter)
+{
+  std::string s = s_;
+  std::vector<string> token;
+  size_t pos = 0;
+  while ( ( pos = s.find( delimiter ) ) != std::string::npos )
+  {
+    token.push_back( s.substr( 0, pos ) );
+    s.erase( 0, pos + delimiter.length() );
+  }
+  token.push_back( s );
+  return token;
+}
+
+float calcDistance(const Rect& a, const Rect& b)
+{
+  Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
+  Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
+  return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
+}
+
+float calcOverlap(const Rect& a, const Rect& b)
+{
+  float rectIntersectionArea = (float)(a & b).area();
+  return rectIntersectionArea / (a.area() + b.area() - rectIntersectionArea);
+}
+
+}  // namespace
+
+
+template<typename Tracker, typename ROI_t = Rect2d>
 class TrackerTest
 {
- public:
+public:
 
-  TrackerTest(Ptr<Tracker> _tracker, string _video, float _distanceThreshold,
-                 float _overlapThreshold, int _shift = NoTransform, int _segmentIdx = 1, int _numSegments = 10 );
-  virtual ~TrackerTest();
-  virtual void run();
+  TrackerTest(const Ptr<Tracker>& tracker, const string& video, float distanceThreshold,
+              float overlapThreshold, int shift = NoTransform, int segmentIdx = 1, int numSegments = 10);
+  ~TrackerTest() {}
+  void run();
 
- protected:
+protected:
   void checkDataTest();
 
-  void distanceAndOvrerlapTest();
+  void distanceAndOverlapTest();
 
   Ptr<Tracker> tracker;
   string video;
@@ -103,16 +145,13 @@ class TrackerTest
   int endFrame;
   vector<int> validSequence;
 
- private:
-  float calcDistance( Rect a, Rect b );
-  float calcOverlap( Rect a, Rect b );
-  Rect applyShift(Rect bb);
-  std::vector<std::string> splitString( std::string s, std::string delimiter );
-
+private:
+  Rect applyShift(const Rect& bb);
 };
 
-TrackerTest::TrackerTest(Ptr<Tracker> _tracker, string _video, float _distanceThreshold,
-                                float _overlapThreshold, int _shift, int _segmentIdx, int _numSegments ) :
+template<typename Tracker, typename ROI_t>
+TrackerTest<Tracker, ROI_t>::TrackerTest(const Ptr<Tracker>& _tracker, const string& _video, float _distanceThreshold,
+                         float _overlapThreshold, int _shift, int _segmentIdx, int _numSegments ) :
     tracker( _tracker ),
     video( _video ),
     overlapThreshold( _overlapThreshold ),
@@ -121,41 +160,13 @@ TrackerTest::TrackerTest(Ptr<Tracker> _tracker, string _video, float _distanceTh
     shift(_shift),
     numSegments(_numSegments)
 {
+    // nothing
 }
 
-TrackerTest::~TrackerTest()
+template<typename Tracker, typename ROI_t>
+Rect TrackerTest<Tracker, ROI_t>::applyShift(const Rect& bb_)
 {
-
-}
-
-std::vector<std::string> TrackerTest::splitString( std::string s, std::string delimiter )
-{
-  std::vector<string> token;
-  size_t pos = 0;
-  while ( ( pos = s.find( delimiter ) ) != std::string::npos )
-  {
-    token.push_back( s.substr( 0, pos ) );
-    s.erase( 0, pos + delimiter.length() );
-  }
-  token.push_back( s );
-  return token;
-}
-
-float TrackerTest::calcDistance( Rect a, Rect b )
-{
-  Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
-  Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
-  return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
-}
-
-float TrackerTest::calcOverlap( Rect a, Rect b )
-{
-  float rectIntersectionArea = (float)(a & b).area();
-  return rectIntersectionArea / (a.area() + b.area() - rectIntersectionArea);
-}
-
-Rect TrackerTest::applyShift(Rect bb)
-{
+  Rect bb = bb_;
   Point center( bb.x + ( bb.width / 2 ), bb.y + ( bb.height / 2 ) );
 
   int xLimit = bb.x + bb.width - 1;
@@ -244,50 +255,76 @@ Rect TrackerTest::applyShift(Rect bb)
   return bb;
 }
 
-void TrackerTest::distanceAndOvrerlapTest()
+template<typename Tracker, typename ROI_t>
+void TrackerTest<Tracker, ROI_t>::distanceAndOverlapTest()
 {
-  Mat frame;
   bool initialized = false;
 
   int fc = ( startFrame - gtStartFrame );
 
   bbs.at( fc ) = applyShift(bbs.at( fc ));
   Rect currentBBi = bbs.at( fc );
-  Rect2d currentBB(currentBBi);
+  ROI_t currentBB(currentBBi);
   float sumDistance = 0;
   float sumOverlap = 0;
 
   string folder = cvtest::TS::ptr()->get_data_path() + "/" + TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
+  string videoPath = folder + "/" + video + ".webm";
 
   VideoCapture c;
-  c.open( folder + "/" + video + ".webm" );
-  c.set( CAP_PROP_POS_FRAMES, startFrame );
+  c.open(videoPath);
+  ASSERT_TRUE(c.isOpened()) << videoPath;
+#if 0
+  c.set(CAP_PROP_POS_FRAMES, startFrame);
+#else
+  if (startFrame)
+      std::cout << "startFrame = " << startFrame << std::endl;
+  for (int i = 0; i < startFrame; i++)
+  {
+      Mat dummy_frame;
+      c >> dummy_frame;
+      ASSERT_FALSE(dummy_frame.empty()) << i << ": " << videoPath;
+  }
+#endif
 
   for ( int frameCounter = startFrame; frameCounter < endFrame; frameCounter++ )
   {
+    Mat frame;
     c >> frame;
 
-    if( frame.empty() )
-    {
-      break;
-    }
+    ASSERT_FALSE(frame.empty()) << "frameCounter=" << frameCounter << " video=" << videoPath;
     if( !initialized )
     {
+#if 0
       if( !tracker->init( frame, currentBB ) )
       {
         FAIL()<< "Could not initialize tracker" << endl;
         return;
       }
+#else
+      tracker->init(frame, currentBB);
+#endif
+      std::cout << "frame size = " << frame.size() << std::endl;
       initialized = true;
     }
     else if( initialized )
     {
       if( frameCounter >= (int) bbs.size() )
-      break;
+          break;
       tracker->update( frame, currentBB );
     }
     float curDistance = calcDistance( currentBB, bbs.at( fc ) );
     float curOverlap = calcOverlap( currentBB, bbs.at( fc ) );
+
+#ifdef DEBUG_TEST
+    Mat result;
+    repeat(frame, 1, 2, result);
+    rectangle(result, currentBB, Scalar(0, 255, 0), 1);
+    Rect roi2(frame.cols, 0, frame.cols, frame.rows);
+    rectangle(result(roi2), bbs.at(fc), Scalar(0, 0, 255), 1);
+    imshow("result", result);
+    waitKey(1);
+#endif
 
     sumDistance += curDistance;
     sumOverlap += curOverlap;
@@ -297,20 +334,12 @@ void TrackerTest::distanceAndOvrerlapTest()
   float meanDistance = sumDistance / (endFrame - startFrame);
   float meanOverlap = sumOverlap / (endFrame - startFrame);
 
-  if( meanDistance > distanceThreshold )
-  {
-    FAIL()<< "Incorrect distance: curr = " << meanDistance << ", max = " << distanceThreshold << endl;
-    return;
-  }
-
-  if( meanOverlap < overlapThreshold )
-  {
-    FAIL()<< "Incorrect overlap: curr = " << meanOverlap << ", min = " << overlapThreshold << endl;
-    return;
-  }
+  EXPECT_LE(meanDistance, distanceThreshold);
+  EXPECT_GE(meanOverlap, overlapThreshold);
 }
 
-void TrackerTest::checkDataTest()
+template<typename Tracker, typename ROI_t>
+void TrackerTest<Tracker, ROI_t>::checkDataTest()
 {
 
   FileStorage fs;
@@ -324,10 +353,7 @@ void TrackerTest::checkDataTest()
   std::ifstream gt;
   //open the ground truth
   gt.open( gtFile.c_str() );
-  if( !gt.is_open() )
-  {
-    FAIL()<< "Ground truth file " << gtFile << " can not be read" << endl;
-  }
+  ASSERT_TRUE(gt.is_open()) << gtFile;
   string line;
   int bbCounter = 0;
   while ( getline( gt, line ) )
@@ -372,20 +398,14 @@ void TrackerTest::checkDataTest()
   std::ifstream gt2;
   //open the ground truth
   gt2.open( gtFile.c_str() );
-  if( !gt2.is_open() )
-  {
-    FAIL()<< "Ground truth file " << gtFile << " can not be read" << endl;
-  }
+  ASSERT_TRUE(gt2.is_open()) << gtFile;
   string line2;
   int bbCounter2 = 0;
   while ( getline( gt2, line2 ) )
   {
     vector<string> tokens = splitString( line2, "," );
     Rect bb( atoi( tokens.at( 0 ).c_str() ), atoi( tokens.at( 1 ).c_str() ), atoi( tokens.at( 2 ).c_str() ), atoi( tokens.at( 3 ).c_str() ) );
-    if( tokens.size() != 4 )
-    {
-      FAIL()<< "Incorrect ground truth file";
-    }
+    ASSERT_EQ((size_t)4, tokens.size()) << "Incorrect ground truth file " << gtFile;
 
     bbs.push_back( bb );
     bbCounter2++;
@@ -396,17 +416,12 @@ void TrackerTest::checkDataTest()
     endFrame = (int)bbs.size();
 }
 
-void TrackerTest::run()
+template<typename Tracker, typename ROI_t>
+void TrackerTest<Tracker, ROI_t>::run()
 {
-  srand( 1 );
+  srand( 1 );  // FIXIT remove that, ensure that there is no "rand()" in implementation
 
-  SCOPED_TRACE( "A" );
-
-  if( !tracker )
-  {
-    FAIL()<< "Error in the instantiation of the tracker" << endl;
-    return;
-  }
+  ASSERT_TRUE(tracker);
 
   checkDataTest();
 
@@ -414,7 +429,7 @@ void TrackerTest::run()
   if( ::testing::Test::HasFatalFailure() )
     return;
 
-  distanceAndOvrerlapTest();
+  distanceAndOverlapTest();
 }
 
 /****************************************************************************************\
@@ -433,167 +448,240 @@ PARAM_TEST_CASE(DistanceAndOverlap, string)
 
 TEST_P(DistanceAndOverlap, MedianFlow)
 {
-  TrackerTest test( TrackerMedianFlow::create(), dataset, 35, .5f, NoTransform, 1, 1);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMedianFlow::create(), dataset, 35, .5f, NoTransform, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, MIL)
 {
-  TrackerTest test( TrackerMIL::create(), dataset, 30, .65f, NoTransform);
+  TrackerTest<Tracker, Rect> test(TrackerMIL::create(), dataset, 30, .65f, NoTransform);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, MIL_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMIL::create(), dataset, 30, .65f, NoTransform);
+  test.run();
+}
+#endif
 
 TEST_P(DistanceAndOverlap, Boosting)
 {
-  TrackerTest test( TrackerBoosting::create(), dataset, 70, .7f, NoTransform);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerBoosting::create(), dataset, 70, .7f, NoTransform);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, KCF)
 {
-  TrackerTest test( TrackerKCF::create(), dataset, 20, .35f, NoTransform, 5);
+  TrackerTest<Tracker, Rect> test(TrackerKCF::create(), dataset, 20, .35f, NoTransform, 5);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, KCF_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerKCF::create(), dataset, 20, .35f, NoTransform, 5);
+  test.run();
+}
+#endif
 
 TEST_P(DistanceAndOverlap, TLD)
 {
-  TrackerTest test( TrackerTLD::create(), dataset, 40, .45f, NoTransform);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerTLD::create(), dataset, 40, .45f, NoTransform);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, MOSSE)
 {
-  TrackerTest test( TrackerMOSSE::create(), dataset, 22, .7f, NoTransform);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMOSSE::create(), dataset, 22, .7f, NoTransform);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, CSRT)
 {
-  TrackerTest test( TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
+  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, CSRT_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
+  test.run();
+}
+#endif
 
 /***************************************************************************************/
 //Tests with shifted initial window
 TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
 {
-  TrackerTest test( TrackerMedianFlow::create(), dataset, 80, .2f, CenterShiftLeft, 1, 1);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMedianFlow::create(), dataset, 80, .2f, CenterShiftLeft, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_MIL)
 {
-  TrackerTest test( TrackerMIL::create(), dataset, 30, .6f, CenterShiftLeft);
+  TrackerTest<Tracker, Rect> test(TrackerMIL::create(), dataset, 30, .6f, CenterShiftLeft);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, Shifted_Data_MIL_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMIL::create(), dataset, 30, .6f, CenterShiftLeft);
+  test.run();
+}
+#endif
 
 TEST_P(DistanceAndOverlap, Shifted_Data_Boosting)
 {
-  TrackerTest test( TrackerBoosting::create(), dataset, 80, .65f, CenterShiftLeft);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerBoosting::create(), dataset, 80, .65f, CenterShiftLeft);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_KCF)
 {
-  TrackerTest test( TrackerKCF::create(), dataset, 20, .4f, CenterShiftLeft, 5);
+  TrackerTest<Tracker, Rect> test(TrackerKCF::create(), dataset, 20, .4f, CenterShiftLeft, 5);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, Shifted_Data_KCF_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerKCF::create(), dataset, 20, .4f, CenterShiftLeft, 5);
+  test.run();
+}
+#endif
 
 TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 {
-  TrackerTest test( TrackerTLD::create(), dataset, 30, .35f, CenterShiftLeft);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerTLD::create(), dataset, 30, .35f, CenterShiftLeft);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_MOSSE)
 {
-  TrackerTest test( TrackerMOSSE::create(), dataset, 13, .69f, CenterShiftLeft);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMOSSE::create(), dataset, 13, .69f, CenterShiftLeft);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_CSRT)
 {
-  TrackerTest test( TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
+  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, Shifted_Data_CSRT_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
+  test.run();
+}
+#endif
+
 /***************************************************************************************/
 //Tests with scaled initial window
 TEST_P(DistanceAndOverlap, Scaled_Data_MedianFlow)
 {
-  TrackerTest test( TrackerMedianFlow::create(), dataset, 25, .5f, Scale_1_1, 1, 1);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMedianFlow::create(), dataset, 25, .5f, Scale_1_1, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_MIL)
 {
-  TrackerTest test( TrackerMIL::create(), dataset, 30, .7f, Scale_1_1);
+  TrackerTest<Tracker, Rect> test(TrackerMIL::create(), dataset, 30, .7f, Scale_1_1);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, Scaled_Data_MIL_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMIL::create(), dataset, 30, .7f, Scale_1_1);
+  test.run();
+}
+#endif
 
 TEST_P(DistanceAndOverlap, Scaled_Data_Boosting)
 {
-  TrackerTest test( TrackerBoosting::create(), dataset, 80, .7f, Scale_1_1);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerBoosting::create(), dataset, 80, .7f, Scale_1_1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_KCF)
 {
-  TrackerTest test( TrackerKCF::create(), dataset, 20, .4f, Scale_1_1, 5);
+  TrackerTest<Tracker, Rect> test(TrackerKCF::create(), dataset, 20, .4f, Scale_1_1, 5);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, Scaled_Data_KCF_legacy)
+{
+  TrackerTest<legacy::Tracker> test(legacy::TrackerKCF::create(), dataset, 20, .4f, Scale_1_1, 5);
+  test.run();
+}
+#endif
 
 TEST_P(DistanceAndOverlap, Scaled_Data_TLD)
 {
-  TrackerTest test( TrackerTLD::create(), dataset, 30, .45f, Scale_1_1);
-  test.run();
-}
-
-
-TEST_P(DistanceAndOverlap, DISABLED_GOTURN)
-{
-  TrackerTest test(TrackerGOTURN::create(), dataset, 18, .5f, NoTransform);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerTLD::create(), dataset, 30, .45f, Scale_1_1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_MOSSE)
 {
-  TrackerTest test( TrackerMOSSE::create(), dataset, 22, 0.69f, Scale_1_1, 1);
+  TrackerTest<legacy::Tracker> test(legacy::TrackerMOSSE::create(), dataset, 22, 0.69f, Scale_1_1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_CSRT)
 {
-  TrackerTest test( TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
+  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
   test.run();
 }
+#ifdef TEST_LEGACY
+TEST_P(DistanceAndOverlap, Scaled_Data_CSRT_legacy)
+{
+  TrackerTest<Tracker, Rect> test(TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
+  test.run();
+}
+#endif
+
+TEST_P(DistanceAndOverlap, GOTURN)
+{
+    std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
+    std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
+    cv::TrackerGOTURN::Params params;
+    params.modelTxt = model;
+    params.modelBin = weights;
+    TrackerTest<Tracker, Rect> test(TrackerGOTURN::create(params), dataset, 35, .35f, NoTransform);
+    test.run();
+}
+
+INSTANTIATE_TEST_CASE_P(Tracking, DistanceAndOverlap, TESTSET_NAMES);
+
+
 
 TEST(GOTURN, memory_usage)
 {
-  cv::Rect2d roi(145, 70, 85, 85);
-  cv::Mat frame;
+  cv::Rect roi(145, 70, 85, 85);
 
   std::string model = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.prototxt");
   std::string weights = cvtest::findDataFile("dnn/gsoc2016-goturn/goturn.caffemodel", false);
   cv::TrackerGOTURN::Params params;
   params.modelTxt = model;
   params.modelBin = weights;
-  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(params);
+  cv::Ptr<Tracker> tracker = TrackerGOTURN::create(params);
+
   string inputVideo = cvtest::findDataFile("tracking/david/data/david.webm");
   cv::VideoCapture video(inputVideo);
+  ASSERT_TRUE(video.isOpened()) << inputVideo;
 
+  cv::Mat frame;
   video >> frame;
+  ASSERT_FALSE(frame.empty()) << inputVideo;
   tracker->init(frame, roi);
   string ground_truth_bb;
   for (int nframes = 0; nframes < 15; ++nframes)
   {
     std::cout << "Frame: " << nframes << std::endl;
     video >> frame;
-    tracker->update(frame, roi);
+    bool res = tracker->update(frame, roi);
+    ASSERT_TRUE(res);
     std::cout << "Predicted ROI: " << roi << std::endl;
   }
 }
 
-INSTANTIATE_TEST_CASE_P( Tracking, DistanceAndOverlap, TESTSET_NAMES);
-
 }} // namespace
-/* End of file. */

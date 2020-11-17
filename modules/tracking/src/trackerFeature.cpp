@@ -41,8 +41,9 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  *  TrackerFeature
@@ -321,4 +322,4 @@ void TrackerFeatureLBP::selection( Mat& /*response*/, int /*npoints*/)
 
 }
 
-} /* namespace cv */
+}}}  // namespace

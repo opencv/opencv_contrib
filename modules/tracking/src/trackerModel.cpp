@@ -41,8 +41,9 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
  *  TrackerModel
@@ -174,4 +175,4 @@ void TrackerTargetState::setTargetHeight( int height )
   targetHeight = height;
 }
 
-} /* namespace cv */
+}}}  // namespace

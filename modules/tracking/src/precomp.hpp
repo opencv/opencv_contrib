@@ -42,18 +42,29 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
-#include "cvconfig.h"
-#include "opencv2/tracking.hpp"
-#include "opencv2/core/utility.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/core/ocl.hpp"
-#include <typeinfo>
 #include "opencv2/core/hal/hal.hpp"
 
-namespace cv
-{
-	extern const float ColorNames[][10];
+#include "opencv2/video/tracking.hpp"
 
-    namespace tracking {
+#include "opencv2/tracking.hpp"
+
+
+#include "opencv2/tracking/tracking_internals.hpp"
+
+namespace cv { inline namespace tracking {
+namespace impl { }
+using namespace impl;
+using namespace cv::detail::tracking;
+}}  // namespace
+
+
+namespace cv {
+namespace detail {
+inline namespace tracking {
+
+	extern const float ColorNames[][10];
 
     /* Cholesky decomposition
      The function performs Cholesky decomposition <https://en.wikipedia.org/wiki/Cholesky_decomposition>.
@@ -102,7 +113,6 @@ namespace cv
         return success;
     }
 
-    } // tracking
-} // cv
+}}}  // namespace
 
 #endif

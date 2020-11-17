@@ -38,12 +38,24 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "opencv2/opencv_modules.hpp"
-#include "gtrTracker.hpp"
+#include "precomp.hpp"
 
+#ifdef HAVE_OPENCV_DNN
+#include "opencv2/dnn.hpp"
+#endif
 
-namespace cv
+namespace cv {
+inline namespace tracking {
+
+TrackerGOTURN::TrackerGOTURN()
 {
+    // nothing
+}
+
+TrackerGOTURN::~TrackerGOTURN()
+{
+    // nothing
+}
 
 TrackerGOTURN::Params::Params()
 {
@@ -51,83 +63,50 @@ TrackerGOTURN::Params::Params()
     modelBin = "goturn.caffemodel";
 }
 
-void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
-
-void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
-
-
-Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters)
-{
 #ifdef HAVE_OPENCV_DNN
-    return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
-#else
-    (void)(parameters);
-    CV_Error(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
-#endif
-}
-Ptr<TrackerGOTURN> TrackerGOTURN::create()
+
+class TrackerGOTURNImpl : public TrackerGOTURN
 {
-    return TrackerGOTURN::create(TrackerGOTURN::Params());
-}
-
-
-#ifdef HAVE_OPENCV_DNN
-namespace gtr
-{
-
-class TrackerGOTURNModel : public TrackerModel{
 public:
-    TrackerGOTURNModel(TrackerGOTURN::Params){}
-    Rect2d getBoundingBox(){ return boundingBox_; }
-    void setBoudingBox(Rect2d boundingBox) {
+    TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters)
+        : params(parameters)
+    {
+        // Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
+        net = dnn::readNetFromCaffe(params.modelTxt, params.modelBin);
+        CV_Assert(!net.empty());
+    }
+
+    void init(InputArray image, const Rect& boundingBox) CV_OVERRIDE;
+    bool update(InputArray image, Rect& boundingBox) CV_OVERRIDE;
+
+    void setBoudingBox(Rect boundingBox)
+    {
         if (image_.empty())
             CV_Error(Error::StsInternal, "Set image first");
-        boundingBox_ = boundingBox & Rect2d(Point(0, 0), image_.size());
+        boundingBox_ = boundingBox & Rect(Point(0, 0), image_.size());
     }
-    Mat getImage(){ return image_; }
-    void setImage(const Mat& image){ image.copyTo(image_); }
-protected:
-    Rect2d boundingBox_;
+
+    TrackerGOTURN::Params params;
+
+    dnn::Net net;
+    Rect boundingBox_;
     Mat image_;
-    void modelEstimationImpl(const std::vector<Mat>&) CV_OVERRIDE {}
-    void modelUpdateImpl() CV_OVERRIDE {}
 };
 
-TrackerGOTURNImpl::TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters) :
-    params(parameters){
-    isInit = false;
-};
-
-void TrackerGOTURNImpl::read(const cv::FileNode& fn)
+void TrackerGOTURNImpl::init(InputArray image, const Rect& boundingBox)
 {
-    params.read(fn);
+    image_ = image.getMat().clone();
+    setBoudingBox(boundingBox);
 }
 
-void TrackerGOTURNImpl::write(cv::FileStorage& fs) const
-{
-    params.write(fs);
-}
-
-bool TrackerGOTURNImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
-{
-    //Make a simple model from frame and bounding box
-    model = Ptr<TrackerGOTURNModel>(new TrackerGOTURNModel(params));
-    ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setImage(image);
-    ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
-
-    //Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
-    net = dnn::readNetFromCaffe(params.modelTxt, params.modelBin);
-    return true;
-}
-
-bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
+bool TrackerGOTURNImpl::update(InputArray image, Rect& boundingBox)
 {
     int INPUT_SIZE = 227;
     //Using prevFrame & prevBB from model and curFrame GOTURN calculating curBB
-    Mat curFrame = image.clone();
-    Mat prevFrame = ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->getImage();
-    Rect2d prevBB = ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->getBoundingBox();
-    Rect2d curBB;
+    InputArray curFrame = image;
+    Mat prevFrame = image_;
+    Rect2d prevBB = boundingBox_;
+    Rect curBB;
 
     float padTargetPatch = 2.0;
     Rect2f searchPatchRect, targetPatchRect;
@@ -154,12 +133,12 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     copyMakeBorder(curFrame, curFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
     searchPatch = curFramePadded(targetPatchRect).clone();
 
-    //Preprocess
-    //Resize
+    // Preprocess
+    // Resize
     resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE), 0, 0, INTER_LINEAR_EXACT);
     resize(searchPatch, searchPatch, Size(INPUT_SIZE, INPUT_SIZE), 0, 0, INTER_LINEAR_EXACT);
 
-    //Convert to Float type and subtract mean
+    // Convert to Float type and subtract mean
     Mat targetBlob = dnn::blobFromImage(targetPatch, 1.0f, Size(), Scalar::all(128), false);
     Mat searchBlob = dnn::blobFromImage(searchPatch, 1.0f, Size(), Scalar::all(128), false);
 
@@ -168,22 +147,31 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
     Mat resMat = net.forward("scale").reshape(1, 1);
 
-    curBB.x = targetPatchRect.x + (resMat.at<float>(0) * targetPatchRect.width / INPUT_SIZE) - targetPatchRect.width;
-    curBB.y = targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height;
-    curBB.width = (resMat.at<float>(2) - resMat.at<float>(0)) * targetPatchRect.width / INPUT_SIZE;
-    curBB.height = (resMat.at<float>(3) - resMat.at<float>(1)) * targetPatchRect.height / INPUT_SIZE;
+    curBB.x = cvRound(targetPatchRect.x + (resMat.at<float>(0) * targetPatchRect.width / INPUT_SIZE) - targetPatchRect.width);
+    curBB.y = cvRound(targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height);
+    curBB.width = cvRound((resMat.at<float>(2) - resMat.at<float>(0)) * targetPatchRect.width / INPUT_SIZE);
+    curBB.height = cvRound((resMat.at<float>(3) - resMat.at<float>(1)) * targetPatchRect.height / INPUT_SIZE);
 
-    //Predicted BB
-    boundingBox = curBB;
+    // Predicted BB
+    boundingBox = curBB & Rect(Point(0, 0), image_.size());
 
-    //Set new model image and BB from current frame
-    ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setImage(curFrame);
-    ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setBoudingBox(curBB);
-
+    // Set new model image and BB from current frame
+    image_ = image.getMat().clone();
+    setBoudingBox(curBB);
     return true;
 }
 
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params& parameters)
+{
+    return makePtr<TrackerGOTURNImpl>(parameters);
+}
+
+#else // OPENCV_HAVE_DNN
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params& parameters)
+{
+    (void)(parameters);
+    CV_Error(cv::Error::StsNotImplemented, "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
 }
 #endif // OPENCV_HAVE_DNN
 
-}
+}} // namespace

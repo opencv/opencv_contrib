@@ -3,12 +3,11 @@
 // of this distribution and at http://opencv.org/license.html.
 #ifndef __OPENCV_TRACKING_UTILS_HPP__
 
-#include "precomp.hpp"
 #include <algorithm>
 
 namespace cv {
-namespace tracking_internal
-{
+namespace tracking_internal {
+
 /** Computes normalized corellation coefficient between the two patches (they should be
 * of the same size).*/
     double computeNCC(const Mat& patch1, const Mat& patch2);
@@ -42,6 +41,6 @@ namespace tracking_internal
         std::vector<T> copy(values);
         return getMedianAndDoPartition(copy);
     }
-}
-}
+
+}}  // namespace
 #endif
