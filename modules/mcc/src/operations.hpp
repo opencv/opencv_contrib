@@ -29,8 +29,6 @@
 #ifndef __OPENCV_MCC_OPERATIONS_HPP__
 #define __OPENCV_MCC_OPERATIONS_HPP__
 
-#include <functional>
-#include <vector>
 #include "utils.hpp"
 
 namespace cv
@@ -64,7 +62,7 @@ public:
     void add(const Operation& other);
 
     void clear();
-    static Operation get_IDENTITY_OP(){
+    static Operation& get_IDENTITY_OP(){
         static Operation identity_op([](Mat x) {return x; });
         return identity_op;
     }

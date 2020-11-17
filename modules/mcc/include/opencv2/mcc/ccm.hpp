@@ -28,19 +28,33 @@
 #ifndef __OPENCV_MCC_CCM_HPP__
 #define __OPENCV_MCC_CCM_HPP__
 
-#include <iostream>
-#include <cmath>
-#include <string>
-#include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-// #include "opencv2/mcc/linearize.hpp"
+
+
+/** @defgroup ccm Color Correction Model
+
+Introduction
+------------
+
+The purpose of color correction is to adjust the color response of input
+and output devices to a known state. The device being calibrated is sometimes
+called the calibration source; the color space used as the standard is sometimes
+called the calibration target. Color calibration has been used in many industries,
+such as television production, games, photography, engineering, chemistry,
+medicine, etc. Due to the manufacturing process of the input and output equipment,
+the channel response has nonlinear distortion. In order to correct the picture output
+of the equipment, it is nessary to calibrate the captured color and the actual color.
+
+
+*/
 
 namespace cv
 {
 namespace ccm
 {
-
+//! @addtogroup ccm
+//! @{
 
 /** @brief Enum of the possible types of ccm.
 */
@@ -306,7 +320,8 @@ enum LINEAR_TYPE
 };
 
 /** @brief Enum of possibale functions to calculate the distance between
-           colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
+           colors.see https://en.wikipedia.org/wiki/Color_difference for details;
+*/
 enum DISTANCE_TYPE
 {
     CIE76,                      ///The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
@@ -326,60 +341,49 @@ enum DISTANCE_TYPE
 class CV_EXPORTS_W ColorCorrectionModel
 {
 public:
-        Mat CV_WRAP ccm;
-        /** @brief Color Correction Model
-            @param src detected colors of ColorChecker patches;\n
-                        the color type is RGB not BGR, and the color values are in [0, 1];
-                        type is cv::Mat;
-            @param constcolor the Built-in color card;\n
-                        Supported list:
-                                Macbeth(Macbeth ColorChecker) ;
-                                Vinyl(DKK ColorChecker) ;
-                                DigitalSG(DigitalSG ColorChecker with 140 squares);\n
-                        type: enum CONST_COLOR;\n
-        */
-    ColorCorrectionModel(Mat src, CONST_COLOR constcolor);
+    /** @brief Color Correction Model
+        @param src detected colors of ColorChecker patches;\n
+                    the color type is RGB not BGR, and the color values are in [0, 1];
+        @param constcolor the Built-in color card;\n
+                    Supported list:
+                            Macbeth(Macbeth ColorChecker) ;
+                            Vinyl(DKK ColorChecker) ;
+                            DigitalSG(DigitalSG ColorChecker with 140 squares);\n
+    */
+    ColorCorrectionModel(const Mat& src, CONST_COLOR constcolor);
      /** @brief Color Correction Model
             @param src detected colors of ColorChecker patches;\n
                         the color type is RGB not BGR, and the color values are in [0, 1];
-                        type is cv::Mat;
             @param colors the reference color values,the color values are in [0, 1].\n
-                        type: cv::Mat
             @param ref_cs the corresponding color space
                         NOTICE: For the list of color spaces supported, see the notes above;\n
                         If the color type is some RGB, the format is RGB not BGR;\n
-                        type:enum COLOR_SPACE;
         */
-    ColorCorrectionModel(Mat src, Mat colors, COLOR_SPACE ref_cs);
+    ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs);
     /** @brief Color Correction Model
             @param src detected colors of ColorChecker patches;\n
                         the color type is RGB not BGR, and the color values are in [0, 1];
-                        type is cv::Mat;
-            @param colors the reference color values,the color values are in [0, 1].\n
-                        type: cv::Mat
+            @param colors the reference color values,the color values are in [0, 1].
             @param ref_cs the corresponding color space
                         NOTICE: For the list of color spaces supported, see the notes above;\n
-                        If the color type is some RGB, the format is RGB not BGR;\n
-                        type:enum COLOR_SPACE;
+                        If the color type is some RGB, the format is RGB not BGR;
             @param colored mask of colored color
         */
-    ColorCorrectionModel(Mat src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
+    ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
 
         /** @brief set ColorSpace
-            @param cs_ the absolute color space that detected colors convert to;\n
+            @param cs the absolute color space that detected colors convert to;\n
             NOTICE: it should be some RGB color space;\n
-                    For the list of RGB color spaces supported, see the notes above;
-            type: enum COLOR_SPACE;\n
+                    For the list of RGB color spaces supported, see the notes above;\n
             default: sRGB;
         */
-    CV_WRAP void setColorSpace(COLOR_SPACE cs_);
+    CV_WRAP void setColorSpace(COLOR_SPACE cs);
         /** @brief set ccm_type
             @param ccm_type :the shape of color correction matrix(CCM);\n
             Supported list: "CCM_3x3"(3x3 matrix);"CCM_4x3"( 4x3 matrix);\n
-            type: enum CCM_TYPE;\n
             default: CCM_3x3;\n
         */
-    CV_WRAP void setCCM(CCM_TYPE ccm_type);
+    CV_WRAP void setCCM_TYPE(CCM_TYPE ccm_type);
     /** @brief set Distance
         @param distance the type of color distance;\n
             Supported list:"CIE2000"; "CIE94_GRAPHIC_ARTS";"CIE94_TEXTILES";
@@ -388,7 +392,6 @@ public:
                 "CMC_2TO1";
                 "RGB" (Euclidean distance of rgb color space);
                 "RGBL" () Euclidean distance of rgbl color space);\n
-            type: enum DISTANCE_TYPE;\n
             default: CIE2000;\n
             */
     CV_WRAP void setDistance(DISTANCE_TYPE distance);
@@ -407,7 +410,6 @@ public:
                                 Need assign a value to deg simultaneously);
                 "GRAYLOGPOLYFIT" (grayscale Logarithmic polynomial fitting;
                                 Need assign a value to deg and dst_whites simultaneously);\n
-            type: enum LINEAR_TYPE;\n
             default: GAMMA;\n
             */
     CV_WRAP void setLinear(LINEAR_TYPE linear_type);
@@ -415,7 +417,6 @@ public:
      /** @brief set Gamma
         @param gamma the gamma value of gamma correction;
             NOTICE: only valid when linear is set to "gamma";\n
-            type: double;\n
             default: 2.2;\n
             */
     CV_WRAP void setLinearGamma(double gamma);
@@ -424,7 +425,6 @@ public:
         @param deg the degree of linearization polynomial;\n
             NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT",
                     "COLORLOGPOLYFIT" and "GRAYLOGPOLYFIT";\n
-            type: int;\n
             default: 3;\n
             */
     CV_WRAP void setLinearDegree(int deg);
@@ -440,14 +440,12 @@ public:
     CV_WRAP void setSaturatedThreshold(double lower, double upper);
      /** @brief set WeightsList
         @param weights_list the list of weight of each color;\n
-            type: cv::Mat;\n
             default: empty array;
             */
     CV_WRAP void setWeightsList(Mat weights_list);
     /** @brief set WeightCoeff
         @param weights_coeff the exponent number of L* component of the reference color in CIE Lab color space;\n
-            type: double;\n
-            default: 0;\n
+            default: 0;
             */
     CV_WRAP void setWeightCoeff(double weights_coeff);
     /** @brief set InitialMethod
@@ -455,38 +453,37 @@ public:
             Supported list:
                 'LEAST_SQUARE' (least-squre method);
                 'WHITE_BALANCE' (white balance method);\n
-            type: enum INITIAL_METHOD_TYPE;
             */
     CV_WRAP void setInitialMethod(INITIAL_METHOD_TYPE initial_method_type);
     /** @brief set MaxCount
         @param max_count used in MinProblemSolver-DownhillSolver;\n
             Terminal criteria to the algorithm;\n
-            type: int;
             default: 5000;
             */
     CV_WRAP void setMaxCount(int max_count);
      /** @brief set Epsilon
         @param epsilon used in MinProblemSolver-DownhillSolver;\n
             Terminal criteria to the algorithm;\n
-            type: double;
             default: 1e-4;
             */
     CV_WRAP void setEpsilon(double epsilon);
     /** @brief make color correction*/
     CV_WRAP void run();
 
-    // /** @brief Infer using fitting ccm.
-    //     @param img the input image, type of cv::Mat.
-    //     @param islinear default false.
-    //     @return the output array, type of cv::Mat.
-    // */
+    CV_WRAP Mat getCCM() const;
+
+    /** @brief Infer using fitting ccm.
+        @param img the input image.
+        @param islinear default false.
+        @return the output array.
+    */
     CV_WRAP Mat infer(const Mat& img, bool islinear = false);
+    class Impl;
 private:
-    CV_WRAP class Impl;
-    CV_WRAP Ptr<Impl> p;
+    std::shared_ptr<Impl> p;
 
 };
-
+//! @} ccm
 } // namespace ccm
 } // namespace cv
 

@@ -37,14 +37,14 @@ double gammaCorrection_(const double& element, const double& gamma)
     return (element >= 0 ? pow(element, gamma) : -pow((-element), gamma));
 }
 
-cv::Mat gammaCorrection(const cv::Mat& src, const double& gamma)
+Mat gammaCorrection(const Mat& src, const double& gamma)
 {
     return elementWise(src, [gamma](double element)->double {return gammaCorrection_(element, gamma); });
 }
 
-cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
+Mat maskCopyTo(const Mat& src, const Mat& mask)
 {
-    cv::Mat dst(countNonZero(mask), 1, src.type());
+    Mat dst(countNonZero(mask), 1, src.type());
     const int channel = src.channels();
     auto it_mask = mask.begin<uchar>();
     switch (channel)
@@ -65,8 +65,8 @@ cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
     }
     case 3:
     {
-        auto it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>();
-        auto it_dst = dst.begin<cv::Vec3d>();
+        auto it_src = src.begin<Vec3d>(), end_src = src.end<Vec3d>();
+        auto it_dst = dst.begin<Vec3d>();
         for (; it_src != end_src; ++it_src, ++it_mask)
         {
             if (*it_mask)
@@ -84,19 +84,19 @@ cv::Mat maskCopyTo(const cv::Mat& src, const cv::Mat& mask)
     return dst;
 }
 
-cv::Mat multiple(const cv::Mat& xyz, const cv::Mat& ccm)
+Mat multiple(const Mat& xyz, const Mat& ccm)
 {
-    cv::Mat tmp = xyz.reshape(1, xyz.rows * xyz.cols);
-    cv::Mat res = tmp * ccm;
+    Mat tmp = xyz.reshape(1, xyz.rows * xyz.cols);
+    Mat res = tmp * ccm;
     res = res.reshape(res.cols, xyz.rows);
     return res;
 }
 
-cv::Mat saturate(cv::Mat& src, const double& low, const double& up)
+Mat saturate(Mat& src, const double& low, const double& up)
 {
-    cv::Mat dst = cv::Mat::ones(src.size(), CV_8UC1);
-    cv::MatIterator_<cv::Vec3d> it_src = src.begin<cv::Vec3d>(), end_src = src.end<cv::Vec3d>();
-    cv::MatIterator_<uchar> it_dst = dst.begin<uchar>();
+    Mat dst = Mat::ones(src.size(), CV_8UC1);
+    MatIterator_<Vec3d> it_src = src.begin<Vec3d>(), end_src = src.end<Vec3d>();
+    MatIterator_<uchar> it_dst = dst.begin<uchar>();
     for (; it_src != end_src; ++it_src, ++it_dst)
     {
         for (int i = 0; i < 3; ++i)
@@ -111,7 +111,7 @@ cv::Mat saturate(cv::Mat& src, const double& low, const double& up)
     return dst;
 }
 
-cv::Mat rgb2gray(cv::Mat rgb)
+Mat rgb2gray(Mat rgb)
 {
     return multiple(rgb, m_gray);
 }

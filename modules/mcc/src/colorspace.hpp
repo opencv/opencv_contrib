@@ -29,9 +29,7 @@
 #ifndef __OPENCV_MCC_COLORSPACE_HPP__
 #define __OPENCV_MCC_COLORSPACE_HPP__
 
-#include <vector>
-#include <string>
-#include <iostream>
+
 #include "operations.hpp"
 #include "io.hpp"
 #include "opencv2/mcc/ccm.hpp"
@@ -339,7 +337,7 @@ class Lab :public ColorSpace
 {
 public:
     static std::map <IO,  std::shared_ptr<Lab>> lab_cs;
-    Lab(IO io_);
+    Lab(IO io);
     static  std::shared_ptr<Lab> get(IO io);
 
 private:

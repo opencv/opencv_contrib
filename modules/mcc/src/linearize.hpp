@@ -29,6 +29,8 @@
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
+#include <opencv2/core.hpp>
+#include <map>
 #include "color.hpp"
 #include "opencv2/mcc/ccm.hpp"
 namespace cv
@@ -51,7 +53,7 @@ public:
     and deduct: Ax = y
     See linear.pdf for details
     */
-    Polyfit(Mat x, Mat y, int deg_);
+    Polyfit(Mat x, Mat y, int deg);
     virtual ~Polyfit() {};
     Mat operator()(const Mat& inp);
 
@@ -73,7 +75,7 @@ public:
 
     /** @brief Logpolyfit method.
     */
-    LogPolyfit(Mat x, Mat y, int deg_);
+    LogPolyfit(Mat x, Mat y, int deg);
     virtual ~LogPolyfit() {};
     Mat operator()(const Mat& inp);
 

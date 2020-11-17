@@ -28,7 +28,6 @@
 #ifndef __OPENCV_MCC_COLOR_HPP__
 #define __OPENCV_MCC_COLOR_HPP__
 
-#include <map>
 #include "distance.hpp"
 #include "colorspace.hpp"
 #include "opencv2/mcc/ccm.hpp"
@@ -56,10 +55,10 @@ public:
     Mat colored;
     std::map<ColorSpace, std::shared_ptr<Color>> history;
     Color();
-    Color(Mat colors_, enum COLOR_SPACE cs_);
-    Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_);
-    Color(Mat colors_, const ColorSpace& cs_, Mat colored_);
-    Color(Mat colors_, const ColorSpace& cs_);
+    Color(Mat colors_, enum COLOR_SPACE cs);
+    Color(Mat colors_, enum COLOR_SPACE cs, Mat colored);
+    Color(Mat colors_, const ColorSpace& cs, Mat colored);
+    Color(Mat colors_, const ColorSpace& cs);
     virtual ~Color() {};
 
     /** @brief Change to other color space.

@@ -67,13 +67,13 @@ int main(int argc, char *argv[])
     //! [get_color_checker]
     for (Ptr<mcc::CChecker> checker : checkers)
     {
-        //! [creat]
+        //! [create]
         Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
         cdraw->draw(image);
         Mat chartsRGB = checker->getChartsRGB();
         Mat src = chartsRGB.col(1).clone().reshape(3, 18);
         src /= 255.0;
-        //! [creat]
+        //! [create]
 
         //compte color correction matrix
         //! [get_ccm_Matrix]
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
          /* brief More models with different parameters, try it & check the document for details.
         */
         // model1.setColorSpace(sRGB);
-        // model1.setCCM(CCM_3x3);
+        // model1.setCCM_TYPE(CCM_3x3);
         // model1.setDistance(CIE2000);
         // model1.setLinear(GAMMA);
         // model1.setLinearGamma(2.2);
