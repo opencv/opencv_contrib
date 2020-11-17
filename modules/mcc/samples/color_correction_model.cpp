@@ -78,6 +78,10 @@ int main(int argc, char *argv[])
         //compte color correction matrix
         //! [get_ccm_Matrix]
         ColorCorrectionModel model1(src, Vinyl);
+        model1.run();
+        Mat ccm = model1.getCCM();
+        std::cout<<"ccm "<<ccm<<std::endl;
+        double loss = model1.getLoss();
         //! [get_ccm_Matrix]
          /* brief More models with different parameters, try it & check the document for details.
         */
