@@ -35,24 +35,20 @@ Here are the parameters for ColorCorrectionModel
     src :
             detected colors of ColorChecker patches;
             NOTICE: the color type is RGB not BGR, and the color values are in [0, 1];
-            type: cv::Mat;
     constcolor :
             the Built-in color card;
             Supported list:
                 Macbeth: Macbeth ColorChecker ;
                 Vinyl: DKK ColorChecker ;
                 DigitalSG: DigitalSG ColorChecker with 140 squares;
-            type: enum CONST_COLOR;
     Mat colors_ :
            the reference color values
            and corresponding color space
            NOTICE: the color values are in [0, 1]
-           type: cv::Mat
     ref_cs_ :
            the corresponding color space
            NOTICE: For the list of color spaces supported, see the notes below;
                   If the color type is some RGB, the format is RGB not BGR;
-           type:enum COLOR_SPACE;
     Supported Color Space:
             Supported list of RGB color spaces:
                 sRGB;
