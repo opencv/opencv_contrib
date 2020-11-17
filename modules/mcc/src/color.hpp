@@ -28,7 +28,6 @@
 #ifndef __OPENCV_MCC_COLOR_HPP__
 #define __OPENCV_MCC_COLOR_HPP__
 
-#include <map>
 #include "distance.hpp"
 #include "colorspace.hpp"
 #include "opencv2/mcc/ccm.hpp"

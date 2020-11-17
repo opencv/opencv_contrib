@@ -29,9 +29,7 @@
 #ifndef __OPENCV_MCC_COLORSPACE_HPP__
 #define __OPENCV_MCC_COLORSPACE_HPP__
 
-#include <vector>
-#include <string>
-#include <iostream>
+
 #include "operations.hpp"
 #include "io.hpp"
 #include "opencv2/mcc/ccm.hpp"

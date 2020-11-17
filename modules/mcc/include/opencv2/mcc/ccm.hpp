@@ -31,10 +31,30 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
+
+/** @defgroup ccm Color Correction Model
+
+Introduction
+------------
+
+The purpose of color correction is to adjust the color response of input
+and output devices to a known state. The device being calibrated is sometimes
+called the calibration source; the color space used as the standard is sometimes
+called the calibration target. Color calibration has been used in many industries,
+such as television production, games, photography, engineering, chemistry,
+medicine, etc. Due to the manufacturing process of the input and output equipment,
+the channel response has nonlinear distortion. In order to correct the picture output
+of the equipment, it is nessary to calibrate the captured color and the actual color.
+
+
+*/
+
 namespace cv
 {
 namespace ccm
 {
+//! @addtogroup ccm
+//! @{
 
 /** @brief Enum of the possible types of ccm.
 */
@@ -352,7 +372,7 @@ public:
     ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
 
         /** @brief set ColorSpace
-            @param cs_ the absolute color space that detected colors convert to;\n
+            @param cs the absolute color space that detected colors convert to;\n
             NOTICE: it should be some RGB color space;\n
                     For the list of RGB color spaces supported, see the notes above;\n
             default: sRGB;
@@ -463,7 +483,7 @@ private:
     std::shared_ptr<Impl> p;
 
 };
-
+//! @} ccm
 } // namespace ccm
 } // namespace cv
 

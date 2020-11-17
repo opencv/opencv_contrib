@@ -107,7 +107,7 @@ The first part is to detect the ColorChecker position.
 @snippet samples/color_correction_model.cpp get_messages_of_image
 Preparation for ColorChecker detection to get messages for the image.
 
-@snippet samples/color_correction_model.cpp creat
+@snippet samples/color_correction_model.cpp create
 The CCheckerDetectorobject is created and uses getListColorChecker function to get ColorChecker message.
 
 @snippet samples/color_correction_model.cpp get_ccm_Matrix

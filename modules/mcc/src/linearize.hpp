@@ -29,6 +29,8 @@
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
+#include <opencv2/core.hpp>
+#include <map>
 #include "color.hpp"
 #include "opencv2/mcc/ccm.hpp"
 namespace cv

@@ -32,7 +32,7 @@
 
 #include <opencv2/core.hpp>
 #include <map>
-
+#include <iostream>
 
 namespace cv
 {

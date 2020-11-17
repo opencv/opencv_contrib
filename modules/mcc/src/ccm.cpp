@@ -32,112 +32,112 @@ namespace cv
 {
 namespace ccm
 {
-    class ColorCorrectionModel::Impl{
+class ColorCorrectionModel::Impl{
+public:
+    Mat src;
+    std::shared_ptr<Color> dst =std::make_shared<Color>();
+    Mat dist;
+    RGBBase_& cs;
+    Mat mask;
+
+    // RGBl of detected data and the reference
+    Mat src_rgbl;
+    Mat dst_rgbl;
+
+    // ccm type and shape
+    CCM_TYPE ccm_type;
+    int shape;
+
+    // linear method and distance
+    std::shared_ptr<Linear> linear=std::make_shared<Linear>();
+    DISTANCE_TYPE distance;
+    LINEAR_TYPE linear_type;
+
+    Mat weights;
+    Mat ccm;
+    Mat ccm0;
+    double gamma;
+    int deg;
+    std::vector<double> saturated_threshold;
+    INITIAL_METHOD_TYPE initial_method_type;
+    double weights_coeff;
+    int masked_len;
+    double loss;
+    int max_count;
+    double epsilon;
+    Impl();
+
+    /** @brief Make no change for CCM_3x3.
+             convert cv::Mat A to [A, 1] in CCM_4x3.
+        @param inp the input array, type of cv::Mat.
+        @return the output array, type of cv::Mat
+    */
+    Mat prepare(const Mat& inp);
+
+    /** @brief Calculate weights and mask.
+        @param weights_list the input array, type of cv::Mat.
+        @param weights_coeff type of double.
+        @param saturate_mask the input array, type of cv::Mat.
+    */
+    void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask);
+
+    /** @brief Fitting nonlinear - optimization initial value by white balance.
+             see CCM.pdf for details.
+        @return the output array, type of Mat
+    */
+    void initialWhiteBalance(void);
+
+    /** @brief Fitting nonlinear-optimization initial value by least square.
+             see CCM.pdf for details
+        @param fit if fit is True, return optimalization for rgbl distance function.
+    */
+    void initialLeastSquare(bool fit = false);
+
+    double calc_loss_(Color color);
+    double calc_loss(const Mat ccm_);
+
+    /** @brief Fitting ccm if distance function is associated with CIE Lab color space.
+             see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
+            Set terminal criteria for solver is possible.
+    */
+    void fitting(void);
+
+
+    void get_color(Mat& img_, bool islinear = false);
+    void get_color(CONST_COLOR constcolor);
+    void get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_);
+    void get_color(Mat colors_, COLOR_SPACE ref_cs_);
+
+
+    /** @brief Loss function base on cv::MinProblemSolver::Function.
+             see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
+    */
+    class LossFunction : public MinProblemSolver::Function
+    {
     public:
-        Mat src;
-        std::shared_ptr<Color> dst =std::make_shared<Color>();
-        Mat dist;
-        RGBBase_& cs;
-        Mat mask;
+        ColorCorrectionModel::Impl * ccm_loss;
+        LossFunction(ColorCorrectionModel::Impl* ccm) : ccm_loss(ccm) {};
 
-        // RGBl of detected data and the reference
-        Mat src_rgbl;
-        Mat dst_rgbl;
-
-        // ccm type and shape
-        CCM_TYPE ccm_type;
-        int shape;
-
-        // linear method and distance
-        std::shared_ptr<Linear> linear=std::make_shared<Linear>();
-        DISTANCE_TYPE distance;
-        LINEAR_TYPE linear_type;
-
-        Mat weights;
-        Mat ccm;
-        Mat ccm0;
-        double gamma;
-        int deg;
-        std::vector<double> saturated_threshold;
-        INITIAL_METHOD_TYPE initial_method_type;
-        double weights_coeff;
-        int masked_len;
-        double loss;
-        int max_count;
-        double epsilon;
-        Impl();
-
-        /** @brief Make no change for CCM_3x3.
-                 convert cv::Mat A to [A, 1] in CCM_4x3.
-            @param inp the input array, type of cv::Mat.
-            @return the output array, type of cv::Mat
+        /** @brief Reset dims to ccm->shape.
         */
-        Mat prepare(const Mat& inp);
-
-        /** @brief Calculate weights and mask.
-            @param weights_list the input array, type of cv::Mat.
-            @param weights_coeff type of double.
-            @param saturate_mask the input array, type of cv::Mat.
-        */
-        void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask);
-
-        /** @brief Fitting nonlinear - optimization initial value by white balance.
-                 see CCM.pdf for details.
-            @return the output array, type of Mat
-        */
-        void initialWhiteBalance(void);
-
-        /** @brief Fitting nonlinear-optimization initial value by least square.
-                 see CCM.pdf for details
-            @param fit if fit is True, return optimalization for rgbl distance function.
-        */
-        void initialLeastSquare(bool fit = false);
-
-        double calc_loss_(Color color);
-        double calc_loss(const Mat ccm_);
-
-        /** @brief Fitting ccm if distance function is associated with CIE Lab color space.
-                 see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
-                Set terminal criteria for solver is possible.
-        */
-        void fitting(void);
-
-
-        void get_color(Mat& img_, bool islinear = false);
-        void get_color(CONST_COLOR constcolor);
-        void get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_);
-        void get_color(Mat colors_, COLOR_SPACE ref_cs_);
-
-
-        /** @brief Loss function base on cv::MinProblemSolver::Function.
-                 see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
-        */
-        class LossFunction : public MinProblemSolver::Function
+        int getDims() const CV_OVERRIDE
         {
-        public:
-            ColorCorrectionModel::Impl * ccm_loss;
-            LossFunction(ColorCorrectionModel::Impl* ccm) : ccm_loss(ccm) {};
+            return ccm_loss->shape;
+        }
 
-            /** @brief Reset dims to ccm->shape.
-            */
-            int getDims() const CV_OVERRIDE
+        /** @brief Reset calculation.
+        */
+        double calc(const double* x) const CV_OVERRIDE
+        {
+            Mat ccm_(ccm_loss->shape, 1, CV_64F);
+            for (int i = 0; i < ccm_loss->shape; i++)
             {
-                return ccm_loss->shape;
+                ccm_.at<double>(i, 0) = x[i];
             }
-
-            /** @brief Reset calculation.
-            */
-            double calc(const double* x) const CV_OVERRIDE
-            {
-                Mat ccm_(ccm_loss->shape, 1, CV_64F);
-                for (int i = 0; i < ccm_loss->shape; i++)
-                {
-                    ccm_.at<double>(i, 0) = x[i];
-                }
-                ccm_ = ccm_.reshape(0, ccm_loss->shape / 3);
-                return ccm_loss->calc_loss(ccm_);
-            }
-    };
+            ccm_ = ccm_.reshape(0, ccm_loss->shape / 3);
+            return ccm_loss->calc_loss(ccm_);
+        }
+};
 };
 
 ColorCorrectionModel::Impl::Impl():cs(*GetCS::get_rgb(sRGB)),ccm_type(CCM_3x3), distance(CIE2000),linear_type(GAMMA), weights(Mat()),gamma(2.2),deg(3),saturated_threshold({ 0, 0.98 }),
