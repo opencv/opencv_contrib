@@ -1136,7 +1136,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         {
             Vec3i tsdf_idx = _totalVolUnits[i];
             //VolumeIndex idx = find_idx(indexes, tsdf_idx);
-            VolumeIndex idx = _indexes.find_Volume(idx);
+            VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
             if (idx < 0 || idx == _lastVolIndex - 1) return;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(poses.at<Vec3i>(idx, 0));
