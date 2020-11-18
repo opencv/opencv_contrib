@@ -997,9 +997,34 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 
     if (k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
+    
+    //Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+    float dfac = 1.f / depthFactor;
+    Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
+    Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
+
+
     std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
-    k.args(ocl::KernelArg::ReadOnly(depth), _indexes.volumes.getUMat(ACCESS_RW),
-       _indexes.list_size, _indexes.bufferNums, _indexes.hash_divisor);
+    k.args(ocl::KernelArg::ReadOnly(depth),
+        _indexes.volumes.getUMat(ACCESS_RW),
+        (int)_indexes.list_size,
+        (int)_indexes.bufferNums,
+        (int)_indexes.hash_divisor,
+        // ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val)),
+        // _volUnitsData.getUMat(ACCESS_RW),
+        // isActive.getUMat(ACCESS_READ),
+        lastVisibleIndexes.getUMat(ACCESS_READ),
+        // ocl::KernelArg::PtrReadOnly(_pixNorms),
+        voxelSize,
+        volResGpu.val,
+        volStrides.val,
+        fxy.val,
+        cxy.val,
+        dfac,
+        truncDist,
+        int(maxWeight)
+        // ,ocl::KernelArg::PtrReadOnly(_pixNorms)
+    );
 
     int resol = 2;
     size_t globalSize[3];

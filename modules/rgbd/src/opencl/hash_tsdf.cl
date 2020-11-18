@@ -47,6 +47,60 @@ __kernel void preCalculationPixNorm (__global float * pixNorms,
     pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
 }
 
+uint calc_hash(int3 x)
+{
+    unsigned int seed = 0;
+    uint GOLDEN_RATIO = 0x9e3779b9;
+    seed += x.x + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed += x.y + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed += x.z + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    return seed;
+}
+
+int findVolume(__global struct Volume_NODE * hash_table, int3 indx, int hash_divisor)
+{
+    int hash = calc_hash(indx) % hash_divisor;
+    printf("%d \n", hash);
+    return 1;
+}
+
+__kernel void integrateAllVolumeUnits(
+                        __global const char * depthptr,
+                        int depth_step, int depth_offset,
+                        int depth_rows, int depth_cols,
+                        __global struct Volume_NODE * hash_table,
+                        const int list_size, 
+                        const int bufferNums, 
+                        const int hash_divisor,
+                        // const float16 vol2camMatrix,
+                        // const __global struct TsdfVoxel * volUnitsData,
+                        // const __global bool * isActive,
+                        // const __global int * lastVisibleIndexes,
+                        // const __global float * pixNorms,
+                        const float voxelSize,
+                        const int4 volResolution4,
+                        const int4 volDims4,
+                        const float2 fxy,
+                        const float2 cxy,
+                        const float dfac,
+                        const float truncDist,
+                        const int maxWeight
+                        // ,const __global float * pixNorms
+                        )
+{
+    //printf(" = %d , %d , %d \n", hash_params.x, hash_params.y, hash_params.z);
+    printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
+    //findVolume(hash_table, hash_table->idx, hash_divisor);
+    //hash_table->idx.x = 10;
+    //findVolume(hash_table, hash_table->idx, hash_divisor);
+    
+    //printf("%d \n", hash_table->nextVolumeRow);
+    //printf("%d \n", hash_table->row);
+    //printf("%d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
+
+
+}
+
 __kernel void integrateVolumeUnit(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
@@ -198,37 +252,4 @@ __kernel void integrateVolumeUnit(__global const char * depthptr,
             volumeptr[volIdx] = voxel;
         }
     }
-}
-
-uint calc_hash(int3 x)
-{
-    unsigned int seed = 0;
-    uint GOLDEN_RATIO = 0x9e3779b9;
-    seed += x.x + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed += x.y + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed += x.z + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    return seed;
-}
-
-int findVolume(__global struct Volume_NODE * hash_table, int3 indx, int hash_divisor)
-{
-    int hash = calc_hash(indx) % hash_divisor;
-    printf("%d \n", hash);
-    return 1;
-}
-
-__kernel void integrateAllVolumeUnits(__global const char * depthptr,
-                        int depth_step, int depth_offset,
-                        int depth_rows, int depth_cols,
-                        __global struct Volume_NODE * hash_table,
-                        int list_size, const int bufferNums, const int hash_divisor)
-{
-    printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
-
-    findVolume(hash_table, hash_table->idx, hash_divisor);
-    hash_table->idx.x = 10;
-    findVolume(hash_table, hash_table->idx, hash_divisor);
-    //printf("%d \n", hash_table->nextVolumeRow);
-    //printf("%d \n", hash_table->row);
-    //printf("%d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
 }
