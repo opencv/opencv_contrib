@@ -1013,7 +1013,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         // ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val)),
         // _volUnitsData.getUMat(ACCESS_RW),
         // isActive.getUMat(ACCESS_READ),
-        lastVisibleIndexes.getUMat(ACCESS_READ),
+        // lastVisibleIndexes.getUMat(ACCESS_READ),
         // ocl::KernelArg::PtrReadOnly(_pixNorms),
         voxelSize,
         volResGpu.val,
