@@ -125,7 +125,11 @@ class vector {
       memcpy(data, data_, sizeof(*data)*size_);
 #else
       for (int i = 0; i < size_; ++i)
+#ifdef CV_CXX11
         new (&data[i]) T(std::move(data_[i]));
+#else
+        new (&data[i]) T(data_[i]);
+#endif
       for (int i = 0; i < size_; ++i)
         data_[i].~T();
 #endif
