@@ -34,18 +34,18 @@ namespace ccm {
 static std::map<IO, std::vector<double>> getilluminants()
 {
   static std::map<IO, std::vector<double>> illuminants = {
-  {A_2, { 1.098466069456375, 1, 0.3558228003436005 }},
-  {A_10, { 1.111420406956693, 1, 0.3519978321919493 }},
-  {D50_2, { 0.9642119944211994, 1, 0.8251882845188288 }},
-  {D50_10, { 0.9672062750333777, 1, 0.8142801513128616 }},
-  {D55_2, { 0.956797052643698, 1, 0.9214805860173273 }},
-  {D55_10, { 0.9579665682254781, 1, 0.9092525159847462 }},
-  {D65_2, { 0.95047, 1., 1.08883 }},
-  {D65_10, { 0.94811, 1., 1.07304 }},
-  {D75_2, { 0.9497220898840717, 1, 1.226393520724154 }},
-  {D75_10, { 0.9441713925645873, 1, 1.2064272211720228 }},
-  {E_2, { 1., 1., 1. }},
-  {E_10, { 1., 1., 1. }},
+  {IO::getIOs(A_2), { 1.098466069456375, 1, 0.3558228003436005 }},
+  {IO::getIOs(A_10), { 1.111420406956693, 1, 0.3519978321919493 }},
+  {IO::getIOs(D50_2), { 0.9642119944211994, 1, 0.8251882845188288 }},
+  {IO::getIOs(D50_10), { 0.9672062750333777, 1, 0.8142801513128616 }},
+  {IO::getIOs(D55_2), { 0.956797052643698, 1, 0.9214805860173273 }},
+  {IO::getIOs(D55_10), { 0.9579665682254781, 1, 0.9092525159847462 }},
+  {IO::getIOs(D65_2), { 0.95047, 1., 1.08883 }},
+  {IO::getIOs(D65_10), { 0.94811, 1., 1.07304 }},
+  {IO::getIOs(D75_2), { 0.9497220898840717, 1, 1.226393520724154 }},
+  {IO::getIOs(D75_10), { 0.9441713925645873, 1, 1.2064272211720228 }},
+  {IO::getIOs(E_2), { 1., 1., 1. }},
+  {IO::getIOs(E_10), { 1., 1., 1. }},
 };
   return illuminants;
 };
@@ -621,80 +621,81 @@ std::shared_ptr<ColorSpace> GetCS::get_cs(enum COLOR_SPACE cs_name) {
         break;
     }
     case cv::ccm::XYZ_D65_2:
-        return XYZ::get(D65_2);
+        return XYZ::get(IO::getIOs(D65_2));
         break;
     case cv::ccm::XYZ_D50_2:
-        return XYZ::get(D50_2);
+        return XYZ::get(IO::getIOs(D50_2));
         break;
     case cv::ccm::XYZ_D65_10:
-        return XYZ::get(D65_10);
+        return XYZ::get(IO::getIOs(D65_10));
         break;
     case cv::ccm::XYZ_D50_10:
-        return XYZ::get(D50_10);
+        return XYZ::get(IO::getIOs(D50_10));
         break;
     case cv::ccm::XYZ_A_2:
-        return XYZ::get(A_2);
+        return XYZ::get(IO::getIOs(A_2));
         break;
     case cv::ccm::XYZ_A_10:
-        return XYZ::get(A_10);
+        return XYZ::get(IO::getIOs(A_10));
         break;
     case cv::ccm::XYZ_D55_2:
-        return XYZ::get(D55_2);
+        return XYZ::get(IO::getIOs(D55_2));
         break;
     case cv::ccm::XYZ_D55_10:
-        return XYZ::get(D55_10);
+        return XYZ::get(IO::getIOs(D55_10));
         break;
     case cv::ccm::XYZ_D75_2:
-        return XYZ::get(D75_2);
+        return XYZ::get(IO::getIOs(D75_2));
         break;
     case cv::ccm::XYZ_D75_10:
-        return XYZ::get(D75_10);
+        return XYZ::get(IO::getIOs(D75_10));
         break;
     case cv::ccm::XYZ_E_2:
-        return XYZ::get(E_2);
+        return XYZ::get(IO::getIOs(E_2));
         break;
     case cv::ccm::XYZ_E_10:
-        return XYZ::get(E_10);
+        return XYZ::get(IO::getIOs(E_10));
         break;
     case cv::ccm::Lab_D65_2:
-        return Lab::get(D65_2);
+        return Lab::get(IO::getIOs(D65_2));
         break;
     case cv::ccm::Lab_D50_2:
-        return Lab::get(D50_2);
+        return Lab::get(IO::getIOs(D50_2));
         break;
     case cv::ccm::Lab_D65_10:
-        return Lab::get(D65_10);
+        return Lab::get(IO::getIOs(D65_10));
         break;
     case cv::ccm::Lab_D50_10:
-        return Lab::get(D50_10);
+        return Lab::get(IO::getIOs(D50_10));
         break;
     case cv::ccm::Lab_A_2:
-        return Lab::get(A_2);
+        return Lab::get(IO::getIOs(A_2));
         break;
     case cv::ccm::Lab_A_10:
-        return Lab::get(A_10);
+        return Lab::get(IO::getIOs(A_10));
         break;
     case cv::ccm::Lab_D55_2:
-        return Lab::get(D55_2);
+        return Lab::get(IO::getIOs(D55_2));
         break;
     case cv::ccm::Lab_D55_10:
-        return Lab::get(D55_10);
+        return Lab::get(IO::getIOs(D55_10));
         break;
     case cv::ccm::Lab_D75_2:
-        return Lab::get(D75_2);
+        return Lab::get(IO::getIOs(D75_2));
         break;
     case cv::ccm::Lab_D75_10:
-        return Lab::get(D75_10);
+        return Lab::get(IO::getIOs(D75_10));
         break;
     case cv::ccm::Lab_E_2:
-        return Lab::get(E_2);
+        return Lab::get(IO::getIOs(E_2));
         break;
     case cv::ccm::Lab_E_10:
-        return Lab::get(E_10);
+        return Lab::get(IO::getIOs(E_10));
         break;
     default:
         break;
     }
+
 
     return map_cs[cs_name];
 }

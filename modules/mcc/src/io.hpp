@@ -38,6 +38,21 @@ namespace cv
 namespace ccm
 {
 
+enum IO_TYPE {
+        A_2,
+        A_10,
+        D50_2,
+        D50_10,
+        D55_2,
+        D55_10,
+        D65_2,
+        D65_10,
+        D75_2,
+        D75_10,
+        E_2,
+        E_10
+    };
+
 /** @brief Io is the meaning of illuminant and observer. See notes of ccm.hpp
            for supported list for illuminant and observer*/
 class IO
@@ -50,17 +65,9 @@ public:
     virtual ~IO(){};
     bool operator<(const IO& other) const;
     bool operator==(const IO& other) const;
+    static IO getIOs(IO_TYPE io);
 
 };
-
-const IO A_2("A", "2"), A_10("A", "10"),
-    D50_2("D50", "2"), D50_10("D50", "10"),
-    D55_2("D55", "2"), D55_10("D55", "10"),
-    D65_2("D65", "2"), D65_10("D65", "10"),
-    D75_2("D75", "2"), D75_10("D75", "10"),
-    E_2("E", "2"), E_10("E", "10");
-
-
 std::vector<double> xyY2XYZ(const std::vector<double>& xyY);
 
 

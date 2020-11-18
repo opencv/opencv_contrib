@@ -195,7 +195,7 @@ class sRGB_ :public sRGBBase_
 
 {
 public:
-    sRGB_(bool linear_) :sRGBBase_(D65_2, "sRGB", linear_) {};
+    sRGB_(bool linear_) :sRGBBase_(IO::getIOs(D65_2), "sRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -206,7 +206,7 @@ private:
 class AdobeRGB_ : public AdobeRGBBase_
 {
 public:
-    AdobeRGB_(bool linear_ = false) :AdobeRGBBase_(D65_2, "AdobeRGB", linear_) {};
+    AdobeRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D65_2), "AdobeRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -219,7 +219,7 @@ private:
 class WideGamutRGB_ : public AdobeRGBBase_
 {
 public:
-    WideGamutRGB_(bool linear_ = false) :AdobeRGBBase_(D50_2, "WideGamutRGB", linear_) {};
+    WideGamutRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D50_2), "WideGamutRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -232,7 +232,7 @@ private:
 class ProPhotoRGB_ : public AdobeRGBBase_
 {
 public:
-    ProPhotoRGB_(bool linear_ = false) :AdobeRGBBase_(D50_2, "ProPhotoRGB", linear_) {};
+    ProPhotoRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D50_2), "ProPhotoRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -244,7 +244,7 @@ private:
 class DCI_P3_RGB_ : public AdobeRGBBase_
 {
 public:
-    DCI_P3_RGB_(bool linear_ = false) :AdobeRGBBase_(D65_2, "DCI_P3_RGB", linear_) {};
+    DCI_P3_RGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D65_2), "DCI_P3_RGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -256,7 +256,7 @@ private:
 class AppleRGB_ : public AdobeRGBBase_
 {
 public:
-    AppleRGB_(bool linear_ = false) :AdobeRGBBase_(D65_2, "AppleRGB", linear_) {};
+    AppleRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D65_2), "AppleRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -268,7 +268,7 @@ private:
 class REC_709_RGB_ : public sRGBBase_
 {
 public:
-    REC_709_RGB_(bool linear_) :sRGBBase_(D65_2, "REC_709_RGB", linear_) {};
+    REC_709_RGB_(bool linear_) :sRGBBase_(IO::getIOs(D65_2), "REC_709_RGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -280,7 +280,7 @@ private:
 class REC_2020_RGB_ : public sRGBBase_
 {
 public:
-    REC_2020_RGB_(bool linear_) :sRGBBase_(D65_2, "REC_2020_RGB", linear_) {};
+    REC_2020_RGB_(bool linear_) :sRGBBase_(IO::getIOs(D65_2), "REC_2020_RGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -328,8 +328,8 @@ private:
 
 /** @brief Define XYZ_D65_2 and XYZ_D50_2.
 */
-const XYZ XYZ_D65_2_CS(D65_2);
-const XYZ XYZ_D50_2_CS(D50_2);
+const XYZ XYZ_D65_2_CS(IO::getIOs(D65_2));
+const XYZ XYZ_D50_2_CS(IO::getIOs(D50_2));
 
 /** @brief Lab color space.
 */
@@ -366,8 +366,8 @@ private:
 
 /** @brief Define Lab_D65_2 and Lab_D50_2.
 */
-const Lab Lab_D65_2_CS(D65_2);
-const Lab Lab_D50_2_CS(D50_2);
+const Lab Lab_D65_2_CS(IO::getIOs(D65_2));
+const Lab Lab_D50_2_CS(IO::getIOs(D50_2));
 
 
 class GetCS {
