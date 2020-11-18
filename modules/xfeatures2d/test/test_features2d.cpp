@@ -85,6 +85,12 @@ TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
     test.safe_run();
 }
 
+TEST(Features2d_Detector_TBMR_Affine, regression)
+{
+    CV_FeatureDetectorTest test("detector-tbmr-affine", TBMR::create());
+    test.safe_run();
+}
+
 /*
  * Descriptors
  */

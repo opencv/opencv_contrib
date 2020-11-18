@@ -901,7 +901,7 @@ public:
  * The interface is equivalent to @ref Feature2D, adding operations for
  * @ref Elliptic_KeyPoint "Elliptic_KeyPoints" instead of @ref KeyPoint "KeyPoints".
  */
-class CV_EXPORTS AffineFeature2D : public Feature2D
+class CV_EXPORTS_W AffineFeature2D : public Feature2D
 {
 public:
     /**
@@ -945,6 +945,40 @@ public:
         bool useProvidedKeypoints=false ) = 0;
 };
 
+/**
+@brief Class implementing the Tree Based Morse Regions (TBMR) as described in
+@cite Najman2014 extended with scaled extraction ability.
+
+@param min_area prune areas smaller than minArea
+@param max_area_relative prune areas bigger than maxArea = max_area_relative *
+input_image_size
+@param scale_factor scale factor for scaled extraction.
+@param n_scales number of applications of the scale factor (octaves).
+
+@note This algorithm is based on Component Tree (Min/Max) as well as MSER but
+uses a Morse-theory approach to extract features.
+
+Features are ellipses (similar to MSER, however a MSER feature can never be a
+TBMR feature and vice versa).
+
+*/
+class CV_EXPORTS_W TBMR : public AffineFeature2D
+{
+public:
+    CV_WRAP static Ptr<TBMR> create(int min_area = 60,
+        float max_area_relative = 0.01f,
+        float scale_factor = 1.25f,
+        int n_scales = -1);
+
+    CV_WRAP virtual void setMinArea(int minArea) = 0;
+    CV_WRAP virtual int getMinArea() const = 0;
+    CV_WRAP virtual void setMaxAreaRelative(float maxArea) = 0;
+    CV_WRAP virtual float getMaxAreaRelative() const = 0;
+    CV_WRAP virtual void setScaleFactor(float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
+    CV_WRAP virtual void setNScales(int n_scales) = 0;
+    CV_WRAP virtual int getNScales() const = 0;
+};
 
 /** @brief Estimates cornerness for prespecified KeyPoints using the FAST algorithm
 
