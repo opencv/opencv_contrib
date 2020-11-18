@@ -104,8 +104,8 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
 
   bool isInit;
 
-  Ptr<TrackerFeatureSet> featureSet;
-  Ptr<TrackerSampler> sampler;
+  Ptr<TrackerContribFeatureSet> featureSet;
+  Ptr<TrackerContribSampler> sampler;
   Ptr<TrackerModel> model;
 };
 
@@ -123,7 +123,7 @@ Original code can be found here <http://vision.ucsd.edu/~bbabenko/project_miltra
 class CV_EXPORTS_W TrackerMIL : public cv::legacy::Tracker
 {
  public:
-  struct CV_EXPORTS Params : cv::tracking::TrackerMIL::Params
+  struct CV_EXPORTS Params : cv::TrackerMIL::Params
   {
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
@@ -526,7 +526,7 @@ public:
 };
 
 
-CV_EXPORTS_W Ptr<cv::tracking::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker);
+CV_EXPORTS_W Ptr<cv::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker);
 
 //! @}
 

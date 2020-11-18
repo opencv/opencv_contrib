@@ -4,11 +4,10 @@ import org.opencv.core.Core;
 import org.opencv.core.CvException;
 import org.opencv.test.OpenCVTestCase;
 
-import org.opencv.tracking.Tracking;
-import org.opencv.tracking.Tracker;
-import org.opencv.tracking.TrackerGOTURN;
+import org.opencv.video.Tracker;
+import org.opencv.video.TrackerGOTURN;
 import org.opencv.tracking.TrackerKCF;
-import org.opencv.tracking.TrackerMIL;
+import org.opencv.video.TrackerMIL;
 
 public class TrackerCreateTest extends OpenCVTestCase {
 

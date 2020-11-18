@@ -60,7 +60,7 @@ inline namespace tracking {
 //! @addtogroup tracking_detail
 //! @{
 
-inline namespace feature {
+inline namespace contrib_feature {
 
 #define FEATURES "features"
 

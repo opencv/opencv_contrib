@@ -65,19 +65,13 @@ bool Tracker::init( InputArray image, const Rect2d& boundingBox )
   if( image.empty() )
     return false;
 
-  sampler = Ptr<TrackerSampler>( new TrackerSampler() );
-  featureSet = Ptr<TrackerFeatureSet>( new TrackerFeatureSet() );
+  sampler = Ptr<TrackerContribSampler>( new TrackerContribSampler() );
+  featureSet = Ptr<TrackerContribFeatureSet>( new TrackerContribFeatureSet() );
   model = Ptr<TrackerModel>();
 
   bool initTracker = initImpl( image.getMat(), boundingBox );
 
-  //check if the model component is initialized
-  if (!model)
-  {
-    CV_Error( -1, "The model is not initialized" );
-  }
-
-  if( initTracker )
+  if (initTracker)
   {
     isInit = true;
   }
@@ -101,7 +95,7 @@ bool Tracker::update( InputArray image, Rect2d& boundingBox )
 
 
 
-class LegacyTrackerWrapper : public cv::tracking::Tracker
+class LegacyTrackerWrapper : public cv::Tracker
 {
     const Ptr<legacy::Tracker> legacy_tracker_;
 public:
@@ -132,7 +126,7 @@ public:
 };
 
 
-CV_EXPORTS_W Ptr<cv::tracking::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker)
+CV_EXPORTS_W Ptr<cv::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker)
 {
     return makePtr<LegacyTrackerWrapper>(legacy_tracker);
 }

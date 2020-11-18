@@ -4,20 +4,6 @@
 
 #include "precomp.hpp"
 
-namespace cv {
-inline namespace tracking {
-
-Tracker::Tracker()
-{
-    // nothing
-}
-
-Tracker::~Tracker()
-{
-    // nothing
-}
-
-}} // namespace
-
+// see modules/video/src/tracking/tracker.cpp
 
 #include "legacy/tracker.legacy.hpp"
