@@ -26,11 +26,11 @@
 //         Chenqi Shan <shanchenqi@huawei.com>
 
 #include "io.hpp"
-namespace cv
-{
-namespace ccm
-{
-IO::IO(std::string illuminant_, std::string observer_) :illuminant(illuminant_), observer(observer_) {};
+namespace cv {
+namespace ccm {
+IO::IO(std::string illuminant_, std::string observer_)
+    : illuminant(illuminant_)
+    , observer(observer_) {};
 
 bool IO::operator<(const IO& other) const
 {
@@ -42,7 +42,8 @@ bool IO::operator==(const IO& other) const
     return illuminant == other.illuminant && observer == other.observer;
 };
 
-IO IO::getIOs(IO_TYPE io) {
+IO IO::getIOs(IO_TYPE io)
+{
     switch (io)
     {
     case cv::ccm::A_2:
@@ -128,5 +129,5 @@ std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
     return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
 }
 
-} // namespace ccm
-} // namespace cv
+}
+}  // namespace cv::ccm

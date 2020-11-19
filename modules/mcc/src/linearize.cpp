@@ -27,12 +27,11 @@
 
 #include "linearize.hpp"
 
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
-Polyfit::Polyfit(Mat x, Mat y, int deg_) :deg(deg_)
+Polyfit::Polyfit(Mat x, Mat y, int deg_)
+    : deg(deg_)
 {
     int n = x.cols * x.rows * x.channels();
     x = x.reshape(1, n);
@@ -51,7 +50,7 @@ Polyfit::Polyfit(Mat x, Mat y, int deg_) :deg(deg_)
 
 Mat Polyfit::operator()(const Mat& inp)
 {
-    return elementWise(inp, [this](double x)->double {return fromEW(x); });
+    return elementWise(inp, [this](double x) -> double { return fromEW(x); });
 };
 
 double Polyfit::fromEW(double x)
@@ -64,7 +63,8 @@ double Polyfit::fromEW(double x)
     return res;
 };
 
-LogPolyfit::LogPolyfit(Mat x, Mat y, int deg_) :deg(deg_)
+LogPolyfit::LogPolyfit(Mat x, Mat y, int deg_)
+    : deg(deg_)
 {
     Mat mask_ = (x > 0) & (y > 0);
     Mat src_, dst_, s_, d_;
@@ -96,7 +96,7 @@ Mat LinearGamma::linearize(Mat inp)
     return gammaCorrection(inp, gamma);
 };
 
-std::shared_ptr<Linear>  getLinear(double gamma, int deg, Mat src, Color dst, Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type)
+std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type)
 {
     std::shared_ptr<Linear> p = std::make_shared<Linear>();
     switch (linear_type)
@@ -120,11 +120,11 @@ std::shared_ptr<Linear>  getLinear(double gamma, int deg, Mat src, Color dst, Ma
         p.reset(new LinearGray<LogPolyfit>(deg, src, dst, mask, cs));
         break;
     default:
-        throw std::invalid_argument{ "Wrong linear_type!" };
+        throw std::invalid_argument { "Wrong linear_type!" };
         break;
     }
     return p;
 };
 
-} // namespace ccm
-} // namespace cv
+}
+}  // namespace cv::ccm

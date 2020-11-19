@@ -25,7 +25,6 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
@@ -33,10 +32,8 @@
 #include <map>
 #include "color.hpp"
 #include "opencv2/mcc/ccm.hpp"
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 /** @brief Polyfit model.
 */
@@ -59,7 +56,6 @@ public:
 
 private:
     double fromEW(double x);
-
 };
 
 /** @brief Logpolyfit model.
@@ -78,7 +74,6 @@ public:
     LogPolyfit(Mat x, Mat y, int deg);
     virtual ~LogPolyfit() {};
     Mat operator()(const Mat& inp);
-
 };
 
 /** @brief Linearization base.
@@ -99,11 +94,11 @@ public:
     virtual void value(void) {};
 };
 
-
 /** @brief Linearization identity.
            make no change.
 */
-class LinearIdentity : public Linear {};
+class LinearIdentity : public Linear
+{};
 
 /** @brief Linearization gamma correction.
 */
@@ -112,7 +107,8 @@ class LinearGamma : public Linear
 public:
     double gamma;
 
-    LinearGamma(double gamma_) :gamma(gamma_) {};
+    LinearGamma(double gamma_)
+        : gamma(gamma_) {};
 
     Mat linearize(Mat inp) CV_OVERRIDE;
 };
@@ -121,12 +117,13 @@ public:
            Grayscale polynomial fitting.
 */
 template <class T>
-class LinearGray :public Linear
+class LinearGray : public Linear
 {
 public:
     int deg;
     T p;
-    LinearGray(int deg_, Mat src, Color dst, Mat mask, RGBBase_ cs) :deg(deg_)
+    LinearGray(int deg_, Mat src, Color dst, Mat mask, RGBBase_ cs)
+        : deg(deg_)
     {
         dst.getGray();
         Mat lear_gray_mask = mask & dst.grays;
@@ -156,7 +153,7 @@ public:
            Fitting channels respectively.
 */
 template <class T>
-class LinearColor :public Linear
+class LinearColor : public Linear
 {
 public:
     int deg;
@@ -164,7 +161,8 @@ public:
     T pg;
     T pb;
 
-    LinearColor(int deg_, Mat src_, Color dst, Mat mask, RGBBase_ cs) :deg(deg_)
+    LinearColor(int deg_, Mat src_, Color dst, Mat mask, RGBBase_ cs)
+        : deg(deg_)
     {
         Mat src = maskCopyTo(src_, mask);
         Mat dst_ = maskCopyTo(dst.to(*cs.l).colors, mask);
@@ -188,7 +186,7 @@ public:
         split(inp, channels);
         std::vector<Mat> channel;
         Mat res;
-        merge(std::vector<Mat>{ pr(channels[0]), pg(channels[1]), pb(channels[2]) }, res);
+        merge(std::vector<Mat> { pr(channels[0]), pg(channels[1]), pb(channels[2]) }, res);
         return res;
     };
 };
@@ -206,9 +204,7 @@ public:
 
 std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type);
 
-
-} // namespace ccm
-} // namespace cv
-
+}
+}  // namespace cv::ccm
 
 #endif

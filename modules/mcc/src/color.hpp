@@ -32,11 +32,8 @@
 #include "colorspace.hpp"
 #include "opencv2/mcc/ccm.hpp"
 
-
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 /** @brief Color defined by color_values and color space
 */
@@ -44,13 +41,12 @@ namespace ccm
 class Color
 {
 public:
-
     /** @param grays mask of grayscale color
         @param colored mask of colored color
         @param history storage of historical conversion
     */
     Mat colors;
-    const ColorSpace& cs ;
+    const ColorSpace& cs;
     Mat grays;
     Mat colored;
     std::map<ColorSpace, std::shared_ptr<Color>> history;
@@ -106,21 +102,17 @@ public:
     /** @brief Operator for mask copy.
     */
     Color operator[](Mat mask);
-
 };
 
-
-class GetColor {
+class GetColor
+{
 public:
     static std::shared_ptr<Color> get_color(CONST_COLOR const_color);
-    static Mat get_ColorChecker(const double *checker,int row);
-    static Mat get_ColorChecker_MASK(const uchar *checker,int row);
+    static Mat get_ColorChecker(const double* checker, int row);
+    static Mat get_ColorChecker_MASK(const uchar* checker, int row);
 };
 
-
-
-} // namespace ccm
-} // namespace cv
-
+}
+}  // namespace cv::ccm
 
 #endif

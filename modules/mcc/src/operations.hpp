@@ -25,16 +25,13 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-
 #ifndef __OPENCV_MCC_OPERATIONS_HPP__
 #define __OPENCV_MCC_OPERATIONS_HPP__
 
 #include "utils.hpp"
 
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 /** @brief Operation class contains some operarions used for color space
            conversion containing linear transformation and non-linear transformation
@@ -47,9 +44,15 @@ public:
     Mat M;
     MatFunc f;
 
-    Operation() : linear(true), M(Mat()) {};
-    Operation(Mat M_) :linear(true), M(M_) {};
-    Operation(MatFunc f_) : linear(false), f(f_) {};
+    Operation()
+        : linear(true)
+        , M(Mat()) {};
+    Operation(Mat M_)
+        : linear(true)
+        , M(M_) {};
+    Operation(MatFunc f_)
+        : linear(false)
+        , f(f_) {};
     virtual ~Operation() {};
 
     /** @brief operator function will run operation
@@ -62,20 +65,22 @@ public:
     void add(const Operation& other);
 
     void clear();
-    static Operation& get_IDENTITY_OP(){
-        static Operation identity_op([](Mat x) {return x; });
+    static Operation& get_IDENTITY_OP()
+    {
+        static Operation identity_op([](Mat x) { return x; });
         return identity_op;
     }
 };
-
 
 class Operations
 {
 public:
     std::vector<Operation> ops;
 
-    Operations() :ops{ } {};
-    Operations(std::initializer_list<Operation> op) :ops{ op } {};
+    Operations()
+        : ops {} {};
+    Operations(std::initializer_list<Operation> op)
+        : ops { op } {};
     virtual ~Operations() {};
 
     /** @brief add function will conbine this operation with other transformation operations
@@ -85,13 +90,13 @@ public:
     /** @brief run operations to make color conversion
     */
     Mat run(Mat abc);
-    static Operations get_IDENTITY_OPS(){
-        return Operations{Operation::get_IDENTITY_OP()};
+    static Operations get_IDENTITY_OPS()
+    {
+        return Operations { Operation::get_IDENTITY_OP() };
     }
 };
 
-} // namespace ccm
-} // namespace cv
-
+}
+}  // namespace cv::ccm
 
 #endif

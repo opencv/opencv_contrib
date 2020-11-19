@@ -27,10 +27,8 @@
 
 #include "utils.hpp"
 
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 double gammaCorrection_(const double& element, const double& gamma)
 {
@@ -39,7 +37,7 @@ double gammaCorrection_(const double& element, const double& gamma)
 
 Mat gammaCorrection(const Mat& src, const double& gamma)
 {
-    return elementWise(src, [gamma](double element)->double {return gammaCorrection_(element, gamma); });
+    return elementWise(src, [gamma](double element) -> double { return gammaCorrection_(element, gamma); });
 }
 
 Mat maskCopyTo(const Mat& src, const Mat& mask)
@@ -116,5 +114,5 @@ Mat rgb2gray(Mat rgb)
     return multiple(rgb, m_gray);
 }
 
-} // namespace ccm
-} // namespace cv
+}
+}  // namespace cv::ccm

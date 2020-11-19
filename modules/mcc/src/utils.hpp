@@ -76,7 +76,7 @@ Mat rgb2gray(Mat rgb);
     @param src the input array, type of Mat
     @param lambda a for operation
  */
-template<typename F>
+template <typename F>
 Mat elementWise(const Mat& src, F&& lambda)
 {
     Mat dst = src.clone();
@@ -116,7 +116,7 @@ Mat elementWise(const Mat& src, F&& lambda)
       @param src the input array, type of Mat
       @param lambda the function for operation
 */
-template<typename F>
+template <typename F>
 Mat channelWise(const Mat& src, F&& lambda)
 {
     Mat dst = src.clone();
@@ -133,12 +133,12 @@ Mat channelWise(const Mat& src, F&& lambda)
     @param ref another input array, type of Mat.
     @param lambda the computing method for distance .
  */
-template<typename F>
+template <typename F>
 Mat distanceWise(Mat& src, Mat& ref, F&& lambda)
 {
     Mat dst = Mat(src.size(), CV_64FC1);
     MatIterator_<Vec3d> it_src = src.begin<Vec3d>(), end_src = src.end<Vec3d>(),
-        it_ref = ref.begin<Vec3d>();
+                        it_ref = ref.begin<Vec3d>();
     MatIterator_<double> it_dst = dst.begin<double>();
     for (; it_src != end_src; ++it_src, ++it_ref, ++it_dst)
     {
@@ -151,7 +151,7 @@ Mat multiple(const Mat& xyz, const Mat& ccm);
 
 static const Mat m_gray = (Mat_<double>(3, 1) << 0.2126, 0.7152, 0.0722);
 
-}  // namespace ccm
-}  // namespace cv
+}
+}  // namespace cv::ccm
 
 #endif

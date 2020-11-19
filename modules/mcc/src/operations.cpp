@@ -27,10 +27,8 @@
 
 #include "operations.hpp"
 #include "utils.hpp"
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 Mat Operation::operator()(Mat& abc)
 {
@@ -88,5 +86,5 @@ Mat Operations::run(Mat abc)
     return abc;
 };
 
-} // namespace ccm
-} // namespace cv
+}
+}  // namespace cv::ccm

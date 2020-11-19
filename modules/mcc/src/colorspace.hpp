@@ -25,19 +25,15 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-
 #ifndef __OPENCV_MCC_COLORSPACE_HPP__
 #define __OPENCV_MCC_COLORSPACE_HPP__
-
 
 #include "operations.hpp"
 #include "io.hpp"
 #include "opencv2/mcc/ccm.hpp"
 
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 /** @brief Basic class for ColorSpace.
 */
@@ -55,7 +51,10 @@ public:
 
     ColorSpace() {};
 
-    ColorSpace(IO io_, std::string type_, bool linear_) :io(io_), type(type_), linear(linear_) {};
+    ColorSpace(IO io_, std::string type_, bool linear_)
+        : io(io_)
+        , type(type_)
+        , linear(linear_) {};
 
     virtual ~ColorSpace()
     {
@@ -66,8 +65,7 @@ public:
 
     virtual Operations relation(const ColorSpace& /*other*/) const;
 
-    bool operator<(const ColorSpace& other)const;
-
+    bool operator<(const ColorSpace& other) const;
 };
 
 /** @brief Base of RGB color space;
@@ -127,8 +125,6 @@ private:
     virtual Mat toLFunc(Mat& /*rgb*/);
 
     virtual Mat fromLFunc(Mat& /*rgbl*/);
-
-
 };
 
 /** @brief Base of Adobe RGB color space;
@@ -185,17 +181,17 @@ private:
         @return the output array, type of cv::Mat.
     */
     Mat fromLFunc(Mat& rgbl) CV_OVERRIDE;
-
 };
 
 /** @brief sRGB color space.
            data from https://en.wikipedia.org/wiki/SRGB.
 */
-class sRGB_ :public sRGBBase_
+class sRGB_ : public sRGBBase_
 
 {
 public:
-    sRGB_(bool linear_) :sRGBBase_(IO::getIOs(D65_2), "sRGB", linear_) {};
+    sRGB_(bool linear_)
+        : sRGBBase_(IO::getIOs(D65_2), "sRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -206,11 +202,11 @@ private:
 class AdobeRGB_ : public AdobeRGBBase_
 {
 public:
-    AdobeRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D65_2), "AdobeRGB", linear_) {};
+    AdobeRGB_(bool linear_ = false)
+        : AdobeRGBBase_(IO::getIOs(D65_2), "AdobeRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
-
 };
 
 /** @brief Wide-gamut RGB color space.
@@ -219,7 +215,8 @@ private:
 class WideGamutRGB_ : public AdobeRGBBase_
 {
 public:
-    WideGamutRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D50_2), "WideGamutRGB", linear_) {};
+    WideGamutRGB_(bool linear_ = false)
+        : AdobeRGBBase_(IO::getIOs(D50_2), "WideGamutRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -232,7 +229,8 @@ private:
 class ProPhotoRGB_ : public AdobeRGBBase_
 {
 public:
-    ProPhotoRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D50_2), "ProPhotoRGB", linear_) {};
+    ProPhotoRGB_(bool linear_ = false)
+        : AdobeRGBBase_(IO::getIOs(D50_2), "ProPhotoRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -244,7 +242,8 @@ private:
 class DCI_P3_RGB_ : public AdobeRGBBase_
 {
 public:
-    DCI_P3_RGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D65_2), "DCI_P3_RGB", linear_) {};
+    DCI_P3_RGB_(bool linear_ = false)
+        : AdobeRGBBase_(IO::getIOs(D65_2), "DCI_P3_RGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -256,7 +255,8 @@ private:
 class AppleRGB_ : public AdobeRGBBase_
 {
 public:
-    AppleRGB_(bool linear_ = false) :AdobeRGBBase_(IO::getIOs(D65_2), "AppleRGB", linear_) {};
+    AppleRGB_(bool linear_ = false)
+        : AdobeRGBBase_(IO::getIOs(D65_2), "AppleRGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -268,7 +268,8 @@ private:
 class REC_709_RGB_ : public sRGBBase_
 {
 public:
-    REC_709_RGB_(bool linear_) :sRGBBase_(IO::getIOs(D65_2), "REC_709_RGB", linear_) {};
+    REC_709_RGB_(bool linear_)
+        : sRGBBase_(IO::getIOs(D65_2), "REC_709_RGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
@@ -280,12 +281,12 @@ private:
 class REC_2020_RGB_ : public sRGBBase_
 {
 public:
-    REC_2020_RGB_(bool linear_) :sRGBBase_(IO::getIOs(D65_2), "REC_2020_RGB", linear_) {};
+    REC_2020_RGB_(bool linear_)
+        : sRGBBase_(IO::getIOs(D65_2), "REC_2020_RGB", linear_) {};
 
 private:
     void setParameter() CV_OVERRIDE;
 };
-
 
 /** @brief Enum of the possible types of CAMs.
 */
@@ -296,24 +297,25 @@ enum CAM
     BRADFORD
 };
 
-static std::map <std::tuple<IO, IO, CAM>, Mat > cams;
+static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
 static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
 static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-static const std::map <CAM, std::vector< Mat >> MAs = {
-    {IDENTITY , { Mat::eye(Size(3,3),CV_64FC1) , Mat::eye(Size(3,3),CV_64FC1)} },
-    {VON_KRIES, { Von_Kries ,Von_Kries.inv() }},
-    {BRADFORD, { Bradford ,Bradford.inv() }}
+static const std::map<CAM, std::vector<Mat>> MAs = {
+    { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
+    { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
+    { BRADFORD, { Bradford, Bradford.inv() } }
 };
 
 /** @brief XYZ color space.
            Chromatic adaption matrices.
 */
-class  XYZ :public ColorSpace
+class XYZ : public ColorSpace
 {
 public:
-    XYZ(IO io_) : ColorSpace(io_, "XYZ", true) {};
+    XYZ(IO io_)
+        : ColorSpace(io_, "XYZ", true) {};
     Operations cam(IO dio, CAM method = BRADFORD);
-    static std::map <IO, std::shared_ptr<XYZ>> xyz_cs;
+    static std::map<IO, std::shared_ptr<XYZ>> xyz_cs;
     static std::shared_ptr<XYZ> get(IO io);
 
 private:
@@ -333,12 +335,12 @@ const XYZ XYZ_D50_2_CS(IO::getIOs(D50_2));
 
 /** @brief Lab color space.
 */
-class Lab :public ColorSpace
+class Lab : public ColorSpace
 {
 public:
-    static std::map <IO,  std::shared_ptr<Lab>> lab_cs;
+    static std::map<IO, std::shared_ptr<Lab>> lab_cs;
     Lab(IO io);
-    static  std::shared_ptr<Lab> get(IO io);
+    static std::shared_ptr<Lab> get(IO io);
 
 private:
     static constexpr double delta = (6. / 29.);
@@ -347,7 +349,6 @@ private:
     static constexpr double c = 4. / 29.;
 
     Vec3d fromxyz(Vec3d& xyz);
-
 
     /** @brief Calculate From.
         @param src the input array, type of cv::Mat.
@@ -369,16 +370,15 @@ private:
 const Lab Lab_D65_2_CS(IO::getIOs(D65_2));
 const Lab Lab_D50_2_CS(IO::getIOs(D50_2));
 
-
-class GetCS {
+class GetCS
+{
 public:
-    static std::map <enum COLOR_SPACE, std::shared_ptr<ColorSpace>> map_cs;
+    static std::map<enum COLOR_SPACE, std::shared_ptr<ColorSpace>> map_cs;
     static std::shared_ptr<RGBBase_> get_rgb(enum COLOR_SPACE cs_name);
     static std::shared_ptr<ColorSpace> get_cs(enum COLOR_SPACE cs_name);
 };
 
-
-} // namespace ccm
-} // namespace cv
+}
+}  // namespace cv::ccm
 
 #endif

@@ -25,18 +25,15 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
-
 #include "distance.hpp"
 
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 
 double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2) { return norm(lab1 - lab2); };
 
 double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH,
-    double kC, double kL, double k1, double k2)
+        double kC, double kL, double k1, double k2)
 {
     double dl = lab1[0] - lab2[0];
     double c1 = sqrt(pow(lab1[1], 2) + pow(lab1[2], 2));
@@ -48,8 +45,7 @@ double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH,
     double sc = 1.0 + k1 * c1;
     double sh = 1.0 + k2 * c1;
     double sl = 1.0;
-    double res =
-        pow(dl / (kL * sl), 2) + pow(dc / (kC * sc), 2) + dh / pow(kH * sh, 2);
+    double res = pow(dl / (kL * sl), 2) + pow(dc / (kC * sc), 2) + dh / pow(kH * sh, 2);
 
     return res > 0 ? sqrt(res) : 0;
 }
@@ -67,7 +63,7 @@ double deltaCIE94Textiles(cv::Vec3d lab1, cv::Vec3d lab2)
 }
 
 double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL,
-    double kC, double kH)
+        double kC, double kH)
 {
     double delta_L_apo = lab2[0] - lab1[0];
     double l_bar_apo = (lab1[0] + lab2[0]) / 2.0;
@@ -90,7 +86,8 @@ double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL,
     else
     {
         h1_apo = atan2(lab1[2], a1_apo);
-        if (h1_apo < 0.0) h1_apo += 2. * CV_PI;
+        if (h1_apo < 0.0)
+            h1_apo += 2. * CV_PI;
     }
 
     double h2_apo;
@@ -101,7 +98,8 @@ double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL,
     else
     {
         h2_apo = atan2(lab2[2], a2_apo);
-        if (h2_apo < 0.0) h2_apo += 2. * CV_PI;
+        if (h2_apo < 0.0)
+            h2_apo += 2. * CV_PI;
     }
 
     double delta_h_apo;
@@ -137,21 +135,12 @@ double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL,
     }
 
     double delta_H_apo = 2.0 * sqrt(C1_apo * C2_apo) * sin(delta_h_apo / 2.0);
-    double T = 1.0 - 0.17 * cos(H_bar_apo - toRad(30.)) +
-        0.24 * cos(2.0 * H_bar_apo) +
-        0.32 * cos(3.0 * H_bar_apo + toRad(6.0)) -
-        0.2 * cos(4.0 * H_bar_apo - toRad(63.0));
+    double T = 1.0 - 0.17 * cos(H_bar_apo - toRad(30.)) + 0.24 * cos(2.0 * H_bar_apo) + 0.32 * cos(3.0 * H_bar_apo + toRad(6.0)) - 0.2 * cos(4.0 * H_bar_apo - toRad(63.0));
     double sC = 1.0 + 0.045 * C_bar_apo;
     double sH = 1.0 + 0.015 * C_bar_apo * T;
-    double sL = 1.0 + ((0.015 * pow(l_bar_apo - 50.0, 2.0)) /
-        sqrt(20.0 + pow(l_bar_apo - 50.0, 2.0)));
-    double RT = -2.0 * G *
-        sin(toRad(60.0) *
-            exp(-pow((H_bar_apo - toRad(275.0)) / toRad(25.0), 2.0)));
-    double res =
-        (pow(delta_L_apo / (kL * sL), 2.0) + pow(delta_C_apo / (kC * sC), 2.0) +
-            pow(delta_H_apo / (kH * sH), 2.0) +
-            RT * (delta_C_apo / (kC * sC)) * (delta_H_apo / (kH * sH)));
+    double sL = 1.0 + ((0.015 * pow(l_bar_apo - 50.0, 2.0)) / sqrt(20.0 + pow(l_bar_apo - 50.0, 2.0)));
+    double RT = -2.0 * G * sin(toRad(60.0) * exp(-pow((H_bar_apo - toRad(275.0)) / toRad(25.0), 2.0)));
+    double res = (pow(delta_L_apo / (kL * sL), 2.0) + pow(delta_C_apo / (kC * sC), 2.0) + pow(delta_H_apo / (kH * sH), 2.0) + RT * (delta_C_apo / (kC * sC)) * (delta_H_apo / (kH * sH)));
     return res > 0 ? sqrt(res) : 0;
 }
 
@@ -178,20 +167,19 @@ double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL, double kC)
     else
     {
         H1 = atan2(lab1[2], lab1[1]);
-        if (H1 < 0.0) H1 += 2. * CV_PI;
+        if (H1 < 0.0)
+            H1 += 2. * CV_PI;
     }
 
     double F = pow(C1, 2) / sqrt(pow(C1, 4) + 1900);
     double T = (H1 > toRad(164) && H1 <= toRad(345))
-        ? 0.56 + abs(0.2 * cos(H1 + toRad(168)))
-        : 0.36 + abs(0.4 * cos(H1 + toRad(35)));
-    double sL =
-        lab1[0] < 16. ? 0.511 : (0.040975 * lab1[0]) / (1.0 + 0.01765 * lab1[0]);
+            ? 0.56 + abs(0.2 * cos(H1 + toRad(168)))
+            : 0.36 + abs(0.4 * cos(H1 + toRad(35)));
+    double sL = lab1[0] < 16. ? 0.511 : (0.040975 * lab1[0]) / (1.0 + 0.01765 * lab1[0]);
     double sC = (0.0638 * C1) / (1.0 + 0.0131 * C1) + 0.638;
     double sH = sC * (F * T + 1.0 - F);
 
-    return sqrt(pow(dL / (kL * sL), 2.0) + pow(dC / (kC * sC), 2.0) +
-        pow(dH / sH, 2.0));
+    return sqrt(pow(dL / (kL * sL), 2.0) + pow(dC / (kC * sC), 2.0) + pow(dH / sH, 2.0));
 }
 
 double deltaCMC1To1(cv::Vec3d lab1, cv::Vec3d lab2)
@@ -225,10 +213,10 @@ Mat distance(Mat src, Mat ref, DISTANCE_TYPE distance_type)
     case cv::ccm::RGBL:
         return distanceWise(src, ref, deltaCIE76);
     default:
-        throw std::invalid_argument{ "Wrong distance_type!" };
+        throw std::invalid_argument { "Wrong distance_type!" };
         break;
     }
 };
 
-} // namespace ccm
-} // namespace cv
+}
+}  // namespace cv::ccm

@@ -31,13 +31,10 @@
 #include "utils.hpp"
 #include "opencv2/mcc/ccm.hpp"
 
-namespace cv
-{
-namespace ccm
-{
+namespace cv {
+namespace ccm {
 /** possibale functions to calculate the distance between
     colors.see https://en.wikipedia.org/wiki/Color_difference for details;*/
-
 
 /** @brief  distance between two points in formula CIE76
     @param lab1 a 3D vector
@@ -59,15 +56,14 @@ double deltaCIE76(Vec3d lab1, Vec3d lab2);
 */
 
 double deltaCIE94(Vec3d lab1, Vec3d lab2, double kH = 1.0,
-    double kC = 1.0, double kL = 1.0, double k1 = 0.045,
-    double k2 = 0.015);
+        double kC = 1.0, double kL = 1.0, double k1 = 0.045,
+        double k2 = 0.015);
 
 double deltaCIE94GraphicArts(Vec3d lab1, Vec3d lab2);
 
 double toRad(double degree);
 
 double deltaCIE94Textiles(Vec3d lab1, Vec3d lab2);
-
 
 /** @brief  distance between two points in formula CIE2000
     @param lab1 a 3D vector
@@ -78,9 +74,8 @@ double deltaCIE94Textiles(Vec3d lab1, Vec3d lab2);
     @return distance between lab1 and lab2
 */
 double deltaCIEDE2000_(Vec3d lab1, Vec3d lab2, double kL = 1.0,
-    double kC = 1.0, double kH = 1.0);
+        double kC = 1.0, double kH = 1.0);
 double deltaCIEDE2000(Vec3d lab1, Vec3d lab2);
-
 
 /** @brief  distance between two points in formula CMC
     @param lab1 a 3D vector
@@ -98,8 +93,7 @@ double deltaCMC2To1(Vec3d lab1, Vec3d lab2);
 
 Mat distance(Mat src, Mat ref, DISTANCE_TYPE distance_type);
 
-} // namespace ccm
-} // namespace cv
-
+}
+}  // namespace cv::ccm
 
 #endif
