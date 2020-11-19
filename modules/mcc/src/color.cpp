@@ -52,6 +52,7 @@ Color::Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_)
 {
     grays = ~colored;
 }
+
 Color::Color(Mat colors_, const ColorSpace& cs_)
     : colors(colors_)
     , cs(cs_)
@@ -61,7 +62,6 @@ Color Color::to(const ColorSpace& other, CAM method, bool save)
 {
     if (history.count(other) == 1)
     {
-
         return *history[other];
     }
     if (cs.relate(other))
@@ -367,35 +367,31 @@ std::shared_ptr<Color> GetColor::get_color(CONST_COLOR const_color)
 
     switch (const_color)
     {
+
     case cv::ccm::Macbeth:
     {
         Mat ColorChecker2005_LAB_D50_2_ = GetColor::get_ColorChecker(*ColorChecker2005_LAB_D50_2, 24);
         Mat ColorChecker2005_COLORED_MASK_ = GetColor::get_ColorChecker_MASK(ColorChecker2005_COLORED_MASK, 24);
-        std::shared_ptr<Color> Macbeth_D50_2(new Color(ColorChecker2005_LAB_D50_2_, Lab_D50_2, ColorChecker2005_COLORED_MASK_));
+        std::shared_ptr<Color> Macbeth_D50_2 = std::make_shared<Color>(ColorChecker2005_LAB_D50_2_, Lab_D50_2, ColorChecker2005_COLORED_MASK_);
         return Macbeth_D50_2;
-        break;
     }
 
     case cv::ccm::Vinyl:
     {
         Mat Vinyl_LAB_D50_2__ = GetColor::get_ColorChecker(*Vinyl_LAB_D50_2, 18);
         Mat Vinyl_COLORED_MASK__ = GetColor::get_ColorChecker_MASK(Vinyl_COLORED_MASK, 18);
-        std::shared_ptr<Color> Vinyl_D50_2(new Color(Vinyl_LAB_D50_2__, Lab_D50_2, Vinyl_COLORED_MASK__));
+        std::shared_ptr<Color> Vinyl_D50_2 = std::make_shared<Color>(Vinyl_LAB_D50_2__, Lab_D50_2, Vinyl_COLORED_MASK__);
         return Vinyl_D50_2;
-        break;
     }
+
     case cv::ccm::DigitalSG:
     {
         Mat DigitalSG_LAB_D50_2__ = GetColor::get_ColorChecker(*DigitalSG_LAB_D50_2, 140);
-        std::shared_ptr<Color> DigitalSG_D50_2(new Color(DigitalSG_LAB_D50_2__, Lab_D50_2));
+        std::shared_ptr<Color> DigitalSG_D50_2 = std::make_shared<Color>(DigitalSG_LAB_D50_2__, Lab_D50_2);
         return DigitalSG_D50_2;
-        break;
     }
-
-    default:
-        throw;
-        break;
     }
+    CV_Error(Error::StsNotImplemented, "");
 }
 
 }

@@ -109,9 +109,10 @@ Mat saturate(Mat& src, const double& low, const double& up)
     return dst;
 }
 
-Mat rgb2gray(Mat rgb)
+Mat rgb2gray(const Mat& rgb)
 {
-    return multiple(rgb, m_gray);
+    const Matx31d m_gray(0.2126, 0.7152, 0.0722);
+    return multiple(rgb, Mat(m_gray));
 }
 
 }

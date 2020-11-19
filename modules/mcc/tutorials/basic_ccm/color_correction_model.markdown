@@ -6,12 +6,12 @@ In this tutorial you will learn how to use the 'Color Correction Model' to do a 
 Reference
 ----
 
-See details of ColorCorrection Algorithm at https://github.com/riskiest/color_calibration/tree/v4/doc/pdf/English/Algorithm.
+See details of ColorCorrection Algorithm at https://github.com/riskiest/color_calibration/tree/v4/doc/pdf/English/Algorithm
 
 Building
 ----
 
-When building OpenCV, run the following command to build all the contrib module:
+When building OpenCV, run the following command to build all the contrib modules:
 
 ```make
 cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules/
@@ -28,7 +28,7 @@ Or make sure you check the mcc module in the GUI version of CMake: cmake-gui.
 Source Code of the sample
 -----------
 
-The sample has two parts of code, the first is the color checker detector model, see details at[basic_chart_detection](https://github.com/opencv/opencv_contrib/tree/master/modules/mcc/tutorials/basic_chart_detection), the second part is to make collor calibration.
+The sample has two parts of code, the first is the color checker detector model, see details at @ref tutorial_mcc_basic_chart_detection, the second part is to make collor calibration.
 
 ```
 Here are the parameters for ColorCorrectionModel
@@ -41,11 +41,11 @@ Here are the parameters for ColorCorrectionModel
                 Macbeth: Macbeth ColorChecker ;
                 Vinyl: DKK ColorChecker ;
                 DigitalSG: DigitalSG ColorChecker with 140 squares;
-    Mat colors_ :
+    Mat colors :
            the reference color values
            and corresponding color space
            NOTICE: the color values are in [0, 1]
-    ref_cs_ :
+    ref_cs :
            the corresponding color space
            NOTICE: For the list of color spaces supported, see the notes below;
                   If the color type is some RGB, the format is RGB not BGR;

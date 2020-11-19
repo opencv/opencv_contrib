@@ -31,8 +31,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-
-/** @defgroup ccm Color Correction Model
+namespace cv
+{
+namespace ccm
+{
+/** @addtogroup color_correction
+@{
 
 Introduction
 ------------
@@ -46,15 +50,9 @@ medicine, etc. Due to the manufacturing process of the input and output equipmen
 the channel response has nonlinear distortion. In order to correct the picture output
 of the equipment, it is nessary to calibrate the captured color and the actual color.
 
-
 */
 
-namespace cv
-{
-namespace ccm
-{
-//! @addtogroup ccm
-//! @{
+
 
 /** @brief Enum of the possible types of ccm.
 */
@@ -62,14 +60,13 @@ enum CCM_TYPE
 {
     CCM_3x3,   ///<The CCM with the shape \f$3\times3\f$ performs linear transformation on color values.
     CCM_4x3,   ///<The CCM with the shape \f$4\times3\f$ performs affine transformation.
-
 };
 
 /** @brief Enum of the possible types of initial method.
 */
 enum INITIAL_METHOD_TYPE
 {
-    WHITE_BALANCE,      ///< The white balance method. The initial value is:
+    WHITE_BALANCE,      ///< The white balance method. The initial value is:\n
                         /// \f$
                         /// M_{CCM}=
                         /// \begin{bmatrix}
@@ -77,8 +74,8 @@ enum INITIAL_METHOD_TYPE
                         /// 0 & k_G & 0\\
                         /// 0 & 0 & k_B\\
                         /// \end{bmatrix}
-                        /// \f$
-                        /// where
+                        /// \f$\n
+                        /// where\n
                         /// \f$
                         /// k_R=mean(R_{li}')/mean(R_{li})\\
                         /// k_R=mean(G_{li}')/mean(G_{li})\\
@@ -86,58 +83,62 @@ enum INITIAL_METHOD_TYPE
                         /// \f$
     LEAST_SQUARE,       ///<the least square method is an optimal solution under the linear RGB distance function
 };
- /** @brief  Macbeth and Vinyl ColorChecker with 2deg D50 .
-    */
+/** @brief  Macbeth and Vinyl ColorChecker with 2deg D50
+*/
 enum CONST_COLOR {
     Macbeth,
     Vinyl,
-    DigitalSG
+    DigitalSG,
 };
 enum COLOR_SPACE {
-    sRGB,                       ///<https://en.wikipedia.org/wiki/SRGB, RGB color space
-    sRGBL,                      ///<https://en.wikipedia.org/wiki/SRGB, linear RGB color space
-    AdobeRGB,                   ///<https://en.wikipedia.org/wiki/Adobe_RGB_color_space, RGB color space
-    AdobeRGBL,                  ///<https://en.wikipedia.org/wiki/Adobe_RGB_color_space, linear RGB color space
-    WideGamutRGB,               ///<https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space, RGB color space
-    WideGamutRGBL,              ///<https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space, linear RGB color space
-    ProPhotoRGB,                ///<https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space, RGB color space
-    ProPhotoRGBL,               ///<https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space, linear RGB color space
-    DCI_P3_RGB,                 ///<https://en.wikipedia.org/wiki/DCI-P3, RGB color space
-    DCI_P3_RGBL,                ///<https://en.wikipedia.org/wiki/DCI-P3, linear RGB color space
-    AppleRGB,                   ///<https://en.wikipedia.org/wiki/RGB_color_space, RGB color space
-    AppleRGBL,                  ///<https://en.wikipedia.org/wiki/RGB_color_space, linear RGB color space
-    REC_709_RGB,                ///<https://en.wikipedia.org/wiki/Rec._709, RGB color space
-    REC_709_RGBL,               ///<https://en.wikipedia.org/wiki/Rec._709, linear RGB color space
-    REC_2020_RGB,               ///<https://en.wikipedia.org/wiki/Rec._2020, RGB color space
-    REC_2020_RGBL,              ///<https://en.wikipedia.org/wiki/Rec._2020, linear RGB color space
-    XYZ_D65_2,                  ///<https://en.wikipedia.org/wiki/CIE_1931_color_space, non-RGB color space
-    XYZ_D65_10,                 ///non-RGB color space
-    XYZ_D50_2,                  ///non-RGB color space
-    XYZ_D50_10,                 ///non-RGB color space
-    XYZ_A_2,                    ///non-RGB color space
-    XYZ_A_10,                   ///non-RGB color space
-    XYZ_D55_2,                  ///non-RGB color space
-    XYZ_D55_10,                 ///non-RGB color space
-    XYZ_D75_2,                  ///non-RGB color space
-    XYZ_D75_10,                 ///non-RGB color space
-    XYZ_E_2,                    ///non-RGB color space
-    XYZ_E_10,                   ///non-RGB color space
-    Lab_D65_2,                  ///<https://en.wikipedia.org/wiki/CIELAB_color_space, non-RGB color space
-    Lab_D65_10,                 ///non-RGB color space
-    Lab_D50_2,                  ///non-RGB color space
-    Lab_D50_10,                 ///non-RGB color space
-    Lab_A_2,                    ///non-RGB color space
-    Lab_A_10,                   ///non-RGB color space
-    Lab_D55_2,                  ///non-RGB color space
-    Lab_D55_10,                 ///non-RGB color space
-    Lab_D75_2,                  ///non-RGB color space
-    Lab_D75_10,                 ///non-RGB color space
-    Lab_E_2,                    ///non-RGB color space
-    Lab_E_10,                   ///non-RGB color space
+    sRGB,                       ///< https://en.wikipedia.org/wiki/SRGB , RGB color space
+    sRGBL,                      ///< https://en.wikipedia.org/wiki/SRGB , linear RGB color space
+    AdobeRGB,                   ///< https://en.wikipedia.org/wiki/Adobe_RGB_color_space , RGB color space
+    AdobeRGBL,                  ///< https://en.wikipedia.org/wiki/Adobe_RGB_color_space , linear RGB color space
+    WideGamutRGB,               ///< https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space , RGB color space
+    WideGamutRGBL,              ///< https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space , linear RGB color space
+    ProPhotoRGB,                ///< https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space , RGB color space
+    ProPhotoRGBL,               ///< https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space , linear RGB color space
+    DCI_P3_RGB,                 ///< https://en.wikipedia.org/wiki/DCI-P3 , RGB color space
+    DCI_P3_RGBL,                ///< https://en.wikipedia.org/wiki/DCI-P3 , linear RGB color space
+    AppleRGB,                   ///< https://en.wikipedia.org/wiki/RGB_color_space , RGB color space
+    AppleRGBL,                  ///< https://en.wikipedia.org/wiki/RGB_color_space , linear RGB color space
+    REC_709_RGB,                ///< https://en.wikipedia.org/wiki/Rec._709 , RGB color space
+    REC_709_RGBL,               ///< https://en.wikipedia.org/wiki/Rec._709 , linear RGB color space
+    REC_2020_RGB,               ///< https://en.wikipedia.org/wiki/Rec._2020 , RGB color space
+    REC_2020_RGBL,              ///< https://en.wikipedia.org/wiki/Rec._2020 , linear RGB color space
+    XYZ_D65_2,                  ///< https://en.wikipedia.org/wiki/CIE_1931_color_space , non-RGB color space
+    XYZ_D65_10,                 ///< non-RGB color space
+    XYZ_D50_2,                  ///< non-RGB color space
+    XYZ_D50_10,                 ///< non-RGB color space
+    XYZ_A_2,                    ///< non-RGB color space
+    XYZ_A_10,                   ///< non-RGB color space
+    XYZ_D55_2,                  ///< non-RGB color space
+    XYZ_D55_10,                 ///< non-RGB color space
+    XYZ_D75_2,                  ///< non-RGB color space
+    XYZ_D75_10,                 ///< non-RGB color space
+    XYZ_E_2,                    ///< non-RGB color space
+    XYZ_E_10,                   ///< non-RGB color space
+    Lab_D65_2,                  ///< https://en.wikipedia.org/wiki/CIELAB_color_space , non-RGB color space
+    Lab_D65_10,                 ///< non-RGB color space
+    Lab_D50_2,                  ///< non-RGB color space
+    Lab_D50_10,                 ///< non-RGB color space
+    Lab_A_2,                    ///< non-RGB color space
+    Lab_A_10,                   ///< non-RGB color space
+    Lab_D55_2,                  ///< non-RGB color space
+    Lab_D55_10,                 ///< non-RGB color space
+    Lab_D75_2,                  ///< non-RGB color space
+    Lab_D75_10,                 ///< non-RGB color space
+    Lab_E_2,                    ///< non-RGB color space
+    Lab_E_10,                   ///< non-RGB color space
 };
-/** @brief ## Linearization
 
-The first step in color correction is to linearize the detected colors. Because the input color space has not been calibrated, we usually use some empirical methods to linearize. There are several common  linearization methods. The first is identical transformation, the second is gamma correction, and the third is polynomial fitting.
+/** @brief Linearization transformation type
+
+The first step in color correction is to linearize the detected colors.
+Because the input color space has not been calibrated, we usually use some empirical methods to linearize.
+There are several common linearization methods.
+The first is identical transformation, the second is gamma correction, and the third is polynomial fitting.
 
 Linearization is generally an elementwise function. The mathematical symbols are as follows:
 
@@ -155,7 +156,8 @@ Linearization is generally an elementwise function. The mathematical symbols are
 
 ### Identical Transformation
 
-No change is made during the Identical transformation linearization, usually because the tristimulus values of the input RGB image is already proportional to the luminance. For example, if the input measurement data is in RAW format, the measurement data is already linear, so no linearization is required.
+No change is made during the Identical transformation linearization, usually because the tristimulus values of the input RGB image is already proportional to the luminance.
+For example, if the input measurement data is in RAW format, the measurement data is already linear, so no linearization is required.
 
 The identity transformation formula is as follows:
 
@@ -165,7 +167,9 @@ C_{sl}=C_s
 
 ### Gamma Correction
 
-Gamma correction is a means of performing nonlinearity in RGB space, see the Color Space documentation for details. In the linearization part, the value of \f$\gamma\f$ is usually set to 2.2. You can also customize the value.
+Gamma correction is a means of performing nonlinearity in RGB space, see the Color Space documentation for details.
+In the linearization part, the value of \f$\gamma\f$ is usually set to 2.2.
+You can also customize the value.
 
 The formula for gamma correction linearization is as follows:
 \f[
@@ -175,7 +179,8 @@ C_{sl}=-(-C_s)^{\gamma},\qquad C_s<0\\\\
 
 ### Polynomial Fitting
 
-Polynomial fitting uses polynomials to linearize. Provided the polynomial is:
+Polynomial fitting uses polynomials to linearize.
+Provided the polynomial is:
 \f[
 f(x)=a_nx^n+a_{n-1}x^{n-1}+... +a_0
 \f]
@@ -185,7 +190,9 @@ C_{sl}=f(C_s)
 \f]
 In practice, \f$n\le3\f$ is used to prevent overfitting.
 
-There are many variants of polynomial fitting, the difference lies in the way of generating $f(x)$. It is usually necessary to use linearized reference colors and corresponding detected colors to calculate the polynomial parameters. However, not all colors can participate in the calculation. The saturation detected colors needs to be removed. See the algorithm introduction document for details.
+There are many variants of polynomial fitting, the difference lies in the way of generating $f(x)$.
+It is usually necessary to use linearized reference colors and corresponding detected colors to calculate the polynomial parameters.
+However, not all colors can participate in the calculation. The saturation detected colors needs to be removed. See the algorithm introduction document for details.
 
 #### Fitting Channels Respectively
 
@@ -195,7 +202,8 @@ R_{sl}=r(R_s)\\
 G_{sl}=g(G_s)\\
 B_{sl}=b(B_s)\\
 \f]
-The polynomial is generated by minimizing the residual sum of squares between the detected data and the linearized reference data. Take the R-channel as an example:
+The polynomial is generated by minimizing the residual sum of squares between the detected data and the linearized reference data.
+Take the R-channel as an example:
 
 \f[
 R=\arg min_{f}(\Sigma(R_{dl}-f(R_S)^2)
@@ -234,7 +242,7 @@ It can be expressed as a system of linear equations:
 AX=B
 \f]
 
-When the number of reference colors is  not less than the degree of the polynomial, the linear system has a least-squares solution:
+When the number of reference colors is not less than the degree of the polynomial, the linear system has a least-squares solution:
 
 \f[
 X=(A^TA)^{-1}A^TB
@@ -248,15 +256,23 @@ This method of finding polynomial coefficients can be implemented by numpy.polyf
 R=polyfit(R_S, R_{dl})
 \f]
 
-Note that, in general, the polynomial that we want to obtain is guaranteed to monotonically increase in the interval [0,1] , but this means that nonlinear method is needed to generate the polynomials(see [4] for detail). This would greatly increases the complexity of the program. Considering that the monotonicity does not affect the correct operation of the color correction program, polyfit is still used to implement the program.
+Note that, in general, the polynomial that we want to obtain is guaranteed to monotonically increase in the interval [0,1] ,
+but this means that nonlinear method is needed to generate the polynomials(see [4] for detail).
+This would greatly increases the complexity of the program.
+Considering that the monotonicity does not affect the correct operation of the color correction program, polyfit is still used to implement the program.
 
 Parameters for other channels can also be derived in a similar way.
 
 #### Grayscale Polynomial Fitting
 
-In this method[2], single polynomial is used for all channels. The polynomial is still a polyfit result from the detected colors to the linear reference colors. However, only the gray of the reference colors can participate in the calculation.
+In this method[2], single polynomial is used for all channels.
+The polynomial is still a polyfit result from the detected colors to the linear reference colors.
+However, only the gray of the reference colors can participate in the calculation.
 
-Since the detected colors corresponding to the gray of reference colors is not necessarily gray, it needs to be grayed. Grayscale refers to the Y channel of the XYZ color space. The color space of the detected data is not determined and cannot be converted into the XYZ space. Therefore, the sRGB formula is used to approximate[5].
+Since the detected colors corresponding to the gray of reference colors is not necessarily gray, it needs to be grayed.
+Grayscale refers to the Y channel of the XYZ color space.
+The color space of the detected data is not determined and cannot be converted into the XYZ space.
+Therefore, the sRGB formula is used to approximate[5].
 \f[
 G_{s}=0.2126R_{s}+0.7152G_{s}+0.0722B_{s}
 \f]
@@ -286,7 +302,8 @@ r=polyfit(ln(R_s),ln(R_{dl}))\\
 g=polyfit(ln(G_s),ln(G_{dl}))\\
 b=polyfit(ln(B_s),ln(B_{dl}))\\
 \f]
-Note that the parameter of $ln$ cannot be 0. Therefore, we need to delete the channels whose values are 0 from $R_s$ and $R_{dl}$, $G_s$ and $G_{dl}$, $B_s$ and $B_{dl}$.
+Note that the parameter of $ln$ cannot be 0.
+Therefore, we need to delete the channels whose values are 0 from $R_s$ and $R_{dl}$, $G_s$ and $G_{dl}$, $B_s$ and $B_{dl}$.
 
 Therefore:
 
@@ -319,171 +336,200 @@ enum LINEAR_TYPE
     GRAYLOGPOLYFIT
 };
 
-/** @brief Enum of possibale functions to calculate the distance between
-           colors.see https://en.wikipedia.org/wiki/Color_difference for details;
+/** @brief Enum of possible functions to calculate the distance between colors.
+
+See https://en.wikipedia.org/wiki/Color_difference for details
 */
 enum DISTANCE_TYPE
 {
-    CIE76,                      ///The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
-    CIE94_GRAPHIC_ARTS,        ///The 1976 definition was extended to address perceptual non-uniformities.
+    CIE76,                      ///< The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
+    CIE94_GRAPHIC_ARTS,         ///< The 1976 definition was extended to address perceptual non-uniformities.
     CIE94_TEXTILES,
     CIE2000,
-    CMC_1TO1,                   //In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
+    CMC_1TO1,                   ///< In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
     CMC_2TO1,
     RGB,
     RGBL
 };
 
-/** @brief Core class of ccm model.
-           produce a ColorCorrectionModel instance for inference.
-*/
+/** @brief Core class of ccm model
 
+Produce a ColorCorrectionModel instance for inference
+*/
 class CV_EXPORTS_W ColorCorrectionModel
 {
 public:
     /** @brief Color Correction Model
-        @param src detected colors of ColorChecker patches;\n
-                    the color type is RGB not BGR, and the color values are in [0, 1];
-        @param constcolor the Built-in color card;\n
-                    Supported list:
-                            Macbeth(Macbeth ColorChecker) ;
-                            Vinyl(DKK ColorChecker) ;
-                            DigitalSG(DigitalSG ColorChecker with 140 squares);\n
-    */
-    ColorCorrectionModel(const Mat& src, CONST_COLOR constcolor);
-     /** @brief Color Correction Model
-            @param src detected colors of ColorChecker patches;\n
-                        the color type is RGB not BGR, and the color values are in [0, 1];
-            @param colors the reference color values,the color values are in [0, 1].\n
-            @param ref_cs the corresponding color space
-                        NOTICE: For the list of color spaces supported, see the notes above;\n
-                        If the color type is some RGB, the format is RGB not BGR;\n
-        */
-    ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs);
-    /** @brief Color Correction Model
-            @param src detected colors of ColorChecker patches;\n
-                        the color type is RGB not BGR, and the color values are in [0, 1];
-            @param colors the reference color values,the color values are in [0, 1].
-            @param ref_cs the corresponding color space
-                        NOTICE: For the list of color spaces supported, see the notes above;\n
-                        If the color type is some RGB, the format is RGB not BGR;
-            @param colored mask of colored color
-        */
-    ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
 
-        /** @brief set ColorSpace
-            @param cs the absolute color space that detected colors convert to;\n
-            NOTICE: it should be some RGB color space;\n
-                    For the list of RGB color spaces supported, see the notes above;\n
-            default: sRGB;
-        */
+    Supported list of color cards:
+    - @ref Macbeth (Macbeth ColorChecker)
+    - @ref Vinyl (DKK ColorChecker)
+    - @ref DigitalSG (DigitalSG ColorChecker with 140 squares)
+
+    @param src detected colors of ColorChecker patches;\n
+                the color type is RGB not BGR, and the color values are in [0, 1];
+    @param constcolor the Built-in color card
+    */
+    CV_WRAP ColorCorrectionModel(const Mat& src, CONST_COLOR constcolor);
+
+    /** @brief Color Correction Model
+    @param src detected colors of ColorChecker patches;\n
+               the color type is RGB not BGR, and the color values are in [0, 1];
+    @param colors the reference color values,the color values are in [0, 1].\n
+    @param ref_cs the corresponding color space
+                NOTICE: For the list of color spaces supported, see the notes above;\n
+                If the color type is some RGB, the format is RGB not BGR;\n
+    */
+    CV_WRAP ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs);
+
+    /** @brief Color Correction Model
+    @param src detected colors of ColorChecker patches;\n
+                the color type is RGB not BGR, and the color values are in [0, 1];
+    @param colors the reference color values,the color values are in [0, 1].
+    @param ref_cs the corresponding color space
+                NOTICE: For the list of color spaces supported, see the notes above;\n
+                If the color type is some RGB, the format is RGB not BGR;
+    @param colored mask of colored color
+    */
+    CV_WRAP ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
+
+    /** @brief set ColorSpace
+
+    @note It should be some RGB color space;
+          For the list of RGB color spaces supported, see the notes above
+
+    @param cs the absolute color space that detected colors convert to;\n
+              default: sRGB
+    */
     CV_WRAP void setColorSpace(COLOR_SPACE cs);
-        /** @brief set ccm_type
-            @param ccm_type :the shape of color correction matrix(CCM);\n
-            Supported list: "CCM_3x3"(3x3 matrix);"CCM_4x3"( 4x3 matrix);\n
-            default: CCM_3x3;\n
-        */
+
+    /** @brief set ccm_type
+    @param ccm_type the shape of color correction matrix(CCM);\n
+                    default: @ref CCM_3x3
+    */
     CV_WRAP void setCCM_TYPE(CCM_TYPE ccm_type);
+
     /** @brief set Distance
-        @param distance the type of color distance;\n
-            Supported list:"CIE2000"; "CIE94_GRAPHIC_ARTS";"CIE94_TEXTILES";
-                "CIE76";
-                "CMC_1TO1";
-                "CMC_2TO1";
-                "RGB" (Euclidean distance of rgb color space);
-                "RGBL" () Euclidean distance of rgbl color space);\n
-            default: CIE2000;\n
-            */
+
+    Supported list:
+    - @ref CIE2000
+    - @ref CIE94_GRAPHIC_ARTS
+    - @ref CIE94_TEXTILES
+    - @ref CIE76
+    - @ref CMC_1TO1
+    - @ref CMC_2TO1
+    - @ref RGB (Euclidean distance of rgb color space)
+    - @ref RGBL (Euclidean distance of rgbl color space)
+
+    @param distance the type of color distance;\n
+                    default: @ref CIE2000
+    */
     CV_WRAP void setDistance(DISTANCE_TYPE distance);
-     /** @brief set Linear
-        @param linear_type the method of linearization;
-            NOTICE: see Linearization.pdf for details;\n
-            Supported list:
-                "IDENTITY_" (no change is made);
-                "GAMMA"( gamma correction;
-                        Need assign a value to gamma simultaneously);
-                "COLORPOLYFIT" (polynomial fitting channels respectively;
-                                Need assign a value to deg simultaneously);
-                "GRAYPOLYFIT"( grayscale polynomial fitting;
-                                Need assign a value to deg and dst_whites simultaneously);
-                "COLORLOGPOLYFIT"(logarithmic polynomial fitting channels respectively;
-                                Need assign a value to deg simultaneously);
-                "GRAYLOGPOLYFIT" (grayscale Logarithmic polynomial fitting;
-                                Need assign a value to deg and dst_whites simultaneously);\n
-            default: GAMMA;\n
-            */
+
+    /** @brief set Linear
+
+    @note see Linearization.pdf for details
+
+    Supported list:
+    - "IDENTITY_" (no change is made)
+    - "GAMMA" (gamma correction;
+               Need assign a value to gamma simultaneously)
+    - "COLORPOLYFIT" (polynomial fitting channels respectively;
+                      Need assign a value to deg simultaneously)
+    - "GRAYPOLYFIT" (grayscale polynomial fitting;
+                     Need assign a value to deg and dst_whites simultaneously)
+    - "COLORLOGPOLYFIT"(logarithmic polynomial fitting channels respectively;
+                        Need assign a value to deg simultaneously)
+    - "GRAYLOGPOLYFIT" (grayscale Logarithmic polynomial fitting;
+                        Need assign a value to deg and dst_whites simultaneously)
+
+    @param linear_type the method of linearization;\n
+                       default: @ref GAMMA
+    */
     CV_WRAP void setLinear(LINEAR_TYPE linear_type);
 
-     /** @brief set Gamma
-        @param gamma the gamma value of gamma correction;
-            NOTICE: only valid when linear is set to "gamma";\n
-            default: 2.2;\n
-            */
+    /** @brief set Gamma
+
+    @note only valid when linear is set to "gamma";\n
+
+    @param gamma the gamma value of gamma correction;
+                 default: 2.2;\n
+    */
     CV_WRAP void setLinearGamma(double gamma);
 
     /** @brief set degree
-        @param deg the degree of linearization polynomial;\n
-            NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT",
-                    "COLORLOGPOLYFIT" and "GRAYLOGPOLYFIT";\n
-            default: 3;\n
-            */
+    @param deg the degree of linearization polynomial;\n
+        NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT",
+                "COLORLOGPOLYFIT" and "GRAYLOGPOLYFIT";\n
+               default: 3
+    */
     CV_WRAP void setLinearDegree(int deg);
-        /** @brief set SaturatedThreshold
-        @param lower the lower threshold to determine saturation;\n
-                default: 0;
-        @param upper the upper threshold to determine saturation;
-            NOTICE: it is a tuple of [lower, upper];
-                    The colors in the closed interval [lower, upper] are reserved to participate
-                    in the calculation of the loss function and initialization parameters\n
-                    default: 0;
-            */
-    CV_WRAP void setSaturatedThreshold(double lower, double upper);
-     /** @brief set WeightsList
-        @param weights_list the list of weight of each color;\n
-            default: empty array;
-            */
-    CV_WRAP void setWeightsList(Mat weights_list);
-    /** @brief set WeightCoeff
-        @param weights_coeff the exponent number of L* component of the reference color in CIE Lab color space;\n
+
+    /** @brief set SaturatedThreshold
+    @param lower the lower threshold to determine saturation;\n
             default: 0;
-            */
+    @param upper the upper threshold to determine saturation;
+        NOTICE: it is a tuple of [lower, upper];
+                The colors in the closed interval [lower, upper] are reserved to participate
+                in the calculation of the loss function and initialization parameters\n
+                 default: 0
+    */
+    CV_WRAP void setSaturatedThreshold(double lower, double upper);
+
+    /** @brief set WeightsList
+    @param weights_list the list of weight of each color;\n
+                        default: empty array
+    */
+    CV_WRAP void setWeightsList(Mat weights_list);
+
+    /** @brief set WeightCoeff
+    @param weights_coeff the exponent number of L* component of the reference color in CIE Lab color space;\n
+                         default: 0
+    */
     CV_WRAP void setWeightCoeff(double weights_coeff);
+
     /** @brief set InitialMethod
-        @param initial_method_type the method of calculating CCM initial value;\n
-            Supported list:
-                'LEAST_SQUARE' (least-squre method);
-                'WHITE_BALANCE' (white balance method);\n
-            */
+
+    Supported list:
+        'LEAST_SQUARE' (least-squre method);
+        'WHITE_BALANCE' (white balance method);\n
+
+    @param initial_method_type the method of calculating CCM initial value;\n
+    */
     CV_WRAP void setInitialMethod(INITIAL_METHOD_TYPE initial_method_type);
+
     /** @brief set MaxCount
-        @param max_count used in MinProblemSolver-DownhillSolver;\n
-            Terminal criteria to the algorithm;\n
-            default: 5000;
-            */
+    @param max_count used in MinProblemSolver-DownhillSolver;\n
+        Terminal criteria to the algorithm;\n
+                     default: 5000;
+    */
     CV_WRAP void setMaxCount(int max_count);
-     /** @brief set Epsilon
-        @param epsilon used in MinProblemSolver-DownhillSolver;\n
-            Terminal criteria to the algorithm;\n
-            default: 1e-4;
-            */
+
+    /** @brief set Epsilon
+    @param epsilon used in MinProblemSolver-DownhillSolver;\n
+        Terminal criteria to the algorithm;\n
+                   default: 1e-4;
+    */
     CV_WRAP void setEpsilon(double epsilon);
-    /** @brief make color correction*/
+
+    /** @brief make color correction */
     CV_WRAP void run();
 
     CV_WRAP Mat getCCM() const;
     CV_WRAP double getLoss() const;
 
     /** @brief Infer using fitting ccm.
-        @param img the input image.
-        @param islinear default false.
-        @return the output array.
+    @param img the input image.
+    @param islinear default false.
+    @return the output array.
     */
     CV_WRAP Mat infer(const Mat& img, bool islinear = false);
+
     class Impl;
 private:
     std::shared_ptr<Impl> p;
-
 };
+
 //! @} ccm
 } // namespace ccm
 } // namespace cv

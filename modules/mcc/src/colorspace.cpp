@@ -1,6 +1,6 @@
 // This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level
-// directory of this distribution and at http://opencv.org/license.html.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 //
 //
 //                       License Agreement
@@ -25,15 +25,17 @@
 //         Jinheng Zhang <zhangjinheng1@huawei.com>
 //         Chenqi Shan <shanchenqi@huawei.com>
 
+#include "precomp.hpp"
+
 #include "colorspace.hpp"
 #include "operations.hpp"
 #include "io.hpp"
 
 namespace cv {
 namespace ccm {
-static std::map<IO, std::vector<double>> getilluminants()
+static const std::vector<double>& getIlluminants(const IO& io)
 {
-    static std::map<IO, std::vector<double>> illuminants = {
+    static const std::map<IO, std::vector<double>> illuminants = {
         { IO::getIOs(A_2), { 1.098466069456375, 1, 0.3558228003436005 } },
         { IO::getIOs(A_10), { 1.111420406956693, 1, 0.3519978321919493 } },
         { IO::getIOs(D50_2), { 0.9642119944211994, 1, 0.8251882845188288 } },
@@ -47,10 +49,12 @@ static std::map<IO, std::vector<double>> getilluminants()
         { IO::getIOs(E_2), { 1., 1., 1. } },
         { IO::getIOs(E_10), { 1., 1., 1. } },
     };
-    return illuminants;
+    auto it = illuminants.find(io);
+    CV_Assert(it != illuminants.end());
+    return it->second;
 };
-static std::map<IO, std::vector<double>> illuminants = getilluminants();
-/* *\ brief Basic class for ColorSpace.
+
+/* @brief Basic class for ColorSpace.
  */
 bool ColorSpace::relate(const ColorSpace& other) const
 {
@@ -60,14 +64,14 @@ bool ColorSpace::relate(const ColorSpace& other) const
 Operations ColorSpace::relation(const ColorSpace& /*other*/) const
 {
     return Operations::get_IDENTITY_OPS();
-};
+}
 
 bool ColorSpace::operator<(const ColorSpace& other) const
 {
     return (io < other.io || (io == other.io && type < other.type) || (io == other.io && type == other.type && linear < other.linear));
 }
 
-/* *\ brief Base of RGB color space;
+/* @brief Base of RGB color space;
  *        the argument values are from AdobeRGB;
  *        Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space
  */
@@ -82,9 +86,9 @@ Operations RGBBase_::relation(const ColorSpace& other) const
         return Operations({ Operation(fromL) });
     }
     return Operations({ Operation(toL) });
-};
+}
 
-/* *\ brief Initial operations.
+/* @brief Initial operations.
  */
 void RGBBase_::init()
 {
@@ -94,8 +98,8 @@ void RGBBase_::init()
     calOperations();
 }
 
-/* *\ brief Produce color space instance with linear and non-linear versions.
- *\ param rgbl type of RGBBase_.
+/* @brief Produce color space instance with linear and non-linear versions.
+ * @param rgbl type of RGBBase_.
  */
 void RGBBase_::bind(RGBBase_& rgbl)
 {
@@ -107,7 +111,7 @@ void RGBBase_::bind(RGBBase_& rgbl)
     rgbl.nl = this;
 }
 
-/* *\ brief Calculation of M_RGBL2XYZ_base.
+/* @brief Calculation of M_RGBL2XYZ_base.
  *        see ColorSpace.pdf for details.
  */
 void RGBBase_::calM()
@@ -118,7 +122,7 @@ void RGBBase_::calM()
     XYZb = Mat(xyY2XYZ({ xb, yb }), true);
     merge(std::vector<Mat> { XYZr, XYZg, XYZb }, XYZ_rgbl);
     XYZ_rgbl = XYZ_rgbl.reshape(1, XYZ_rgbl.rows);
-    Mat XYZw = Mat(illuminants.find(io)->second, true);
+    Mat XYZw = Mat(getIlluminants(io), true);
     solve(XYZ_rgbl, XYZw, Srgb);
     merge(std::vector<Mat> { Srgb.at<double>(0) * XYZr, Srgb.at<double>(1) * XYZg,
                   Srgb.at<double>(2) * XYZb },
@@ -127,7 +131,7 @@ void RGBBase_::calM()
     M_from = M_to.inv();
 };
 
-/* *\ brief operations to or from XYZ.
+/* @brief operations to or from XYZ.
  */
 void RGBBase_::calOperations()
 {
@@ -153,7 +157,7 @@ Mat RGBBase_::toLFunc(Mat& /*rgb*/) { return Mat(); }
 
 Mat RGBBase_::fromLFunc(Mat& /*rgbl*/) { return Mat(); }
 
-/* *\ brief Base of Adobe RGB color space;
+/* @brief Base of Adobe RGB color space;
  */
 
 Mat AdobeRGBBase_::toLFunc(Mat& rgb) { return gammaCorrection(rgb, gamma); }
@@ -163,7 +167,7 @@ Mat AdobeRGBBase_::fromLFunc(Mat& rgbl)
     return gammaCorrection(rgbl, 1. / gamma);
 }
 
-/* *\ brief Base of sRGB color space;
+/* @brief Base of sRGB color space;
  */
 
 void sRGBBase_::calLinear()
@@ -174,7 +178,7 @@ void sRGBBase_::calLinear()
     beta = K0 / phi;
 }
 
-/* *\ brief Used by toLFunc.
+/* @brief Used by toLFunc.
  */
 double sRGBBase_::toLFuncEW(double& x)
 {
@@ -192,10 +196,10 @@ double sRGBBase_::toLFuncEW(double& x)
     }
 }
 
-/* *\ brief Linearization.
+/* @brief Linearization.
  *        see ColorSpace.pdf for details.
- *\ param rgb the input array, type of cv::Mat.
- *\ return the output array, type of cv::Mat.
+ * @param rgb the input array, type of cv::Mat.
+ * @return the output array, type of cv::Mat.
  */
 Mat sRGBBase_::toLFunc(Mat& rgb)
 {
@@ -203,7 +207,7 @@ Mat sRGBBase_::toLFunc(Mat& rgb)
             [this](double a_) -> double { return toLFuncEW(a_); });
 }
 
-/* *\ brief Used by fromLFunc.
+/* @brief Used by fromLFunc.
  */
 double sRGBBase_::fromLFuncEW(double& x)
 {
@@ -221,10 +225,10 @@ double sRGBBase_::fromLFuncEW(double& x)
     }
 }
 
-/* *\ brief Delinearization.
+/* @brief Delinearization.
  *        see ColorSpace.pdf for details.
- *\ param rgbl the input array, type of cv::Mat.
- *\ return the output array, type of cv::Mat.
+ * @param rgbl the input array, type of cv::Mat.
+ * @return the output array, type of cv::Mat.
  */
 Mat sRGBBase_::fromLFunc(Mat& rgbl)
 {
@@ -232,7 +236,7 @@ Mat sRGBBase_::fromLFunc(Mat& rgbl)
             [this](double a_) -> double { return fromLFuncEW(a_); });
 }
 
-/* *\ brief sRGB color space.
+/* @brief sRGB color space.
  *        data from https://en.wikipedia.org/wiki/SRGB.
  */
 void sRGB_::setParameter()
@@ -247,7 +251,7 @@ void sRGB_::setParameter()
     gamma = 2.4;
 }
 
-/* *\ brief Adobe RGB color space.
+/* @brief Adobe RGB color space.
  */
 void AdobeRGB_::setParameter()
 {
@@ -260,7 +264,7 @@ void AdobeRGB_::setParameter()
     gamma = 2.2;
 }
 
-/* *\ brief Wide-gamut RGB color space.
+/* @brief Wide-gamut RGB color space.
  *        data from https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space.
  */
 void WideGamutRGB_::setParameter()
@@ -274,7 +278,7 @@ void WideGamutRGB_::setParameter()
     gamma = 2.2;
 }
 
-/* *\ brief ProPhoto RGB color space.
+/* @brief ProPhoto RGB color space.
  *        data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space.
  */
 void ProPhotoRGB_::setParameter()
@@ -288,7 +292,7 @@ void ProPhotoRGB_::setParameter()
     gamma = 1.8;
 }
 
-/* *\ brief DCI-P3 RGB color space.
+/* @brief DCI-P3 RGB color space.
  *        data from https://en.wikipedia.org/wiki/DCI-P3.
  */
 
@@ -303,7 +307,7 @@ void DCI_P3_RGB_::setParameter()
     gamma = 2.2;
 }
 
-/* *\ brief Apple RGB color space.
+/* @brief Apple RGB color space.
  *        data from
  * http://www.brucelindbloom.com/index.html?WorkingSpaceInfo.html.
  */
@@ -318,7 +322,7 @@ void AppleRGB_::setParameter()
     gamma = 1.8;
 }
 
-/* *\ brief REC_709 RGB color space.
+/* @brief REC_709 RGB color space.
  *        data from https://en.wikipedia.org/wiki/Rec._709.
  */
 void REC_709_RGB_::setParameter()
@@ -333,7 +337,7 @@ void REC_709_RGB_::setParameter()
     gamma = 1 / 0.45;
 }
 
-/* *\ brief REC_2020 RGB color space.
+/* @brief REC_2020 RGB color space.
  *        data from https://en.wikipedia.org/wiki/Rec._2020.
  */
 
@@ -349,10 +353,10 @@ void REC_2020_RGB_::setParameter()
     gamma = 1 / 0.45;
 }
 
-/* *\ brief Enum of the possible types of CAMs.
+/* @brief Enum of the possible types of CAMs.
  */
 
-/* *\ brief XYZ color space.
+/* @brief XYZ color space.
  *        Chromatic adaption matrices.
  */
 Operations XYZ::cam(IO dio, CAM method)
@@ -372,8 +376,8 @@ Mat XYZ::cam_(IO sio, IO dio, CAM method) const
     }
 
     // Function from http://www.brucelindbloom.com/index.html?ColorCheckerRGB.html.
-    Mat XYZws = Mat(illuminants.find(dio)->second);
-    Mat XYZWd = Mat(illuminants.find(sio)->second);
+    Mat XYZws = Mat(getIlluminants(dio));
+    Mat XYZWd = Mat(getIlluminants(sio));
     Mat MA = MAs.at(method)[0];
     Mat MA_inv = MAs.at(method)[1];
     Mat M = MA_inv * Mat::diag((MA * XYZws) / (MA * XYZWd)) * MA;
@@ -395,7 +399,7 @@ std::shared_ptr<XYZ> XYZ::get(IO io)
     return xyz_cs[io];
 }
 
-/* *\ brief Lab color space.
+/* @brief Lab color space.
  */
 Lab::Lab(IO io_)
     : ColorSpace(io_, "Lab", true)
@@ -406,9 +410,10 @@ Lab::Lab(IO io_)
 
 Vec3d Lab::fromxyz(cv::Vec3d& xyz)
 {
-    double x = xyz[0] / illuminants.find(io)->second[0],
-           y = xyz[1] / illuminants.find(io)->second[1],
-           z = xyz[2] / illuminants.find(io)->second[2];
+    auto& il = getIlluminants(io);
+    double x = xyz[0] / il[0],
+           y = xyz[1] / il[1],
+           z = xyz[2] / il[2];
     auto f = [](double t) -> double {
         return t > t0 ? std::cbrt(t) : (m * t + c);
     };
@@ -416,9 +421,9 @@ Vec3d Lab::fromxyz(cv::Vec3d& xyz)
     return { 116. * fy - 16., 500 * (fx - fy), 200 * (fy - fz) };
 }
 
-/* *\ brief Calculate From.
- *\ param src the input array, type of cv::Mat.
- *\ return the output array, type of cv::Mat
+/* @brief Calculate From.
+ * @param src the input array, type of cv::Mat.
+ * @return the output array, type of cv::Mat
  */
 Mat Lab::fromsrc(Mat& src)
 {
@@ -432,14 +437,15 @@ Vec3d Lab::tolab(cv::Vec3d& lab)
         return t > delta ? pow(t, 3.0) : (t - c) / m;
     };
     double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
-    return { illuminants.find(io)->second[0] * f_inv(L + a),
-        illuminants.find(io)->second[1] * f_inv(L),
-        illuminants.find(io)->second[2] * f_inv(L - b) };
+    auto& il = getIlluminants(io);
+    return { il[0] * f_inv(L + a),
+        il[1] * f_inv(L),
+        il[2] * f_inv(L - b) };
 }
 
-/* *\ brief Calculate To.
- *\ param src the input array, type of cv::Mat.
- *\ return the output array, type of cv::Mat
+/* @brief Calculate To.
+ * @param src the input array, type of cv::Mat.
+ * @return the output array, type of cv::Mat
  */
 Mat Lab::tosrc(Mat& src)
 {
@@ -568,11 +574,11 @@ std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name)
     case cv::ccm::AppleRGBL:
     case cv::ccm::REC_709_RGBL:
     case cv::ccm::REC_2020_RGBL:
-        throw "linear RGB colorspaces are not supported, you should assigned as normal rgb color space";
+        CV_Error(Error::StsBadArg, "linear RGB colorspaces are not supported, you should assigned as normal rgb color space");
         break;
 
     default:
-        throw "Only RGB color spaces are supported";
+        CV_Error(Error::StsBadArg, "Only RGB color spaces are supported");
     }
     return (std::dynamic_pointer_cast<RGBBase_>)(map_cs[cs_name]);
 }

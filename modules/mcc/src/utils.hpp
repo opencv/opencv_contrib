@@ -70,7 +70,7 @@ Mat saturate(Mat& src, const double& low, const double& up);
            color space, see Miscellaneous.pdf for details;
     @param  rgb the input array,type of Mat.
  */
-Mat rgb2gray(Mat rgb);
+Mat rgb2gray(const Mat& rgb);
 
 /** @brief function for elementWise operation
     @param src the input array, type of Mat
@@ -148,8 +148,6 @@ Mat distanceWise(Mat& src, Mat& ref, F&& lambda)
 }
 
 Mat multiple(const Mat& xyz, const Mat& ccm);
-
-static const Mat m_gray = (Mat_<double>(3, 1) << 0.2126, 0.7152, 0.0722);
 
 }
 }  // namespace cv::ccm
