@@ -49,6 +49,9 @@ struct Volume_NODE
     Vec3i idx = nan3;
     int row   = -1;
     int nextVolumeRow = -1;
+    bool isActive = true;
+    int lastVisibleIndex = -1;
+    ocl::KernelArg pose;
 };
 
 size_t calc_hash(Vec3i x);
@@ -69,6 +72,7 @@ public:
 
     void update(Vec3i indx);
     void update(Vec3i indx, int row);
+    void update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::KernelArg pose);
     void expand();
     int getNextVolume(int hash, int& num, int i, int start);
     int find_Volume(Vec3i indx) const;

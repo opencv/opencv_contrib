@@ -932,7 +932,7 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 
     return pixNorm;
 }
-
+/*
 void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFactor,
         const Matx44f& cameraPose, const Intr& intrinsics, VolumeIndex idx)
 {
@@ -980,7 +980,7 @@ void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFa
     if (!k.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 }
-
+*/
 void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
@@ -1004,7 +1004,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
 
-    std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
+    //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
     k.args(ocl::KernelArg::ReadOnly(depth),
         _indexes.volumes.getUMat(ACCESS_RW),
         (int)_indexes.list_size,
@@ -1012,7 +1012,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         (int)_indexes.hash_divisor,
         // ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val)),
         // _volUnitsData.getUMat(ACCESS_RW),
-        // isActive.getUMat(ACCESS_READ),
+        // isActive.getUMat(ACCESS_RW),
         // lastVisibleIndexes.getUMat(ACCESS_READ),
         // ocl::KernelArg::PtrReadOnly(_pixNorms),
         voxelSize,
@@ -1134,7 +1134,12 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
         isActive.at<bool>(idx, 0) = true;
         lastVisibleIndexes.at<int>(idx, 0) = frameId;
-        //std::cout << " 1 ";
+        //Affine3f cam2vol(Affine3f(subvolumePose) * Affine3f(cameraPose));
+        Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+        ocl::KernelArg pose = ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val));
+        //ocl::KernelArg pose;
+        _indexes.update(idx, true, frameId, pose);
+
         _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
@@ -1161,7 +1166,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         for (int i = range.start; i < range.end; ++i)
         {
             Vec3i tsdf_idx = _totalVolUnits[i];
+            
             VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
+            //std::cout << tsdf_idx << " " << idx << std::endl;
             if (idx < 0 || idx == _lastVolIndex - 1) return;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(poses.at<Vec3i>(idx, 0));

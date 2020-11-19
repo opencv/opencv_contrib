@@ -4,7 +4,7 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-#define NAN_NUM -2147483648;
+//#define NAN_NUM -2147483648;
 
 typedef __INT8_TYPE__ int8_t;
 
@@ -22,6 +22,9 @@ struct Volume_NODE
     int3 idx;
     int row;
     int nextVolumeRow;
+    bool isActive;
+    int lastVisibleIndex;
+    float16 vol2camMatrix;
 };
 
 static inline TsdfType floatToTsdf(float num)
@@ -57,10 +60,27 @@ uint calc_hash(int3 x)
     return seed;
 }
 
-int findVolume(__global struct Volume_NODE * hash_table, int3 indx, int hash_divisor)
+int findVolume(__global struct Volume_NODE * hash_table, int3 indx,
+               int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
-    printf("%d \n", hash);
+    //printf("%d \n", hash);
+    int num = 1;
+    int i = hash * num * list_size;
+    int NAN_NUM = -2147483648;
+    while (i != -1)
+    {
+        __global struct Volume_NODE* v = (hash_table + i);
+        //int3 tmp = v->idx 
+        if (v->idx.x == indx.x &&
+            v->idx.y == indx.y &&
+            v->idx.z == indx.z)
+            return v->row;
+        if (v->idx.x == NAN_NUM)
+            return -2;
+        i = v->nextVolumeRow;
+    }
+
     return 1;
 }
 
@@ -74,7 +94,7 @@ __kernel void integrateAllVolumeUnits(
                         const int hash_divisor,
                         // const float16 vol2camMatrix,
                         // const __global struct TsdfVoxel * volUnitsData,
-                        // const __global bool * isActive,
+                        //global bool * isActive,
                         // const __global int * lastVisibleIndexes,
                         // const __global float * pixNorms,
                         const float voxelSize,
@@ -89,15 +109,24 @@ __kernel void integrateAllVolumeUnits(
                         )
 {
     //printf(" = %d , %d , %d \n", hash_params.x, hash_params.y, hash_params.z);
-    printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
-    //findVolume(hash_table, hash_table->idx, hash_divisor);
+    //printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
+    //int tmp = findVolume(hash_table, hash_table->idx, hash_divisor);
+    
+    //int3 idx; idx.x = 7; idx.y=7;idx.z=1;
+    //int tmp = findVolume(hash_table, idx, list_size, bufferNums, hash_divisor);
+    //print("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
+    
     //hash_table->idx.x = 10;
     //findVolume(hash_table, hash_table->idx, hash_divisor);
     
-    //printf("%d \n", hash_table->nextVolumeRow);
-    //printf("%d \n", hash_table->row);
-    //printf("%d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
-
+    //printf("\n");
+    //printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
+    //printf("row = %d \n", hash_table->row);
+    //printf("nv  = %d \n", hash_table->nextVolumeRow);
+    //printf("isA = %d \n", hash_table->isActive);
+    //printf("isA = %s \n", hash_table->isActive ? "true" : "false");
+    //printf("lvi = %d \n", hash_table->lastVisibleIndex);
+    //printf("%f %f \n", hash_table->vol2camMatrix.x, hash_table->vol2camMatrix.y);
 
 }
 

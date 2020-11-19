@@ -450,6 +450,35 @@ void VolumesTable::update(Vec3i indx, int row)
     }
 }
 
+void VolumesTable::update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::KernelArg pose)
+{
+    int hash = int(calc_hash(indx) % hash_divisor);
+    int num = 1;
+    int start = hash * num * list_size;
+    int i = start;
+
+    while (i != -1)
+    {
+        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        if (v.idx == indx)
+        {
+            return;
+        }
+        //find nan cheking for int or Vec3i
+        if (v.idx == Vec3i(nan3))
+        {
+            v.idx = indx;
+            v.isActive = isActive;
+            v.lastVisibleIndex = lastVisibleIndex;
+            v.pose = pose;
+            v.nextVolumeRow = getNextVolume(hash, num, i, start);
+            indexes.push_back(indx);
+            return;
+        }
+        i = v.nextVolumeRow;
+    }
+}
+
 int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 {
     if (i != start && i % list_size == 0)
