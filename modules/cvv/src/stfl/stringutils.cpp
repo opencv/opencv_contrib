@@ -248,15 +248,16 @@ void unescapeCommas(QString &str)
 
 QString shortenString(QString &str, int maxLength, bool cutEnd, bool fill)
 {
+    const auto horizontalEllipsis = u8"\xE2\x80\xA6"; // u8"…"
     if (str.size() > maxLength)
     {
         if (cutEnd)
         {
-            str = str.mid(0, maxLength - 1) + u8"…";
+            str = str.mid(0, maxLength - 1) + horizontalEllipsis;
         }
         else
         {
-            str = u8"…" +
+            str = horizontalEllipsis +
                   str.mid(str.size() + 1 - maxLength, str.size());
         }
     }
