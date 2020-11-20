@@ -89,10 +89,10 @@ public:
     /** @brief run operations to make color conversion
     */
     Mat run(Mat abc);
-    static Operations get_IDENTITY_OPS()
+    static const Operations& get_IDENTITY_OPS()
     {
-        Operation Operation_op = Operation::get_IDENTITY_OP();
-        return Operations { Operation_op };
+        static Operations Operation_op {Operation::get_IDENTITY_OP()};
+        return Operation_op;
     }
 };
 
