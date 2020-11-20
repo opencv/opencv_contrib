@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     if (!parser.check())
     {
         parser.printErrors();
+        parser.printMessage();
         return 0;
     }
 
@@ -59,6 +60,9 @@ int main(int argc, char *argv[])
     //--------------------------------------------------------------------------
     //-------------------------Actual Relevant Code-----------------------------
     //--------------------------------------------------------------------------
+
+    namedWindow("original", WINDOW_NORMAL);
+    namedWindow("image result | q or esc to quit", WINDOW_NORMAL);
 
     while (inputVideo.grab())
     {

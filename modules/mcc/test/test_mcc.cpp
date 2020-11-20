@@ -37,6 +37,8 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_MCC24)
     Ptr<CChecker> pChecker = CChecker::create();
     pChecker->setTarget(MCC24);
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
+    pChecker->calculate();
+
     runCCheckerDraw(pChecker, 640, 480, 24);
 }
 TEST(CV_mccRunCCheckerDrawTest, accuracy_SG140)
@@ -44,6 +46,8 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_SG140)
     Ptr<CChecker> pChecker = CChecker::create();
     pChecker->setTarget(SG140);
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
+    pChecker->calculate();
+
     runCCheckerDraw(pChecker, 640, 480, 140);
 }
 TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
@@ -51,6 +55,8 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
     Ptr<CChecker> pChecker = CChecker::create();
     pChecker->setTarget(VINYL18);
     pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
+    pChecker->calculate();
+
     runCCheckerDraw(pChecker, 640, 480, 18);
 }
 

@@ -36,6 +36,33 @@ namespace mcc
 
 Rect poly2mask(const std::vector<Point2f> &poly, Size size, InputOutputArray mask);
 
+
+float perimeter(const std::vector<cv::Point2f> &ps);
+
+cv::Point2f mace_center(const std::vector<cv::Point2f> &ps);
+
+void transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X,
+                              std::vector<cv::Point2f> &Xt);
+
+void transform_points_inverse(InputArray T, const std::vector<cv::Point2f> &X,
+                              std::vector<cv::Point2f> &Xt);
+
+
+template <class NumType>
+cv::Mat Vect2Mat(std::vector<std::vector<NumType>> vect)
+{
+    cv::Mat matrix = cv::Mat::zeros((int)vect.size(), (int)vect[0].size(), cv::DataType<NumType>::type);
+    //Mat mtx;
+
+    // copy data
+    for (int i=0; i<(int)vect.size(); i++)
+        for (int j=0; j<(int)vect[i].size(); j++)
+        {
+            matrix.at<NumType>(i,j) = vect[i][j];
+        }
+
+    return matrix;
+}
 template <typename T>
 void circshift(std::vector<T> &A, int shiff)
 {
@@ -52,10 +79,6 @@ void circshift(std::vector<T> &A, int shiff)
 
     A = Tmp;
 }
-
-float perimeter(const std::vector<cv::Point2f> &ps);
-
-cv::Point2f mace_center(const std::vector<cv::Point2f> &ps);
 
 template <typename T>
 void unique(const std::vector<T> &A, std::vector<T> &U)
