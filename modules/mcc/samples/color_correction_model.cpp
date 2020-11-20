@@ -24,6 +24,7 @@ const char *keys =
 int main(int argc, char *argv[])
 {
 
+
     // ----------------------------------------------------------
     // Scroll down a bit (~40 lines) to find actual relevant code
     // ----------------------------------------------------------
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
 
         //compte color correction matrix
         //! [get_ccm_Matrix]
-        ColorCorrectionModel model1(src, Vinyl);
+        ColorCorrectionModel model1(src, COLORCHECKER_Vinyl);
         model1.run();
         Mat ccm = model1.getCCM();
         std::cout<<"ccm "<<ccm<<std::endl;
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
         //! [get_ccm_Matrix]
          /* brief More models with different parameters, try it & check the document for details.
         */
-        // model1.setColorSpace(sRGB);
+        // model1.setColorSpace(COLOR_SPACE_sRGB);
         // model1.setCCM_TYPE(CCM_3x3);
         // model1.setDistance(DISTANCE_CIE2000);
         // model1.setLinear(LINEARIZATION_GAMMA);
@@ -128,7 +129,6 @@ int main(int argc, char *argv[])
         const int inp_size = 255;
         const int out_size = 255;
         img_ = img_ / inp_size;
-        //Mat out = this->infer(img_, islinear);
         Mat calibratedImage= model1.infer(img_);
         Mat out_ = calibratedImage * out_size;
         //! [make_color_correction]

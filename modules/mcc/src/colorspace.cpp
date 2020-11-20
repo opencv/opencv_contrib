@@ -350,17 +350,6 @@ void REC_2020_RGB_::setParameter()
     gamma = 1 / 0.45;
 }
 
-static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
-static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
-static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-static const std::map<CAM, std::vector<Mat>> MAs = {
-    { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
-    { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
-    { BRADFORD, { Bradford, Bradford.inv() } }
-};
-/* @brief XYZ color space.
- *        Chromatic adaption matrices.
- */
 Operations XYZ::cam(IO dio, CAM method)
 {
     return (io == dio) ? Operations()
@@ -376,6 +365,17 @@ Mat XYZ::cam_(IO sio, IO dio, CAM method) const
     {
         return cams[std::make_tuple(dio, sio, method)];
     }
+    /* @brief XYZ color space.
+    *        Chromatic adaption matrices.
+    */
+
+    static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+    static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+    static const std::map<CAM, std::vector<Mat>> MAs = {
+        { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
+        { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
+        { BRADFORD, { Bradford, Bradford.inv() } }
+    };
 
     // Function from http://www.brucelindbloom.com/index.html?ColorCheckerRGB.html.
     Mat XYZws = Mat(getIlluminants(dio));
