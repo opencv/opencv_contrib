@@ -31,7 +31,7 @@ namespace cv {
 namespace ccm {
 Color::Color()
     : colors(Mat())
-    , cs(*new ColorSpace())
+    , cs(*std::make_shared<ColorSpace>())
 {}
 Color::Color(Mat colors_, enum COLOR_SPACE cs_)
     : colors(colors_)
@@ -123,7 +123,7 @@ Mat Color::diff(Color& other, IO io, DISTANCE_TYPE method)
     case cv::ccm::DISTANCE_RGBL:
         return distance(to(*cs.l).colors, other.to(*cs.l).colors, method);
     default:
-        throw std::invalid_argument { "Wrong method!" };
+        CV_Error(Error::StsBadArg, "Wrong method!" );
         break;
     }
 }

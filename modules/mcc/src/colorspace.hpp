@@ -112,7 +112,6 @@ private:
     virtual void setParameter() {};
 
     /** @brief Calculation of M_RGBL2XYZ_base.
-               see ColorSpace.pdf for details.
     */
     virtual void calM();
 
@@ -157,7 +156,6 @@ public:
 
 private:
     /** @brief linearization parameters
-               see ColorSpace.pdf for details;
     */
     virtual void calLinear() CV_OVERRIDE;
     /** @brief Used by toLFunc.
@@ -165,7 +163,6 @@ private:
     double toLFuncEW(double& x);
 
     /** @brief Linearization.
-               see ColorSpace.pdf for details.
         @param rgb the input array, type of cv::Mat.
         @return the output array, type of cv::Mat.
     */
@@ -176,7 +173,6 @@ private:
     double fromLFuncEW(double& x);
 
     /** @brief Delinearization.
-               see ColorSpace.pdf for details.
         @param rgbl the input array, type of cv::Mat.
         @return the output array, type of cv::Mat.
     */
@@ -297,14 +293,14 @@ enum CAM
     BRADFORD
 };
 
-static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
-static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
-static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-static const std::map<CAM, std::vector<Mat>> MAs = {
-    { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
-    { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
-    { BRADFORD, { Bradford, Bradford.inv() } }
-};
+// static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
+// static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+// static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+// static const std::map<CAM, std::vector<Mat>> MAs = {
+//     { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
+//     { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
+//     { BRADFORD, { Bradford, Bradford.inv() } }
+// };
 
 /** @brief XYZ color space.
            Chromatic adaption matrices.
@@ -327,11 +323,6 @@ private:
     */
     Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const;
 };
-
-/** @brief Define XYZ_D65_2 and XYZ_D50_2.
-*/
-const XYZ XYZ_D65_2_CS(IO::getIOs(D65_2));
-const XYZ XYZ_D50_2_CS(IO::getIOs(D50_2));
 
 /** @brief Lab color space.
 */

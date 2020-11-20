@@ -120,7 +120,7 @@ std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat
         p.reset(new LinearGray<LogPolyfit>(deg, src, dst, mask, cs));
         break;
     default:
-        throw std::invalid_argument { "Wrong linear_type!" };
+        CV_Error(Error::StsBadArg, "Wrong linear_type!" );
         break;
     }
     return p;

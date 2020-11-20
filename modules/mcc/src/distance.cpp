@@ -213,7 +213,7 @@ Mat distance(Mat src, Mat ref, DISTANCE_TYPE distance_type)
     case cv::ccm::DISTANCE_RGBL:
         return distanceWise(src, ref, deltaCIE76);
     default:
-        throw std::invalid_argument { "Wrong distance_type!" };
+        CV_Error(Error::StsBadArg, "Wrong distance_type!" );
         break;
     }
 };

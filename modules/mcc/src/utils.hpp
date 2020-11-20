@@ -35,7 +35,7 @@ namespace ccm {
 
 double gammaCorrection_(const double& element, const double& gamma);
 
-/** @brief gamma correction ,see ColorSpace.pdf for details.
+/** @brief gamma correction.
            \f[
             C_l=C_n^{\gamma},\qquad C_n\ge0\\
             C_l=-(-C_n)^{\gamma},\qquad C_n<0\\\\
@@ -67,7 +67,7 @@ Mat multiple(const Mat& xyz, const Mat& ccm);
 Mat saturate(Mat& src, const double& low, const double& up);
 
 /** @brief rgb2gray it is an approximation grayscale function for relative RGB
-           color space, see Miscellaneous.pdf for details;
+           color space
     @param  rgb the input array,type of Mat.
  */
 Mat rgb2gray(const Mat& rgb);
@@ -106,7 +106,7 @@ Mat elementWise(const Mat& src, F&& lambda)
         break;
     }
     default:
-        throw std::invalid_argument { "Wrong channel!" };
+        CV_Error(Error::StsBadArg, "Wrong channel!" );
         break;
     }
     return dst;

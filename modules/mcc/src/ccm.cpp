@@ -80,13 +80,11 @@ public:
     void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask);
 
     /** @brief Fitting nonlinear - optimization initial value by white balance.
-             see CCM.pdf for details.
         @return the output array, type of Mat
     */
     void initialWhiteBalance(void);
 
     /** @brief Fitting nonlinear-optimization initial value by least square.
-             see CCM.pdf for details
         @param fit if fit is True, return optimalization for rgbl distance function.
     */
     void initialLeastSquare(bool fit = false);
@@ -170,7 +168,7 @@ Mat ColorCorrectionModel::Impl::prepare(const Mat& inp)
         return arr_out;
     }
     default:
-        throw std::invalid_argument { "Wrong ccm_type!" };
+        CV_Error(Error::StsBadArg, "Wrong ccm_type!");
         break;
     }
 }
@@ -287,7 +285,7 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 {
     if (!p->ccm.data)
     {
-        throw "No CCM values!";
+        CV_Error(Error::StsBadArg, "No CCM values!" );
     }
     Mat img_lin = (p->linear)->linearize(img);
     Mat img_ccm(img_lin.size(), img_lin.type());
@@ -408,7 +406,7 @@ void ColorCorrectionModel::run()
             p->initialLeastSquare();
             break;
         default:
-            throw std::invalid_argument { "Wrong initial_methoddistance_type!" };
+            CV_Error(Error::StsBadArg, "Wrong initial_methoddistance_type!" );
             break;
         }
         break;

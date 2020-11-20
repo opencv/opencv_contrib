@@ -112,7 +112,6 @@ void RGBBase_::bind(RGBBase_& rgbl)
 }
 
 /* @brief Calculation of M_RGBL2XYZ_base.
- *        see ColorSpace.pdf for details.
  */
 void RGBBase_::calM()
 {
@@ -197,7 +196,6 @@ double sRGBBase_::toLFuncEW(double& x)
 }
 
 /* @brief Linearization.
- *        see ColorSpace.pdf for details.
  * @param rgb the input array, type of cv::Mat.
  * @return the output array, type of cv::Mat.
  */
@@ -226,7 +224,6 @@ double sRGBBase_::fromLFuncEW(double& x)
 }
 
 /* @brief Delinearization.
- *        see ColorSpace.pdf for details.
  * @param rgbl the input array, type of cv::Mat.
  * @return the output array, type of cv::Mat.
  */
@@ -353,9 +350,14 @@ void REC_2020_RGB_::setParameter()
     gamma = 1 / 0.45;
 }
 
-/* @brief Enum of the possible types of CAMs.
- */
-
+static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
+static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+static const std::map<CAM, std::vector<Mat>> MAs = {
+    { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
+    { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
+    { BRADFORD, { Bradford, Bradford.inv() } }
+};
 /* @brief XYZ color space.
  *        Chromatic adaption matrices.
  */
@@ -574,7 +576,7 @@ std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name)
     case cv::ccm::COLOR_SPACE_AppleRGBL:
     case cv::ccm::COLOR_SPACE_REC_709_RGBL:
     case cv::ccm::COLOR_SPACE_REC_2020_RGBL:
-        CV_Error(Error::StsBadArg, "linear RGB colorspaces are not supported, you should assigned as normal rgb color space");
+        CV_Error(Error::StsBadArg, "linear RGB colorspaces are not supported, you should assigned as normal RGB color space");
         break;
 
     default:
