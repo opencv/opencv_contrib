@@ -111,16 +111,16 @@ Mat Color::diff(Color& other, IO io, DISTANCE_TYPE method)
     Lab lab = *Lab::get(io);
     switch (method)
     {
-    case cv::ccm::CIE76:
-    case cv::ccm::CIE94_GRAPHIC_ARTS:
-    case cv::ccm::CIE94_TEXTILES:
-    case cv::ccm::CIE2000:
-    case cv::ccm::CMC_1TO1:
-    case cv::ccm::CMC_2TO1:
+    case cv::ccm::DISTANCE_CIE76:
+    case cv::ccm::DISTANCE_CIE94_GRAPHIC_ARTS:
+    case cv::ccm::DISTANCE_CIE94_TEXTILES:
+    case cv::ccm::DISTANCE_CIE2000:
+    case cv::ccm::DISTANCE_CMC_1TO1:
+    case cv::ccm::DISTANCE_CMC_2TO1:
         return distance(to(lab).colors, other.to(lab).colors, method);
-    case cv::ccm::RGB:
+    case cv::ccm::DISTANCE_RGB:
         return distance(to(*cs.nl).colors, other.to(*cs.nl).colors, method);
-    case cv::ccm::RGBL:
+    case cv::ccm::DISTANCE_RGBL:
         return distance(to(*cs.l).colors, other.to(*cs.l).colors, method);
     default:
         throw std::invalid_argument { "Wrong method!" };
@@ -134,11 +134,11 @@ void Color::getGray(double JDN)
     {
         return;
     }
-    Mat lab = to(Lab_D65_2).colors;
+    Mat lab = to(COLOR_SPACE_Lab_D65_2).colors;
     Mat gray(colors.size(), colors.type());
     int fromto[] = { 0, 0, -1, 1, -1, 2 };
     mixChannels(&lab, 1, &gray, 1, fromto, 3);
-    Mat d = distance(lab, gray, CIE2000);
+    Mat d = distance(lab, gray, DISTANCE_CIE2000);
     this->grays = d < JDN;
     this->colored = ~grays;
 }
@@ -368,26 +368,26 @@ std::shared_ptr<Color> GetColor::get_color(CONST_COLOR const_color)
     switch (const_color)
     {
 
-    case cv::ccm::Macbeth:
+    case cv::ccm::COLORCHECKER_Macbeth:
     {
         Mat ColorChecker2005_LAB_D50_2_ = GetColor::get_ColorChecker(*ColorChecker2005_LAB_D50_2, 24);
         Mat ColorChecker2005_COLORED_MASK_ = GetColor::get_ColorChecker_MASK(ColorChecker2005_COLORED_MASK, 24);
-        std::shared_ptr<Color> Macbeth_D50_2 = std::make_shared<Color>(ColorChecker2005_LAB_D50_2_, Lab_D50_2, ColorChecker2005_COLORED_MASK_);
+        std::shared_ptr<Color> Macbeth_D50_2 = std::make_shared<Color>(ColorChecker2005_LAB_D50_2_, COLOR_SPACE_Lab_D50_2, ColorChecker2005_COLORED_MASK_);
         return Macbeth_D50_2;
     }
 
-    case cv::ccm::Vinyl:
+    case cv::ccm::COLORCHECKER_Vinyl:
     {
         Mat Vinyl_LAB_D50_2__ = GetColor::get_ColorChecker(*Vinyl_LAB_D50_2, 18);
         Mat Vinyl_COLORED_MASK__ = GetColor::get_ColorChecker_MASK(Vinyl_COLORED_MASK, 18);
-        std::shared_ptr<Color> Vinyl_D50_2 = std::make_shared<Color>(Vinyl_LAB_D50_2__, Lab_D50_2, Vinyl_COLORED_MASK__);
+        std::shared_ptr<Color> Vinyl_D50_2 = std::make_shared<Color>(Vinyl_LAB_D50_2__, COLOR_SPACE_Lab_D50_2, Vinyl_COLORED_MASK__);
         return Vinyl_D50_2;
     }
 
-    case cv::ccm::DigitalSG:
+    case cv::ccm::COLORCHECKER_DigitalSG:
     {
         Mat DigitalSG_LAB_D50_2__ = GetColor::get_ColorChecker(*DigitalSG_LAB_D50_2, 140);
-        std::shared_ptr<Color> DigitalSG_D50_2 = std::make_shared<Color>(DigitalSG_LAB_D50_2__, Lab_D50_2);
+        std::shared_ptr<Color> DigitalSG_D50_2 = std::make_shared<Color>(DigitalSG_LAB_D50_2__, COLOR_SPACE_Lab_D50_2);
         return DigitalSG_D50_2;
     }
     }

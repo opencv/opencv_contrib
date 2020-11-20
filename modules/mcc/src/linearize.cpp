@@ -101,22 +101,22 @@ std::shared_ptr<Linear> getLinear(double gamma, int deg, Mat src, Color dst, Mat
     std::shared_ptr<Linear> p = std::make_shared<Linear>();
     switch (linear_type)
     {
-    case cv::ccm::IDENTITY_:
+    case cv::ccm::LINEARIZATION_IDENTITY:
         p.reset(new LinearIdentity());
         break;
-    case cv::ccm::GAMMA:
+    case cv::ccm::LINEARIZATION_GAMMA:
         p.reset(new LinearGamma(gamma));
         break;
-    case cv::ccm::COLORPOLYFIT:
+    case cv::ccm::LINEARIZATION_COLORPOLYFIT:
         p.reset(new LinearColor<Polyfit>(deg, src, dst, mask, cs));
         break;
-    case cv::ccm::COLORLOGPOLYFIT:
+    case cv::ccm::LINEARIZATION_COLORLOGPOLYFIT:
         p.reset(new LinearColor<LogPolyfit>(deg, src, dst, mask, cs));
         break;
-    case cv::ccm::GRAYPOLYFIT:
+    case cv::ccm::LINEARIZATION_GRAYPOLYFIT:
         p.reset(new LinearGray<Polyfit>(deg, src, dst, mask, cs));
         break;
-    case cv::ccm::GRAYLOGPOLYFIT:
+    case cv::ccm::LINEARIZATION_GRAYLOGPOLYFIT:
         p.reset(new LinearGray<LogPolyfit>(deg, src, dst, mask, cs));
         break;
     default:

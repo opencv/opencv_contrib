@@ -51,48 +51,48 @@ Here are the parameters for ColorCorrectionModel
                   If the color type is some RGB, the format is RGB not BGR;
     Supported Color Space:
             Supported list of RGB color spaces:
-                sRGB;
-                AdobeRGB;
-                WideGamutRGB;
-                ProPhotoRGB;
-                DCI_P3_RGB;
-                AppleRGB;
-                REC_709_RGB;
-                REC_2020_RGB;
+                COLOR_SPACE_sRGB;
+                COLOR_SPACE_AdobeRGB;
+                COLOR_SPACE_WideGamutRGB;
+                COLOR_SPACE_ProPhotoRGB;
+                COLOR_SPACE_DCI_P3_RGB;
+                COLOR_SPACE_AppleRGB;
+                COLOR_SPACE_REC_709_RGB;
+                COLOR_SPACE_REC_2020_RGB;
             Supported list of linear RGB color spaces:
-                sRGBL;
-                AdobeRGBL;
-                WideGamutRGBL;
-                ProPhotoRGBL;
-                DCI_P3_RGBL;
-                AppleRGBL;
-                REC_709_RGBL;
-                REC_2020_RGBL;
+                COLOR_SPACE_sRGBL;
+                COLOR_SPACE_AdobeRGBL;
+                COLOR_SPACE_WideGamutRGBL;
+                COLOR_SPACE_ProPhotoRGBL;
+                COLOR_SPACE_DCI_P3_RGBL;
+                COLOR_SPACE_AppleRGBL;
+                COLOR_SPACE_REC_709_RGBL;
+                COLOR_SPACE_REC_2020_RGBL;
             Supported list of non-RGB color spaces:
-                Lab_D50_2;
-                Lab_D65_2;
-                XYZ_D50_2;
-                XYZ_D65_2;
-                XYZ_D65_10;
-                XYZ_D50_10;
-                XYZ_A_2;
-                XYZ_A_10;
-                XYZ_D55_2;
-                XYZ_D55_10;
-                XYZ_D75_2;
-                XYZ_D75_10;
-                XYZ_E_2;
-                XYZ_E_10;
-                Lab_D65_10;
-                Lab_D50_10;
-                Lab_A_2;
-                Lab_A_10;
-                Lab_D55_2;
-                Lab_D55_10;
-                Lab_D75_2;
-                Lab_D75_10;
-                Lab_E_2;
-                Lab_E_10;
+                COLOR_SPACE_Lab_D50_2;
+                COLOR_SPACE_Lab_D65_2;
+                COLOR_SPACE_XYZ_D50_2;
+                COLOR_SPACE_XYZ_D65_2;
+                COLOR_SPACE_XYZ_D65_10;
+                COLOR_SPACE_XYZ_D50_10;
+                COLOR_SPACE_XYZ_A_2;
+                COLOR_SPACE_XYZ_A_10;
+                COLOR_SPACE_XYZ_D55_2;
+                COLOR_SPACE_XYZ_D55_10;
+                COLOR_SPACE_XYZ_D75_2;
+                COLOR_SPACE_XYZ_D75_10;
+                COLOR_SPACE_XYZ_E_2;
+                COLOR_SPACE_XYZ_E_10;
+                COLOR_SPACE_Lab_D65_10;
+                COLOR_SPACE_Lab_D50_10;
+                COLOR_SPACE_Lab_A_2;
+                COLOR_SPACE_Lab_A_10;
+                COLOR_SPACE_Lab_D55_2;
+                COLOR_SPACE_Lab_D55_10;
+                COLOR_SPACE_Lab_D75_2;
+                COLOR_SPACE_Lab_D75_10;
+                COLOR_SPACE_Lab_E_2;
+                COLOR_SPACE_Lab_E_10;
 ```
 
 

@@ -365,11 +365,6 @@ private:
     Mat tosrc(Mat& src);
 };
 
-/** @brief Define Lab_D65_2 and Lab_D50_2.
-*/
-const Lab Lab_D65_2_CS(IO::getIOs(D65_2));
-const Lab Lab_D50_2_CS(IO::getIOs(D50_2));
-
 class GetCS
 {
 public:

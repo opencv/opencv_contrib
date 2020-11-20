@@ -138,15 +138,15 @@ public:
 };
 
 ColorCorrectionModel::Impl::Impl()
-    : cs(*GetCS::get_rgb(sRGB))
+    : cs(*GetCS::get_rgb(COLOR_SPACE_sRGB))
     , ccm_type(CCM_3x3)
-    , distance(CIE2000)
-    , linear_type(GAMMA)
+    , distance(DISTANCE_CIE2000)
+    , linear_type(LINEARIZATION_GAMMA)
     , weights(Mat())
     , gamma(2.2)
     , deg(3)
     , saturated_threshold({ 0, 0.98 })
-    , initial_method_type(LEAST_SQUARE)
+    , initial_method_type(INITIAL_METHOD_LEAST_SQUARE)
     , weights_coeff(0)
     , max_count(5000)
     , epsilon(1.e-4)
@@ -250,7 +250,7 @@ void ColorCorrectionModel::Impl::initialLeastSquare(bool fit)
 double ColorCorrectionModel::Impl::calc_loss_(Color color)
 {
     Mat distlist = color.diff(*dst, distance);
-    Color lab = color.to(Lab_D50_2);
+    Color lab = color.to(COLOR_SPACE_Lab_D50_2);
     Mat dist_;
     pow(distlist, 2, dist_);
     if (!weights.empty())
@@ -395,16 +395,16 @@ void ColorCorrectionModel::run()
     // distance function may affect the loss function and the fitting function
     switch (p->distance)
     {
-    case cv::ccm::RGBL:
+    case cv::ccm::DISTANCE_RGBL:
         p->initialLeastSquare(true);
         break;
     default:
         switch (p->initial_method_type)
         {
-        case cv::ccm::WHITE_BALANCE:
+        case cv::ccm::INITIAL_METHOD_WHITE_BALANCE:
             p->initialWhiteBalance();
             break;
-        case cv::ccm::LEAST_SQUARE:
+        case cv::ccm::INITIAL_METHOD_LEAST_SQUARE:
             p->initialLeastSquare();
             break;
         default:

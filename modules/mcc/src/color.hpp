@@ -85,7 +85,7 @@ public:
         @param method type of distance.
         @return distance between self and other
     */
-    Mat diff(Color& other, DISTANCE_TYPE method = CIE2000);
+    Mat diff(Color& other, DISTANCE_TYPE method = DISTANCE_CIE2000);
 
     /** @brief Diff with IO.
         @param other type of Color.
@@ -93,7 +93,7 @@ public:
         @param method type of distance.
         @return distance between self and other
     */
-    Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000);
+    Mat diff(Color& other, IO io, DISTANCE_TYPE method = DISTANCE_CIE2000);
 
     /** @brief Calculate gray mask.
     */

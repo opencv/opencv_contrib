@@ -88,8 +88,8 @@ int main(int argc, char *argv[])
         */
         // model1.setColorSpace(sRGB);
         // model1.setCCM_TYPE(CCM_3x3);
-        // model1.setDistance(CIE2000);
-        // model1.setLinear(GAMMA);
+        // model1.setDistance(DISTANCE_CIE2000);
+        // model1.setLinear(LINEARIZATION_GAMMA);
         // model1.setLinearGamma(2.2);
         // model1.setLinearDegree(3);
         // model1.setSaturatedThreshold(0, 0.98);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
         // Vec3d(68.70700069999999, 12.2959995, 16.2129993),
         // Vec3d(63.6839981, 10.2930002, 16.7639999));
 
-        // ColorCorrectionModel model8(src,ref,Lab_D50_2);
+        // ColorCorrectionModel model8(src,ref,COLOR_SPACE_Lab_D50_2);
         // model8.run();
         //! [reference_color_values]
 
