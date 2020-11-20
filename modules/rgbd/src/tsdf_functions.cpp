@@ -375,12 +375,17 @@ void integrateVolumeUnit(
 
 size_t calc_hash(Vec3i x)
 {
-    size_t seed = 0;
-    constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
-    for (uint16_t i = 0; i < 3; i++)
-    {
-        seed ^= std::hash<int>()(x[i]) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    }
+    uint32_t seed = 0;
+    //constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    seed ^= x[0] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed ^= x[1] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    //for (int i = 0; i < 3; i++)
+    //{
+    //    //seed ^= std::hash<int>()(x[i]) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    //    seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    //}
     return seed;
 }
 

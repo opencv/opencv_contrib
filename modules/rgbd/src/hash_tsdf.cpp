@@ -1003,10 +1003,12 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
-
+    std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
+        " | " << calc_hash(Vec3i(7, 7, 1)) % _indexes.hash_divisor<< std::endl;
+    std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
     k.args(ocl::KernelArg::ReadOnly(depth),
-        _indexes.volumes.getUMat(ACCESS_RW),
+        ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
         (int)_indexes.list_size,
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
@@ -1026,7 +1028,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         // ,ocl::KernelArg::PtrReadOnly(_pixNorms)
     );
 
-    int resol = 2;
+    int resol = 1;
     size_t globalSize[3];
     globalSize[0] = (size_t)resol;
     globalSize[1] = (size_t)resol;

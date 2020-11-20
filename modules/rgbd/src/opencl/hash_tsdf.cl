@@ -7,6 +7,7 @@
 //#define NAN_NUM -2147483648;
 
 typedef __INT8_TYPE__ int8_t;
+typedef __UINT32_TYPE__ uint32_t;
 
 typedef int8_t TsdfType;
 typedef uchar WeightType;
@@ -52,11 +53,12 @@ __kernel void preCalculationPixNorm (__global float * pixNorms,
 
 uint calc_hash(int3 x)
 {
-    unsigned int seed = 0;
-    uint GOLDEN_RATIO = 0x9e3779b9;
-    seed += x.x + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed += x.y + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed += x.z + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    uint32_t seed = 0;
+    //uint GOLDEN_RATIO = 0x9e3779b9;
+    uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    seed ^= x.x + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed ^= x.y + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed ^= x.z + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     return seed;
 }
 
@@ -64,13 +66,17 @@ int findVolume(__global struct Volume_NODE * hash_table, int3 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
-    //printf("%d \n", hash);
+    printf("hash = %d \n", hash);
+    
+    //printf("%d | %d \n", calc_hash(indx), hash);
     int num = 1;
     int i = hash * num * list_size;
     int NAN_NUM = -2147483648;
     while (i != -1)
     {
         __global struct Volume_NODE* v = (hash_table + i);
+        printf(" = %d %d %d \n", v->idx.x, v->idx.y, v->idx.z);
+        printf("   %d | %d \n", v->row , v->nextVolumeRow);
         //int3 tmp = v->idx 
         if (v->idx.x == indx.x &&
             v->idx.y == indx.y &&
@@ -114,18 +120,18 @@ __kernel void integrateAllVolumeUnits(
     
     //int3 idx; idx.x = 7; idx.y=7;idx.z=1;
     //int tmp = findVolume(hash_table, idx, list_size, bufferNums, hash_divisor);
-    //print("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
+    //printf("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
     
     //hash_table->idx.x = 10;
     //findVolume(hash_table, hash_table->idx, hash_divisor);
     
     //printf("\n");
-    //printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
-    //printf("row = %d \n", hash_table->row);
-    //printf("nv  = %d \n", hash_table->nextVolumeRow);
-    //printf("isA = %d \n", hash_table->isActive);
+    printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
+    printf("row = %d \n", hash_table->row);
+    printf("nv  = %d \n", hash_table->nextVolumeRow);
+    printf("isA = %d \n", hash_table->isActive);
     //printf("isA = %s \n", hash_table->isActive ? "true" : "false");
-    //printf("lvi = %d \n", hash_table->lastVisibleIndex);
+    printf("lvi = %d \n", hash_table->lastVisibleIndex);
     //printf("%f %f \n", hash_table->vol2camMatrix.x, hash_table->vol2camMatrix.y);
 
 }

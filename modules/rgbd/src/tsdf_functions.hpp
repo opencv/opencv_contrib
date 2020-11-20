@@ -49,7 +49,7 @@ struct Volume_NODE
     Vec3i idx = nan3;
     int row   = -1;
     int nextVolumeRow = -1;
-    bool isActive = true;
+    bool isActive = false;
     int lastVisibleIndex = -1;
     ocl::KernelArg pose;
 };
