@@ -49,9 +49,10 @@ struct Volume_NODE
     Vec3i idx = nan3;
     int row   = -1;
     int nextVolumeRow = -1;
-    bool isActive = false;
-    int lastVisibleIndex = -1;
-    ocl::KernelArg pose;
+    //bool isActive = false;
+    //int lastVisibleIndex = -1;
+    //ocl::KernelArg pose;
+    int tmp;
 };
 
 size_t calc_hash(Vec3i x);

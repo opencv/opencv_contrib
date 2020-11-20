@@ -398,6 +398,7 @@ VolumesTable::VolumesTable()
         v.idx = nan3;
         v.row = -1;
         v.nextVolumeRow = -1;
+        v.tmp = i;
     }
 }
 
@@ -454,7 +455,7 @@ void VolumesTable::update(Vec3i indx, int row)
         i = v.nextVolumeRow;
     }
 }
-
+/*
 void VolumesTable::update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::KernelArg pose)
 {
     int hash = int(calc_hash(indx) % hash_divisor);
@@ -483,7 +484,7 @@ void VolumesTable::update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::
         i = v.nextVolumeRow;
     }
 }
-
+*/
 int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 {
     if (i != start && i % list_size == 0)

@@ -23,9 +23,10 @@ struct Volume_NODE
     int3 idx;
     int row;
     int nextVolumeRow;
-    bool isActive;
-    int lastVisibleIndex;
-    float16 vol2camMatrix;
+    //bool isActive;
+    //int lastVisibleIndex;
+    //float16 vol2camMatrix;
+    int tmp;
 };
 
 static inline TsdfType floatToTsdf(float num)
@@ -72,7 +73,7 @@ int findVolume(__global struct Volume_NODE * hash_table, int3 indx,
     int num = 1;
     int i = hash * num * list_size;
     int NAN_NUM = -2147483648;
-    while (i != -1)
+    while (i != NAN_NUM)
     {
         __global struct Volume_NODE* v = (hash_table + i);
         printf(" = %d %d %d \n", v->idx.x, v->idx.y, v->idx.z);
@@ -126,12 +127,27 @@ __kernel void integrateAllVolumeUnits(
     //findVolume(hash_table, hash_table->idx, hash_divisor);
     
     //printf("\n");
-    printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
-    printf("row = %d \n", hash_table->row);
-    printf("nv  = %d \n", hash_table->nextVolumeRow);
-    printf("isA = %d \n", hash_table->isActive);
+    for (int i = 0; i < 10; i++)
+    {
+        printf("\n");
+        int idx = i*3;
+        struct Volume_NODE v = hash_table[idx];
+        printf("idx = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
+        printf("row = %d \n", v.row);
+        printf("nv  = %d \n", v.nextVolumeRow);
+        printf("tmp = %d \n", v.tmp);
+
+        //printf("idx = %d %d %d \n", (hash_table[idx]).idx.x, (hash_table[idx]).idx.y, (hash_table[idx]).idx.z);
+        //printf("idx = %d %d %d \n", (hash_table+idx)->idx.x, (hash_table+idx)->idx.y, (hash_table+idx)->idx.z);
+        
+    }
+    
+    //printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
+    //printf("row = %d \n", hash_table->row);
+    //printf("nv  = %d \n", hash_table->nextVolumeRow);
+    //printf("isA = %d \n", hash_table->isActive);
     //printf("isA = %s \n", hash_table->isActive ? "true" : "false");
-    printf("lvi = %d \n", hash_table->lastVisibleIndex);
+    //printf("lvi = %d \n", hash_table->lastVisibleIndex);
     //printf("%f %f \n", hash_table->vol2camMatrix.x, hash_table->vol2camMatrix.y);
 
 }
