@@ -86,9 +86,9 @@ enum INITIAL_METHOD_TYPE
 /** @brief  Macbeth and Vinyl ColorChecker with 2deg D50
 */
 enum CONST_COLOR {
-    Macbeth,
-    Vinyl,
-    DigitalSG,
+    Macbeth,                ///<Macbeth ColorChecker
+    Vinyl,                  ///DKK ColorChecker
+    DigitalSG,              ///DigitalSG ColorChecker with 140 squares
 };
 enum COLOR_SPACE {
     sRGB,                       ///< https://en.wikipedia.org/wiki/SRGB , RGB color space
@@ -328,12 +328,13 @@ C_sl=0, \qquad C_s=0
 */
 enum LINEAR_TYPE
 {
-    IDENTITY_,
-    GAMMA,
-    COLORPOLYFIT,
-    COLORLOGPOLYFIT,
-    GRAYPOLYFIT,
-    GRAYLOGPOLYFIT
+
+    IDENTITY_,                  ///<no change is made
+    GAMMA,                      ///<gamma correction; Need assign a value to gamma simultaneously
+    COLORPOLYFIT,               ///<polynomial fitting channels respectively; Need assign a value to deg simultaneously
+    COLORLOGPOLYFIT,            ///<logarithmic polynomial fitting channels respectively; Need assign a value to deg simultaneously
+    GRAYPOLYFIT,                ///<grayscale polynomial fitting; Need assign a value to deg and dst_whites simultaneously
+    GRAYLOGPOLYFIT              ///<grayscale Logarithmic polynomial fitting;  Need assign a value to deg and dst_whites simultaneously
 };
 
 /** @brief Enum of possible functions to calculate the distance between colors.
@@ -342,14 +343,14 @@ See https://en.wikipedia.org/wiki/Color_difference for details
 */
 enum DISTANCE_TYPE
 {
-    CIE76,                      ///< The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
-    CIE94_GRAPHIC_ARTS,         ///< The 1976 definition was extended to address perceptual non-uniformities.
+    CIE76,                      ///<The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
+    CIE94_GRAPHIC_ARTS,         ///<The 1976 definition was extended to address perceptual non-uniformities.
     CIE94_TEXTILES,
     CIE2000,
-    CMC_1TO1,                   ///< In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
+    CMC_1TO1,                   ///<In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
     CMC_2TO1,
-    RGB,
-    RGBL
+    RGB,                        ///<Euclidean distance of rgb color space
+    RGBL                        ///<Euclidean distance of rgbl color space
 };
 
 /** @brief Core class of ccm model
@@ -396,10 +397,17 @@ public:
     /** @brief set ColorSpace
 
     @note It should be some RGB color space;
-          For the list of RGB color spaces supported, see the notes above
-
-    @param cs the absolute color space that detected colors convert to;\n
-              default: sRGB
+    Supported list of color cards:
+    - @ref sRGB,
+    - @ref AdobeRGB,
+    - @ref WideGamutRGB,
+    - @ref ProPhotoRGB,
+    - @ref DCI_P3_RGB,
+    - @ref AppleRGB,
+    - @ref REC_709_RGB,
+    - @ref REC_2020_RGB,
+    - @param cs the absolute color space that detected colors convert to;\n
+              default: @ref sRGB
     */
     CV_WRAP void setColorSpace(COLOR_SPACE cs);
 
@@ -410,17 +418,6 @@ public:
     CV_WRAP void setCCM_TYPE(CCM_TYPE ccm_type);
 
     /** @brief set Distance
-
-    Supported list:
-    - @ref CIE2000
-    - @ref CIE94_GRAPHIC_ARTS
-    - @ref CIE94_TEXTILES
-    - @ref CIE76
-    - @ref CMC_1TO1
-    - @ref CMC_2TO1
-    - @ref RGB (Euclidean distance of rgb color space)
-    - @ref RGBL (Euclidean distance of rgbl color space)
-
     @param distance the type of color distance;\n
                     default: @ref CIE2000
     */
@@ -428,21 +425,7 @@ public:
 
     /** @brief set Linear
 
-    @note see Linearization.pdf for details
-
     Supported list:
-    - "IDENTITY_" (no change is made)
-    - "GAMMA" (gamma correction;
-               Need assign a value to gamma simultaneously)
-    - "COLORPOLYFIT" (polynomial fitting channels respectively;
-                      Need assign a value to deg simultaneously)
-    - "GRAYPOLYFIT" (grayscale polynomial fitting;
-                     Need assign a value to deg and dst_whites simultaneously)
-    - "COLORLOGPOLYFIT"(logarithmic polynomial fitting channels respectively;
-                        Need assign a value to deg simultaneously)
-    - "GRAYLOGPOLYFIT" (grayscale Logarithmic polynomial fitting;
-                        Need assign a value to deg and dst_whites simultaneously)
-
     @param linear_type the method of linearization;\n
                        default: @ref GAMMA
     */
@@ -489,11 +472,6 @@ public:
     CV_WRAP void setWeightCoeff(double weights_coeff);
 
     /** @brief set InitialMethod
-
-    Supported list:
-        'LEAST_SQUARE' (least-squre method);
-        'WHITE_BALANCE' (white balance method);\n
-
     @param initial_method_type the method of calculating CCM initial value;\n
     */
     CV_WRAP void setInitialMethod(INITIAL_METHOD_TYPE initial_method_type);
