@@ -52,6 +52,7 @@ public:
     LINEAR_TYPE linear_type;
 
     Mat weights;
+    Mat weights_list;
     Mat ccm;
     Mat ccm0;
     double gamma;
@@ -173,12 +174,12 @@ Mat ColorCorrectionModel::Impl::prepare(const Mat& inp)
     }
 }
 
-void ColorCorrectionModel::Impl::calWeightsMasks(Mat weights_list, double weights_coeff_, Mat saturate_mask)
+void ColorCorrectionModel::Impl::calWeightsMasks(Mat weights_list_, double weights_coeff_, Mat saturate_mask)
 {
     // weights
-    if (!weights_list.empty())
+    if (!weights_list_.empty())
     {
-        weights = weights_list;
+        weights = weights_list_;
     }
     else if (weights_coeff_ != 0)
     {
@@ -359,7 +360,7 @@ void ColorCorrectionModel::setSaturatedThreshold(double lower, double upper)
 }
 void ColorCorrectionModel::setWeightsList(Mat weights_list)
 {
-    p->weights = weights_list;
+    p->weights_list = weights_list;
 }
 void ColorCorrectionModel::setWeightCoeff(double weights_coeff)
 {
@@ -382,7 +383,7 @@ void ColorCorrectionModel::run()
 
     Mat saturate_mask = saturate(p->src, p->saturated_threshold[0], p->saturated_threshold[1]);
     p->linear = getLinear(p->gamma, p->deg, p->src, *(p->dst), saturate_mask, (p->cs), p->linear_type);
-    p->calWeightsMasks(p->weights, p->weights_coeff, saturate_mask);
+    p->calWeightsMasks(p->weights_list, p->weights_coeff, saturate_mask);
     p->src_rgbl = p->linear->linearize(maskCopyTo(p->src, p->mask));
     p->dst->colors = maskCopyTo(p->dst->colors, p->mask);
     p->dst_rgbl = p->dst->to(*(p->cs.l)).colors;
@@ -420,6 +421,18 @@ Mat ColorCorrectionModel::getCCM() const
 double ColorCorrectionModel::getLoss() const
 {
     return p->loss;
+}
+Mat ColorCorrectionModel::get_src_rgbl() const{
+    return p->src_rgbl;
+}
+Mat ColorCorrectionModel::get_dst_rgbl() const{
+    return p->dst_rgbl;
+}
+Mat ColorCorrectionModel::get_mask() const{
+    return p->mask;
+}
+Mat ColorCorrectionModel::get_weights() const{
+    return p->weights;
 }
 }
 }  // namespace cv::ccm

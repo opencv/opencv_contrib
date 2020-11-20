@@ -498,6 +498,10 @@ public:
 
     CV_WRAP Mat getCCM() const;
     CV_WRAP double getLoss() const;
+    CV_WRAP Mat get_src_rgbl() const;
+    CV_WRAP Mat get_dst_rgbl() const;
+    CV_WRAP Mat get_mask() const;
+    CV_WRAP Mat get_weights() const;
 
     /** @brief Infer using fitting ccm.
     @param img the input image.
