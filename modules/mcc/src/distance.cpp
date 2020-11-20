@@ -196,24 +196,24 @@ Mat distance(Mat src, Mat ref, DISTANCE_TYPE distance_type)
 {
     switch (distance_type)
     {
-    case cv::ccm::CIE76:
+    case cv::ccm::DISTANCE_CIE76:
         return distanceWise(src, ref, deltaCIE76);
-    case cv::ccm::CIE94_GRAPHIC_ARTS:
+    case cv::ccm::DISTANCE_CIE94_GRAPHIC_ARTS:
         return distanceWise(src, ref, deltaCIE94GraphicArts);
-    case cv::ccm::CIE94_TEXTILES:
+    case cv::ccm::DISTANCE_CIE94_TEXTILES:
         return distanceWise(src, ref, deltaCIE94Textiles);
-    case cv::ccm::CIE2000:
+    case cv::ccm::DISTANCE_CIE2000:
         return distanceWise(src, ref, deltaCIEDE2000);
-    case cv::ccm::CMC_1TO1:
+    case cv::ccm::DISTANCE_CMC_1TO1:
         return distanceWise(src, ref, deltaCMC1To1);
-    case cv::ccm::CMC_2TO1:
+    case cv::ccm::DISTANCE_CMC_2TO1:
         return distanceWise(src, ref, deltaCMC2To1);
-    case cv::ccm::RGB:
+    case cv::ccm::DISTANCE_RGB:
         return distanceWise(src, ref, deltaCIE76);
-    case cv::ccm::RGBL:
+    case cv::ccm::DISTANCE_RGBL:
         return distanceWise(src, ref, deltaCIE76);
     default:
-        throw std::invalid_argument { "Wrong distance_type!" };
+        CV_Error(Error::StsBadArg, "Wrong distance_type!" );
         break;
     }
 };

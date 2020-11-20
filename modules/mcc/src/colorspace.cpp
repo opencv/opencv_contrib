@@ -112,7 +112,6 @@ void RGBBase_::bind(RGBBase_& rgbl)
 }
 
 /* @brief Calculation of M_RGBL2XYZ_base.
- *        see ColorSpace.pdf for details.
  */
 void RGBBase_::calM()
 {
@@ -197,7 +196,6 @@ double sRGBBase_::toLFuncEW(double& x)
 }
 
 /* @brief Linearization.
- *        see ColorSpace.pdf for details.
  * @param rgb the input array, type of cv::Mat.
  * @return the output array, type of cv::Mat.
  */
@@ -226,7 +224,6 @@ double sRGBBase_::fromLFuncEW(double& x)
 }
 
 /* @brief Delinearization.
- *        see ColorSpace.pdf for details.
  * @param rgbl the input array, type of cv::Mat.
  * @return the output array, type of cv::Mat.
  */
@@ -353,9 +350,14 @@ void REC_2020_RGB_::setParameter()
     gamma = 1 / 0.45;
 }
 
-/* @brief Enum of the possible types of CAMs.
- */
-
+static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
+static const Mat Von_Kries = (Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+static const Mat Bradford = (Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+static const std::map<CAM, std::vector<Mat>> MAs = {
+    { IDENTITY, { Mat::eye(Size(3, 3), CV_64FC1), Mat::eye(Size(3, 3), CV_64FC1) } },
+    { VON_KRIES, { Von_Kries, Von_Kries.inv() } },
+    { BRADFORD, { Bradford, Bradford.inv() } }
+};
 /* @brief XYZ color space.
  *        Chromatic adaption matrices.
  */
@@ -470,111 +472,111 @@ std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name)
 {
     switch (cs_name)
     {
-    case cv::ccm::sRGB:
+    case cv::ccm::COLOR_SPACE_sRGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<sRGB_> sRGB_CS(new sRGB_(false));
             std::shared_ptr<sRGB_> sRGBL_CS(new sRGB_(true));
             (*sRGB_CS).bind(*sRGBL_CS);
-            map_cs[sRGB] = sRGB_CS;
-            map_cs[sRGBL] = sRGBL_CS;
+            map_cs[COLOR_SPACE_sRGB] = sRGB_CS;
+            map_cs[COLOR_SPACE_sRGBL] = sRGBL_CS;
         }
         break;
     }
-    case cv::ccm::AdobeRGB:
+    case cv::ccm::COLOR_SPACE_AdobeRGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<AdobeRGB_> AdobeRGB_CS(new AdobeRGB_(false));
             std::shared_ptr<AdobeRGB_> AdobeRGBL_CS(new AdobeRGB_(true));
             (*AdobeRGB_CS).bind(*AdobeRGBL_CS);
-            map_cs[AdobeRGB] = AdobeRGB_CS;
-            map_cs[AdobeRGBL] = AdobeRGBL_CS;
+            map_cs[COLOR_SPACE_AdobeRGB] = AdobeRGB_CS;
+            map_cs[COLOR_SPACE_AdobeRGBL] = AdobeRGBL_CS;
         }
         break;
     }
-    case cv::ccm::WideGamutRGB:
+    case cv::ccm::COLOR_SPACE_WideGamutRGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<WideGamutRGB_> WideGamutRGB_CS(new WideGamutRGB_(false));
             std::shared_ptr<WideGamutRGB_> WideGamutRGBL_CS(new WideGamutRGB_(true));
             (*WideGamutRGB_CS).bind(*WideGamutRGBL_CS);
-            map_cs[WideGamutRGB] = WideGamutRGB_CS;
-            map_cs[WideGamutRGBL] = WideGamutRGBL_CS;
+            map_cs[COLOR_SPACE_WideGamutRGB] = WideGamutRGB_CS;
+            map_cs[COLOR_SPACE_WideGamutRGBL] = WideGamutRGBL_CS;
         }
         break;
     }
-    case cv::ccm::ProPhotoRGB:
+    case cv::ccm::COLOR_SPACE_ProPhotoRGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<ProPhotoRGB_> ProPhotoRGB_CS(new ProPhotoRGB_(false));
             std::shared_ptr<ProPhotoRGB_> ProPhotoRGBL_CS(new ProPhotoRGB_(true));
             (*ProPhotoRGB_CS).bind(*ProPhotoRGBL_CS);
-            map_cs[ProPhotoRGB] = ProPhotoRGB_CS;
-            map_cs[ProPhotoRGBL] = ProPhotoRGBL_CS;
+            map_cs[COLOR_SPACE_ProPhotoRGB] = ProPhotoRGB_CS;
+            map_cs[COLOR_SPACE_ProPhotoRGBL] = ProPhotoRGBL_CS;
         }
         break;
     }
-    case cv::ccm::DCI_P3_RGB:
+    case cv::ccm::COLOR_SPACE_DCI_P3_RGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGB_CS(new DCI_P3_RGB_(false));
             std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGBL_CS(new DCI_P3_RGB_(true));
             (*DCI_P3_RGB_CS).bind(*DCI_P3_RGBL_CS);
-            map_cs[DCI_P3_RGB] = DCI_P3_RGB_CS;
-            map_cs[DCI_P3_RGBL] = DCI_P3_RGBL_CS;
+            map_cs[COLOR_SPACE_DCI_P3_RGB] = DCI_P3_RGB_CS;
+            map_cs[COLOR_SPACE_DCI_P3_RGBL] = DCI_P3_RGBL_CS;
         }
         break;
     }
-    case cv::ccm::AppleRGB:
+    case cv::ccm::COLOR_SPACE_AppleRGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<AppleRGB_> AppleRGB_CS(new AppleRGB_(false));
             std::shared_ptr<AppleRGB_> AppleRGBL_CS(new AppleRGB_(true));
             (*AppleRGB_CS).bind(*AppleRGBL_CS);
-            map_cs[AppleRGB] = AppleRGB_CS;
-            map_cs[AppleRGBL] = AppleRGBL_CS;
+            map_cs[COLOR_SPACE_AppleRGB] = AppleRGB_CS;
+            map_cs[COLOR_SPACE_AppleRGBL] = AppleRGBL_CS;
         }
         break;
     }
-    case cv::ccm::REC_709_RGB:
+    case cv::ccm::COLOR_SPACE_REC_709_RGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<REC_709_RGB_> REC_709_RGB_CS(new REC_709_RGB_(false));
             std::shared_ptr<REC_709_RGB_> REC_709_RGBL_CS(new REC_709_RGB_(true));
             (*REC_709_RGB_CS).bind(*REC_709_RGBL_CS);
-            map_cs[REC_709_RGB] = REC_709_RGB_CS;
-            map_cs[REC_709_RGBL] = REC_709_RGBL_CS;
+            map_cs[COLOR_SPACE_REC_709_RGB] = REC_709_RGB_CS;
+            map_cs[COLOR_SPACE_REC_709_RGBL] = REC_709_RGBL_CS;
         }
         break;
     }
-    case cv::ccm::REC_2020_RGB:
+    case cv::ccm::COLOR_SPACE_REC_2020_RGB:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<REC_2020_RGB_> REC_2020_RGB_CS(new REC_2020_RGB_(false));
             std::shared_ptr<REC_2020_RGB_> REC_2020_RGBL_CS(new REC_2020_RGB_(true));
             (*REC_2020_RGB_CS).bind(*REC_2020_RGBL_CS);
-            map_cs[REC_2020_RGB] = REC_2020_RGB_CS;
-            map_cs[REC_2020_RGBL] = REC_2020_RGBL_CS;
+            map_cs[COLOR_SPACE_REC_2020_RGB] = REC_2020_RGB_CS;
+            map_cs[COLOR_SPACE_REC_2020_RGBL] = REC_2020_RGBL_CS;
         }
         break;
     }
-    case cv::ccm::sRGBL:
-    case cv::ccm::AdobeRGBL:
-    case cv::ccm::WideGamutRGBL:
-    case cv::ccm::ProPhotoRGBL:
-    case cv::ccm::DCI_P3_RGBL:
-    case cv::ccm::AppleRGBL:
-    case cv::ccm::REC_709_RGBL:
-    case cv::ccm::REC_2020_RGBL:
-        CV_Error(Error::StsBadArg, "linear RGB colorspaces are not supported, you should assigned as normal rgb color space");
+    case cv::ccm::COLOR_SPACE_sRGBL:
+    case cv::ccm::COLOR_SPACE_AdobeRGBL:
+    case cv::ccm::COLOR_SPACE_WideGamutRGBL:
+    case cv::ccm::COLOR_SPACE_ProPhotoRGBL:
+    case cv::ccm::COLOR_SPACE_DCI_P3_RGBL:
+    case cv::ccm::COLOR_SPACE_AppleRGBL:
+    case cv::ccm::COLOR_SPACE_REC_709_RGBL:
+    case cv::ccm::COLOR_SPACE_REC_2020_RGBL:
+        CV_Error(Error::StsBadArg, "linear RGB colorspaces are not supported, you should assigned as normal RGB color space");
         break;
 
     default:
@@ -587,180 +589,180 @@ std::shared_ptr<ColorSpace> GetCS::get_cs(enum COLOR_SPACE cs_name)
 {
     switch (cs_name)
     {
-    case cv::ccm::sRGB:
-    case cv::ccm::sRGBL:
+    case cv::ccm::COLOR_SPACE_sRGB:
+    case cv::ccm::COLOR_SPACE_sRGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<sRGB_> sRGB_CS(new sRGB_(false));
             std::shared_ptr<sRGB_> sRGBL_CS(new sRGB_(true));
             (*sRGB_CS).bind(*sRGBL_CS);
-            map_cs[sRGB] = sRGB_CS;
-            map_cs[sRGBL] = sRGBL_CS;
+            map_cs[COLOR_SPACE_sRGB] = sRGB_CS;
+            map_cs[COLOR_SPACE_sRGBL] = sRGBL_CS;
         }
         break;
     }
-    case cv::ccm::AdobeRGB:
-    case cv::ccm::AdobeRGBL:
+    case cv::ccm::COLOR_SPACE_AdobeRGB:
+    case cv::ccm::COLOR_SPACE_AdobeRGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<AdobeRGB_> AdobeRGB_CS(new AdobeRGB_(false));
             std::shared_ptr<AdobeRGB_> AdobeRGBL_CS(new AdobeRGB_(true));
             (*AdobeRGB_CS).bind(*AdobeRGBL_CS);
-            map_cs[AdobeRGB] = AdobeRGB_CS;
-            map_cs[AdobeRGBL] = AdobeRGBL_CS;
+            map_cs[COLOR_SPACE_AdobeRGB] = AdobeRGB_CS;
+            map_cs[COLOR_SPACE_AdobeRGBL] = AdobeRGBL_CS;
         }
         break;
     }
-    case cv::ccm::WideGamutRGB:
-    case cv::ccm::WideGamutRGBL:
+    case cv::ccm::COLOR_SPACE_WideGamutRGB:
+    case cv::ccm::COLOR_SPACE_WideGamutRGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<WideGamutRGB_> WideGamutRGB_CS(new WideGamutRGB_(false));
             std::shared_ptr<WideGamutRGB_> WideGamutRGBL_CS(new WideGamutRGB_(true));
             (*WideGamutRGB_CS).bind(*WideGamutRGBL_CS);
-            map_cs[WideGamutRGB] = WideGamutRGB_CS;
-            map_cs[WideGamutRGBL] = WideGamutRGBL_CS;
+            map_cs[COLOR_SPACE_WideGamutRGB] = WideGamutRGB_CS;
+            map_cs[COLOR_SPACE_WideGamutRGBL] = WideGamutRGBL_CS;
         }
         break;
     }
-    case cv::ccm::ProPhotoRGB:
-    case cv::ccm::ProPhotoRGBL:
+    case cv::ccm::COLOR_SPACE_ProPhotoRGB:
+    case cv::ccm::COLOR_SPACE_ProPhotoRGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<ProPhotoRGB_> ProPhotoRGB_CS(new ProPhotoRGB_(false));
             std::shared_ptr<ProPhotoRGB_> ProPhotoRGBL_CS(new ProPhotoRGB_(true));
             (*ProPhotoRGB_CS).bind(*ProPhotoRGBL_CS);
-            map_cs[ProPhotoRGB] = ProPhotoRGB_CS;
-            map_cs[ProPhotoRGBL] = ProPhotoRGBL_CS;
+            map_cs[COLOR_SPACE_ProPhotoRGB] = ProPhotoRGB_CS;
+            map_cs[COLOR_SPACE_ProPhotoRGBL] = ProPhotoRGBL_CS;
         }
         break;
     }
-    case cv::ccm::DCI_P3_RGB:
-    case cv::ccm::DCI_P3_RGBL:
+    case cv::ccm::COLOR_SPACE_DCI_P3_RGB:
+    case cv::ccm::COLOR_SPACE_DCI_P3_RGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGB_CS(new DCI_P3_RGB_(false));
             std::shared_ptr<DCI_P3_RGB_> DCI_P3_RGBL_CS(new DCI_P3_RGB_(true));
             (*DCI_P3_RGB_CS).bind(*DCI_P3_RGBL_CS);
-            map_cs[DCI_P3_RGB] = DCI_P3_RGB_CS;
-            map_cs[DCI_P3_RGBL] = DCI_P3_RGBL_CS;
+            map_cs[COLOR_SPACE_DCI_P3_RGB] = DCI_P3_RGB_CS;
+            map_cs[COLOR_SPACE_DCI_P3_RGBL] = DCI_P3_RGBL_CS;
         }
         break;
     }
-    case cv::ccm::AppleRGB:
-    case cv::ccm::AppleRGBL:
+    case cv::ccm::COLOR_SPACE_AppleRGB:
+    case cv::ccm::COLOR_SPACE_AppleRGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<AppleRGB_> AppleRGB_CS(new AppleRGB_(false));
             std::shared_ptr<AppleRGB_> AppleRGBL_CS(new AppleRGB_(true));
             (*AppleRGB_CS).bind(*AppleRGBL_CS);
-            map_cs[AppleRGB] = AppleRGB_CS;
-            map_cs[AppleRGBL] = AppleRGBL_CS;
+            map_cs[COLOR_SPACE_AppleRGB] = AppleRGB_CS;
+            map_cs[COLOR_SPACE_AppleRGBL] = AppleRGBL_CS;
         }
         break;
     }
-    case cv::ccm::REC_709_RGB:
-    case cv::ccm::REC_709_RGBL:
+    case cv::ccm::COLOR_SPACE_REC_709_RGB:
+    case cv::ccm::COLOR_SPACE_REC_709_RGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<REC_709_RGB_> REC_709_RGB_CS(new REC_709_RGB_(false));
             std::shared_ptr<REC_709_RGB_> REC_709_RGBL_CS(new REC_709_RGB_(true));
             (*REC_709_RGB_CS).bind(*REC_709_RGBL_CS);
-            map_cs[REC_709_RGB] = REC_709_RGB_CS;
-            map_cs[REC_709_RGBL] = REC_709_RGBL_CS;
+            map_cs[COLOR_SPACE_REC_709_RGB] = REC_709_RGB_CS;
+            map_cs[COLOR_SPACE_REC_709_RGBL] = REC_709_RGBL_CS;
         }
         break;
     }
-    case cv::ccm::REC_2020_RGB:
-    case cv::ccm::REC_2020_RGBL:
+    case cv::ccm::COLOR_SPACE_REC_2020_RGB:
+    case cv::ccm::COLOR_SPACE_REC_2020_RGBL:
     {
         if (map_cs.count(cs_name) < 1)
         {
             std::shared_ptr<REC_2020_RGB_> REC_2020_RGB_CS(new REC_2020_RGB_(false));
             std::shared_ptr<REC_2020_RGB_> REC_2020_RGBL_CS(new REC_2020_RGB_(true));
             (*REC_2020_RGB_CS).bind(*REC_2020_RGBL_CS);
-            map_cs[REC_2020_RGB] = REC_2020_RGB_CS;
-            map_cs[REC_2020_RGBL] = REC_2020_RGBL_CS;
+            map_cs[COLOR_SPACE_REC_2020_RGB] = REC_2020_RGB_CS;
+            map_cs[COLOR_SPACE_REC_2020_RGBL] = REC_2020_RGBL_CS;
         }
         break;
     }
-    case cv::ccm::XYZ_D65_2:
+    case cv::ccm::COLOR_SPACE_XYZ_D65_2:
         return XYZ::get(IO::getIOs(D65_2));
         break;
-    case cv::ccm::XYZ_D50_2:
+    case cv::ccm::COLOR_SPACE_XYZ_D50_2:
         return XYZ::get(IO::getIOs(D50_2));
         break;
-    case cv::ccm::XYZ_D65_10:
+    case cv::ccm::COLOR_SPACE_XYZ_D65_10:
         return XYZ::get(IO::getIOs(D65_10));
         break;
-    case cv::ccm::XYZ_D50_10:
+    case cv::ccm::COLOR_SPACE_XYZ_D50_10:
         return XYZ::get(IO::getIOs(D50_10));
         break;
-    case cv::ccm::XYZ_A_2:
+    case cv::ccm::COLOR_SPACE_XYZ_A_2:
         return XYZ::get(IO::getIOs(A_2));
         break;
-    case cv::ccm::XYZ_A_10:
+    case cv::ccm::COLOR_SPACE_XYZ_A_10:
         return XYZ::get(IO::getIOs(A_10));
         break;
-    case cv::ccm::XYZ_D55_2:
+    case cv::ccm::COLOR_SPACE_XYZ_D55_2:
         return XYZ::get(IO::getIOs(D55_2));
         break;
-    case cv::ccm::XYZ_D55_10:
+    case cv::ccm::COLOR_SPACE_XYZ_D55_10:
         return XYZ::get(IO::getIOs(D55_10));
         break;
-    case cv::ccm::XYZ_D75_2:
+    case cv::ccm::COLOR_SPACE_XYZ_D75_2:
         return XYZ::get(IO::getIOs(D75_2));
         break;
-    case cv::ccm::XYZ_D75_10:
+    case cv::ccm::COLOR_SPACE_XYZ_D75_10:
         return XYZ::get(IO::getIOs(D75_10));
         break;
-    case cv::ccm::XYZ_E_2:
+    case cv::ccm::COLOR_SPACE_XYZ_E_2:
         return XYZ::get(IO::getIOs(E_2));
         break;
-    case cv::ccm::XYZ_E_10:
+    case cv::ccm::COLOR_SPACE_XYZ_E_10:
         return XYZ::get(IO::getIOs(E_10));
         break;
-    case cv::ccm::Lab_D65_2:
+    case cv::ccm::COLOR_SPACE_Lab_D65_2:
         return Lab::get(IO::getIOs(D65_2));
         break;
-    case cv::ccm::Lab_D50_2:
+    case cv::ccm::COLOR_SPACE_Lab_D50_2:
         return Lab::get(IO::getIOs(D50_2));
         break;
-    case cv::ccm::Lab_D65_10:
+    case cv::ccm::COLOR_SPACE_Lab_D65_10:
         return Lab::get(IO::getIOs(D65_10));
         break;
-    case cv::ccm::Lab_D50_10:
+    case cv::ccm::COLOR_SPACE_Lab_D50_10:
         return Lab::get(IO::getIOs(D50_10));
         break;
-    case cv::ccm::Lab_A_2:
+    case cv::ccm::COLOR_SPACE_Lab_A_2:
         return Lab::get(IO::getIOs(A_2));
         break;
-    case cv::ccm::Lab_A_10:
+    case cv::ccm::COLOR_SPACE_Lab_A_10:
         return Lab::get(IO::getIOs(A_10));
         break;
-    case cv::ccm::Lab_D55_2:
+    case cv::ccm::COLOR_SPACE_Lab_D55_2:
         return Lab::get(IO::getIOs(D55_2));
         break;
-    case cv::ccm::Lab_D55_10:
+    case cv::ccm::COLOR_SPACE_Lab_D55_10:
         return Lab::get(IO::getIOs(D55_10));
         break;
-    case cv::ccm::Lab_D75_2:
+    case cv::ccm::COLOR_SPACE_Lab_D75_2:
         return Lab::get(IO::getIOs(D75_2));
         break;
-    case cv::ccm::Lab_D75_10:
+    case cv::ccm::COLOR_SPACE_Lab_D75_10:
         return Lab::get(IO::getIOs(D75_10));
         break;
-    case cv::ccm::Lab_E_2:
+    case cv::ccm::COLOR_SPACE_Lab_E_2:
         return Lab::get(IO::getIOs(E_2));
         break;
-    case cv::ccm::Lab_E_10:
+    case cv::ccm::COLOR_SPACE_Lab_E_10:
         return Lab::get(IO::getIOs(E_10));
         break;
     default:

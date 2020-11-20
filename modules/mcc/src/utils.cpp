@@ -76,7 +76,7 @@ Mat maskCopyTo(const Mat& src, const Mat& mask)
         break;
     }
     default:
-        throw std::invalid_argument { "Wrong channel!" };
+        CV_Error(Error::StsBadArg, "Wrong channel!" );
         break;
     }
     return dst;

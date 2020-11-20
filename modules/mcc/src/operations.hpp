@@ -76,7 +76,6 @@ class Operations
 {
 public:
     std::vector<Operation> ops;
-
     Operations()
         : ops {} {};
     Operations(std::initializer_list<Operation> op)
@@ -92,7 +91,8 @@ public:
     Mat run(Mat abc);
     static Operations get_IDENTITY_OPS()
     {
-        return Operations { Operation::get_IDENTITY_OP() };
+        Operation Operation_op = Operation::get_IDENTITY_OP();
+        return Operations { Operation_op };
     }
 };
 

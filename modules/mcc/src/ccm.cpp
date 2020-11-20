@@ -80,13 +80,11 @@ public:
     void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask);
 
     /** @brief Fitting nonlinear - optimization initial value by white balance.
-             see CCM.pdf for details.
         @return the output array, type of Mat
     */
     void initialWhiteBalance(void);
 
     /** @brief Fitting nonlinear-optimization initial value by least square.
-             see CCM.pdf for details
         @param fit if fit is True, return optimalization for rgbl distance function.
     */
     void initialLeastSquare(bool fit = false);
@@ -138,15 +136,15 @@ public:
 };
 
 ColorCorrectionModel::Impl::Impl()
-    : cs(*GetCS::get_rgb(sRGB))
+    : cs(*GetCS::get_rgb(COLOR_SPACE_sRGB))
     , ccm_type(CCM_3x3)
-    , distance(CIE2000)
-    , linear_type(GAMMA)
+    , distance(DISTANCE_CIE2000)
+    , linear_type(LINEARIZATION_GAMMA)
     , weights(Mat())
     , gamma(2.2)
     , deg(3)
     , saturated_threshold({ 0, 0.98 })
-    , initial_method_type(LEAST_SQUARE)
+    , initial_method_type(INITIAL_METHOD_LEAST_SQUARE)
     , weights_coeff(0)
     , max_count(5000)
     , epsilon(1.e-4)
@@ -170,7 +168,7 @@ Mat ColorCorrectionModel::Impl::prepare(const Mat& inp)
         return arr_out;
     }
     default:
-        throw std::invalid_argument { "Wrong ccm_type!" };
+        CV_Error(Error::StsBadArg, "Wrong ccm_type!");
         break;
     }
 }
@@ -250,7 +248,7 @@ void ColorCorrectionModel::Impl::initialLeastSquare(bool fit)
 double ColorCorrectionModel::Impl::calc_loss_(Color color)
 {
     Mat distlist = color.diff(*dst, distance);
-    Color lab = color.to(Lab_D50_2);
+    Color lab = color.to(COLOR_SPACE_Lab_D50_2);
     Mat dist_;
     pow(distlist, 2, dist_);
     if (!weights.empty())
@@ -287,7 +285,7 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
 {
     if (!p->ccm.data)
     {
-        throw "No CCM values!";
+        CV_Error(Error::StsBadArg, "No CCM values!" );
     }
     Mat img_lin = (p->linear)->linearize(img);
     Mat img_ccm(img_lin.size(), img_lin.type());
@@ -395,20 +393,20 @@ void ColorCorrectionModel::run()
     // distance function may affect the loss function and the fitting function
     switch (p->distance)
     {
-    case cv::ccm::RGBL:
+    case cv::ccm::DISTANCE_RGBL:
         p->initialLeastSquare(true);
         break;
     default:
         switch (p->initial_method_type)
         {
-        case cv::ccm::WHITE_BALANCE:
+        case cv::ccm::INITIAL_METHOD_WHITE_BALANCE:
             p->initialWhiteBalance();
             break;
-        case cv::ccm::LEAST_SQUARE:
+        case cv::ccm::INITIAL_METHOD_LEAST_SQUARE:
             p->initialLeastSquare();
             break;
         default:
-            throw std::invalid_argument { "Wrong initial_methoddistance_type!" };
+            CV_Error(Error::StsBadArg, "Wrong initial_methoddistance_type!" );
             break;
         }
         break;

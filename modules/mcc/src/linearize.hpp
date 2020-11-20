@@ -48,7 +48,6 @@ public:
     https://en.wikipedia.org/wiki/Polynomial_regression
     polynomial: yi = a0 + a1*xi + a2*xi^2 + ... + an*xi^deg (i = 1,2,...,n)
     and deduct: Ax = y
-    See linear.pdf for details
     */
     Polyfit(Mat x, Mat y, int deg);
     virtual ~Polyfit() {};

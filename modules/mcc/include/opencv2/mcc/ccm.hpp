@@ -58,15 +58,15 @@ of the equipment, it is nessary to calibrate the captured color and the actual c
 */
 enum CCM_TYPE
 {
-    CCM_3x3,   ///<The CCM with the shape \f$3\times3\f$ performs linear transformation on color values.
-    CCM_4x3,   ///<The CCM with the shape \f$4\times3\f$ performs affine transformation.
+    CCM_3x3,   ///< The CCM with the shape \f$3\times3\f$ performs linear transformation on color values.
+    CCM_4x3,   ///< The CCM with the shape \f$4\times3\f$ performs affine transformation.
 };
 
 /** @brief Enum of the possible types of initial method.
 */
 enum INITIAL_METHOD_TYPE
 {
-    WHITE_BALANCE,      ///< The white balance method. The initial value is:\n
+    INITIAL_METHOD_WHITE_BALANCE,      ///< The white balance method. The initial value is:\n
                         /// \f$
                         /// M_{CCM}=
                         /// \begin{bmatrix}
@@ -81,56 +81,56 @@ enum INITIAL_METHOD_TYPE
                         /// k_R=mean(G_{li}')/mean(G_{li})\\
                         /// k_R=mean(B_{li}')/mean(B_{li})
                         /// \f$
-    LEAST_SQUARE,       ///<the least square method is an optimal solution under the linear RGB distance function
+    INITIAL_METHOD_LEAST_SQUARE,       ///<the least square method is an optimal solution under the linear RGB distance function
 };
 /** @brief  Macbeth and Vinyl ColorChecker with 2deg D50
 */
 enum CONST_COLOR {
-    Macbeth,
-    Vinyl,
-    DigitalSG,
+    COLORCHECKER_Macbeth,                ///< Macbeth ColorChecker
+    COLORCHECKER_Vinyl,                  ///< DKK ColorChecker
+    COLORCHECKER_DigitalSG,              ///< DigitalSG ColorChecker with 140 squares
 };
 enum COLOR_SPACE {
-    sRGB,                       ///< https://en.wikipedia.org/wiki/SRGB , RGB color space
-    sRGBL,                      ///< https://en.wikipedia.org/wiki/SRGB , linear RGB color space
-    AdobeRGB,                   ///< https://en.wikipedia.org/wiki/Adobe_RGB_color_space , RGB color space
-    AdobeRGBL,                  ///< https://en.wikipedia.org/wiki/Adobe_RGB_color_space , linear RGB color space
-    WideGamutRGB,               ///< https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space , RGB color space
-    WideGamutRGBL,              ///< https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space , linear RGB color space
-    ProPhotoRGB,                ///< https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space , RGB color space
-    ProPhotoRGBL,               ///< https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space , linear RGB color space
-    DCI_P3_RGB,                 ///< https://en.wikipedia.org/wiki/DCI-P3 , RGB color space
-    DCI_P3_RGBL,                ///< https://en.wikipedia.org/wiki/DCI-P3 , linear RGB color space
-    AppleRGB,                   ///< https://en.wikipedia.org/wiki/RGB_color_space , RGB color space
-    AppleRGBL,                  ///< https://en.wikipedia.org/wiki/RGB_color_space , linear RGB color space
-    REC_709_RGB,                ///< https://en.wikipedia.org/wiki/Rec._709 , RGB color space
-    REC_709_RGBL,               ///< https://en.wikipedia.org/wiki/Rec._709 , linear RGB color space
-    REC_2020_RGB,               ///< https://en.wikipedia.org/wiki/Rec._2020 , RGB color space
-    REC_2020_RGBL,              ///< https://en.wikipedia.org/wiki/Rec._2020 , linear RGB color space
-    XYZ_D65_2,                  ///< https://en.wikipedia.org/wiki/CIE_1931_color_space , non-RGB color space
-    XYZ_D65_10,                 ///< non-RGB color space
-    XYZ_D50_2,                  ///< non-RGB color space
-    XYZ_D50_10,                 ///< non-RGB color space
-    XYZ_A_2,                    ///< non-RGB color space
-    XYZ_A_10,                   ///< non-RGB color space
-    XYZ_D55_2,                  ///< non-RGB color space
-    XYZ_D55_10,                 ///< non-RGB color space
-    XYZ_D75_2,                  ///< non-RGB color space
-    XYZ_D75_10,                 ///< non-RGB color space
-    XYZ_E_2,                    ///< non-RGB color space
-    XYZ_E_10,                   ///< non-RGB color space
-    Lab_D65_2,                  ///< https://en.wikipedia.org/wiki/CIELAB_color_space , non-RGB color space
-    Lab_D65_10,                 ///< non-RGB color space
-    Lab_D50_2,                  ///< non-RGB color space
-    Lab_D50_10,                 ///< non-RGB color space
-    Lab_A_2,                    ///< non-RGB color space
-    Lab_A_10,                   ///< non-RGB color space
-    Lab_D55_2,                  ///< non-RGB color space
-    Lab_D55_10,                 ///< non-RGB color space
-    Lab_D75_2,                  ///< non-RGB color space
-    Lab_D75_10,                 ///< non-RGB color space
-    Lab_E_2,                    ///< non-RGB color space
-    Lab_E_10,                   ///< non-RGB color space
+    COLOR_SPACE_sRGB,                       ///< https://en.wikipedia.org/wiki/SRGB , RGB color space
+    COLOR_SPACE_sRGBL,                      ///< https://en.wikipedia.org/wiki/SRGB , linear RGB color space
+    COLOR_SPACE_AdobeRGB,                   ///< https://en.wikipedia.org/wiki/Adobe_RGB_color_space , RGB color space
+    COLOR_SPACE_AdobeRGBL,                  ///< https://en.wikipedia.org/wiki/Adobe_RGB_color_space , linear RGB color space
+    COLOR_SPACE_WideGamutRGB,               ///< https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space , RGB color space
+    COLOR_SPACE_WideGamutRGBL,              ///< https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space , linear RGB color space
+    COLOR_SPACE_ProPhotoRGB,                ///< https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space , RGB color space
+    COLOR_SPACE_ProPhotoRGBL,               ///< https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space , linear RGB color space
+    COLOR_SPACE_DCI_P3_RGB,                 ///< https://en.wikipedia.org/wiki/DCI-P3 , RGB color space
+    COLOR_SPACE_DCI_P3_RGBL,                ///< https://en.wikipedia.org/wiki/DCI-P3 , linear RGB color space
+    COLOR_SPACE_AppleRGB,                   ///< https://en.wikipedia.org/wiki/RGB_color_space , RGB color space
+    COLOR_SPACE_AppleRGBL,                  ///< https://en.wikipedia.org/wiki/RGB_color_space , linear RGB color space
+    COLOR_SPACE_REC_709_RGB,                ///< https://en.wikipedia.org/wiki/Rec._709 , RGB color space
+    COLOR_SPACE_REC_709_RGBL,               ///< https://en.wikipedia.org/wiki/Rec._709 , linear RGB color space
+    COLOR_SPACE_REC_2020_RGB,               ///< https://en.wikipedia.org/wiki/Rec._2020 , RGB color space
+    COLOR_SPACE_REC_2020_RGBL,              ///< https://en.wikipedia.org/wiki/Rec._2020 , linear RGB color space
+    COLOR_SPACE_XYZ_D65_2,                  ///< https://en.wikipedia.org/wiki/CIE_1931_color_space , non-RGB color space
+    COLOR_SPACE_XYZ_D65_10,                 ///< non-RGB color space
+    COLOR_SPACE_XYZ_D50_2,                  ///< non-RGB color space
+    COLOR_SPACE_XYZ_D50_10,                 ///< non-RGB color space
+    COLOR_SPACE_XYZ_A_2,                    ///< non-RGB color space
+    COLOR_SPACE_XYZ_A_10,                   ///< non-RGB color space
+    COLOR_SPACE_XYZ_D55_2,                  ///< non-RGB color space
+    COLOR_SPACE_XYZ_D55_10,                 ///< non-RGB color space
+    COLOR_SPACE_XYZ_D75_2,                  ///< non-RGB color space
+    COLOR_SPACE_XYZ_D75_10,                 ///< non-RGB color space
+    COLOR_SPACE_XYZ_E_2,                    ///< non-RGB color space
+    COLOR_SPACE_XYZ_E_10,                   ///< non-RGB color space
+    COLOR_SPACE_Lab_D65_2,                  ///< https://en.wikipedia.org/wiki/CIELAB_color_space , non-RGB color space
+    COLOR_SPACE_Lab_D65_10,                 ///< non-RGB color space
+    COLOR_SPACE_Lab_D50_2,                  ///< non-RGB color space
+    COLOR_SPACE_Lab_D50_10,                 ///< non-RGB color space
+    COLOR_SPACE_Lab_A_2,                    ///< non-RGB color space
+    COLOR_SPACE_Lab_A_10,                   ///< non-RGB color space
+    COLOR_SPACE_Lab_D55_2,                  ///< non-RGB color space
+    COLOR_SPACE_Lab_D55_10,                 ///< non-RGB color space
+    COLOR_SPACE_Lab_D75_2,                  ///< non-RGB color space
+    COLOR_SPACE_Lab_D75_10,                 ///< non-RGB color space
+    COLOR_SPACE_Lab_E_2,                    ///< non-RGB color space
+    COLOR_SPACE_Lab_E_10,                   ///< non-RGB color space
 };
 
 /** @brief Linearization transformation type
@@ -294,7 +294,7 @@ ln(C_{sl})=f(ln(C_s)), \qquad C_s>0\\
 C_{sl}=0, \qquad C_s=0
 \f]
 
-Because \f$exp(ln(0))\to\infin\f$, the channel whose component is 0 is directly mapped to 0 in the formula above.
+Because \f$exp(ln(0))\to\infty \f$, the channel whose component is 0 is directly mapped to 0 in the formula above.
 
 For fitting channels respectively, we have:
 \f[
@@ -328,12 +328,13 @@ C_sl=0, \qquad C_s=0
 */
 enum LINEAR_TYPE
 {
-    IDENTITY_,
-    GAMMA,
-    COLORPOLYFIT,
-    COLORLOGPOLYFIT,
-    GRAYPOLYFIT,
-    GRAYLOGPOLYFIT
+
+    LINEARIZATION_IDENTITY,                  ///<no change is made
+    LINEARIZATION_GAMMA,                      ///<gamma correction; Need assign a value to gamma simultaneously
+    LINEARIZATION_COLORPOLYFIT,               ///<polynomial fitting channels respectively; Need assign a value to deg simultaneously
+    LINEARIZATION_COLORLOGPOLYFIT,            ///<logarithmic polynomial fitting channels respectively; Need assign a value to deg simultaneously
+    LINEARIZATION_GRAYPOLYFIT,                ///<grayscale polynomial fitting; Need assign a value to deg and dst_whites simultaneously
+    LINEARIZATION_GRAYLOGPOLYFIT              ///<grayscale Logarithmic polynomial fitting;  Need assign a value to deg and dst_whites simultaneously
 };
 
 /** @brief Enum of possible functions to calculate the distance between colors.
@@ -342,14 +343,14 @@ See https://en.wikipedia.org/wiki/Color_difference for details
 */
 enum DISTANCE_TYPE
 {
-    CIE76,                      ///< The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
-    CIE94_GRAPHIC_ARTS,         ///< The 1976 definition was extended to address perceptual non-uniformities.
-    CIE94_TEXTILES,
-    CIE2000,
-    CMC_1TO1,                   ///< In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
-    CMC_2TO1,
-    RGB,
-    RGBL
+    DISTANCE_CIE76,                      ///<The 1976 formula is the first formula that related a measured color difference to a known set of CIELAB coordinates.
+    DISTANCE_CIE94_GRAPHIC_ARTS,         ///<The 1976 definition was extended to address perceptual non-uniformities.
+    DISTANCE_CIE94_TEXTILES,
+    DISTANCE_CIE2000,
+    DISTANCE_CMC_1TO1,                   ///<In 1984, the Colour Measurement Committee of the Society of Dyers and Colourists defined a difference measure, also based on the L*C*h color model.
+    DISTANCE_CMC_2TO1,
+    DISTANCE_RGB,                        ///<Euclidean distance of rgb color space
+    DISTANCE_RGBL                        ///<Euclidean distance of rgbl color space
 };
 
 /** @brief Core class of ccm model
@@ -362,9 +363,9 @@ public:
     /** @brief Color Correction Model
 
     Supported list of color cards:
-    - @ref Macbeth (Macbeth ColorChecker)
-    - @ref Vinyl (DKK ColorChecker)
-    - @ref DigitalSG (DigitalSG ColorChecker with 140 squares)
+    - @ref COLORCHECKER_Macbeth (Macbeth ColorChecker)
+    - @ref COLORCHECKER_Vinyl (DKK ColorChecker)
+    - @ref COLORCHECKER_DigitalSG (DigitalSG ColorChecker with 140 squares)
 
     @param src detected colors of ColorChecker patches;\n
                 the color type is RGB not BGR, and the color values are in [0, 1];
@@ -396,10 +397,17 @@ public:
     /** @brief set ColorSpace
 
     @note It should be some RGB color space;
-          For the list of RGB color spaces supported, see the notes above
-
-    @param cs the absolute color space that detected colors convert to;\n
-              default: sRGB
+    Supported list of color cards:
+    - @ref COLOR_SPACE_sRGB,
+    - @ref COLOR_SPACE_AdobeRGB,
+    - @ref COLOR_SPACE_WideGamutRGB,
+    - @ref COLOR_SPACE_ProPhotoRGB,
+    - @ref COLOR_SPACE_DCI_P3_RGB,
+    - @ref COLOR_SPACE_AppleRGB,
+    - @ref COLOR_SPACE_REC_709_RGB,
+    - @ref COLOR_SPACE_REC_2020_RGB,
+    - @param cs the absolute color space that detected colors convert to;\n
+              default: @ref COLOR_SPACE_sRGB
     */
     CV_WRAP void setColorSpace(COLOR_SPACE cs);
 
@@ -410,41 +418,16 @@ public:
     CV_WRAP void setCCM_TYPE(CCM_TYPE ccm_type);
 
     /** @brief set Distance
-
-    Supported list:
-    - @ref CIE2000
-    - @ref CIE94_GRAPHIC_ARTS
-    - @ref CIE94_TEXTILES
-    - @ref CIE76
-    - @ref CMC_1TO1
-    - @ref CMC_2TO1
-    - @ref RGB (Euclidean distance of rgb color space)
-    - @ref RGBL (Euclidean distance of rgbl color space)
-
     @param distance the type of color distance;\n
-                    default: @ref CIE2000
+                    default: @ref DISTANCE_CIE2000
     */
     CV_WRAP void setDistance(DISTANCE_TYPE distance);
 
     /** @brief set Linear
 
-    @note see Linearization.pdf for details
-
     Supported list:
-    - "IDENTITY_" (no change is made)
-    - "GAMMA" (gamma correction;
-               Need assign a value to gamma simultaneously)
-    - "COLORPOLYFIT" (polynomial fitting channels respectively;
-                      Need assign a value to deg simultaneously)
-    - "GRAYPOLYFIT" (grayscale polynomial fitting;
-                     Need assign a value to deg and dst_whites simultaneously)
-    - "COLORLOGPOLYFIT"(logarithmic polynomial fitting channels respectively;
-                        Need assign a value to deg simultaneously)
-    - "GRAYLOGPOLYFIT" (grayscale Logarithmic polynomial fitting;
-                        Need assign a value to deg and dst_whites simultaneously)
-
     @param linear_type the method of linearization;\n
-                       default: @ref GAMMA
+                       default: @ref LINEARIZATION_GAMMA
     */
     CV_WRAP void setLinear(LINEAR_TYPE linear_type);
 
@@ -459,8 +442,11 @@ public:
 
     /** @brief set degree
     @param deg the degree of linearization polynomial;\n
-        NOTICE: only valid when linear is set to "COLORPOLYFIT", "GRAYPOLYFIT",
-                "COLORLOGPOLYFIT" and "GRAYLOGPOLYFIT";\n
+        NOTICE: only valid when linear is set to
+        @ref LINEARIZATION_COLORPOLYFIT
+        @ref LINEARIZATION_GRAYPOLYFIT
+        @ref LINEARIZATION_COLORLOGPOLYFIT
+        @ref LINEARIZATION_GRAYLOGPOLYFIT
                default: 3
     */
     CV_WRAP void setLinearDegree(int deg);
@@ -489,11 +475,6 @@ public:
     CV_WRAP void setWeightCoeff(double weights_coeff);
 
     /** @brief set InitialMethod
-
-    Supported list:
-        'LEAST_SQUARE' (least-squre method);
-        'WHITE_BALANCE' (white balance method);\n
-
     @param initial_method_type the method of calculating CCM initial value;\n
     */
     CV_WRAP void setInitialMethod(INITIAL_METHOD_TYPE initial_method_type);
