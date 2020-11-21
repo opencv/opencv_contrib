@@ -14,7 +14,7 @@ using namespace std;
 
 const char *about = "Basic chart detection";
 const char *keys =
-    "{ help h usage ? |    | show this message }"
+    "{ help h  |    | show this message }"
     "{t        |      |  chartType: 0-Standard, 1-DigitalSG, 2-Vinyl }"
     "{v        |      | Input from video file, if ommited, input comes from camera }"
     "{ci       | 0    | Camera id if input doesnt come from video (-v) }"
@@ -31,6 +31,11 @@ int main(int argc, char *argv[])
     //! [get_messages_of_image]
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
+    if (argc==1 || parser.has("help"))
+    {
+        parser.printMessage();
+        return 0;
+    }
 
     int t = parser.get<int>("t");
     int nc = parser.get<int>("nc");
@@ -39,7 +44,6 @@ int main(int argc, char *argv[])
     CV_Assert(0 <= t && t <= 2);
     TYPECHART chartType = TYPECHART(t);
 
-    cout << "t: " << t << " , nc: " << nc <<  ", \nf: " << filepath << endl;
 
     if (!parser.check())
     {
