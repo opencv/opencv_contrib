@@ -312,19 +312,19 @@ void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat col
     dst.reset(new Color(colors_, *GetCS::get_cs(cs_), colored_));
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, CONST_COLOR constcolor)
-    : p(new Impl)
+    : p(std::make_shared<Impl>())
 {
     p->src = src_;
     p->get_color(constcolor);
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_SPACE ref_cs_)
-    : p(new Impl)
+    : p(std::make_shared<Impl>())
 {
     p->src = src_;
     p->get_color(colors_, ref_cs_);
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_SPACE cs_, Mat colored_)
-    : p(new Impl)
+    : p(std::make_shared<Impl>())
 {
     p->src = src_;
     p->get_color(colors_, cs_, colored_);
