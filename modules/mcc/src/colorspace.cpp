@@ -357,6 +357,8 @@ Operations XYZ::cam(IO dio, CAM method)
 }
 Mat XYZ::cam_(IO sio, IO dio, CAM method) const
 {
+    static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
+
     if (sio == dio)
     {
         return Mat::eye(cv::Size(3, 3), CV_64FC1);
@@ -388,15 +390,15 @@ Mat XYZ::cam_(IO sio, IO dio, CAM method) const
     return M;
 }
 
-std::map<IO, std::shared_ptr<XYZ>> XYZ::xyz_cs = {};
-
 std::shared_ptr<XYZ> XYZ::get(IO io)
 {
+    static std::map<IO, std::shared_ptr<XYZ>> xyz_cs;
+
     if (xyz_cs.count(io) == 1)
     {
         return xyz_cs[io];
     }
-    std::shared_ptr<XYZ> XYZ_CS(new XYZ(io));
+    std::shared_ptr<XYZ> XYZ_CS = std::make_shared<XYZ>(io);
     xyz_cs[io] = XYZ_CS;
     return xyz_cs[io];
 }
@@ -454,9 +456,11 @@ Mat Lab::tosrc(Mat& src)
     return channelWise(src,
             [this](cv::Vec3d a) -> cv::Vec3d { return tolab(a); });
 }
-std::map<IO, std::shared_ptr<Lab>> Lab::lab_cs = {};
+
 std::shared_ptr<Lab> Lab::get(IO io)
 {
+    static std::map<IO, std::shared_ptr<Lab>> 	lab_cs;
+
     if (lab_cs.count(io) == 1)
     {
         return lab_cs[io];
@@ -466,7 +470,16 @@ std::shared_ptr<Lab> Lab::get(IO io)
     return lab_cs[io];
 }
 
-std::map<enum COLOR_SPACE, std::shared_ptr<ColorSpace>> GetCS::map_cs = {};
+GetCS::GetCS()
+{
+    // nothing
+}
+
+GetCS& GetCS::getInstance()
+{
+    static GetCS instance;
+    return instance;
+}
 
 std::shared_ptr<RGBBase_> GetCS::get_rgb(enum COLOR_SPACE cs_name)
 {

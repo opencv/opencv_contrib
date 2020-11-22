@@ -4,8 +4,6 @@
 
 #include "test_precomp.hpp"
 
-#include <vector>
-
 namespace opencv_test
 {
 namespace
@@ -163,5 +161,6 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
                             false, false, true, true, true, true);
     ASSERT_MAT_NEAR(model2.get_mask(), mask, 0.0);
 }
+
 } // namespace
 } // namespace opencv_test

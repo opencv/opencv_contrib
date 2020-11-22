@@ -35,7 +35,7 @@ Color::Color()
 {}
 Color::Color(Mat colors_, enum COLOR_SPACE cs_)
     : colors(colors_)
-    , cs(*GetCS::get_cs(cs_))
+    , cs(*GetCS::getInstance().get_cs(cs_))
 {}
 
 Color::Color(Mat colors_, const ColorSpace& cs_, Mat colored_)
@@ -47,7 +47,7 @@ Color::Color(Mat colors_, const ColorSpace& cs_, Mat colored_)
 }
 Color::Color(Mat colors_, enum COLOR_SPACE cs_, Mat colored_)
     : colors(colors_)
-    , cs(*GetCS::get_cs(cs_))
+    , cs(*GetCS::getInstance().get_cs(cs_))
     , colored(colored_)
 {
     grays = ~colored;
@@ -79,7 +79,7 @@ Color Color::to(const ColorSpace& other, CAM method, bool save)
 }
 Color Color::to(COLOR_SPACE other, CAM method, bool save)
 {
-    return to(*GetCS::get_cs(other), method, save);
+    return to(*GetCS::getInstance().get_cs(other), method, save);
 }
 
 Mat Color::channel(Mat m, int i)

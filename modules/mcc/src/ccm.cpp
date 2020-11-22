@@ -137,7 +137,7 @@ public:
 };
 
 ColorCorrectionModel::Impl::Impl()
-    : cs(*GetCS::get_rgb(COLOR_SPACE_sRGB))
+    : cs(*GetCS::getInstance().get_rgb(COLOR_SPACE_sRGB))
     , ccm_type(CCM_3x3)
     , distance(DISTANCE_CIE2000)
     , linear_type(LINEARIZATION_GAMMA)
@@ -305,11 +305,11 @@ void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor)
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_)
 {
-    dst.reset(new Color(colors_, *GetCS::get_cs(ref_cs_)));
+    dst.reset(new Color(colors_, *GetCS::getInstance().get_cs(ref_cs_)));
 }
 void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_)
 {
-    dst.reset(new Color(colors_, *GetCS::get_cs(cs_), colored_));
+    dst.reset(new Color(colors_, *GetCS::getInstance().get_cs(cs_), colored_));
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, CONST_COLOR constcolor)
     : p(std::make_shared<Impl>())
@@ -332,7 +332,7 @@ ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_S
 
 void ColorCorrectionModel::setColorSpace(COLOR_SPACE cs_)
 {
-    p->cs = *GetCS::get_rgb(cs_);
+    p->cs = *GetCS::getInstance().get_rgb(cs_);
 }
 void ColorCorrectionModel::setCCM_TYPE(CCM_TYPE ccm_type_)
 {

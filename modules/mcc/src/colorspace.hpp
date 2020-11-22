@@ -293,8 +293,6 @@ enum CAM
     BRADFORD
 };
 
-static std::map<std::tuple<IO, IO, CAM>, Mat> cams;
-
 
 /** @brief XYZ color space.
            Chromatic adaption matrices.
@@ -305,7 +303,6 @@ public:
     XYZ(IO io_)
         : ColorSpace(io_, "XYZ", true) {};
     Operations cam(IO dio, CAM method = BRADFORD);
-    static std::map<IO, std::shared_ptr<XYZ>> xyz_cs;
     static std::shared_ptr<XYZ> get(IO io);
 
 private:
@@ -323,7 +320,6 @@ private:
 class Lab : public ColorSpace
 {
 public:
-    static std::map<IO, std::shared_ptr<Lab>> lab_cs;
     Lab(IO io);
     static std::shared_ptr<Lab> get(IO io);
 
@@ -352,10 +348,15 @@ private:
 
 class GetCS
 {
+protected:
+    std::map<enum COLOR_SPACE, std::shared_ptr<ColorSpace>> map_cs;
+
+    GetCS();  // singleton, use getInstance()
 public:
-    static std::map<enum COLOR_SPACE, std::shared_ptr<ColorSpace>> map_cs;
-    static std::shared_ptr<RGBBase_> get_rgb(enum COLOR_SPACE cs_name);
-    static std::shared_ptr<ColorSpace> get_cs(enum COLOR_SPACE cs_name);
+    static GetCS& getInstance();
+
+    std::shared_ptr<RGBBase_> get_rgb(enum COLOR_SPACE cs_name);
+    std::shared_ptr<ColorSpace> get_cs(enum COLOR_SPACE cs_name);
 };
 
 }
