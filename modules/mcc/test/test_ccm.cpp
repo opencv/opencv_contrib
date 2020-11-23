@@ -95,7 +95,7 @@ TEST(CV_ccmRunColorCorrection, test_model)
     ASSERT_MAT_NEAR(dst_rgbl, model.get_dst_rgbl(), 1e-4);
 
     Mat mask = Mat::ones(24, 1, CV_8U);
-    ASSERT_MAT_NEAR(model.get_mask(), mask, 0.0);
+    ASSERT_MAT_NEAR(model.getMask(), mask, 0.0);
 
 
     Mat ccm = (Mat_<double>(3, 3) <<
@@ -125,14 +125,14 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
     Mat weights = (Mat_<double>(8, 1) <<
                             1.15789474, 1.26315789, 1.36842105, 1.47368421,
                             0.52631579, 0.63157895, 0.73684211, 0.84210526);
-    ASSERT_MAT_NEAR(model1.get_weights(), weights, 1e-4);
+    ASSERT_MAT_NEAR(model1.getWeights(), weights, 1e-4);
 
     Mat mask = (Mat_<uchar>(24, 1) <<
                             true, false, false, true, false, false,
                             true, false, false, true, false, false,
                             true, false, false, true, false, false,
                             true, false, false, true, false, false);
-    ASSERT_MAT_NEAR(model1.get_mask(), mask, 0.0);
+    ASSERT_MAT_NEAR(model1.getMask(), mask, 0.0);
 }
 
 TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
@@ -152,14 +152,14 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
                             1.68623868, 1.37973155, 0.73213388, 1.0169629, 0.47430246,
                             1.70312161, 0.45414218, 1.15910007, 0.7540434, 1.05049802,
                             1.04551645, 1.54082353, 1.02453421, 0.6015915, 0.26154558);
-    ASSERT_MAT_NEAR(model2.get_weights(), weights, 1e-4);
+    ASSERT_MAT_NEAR(model2.getWeights(), weights, 1e-4);
 
     Mat mask = (Mat_<uchar>(24, 1) <<
                             true, true, true, true, true, true,
                             true, true, true, true, false, true,
                             true, true, true, false, true, true,
                             false, false, true, true, true, true);
-    ASSERT_MAT_NEAR(model2.get_mask(), mask, 0.0);
+    ASSERT_MAT_NEAR(model2.getMask(), mask, 0.0);
 }
 
 } // namespace
