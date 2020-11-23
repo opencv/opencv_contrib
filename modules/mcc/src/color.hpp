@@ -107,9 +107,9 @@ public:
 class GetColor
 {
 public:
-    static std::shared_ptr<Color> get_color(CONST_COLOR const_color);
-    static Mat get_ColorChecker(const double* checker, int row);
-    static Mat get_ColorChecker_MASK(const uchar* checker, int row);
+    static std::shared_ptr<Color> getColor(CONST_COLOR const_color);
+    static Mat getColorChecker(const double* checker, int row);
+    static Mat getColorCheckerMASK(const uchar* checker, int row);
 };
 
 }

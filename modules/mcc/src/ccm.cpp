@@ -78,7 +78,7 @@ public:
         @param weights_coeff type of double.
         @param saturate_mask the input array, type of cv::Mat.
     */
-    void calWeightsMasks(Mat weights_list, double weights_coeff, Mat saturate_mask);
+    void calWeightsMasks(const Mat& weights_list, double weights_coeff, Mat saturate_mask);
 
     /** @brief Fitting nonlinear - optimization initial value by white balance.
         @return the output array, type of Mat
@@ -99,10 +99,10 @@ public:
     */
     void fitting(void);
 
-    void get_color(Mat& img_, bool islinear = false);
-    void get_color(CONST_COLOR constcolor);
-    void get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_);
-    void get_color(Mat colors_, COLOR_SPACE ref_cs_);
+    void getColor(Mat& img_, bool islinear = false);
+    void getColor(CONST_COLOR constcolor);
+    void getColor(Mat colors_, COLOR_SPACE cs_, Mat colored_);
+    void getColor(Mat colors_, COLOR_SPACE ref_cs_);
 
     /** @brief Loss function base on cv::MinProblemSolver::Function.
              see details in https://github.com/opencv/opencv/blob/master/modules/core/include/opencv2/core/optim.hpp
@@ -174,7 +174,7 @@ Mat ColorCorrectionModel::Impl::prepare(const Mat& inp)
     }
 }
 
-void ColorCorrectionModel::Impl::calWeightsMasks(Mat weights_list_, double weights_coeff_, Mat saturate_mask)
+void ColorCorrectionModel::Impl::calWeightsMasks(const Mat& weights_list_, double weights_coeff_, Mat saturate_mask)
 {
     // weights
     if (!weights_list_.empty())
@@ -299,15 +299,15 @@ Mat ColorCorrectionModel::infer(const Mat& img, bool islinear)
     return p->cs.fromL(img_ccm);
 }
 
-void ColorCorrectionModel::Impl::get_color(CONST_COLOR constcolor)
+void ColorCorrectionModel::Impl::getColor(CONST_COLOR constcolor)
 {
-    dst = (GetColor::get_color(constcolor));
+    dst = (GetColor::getColor(constcolor));
 }
-void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE ref_cs_)
+void ColorCorrectionModel::Impl::getColor(Mat colors_, COLOR_SPACE ref_cs_)
 {
     dst.reset(new Color(colors_, *GetCS::getInstance().get_cs(ref_cs_)));
 }
-void ColorCorrectionModel::Impl::get_color(Mat colors_, COLOR_SPACE cs_, Mat colored_)
+void ColorCorrectionModel::Impl::getColor(Mat colors_, COLOR_SPACE cs_, Mat colored_)
 {
     dst.reset(new Color(colors_, *GetCS::getInstance().get_cs(cs_), colored_));
 }
@@ -315,19 +315,19 @@ ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, CONST_COLOR constcol
     : p(std::make_shared<Impl>())
 {
     p->src = src_;
-    p->get_color(constcolor);
+    p->getColor(constcolor);
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_SPACE ref_cs_)
     : p(std::make_shared<Impl>())
 {
     p->src = src_;
-    p->get_color(colors_, ref_cs_);
+    p->getColor(colors_, ref_cs_);
 }
 ColorCorrectionModel::ColorCorrectionModel(const Mat& src_, Mat colors_, COLOR_SPACE cs_, Mat colored_)
     : p(std::make_shared<Impl>())
 {
     p->src = src_;
-    p->get_color(colors_, cs_, colored_);
+    p->getColor(colors_, cs_, colored_);
 }
 
 void ColorCorrectionModel::setColorSpace(COLOR_SPACE cs_)
@@ -428,10 +428,10 @@ Mat ColorCorrectionModel::get_src_rgbl() const{
 Mat ColorCorrectionModel::get_dst_rgbl() const{
     return p->dst_rgbl;
 }
-Mat ColorCorrectionModel::get_mask() const{
+Mat ColorCorrectionModel::getMask() const{
     return p->mask;
 }
-Mat ColorCorrectionModel::get_weights() const{
+Mat ColorCorrectionModel::getWeights() const{
     return p->weights;
 }
 }

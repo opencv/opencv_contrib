@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
         cdraw->draw(image);
         Mat chartsRGB = checker->getChartsRGB();
-        Mat src = chartsRGB.col(1).clone().reshape(3, 18);
+        Mat src = chartsRGB.col(1).clone().reshape(3, chartsRGB.rows/3);
         src /= 255.0;
         //! [create]
 
