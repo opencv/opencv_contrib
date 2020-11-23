@@ -190,7 +190,7 @@ C_{sl}=f(C_s)
 \f]
 In practice, \f$n\le3\f$ is used to prevent overfitting.
 
-There are many variants of polynomial fitting, the difference lies in the way of generating $f(x)$.
+There are many variants of polynomial fitting, the difference lies in the way of generating \f$f(x)\f$.
 It is usually necessary to use linearized reference colors and corresponding detected colors to calculate the polynomial parameters.
 However, not all colors can participate in the calculation. The saturation detected colors needs to be removed. See the algorithm introduction document for details.
 
@@ -288,7 +288,7 @@ For gamma correction formula, we take the logarithm:
 \f[
 ln(C_{sl})={\gamma}ln(C_s),\qquad C_s\ge0\
 \f]
-It can be seen that there is a linear relationship between \f$ln(C_s)\f$ and \f$ln(C_{sl})\f$. It can be considered that the formula is an approximation of a polynomial relationship, that is, there exists a polynomial $f$, which makes[2]:
+It can be seen that there is a linear relationship between \f$ln(C_s)\f$ and \f$ln(C_{sl})\f$. It can be considered that the formula is an approximation of a polynomial relationship, that is, there exists a polynomial \f$f\f$, which makes[2]:
 \f[
 ln(C_{sl})=f(ln(C_s)), \qquad C_s>0\\
 C_{sl}=0, \qquad C_s=0
@@ -302,8 +302,8 @@ r=polyfit(ln(R_s),ln(R_{dl}))\\
 g=polyfit(ln(G_s),ln(G_{dl}))\\
 b=polyfit(ln(B_s),ln(B_{dl}))\\
 \f]
-Note that the parameter of $ln$ cannot be 0.
-Therefore, we need to delete the channels whose values are 0 from $R_s$ and $R_{dl}$, $G_s$ and $G_{dl}$, $B_s$ and $B_{dl}$.
+Note that the parameter of \f$ln(*) \f$ cannot be 0.
+Therefore, we need to delete the channels whose values are 0 from \f$R_s \f$ and \f$R_{dl} \f$, \f$G_s\f$ and \f$G_{dl}\f$, \f$B_s\f$ and \f$B_{dl}\f$.
 
 Therefore:
 
@@ -363,9 +363,9 @@ public:
     /** @brief Color Correction Model
 
     Supported list of color cards:
-    - @ref COLORCHECKER_Macbeth (Macbeth ColorChecker)
-    - @ref COLORCHECKER_Vinyl (DKK ColorChecker)
-    - @ref COLORCHECKER_DigitalSG (DigitalSG ColorChecker with 140 squares)
+    - @ref COLORCHECKER_Macbeth, the Macbeth ColorChecker
+    - @ref COLORCHECKER_Vinyl, the DKK ColorChecker
+    - @ref COLORCHECKER_DigitalSG, the DigitalSG ColorChecker with 140 squares
 
     @param src detected colors of ColorChecker patches;\n
                 the color type is RGB not BGR, and the color values are in [0, 1];
@@ -376,9 +376,8 @@ public:
     /** @brief Color Correction Model
     @param src detected colors of ColorChecker patches;\n
                the color type is RGB not BGR, and the color values are in [0, 1];
-    @param colors the reference color values,the color values are in [0, 1].\n
+    @param colors the reference color values, the color values are in [0, 1].\n
     @param ref_cs the corresponding color space
-                NOTICE: For the list of color spaces supported, see the notes above;\n
                 If the color type is some RGB, the format is RGB not BGR;\n
     */
     CV_WRAP ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs);
@@ -386,27 +385,25 @@ public:
     /** @brief Color Correction Model
     @param src detected colors of ColorChecker patches;\n
                 the color type is RGB not BGR, and the color values are in [0, 1];
-    @param colors the reference color values,the color values are in [0, 1].
+    @param colors the reference color values, the color values are in [0, 1].
     @param ref_cs the corresponding color space
-                NOTICE: For the list of color spaces supported, see the notes above;\n
                 If the color type is some RGB, the format is RGB not BGR;
     @param colored mask of colored color
     */
     CV_WRAP ColorCorrectionModel(const Mat& src, Mat colors, COLOR_SPACE ref_cs, Mat colored);
 
     /** @brief set ColorSpace
-
     @note It should be some RGB color space;
     Supported list of color cards:
-    - @ref COLOR_SPACE_sRGB,
-    - @ref COLOR_SPACE_AdobeRGB,
-    - @ref COLOR_SPACE_WideGamutRGB,
-    - @ref COLOR_SPACE_ProPhotoRGB,
-    - @ref COLOR_SPACE_DCI_P3_RGB,
-    - @ref COLOR_SPACE_AppleRGB,
-    - @ref COLOR_SPACE_REC_709_RGB,
-    - @ref COLOR_SPACE_REC_2020_RGB,
-    - @param cs the absolute color space that detected colors convert to;\n
+    - @ref COLOR_SPACE_sRGB
+    - @ref COLOR_SPACE_AdobeRGB
+    - @ref COLOR_SPACE_WideGamutRGB
+    - @ref COLOR_SPACE_ProPhotoRGB
+    - @ref COLOR_SPACE_DCI_P3_RGB
+    - @ref COLOR_SPACE_AppleRGB
+    - @ref COLOR_SPACE_REC_709_RGB
+    - @ref COLOR_SPACE_REC_2020_RGB
+     @param cs the absolute color space that detected colors convert to;\n
               default: @ref COLOR_SPACE_sRGB
     */
     CV_WRAP void setColorSpace(COLOR_SPACE cs);
@@ -424,8 +421,6 @@ public:
     CV_WRAP void setDistance(DISTANCE_TYPE distance);
 
     /** @brief set Linear
-
-    Supported list:
     @param linear_type the method of linearization;\n
                        default: @ref LINEARIZATION_GAMMA
     */
@@ -435,29 +430,30 @@ public:
 
     @note only valid when linear is set to "gamma";\n
 
-    @param gamma the gamma value of gamma correction;
-                 default: 2.2;\n
+    @param gamma the gamma value of gamma correction;\n
+                 default: 2.2;
     */
     CV_WRAP void setLinearGamma(double gamma);
 
     /** @brief set degree
-    @param deg the degree of linearization polynomial;\n
-        NOTICE: only valid when linear is set to
-        @ref LINEARIZATION_COLORPOLYFIT
-        @ref LINEARIZATION_GRAYPOLYFIT
-        @ref LINEARIZATION_COLORLOGPOLYFIT
-        @ref LINEARIZATION_GRAYLOGPOLYFIT
-               default: 3
+        @note only valid when linear is set to
+       - @ref LINEARIZATION_COLORPOLYFIT
+       - @ref LINEARIZATION_GRAYPOLYFIT
+       - @ref LINEARIZATION_COLORLOGPOLYFIT
+       - @ref LINEARIZATION_GRAYLOGPOLYFIT
+
+   - @param deg the degree of linearization polynomial;\n
+            default: 3
+
     */
     CV_WRAP void setLinearDegree(int deg);
 
-    /** @brief set SaturatedThreshold
+    /** @brief set SaturatedThreshold.it is a tuple of [lower, upper];
+                The colors in the closed interval [lower, upper] are reserved to participate
+                in the calculation of the loss function and initialization parameters
     @param lower the lower threshold to determine saturation;\n
             default: 0;
-    @param upper the upper threshold to determine saturation;
-        NOTICE: it is a tuple of [lower, upper];
-                The colors in the closed interval [lower, upper] are reserved to participate
-                in the calculation of the loss function and initialization parameters\n
+    @param upper the upper threshold to determine saturation;\n
                  default: 0
     */
     CV_WRAP void setSaturatedThreshold(double lower, double upper);
@@ -476,6 +472,7 @@ public:
 
     /** @brief set InitialMethod
     @param initial_method_type the method of calculating CCM initial value;\n
+            default: INITIAL_METHOD_LEAST_SQUARE
     */
     CV_WRAP void setInitialMethod(INITIAL_METHOD_TYPE initial_method_type);
 
