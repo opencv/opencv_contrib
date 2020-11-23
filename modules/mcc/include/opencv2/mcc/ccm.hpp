@@ -433,7 +433,7 @@ public:
     @param gamma the gamma value of gamma correction;\n
                  default: 2.2;
     */
-    CV_WRAP void setLinearGamma(double gamma);
+    CV_WRAP void setLinearGamma(const double& gamma);
 
     /** @brief set degree
         @note only valid when linear is set to
@@ -442,13 +442,13 @@ public:
        - @ref LINEARIZATION_COLORLOGPOLYFIT
        - @ref LINEARIZATION_GRAYLOGPOLYFIT
 
-   - @param deg the degree of linearization polynomial;\n
+    @param deg the degree of linearization polynomial;\n
             default: 3
 
     */
-    CV_WRAP void setLinearDegree(int deg);
+    CV_WRAP void setLinearDegree(const int& deg);
 
-    /** @brief set SaturatedThreshold.it is a tuple of [lower, upper];
+    /** @brief set SaturatedThreshold.
                 The colors in the closed interval [lower, upper] are reserved to participate
                 in the calculation of the loss function and initialization parameters
     @param lower the lower threshold to determine saturation;\n
@@ -456,19 +456,19 @@ public:
     @param upper the upper threshold to determine saturation;\n
                  default: 0
     */
-    CV_WRAP void setSaturatedThreshold(double lower, double upper);
+    CV_WRAP void setSaturatedThreshold(const double& lower, const double& upper);
 
     /** @brief set WeightsList
     @param weights_list the list of weight of each color;\n
                         default: empty array
     */
-    CV_WRAP void setWeightsList(Mat weights_list);
+    CV_WRAP void setWeightsList(const Mat& weights_list);
 
     /** @brief set WeightCoeff
     @param weights_coeff the exponent number of L* component of the reference color in CIE Lab color space;\n
                          default: 0
     */
-    CV_WRAP void setWeightCoeff(double weights_coeff);
+    CV_WRAP void setWeightCoeff(const double& weights_coeff);
 
     /** @brief set InitialMethod
     @param initial_method_type the method of calculating CCM initial value;\n
@@ -481,14 +481,14 @@ public:
         Terminal criteria to the algorithm;\n
                      default: 5000;
     */
-    CV_WRAP void setMaxCount(int max_count);
+    CV_WRAP void setMaxCount(const int& max_count);
 
     /** @brief set Epsilon
     @param epsilon used in MinProblemSolver-DownhillSolver;\n
         Terminal criteria to the algorithm;\n
                    default: 1e-4;
     */
-    CV_WRAP void setEpsilon(double epsilon);
+    CV_WRAP void setEpsilon(const double& epsilon);
 
     /** @brief make color correction */
     CV_WRAP void run();

@@ -346,23 +346,23 @@ void ColorCorrectionModel::setLinear(LINEAR_TYPE linear_type)
 {
     p->linear_type = linear_type;
 }
-void ColorCorrectionModel::setLinearGamma(double gamma)
+void ColorCorrectionModel::setLinearGamma(const double& gamma)
 {
     p->gamma = gamma;
 }
-void ColorCorrectionModel::setLinearDegree(int deg)
+void ColorCorrectionModel::setLinearDegree(const int& deg)
 {
     p->deg = deg;
 }
-void ColorCorrectionModel::setSaturatedThreshold(double lower, double upper)
+void ColorCorrectionModel::setSaturatedThreshold(const double& lower, const double& upper)
 {  //std::vector<double> saturated_threshold
     p->saturated_threshold = { lower, upper };
 }
-void ColorCorrectionModel::setWeightsList(Mat weights_list)
+void ColorCorrectionModel::setWeightsList(const Mat& weights_list)
 {
     p->weights_list = weights_list;
 }
-void ColorCorrectionModel::setWeightCoeff(double weights_coeff)
+void ColorCorrectionModel::setWeightCoeff(const double& weights_coeff)
 {
     p->weights_coeff = weights_coeff;
 }
@@ -370,11 +370,11 @@ void ColorCorrectionModel::setInitialMethod(INITIAL_METHOD_TYPE initial_method_t
 {
     p->initial_method_type = initial_method_type;
 }
-void ColorCorrectionModel::setMaxCount(int max_count_)
+void ColorCorrectionModel::setMaxCount(const int& max_count_)
 {
     p->max_count = max_count_;
 }
-void ColorCorrectionModel::setEpsilon(double epsilon_)
+void ColorCorrectionModel::setEpsilon(const double& epsilon_)
 {
     p->epsilon = epsilon_;
 }
