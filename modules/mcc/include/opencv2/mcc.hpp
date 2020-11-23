@@ -32,8 +32,15 @@
 
 #include "mcc/checker_detector.hpp"
 #include "mcc/checker_model.hpp"
+#include "mcc/ccm.hpp"
 
 /** @defgroup mcc Macbeth Chart module
+@{
+    @defgroup color_correction Color Correction Model
+@}
+
+
+@addtogroup mcc
 
 Introduction
 ------------
@@ -46,7 +53,6 @@ depeding on many variables, this gives us the colors initially present and the
 colors that are present in the image, based on this information we can apply any
 suitable algorithm to find the actual color of all the objects present in the
 image.
-
 
 */
 
