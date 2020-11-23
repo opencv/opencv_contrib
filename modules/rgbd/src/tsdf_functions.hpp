@@ -47,12 +47,12 @@ void integrateVolumeUnit(
 struct Volume_NODE
 {
     Vec3i idx = nan3;
-    int row   = -1;
-    int nextVolumeRow = -1;
+    int32_t row   = -1;
+    int32_t nextVolumeRow = -1;
     //bool isActive = false;
     //int lastVisibleIndex = -1;
     //ocl::KernelArg pose;
-    int tmp;
+    int32_t tmp;
 };
 
 size_t calc_hash(Vec3i x);

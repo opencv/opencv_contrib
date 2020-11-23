@@ -1003,10 +1003,12 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
-    std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
-        " | " << calc_hash(Vec3i(7, 7, 1)) % _indexes.hash_divisor<< std::endl;
+    //std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
+    //    " | " << calc_hash(Vec3i(7, 7, 1)) % _indexes.hash_divisor<< std::endl;
+    
     //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
+    
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
         (int)_indexes.list_size,
@@ -1030,9 +1032,9 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 
     int resol = 1;
     size_t globalSize[3];
-    globalSize[0] = (size_t)resol;
-    globalSize[1] = (size_t)resol;
-    globalSize[2] = (size_t)resol;
+    globalSize[0] = (size_t)resol; // volResolution.x
+    globalSize[1] = (size_t)resol; // volResolution.y
+    globalSize[2] = (size_t)resol; // num of voxels
 
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");

@@ -8,6 +8,7 @@
 
 typedef __INT8_TYPE__ int8_t;
 typedef __UINT32_TYPE__ uint32_t;
+typedef __INT32_TYPE__ int32_t;
 
 typedef int8_t TsdfType;
 typedef uchar WeightType;
@@ -21,12 +22,12 @@ struct TsdfVoxel
 struct Volume_NODE
 {
     int3 idx;
-    int row;
-    int nextVolumeRow;
+    int32_t row;
+    int32_t nextVolumeRow;
     //bool isActive;
     //int lastVisibleIndex;
     //float16 vol2camMatrix;
-    int tmp;
+    int32_t tmp;
 };
 
 static inline TsdfType floatToTsdf(float num)
@@ -115,6 +116,12 @@ __kernel void integrateAllVolumeUnits(
                         // ,const __global float * pixNorms
                         )
 {
+
+    //int i = get_global_id(0);
+    //int j = get_global_id(1);
+    //int k = get_global_id(2);
+    //printf("[i, j, k] = [%d , %d , %d] \n", i, j, k);
+
     //printf(" = %d , %d , %d \n", hash_params.x, hash_params.y, hash_params.z);
     //printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
     //int tmp = findVolume(hash_table, hash_table->idx, hash_divisor);
@@ -127,10 +134,18 @@ __kernel void integrateAllVolumeUnits(
     //findVolume(hash_table, hash_table->idx, hash_divisor);
     
     //printf("\n");
+    
+    //char* tmp = (char) hash_table;
+    //for (int i = 0; i < 100; i++)
+    //{
+    //    printf("|%c", tmp[i] );
+    //}
+
+    
     for (int i = 0; i < 10; i++)
     {
         printf("\n");
-        int idx = i*3;
+        int idx = i;
         struct Volume_NODE v = hash_table[idx];
         printf("idx = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
         printf("row = %d \n", v.row);
