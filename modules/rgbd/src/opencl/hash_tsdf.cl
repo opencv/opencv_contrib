@@ -68,7 +68,7 @@ int findVolume(__global struct Volume_NODE * hash_table, int3 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
-    printf("hash = %d \n", hash);
+    printf("\nhash = %d \n", hash);
     
     //printf("%d | %d \n", calc_hash(indx), hash);
     int num = 1;
@@ -76,17 +76,17 @@ int findVolume(__global struct Volume_NODE * hash_table, int3 indx,
     int NAN_NUM = -2147483648;
     while (i != NAN_NUM)
     {
-        __global struct Volume_NODE* v = (hash_table + i);
-        printf(" = %d %d %d \n", v->idx.x, v->idx.y, v->idx.z);
-        printf("   %d | %d \n", v->row , v->nextVolumeRow);
+        struct Volume_NODE v = hash_table[i];
+        printf(" = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
+        //printf("   %d | %d \n", v->row , v->nextVolumeRow);
         //int3 tmp = v->idx 
-        if (v->idx.x == indx.x &&
-            v->idx.y == indx.y &&
-            v->idx.z == indx.z)
-            return v->row;
-        if (v->idx.x == NAN_NUM)
+        if (v.idx.x == indx.x &&
+            v.idx.y == indx.y &&
+            v.idx.z == indx.z)
+            return v.row;
+        if (v.idx.x == NAN_NUM)
             return -2;
-        i = v->nextVolumeRow;
+        i = v.nextVolumeRow;
     }
 
     return 1;
@@ -142,19 +142,22 @@ __kernel void integrateAllVolumeUnits(
     //}
 
     
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 16000; i++)
     {
-        printf("\n");
+       
         int idx = i;
         struct Volume_NODE v = hash_table[idx];
-        printf("idx = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
-        printf("row = %d \n", v.row);
-        printf("nv  = %d \n", v.nextVolumeRow);
-        printf("tmp = %d \n", v.tmp);
+        if (v.idx.x != -2147483648)
+        {
+            printf("\n");
+            printf("idx = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
+            printf("row = %d \n", v.row);
+            printf("nv  = %d \n", v.nextVolumeRow);
+            printf("tmp = %d \n", v.tmp);
 
-        //printf("idx = %d %d %d \n", (hash_table[idx]).idx.x, (hash_table[idx]).idx.y, (hash_table[idx]).idx.z);
-        //printf("idx = %d %d %d \n", (hash_table+idx)->idx.x, (hash_table+idx)->idx.y, (hash_table+idx)->idx.z);
-        
+            //printf("idx = %d %d %d \n", (hash_table[idx]).idx.x, (hash_table[idx]).idx.y, (hash_table[idx]).idx.z);
+            //printf("idx = %d %d %d \n", (hash_table+idx)->idx.x, (hash_table+idx)->idx.y, (hash_table+idx)->idx.z);
+        }
     }
     
     //printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
