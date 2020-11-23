@@ -373,7 +373,7 @@ void integrateVolumeUnit(
 
 }
 
-size_t calc_hash(Vec3i x)
+size_t calc_hash(Vec4i x)
 {
     uint32_t seed = 0;
     //constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
@@ -395,16 +395,18 @@ VolumesTable::VolumesTable()
     for (int i = 0; i < volumes.size().height; i++)
     {
         Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        v.idx = nan3;
+        v.idx = nan4;
         v.row = -1;
         v.nextVolumeRow = -1;
         v.tmp = i;
+        v.noneed = -555;
     }
 }
 
 void VolumesTable::update(Vec3i indx)
 {
-    int hash = int(calc_hash(indx) % hash_divisor);
+    Vec4i idx = (indx[0], indx[0], indx[0], -2147483648);
+    int hash = int(calc_hash(idx) % hash_divisor);
     int num  = 1;
     int start = hash * num * list_size;
     int i = start;
@@ -412,13 +414,13 @@ void VolumesTable::update(Vec3i indx)
     while (i != -1)
     {
         Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == indx)
+        if (v.idx == idx)
             return;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx == Vec3i(nan3))
+        if (v.idx == nan4)
         {
-            v.idx = indx;
+            v.idx = idx;
             v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
             return;
@@ -429,7 +431,8 @@ void VolumesTable::update(Vec3i indx)
 
 void VolumesTable::update(Vec3i indx, int row)
 {
-    int hash = int(calc_hash(indx) % hash_divisor);
+    Vec4i idx = (indx[0], indx[0], indx[0], -2147483648);
+    int hash = int(calc_hash(idx) % hash_divisor);
     int num = 1;
     int start = hash * num * list_size;
     int i = start;
@@ -437,16 +440,16 @@ void VolumesTable::update(Vec3i indx, int row)
     while (i != -1)
     {
         Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == indx)
+        if (v.idx == idx)
         {
             v.row = row;
             return;
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx == Vec3i(nan3))
+        if (v.idx == nan4)
         {
-            v.idx = indx;
+            v.idx = idx;
             v.row = row;
             v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
@@ -514,8 +517,9 @@ void VolumesTable::expand()
 
 int VolumesTable::find_Volume(Vec3i indx) const
 {
+    Vec4i idx = (indx[0], indx[0], indx[0], -2147483648);
     //std::cout << "find_Volume -> ";
-    int hash = int(calc_hash(indx) % hash_divisor);
+    int hash = int(calc_hash(idx) % hash_divisor);
     int num = 1;
     int i = hash * num * list_size;
     //std::cout << " [find_Volume]"; // << std::endl;
@@ -523,11 +527,11 @@ int VolumesTable::find_Volume(Vec3i indx) const
     {
         Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
         //std::cout << " | i = " << i << " idx=" << v.idx << " row=" << v.row << " next=" << v.nextVolumeRow << std::endl;
-        if (v.idx == indx)
+        if (v.idx == idx)
             return v.row;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx == Vec3i(nan3))
+        if (v.idx == nan4)
             return -2;
         i = v.nextVolumeRow;
     }

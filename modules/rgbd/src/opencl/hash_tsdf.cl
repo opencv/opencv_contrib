@@ -21,7 +21,7 @@ struct TsdfVoxel
 
 struct Volume_NODE
 {
-    int3 idx;
+    int4 idx;
     int32_t row;
     int32_t nextVolumeRow;
     //bool isActive;

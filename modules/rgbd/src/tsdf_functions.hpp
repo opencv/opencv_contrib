@@ -46,16 +46,17 @@ void integrateVolumeUnit(
 
 struct Volume_NODE
 {
-    Vec3i idx = nan3;
+    Vec4i idx = Vec4i(-2147483648);
     int32_t row   = -1;
     int32_t nextVolumeRow = -1;
     //bool isActive = false;
     //int lastVisibleIndex = -1;
     //ocl::KernelArg pose;
     int32_t tmp;
+    int32_t noneed;
 };
 
-size_t calc_hash(Vec3i x);
+size_t calc_hash(Vec4i x);
 
 class VolumesTable
 {
@@ -66,7 +67,7 @@ public:
 
     cv::Mat volumes;
     std::vector<Vec3i> indexes;
-
+    cv::Vec4i nan4 = cv::Vec4i(-2147483648, -2147483647, -2147483647, -2147483647);
     VolumesTable();
     ~VolumesTable() {};
 
