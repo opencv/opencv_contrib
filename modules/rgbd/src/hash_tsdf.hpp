@@ -166,6 +166,8 @@ public:
     Vec4i volStrides;
     Vec6f frameParams;
     Mat pixNorms;
+    int degree;
+    int buff_lvl;
 
     VolumeIndex _lastVolIndex;
     cv::Mat indexes;

@@ -855,13 +855,15 @@ void HashTSDFVolumeGPU::reset()
 {
     CV_TRACE_FUNCTION();
     _lastVolIndex = 0;
-    _volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
-    volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    degree = 15;
+    buff_lvl = pow(2, degree);
+    _volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     //volUnitsData = cv::Mat(VOLUMES_SIZE, 1, rawType<UMat>());
-    indexes = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
-    poses = cv::Mat(VOLUMES_SIZE, 1, rawType<cv::Matx44f>());
-    isActive = cv::Mat(VOLUMES_SIZE, 1, rawType<bool>());
-    lastVisibleIndexes = cv::Mat(VOLUMES_SIZE, 1, rawType<int>());
+    indexes = cv::Mat(buff_lvl, 1, rawType<Vec3i>());
+    poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
+    isActive = cv::Mat(buff_lvl, 1, rawType<bool>());
+    lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
     _indexes = VolumesTable();
 }
 
@@ -1003,31 +1005,22 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
+    int totalVolUnitsSize = _indexes.indexesGPU.size();
+    Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
+
     std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
         " | " << calc_hash(Vec4i(7, 7, 1, 0)) % _indexes.hash_divisor<< std::endl;
     
     //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
-    /*
-    for (int i = 5060; i < 5070; i++)
-    {
-        Volume_NODE v = _indexes.volumes.at<Volume_NODE>(i, 0);
-        //if (v.idx[0] != -2147483648)
-        //{
-            printf("\n");
-            printf("idx = %d %d %d \n", v.idx[0], v.idx[1], v.idx[2]);
-            printf("row = %d \n", v.row);
-            printf("nv  = %d \n", v.nextVolumeRow);
-            printf("tmp = %d \n", v.tmp);
-        //}
-    }
-    */
+
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
         //ocl::KernelArg::PtrReadWrite(_indexes.volumes),
         (int)_indexes.list_size,
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
+        ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
         // ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val)),
         // _volUnitsData.getUMat(ACCESS_RW),
         // isActive.getUMat(ACCESS_RW),
@@ -1046,9 +1039,9 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 
     int resol = 1;
     size_t globalSize[3];
-    globalSize[0] = (size_t)volumeUnitResolution; // volResolution.x
-    globalSize[1] = (size_t)volumeUnitResolution; // volResolution.y
-    globalSize[2] = (size_t)resol; // num of voxels
+    globalSize[0] = (size_t)resol; // volResolution.x
+    globalSize[1] = (size_t)resol; // volResolution.y
+    globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
 
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
@@ -1110,21 +1103,24 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         }
 
         //mutex.lock();
-
+        //std::cout << "lol\n";
         for (int i = 0; i < loc_vol_idx; i++)
         {
             Vec3i idx = _localAccessVolUnits.at<Vec3i>(i, 0);
 
             if (!_indexes.isExist(idx))
             {
-                if (_lastVolIndex >= VolumeIndex(_volUnitsData.size().height))
+                if (_lastVolIndex >= buff_lvl)
                 {
-                    indexes.resize(_lastVolIndex * 2);
-                    _volUnitsData.resize(_lastVolIndex * 2);
-                    volUnitsData.resize(_lastVolIndex * 2);
-                    poses.resize(_lastVolIndex * 2);
-                    isActive.resize(_lastVolIndex * 2);
-                    lastVisibleIndexes.resize(_lastVolIndex * 2);
+                    //std::cout << "kek " << _lastVolIndex << " " << buff_lvl << std::endl;
+                    degree++;
+                    buff_lvl = pow(2, degree);
+                    indexes.resize(buff_lvl);
+                    _volUnitsData.resize(buff_lvl);
+                    volUnitsData.resize(buff_lvl);
+                    poses.resize(buff_lvl);
+                    isActive.resize(buff_lvl);
+                    lastVisibleIndexes.resize(buff_lvl);
                 }
                 this->indexes.at<Vec3i>(_lastVolIndex, 0) = idx;
                 _indexes.update(idx, _lastVolIndex);
@@ -1141,7 +1137,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     AllocateVolumeUnitsInvoker(allocateRange);
 
     //! Perform the allocation
-
+    //std::cout << "lol\n";
     for (int i = 0; i < vol_idx; i++)
     {
         Vec3i tsdf_idx  = newIndices.at<Vec3i>(i, 0);
@@ -1248,8 +1244,11 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
     //Integrate(Range(0, (int)_totalVolUnits.size()));
 
+    //std::cout << "lol\n";
+
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
+    //std::cout << "lol\n";
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const

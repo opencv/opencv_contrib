@@ -100,6 +100,7 @@ __kernel void integrateAllVolumeUnits(
                         const int list_size, 
                         const int bufferNums, 
                         const int hash_divisor,
+                        __global const int4 * totalVolUnits, 
                         // const float16 vol2camMatrix,
                         // const __global struct TsdfVoxel * volUnitsData,
                         //global bool * isActive,
@@ -117,18 +118,19 @@ __kernel void integrateAllVolumeUnits(
                         )
 {
 
-    //int i = get_global_id(0);
-    //int j = get_global_id(1);
-    //int k = get_global_id(2);
-    //printf("[i, j, k] = [%d , %d , %d] \n", i, j, k);
+    int i = get_global_id(0);
+    int j = get_global_id(1);
+    int k = get_global_id(2);
+    int4 v = totalVolUnits[k];
+    printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d]\n", i, j, k, v[0], v[1], v[2]);
 
     //printf(" = %d , %d , %d \n", hash_params.x, hash_params.y, hash_params.z);
     //printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
     //int tmp = findVolume(hash_table, hash_table->idx, hash_divisor);
     
-    int3 idx; idx.x = 7; idx.y=7;idx.z=1;
-    int tmp = findVolume(hash_table, idx, list_size, bufferNums, hash_divisor);
-    printf("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
+    //int3 idx; idx.x = 7; idx.y=7;idx.z=1;
+    //int tmp = findVolume(hash_table, idx, list_size, bufferNums, hash_divisor);
+    //printf("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
     
     //hash_table->idx.x = 10;
     //findVolume(hash_table, hash_table->idx, hash_divisor);
