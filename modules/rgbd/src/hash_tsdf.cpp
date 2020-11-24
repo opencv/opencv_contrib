@@ -1008,9 +1008,23 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     
     //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
-    
+    /*
+    for (int i = 5060; i < 5070; i++)
+    {
+        Volume_NODE v = _indexes.volumes.at<Volume_NODE>(i, 0);
+        //if (v.idx[0] != -2147483648)
+        //{
+            printf("\n");
+            printf("idx = %d %d %d \n", v.idx[0], v.idx[1], v.idx[2]);
+            printf("row = %d \n", v.row);
+            printf("nv  = %d \n", v.nextVolumeRow);
+            printf("tmp = %d \n", v.tmp);
+        //}
+    }
+    */
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
+        //ocl::KernelArg::PtrReadWrite(_indexes.volumes),
         (int)_indexes.list_size,
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
@@ -1032,8 +1046,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 
     int resol = 1;
     size_t globalSize[3];
-    globalSize[0] = (size_t)resol; // volResolution.x
-    globalSize[1] = (size_t)resol; // volResolution.y
+    globalSize[0] = (size_t)volumeUnitResolution; // volResolution.x
+    globalSize[1] = (size_t)volumeUnitResolution; // volResolution.y
     globalSize[2] = (size_t)resol; // num of voxels
 
     if (!k.run(3, globalSize, NULL, true))
@@ -1160,7 +1174,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> _totalVolUnits = _indexes.indexes;
     //for (int i = 0; i < indexes.size().height; i++){_totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));}
-
+    //std::cout << "lol\n";
     //! Mark volumes in the camera frustum as active
     Range _inFrustumRange(0, (int)_totalVolUnits.size());
     auto markActivities = [&](const Range& range) {

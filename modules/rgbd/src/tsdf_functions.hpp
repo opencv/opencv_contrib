@@ -46,7 +46,7 @@ void integrateVolumeUnit(
 
 struct Volume_NODE
 {
-    Vec4i idx = Vec4i(-2147483648);
+    Vec4i idx = Vec4i(-2147483647);
     int32_t row   = -1;
     int32_t nextVolumeRow = -1;
     //bool isActive = false;
@@ -67,7 +67,8 @@ public:
 
     cv::Mat volumes;
     std::vector<Vec3i> indexes;
-    cv::Vec4i nan4 = cv::Vec4i(-2147483648, -2147483647, -2147483647, -2147483647);
+    std::vector<Vec4i> indexesGPU;
+    cv::Vec4i nan4 = cv::Vec4i(-2147483647);
     VolumesTable();
     ~VolumesTable() {};
 

@@ -4,7 +4,7 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-//#define NAN_NUM -2147483648;
+//#define NAN_NUM -2147483647;
 
 typedef __INT8_TYPE__ int8_t;
 typedef __UINT32_TYPE__ uint32_t;
@@ -68,16 +68,16 @@ int findVolume(__global struct Volume_NODE * hash_table, int3 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
-    printf("\nhash = %d \n", hash);
+    //printf("\nhash = %d \n", hash);
     
     //printf("%d | %d \n", calc_hash(indx), hash);
     int num = 1;
     int i = hash * num * list_size;
-    int NAN_NUM = -2147483648;
+    int NAN_NUM = -2147483647;
     while (i != NAN_NUM)
     {
         struct Volume_NODE v = hash_table[i];
-        printf(" = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
+        //printf(" = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
         //printf("   %d | %d \n", v->row , v->nextVolumeRow);
         //int3 tmp = v->idx 
         if (v.idx.x == indx.x &&
@@ -126,9 +126,9 @@ __kernel void integrateAllVolumeUnits(
     //printf(" = %d , %d , %d \n", list_size, bufferNums, hash_divisor );
     //int tmp = findVolume(hash_table, hash_table->idx, hash_divisor);
     
-    //int3 idx; idx.x = 7; idx.y=7;idx.z=1;
-    //int tmp = findVolume(hash_table, idx, list_size, bufferNums, hash_divisor);
-    //printf("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
+    int3 idx; idx.x = 7; idx.y=7;idx.z=1;
+    int tmp = findVolume(hash_table, idx, list_size, bufferNums, hash_divisor);
+    printf("idx = %d %d %d | row = %d \n", idx.x, idx.y, idx.z, tmp);
     
     //hash_table->idx.x = 10;
     //findVolume(hash_table, hash_table->idx, hash_divisor);
@@ -141,13 +141,13 @@ __kernel void integrateAllVolumeUnits(
     //    printf("|%c", tmp[i] );
     //}
 
-    
+    /*
     for (int i = 0; i < 16000; i++)
     {
        
         int idx = i;
         struct Volume_NODE v = hash_table[idx];
-        if (v.idx.x != -2147483648)
+        if (v.idx.x != -2147483647)
         {
             printf("\n");
             printf("idx = %d %d %d \n", v.idx.x, v.idx.y, v.idx.z);
@@ -159,7 +159,8 @@ __kernel void integrateAllVolumeUnits(
             //printf("idx = %d %d %d \n", (hash_table+idx)->idx.x, (hash_table+idx)->idx.y, (hash_table+idx)->idx.z);
         }
     }
-    
+    */
+
     //printf("idx = %d %d %d \n", hash_table->idx.x, hash_table->idx.y, hash_table->idx.z);
     //printf("row = %d \n", hash_table->row);
     //printf("nv  = %d \n", hash_table->nextVolumeRow);
@@ -170,7 +171,7 @@ __kernel void integrateAllVolumeUnits(
 
 }
 
-__kernel void integrateVolumeUnit(__global const char * depthptr,
+void integrateVolumeUnit(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
                         __global struct TsdfVoxel * volumeptr,

@@ -376,16 +376,18 @@ void integrateVolumeUnit(
 size_t calc_hash(Vec4i x)
 {
     uint32_t seed = 0;
-    //constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
-    uint32_t GOLDEN_RATIO = 0x9e3779b9;
-    seed ^= x[0] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed ^= x[1] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    //for (int i = 0; i < 3; i++)
-    //{
-    //    //seed ^= std::hash<int>()(x[i]) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    //    seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    //}
+    constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    //uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    //seed ^= x[0] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    //seed ^= x[1] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    //seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    //std::cout << " lol "  << x[0]<<std::endl;
+    for (int i = 0; i < 3; i++)
+    {
+        //seed ^= std::hash<int>()(x[i]) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+        seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+        //std::cout << x[i] << "|" << seed << std::endl;
+    }
     return seed;
 }
 
@@ -396,6 +398,7 @@ VolumesTable::VolumesTable()
     {
         Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         v.idx = nan4;
+        //v.idx = cv::Vec4i(-2147483648, -2147483648, -2147483648, -2147483648);
         v.row = -1;
         v.nextVolumeRow = -1;
         v.tmp = i;
@@ -405,7 +408,7 @@ VolumesTable::VolumesTable()
 
 void VolumesTable::update(Vec3i indx)
 {
-    Vec4i idx = (indx[0], indx[0], indx[0], -2147483648);
+    Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
     int num  = 1;
     int start = hash * num * list_size;
@@ -418,11 +421,12 @@ void VolumesTable::update(Vec3i indx)
             return;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx == nan4)
+        if (v.idx[0] == -2147483647)
         {
             v.idx = idx;
             v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
+            indexesGPU.push_back(idx);
             return;
         }
         i = v.nextVolumeRow;
@@ -431,7 +435,7 @@ void VolumesTable::update(Vec3i indx)
 
 void VolumesTable::update(Vec3i indx, int row)
 {
-    Vec4i idx = (indx[0], indx[0], indx[0], -2147483648);
+    Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
     int num = 1;
     int start = hash * num * list_size;
@@ -447,12 +451,13 @@ void VolumesTable::update(Vec3i indx, int row)
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx == nan4)
+        if (v.idx[0] == -2147483647)
         {
             v.idx = idx;
             v.row = row;
             v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
+            indexesGPU.push_back(idx);
             return;
         }
         i = v.nextVolumeRow;
@@ -517,12 +522,12 @@ void VolumesTable::expand()
 
 int VolumesTable::find_Volume(Vec3i indx) const
 {
-    Vec4i idx = (indx[0], indx[0], indx[0], -2147483648);
+    Vec4i idx(indx[0], indx[1], indx[2], 0);
     //std::cout << "find_Volume -> ";
     int hash = int(calc_hash(idx) % hash_divisor);
     int num = 1;
     int i = hash * num * list_size;
-    //std::cout << " [find_Volume]"; // << std::endl;
+    //std::cout <<"[ "<< idx<<" ]= " << calc_hash(idx) <<" = "<< hash << std::endl;
     while (i != -1)
     {
         Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
@@ -531,7 +536,7 @@ int VolumesTable::find_Volume(Vec3i indx) const
             return v.row;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx == nan4)
+        if (v.idx[0] == -2147483648)
             return -2;
         i = v.nextVolumeRow;
     }
