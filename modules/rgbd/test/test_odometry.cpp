@@ -41,7 +41,7 @@ void warpFrame(const Mat& image, const Mat& depth, const Mat& rvec, const Mat& t
     Mat Rt = Mat::eye(4, 4, CV_64FC1);
     {
         Mat R, dst;
-        Rodrigues(rvec, R);
+        cv3d::Rodrigues(rvec, R);
         
         dst = Rt(Rect(0,0,3,3));
         R.copyTo(dst);
@@ -51,7 +51,7 @@ void warpFrame(const Mat& image, const Mat& depth, const Mat& rvec, const Mat& t
     }
     Mat warpedCloud, warpedImagePoints;
     perspectiveTransform(cloud, warpedCloud, Rt);
-    projectPoints(warpedCloud.reshape(3, 1), Mat(3,1,CV_32FC1, Scalar(0)), Mat(3,1,CV_32FC1, Scalar(0)), K, Mat(1,5,CV_32FC1, Scalar(0)), warpedImagePoints);
+    cv3d::projectPoints(warpedCloud.reshape(3, 1), Mat(3,1,CV_32FC1, Scalar(0)), Mat(3,1,CV_32FC1, Scalar(0)), K, Mat(1,5,CV_32FC1, Scalar(0)), warpedImagePoints);
     warpedImagePoints = warpedImagePoints.reshape(2, cloud.rows);
     Rect r(0, 0, image.cols, image.rows);
     for(int y = 0; y < cloud.rows; y++)
@@ -254,7 +254,7 @@ void CV_OdometryTest::run(int)
             continue;
                 
         Mat calcR = calcRt(Rect(0,0,3,3)), calcRvec;
-        Rodrigues(calcR, calcRvec);
+        cv3d::Rodrigues(calcR, calcRvec);
         calcRvec = calcRvec.reshape(rvec.channels(), rvec.rows);
         Mat calcTvec = calcRt(Rect(3,0,1,3));
 

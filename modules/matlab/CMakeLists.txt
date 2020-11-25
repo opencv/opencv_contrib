@@ -110,7 +110,7 @@ ocv_add_module(matlab   BINDINGS
                                  opencv_imgcodecs opencv_videoio opencv_highgui
                                  opencv_objdetect opencv_flann opencv_features2d
                                  opencv_photo opencv_video opencv_videostab
-                                 opencv_calib opencv_calib3d
+                                 opencv_calib opencv_3d
                                  opencv_stitching opencv_superres
                                  opencv_xfeatures2d
 )

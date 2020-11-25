@@ -1,4 +1,4 @@
-#include "opencv2/stereo.hpp"
+#include "opencv2/xstereo.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include <stdio.h>

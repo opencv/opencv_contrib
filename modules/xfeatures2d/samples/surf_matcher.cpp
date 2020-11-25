@@ -6,7 +6,7 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/features2d.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/xfeatures2d.hpp"
 
@@ -110,7 +110,7 @@ static Mat drawGoodMatches(
     obj_corners[3] = Point( 0, img1.rows );
     std::vector<Point2f> scene_corners(4);
 
-    Mat H = findHomography( obj, scene, RANSAC );
+    Mat H = findHomography( obj, scene, cv3d::RANSAC );
     perspectiveTransform( obj_corners, scene_corners, H);
 
     scene_corners_ = scene_corners;

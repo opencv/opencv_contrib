@@ -45,7 +45,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 
 #include <vector>
 
@@ -97,9 +97,9 @@ public:
 	*/
 
     bool findRt(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
-                InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
+                InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess = false, int flags = cv3d::SOLVEPNP_ITERATIVE);
     bool findRt(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
+                InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess = false, int flags = cv3d::SOLVEPNP_ITERATIVE);
     /**<
 		Uses solvePnP to find the rotation and translation of the pattern
 		with respect to the camera frame.
@@ -107,10 +107,10 @@ public:
 
     bool findRtRANSAC(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
                       InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
-                      float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
+                      float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = cv3d::SOLVEPNP_ITERATIVE);
     bool findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                       InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
-                      float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
+                      float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = cv3d::SOLVEPNP_ITERATIVE);
         /**<
 		Uses solvePnPRansac()
 	*/

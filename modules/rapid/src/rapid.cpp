@@ -150,7 +150,7 @@ void extractControlPoints(int num, int len, InputArray pts3d, InputArray rvec, I
     CV_Assert(num);
 
     Mat_<Point2f> pts2d(pts3d.rows(), 1);
-    projectPoints(pts3d, rvec, tvec, K, noArray(), pts2d);
+    cv3d::projectPoints(pts3d, rvec, tvec, K, noArray(), pts2d);
 
     Mat_<uchar> img(imsize, uchar(0));
     drawWireframe(img, pts2d, tris.getMat(), 255, LINE_8, true);
@@ -354,7 +354,7 @@ float rapid(InputArray img, int num, int len, InputArray vtx, InputArray tris, I
     if (pts2d.rows < 3)
         return 0;
 
-    solvePnPRefineLM(pts3d, pts2d, K, cv::noArray(), rvec, tvec);
+    cv3d::solvePnPRefineLM(pts3d, pts2d, K, cv::noArray(), rvec, tvec);
 
     return float(pts2d.rows) / num;
 }

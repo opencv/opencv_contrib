@@ -67,6 +67,9 @@
 
 namespace cv { namespace multicalib {
 
+using namespace cv3d;
+using namespace cv::calib;
+
 MultiCameraCalibration::MultiCameraCalibration(int cameraType, int nCameras, const std::string& fileName,
     float patternWidth, float patternHeight, int verbose, int showExtration, int nMiniMatches, int flags, TermCriteria criteria,
     Ptr<FeatureDetector> detector, Ptr<DescriptorExtractor> descriptor,
@@ -193,7 +196,7 @@ void MultiCameraCalibration::loadImages()
         double rms = 0.0;
         if (_camType == PINHOLE)
         {
-            rms = cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
+            rms = cv::calib::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
                 image.size(), _cameraMatrix[camera], _distortCoeffs[camera], _omEachCamera[camera],
                 _tEachCamera[camera],_flags);
             idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32S);
@@ -347,7 +350,7 @@ double MultiCameraCalibration::optimizeExtrinsics()
     for (int i = 1; i < nVertex; ++i)
     {
         Mat rvec, tvec;
-        cv::Rodrigues(this->_vertexList[i].pose.rowRange(0,3).colRange(0, 3), rvec);
+        cv3d::Rodrigues(this->_vertexList[i].pose.rowRange(0,3).colRange(0, 3), rvec);
         this->_vertexList[i].pose.rowRange(0,3).col(3).copyTo(tvec);
 
         rvec.reshape(1, 1).copyTo(extrinParam.colRange(offset, offset + 3));
@@ -430,7 +433,7 @@ void MultiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams
         Mat rvecTran, tvecTran;
         Mat R = _edgeList[edgeIdx].transform.rowRange(0, 3).colRange(0, 3);
         tvecTran = _edgeList[edgeIdx].transform.rowRange(0, 3).col(3);
-        cv::Rodrigues(R, rvecTran);
+        cv3d::Rodrigues(R, rvecTran);
 
         Mat rvecPhoto = extrinsicParams.colRange((photoVertex-1)*6, (photoVertex-1)*6 + 3);
         Mat tvecPhoto = extrinsicParams.colRange((photoVertex-1)*6 + 3, (photoVertex-1)*6 + 6);
@@ -495,7 +498,7 @@ void MultiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
     Mat imagePoints2, jacobian, dx_drvecCamera, dx_dtvecCamera, dx_drvecPhoto, dx_dtvecPhoto;
     if (_camType == PINHOLE)
     {
-        cv::projectPoints(objectPoints, rvecTran, tvecTran, K, distort, imagePoints2, jacobian);
+        cv3d::projectPoints(objectPoints, rvecTran, tvecTran, K, distort, imagePoints2, jacobian);
     }
     //else if (_camType == FISHEYE)
     //{
@@ -608,7 +611,7 @@ double MultiCameraCalibration::computeProjectError(Mat& parameters)
 
         //edgeList[edgeIdx].transform = Mat::ones(4, 4, CV_32F);
         transform = Mat::eye(4, 4, CV_32F);
-        cv::Rodrigues(rvecVertex[photoVertex-1], RPhoto);
+        cv3d::Rodrigues(rvecVertex[photoVertex-1], RPhoto);
         if (cameraVertex == 0)
         {
             RPhoto.copyTo(transform.rowRange(0, 3).colRange(0, 3));
@@ -617,14 +620,14 @@ double MultiCameraCalibration::computeProjectError(Mat& parameters)
         else
         {
             TCamera = Mat(tvecVertex[cameraVertex - 1]).reshape(1, 3);
-            cv::Rodrigues(rvecVertex[cameraVertex - 1], RCamera);
+            cv3d::Rodrigues(rvecVertex[cameraVertex - 1], RCamera);
             Mat(RCamera*RPhoto).copyTo(transform.rowRange(0, 3).colRange(0, 3));
             Mat(RCamera * TPhoto + TCamera).copyTo(transform.rowRange(0, 3).col(3));
         }
 
         transform.copyTo(edgeList[edgeIdx].transform);
         Mat rvec, tvec;
-        cv::Rodrigues(transform.rowRange(0, 3).colRange(0, 3), rvec);
+        cv3d::Rodrigues(transform.rowRange(0, 3).colRange(0, 3), rvec);
         transform.rowRange(0, 3).col(3).copyTo(tvec);
 
         Mat objectPoints, imagePoints, proImagePoints;
@@ -633,7 +636,7 @@ double MultiCameraCalibration::computeProjectError(Mat& parameters)
 
         if (this->_camType == PINHOLE)
         {
-            cv::projectPoints(objectPoints, rvec, tvec, _cameraMatrix[cameraVertex], _distortCoeffs[cameraVertex],
+            cv3d::projectPoints(objectPoints, rvec, tvec, _cameraMatrix[cameraVertex], _distortCoeffs[cameraVertex],
                 proImagePoints);
         }
         //else if (this->_camType == FISHEYE)
@@ -675,8 +678,8 @@ void MultiCameraCalibration::compose_motion(InputArray _om1, InputArray _T1, Inp
 
     //% Rotations:
     Mat R1, R2, R3, dR1dom1(9, 3, CV_64FC1), dR2dom2;
-    cv::Rodrigues(om1, R1, dR1dom1);
-    cv::Rodrigues(om2, R2, dR2dom2);
+    cv3d::Rodrigues(om1, R1, dR1dom1);
+    cv3d::Rodrigues(om2, R2, dR2dom2);
     /*JRodriguesMatlab(dR1dom1, dR1dom1);
     JRodriguesMatlab(dR2dom2, dR2dom2);*/
     dR1dom1 = dR1dom1.t();
@@ -687,7 +690,7 @@ void MultiCameraCalibration::compose_motion(InputArray _om1, InputArray _T1, Inp
     //dAB(R2, R1, dR3dR2, dR3dR1);
     matMulDeriv(R2, R1, dR3dR2, dR3dR1);
     Mat dom3dR3;
-    cv::Rodrigues(R3, om3, dom3dR3);
+    cv3d::Rodrigues(R3, om3, dom3dR3);
     //JRodriguesMatlab(dom3dR3, dom3dR3);
     dom3dR3 = dom3dR3.t();
 

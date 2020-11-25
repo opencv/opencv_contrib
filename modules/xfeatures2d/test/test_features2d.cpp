@@ -347,7 +347,7 @@ protected:
             pt2.push_back(kpt2[matches[i].trainIdx].pt);
         }
 
-        Mat inliers, H = findHomography(pt1, pt2, RANSAC, 10, inliers);
+        Mat inliers, H = findHomography(pt1, pt2, cv3d::RANSAC, 10, inliers);
         int ninliers = countNonZero(inliers);
 
         if( ninliers < min_ninliers )

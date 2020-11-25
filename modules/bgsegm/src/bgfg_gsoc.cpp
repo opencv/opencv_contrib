@@ -50,7 +50,7 @@
 */
 
 #include "precomp.hpp"
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <iostream>
 #include "opencv2/core/cvdef.h"
 
@@ -757,7 +757,7 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask,
             FindSparseCorrLK(frame, prevFrame, srcPoints, dstPoints);
 
         if (srcPoints.size()) {
-            Mat H = findHomography(srcPoints, dstPoints, LMEDS);
+            Mat H = findHomography(srcPoints, dstPoints, cv3d::LMEDS);
 
             srcPoints.clear();
             for (int x = 0; x < sz.width; ++x)
@@ -904,7 +904,7 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
             FindSparseCorrLK(frame, prevFrame, srcPoints, dstPoints);
 
         if (srcPoints.size()) {
-            Mat H = findHomography(srcPoints, dstPoints, LMEDS);
+            Mat H = findHomography(srcPoints, dstPoints, cv3d::LMEDS);
 
             srcPoints.clear();
             for (int x = 0; x < sz.width; ++x)

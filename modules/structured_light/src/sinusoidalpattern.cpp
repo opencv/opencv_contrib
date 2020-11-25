@@ -908,7 +908,7 @@ void SinusoidalPatternProfilometry_Impl::convertToAbsolutePhaseMap( InputArrayOf
     computeDataModulationTerm(camPatterns_, camDmt, shadowMask);
 
     std::vector<Vec3f> epilines;
-    computeCorrespondEpilines(params.markersLocation, 2, fundamental, epilines);
+    cv3d::computeCorrespondEpilines(params.markersLocation, 2, fundamental, epilines);
 
 }
 Ptr<SinusoidalPattern> SinusoidalPattern::create( Ptr<SinusoidalPattern::Params> params )

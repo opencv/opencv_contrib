@@ -1,7 +1,8 @@
 #include "opencv2/ccalib/randpattern.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
+#include "opencv2/calib.hpp"
 #include <vector>
 #include <iostream>
 #include <time.h>
@@ -125,7 +126,7 @@ int main(int argc, char** argv)
         }
         else if( strcmp( s, "-fp" ) == 0 )
         {
-            flags |= CALIB_FIX_PRINCIPAL_POINT;
+            flags |= calib::CALIB_FIX_PRINCIPAL_POINT;
         }
         else if( s[0] != '-')
         {
@@ -156,6 +157,6 @@ int main(int argc, char** argv)
     Mat K;
     Mat D;
     vector<Mat> rvec, tvec;
-    double rms = calibrateCamera(objectPoints, imagePoints, vecImg[0].size(), K, D, rvec, tvec);
+    double rms = calib::calibrateCamera(objectPoints, imagePoints, vecImg[0].size(), K, D, rvec, tvec);
     saveCameraParams(outputFilename, vecImg[0].size(), patternWidth, patternHeight, flags, K, D, rvec, tvec, rms);
 }

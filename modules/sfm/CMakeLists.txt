@@ -78,7 +78,7 @@ endif()
 
 ocv_add_module(sfm
   opencv_core
-  opencv_calib3d
+  opencv_3d
   opencv_features2d
   opencv_xfeatures2d
   opencv_imgcodecs

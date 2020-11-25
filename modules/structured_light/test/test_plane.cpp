@@ -40,6 +40,7 @@
  //M*/
 
 #include "test_precomp.hpp"
+#include "opencv2/stereo.hpp"
 
 namespace opencv_test { namespace {
 
@@ -263,12 +264,12 @@ void CV_PlaneTest::run( int )
   // Computing stereo rectify parameters
   Mat R1, R2, P1, P2, Q;
   Rect validRoi[2];
-  stereoRectify( cam1intrinsics, cam1distCoeffs, cam2intrinsics, cam2distCoeffs, imagesSize, R, T, R1, R2, P1, P2, Q, 0,
+  stereo::stereoRectify( cam1intrinsics, cam1distCoeffs, cam2intrinsics, cam2distCoeffs, imagesSize, R, T, R1, R2, P1, P2, Q, 0,
                  -1, imagesSize, &validRoi[0], &validRoi[1] );
 
   Mat map1x, map1y, map2x, map2y;
-  initUndistortRectifyMap( cam1intrinsics, cam1distCoeffs, R1, P1, imagesSize, CV_32FC1, map1x, map1y );
-  initUndistortRectifyMap( cam2intrinsics, cam2distCoeffs, R2, P2, imagesSize, CV_32FC1, map2x, map2y );
+  cv3d::initUndistortRectifyMap( cam1intrinsics, cam1distCoeffs, R1, P1, imagesSize, CV_32FC1, map1x, map1y );
+  cv3d::initUndistortRectifyMap( cam2intrinsics, cam2distCoeffs, R2, P2, imagesSize, CV_32FC1, map2x, map2y );
 
   vector<vector<Mat> > captured_pattern;
   captured_pattern.resize( 2 );
@@ -314,7 +315,7 @@ void CV_PlaneTest::run( int )
   // Computing the point cloud
   Mat pointcloud;
   disparityMap.convertTo( disparityMap, CV_32FC1 );
-  reprojectImageTo3D( disparityMap, pointcloud, Q, true, -1 );
+  stereo::reprojectImageTo3D( disparityMap, pointcloud, Q, true, -1 );
   // from mm (unit of calibration) to m
   pointcloud = pointcloud / 1000;
 

@@ -225,10 +225,10 @@ void AffineTransformerImpl::estimateTransformation(InputArray _pts1, InputArray 
     Mat affine;
     if (fullAffine)
     {
-        estimateAffine2D(shape1, shape2).convertTo(affine, CV_32F);
+        cv3d::estimateAffine2D(shape1, shape2).convertTo(affine, CV_32F);
     } else
     {
-        estimateAffinePartial2D(shape1, shape2).convertTo(affine, CV_32F);
+        cv3d::estimateAffinePartial2D(shape1, shape2).convertTo(affine, CV_32F);
     }
 
     if (affine.empty())

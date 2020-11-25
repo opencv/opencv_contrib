@@ -184,7 +184,7 @@ namespace rgbd
 
                 // Project an entire row of points with distortion.
                 // Doing this for the entire image at once would require more memory.
-                projectPoints(transformedCloud.row(y),
+                cv3d::projectPoints(transformedCloud.row(y),
                               Vec3f(0,0,0),
                               Vec3f(0,0,0),
                               registeredCameraMatrix,

@@ -420,7 +420,7 @@ void DisparityWLSFilterImpl::ParallelMatOp_ParBody::operator() (const Range& ran
         (wls->*ops[i])(*src[i],*dst[i]);
 }
 
-Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left)
+Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<stereo::StereoMatcher> matcher_left)
 {
     Ptr<DisparityWLSFilter> wls;
     matcher_left->setDisp12MaxDiff(1000000);
@@ -431,14 +431,14 @@ Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left
     int wsize    = matcher_left->getBlockSize();
     int wsize2   = wsize/2;
 
-    if(Ptr<StereoBM> bm = matcher_left.dynamicCast<StereoBM>())
+    if(Ptr<stereo::StereoBM> bm = matcher_left.dynamicCast<stereo::StereoBM>())
     {
         bm->setTextureThreshold(0);
         bm->setUniquenessRatio(0);
         wls = DisparityWLSFilterImpl::create(true,max(0,min_disp+num_disp)+wsize2,max(0,-min_disp)+wsize2,wsize2,wsize2,min_disp);
         wls->setDepthDiscontinuityRadius((int)ceil(0.33*wsize));
     }
-    else if(Ptr<StereoSGBM> sgbm = matcher_left.dynamicCast<StereoSGBM>())
+    else if(Ptr<stereo::StereoSGBM> sgbm = matcher_left.dynamicCast<stereo::StereoSGBM>())
     {
         sgbm->setUniquenessRatio(0);
         wls = DisparityWLSFilterImpl::create(true,max(0,min_disp+num_disp),max(0,-min_disp),0,0,min_disp);
@@ -450,14 +450,14 @@ Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left
     return wls;
 }
 
-Ptr<StereoMatcher> createRightMatcher(Ptr<StereoMatcher> matcher_left)
+Ptr<stereo::StereoMatcher> createRightMatcher(Ptr<stereo::StereoMatcher> matcher_left)
 {
     int min_disp = matcher_left->getMinDisparity();
     int num_disp = matcher_left->getNumDisparities();
     int wsize    = matcher_left->getBlockSize();
-    if(Ptr<StereoBM> bm = matcher_left.dynamicCast<StereoBM>())
+    if(Ptr<stereo::StereoBM> bm = matcher_left.dynamicCast<stereo::StereoBM>())
     {
-        Ptr<StereoBM> right_bm = StereoBM::create(num_disp,wsize);
+        Ptr<stereo::StereoBM> right_bm = stereo::StereoBM::create(num_disp,wsize);
         right_bm->setMinDisparity(-(min_disp+num_disp)+1);
         right_bm->setTextureThreshold(0);
         right_bm->setUniquenessRatio(0);
@@ -465,9 +465,9 @@ Ptr<StereoMatcher> createRightMatcher(Ptr<StereoMatcher> matcher_left)
         right_bm->setSpeckleWindowSize(0);
         return right_bm;
     }
-    else if(Ptr<StereoSGBM> sgbm = matcher_left.dynamicCast<StereoSGBM>())
+    else if(Ptr<stereo::StereoSGBM> sgbm = matcher_left.dynamicCast<stereo::StereoSGBM>())
     {
-        Ptr<StereoSGBM> right_sgbm = StereoSGBM::create(-(min_disp+num_disp)+1,num_disp,wsize);
+        Ptr<stereo::StereoSGBM> right_sgbm = stereo::StereoSGBM::create(-(min_disp+num_disp)+1,num_disp,wsize);
         right_sgbm->setUniquenessRatio(0);
         right_sgbm->setP1(sgbm->getP1());
         right_sgbm->setP2(sgbm->getP2());

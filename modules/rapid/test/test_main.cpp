@@ -22,13 +22,13 @@ TEST(CV_Rapid, rapid)
     // camera setup
     Size sz(1280, 720);
 
-    Mat K = getDefaultNewCameraMatrix(Matx33f::diag(Vec3f(800, 800, 1)), sz, true);
+    Mat K = cv3d::getDefaultNewCameraMatrix(Matx33f::diag(Vec3f(800, 800, 1)), sz, true);
     Vec3f trans = {0, 0, 5};
     Vec3f rot = {0.7f, 0.6f, 0};
 
     // draw something
     Mat pts2d;
-    projectPoints(vtx, rot, trans, K, noArray(), pts2d);
+    cv3d::projectPoints(vtx, rot, trans, K, noArray(), pts2d);
 
     Mat_<uchar> img(sz, uchar(0));
     rapid::drawWireframe(img, pts2d, tris, Scalar(255), LINE_8);

@@ -196,7 +196,7 @@ struct OLSTrackerImpl : public OLSTracker
             if (pts2d.rows < 3)
                 return 0;
 
-            solvePnPRefineLM(pts3d, pts2d, K, cv::noArray(), rvec, tvec);
+            cv3d::solvePnPRefineLM(pts3d, pts2d, K, cv::noArray(), rvec, tvec);
 
             updateFgBgHist(bundleHSV, cols);
 

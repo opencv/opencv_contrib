@@ -9,7 +9,7 @@
 #include <iostream>
 #include <fstream>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/rgbd.hpp>
@@ -202,7 +202,7 @@ public:
             distCoeffs(1) = Kinect2Params::k2;
             distCoeffs(4) = Kinect2Params::k3;
             if(useKinect2Workarounds)
-                initUndistortRectifyMap(camMatrix, distCoeffs, cv::noArray(),
+                cv3d::initUndistortRectifyMap(camMatrix, distCoeffs, cv::noArray(),
                                         camMatrix, frameSize, CV_16SC2,
                                         undistortMap1, undistortMap2);
         }

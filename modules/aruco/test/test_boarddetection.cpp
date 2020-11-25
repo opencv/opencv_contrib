@@ -64,7 +64,7 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
     rotX.ptr< double >(0)[2] = 0;
 
     Mat camRvec, camTvec;
-    composeRT(rotZ, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotX, Mat(3, 1, CV_64FC1, Scalar::all(0)),
+    cv3d::composeRT(rotZ, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotX, Mat(3, 1, CV_64FC1, Scalar::all(0)),
               camRvec, camTvec);
 
     // now pitch and yaw angles
@@ -78,11 +78,11 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
     rotYaw.ptr< double >(0)[1] = 0;
     rotYaw.ptr< double >(0)[2] = 0;
 
-    composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
+    cv3d::composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
               Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
 
     // compose both rotations
-    composeRT(camRvec, Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec,
+    cv3d::composeRT(camRvec, Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec,
               Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
 
     // Tvec, just move in z (camera) direction the specific distance
@@ -107,7 +107,7 @@ static void projectMarker(Mat &img, Ptr<aruco::Dictionary> &dictionary, int id,
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector< Point2f > corners;
-    projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
+    cv3d::projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
     // get perspective transform
     vector< Point2f > originalCorners;
@@ -229,7 +229,7 @@ void CV_ArucoBoardPose::run(int) {
                     }
 
                     vector< Point2f > projectedCorners;
-                    projectPoints(gridboard->objPoints[foundIdx], rvec, tvec, cameraMatrix, distCoeffs,
+                    cv3d::projectPoints(gridboard->objPoints[foundIdx], rvec, tvec, cameraMatrix, distCoeffs,
                                   projectedCorners);
 
                     for(int c = 0; c < 4; c++) {
@@ -379,7 +379,7 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     ASSERT_EQ(nUsed, 2);
 
     cv::Matx33d rotm; cv::Point3d out;
-    cv::Rodrigues(rvec, rotm);
+    cv3d::Rodrigues(rvec, rotm);
     out = cv::Point3d(tvec) + rotm*Point3d(board.objPoints[0][0]);
     ASSERT_GT(out.z, 0);
 
@@ -399,7 +399,7 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     nUsed = cv::aruco::estimatePoseBoard(corners, board.ids, boardPtr, cameraMatrix, Mat(), rvec, tvec, true);
     ASSERT_EQ(nUsed, 2);
 
-    cv::Rodrigues(rvec, rotm);
+    cv3d::Rodrigues(rvec, rotm);
     out = cv::Point3d(tvec) + rotm*Point3d(board.objPoints[0][0]);
     ASSERT_GT(out.z, 0);
 }

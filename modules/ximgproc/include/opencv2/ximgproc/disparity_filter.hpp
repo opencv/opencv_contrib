@@ -39,7 +39,7 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/stereo.hpp>
 
 namespace cv {
 namespace ximgproc {
@@ -128,7 +128,7 @@ filter parameters automatically based on the matcher instance. Currently support
 @param matcher_left stereo matcher instance that will be used with the filter
 */
 CV_EXPORTS_W
-Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<StereoMatcher> matcher_left);
+Ptr<DisparityWLSFilter> createDisparityWLSFilter(Ptr<stereo::StereoMatcher> matcher_left);
 
 /** @brief Convenience method to set up the matcher for computing the right-view disparity map
 that is required in case of filtering with confidence.
@@ -136,7 +136,7 @@ that is required in case of filtering with confidence.
 @param matcher_left main stereo matcher instance that will be used with the filter
 */
 CV_EXPORTS_W
-Ptr<StereoMatcher> createRightMatcher(Ptr<StereoMatcher> matcher_left);
+Ptr<stereo::StereoMatcher> createRightMatcher(Ptr<stereo::StereoMatcher> matcher_left);
 
 /** @brief More generic factory method, create instance of DisparityWLSFilter and execute basic
 initialization routines. When using this method you will need to set-up the ROI, matchers and

@@ -40,6 +40,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/aruco/charuco.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/calib.hpp>
 
 
 namespace cv {
@@ -417,7 +418,7 @@ static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorne
     // project chessboard corners
     vector< Point2f > allChessboardImgPoints;
 
-    projectPoints(_board->chessboardCorners, approximatedRvec, approximatedTvec, _cameraMatrix,
+    cv3d::projectPoints(_board->chessboardCorners, approximatedRvec, approximatedTvec, _cameraMatrix,
                   _distCoeffs, allChessboardImgPoints);
 
 
@@ -641,7 +642,7 @@ bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds
     // points need to be in different lines, check if detected points are enough
     if(!_arePointsEnoughForPoseEstimation(objPoints)) return false;
 
-    solvePnP(objPoints, _charucoCorners, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
+    cv3d::solvePnP(objPoints, _charucoCorners, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     return true;
 }
@@ -677,7 +678,7 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
         }
     }
 
-    return calibrateCamera(allObjPoints, _charucoCorners, imageSize, _cameraMatrix, _distCoeffs,
+    return calib::calibrateCamera(allObjPoints, _charucoCorners, imageSize, _cameraMatrix, _distCoeffs,
                            _rvecs, _tvecs, _stdDeviationsIntrinsics, _stdDeviationsExtrinsics,
                            _perViewErrors, flags, criteria);
 }

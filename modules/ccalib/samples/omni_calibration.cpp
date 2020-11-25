@@ -1,7 +1,8 @@
 #include "opencv2/ccalib/omnidir.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
+#include "opencv2/calib.hpp"
 #include "opencv2/highgui.hpp"
 #include <vector>
 #include <iostream>
@@ -39,7 +40,7 @@ static bool detecChessboardCorners(const vector<string>& list, vector<string>& l
         cout << list[i] << "... ";
         Mat points;
         img = imread(list[i], IMREAD_GRAYSCALE);
-        bool found = findChessboardCorners( img, boardSize, points);
+        bool found = calib::findChessboardCorners( img, boardSize, points);
         if (found)
         {
             if (points.type() != CV_64FC2)

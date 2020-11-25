@@ -10,7 +10,7 @@
 
 #ifdef HAVE_OPENCV_CALIB3D
 
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
@@ -241,7 +241,7 @@ int main(int ac, char ** av)
 
 int main()
 {
-    std::cerr << "OpenCV was built without calib3d module" << std::endl;
+    std::cerr << "OpenCV was built without 3d module" << std::endl;
     return 0;
 }
 

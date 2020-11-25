@@ -7,7 +7,7 @@
 #include <opencv2/rgbd.hpp>
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utility.hpp>
 
@@ -65,7 +65,7 @@ void writeResults( const string& filename, const vector<string>& timestamps, con
         CV_Assert( Rt_curr.type() == CV_64FC1 );
 
         Mat R = Rt_curr(Rect(0,0,3,3)), rvec;
-        Rodrigues(R, rvec);
+        cv3d::Rodrigues(R, rvec);
         double alpha = norm( rvec );
         if(alpha > DBL_MIN)
             rvec = rvec / alpha;

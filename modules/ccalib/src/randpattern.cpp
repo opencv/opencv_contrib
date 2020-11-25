@@ -58,6 +58,9 @@
 using namespace std;
 
 namespace cv { namespace randpattern {
+
+using namespace cv3d;
+
 RandomPatternCornerFinder::RandomPatternCornerFinder(float patternWidth, float patternHeight,
     int nminiMatch, int depth, int verbose, int showExtraction, Ptr<FeatureDetector> detector, Ptr<DescriptorExtractor> descriptor,
     Ptr<DescriptorMatcher> matcher)

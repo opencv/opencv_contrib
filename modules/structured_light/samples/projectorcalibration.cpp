@@ -47,10 +47,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
+#include <opencv2/calib.hpp>
 
 using namespace std;
 using namespace cv;
+using namespace cv::calib;
 
 static const char* keys =
 {
@@ -386,7 +388,7 @@ void fromCamToWorld( Mat cameraMatrix, vector<Mat> rV, vector<Mat> tV,
         rV[i].convertTo(r, CV_32F);
         tV[i].convertTo(t, CV_32F);
 
-        Rodrigues(r, rMat);
+        cv3d::Rodrigues(r, rMat);
         Mat transPlaneToCam = rMat.inv()*t;
 
         vector<Point3f> wpTemp;

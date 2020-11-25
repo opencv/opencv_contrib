@@ -64,7 +64,7 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
     rotX.ptr< double >(0)[2] = 0;
 
     Mat camRvec, camTvec;
-    composeRT(rotZ, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotX, Mat(3, 1, CV_64FC1, Scalar::all(0)),
+    cv3d::composeRT(rotZ, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotX, Mat(3, 1, CV_64FC1, Scalar::all(0)),
               camRvec, camTvec);
 
     // now pitch and yaw angles
@@ -78,11 +78,11 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
     rotYaw.ptr< double >(0)[1] = 0;
     rotYaw.ptr< double >(0)[2] = 0;
 
-    composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
+    cv3d::composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
               Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
 
     // compose both rotations
-    composeRT(camRvec, Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec,
+    cv3d::composeRT(camRvec, Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec,
               Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
 
     // Tvec, just move in z (camera) direction the specific distance
@@ -105,7 +105,7 @@ static void projectMarker(Mat &img, Ptr<aruco::Dictionary> dictionary, int id,
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector< Point2f > corners;
-    projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
+    cv3d::projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
     vector< Point2f > originalCorners;
     originalCorners.push_back(Point2f(0, 0));
@@ -152,7 +152,7 @@ static Mat projectChessboard(int squaresX, int squaresY, float squareSize, Size 
 
             vector< vector< Point2f > > projectedCorners;
             projectedCorners.push_back(vector< Point2f >());
-            projectPoints(squareCorners, rvec, tvec, cameraMatrix, distCoeffs, projectedCorners[0]);
+            cv3d::projectPoints(squareCorners, rvec, tvec, cameraMatrix, distCoeffs, projectedCorners[0]);
 
             vector< vector< Point > > projectedCornersInt;
             projectedCornersInt.push_back(vector< Point >());
@@ -269,7 +269,7 @@ void CV_CharucoDetection::run(int) {
 
                 // check results
                 vector< Point2f > projectedCharucoCorners;
-                projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+                cv3d::projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
                 for(unsigned int i = 0; i < charucoIds.size(); i++) {
@@ -374,7 +374,7 @@ void CV_CharucoPoseEstimation::run(int) {
 
                 // check result
                 vector< Point2f > projectedCharucoCorners;
-                projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+                cv3d::projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
                 for(unsigned int i = 0; i < charucoIds.size(); i++) {
@@ -485,7 +485,7 @@ void CV_CharucoDiamondDetection::run(int) {
 
 
                 vector< Point2f > projectedDiamondCorners;
-                projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+                cv3d::projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedDiamondCorners);
 
                 vector< Point2f > projectedDiamondCornersReorder(4);
@@ -518,7 +518,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 diamondObjPoints[1] = Vec3f(squareLength / 2.f, squareLength / 2.f, 0);
                 diamondObjPoints[2] = Vec3f(squareLength / 2.f, -squareLength / 2.f, 0);
                 diamondObjPoints[3] = Vec3f(-squareLength / 2.f, -squareLength / 2.f, 0);
-                projectPoints(diamondObjPoints, estimatedRvec[0], estimatedTvec[0], cameraMatrix,
+                cv3d::projectPoints(diamondObjPoints, estimatedRvec[0], estimatedTvec[0], cameraMatrix,
                               distCoeffs, projectedDiamondCornersPose);
 
                 for(unsigned int i = 0; i < 4; i++) {

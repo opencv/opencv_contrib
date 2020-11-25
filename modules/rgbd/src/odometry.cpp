@@ -426,7 +426,7 @@ void computeProjectiveMatrix(const Mat& ksi, Mat& Rt)
     Mat R = Rt(Rect(0,0,3,3));
     Mat rvec = ksi.rowRange(0,3);
 
-    Rodrigues(rvec, R);
+    cv3d::Rodrigues(rvec, R);
 
     Rt.at<double>(0,3) = ksi.at<double>(3);
     Rt.at<double>(1,3) = ksi.at<double>(4);
@@ -779,7 +779,7 @@ bool testDeltaTransformation(const Mat& deltaRt, double maxTranslation, double m
     double translation = norm(deltaRt(Rect(3, 0, 1, 3)));
 
     Mat rvec;
-    Rodrigues(deltaRt(Rect(0,0,3,3)), rvec);
+    cv3d::Rodrigues(deltaRt(Rect(0,0,3,3)), rvec);
 
     double rotation = norm(rvec) * 180. / CV_PI;
 
@@ -935,7 +935,7 @@ warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
     std::vector<Point2f> points2d;
     Mat transformedCloud;
     perspectiveTransform(cloud, transformedCloud, Rt);
-    projectPoints(transformedCloud.reshape(3, 1), Mat::eye(3, 3, CV_64FC1), Mat::zeros(3, 1, CV_64FC1), cameraMatrix,
+    cv3d::projectPoints(transformedCloud.reshape(3, 1), Mat::eye(3, 3, CV_64FC1), Mat::zeros(3, 1, CV_64FC1), cameraMatrix,
                 distCoeff, points2d);
 
     _warpedImage.create(image.size(), image.type());

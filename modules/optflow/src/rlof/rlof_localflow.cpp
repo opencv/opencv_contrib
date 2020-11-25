@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "../precomp.hpp"
 
-#include "opencv2/calib3d.hpp"  // findHomography
+#include "opencv2/3d.hpp"  // findHomography
 #include "rlof_localflow.h"
 #include "berlof_invoker.hpp"
 #include "rlof_invoker.hpp"
@@ -658,7 +658,7 @@ void preprocess(Ptr<CImageBuffer> prevPyramids[2],
     if (noPoints < 8)
         return;
 
-    cv::findHomography(prevPointsMat(cv::Rect(0, 0, 1, noPoints)), currPointsMat(cv::Rect(0, 0, 1, noPoints)), cv::RANSAC, medianDist, mask).convertTo(homography, CV_32FC1);
+    cv3d::findHomography(prevPointsMat(cv::Rect(0, 0, 1, noPoints)), currPointsMat(cv::Rect(0, 0, 1, noPoints)), cv3d::RANSAC, medianDist, mask).convertTo(homography, CV_32FC1);
 
     if (homography.empty())
         return;

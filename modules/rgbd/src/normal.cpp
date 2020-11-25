@@ -533,7 +533,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
       }
 
       map_.create(rows_, cols_);
-      projectPoints(points3d, Mat(3,1,CV_32FC1,Scalar::all(0.0f)), Mat(3,1,CV_32FC1,Scalar::all(0.0f)), K_, Mat(), map_);
+      cv3d::projectPoints(points3d, Mat(3,1,CV_32FC1,Scalar::all(0.0f)), Mat(3,1,CV_32FC1,Scalar::all(0.0f)), K_, Mat(), map_);
       map_ = map_.reshape(2, rows_);
       convertMaps(map_, Mat(), xy_, fxy_, CV_16SC2);
 

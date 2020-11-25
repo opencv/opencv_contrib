@@ -45,8 +45,9 @@
 #define __OPENCV_STEREO_HPP__
 
 #include "opencv2/core.hpp"
-#include "opencv2/stereo/descriptor.hpp"
-#include <opencv2/stereo/quasi_dense_stereo.hpp>
+#include "opencv2/stereo.hpp"
+#include "opencv2/xstereo/descriptor.hpp"
+#include <opencv2/xstereo/quasi_dense_stereo.hpp>
 
 /**
 @defgroup stereo Stereo Correspondance Algorithms
@@ -57,58 +58,6 @@ namespace cv
 {
     namespace stereo
     {
-        //! @addtogroup stereo
-        //! @{
-        /** @brief Filters off small noise blobs (speckles) in the disparity map
-        @param img The input 16-bit signed disparity image
-        @param newVal The disparity value used to paint-off the speckles
-        @param maxSpeckleSize The maximum speckle size to consider it a speckle. Larger blobs are not
-        affected by the algorithm
-        @param maxDiff Maximum difference between neighbor disparity pixels to put them into the same
-        blob. Note that since StereoBM, StereoSGBM and may be other algorithms return a fixed-point
-        disparity map, where disparity values are multiplied by 16, this scale factor should be taken into
-        account when specifying this parameter value.
-        @param buf The optional temporary buffer to avoid memory allocation within the function.
-        */
-        /** @brief The base class for stereo correspondence algorithms.
-        */
-        class StereoMatcher : public Algorithm
-        {
-        public:
-            enum { DISP_SHIFT = 4,
-                DISP_SCALE = (1 << DISP_SHIFT)
-            };
-
-            /** @brief Computes disparity map for the specified stereo pair
-
-            @param left Left 8-bit single-channel image.
-            @param right Right image of the same size and the same type as the left one.
-            @param disparity Output disparity map. It has the same size as the input images. Some algorithms,
-            like StereoBM or StereoSGBM compute 16-bit fixed-point disparity map (where each disparity value
-            has 4 fractional bits), whereas other algorithms output 32-bit floating-point disparity map.
-            */
-            virtual void compute( InputArray left, InputArray right,
-                OutputArray disparity ) = 0;
-
-            virtual int getMinDisparity() const = 0;
-            virtual void setMinDisparity(int minDisparity) = 0;
-
-            virtual int getNumDisparities() const = 0;
-            virtual void setNumDisparities(int numDisparities) = 0;
-
-            virtual int getBlockSize() const = 0;
-            virtual void setBlockSize(int blockSize) = 0;
-
-            virtual int getSpeckleWindowSize() const = 0;
-            virtual void setSpeckleWindowSize(int speckleWindowSize) = 0;
-
-            virtual int getSpeckleRange() const = 0;
-            virtual void setSpeckleRange(int speckleRange) = 0;
-
-            virtual int getDisp12MaxDiff() const = 0;
-            virtual void setDisp12MaxDiff(int disp12MaxDiff) = 0;
-
-        };
         //!speckle removal algorithms. These algorithms have the purpose of removing small regions
         enum {
             CV_SPECKLE_REMOVAL_ALGORITHM, CV_SPECKLE_REMOVAL_AVG_ALGORITHM
@@ -172,7 +121,7 @@ namespace cv
             The function create StereoBM object. You can then call StereoBM::compute() to compute disparity for
             a specific stereo pair.
             */
-            CV_EXPORTS static Ptr< cv::stereo::StereoBinaryBM > create(int numDisparities = 0, int blockSize = 9);
+            CV_EXPORTS static Ptr<StereoBinaryBM > create(int numDisparities = 0, int blockSize = 9);
         };
 
         /** @brief The class implements the modified H. Hirschmuller algorithm @cite HH08 that differs from the original
@@ -263,7 +212,7 @@ namespace cv
             set StereoSGBM::numDisparities at minimum. The second constructor enables you to set each parameter
             to a custom value.
             */
-            CV_EXPORTS static Ptr<cv::stereo::StereoBinarySGBM> create(int minDisparity, int numDisparities, int blockSize,
+            CV_EXPORTS static Ptr<StereoBinarySGBM> create(int minDisparity, int numDisparities, int blockSize,
                 int P1 = 100, int P2 = 1000, int disp12MaxDiff = 1,
                 int preFilterCap = 0, int uniquenessRatio = 5,
                 int speckleWindowSize = 400, int speckleRange = 200,

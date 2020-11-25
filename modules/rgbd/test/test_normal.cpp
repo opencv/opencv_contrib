@@ -6,7 +6,7 @@
 
 #include "test_precomp.hpp"
 #include <opencv2/rgbd.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 
 namespace opencv_test { namespace {
 
@@ -65,7 +65,7 @@ void points3dToDepth16U(const Mat_<Vec3f>& points3d, Mat& depthMap)
   depthMap = Mat::zeros(H, W, CV_32F);
   Vec3f R(0.0,0.0,0.0);
   Vec3f T(0.0,0.0,0.0);
-  cv::projectPoints(points3dvec, R, T, K, Mat(), img_points);
+  cv3d::projectPoints(points3dvec, R, T, K, Mat(), img_points);
 
   int index = 0;
   for(int i = 0; i < H; i++)

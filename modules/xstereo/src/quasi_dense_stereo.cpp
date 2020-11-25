@@ -4,7 +4,7 @@
 
 #include "precomp.hpp"
 #include <opencv2/video/tracking.hpp>
-#include <opencv2/stereo/quasi_dense_stereo.hpp>
+#include <opencv2/xstereo/quasi_dense_stereo.hpp>
 #include <queue>
 
 

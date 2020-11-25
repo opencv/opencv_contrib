@@ -58,6 +58,7 @@
  */
 #include "precomp.hpp"
 #include "opencv2/ccalib/omnidir.hpp"
+#include "opencv2/stereo.hpp"
 #include <fstream>
 #include <iostream>
 namespace cv { namespace
@@ -125,7 +126,7 @@ void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints
 
     Matx33d R;
     Matx<double, 3, 9> dRdom;
-    Rodrigues(om, R, dRdom);
+    cv3d::Rodrigues(om, R, dRdom);
 
     JacobianRow *Jn = 0;
     if (jacobian.needed())
@@ -286,7 +287,7 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
     {
         cv::Vec3d rvec;
         R.getMat().convertTo(rvec, CV_64F);
-        cv::Rodrigues(rvec, RR);
+        cv3d::Rodrigues(rvec, RR);
     }
     else if (!R.empty() && R.size() == Size(3,3))
     {
@@ -390,7 +391,7 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
     {
         cv::Vec3d rvec;
         R.getMat().convertTo(rvec, CV_64F);
-        cv::Rodrigues(rvec, RR);
+        cv3d::Rodrigues(rvec, RR);
     }
     else if (!R.empty() && R.size() == Size(3, 3))
         R.getMat().convertTo(RR, CV_64F);
@@ -669,7 +670,7 @@ void cv::omnidir::internal::initializeCalibration(InputArrayOfArrays patternPoin
                           r1[1], r2[1], r3[1],
                           r1[2], r2[2], r3[2]);
                 Vec3d om;
-                Rodrigues(R, om);
+                cv3d::Rodrigues(R, om);
 
                 // project pattern points to images
                 Mat projedImgPoints;
@@ -785,13 +786,13 @@ void cv::omnidir::internal::initializeStereoCalibration(InputArrayOfArrays objec
     Mat R1, R2, T1, T2, omLR, TLR, RLR;
     for (int i = 0; i < n_inter; ++i)
     {
-        Rodrigues(omAll1[i], R1);
-        Rodrigues(omAll2[i], R2);
+        cv3d::Rodrigues(omAll1[i], R1);
+        cv3d::Rodrigues(omAll2[i], R2);
         T1 = Mat(tAll1[i]).reshape(1, 3);
         T2 = Mat(tAll2[i]).reshape(1, 3);
         RLR = R2 * R1.t();
         TLR = T2 - RLR*T1;
-        Rodrigues(RLR, omLR);
+        cv3d::Rodrigues(RLR, omLR);
         omLR.reshape(3, 1).copyTo(omEstAll.col(i));
         TLR.reshape(3, 1).copyTo(tEstAll.col(i));
     }
@@ -1030,8 +1031,8 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
 
     //% Rotations:
     Mat R1, R2, R3, dR1dom1(9, 3, CV_64FC1), dR2dom2;
-    Rodrigues(om1, R1, dR1dom1);
-    Rodrigues(om2, R2, dR2dom2);
+    cv3d::Rodrigues(om1, R1, dR1dom1);
+    cv3d::Rodrigues(om2, R2, dR2dom2);
     //JRodriguesMatlab(dR1dom1, dR1dom1);
     //JRodriguesMatlab(dR2dom2, dR2dom2);
     dR1dom1 = dR1dom1.t();
@@ -1040,10 +1041,10 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
     R3 = R2 * R1;
     Mat dR3dR2, dR3dR1;
     //dAB(R2, R1, dR3dR2, dR3dR1);
-    matMulDeriv(R2, R1, dR3dR2, dR3dR1);
+    cv3d::matMulDeriv(R2, R1, dR3dR2, dR3dR1);
 
     Mat dom3dR3;
-    Rodrigues(R3, om3, dom3dR3);
+    cv3d::Rodrigues(R3, om3, dom3dR3);
     //JRodriguesMatlab(dom3dR3, dom3dR3);
     dom3dR3 = dom3dR3.t();
     dom3dom1 = dom3dR3 * dR3dR1 * dR1dom1;
@@ -1055,7 +1056,7 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
     Mat T3t = R2 * T1;
     Mat dT3tdR2, dT3tdT1;
     //dAB(R2, T1, dT3tdR2, dT3tdT1);
-    matMulDeriv(R2, T1, dT3tdR2, dT3tdT1);
+    cv3d::matMulDeriv(R2, T1, dT3tdR2, dT3tdT1);
     Mat dT3tdom2 = dT3tdR2 * dR2dom2;
     T3 = T3t + T2;
     dT3dT1 = dT3tdT1;
@@ -1409,7 +1410,7 @@ void cv::omnidir::stereoReconstruct(InputArray image1, InputArray image2, InputA
     }
     else if (R.total() == 3)
     {
-        Rodrigues(R.getMat(), _R);
+        cv3d::Rodrigues(R.getMat(), _R);
         _R.convertTo(_R, CV_64F);
     }
     // stereo rectify so that stereo matching can be applied in one line
@@ -1434,7 +1435,7 @@ void cv::omnidir::stereoReconstruct(InputArray image1, InputArray image2, InputA
 
     //cv::StereoSGBM matching(0, numDisparities, SADWindowSize, 8*channel*SADWindowSize*SADWindowSize, 32*channel*SADWindowSize*SADWindowSize);
     //matching(undis1, undis2, _depthMap);
-	Ptr<StereoSGBM> sgbm = StereoSGBM::create(0, numDisparities, SADWindowSize, 8 * channel*SADWindowSize*SADWindowSize, 32 * channel*SADWindowSize*SADWindowSize);
+	Ptr<stereo::StereoSGBM> sgbm = stereo::StereoSGBM::create(0, numDisparities, SADWindowSize, 8 * channel*SADWindowSize*SADWindowSize, 32 * channel*SADWindowSize*SADWindowSize);
 
 	sgbm->compute(undis1, undis2, _disMap);
 
@@ -1849,12 +1850,12 @@ void cv::omnidir::internal::estimateUncertaintiesStereo(InputArrayOfArrays objec
 
         Mat x;
         Mat _R, _R2, _R1, _T2, _T1, _om2;
-        Rodrigues(_om, _R);
-        Rodrigues(_omL[i], _R1);
+        cv3d::Rodrigues(_om, _R);
+        cv3d::Rodrigues(_omL[i], _R1);
         _T1 = Mat(_tL[i]);
         _R2 = _R * _R1;
         _T2 = _R * _T1 + Mat(_T);
-        Rodrigues(_R2, _om2);
+        cv3d::Rodrigues(_R2, _om2);
 
         omnidir::projectPoints(objPointsi, x, _om2, _T2, _K2, _xi2, _D2, cv::noArray());
 
@@ -1966,7 +1967,7 @@ double cv::omnidir::internal::computeMeanReproErrStereo(InputArrayOfArrays objec
     int n = (int)objectPoints.total();
     Mat _omL = omL.getMat(), _TL = TL.getMat();
     Mat _om = om.getMat(), _R, _T = T.getMat();
-    Rodrigues(_om, _R);
+    cv3d::Rodrigues(_om, _R);
     Mat _K1 = K1.getMat(), _K2 = K2.getMat();
     Mat _D1 = D1.getMat(), _D2 = D2.getMat();
 
@@ -1983,11 +1984,11 @@ double cv::omnidir::internal::computeMeanReproErrStereo(InputArrayOfArrays objec
     {
         Mat imgPoints;
         Mat _omRi,_RRi,_TRi,_RLi, _TLi;
-        Rodrigues(_omL.at<Vec3d>(i), _RLi);
+        cv3d::Rodrigues(_omL.at<Vec3d>(i), _RLi);
         _TLi = Mat(_TL.at<Vec3d>(i)).reshape(1, 3);
         _RRi = _R * _RLi;
         _TRi = _R * _TLi + _T;
-        Rodrigues(_RRi, _omRi);
+        cv3d::Rodrigues(_RRi, _omRi);
         cv::omnidir::projectPoints(objectPoints.getMat(i), imgPoints, _omRi, _TRi, _K2, xi2, _D2, cv::noArray());
         proImagePoints2.push_back(imgPoints);
     }
@@ -2199,7 +2200,7 @@ void cv::omnidir::stereoRectify(InputArray R, InputArray T, OutputArray R1, Outp
     }
     else if (R.total() == 3)
     {
-        Rodrigues(R.getMat(), _R);
+        cv3d::Rodrigues(R.getMat(), _R);
         _R.convertTo(_R, CV_64F);
     }
 

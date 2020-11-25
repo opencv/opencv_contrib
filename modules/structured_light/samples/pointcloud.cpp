@@ -42,7 +42,8 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
+#include <opencv2/stereo.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/structured_light.hpp>
 #include <opencv2/opencv_modules.hpp>
@@ -54,6 +55,8 @@
 
 using namespace std;
 using namespace cv;
+using namespace cv3d;
+using namespace cv::stereo;
 
 static const char* keys =
 { "{@images_list | | Image list where the captured pattern images are saved}"

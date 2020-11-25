@@ -945,7 +945,7 @@ void CCheckerDetectorImpl::
         if (point_ac.x == ctss[0].x * p || point_ac.y == ctss[0].y * p)
             continue;
         // Find the perspective transformation
-        cv::Matx33f ccTe = cv::findHomography(ctss, cte);
+        cv::Matx33f ccTe = cv3d::findHomography(ctss, cte);
 
         std::vector<cv::Point2f> tbox, ibox;
         transform_points_forward(ccTe, box, tbox);

@@ -513,7 +513,7 @@ Mat MotionEstimatorRansacL2::estimate(InputArray points0, InputArray points1, bo
     else
     {
         std::vector<uchar> mask;
-        M = findHomography(points0, points1, mask, LMEDS);
+        M = findHomography(points0, points1, mask, cv3d::LMEDS);
         for (int i  = 0; i < npoints; ++i)
             if (mask[i]) ninliers++;
     }

@@ -40,6 +40,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/aruco.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/3d.hpp>
+#include <opencv2/calib.hpp>
 
 #include "apriltag_quad_thresh.hpp"
 #include "zarray.hpp"
@@ -767,7 +769,7 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
         float y= (in[i].y - float(camMatrix.at<double>(1, 2))) / float(camMatrix.at<double>(1, 1));
         cornersPoints3d.push_back(Point3f(x,y,1));
     }
-    cv::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
+    cv3d::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
 }
 
 /**
@@ -781,7 +783,7 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 	vector<Point2f> contour2f(nContours.begin(), nContours.end());
 
 	if(!camMatrix.empty() && !distCoeff.empty()){
-		undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
+		cv3d::undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
 	}
 
 	/* 5 groups :: to group the edges
@@ -1077,7 +1079,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
         const int end = range.end;
 
         for (int i = begin; i < end; i++) {
-            solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs, rvecs.at<Vec3d>(i),
+            cv3d::solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs, rvecs.at<Vec3d>(i),
                      tvecs.at<Vec3d>(i));
         }
     });
@@ -1157,7 +1159,7 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
         if(foundIdx == -1) {
             undetectedCorners.push_back(vector< Point2f >());
             undetectedIds.push_back(_board->ids[i]);
-            projectPoints(_board->objPoints[i], rvec, tvec, _cameraMatrix, _distCoeffs,
+            cv3d::projectPoints(_board->objPoints[i], rvec, tvec, _cameraMatrix, _distCoeffs,
                           undetectedCorners.back());
         }
     }
@@ -1222,7 +1224,7 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
     if(imageCornersAll.size() == 0) return;
 
     // get homography from detected markers
-    Mat transformation = findHomography(detectedMarkersObj2DAll, imageCornersAll);
+    Mat transformation = cv3d::findHomography(detectedMarkersObj2DAll, imageCornersAll);
 
     _undetectedMarkersProjectedCorners.resize(undetectedMarkersIds.size());
 
@@ -1447,7 +1449,7 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
     if(objPoints.total() == 0) // 0 of the detected markers in board
         return 0;
 
-    solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
+    cv3d::solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     // divide by four since all the four corners are concatenated in the array for each marker
     return (int)objPoints.total() / 4;
@@ -1588,7 +1590,7 @@ void drawDetectedMarkers(InputOutputArray _image, InputArrayOfArrays _corners,
 void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs, InputArray _rvec,
               InputArray _tvec, float length)
 {
-    drawFrameAxes(_image, _cameraMatrix, _distCoeffs, _rvec, _tvec, length, 3);
+    cv3d::drawFrameAxes(_image, _cameraMatrix, _distCoeffs, _rvec, _tvec, length, 3);
 }
 
 /**
@@ -1732,7 +1734,7 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
         }
     }
 
-    return calibrateCamera(processedObjectPoints, processedImagePoints, imageSize, _cameraMatrix,
+    return calib::calibrateCamera(processedObjectPoints, processedImagePoints, imageSize, _cameraMatrix,
                            _distCoeffs, _rvecs, _tvecs, _stdDeviationsIntrinsics, _stdDeviationsExtrinsics,
                            _perViewErrors, flags, criteria);
 }
