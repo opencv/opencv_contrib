@@ -1,5 +1,5 @@
 #include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/videoio.hpp>
 
 #include <opencv2/ovis.hpp>
@@ -34,7 +34,7 @@ int main()
   cm.at<double>(0, 0) = focal_length; // f_x
   cm.at<double>(1, 1) = focal_length; // f_y
   cm.at<double>(2, 2) = 1; // f_z
-  Mat K = getDefaultNewCameraMatrix(cm, imsize, true);
+  Mat K = cv3d::getDefaultNewCameraMatrix(cm, imsize, true);
 
   // AR scene
   ovis::addResourceLocation("packs/Sinbad.zip"); // shipped with Ogre

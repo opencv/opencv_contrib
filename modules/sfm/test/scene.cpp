@@ -33,7 +33,7 @@
  *
  */
 
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/core.hpp>
 
 #include "test_precomp.hpp"
@@ -81,7 +81,7 @@ generateScene(size_t n_views, size_t n_points, bool is_projective, cv::Matx33d &
     rng.fill(vec, cv::RNG::UNIFORM, 0, 1);
     // Give a random angle to the rotation vector
     vec = vec / cv::norm(vec) * rng.uniform(0.0f, float(2 * CV_PI));
-    cv::Rodrigues(vec, R[i]);
+    cv3d::Rodrigues(vec, R[i]);
     // Create a random translation
     t[i] = cv::Vec3d(rng.uniform(-0.5f, 0.5f), rng.uniform(-0.5f, 0.5f), rng.uniform(1.0f, 2.0f));
     // Make sure the shape is in front of the camera

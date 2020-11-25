@@ -9,12 +9,12 @@
 #include <OgreRectangle2D.h>
 #include <OgreCompositorManager.h>
 
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/core/utils/configuration.private.hpp>
-
 
 namespace cv
 {
+using namespace _3d;
 namespace ovis
 {
 using namespace Ogre;
