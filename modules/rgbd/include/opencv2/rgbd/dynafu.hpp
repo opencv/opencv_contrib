@@ -13,6 +13,7 @@
 #include "kinfu.hpp"
 
 namespace cv {
+
 namespace dynafu {
 
 /** @brief DynamicFusion implementation
@@ -37,6 +38,11 @@ namespace dynafu {
 
   That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use DynamicFusion.
 */
+
+
+/** Backwards compatibility for old versions */
+using Params = kinfu::Params;
+
 class CV_EXPORTS_W DynaFu
 {
 public:
