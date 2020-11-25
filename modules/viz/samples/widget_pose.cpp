@@ -5,7 +5,7 @@
  */
 
 #include <opencv2/viz.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <iostream>
 
 using namespace cv;
@@ -65,7 +65,7 @@ int main()
         translation = sin(translation_phase);
 
         Mat rot_mat;
-        Rodrigues(rot_vec, rot_mat);
+        cv3d::Rodrigues(rot_vec, rot_mat);
 
         /// Construct pose
         Affine3f pose(rot_mat, Vec3f(translation, translation, translation));
