@@ -865,6 +865,7 @@ void HashTSDFVolumeGPU::reset()
     isActive = cv::Mat(buff_lvl, 1, rawType<bool>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
     _indexes = VolumesTable();
+    posesGPU = cv::Mat(buff_lvl, 1, rawType<ocl::KernelArg>());
 }
 
 static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)
@@ -1008,12 +1009,12 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     int totalVolUnitsSize = _indexes.indexesGPU.size();
     Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
 
-    std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
-        " | " << calc_hash(Vec4i(7, 7, 1, 0)) % _indexes.hash_divisor<< std::endl;
+    //std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
+    //    " | " << calc_hash(Vec4i(7, 7, 1, 0)) % _indexes.hash_divisor<< std::endl;
     
     //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
-
+    //std::cout << "maxWeight == " << maxWeight << std::endl;
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
         //ocl::KernelArg::PtrReadWrite(_indexes.volumes),
@@ -1021,11 +1022,10 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
         ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-        // ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val)),
-        // _volUnitsData.getUMat(ACCESS_RW),
-        // isActive.getUMat(ACCESS_RW),
-        // lastVisibleIndexes.getUMat(ACCESS_READ),
-        // ocl::KernelArg::PtrReadOnly(_pixNorms),
+        ocl::KernelArg::PtrReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
+        ocl::KernelArg::PtrReadOnly(_pixNorms),
+        ocl::KernelArg::PtrReadWrite(posesGPU.getUMat(ACCESS_RW)),
+        _lastVolIndex,
         voxelSize,
         volResGpu.val,
         volStrides.val,
@@ -1034,13 +1034,16 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         dfac,
         truncDist,
         int(maxWeight)
-        // ,ocl::KernelArg::PtrReadOnly(_pixNorms)
+        
     );
 
-    int resol = 1;
+    //int resol = 1;
+    int resol = volumeUnitResolution;
     size_t globalSize[3];
-    globalSize[0] = (size_t)resol; // volResolution.x
-    globalSize[1] = (size_t)resol; // volResolution.y
+    globalSize[0] = (size_t)resol; // volumeUnitResolution
+    globalSize[1] = (size_t)resol; // volumeUnitResolution
+    //globalSize[0] = (size_t)depth.rows; // volResolution.x
+    //globalSize[1] = (size_t)depth.cols; // volResolution.y
     globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
 
     if (!k.run(3, globalSize, NULL, true))
@@ -1121,6 +1124,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                     poses.resize(buff_lvl);
                     isActive.resize(buff_lvl);
                     lastVisibleIndexes.resize(buff_lvl);
+                    posesGPU.resize(buff_lvl);
                 }
                 this->indexes.at<Vec3i>(_lastVolIndex, 0) = idx;
                 _indexes.update(idx, _lastVolIndex);
@@ -1151,8 +1155,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         //Affine3f cam2vol(Affine3f(subvolumePose) * Affine3f(cameraPose));
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         ocl::KernelArg pose = ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val));
+        posesGPU.at<ocl::KernelArg>(idx, 0) = pose;
         //ocl::KernelArg pose;
-        //_indexes.update(idx, true, frameId, pose);
 
         _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
             {
@@ -1169,8 +1173,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     //! Get keys for all the allocated volume Units
     std::vector<Vec3i> _totalVolUnits = _indexes.indexes;
-    //for (int i = 0; i < indexes.size().height; i++){_totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));}
-    //std::cout << "lol\n";
+
     //! Mark volumes in the camera frustum as active
     Range _inFrustumRange(0, (int)_totalVolUnits.size());
     auto markActivities = [&](const Range& range) {
@@ -1191,6 +1194,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
                 isActive.at<bool>(idx, 0) = false;
+                _indexes.updateActive(tsdf_idx, false);
                 return;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
@@ -1199,6 +1203,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 assert(idx == _lastVolIndex - 1);
                 lastVisibleIndexes.at<int>(idx, 0) = frameId;
                 isActive.at<bool>(idx, 0) = true;
+                _indexes.update(tsdf_idx, true, frameId);
             }
         }
     };
@@ -1231,9 +1236,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 //! The volume unit should already be added into the Volume from the allocator
                 Matx44f _pose = poses.at<Matx44f>(idx, 0);
 
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
-                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
+                //integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
+                //    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
+                //    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
 
                 //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
                 //! Ensure all active volumeUnits are set to inactive for next integration

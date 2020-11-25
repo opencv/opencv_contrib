@@ -398,11 +398,11 @@ VolumesTable::VolumesTable()
     {
         Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         v.idx = nan4;
-        //v.idx = cv::Vec4i(-2147483648, -2147483648, -2147483648, -2147483648);
         v.row = -1;
         v.nextVolumeRow = -1;
-        v.tmp = i;
-        v.noneed = -555;
+        v.isActive = 0;
+        v.lastVisibleIndex = -1;
+        //v.tmp = i;
     }
 }
 
@@ -463,10 +463,11 @@ void VolumesTable::update(Vec3i indx, int row)
         i = v.nextVolumeRow;
     }
 }
-/*
-void VolumesTable::update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::KernelArg pose)
+
+void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
 {
-    int hash = int(calc_hash(indx) % hash_divisor);
+    Vec4i idx(indx[0], indx[1], indx[2], 0);
+    int hash = int(calc_hash(idx) % hash_divisor);
     int num = 1;
     int start = hash * num * list_size;
     int i = start;
@@ -474,25 +475,54 @@ void VolumesTable::update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::
     while (i != -1)
     {
         Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == indx)
+        if (v.idx == idx)
         {
+            v.isActive = isActive;
+            v.lastVisibleIndex = lastVisibleIndex;
             return;
         }
         //find nan cheking for int or Vec3i
-        if (v.idx == Vec3i(nan3))
+        //if (isNaN(Point3i(v.idx)))
+        if (v.idx[0] == -2147483647)
         {
-            v.idx = indx;
+            v.idx = idx;
+            v.nextVolumeRow = getNextVolume(hash, num, i, start);
             v.isActive = isActive;
             v.lastVisibleIndex = lastVisibleIndex;
-            v.pose = pose;
-            v.nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
+            indexesGPU.push_back(idx);
             return;
         }
         i = v.nextVolumeRow;
     }
 }
-*/
+
+void VolumesTable::updateActive(Vec3i indx, int isActive)
+{
+    Vec4i idx(indx[0], indx[1], indx[2], 0);
+    int hash = int(calc_hash(idx) % hash_divisor);
+    int num = 1;
+    int start = hash * num * list_size;
+    int i = start;
+
+    while (i != -1)
+    {
+        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        if (v.idx == idx)
+        {
+            v.isActive = isActive;
+            return;
+        }
+        //find nan cheking for int or Vec3i
+        //if (isNaN(Point3i(v.idx)))
+        if (v.idx[0] == -2147483647)
+        {
+            return;
+        }
+        i = v.nextVolumeRow;
+    }
+}
+
 int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 {
     if (i != start && i % list_size == 0)

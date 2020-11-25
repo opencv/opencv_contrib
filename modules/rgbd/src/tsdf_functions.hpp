@@ -49,11 +49,9 @@ struct Volume_NODE
     Vec4i idx = Vec4i(-2147483647);
     int32_t row   = -1;
     int32_t nextVolumeRow = -1;
-    //bool isActive = false;
-    //int lastVisibleIndex = -1;
-    //ocl::KernelArg pose;
-    int32_t tmp;
-    int32_t noneed;
+    int32_t isActive;
+    int32_t lastVisibleIndex;
+    //int32_t tmp;
 };
 
 size_t calc_hash(Vec4i x);
@@ -75,7 +73,8 @@ public:
 
     void update(Vec3i indx);
     void update(Vec3i indx, int row);
-    void update(Vec3i indx, bool isActive, int lastVisibleIndex, ocl::KernelArg pose);
+    void update(Vec3i indx, int isActive, int lastVisibleIndex);
+    void updateActive(Vec3i indx, int isActive);
     void expand();
     int getNextVolume(int hash, int& num, int i, int start);
     int find_Volume(Vec3i indx) const;

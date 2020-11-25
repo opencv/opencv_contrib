@@ -929,7 +929,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
     size_t globalSize[2];
     globalSize[0] = (size_t)volResolution.x;
     globalSize[1] = (size_t)volResolution.y;
-
+    std::cout << "volResolution = "<<volResolution << std::endl;
     if(!k.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 }

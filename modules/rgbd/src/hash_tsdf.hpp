@@ -176,6 +176,7 @@ public:
     cv::Mat lastVisibleIndexes;
     cv::Mat _volUnitsData;
 
+    cv::Mat posesGPU;
     cv::UMat _pixNorms;
     cv::Mat volUnitsData;
     VolumesTable _indexes;
