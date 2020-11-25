@@ -45,7 +45,7 @@
 using namespace cv;
 using namespace cv::cuda;
 
-#if !defined HAVE_CUDA || !defined HAVE_OPENCV_CALIB3D || defined(CUDA_DISABLER)
+#if !defined HAVE_CUDA || !defined HAVE_OPENCV_3D || defined(CUDA_DISABLER)
 
 void cv::cuda::transformPoints(const GpuMat&, const Mat&, const Mat&, GpuMat&, Stream&) { throw_no_cuda(); }
 
@@ -54,6 +54,8 @@ void cv::cuda::projectPoints(const GpuMat&, const Mat&, const Mat&, const Mat&, 
 void cv::cuda::solvePnPRansac(const Mat&, const Mat&, const Mat&, const Mat&, Mat&, Mat&, bool, int, float, int, std::vector<int>*) { throw_no_cuda(); }
 
 #else
+
+using namespace cv3d;
 
 namespace cv { namespace cuda { namespace device
 {

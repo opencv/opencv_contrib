@@ -8,7 +8,7 @@
 #include <iostream>
 #include "opencv2/opencv_modules.hpp"
 
-#ifdef HAVE_OPENCV_CALIB3D
+#ifdef HAVE_OPENCV_3D
 
 #include "opencv2/3d.hpp"
 #include "opencv2/videoio.hpp"
@@ -21,6 +21,7 @@
 
 using namespace std;
 using namespace cv;
+using namespace cv3d;
 using namespace cv::xfeatures2d;
 
 static void help(char **av)

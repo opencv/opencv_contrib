@@ -42,11 +42,13 @@
 
 #include "test_precomp.hpp"
 
-#if defined HAVE_CUDA && defined HAVE_OPENCV_CALIB3D
+#if defined HAVE_CUDA && defined HAVE_OPENCV_3D
 
 #include "opencv2/3d.hpp"
 
 namespace opencv_test { namespace {
+
+using namespace cv3d;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // transformPoints
@@ -78,7 +80,7 @@ CUDA_TEST_P(TransformPoints, Accuracy)
     cv::Mat h_dst(dst);
 
     cv::Mat rot;
-    cv::Rodrigues(rvec, rot);
+    cv3d::Rodrigues(rvec, rot);
 
     for (int i = 0; i < h_dst.cols; ++i)
     {
@@ -129,7 +131,7 @@ CUDA_TEST_P(ProjectPoints, Accuracy)
     ASSERT_EQ(MatType(CV_32FC2), MatType(dst.type()));
 
     std::vector<cv::Point2f> dst_gold;
-    cv::projectPoints(src, rvec, tvec, camera_mat, cv::Mat(1, 8, CV_32F, cv::Scalar::all(0)), dst_gold);
+    cv3d::projectPoints(src, rvec, tvec, camera_mat, cv::Mat(1, 8, CV_32F, cv::Scalar::all(0)), dst_gold);
 
     ASSERT_EQ(dst_gold.size(), static_cast<size_t>(dst.cols));
 
@@ -175,7 +177,7 @@ CUDA_TEST_P(SolvePnPRansac, Accuracy)
     cv::Mat tvec_gold;
     rvec_gold = randomMat(cv::Size(3, 1), CV_32F, 0, 1);
     tvec_gold = randomMat(cv::Size(3, 1), CV_32F, 0, 1);
-    cv::projectPoints(object, rvec_gold, tvec_gold, camera_mat, cv::Mat(1, 8, CV_32F, cv::Scalar::all(0)), image_vec);
+    cv3d::projectPoints(object, rvec_gold, tvec_gold, camera_mat, cv::Mat(1, 8, CV_32F, cv::Scalar::all(0)), image_vec);
 
     cv::Mat rvec, tvec;
     std::vector<int> inliers;

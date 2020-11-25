@@ -42,7 +42,7 @@
 
 #include "perf_precomp.hpp"
 
-#ifdef HAVE_OPENCV_CALIB3D
+#ifdef HAVE_OPENCV_3D
 
 #include "opencv2/3d.hpp"
 
@@ -78,7 +78,7 @@ PERF_TEST_P(Count, Calib3D_ProjectPoints,
     {
         cv::Mat dst;
 
-        TEST_CYCLE() cv::projectPoints(src, rvec, tvec, camera_mat, cv::noArray(), dst);
+        TEST_CYCLE() cv3d::projectPoints(src, rvec, tvec, camera_mat, cv::noArray(), dst);
 
         CPU_SANITY_CHECK(dst);
     }
@@ -113,7 +113,7 @@ PERF_TEST_P(Count, Calib3D_SolvePnPRansac,
     cv::randu(tvec_gold, 0, 1);
 
     std::vector<cv::Point2f> image_vec;
-    cv::projectPoints(object, rvec_gold, tvec_gold, camera_mat, dist_coef, image_vec);
+    cv3d::projectPoints(object, rvec_gold, tvec_gold, camera_mat, dist_coef, image_vec);
 
     const cv::Mat image(1, count, CV_32FC2, &image_vec[0]);
 
@@ -129,7 +129,7 @@ PERF_TEST_P(Count, Calib3D_SolvePnPRansac,
     }
     else
     {
-        TEST_CYCLE() cv::solvePnPRansac(object, image, camera_mat, dist_coef, rvec, tvec);
+        TEST_CYCLE() cv3d::solvePnPRansac(object, image, camera_mat, dist_coef, rvec, tvec);
 
         CPU_SANITY_CHECK(rvec, 1e-6);
         CPU_SANITY_CHECK(tvec, 1e-6);

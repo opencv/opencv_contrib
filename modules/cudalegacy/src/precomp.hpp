@@ -63,7 +63,7 @@
 #  include "opencv2/objdetect.hpp"
 #endif
 
-#ifdef HAVE_OPENCV_CALIB3D
+#ifdef HAVE_OPENCV_3D
 #  include "opencv2/3d.hpp"
 #endif
 
