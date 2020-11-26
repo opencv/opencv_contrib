@@ -862,7 +862,6 @@ void HashTSDFVolumeGPU::reset()
     //volUnitsData = cv::Mat(VOLUMES_SIZE, 1, rawType<UMat>());
     indexes = cv::Mat(buff_lvl, 1, rawType<Vec3i>());
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
-    isActive = cv::Mat(buff_lvl, 1, rawType<bool>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
     _indexes = VolumesTable();
     posesGPU = cv::Mat(buff_lvl, 1, rawType<ocl::KernelArg>());
@@ -1025,6 +1024,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
         ocl::KernelArg::PtrReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
         ocl::KernelArg::PtrReadOnly(_pixNorms),
+        //ocl::KernelArg::PtrReadOnly(pixNorms.getUMat(ACCESS_RW)),
         ocl::KernelArg::PtrReadWrite(posesGPU.getUMat(ACCESS_RW)),
         _lastVolIndex,
         voxelSize,
@@ -1038,16 +1038,16 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         
     );
 
-    int resol = 1;
-    //int resol = volumeUnitResolution;
+    //int resol = 1;
+    int resol = volumeUnitResolution;
     size_t globalSize[3];
     globalSize[0] = (size_t)resol; // volumeUnitResolution
     globalSize[1] = (size_t)resol; // volumeUnitResolution
-    //globalSize[0] = (size_t)depth.rows; // volResolution.x
-    //globalSize[1] = (size_t)depth.cols; // volResolution.y
+    //globalSize[0] = (size_t)volResGpu.val[0]; // volResolution.x
+    //globalSize[1] = (size_t)volResGpu.val[1]; // volResolution.y
     globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
 
-    //std::cout << "RUN" << std::endl;
+    //std::cout << "r = " << volumeUnitResolution << std::endl;
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 }
@@ -1124,7 +1124,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                     _volUnitsData.resize(buff_lvl);
                     volUnitsData.resize(buff_lvl);
                     poses.resize(buff_lvl);
-                    isActive.resize(buff_lvl);
                     lastVisibleIndexes.resize(buff_lvl);
                     posesGPU.resize(buff_lvl);
                 }
@@ -1152,7 +1151,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
 
         poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
-        isActive.at<bool>(idx, 0) = true;
         lastVisibleIndexes.at<int>(idx, 0) = frameId;
         //Affine3f cam2vol(Affine3f(subvolumePose) * Affine3f(cameraPose));
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
@@ -1196,7 +1194,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
-                isActive.at<bool>(idx, 0) = false;
                 _indexes.updateActive(tsdf_idx, 0);
                 return;
             }
@@ -1205,7 +1202,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             {
                 assert(idx == _lastVolIndex - 1);
                 lastVisibleIndexes.at<int>(idx, 0) = frameId;
-                isActive.at<bool>(idx, 0) = true;
                 std::cout << " - " << tsdf_idx << std::endl;
                 _indexes.update(tsdf_idx, 1, frameId);
             }

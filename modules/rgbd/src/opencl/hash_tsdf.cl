@@ -157,7 +157,7 @@ void integrateVolumeUnit(
 {
     //int x = get_global_id(0);
     //int y = get_global_id(1);
-
+    //printf("integrateVolumeUnit \n");
     const int3 volResolution = volResolution4.xyz;
 
     if(x >= volResolution.x || y >= volResolution.y)
@@ -232,6 +232,7 @@ void integrateVolumeUnit(
 
         float v;
         // bilinearly interpolate depth at projected
+        //printf("bilinearly\n");
         if(all(projected >= 0) && all(projected < limits))
         {
             float2 ip = floor(projected);
@@ -272,7 +273,7 @@ void integrateVolumeUnit(
         float sdf = pixNorm*(v*dfac - camSpacePt.z);
         // possible alternative is:
         // float sdf = length(camSpacePt)*(v*dfac/camSpacePt.z - 1.0);
-
+        //printf("sdf \n");
         if(sdf >= -truncDist)
         {
             float tsdf = fmin(1.0f, sdf * truncDistInv);
@@ -281,9 +282,10 @@ void integrateVolumeUnit(
             struct TsdfVoxel voxel = volumeptr[volIdx];
             float value  = tsdfToFloat(voxel.tsdf);
             int weight = voxel.weight;
-
+            //printf(" v = %f \n", value);
             // update TSDF
             value = (value*weight + tsdf) / (weight + 1);
+            //printf(" v = %f \n", value);
             weight = min(weight + 1, maxWeight);
 
             voxel.tsdf = floatToTsdf(value);
@@ -325,26 +327,18 @@ __kernel void integrateAllVolumeUnits(
 
     int4 v = totalVolUnits[k];
     int row = findRow(hash_table, v, list_size, bufferNums, hash_divisor);
+    if (row < 0)
+        return;
     //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | row = %d \n", i, j, k, v[0], v[1], v[2], row);
     //printf("maxWeight = %d \n", maxWeight);
-    //int hash = calc_hash(v);
-    
-    //printf("start_ \n");
-    //__global struct Volume_NODE * vu = getVolume(hash_table, v, list_size, bufferNums, hash_divisor);
-    //printf("idx = [x, y, z] = [%d, %d, %d] | row = %d \n", vu->idx[0], vu->idx[0], vu->idx[0], vu->row);
-    //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | row = %d \n", v[0], v[1], v[2], vu->idx[0], vu->idx[0], vu->idx[0], vu->row);
     
     int isActive = getIsActive(hash_table, v, list_size, bufferNums, hash_divisor);
-    //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | isActive = %d \n", i, j, k, v[0], v[1], v[2], isActive);
-
     
     if (isActive == 1)
     {
-    //printf("lol \n");
         int resol = volResolution4[0] * volResolution4[1] * volResolution4[2];
         __global struct TsdfVoxel * volumeptr = (allVolumePtr+(row*resol));
         const float16 vol2camMatrix = allVol2camMatrix[row];
-        //printf("resol = %d \n", resol);
     
         integrateVolumeUnit(
             i, j,
@@ -363,7 +357,6 @@ __kernel void integrateAllVolumeUnits(
             truncDist,
             maxWeight
             );
-        //isActive = 0;
         updateIsActive(hash_table, v, 0, list_size, bufferNums, hash_divisor);
     }
     

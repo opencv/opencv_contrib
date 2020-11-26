@@ -172,7 +172,6 @@ public:
     VolumeIndex _lastVolIndex;
     cv::Mat indexes;
     cv::Mat poses;
-    cv::Mat isActive;
     cv::Mat lastVisibleIndexes;
     cv::Mat _volUnitsData;
 
