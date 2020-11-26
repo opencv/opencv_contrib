@@ -986,6 +986,7 @@ void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFa
 */
 void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics)
 {
+    //std::cout << "integrateAllVolumeUnitsGPU" << std::endl;
     CV_TRACE_FUNCTION();
     CV_Assert(!_depth.empty());
 
@@ -1037,8 +1038,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         
     );
 
-    //int resol = 1;
-    int resol = volumeUnitResolution;
+    int resol = 1;
+    //int resol = volumeUnitResolution;
     size_t globalSize[3];
     globalSize[0] = (size_t)resol; // volumeUnitResolution
     globalSize[1] = (size_t)resol; // volumeUnitResolution
@@ -1046,6 +1047,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //globalSize[1] = (size_t)depth.cols; // volResolution.y
     globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
 
+    //std::cout << "RUN" << std::endl;
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 }
@@ -1154,6 +1156,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         lastVisibleIndexes.at<int>(idx, 0) = frameId;
         //Affine3f cam2vol(Affine3f(subvolumePose) * Affine3f(cameraPose));
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+        _indexes.updateActive(tsdf_idx, 1);
         ocl::KernelArg pose = ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val));
         posesGPU.at<ocl::KernelArg>(idx, 0) = pose;
         //ocl::KernelArg pose;
@@ -1194,7 +1197,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
                 isActive.at<bool>(idx, 0) = false;
-                _indexes.updateActive(tsdf_idx, false);
+                _indexes.updateActive(tsdf_idx, 0);
                 return;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
@@ -1203,7 +1206,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 assert(idx == _lastVolIndex - 1);
                 lastVisibleIndexes.at<int>(idx, 0) = frameId;
                 isActive.at<bool>(idx, 0) = true;
-                _indexes.update(tsdf_idx, true, frameId);
+                std::cout << " - " << tsdf_idx << std::endl;
+                _indexes.update(tsdf_idx, 1, frameId);
             }
         }
     };
@@ -1222,6 +1226,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
+    /*
     auto Integrate = [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
@@ -1246,7 +1251,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
     };
-    parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
+    */
+    //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
     //Integrate(Range(0, (int)_totalVolUnits.size()));
 
     //std::cout << "lol\n";

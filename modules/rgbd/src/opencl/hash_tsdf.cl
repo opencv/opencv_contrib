@@ -87,28 +87,55 @@ int findRow(__global struct Volume_NODE * hash_table, int4 indx,
     return -2;
 }
 
-struct Volume_NODE findVolume(__global struct Volume_NODE * hash_table, int4 indx,
+int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     int i = hash * num * list_size;
     int NAN_NUM = -2147483647;
-    struct Volume_NODE tmp;
+    //struct Volume_NODE tmp;
     while (i != NAN_NUM)
     {
         struct Volume_NODE v = hash_table[i];
+
         if (v.idx[0] == indx[0] &&
             v.idx[1] == indx[1] &&
             v.idx[2] == indx[2])
-            return v;
-        if (v.idx.x == NAN_NUM)
-            return tmp;
+            {
+            //printf("idx = [%d %d %d] | idx = [%d %d %d] \n nextVolumeRow = %d \n", indx[0],indx[1],indx[2],v->idx[0], v->idx[1], v->idx[2], v->nextVolumeRow);
+
+            return v.isActive;
+            }
+        if (v.idx[0] == NAN_NUM)
+            return 0;
         i = v.nextVolumeRow;
     }
-
-    return tmp;
+    return 0;
 }
+
+void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, int isActive,
+               int list_size, int bufferNums, int hash_divisor)
+{
+    int hash = calc_hash(indx) % hash_divisor;
+    int num = 1;
+    int i = hash * num * list_size;
+    int NAN_NUM = -2147483647;
+    while (i != NAN_NUM)
+    {
+        __global struct Volume_NODE * v = (hash_table + i);
+
+        if (v->idx[0] == indx[0] &&
+            v->idx[1] == indx[1] &&
+            v->idx[2] == indx[2])
+            v->isActive = isActive;     
+        if (v->idx[0] == NAN_NUM)
+            return;
+        i = v->nextVolumeRow;
+    }
+    return;
+}
+
 
 void integrateVolumeUnit(
                         int x, int y,
@@ -290,6 +317,7 @@ __kernel void integrateAllVolumeUnits(
                         const int maxWeight
                         )
 {
+    //printf("start \n");
 
     int i = get_global_id(0);
     int j = get_global_id(1);
@@ -299,13 +327,20 @@ __kernel void integrateAllVolumeUnits(
     int row = findRow(hash_table, v, list_size, bufferNums, hash_divisor);
     //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | row = %d \n", i, j, k, v[0], v[1], v[2], row);
     //printf("maxWeight = %d \n", maxWeight);
-    int hash = calc_hash(v);
-    __global struct Volume_NODE * vu = (hash_table + hash);
+    //int hash = calc_hash(v);
     
+    //printf("start_ \n");
+    //__global struct Volume_NODE * vu = getVolume(hash_table, v, list_size, bufferNums, hash_divisor);
+    //printf("idx = [x, y, z] = [%d, %d, %d] | row = %d \n", vu->idx[0], vu->idx[0], vu->idx[0], vu->row);
+    //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | row = %d \n", v[0], v[1], v[2], vu->idx[0], vu->idx[0], vu->idx[0], vu->row);
+    
+    int isActive = getIsActive(hash_table, v, list_size, bufferNums, hash_divisor);
+    //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | isActive = %d \n", i, j, k, v[0], v[1], v[2], isActive);
 
-    if (vu->isActive == 1)
+    
+    if (isActive == 1)
     {
-
+    //printf("lol \n");
         int resol = volResolution4[0] * volResolution4[1] * volResolution4[2];
         __global struct TsdfVoxel * volumeptr = (allVolumePtr+(row*resol));
         const float16 vol2camMatrix = allVol2camMatrix[row];
@@ -328,6 +363,8 @@ __kernel void integrateAllVolumeUnits(
             truncDist,
             maxWeight
             );
-        vu->isActive = 0;
+        //isActive = 0;
+        updateIsActive(hash_table, v, 0, list_size, bufferNums, hash_divisor);
     }
+    
 }
