@@ -25,16 +25,16 @@ class CV_EXPORTS_W BarcodeDetector
 {
 public:
     CV_WRAP BarcodeDetector();
-    
+
     ~BarcodeDetector();
-    
+
     /** @brief Detects Barcode in image and returns the rectangle(s) containing the code.
 
     @param img grayscale or color (BGR) image containing (or not) Barcode.
     @param rects Output vector of rotated rectangle(s) containing the barcode.
      */
     CV_WRAP bool detect(InputArray img, CV_OUT std::vector <RotatedRect> &rects) const;
-    
+
     /** @brief Decodes barcode in image once it's found by the detect() method.
 
     Returns UTF8-encoded output string(s) or empty string if the code cannot be decoded.
@@ -44,7 +44,7 @@ public:
      */
     CV_WRAP bool decode(InputArray img, const std::vector <RotatedRect> &rects,
                         CV_OUT std::vector <std::string> &decoded_info) const;
-    
+
     /** @brief Both detects and decodes barcode
 
     @param img grayscale or color (BGR) image containing QR code.
