@@ -1017,15 +1017,15 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //std::cout << "maxWeight == " << maxWeight << std::endl;
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
-        //ocl::KernelArg::PtrReadWrite(_indexes.volumes),
         (int)_indexes.list_size,
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
         ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-        ocl::KernelArg::PtrReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
+        //ocl::KernelArg::PtrReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
+        ocl::KernelArg::ReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
         ocl::KernelArg::PtrReadOnly(_pixNorms),
         //ocl::KernelArg::PtrReadOnly(pixNorms.getUMat(ACCESS_RW)),
-        ocl::KernelArg::PtrReadWrite(posesGPU.getUMat(ACCESS_RW)),
+        ocl::KernelArg::ReadOnly(posesGPU.getUMat(ACCESS_RW)),
         _lastVolIndex,
         voxelSize,
         volResGpu.val,
@@ -1037,6 +1037,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         int(maxWeight)
         
     );
+    //std::cout << _indexes
 
     //int resol = 1;
     int resol = volumeUnitResolution;

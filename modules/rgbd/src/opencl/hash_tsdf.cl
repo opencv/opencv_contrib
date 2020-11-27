@@ -301,13 +301,18 @@ __kernel void integrateAllVolumeUnits(
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
                         __global struct Volume_NODE * hash_table,
+                        
                         const int list_size, 
                         const int bufferNums, 
                         const int hash_divisor,
                         __global const int4 * totalVolUnits, 
                         __global struct TsdfVoxel * allVolumePtr,
+                        int table_step, int table_offset,
+                        int table_rows, int table_cols,
                         __global const float * pixNorms,
                         __global const float16 * allVol2camMatrix,
+                        int val2cam_step, int val2cam_offset,
+                        int val2cam_rows, int val2cam_cols,
                         const int lastVolIndex, 
                         const float voxelSize,
                         const int4 volResolution4,
@@ -320,7 +325,9 @@ __kernel void integrateAllVolumeUnits(
                         )
 {
     //printf("start \n");
-
+    //printf(" | step, offset = %d %d \n | rows, cols = %d %d \n", table_step, table_offset, table_rows, table_cols);
+    //printf(" | step, offset = %d %d \n | rows, cols = %d %d \n", val2cam_step, val2cam_offset, val2cam_rows, val2cam_cols);
+    
     int i = get_global_id(0);
     int j = get_global_id(1);
     int k = get_global_id(2);
@@ -334,11 +341,16 @@ __kernel void integrateAllVolumeUnits(
     
     int isActive = getIsActive(hash_table, v, list_size, bufferNums, hash_divisor);
     
+
     if (isActive == 1)
     {
         int resol = volResolution4[0] * volResolution4[1] * volResolution4[2];
-        __global struct TsdfVoxel * volumeptr = (allVolumePtr+(row*resol));
-        const float16 vol2camMatrix = allVol2camMatrix[row];
+        //__global struct TsdfVoxel * volumeptr = (allVolumePtr+(row*resol));
+        __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
+                                                (allVolumePtr + table_offset +
+                                                    (row)*table_step);
+        //const float16 vol2camMatrix = allVol2camMatrix[row];
+        const float16 vol2camMatrix = allVol2camMatrix[val2cam_offset + (row) * val2cam_step];
     
         integrateVolumeUnit(
             i, j,
@@ -359,5 +371,5 @@ __kernel void integrateAllVolumeUnits(
             );
         updateIsActive(hash_table, v, 0, list_size, bufferNums, hash_divisor);
     }
-    
+   
 }
