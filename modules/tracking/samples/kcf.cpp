@@ -41,7 +41,7 @@ int main( int argc, char** argv ){
 
   // get bounding box
   cap >> frame;
-  Rect2d roi= selectROI("tracker", frame, true, false);
+  Rect roi = selectROI("tracker", frame, true, false);
 
   //quit if ROI was not selected
   if(roi.width==0 || roi.height==0)

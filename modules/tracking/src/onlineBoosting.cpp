@@ -42,8 +42,9 @@
 #include "precomp.hpp"
 #include "opencv2/tracking/onlineBoosting.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 StrongClassifierDirectSelection::StrongClassifierDirectSelection( int numBaseClf, int numWeakClf, Size patchSz, const Rect& sampleROI,
                                                                   bool useFeatureEx, int iterationInit )
@@ -732,4 +733,4 @@ int ClassifierThreshold::eval( float value )
   return ( ( ( m_parity * ( value - m_threshold ) ) > 0 ) ? 1 : -1 );
 }
 
-} /* namespace cv */
+}}}  // namespace

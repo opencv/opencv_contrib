@@ -41,17 +41,18 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
- *  TrackerFeatureSet
+ *  TrackerContribFeatureSet
  */
 
 /*
  * Constructor
  */
-TrackerFeatureSet::TrackerFeatureSet()
+TrackerContribFeatureSet::TrackerContribFeatureSet()
 {
   blockAddTrackerFeature = false;
 }
@@ -59,12 +60,12 @@ TrackerFeatureSet::TrackerFeatureSet()
 /*
  * Destructor
  */
-TrackerFeatureSet::~TrackerFeatureSet()
+TrackerContribFeatureSet::~TrackerContribFeatureSet()
 {
 
 }
 
-void TrackerFeatureSet::extraction( const std::vector<Mat>& images )
+void TrackerContribFeatureSet::extraction( const std::vector<Mat>& images )
 {
 
   clearResponses();
@@ -83,23 +84,23 @@ void TrackerFeatureSet::extraction( const std::vector<Mat>& images )
   }
 }
 
-void TrackerFeatureSet::selection()
+void TrackerContribFeatureSet::selection()
 {
 
 }
 
-void TrackerFeatureSet::removeOutliers()
+void TrackerContribFeatureSet::removeOutliers()
 {
 
 }
 
-bool TrackerFeatureSet::addTrackerFeature( String trackerFeatureType )
+bool TrackerContribFeatureSet::addTrackerFeature( String trackerFeatureType )
 {
   if( blockAddTrackerFeature )
   {
     return false;
   }
-  Ptr<TrackerFeature> feature = TrackerFeature::create( trackerFeatureType );
+  Ptr<TrackerContribFeature> feature = TrackerContribFeature::create( trackerFeatureType );
 
   if (!feature)
   {
@@ -111,7 +112,7 @@ bool TrackerFeatureSet::addTrackerFeature( String trackerFeatureType )
   return true;
 }
 
-bool TrackerFeatureSet::addTrackerFeature( Ptr<TrackerFeature>& feature )
+bool TrackerContribFeatureSet::addTrackerFeature( Ptr<TrackerContribFeature>& feature )
 {
   if( blockAddTrackerFeature )
   {
@@ -124,19 +125,20 @@ bool TrackerFeatureSet::addTrackerFeature( Ptr<TrackerFeature>& feature )
   return true;
 }
 
-const std::vector<std::pair<String, Ptr<TrackerFeature> > >& TrackerFeatureSet::getTrackerFeature() const
+const std::vector<std::pair<String, Ptr<TrackerContribFeature> > >& TrackerContribFeatureSet::getTrackerFeature() const
 {
   return features;
 }
 
-const std::vector<Mat>& TrackerFeatureSet::getResponses() const
+const std::vector<Mat>& TrackerContribFeatureSet::getResponses() const
 {
   return responses;
 }
 
-void TrackerFeatureSet::clearResponses()
+void TrackerContribFeatureSet::clearResponses()
 {
   responses.clear();
 }
 
-} /* namespace cv */
+
+}}}  // namespace

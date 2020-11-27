@@ -40,55 +40,50 @@
  //M*/
 
 #include "precomp.hpp"
+
 #include "opencl_kernels_tracking.hpp"
 #include <complex>
 #include <cmath>
 
+namespace cv {
+inline namespace tracking {
+namespace impl {
+
 /*---------------------------
 |  TrackerKCFModel
 |---------------------------*/
-namespace cv{
    /**
   * \brief Implementation of TrackerModel for KCF algorithm
   */
   class TrackerKCFModel : public TrackerModel{
   public:
-    TrackerKCFModel(TrackerKCF::Params /*params*/){}
+    TrackerKCFModel(){}
     ~TrackerKCFModel(){}
   protected:
     void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ) CV_OVERRIDE {}
     void modelUpdateImpl() CV_OVERRIDE {}
   };
-} /* namespace cv */
 
 
 /*---------------------------
 |  TrackerKCF
 |---------------------------*/
-namespace cv{
-
   /*
  * Prototype
  */
-  class TrackerKCFImpl : public TrackerKCF {
-  public:
-    TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
-    void read( const FileNode& /*fn*/ ) CV_OVERRIDE;
-    void write( FileStorage& /*fs*/ ) const CV_OVERRIDE;
+class TrackerKCFImpl CV_FINAL : public TrackerKCF
+{
+public:
+    TrackerKCFImpl(const TrackerKCF::Params &parameters);
+
+    virtual void init(InputArray image, const Rect& boundingBox) CV_OVERRIDE;
+    virtual bool update(InputArray image, Rect& boundingBox) CV_OVERRIDE;
     void setFeatureExtractor(void (*f)(const Mat, const Rect, Mat&), bool pca_func = false) CV_OVERRIDE;
 
-  protected:
-     /*
-    * basic functions and vars
-    */
-    bool initImpl( const Mat& /*image*/, const Rect2d& boundingBox ) CV_OVERRIDE;
-    bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE;
-
     TrackerKCF::Params params;
+    Ptr<TrackerKCFModel> model;
 
-    /*
-    * KCF functions and vars
-    */
+protected:
     void createHanningWindow(OutputArray dest, const cv::Size winSize, const int type) const;
     void inline fft2(const Mat src, std::vector<Mat> & dest, std::vector<Mat> & layers_data) const;
     void inline fft2(const Mat src, Mat & dest) const;
@@ -113,7 +108,7 @@ namespace cv{
     bool inline oclTransposeMM(const Mat src, float alpha, UMat &dst);
 #endif
 
-  private:
+private:
     float output_sigma;
     Rect2d roi;
     Mat hann; 	//hann window filter
@@ -164,21 +159,14 @@ namespace cv{
 #endif
 
     int frame;
-  };
+};
 
   /*
  * Constructor
  */
-  Ptr<TrackerKCF> TrackerKCF::create(const TrackerKCF::Params &parameters){
-      return Ptr<TrackerKCFImpl>(new TrackerKCFImpl(parameters));
-  }
-  Ptr<TrackerKCF> TrackerKCF::create(){
-      return Ptr<TrackerKCFImpl>(new TrackerKCFImpl());
-  }
   TrackerKCFImpl::TrackerKCFImpl( const TrackerKCF::Params &parameters ) :
       params( parameters )
   {
-    isInit = false;
     resizeImage = false;
     use_custom_extractor_pca = false;
     use_custom_extractor_npca = false;
@@ -195,14 +183,6 @@ namespace cv{
 #endif
   }
 
-  void TrackerKCFImpl::read( const cv::FileNode& fn ){
-    params.read( fn );
-  }
-
-  void TrackerKCFImpl::write( cv::FileStorage& fs ) const {
-    params.write( fs );
-  }
-
   /*
    * Initialization:
    * - creating hann window filter
@@ -210,7 +190,8 @@ namespace cv{
    * - creating a gaussian response for the training ground-truth
    * - perform FFT to the gaussian response
    */
-  bool TrackerKCFImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
+  void TrackerKCFImpl::init(InputArray image, const Rect& boundingBox)
+  {
     frame=0;
     roi.x = cvRound(boundingBox.x);
     roi.y = cvRound(boundingBox.y);
@@ -262,7 +243,7 @@ namespace cv{
       params.desc_pca &= ~(CN);
       params.desc_npca &= ~(CN);
     }
-    model=Ptr<TrackerKCFModel>(new TrackerKCFModel(params));
+    model = makePtr<TrackerKCFModel>();
 
     // record the non-compressed descriptors
     if((params.desc_npca & GRAY) == GRAY)descriptors_npca.push_back(GRAY);
@@ -286,27 +267,29 @@ namespace cv{
       || use_custom_extractor_npca
     );
 
-  //return true only if roi has intersection with the image
-  if((roi & Rect2d(0,0, resizeImage ? image.cols / 2 : image.cols,
-                   resizeImage ? image.rows / 2 : image.rows)) == Rect2d())
-      return false;
-
-    return true;
+    // ensure roi has intersection with the image
+    Rect2d image_roi(0, 0,
+                     image.cols() / (resizeImage ? 2 : 1),
+                     image.rows() / (resizeImage ? 2 : 1));
+    CV_Assert(!(roi & image_roi).empty());
   }
 
   /*
    * Main part of the KCF algorithm
    */
-  bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
+  bool TrackerKCFImpl::update(InputArray image, Rect& boundingBoxResult)
+  {
     double minVal, maxVal;	// min-max response
     Point minLoc,maxLoc;	// min-max location
 
-    Mat img=image.clone();
-    // check the channels of the input image, grayscale is preferred
-    CV_Assert(img.channels() == 1 || img.channels() == 3);
+    CV_Assert(image.channels() == 1 || image.channels() == 3);
 
+    Mat img;
     // resize the image whenever needed
-    if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2),0,0,INTER_LINEAR_EXACT);
+    if (resizeImage)
+        resize(image, img, Size(image.cols()/2, image.rows()/2), 0, 0, INTER_LINEAR_EXACT);
+    else
+        image.copyTo(img);
 
     // detection part
     if(frame>0){
@@ -377,6 +360,7 @@ namespace cv{
     }
 
     // update the bounding box
+    Rect2d boundingBox;
     boundingBox.x=(resizeImage?roi.x*2:roi.x)+(resizeImage?roi.width*2:roi.width)/4;
     boundingBox.y=(resizeImage?roi.y*2:roi.y)+(resizeImage?roi.height*2:roi.height)/4;
     boundingBox.width = (resizeImage?roi.width*2:roi.width)/2;
@@ -475,6 +459,13 @@ namespace cv{
     }
 
     frame++;
+
+    int x1 = cvRound(boundingBox.x);
+    int y1 = cvRound(boundingBox.y);
+    int x2 = cvRound(boundingBox.x + boundingBox.width);
+    int y2 = cvRound(boundingBox.y + boundingBox.height);
+    boundingBoxResult = Rect(x1, y1, x2 - x1, y2 - y1) & Rect(Point(0, 0), image.size());
+
     return true;
   }
 
@@ -664,7 +655,7 @@ namespace cv{
     Rect region=_roi;
 
     // return false if roi is outside the image
-    if((roi & Rect2d(0,0, img.cols, img.rows)) == Rect2d() )
+    if ((roi & Rect2d(0, 0, img.cols, img.rows)).empty())
         return false;
 
     // extract patch inside the image
@@ -903,10 +894,11 @@ namespace cv{
   }
   /*----------------------------------------------------------------------*/
 
-  /*
- * Parameters
- */
-  TrackerKCF::Params::Params(){
+
+} // namespace
+
+TrackerKCF::Params::Params()
+{
       detect_thresh = 0.5f;
       sigma=0.2f;
       lambda=0.0001f;
@@ -923,69 +915,24 @@ namespace cv{
       compress_feature=true;
       compressed_size=2;
       pca_learning_rate=0.15f;
-  }
-
-  void TrackerKCF::Params::read( const cv::FileNode& fn ){
-      *this = TrackerKCF::Params();
-
-      if (!fn["detect_thresh"].empty())
-          fn["detect_thresh"] >> detect_thresh;
-
-      if (!fn["sigma"].empty())
-          fn["sigma"] >> sigma;
-
-      if (!fn["lambda"].empty())
-          fn["lambda"] >> lambda;
-
-      if (!fn["interp_factor"].empty())
-          fn["interp_factor"] >> interp_factor;
-
-      if (!fn["output_sigma_factor"].empty())
-          fn["output_sigma_factor"] >> output_sigma_factor;
-
-      if (!fn["resize"].empty())
-          fn["resize"] >> resize;
-
-      if (!fn["max_patch_size"].empty())
-          fn["max_patch_size"] >> max_patch_size;
-
-      if (!fn["split_coeff"].empty())
-          fn["split_coeff"] >> split_coeff;
-
-      if (!fn["wrap_kernel"].empty())
-          fn["wrap_kernel"] >> wrap_kernel;
+}
 
 
-      if (!fn["desc_npca"].empty())
-          fn["desc_npca"] >> desc_npca;
+TrackerKCF::TrackerKCF()
+{
+    // nothing
+}
 
-      if (!fn["desc_pca"].empty())
-          fn["desc_pca"] >> desc_pca;
+TrackerKCF::~TrackerKCF()
+{
+    // nothing
+}
 
-      if (!fn["compress_feature"].empty())
-          fn["compress_feature"] >> compress_feature;
+Ptr<TrackerKCF> TrackerKCF::create(const TrackerKCF::Params &parameters)
+{
+    return makePtr<TrackerKCFImpl>(parameters);
+}
 
-      if (!fn["compressed_size"].empty())
-          fn["compressed_size"] >> compressed_size;
+}}  // namespace
 
-      if (!fn["pca_learning_rate"].empty())
-          fn["pca_learning_rate"] >> pca_learning_rate;
-  }
-
-  void TrackerKCF::Params::write( cv::FileStorage& fs ) const{
-    fs << "detect_thresh" << detect_thresh;
-    fs << "sigma" << sigma;
-    fs << "lambda" << lambda;
-    fs << "interp_factor" << interp_factor;
-    fs << "output_sigma_factor" << output_sigma_factor;
-    fs << "resize" << resize;
-    fs << "max_patch_size" << max_patch_size;
-    fs << "split_coeff" << split_coeff;
-    fs << "wrap_kernel" << wrap_kernel;
-    fs << "desc_npca" << desc_npca;
-    fs << "desc_pca" << desc_pca;
-    fs << "compress_feature" << compress_feature;
-    fs << "compressed_size" << compressed_size;
-    fs << "pca_learning_rate" << pca_learning_rate;
-  }
-} /* namespace cv */
+#include "legacy/trackerKCF.legacy.hpp"

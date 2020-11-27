@@ -42,11 +42,9 @@
 #ifndef __OPENCV_TRACKER_BOOSTING_MODEL_HPP__
 #define __OPENCV_TRACKER_BOOSTING_MODEL_HPP__
 
-#include "precomp.hpp"
-#include "opencv2/core.hpp"
-
-namespace cv
-{
+namespace cv {
+inline namespace tracking {
+namespace impl {
 
 /**
  * \brief Implementation of TrackerModel for BOOSTING algorithm
@@ -103,6 +101,6 @@ class TrackerBoostingModel : public TrackerModel
   int mode;
 };
 
-} /* namespace cv */
+}}}  // namespace
 
 #endif

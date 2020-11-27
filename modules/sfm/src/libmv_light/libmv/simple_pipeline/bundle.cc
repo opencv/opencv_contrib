@@ -402,7 +402,7 @@ void EuclideanBundlePointsOnly(const DistortionModelType distortion_model,
                 marker.x,
                 marker.y,
                 1.0)),
-        NULL,
+        nullptr,
         ceres_intrinsics,
         current_camera_R_t,
         &point->X(0));

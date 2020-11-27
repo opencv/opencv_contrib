@@ -40,29 +40,23 @@
  //M*/
 
 #include "precomp.hpp"
-#include <time.h>
 #include "PFSolver.hpp"
 #include "TrackingFunctionPF.hpp"
 
-#ifdef _WIN32
-#define TIME( arg ) (((double) clock()) / CLOCKS_PER_SEC)
-#else
-#define TIME( arg ) (time( arg ))
-#endif
-
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
- *  TrackerSamplerAlgorithm
+ *  TrackerContribSamplerAlgorithm
  */
 
-TrackerSamplerAlgorithm::~TrackerSamplerAlgorithm()
+TrackerContribSamplerAlgorithm::~TrackerContribSamplerAlgorithm()
 {
 
 }
 
-bool TrackerSamplerAlgorithm::sampling( const Mat& image, Rect boundingBox, std::vector<Mat>& sample )
+bool TrackerContribSamplerAlgorithm::sampling(const Mat& image, const Rect& boundingBox, std::vector<Mat>& sample)
 {
   if( image.empty() )
     return false;
@@ -70,11 +64,11 @@ bool TrackerSamplerAlgorithm::sampling( const Mat& image, Rect boundingBox, std:
   return samplingImpl( image, boundingBox, sample );
 }
 
-Ptr<TrackerSamplerAlgorithm> TrackerSamplerAlgorithm::create( const String& trackerSamplerType )
+Ptr<TrackerContribSamplerAlgorithm> TrackerContribSamplerAlgorithm::create( const String& trackerSamplerType )
 {
   if( trackerSamplerType.find( "CSC" ) == 0 )
   {
-    return Ptr<TrackerSamplerCSC>( new TrackerSamplerCSC() );
+    return Ptr<TrackerContribSamplerCSC>( new TrackerContribSamplerCSC() );
   }
 
   if( trackerSamplerType.find( "CS" ) == 0 )
@@ -82,23 +76,23 @@ Ptr<TrackerSamplerAlgorithm> TrackerSamplerAlgorithm::create( const String& trac
     return Ptr<TrackerSamplerCS>( new TrackerSamplerCS() );
   }
 
-  CV_Error( -1, "Tracker sampler algorithm type not supported" );
+  CV_Error(Error::StsNotImplemented, "Tracker sampler algorithm type not supported" );
 }
 
-String TrackerSamplerAlgorithm::getClassName() const
+String TrackerContribSamplerAlgorithm::getClassName() const
 {
   return className;
 }
 
 /**
- * TrackerSamplerCSC
+ * TrackerContribSamplerCSC
  */
 
 /**
  * Parameters
  */
 
-TrackerSamplerCSC::Params::Params()
+TrackerContribSamplerCSC::Params::Params()
 {
   initInRad = 3;
   initMaxNegNum = 65;
@@ -109,21 +103,21 @@ TrackerSamplerCSC::Params::Params()
 
 }
 
-TrackerSamplerCSC::TrackerSamplerCSC( const TrackerSamplerCSC::Params &parameters ) :
+TrackerContribSamplerCSC::TrackerContribSamplerCSC( const TrackerContribSamplerCSC::Params &parameters ) :
     params( parameters )
 {
   className = "CSC";
   mode = MODE_INIT_POS;
-  rng = RNG( uint64( TIME( 0 ) ) );
+  rng = theRNG();
 
 }
 
-TrackerSamplerCSC::~TrackerSamplerCSC()
+TrackerContribSamplerCSC::~TrackerContribSamplerCSC()
 {
 
 }
 
-bool TrackerSamplerCSC::samplingImpl( const Mat& image, Rect boundingBox, std::vector<Mat>& sample )
+bool TrackerContribSamplerCSC::samplingImpl( const Mat& image, Rect boundingBox, std::vector<Mat>& sample )
 {
   float inrad = 0;
   float outrad = 0;
@@ -165,12 +159,12 @@ bool TrackerSamplerCSC::samplingImpl( const Mat& image, Rect boundingBox, std::v
   return false;
 }
 
-void TrackerSamplerCSC::setMode( int samplingMode )
+void TrackerContribSamplerCSC::setMode( int samplingMode )
 {
   mode = samplingMode;
 }
 
-std::vector<Mat> TrackerSamplerCSC::sampleImage( const Mat& img, int x, int y, int w, int h, float inrad, float outrad, int maxnum )
+std::vector<Mat> TrackerContribSamplerCSC::sampleImage( const Mat& img, int x, int y, int w, int h, float inrad, float outrad, int maxnum )
 {
   int rowsz = img.rows - h - 1;
   int colsz = img.cols - w - 1;
@@ -410,4 +404,5 @@ bool TrackerSamplerPF::samplingImpl( const Mat& image, Rect boundingBox, std::ve
     return true;
 }
 
-} /* namespace cv */
+
+}}}  // namespace

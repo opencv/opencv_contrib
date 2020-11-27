@@ -41,11 +41,12 @@ ${include_code}
 //
 
 #ifdef HAVE_OPENCV_FEATURES2D
-    template <>
-    struct SuperType<cv::Feature2D>
-    {
-        typedef cv::Algorithm type;
-    };
+    // template <>
+    // struct SuperType<cv::Feature2D>
+    // {
+    //     typedef cv::Algorithm type;
+    // };
+    // TODO: Needs to be fixed but doesn't matter for now
     template <>
     struct SuperType<cv::SimpleBlobDetector>
     {
@@ -88,7 +89,6 @@ JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
 
 
 
-    ${cpp_code}
 
 //
 // Manual Wrapping BEGIN
@@ -128,16 +128,21 @@ JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
 #endif
 
 #ifdef HAVE_OPENCV_FEATURES2D
-    mod.add_type<cv::Feature2D>("Feature2D", jlcxx::julia_base_type<cv::Algorithm>());
+    mod.add_type<cv::Feature2D>("Feature2D");
     mod.add_type<cv::SimpleBlobDetector>("SimpleBlobDetector", jlcxx::julia_base_type<cv::Feature2D>());
     mod.add_type<cv::SimpleBlobDetector::Params>("SimpleBlobDetector_Params");
-
-    mod.method("jlopencv_cv_cv_Feature2D_cv_Feature2D_detect", [](cv::Ptr<cv::Feature2D> &cobj, Mat &image, Mat &mask) {vector<KeyPoint> keypoints; cobj->detect(image, keypoints, mask);  return keypoints; });
-    mod.method("jlopencv_cv_cv_SimpleBlobDetector_create", [](SimpleBlobDetector_Params &parameters) { auto retval = cv::SimpleBlobDetector::create(parameters); return retval; });
 #endif
 
 //
 // Manual Wrapping END
 //
+
+    ${cpp_code}
+
+#ifdef HAVE_OPENCV_FEATURES2D
+
+    mod.method("jlopencv_cv_cv_Feature2D_cv_Feature2D_detect", [](cv::Ptr<cv::Feature2D> &cobj, Mat &image, Mat &mask) {vector<KeyPoint> keypoints; cobj->detect(image, keypoints, mask);  return keypoints; });
+    mod.method("jlopencv_cv_cv_SimpleBlobDetector_create", [](SimpleBlobDetector_Params &parameters) { auto retval = cv::SimpleBlobDetector::create(parameters); return retval; });
+#endif
 
 }

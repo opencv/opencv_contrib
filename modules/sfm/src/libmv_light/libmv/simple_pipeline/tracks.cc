@@ -28,10 +28,6 @@
 
 namespace libmv {
 
-Tracks::Tracks(const Tracks &other) {
-  markers_ = other.markers_;
-}
-
 Tracks::Tracks(const vector<Marker> &markers) : markers_(markers) {}
 
 void Tracks::Insert(int image, int track, double x, double y, double weight) {

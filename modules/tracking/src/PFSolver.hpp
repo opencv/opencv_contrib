@@ -1,5 +1,3 @@
-#include "opencv2/core.hpp"
-#include "opencv2/core/core_c.h"
 #include <algorithm>
 #include <typeinfo>
 #include <cmath>

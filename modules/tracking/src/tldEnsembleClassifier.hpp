@@ -40,12 +40,12 @@
 //M*/
 
 #include <vector>
-#include "precomp.hpp"
 
-namespace cv
-{
-	namespace tld
-	{
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
+
 		class TLDEnsembleClassifier
 		{
 		public:
@@ -64,5 +64,5 @@ namespace cv
 			std::vector<Point2i> offset;
 			int lastStep_;
 		};
-	}
-}
+
+}}}}  // namespace

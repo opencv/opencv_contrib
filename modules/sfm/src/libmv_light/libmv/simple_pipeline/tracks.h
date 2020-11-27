@@ -65,7 +65,7 @@ class Tracks {
   Tracks() { }
 
   // Copy constructor for a tracks object.
-  Tracks(const Tracks &other);
+  Tracks(const Tracks &other) = default;
 
   /// Construct a new tracks object using the given markers to start.
   explicit Tracks(const vector<Marker> &markers);

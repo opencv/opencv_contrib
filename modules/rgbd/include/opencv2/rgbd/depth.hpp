@@ -312,16 +312,17 @@ namespace rgbd
   depthTo3d(InputArray depth, InputArray K, OutputArray points3d, InputArray mask = noArray());
 
   /** If the input image is of type CV_16UC1 (like the Kinect one), the image is converted to floats, divided
-   * by 1000 to get a depth in meters, and the values 0 are converted to std::numeric_limits<float>::quiet_NaN()
+   * by depth_factor to get a depth in meters, and the values 0 are converted to std::numeric_limits<float>::quiet_NaN()
    * Otherwise, the image is simply converted to floats
    * @param in the depth image (if given as short int CV_U, it is assumed to be the depth in millimeters
    *              (as done with the Microsoft Kinect), it is assumed in meters)
    * @param depth the desired output depth (floats or double)
    * @param out The rescaled float depth image
+   * @param depth_factor (optional) factor by which depth is converted to distance (by default = 1000.0 for Kinect sensor)
    */
   CV_EXPORTS_W
   void
-  rescaleDepth(InputArray in, int depth, OutputArray out);
+  rescaleDepth(InputArray in, int depth, OutputArray out, double depth_factor = 1000.0);
 
   /** Object that can compute planes in an image
    */
@@ -564,7 +565,7 @@ namespace rgbd
     /** Method to compute a transformation from the source frame to the destination one.
      * Some odometry algorithms do not used some data of frames (eg. ICP does not use images).
      * In such case corresponding arguments can be set as empty Mat.
-     * The method returns true if all internal computions were possible (e.g. there were enough correspondences,
+     * The method returns true if all internal computations were possible (e.g. there were enough correspondences,
      * system of equations has a solution, etc) and resulting transformation satisfies some test if it's provided
      * by the Odometry inheritor implementation (e.g. thresholds for maximum translation and rotation).
      * @param srcImage Image data of the source frame (CV_8UC1)

@@ -8,7 +8,8 @@
 
 using namespace std;
 using namespace cv;
-using namespace cv::tbm;
+using namespace cv::detail::tracking;
+using namespace cv::detail::tracking::tbm;
 
 static const char* keys =
 {   "{video_name       | | video name                       }"
@@ -123,7 +124,7 @@ private:
 
 cv::Ptr<ITrackerByMatching>
 createTrackerByMatchingWithFastDescriptor() {
-    cv::tbm::TrackerParams params;
+    tbm::TrackerParams params;
 
     cv::Ptr<ITrackerByMatching> tracker = createTrackerByMatching(params);
 

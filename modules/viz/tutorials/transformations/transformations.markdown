@@ -84,8 +84,8 @@ Results
 
 -#  Here is the result from the camera point of view.
 
-    ![](images/camera_view_point.png)
+![](images/camera_view_point.png)
 
 -#  Here is the result from global point of view.
 
-    ![](images/global_view_point.png)
+![](images/global_view_point.png)

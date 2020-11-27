@@ -39,80 +39,96 @@
  //
  //M*/
 
-#ifndef __OPENCV_ONLINEMIL_HPP__
-#define __OPENCV_ONLINEMIL_HPP__
+#include "opencv2/tracking/tracking_legacy.hpp"
 
-#include "opencv2/core.hpp"
-#include <limits>
+namespace cv {
+namespace legacy {
+inline namespace tracking {
 
-namespace cv
+Tracker::Tracker()
+{
+    isInit = false;
+}
+
+Tracker::~Tracker()
+{
+}
+
+bool Tracker::init( InputArray image, const Rect2d& boundingBox )
 {
 
-//! @addtogroup tracking
-//! @{
-
-//TODO based on the original implementation
-//http://vision.ucsd.edu/~bbabenko/project_miltrack.shtml
-
-class ClfOnlineStump;
-
-class CV_EXPORTS ClfMilBoost
-{
- public:
-  struct CV_EXPORTS Params
+  if( isInit )
   {
-    Params();
-    int _numSel;
-    int _numFeat;
-    float _lRate;
-  };
-
-  ClfMilBoost();
-  ~ClfMilBoost();
-  void init( const ClfMilBoost::Params &parameters = ClfMilBoost::Params() );
-  void update( const Mat& posx, const Mat& negx );
-  std::vector<float> classify( const Mat& x, bool logR = true );
-
-  inline float sigmoid( float x )
-  {
-    return 1.0f / ( 1.0f + exp( -x ) );
+    return false;
   }
 
- private:
-  uint _numsamples;
-  ClfMilBoost::Params _myParams;
-  std::vector<int> _selectors;
-  std::vector<ClfOnlineStump*> _weakclf;
-  uint _counter;
+  if( image.empty() )
+    return false;
 
-};
+  sampler = Ptr<TrackerContribSampler>( new TrackerContribSampler() );
+  featureSet = Ptr<TrackerContribFeatureSet>( new TrackerContribFeatureSet() );
+  model = Ptr<TrackerModel>();
 
-class ClfOnlineStump
+  bool initTracker = initImpl( image.getMat(), boundingBox );
+
+  if (initTracker)
+  {
+    isInit = true;
+  }
+
+  return initTracker;
+}
+
+bool Tracker::update( InputArray image, Rect2d& boundingBox )
 {
- public:
-  float _mu0, _mu1, _sig0, _sig1;
-  float _q;
-  int _s;
-  float _log_n1, _log_n0;
-  float _e1, _e0;
-  float _lRate;
 
-  ClfOnlineStump();
-  ClfOnlineStump( int ind );
-  void init();
-  void update( const Mat& posx, const Mat& negx, const cv::Mat_<float> & posw = cv::Mat_<float>(), const cv::Mat_<float> & negw = cv::Mat_<float>() );
-  bool classify( const Mat& x, int i );
-  float classifyF( const Mat& x, int i );
-  std::vector<float> classifySetF( const Mat& x );
+  if( !isInit )
+  {
+    return false;
+  }
 
- private:
-  bool _trained;
-  int _ind;
+  if( image.empty() )
+    return false;
 
+  return updateImpl( image.getMat(), boundingBox );
+}
+
+
+
+class LegacyTrackerWrapper : public cv::Tracker
+{
+    const Ptr<legacy::Tracker> legacy_tracker_;
+public:
+    LegacyTrackerWrapper(const Ptr<legacy::Tracker>& legacy_tracker) : legacy_tracker_(legacy_tracker)
+    {
+        CV_Assert(legacy_tracker_);
+    }
+    virtual ~LegacyTrackerWrapper() CV_OVERRIDE {};
+
+    void init(InputArray image, const Rect& boundingBox) CV_OVERRIDE
+    {
+        CV_DbgAssert(legacy_tracker_);
+        legacy_tracker_->init(image, (Rect2d)boundingBox);
+    }
+
+    bool update(InputArray image, CV_OUT Rect& boundingBox) CV_OVERRIDE
+    {
+        CV_DbgAssert(legacy_tracker_);
+        Rect2d boundingBox2d;
+        bool res = legacy_tracker_->update(image, boundingBox2d);
+        int x1 = cvRound(boundingBox2d.x);
+        int y1 = cvRound(boundingBox2d.y);
+        int x2 = cvRound(boundingBox2d.x + boundingBox2d.width);
+        int y2 = cvRound(boundingBox2d.y + boundingBox2d.height);
+        boundingBox = Rect(x1, y1, x2 - x1, y2 - y1) & Rect(Point(0, 0), image.size());
+        return res;
+    }
 };
 
-//! @}
 
-} /* namespace cv */
+CV_EXPORTS_W Ptr<cv::Tracker> upgradeTrackingAPI(const Ptr<legacy::Tracker>& legacy_tracker)
+{
+    return makePtr<LegacyTrackerWrapper>(legacy_tracker);
+}
 
-#endif
+}}}  // namespace

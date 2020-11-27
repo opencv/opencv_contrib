@@ -16,7 +16,7 @@ Inspite of all this, Julia severely lacks in a lot of traditional computer visio
 
 The Bindings
 -----------------------
-The OpenCV bindings for Julia are created automatically using Python scripts at configure time and then installed with the Julia package manager on the system. These bindings cover most of the important functionality present in the core, imgproc, imgcodecs, highgui, videio, and dnn modules. These bindings depend on CxxWrap.jl and the process for usage and compilation is explained in detail below. The Bindings have been tested on Ubuntu and Mac. Windows might work but is not officially tested and supported right now.
+The OpenCV bindings for Julia are created automatically using Python scripts at configure time and then installed with the Julia package manager on the system. These bindings cover most of the important functionality present in the core, imgproc, imgcodecs, highgui, videio, calib3d, and dnn modules. These bindings depend on CxxWrap.jl and the process for usage and compilation is explained in detail below. The Bindings have been tested on Ubuntu and Mac. Windows might work but is not officially tested and supported right now.
 
 The generation process and the method by which the binding works are similar to the Python bindings. The only major difference is that CxxWrap.jl does not support optional arguments. As a consequence, it's necessary to define the optional arguments in Julia code which adds a lot of additional complexity.
 

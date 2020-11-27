@@ -4,11 +4,15 @@
 
 #include "test_precomp.hpp"
 
+#include <opencv2/tracking/tracking_legacy.hpp>
+//using namespace cv::tracking::legacy;
+
 namespace opencv_test { namespace {
+
 
 TEST(MEDIAN_FLOW_Parameters, IO)
 {
-    TrackerMedianFlow::Params parameters;
+    legacy::TrackerMedianFlow::Params parameters;
 
     parameters.maxLevel = 10;
     parameters.maxMedianLengthOfDisplacementDifference = 11;
@@ -25,7 +29,7 @@ TEST(MEDIAN_FLOW_Parameters, IO)
 
     FileStorage fsReader(serializedParameters, FileStorage::READ + FileStorage::MEMORY);
 
-    TrackerMedianFlow::Params readParameters;
+    legacy::TrackerMedianFlow::Params readParameters;
     readParameters.read(fsReader.root());
 
     ASSERT_EQ(parameters.maxLevel, readParameters.maxLevel);
@@ -41,11 +45,11 @@ TEST(MEDIAN_FLOW_Parameters, IO)
 
 TEST(MEDIAN_FLOW_Parameters, Default_Value_If_Absent)
 {
-    TrackerMedianFlow::Params defaultParameters;
+    legacy::TrackerMedianFlow::Params defaultParameters;
 
     FileStorage fsReader(String("%YAML 1.0"), FileStorage::READ + FileStorage::MEMORY);
 
-    TrackerMedianFlow::Params readParameters;
+    legacy::TrackerMedianFlow::Params readParameters;
     readParameters.read(fsReader.root());
 
     ASSERT_EQ(defaultParameters.maxLevel, readParameters.maxLevel);
@@ -60,7 +64,7 @@ TEST(MEDIAN_FLOW_Parameters, Default_Value_If_Absent)
 
 TEST(KCF_Parameters, IO)
 {
-    TrackerKCF::Params parameters;
+    legacy::TrackerKCF::Params parameters;
 
     parameters.sigma = 0.3f;
     parameters.lambda = 0.02f;
@@ -83,7 +87,7 @@ TEST(KCF_Parameters, IO)
 
     FileStorage fsReader(serializedParameters, FileStorage::READ + FileStorage::MEMORY);
 
-    TrackerKCF::Params readParameters;
+    legacy::TrackerKCF::Params readParameters;
     readParameters.read(fsReader.root());
 
     ASSERT_DOUBLE_EQ(parameters.sigma, readParameters.sigma);
@@ -103,11 +107,11 @@ TEST(KCF_Parameters, IO)
 
 TEST(KCF_Parameters, Default_Value_If_Absent)
 {
-    TrackerKCF::Params defaultParameters;
+    legacy::TrackerKCF::Params defaultParameters;
 
     FileStorage fsReader(String("%YAML 1.0"), FileStorage::READ + FileStorage::MEMORY);
 
-    TrackerKCF::Params readParameters;
+    legacy::TrackerKCF::Params readParameters;
     readParameters.read(fsReader.root());
 
     ASSERT_DOUBLE_EQ(defaultParameters.sigma, readParameters.sigma);

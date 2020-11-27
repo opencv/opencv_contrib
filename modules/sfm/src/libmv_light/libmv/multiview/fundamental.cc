@@ -521,7 +521,7 @@ bool EstimateFundamentalFromCorrespondences(
             FundamentalSymmetricEpipolarCostFunctor,
             2,  // num_residuals
             9>(fundamental_symmetric_epipolar_cost_function),
-        NULL,
+        nullptr,
         F->data());
   }
 

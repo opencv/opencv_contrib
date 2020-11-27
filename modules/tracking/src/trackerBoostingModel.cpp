@@ -39,14 +39,16 @@
  //
  //M*/
 
+#include "precomp.hpp"
 #include "trackerBoostingModel.hpp"
 
 /**
  * TrackerBoostingModel
  */
 
-namespace cv
-{
+namespace cv {
+inline namespace tracking {
+namespace impl {
 
 TrackerBoostingModel::TrackerBoostingModel( const Rect& boundingBox )
 {
@@ -119,4 +121,4 @@ void TrackerBoostingModel::responseToConfidenceMap( const std::vector<Mat>& resp
   }
 }
 
-}
+}}}  // namespace

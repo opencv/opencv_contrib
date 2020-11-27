@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "tsdf.hpp"
+#include "tsdf_functions.hpp"
 
 namespace cv
 {
@@ -35,20 +35,10 @@ class HashTSDFVolume : public Volume
     bool zFirstMemOrder;
 };
 
-struct VolumeUnit
-{
-    VolumeUnit() : pVolume(nullptr){};
-    ~VolumeUnit() = default;
-
-    cv::Ptr<TSDFVolume> pVolume;
-    cv::Vec3i index;
-    bool isActive;
-};
-
 //! Spatial hashing
 struct tsdf_hash
 {
-    size_t operator()(const cv::Vec3i& x) const noexcept
+    size_t operator()(const Vec3i& x) const noexcept
     {
         size_t seed                     = 0;
         constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
@@ -60,54 +50,84 @@ struct tsdf_hash
     }
 };
 
+typedef unsigned int VolumeIndex;
+struct VolumeUnit
+{
+    cv::Vec3i coord;
+    VolumeIndex index;
+    cv::Matx44f pose;
+    int lastVisibleIndex = 0;
+    bool isActive;
+};
+
 typedef std::unordered_set<cv::Vec3i, tsdf_hash> VolumeUnitIndexSet;
-typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitMap;
+typedef std::unordered_map<cv::Vec3i, VolumeUnit, tsdf_hash> VolumeUnitIndexes;
 
 class HashTSDFVolumeCPU : public HashTSDFVolume
 {
    public:
     // dimension in voxels, size in meters
-    HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
-                      float _truncDist, int _maxWeight, float _truncateThreshold,
-                      int _volumeUnitRes, bool zFirstMemOrder = true);
+    HashTSDFVolumeCPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
+                      float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics) override;
-    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
-                         cv::Size frameSize, cv::OutputArray points,
-                         cv::OutputArray normals) const override;
+    HashTSDFVolumeCPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = true);
 
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
+    void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
+                    const int frameId = 0) override;
+    void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
+                  OutputArray normals) const override;
 
-    virtual void reset() override;
+    void fetchNormals(InputArray points, OutputArray _normals) const override;
+    void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
+
+    void reset() override;
+    size_t getTotalVolumeUnits() const { return volumeUnits.size(); }
+    int getVisibleBlocks(int currFrameId, int frameThreshold) const;
 
     //! Return the voxel given the voxel index in the universal volume (1 unit = 1 voxel_length)
-    virtual TsdfVoxel at(const cv::Vec3i& volumeIdx) const;
+    TsdfVoxel at(const Vec3i& volumeIdx) const;
 
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
+    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
+
+    TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const;
+
 
     float interpolateVoxelPoint(const Point3f& point) const;
-    inline float interpolateVoxel(const cv::Point3f& point) const;
-    Point3f getNormalVoxel(cv::Point3f p) const;
+    float interpolateVoxel(const cv::Point3f& point) const;
+    Point3f getNormalVoxel(const cv::Point3f& p) const;
 
     //! Utility functions for coordinate transformations
-    cv::Vec3i volumeToVolumeUnitIdx(cv::Point3f point) const;
-    cv::Point3f volumeUnitIdxToVolume(cv::Vec3i volumeUnitIdx) const;
+    Vec3i volumeToVolumeUnitIdx(const Point3f& point) const;
+    Point3f volumeUnitIdxToVolume(const Vec3i& volumeUnitIdx) const;
 
-    cv::Point3f voxelCoordToVolume(cv::Vec3i voxelIdx) const;
-    cv::Vec3i volumeToVoxelCoord(cv::Point3f point) const;
+    Point3f voxelCoordToVolume(const Vec3i& voxelIdx) const;
+    Vec3i volumeToVoxelCoord(const Point3f& point) const;
 
    public:
-    //! Hashtable of individual smaller volume units
-    VolumeUnitMap volumeUnits;
+       Vec4i volStrides;
+       Vec6f frameParams;
+       Mat pixNorms;
+       VolumeUnitIndexes volumeUnits;
+       cv::Mat volUnitsData;
+       VolumeIndex lastVolIndex;
 };
-cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Matx44f _pose,
-                                           float _raycastStepFactor, float _truncDist,
-                                           int _maxWeight, float truncateThreshold,
-                                           int volumeUnitResolution = 16);
+
+template<typename T>
+Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _volumeParams)
+{
+    return makePtr<T>(_volumeParams);
+}
+
+template<typename T>
+Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
+                                          int _maxWeight, float truncateThreshold, int volumeUnitResolution = 16)
+{
+    return makePtr<T>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, truncateThreshold,
+                      volumeUnitResolution);
+}
 }  // namespace kinfu
 }  // namespace cv
 #endif

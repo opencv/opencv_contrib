@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     cap >> frame;
 
     // target bounding box
-    Rect2d roi;
+    Rect roi;
     if (argc > 2) {
         // read first line of ground-truth file
         std::string groundtruthPath = argv[2];
