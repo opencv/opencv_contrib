@@ -1015,6 +1015,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
     //std::cout << "maxWeight == " << maxWeight << std::endl;
+    UMat U_volUnitsData = _volUnitsData.getUMat(ACCESS_RW);
+
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
         (int)_indexes.list_size,
@@ -1022,7 +1024,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         (int)_indexes.hash_divisor,
         ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
         //ocl::KernelArg::PtrReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
-        ocl::KernelArg::ReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
+        //ocl::KernelArg::ReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
+        ocl::KernelArg::ReadWrite(U_volUnitsData),
         ocl::KernelArg::PtrReadOnly(_pixNorms),
         //ocl::KernelArg::PtrReadOnly(pixNorms.getUMat(ACCESS_RW)),
         ocl::KernelArg::ReadOnly(posesGPU.getUMat(ACCESS_RW)),
@@ -1051,6 +1054,17 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //std::cout << "r = " << volumeUnitResolution << std::endl;
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
+    
+    //Mat _tmp = _volUnitsData;
+    (U_volUnitsData.getMat(ACCESS_RW)).copyTo(_volUnitsData);
+    //Mat tmp = U_volUnitsData.getMat(ACCESS_RW);
+    
+    //tmp.copyTo(_volUnitsData);
+    //U_volUnitsData.release();
+    //tmp.release();
+    //bool res = false;
+    //if (_tmp == _volUnitsData) res = true;
+    //std::cout << res << std::endl;
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)

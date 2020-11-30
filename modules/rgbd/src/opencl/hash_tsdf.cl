@@ -344,7 +344,7 @@ __kernel void integrateAllVolumeUnits(
 
     if (isActive == 1)
     {
-        printf("lol");
+        //printf("lol");
         int resol = volResolution4[0] * volResolution4[1] * volResolution4[2];
         //__global struct TsdfVoxel * volumeptr = (allVolumePtr+(row*resol));
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
