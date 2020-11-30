@@ -49,8 +49,8 @@ struct Volume_NODE
     Vec4i idx = Vec4i(-2147483647);
     int32_t row   = -1;
     int32_t nextVolumeRow = -1;
-    int32_t isActive;
-    int32_t lastVisibleIndex;
+    int32_t isActive = 0;
+    int32_t lastVisibleIndex = -1;
     //int32_t tmp;
 };
 
@@ -76,6 +76,7 @@ public:
     void update(Vec3i indx, int isActive, int lastVisibleIndex);
     void updateActive(Vec3i indx, int isActive);
     void expand();
+    bool getActive(Vec3i indx) const;
     int getNextVolume(int hash, int& num, int i, int start);
     int find_Volume(Vec3i indx) const;
     bool isExist(Vec3i indx);

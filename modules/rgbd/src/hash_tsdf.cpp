@@ -1223,7 +1223,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
-    /*
+    
     auto Integrate = [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
@@ -1231,30 +1231,32 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
             if (idx < 0 || idx == _lastVolIndex - 1) return;
 
-            bool& _isActive = isActive.at<bool>(idx, 0);
+            //bool& _isActive = isActive.at<bool>(idx, 0);
+            bool _isActive = _indexes.getActive(tsdf_idx);
 
             if (_isActive)
             {
                 //! The volume unit should already be added into the Volume from the allocator
                 Matx44f _pose = poses.at<Matx44f>(idx, 0);
 
-                //integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
-                //    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                //    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
+                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
+                    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
 
                 //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
                 //! Ensure all active volumeUnits are set to inactive for next integration
-                _isActive = false;
+                //_isActive = false;
+                _indexes.updateActive(tsdf_idx, 0);
             }
         }
     };
-    */
+    
     //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
     //Integrate(Range(0, (int)_totalVolUnits.size()));
 
     //std::cout << "lol\n";
 
-    integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
+    //integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
     //std::cout << "lol\n";
 }

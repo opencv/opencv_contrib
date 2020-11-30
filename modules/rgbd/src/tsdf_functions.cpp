@@ -523,6 +523,24 @@ void VolumesTable::updateActive(Vec3i indx, int isActive)
     }
 }
 
+bool VolumesTable::getActive(Vec3i indx) const
+{
+    Vec4i idx(indx[0], indx[1], indx[2], 0);
+    int hash = int(calc_hash(idx) % hash_divisor);
+    int num = 1;
+    int i = hash * num * list_size;
+    while (i != -1)
+    {
+        Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
+        if (v.idx == idx)
+            return v.isActive;
+        if (v.idx[0] == -2147483647)
+            return false;
+        i = v.nextVolumeRow;
+    }
+    return false;
+}
+
 int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
 {
     if (i != start && i % list_size == 0)
@@ -566,7 +584,7 @@ int VolumesTable::find_Volume(Vec3i indx) const
             return v.row;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == -2147483648)
+        if (v.idx[0] == -2147483647)
             return -2;
         i = v.nextVolumeRow;
     }
