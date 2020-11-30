@@ -1223,40 +1223,42 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
-    
-    auto Integrate = [&](const Range& range) {
-        for (int i = range.start; i < range.end; i++)
-        {
-            Vec3i tsdf_idx = _totalVolUnits[i];
-            VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
-            if (idx < 0 || idx == _lastVolIndex - 1) return;
-
-            //bool& _isActive = isActive.at<bool>(idx, 0);
-            bool _isActive = _indexes.getActive(tsdf_idx);
-
-            if (_isActive)
+    if (false)
+    {
+        auto Integrate = [&](const Range& range) {
+            for (int i = range.start; i < range.end; i++)
             {
-                //! The volume unit should already be added into the Volume from the allocator
-                Matx44f _pose = poses.at<Matx44f>(idx, 0);
+                Vec3i tsdf_idx = _totalVolUnits[i];
+                VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
+                if (idx < 0 || idx == _lastVolIndex - 1) return;
 
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
-                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
+                //bool& _isActive = isActive.at<bool>(idx, 0);
+                bool _isActive = _indexes.getActive(tsdf_idx);
+                //std::cout << _isActive;
+                if (_isActive)
+                {
+                    //std::cout << " lol ";
+                    //! The volume unit should already be added into the Volume from the allocator
+                    Matx44f _pose = poses.at<Matx44f>(idx, 0);
 
-                //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
-                //! Ensure all active volumeUnits are set to inactive for next integration
-                //_isActive = false;
-                _indexes.updateActive(tsdf_idx, 0);
+                    integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
+                        Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
+                        depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
+
+                    //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
+                    //! Ensure all active volumeUnits are set to inactive for next integration
+                    //_isActive = false;
+                    _indexes.updateActive(tsdf_idx, 0);
+                }
             }
-        }
-    };
-    
-    //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-    //Integrate(Range(0, (int)_totalVolUnits.size()));
+        };
 
+        //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
+        Integrate(Range(0, (int)_totalVolUnits.size()));
+    }
     //std::cout << "lol\n";
-
-    //integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
+    else
+    integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
     //std::cout << "lol\n";
 }

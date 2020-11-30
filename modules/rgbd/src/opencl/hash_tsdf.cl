@@ -334,7 +334,7 @@ __kernel void integrateAllVolumeUnits(
 
     int4 v = totalVolUnits[k];
     int row = findRow(hash_table, v, list_size, bufferNums, hash_divisor);
-    if (row < 0)
+    if (row < 0 || row > lastVolIndex-1)
         return;
     //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | row = %d \n", i, j, k, v[0], v[1], v[2], row);
     //printf("maxWeight = %d \n", maxWeight);
@@ -344,6 +344,7 @@ __kernel void integrateAllVolumeUnits(
 
     if (isActive == 1)
     {
+        printf("lol");
         int resol = volResolution4[0] * volResolution4[1] * volResolution4[2];
         //__global struct TsdfVoxel * volumeptr = (allVolumePtr+(row*resol));
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
