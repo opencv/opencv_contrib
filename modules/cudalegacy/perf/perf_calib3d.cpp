@@ -42,9 +42,9 @@
 
 #include "perf_precomp.hpp"
 
-#ifdef HAVE_OPENCV_CALIB3D
+#ifdef HAVE_OPENCV_3D
 
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
 
 namespace opencv_test { namespace {
 

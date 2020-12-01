@@ -1,5 +1,5 @@
 #include <opencv2/core.hpp>
-#include <opencv2/stereo.hpp>
+#include <opencv2/xstereo.hpp>
 
 using namespace cv;
 using namespace std;

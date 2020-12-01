@@ -7,7 +7,7 @@
 #include "opencv2/ts.hpp"
 #include "opencv2/ts/cuda_test.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
 
 #include "cvconfig.h"
 

@@ -4,7 +4,7 @@
 
 #include "precomp.hpp"
 #include "face_alignmentimpl.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
 #include <climits>
 
 using namespace std;
