@@ -1095,7 +1095,11 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //int nz = cv::countNonZero(diff);
 
     //if (nz == 0) std::cout << "compare = " << true << std::endl;
-    if (matIsEqual(checking, _volUnitsData)) std::cout << "compare = " << true << std::endl;
+    if (matIsEqual(checking, _volUnitsData)) 
+        std::cout << "compare = " << true << std::endl;
+    else
+        std::cout << "compare = " << false << std::endl;
+
     //Mat _tmp = _volUnitsData;
     //(U_volUnitsData.getMat(ACCESS_RW)).copyTo(_volUnitsData);
     //Mat tmp = U_volUnitsData.getMat(ACCESS_RW);
