@@ -43,7 +43,7 @@
 #define __OPENCV_CCALIB_PRECOMP__
 
 #include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <vector>
 
 #endif

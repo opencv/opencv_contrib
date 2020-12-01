@@ -40,6 +40,7 @@
  //M*/
 
 #include "test_precomp.hpp"
+#include "opencv2/stereo.hpp"
 
 namespace opencv_test { namespace {
 

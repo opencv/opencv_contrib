@@ -32,7 +32,7 @@ ocv_create_module()
 
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
-ocv_add_samples(opencv_imgproc opencv_calib3d opencv_features2d opencv_flann)
+ocv_add_samples(opencv_imgproc opencv_3d opencv_features2d opencv_flann)
 
 
 if (VTK_VERSION VERSION_LESS "8.90.0")

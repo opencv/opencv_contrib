@@ -18,7 +18,7 @@ namespace cv
 {
 namespace stereo
 {
-/** \addtogroup stereo
+/** \addtogroup xstereo
  *  @{
  */
 

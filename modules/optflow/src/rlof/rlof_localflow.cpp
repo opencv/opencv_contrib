@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "../precomp.hpp"
 
-#include "opencv2/calib3d.hpp"  // findHomography
+#include "opencv2/3d.hpp"  // findHomography
 #include "rlof_localflow.h"
 #include "berlof_invoker.hpp"
 #include "rlof_invoker.hpp"

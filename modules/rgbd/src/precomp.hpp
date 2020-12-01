@@ -20,7 +20,7 @@
 #include "opencv2/core/hal/intrin.hpp"
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
 #include "opencv2/rgbd.hpp"
 
 #endif

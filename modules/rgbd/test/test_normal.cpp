@@ -6,7 +6,7 @@
 
 #include "test_precomp.hpp"
 #include <opencv2/rgbd.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 
 namespace opencv_test { namespace {
 
