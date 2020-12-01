@@ -983,6 +983,33 @@ void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFa
         throw std::runtime_error("Failed to run kernel");
 }
 */
+
+bool matIsEqual(const cv::Mat Mat1, const cv::Mat Mat2)
+{
+    if (Mat1.dims == Mat2.dims &&
+        Mat1.size == Mat2.size &&
+        Mat1.elemSize() == Mat2.elemSize())
+    {
+        if (Mat1.isContinuous() && Mat2.isContinuous())
+        {
+            return 0 == memcmp(Mat1.ptr(), Mat2.ptr(), Mat1.total() * Mat1.elemSize());
+        }
+        else
+        {
+            const cv::Mat* arrays[] = { &Mat1, &Mat2, 0 };
+            uchar* ptrs[2];
+            cv::NAryMatIterator it(arrays, ptrs, 2);
+            for (unsigned int p = 0; p < it.nplanes; p++, ++it)
+                if (0 != memcmp(it.ptrs[0], it.ptrs[1], it.size * Mat1.elemSize()))
+                    return false;
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics)
 {
     //std::cout << "integrateAllVolumeUnitsGPU" << std::endl;
@@ -1015,7 +1042,10 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
     //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
     //std::cout << "maxWeight == " << maxWeight << std::endl;
-    UMat U_volUnitsData = _volUnitsData.getUMat(ACCESS_RW);
+    Mat _tmp;
+    _volUnitsData.copyTo(_tmp);
+    UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
+    //UMat U_volUnitsData = _volUnitsData.getUMat(ACCESS_RW);
 
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
@@ -1038,10 +1068,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         dfac,
         truncDist,
         int(maxWeight)
-        
     );
     //std::cout << _indexes
-
     //int resol = 1;
     int resol = volumeUnitResolution;
     size_t globalSize[3];
@@ -1055,8 +1083,21 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
     
+    Mat checking;
+    _volUnitsData.copyTo(checking);
+
+    _tmp = U_volUnitsData.getMat(ACCESS_RW);
+    _tmp.copyTo(_volUnitsData);
+    _tmp.release();
+
+    //cv::Mat diff;
+    //cv::compare(checking, _volUnitsData, diff, cv::CMP_NE);
+    //int nz = cv::countNonZero(diff);
+
+    //if (nz == 0) std::cout << "compare = " << true << std::endl;
+    if (matIsEqual(checking, _volUnitsData)) std::cout << "compare = " << true << std::endl;
     //Mat _tmp = _volUnitsData;
-    (U_volUnitsData.getMat(ACCESS_RW)).copyTo(_volUnitsData);
+    //(U_volUnitsData.getMat(ACCESS_RW)).copyTo(_volUnitsData);
     //Mat tmp = U_volUnitsData.getMat(ACCESS_RW);
     
     //tmp.copyTo(_volUnitsData);
