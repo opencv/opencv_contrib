@@ -864,7 +864,7 @@ void HashTSDFVolumeGPU::reset()
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
     _indexes = VolumesTable();
-    posesGPU = cv::Mat(buff_lvl, 16, rawType<float[16]>());
+    posesGPU = cv::Mat(buff_lvl, 16, rawType<float>());
 }
 
 static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)
@@ -1223,6 +1223,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         {
             posesGPU.at<float>(idx, i) = vol2camMatrix[i];
         }
+
         /*
         printf(" CPU | %f %f %f %f | %f %f %f %f | %f %f %f %f | %f %f %f %f |\n",
             vol2camMatrix[0], vol2camMatrix[1], vol2camMatrix[2], vol2camMatrix[3],

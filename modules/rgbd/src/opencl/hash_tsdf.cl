@@ -238,13 +238,13 @@ void integrateVolumeUnit(
             continue;
 
         float3 camPixVec = camSpacePt / camSpacePt.z;
-        float2 projected = mad(camPixVec.xy, fxy, cxy);
-        //printf("fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
-
+        float2 projected = mad(camPixVec.xy, fxy, cxy); // mad(a,b,c) = a * b + c
+        printf("GPU: fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
+        printf("GPU: camSpacePt = [%f, %f, %f] \n     camPixVec = [%f, %f, %f] \n",camSpacePt[0], camSpacePt[1], camSpacePt[2], camPixVec[0], camPixVec[1], camPixVec[2]);
 
         float v;
         // bilinearly interpolate depth at projected
-        //printf("projected = [%f, %f] \n",projected[0],projected[1] );
+        printf("projected = [%f, %f] \n",projected[0],projected[1] );
         if(all(projected >= 0) && all(projected < limits))
         {
             //printf("<----- lol -----> \n");
@@ -314,7 +314,6 @@ __kernel void integrateAllVolumeUnits(
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
                         __global struct Volume_NODE * hash_table,
-                        
                         const int list_size, 
                         const int bufferNums, 
                         const int hash_divisor,
@@ -323,7 +322,6 @@ __kernel void integrateAllVolumeUnits(
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
                         __global const float * pixNorms,
-                        //__global const float16 * allVol2camMatrix,
                         __global const float * allVol2camMatrix,
                         int val2cam_step, int val2cam_offset,
                         int val2cam_rows, int val2cam_cols,
