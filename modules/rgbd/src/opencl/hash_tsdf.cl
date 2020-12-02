@@ -239,12 +239,15 @@ void integrateVolumeUnit(
 
         float3 camPixVec = camSpacePt / camSpacePt.z;
         float2 projected = mad(camPixVec.xy, fxy, cxy); // mad(a,b,c) = a * b + c
-        printf("GPU: fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
-        printf("GPU: camSpacePt = [%f, %f, %f] \n     camPixVec = [%f, %f, %f] \n",camSpacePt[0], camSpacePt[1], camSpacePt[2], camPixVec[0], camPixVec[1], camPixVec[2]);
+        //printf("GPU: fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
+        //printf("GPU: camSpacePt = [%f, %f, %f] \n     camPixVec = [%f, %f, %f] \n",camSpacePt[0], camSpacePt[1], camSpacePt[2], camPixVec[0], camPixVec[1], camPixVec[2]);
+        
+        //if(camPixVec[0] > 0 && camPixVec[1] > 0) printf("GPU: camSpacePt = [%f, %f, %f] \n     camPixVec = [%f, %f, %f] \n",camSpacePt[0], camSpacePt[1], camSpacePt[2], camPixVec[0], camPixVec[1], camPixVec[2]);
+
 
         float v;
         // bilinearly interpolate depth at projected
-        printf("projected = [%f, %f] \n",projected[0],projected[1] );
+        //printf("projected = [%f, %f] \n",projected[0],projected[1] );
         if(all(projected >= 0) && all(projected < limits))
         {
             //printf("<----- lol -----> \n");
@@ -286,7 +289,7 @@ void integrateVolumeUnit(
         float sdf = pixNorm*(v*dfac - camSpacePt.z);
         // possible alternative is:
         // float sdf = length(camSpacePt)*(v*dfac/camSpacePt.z - 1.0);
-        printf("sdf \n");
+        //printf("sdf \n");
         if(sdf >= -truncDist)
         {
             float tsdf = fmin(1.0f, sdf * truncDistInv);
@@ -395,7 +398,7 @@ __kernel void integrateAllVolumeUnits(
         vol2camMatrix[4], vol2camMatrix[5], vol2camMatrix[6], vol2camMatrix[7],
         vol2camMatrix[8], vol2camMatrix[9], vol2camMatrix[10], vol2camMatrix[11],
         vol2camMatrix[12], vol2camMatrix[13], vol2camMatrix[14], vol2camMatrix[15]);
-*/        
+*/       
         
         /*
         const float4 vol2cam0 = vol2camMatrix.s0123;

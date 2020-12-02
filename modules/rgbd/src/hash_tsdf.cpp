@@ -1097,11 +1097,12 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //int nz = cv::countNonZero(diff);
 
     //if (nz == 0) std::cout << "compare = " << true << std::endl;
+    /*
     if (matIsEqual(checking, _volUnitsData)) 
         std::cout << "compare = " << true << std::endl;
     else
         std::cout << "compare = " << false << std::endl;
-
+    */
     //Mat _tmp = _volUnitsData;
     //(U_volUnitsData.getMat(ACCESS_RW)).copyTo(_volUnitsData);
     //Mat tmp = U_volUnitsData.getMat(ACCESS_RW);
@@ -1215,7 +1216,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
         lastVisibleIndexes.at<int>(idx, 0) = frameId;
         //Affine3f cam2vol(Affine3f(subvolumePose) * Affine3f(cameraPose));
-        Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+        Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
         _indexes.updateActive(tsdf_idx, 1);
  
         auto vol2camMatrix = vol2cam.matrix.val;
