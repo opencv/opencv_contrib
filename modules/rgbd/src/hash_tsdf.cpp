@@ -864,7 +864,7 @@ void HashTSDFVolumeGPU::reset()
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
     _indexes = VolumesTable();
-    posesGPU = cv::Mat(buff_lvl, 1, rawType<ocl::KernelArg>());
+    posesGPU = cv::Mat(buff_lvl, 16, rawType<float[16]>());
 }
 
 static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)
@@ -1058,7 +1058,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         ocl::KernelArg::ReadWrite(U_volUnitsData),
         ocl::KernelArg::PtrReadOnly(_pixNorms),
         //ocl::KernelArg::PtrReadOnly(pixNorms.getUMat(ACCESS_RW)),
-        ocl::KernelArg::ReadOnly(posesGPU.getUMat(ACCESS_RW)),
+        ocl::KernelArg::ReadOnly(posesGPU.getUMat(ACCESS_READ)),
+        //ocl::KernelArg::ReadOnly(poses.getUMat(ACCESS_READ)),
         _lastVolIndex,
         voxelSize,
         volResGpu.val,
@@ -1078,17 +1079,18 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     //globalSize[0] = (size_t)volResGpu.val[0]; // volResolution.x
     //globalSize[1] = (size_t)volResGpu.val[1]; // volResolution.y
     globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
-
-    //std::cout << "r = " << volumeUnitResolution << std::endl;
+    //printf("CPU: fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
+    //std::cout << "rmaxWeight == " << maxWeight << std::endl;
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
     
     Mat checking;
     _volUnitsData.copyTo(checking);
 
-    _tmp = U_volUnitsData.getMat(ACCESS_RW);
-    _tmp.copyTo(_volUnitsData);
-    _tmp.release();
+    U_volUnitsData.getMat(ACCESS_RW).copyTo(_volUnitsData);
+    //_tmp = U_volUnitsData.getMat(ACCESS_RW);
+    //_tmp.copyTo(_volUnitsData);
+    //_tmp.release();
 
     //cv::Mat diff;
     //cv::compare(checking, _volUnitsData, diff, cv::CMP_NE);
@@ -1215,9 +1217,19 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         //Affine3f cam2vol(Affine3f(subvolumePose) * Affine3f(cameraPose));
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         _indexes.updateActive(tsdf_idx, 1);
-        ocl::KernelArg pose = ocl::KernelArg::Constant(vol2cam.matrix.val, sizeof(vol2cam.matrix.val));
-        posesGPU.at<ocl::KernelArg>(idx, 0) = pose;
-        //ocl::KernelArg pose;
+ 
+        auto vol2camMatrix = vol2cam.matrix.val;
+        for (int i = 0; i < 16; i++)
+        {
+            posesGPU.at<float>(idx, i) = vol2camMatrix[i];
+        }
+        /*
+        printf(" CPU | %f %f %f %f | %f %f %f %f | %f %f %f %f | %f %f %f %f |\n",
+            vol2camMatrix[0], vol2camMatrix[1], vol2camMatrix[2], vol2camMatrix[3],
+            vol2camMatrix[4], vol2camMatrix[5], vol2camMatrix[6], vol2camMatrix[7],
+            vol2camMatrix[8], vol2camMatrix[9], vol2camMatrix[10], vol2camMatrix[11],
+            vol2camMatrix[12], vol2camMatrix[13], vol2camMatrix[14], vol2camMatrix[15]);
+        */
 
         _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
             {

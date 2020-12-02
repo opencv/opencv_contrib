@@ -163,6 +163,8 @@ void integrateVolumeUnit(
     if(x >= volResolution.x || y >= volResolution.y)
         return;
 
+    //printf("ok_1 \n");
+
     // coord-independent constants
     const int3 volDims = volDims4.xyz;
     const float2 limits = (float2)(depth_cols-1, depth_rows-1);
@@ -189,26 +191,32 @@ void integrateVolumeUnit(
     int startZ, endZ;
     if(fabs(zStep.z) > 1e-5)
     {
+        //printf("test_1 \n");
         int baseZ = convert_int(-basePt.z / zStep.z);
         if(zStep.z > 0)
         {
+            //printf("test_11 \n");
             startZ = baseZ;
             endZ = volResolution.z;
         }
         else
         {
+            //printf("test_12 \n");
             startZ = 0;
             endZ = baseZ;
         }
     }
     else
     {
+        //printf("test_2 \n");
         if(basePt.z > 0)
         {
+            //printf("test_21 \n");
             startZ = 0; endZ = volResolution.z;
         }
         else
         {
+            //printf("test_22 \n");
             // z loop shouldn't be performed
             //startZ = endZ = 0;
             return;
@@ -217,6 +225,8 @@ void integrateVolumeUnit(
 
     startZ = max(0, startZ);
     endZ = min(volResolution.z, endZ);
+
+    //printf("ok_2 \n");
 
     for(int z = startZ; z < endZ; z++)
     {
@@ -229,12 +239,15 @@ void integrateVolumeUnit(
 
         float3 camPixVec = camSpacePt / camSpacePt.z;
         float2 projected = mad(camPixVec.xy, fxy, cxy);
+        //printf("fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
+
 
         float v;
         // bilinearly interpolate depth at projected
-        //printf("bilinearly\n");
+        //printf("projected = [%f, %f] \n",projected[0],projected[1] );
         if(all(projected >= 0) && all(projected < limits))
         {
+            //printf("<----- lol -----> \n");
             float2 ip = floor(projected);
             int xi = ip.x, yi = ip.y;
 
@@ -273,7 +286,7 @@ void integrateVolumeUnit(
         float sdf = pixNorm*(v*dfac - camSpacePt.z);
         // possible alternative is:
         // float sdf = length(camSpacePt)*(v*dfac/camSpacePt.z - 1.0);
-        //printf("sdf \n");
+        printf("sdf \n");
         if(sdf >= -truncDist)
         {
             float tsdf = fmin(1.0f, sdf * truncDistInv);
@@ -310,7 +323,8 @@ __kernel void integrateAllVolumeUnits(
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
                         __global const float * pixNorms,
-                        __global const float16 * allVol2camMatrix,
+                        //__global const float16 * allVol2camMatrix,
+                        __global const float * allVol2camMatrix,
                         int val2cam_step, int val2cam_offset,
                         int val2cam_rows, int val2cam_cols,
                         const int lastVolIndex, 
@@ -327,7 +341,8 @@ __kernel void integrateAllVolumeUnits(
     //printf("start \n");
     //printf(" | step, offset = %d %d \n | rows, cols = %d %d \n", table_step, table_offset, table_rows, table_cols);
     //printf(" | step, offset = %d %d \n | rows, cols = %d %d \n", val2cam_step, val2cam_offset, val2cam_rows, val2cam_cols);
-    
+    //printf("fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
+
     int i = get_global_id(0);
     int j = get_global_id(1);
     int k = get_global_id(2);
@@ -336,6 +351,7 @@ __kernel void integrateAllVolumeUnits(
     int row = findRow(hash_table, v, list_size, bufferNums, hash_divisor);
     if (row < 0 || row > lastVolIndex-1)
         return;
+    
     //printf("[i, j, k] = [%d , %d , %d] | idx = [x, y, z] = [%d, %d, %d] | row = %d \n", i, j, k, v[0], v[1], v[2], row);
     //printf("maxWeight = %d \n", maxWeight);
     
@@ -350,9 +366,50 @@ __kernel void integrateAllVolumeUnits(
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
                                                 (allVolumePtr + table_offset +
                                                     (row)*table_step);
+        
+        __global const float * p_vol2camMatrix = (__global const float *)
+                                                 (allVol2camMatrix + val2cam_offset + (row) * val2cam_step);
+        
+        
+        const float16 vol2camMatrix = (float16)
+        (p_vol2camMatrix[0], p_vol2camMatrix[1], p_vol2camMatrix[2], p_vol2camMatrix[3],
+        p_vol2camMatrix[4], p_vol2camMatrix[5], p_vol2camMatrix[6], p_vol2camMatrix[7],
+        p_vol2camMatrix[8], p_vol2camMatrix[9], p_vol2camMatrix[10], p_vol2camMatrix[11],
+        p_vol2camMatrix[12], p_vol2camMatrix[13], p_vol2camMatrix[14], p_vol2camMatrix[15]);
+        /*
+        const float16 vol2camMatrix = (float16)
+        (0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0);
+        */
+
+        /*
         //const float16 vol2camMatrix = allVol2camMatrix[row];
-        const float16 vol2camMatrix = allVol2camMatrix[val2cam_offset + (row) * val2cam_step];
-    
+        //const float16 vol2camMatrix = allVol2camMatrix[val2cam_offset + (row) * val2cam_step];
+        __global const float16 * p_vol2camMatrix = (__global const float16*)
+                                                 (allVol2camMatrix + val2cam_offset + (row) * val2cam_step);
+        const float16 vol2camMatrix = *(p_vol2camMatrix);
+*/
+/*
+        printf(" GPU | %f %f %f %f | %f %f %f %f | %f %f %f %f | %f %f %f %f |\n", 
+        vol2camMatrix[0], vol2camMatrix[1], vol2camMatrix[2], vol2camMatrix[3],
+        vol2camMatrix[4], vol2camMatrix[5], vol2camMatrix[6], vol2camMatrix[7],
+        vol2camMatrix[8], vol2camMatrix[9], vol2camMatrix[10], vol2camMatrix[11],
+        vol2camMatrix[12], vol2camMatrix[13], vol2camMatrix[14], vol2camMatrix[15]);
+*/        
+        
+        /*
+        const float4 vol2cam0 = vol2camMatrix.s0123;
+        const float4 vol2cam1 = vol2camMatrix.s4567;
+        const float4 vol2cam2 = vol2camMatrix.s89ab;
+        printf(" {GPU} | %f %f %f %f | %f %f %f %f | %f %f %f %f |\n", 
+        vol2cam0[0], vol2cam0[1], vol2cam0[2], vol2cam0[3],
+        vol2cam1[0], vol2cam1[1], vol2cam1[2], vol2cam1[3]);
+        vol2cam2[0], vol2cam2[1], vol2cam2[2], vol2cam2[3]);
+        */
+
+
         integrateVolumeUnit(
             i, j,
             depthptr,
