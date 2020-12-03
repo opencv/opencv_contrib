@@ -934,85 +934,9 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 
     return pixNorm;
 }
-/*
-void HashTSDFVolumeGPU::integrateVolumeUnitGPU( InputArray _depth, float depthFactor,
-        const Matx44f& cameraPose, const Intr& intrinsics, VolumeIndex idx)
-{
-    CV_TRACE_FUNCTION();
-    CV_Assert(!_depth.empty());
-
-    UMat depth = _depth.getUMat();
-
-    String errorStr;
-    String name = "integrateVolumeUnit";
-    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
-    String options = "-cl-mad-enable";
-    ocl::Kernel k;
-    k.create(name.c_str(), source, options, &errorStr);
-
-    if (k.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
-
-    Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
-    float dfac = 1.f / depthFactor;
-    Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
-    Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
-
-    // TODO: optimization possible
-    // Use sampler for depth (mask needed)
-    k.args(ocl::KernelArg::ReadOnly(depth),
-        //ocl::KernelArg::PtrReadWrite(volUnitsData.row(idx).getUMat(ACCESS_RW)),
-        ocl::KernelArg::PtrReadWrite(_volUnitsData.row(idx).getUMat(ACCESS_RW)),
-        ocl::KernelArg::Constant(vol2cam.matrix.val,
-            sizeof(vol2cam.matrix.val)),
-        voxelSize,
-        volResGpu.val,
-        volStrides.val,
-        fxy.val,
-        cxy.val,
-        dfac,
-        truncDist,
-        int(maxWeight),
-        ocl::KernelArg::PtrReadOnly(_pixNorms)); 
-
-    size_t globalSize[2];
-    globalSize[0] = (size_t)volumeUnitResolution;
-    globalSize[1] = (size_t)volumeUnitResolution;
-
-    if (!k.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
-}
-*/
-
-bool matIsEqual(const cv::Mat Mat1, const cv::Mat Mat2)
-{
-    if (Mat1.dims == Mat2.dims &&
-        Mat1.size == Mat2.size &&
-        Mat1.elemSize() == Mat2.elemSize())
-    {
-        if (Mat1.isContinuous() && Mat2.isContinuous())
-        {
-            return 0 == memcmp(Mat1.ptr(), Mat2.ptr(), Mat1.total() * Mat1.elemSize());
-        }
-        else
-        {
-            const cv::Mat* arrays[] = { &Mat1, &Mat2, 0 };
-            uchar* ptrs[2];
-            cv::NAryMatIterator it(arrays, ptrs, 2);
-            for (unsigned int p = 0; p < it.nplanes; p++, ++it)
-                if (0 != memcmp(it.ptrs[0], it.ptrs[1], it.size * Mat1.elemSize()))
-                    return false;
-
-            return true;
-        }
-    }
-
-    return false;
-}
 
 void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics)
 {
-    //std::cout << "integrateAllVolumeUnitsGPU" << std::endl;
     CV_TRACE_FUNCTION();
     CV_Assert(!_depth.empty());
 
@@ -1028,7 +952,6 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     if (k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
     
-    //Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
     float dfac = 1.f / depthFactor;
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
@@ -1036,16 +959,9 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     int totalVolUnitsSize = _indexes.indexesGPU.size();
     Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
 
-    //std::cout << Vec3i(7,7,1) << " = " << _indexes.find_Volume(Vec3i(7, 7, 1)) << 
-    //    " | " << calc_hash(Vec4i(7, 7, 1, 0)) % _indexes.hash_divisor<< std::endl;
-    
-    //std::cout << calc_hash(Vec3i(7, 7, 1)) << std::endl;
-    //std::cout << " lol =" << _indexes.list_size<<" "<< _indexes.bufferNums << " " << _indexes.hash_divisor << std::endl;
-    //std::cout << "maxWeight == " << maxWeight << std::endl;
     Mat _tmp;
     _volUnitsData.copyTo(_tmp);
     UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
-    //UMat U_volUnitsData = _volUnitsData.getUMat(ACCESS_RW);
 
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
@@ -1053,13 +969,9 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
         ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-        //ocl::KernelArg::PtrReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
-        //ocl::KernelArg::ReadWrite(_volUnitsData.getUMat(ACCESS_RW)),
         ocl::KernelArg::ReadWrite(U_volUnitsData),
         ocl::KernelArg::PtrReadOnly(_pixNorms),
-        //ocl::KernelArg::PtrReadOnly(pixNorms.getUMat(ACCESS_RW)),
         ocl::KernelArg::ReadOnly(posesGPU.getUMat(ACCESS_READ)),
-        //ocl::KernelArg::ReadOnly(poses.getUMat(ACCESS_READ)),
         _lastVolIndex,
         voxelSize,
         volResGpu.val,
@@ -1070,54 +982,21 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         truncDist,
         int(maxWeight)
     );
-    //std::cout << _indexes
-    //int resol = 1;
+
     int resol = volumeUnitResolution;
     size_t globalSize[3];
     globalSize[0] = (size_t)resol; // volumeUnitResolution
     globalSize[1] = (size_t)resol; // volumeUnitResolution
-    //globalSize[0] = (size_t)volResGpu.val[0]; // volResolution.x
-    //globalSize[1] = (size_t)volResGpu.val[1]; // volResolution.y
     globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
-    //printf("CPU: fxy = [%f, %f] | cxy = [%f, %f] \n", fxy[0], fxy[1], cxy[0], cxy[1]);
-    //std::cout << "rmaxWeight == " << maxWeight << std::endl;
+
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
-    
-    Mat checking;
-    _volUnitsData.copyTo(checking);
 
     U_volUnitsData.getMat(ACCESS_RW).copyTo(_volUnitsData);
-    //_tmp = U_volUnitsData.getMat(ACCESS_RW);
-    //_tmp.copyTo(_volUnitsData);
-    //_tmp.release();
-
-    //cv::Mat diff;
-    //cv::compare(checking, _volUnitsData, diff, cv::CMP_NE);
-    //int nz = cv::countNonZero(diff);
-
-    //if (nz == 0) std::cout << "compare = " << true << std::endl;
-    /*
-    if (matIsEqual(checking, _volUnitsData)) 
-        std::cout << "compare = " << true << std::endl;
-    else
-        std::cout << "compare = " << false << std::endl;
-    */
-    //Mat _tmp = _volUnitsData;
-    //(U_volUnitsData.getMat(ACCESS_RW)).copyTo(_volUnitsData);
-    //Mat tmp = U_volUnitsData.getMat(ACCESS_RW);
-    
-    //tmp.copyTo(_volUnitsData);
-    //U_volUnitsData.release();
-    //tmp.release();
-    //bool res = false;
-    //if (_tmp == _volUnitsData) res = true;
-    //std::cout << res << std::endl;
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
 {
-    //std::cout << "integrate" << std::endl;
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
@@ -1138,7 +1017,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
         _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
-
 
         for (int y = range.start; y < range.end; y += depthStride)
         {
@@ -1170,8 +1048,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
 
-        //mutex.lock();
-        //std::cout << "lol\n";
+        mutex.lock();
         for (int i = 0; i < loc_vol_idx; i++)
         {
             Vec3i idx = _localAccessVolUnits.at<Vec3i>(i, 0);
@@ -1198,7 +1075,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 _lastVolIndex++;
             }
         }
-        //mutex.unlock();
+        mutex.unlock();
     };
 
     //parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
