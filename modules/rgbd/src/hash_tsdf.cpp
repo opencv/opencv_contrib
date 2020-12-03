@@ -1094,9 +1094,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         _indexes.updateActive(tsdf_idx, 1);
 
         auto vol2camMatrix = vol2cam.matrix.val;
-        for (int i = 0; i < 16; i++)
+        for (int k = 0; k < 16; k++)
         {
-            posesGPU.at<float>(idx, i) = vol2camMatrix[i];
+            posesGPU.at<float>(idx, k) = vol2camMatrix[k];
         }
 
         _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
@@ -1159,6 +1159,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
+    /*
     if (false)
     {
         auto Integrate = [&](const Range& range) {
@@ -1190,6 +1191,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         Integrate(Range(0, (int)_totalVolUnits.size()));
     }
     else
+    */
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
 }
