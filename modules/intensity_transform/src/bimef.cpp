@@ -234,7 +234,7 @@ static Mat solveLinearEquation(const Mat_<float>& img, Mat_<float>& W_h_, Mat_<f
         }
     );
 
-    return tout;
+    return std::move(tout);
 }
 
 static Mat_<float> tsmooth(const Mat_<float>& src, float lambda=0.01f, float sigma=3.0f, float sharpness=0.001f)

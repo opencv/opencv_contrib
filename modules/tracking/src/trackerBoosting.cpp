@@ -42,8 +42,12 @@
 #include "precomp.hpp"
 #include "trackerBoostingModel.hpp"
 
-namespace cv
-{
+#include "opencv2/tracking/tracking_legacy.hpp"
+
+namespace cv {
+namespace legacy {
+inline namespace tracking {
+using namespace impl;
 
 class TrackerBoostingImpl : public TrackerBoosting
 {
@@ -132,7 +136,7 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
   CSparameters.overlap = params.samplerOverlap;
   CSparameters.searchFactor = params.samplerSearchFactor;
 
-  Ptr<TrackerSamplerAlgorithm> CSSampler = Ptr<TrackerSamplerCS>( new TrackerSamplerCS( CSparameters ) );
+  Ptr<TrackerContribSamplerAlgorithm> CSSampler = Ptr<TrackerSamplerCS>( new TrackerSamplerCS( CSparameters ) );
 
   if( !sampler->addTrackerSamplerAlgorithm( CSSampler ) )
     return false;
@@ -151,11 +155,11 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
   Rect ROI = CSSampler.staticCast<TrackerSamplerCS>()->getROI();
 
   //compute HAAR features
-  TrackerFeatureHAAR::Params HAARparameters;
+  TrackerContribFeatureHAAR::Params HAARparameters;
   HAARparameters.numFeatures = params.featureSetNumFeatures;
   HAARparameters.isIntegral = true;
   HAARparameters.rectSize = Size( static_cast<int>(boundingBox.width), static_cast<int>(boundingBox.height) );
-  Ptr<TrackerFeature> trackerFeature = Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR( HAARparameters ) );
+  Ptr<TrackerContribFeature> trackerFeature = Ptr<TrackerContribFeatureHAAR>( new TrackerContribFeatureHAAR( HAARparameters ) );
   if( !featureSet->addTrackerFeature( trackerFeature ) )
     return false;
 
@@ -175,11 +179,11 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
   for ( int i = 0; i < params.iterationInit; i++ )
   {
     //compute temp features
-    TrackerFeatureHAAR::Params HAARparameters2;
+    TrackerContribFeatureHAAR::Params HAARparameters2;
     HAARparameters2.numFeatures = static_cast<int>( posSamples.size() + negSamples.size() );
     HAARparameters2.isIntegral = true;
     HAARparameters2.rectSize = Size( static_cast<int>(boundingBox.width), static_cast<int>(boundingBox.height) );
-    Ptr<TrackerFeatureHAAR> trackerFeature2 = Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR( HAARparameters2 ) );
+    Ptr<TrackerContribFeatureHAAR> trackerFeature2 = Ptr<TrackerContribFeatureHAAR>( new TrackerContribFeatureHAAR( HAARparameters2 ) );
 
     model.staticCast<TrackerBoostingModel>()->setMode( TrackerBoostingModel::MODE_NEGATIVE, negSamples );
     model->modelEstimation( negResponse );
@@ -194,8 +198,8 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
     {
       if( replacedClassifier[j] != -1 && swappedClassified[j] != -1 )
       {
-        trackerFeature.staticCast<TrackerFeatureHAAR>()->swapFeature( replacedClassifier[j], swappedClassified[j] );
-        trackerFeature.staticCast<TrackerFeatureHAAR>()->swapFeature( swappedClassified[j], trackerFeature2->getFeatureAt( (int)j ) );
+        trackerFeature.staticCast<TrackerContribFeatureHAAR>()->swapFeature( replacedClassifier[j], swappedClassified[j] );
+        trackerFeature.staticCast<TrackerContribFeatureHAAR>()->swapFeature( swappedClassified[j], trackerFeature2->getFeatureAt( (int)j ) );
       }
     }
   }
@@ -240,7 +244,7 @@ bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
   Mat response;
 
   std::vector<int> classifiers = model->getTrackerStateEstimator().staticCast<TrackerStateEstimatorAdaBoosting>()->computeSelectedWeakClassifier();
-  Ptr<TrackerFeatureHAAR> extractor = featureSet->getTrackerFeature()[0].second.staticCast<TrackerFeatureHAAR>();
+  Ptr<TrackerContribFeatureHAAR> extractor = featureSet->getTrackerFeature()[0].second.staticCast<TrackerContribFeatureHAAR>();
   extractor->extractSelected( classifiers, detectSamples, response );
   responses.push_back( response );
 
@@ -288,11 +292,11 @@ bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
   const std::vector<Mat> negResponse = featureSet->getResponses();
 
   //compute temp features
-  TrackerFeatureHAAR::Params HAARparameters2;
+  TrackerContribFeatureHAAR::Params HAARparameters2;
   HAARparameters2.numFeatures = static_cast<int>( posSamples.size() + negSamples.size() );
   HAARparameters2.isIntegral = true;
   HAARparameters2.rectSize = Size( static_cast<int>(boundingBox.width), static_cast<int>(boundingBox.height) );
-  Ptr<TrackerFeatureHAAR> trackerFeature2 = Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR( HAARparameters2 ) );
+  Ptr<TrackerContribFeatureHAAR> trackerFeature2 = Ptr<TrackerContribFeatureHAAR>( new TrackerContribFeatureHAAR( HAARparameters2 ) );
 
   //model estimate
   model.staticCast<TrackerBoostingModel>()->setMode( TrackerBoostingModel::MODE_NEGATIVE, negSamples );
@@ -310,8 +314,8 @@ bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
   {
     if( replacedClassifier[j] != -1 && swappedClassified[j] != -1 )
     {
-      featureSet->getTrackerFeature().at( 0 ).second.staticCast<TrackerFeatureHAAR>()->swapFeature( replacedClassifier[j], swappedClassified[j] );
-      featureSet->getTrackerFeature().at( 0 ).second.staticCast<TrackerFeatureHAAR>()->swapFeature( swappedClassified[j],
+      featureSet->getTrackerFeature().at( 0 ).second.staticCast<TrackerContribFeatureHAAR>()->swapFeature( replacedClassifier[j], swappedClassified[j] );
+      featureSet->getTrackerFeature().at( 0 ).second.staticCast<TrackerContribFeatureHAAR>()->swapFeature( swappedClassified[j],
                                                                                                     trackerFeature2->getFeatureAt( (int)j ) );
     }
   }
@@ -319,4 +323,4 @@ bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
   return true;
 }
 
-} /* namespace cv */
+}}}  // namespace

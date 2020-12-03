@@ -499,7 +499,7 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
     PoseGraph localPoseGraph;
 
 
-    for(const Ptr<SubmapT> currSubmap : submapList)
+    for(const auto& currSubmap : submapList)
     {
         const typename SubmapT::Constraints& constraintList = currSubmap->constraints;
         for(const auto& currConstraintPair : constraintList)
@@ -512,7 +512,7 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
         }
     }
 
-    for(const Ptr<SubmapT> currSubmap : submapList)
+    for(const auto& currSubmap : submapList)
     {
         PoseGraphNode currNode(currSubmap->id, currSubmap->pose);
         if(currSubmap->id == 0)
@@ -530,7 +530,7 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
 template <typename MatType>
 void SubmapManager<MatType>::PoseGraphToMap(const PoseGraph &updatedPoseGraph)
 {
-    for(const Ptr<SubmapT> currSubmap : submapList)
+    for(const auto& currSubmap : submapList)
     {
         const PoseGraphNode& currNode = updatedPoseGraph.nodes.at(currSubmap->id);
         if(!currNode.isPoseFixed())

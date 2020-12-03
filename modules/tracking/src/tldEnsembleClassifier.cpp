@@ -39,12 +39,14 @@
 //
 //M*/
 
+#include "precomp.hpp"
 #include "tldEnsembleClassifier.hpp"
 
-namespace cv
-{
-	namespace tld
-	{
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
+
 		// Constructor
 		TLDEnsembleClassifier::TLDEnsembleClassifier(const std::vector<Vec4b>& meas, int beg, int end) :lastStep_(-1)
 		{
@@ -194,5 +196,4 @@ namespace cv
 			return (int)classifiers.size();
 		}
 
-	}
-}
+}}}}  // namespace

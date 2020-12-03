@@ -40,7 +40,7 @@ int main( int argc, char** argv ){
 
   // create the tracker
   //! [create]
-  MultiTracker trackers;
+  legacy::MultiTracker trackers;
   //! [create]
 
   // container of the tracked objects
@@ -67,10 +67,10 @@ int main( int argc, char** argv ){
 
   // initialize the tracker
   //! [init]
-  std::vector<Ptr<Tracker> > algorithms;
+  std::vector<Ptr<legacy::Tracker> > algorithms;
   for (size_t i = 0; i < ROIs.size(); i++)
   {
-      algorithms.push_back(createTrackerByName(trackingAlg));
+      algorithms.push_back(createTrackerByName_legacy(trackingAlg));
       objects.push_back(ROIs[i]);
     }
 

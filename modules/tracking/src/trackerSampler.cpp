@@ -41,17 +41,18 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
- *  TrackerSampler
+ *  TrackerContribSampler
  */
 
 /*
  * Constructor
  */
-TrackerSampler::TrackerSampler()
+TrackerContribSampler::TrackerContribSampler()
 {
   blockAddTrackerSampler = false;
 }
@@ -59,12 +60,12 @@ TrackerSampler::TrackerSampler()
 /*
  * Destructor
  */
-TrackerSampler::~TrackerSampler()
+TrackerContribSampler::~TrackerContribSampler()
 {
 
 }
 
-void TrackerSampler::sampling( const Mat& image, Rect boundingBox )
+void TrackerContribSampler::sampling( const Mat& image, Rect boundingBox )
 {
 
   clearSamples();
@@ -88,13 +89,13 @@ void TrackerSampler::sampling( const Mat& image, Rect boundingBox )
   }
 }
 
-bool TrackerSampler::addTrackerSamplerAlgorithm( String trackerSamplerAlgorithmType )
+bool TrackerContribSampler::addTrackerSamplerAlgorithm( String trackerSamplerAlgorithmType )
 {
   if( blockAddTrackerSampler )
   {
     return false;
   }
-  Ptr<TrackerSamplerAlgorithm> sampler = TrackerSamplerAlgorithm::create( trackerSamplerAlgorithmType );
+  Ptr<TrackerContribSamplerAlgorithm> sampler = TrackerContribSamplerAlgorithm::create( trackerSamplerAlgorithmType );
 
   if (!sampler)
   {
@@ -106,7 +107,7 @@ bool TrackerSampler::addTrackerSamplerAlgorithm( String trackerSamplerAlgorithmT
   return true;
 }
 
-bool TrackerSampler::addTrackerSamplerAlgorithm( Ptr<TrackerSamplerAlgorithm>& sampler )
+bool TrackerContribSampler::addTrackerSamplerAlgorithm( Ptr<TrackerContribSamplerAlgorithm>& sampler )
 {
   if( blockAddTrackerSampler )
   {
@@ -124,19 +125,20 @@ bool TrackerSampler::addTrackerSamplerAlgorithm( Ptr<TrackerSamplerAlgorithm>& s
   return true;
 }
 
-const std::vector<std::pair<String, Ptr<TrackerSamplerAlgorithm> > >& TrackerSampler::getSamplers() const
+const std::vector<std::pair<String, Ptr<TrackerContribSamplerAlgorithm> > >& TrackerContribSampler::getSamplers() const
 {
   return samplers;
 }
 
-const std::vector<Mat>& TrackerSampler::getSamples() const
+const std::vector<Mat>& TrackerContribSampler::getSamples() const
 {
   return samples;
 }
 
-void TrackerSampler::clearSamples()
+void TrackerContribSampler::clearSamples()
 {
   samples.clear();
 }
 
-} /* namespace cv */
+
+}}}  // namespace

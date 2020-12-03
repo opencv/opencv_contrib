@@ -88,7 +88,7 @@ int main( int argc, char** argv ){
   namedWindow( "Tracking API", 1 );
 
   Mat image;
-  Rect2d boundingBox;
+  Rect boundingBox;
   bool paused = false;
 
   //instantiates the specific Tracker
@@ -134,11 +134,7 @@ int main( int argc, char** argv ){
       if( !initialized )
       {
         //initializes the tracker
-        if( !tracker->init( frame, boundingBox ) )
-        {
-          cout << "***Could not initialize tracker...***\n";
-          return -1;
-        }
+        tracker->init(frame, boundingBox);
         initialized = true;
       }
       else if( initialized )

@@ -25,7 +25,7 @@ int main( int argc, char** argv ){
   }
 
   // declares all required variables
-  Rect2d roi;
+  Rect roi;
   Mat frame;
 
   //! [param]
