@@ -941,7 +941,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     CV_Assert(!_depth.empty());
 
     UMat depth = _depth.getUMat();
-    
+
     String errorStr;
     String name = "integrateAllVolumeUnits";
     ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
@@ -951,7 +951,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 
     if (k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
-    
+
     float dfac = 1.f / depthFactor;
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
@@ -1092,7 +1092,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         lastVisibleIndexes.at<int>(idx, 0) = frameId;
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
         _indexes.updateActive(tsdf_idx, 1);
- 
+
         auto vol2camMatrix = vol2cam.matrix.val;
         for (int i = 0; i < 16; i++)
         {
@@ -1123,7 +1123,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         for (int i = range.start; i < range.end; ++i)
         {
             Vec3i tsdf_idx = _totalVolUnits[i];
-            
+
             VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
             if (idx < 0 || idx == _lastVolIndex - 1) return;
 
