@@ -533,7 +533,7 @@ bool VolumesTable::getActive(Vec3i indx) const
     {
         Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
         if (v.idx == idx)
-            return (bool(v.isActive));
+            return (v.isActive == 1);
         if (v.idx[0] == -2147483647)
             return false;
         i = v.nextVolumeRow;
