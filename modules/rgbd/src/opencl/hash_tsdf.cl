@@ -368,8 +368,15 @@ __kernel void raycast(
                     const int hash_divisor,
                     __global const int4 * totalVolUnits,
                     __global float4 * points,
-                    __global float4 * normals
+                    int points_step, int points_offset,
+                    int points_rows, int points_cols,
+                    __global float4 * normals,
+                    int normals_step, int normals_offset,
+                    int normals_rows, int normals_cols
                     )
 {
-    printf("raycast_GPU \n");
+    int i = get_global_id(0);
+    //printf("raycast_GPU \n");
+    float4 point = points[points_offset + (i) * points_step];
+    //printf("point (%d) = [%f, %f, %f, %f] \n", i, point[0], point[1], point[2], point[3]);
 }

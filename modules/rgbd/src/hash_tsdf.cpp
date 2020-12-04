@@ -1159,7 +1159,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
-    /*
     auto Integrate = [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
@@ -1186,11 +1185,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     };
 
     //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-    Integrate(Range(0, (int)_totalVolUnits.size()));
+    //Integrate(Range(0, (int)_totalVolUnits.size()));
 
-    */
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
-
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
@@ -1601,12 +1598,12 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             (int)_indexes.bufferNums,
             (int)_indexes.hash_divisor,
             ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-            ocl::KernelArg::PtrReadWrite(points.getUMat(ACCESS_RW)),
-            ocl::KernelArg::PtrReadWrite(normals.getUMat(ACCESS_RW))
+            ocl::KernelArg::ReadWrite(points.getUMat(ACCESS_RW)),
+            ocl::KernelArg::ReadWrite(normals.getUMat(ACCESS_RW))
         );
         
-        //int resol = new_points.rows;
-        int resol = 1;
+        int resol = new_points.rows;
+        //int resol = 1;
         size_t globalSize[1];
         globalSize[0] = (size_t)resol; // num of points
 
