@@ -1160,37 +1160,34 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     //! Integrate the correct volumeUnits
     /*
-    if (false)
-    {
-        auto Integrate = [&](const Range& range) {
-            for (int i = range.start; i < range.end; i++)
+    auto Integrate = [&](const Range& range) {
+        for (int i = range.start; i < range.end; i++)
+        {
+            Vec3i tsdf_idx = _totalVolUnits[i];
+            VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
+            if (idx < 0 || idx == _lastVolIndex - 1) return;
+
+            bool _isActive = _indexes.getActive(tsdf_idx);
+
+            if (_isActive)
             {
-                Vec3i tsdf_idx = _totalVolUnits[i];
-                VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
-                if (idx < 0 || idx == _lastVolIndex - 1) return;
+                //! The volume unit should already be added into the Volume from the allocator
+                Matx44f _pose = poses.at<Matx44f>(idx, 0);
 
-                bool _isActive = _indexes.getActive(tsdf_idx);
+                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
+                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
+                    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
 
-                if (_isActive)
-                {
-                    //! The volume unit should already be added into the Volume from the allocator
-                    Matx44f _pose = poses.at<Matx44f>(idx, 0);
-
-                    integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
-                        Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                        depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
-
-                    //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
-                    //! Ensure all active volumeUnits are set to inactive for next integration
-                    _indexes.updateActive(tsdf_idx, 0);
-                }
+                //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
+                //! Ensure all active volumeUnits are set to inactive for next integration
+                _indexes.updateActive(tsdf_idx, 0);
             }
-        };
+        }
+    };
 
-        //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-        Integrate(Range(0, (int)_totalVolUnits.size()));
-    }
-    else
+    //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
+    Integrate(Range(0, (int)_totalVolUnits.size()));
+
     */
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
@@ -1470,11 +1467,11 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     _points.create(frameSize, POINT_TYPE);
     _normals.create(frameSize, POINT_TYPE);
 
-    Points points1 = _points.getMat();
-    Normals normals1 = _normals.getMat();
+    Points points = _points.getMat();
+    Normals normals = _normals.getMat();
 
-    Points& new_points(points1);
-    Normals& new_normals(normals1);
+    Points& new_points(points);
+    Normals& new_normals(normals);
 
     const HashTSDFVolumeGPU& volume(*this);
     const float tstep(volume.truncDist * volume.raycastStepFactor);
@@ -1582,6 +1579,42 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
     //_HashRaycastInvoker(Range(0, new_points.rows));
+
+
+    {
+        String errorStr;
+        String name = "raycast";
+        ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+        String options = "-cl-mad-enable";
+        ocl::Kernel k;
+        k.create(name.c_str(), source, options, &errorStr);
+
+        if (k.empty())
+            throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+        int totalVolUnitsSize = _indexes.indexesGPU.size();
+        Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
+
+        k.args(
+            ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
+            (int)_indexes.list_size,
+            (int)_indexes.bufferNums,
+            (int)_indexes.hash_divisor,
+            ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
+            ocl::KernelArg::PtrReadWrite(points.getUMat(ACCESS_RW)),
+            ocl::KernelArg::PtrReadWrite(normals.getUMat(ACCESS_RW))
+        );
+        
+        //int resol = new_points.rows;
+        int resol = 1;
+        size_t globalSize[1];
+        globalSize[0] = (size_t)resol; // num of points
+
+        if (!k.run(1, globalSize, NULL, true))
+            throw std::runtime_error("Failed to run kernel");
+    }
+
+
 }
 
 void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const

@@ -359,3 +359,17 @@ __kernel void integrateAllVolumeUnits(
     }
    
 }
+
+
+__kernel void raycast(
+                    __global struct Volume_NODE * hash_table,
+                    const int list_size, 
+                    const int bufferNums, 
+                    const int hash_divisor,
+                    __global const int4 * totalVolUnits,
+                    __global float4 * points,
+                    __global float4 * normals
+                    )
+{
+    printf("raycast_GPU \n");
+}
