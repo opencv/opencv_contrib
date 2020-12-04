@@ -54,8 +54,6 @@ namespace cv { namespace cuda { namespace device
 {
     namespace hough_circles
     {
-        __device__ int g_counter;
-
         ////////////////////////////////////////////////////////////////////////
         // circlesAccumCenters
 
@@ -111,23 +109,22 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        void circlesAccumCenters_gpu(const unsigned int* list, int count, PtrStepi dx, PtrStepi dy, PtrStepSzi accum, int minRadius, int maxRadius, float idp)
+        void circlesAccumCenters_gpu(const unsigned int* list, int count, PtrStepi dx, PtrStepi dy, PtrStepSzi accum, int minRadius, int maxRadius, float idp, cudaStream_t stream)
         {
             const dim3 block(256);
             const dim3 grid(divUp(count, block.x));
 
             cudaSafeCall( cudaFuncSetCacheConfig(circlesAccumCenters, cudaFuncCachePreferL1) );
 
-            circlesAccumCenters<<<grid, block>>>(list, count, dx, dy, accum, accum.cols - 2, accum.rows - 2, minRadius, maxRadius, idp);
+            circlesAccumCenters<<<grid, block, 0, stream>>>(list, count, dx, dy, accum, accum.cols - 2, accum.rows - 2, minRadius, maxRadius, idp);
             cudaSafeCall( cudaGetLastError() );
 
-            cudaSafeCall( cudaDeviceSynchronize() );
+            cudaSafeCall( cudaStreamSynchronize(stream) );
         }
 
         ////////////////////////////////////////////////////////////////////////
         // buildCentersList
-
-        __global__ void buildCentersList(const PtrStepSzi accum, unsigned int* centers, const int threshold)
+        __global__ void buildCentersList(const PtrStepSzi accum, unsigned int* centers, const int threshold, int* counterPtr)
         {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -145,31 +142,27 @@ namespace cv { namespace cuda { namespace device
                 if (cur > threshold && cur > top && cur >= bottom && cur >  left && cur >= right)
                 {
                     const unsigned int val = (y << 16) | x;
-                    const int idx = ::atomicAdd(&g_counter, 1);
+                    const int idx = ::atomicAdd(counterPtr, 1);
                     centers[idx] = val;
                 }
             }
         }
 
-        int buildCentersList_gpu(PtrStepSzi accum, unsigned int* centers, int threshold)
+        int buildCentersList_gpu(PtrStepSzi accum, unsigned int* centers, int threshold, int* counterPtr, cudaStream_t stream)
         {
-            void* counterPtr;
-            cudaSafeCall( cudaGetSymbolAddress(&counterPtr, g_counter) );
-
-            cudaSafeCall( cudaMemset(counterPtr, 0, sizeof(int)) );
+            cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
             const dim3 block(32, 8);
             const dim3 grid(divUp(accum.cols - 2, block.x), divUp(accum.rows - 2, block.y));
 
             cudaSafeCall( cudaFuncSetCacheConfig(buildCentersList, cudaFuncCachePreferL1) );
 
-            buildCentersList<<<grid, block>>>(accum, centers, threshold);
+            buildCentersList<<<grid, block, 0, stream>>>(accum, centers, threshold, counterPtr);
             cudaSafeCall( cudaGetLastError() );
 
-            cudaSafeCall( cudaDeviceSynchronize() );
-
             int totalCount;
-            cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
+            cudaSafeCall( cudaMemcpyAsync(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
+            cudaSafeCall( cudaStreamSynchronize(stream) );
 
             return totalCount;
         }
@@ -179,7 +172,8 @@ namespace cv { namespace cuda { namespace device
 
         __global__ void circlesAccumRadius(const unsigned int* centers, const unsigned int* list, const int count,
                                            float3* circles, const int maxCircles, const float dp,
-                                           const int minRadius, const int maxRadius, const int histSize, const int threshold)
+                                           const int minRadius, const int maxRadius, const int histSize, const int threshold,
+                                           int* counterPtr)
         {
             int* smem = DynamicSharedMem<int>();
 
@@ -219,7 +213,7 @@ namespace cv { namespace cuda { namespace device
 
                 if (curVotes >= threshold && curVotes > smem[i] && curVotes >= smem[i + 2])
                 {
-                    const int ind = ::atomicAdd(&g_counter, 1);
+                    const int ind = ::atomicAdd(counterPtr, 1);
                     if (ind < maxCircles)
                         circles[ind] = make_float3(cx, cy, i + minRadius);
                 }
@@ -227,12 +221,9 @@ namespace cv { namespace cuda { namespace device
         }
 
         int circlesAccumRadius_gpu(const unsigned int* centers, int centersCount, const unsigned int* list, int count,
-                                   float3* circles, int maxCircles, float dp, int minRadius, int maxRadius, int threshold, bool has20)
+                                   float3* circles, int maxCircles, float dp, int minRadius, int maxRadius, int threshold, bool has20, int* counterPtr, cudaStream_t stream)
         {
-            void* counterPtr;
-            cudaSafeCall( cudaGetSymbolAddress(&counterPtr, g_counter) );
-
-            cudaSafeCall( cudaMemset(counterPtr, 0, sizeof(int)) );
+            cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
             const dim3 block(has20 ? 1024 : 512);
             const dim3 grid(centersCount);
@@ -240,13 +231,12 @@ namespace cv { namespace cuda { namespace device
             const int histSize = maxRadius - minRadius + 1;
             size_t smemSize = (histSize + 2) * sizeof(int);
 
-            circlesAccumRadius<<<grid, block, smemSize>>>(centers, list, count, circles, maxCircles, dp, minRadius, maxRadius, histSize, threshold);
+            circlesAccumRadius<<<grid, block, smemSize, stream>>>(centers, list, count, circles, maxCircles, dp, minRadius, maxRadius, histSize, threshold, counterPtr);
             cudaSafeCall( cudaGetLastError() );
 
-            cudaSafeCall( cudaDeviceSynchronize() );
-
             int totalCount;
-            cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
+            cudaSafeCall( cudaMemcpyAsync(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
+            cudaSafeCall( cudaStreamSynchronize(stream) );
 
             totalCount = ::min(totalCount, maxCircles);
 
