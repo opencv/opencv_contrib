@@ -1,10 +1,11 @@
 FreeType2 Wrapper Module
-==========================
+========================
 
 This FreeType2 wrapper module allows to draw strings with outlines and bitmaps.
 
-Requested external libraries.
-------------------------------
+Requested external libraries
+----------------------------
+
 harfbuzz is requested to convert UTF8 to gid(GlyphID).
 
 freetype library is requested to rasterize given gid.
@@ -13,7 +14,7 @@ freetype library is requested to rasterize given gid.
 - freetype https://www.freetype.org/
 
 Usage
------------
+-----
 
 ```
 cv::Ptr<cv::freetype::FreeType2> ft2;
@@ -24,7 +25,7 @@ ft2->putText(mat, "hello world", cv::Point(20, 200),
 ```
 
 Option
-------------
+------
 - 2nd argument of loadFontData is used if font file has many font data.
 - 3 drawing mode is available.
     - outline mode is used if lineWidth is larger than 0. (like original putText)
