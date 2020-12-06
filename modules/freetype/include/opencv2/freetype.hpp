@@ -103,7 +103,7 @@ The function putText renders the specified text string in the image. Symbols tha
 @param text Text string to be drawn.
 @param org Bottom-left/Top-left corner of the text string in the image.
 @param fontHeight Drawing font size by pixel unit.
-@param color Text color.(Only 3ch 8bit Scalar is supported.)
+@param color Text color.
 @param thickness Thickness of the lines used to draw a text when negative, the glyph is filled. Otherwise, the glyph is drawn with this thickness.
 @param line_type Line type. See the line for details.
 @param bottomLeftOrigin When true, the image data origin is at the bottom-left corner. Otherwise, it is at the top-left corner.
