@@ -228,8 +228,8 @@ class PoseGraph
     virtual ~PoseGraph() = default;
 
     //! PoseGraph can be copied/cloned
-    PoseGraph(const PoseGraph& _poseGraph) = default;
-    PoseGraph& operator=(const PoseGraph& _poseGraph) = default;
+    PoseGraph(const PoseGraph&) = default;
+    PoseGraph& operator=(const PoseGraph&) = default;
 
     void addNode(const PoseGraphNode& node) { nodes.push_back(node); }
     void addEdge(const PoseGraphEdge& edge) { edges.push_back(edge); }
