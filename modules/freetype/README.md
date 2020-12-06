@@ -31,4 +31,3 @@ Option
     - bitmap  mode is used if lineWidth is less than 0.
         - 1bit bitmap mode is used if lineStyle is 4 or 8.
         - gray bitmap mode is used if lineStyle is 16.
-
