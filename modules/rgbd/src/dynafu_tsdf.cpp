@@ -1000,10 +1000,10 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
         meshEdges.push_back(i);
     }
 
-    if (_vertices.needed())
+    if (_vertices.needed() && meshPoints.size())
         Mat((int)meshPoints.size(), 1, CV_32FC4, &meshPoints[0]).copyTo(_vertices);
 
-    if (_edges.needed())
+    if (_edges.needed() && meshEdges.size())
         Mat((int)meshPoints.size(), 2, CV_32S, &meshEdges[0]).copyTo(_edges);
 }
 
