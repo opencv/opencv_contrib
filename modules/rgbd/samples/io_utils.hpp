@@ -109,7 +109,8 @@ struct DepthSource
                                              : readDepth(fileListName)),
           frameIdx(0),
           undistortMap1(),
-          undistortMap2()
+          undistortMap2(),
+          distCoeffs()
     {
         if (cam >= 0)
         {
@@ -131,6 +132,22 @@ struct DepthSource
         {
             vc         = VideoCapture();
             sourceType = Type::DEPTH_KINECT2_LIST;
+        }
+
+        if (sourceType == Type::DEPTH_KINECT2)
+        {
+            needCrop = true;
+            needFlip = true;
+            needUndistort = true;
+            distCoeffs(0) = Kinect2Params::k1;
+            distCoeffs(1) = Kinect2Params::k2;
+            distCoeffs(4) = Kinect2Params::k3;
+        }
+        else
+        {
+            needCrop = false;
+            needFlip = false;
+            needUndistort = false;
         }
     }
 
@@ -160,22 +177,32 @@ struct DepthSource
                     // unknown depth source
                     vc.retrieve(out);
             }
-
-            // workaround for Kinect 2
-            if (sourceType == Type::DEPTH_KINECT2)
-            {
-                out = out(Rect(Point(), Kinect2Params::frameSize));
-
-                UMat outCopy;
-                // linear remap adds gradient between valid and invalid pixels
-                // which causes garbage, use nearest instead
-                remap(out, outCopy, undistortMap1, undistortMap2, cv::INTER_NEAREST);
-
-                cv::flip(outCopy, out, 1);
-            }
+            if (out.empty())
+                throw std::runtime_error("Matrix is empty");
         }
-        if (out.empty())
-            throw std::runtime_error("Matrix is empty");
+
+        if (needCrop)
+        {
+            out = out(Rect(Point(), Kinect2Params::frameSize));
+        }
+
+        if (needUndistort)
+        {
+            UMat outCopy;
+            // linear remap adds gradient between valid and invalid pixels
+            // which causes garbage, use nearest instead
+            // TODO: or add masking as a solution
+            remap(out, outCopy, undistortMap1, undistortMap2, cv::INTER_NEAREST);
+            out = outCopy;
+        }
+
+        if (needFlip)
+        {
+            UMat outCopy;
+            cv::flip(out, outCopy, 1);
+            out = outCopy;
+        }
+
         return out;
     }
 
@@ -256,6 +283,15 @@ struct DepthSource
         }
     }
 
+    void updateUndistortMaps(const Matx33f& intr, const Size frameSize)
+    {
+        if (needUndistort)
+        {
+            initUndistortRectifyMap(intr, distCoeffs, cv::noArray(), intr,
+                                    frameSize, CV_16SC2, undistortMap1, undistortMap2);
+        }
+    }
+
     void updateParams(large_kinfu::Params& params)
     {
         if (vc.isOpened())
@@ -266,16 +302,7 @@ struct DepthSource
                                params.truncateThreshold);
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
 
-            if (sourceType == Type::DEPTH_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
+            updateUndistortMaps(params.intr, params.frameSize);
         }
     }
 
@@ -288,22 +315,15 @@ struct DepthSource
                                params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
 
-            if (sourceType == Type::DEPTH_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
+            updateUndistortMaps(params.intr, params.frameSize);
         }
     }
 
     std::vector<std::string> depthFileList;
     size_t frameIdx;
     VideoCapture vc;
+    bool needUndistort, needFlip, needCrop;
+    Matx<float, 1, 5> distCoeffs;
     UMat undistortMap1, undistortMap2;
     Type sourceType;
 };
