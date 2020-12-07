@@ -19,7 +19,7 @@ public:
                float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose,
-                           cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) = 0;
+                           cv::kinfu::Intr intrinsics, Ptr<WarpField> wf, Ptr<TSDFVolume> dsVolume) = 0;
 
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const = 0;
@@ -34,6 +34,10 @@ public:
     virtual void reset() = 0;
 
     virtual NodeNeighboursType const& getVoxelNeighbours(Point3i v, int& n) const = 0;
+
+    virtual Ptr<TSDFVolume> createDownsampled(float factor) const = 0;
+
+    virtual void downsample(const TSDFVolume& hiResVolume, float factor) = 0;
 
     virtual ~TSDFVolume() { }
 

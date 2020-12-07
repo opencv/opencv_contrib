@@ -52,6 +52,10 @@ public:
 
     NodeNeighboursType const& getVoxelNeighbours(Point3i coords, int& n) const override;
 
+    virtual Ptr<TSDFVolume> createDownsampled(float factor) const override;
+
+    virtual void downsample(const TSDFVolume& hiResVolume, float factor) override;
+
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
     // Consist of Voxel elements
@@ -330,6 +334,80 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f
     Range range(0, volResolution.x);
     parallel_for_(range, ii);
 }
+
+
+Ptr<TSDFVolume> TSDFVolumeCPU::createDownsampled(float factor) const
+{
+    Point3i res(volResolution.x / factor, volResolution.y / factor, volResolution.z / factor);
+    Ptr<TSDFVolumeCPU> ds = new TSDFVolumeCPU(res, voxelSize * factor, pose, truncDist * factor, maxWeight, raycastStepFactor);
+
+    ds->downsample(*this, factor);
+
+    return Ptr<TSDFVolume>(ds);
+}
+
+void TSDFVolumeCPU::downsample(const TSDFVolume& hiResVolume, float factor)
+{
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
+    const TSDFVolumeCPU& other = dynamic_cast<const TSDFVolumeCPU&>(hiResVolume);
+
+    Point3i res = other.volResolution / factor;
+
+    CV_DbgAssert(this->volResolution == res);
+
+    Range loRange(0, res.x);
+    const Voxel* hiVolDataStart = other.volume.ptr<Voxel>();
+    Voxel* loVolDataStart = this->volume.ptr<Voxel>();
+    auto loDims = this->volDims, hiDims = other.volDims;
+
+    auto downsampleInvoker = [&](const Range& r)
+    {
+        for (int x = r.start; x < r.end; x++)
+        {
+            Voxel* loVolX = loVolDataStart + x * loDims[0];
+            for (int y = 0; y < res.y; y++)
+            {
+                Voxel* loVolY = loVolX + y * loDims[1];
+                for (int z = 0; z < res.z; z++)
+                {
+                    Voxel& loVoxel = loVolY[z * loDims[2]];
+
+                    //float val = 1.f;
+                    float weight = 0;
+                    float val = 0.f;
+                    int count = 0;
+
+                    for (int xx = x * factor; xx < (x + 1) * factor; xx++)
+                    {
+                        for (int yy = y * factor; yy < (y + 1) * factor; yy++)
+                        {
+                            for (int zz = z * factor; zz < (z + 1) * factor; zz++)
+                            {
+                                const Voxel& hiVoxel = hiVolDataStart[xx * hiDims[0] + yy * hiDims[1] + zz * hiDims[2]];
+
+                                weight = max(weight, hiVoxel.weight);
+                                if (hiVoxel.weight > 0)
+                                {
+                                    //val = min(val, abs(hiVoxel.v));
+                                    val += hiVoxel.v; count++;
+                                }
+                            }
+                        }
+                    }
+
+                    loVoxel.v = count ? (val / count) : 0.f;
+                    //loVoxel.v = val;
+                    loVoxel.weight = weight;
+                }
+            }
+        }
+    };
+
+    parallel_for_(loRange, downsampleInvoker);
+}
+
 
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 {
