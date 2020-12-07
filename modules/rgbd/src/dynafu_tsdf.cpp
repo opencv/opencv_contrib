@@ -37,6 +37,7 @@ public:
                   float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) override;
+    virtual void cacheNeighbors(const WarpField& wf) override;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const override;
 
@@ -322,16 +323,52 @@ struct IntegrateInvoker : ParallelLoopBody
     Ptr<WarpField> warpfield;
 };
 
+void TSDFVolumeCPU::cacheNeighbors(const WarpField& wf)
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics, Ptr<WarpField> wf)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     CV_TRACE_FUNCTION();
 
+    if (!wf.getNodeIndex())
+    {
+        CV_Error(cv::Error::StsError, "no index provided");
+    }
     CV_Assert(_depth.type() == DEPTH_TYPE);
     Depth depth = _depth.getMat();
 
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, wf);
     Range range(0, volResolution.x);
+    Voxel* volDataStart = this->volume.ptr<Voxel>();
+    auto cacheInvoker = [this, wf, volDataStart](const Range& r)
+    {
+        for (int x = r.start; x < r.end; x++)
+        {
+            Voxel* volDataX = volDataStart + x * volDims[0];
+            for (int y = 0; y < volResolution.y; y++)
+            {
+                Voxel* volDataY = volDataX + y * volDims[1];
+
+                for (int z = 0; z < volResolution.z; z++)
+                {
+                    Voxel& voxel = volDataY[z * volDims[2]];
+
+                    //DEBUG
+                    bool needCalc = true; //(voxel.weight > 0) && (voxel.v < 1.f);
+                    if (needCalc)
+                    {
+                        Point3f volPt = Point3f((float)x, (float)y, (float)z) * voxelSize;
+
+                        voxel.neighbours = wf.findNeighbours(volPt);
+                    }
+                }
+            }
+        }
+    };
+
+    parallel_for_(range, cacheInvoker);
     parallel_for_(range, ii);
 }
 

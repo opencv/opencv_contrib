@@ -21,6 +21,8 @@ public:
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose,
                            cv::kinfu::Intr intrinsics, Ptr<WarpField> wf, Ptr<TSDFVolume> dsVolume) = 0;
 
+    virtual void cacheNeighbors(const WarpField& wf) = 0;
+
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const = 0;
 
