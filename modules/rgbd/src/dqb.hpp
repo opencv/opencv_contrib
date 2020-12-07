@@ -61,6 +61,12 @@ SOFTWARE.
 namespace cv {
 namespace dynafu {
 
+// TODO: this can be used as incentive for log, exp, etc.:
+// https://github.com/jhu-lcsr/handeye_calib_camodocal/blob/master/src/camodocal/calib/DualQuaternion.h
+// https://github.com/muellan/numeric/blob/master/include/quaternion.h and the following:
+// https://github.com/muellan/numeric/blob/master/include/dual.h
+
+
 ///// Singularity-free primitive functions for quaternion routines /////
 
 // for quaternion exp
