@@ -891,11 +891,11 @@ inline DualQuaternion DualQuaternion::log() const
 // works even if this dq is not a unit dual quaternion
 inline Affine3f DualQuaternion::getRt() const
 {
-    Affine3f aff = UnitQuaternion(qreal).getRotation();
+    UnitQuaternion uqr = UnitQuaternion(qreal);
+    Affine3f aff = uqr.getRotation();
 
-    Quaternion t = 2.f * (qdual * (qreal.inverted()));
-    aff.translate(t.vec());
-    return aff;
+    Quaternion t = 2.f * (qdual * qreal.inverted());
+    return aff.translate(t.vec());
 }
 
 inline DualQuaternion DualQuaternion::inverted() const
@@ -998,8 +998,7 @@ inline UnitDualQuaternion UnitDualQuaternion::centered(Vec3f c) const
 inline Affine3f UnitDualQuaternion::getRt() const
 {
     Affine3f aff = qreal.getRotation();
-    aff.translate(getT());
-    return aff;
+    return aff.translate(getT());
 }
 
 // 1. normalize n
