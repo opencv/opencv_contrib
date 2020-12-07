@@ -104,6 +104,18 @@ struct BlockSparseMat
 #endif
     size_t nonZeroBlocks() const { return ijValue.size(); }
 
+    BlockSparseMat<_Tp, blockM, blockN>& operator+=(const BlockSparseMat<_Tp, blockM, blockN>& other)
+    {
+        for (const auto& oijv : other.ijValue)
+        {
+            Point2i p = oijv.first;
+            MatType vblock = oijv.second;
+            this->refBlock(p.x, p.y) += vblock;
+        }
+
+        return *this;
+    }
+
     static constexpr float NON_ZERO_VAL_THRESHOLD = 0.0001f;
     size_t nBlocks;
     IDtoBlockValueMap ijValue;
