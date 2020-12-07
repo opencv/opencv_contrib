@@ -58,7 +58,6 @@ struct tsdf_hash
 typedef unsigned int VolumeIndex;
 struct VolumeUnit
 {
-    cv::Vec3i coord;
     VolumeIndex index;
     cv::Matx44f pose;
     int lastVisibleIndex = 0;

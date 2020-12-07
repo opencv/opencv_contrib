@@ -180,7 +180,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                 it->second.isActive         = true;
             }
         }
-        });
+    });
 
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,

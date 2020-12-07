@@ -498,7 +498,6 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
 {
     PoseGraph localPoseGraph;
 
-
     for(const Ptr<SubmapT> currSubmap : submapList)
     {
         const typename SubmapT::Constraints& constraintList = currSubmap->constraints;
@@ -521,8 +520,6 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
         }
         localPoseGraph.addNode(currNode);
     }
-
-
 
     return localPoseGraph;
 }
