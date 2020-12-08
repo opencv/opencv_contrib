@@ -1466,18 +1466,24 @@ void buildWeights(const Mat_<float>& cachedResiduals,
 
     Size size = cachedResiduals.size();
     cachedWeights.create(size);
-    
-    for (int y = 0; y < size.height; y++)
+
+    Range range(0, size.height);
+    auto lambda = [=, &cachedWeights](const Range& range)
     {
-        auto cachedResidualsRow = cachedResiduals[y];
-        auto cachedWeightsRow = cachedWeights[y];
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            float dist = cachedResidualsRow[x];
-            float weight = tukeyWeightSq(dist * dist, vertSigma);
-            cachedWeightsRow[x] = weight;
+            auto cachedResidualsRow = cachedResiduals[y];
+            auto cachedWeightsRow = cachedWeights[y];
+            for (int x = 0; x < size.width; x++)
+            {
+                float dist = cachedResidualsRow[x];
+                float weight = tukeyWeightSq(dist * dist, vertSigma);
+                cachedWeightsRow[x] = weight;
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
