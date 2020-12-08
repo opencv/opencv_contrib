@@ -131,6 +131,18 @@ int main(int argc, char **argv)
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
+    //DEBUG, for boxing dataset only
+    float ff = 570.342f;
+    params->intr = Matx33f(ff,  0, 320,
+                            0, ff, 240,
+                            0,  0,   1);
+    params->depthFactor = 250.f;
+    params->voxelSize = params->voxelSize*1.f;
+    params->volumePose = params->volumePose.translate(Vec3f(0.f, 0.5f, 1.));
+    //ds->distCoeffs = { 0.12f, -0.34f, 0, 0, 0.12f };
+    //ds->needUndistort = true;
+    //ds->updateUndistortMaps(params->intr, params->frameSize);
+
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(false);
 
@@ -235,36 +247,43 @@ int main(int argc, char **argv)
                     viz::WMesh mesh(meshCloud.t(), meshPoly);
                     window.showWidget("mesh", mesh);
 
-                    if(coarse)
-                    {
-                        df->getCloud(points, normals);
+                    //DEBUG
+                    //if(coarse)
+                    //{
+                    //    df->getCloud(points, normals);
 
-                        if(!points.empty() && !normals.empty())
-                        {
-                            viz::WCloud cloudWidget(points, viz::Color::white());
-                            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                            //window.showWidget("cloud", cloudWidget);
-                            //window.showWidget("normals", cloudNormals);
-                            std::vector<Point3f> nodesPts = df->getNodesPos();
-                            if(!nodesPts.empty())
-                            {
-                                std::transform(nodesPts.begin(), nodesPts.end(),
-                                               nodesPts.begin(),
-                                               [params](const Point3f& p){ return params->volumePose*p; });
-                                viz::WCloud nodeCloud(nodesPts, viz::Color::red());
-                                nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
-                                window.showWidget("nodes", nodeCloud);
-                            }
-                        }
-                    }
+                    //    if(!points.empty() && !normals.empty())
+                    //    {
+                    //        viz::WCloud cloudWidget(points, viz::Color::white());
+                    //        viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                    //        //window.showWidget("cloud", cloudWidget);
+                    //        //window.showWidget("normals", cloudNormals);
+                    //        std::vector<Point3f> nodesPts = df->getNodesPos();
+                    //        if(!nodesPts.empty())
+                    //        {
+                    //            std::transform(nodesPts.begin(), nodesPts.end(),
+                    //                           nodesPts.begin(),
+                    //                           [params](const Point3f& p){ return params->volumePose*p; });
+                    //            viz::WCloud nodeCloud(nodesPts, viz::Color::red());
+                    //            nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
+                    //            window.showWidget("nodes", nodeCloud);
+                    //        }
+                    //    }
+                    //}
 
-                    //window.showWidget("worldAxes", viz::WCoordinateSystem());
+
+                    //DEBUG
+                    /*
+                    window.showWidget("worldAxes", viz::WCoordinateSystem());
                     Vec3d volSize = df->getParams().voxelSize*df->getParams().volumeDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                          volSize),
                                       df->getParams().volumePose);
                     window.setViewerPose(df->getPose());
                     window.spinOnce(1, true);
+                    */
+
+
                 }
 #endif
 
