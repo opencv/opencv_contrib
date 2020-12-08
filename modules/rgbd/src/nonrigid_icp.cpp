@@ -1566,46 +1566,12 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
     parallel_for_(range, lambda);
 }
 
-bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
-                                InputArray _vertImage, InputArray _normImage,
-                                InputArray _oldPoints, InputArray _oldNormals,
-                                InputArray _newPoints, InputArray _newNormals) const
-{
-    CV_Assert(_vertImage.isMat());
-    CV_Assert(_oldPoints.isMat());
-    CV_Assert(_newPoints.isMat());
-    CV_Assert(_newNormals.isMat());
 
-    CV_Assert(_vertImage.type()  == cv::DataType<ptype>::type);
-    CV_Assert(_normImage.type()  == cv::DataType<ptype>::type);
-    CV_Assert(_oldPoints.type()  == cv::DataType<ptype>::type);
-    CV_Assert(_oldNormals.type() == cv::DataType<ptype>::type);
-    CV_Assert(_newPoints.type()  == cv::DataType<ptype>::type);
-    CV_Assert(_newNormals.type() == cv::DataType<ptype>::type);
-
-    Mat vertImage = _vertImage.getMat();
-    Mat normImage = _normImage.getMat();
-    Mat oldPoints = _oldPoints.getMat();
-    Mat newPoints = _newPoints.getMat();
-    Mat newNormals = _newNormals.getMat();
-    Mat oldNormals = _oldNormals.getMat();
 
 /// ---------------------------------------------------------------------
-    CV_Assert(!vertImage.empty());
-    CV_Assert(!normImage.empty());
-    CV_Assert(!oldPoints.empty());
-    CV_Assert(!newPoints.empty());
-    CV_Assert(!newNormals.empty());
 
-    Size size = vertImage.size();
 
-    CV_Assert(normImage.size() == size);
-    CV_Assert(oldPoints.size() == size);
-    CV_Assert(newPoints.size() == size);
-    CV_Assert(newNormals.size() == size);
 
-    // newPoints: points from camera to match to
-    // vertImage: [0-1] in volumeDims
 
 void debugBuildWarped(const Mat_<ptype>& ptsIn, const Mat& cachedDqSums,
                       // output params
@@ -1613,16 +1579,9 @@ void debugBuildWarped(const Mat_<ptype>& ptsIn, const Mat& cachedDqSums,
 {
     //DEBUG
     std::cout << __FUNCTION__ << std::endl;
-    //TODO: check this
-    //possibly this should be connected to baseRadius
-    //const float csize = 1.0f;
-    //TODO: move all params to one place;
 
     Size size = ptsIn.size();
     ptsInWarped.create(size);
-    // Can be used to fade transformation to identity far from nodes centers
-    // To make them local even w/o knn nodes choice
-    constexpr float damping = 0.f;
 
     Range range(0, size.height);
     auto lambda = [&](const Range& range)
@@ -1632,27 +1591,11 @@ void debugBuildWarped(const Mat_<ptype>& ptsIn, const Mat& cachedDqSums,
             auto ptsInRow = ptsIn[y];
             auto ptsInWarpedRow = ptsInWarped[y];
             auto cachedDqSumsRow = cachedDqSums.ptr<DualQuaternion>(y);
-    uint32_t nIter = this->iterations;
 
             for (int x = 0; x < size.width; x++)
             {
                 // Get ptsIn from shaded data
                 Point3f inp = fromPtype(ptsInRow[x]);
-    // calc j_rt params :
-    const bool atZero = false;
-    const bool useExp = false;
-    const bool additiveDerivative = true;
-    // TODO: we can calculate first T, then R, then RT both
-    const bool needR = true;
-    const bool needT = true;
-    const bool disableCentering = false;
-    // reg params :
-    const bool needReg = true;
-    const bool parentMovesChild = true;
-    const bool childMovesParent = true;
-    const bool useNormApply = false;
-    const bool useHuber = true;
-    const bool precalcHuberSigma = true;
 
                 DualQuaternion dqsum = cachedDqSumsRow[x];
                 // We don't use commondq here, it's done at other stages of pipeline
@@ -1663,28 +1606,10 @@ void debugBuildWarped(const Mat_<ptype>& ptsIn, const Mat& cachedDqSums,
             }
         }
     };
-    // data term params:
-    const bool needData = false;
-    const bool useTukey = true;
-    const bool precalcTukeySigma = true;
 
     parallel_for_(range, lambda);
 }
-    // tries to fix dual quaternions before DQB so that they will form shortest paths
-    // the algorithm is described in [Kavan and Zara 2005], Kavan'08
-    // to make it deterministic we choose a reference dq according to relative flag
-    const bool signFix = false;
-    const bool signFixRelative = false;
 
-    // solve params
-    // Used in DynaFu paper, simplifies calculation
-    const bool decorrelate = false;
-    const bool tryLevMarq = true;
-    const bool addItoLM = true;
-    const float initialLambdaLevMarq = 0.1f;
-    const float lmUpFactor = 2.f;
-    const float lmDownFactor = 3.f;
-    const float coeffILM = 0.1f;
 
 // vertex residuals, point-plane metrics given warped data
 void debugBuildVertexResiduals(const Mat_<ptype>& ptsInWarped,
@@ -1695,13 +1620,10 @@ void debugBuildVertexResiduals(const Mat_<ptype>& ptsInWarped,
 {
     //DEBUG
     std::cout << __FUNCTION__ << std::endl;
-    const float factorCommon = false;
 
     Size size = ptsInWarped.size();
     cachedResiduals.create(size);
     ptsDiff.create(size);
-    // TODO: check and find good one
-    const float normPenalty = 0.0f;
 
     Range range(0, size.height);
     auto lambda = [=, &cachedResiduals](const Range& range)
@@ -1712,13 +1634,6 @@ void debugBuildVertexResiduals(const Mat_<ptype>& ptsInWarped,
             auto outVolPRow = ptsOutVolP[y];
             auto cachedResidualsRow = cachedResiduals[y];
             ptype* diffRow = (ptype*)ptsDiff.ptr<ptype>(y);
-    //TODO: find good one
-    const float reg_term_weight = size.area() * 0.0001;
-    //TODO: find good one
-    const float diffThreshold = 50.f;
-    //TODO: find good one
-    const float critAngleCos = cos((float)CV_PI / 2);
-    
 
             for (int x = 0; x < size.width; x++)
             {
@@ -1726,11 +1641,8 @@ void debugBuildVertexResiduals(const Mat_<ptype>& ptsInWarped,
                 // Get ptsInWarped (in volume coords)
                 Point3f inWarped = fromPtype(ptsInWarpedRow[x]);
                 Point3f diff = outVolP - inWarped;
-    cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
 
                 float residual = norm(diff);
-    Affine3f cam2vol = volume->pose.inv() * pose;
-    Affine3f vol2cam = pose * volume->pose.inv();
 
                 if (!(cvIsInf(residual) || cvIsNaN(residual)) )
                 {
@@ -1745,25 +1657,10 @@ void debugBuildVertexResiduals(const Mat_<ptype>& ptsInWarped,
             }
         }
     };
-    // Precalculate values:
-    // - canonical points from shaded images
-    // ptsIn = (vertImage*volumeSize) = (vertImage*volumeDims*voxelSize)
-    // nrmIn: Normals from shaded data
-    Mat_<ptype> ptsIn, nrmIn;
-    buildShaded(vertImage, normImage, volume->volSize, ptsIn, nrmIn);
 
     parallel_for_(range, lambda);
 }
-    // - knns and distances to nodes' centers
-    Mat cachedKnns;
-    buildKnns(warp, ptsIn, cachedKnns);
 
-    // - output points from camera to align to
-    // Camera points (and normals) in volume coordinates
-    // Used for delta calculation as y_i
-    // ptsOutVol = (invVolPose * camPose) * newPoints
-    Mat_<ptype> ptsOutVolP, ptsOutVolN;
-    buildOut(newPoints, newNormals, cam2vol, ptsOutVolP, ptsOutVolN);
 
 static void debugFillVertex(BlockSparseMat<float, 6, 6>& jtj,
     std::vector<float>& jtb,
@@ -1780,85 +1677,40 @@ static void debugFillVertex(BlockSparseMat<float, 6, 6>& jtj,
     const bool decorrelate)
 {
     size_t knn = nodes.size();
-    // - current warped points from rendered data
-    // Warped points in camera coordinates
-    // Used for correspondence search
-    // oldPoints = ptsInWarpedRendered = invCamPose * volPose * ptsInWarped
-    // oldNormals: used to filter out bad points based on their normals
-    Mat_<ptype> ptsInWarpedRendered, ptsInWarpedRenderedNormals;
-    // Warped points in volume coordinates
-    // Used for delta calculation as f(x_i)
-    // ptsInWarped = warped(ptsIn) = (invVolPose * camPose) * ptsInWarpedRendered
-    Mat_<ptype> ptsInWarped, ptsInWarpedNormals;
-    buildInWarpedInitial(oldPoints, oldNormals, cam2vol,
-                         ptsInWarped, ptsInWarpedNormals,
-                         ptsInWarpedRendered, ptsInWarpedRenderedNormals);
-    //DEBUG
-    if (true)
-    {
 
     // run through DQB
     float wsum = 0;
-    }
 
     std::vector<size_t> places(knn);
     std::vector<Matx<float, 8, 6>> jPerNodeWeighted(knn);
     for (int k = 0; k < knn; k++)
-    //DEBUG
-    if (false)
     {
         float w = nodeWeights[k];
-        Mat_<ptype> inwExact, inwRender;
-        Mat_<ptype> inwrExact, inwrRender;
-        Mat_<ptype> inwnExact, inwnRender;
-        Mat_<ptype> inwrnExact, inwrnRender;
-        buildWarped(ptsIn, nrmIn, cachedDqSums, vol2cam,
-                    inwExact, inwrExact, inwnExact, inwrnExact);
 
         const WarpNode& node = nodes[k];
-        buildInWarpedInitial(oldPoints, oldNormals, cam2vol,
-                             inwRender, inwnRender, inwrRender, inwrnRender);
 
         places[k] = node.place;
         jPerNodeWeighted[k] = w * node.cachedJac;
         wsum += w;
     }
-        viz::Viz3d view("debug");
 
     // jacobian of normalization+application to a point
     Matx<float, 3, 8> jNormApply = dqsum.j_normapply(inp);
-        viz::WCloud winwExact(inwExact, viz::Color::bluberry());
-        viz::WCloudNormals winwnExact(inwExact, inwnExact, 1, 0.01, viz::Color::bluberry());
-        view.showWidget("inwExact", winwExact);
-        view.showWidget("inwnExact", winwnExact);
 
     // jacobian of norm penalty
     Vec2f norm = dqsum.norm();
     Matx<float, 2, 8> jNormPenalty = dqsum.j_norm();
     Vec2f normDiff(1 - norm[0], 0 - norm[1]);
-        viz::WCloud winwrExact(inwrExact, viz::Color::celestial_blue());
-        viz::WCloudNormals winwrnExact(inwrExact, inwrnExact, 1, 0.01, viz::Color::celestial_blue());
-        view.showWidget("inwrExact", winwrExact);
-        view.showWidget("inwrnExact", winwrnExact);
 
     std::vector<Matx<float, 3, 6>> jPerNode(knn);
-        viz::WCloud winwRender(inwRender, viz::Color::apricot());
-        viz::WCloudNormals winwnRender(inwRender, inwnRender, 1, 0.02, viz::Color::apricot());
-        view.showWidget("inwRender", winwRender);
-        view.showWidget("inwnRender", winwnRender);
 
     std::vector<Matx<float, 2, 6>> jNodeNormPenalty(knn);
-        viz::WCloud winwrRender(inwrRender, viz::Color::brown());
-        viz::WCloudNormals winwrnRender(inwrRender, inwrnRender, 1, 0.02, viz::Color::brown());
-        view.showWidget("inwrRender", winwrRender);
-        view.showWidget("inwrnRender", winwrnRender);
 
     // emulating jNormApply * jPerNodeWeighted
     for (int k = 0; k < knn; k++)
     {
         jPerNode[k] = jNormApply * jPerNodeWeighted[k];
         jNodeNormPenalty[k] = jNormPenalty * jPerNodeWeighted[k];
-        view.spin();
     }
         
     // emulate jVertex^T * jVertex and jVertex^T*b
@@ -1908,25 +1760,8 @@ void debugFillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>&
 {
     //DEBUG
     std::cout << __FUNCTION__ << std::endl;
-    // - current warped points projected onto image plane
-    // Projected onto 2d plane, for point-plane metrics calculation
-    Mat_<Point2f> ptsInProjected;
-    buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
-
-    // - per-vertex residuals before the optimization
-    // Cached point-to-plane distances per vertex
-    Mat_<float> cachedResiduals;
-    // Cached ground truth normals from projected pixels
-    Mat_<ptype> cachedOutVolN;
-    buildVertexResiduals(ptsInProjected, ptsInWarped, ptsInWarpedNormals,
-                         ptsOutVolP, ptsOutVolN,
-                         diffThreshold, critAngleCos,
-                         cachedResiduals, cachedOutVolN);
 
     Size size = cachedResiduals.size();
-    // Will be calculated at first energy evaluation
-    // Cached dq sums
-    Mat cachedDqSums;
 
     std::recursive_mutex mutex;
     Range range(0, size.height);
@@ -1934,53 +1769,34 @@ void debugFillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>&
     {
         BlockSparseMat<float, 6, 6> localjtj(jtj.nBlocks);
         std::vector<float> localjtb(jtb.size());
-    // MAD sigma estimation
-    float vertSigma = estimateVertexSigma(cachedResiduals);
 
         for (int y = range.start; y < range.end; y++)
         {
             auto dqsumRow = cachedDqSums.ptr<DualQuaternion>(y);
             auto neighboursRow = neighbours.ptr<NodeNeighboursType>(y);
             auto nodeWeightsRow = nodeWeights.ptr<NodeWeightsType>(y);
-    // - per-vertex weights before optimization (based on sigma we got)
-    Mat_<float> cachedWeights;
-    buildWeights(cachedResiduals, vertSigma, cachedWeights);
 
             auto ptsDiffRow = ptsDiff.ptr<ptype>(y);
-    float vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
 
             for (int x = 0; x < size.width; x++)
             {
                 Point pt(x, y);
-    auto graph = warp.getRegGraph();
-    const std::vector<Ptr<WarpNode>>& warpNodes = warp.getNodes();
-    const std::vector<std::vector<Ptr<WarpNode>>>& regNodes = warp.getGraphNodes();
-    std::vector<float> regSigmas = estimateRegSigmas(graph, warpNodes, regNodes,
-                                                     disableCentering, parentMovesChild, childMovesParent);
 
                 float residual = cachedResiduals(pt);
-    float regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas,
-                                        useHuber, disableCentering, parentMovesChild, childMovesParent);
 
                 DualQuaternion dqsum = dqsumRow[x];
-    float energy = vertexEnergy + reg_term_weight * regEnergy;
-    float oldEnergy = energy;
 
                 if (std::isnan(residual))
                     continue;
-    const int knn = warp.k;
 
                 float weight = 1.f;
                 if (useTukey)
                 {
                     weight = cachedWeights(pt);
                 }
-    size_t nNodesAll = warp.getNodesLen() + warp.getRegNodesLen();
 
                 if (weight < weightEpsilon)
                     continue;
-    // Find a place for each node params in x vector
-    placeNodesInX(warpNodes, regNodes);
 
                 // Get ptsIn from shaded data
                 Point3f inp = fromPtype(ptsIn(pt));
@@ -2905,6 +2721,279 @@ void debugToyExample(Mat_<ptype> ptsIn, WarpField wf, Mat cachedNeighbours, Mat 
 
     throw "this is the end, my friend";
 }
+
+
+
+
+/// -----------------------------------------------------------------------------------
+
+
+
+
+
+bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose, const cv::kinfu::Intr intrinsics,
+                                InputArray _vertImage, InputArray _normImage,
+                                InputArray _oldPoints, InputArray _oldNormals,
+                                InputArray _newPoints, InputArray _newNormals) const
+{
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
+    CV_Assert(_vertImage.isMat());
+    CV_Assert(_oldPoints.isMat());
+    CV_Assert(_newPoints.isMat());
+    CV_Assert(_newNormals.isMat());
+
+    CV_Assert(_vertImage.type()  == CV_32FC3 /* cv::DataType<ptype>::type */);
+    CV_Assert(_normImage.type()  == CV_32FC3 /* cv::DataType<ptype>::type */);
+    CV_Assert(_oldPoints.type()  == cv::DataType<ptype>::type);
+    CV_Assert(_oldNormals.type() == cv::DataType<ptype>::type);
+    CV_Assert(_newPoints.type()  == cv::DataType<ptype>::type);
+    CV_Assert(_newNormals.type() == cv::DataType<ptype>::type);
+
+    Mat vertImage = _vertImage.getMat();
+    Mat normImage = _normImage.getMat();
+    Mat oldPoints = _oldPoints.getMat();
+    Mat newPoints = _newPoints.getMat();
+    Mat newNormals = _newNormals.getMat();
+    Mat oldNormals = _oldNormals.getMat();
+
+    CV_Assert(!vertImage.empty());
+    CV_Assert(!normImage.empty());
+    CV_Assert(!oldPoints.empty());
+    CV_Assert(!newPoints.empty());
+    CV_Assert(!newNormals.empty());
+
+    Size size = vertImage.size();
+
+    CV_Assert(normImage.size() == size);
+    CV_Assert(oldPoints.size() == size);
+    CV_Assert(newPoints.size() == size);
+    CV_Assert(newNormals.size() == size);
+
+    // newPoints: points from camera to match to
+    // vertImage: [0-1] in volumeDims
+
+    //TODO: check this
+    //possibly this should be connected to baseRadius
+    //const float csize = 1.0f;
+    //TODO: move all params to one place;
+
+    //DEBUG
+    //uint32_t nIter = this->iterations;
+    uint32_t nIter = 10;
+
+    // calc j_rt params :
+    const bool atZero = false;
+    const bool useExp = false;
+    const bool additiveDerivative = true;
+    
+    // TODO: we can calculate first T, then R, then RT both
+    const bool needR = true;
+    const bool needT = true;
+    // reg params :
+    const bool needReg = true;
+    const bool parentMovesChild = true;
+    const bool childMovesParent = true;
+    const bool useNormApply = false;
+    const bool useHuber = true;
+    const bool precalcHuberSigma = true;
+
+    // data term params:
+    const bool needData = true;
+    const bool useTukey = true;
+    const bool precalcTukeySigma = true;
+
+    // tries to fix dual quaternions before DQB so that they will form shortest paths
+    // the algorithm is described in [Kavan and Zara 2005], Kavan'08
+    // to make it deterministic we choose a reference dq according to relative flag
+    const bool signFix = false;
+    const bool signFixRelative = false;
+
+    // solve params
+    // Used in DynaFu paper, simplifies calculation
+    const bool decorrelate = false;
+    const bool addItoLM = true;
+    const float initialLambdaLevMarq = 0.1f;
+    const float lmUpFactor = 2.f;
+    const float lmDownFactor = 3.f;
+    const float coeffILM = 0.1f;
+
+    const float factorCommon = false;
+
+    // generate ptsInWarped+Rendered from ptsIn and warping (on) or from oldPoints (off)
+    const float exactInitial = true;
+
+    // TODO: check and find good one
+    const float normPenalty = 0.0f;
+
+    //TODO: find good one
+    const float reg_term_weight = size.area() * 0.0001f;
+    //TODO: find good one
+    const float diffThreshold = 50.f;
+    //TODO: find good one
+    const float critAngleCos = cos((float)CV_PI / 2);
+    
+    cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
+
+    // SIC! the order: (1st) * (2nd), not vice versa like matrices
+    Affine3f cam2vol = pose * volume->pose.inv();
+    Affine3f vol2cam = volume->pose * pose.inv();
+
+    // Precalculate values:
+    // - canonical points from shaded images
+    // ptsIn = (vertImage*volumeSize) = (vertImage*volumeDims*voxelSize)
+    // nrmIn: Normals from shaded data
+    Mat_<ptype> ptsIn, nrmIn;
+    buildShaded(vertImage, normImage, volume->volSize, ptsIn, nrmIn);
+
+    Mat cachedNeighbours;
+    Mat cachedNodeWeights;
+    // - knns and distances to nodes' centers
+    //buildKnns(warp, ptsIn, cachedNeighbours, cachedNodeWeights);
+    //buildKnnsFromVolume(warp, volume, ptsIn, cachedNeighbours, cachedNodeWeights);
+
+    // using downscaled volume instead
+    buildKnnsFromVolume(warp, dsVolume, ptsIn, cachedNeighbours, cachedNodeWeights);
+
+    // - output points from camera to align to
+    // Camera points (and normals) in volume coordinates
+    // Used for delta calculation as y_i
+    // ptsOutVol = (invVolPose * camPose) * newPoints
+    Mat_<ptype> ptsOutVolP, ptsOutVolN;
+    buildOut(newPoints, newNormals, cam2vol, ptsOutVolP, ptsOutVolN);
+
+    const int knn = warp.k;
+    const std::vector<Ptr<WarpNode>>& warpNodes = warp.getNodes();
+
+    // Can be calculated at first energy evaluation if exactInitial is off
+    // Cached dq sums
+    Mat cachedDqSums;
+
+    // - current warped points from rendered data
+    // Warped points in camera coordinates
+    // Used for correspondence search
+    // oldPoints = ptsInWarpedRendered = invCamPose * volPose * ptsInWarped
+    // oldNormals: used to filter out bad points based on their normals
+    Mat_<ptype> ptsInWarpedRendered, ptsInWarpedRenderedNormals;
+    // Warped points in volume coordinates
+    // Used for delta calculation as f(x_i)
+    // ptsInWarped = warped(ptsIn) = (invVolPose * camPose) * ptsInWarpedRendered
+    Mat_<ptype> ptsInWarped, ptsInWarpedNormals;
+
+    if (exactInitial)
+    {
+        // or can be calculated from ptsIn and warp nodes by warping
+        buildCachedDqSumsKnns(cachedNeighbours, cachedNodeWeights, warp, cachedDqSums);
+        buildWarped(ptsIn, nrmIn, cachedDqSums, vol2cam,
+                    ptsInWarped, ptsInWarpedRendered,
+                    ptsInWarpedNormals, ptsInWarpedRenderedNormals);
+    }
+    else
+    {
+        // Can be calculated from rendered
+        buildInWarpedInitial(oldPoints, oldNormals, cam2vol,
+                             ptsInWarped, ptsInWarpedNormals,
+                             ptsInWarpedRendered, ptsInWarpedRenderedNormals);
+    }
+
+    //DEBUG
+    //debugToyExample(ptsIn, warp, cachedNeighbours, cachedNodeWeights);
+
+    //DEBUG
+    if (true)
+    {
+
+    }
+
+    //DEBUG
+    if (false)
+    {
+        Mat_<ptype> inwExact, inwRender;
+        Mat_<ptype> inwrExact, inwrRender;
+        Mat_<ptype> inwnExact, inwnRender;
+        Mat_<ptype> inwrnExact, inwrnRender;
+        buildWarped(ptsIn, nrmIn, cachedDqSums, vol2cam,
+                    inwExact, inwrExact, inwnExact, inwrnExact);
+
+        buildInWarpedInitial(oldPoints, oldNormals, cam2vol,
+                             inwRender, inwnRender, inwrRender, inwrnRender);
+
+        viz::Viz3d view("debug");
+
+        viz::WCloud winwExact(inwExact, viz::Color::bluberry());
+        viz::WCloudNormals winwnExact(inwExact, inwnExact, 1, 0.01, viz::Color::bluberry());
+        view.showWidget("inwExact", winwExact);
+        view.showWidget("inwnExact", winwnExact);
+
+        viz::WCloud winwrExact(inwrExact, viz::Color::celestial_blue());
+        viz::WCloudNormals winwrnExact(inwrExact, inwrnExact, 1, 0.01, viz::Color::celestial_blue());
+        view.showWidget("inwrExact", winwrExact);
+        view.showWidget("inwrnExact", winwrnExact);
+
+        viz::WCloud winwRender(inwRender, viz::Color::apricot());
+        viz::WCloudNormals winwnRender(inwRender, inwnRender, 1, 0.02, viz::Color::apricot());
+        view.showWidget("inwRender", winwRender);
+        view.showWidget("inwnRender", winwnRender);
+
+        viz::WCloud winwrRender(inwrRender, viz::Color::brown());
+        viz::WCloudNormals winwrnRender(inwrRender, inwrnRender, 1, 0.02, viz::Color::brown());
+        view.showWidget("inwrRender", winwrRender);
+        view.showWidget("inwrnRender", winwrnRender);
+
+        view.spin();
+    }
+
+
+
+    // - current warped points projected onto image plane
+    // Projected onto 2d plane, for point-plane metrics calculation
+    // TODO: can this be optimized to just loop from (0, 0) to (width, height)?
+    Mat_<Point2f> ptsInProjected;
+    buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
+
+    // - per-vertex residuals before the optimization
+    // Cached point-to-plane distances per vertex
+    Mat_<float> cachedResiduals;
+    // Cached ground truth normals from projected pixels
+    Mat_<ptype> cachedOutVolN;
+    buildVertexResiduals(ptsInProjected, ptsInWarped, ptsInWarpedNormals,
+                         ptsOutVolP, ptsOutVolN,
+                         diffThreshold, critAngleCos,
+                         cachedResiduals, cachedOutVolN);
+
+    // MAD sigma estimation
+    float vertSigma = estimateVertexSigma(cachedResiduals);
+
+    // - per-vertex weights before optimization (based on sigma we got)
+    Mat_<float> cachedWeights;
+    buildWeights(cachedResiduals, vertSigma, cachedWeights);
+
+    float vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
+
+    auto graph = warp.getRegGraph();
+    const std::vector<std::vector<Ptr<WarpNode>>>& regNodes = warp.getGraphNodes();
+    std::vector<float> regSigmas = estimateRegSigmas(graph, warpNodes, regNodes,
+                                                     warp.disableCentering, parentMovesChild, childMovesParent);
+
+    float regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas,
+                                        useHuber, warp.disableCentering, parentMovesChild, childMovesParent);
+
+    float energy = vertexEnergy + reg_term_weight * regEnergy;
+    float oldEnergy = energy;
+
+    std::cout << "#s" << " energy: " << energy;
+    std::cout << " = " << vertexEnergy << " + " << reg_term_weight << " * " << regEnergy;
+    std::cout << ", vertSigma: " << vertSigma;
+    std::cout << ", regSigmas: ";
+    for (auto f : regSigmas) std::cout << f << " ";
+    std::cout << std::endl;
+
+    size_t nNodesAll = warp.getNodesLen() + warp.getRegNodesLen();
+
+    // Find a place for each node params in x vector
+    placeNodesInX(warpNodes, regNodes);
+
     // calc args for additive derivative
     if (additiveDerivative)
     {
@@ -2925,11 +3014,9 @@ void debugToyExample(Mat_<ptype> ptsIn, WarpField wf, Mat cachedNeighbours, Mat 
             auto levelNodes = (level == 0) ? warpNodes : regNodes[level - 1];
             for (int ixn = 0; ixn < levelNodes.size(); ixn++)
             {
-    //DEBUG
-    //debugToyExample(ptsIn, warp, cachedNeighbours, cachedNodeWeights);
                 Ptr<WarpNode> node = levelNodes[ixn];
                 node->cachedJac = node->transform.jRt(node->pos, atZero, additiveDerivative,
-                                                      useExp, needR, needT, disableCentering);
+                                                      useExp, needR, needT, warp.disableCentering);
             }
         }
 
@@ -2937,11 +3024,17 @@ void debugToyExample(Mat_<ptype> ptsIn, WarpField wf, Mat cachedNeighbours, Mat 
         if (needReg)
         {
             // Sigmas are to be updated before each iteration only
-            regSigmas = estimateRegSigmas(graph, warpNodes, regNodes, disableCentering,
-                                          parentMovesChild, childMovesParent);
+            // At 0th iteration we had sigma and energy estimated
+            if (it > 0)
+            {
+                regSigmas = estimateRegSigmas(graph, warpNodes, regNodes, warp.disableCentering,
+                                              parentMovesChild, childMovesParent);
+                regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas,
+                                              useHuber, warp.disableCentering, parentMovesChild, childMovesParent);
+            }
 
             fillJacobianReg(jtj, jtb, graph, warpNodes, regNodes, regSigmas,  reg_term_weight,
-                            useHuber, disableCentering, useExp, useNormApply,
+                            useHuber, warp.disableCentering, useExp, useNormApply,
                             parentMovesChild, childMovesParent);
         }
 
@@ -2954,176 +3047,193 @@ void debugToyExample(Mat_<ptype> ptsIn, WarpField wf, Mat cachedNeighbours, Mat 
                 vertSigma = estimateVertexSigma(cachedResiduals);
                 // re-weighting based on a sigma
                 buildWeights(cachedResiduals, vertSigma, cachedWeights);
+                vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
             }
-            else // there's no cachedDqSums at 0th iteration, fixing it
+            else if (!exactInitial) // there's no cachedDqSums at 0th iteration if exactInitial is off, fixing it
             {
-                buildCachedDqSums(cachedKnns, warpNodes, knn, damping, disableCentering,
-                                  cachedDqSums);
+                buildCachedDqSumsKnns(cachedNeighbours, cachedNodeWeights, warp, cachedDqSums);
             }
 
             fillJacobianData(jtj, jtb, cachedResiduals, cachedOutVolN, cachedDqSums, cachedWeights,
-                             ptsIn, cachedKnns, warpNodes, useTukey, normPenalty,
+                             ptsIn, cachedNeighbours, cachedNodeWeights, warpNodes, useTukey, normPenalty,
                              decorrelate);
         }
 
-        // Solve and get delta transform
-        if (tryLevMarq)
+        energy = vertexEnergy + reg_term_weight * regEnergy;
+        oldEnergy = energy;
+
+        std::cout << "#LM#s" << " energy: " << energy;
+        std::cout << " = " << vertexEnergy << " + " << reg_term_weight << " * " << regEnergy;
+        std::cout << ", vertSigma: " << vertSigma;
+        std::cout << ", regSigmas: ";
+        for (auto f : regSigmas) std::cout << f << " ";
+        std::cout << std::endl;
+
+        // Solve using LevMarq and get delta transform
+        bool enough = false;
+
+        // save original diagonal of jtj matrix
+        std::vector<float> diag(nNodesAll*6);
+        for (int i = 0; i < nNodesAll*6; i++)
         {
-            bool enough = false;
-
-            // save original diagonal of jtj matrix
-            std::vector<float> diag(nNodesAll);
-            for (int i = 0; i < nNodesAll; i++)
-            {
-                diag[i] = jtj.refElem(i, i);
-            }
-
-            std::vector<Ptr<WarpNode>> tempWarpNodes;
-            std::vector<std::vector<Ptr<WarpNode>>> tempRegNodes;
-            Mat_<float> tempCachedResiduals;
-            Mat_<ptype> tempCachedOutVolN, tempPtsInWarped;
-            Mat tempCachedDqSums;
-            while (!enough && it < nIter)
-            {
-                // form LevMarq matrix
-                for (int i = 0; i < nNodesAll; i++)
-                {
-                    float v = diag[i];
-                    jtj.refElem(i, i) = v + lambdaLevMarq * (v + coeffILM);
-                }
-
-                std::vector<float> x;
-                bool solved = kinfu::sparseSolve(jtj, Mat(jtb), x);
-
-                //DEBUG
-                std::cout << "#" << nIter;
-
-                if (solved)
-                {
-                    tempWarpNodes = warp.cloneNodes();
-                    tempRegNodes = warp.cloneGraphNodes();
-
-                    // Update nodes using x
-
-                    updateNodes(x, tempWarpNodes, tempRegNodes, additiveDerivative,
-                                useExp, signFix, signFixRelative);
-
-                    // Warping nodes
-                    buildCachedDqSums(cachedKnns, tempWarpNodes, knn, damping, disableCentering,
-                                      tempCachedDqSums);
-                    buildWarped(ptsIn, nrmIn, tempCachedDqSums, vol2cam,
-                                tempPtsInWarped, ptsInWarpedRendered,
-                                ptsInWarpedNormals, ptsInWarpedRenderedNormals);
-                    buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
-                    buildVertexResiduals(ptsInProjected, tempPtsInWarped, ptsInWarpedNormals,
-                                         ptsOutVolP, ptsOutVolN,
-                                         diffThreshold, critAngleCos,
-                                         tempCachedResiduals, tempCachedOutVolN);
-                    buildWeights(tempCachedResiduals, vertSigma, cachedWeights);
-
-                    vertexEnergy = estimateVertexEnergy(tempCachedResiduals, cachedWeights);
-
-                    regEnergy = estimateRegEnergy(graph, tempWarpNodes, tempRegNodes, regSigmas,
-                                                  useHuber, disableCentering, parentMovesChild, childMovesParent);
-
-                    energy = vertexEnergy + reg_term_weight * regEnergy;
-
-                    //TODO: visualize iteration by iteration
-
-                    //DEBUG
-                    std::cout << " energy: " << energy;
-                    std::cout << " = " << vertexEnergy << " + " << reg_term_weight << " * " << regEnergy;
-                    std::cout << ", vertSigma: " << vertSigma;
-                    std::cout << ", regSigmas: ";
-                    for (auto f : regSigmas) std::cout << f;
-                    
-                }
-                else
-                {
-                    //DEBUG
-                    std::cout << " not solved";
-                }
-
-                //DEBUG
-                std::cout << std::endl;
-                                
-                if (!solved || (energy > oldEnergy))
-                {
-                    lambdaLevMarq *= lmUpFactor;
-                    it++;
-
-                    //DEBUG
-                    std::cout << "LM up" << std::endl;
-                }
-                else
-                {
-                    enough = true;
-
-                    //DEBUG
-                    std::cout << "LM down" << std::endl;
-                }
-            }
-
-            lambdaLevMarq /= lmDownFactor;
-            warp.setNodes(tempWarpNodes);
-            warp.setRegNodes(tempRegNodes);
-            oldEnergy = energy;
-            // these things will be reused at next stages
-            ptsInWarped = tempPtsInWarped;
-            cachedResiduals = tempCachedResiduals;
-            cachedOutVolN = tempCachedOutVolN;
-            cachedDqSums = tempCachedDqSums;
+            diag[i] = jtj.refElem(i, i);
         }
-        else
-        // TODO: remove this branch when LevMarq works
+
+        std::vector<Ptr<WarpNode>> tempWarpNodes;
+        std::vector<std::vector<Ptr<WarpNode>>> tempRegNodes;
+        Mat_<float> tempCachedResiduals;
+        Mat_<ptype> tempCachedOutVolN, tempPtsInWarped;
+        Mat tempCachedDqSums;
+        while (!enough && it < nIter)
         {
+            // form LevMarq matrix
+            for (int i = 0; i < nNodesAll*6; i++)
+            {
+                float v = diag[i];
+                jtj.refElem(i, i) = v + lambdaLevMarq * (v + coeffILM);
+            }
+            
+            //DEBUG
+            /*
+            Mat_<float> vizJtj(nNodesAll*6, nNodesAll*6);
+            for (int i = 0; i < nNodesAll*6; i++)
+            {
+                for (int j = 0; j < nNodesAll*6; j++)
+                {
+                    vizJtj(i, j) = jtj.refElem(i, j)+100.f;
+                }
+            }
+            */
+            
             std::vector<float> x;
-            if (!kinfu::sparseSolve(jtj, Mat(jtb), x))
-                break;
+            bool solved = kinfu::sparseSolve(jtj, Mat(jtb), x);
+            
+            if (solved)
+            {
+                tempWarpNodes = warp.cloneNodes();
+                tempRegNodes = warp.cloneGraphNodes();
+                WarpField tempWarpField = warp;
+                                                
+                // Update nodes using x
+                
+                updateNodes(x, tempWarpNodes, tempRegNodes, additiveDerivative,
+                            useExp, signFix, signFixRelative);
+                
+                tempWarpField.setNodes(tempWarpNodes);
+                tempWarpField.setRegNodes(tempRegNodes);
+                                                
+                // Warping nodes
+                buildCachedDqSumsKnns(cachedNeighbours, cachedNodeWeights, tempWarpField, tempCachedDqSums);
+                buildWarped(ptsIn, nrmIn, tempCachedDqSums, vol2cam, tempPtsInWarped, ptsInWarpedRendered,
+                            ptsInWarpedNormals, ptsInWarpedRenderedNormals);
 
-            std::vector<Ptr<WarpNode>> tempWarpNodes = warp.cloneNodes();
-            std::vector<std::vector<Ptr<WarpNode>>> tempRegNodes = warp.cloneGraphNodes();
+                //DEBUG!!!
+                //TODO URGENT: should we fix the correspondences until LM goes down???
+                //buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
+                
+                buildVertexResiduals(ptsInProjected, tempPtsInWarped, ptsInWarpedNormals, ptsOutVolP, ptsOutVolN,
+                                     diffThreshold, critAngleCos, tempCachedResiduals, tempCachedOutVolN);
 
-            updateNodes(x, tempWarpNodes, tempRegNodes, additiveDerivative, useExp, signFix,
-                        signFixRelative);
+                //TODO URGENT: should we recalculate weights here?????
+                //buildWeights(tempCachedResiduals, vertSigma, cachedWeights);
 
-            warp.setNodes(tempWarpNodes);
-            warp.setRegNodes(tempRegNodes);
+                vertexEnergy = estimateVertexEnergy(tempCachedResiduals, cachedWeights);
 
-            // Warping nodes
-            buildCachedDqSums(cachedKnns, warpNodes, knn, damping, disableCentering,
-                              cachedDqSums);
-            buildWarped(ptsIn, nrmIn, cachedDqSums, vol2cam,
-                        ptsInWarped, ptsInWarpedRendered,
-                        ptsInWarpedNormals, ptsInWarpedRenderedNormals);
-            buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
-            buildVertexResiduals(ptsInProjected, ptsInWarped, ptsInWarpedNormals,
-                                 ptsOutVolP, ptsOutVolN,
-                                 diffThreshold, critAngleCos,
-                                 cachedResiduals, cachedOutVolN);
-            buildWeights(cachedResiduals, vertSigma, cachedWeights);
+                regEnergy = estimateRegEnergy(graph, tempWarpNodes, tempRegNodes, regSigmas,
+                                              useHuber, warp.disableCentering, parentMovesChild, childMovesParent);
+                
+                energy = vertexEnergy + reg_term_weight * regEnergy;
+                
+                //DEBUG
+                std::cout << "#LM#" << it;
+                std::cout << " energy: " << energy;
+                std::cout << " = " << vertexEnergy << " + " << reg_term_weight << " * " << regEnergy;
+                std::cout << ", vertSigma: " << vertSigma;
+                std::cout << ", regSigmas: ";
+                for (auto f : regSigmas) std::cout << f << " ";
 
-            vertexEnergy = estimateVertexEnergy(cachedResiduals, cachedWeights);
+                Mat vizptsIn = ptsIn, viznrmIn = nrmIn;
+                Mat vizptsOutVolP = ptsOutVolP, vizptsOutVolN = ptsOutVolN;
+                Mat vizptsInWarpedRendered = ptsInWarpedRendered, vizptsInWarpedRenderedNormals = ptsInWarpedRenderedNormals;
+                Mat vizptsInWarped = ptsInWarped, vizptsInWarpedNormals = ptsInWarpedNormals;
+                Mat vizptsInProjected = ptsInProjected;
+                Mat vizcachedOutVolN = cachedOutVolN;
 
-            regEnergy = estimateRegEnergy(graph, warpNodes, regNodes, regSigmas, useHuber,
-                                          disableCentering, parentMovesChild, childMovesParent);
+                Mat viztempCachedOutVolN = tempCachedOutVolN;
+                Mat viztempPtsInWarped = tempPtsInWarped;
 
-            energy = vertexEnergy + reg_term_weight * regEnergy;
+                Mat viztempcachedResiduals = abs(tempCachedResiduals)*20.f;
 
-            //TODO: visualize iteration by iteration
+                Mat vizdiffCachedResiduals = abs(tempCachedResiduals - cachedResiduals) * 20.f;
+
+                Mat vizdebug;
+            }
+            else
+            {
+                //DEBUG
+                std::cout << " not solved";
+            }
 
             //DEBUG
-            std::cout << "#" << nIter << " energy: " << energy;
-            std::cout << " = " << vertexEnergy << " + " << reg_term_weight << " * " << regEnergy;
-            std::cout << ", vertSigma: " << vertSigma;
-            std::cout << ", regSigmas: ";
-            for (auto f : regSigmas) std::cout << f;
             std::cout << std::endl;
+
+            if (!solved || (energy > oldEnergy))
+            {
+                // failed to optimize, increase lambda and repeat
+
+                lambdaLevMarq *= lmUpFactor;
+                it++;
+                
+                //DEBUG
+                std::cout << "LM up, old energy = " << oldEnergy << std::endl;
+            }
+            else
+            {
+                // optimized successfully, decrease lambda and set variables for next iteration
+
+                enough = true;
+
+                lambdaLevMarq /= lmDownFactor;
+                warp.setNodes(tempWarpNodes);
+                warp.setRegNodes(tempRegNodes);
+
+                //DEBUG!!!
+                //TODO URGENT: should we fix the correspondences until LM goes down???
+                buildInProjected(ptsInWarpedRendered, proj, ptsInProjected);
+                buildVertexResiduals(ptsInProjected, tempPtsInWarped, ptsInWarpedNormals, ptsOutVolP, ptsOutVolN,
+                    diffThreshold, critAngleCos, tempCachedResiduals, tempCachedOutVolN);
+                //TODO URGENT: should we recalculate weights here?????
+                buildWeights(tempCachedResiduals, vertSigma, cachedWeights);
+                vertexEnergy = estimateVertexEnergy(tempCachedResiduals, cachedWeights);
+                // no need to recalculate regEnergy after re-association, nodes are the same
+                energy = vertexEnergy + reg_term_weight * regEnergy;
+
+                //DEBUG
+                std::cout << "#" << it;
+                std::cout << " energy: " << energy;
+                std::cout << " = " << vertexEnergy << " + " << reg_term_weight << " * " << regEnergy;
+                std::cout << ", vertSigma: " << vertSigma;
+                std::cout << ", regSigmas: ";
+                for (auto f : regSigmas) std::cout << f << " ";
+                std::cout << std::endl;
+
+
+                oldEnergy = energy;
+                // these things will be reused at next stages
+                ptsInWarped = tempPtsInWarped;
+                cachedResiduals = tempCachedResiduals;
+                cachedOutVolN = tempCachedOutVolN;
+                cachedDqSums = tempCachedDqSums;
+
+                //DEBUG
+                std::cout << "LM down" << std::endl;
+            }
         }
 
         it++;
     }
 
+    //TODO: check it; are there correct vertices to align?
     if(factorCommon)
     {
         Matx44f commonM;
@@ -3141,6 +3251,13 @@ void debugToyExample(Mat_<ptype> ptsIn, WarpField wf, Mat cachedNeighbours, Mat 
                 node->transform = node->transform.factoredOut(common, node->pos);
             }
         }
+
+        //TODO: where to put this common transform?
+    }
+
+
+
+
     if (false)
     {
         cv::viz::Viz3d view("debug");
@@ -3274,7 +3391,10 @@ void debugToyExample(Mat_<ptype> ptsIn, WarpField wf, Mat cachedNeighbours, Mat 
         view.spin();
     }
 
-    if (it != nIter)
+
+
+
+    if (it < nIter)
     {
         //DEBUG
         std::cout << "Failed at iteration #" << it << "/" << nIter << std::endl;
