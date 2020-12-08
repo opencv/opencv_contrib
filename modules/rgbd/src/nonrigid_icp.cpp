@@ -710,9 +710,12 @@ std::vector<float> estimateRegSigmas(const std::vector<std::vector<NodeNeighbour
         std::vector<float> regLevResiduals;
         regLevResiduals.reserve(levelNodes.size());
 
+        float avgRadius = 0.f;
         for (int ixn = 0; ixn < levelNodes.size(); ixn++)
         {
             Ptr<WarpNode> node = levelNodes[ixn];
+
+            avgRadius += node->radius;
 
             auto children = levelChildIdx[ixn];
 
@@ -737,7 +740,10 @@ std::vector<float> estimateRegSigmas(const std::vector<std::vector<NodeNeighbour
             }
         }
 
-        regSigmas[level] = madEstimate(regLevResiduals);
+        float sigma = madEstimate(regLevResiduals);
+        if (abs(sigma) < 0.00001f)
+            sigma = avgRadius / levelNodes.size();
+        regSigmas[level] = sigma;
     }
 
     return regSigmas;
