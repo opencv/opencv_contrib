@@ -8,9 +8,6 @@
 //     BEBLID: Boosted Efficient Binary Local Image Descriptor.
 //     Pattern Recognition Letters, 133:366–372, 2020.
 
-#ifndef __OPENCV_XFEATURES2D_BEBLID_P512_HPP__
-#define __OPENCV_XFEATURES2D_BEBLID_P512_HPP__
-
 // ABWLParams: x1, y1, x2, y2, boxRadius, th
 
 // Pre-trained parameters of BEBLID-512 trained in Liberty data set with
@@ -147,5 +144,3 @@ static const ABWLParams wl_params_512[] = {
     {26, 4, 26, 1, 1, 0}, {5, 21, 2, 20, 1, -1}, {14, 1, 13, 3, 1, 1}, {30, 9, 28, 8, 1, 0},
     {13, 15, 12, 12, 1, 1}, {7, 23, 6, 25, 1, -1}
 };
-
-#endif
