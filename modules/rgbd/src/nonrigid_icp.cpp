@@ -941,30 +941,36 @@ void buildInWarpedInitial(const Mat_<ptype>& oldPoints,
     ptsInWarpedRendered.create(size);
     ptsInWarpedRenderedNormals.create(size);
 
-    for (int y = 0; y < size.height; y++)
+    Range range(0, size.height);
+    auto lambda = [&](const Range& range)
     {
-        auto oldPointsRow  = oldPoints [y];
-        auto oldNormalsRow = oldNormals[y];
-
-        auto ptsInWarpedRenderedRow = ptsInWarpedRendered[y];
-        auto ptsInWarpedRow         = ptsInWarped[y];
-        auto ptsInWarpedNormalsRow  = ptsInWarpedNormals[y];
-        auto ptsInWarpedRenderedNormalsRow = ptsInWarpedRenderedNormals[y];
-
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            // Since oldPoints are warped and rendered data,
-            // we can get warped data in volume coords just by cam2vol transformation,
-            // w/o applying warp to inp
-            Point3f inWarpedRendered = fromPtype(oldPointsRow[x]);
-            ptsInWarpedRenderedRow[x] = toPtype(inWarpedRendered);
-            Point3f inWarped = cam2vol * inWarpedRendered;
-            ptsInWarpedRow[x] = toPtype(inWarped);
-            Point3f inrn = fromPtype(oldNormalsRow[x]);
-            ptsInWarpedRenderedNormalsRow[x] = toPtype(inrn);
-            ptsInWarpedNormalsRow[x] = toPtype(cam2vol.rotation() * inrn);
+            auto oldPointsRow  = oldPoints [y];
+            auto oldNormalsRow = oldNormals[y];
+
+            auto ptsInWarpedRenderedRow = ptsInWarpedRendered[y];
+            auto ptsInWarpedRow         = ptsInWarped[y];
+            auto ptsInWarpedNormalsRow  = ptsInWarpedNormals[y];
+            auto ptsInWarpedRenderedNormalsRow = ptsInWarpedRenderedNormals[y];
+
+            for (int x = 0; x < size.width; x++)
+            {
+                // Since oldPoints are warped and rendered data,
+                // we can get warped data in volume coords just by cam2vol transformation,
+                // w/o applying warp to inp
+                Point3f inWarpedRendered = fromPtype(oldPointsRow[x]);
+                ptsInWarpedRenderedRow[x] = toPtype(inWarpedRendered);
+                Point3f inWarped = cam2vol * inWarpedRendered;
+                ptsInWarpedRow[x] = toPtype(inWarped);
+                Point3f inrn = fromPtype(oldNormalsRow[x]);
+                ptsInWarpedRenderedNormalsRow[x] = toPtype(inrn);
+                ptsInWarpedNormalsRow[x] = toPtype(cam2vol.rotation() * inrn);
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
@@ -975,26 +981,38 @@ void buildInProjected(const Mat_<ptype>& ptsInWarpedRendered,
 {
     Size size = ptsInWarpedRendered.size();
     ptsInProjected.create(size);
-    Rect inside(Point(), size);
-    for (int y = 0; y < size.height; y++)
+    // make a border of 1 to avoid segfaults at interpolation
+    Rect2f inside = Rect(Point(), size) - Size(1, 1);
+
+    Range range(0, size.height);
+    auto lambda = [=, &ptsInProjected](const Range& range)
     {
-        auto ptsInWarpedRenderedRow = ptsInWarpedRendered[y];
-        auto ptsInProjectedRow      = ptsInProjected[y];
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            Point3f inWarpedRendered = fromPtype(ptsInWarpedRenderedRow[x]);
-                        
-            Point2f outXY = proj(inWarpedRendered);
-            if (! inside.contains(outXY))
-                outXY = Point2f(qnan, qnan);
-            ptsInProjectedRow[x] = outXY;
+            auto ptsInWarpedRenderedRow = ptsInWarpedRendered[y];
+            auto ptsInProjectedRow      = ptsInProjected[y];
+            for (int x = 0; x < size.width; x++)
+            {
+                Point3f inWarpedRendered = fromPtype(ptsInWarpedRenderedRow[x]);
+            
+                if (fastCheck(inWarpedRendered))
+                    inWarpedRendered = inWarpedRendered;
+
+                Point2f outXY = proj(inWarpedRendered);
+                if (!inside.contains(outXY))
+                    outXY = Point2f(qnan, qnan);
+
+                ptsInProjectedRow[x] = outXY;
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
-void buildShaded(const Mat_<ptype>& vertImage, const Mat_<ptype>& normImage,
-                Point3f volSize,
+void buildShaded(const Mat_<Vec3f /* ptype */>& vertImage, const Mat_<Vec3f /* ptype */>& normImage,
+                 Point3f volSize,
                  // output params
                  Mat_<ptype>& ptsIn,
                  Mat_<ptype>& nrmIn)
@@ -1002,26 +1020,40 @@ void buildShaded(const Mat_<ptype>& vertImage, const Mat_<ptype>& normImage,
     Size size = vertImage.size();
     ptsIn.create(size);
     nrmIn.create(size);
-    for (int y = 0; y < size.height; y++)
+
+    Range range(0, size.height);
+    auto lambda = [=, &ptsIn, &nrmIn](const Range& range)
     {
-        auto ptsInRow = ptsIn[y];
-        auto nrmInRow = nrmIn[y];
-        auto vertImageRow = vertImage[y];
-        auto normImageRow = normImage[y];
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            // Get ptsIn from shaded data
-            Point3f vshad = fromPtype(vertImageRow[x]);
-            Point3f inp(vshad.x * volSize.x,
-                        vshad.y * volSize.y,
-                        vshad.z * volSize.z);
-            ptsInRow[x] = toPtype(inp);
-            // Get normals from shaded data
-            Point3f nshad = fromPtype(normImageRow[x]);
-            Point3f inn(nshad * 2.f - Point3f(1.f, 1.f, 1.f));
-            nrmInRow[x] = toPtype(inn);
+            auto ptsInRow = ptsIn[y];
+            auto nrmInRow = nrmIn[y];
+            auto vertImageRow = vertImage[y];
+            auto normImageRow = normImage[y];
+            for (int x = 0; x < size.width; x++)
+            {
+                // Get ptsIn from shaded data
+                Point3f vshad = vertImageRow[x]; // fromPtype(vertImageRow[x]);
+                Point3f inp(vshad.x * volSize.x,
+                            vshad.y * volSize.y,
+                            vshad.z * volSize.z);
+            
+                // Get normals from shaded data
+                Point3f nshad = normImageRow[x]; // fromPtype(normImageRow[x]);
+                Point3f inn(nshad * 2.f - Point3f(1.f, 1.f, 1.f));
+
+                if ((vshad == Point3f()) || (nshad == Point3f()))
+                {
+                    inp = nan3; inn = nan3;
+                }
+
+                ptsInRow[x] = toPtype(inp);
+                nrmInRow[x] = toPtype(inn);
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
@@ -1037,25 +1069,31 @@ void buildOut(const Mat_<ptype>& newPoints,
     ptsOutVolP.create(size);
     ptsOutVolN.create(size);
 
-    for (int y = 0; y < size.height; y++)
+    Range range(0, size.height);
+    auto lambda = [=, &ptsOutVolP, &ptsOutVolN](const Range& range)
     {
-        auto newPointsRow  = newPoints [y];
-        auto newNormalsRow = newNormals[y];
-        auto ptsOutVolProw = ptsOutVolP[y];
-        auto ptsOutVolNrow = ptsOutVolN[y];
-        
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            // Get newPoint and newNormal
-            Point3f outp = fromPtype(newPointsRow [x]);
-            Point3f outn = fromPtype(newNormalsRow[x]);
-            // Transform them to coords in volume
-            Point3f outVolP = cam2vol * outp;
-            Point3f outVolN = cam2vol.rotation() * outn;
-            ptsOutVolProw[x] = toPtype(outVolP);
-            ptsOutVolNrow[x] = toPtype(outVolN);
+            auto newPointsRow  = newPoints [y];
+            auto newNormalsRow = newNormals[y];
+            auto ptsOutVolProw = ptsOutVolP[y];
+            auto ptsOutVolNrow = ptsOutVolN[y];
+        
+            for (int x = 0; x < size.width; x++)
+            {
+                // Get newPoint and newNormal
+                Point3f outp = fromPtype(newPointsRow [x]);
+                Point3f outn = fromPtype(newNormalsRow[x]);
+                // Transform them to coords in volume
+                Point3f outVolP = cam2vol * outp;
+                Point3f outVolN = cam2vol.rotation() * outn;
+                ptsOutVolProw[x] = toPtype(outVolP);
+                ptsOutVolNrow[x] = toPtype(outVolN);
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
@@ -1241,40 +1279,49 @@ void buildWarped(const Mat_<ptype>& ptsIn, const Mat_<ptype>& nrmIn, const Mat& 
     ptsInWarpedRendered.create(size);
     ptsInWarpedNormals.create(size);
     ptsInWarpedRenderedNormals.create(size);
-    
-    for (int y = 0; y < size.height; y++)
-    {
-        auto ptsInRow = ptsIn[y];
-        auto nrmInRow = nrmIn[y];
-        auto ptsInWarpedRow = ptsInWarped[y];
-        auto ptsInWarpedRenderedRow = ptsInWarpedRendered[y];
-        auto ptsInWarpedNormalsRow = ptsInWarpedNormals[y];
-        auto ptsInWarpedRenderedNormalsRow = ptsInWarpedRenderedNormals[y];
-        auto cachedDqSumsRow = cachedDqSums.ptr<DualQuaternion>(y);
-        
-        for (int x = 0; x < size.width; x++)
-        {
-            // Get ptsIn from shaded data
-            Point3f inp = fromPtype(ptsInRow[x]);
-            // Get initial normals for transformation
-            Point3f inn = fromPtype(nrmInRow[x]);
 
-            DualQuaternion dqsum = cachedDqSumsRow[x];
-            // We don't use commondq here, it's done at other stages of pipeline
-            //UnitDualQuaternion dqfull = dqn; // dqfull = dqn * commondq;
-            Affine3f rt = dqsum.getRt();
-            Point3f warpedP = rt * inp;
-            ptsInWarpedRow[x] = toPtype(warpedP);
-            Point3f inWarpedRendered = vol2cam * warpedP;
-            ptsInWarpedRenderedRow[x] = toPtype(inWarpedRendered);
+    Range range(0, size.height);
+    auto lambda = [&](const Range& range)
+    {
+        for (int y = range.start; y < range.end; y++)
+        {
+            auto ptsInRow = ptsIn[y];
+            auto nrmInRow = nrmIn[y];
+            auto ptsInWarpedRow = ptsInWarped[y];
+            auto ptsInWarpedRenderedRow = ptsInWarpedRendered[y];
+            auto ptsInWarpedNormalsRow = ptsInWarpedNormals[y];
+            auto ptsInWarpedRenderedNormalsRow = ptsInWarpedRenderedNormals[y];
+            auto cachedDqSumsRow = cachedDqSums.ptr<DualQuaternion>(y);
+        
+            for (int x = 0; x < size.width; x++)
+            {
+                // Get ptsIn from shaded data
+                Point3f inp = fromPtype(ptsInRow[x]);
+                // Get initial normals for transformation
+                Point3f inn = fromPtype(nrmInRow[x]);
+
+                //TODO URGENT: inWarpedRendered = vol2cam * (rt * warped)
+                //replace by (vol2cam * rt) * warped, done in dq
+
+                DualQuaternion dqsum = cachedDqSumsRow[x];
+                // We don't use commondq here, it's done at other stages of pipeline
+                //UnitDualQuaternion dqfull = dqn; // dqfull = dqn * commondq;
+                Affine3f rt = dqsum.getRt();
+                Point3f warpedP = rt * inp;
+                ptsInWarpedRow[x] = toPtype(warpedP);
+                Point3f inWarpedRendered = vol2cam * warpedP;
+                ptsInWarpedRenderedRow[x] = toPtype(inWarpedRendered);
             
-            // Fill transformed normals
-            Point3f warpedN = rt.rotation() * inn;
-            ptsInWarpedNormalsRow[x] = toPtype(warpedN);
-            Point3f inrn = vol2cam.rotation() * warpedN;
-            ptsInWarpedRenderedNormalsRow[x] = toPtype(inrn);
+                // Fill transformed normals
+                Point3f warpedN = rt.rotation() * inn;
+                ptsInWarpedNormalsRow[x] = toPtype(warpedN);
+                Point3f inrn = vol2cam.rotation() * warpedN;
+                ptsInWarpedRenderedNormalsRow[x] = toPtype(inrn);
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
@@ -1293,65 +1340,71 @@ void buildVertexResiduals(const Mat_<Point2f>& ptsInProjected,
     cachedResiduals.create(size);
     cachedOutVolN.create(size);
 
-    for (int y = 0; y < size.height; y++)
+    Range range(0, size.height);
+    auto lambda = [=, &cachedResiduals, &cachedOutVolN](const Range& range)
     {
-        auto ptsInProjectedRow = ptsInProjected[y];
-        auto ptsInWarpedRow = ptsInWarped[y];
-        auto ptsInWarpedNormalsRow = ptsInWarpedNormals[y];
-
-        auto cachedResidualsRow = cachedResiduals[y];
-        auto cachedOutVolNRow = cachedOutVolN[y];
-
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            bool goodv = false;
-            float pointPlaneDistance = 0.f;
-            Point3f outVolP, outVolN;
-            // ptsIn warped and rendered from camera
-            // Point3f inrp = fromPtype(ptsInWarpedRenderedRow[x]);
+            auto ptsInProjectedRow = ptsInProjected[y];
+            auto ptsInWarpedRow = ptsInWarped[y];
+            auto ptsInWarpedNormalsRow = ptsInWarpedNormals[y];
 
-            // Project it to screen to get corresponding out point to calc delta
-            Point2f outXY = ptsInProjectedRow[x];
-            if (!(cvIsNaN(outXY.x) || cvIsNaN(outXY.y)))
+            auto cachedResidualsRow = cachedResiduals[y];
+            auto cachedOutVolNRow = cachedOutVolN[y];
+
+            for (int x = 0; x < size.width; x++)
             {
-                // Get newPoint and newNormal
-                bool hasP, hasN;
-                std::tie(hasP, outVolP) = interpolateP3f(outXY, ptsOutVolP[0], size.width);
-                std::tie(hasN, outVolN) = interpolateP3f(outXY, ptsOutVolN[0], size.width);
-                if (hasP && hasN)
+                bool goodv = false;
+                float pointPlaneDistance = 0.f;
+                Point3f outVolP, outVolN;
+                // ptsIn warped and rendered from camera
+                // Point3f inrp = fromPtype(ptsInWarpedRenderedRow[x]);
+
+                // Project it to screen to get corresponding out point to calc delta
+                Point2f outXY = ptsInProjectedRow[x];
+                if (!(cvIsNaN(outXY.x) || cvIsNaN(outXY.y)))
                 {
-                    // Interpolated normal is not normalized usually; fix it
-                    outVolN = outVolN / norm(outVolN);
+                    // Get newPoint and newNormal
+                    bool hasP, hasN;
+                    std::tie(hasP, outVolP) = interpolateP3f(outXY, ptsOutVolP[0], size.width);
+                    std::tie(hasN, outVolN) = interpolateP3f(outXY, ptsOutVolN[0], size.width);
+                    if (hasP && hasN)
+                    {
+                        // Interpolated normal is not normalized usually; fix it
+                        outVolN = outVolN / norm(outVolN);
 
-                    // Get ptsInWarped (in volume coords)
-                    Point3f inWarped = fromPtype(ptsInWarpedRow[x]);
+                        // Get ptsInWarped (in volume coords)
+                        Point3f inWarped = fromPtype(ptsInWarpedRow[x]);
 
-                    // Get normals for filtering out
-                    //Point3f inrn = fromPtype(ptsInWarpedRenderedNormals(x, y));
-                    Point3f inVolumeN = fromPtype(ptsInWarpedNormalsRow[x]);
+                        // Get normals for filtering out
+                        //Point3f inrn = fromPtype(ptsInWarpedRenderedNormals(x, y));
+                        Point3f inVolumeN = fromPtype(ptsInWarpedNormalsRow[x]);
 
-                    Point3f diff = outVolP - inWarped;
+                        Point3f diff = outVolP - inWarped;
 
-                    pointPlaneDistance = outVolN.dot(diff);
+                        pointPlaneDistance = outVolN.dot(diff);
 
-                    goodv = (diff.dot(diff) <= diffThreshold) &&
-                            (abs(inVolumeN.dot(outVolN)) >= critAngleCos) &&
-                            (!(cvIsInf(pointPlaneDistance) || cvIsNaN(pointPlaneDistance)));
+                        goodv = (diff.dot(diff) <= diffThreshold) &&
+                                (abs(inVolumeN.dot(outVolN)) >= critAngleCos) &&
+                                (!(cvIsInf(pointPlaneDistance) || cvIsNaN(pointPlaneDistance)));
+                    }
+                }
+
+                if (goodv)
+                {
+                    cachedResidualsRow[x] = pointPlaneDistance;
+                    cachedOutVolNRow[x] = toPtype(outVolN);
+                }
+                else
+                {
+                    cachedResidualsRow[x] = qnan;
+                    cachedOutVolNRow[x] = toPtype(nan3);
                 }
             }
-
-            if (goodv)
-            {
-                cachedResidualsRow[x] = pointPlaneDistance;
-                cachedOutVolNRow[x] = toPtype(outVolN);
-            }
-            else
-            {
-                cachedResidualsRow[x] = qnan;
-                cachedOutVolNRow[x] = toPtype(nan3);
-            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
