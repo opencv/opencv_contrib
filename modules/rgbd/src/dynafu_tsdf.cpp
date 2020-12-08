@@ -740,6 +740,9 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
 void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals, bool fetchVoxels) const
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     CV_TRACE_FUNCTION();
 
     if(_points.needed())
@@ -816,6 +819,7 @@ struct MarchCubesInvoker : ParallelLoopBody
                       std::vector<Vec4f>& _meshPoints) :
         volume(_volume),
         meshPoints(_meshPoints),
+        //TODO URGENT: refactor these 2 things
         mcNeighbourPts{
             Point3f(0.f, 0.f, 0.f),
             Point3f(0.f, 0.f, 1.f),
@@ -953,6 +957,9 @@ struct MarchCubesInvoker : ParallelLoopBody
 
 void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     std::vector<Vec4f> meshPoints;
     std::vector<int> meshEdges;
     MarchCubesInvoker mci(*this, meshPoints);
