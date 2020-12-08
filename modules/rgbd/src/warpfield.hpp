@@ -11,6 +11,12 @@ typedef std::array<size_t, DYNAFU_MAX_NEIGHBOURS> NodeNeighboursType;
 namespace cv {
 namespace dynafu {
 
+inline DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
+{
+    float wdamp = nNodes - wsum;
+    return UnitDualQuaternion().dq() * wdamp * coeff;
+}
+
 struct WarpNode
 {
     WarpNode():
@@ -56,23 +62,31 @@ public:
     typedef flann::GenericIndex<Distance> Index;
 
     WarpField(int _maxNeighbours=1000000, int K=4, size_t levels=4, float baseResolution=.10f,
-              float resolutionGrowth=4) :
+              float resolutionGrowth=4.f, float _damping = 0.001f, bool _disableCentering = false) :
         k(K), n_levels(levels),
         nodes(), maxNeighbours(_maxNeighbours), // good amount for dense kinfu pointclouds
         baseRes(baseResolution),
         resGrowthRate(resolutionGrowth),
         regGraphNodes(n_levels - 1),
         hierarchy(n_levels - 1),
-        nodeIndex(nullptr)
+        nodeIndex(nullptr),
+        damping(_damping),
+        disableCentering(_disableCentering)
     {
         CV_Assert(k <= DYNAFU_MAX_NEIGHBOURS);
     }
 
     void updateNodesFromPoints(InputArray _points);
 
-    Point3f applyWarp(Point3f p, const NodeNeighboursType neighbours, int n, bool normal = false) const;
 
-    void findNeighbours(Point3f queryPt, std::vector<int>& indices, std::vector<float>& dists) const
+    Point3f applyWarp(const Point3f p, const NodeNeighboursType neighbours, bool normal = false) const;
+    Point3f applyWarp(const Point3f p, const NodeWeightsType weights, const NodeNeighboursType neighbours, bool normal = false) const;
+
+    DualQuaternion warpForKnns(const NodeNeighboursType neighbours, const NodeWeightsType weights) const;
+    DualQuaternion warpForVertex(const Point3f vertex, const NodeNeighboursType neighbours) const;
+
+
+    void findNeighbours(Point3f queryPt, std::vector<int>& indices, std::vector<float>& sqDists) const
     {
         std::vector<float> query = { queryPt.x, queryPt.y, queryPt.z };
         nodeIndex->knnSearch(query, indices, dists, k, cvflann::SearchParams());
@@ -170,6 +184,12 @@ public:
 
     int k; //k-nearest neighbours will be used
     size_t n_levels; // number of levels in the heirarchy
+
+    // Can be used to fade transformation to identity far from nodes centers
+    // To make them local even w/o knn nodes choice
+    float damping;
+
+    bool disableCentering;
 
 private:
     void removeSupported(Index& ind, AutoBuffer<bool>& supInd);

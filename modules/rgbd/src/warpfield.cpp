@@ -181,26 +181,16 @@ void WarpField::initTransforms(std::vector<Ptr<WarpNode> > nv)
         return;
     }
 
-    for(auto nodePtr: nv)
+    for(auto &nodePtr: nv)
     {
-        std::vector<int> knnIndices(k);
-        std::vector<float> knnDists(k);
+        Point3f pos = nodePtr->pos;
+        NodeNeighboursType neighbours = findNeighbours(pos);
+       
+        DualQuaternion dqsum = warpForVertex(pos, neighbours);
 
-        std::vector<float> query = {nodePtr->pos.x, nodePtr->pos.y, nodePtr->pos.z};
-
-        nodeIndex->knnSearch(query, knnIndices, knnDists, k, cvflann::SearchParams());
-
-        std::vector<float> weights(knnIndices.size());
-        std::vector<UnitDualQuaternion> transforms(knnIndices.size());
-
-        size_t i = 0;
-        for(int idx: knnIndices)
-        {
-            weights[i] = nodes[idx]->weight(nodePtr->pos);
-            transforms[i++] = nodes[idx]->transform;
-        }
-
-        UnitDualQuaternion pose = DQB(weights, transforms);
+        UnitDualQuaternion pose = dqsum.normalized();
+        // Here we prepare pose for (possible) centering
+        pose = disableCentering ? pose : pose.centered(-pos);
         nodePtr->transform = pose;
     }
 }
@@ -276,48 +266,99 @@ void WarpField::constructRegGraph()
 }
 
 
-/*
-Calculate DQB transform at point p and apply it to p
-Normal calculation is done the same way but translation is not applied
-*/
-Point3f WarpField::applyWarp(Point3f p, const NodeNeighboursType neighbours, int n, bool normal) const
+// Calculate DQB transform at point p and apply it to p
+// If p is normal, do not apply translation
+Point3f WarpField::applyWarp(const Point3f p, const NodeNeighboursType neighbours, bool normal) const
 {
     CV_TRACE_FUNCTION();
 
-    // DQB:
+    Affine3f rt = warpForVertex(p, neighbours).getRt();
 
-    if(!n)
-        return p;
-
-    std::vector<float> weights(n);
-    std::vector<UnitDualQuaternion> transforms(n);
-    float totalWeightSquare = 0.f;
-    for(int i = 0; i < n; i++)
+    if (normal)
     {
-        Ptr<WarpNode> neigh = nodes[neighbours[i]];
-        transforms[i] = neigh->centeredRt();
-        float w = neigh->weight(p);
-        weights[i]= w;
-        totalWeightSquare = w*w;
-    }
-    if(abs(totalWeightSquare) > 0.001f)
-    {
-        Affine3f rt = DQB(weights, transforms).getRt();
-        if(normal)
-        {
-            Affine3f r(rt.rotation());
-            return r*p;
-        }
-        else
-        {
-            return rt*p;
-        }
+        return rt.rotation() * p;
     }
     else
     {
-        return p;
+        return rt * p;
     }
 }
+
+
+Point3f WarpField::applyWarp(const Point3f p, const NodeWeightsType weights, const NodeNeighboursType neighbours, bool normal) const
+{
+    CV_TRACE_FUNCTION();
+
+    throw "useless function";
+
+    Affine3f rt = warpForKnns(neighbours, weights).getRt();
+
+    if (normal)
+    {
+        return rt.rotation() * p;
+    }
+    else
+    {
+        return rt * p;
+    }
+}
+
+
+DualQuaternion WarpField::warpForKnns(const NodeNeighboursType neighbours, const NodeWeightsType weights) const
+{
+    CV_TRACE_FUNCTION();
+
+    DualQuaternion dqsum;
+    float wsum = 0; int nValid = 0;
+    for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
+    {
+        int ixn = neighbours[i];
+        if (ixn >= 0)
+        {
+            Ptr<WarpNode> node = nodes[ixn];
+
+            // center(x) := (1+e*1/2*c)*x*(1-e*1/2*c)
+            UnitDualQuaternion dqi = disableCentering ? node->transform : node->centeredRt();
+
+            float w = weights[i];
+
+            dqsum += w * dqi.dq();
+            wsum += w;
+            nValid++;
+        }
+        else
+            break;
+    }
+
+    dqsum += dampedDQ(nValid, wsum, damping);
+    return dqsum;
+}
+
+
+DualQuaternion WarpField::warpForVertex(const Point3f vertex, NodeNeighboursType neighbours) const
+{
+    NodeWeightsType weights { };
+    int n = 0;
+    for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
+    {
+        int ixn = neighbours[i];
+        if (ixn >= 0)
+        {
+            weights[i] = nodes[ixn]->weight(vertex);
+            n++;
+        }
+        else
+            break;
+    }
+    // to prevent access to incorrect indices
+    for (int i = n; i < DYNAFU_MAX_NEIGHBOURS; i++)
+    {
+        neighbours[i] = -1;
+    }
+
+    return warpForKnns(neighbours, weights);
+}
+
 
 } // namepsace dynafu
 } // namespace cv
