@@ -502,13 +502,12 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
     std::vector<Matx<float, 8, 6>> jPerNodeWeighted(knn);
     for (int k = 0; k < knn; k++)
     {
-        //int nei = knns.neighbours[k];
-        float w = knns.weights[k];
+        float w = nodeWeights[k];
 
         const WarpNode& node = nodes[k];
 
         places[k] = node.place;
-        jPerNodeWeighted[node.place] = w * node.cachedJac;
+        jPerNodeWeighted[k] = w * node.cachedJac;
         wsum += w;
     }
 
@@ -1369,7 +1368,11 @@ void fillJacobianReg(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
 
             for (int ixc = 0; ixc < children.size(); ixc++)
             {
-                Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+                int chidx = children[ixc];
+                if (chidx < 0)
+                    break;
+
+                Ptr<WarpNode> child = childLevelNodes[chidx];
 
                 if (parentMovesChild)
                 {
@@ -1395,57 +1398,85 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
                       const Mat& cachedDqSums,
                       const Mat_<float>& cachedWeights,
                       const Mat_<ptype>& ptsIn,
-                      const Mat& cachedKnns,
+                      const Mat& neighbours,
+                      const Mat& nodeWeights,
                       const std::vector<Ptr<WarpNode>>& warpNodes,
                       const bool useTukey,
                       const float normPenalty,
                       const bool decorrelate)
 {
     Size size = cachedResiduals.size();
-    for (int y = 0; y < size.height; y++)
+
+    std::recursive_mutex mutex;
+    Range range(0, size.height);
+    auto lambda = [=, &mutex, &jtj, &jtb](const Range& range)
     {
-        auto dqsumRow = cachedDqSums.ptr<DualQuaternion>(y);
-        auto knnsRow = cachedKnns.ptr<WeightsNeighbours>(y);
-
-        for (int x = 0; x < size.width; x++)
+        BlockSparseMat<float, 6, 6> localjtj(jtj.nBlocks);
+        std::vector<float> localjtb(jtb.size());
+        
+        for (int y = range.start; y < range.end; y++)
         {
-            Point pt(x, y);
+            auto dqsumRow = cachedDqSums.ptr<DualQuaternion>(y);
+            auto neighboursRow = neighbours.ptr<NodeNeighboursType>(y);
+            auto nodeWeightsRow = nodeWeights.ptr<NodeWeightsType>(y);
 
-            float pointPlaneDistance = cachedResiduals(pt);
-            Point3f outVolN = fromPtype(cachedOutVolN(pt));
-            DualQuaternion dqsum = dqsumRow[x];
-
-            if (std::isnan(pointPlaneDistance))
-                continue;
-
-            float weight = 1.f;
-            if (useTukey)
+            for (int x = 0; x < size.width; x++)
             {
-                weight = cachedWeights(pt);
+                Point pt(x, y);
+
+                float pointPlaneDistance = cachedResiduals(pt);
+                Point3f outVolN = fromPtype(cachedOutVolN(pt));
+                DualQuaternion dqsum = dqsumRow[x];
+
+                if (std::isnan(pointPlaneDistance))
+                    continue;
+
+                float weight = 1.f;
+                if (useTukey)
+                {
+                    weight = cachedWeights(pt);
+                }
+
+                if (weight < weightEpsilon)
+                    continue;
+
+                // Get ptsIn from shaded data
+                Point3f inp = fromPtype(ptsIn(pt));
+
+                if (!fastCheck(inp))
+                    continue;
+
+                NodeWeightsType nodeWeights = nodeWeightsRow[x];
+                NodeNeighboursType knns = neighboursRow[x];
+
+                std::vector<WarpNode> nodes;
+                for (int k = 0; k < DYNAFU_MAX_NEIGHBOURS; k++)
+                {
+                    int nei = knns[k];
+                    if (nei < 0)
+                        break;
+                    const WarpNode node = *(warpNodes[nei]);
+                    nodes.push_back(node);
+                }
+
+                fillVertex(localjtj, localjtb, nodes, nodeWeights,
+                           inp, pointPlaneDistance, outVolN, dqsum, weight,
+                           normPenalty, decorrelate);
             }
-
-            // Get ptsIn from shaded data
-            Point3f inp = fromPtype(ptsIn(pt));
-
-            WeightsNeighbours knns = knnsRow[x];
-
-            std::vector<WarpNode> nodes;
-            for (int k = 0; k < DYNAFU_MAX_NEIGHBOURS; k++)
-            {
-                int nei = knns.neighbours[k];
-                if (nei < 0)
-                    break;
-                const WarpNode node = *(warpNodes[nei]);
-                nodes.push_back(node);
-            }
-
-            fillVertex(jtj, jtb, nodes, knns,
-                       inp, pointPlaneDistance, outVolN, dqsum, weight,
-                       normPenalty, decorrelate);
         }
-    }
-}
 
+        {
+            std::lock_guard<std::recursive_mutex> autoLock(mutex);
+
+            jtj += localjtj;
+            Mat globalJtb(jtb);
+            globalJtb += Mat(localjtb);
+            globalJtb.copyTo(jtb);
+        }
+    };
+
+    parallel_for_(range, lambda);
+}
 
 bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                                 InputArray _vertImage, InputArray _normImage,
