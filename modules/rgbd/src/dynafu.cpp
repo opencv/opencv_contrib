@@ -365,13 +365,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
-        // Obtain vertex data in cube's coordinates (voxelSize included)
-        // and use them to update warp field
-        //TODO: what if to use marchCubes() instead?
-        UMat wfPoints;
-        volume->fetchPointsNormals(wfPoints, noArray(), true);
-        warpfield.updateNodesFromPoints(wfPoints);
-
         // Render it using current cam pose but _with_ warping
         Mat _depthRender, estdDepth, _vertRender, _normRender;
         // TODO: check if we really need to turn it off
