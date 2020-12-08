@@ -73,6 +73,9 @@ static float median(std::vector<float>& v)
 
 static float madEstimate(std::vector<float>& v)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     float med = median(v);
     std::for_each(v.begin(), v.end(), [med](float& x) {x = std::abs(x - med); });
     return MAD_SCALE * median(v);
@@ -575,6 +578,9 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
 // MAD sigma estimation
 float estimateVertexSigma(const Mat_<float>& cachedResiduals)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = cachedResiduals.size();
     std::vector<float> vertResiduals;
     vertResiduals.reserve(size.area());
@@ -614,6 +620,9 @@ float estimateVertexSigma(const Mat_<float>& cachedResiduals)
 float estimateVertexEnergy(const Mat_<float>& cachedResiduals,
                            const Mat_<float>& cachedWeights)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = cachedResiduals.size();
     float energy = 0.f;
 
@@ -657,6 +666,9 @@ float estimateRegEnergy(const std::vector<std::vector<NodeNeighboursType>>& grap
                         const bool disableCentering,
                         const bool parentMovesChild, const bool childMovesParent)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     float energy = 0.f;
 
     for (int level = 0; level < graph.size(); level++)
@@ -717,6 +729,9 @@ std::vector<float> estimateRegSigmas(const std::vector<std::vector<NodeNeighbour
                                      const bool disableCentering,
                                      const bool parentMovesChild, const bool childMovesParent)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     std::vector<float> regSigmas(graph.size(), 1.f);
     for (int level = 0; level < graph.size(); level++)
     {
@@ -776,6 +791,9 @@ void updateNodes(const std::vector<float>& x,
                  const bool signFix,
                  const bool signFixRelative)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     // for sign fix
     UnitDualQuaternion ref;
     float refnorm = std::numeric_limits<float>::max();
@@ -938,6 +956,9 @@ void buildInWarpedInitial(const Mat_<ptype>& oldPoints,
                           Mat_<ptype>& ptsInWarpedRendered,
                           Mat_<ptype>& ptsInWarpedRenderedNormals)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = oldPoints.size();
     ptsInWarped.create(size);
     ptsInWarpedNormals.create(size);
@@ -982,6 +1003,9 @@ void buildInProjected(const Mat_<ptype>& ptsInWarpedRendered,
                       // output param
                       Mat_<Point2f>& ptsInProjected)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = ptsInWarpedRendered.size();
     ptsInProjected.create(size);
     // make a border of 1 to avoid segfaults at interpolation
@@ -1020,6 +1044,9 @@ void buildShaded(const Mat_<Vec3f /* ptype */>& vertImage, const Mat_<Vec3f /* p
                  Mat_<ptype>& ptsIn,
                  Mat_<ptype>& nrmIn)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = vertImage.size();
     ptsIn.create(size);
     nrmIn.create(size);
@@ -1068,6 +1095,9 @@ void buildOut(const Mat_<ptype>& newPoints,
               Mat_<ptype>& ptsOutVolP,
               Mat_<ptype>& ptsOutVolN)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = newPoints.size();
     ptsOutVolP.create(size);
     ptsOutVolN.create(size);
@@ -1106,6 +1136,9 @@ void buildKnns(const WarpField& warp, const Mat_<ptype>& ptsIn,
                Mat& cachedNeighbours,
                Mat& cachedNodeWeights)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = ptsIn.size();
     cachedNeighbours.create(size, rawType<NodeNeighboursType>());
     cachedNodeWeights.create(size, rawType<NodeWeightsType>());
@@ -1153,6 +1186,8 @@ void buildKnnsFromVolume(const WarpField& warp, const cv::Ptr<dynafu::TSDFVolume
                          Mat& cachedNeighbours,
                          Mat& cachedNodeWeights)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
 
     Size size = ptsIn.size();
     cachedNeighbours.create(size, rawType<NodeNeighboursType>());
@@ -1209,6 +1244,8 @@ void buildCachedDqSumsVertex(const Mat& cachedNeighbours, const Mat_<ptype>& pts
                              // output params
                              Mat& cachedDqSums)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
 
     Size size = ptsIn.size();
     cachedDqSums.create(size, rawType<DualQuaternion>());
@@ -1242,6 +1279,8 @@ void buildCachedDqSumsKnns(const Mat& cachedNeighbours, const Mat& cachedNodeWei
                            // output params
                            Mat& cachedDqSums)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
 
     Size size = cachedNeighbours.size();
     cachedDqSums.create(size, rawType<DualQuaternion>());
@@ -1277,6 +1316,9 @@ void buildWarped(const Mat_<ptype>& ptsIn, const Mat_<ptype>& nrmIn, const Mat& 
                  Mat_<ptype>& ptsInWarpedNormals,
                  Mat_<ptype>& ptsInWarpedRenderedNormals)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = ptsIn.size();
     ptsInWarped.create(size);
     ptsInWarpedRendered.create(size);
@@ -1339,6 +1381,9 @@ void buildVertexResiduals(const Mat_<Point2f>& ptsInProjected,
                           Mat_<float>& cachedResiduals,
                           Mat_<ptype>& cachedOutVolN)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = ptsInProjected.size();
     cachedResiduals.create(size);
     cachedOutVolN.create(size);
@@ -1416,6 +1461,9 @@ void buildWeights(const Mat_<float>& cachedResiduals,
                   // output params
                   Mat_<float>& cachedWeights)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = cachedResiduals.size();
     cachedWeights.create(size);
     
@@ -1442,6 +1490,9 @@ void fillJacobianReg(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
                      const bool disableCentering, const bool useExp, const bool useNormApply,
                      const bool parentMovesChild, const bool childMovesParent)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     for (int level = 0; level < graph.size(); level++)
     {
         auto childLevelNodes = (level == 0) ? nodes : regNodes[level - 1];
@@ -1493,6 +1544,9 @@ void fillJacobianData(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
                       const float normPenalty,
                       const bool decorrelate)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Size size = cachedResiduals.size();
 
     std::recursive_mutex mutex;
