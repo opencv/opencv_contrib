@@ -657,7 +657,11 @@ float estimateRegEnergy(const std::vector<std::vector<NodeNeighboursType>>& grap
 
             for (int ixc = 0; ixc < children.size(); ixc++)
             {
-                Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+                int chidx = children[ixc];
+                if (chidx < 0)
+                    break;
+
+                Ptr<WarpNode> child = childLevelNodes[chidx];
 
                 if (parentMovesChild)
                 {
@@ -714,7 +718,11 @@ std::vector<float> estimateRegSigmas(const std::vector<std::vector<NodeNeighbour
 
             for (int ixc = 0; ixc < children.size(); ixc++)
             {
-                Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+                int chidx = children[ixc];
+                if (chidx < 0)
+                    break;
+
+                Ptr<WarpNode> child = childLevelNodes[chidx];
 
                 if (parentMovesChild)
                 {
