@@ -35,7 +35,7 @@ public:
 
     virtual void reset() = 0;
 
-    virtual NodeNeighboursType const& getVoxelNeighbours(Point3i v, int& n) const = 0;
+    virtual NodeNeighboursType const& getVoxelNeighbours(Point3f coords) const = 0;
 
     virtual Ptr<TSDFVolume> createDownsampled(float factor) const = 0;
 

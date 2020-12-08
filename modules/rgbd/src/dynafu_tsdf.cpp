@@ -7,6 +7,7 @@
 #include "precomp.hpp"
 #include "dynafu_tsdf.hpp"
 #include "marchingcubes.hpp"
+#include "tsdf_functions.hpp"
 
 namespace cv {
 
@@ -20,11 +21,19 @@ using namespace kinfu;
 typedef float volumeType;
 struct Voxel
 {
+    Voxel()
+    {
+        v = 0.f;
+        weight = 0.f;
+        neighbours = NodeNeighboursType();
+        //for (auto& f : neighbourSqDists)
+        //    f = 0.f;
+    }
     volumeType v;
     float weight;
     NodeNeighboursType neighbours;
-    float neighbourDists[DYNAFU_MAX_NEIGHBOURS];
-    int n;
+    //TODO: do we need this?
+    //float neighbourSqDists[DYNAFU_MAX_NEIGHBOURS];
 };
 typedef Vec<uchar, sizeof(Voxel)> VecT;
 
@@ -36,7 +45,7 @@ public:
     TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) override;
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Ptr<WarpField> wf, Ptr<TSDFVolume> dsVolume) override;
     virtual void cacheNeighbors(const WarpField& wf) override;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const override;
@@ -51,7 +60,8 @@ public:
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
-    NodeNeighboursType const& getVoxelNeighbours(Point3i coords, int& n) const override;
+    // takes pt in volume coords
+    NodeNeighboursType const& getVoxelNeighbours(Point3f coords) const override;
 
     virtual Ptr<TSDFVolume> createDownsampled(float factor) const override;
 
@@ -132,138 +142,64 @@ void TSDFVolumeCPU::reset()
     volume.forEach<VecT>([](VecT& vv, const int* /* position */)
     {
         Voxel& v = reinterpret_cast<Voxel&>(vv);
-        v.v = 0; v.weight = 0;
+        v = Voxel();
     });
 }
 
-static const bool fixMissingData = false;
 
-static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
+// use depth instead of distance (optimization)
+void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics, Ptr<WarpField> wf, Ptr<TSDFVolume> dsVolume)
 {
-    const depthType defaultValue = qnan;
-    if(pt.x < 0 || pt.x >= m.cols-1 ||
-       pt.y < 0 || pt.y >= m.rows-1)
-        return defaultValue;
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
 
-    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
+    CV_TRACE_FUNCTION();
 
-    const depthType* row0 = m[yi+0];
-    const depthType* row1 = m[yi+1];
+    CV_Assert(_depth.type() == DEPTH_TYPE);
+    Depth depth = _depth.getMat();
+    
+    const float dfac = 1.f / depthFactor;
+    const float truncDistInv = 1.f / truncDist;
 
-    depthType v00 = row0[xi+0];
-    depthType v01 = row0[xi+1];
-    depthType v10 = row1[xi+0];
-    depthType v11 = row1[xi+1];
+    const Intr::Projector proj(intrinsics.makeProjector());
+    const cv::Affine3f vol2cam(cameraPose.inv() * this->pose);
+    // at 1st iteration we don't have warp field at all
+    const bool haveEnoughWarpField = (wf->getNodesLen() >= (size_t)wf->k);
 
-    // assume correct depth is positive
-    bool b00 = v00 > 0;
-    bool b01 = v01 > 0;
-    bool b10 = v10 > 0;
-    bool b11 = v11 > 0;
+    const float invDsFactor = (voxelSize / dsVolume->voxelSize);
 
-    if(!fixMissingData)
+    Range range(0, volResolution.x);
+    Voxel* volDataStart = volume.ptr<Voxel>();
+    auto integrateLambda = [=](const Range & range)
     {
-        if(!(b00 && b01 && b10 && b11))
-            return defaultValue;
-        else
+        for (int x = range.start; x < range.end; x++)
         {
-            float tx = pt.x - xi, ty = pt.y - yi;
-            depthType v0 = v00 + tx*(v01 - v00);
-            depthType v1 = v10 + tx*(v11 - v10);
-            return v0 + ty*(v1 - v0);
-        }
-    }
-    else
-    {
-        int nz = b00 + b01 + b10 + b11;
-        if(nz == 0)
-        {
-            return defaultValue;
-        }
-        if(nz == 1)
-        {
-            if(b00) return v00;
-            if(b01) return v01;
-            if(b10) return v10;
-            if(b11) return v11;
-        }
-        else if(nz == 2)
-        {
-            if(b00 && b10) v01 = v00, v11 = v10;
-            if(b01 && b11) v00 = v01, v10 = v11;
-            if(b00 && b01) v10 = v00, v11 = v01;
-            if(b10 && b11) v00 = v10, v01 = v11;
-            if(b00 && b11) v01 = v10 = (v00 + v11)*0.5f;
-            if(b01 && b10) v00 = v11 = (v01 + v10)*0.5f;
-        }
-        else if(nz == 3)
-        {
-            if(!b00) v00 = v10 + v01 - v11;
-            if(!b01) v01 = v00 + v11 - v10;
-            if(!b10) v10 = v00 + v11 - v01;
-            if(!b11) v11 = v01 + v10 - v00;
-        }
-
-        float tx = pt.x - xi, ty = pt.y - yi;
-        depthType v0 = v00 + tx*(v01 - v00);
-        depthType v1 = v10 + tx*(v11 - v10);
-        return v0 + ty*(v1 - v0);
-    }
-}
-
-struct IntegrateInvoker : ParallelLoopBody
-{
-    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, Intr intrinsics, cv::Affine3f cameraPose,
-                     float depthFactor, Ptr<WarpField> wf) :
-        ParallelLoopBody(),
-        volume(_volume),
-        depth(_depth),
-        proj(intrinsics.makeProjector()),
-        vol2cam(cameraPose.inv() * _volume.pose),
-        truncDistInv(1.f/_volume.truncDist),
-        dfac(1.f/depthFactor),
-        warpfield(wf)
-    {
-        volDataStart = volume.volume.ptr<Voxel>();
-    }
-
-    virtual void operator() (const Range& range) const override
-    {
-        CV_TRACE_FUNCTION();
-
-        for(int x = range.start; x < range.end; x++)
-        {
-            Voxel* volDataX = volDataStart + x*volume.volDims[0];
-            for(int y = 0; y < volume.volResolution.y; y++)
+            Voxel* volDataX = volDataStart + x * volDims[0];
+            for (int y = 0; y < volResolution.y; y++)
             {
-                Voxel* volDataY = volDataX+y*volume.volDims[1];
+                Voxel* volDataY = volDataX + y * volDims[1];
 
-                for(int z = 0; z < volume.volResolution.z; z++)
+                for (int z = 0; z < volResolution.z; z++)
                 {
-                    Voxel& voxel = volDataY[z*volume.volDims[2]];
+                    Voxel& voxel = volDataY[z * volDims[2]];
 
-                    Point3f volPt = Point3f((float)x, (float)y, (float)z)*volume.voxelSize;
+                    Point3f volPt = Point3f((float)x, (float)y, (float)z) * voxelSize;
 
-                    if(warpfield->getNodeIndex())
+                    // neighbors should be cached in dsVolume at that point
+                    NodeNeighboursType nei;
+                    Point3f warpedPt;
+                    if (haveEnoughWarpField)
                     {
-                        std::vector<int> indices(warpfield->k);
-                        std::vector<float> dists(warpfield->k);
-                        warpfield->findNeighbours(volPt, indices, dists);
-
-                        voxel.n = 0;
-                        for(size_t i = 0; i < indices.size(); i++)
-                        {
-                            if(std::isnan(dists[i])) continue;
-
-                            voxel.neighbourDists[voxel.n] = dists[i];
-                            voxel.neighbours[voxel.n++] = indices[i];
-                        }
+                        nei = dsVolume->getVoxelNeighbours(volPt);
+                        warpedPt = wf->applyWarp(volPt, nei);
                     }
+                    else
+                    {
+                        warpedPt = volPt;
+                    }
+                    Point3f camSpacePt = vol2cam * warpedPt;
 
-                    Point3f camSpacePt =
-                    vol2cam * warpfield->applyWarp(volPt, voxel.neighbours, voxel.n);
-
-                    if(camSpacePt.z <= 0)
+                    if (camSpacePt.z <= 0)
                         continue;
 
                     Point3f camPixVec;
@@ -271,61 +207,63 @@ struct IntegrateInvoker : ParallelLoopBody
 
                     depthType v = bilinearDepth(depth, projected);
 
-                    if(v == 0)
+                    if (v == 0)
                         continue;
 
                     // norm(camPixVec) produces double which is too slow
                     float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
-                    volumeType sdf = pixNorm*(v*dfac - camSpacePt.z);
+                    volumeType sdf = pixNorm * (v * dfac - camSpacePt.z);
                     // possible alternative is:
                     // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
 
-                    if(sdf >= -volume.truncDist)
+                    if (sdf >= -truncDist)
                     {
                         volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
-                        float& weight = voxel.weight;
-                        volumeType& value = voxel.v;
+                        float weight = voxel.weight;
+                        volumeType value = voxel.v;
 
                         // update TSDF
                         float newWeight = 0;
 
-                        //TODO: check this place for correctness
-                        if(warpfield->getNodesLen() >= (size_t)warpfield->k)
+                        if (haveEnoughWarpField)
                         {
-                            for(int i = 0; i < voxel.n; i++)
-                                newWeight += sqrt(voxel.neighbourDists[i]);
+                            int numNei = 0;
+                            for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
+                            {
+                                int idx = nei[i];
+                                if (idx < 0)
+                                    break;
+                                Point3f pos = wf->getNodes()[idx]->pos;
 
-                            if(voxel.n > 0) newWeight /= voxel.n;
+                                Point3f diff = pos - volPt;
+                                float norm2 = diff.dot(diff);
+                                newWeight += sqrt(norm2);
+                                numNei++;
+                            }
 
-                        } else newWeight = 1.f;
+                            if (numNei > 0)
+                                newWeight /= numNei;
+                        }
+                        else
+                            newWeight = 1.f;
 
-                        //TODO: check this place for correctness
-                        if((weight + newWeight) != 0)
+                        if ((weight + newWeight) != 0)
                         {
-                            value = (value*weight+tsdf*newWeight) / (weight+newWeight);
-                            weight = min(weight+newWeight, volume.maxWeight);
+                            voxel.v = (value * weight + tsdf * newWeight) / (weight + newWeight);
+                            voxel.weight = min(weight + newWeight, maxWeight);
                         }
                     }
                 }
             }
         }
-    }
+    };
 
-    TSDFVolumeCPU& volume;
-    const Depth& depth;
-    const Intr::Projector proj;
-    const cv::Affine3f vol2cam;
-    const float truncDistInv;
-    const float dfac;
-    Voxel* volDataStart;
-    Ptr<WarpField> warpfield;
-};
+    parallel_for_(range, integrateLambda);
+}
 
 void TSDFVolumeCPU::cacheNeighbors(const WarpField& wf)
-// use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics, Ptr<WarpField> wf)
 {
     //DEBUG
     std::cout << __FUNCTION__ << std::endl;
@@ -336,10 +274,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f
     {
         CV_Error(cv::Error::StsError, "no index provided");
     }
-    CV_Assert(_depth.type() == DEPTH_TYPE);
-    Depth depth = _depth.getMat();
 
-    IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor, wf);
     Range range(0, volResolution.x);
     Voxel* volDataStart = this->volume.ptr<Voxel>();
     auto cacheInvoker = [this, wf, volDataStart](const Range& r)
@@ -369,7 +304,6 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f
     };
 
     parallel_for_(range, cacheInvoker);
-    parallel_for_(range, ii);
 }
 
 
@@ -1044,14 +978,14 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
         Mat((int)meshPoints.size(), 2, CV_32S, &meshEdges[0]).copyTo(_edges);
 }
 
-NodeNeighboursType const& TSDFVolumeCPU::getVoxelNeighbours(Point3i v, int& n) const
+NodeNeighboursType const& TSDFVolumeCPU::getVoxelNeighbours(Point3f coords) const
 {
-    int baseX = v.x * volDims[0];
-    int baseY = baseX + v.y * volDims[1];
-    int base = baseY + v.z * volDims[2];
-    const Voxel *vox = volume.ptr<Voxel>()+base;
+    coords /= voxelSize;
+    // abs() is to transform -0.something values to 0
+    Point3i v(cvFloor(abs(coords.x)), cvFloor(abs(coords.y)), cvFloor(abs(coords.z)));
 
-    n = vox->n;
+    const Voxel *vox = volume.ptr<Voxel>() + v.x * volDims[0] + v.y * volDims[1] + v.z * volDims[2];
+
     return vox->neighbours;
 }
 
