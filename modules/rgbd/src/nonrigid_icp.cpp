@@ -79,6 +79,9 @@ static float madEstimate(std::vector<float>& v)
 }
 
 
+const float weightEpsilon = 1e-5f;
+
+
 static float tukeyWeight(float v, float sigma = 1.f)
 {
     v /= sigma;
