@@ -17,16 +17,16 @@ namespace dynafu
 {
 using namespace kinfu;
 
-NonRigidICP::NonRigidICP(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
-iterations(_iterations), volume(_volume), intrinsics(_intrinsics)
+NonRigidICP::NonRigidICP(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, const cv::Ptr<TSDFVolume>& _dsVolume, int _iterations) :
+iterations(_iterations), volume(_volume), dsVolume(_dsVolume) //, intrinsics(_intrinsics)
 {}
 
 class ICPImpl : public NonRigidICP
 {
 public:
-    ICPImpl(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
+    ICPImpl(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, const cv::Ptr<TSDFVolume>& _dsVolume, int _iterations);
 
-    virtual bool estimateWarpNodes(WarpField& warp, const Affine3f &pose,
+    virtual bool estimateWarpNodes(WarpField& warp, const Affine3f &pose, const cv::kinfu::Intr intrinsics,
                                    InputArray vertImage, InputArray normImage,
                                    InputArray oldPoints, InputArray oldNormals,
                                    InputArray newPoints, InputArray newNormals) const override;
@@ -35,8 +35,8 @@ public:
 };
 
 
-ICPImpl::ICPImpl(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
-NonRigidICP(_intrinsics, _volume, _iterations)
+ICPImpl::ICPImpl(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, const cv::Ptr<TSDFVolume>& _dsVolume, int _iterations) :
+NonRigidICP(_intrinsics, _volume, _dsVolume, _iterations)
 {}
 
 
@@ -2016,10 +2016,10 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     */
 }
 
-cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
+cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, const cv::Ptr<TSDFVolume>& _dsVolume,
                                      int _iterations)
 {
-    return makePtr<ICPImpl>(_intrinsics, _volume, _iterations);
+    return makePtr<ICPImpl>(_intrinsics, _volume, _dsVolume, _iterations);
 }
 
 } // namespace dynafu

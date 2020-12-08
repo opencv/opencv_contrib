@@ -20,9 +20,9 @@ namespace dynafu {
 class NonRigidICP
 {
 public:
-    NonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
+    NonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, const cv::Ptr<TSDFVolume>& _dsVolume, int _iterations);
 
-    virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f& pose,
+    virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f& pose, const cv::kinfu::Intr intrinsics,
                                    InputArray vertImage, InputArray normImage,
                                    InputArray oldPoints, InputArray oldNormals,
                                    InputArray newPoints, InputArray newNormals) const = 0;
@@ -33,10 +33,12 @@ protected:
 
     int iterations;
     const cv::Ptr<TSDFVolume>& volume;
-    cv::kinfu::Intr intrinsics;
+    // downsampled volume copy
+    const cv::Ptr<TSDFVolume>& dsVolume;
+    // cv::kinfu::Intr intrinsics;
 };
 
-cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
+cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, const cv::Ptr<TSDFVolume>& _dsVolume,
                                      int _iterations);
 
 } // namespace dynafu
