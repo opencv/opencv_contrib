@@ -321,23 +321,6 @@ inline std::pair<bool, Point3f> interpolateP3f(Point2f pt, const ptype* data, si
 }
 
 
-// Per-pixel structure to keep neighbours and weights
-// neighbours[i] < 0 indicates last neighbour
-struct WeightsNeighbours
-{
-    WeightsNeighbours()
-    {
-        for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
-        {
-            neighbours[i] = -1;
-            weights[i] = 0;
-        }
-    }
-    int    neighbours[DYNAFU_MAX_NEIGHBOURS];
-    float     weights[DYNAFU_MAX_NEIGHBOURS];
-};
-
-
 // residual norm for sigma estimation
 static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const bool disableCentering)
 {
@@ -499,7 +482,7 @@ static void fillEdge(BlockSparseMat<float, 6, 6>& jtj, std::vector<float>& jtb,
 static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
                        std::vector<float>& jtb,
                        const std::vector<WarpNode>& nodes,
-                       WeightsNeighbours knns,
+                       const NodeWeightsType& nodeWeights,
                        // per-vertex values
                        const Point3f& inp,
                        const float pointPlaneDistance,
@@ -1047,65 +1030,170 @@ void buildOut(const Mat_<ptype>& newPoints,
 
 // Precalculate knns and dists
 void buildKnns(const WarpField& warp, const Mat_<ptype>& ptsIn,
-               // output param
-               Mat& cachedKnns)
+               // output params
+               Mat& cachedNeighbours,
+               Mat& cachedNodeWeights)
 {
     Size size = ptsIn.size();
-    cachedKnns.create(size, rawType<WeightsNeighbours>());
+    cachedNeighbours.create(size, rawType<NodeNeighboursType>());
+    cachedNodeWeights.create(size, rawType<NodeWeightsType>());
 
-    for (int y = 0; y < size.height; y++)
+    Range range(0, size.height);
+    auto lambda = [ptsIn, warp, size, &cachedNeighbours, &cachedNodeWeights](const Range& range)
     {
-        auto ptsInRow = ptsIn[y];
-        auto cachedKnnsRow = cachedKnns.ptr<WeightsNeighbours>(y);
-
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            // Get ptsIn from shaded data
-            Point3f inp = fromPtype(ptsInRow[x]);
+            auto ptsInRow = ptsIn[y];
+            auto cachedNeighboursRow = cachedNeighbours.ptr<NodeNeighboursType>(y);
+            auto cachedNodeWeightsRow = cachedNodeWeights.ptr<NodeWeightsType>(y);
 
-            std::vector<float> dists;
-            std::vector<int> indices;
-
-            WeightsNeighbours wn;
-            //TODO: maybe use this: volume->getVoxelNeighbours(p, n)
-            warp.findNeighbours(inp, indices, dists);
-            int k = 0;
-            for (size_t i = 0; i < indices.size(); i++)
+            for (int x = 0; x < size.width; x++)
             {
-                if (std::isnan(dists[i]))
-                    continue;
+                // Get ptsIn from shaded data
+                Point3f inp = fromPtype(ptsInRow[x]);
+                NodeNeighboursType knns = warp.findNeighbours(inp);
+                NodeWeightsType weights { };
+                for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
+                {
+                    int idx = knns[i];
+                    if (idx < 0)
+                        break;
+                    else
+                    {
+                        weights[i] = warp.getNodes()[idx]->weight(inp);
+                    }
+                }
 
-                wn.neighbours[k] = indices[i];
-                wn.weights[k] = dists[i];
-                k++;
+                cachedNeighboursRow[x] = knns;
+                cachedNodeWeightsRow[x] = weights;
             }
-            cachedKnnsRow[x] = wn;
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
-void buildCachedDqSums(const Mat& cachedKnns,
-                       const std::vector<Ptr<WarpNode>>& nodes,
-                       const int knn, const float damping, const bool disableCentering,
-                       // output params
-                       Mat& cachedDqSums)
+// take knns and dists from voxel cached values
+void buildKnnsFromVolume(const WarpField& warp, const cv::Ptr<dynafu::TSDFVolume>& volume,
+                         const Mat_<ptype>& ptsIn,
+                         // output params
+                         Mat& cachedNeighbours,
+                         Mat& cachedNodeWeights)
 {
-    Size size = cachedKnns.size();
+
+    Size size = ptsIn.size();
+    cachedNeighbours.create(size, rawType<NodeNeighboursType>());
+    cachedNodeWeights.create(size, rawType<NodeWeightsType>());
+    float voxelSize = volume->voxelSize;
+
+    Range range(0, size.height);
+    auto lambda = [=, &cachedNeighbours, &cachedNodeWeights](const Range& range)
+    {
+        for (int y = range.start; y < range.end; y++)
+        {
+            auto ptsInRow = ptsIn[y];
+            auto cachedNeighboursRow = cachedNeighbours.ptr<NodeNeighboursType>(y);
+            auto cachedNodeWeightsRow = cachedNodeWeights.ptr<NodeWeightsType>(y);
+
+            for (int x = 0; x < size.width; x++)
+            {
+                // Get ptsIn from shaded data
+                Point3f inp = fromPtype(ptsInRow[x]);
+
+                NodeNeighboursType knns;
+                NodeWeightsType weights{ };
+
+                if (fastCheck(inp))
+                {
+                    knns = volume->getVoxelNeighbours(inp);
+                    if (knns[0] < 0)
+                        knns = warp.findNeighbours(inp);
+
+                    for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
+                    {
+                        int idx = knns[i];
+                        if (idx < 0)
+                            break;
+                        else
+                        {
+                            weights[i] = warp.getNodes()[idx]->weight(inp);
+                        }
+                    }
+                }
+
+                cachedNeighboursRow[x] = knns;
+                cachedNodeWeightsRow[x] = weights;
+            }
+        }
+    };
+
+    parallel_for_(range, lambda);
+}
+
+
+void buildCachedDqSumsVertex(const Mat& cachedNeighbours, const Mat_<ptype>& ptsIn,
+                             const WarpField& warp,
+                             // output params
+                             Mat& cachedDqSums)
+{
+
+    Size size = ptsIn.size();
     cachedDqSums.create(size, rawType<DualQuaternion>());
 
-    for (int y = 0; y < size.height; y++)
+    Range range(0, size.height);
+    auto lambda = [=, &cachedDqSums](const Range& range)
     {
-        auto cachedKnnsRow  = cachedKnns.ptr<WeightsNeighbours>(y);
-        auto cachedDqSumsRow = cachedDqSums.ptr<DualQuaternion>(y);
-
-        for (int x = 0; x < size.width; x++)
+        for (int y = range.start; y < range.end; y++)
         {
-            WeightsNeighbours knns = cachedKnnsRow[x];
-            DualQuaternion dqrt = warpForVertex(knns, nodes, knn, damping, disableCentering);
-            cachedDqSumsRow[x] = dqrt;
+            auto ptsInRow = ptsIn.ptr<ptype>(y);
+            auto cachedNeighboursRow = cachedNeighbours.ptr<NodeNeighboursType>(y);
+            auto cachedDqSumsRow = cachedDqSums.ptr<DualQuaternion>(y);
+
+            for (int x = 0; x < size.width; x++)
+            {
+                NodeNeighboursType knns = cachedNeighboursRow[x];
+
+                Point3f vertex = fromPtype(ptsInRow[x]);
+                DualQuaternion dqrt = warp.warpForVertex(vertex, knns);
+                cachedDqSumsRow[x] = dqrt;
+            }
         }
-    }
+    };
+
+    parallel_for_(range, lambda);
+}
+
+
+void buildCachedDqSumsKnns(const Mat& cachedNeighbours, const Mat& cachedNodeWeights,
+                           const WarpField& warp,
+                           // output params
+                           Mat& cachedDqSums)
+{
+
+    Size size = cachedNeighbours.size();
+    cachedDqSums.create(size, rawType<DualQuaternion>());
+
+    Range range(0, size.height);
+    auto lambda = [=, &cachedDqSums](const Range& range)
+    {
+        for (int y = range.start; y < range.end; y++)
+        {
+            auto cachedNeighboursRow = cachedNeighbours.ptr<NodeNeighboursType>(y);
+            auto cachedNodeWeightsRow = cachedNodeWeights.ptr<NodeWeightsType>(y);
+            auto cachedDqSumsRow = cachedDqSums.ptr<DualQuaternion>(y);
+
+            for (int x = 0; x < size.width; x++)
+            {
+                NodeNeighboursType knns = cachedNeighboursRow[x];
+                NodeWeightsType weights = cachedNodeWeightsRow[x];
+                DualQuaternion dqrt = warp.warpForKnns(knns, weights);
+                cachedDqSumsRow[x] = dqrt;
+            }
+        }
+    };
+
+    parallel_for_(range, lambda);
 }
 
 
