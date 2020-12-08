@@ -7,6 +7,9 @@
 #include "precomp.hpp"
 #include "nonrigid_icp.hpp"
 
+//DEBUG
+#include <opencv2/viz.hpp>
+
 #define MAD_SCALE 1.4826f
 #define TUKEY_B 4.6851f
 #define HUBER_K 1.345f
@@ -1516,6 +1519,51 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
     buildInWarpedInitial(oldPoints, oldNormals, cam2vol,
                          ptsInWarped, ptsInWarpedNormals,
                          ptsInWarpedRendered, ptsInWarpedRenderedNormals);
+    //DEBUG
+    if (true)
+    {
+
+    }
+
+    //DEBUG
+    if (false)
+    {
+        Mat_<ptype> inwExact, inwRender;
+        Mat_<ptype> inwrExact, inwrRender;
+        Mat_<ptype> inwnExact, inwnRender;
+        Mat_<ptype> inwrnExact, inwrnRender;
+        buildWarped(ptsIn, nrmIn, cachedDqSums, vol2cam,
+                    inwExact, inwrExact, inwnExact, inwrnExact);
+
+        buildInWarpedInitial(oldPoints, oldNormals, cam2vol,
+                             inwRender, inwnRender, inwrRender, inwrnRender);
+
+        viz::Viz3d view("debug");
+
+        viz::WCloud winwExact(inwExact, viz::Color::bluberry());
+        viz::WCloudNormals winwnExact(inwExact, inwnExact, 1, 0.01, viz::Color::bluberry());
+        view.showWidget("inwExact", winwExact);
+        view.showWidget("inwnExact", winwnExact);
+
+        viz::WCloud winwrExact(inwrExact, viz::Color::celestial_blue());
+        viz::WCloudNormals winwrnExact(inwrExact, inwrnExact, 1, 0.01, viz::Color::celestial_blue());
+        view.showWidget("inwrExact", winwrExact);
+        view.showWidget("inwrnExact", winwrnExact);
+
+        viz::WCloud winwRender(inwRender, viz::Color::apricot());
+        viz::WCloudNormals winwnRender(inwRender, inwnRender, 1, 0.02, viz::Color::apricot());
+        view.showWidget("inwRender", winwRender);
+        view.showWidget("inwnRender", winwnRender);
+
+        viz::WCloud winwrRender(inwrRender, viz::Color::brown());
+        viz::WCloudNormals winwrnRender(inwrRender, inwrnRender, 1, 0.02, viz::Color::brown());
+        view.showWidget("inwrRender", winwrRender);
+        view.showWidget("inwrnRender", winwrnRender);
+
+        view.spin();
+    }
+
+
 
     // - current warped points projected onto image plane
     // Projected onto 2d plane, for point-plane metrics calculation
@@ -1798,6 +1846,137 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 node->transform = node->transform.factoredOut(common, node->pos);
             }
         }
+    if (false)
+    {
+        cv::viz::Viz3d view("debug");
+
+        view.showWidget("cube", viz::WCube(Vec3d::all(0), volume->volSize), volume->pose);
+        viz::WCoordinateSystem world;
+        view.showWidget("world", world);
+
+        int nNodes = warp.getNodesLen();
+
+        std::vector<Vec3f> randColors(nNodes);
+        for (auto& c : randColors)
+        {
+            c = Vec3f(255.f * (float)theRNG(),
+                255.f * (float)theRNG(),
+                255.f * (float)theRNG());
+        }
+
+        Mat_<ptype> vptsIn = ptsIn.clone();
+        Mat_<ptype> vnrmIn = nrmIn.clone();
+
+        Mat_<Vec3b> colors(vptsIn.size(), CV_8UC3);
+
+        for (int y = 0; y < vptsIn.rows; y++)
+        {
+            auto neighboursRow = cachedNeighbours.ptr<NodeNeighboursType>(y);
+            auto nodeWeightsRow = cachedNodeWeights.ptr<NodeWeightsType>(y);
+
+            for (int x = 0; x < vptsIn.cols; x++)
+            {
+                NodeWeightsType nodeWeights = nodeWeightsRow[x];
+                NodeNeighboursType knns = neighboursRow[x];
+
+                Vec3f col(0, 0, 0);
+                float sumw = 0;
+                int i = 0;
+                for (; i < DYNAFU_MAX_NEIGHBOURS; i++)
+                {
+                    int n = knns[i];
+                    float w = nodeWeights[i];
+                    if (n >= 0)
+                    {
+                        sumw += w;
+                        col += randColors[n] * w;
+                    }
+                    else
+                        break;
+                }
+                //col /= sumw;
+                col /= 3.f;
+
+                colors(y, x) = Vec3b(col);
+            }
+        }
+
+        viz::WCloud vvertImage(vptsIn, colors);
+        vvertImage.setRenderingProperty(viz::RenderingProperties::POINT_SIZE, 2.f);
+        //view.showWidget("ptsIn", vvertImage, volume->pose);
+        //view.showWidget("nrmIn", viz::WCloudNormals(vptsIn, vnrmIn, 1, 0.02), volume->pose);
+
+        // ---------------------------------------
+
+        std::vector<Vec3f> vnodes;
+        for (auto node : warp.getNodes())
+        {
+            vnodes.push_back(Vec3f(node->pos));
+        }
+        viz::WCloud nodeCloud(vnodes, viz::Color::red());
+        nodeCloud.setRenderingProperty(viz::POINT_SIZE, 6.f);
+        view.showWidget("nodes", nodeCloud, volume->pose);
+
+        //std::cout << "nNodes: " << vnodes.size() << std::endl;
+
+        // ---------------------------------------
+
+        view.showWidget("voutp", viz::WCloud(ptsOutVolP, viz::Color::brown()), volume->pose);
+        //view.showWidget("voutn", viz::WCloudNormals(ptsOutVolP, ptsOutVolN, 1, 0.02, viz::Color::brown()), volume->pose);
+
+        // ---------------------------------------
+
+        //view.showWidget("vnewp", viz::WCloud(newPoints, viz::Color::amethyst()));
+        //view.showWidget("vnewn", viz::WCloudNormals(newPoints, newNormals, 1, 0.02, viz::Color::amethyst()));
+
+        // ---------------------------------------
+
+        //view.showWidget("voldp", viz::WCloud(oldPoints, viz::Color::azure()));
+        //view.showWidget("voldn", viz::WCloudNormals(oldPoints, oldNormals, 1, 0.02, viz::Color::azure()));
+
+        // ---------------------------------------
+
+
+        //view.showWidget("vinwp", viz::WCloud(ptsInWarped, viz::Color::apricot()), volume->pose);
+        //view.showWidget("vinwn", viz::WCloudNormals(ptsInWarped, ptsInWarpedNormals, 1, 0.02, viz::Color::apricot()), volume->pose);
+
+        // ---------------------------------------
+
+        //view.showWidget("vinwrp", viz::WCloud(ptsInWarpedRendered, viz::Color::lime()));
+        //view.showWidget("vinwrn", viz::WCloudNormals(ptsInWarpedRendered, ptsInWarpedRenderedNormals, 1, 0.02, viz::Color::lime()));
+
+        // ---------------------------------------
+
+        view.showWidget("vdiff", viz::WCloudNormals(ptsIn, (ptsInWarped - ptsIn), 1, 1.f, viz::Color::apricot()), volume->pose);
+
+        // ---------------------------------------
+
+        //std::vector<Point3f> proj3d; proj3d.reserve(ptsInProjected.total());
+        //for (auto p : ptsInProjected)
+        //{
+        //    proj3d.push_back(Point3f(p.x, p.y, 0.f));
+        //}
+
+        //view.showWidget("projected", viz::WCloud(proj3d, viz::Color::amethyst()));
+
+        // ---------------------------------------
+
+        //view.showWidget("newPoints", viz::WCloud(newPoints, viz::Color::lime()));
+        //view.showWidget("cachedOutVolN", viz::WCloudNormals(newPoints, cachedOutVolN, 1, 0.02, viz::Color::lime()));
+
+        //viz::WCoordinateSystem nodeCoords(0.1f);
+        //debug.showWidget("nodepos", nodeCoords, Affine3f(nodeRot.rotation()).translate(nodePos));
+
+        //viz::WCloud nodeCloud(nodesPts, viz::Color::red());
+        //nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
+        //viz::WCloud nodeTargets(nodesTo, viz::Color::yellow());
+        //nodeTargets.setRenderingProperty(viz::POINT_SIZE, 2);
+        //debug.showWidget("nodes", nodeCloud);
+        //debug.showWidget("targets", nodeTargets);
+
+        
+
+        view.spin();
     }
 
     if (it != nIter)
