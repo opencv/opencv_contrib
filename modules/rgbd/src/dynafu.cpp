@@ -547,6 +547,9 @@ void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
 template<typename T>
 void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
 #ifdef HAVE_OPENGL
     Mat _vertices, vertices, normals, meshIdx;
     volume->marchCubes(_vertices, noArray());
