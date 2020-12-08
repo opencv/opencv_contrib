@@ -338,13 +338,6 @@ struct WeightsNeighbours
 };
 
 
-static DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
-{
-    float wdamp = nNodes - wsum;
-    return UnitDualQuaternion().dq() * wdamp * coeff;
-}
-
-
 // residual norm for sigma estimation
 static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const bool disableCentering)
 {
@@ -591,37 +584,6 @@ static void fillVertex(BlockSparseMat<float, 6, 6>& jtj,
             jtb[6 * kplace + i] += weight * jtbBlock[i];
         }
     }
-}
-
-
-// nodes = warp.getNodes();
-DualQuaternion warpForVertex(const WeightsNeighbours& knns, const std::vector<Ptr<WarpNode>>& nodes,
-                             const int knn, const float damping, const bool disableCentering)
-{
-    DualQuaternion dqsum;
-    float wsum = 0; int nValid = 0;
-    for (int k = 0; k < knn; k++)
-    {
-        int ixn = knns.neighbours[k];
-        if (ixn >= 0)
-        {
-            float w = knns.weights[k];
-
-            Ptr<WarpNode> node = nodes[ixn];
-
-            // center(x) := (1+e*1/2*c)*x*(1-e*1/2*c)
-            UnitDualQuaternion dqi = disableCentering ?
-                node->transform :
-                node->transform.centered(node->pos);
-
-            dqsum += w * dqi.dq();
-            wsum += w;
-            nValid++;
-        }
-    }
-
-    dqsum += dampedDQ(knn, wsum, damping);
-    return dqsum;
 }
 
 
