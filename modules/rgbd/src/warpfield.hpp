@@ -51,6 +51,10 @@ struct WarpNode
 class WarpField
 {
 public:
+
+    typedef flann::L2_Simple<float> Distance;
+    typedef flann::GenericIndex<Distance> Index;
+
     WarpField(int _maxNeighbours=1000000, int K=4, size_t levels=4, float baseResolution=.10f,
               float resolutionGrowth=4) :
         k(K), n_levels(levels),
@@ -168,12 +172,11 @@ public:
     size_t n_levels; // number of levels in the heirarchy
 
 private:
-    void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, AutoBuffer<bool>& supInd);
+    void removeSupported(Index& ind, AutoBuffer<bool>& supInd);
 
-    std::vector<Ptr<WarpNode> > subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind,
+    std::vector<Ptr<WarpNode> > subsampleIndex(Mat& pmat, Index& ind,
                                                AutoBuffer<bool>& supInd, float res,
-                                               Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex = nullptr);
-    void constructRegGraph();
+                                               Ptr<Index> knnIndex = nullptr);
 
     void initTransforms(std::vector<Ptr<WarpNode> > nv);
 
@@ -196,7 +199,7 @@ private:
     */
     std::vector<std::vector<NodeNeighboursType> > hierarchy;
 
-    Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
+    Ptr<Index> nodeIndex;
 
     Mat nodesPos;
 };

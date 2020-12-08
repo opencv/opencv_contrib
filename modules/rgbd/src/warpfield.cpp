@@ -41,8 +41,12 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
         points_matrix = inputPoints.getMat().reshape(1).colRange(0, 3).clone();
     }
 
-    cvflann::LinearIndexParams params;
-    flann::GenericIndex<flann::L2_Simple <float> > searchIndex(points_matrix, params);
+    //TODO URGENT: check this
+    //cvflann::LinearIndexParams params;
+    cvflann::AutotunedIndexParams params;
+    
+    //TODO URGENT: this takes too long, what to do?
+    Index searchIndex(points_matrix, params);
 
     AutoBuffer<bool> validIndex;
     removeSupported(searchIndex, validIndex);
@@ -61,14 +65,16 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
     nodes.insert(nodes.end(), newNodes.begin(), newNodes.end());
     nodesPos = getNodesPos(nodes);
     //re-build index
-    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(nodesPos,
-                                                                  cvflann::LinearIndexParams());
+    nodeIndex = new Index(nodesPos,
+                          /* cvflann::LinearIndexParams() */
+                          cvflann::AutotunedIndexParams()
+                          );
 
     constructRegGraph();
 }
 
 
-void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind,
+void WarpField::removeSupported(Index& ind,
                                 AutoBuffer<bool>& validInd)
 {
     validInd.allocate(ind.size());
@@ -96,9 +102,9 @@ Returns a set of nodes that cover the points.
 */
 //TODO: fix its undefined order of coverage
 std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat,
-                                                      flann::GenericIndex<flann::L2_Simple<float> >& ind,
+                                                      Index& ind,
                                                       AutoBuffer<bool>& validIndex, float res,
-                                                      Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex)
+                                                      Ptr<Index> knnIndex)
 {
     CV_TRACE_FUNCTION();
 
@@ -114,7 +120,10 @@ std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat,
         std::vector<int> indices_vec(maxNeighbours);
         std::vector<float> dist_vec(maxNeighbours);
 
-        ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
+        int amt = ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
+        // set of results should be sorted, crop the results
+        indices_vec.resize(amt);
+        dist_vec.resize(amt);
 
         Ptr<WarpNode> wn = new WarpNode;
         Point3f centre(0, 0, 0);
@@ -217,9 +226,11 @@ void WarpField::constructRegGraph()
     std::vector<Ptr<WarpNode> > curNodes = nodes;
     Mat curNodeMatrix = getNodesPos(curNodes);
 
-    Ptr<flann::GenericIndex<flann::L2_Simple<float> > > curNodeIndex(
-        new flann::GenericIndex<flann::L2_Simple<float> >(curNodeMatrix,
-                                                          cvflann::LinearIndexParams()));
+    Ptr<Index> curNodeIndex(new Index(curNodeMatrix,
+                                      /* cvflann::LinearIndexParams() */
+                                      cvflann::AutotunedIndexParams()
+                                      )
+                            );
 
     for(int l = 0; l < (n_levels-1); l++)
     {
@@ -234,9 +245,11 @@ void WarpField::constructRegGraph()
 
         Mat coarseNodeMatrix = getNodesPos(coarseNodes);
 
-        Ptr<flann::GenericIndex<flann::L2_Simple<float> > > coarseNodeIndex(
-            new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix,
-                                                              cvflann::LinearIndexParams()));
+        Ptr<Index> coarseNodeIndex(new Index(coarseNodeMatrix,
+                                             /* cvflann::LinearIndexParams() */
+                                             cvflann::AutotunedIndexParams()
+                                            )
+                                  );
 
         hierarchy[l] = std::vector<NodeNeighboursType>(curNodes.size());
         for(int i = 0; i < (int)curNodes.size(); i++)
