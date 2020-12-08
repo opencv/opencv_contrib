@@ -10,9 +10,10 @@
 //DEBUG
 #include <opencv2/viz.hpp>
 
-#define MAD_SCALE 1.4826f
-#define TUKEY_B 4.6851f
-#define HUBER_K 1.345f
+// for robust statistics functions
+const float MAD_SCALE = 1.4826f;
+const float TUKEY_B = 4.6851f;
+const float HUBER_K = 1.345f;
 
 namespace cv
 {
