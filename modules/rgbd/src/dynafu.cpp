@@ -175,7 +175,11 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     unsigned int fbo_color;
     glGenRenderbuffersEXT(1, &fbo_color);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo_color);
-    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGB, params.frameSize.width, params.frameSize.height);
+    
+    // GL_RGB gives too low resolution of 8bpp for coordinates
+    // which results in many vertices falling into the same point in space
+    // use GL_RGB16 instead
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGB16, params.frameSize.width, params.frameSize.height);
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, fbo_color);
 
