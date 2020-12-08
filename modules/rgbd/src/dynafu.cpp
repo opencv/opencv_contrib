@@ -87,6 +87,9 @@ namespace cv {
 namespace dynafu {
 using namespace kinfu;
 
+//TODO: PUT IT TO PARAMS
+const float downsampleFactor = 4.f;
+
 // T should be Mat or UMat
 template< typename T >
 class DynaFuImpl : public DynaFu
@@ -123,6 +126,8 @@ private:
     cv::Ptr<ICP> icp;
     cv::Ptr<NonRigidICP> dynafuICP;
     cv::Ptr<TSDFVolume> volume;
+    // a downsampled volume copy
+    cv::Ptr<TSDFVolume> dsVolume;
 
     int frameCounter;
     Affine3f pose;
@@ -152,12 +157,18 @@ template< typename T >
 DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     params(_params),
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    dynafuICP(makeNonRigidICP(params.intr, volume, 2)),
     volume(makeTSDFVolume(params.volumeDims, params.voxelSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
                           params.raycast_step_factor)),
+    dsVolume(),
+    dynafuICP(makeNonRigidICP(params.intr, volume, dsVolume, 2)),
+
     pyrPoints(), pyrNormals(), warpfield()
 {
+    Point3i res = params.volumeDims / downsampleFactor;
+    dsVolume = makeTSDFVolume(res, params.voxelSize * downsampleFactor, params.volumePose, params.tsdf_trunc_dist * downsampleFactor,
+                              params.tsdf_max_weight, params.raycast_step_factor);
+
 #ifdef HAVE_OPENGL
     // Bind framebuffer for off-screen rendering
     unsigned int fbo_depth;
@@ -256,6 +267,7 @@ void DynaFuImpl<T>::reset()
     pose = Affine3f::Identity();
     warpfield.setAllRT(Affine3f::Identity());
     volume->reset();
+    dsVolume->reset();
 }
 
 template< typename T >
@@ -336,12 +348,20 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     if(frameCounter == 0)
     {
         // use depth instead of distance
-        volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
+        volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield), dsVolume);
 
+        //TODO: check if this is redundant
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
         //TODO: check if this is redundant
         warpfield.setAllRT(Affine3f::Identity());
+        
+        dsVolume->downsample(*volume, downsampleFactor);
+        T wfPoints;
+        //TODO: what if to use marchCubes() instead when it produces no duplicates?
+        dsVolume->fetchPointsNormals(wfPoints, noArray(), true);
+        warpfield.updateNodesFromPoints(wfPoints);
+        dsVolume->cacheNeighbors(warpfield);
     }
     else
     {
@@ -402,16 +422,25 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
-        // TODO: measure warpfield too
+        // TODO: measure warpfield too, or this comparison is useless
         // We do not integrate volume if camera does not move
-        if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
+        if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
-        }
-    }
+            volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield), dsVolume);
 
+            // Obtain vertex data in cube's coordinates (voxelSize included)
+            // and use them to update warp field
+            dsVolume->downsample(*volume, downsampleFactor);
 
+            //DEBUG
+            /*
+            T wfPoints;
+            //TODO: what if to use marchCubes() instead when it produces no duplicates?
+            dsVolume->fetchPointsNormals(wfPoints, noArray(), true);
+            warpfield.updateNodesFromPoints(wfPoints);
+            */
+            dsVolume->cacheNeighbors(warpfield);
 
         }
     }
