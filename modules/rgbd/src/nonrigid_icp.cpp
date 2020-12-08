@@ -575,18 +575,34 @@ float estimateVertexSigma(const Mat_<float>& cachedResiduals)
     Size size = cachedResiduals.size();
     std::vector<float> vertResiduals;
     vertResiduals.reserve(size.area());
-    for (int y = 0; y < size.height; y++)
+    
+    std::recursive_mutex mutex;
+    Range range(0, size.height);
+    auto lambda = [cachedResiduals, size, &vertResiduals, &mutex](const Range& range)
     {
-        auto row = cachedResiduals[y];
-        for (int x = 0; x < size.width; x++)
-        {
-            float pointPlaneDistance = row[x];
-            if (std::isnan(pointPlaneDistance))
-                continue;
+        std::vector<float> localvr;
+        localvr.reserve(size.area());
 
-            vertResiduals.push_back(pointPlaneDistance);
+        for (int y = range.start; y < range.end; y++)
+        {
+            auto row = cachedResiduals[y];
+            for (int x = 0; x < size.width; x++)
+            {
+                float pointPlaneDistance = row[x];
+                if (std::isnan(pointPlaneDistance))
+                    continue;
+
+                localvr.push_back(pointPlaneDistance);
+            }
         }
-    }
+
+        {
+            std::lock_guard<std::recursive_mutex> autoLock(mutex);
+            vertResiduals.insert(vertResiduals.end(), localvr.begin(), localvr.end());
+        }
+    };
+
+    parallel_for_(range, lambda);
 
     return madEstimate(vertResiduals);
 }
@@ -597,19 +613,35 @@ float estimateVertexEnergy(const Mat_<float>& cachedResiduals,
 {
     Size size = cachedResiduals.size();
     float energy = 0.f;
-    for (int y = 0; y < size.height; y++)
+
+    std::recursive_mutex mutex;
+    Range range(0, size.height);
+    auto lambda = [cachedResiduals, cachedWeights, size, &mutex, &energy](const Range& range)
     {
-        auto resrow = cachedResiduals[y];
-        auto wrow   = cachedWeights  [y];
-        for (int x = 0; x < size.width; x++)
+        float localEnergy = 0.f;
+
+        for (int y = range.start; y < range.end; y++)
         {
-            float pointPlaneDistance = resrow[x];
-            if (std::isnan(pointPlaneDistance))
-                continue;
-            float weight = wrow[x];
-            energy += weight * pointPlaneDistance;
+            auto resrow = cachedResiduals[y];
+            auto wrow = cachedWeights[y];
+            for (int x = 0; x < size.width; x++)
+            {
+                float pointPlaneDistance = resrow[x];
+                if (std::isnan(pointPlaneDistance))
+                    continue;
+                float weight = wrow[x];
+                localEnergy += weight * (pointPlaneDistance * pointPlaneDistance);
+            }
         }
-    }
+
+        {
+            std::lock_guard<std::recursive_mutex> autoLock(mutex);
+            energy += localEnergy;
+        }
+    };
+
+    parallel_for_(range, lambda);
+
     return energy;
 }
 
