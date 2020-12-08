@@ -406,11 +406,64 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                                params.bilateral_kernel_size,
                                params.truncateThreshold);
 
+            //DEBUG
+            std::vector<Mat> pyrVert(1), pyrNorm(1);
+            pyrVert[0] = _vertRender; pyrNorm[0] = _normRender;
+            auto makePyrs = [=](std::vector<Mat>& pyrVec)
+            {
+                for (int pyr = 1; pyr < params.pyramidLevels; pyr++)
+                {
+                    Mat prev = pyrVec[pyr - 1];
+
+                    Mat curr(prev.rows / 2, prev.cols / 2, CV_32FC3);
+                    for (int y = 0; y < curr.rows; y++)
+                    {
+                        for (int x = 0; x < curr.cols; x++)
+                        {
+                            Vec3f vsum(0, 0, 0);
+
+                            bool bad = false;
+                            for (int yy = 0; yy < 2; yy++)
+                            {
+                                for (int xx = 0; xx < 2; xx++)
+                                {
+                                    Vec3f vcurr = prev.at<Vec3f>(Point(x * 2 + xx, y * 2 + yy));
+
+                                    bad = bad || (vcurr == Vec3f());
+
+                                    vsum += vcurr;
+                                }
+                            }
+
+                            if (bad)
+                                vsum = Vec3f();
+
+                            curr.at<Vec3f>(Point(x, y)) = vsum * 0.25f;
+                        }
+                    }
+
+                    pyrVec.push_back(curr);
+                }
+            };
+            makePyrs(pyrVert);
+            makePyrs(pyrNorm);
+            for (int pyr = params.pyramidLevels - 1; pyr >= 0; pyr--)
+            {
+                cv::kinfu::Intr intr = cv::kinfu::Intr(params.intr).scale(pyr);
+                success = dynafuICP->estimateWarpNodes(warpfield, pose, intr,
+                                                       pyrVert[pyr], pyrNorm[pyr],
+                                                       estdPoints[pyr], estdNormals[pyr],
+                                                       newPoints[pyr], newNormals[pyr]);
+                if (!success)
+                    return false;
+            }
+            /*
             success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, _normRender,
                                                    estdPoints[0], estdNormals[0],
                                                    newPoints[0], newNormals[0]);
             if(!success)
                 return false;
+                */
         }
 
         float rnorm = (float)cv::norm(affine.rvec());
