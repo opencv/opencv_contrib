@@ -5,8 +5,16 @@
 #include "opencv2/flann.hpp"
 #include "dqb.hpp"
 
+// negative element indicates last neighbour
 constexpr size_t DYNAFU_MAX_NEIGHBOURS = 10;
-typedef std::array<size_t, DYNAFU_MAX_NEIGHBOURS> NodeNeighboursType;
+struct NodeNeighboursType : public std::array<int, DYNAFU_MAX_NEIGHBOURS>
+{
+    NodeNeighboursType() : std::array<int, DYNAFU_MAX_NEIGHBOURS>()
+    {
+        this->fill(-1);
+    }
+};
+typedef std::array<float, DYNAFU_MAX_NEIGHBOURS> NodeWeightsType;
 
 namespace cv {
 namespace dynafu {
@@ -89,11 +97,31 @@ public:
     void findNeighbours(Point3f queryPt, std::vector<int>& indices, std::vector<float>& sqDists) const
     {
         std::vector<float> query = { queryPt.x, queryPt.y, queryPt.z };
-        nodeIndex->knnSearch(query, indices, dists, k, cvflann::SearchParams());
+        // According to flann settings, valid results should be in the beginning, empty in the end
+        indices.resize((size_t)k, -1);
+        sqDists.resize((size_t)k, std::numeric_limits<float>::quiet_NaN());
+        nodeIndex->knnSearch(query, indices, sqDists, k, cvflann::SearchParams());
+    }
 
-        //TODO URGENT: preprocessing to get arrays with -1's
+    NodeNeighboursType findNeighbours(Point3f volPt) const
+    {
+        std::vector<int> indices(k);
+        std::vector<float> sqDists(k);
+        findNeighbours(volPt, indices, sqDists);
 
-        throw "here we stop for debugging";
+        NodeNeighboursType neighbours;
+        int n = 0;
+        for (size_t i = 0; i < indices.size(); i++)
+        {
+            if (std::isnan(sqDists[i])) continue;
+            neighbours[n++] = indices[i];
+        }
+        for (; n < DYNAFU_MAX_NEIGHBOURS; n++)
+        {
+            neighbours[n] = -1;
+        }
+
+        return neighbours;
     }
 
     const std::vector<std::vector<NodeNeighboursType> >& getRegGraph() const
