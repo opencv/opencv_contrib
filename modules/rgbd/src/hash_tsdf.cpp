@@ -962,13 +962,19 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Mat _tmp;
     _volUnitsData.copyTo(_tmp);
     UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
+    _tmp.release();
+    
+    _indexes.volumes.copyTo(_tmp);
+    UMat U_hashtable = _tmp.getUMat(ACCESS_RW);
+
 
     k.args(ocl::KernelArg::ReadOnly(depth),
-        ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
+        //ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
+        ocl::KernelArg::PtrReadWrite(U_hashtable),
         (int)_indexes.list_size,
         (int)_indexes.bufferNums,
         (int)_indexes.hash_divisor,
-        ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
+        ocl::KernelArg::ReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
         ocl::KernelArg::ReadWrite(U_volUnitsData),
         ocl::KernelArg::PtrReadOnly(_pixNorms),
         ocl::KernelArg::ReadOnly(posesGPU.getUMat(ACCESS_READ)),
@@ -993,6 +999,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         throw std::runtime_error("Failed to run kernel");
 
     U_volUnitsData.getMat(ACCESS_RW).copyTo(_volUnitsData);
+    U_hashtable.getMat(ACCESS_RW).copyTo(_indexes.volumes);
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -1188,6 +1195,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     //Integrate(Range(0, (int)_totalVolUnits.size()));
 
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
+
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
@@ -1454,6 +1462,8 @@ Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
         normal[2] * normal[2]);
     return nv < 0.0001f ? nan3 : normal / nv;
 }
+
+
 
 void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
     OutputArray _points, OutputArray _normals) const
