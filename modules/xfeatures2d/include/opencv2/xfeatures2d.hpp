@@ -179,12 +179,8 @@ public:
     CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
 };
 
-/*
-* BEBLID Descriptor
-*/
-
-/** @brief Class implementing BEBLID (Boosted Efficient Binary Local Image Descriptor)
- * @cite Suarez2020BEBLID .
+/** @brief Class implementing BEBLID (Boosted Efficient Binary Local Image Descriptor),
+ * described in @cite Suarez2020BEBLID .
 
 BEBLID \cite Suarez2020BEBLID is a efficient binary descriptor learned with boosting.
 It is able to describe keypoints from any detector just by changing the scale_factor parameter.
@@ -212,7 +208,7 @@ public:
      * @brief  Descriptor number of bits, each bit is a boosting weak-learner.
      * The user can choose between 512 or 256 bits.
      */
-    CV_WRAP enum
+    enum BeblidSize
     {
         SIZE_512_BITS = 100, SIZE_256_BITS = 101,
     };
@@ -225,7 +221,8 @@ public:
     @param n_bits Determine the number of bits in the descriptor. Should be either
      BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS.
     */
-    CV_WRAP static Ptr<BEBLID> create(float scale_factor, int n_bits = BEBLID::SIZE_512_BITS);
+    CV_WRAP static Ptr<BEBLID> create(float scale_factor,
+                                      BEBLID::BeblidSize n_bits = BEBLID::SIZE_512_BITS);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10

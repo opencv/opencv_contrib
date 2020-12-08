@@ -13,6 +13,10 @@
             "create" : { "norm" : { "ctype" : "NormalizationType",
                                     "defval" : "cv::xfeatures2d::DAISY::NRM_NONE"} }
         },
+        "BEBLID" : {
+            "create" : { "n_bits" : { "ctype" : "BeblidSize",
+                                      "defval" : "cv::xfeatures2d::BEBLID::SIZE_512_BITS"} }
+        },
         "PCTSignatures" : {
             "(PCTSignatures*)create:(NSArray<Point2f*>*)initSamplingPoints initSeedCount:(int)initSeedCount" : { "create" : {"name" : "create2"} }
         }
