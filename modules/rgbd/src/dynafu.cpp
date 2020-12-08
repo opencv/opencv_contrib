@@ -512,40 +512,47 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
     Mat warpedVerts(vertices.size(), vertices.type());
 
     Affine3f invCamPose(pose.inv());
-    for(int i = 0; i < vertices.size().height; i++)
+
+    Range allVerts(0, vertices.size().height);
+    auto warpVertices = [=, &vertices, &normals, &warpedVerts](const Range& range)
     {
-        ptype v = vertices.at<ptype>(i);
-
-        // transform vertex to RGB space
-        Point3f pVoxel = (params.volumePose.inv() * Point3f(v[0], v[1], v[2])) / params.voxelSize;
-        Point3f pGlobal = Point3f(pVoxel.x / params.volumeDims[0],
-                                  pVoxel.y / params.volumeDims[1],
-                                  pVoxel.z / params.volumeDims[2]);
-        vertices.at<ptype>(i) = ptype(pGlobal.x, pGlobal.y, pGlobal.z, 1.f);
-
-        // transform normals to RGB space
-        ptype n = normals.at<ptype>(i);
-        Point3f nGlobal = params.volumePose.rotation().inv() * Point3f(n[0], n[1], n[2]);
-        nGlobal.x = (nGlobal.x + 1)/2;
-        nGlobal.y = (nGlobal.y + 1)/2;
-        nGlobal.z = (nGlobal.z + 1)/2;
-        normals.at<ptype>(i) = ptype(nGlobal.x, nGlobal.y, nGlobal.z, 1.f);
-
-        //Point3f p = Point3f(v[0], v[1], v[2]);
-
-        if(!warp)
+        for (int i = range.start; i < range.end; i++)
         {
-            Point3f p(invCamPose * params.volumePose * (pVoxel*params.voxelSize));
-            warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+            ptype v = vertices.at<ptype>(i);
+
+            // transform vertex to RGB space
+            Point3f pVolume = params.volumePose.inv() * Point3f(v[0], v[1], v[2]);
+            Point3f pVoxel = pVolume / params.voxelSize;
+            Point3f pGlobal = Point3f(pVoxel.x / params.volumeDims[0],
+                                      pVoxel.y / params.volumeDims[1],
+                                      pVoxel.z / params.volumeDims[2]);
+            vertices.at<ptype>(i) = ptype(pGlobal.x, pGlobal.y, pGlobal.z, 1.f);
+
+            // transform normals to RGB space
+            ptype n = normals.at<ptype>(i);
+            Point3f nGlobal = params.volumePose.rotation().inv() * Point3f(n[0], n[1], n[2]);
+            nGlobal.x = (nGlobal.x + 1) / 2;
+            nGlobal.y = (nGlobal.y + 1) / 2;
+            nGlobal.z = (nGlobal.z + 1) / 2;
+            normals.at<ptype>(i) = ptype(nGlobal.x, nGlobal.y, nGlobal.z, 1.f);
+
+            //Point3f p = Point3f(v[0], v[1], v[2]);
+
+            if (!warp)
+            {
+                Point3f p(invCamPose * params.volumePose * (pVoxel * params.voxelSize));
+                warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+            }
+            else
+            {
+                const NodeNeighboursType neighbours = dsVolume->getVoxelNeighbours(pVolume);
+                Point3f p = (invCamPose * params.volumePose) * warpfield.applyWarp(pVolume, neighbours);
+                warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+            }
         }
-        else
-        {
-            int numNeighbours = 0;
-            const NodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
-            Point3f p = (invCamPose * params.volumePose) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
-            warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
-        }
-    }
+    };
+
+    parallel_for_(allVerts, warpVertices);
 
     for(int i = 0; i < vertices.size().height; i++)
         meshIdx.push_back<int>(i);
