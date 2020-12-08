@@ -221,8 +221,7 @@ public:
     @param n_bits Determine the number of bits in the descriptor. Should be either
      BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS.
     */
-    CV_WRAP static Ptr<BEBLID> create(float scale_factor,
-                                      BEBLID::BeblidSize n_bits = BEBLID::SIZE_512_BITS);
+    CV_WRAP static Ptr<BEBLID> create(float scale_factor, int n_bits = BEBLID::SIZE_512_BITS);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10

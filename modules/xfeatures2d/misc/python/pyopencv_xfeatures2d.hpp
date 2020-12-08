@@ -4,8 +4,4 @@
 using cv::xfeatures2d::DAISY;
 
 typedef DAISY::NormalizationType DAISY_NormalizationType;
-
-using cv::xfeatures2d::BEBLID;
-
-typedef BEBLID::BeblidSize BEBLID_BeblidSize;
 #endif

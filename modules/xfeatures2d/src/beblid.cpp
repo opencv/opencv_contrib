@@ -37,7 +37,7 @@ class BEBLID_Impl CV_FINAL: public BEBLID
 public:
 
     // constructor
-    explicit BEBLID_Impl(float scale_factor, BeblidSize n_bits = SIZE_512_BITS);
+    explicit BEBLID_Impl(float scale_factor, int n_bits = SIZE_512_BITS);
 
     // destructor
     ~BEBLID_Impl() CV_OVERRIDE = default;
@@ -155,12 +155,11 @@ static inline float computeABWLResponse(const ABWLParams &wlImageParams,
                                         const cv::Mat &integralImage)
 {
     CV_DbgAssert(!integralImage.empty());
+    CV_DbgAssert(integralImage.type() == CV_32SC1);
 
     int frameWidth, frameHeight, box1x1, box1y1, box1x2, box1y2, box2x1, box2y1, box2x2, box2y2;
-    int idx1, idx2, idx3, idx4;
     int A, B, C, D;
-    const int *ptr;
-    int box_area1, box_area2, width;
+    int box_area1, box_area2;
     float sum1, sum2, average1, average2;
     // Since the integral image has one extra row and col, calculate the patch dimensions
     frameWidth = integralImage.cols;
@@ -212,23 +211,11 @@ static inline float computeABWLResponse(const ABWLParams &wlImageParams,
         box2y2 = frameHeight - 1;
     CV_DbgAssert((box2x1 < box2x2 && box2y1 < box2y2) && "Box 2 has size 0");
 
-    // Calculate the indices on the integral image where the box falls
-    width = integralImage.cols;
-    idx1 = box1y1 * width + box1x1;
-    idx2 = box1y1 * width + box1x2;
-    idx3 = box1y2 * width + box1x1;
-    idx4 = box1y2 * width + box1x2;
-    CV_DbgAssert(idx1 >= 0 && idx1 < integralImage.size().area());
-    CV_DbgAssert(idx2 >= 0 && idx2 < integralImage.size().area());
-    CV_DbgAssert(idx3 >= 0 && idx3 < integralImage.size().area());
-    CV_DbgAssert(idx4 >= 0 && idx4 < integralImage.size().area());
-    ptr = integralImage.ptr<int>();
-
     // Read the integral image values for the first box
-    A = ptr[idx1];
-    B = ptr[idx2];
-    C = ptr[idx3];
-    D = ptr[idx4];
+    A = integralImage.at<int>(box1y1, box1x1);
+    B = integralImage.at<int>(box1y1, box1x2);
+    C = integralImage.at<int>(box1y2, box1x1);
+    D = integralImage.at<int>(box1y2, box1x2);
 
     // Calculate the mean intensity value of the pixels in the box
     sum1 = float(A + D - B - C);
@@ -237,21 +224,10 @@ static inline float computeABWLResponse(const ABWLParams &wlImageParams,
     average1 = sum1 / box_area1;
 
     // Calculate the indices on the integral image where the box falls
-    idx1 = box2y1 * width + box2x1;
-    idx2 = box2y1 * width + box2x2;
-    idx3 = box2y2 * width + box2x1;
-    idx4 = box2y2 * width + box2x2;
-
-    CV_DbgAssert(idx1 >= 0 && idx1 < integralImage.size().area());
-    CV_DbgAssert(idx2 >= 0 && idx2 < integralImage.size().area());
-    CV_DbgAssert(idx3 >= 0 && idx3 < integralImage.size().area());
-    CV_DbgAssert(idx4 >= 0 && idx4 < integralImage.size().area());
-
-    // Read the integral image values for the first box
-    A = ptr[idx1];
-    B = ptr[idx2];
-    C = ptr[idx3];
-    D = ptr[idx4];
+    A = integralImage.at<int>(box2y1, box2x1);
+    B = integralImage.at<int>(box2y1, box2x2);
+    C = integralImage.at<int>(box2y2, box2x1);
+    D = integralImage.at<int>(box2y2, box2x2);
 
     // Calculate the mean intensity value of the pixels in the box
     sum2 = float(A + D - B - C);
@@ -271,7 +247,11 @@ void BEBLID_Impl::compute(InputArray _image, vector<KeyPoint> &keypoints, Output
         return;
 
     if (keypoints.empty())
+    {
+        // clean output buffer (it may be reused with "allocated" data)
+        _descriptors.release();
         return;
+    }
 
     Mat grayImage;
     switch (image.type()) {
@@ -305,7 +285,7 @@ void BEBLID_Impl::compute(InputArray _image, vector<KeyPoint> &keypoints, Output
 }
 
 // constructor
-BEBLID_Impl::BEBLID_Impl(float scale_factor, BeblidSize n_bits)
+BEBLID_Impl::BEBLID_Impl(float scale_factor, int n_bits)
     : scale_factor_(scale_factor), patch_size_(32, 32)
 {
     #include "beblid.p512.hpp"
@@ -415,7 +395,7 @@ void BEBLID_Impl::computeBEBLID(const cv::Mat &integralImg,
 #endif
 }
 
-Ptr<BEBLID> BEBLID::create(float scale_factor, BeblidSize n_bits)
+Ptr<BEBLID> BEBLID::create(float scale_factor, int n_bits)
 {
     return makePtr<BEBLID_Impl>(scale_factor, n_bits);
 }
