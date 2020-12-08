@@ -23,6 +23,7 @@ Mat getNodesPos(const std::vector<Ptr<WarpNode> >& nv)
     return nodePos;
 }
 
+
 /*
 1. Find a set of new points that are not covered by existing nodes yet
 2. Covers them by a new set of nodes
@@ -31,6 +32,9 @@ Mat getNodesPos(const std::vector<Ptr<WarpNode> >& nv)
 */
 void WarpField::updateNodesFromPoints(InputArray inputPoints)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     Mat points_matrix(inputPoints.size().height, 3, CV_32F);
     if(inputPoints.channels() == 1)
     {
@@ -77,6 +81,9 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
 void WarpField::removeSupported(Index& ind,
                                 AutoBuffer<bool>& validInd)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     validInd.allocate(ind.size());
     std::fill_n(validInd.data(), ind.size(), true);
 
@@ -106,6 +113,9 @@ std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat,
                                                       AutoBuffer<bool>& validIndex, float res,
                                                       Ptr<Index> knnIndex)
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     CV_TRACE_FUNCTION();
 
     std::vector<Ptr<WarpNode> > temp_nodes;
@@ -117,6 +127,7 @@ std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat,
             continue;
         }
 
+        //TODO URGENT: use less memory somehow
         std::vector<int> indices_vec(maxNeighbours);
         std::vector<float> dist_vec(maxNeighbours);
 
@@ -203,6 +214,9 @@ void WarpField::initTransforms(std::vector<Ptr<WarpNode> > nv)
 */
 void WarpField::constructRegGraph()
 {
+    //DEBUG
+    std::cout << __FUNCTION__ << std::endl;
+
     CV_TRACE_FUNCTION();
 
     regGraphNodes.clear();

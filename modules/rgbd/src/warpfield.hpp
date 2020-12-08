@@ -86,6 +86,7 @@ public:
 
     void updateNodesFromPoints(InputArray _points);
 
+    void constructRegGraph();
 
     Point3f applyWarp(const Point3f p, const NodeNeighboursType neighbours, bool normal = false) const;
     Point3f applyWarp(const Point3f p, const NodeWeightsType weights, const NodeNeighboursType neighbours, bool normal = false) const;
@@ -155,30 +156,6 @@ public:
         return nodes.size();
     }
 
-    size_t getRegNodesLen() const
-    {
-        size_t len = 0;
-        for (auto level : regGraphNodes)
-        {
-            len += level.size();
-        }
-        return len;
-    }
-
-    Ptr<flann::GenericIndex<flann::L2_Simple<float> > > getNodeIndex() const
-    {
-        return nodeIndex;
-    }  
-
-    void setAllRT(Affine3f warpRt)
-    {
-        UnitDualQuaternion u(warpRt);
-        for (auto n : nodes)
-        {
-            n->transform = u;
-        }
-    }
-
     std::vector<Ptr<WarpNode>> cloneNodes()
     {
         const auto& wn = getNodes();
@@ -209,6 +186,29 @@ public:
         return vv;
     }
 
+    size_t getRegNodesLen() const
+    {
+        size_t len = 0;
+        for (auto &level : regGraphNodes)
+        {
+            len += level.size();
+        }
+        return len;
+    }
+
+    Ptr<Index> getNodeIndex() const
+    {
+        return nodeIndex;
+    }  
+
+    void setAllRT(Affine3f warpRt)
+    {
+        UnitDualQuaternion u(warpRt);
+        for (auto n : nodes)
+        {
+            n->transform = u;
+        }
+    }
 
     int k; //k-nearest neighbours will be used
     size_t n_levels; // number of levels in the heirarchy
