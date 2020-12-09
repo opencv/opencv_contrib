@@ -963,7 +963,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     _volUnitsData.copyTo(_tmp);
     UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
     _tmp.release();
-    
+
     _indexes.volumes.copyTo(_tmp);
     UMat U_hashtable = _tmp.getUMat(ACCESS_RW);
 
@@ -1612,7 +1612,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             ocl::KernelArg::ReadWrite(points.getUMat(ACCESS_RW)),
             ocl::KernelArg::ReadWrite(normals.getUMat(ACCESS_RW))
         );
-        
+
         int resol = new_points.rows;
         //int resol = 1;
         size_t globalSize[1];
