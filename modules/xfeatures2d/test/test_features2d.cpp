@@ -185,6 +185,13 @@ TEST( Features2d_DescriptorExtractor_LATCH, regression )
     test.safe_run();
 }
 
+TEST(Features2d_DescriptorExtractor_BEBLID, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test("descriptor-beblid", 1,
+                                             BEBLID::create(6.75));
+    test.safe_run();
+}
+
 TEST( Features2d_DescriptorExtractor_VGG, regression )
 {
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-vgg",  0.03f,
