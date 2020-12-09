@@ -326,24 +326,15 @@ __kernel void integrateAllVolumeUnits(
     if (isActive == 1)
     {
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
-                                                (allVolumePtr + table_offset + (row)*table_step);
+                                                (allVolumePtr + table_offset + (row) * 16*16*16);
         __global const float * p_vol2camMatrix = (__global const float *)
-                                                 (allVol2camMatrix + val2cam_offset + (row) * val2cam_step);
-        
+                                                 (allVol2camMatrix + val2cam_offset + (row) * 16);
         
         const float16 vol2camMatrix = (float16) (
         p_vol2camMatrix[0], p_vol2camMatrix[1], p_vol2camMatrix[2], p_vol2camMatrix[3],
         p_vol2camMatrix[4], p_vol2camMatrix[5], p_vol2camMatrix[6], p_vol2camMatrix[7],
         p_vol2camMatrix[8], p_vol2camMatrix[9], p_vol2camMatrix[10], p_vol2camMatrix[11],
         p_vol2camMatrix[12], p_vol2camMatrix[13], p_vol2camMatrix[14], p_vol2camMatrix[15]);
-
-        /*
-        printf("GPU %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f \n",
-        p_vol2camMatrix[0], p_vol2camMatrix[1], p_vol2camMatrix[2], p_vol2camMatrix[3],
-        p_vol2camMatrix[4], p_vol2camMatrix[5], p_vol2camMatrix[6], p_vol2camMatrix[7],
-        p_vol2camMatrix[8], p_vol2camMatrix[9], p_vol2camMatrix[10], p_vol2camMatrix[11],
-        p_vol2camMatrix[12], p_vol2camMatrix[13], p_vol2camMatrix[14], p_vol2camMatrix[15]);
-        */
 
         integrateVolumeUnit(
             i, j,
@@ -362,7 +353,7 @@ __kernel void integrateAllVolumeUnits(
             truncDist,
             maxWeight
             );
-        updateIsActive(hash_table, v, 0, list_size, bufferNums, hash_divisor);
+        //updateIsActive(hash_table, v, 0, list_size, bufferNums, hash_divisor);
     }
    
 }

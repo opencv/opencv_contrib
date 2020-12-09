@@ -998,6 +998,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 
+    // add updating of isActive for volUnits
     U_volUnitsData.getMat(ACCESS_RW).copyTo(_volUnitsData);
     U_hashtable.getMat(ACCESS_RW).copyTo(_indexes.volumes);
 }

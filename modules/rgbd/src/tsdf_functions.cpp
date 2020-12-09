@@ -381,12 +381,9 @@ size_t calc_hash(Vec4i x)
     //seed ^= x[0] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     //seed ^= x[1] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     //seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    //std::cout << " lol "  << x[0]<<std::endl;
     for (int i = 0; i < 3; i++)
     {
-        //seed ^= std::hash<int>()(x[i]) + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
         seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-        //std::cout << x[i] << "|" << seed << std::endl;
     }
     return seed;
 }
@@ -571,15 +568,12 @@ void VolumesTable::expand()
 int VolumesTable::find_Volume(Vec3i indx) const
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
-    //std::cout << "find_Volume -> ";
     int hash = int(calc_hash(idx) % hash_divisor);
     int num = 1;
     int i = hash * num * list_size;
-    //std::cout <<"[ "<< idx<<" ]= " << calc_hash(idx) <<" = "<< hash << std::endl;
     while (i != -1)
     {
         Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
-        //std::cout << " | i = " << i << " idx=" << v.idx << " row=" << v.row << " next=" << v.nextVolumeRow << std::endl;
         if (v.idx == idx)
             return v.row;
         //find nan cheking for int or Vec3i
@@ -592,7 +586,6 @@ int VolumesTable::find_Volume(Vec3i indx) const
 }
 bool VolumesTable::isExist(Vec3i indx)
 {
-    //std::cout << "isExist -> ";
     if (this->find_Volume(indx) == -2)
         return false;
     return true;
