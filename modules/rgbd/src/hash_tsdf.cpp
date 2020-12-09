@@ -1167,6 +1167,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
+    /*
     auto Integrate = [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
@@ -1191,7 +1192,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
     };
-
+    */
     //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
     //Integrate(Range(0, (int)_totalVolUnits.size()));
 
@@ -1600,7 +1601,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         if (k.empty())
             throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-        int totalVolUnitsSize = _indexes.indexesGPU.size();
+        //int totalVolUnitsSize = _indexes.indexesGPU.size();
         Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
 
         k.args(
