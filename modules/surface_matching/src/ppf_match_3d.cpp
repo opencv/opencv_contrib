@@ -583,9 +583,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
       poseList.push_back(pose);
     }
 
-#if defined (_OPENMP)
     free(accumulator);
-#endif
   }
 
   // TODO : Make the parameters relative if not arguments.
