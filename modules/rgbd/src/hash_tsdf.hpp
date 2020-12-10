@@ -175,10 +175,13 @@ public:
     cv::Mat lastVisibleIndexes;
     cv::Mat _volUnitsData;
 
-    cv::Mat posesGPU;
+    cv::Mat allVol2cam;
+    cv::Mat allCam2vol;
     cv::UMat _pixNorms;
     cv::Mat volUnitsData;
     VolumesTable _indexes;
+    Vec8i neighbourCoords;
+
 };
 #endif
 

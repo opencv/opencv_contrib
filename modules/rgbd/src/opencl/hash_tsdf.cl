@@ -364,13 +364,27 @@ __kernel void raycast(
                     const int list_size, 
                     const int bufferNums, 
                     const int hash_divisor,
-                    __global const int4 * totalVolUnits,
+                    //__global const int4 * totalVolUnits,
                     __global float4 * points,
-                    int points_step, int points_offset,
-                    int points_rows, int points_cols,
+                        int points_step, int points_offset,
+                        int points_rows, int points_cols,
                     __global float4 * normals,
-                    int normals_step, int normals_offset,
-                    int normals_rows, int normals_cols
+                        int normals_step, int normals_offset,
+                        int normals_rows, int normals_cols,
+                    const int2 frameSize,
+                    __global const float * allVol2cam,
+                        int val2cam_step, int val2cam_offset,
+                        int val2cam_rows, int val2cam_cols,
+                    __global const float * allCam2vol,
+                        int cam2vol_step, int cam2vol_offset,
+                        int cam2vol_rows, int cam2vol_cols,
+                    const float2 fixy, const float2 cxy,
+                    const float4 boxDown4, const float4 boxUp4,
+                    const float tstep,
+                    const float voxelSize,
+                    const int4 volResolution4,
+                    const int4 volDims4,
+                    const int8 neighbourCoords
                     )
 {
     int i = get_global_id(0);
