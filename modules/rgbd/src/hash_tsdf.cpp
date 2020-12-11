@@ -1547,6 +1547,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                     float prevTsdf = volume.truncDist;
                     Ptr<TSDFVolumeCPU> currVolumeUnit;
 
+                    //std::cout << "CPU " << tcurr << " " << tmax << std::endl;
+
                     while (tcurr < tmax)
                     {
                         Point3f currRayPos = orig + tcurr * rayDirV;
@@ -1645,6 +1647,27 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         float tstep = truncDist * raycastStepFactor;
         Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
 
+        const HashTSDFVolumeGPU& volume(*this);
+        const Affine3f cam2vol(volume.pose.inv()* Affine3f(cameraPose));
+        const Affine3f vol2cam(Affine3f(cameraPose.inv())* volume.pose);
+
+        const Point3f cam2volTrans = cam2vol.translation();
+        const Matx33f cam2volRot = cam2vol.rotation();
+        const Matx33f vol2camRot = vol2cam.rotation();
+
+        Vec4f cam2volTransGPU(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0);
+        Matx44f cam2volRotGPU = cam2vol.matrix;
+        Matx44f vol2camRotGPU = vol2cam.matrix;
+
+        UMat volPoseGpu, invPoseGpu;
+        Mat(pose.matrix).copyTo(volPoseGpu);
+        Mat(pose.inv().matrix).copyTo(invPoseGpu);
+
+        //std::cout << cam2volTrans << std::endl;
+        //std::cout << Vec4f(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0) << std::endl;
+        //std::cout << cam2volRot << std::endl;
+        //std::cout << cam2volRotGPU << std::endl;
+
         k.args(
             ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
             (int)_indexes.list_size,
@@ -1656,20 +1679,37 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             frameSize,
             ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
             ocl::KernelArg::ReadOnly(allCam2vol.getUMat(ACCESS_READ)),
+            ocl::KernelArg::PtrReadOnly(volPoseGpu),
+            ocl::KernelArg::PtrReadOnly(invPoseGpu),
+            cam2volTransGPU,
+            cam2volRotGPU,
+            vol2camRotGPU,
+            float(volume.truncateThreshold),
             finv.val, cxy.val,
             boxMin.val, boxMax.val,
             tstep,
             voxelSize,
             volResGpu.val,
             volStrides.val,
-            neighbourCoords.val
+            neighbourCoords.val,
+            voxelSizeInv
+            //, int(123456789)
         );
 
         int resol = points.rows;
         //int resol = 1;
         size_t globalSize[2];
-        globalSize[0] = (size_t)frameSize.width;
-        globalSize[1] = (size_t)frameSize.height;
+        //globalSize[0] = (size_t)frameSize.width;
+        //globalSize[1] = (size_t)frameSize.height;
+        //globalSize[0] = (size_t)points.cols;
+        //globalSize[1] = (size_t)points.rows;
+        globalSize[0] = (size_t)10;
+        globalSize[1] = (size_t)10;
+        
+        std::cout << "CPU "<< "cam2volTransGPU " << cam2volTransGPU <<
+            "\n | cam2volRotGPU " << cam2volRotGPU <<
+            "\n | vol2camRotGPU " << vol2camRotGPU << 
+            "\n | truncateThreshold " << volume.truncateThreshold << std::endl;
 
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");

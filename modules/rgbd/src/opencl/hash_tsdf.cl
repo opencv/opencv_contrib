@@ -378,17 +378,194 @@ __kernel void raycast(
                     __global const float * allCam2vol,
                         int cam2vol_step, int cam2vol_offset,
                         int cam2vol_rows, int cam2vol_cols,
+                    __global const float * vol2camptr,
+                    __global const float * cam2volptr,
+                    float4  cam2volTransGPU,
+                    float16 cam2volRotGPU,
+                    float16 vol2camRotGPU,
+                    float truncateThreshold,
                     const float2 fixy, const float2 cxy,
                     const float4 boxDown4, const float4 boxUp4,
                     const float tstep,
                     const float voxelSize,
                     const int4 volResolution4,
                     const int4 volDims4,
-                    const int8 neighbourCoords
+                    const int8 neighbourCoords,
+                    float voxelSizeInv
+                    //, int test
                     )
 {
-    int i = get_global_id(0);
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+
+    //printf(" %d \n", test);
     //printf("raycast_GPU \n");
-    float4 point = points[points_offset + (i) * points_step];
+    //float4 point = points[points_offset + (i) * points_step];
     //printf("point (%d) = [%f, %f, %f, %f] \n", i, point[0], point[1], point[2], point[3]);
+    
+    /*
+    printf(" cam2volTransGPU [%f, %f, %f, %f] \n cam2volRotGPU | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | \n vol2camRotGPU | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | \n ", 
+    cam2volTransGPU[0], cam2volTransGPU[1], cam2volTransGPU[2], cam2volTransGPU[3],
+
+    cam2volRotGPU[0],cam2volRotGPU[1],cam2volRotGPU[2],cam2volRotGPU[3],cam2volRotGPU[4],cam2volRotGPU[5],cam2volRotGPU[6],cam2volRotGPU[7],
+    cam2volRotGPU[8],cam2volRotGPU[9],cam2volRotGPU[10],cam2volRotGPU[11],cam2volRotGPU[12],cam2volRotGPU[13],cam2volRotGPU[14],cam2volRotGPU[15], 
+    
+    vol2camRotGPU[0],vol2camRotGPU[1],vol2camRotGPU[2],vol2camRotGPU[3],vol2camRotGPU[4],vol2camRotGPU[5],vol2camRotGPU[6],vol2camRotGPU[7],
+    vol2camRotGPU[8],vol2camRotGPU[9],vol2camRotGPU[10],vol2camRotGPU[11],vol2camRotGPU[12],vol2camRotGPU[13],vol2camRotGPU[14],vol2camRotGPU[15] 
+    );
+    */
+
+
+    if(x >= frameSize.x || y >= frameSize.y)
+        return;
+
+
+
+    __global const float* cm = cam2volptr;
+    const float3 camRot0  = vload4(0, cm).xyz;
+    const float3 camRot1  = vload4(1, cm).xyz;
+    const float3 camRot2  = vload4(2, cm).xyz;
+    const float3 camTrans = (float3)(cm[3], cm[7], cm[11]);
+
+    __global const float* vm = vol2camptr;
+    const float3 volRot0  = vload4(0, vm).xyz;
+    const float3 volRot1  = vload4(1, vm).xyz;
+    const float3 volRot2  = vload4(2, vm).xyz;
+    const float3 volTrans = (float3)(vm[3], vm[7], vm[11]);
+
+    /*
+    printf("camRot0 [%f, %f, %f] \ncamRot1 [%f, %f, %f] \ncamRot2 [%f, %f, %f] \ncamTrans [%f, %f, %f] \n", 
+    camRot0[0], camRot0[1], camRot0[2],
+    camRot1[0], camRot1[1], camRot1[2],
+    camRot2[0], camRot2[1], camRot2[2],
+    camTrans[0], camTrans[1], camTrans[2]
+    );
+    */
+
+
+    float3 planed = (float3)(((float2)(x, y) - cxy)*fixy, 1.f);
+    planed = (float3)(dot(planed, camRot0),
+                      dot(planed, camRot1),
+                      dot(planed, camRot2));
+
+    float3 orig = (float3) (1, 1, 1);
+    float3 dir = fast_normalize(planed);
+
+    float tmin = 0;
+    truncateThreshold = 4;
+    float tmax = truncateThreshold;
+
+    float tcurr = tmin;
+    float tprev = tcurr;
+
+    if (tcurr < tmax)
+    {
+        
+        float3 currRayPos = orig + tcurr * dir;
+
+        int3 point = (int3) (
+        (int) currRayPos.x * voxelSizeInv,
+        (int) currRayPos.y * voxelSizeInv,
+        (int) currRayPos.z * voxelSizeInv
+        );
+
+        printf("lol [%d, %d] tcurr=%d tmax=%d [%d, %d, %d] \n", x, y, tcurr, tmax, point.x, point.y, point.z);
+        
+        tprev = tcurr;
+        tcurr += tstep;
+    }
+
+    
+
+
+
+    // coordinate-independent constants
+    /*
+    __global const float* cm = cam2volptr;
+    const float3 camRot0  = vload4(0, cm).xyz;
+    const float3 camRot1  = vload4(1, cm).xyz;
+    const float3 camRot2  = vload4(2, cm).xyz;
+    const float3 camTrans = (float3)(cm[3], cm[7], cm[11]);
+
+    __global const float* vm = vol2camptr;
+    const float3 volRot0  = vload4(0, vm).xyz;
+    const float3 volRot1  = vload4(1, vm).xyz;
+    const float3 volRot2  = vload4(2, vm).xyz;
+    const float3 volTrans = (float3)(vm[3], vm[7], vm[11]);
+
+    const float3 boxDown = boxDown4.xyz;
+    const float3 boxUp   = boxUp4.xyz;
+    const int3   volDims = volDims4.xyz;
+
+    const int3 volResolution = volResolution4.xyz;
+
+    const float invVoxelSize = native_recip(voxelSize);
+
+    // kernel itself
+
+    float3 point  = nan((uint)0);
+    float3 normal = nan((uint)0);
+
+    float3 orig = camTrans;
+
+    // get direction through pixel in volume space:
+    // 1. reproject (x, y) on projecting plane where z = 1.f
+    float3 planed = (float3)(((float2)(x, y) - cxy)*fixy, 1.f);
+
+    // 2. rotate to volume space
+    planed = (float3)(dot(planed, camRot0),
+                      dot(planed, camRot1),
+                      dot(planed, camRot2));
+
+    // 3. normalize
+    float3 dir = fast_normalize(planed);
+
+    // compute intersection of ray with all six bbox planes
+    float3 rayinv = native_recip(dir);
+    float3 tbottom = rayinv*(boxDown - orig); //incorrect value
+    float3 ttop    = rayinv*(boxUp   - orig); //incorrect value
+
+    // re-order intersections to find smallest and largest on each axis
+    float3 minAx = min(ttop, tbottom);
+    float3 maxAx = max(ttop, tbottom);
+
+    // near clipping plane
+    const float clip = 0.f;
+    float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
+    float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
+
+    // precautions against getting coordinates out of bounds
+    tmin = tmin + tstep;
+    tmax = tmax - tstep;
+    
+    //printf("GPU [%d, %d] tmin=%f tmax=%f minAx(%f, %f, %f) maxAx(%f, %f, %f) \n", 
+    //    x, y, tmin, tmax, minAx.x, minAx.y, minAx.z, maxAx.x, maxAx.y, maxAx.z);
+    
+    //printf("GPU [%d, %d] rayinv(%f, %f, %f) tbottom(%f, %f, %f) ttop(%f, %f, %f) \n",
+    //    x, y, rayinv.x, rayinv.y, rayinv.z, tbottom.x, tbottom.y, tbottom.z, ttop.x, ttop.y, ttop.z);
+
+    printf("GPU [%d, %d] orig(%f, %f, %f) boxDown(%f, %f, %f) boxUp(%f, %f, %f) \n",
+        x, y, orig.x, orig.y, orig.z, boxDown.x, boxDown.y, boxDown.z, boxUp.x, boxUp.y, boxUp.z);
+    
+
+    if(tmin < tmax)
+    {
+        // interpolation optimized a little
+        orig *= invVoxelSize;
+        dir  *= invVoxelSize;
+
+        float3 rayStep = dir*tstep;
+        float3 next = (orig + dir*tmin);
+
+        float3 currRayPos = orig + tmin * dir;
+
+        printf("[%f, %f, %f] \n",currRayPos[0], currRayPos[1], currRayPos[2]);
+
+    }
+    */
+
+
+
+
+
 }
