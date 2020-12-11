@@ -242,6 +242,53 @@ CV_EXPORTS_W Ptr<cuda::StereoConstantSpaceBP>
     createStereoConstantSpaceBP(int ndisp = 128, int iters = 8, int levels = 4, int nr_plane = 4, int msg_type = CV_32F);
 
 /////////////////////////////////////////
+// StereoSGM
+
+/** @brief The class implements the modified H. Hirschmuller algorithm @cite HH08.
+Limitation and difference are as follows:
+
+-   By default, the algorithm uses only 4 directions which are horizontal and vertical path instead of 8.
+Set mode=StereoSGM::MODE_HH in createStereoSGM to run the full variant of the algorithm.
+-   Mutual Information cost function is not implemented.
+Instead, Center-Symmetric Census Transform with \f$9 \times 7\f$ window size from @cite Spangenberg2013
+is used for robustness.
+
+@sa cv::StereoSGBM
+*/
+class CV_EXPORTS_W StereoSGM : public cv::StereoSGBM
+{
+public:
+    /** @brief Computes disparity map for the specified stereo pair
+
+    @param left Left 8-bit or 16-bit unsigned single-channel image.
+    @param right Right image of the same size and the same type as the left one.
+    @param disparity Output disparity map. It has the same size as the input images.
+    StereoSGM computes 16-bit fixed-point disparity map (where each disparity value has 4 fractional bits).
+    */
+    CV_WRAP virtual void compute(InputArray left, InputArray right, OutputArray disparity) CV_OVERRIDE = 0;
+
+    /** @brief Computes disparity map with specified CUDA Stream
+
+    @sa compute
+    */
+    CV_WRAP_AS(compute_with_stream) virtual void compute(InputArray left, InputArray right, OutputArray disparity, Stream& stream) = 0;
+};
+
+/** @brief Creates StereoSGM object.
+
+@param minDisparity Minimum possible disparity value. Normally, it is zero but sometimes rectification algorithms can shift images, so this parameter needs to be adjusted accordingly.
+@param numDisparities Maximum disparity minus minimum disparity. The value must be 64, 128 or 256.
+@param P1 The first parameter controlling the disparity smoothness.This parameter is used for the case of slanted surfaces (not fronto parallel).
+@param P2 The second parameter controlling the disparity smoothness.This parameter is used for "solving" the depth discontinuities problem.
+@param uniquenessRatio Margin in percentage by which the best (minimum) computed cost function
+value should "win" the second best value to consider the found match correct. Normally, a value
+within the 5-15 range is good enough.
+@param mode Set it to StereoSGM::MODE_HH to run the full-scale two-pass dynamic programming algorithm.
+It will consume O(W\*H\*numDisparities) bytes. By default, it is set to StereoSGM::MODE_HH4.
+*/
+CV_EXPORTS_W Ptr<cuda::StereoSGM> createStereoSGM(int minDisparity = 0, int numDisparities = 128, int P1 = 10, int P2 = 120, int uniquenessRatio = 5, int mode = cv::cuda::StereoSGM::MODE_HH4);
+
+/////////////////////////////////////////
 // DisparityBilateralFilter
 
 /** @brief Class refining a disparity map using joint bilateral filtering. :
