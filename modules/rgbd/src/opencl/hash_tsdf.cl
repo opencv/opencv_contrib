@@ -364,6 +364,7 @@ __kernel void raycast(
                     const int list_size, 
                     const int bufferNums, 
                     const int hash_divisor,
+                    const int lastVolIndex, 
                     //__global const int4 * totalVolUnits,
                     __global float4 * points,
                         int points_step, int points_offset,
@@ -372,14 +373,16 @@ __kernel void raycast(
                         int normals_step, int normals_offset,
                         int normals_rows, int normals_cols,
                     const int2 frameSize,
-                    __global const float * allVol2cam,
-                        int val2cam_step, int val2cam_offset,
-                        int val2cam_rows, int val2cam_cols,
-                    __global const float * allCam2vol,
-                        int cam2vol_step, int cam2vol_offset,
-                        int cam2vol_rows, int cam2vol_cols,
-                    __global const float * vol2camptr,
-                    __global const float * cam2volptr,
+
+                    //__global const float * allVol2cam,
+                    //    int val2cam_step, int val2cam_offset,
+                    //    int val2cam_rows, int val2cam_cols,
+                    //__global const float * allCam2vol,
+                    //    int cam2vol_step, int cam2vol_offset,
+                    //    int cam2vol_rows, int cam2vol_cols,
+                    //__global const float * vol2camptr,
+                    //__global const float * cam2volptr,
+
                     float4  cam2volTransGPU,
                     float16 cam2volRotGPU,
                     float16 vol2camRotGPU,
@@ -392,6 +395,7 @@ __kernel void raycast(
                     const int4 volDims4,
                     const int8 neighbourCoords,
                     float voxelSizeInv
+
                     //, int test
                     )
 {
@@ -419,19 +423,15 @@ __kernel void raycast(
     if(x >= frameSize.x || y >= frameSize.y)
         return;
 
+    const float3 camRot0  = cam2volRotGPU.s012;
+    const float3 camRot1  = cam2volRotGPU.s456;
+    const float3 camRot2  = cam2volRotGPU.s89a;
+    const float3 camTrans = cam2volRotGPU.s37b;
 
-
-    __global const float* cm = cam2volptr;
-    const float3 camRot0  = vload4(0, cm).xyz;
-    const float3 camRot1  = vload4(1, cm).xyz;
-    const float3 camRot2  = vload4(2, cm).xyz;
-    const float3 camTrans = (float3)(cm[3], cm[7], cm[11]);
-
-    __global const float* vm = vol2camptr;
-    const float3 volRot0  = vload4(0, vm).xyz;
-    const float3 volRot1  = vload4(1, vm).xyz;
-    const float3 volRot2  = vload4(2, vm).xyz;
-    const float3 volTrans = (float3)(vm[3], vm[7], vm[11]);
+    const float3 volRot0  = vol2camRotGPU.s012;
+    const float3 volRot1  = vol2camRotGPU.s456;
+    const float3 volRot2  = vol2camRotGPU.s89a;
+    const float3 volTrans = vol2camRotGPU.s37b;
 
     /*
     printf("camRot0 [%f, %f, %f] \ncamRot1 [%f, %f, %f] \ncamRot2 [%f, %f, %f] \ncamTrans [%f, %f, %f] \n", 
@@ -448,17 +448,18 @@ __kernel void raycast(
                       dot(planed, camRot1),
                       dot(planed, camRot2));
 
-    float3 orig = (float3) (1, 1, 1);
+    float3 orig = (float3) (cam2volTransGPU[0], cam2volTransGPU[1], cam2volTransGPU[2]);
     float3 dir = fast_normalize(planed);
 
     float tmin = 0;
-    truncateThreshold = 4;
     float tmax = truncateThreshold;
 
     float tcurr = tmin;
     float tprev = tcurr;
 
-    if (tcurr < tmax)
+    //printf("GPU [%d, %d] truncateThreshold=%f, orig=[%f, %f, %f] \n", x, y, truncateThreshold, orig[0], orig[1], orig[2]);
+
+    while (tcurr < tmax)
     {
         
         float3 currRayPos = orig + tcurr * dir;
@@ -466,10 +467,21 @@ __kernel void raycast(
         int3 point = (int3) (
         (int) currRayPos.x * voxelSizeInv,
         (int) currRayPos.y * voxelSizeInv,
-        (int) currRayPos.z * voxelSizeInv
-        );
+        (int) currRayPos.z * voxelSizeInv);
 
-        printf("lol [%d, %d] tcurr=%d tmax=%d [%d, %d, %d] \n", x, y, tcurr, tmax, point.x, point.y, point.z);
+        int4 point4 = (int4) (
+        (int) currRayPos.x * voxelSizeInv,
+        (int) currRayPos.y * voxelSizeInv,
+        (int) currRayPos.z * voxelSizeInv, 0);
+
+        int row = findRow(hash_table, point4, list_size, bufferNums, hash_divisor);
+        if (row >= 0 && row <= lastVolIndex-1) {
+            printf("idx = [%d, %d, %d] row=%d \n", point4[0], point4[1], point4[2], row);
+            return;
+        }
+
+
+        //printf("lol [%d, %d] tcurr=%f tmax=%f tstep=%f [%d, %d, %d] \n", x, y, tcurr, tmax, tstep, point.x, point.y, point.z);
         
         tprev = tcurr;
         tcurr += tstep;

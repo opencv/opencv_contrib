@@ -1673,14 +1673,15 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             (int)_indexes.list_size,
             (int)_indexes.bufferNums,
             (int)_indexes.hash_divisor,
+            (int)_lastVolIndex, 
             //ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
             ocl::KernelArg::ReadWrite(points),
             ocl::KernelArg::ReadWrite(normals),
             frameSize,
-            ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
-            ocl::KernelArg::ReadOnly(allCam2vol.getUMat(ACCESS_READ)),
-            ocl::KernelArg::PtrReadOnly(volPoseGpu),
-            ocl::KernelArg::PtrReadOnly(invPoseGpu),
+            //ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
+            //ocl::KernelArg::ReadOnly(allCam2vol.getUMat(ACCESS_READ)),
+            //ocl::KernelArg::PtrReadOnly(volPoseGpu),
+            //ocl::KernelArg::PtrReadOnly(invPoseGpu),
             cam2volTransGPU,
             cam2volRotGPU,
             vol2camRotGPU,
@@ -1696,21 +1697,15 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             //, int(123456789)
         );
 
-        int resol = points.rows;
-        //int resol = 1;
+        int resol = 1;
         size_t globalSize[2];
+        //globalSize[0] = (size_t) resol;
+        //globalSize[1] = (size_t) resol;
         //globalSize[0] = (size_t)frameSize.width;
         //globalSize[1] = (size_t)frameSize.height;
-        //globalSize[0] = (size_t)points.cols;
-        //globalSize[1] = (size_t)points.rows;
-        globalSize[0] = (size_t)10;
-        globalSize[1] = (size_t)10;
+        globalSize[0] = (size_t)points.cols;
+        globalSize[1] = (size_t)points.rows;
         
-        std::cout << "CPU "<< "cam2volTransGPU " << cam2volTransGPU <<
-            "\n | cam2volRotGPU " << cam2volRotGPU <<
-            "\n | vol2camRotGPU " << vol2camRotGPU << 
-            "\n | truncateThreshold " << volume.truncateThreshold << std::endl;
-
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
     }
