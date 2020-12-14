@@ -465,22 +465,30 @@ __kernel void raycast(
         float3 currRayPos = orig + tcurr * dir;
 
         int3 point = (int3) (
-        (int) currRayPos.x * voxelSizeInv,
-        (int) currRayPos.y * voxelSizeInv,
-        (int) currRayPos.z * voxelSizeInv);
+        (int) (currRayPos.x * voxelSizeInv),
+        (int) (currRayPos.y * voxelSizeInv),
+        (int) (currRayPos.z * voxelSizeInv) );
 
         int4 point4 = (int4) (
-        (int) currRayPos.x * voxelSizeInv,
-        (int) currRayPos.y * voxelSizeInv,
-        (int) currRayPos.z * voxelSizeInv, 0);
+        (int) (currRayPos.x * voxelSizeInv),
+        (int) (currRayPos.y * voxelSizeInv),
+        (int) (currRayPos.z * voxelSizeInv), 0);
 
         int row = findRow(hash_table, point4, list_size, bufferNums, hash_divisor);
+        
+        /*
         if (row >= 0 && row <= lastVolIndex-1) {
             printf("idx = [%d, %d, %d] row=%d \n", point4[0], point4[1], point4[2], row);
             return;
         }
 
+        if ( point.x>-10 && point.x<10  &&  point.y>-10 && point.y<20  &&  point.z>-10 && point.z<10 )
+        {
+            printf("[%d, %d]  currRayPos=[%f, %f, %f] voxelSizeInv=%f point=[%d, %d, %d] \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, voxelSizeInv, point.x, point.y, point.z);
+        }
+        */
 
+        //printf("[%d, %d]  currRayPos=[%f, %f, %f] voxelSizeInv=%f point=[%d, %d, %d] \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, voxelSizeInv, point.x, point.y, point.z);
         //printf("lol [%d, %d] tcurr=%f tmax=%f tstep=%f [%d, %d, %d] \n", x, y, tcurr, tmax, tstep, point.x, point.y, point.z);
         
         tprev = tcurr;

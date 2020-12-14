@@ -1701,11 +1701,14 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         size_t globalSize[2];
         //globalSize[0] = (size_t) resol;
         //globalSize[1] = (size_t) resol;
-        //globalSize[0] = (size_t)frameSize.width;
-        //globalSize[1] = (size_t)frameSize.height;
-        globalSize[0] = (size_t)points.cols;
-        globalSize[1] = (size_t)points.rows;
+        globalSize[0] = (size_t)frameSize.width;
+        globalSize[1] = (size_t)frameSize.height;
+        //globalSize[0] = (size_t)points.cols;
+        //globalSize[1] = (size_t)points.rows;
         
+        //std::cout << "voxelSizeInv = " << voxelSizeInv << std::endl;
+        //std::cout << totalVolUnits << std::endl;
+
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
     }
