@@ -1548,6 +1548,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                     Ptr<TSDFVolumeCPU> currVolumeUnit;
 
                     //std::cout << "CPU " << tcurr << " " << tmax << std::endl;
+                    //printf("CPU [%d, %d] truncateThreshold=%f, orig=[%f, %f, %f] \n", x, y, truncateThreshold, orig.x, orig.y, orig.z);
 
                     while (tcurr < tmax)
                     {
@@ -1561,10 +1562,12 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                         float stepSize = 0.5f * blockSize;
                         cv::Vec3i volUnitLocalIdx;
 
-
                         //! The subvolume exists in hashtable
                         if (idx < _lastVolIndex && idx >= 0)
                         {
+
+                            //std::cout << "CPU x,y=" << x << "," << y <<" currRayPos =" << currRayPos << " Idx=" << currVolumeUnitIdx <<" row=" << idx<< std::endl;
+
                             cv::Point3f currVolUnitPos =
                                 volume.volumeUnitIdxToVolume(currVolumeUnitIdx);
                             volUnitLocalIdx = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
@@ -1611,8 +1614,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
         };
 
-        parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
-        //_HashRaycastInvoker(Range(0, new_points.rows));
+        //parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
+        _HashRaycastInvoker(Range(0, new_points.rows));
     
     }
     
@@ -1693,7 +1696,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             volResGpu.val,
             volStrides.val,
             neighbourCoords.val,
-            voxelSizeInv
+            voxelSizeInv,
+            volumeUnitSize
+
+
             //, int(123456789)
         );
 
@@ -1701,13 +1707,15 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         size_t globalSize[2];
         //globalSize[0] = (size_t) resol;
         //globalSize[1] = (size_t) resol;
-        globalSize[0] = (size_t)frameSize.width;
-        globalSize[1] = (size_t)frameSize.height;
-        //globalSize[0] = (size_t)points.cols;
-        //globalSize[1] = (size_t)points.rows;
+        globalSize[0] = (size_t) frameSize.width;
+        globalSize[1] = (size_t) frameSize.height;
+        //globalSize[0] = (size_t) points.cols;
+        //globalSize[1] = (size_t) points.rows;
         
         //std::cout << "voxelSizeInv = " << voxelSizeInv << std::endl;
         //std::cout << totalVolUnits << std::endl;
+        //printf("CPU volumeUnitSize=%f \n", volumeUnitSize);
+
 
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");

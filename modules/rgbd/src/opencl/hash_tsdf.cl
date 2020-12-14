@@ -394,7 +394,8 @@ __kernel void raycast(
                     const int4 volResolution4,
                     const int4 volDims4,
                     const int8 neighbourCoords,
-                    float voxelSizeInv
+                    float voxelSizeInv,
+                    float volumeUnitSize
 
                     //, int test
                     )
@@ -402,11 +403,15 @@ __kernel void raycast(
     int x = get_global_id(0);
     int y = get_global_id(1);
 
+    //x+=468; y+=29;
+
     //printf(" %d \n", test);
     //printf("raycast_GPU \n");
     //float4 point = points[points_offset + (i) * points_step];
     //printf("point (%d) = [%f, %f, %f, %f] \n", i, point[0], point[1], point[2], point[3]);
-    
+    //printf("GPU volumeUnitSize=%f \n", volumeUnitSize);
+    //printf("GPU volumeUnitSize=%f \n", volumeUnitSize);
+
     /*
     printf(" cam2volTransGPU [%f, %f, %f, %f] \n cam2volRotGPU | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | \n vol2camRotGPU | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | \n ", 
     cam2volTransGPU[0], cam2volTransGPU[1], cam2volTransGPU[2], cam2volTransGPU[3],
@@ -459,29 +464,34 @@ __kernel void raycast(
 
     //printf("GPU [%d, %d] truncateThreshold=%f, orig=[%f, %f, %f] \n", x, y, truncateThreshold, orig[0], orig[1], orig[2]);
 
+    //printf("GPU tcurr=%f", tcurr);
+
+    float stepSize = 0.5 * volumeUnitSize;
+
     while (tcurr < tmax)
     {
         
         float3 currRayPos = orig + tcurr * dir;
 
         int3 point = (int3) (
-        (int) (currRayPos.x * voxelSizeInv),
-        (int) (currRayPos.y * voxelSizeInv),
-        (int) (currRayPos.z * voxelSizeInv) );
+        (int) (currRayPos.x / volumeUnitSize),
+        (int) (currRayPos.y / volumeUnitSize),
+        (int) (currRayPos.z / volumeUnitSize) );
 
         int4 point4 = (int4) (
-        (int) (currRayPos.x * voxelSizeInv),
-        (int) (currRayPos.y * voxelSizeInv),
-        (int) (currRayPos.z * voxelSizeInv), 0);
+        (int) (currRayPos.x / volumeUnitSize),
+        (int) (currRayPos.y / volumeUnitSize),
+        (int) (currRayPos.z / volumeUnitSize), 0);
 
         int row = findRow(hash_table, point4, list_size, bufferNums, hash_divisor);
         
-        /*
+        
         if (row >= 0 && row <= lastVolIndex-1) {
-            printf("idx = [%d, %d, %d] row=%d \n", point4[0], point4[1], point4[2], row);
+            printf("GPU [%d, %d] currRayPos=[%f, %f, %f] idx=[%d, %d, %d] row=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row);
             return;
         }
 
+        /*
         if ( point.x>-10 && point.x<10  &&  point.y>-10 && point.y<20  &&  point.z>-10 && point.z<10 )
         {
             printf("[%d, %d]  currRayPos=[%f, %f, %f] voxelSizeInv=%f point=[%d, %d, %d] \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, voxelSizeInv, point.x, point.y, point.z);
@@ -492,10 +502,33 @@ __kernel void raycast(
         //printf("lol [%d, %d] tcurr=%f tmax=%f tstep=%f [%d, %d, %d] \n", x, y, tcurr, tmax, tstep, point.x, point.y, point.z);
         
         tprev = tcurr;
-        tcurr += tstep;
+        tcurr += stepSize;
     }
 
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
