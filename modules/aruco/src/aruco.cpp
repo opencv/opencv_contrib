@@ -40,7 +40,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/aruco.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-
 #include "apriltag_quad_thresh.hpp"
 #include "zarray.hpp"
 
@@ -49,10 +48,15 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/imgcodecs.hpp"
 #endif
 
+
+#include <iostream>
+#include <chrono>
+
 namespace cv {
 namespace aruco {
 
 using namespace std;
+using namespace std::chrono;
 
 
 /**
@@ -60,7 +64,7 @@ using namespace std;
   */
 DetectorParameters::DetectorParameters()
     : adaptiveThreshWinSizeMin(3),
-      adaptiveThreshWinSizeMax(23),
+      adaptiveThreshWinSizeMax(13),
       adaptiveThreshWinSizeStep(10),
       adaptiveThreshConstant(7),
       minMarkerPerimeterRate(0.03),
@@ -69,9 +73,9 @@ DetectorParameters::DetectorParameters()
       minCornerDistanceRate(0.05),
       minDistanceToBorder(3),
       minMarkerDistanceRate(0.05),
-      cornerRefinementMethod(CORNER_REFINE_NONE),
+      cornerRefinementMethod(CORNER_REFINE_SUBPIX),
       cornerRefinementWinSize(5),
-      cornerRefinementMaxIterations(30),
+      cornerRefinementMaxIterations(5),
       cornerRefinementMinAccuracy(0.1),
       markerBorderBits(1),
       perspectiveRemovePixelPerCell(4),
@@ -87,7 +91,15 @@ DetectorParameters::DetectorParameters()
       aprilTagMaxLineFitMse(10.0),
       aprilTagMinWhiteBlackDiff(5),
       aprilTagDeglitch(0),
-      detectInvertedMarker(false){}
+      detectInvertedMarker(false),
+      useAruco3Detection(true),
+      minSideLengthCanonicalImg(16),
+      minMarkerLengthRatioOriginalImg(0.02),
+      cameraMotionSpeed(0.8),
+      useGlobalThreshold(true),
+      foundGlobalThreshold(false),
+      foundMarkerInLastFrames(0)
+{}
 
 
 /**
@@ -131,7 +143,7 @@ static void _threshold(InputArray _in, OutputArray _out, int winSize, double con
 static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &candidates,
                                 vector< vector< Point > > &contoursOut, double minPerimeterRate,
                                 double maxPerimeterRate, double accuracyRate,
-                                double minCornerDistanceRate, int minDistanceToBorder) {
+                                double minCornerDistanceRate, int minDistanceToBorder, int minSize) {
 
     CV_Assert(minPerimeterRate > 0 && maxPerimeterRate > 0 && accuracyRate > 0 &&
               minCornerDistanceRate >= 0 && minDistanceToBorder >= 0);
@@ -142,10 +154,16 @@ static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &can
     unsigned int maxPerimeterPixels =
         (unsigned int)(maxPerimeterRate * max(_in.getMat().cols, _in.getMat().rows));
 
+    // for aruco3 functionality
+    if (minSize != 0) {
+        minPerimeterPixels = 4*minSize;
+    }
+
     Mat contoursImg;
     _in.getMat().copyTo(contoursImg);
     vector< vector< Point > > contours;
     findContours(contoursImg, contours, RETR_LIST, CHAIN_APPROX_NONE);
+
     // now filter list of contours
     for(unsigned int i = 0; i < contours.size(); i++) {
         // check perimeter
@@ -167,7 +185,7 @@ static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &can
                            (double)(approxCurve[j].y - approxCurve[(j + 1) % 4].y);
             minDistSq = min(minDistSq, d);
         }
-        double minCornerDistancePixels = double(contours[i].size()) * minCornerDistanceRate;
+        const double minCornerDistancePixels = double(contours[i].size()) * minCornerDistanceRate;
         if(minDistSq < minCornerDistancePixels * minCornerDistancePixels) continue;
 
         // check if it is too near to the image border
@@ -217,7 +235,7 @@ static vector< Point2f > alignContourOrder( Point2f corner, vector< Point2f > ca
     uint8_t r=0;
     double min = cv::norm( Vec2f( corner - candidate[0] ), NORM_L2SQR);
     for(uint8_t pos=1; pos < 4; pos++) {
-        double nDiff = cv::norm( Vec2f( corner - candidate[pos] ), NORM_L2SQR);
+        const double nDiff = cv::norm( Vec2f( corner - candidate[pos] ), NORM_L2SQR);
         if(nDiff < min){
             r = pos;
             min =nDiff;
@@ -348,7 +366,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
 /**
  * @brief Initial steps on finding square candidates
  */
-static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > > &candidates,
+static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > > &candidates,
                                      vector< vector< Point > > &contours,
                                      const Ptr<DetectorParameters> &params) {
 
@@ -363,25 +381,49 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
     vector< vector< vector< Point2f > > > candidatesArrays((size_t) nScales);
     vector< vector< vector< Point > > > contoursArrays((size_t) nScales);
 
-    ////for each value in the interval of thresholding window sizes
-    parallel_for_(Range(0, nScales), [&](const Range& range) {
-        const int begin = range.start;
-        const int end = range.end;
-
-        for (int i = begin; i < end; i++) {
-            int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
-            // threshold
-            Mat thresh;
-            _threshold(grey, thresh, currScale, params->adaptiveThreshConstant);
-
-            // detect rectangles
-            _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
-                                params->minMarkerPerimeterRate, params->maxMarkerPerimeterRate,
-                                params->polygonalApproxAccuracyRate, params->minCornerDistanceRate,
-                                params->minDistanceToBorder);
+    double otsu_treshold = 0.0;
+    // extract with global theshold)
+    if (params->useGlobalThreshold && params->foundMarkerInLastFrames > 2 && params->useAruco3Detection) {
+        Mat thresh;
+        if (params->foundGlobalThreshold) {
+            cv::threshold(grey, thresh, params->otsuGlobalThreshold, 255, cv::THRESH_BINARY_INV);
+            otsu_treshold = params->otsuGlobalThreshold;
         }
-    });
+        else { // first time get threshold with otsu
+            otsu_treshold = cv::threshold(grey, thresh, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+            params->foundGlobalThreshold = true;
 
+        }
+        // get lines
+        int el_size = 3;
+        cv::Mat struc_el = cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(el_size,el_size), cv::Point(el_size/2.0,el_size/2.0));
+        cv::Mat eroded_imaged;
+        cv::erode(thresh, eroded_imaged, struc_el);
+        cv::bitwise_xor(eroded_imaged, thresh, thresh);
+        _findMarkerContours(thresh, candidatesArrays[0], contoursArrays[0],
+                            params->minMarkerPerimeterRate, params->maxMarkerPerimeterRate,
+                            params->polygonalApproxAccuracyRate, params->minCornerDistanceRate,
+                            params->minDistanceToBorder, params->minSideLengthCanonicalImg);
+    } else {
+        ////for each value in the interval of thresholding window sizes
+        parallel_for_(Range(0, nScales), [&](const Range& range) {
+            const int begin = range.start;
+            const int end = range.end;
+
+            for (int i = begin; i < end; i++) {
+                int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
+                // threshold
+                Mat thresh;
+                _threshold(grey, thresh, currScale, params->adaptiveThreshConstant);
+
+                // detect rectangles
+                _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
+                                    params->minMarkerPerimeterRate, params->maxMarkerPerimeterRate,
+                                    params->polygonalApproxAccuracyRate, params->minCornerDistanceRate,
+                                    params->minDistanceToBorder, params->minSideLengthCanonicalImg);
+            }
+        });
+    }
     // join candidates
     for(int i = 0; i < nScales; i++) {
         for(unsigned int j = 0; j < candidatesArrays[i].size(); j++) {
@@ -389,27 +431,28 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
             contours.push_back(contoursArrays[i][j]);
         }
     }
+
+    return otsu_treshold;
 }
 
 
 /**
  * @brief Detect square candidates in the input image
  */
-static void _detectCandidates(InputArray _image, vector< vector< vector< Point2f > > >& candidatesSetOut,
+static float _detectCandidates(InputArray _image, vector< vector< vector< Point2f > > >& candidatesSetOut,
                               vector< vector< vector< Point > > >& contoursSetOut, const Ptr<DetectorParameters> &_params) {
 
-    Mat image = _image.getMat();
-    CV_Assert(image.total() != 0);
+    Mat grey = _image.getMat();
+    CV_Assert(grey.total() != 0);
 
     /// 1. CONVERT TO GRAY
-    Mat grey;
-    _convertToGrey(image, grey);
+    //Mat grey;
+    //_convertToGrey(image, grey);
 
     vector< vector< Point2f > > candidates;
     vector< vector< Point > > contours;
     /// 2. DETECT FIRST SET OF CANDIDATES
-    _detectInitialCandidates(grey, candidates, contours, _params);
-
+    float new_otsu_global_thresh = _detectInitialCandidates(grey, candidates, contours, _params);
     /// 3. SORT CORNERS
     _reorderCandidatesCorners(candidates);
 
@@ -417,6 +460,8 @@ static void _detectCandidates(InputArray _image, vector< vector< vector< Point2f
     // save the outter/inner border (i.e. potential candidates)
     _filterTooCloseCandidates(candidates, candidatesSetOut, contours, contoursSetOut,
                               _params->minMarkerDistanceRate, _params->detectInvertedMarker);
+
+    return new_otsu_global_thresh;
 }
 
 
@@ -524,8 +569,9 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
  *                           2 if the candidate is a white candidate
  */
 static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
-                                  vector<Point2f>& _corners, int& idx,
-                                  const Ptr<DetectorParameters>& params, int& rotation)
+                                  const vector<Point2f>& _corners, int& idx,
+                                  const Ptr<DetectorParameters>& params, int& rotation,
+                                  const double& scale = 1.0)
 {
     CV_Assert(_corners.size() == 4);
     CV_Assert(_image.getMat().total() != 0);
@@ -533,10 +579,20 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
 
     uint8_t typ=1;
     // get bits
+    //auto start = high_resolution_clock::now();
+    // scale corners to the correct size to search on the corresponding image pyramid
+    vector<Point2f> scaled_corners(4);
+    for (int i=0; i < 4; ++i) {
+        scaled_corners[i].x = _corners[i].x * scale;
+        scaled_corners[i].y = _corners[i].y * scale;
+    }
+
     Mat candidateBits =
-        _extractBits(_image, _corners, dictionary->markerSize, params->markerBorderBits,
+        _extractBits(_image, scaled_corners, dictionary->markerSize, params->markerBorderBits,
                      params->perspectiveRemovePixelPerCell,
                      params->perspectiveRemoveIgnoredMarginPerCell, params->minOtsuStdDev);
+    //auto stop = high_resolution_clock::now();
+    //std::cout << "time extract bits microseconds: "<<duration_cast<microseconds>(stop - start).count() << std::endl;
 
     // analyze border bits
     int maximumErrorsInBorder =
@@ -574,28 +630,37 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
 /**
  * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
  */
-static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out) {
+static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out, const double& scale = 1.0) {
     out.create((int)vec.size(), 1, CV_32FC2);
-
+    vector<Point2f> vec_scaled(4);
     if(out.isMatVector()) {
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             Mat &m = out.getMatRef(i);
-            Mat(Mat(vec[i]).t()).copyTo(m);
+            for (int p = 0; p < 4; ++p) {
+                vec_scaled[p] = vec[i][p]*scale;
+            }
+            Mat(Mat(vec_scaled).t()).copyTo(m);
         }
     }
     else if(out.isUMatVector()) {
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             UMat &m = out.getUMatRef(i);
-            Mat(Mat(vec[i]).t()).copyTo(m);
+            for (int p = 0; p < 4; ++p) {
+                vec_scaled[p] = vec[i][p]*scale;
+            }
+            Mat(Mat(vec_scaled).t()).copyTo(m);
         }
     }
     else if(out.kind() == _OutputArray::STD_VECTOR_VECTOR){
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             Mat m = out.getMat(i);
-            Mat(Mat(vec[i]).t()).copyTo(m);
+            for (int p = 0; p < 4; ++p) {
+                vec_scaled[p] = vec[i][p]*scale;
+            }
+            Mat(Mat(vec_scaled).t()).copyTo(m);
         }
     }
     else {
@@ -611,10 +676,34 @@ static void correctCornerPosition( vector< Point2f >& _candidate, int rotate){
     std::rotate(_candidate.begin(), _candidate.begin() + 4 - rotate, _candidate.end());
 }
 
+static unsigned int _findOptPyrImageForCanonicalImg(
+        const std::vector<cv::Size>& img_pyr_sizes,
+        const cv::Size& resized_seg_image,
+        const int& cur_perimeter,
+        const int& min_perimeter) {
+
+    unsigned int h = 0;
+    double dist = std::numeric_limits<double>::max();
+    for (size_t i=0; i < img_pyr_sizes.size(); ++i) {
+        const double factor = (double)resized_seg_image.width / img_pyr_sizes[i].width;
+        double perimeter_scaled = cur_perimeter * factor;
+        const double new_dist = std::abs(perimeter_scaled - min_perimeter);
+        //std::cout<<"new_dist: "<<new_dist<<"\n";
+        if (new_dist < dist) {
+            dist = new_dist;
+            h = i;
+        }
+    }
+    return h;
+}
+
 /**
  * @brief Identify square candidates according to a marker dictionary
  */
-static void _identifyCandidates(InputArray _image, vector< vector< vector< Point2f > > >& _candidatesSet,
+static void _identifyCandidates(InputArray _image,
+                                const std::vector<cv::Mat>& _image_pyr,
+                                const std::vector<cv::Size>& _image_pyr_sizes,
+                                vector< vector< vector< Point2f > > >& _candidatesSet,
                                 vector< vector< vector<Point> > >& _contoursSet, const Ptr<Dictionary> &_dictionary,
                                 vector< vector< Point2f > >& _accepted, vector< vector<Point> >& _contours, vector< int >& ids,
                                 const Ptr<DetectorParameters> &params,
@@ -628,12 +717,14 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
 
     CV_Assert(_image.getMat().total() != 0);
 
-    Mat grey;
-    _convertToGrey(_image.getMat(), grey);
+    //Mat grey;
+    //_convertToGrey(_image.getMat(), grey);
 
     vector< int > idsTmp(ncandidates, -1);
     vector< int > rotated(ncandidates, 0);
     vector< uint8_t > validCandidates(ncandidates, 0);
+
+    const int min_perimeter = params->minSideLengthCanonicalImg * params->minSideLengthCanonicalImg;
 
     //// Analyze each of the candidates
     parallel_for_(Range(0, ncandidates), [&](const Range &range) {
@@ -641,10 +732,22 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
         const int end = range.end;
 
         vector< vector< Point2f > >& candidates = params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0];
+        //std::cout<<"candidates.size "<<candidates.size()<<"\n";
+        vector< vector< Point > >& cont = params->detectInvertedMarker ? _contoursSet[1] : _contoursSet[0];
+        //std::cout<<"cont.size "<<cont.size()<<"\n";
+
 
         for(int i = begin; i < end; i++) {
             int currId;
-            validCandidates[i] = _identifyOneCandidate(_dictionary, grey, candidates[i], currId, params, rotated[i]);
+
+            // implements equation (4)
+            const int perimeter_in_seg_img = cont[i].size();
+            int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
+            const Mat& pyr_img = _image_pyr[n];
+
+            double scale = (double)_image_pyr_sizes[n].width / _image.cols();
+            //std::cout<<"Optimal pyr: "<<n<<" scale: "<<scale<<std::endl;
+            validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
 
             if(validCandidates[i] > 0)
                 idsTmp[i] = currId;
@@ -705,41 +808,41 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
  * @param nContours, contour-container
  */
 static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
-	float minX, minY, maxX, maxY;
-	minX = maxX = nContours[0].x;
-	minY = maxY = nContours[0].y;
+    float minX, minY, maxX, maxY;
+    minX = maxX = nContours[0].x;
+    minY = maxY = nContours[0].y;
 
-	for(unsigned int i = 0; i< nContours.size(); i++){
-		minX = nContours[i].x < minX ? nContours[i].x : minX;
-		minY = nContours[i].y < minY ? nContours[i].y : minY;
-		maxX = nContours[i].x > maxX ? nContours[i].x : maxX;
-		maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
-	}
+    for(unsigned int i = 0; i< nContours.size(); i++){
+        minX = nContours[i].x < minX ? nContours[i].x : minX;
+        minY = nContours[i].y < minY ? nContours[i].y : minY;
+        maxX = nContours[i].x > maxX ? nContours[i].x : maxX;
+        maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
+    }
 
-	Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
-	Mat B((int)nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
-	Mat C;											// Constant
+    Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
+    Mat B((int)nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
+    Mat C;											// Constant
 
-	if(maxX - minX > maxY - minY){
-		for(unsigned int i =0; i < nContours.size(); i++){
+    if(maxX - minX > maxY - minY){
+        for(unsigned int i =0; i < nContours.size(); i++){
             A.at<float>(i,0)= nContours[i].x;
             B.at<float>(i,0)= nContours[i].y;
-		}
+        }
 
-		solve(A, B, C, DECOMP_NORMAL);
+        solve(A, B, C, DECOMP_NORMAL);
 
-		return Point3f(C.at<float>(0, 0), -1., C.at<float>(1, 0));
-	}
-	else{
-		for(unsigned int i =0; i < nContours.size(); i++){
-			A.at<float>(i,0)= nContours[i].y;
-			B.at<float>(i,0)= nContours[i].x;
-		}
+        return Point3f(C.at<float>(0, 0), -1., C.at<float>(1, 0));
+    }
+    else{
+        for(unsigned int i =0; i < nContours.size(); i++){
+            A.at<float>(i,0)= nContours[i].y;
+            B.at<float>(i,0)= nContours[i].x;
+        }
 
-		solve(A, B, C, DECOMP_NORMAL);
+        solve(A, B, C, DECOMP_NORMAL);
 
-		return Point3f(-1., C.at<float>(0, 0), C.at<float>(1, 0));
-	}
+        return Point3f(-1., C.at<float>(0, 0), C.at<float>(1, 0));
+    }
 
 }
 
@@ -750,9 +853,9 @@ static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
  * @return Crossed Point
  */
 static Point2f _getCrossPoint(Point3f nLine1, Point3f nLine2){
-	Matx22f A(nLine1.x, nLine1.y, nLine2.x, nLine2.y);
-	Vec2f B(-nLine1.z, -nLine2.z);
-	return Vec2f(A.solve(B).val);
+    Matx22f A(nLine1.x, nLine1.y, nLine2.x, nLine2.y);
+    Vec2f B(-nLine1.z, -nLine2.z);
+    return Vec2f(A.solve(B).val);
 }
 
 static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
@@ -778,68 +881,68 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
  * @param distCoeff, distCoeffs vector of distortion coefficient
  */
 static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
-	vector<Point2f> contour2f(nContours.begin(), nContours.end());
+    vector<Point2f> contour2f(nContours.begin(), nContours.end());
 
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
-	}
+    if(!camMatrix.empty() && !distCoeff.empty()){
+        undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
+    }
 
-	/* 5 groups :: to group the edges
-	 * 4 - classified by its corner
-	 * extra group - (temporary) if contours do not begin with a corner
-	 */
-	vector<Point2f> cntPts[5];
-	int cornerIndex[4]={-1};
-	int group=4;
+    /* 5 groups :: to group the edges
+     * 4 - classified by its corner
+     * extra group - (temporary) if contours do not begin with a corner
+     */
+    vector<Point2f> cntPts[5];
+    int cornerIndex[4]={-1};
+    int group=4;
 
-	for ( unsigned int i =0; i < nContours.size(); i++ ) {
-		for(unsigned int j=0; j<4; j++){
-			if ( nCorners[j] == contour2f[i] ){
-				cornerIndex[j] = i;
-				group=j;
-			}
-		}
-		cntPts[group].push_back(contour2f[i]);
-	}
+    for ( unsigned int i =0; i < nContours.size(); i++ ) {
+        for(unsigned int j=0; j<4; j++){
+            if ( nCorners[j] == contour2f[i] ){
+                cornerIndex[j] = i;
+                group=j;
+            }
+        }
+        cntPts[group].push_back(contour2f[i]);
+    }
 
-	// saves extra group into corresponding
-	if( !cntPts[4].empty() ){
-		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
-			cntPts[group].push_back(cntPts[4].at(i));
-		cntPts[4].clear();
-	}
+    // saves extra group into corresponding
+    if( !cntPts[4].empty() ){
+        for( unsigned int i=0; i < cntPts[4].size() ; i++ )
+            cntPts[group].push_back(cntPts[4].at(i));
+        cntPts[4].clear();
+    }
 
-	//Evaluate contour direction :: using the position of the detected corners
-	int inc=1;
+    //Evaluate contour direction :: using the position of the detected corners
+    int inc=1;
 
         inc = ( (cornerIndex[0] > cornerIndex[1]) &&  (cornerIndex[3] > cornerIndex[0]) ) ? -1:inc;
-	inc = ( (cornerIndex[2] > cornerIndex[3]) &&  (cornerIndex[1] > cornerIndex[2]) ) ? -1:inc;
+    inc = ( (cornerIndex[2] > cornerIndex[3]) &&  (cornerIndex[1] > cornerIndex[2]) ) ? -1:inc;
 
-	// calculate the line :: who passes through the grouped points
-	Point3f lines[4];
-	for(int i=0; i<4; i++){
-		lines[i]=_interpolate2Dline(cntPts[i]);
-	}
+    // calculate the line :: who passes through the grouped points
+    Point3f lines[4];
+    for(int i=0; i<4; i++){
+        lines[i]=_interpolate2Dline(cntPts[i]);
+    }
 
-	/*
-	 * calculate the corner :: where the lines crosses to each other
-	 * clockwise direction		no clockwise direction
-	 *      0                           1
-	 *      .---. 1                     .---. 2
-	 *      |   |                       |   |
-	 *    3 .___.                     0 .___.
-	 *          2                           3
-	 */
-	for(int i=0; i < 4; i++){
-		if(inc<0)
-			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
-		else
-			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
-	}
+    /*
+     * calculate the corner :: where the lines crosses to each other
+     * clockwise direction		no clockwise direction
+     *      0                           1
+     *      .---. 1                     .---. 2
+     *      |   |                       |   |
+     *    3 .___.                     0 .___.
+     *          2                           3
+     */
+    for(int i=0; i < 4; i++){
+        if(inc<0)
+            nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
+        else
+            nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
+    }
 
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		_distortPoints(nCorners, camMatrix, distCoeff);
-	}
+    if(!camMatrix.empty() && !distCoeff.empty()){
+        _distortPoints(nCorners, camMatrix, distCoeff);
+    }
 }
 
 #ifdef APRIL_DEBUG
@@ -979,61 +1082,194 @@ static void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std:
 
 /**
   */
-void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
-                   OutputArray _ids, const Ptr<DetectorParameters> &_params,
-                   OutputArrayOfArrays _rejectedImgPoints, InputArrayOfArrays camMatrix, InputArrayOfArrays distCoeff) {
+float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
+                     OutputArray _ids, const Ptr<DetectorParameters> &_params,
+                     OutputArrayOfArrays _rejectedImgPoints,
+                     InputArrayOfArrays camMatrix, InputArrayOfArrays distCoeff) {
 
     CV_Assert(!_image.empty());
+    // check that the parameters are set correctly if Aruco3 is used
+    CV_Assert(!(_params->useAruco3Detection == true &&
+                _params->minSideLengthCanonicalImg == 0 &&
+                _params->minMarkerLengthRatioOriginalImg == 0.0));
 
     Mat grey;
     _convertToGrey(_image.getMat(), grey);
 
-    /// STEP 1: Detect marker candidates
+    // Aruco3 functionality is the extension of Aruco.
+    // The description can be found in:
+    // [1] Speeded up detection of squared fiducial markers, 2018, FJ Romera-Ramirez et al.
+    // if Aruco3 functionality if not wanted
+    // change some parameters to be sure to turn it off
+    if (!_params->useAruco3Detection) {
+        _params->useGlobalThreshold = false;
+        _params->foundGlobalThreshold = false;
+        _params->minMarkerLengthRatioOriginalImg = 0.0;
+        _params->minSideLengthCanonicalImg = 0;
+    }
+
+    /// Step 0: equation (2) from paper [1]
+    const unsigned int tau_i_dot = _params->minSideLengthCanonicalImg +
+            std::max(grey.cols, grey.rows) * _params->minMarkerLengthRatioOriginalImg;
+
+    //// Step 0.1: resize image with equation (1) from paper [1]
+    const float fxfy = (float)_params->minSideLengthCanonicalImg / tau_i_dot;
+    const cv::Size seg_img_size = cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows));
+    const int image_area = seg_img_size.width * seg_img_size.height;
+
+    /// Step 1: create image pyramid. Section 3.4. in [1]
+    std::vector<cv::Mat> grey_pyramid;
+    int closest_pyr_image_idx = 0;
+    if (_params->useAruco3Detection) {
+        // find max level
+        int num_levels = 0;
+        int pyr_factor = 2;
+        const int min_size_2 = _params->minSideLengthCanonicalImg * _params->minSideLengthCanonicalImg;
+        // the closest pyramid image to the downsampled segmentation image
+        // will later be used as start index for corner upsampling
+        int min_dist = std::numeric_limits<int>::max();
+        while (true && min_size_2 < image_area) {
+            const int resized_img_area = (grey.cols / pyr_factor) * (grey.rows / pyr_factor);
+            if (resized_img_area - min_size_2 > 0) {
+                ++num_levels;
+                pyr_factor *= 2;
+                const int resized_diff = static_cast<int>(std::abs(resized_img_area - image_area));
+                if (resized_diff < min_dist) {
+                    closest_pyr_image_idx = num_levels;
+                    min_dist = resized_diff;
+                }
+            }
+            else
+                break;
+        }
+        if (num_levels > 0) {
+            --num_levels;
+        }
+        cv::buildPyramid(grey, grey_pyramid, num_levels);
+
+        // resize to segmentation image
+        // in this reduces size the contours will be detected
+        cv::resize(grey, grey, seg_img_size);
+    }
+    else {
+        grey_pyramid.push_back(grey);
+    }
+
+    // save pyramid sizes
+    std::vector<cv::Size> img_pyr_sizes(grey_pyramid.size());
+    for (size_t i = 0; i < grey_pyramid.size(); ++i) {
+        img_pyr_sizes[i] = grey_pyramid[i].size();
+    }
+
+    /// STEP 2: Detect marker candidates
     vector< vector< Point2f > > candidates;
     vector< vector< Point > > contours;
     vector< int > ids;
 
     vector< vector< vector< Point2f > > > candidatesSet;
     vector< vector< vector< Point > > > contoursSet;
-    /// STEP 1.a Detect marker candidates :: using AprilTag
-    if(_params->cornerRefinementMethod == CORNER_REFINE_APRILTAG){
-        _apriltag(grey, _params, candidates, contours);
+    /// STEP 2.a Detect marker candidates :: using AprilTag
+    bool no_cand_found_in_first_iter = false;
+    for (int i=0; i < 2; ++i) {
+        // if a global threshold was found in the last iteration,
+        // but no candidates in this frame
+        if (i >= 1 && _params->foundGlobalThreshold && no_cand_found_in_first_iter) {
+            _params->foundGlobalThreshold = false;
+            _params->foundMarkerInLastFrames = 1;
+        }
 
-        candidatesSet.push_back(candidates);
-        contoursSet.push_back(contours);
+        // save otsu threshold when using video
+        // use it for subsequent frames for global thresholding. Paper [1] section 3.2.
+        float otsu_global_tresh_video = 0.0f;
+        if(_params->cornerRefinementMethod == CORNER_REFINE_APRILTAG){
+            _apriltag(grey, _params, candidates, contours);
+
+            candidatesSet.push_back(candidates);
+            contoursSet.push_back(contours);
+        }
+        /// STEP 1.b Detect marker candidates :: traditional way
+        else
+            otsu_global_tresh_video =  _detectCandidates(grey, candidatesSet, contoursSet, _params);
+
+
+        /// STEP 2: Check candidate codification (identify markers)
+        _identifyCandidates(grey, grey_pyramid, img_pyr_sizes, candidatesSet, contoursSet, _dictionary,
+                            candidates, contours, ids, _params, _rejectedImgPoints);
+
+        // if we found corners set the otsu threshold for the next iteration (for video processing)
+        if (candidates.size() > 0) {
+            if (_params->foundGlobalThreshold) {
+                _params->otsuGlobalThreshold = otsu_global_tresh_video;
+            }
+            _params->foundMarkerInLastFrames++;
+            // if we found candidates we can break the for loop
+            // if not we are going into a second loop and use adaptive thresholding to try to find candidates
+            // see section 3.2 in [1]
+            break;
+        } else {
+            no_cand_found_in_first_iter = true;
+            _params->foundGlobalThreshold = false;
+            _params->foundMarkerInLastFrames = 0;
+        }
     }
-
-    /// STEP 1.b Detect marker candidates :: traditional way
-    else
-        _detectCandidates(grey, candidatesSet, contoursSet, _params);
-
-    /// STEP 2: Check candidate codification (identify markers)
-    _identifyCandidates(grey, candidatesSet, contoursSet, _dictionary, candidates, contours, ids, _params,
-                        _rejectedImgPoints);
 
     // copy to output arrays
     _copyVector2Output(candidates, _corners);
     Mat(ids).copyTo(_ids);
 
     /// STEP 3: Corner refinement :: use corner subpix
-    if( _params->cornerRefinementMethod == CORNER_REFINE_SUBPIX ) {
-        CV_Assert(_params->cornerRefinementWinSize > 0 && _params->cornerRefinementMaxIterations > 0 &&
+    if( _params->cornerRefinementMethod == CORNER_REFINE_SUBPIX) {
+        CV_Assert(_params->cornerRefinementWinSize > 0 &&
+                  _params->cornerRefinementMaxIterations > 0 &&
                   _params->cornerRefinementMinAccuracy > 0);
+        if (_params->useAruco3Detection) {
+            // if Aruco3 featue is selected we use
+            const float scale_init = (float)grey_pyramid[closest_pyr_image_idx].cols / grey.cols;
+            const float scale_pyr  = (float)grey_pyramid[0].cols / grey_pyramid[1].cols;
 
-        //// do corner refinement for each of the detected markers
-        parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
-            const int begin = range.start;
-            const int end = range.end;
+            // Do subpixel estimation. In Aruco3 start on the lowest pyramid level and
+            // upsample the corners
+            parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
+                const int begin = range.start;
+                const int end = range.end;
 
-            for (int i = begin; i < end; i++) {
-                cornerSubPix(grey, _corners.getMat(i),
-                             Size(_params->cornerRefinementWinSize, _params->cornerRefinementWinSize),
-                             Size(-1, -1),
-                             TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
-                                          _params->cornerRefinementMaxIterations,
-                                          _params->cornerRefinementMinAccuracy));
-            }
-        });
+                for (int i = begin; i < end; i++) {
+                    // scale it up to the closest pyramid level
+                    for (int p = 0; p < 4; ++p) {
+                         _corners.getMat(i).ptr<Point2f>(0)[p] *= scale_init;
+                    }
+
+                    for (int n = closest_pyr_image_idx-1; n >= 0; --n) {
+                        // scale them to new pyramid level
+                        for (int p = 0; p < 4; ++p) {
+                            _corners.getMat(i).ptr<Point2f>(0)[p] *= scale_pyr;
+                        }
+
+                        cornerSubPix(grey_pyramid[n], _corners.getMat(i),
+                                     Size(_params->cornerRefinementWinSize, _params->cornerRefinementWinSize),
+                                     Size(-1, -1),
+                                     TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+                                                  _params->cornerRefinementMaxIterations,
+                                                  _params->cornerRefinementMinAccuracy));
+                    }
+                }
+            });
+        } else { // no pyramid search
+            //// do corner refinement for each of the detected markers
+            parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
+                const int begin = range.start;
+                const int end = range.end;
+
+                for (int i = begin; i < end; i++) {
+                    cornerSubPix(grey, _corners.getMat(i),
+                                 Size(_params->cornerRefinementWinSize, _params->cornerRefinementWinSize),
+                                 Size(-1, -1),
+                                 TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+                                              _params->cornerRefinementMaxIterations,
+                                              _params->cornerRefinementMinAccuracy));
+                }
+            });
+        }
     }
 
     /// STEP 3, Optional : Corner refinement :: use contour container
@@ -1052,6 +1288,24 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
             // copy the corners to the output array
             _copyVector2Output(candidates, _corners);
         }
+    }
+
+    if (_params->cornerRefinementMethod != CORNER_REFINE_APRILTAG &&
+        _params->cornerRefinementMethod != CORNER_REFINE_SUBPIX) {
+        // scale to orignal size, this however will lead to inaccurate detections!
+        _copyVector2Output(candidates, _corners, 1./fxfy);
+    }
+
+    // if the detection is used on a video the parameter tau_i (eq. 2) can be dynamically updated
+    // according to section 3.2.7. in the paper
+    // sort contours according to perimeter
+    if (contours.size() > 0 && _params->cameraMotionSpeed > 0 && _params->useAruco3Detection) {
+        std::sort(contours.begin(), contours.end(), [](vector<Point> a, vector<Point> b) {return a.size() < b.size();});
+        const float next_frame_tau_i = (1.0 - _params->cameraMotionSpeed) * contours[0].size() / 4.0;
+        return next_frame_tau_i / std::max(img_pyr_sizes[0].width, img_pyr_sizes[0].height); // normalize new tau_i
+    }
+    else {
+        return 0.0f;
     }
 }
 
