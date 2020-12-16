@@ -1562,11 +1562,18 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                         float stepSize = 0.5f * blockSize;
                         cv::Vec3i volUnitLocalIdx;
 
+                        //if (x == 468 && y == 29)
+                        //    {
+                        //        std::cout << "CPU x,y=[" << x << ", " << y << "] currRayPos =" << currRayPos << " Idx=" << currVolumeUnitIdx << " row=" << idx << std::endl;
+                        //    }
+
                         //! The subvolume exists in hashtable
-                        if (idx < _lastVolIndex && idx >= 0)
+                        if (idx >= 0 && idx < _lastVolIndex)
                         {
 
+                            
                             //std::cout << "CPU x,y=" << x << "," << y <<" currRayPos =" << currRayPos << " Idx=" << currVolumeUnitIdx <<" row=" << idx<< std::endl;
+                            //return;
 
                             cv::Point3f currVolUnitPos =
                                 volume.volumeUnitIdxToVolume(currVolumeUnitIdx);
@@ -1662,6 +1669,11 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         Matx44f cam2volRotGPU = cam2vol.matrix;
         Matx44f vol2camRotGPU = vol2cam.matrix;
 
+        Mat _tmp;
+        _volUnitsData.copyTo(_tmp);
+        UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
+        _tmp.release();
+
         UMat volPoseGpu, invPoseGpu;
         Mat(pose.matrix).copyTo(volPoseGpu);
         Mat(pose.inv().matrix).copyTo(invPoseGpu);
@@ -1681,6 +1693,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             ocl::KernelArg::ReadWrite(points),
             ocl::KernelArg::ReadWrite(normals),
             frameSize,
+
+            ocl::KernelArg::ReadWrite(U_volUnitsData),
+
+
             //ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
             //ocl::KernelArg::ReadOnly(allCam2vol.getUMat(ACCESS_READ)),
             //ocl::KernelArg::PtrReadOnly(volPoseGpu),
@@ -1697,7 +1713,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             volStrides.val,
             neighbourCoords.val,
             voxelSizeInv,
-            volumeUnitSize
+            volumeUnitSize,
+            volume.truncDist,
+            volumeUnitResolution,
+            volStrides
 
 
             //, int(123456789)
