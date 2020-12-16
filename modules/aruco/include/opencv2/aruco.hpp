@@ -255,12 +255,13 @@ struct CV_EXPORTS_W DetectorParameters {
  * are searched. For each detected marker, it returns the 2D position of its corner in the image
  * and its corresponding identifier.
  * Note that this function does not perform pose estimation.
- * @sa estimatePoseSingleMarkers,  estimatePoseBoard
+ * The function returns an estimate of the parameter minMarkerLengthRatioOriginalImg if useAruco3Detection=1. If not it returns 0.0.
+ * @sa estimatePoseSingleMarkers, estimatePoseBoard
  *
  */
-CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
-                                OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
-                                OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
+CV_EXPORTS_W float detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
+                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
+                                 OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
 
 
 

@@ -22,4 +22,12 @@ perspectiveRemoveIgnoredMarginPerCell: 0.13
 maxErroneousBitsInBorderRate: 0.04
 minOtsuStdDev: 5.0
 errorCorrectionRate: 0.6
+
 # new aruco functionality
+useAruco3Detection: 0
+minSideLengthCanonicalImg: 32 # 16, 32, 64
+minMarkerLengthRatioOriginalImg: 0.08 # range [0,0.2]
+cameraMotionSpeed: 0.5 # range [0,1)
+useGlobalThreshold: 0
+
+

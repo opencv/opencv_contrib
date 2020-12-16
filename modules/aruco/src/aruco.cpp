@@ -95,7 +95,7 @@ DetectorParameters::DetectorParameters()
       useAruco3Detection(true),
       minSideLengthCanonicalImg(16),
       minMarkerLengthRatioOriginalImg(0.02),
-      cameraMotionSpeed(0.8),
+      cameraMotionSpeed(1.0),
       useGlobalThreshold(true),
       foundGlobalThreshold(false),
       foundMarkerInLastFrames(0)
@@ -380,7 +380,6 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
 
     vector< vector< vector< Point2f > > > candidatesArrays((size_t) nScales);
     vector< vector< vector< Point > > > contoursArrays((size_t) nScales);
-
     double otsu_treshold = 0.0;
     // extract with global theshold)
     if (params->useGlobalThreshold && params->foundMarkerInLastFrames > 2 && params->useAruco3Detection) {
@@ -1305,7 +1304,7 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
         return next_frame_tau_i / std::max(img_pyr_sizes[0].width, img_pyr_sizes[0].height); // normalize new tau_i
     }
     else {
-        return 0.0f;
+        return -1.0f;
     }
 }
 
