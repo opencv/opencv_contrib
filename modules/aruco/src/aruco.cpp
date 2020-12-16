@@ -578,7 +578,6 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
 
     uint8_t typ=1;
     // get bits
-    //auto start = high_resolution_clock::now();
     // scale corners to the correct size to search on the corresponding image pyramid
     vector<Point2f> scaled_corners(4);
     for (int i=0; i < 4; ++i) {
@@ -590,8 +589,6 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
         _extractBits(_image, scaled_corners, dictionary->markerSize, params->markerBorderBits,
                      params->perspectiveRemovePixelPerCell,
                      params->perspectiveRemoveIgnoredMarginPerCell, params->minOtsuStdDev);
-    //auto stop = high_resolution_clock::now();
-    //std::cout << "time extract bits microseconds: "<<duration_cast<microseconds>(stop - start).count() << std::endl;
 
     // analyze border bits
     int maximumErrorsInBorder =
@@ -687,7 +684,6 @@ static unsigned int _findOptPyrImageForCanonicalImg(
         const double factor = (double)resized_seg_image.width / img_pyr_sizes[i].width;
         double perimeter_scaled = cur_perimeter * factor;
         const double new_dist = std::abs(perimeter_scaled - min_perimeter);
-        //std::cout<<"new_dist: "<<new_dist<<"\n";
         if (new_dist < dist) {
             dist = new_dist;
             h = i;
@@ -716,9 +712,6 @@ static void _identifyCandidates(InputArray _image,
 
     CV_Assert(_image.getMat().total() != 0);
 
-    //Mat grey;
-    //_convertToGrey(_image.getMat(), grey);
-
     vector< int > idsTmp(ncandidates, -1);
     vector< int > rotated(ncandidates, 0);
     vector< uint8_t > validCandidates(ncandidates, 0);
@@ -731,9 +724,7 @@ static void _identifyCandidates(InputArray _image,
         const int end = range.end;
 
         vector< vector< Point2f > >& candidates = params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0];
-        //std::cout<<"candidates.size "<<candidates.size()<<"\n";
         vector< vector< Point > >& cont = params->detectInvertedMarker ? _contoursSet[1] : _contoursSet[0];
-        //std::cout<<"cont.size "<<cont.size()<<"\n";
 
 
         for(int i = begin; i < end; i++) {
@@ -745,7 +736,6 @@ static void _identifyCandidates(InputArray _image,
             const Mat& pyr_img = _image_pyr[n];
 
             double scale = (double)_image_pyr_sizes[n].width / _image.cols();
-            //std::cout<<"Optimal pyr: "<<n<<" scale: "<<scale<<std::endl;
             validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
 
             if(validCandidates[i] > 0)
@@ -1114,6 +1104,7 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
     //// Step 0.1: resize image with equation (1) from paper [1]
     const float fxfy = (float)_params->minSideLengthCanonicalImg / tau_i_dot;
     const cv::Size seg_img_size = cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows));
+
     const int image_area = seg_img_size.width * seg_img_size.height;
 
     /// Step 1: create image pyramid. Section 3.4. in [1]
@@ -1304,7 +1295,7 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
         return next_frame_tau_i / std::max(img_pyr_sizes[0].width, img_pyr_sizes[0].height); // normalize new tau_i
     }
     else {
-        return -1.0f;
+        return 0.0f;
     }
 }
 
