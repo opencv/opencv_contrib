@@ -382,6 +382,50 @@ struct TsdfVoxel _at(int3 volumeIdx, int row,
     return volData[coordBase];
 }
 
+inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* volumePtr,
+                             int3 volResolution, int3 volDims, int8 neighbourCoords)
+{
+    if(any(p < 1) || any(p >= convert_float3(volResolution - 2)))
+        return nan((uint)0);
+
+    float3 fip = floor(p);
+    int3 ip = convert_int3(fip);
+    float3 t = p - fip;
+
+    int3 cmul = volDims*ip;
+    int coordBase = cmul.x + cmul.y + cmul.z;
+    int nco[8];
+    vstore8(neighbourCoords + coordBase, 0, nco);
+
+    int arDims[3];
+    vstore3(volDims, 0, arDims);
+    float an[3];
+    for(int c = 0; c < 3; c++)
+    {
+        int dim = arDims[c];
+
+        float vaz[8];
+        for(int i = 0; i < 8; i++)
+            vaz[i] = tsdfToFloat(volumePtr[nco[i] + dim].tsdf -
+                                 volumePtr[nco[i] - dim].tsdf);
+
+        float8 vz = vload8(0, vaz);
+
+        float4 vy = mix(vz.s0246, vz.s1357, t.z);
+        float2 vx = mix(vy.s02, vy.s13, t.y);
+
+        an[c] = mix(vx.s0, vx.s1, t.x);
+    }
+
+    //gradientDeltaFactor is fixed at 1.0 of voxel size
+    float3 n = vload3(0, an);
+    float Norm = sqrt(n.x*n.x + n.y*n.y + n.z*n.z);
+    return Norm < 0.0001f ? nan((uint)0) : n / Norm;
+    //return fast_normalize(vload3(0, an));
+}
+
+typedef float4 ptype;
+
 __kernel void raycast(
                     __global struct Volume_NODE * hash_table,
                     const int list_size, 
@@ -433,9 +477,13 @@ __kernel void raycast(
     int y = get_global_id(1);
 
     //x+=468; y+=29;
+    x+=168; y+=28;
 
     if(x >= frameSize.x || y >= frameSize.y)
         return;
+
+    float3 point  = nan((uint)0);
+    float3 normal = nan((uint)0);
 
     const float3 camRot0  = cam2volRotGPU.s012;
     const float3 camRot1  = cam2volRotGPU.s456;
@@ -495,28 +543,59 @@ __kernel void raycast(
              ( (float) (currVolumeUnitIdx[1]) * volumeUnitSize), 
              ( (float) (currVolumeUnitIdx[2]) * volumeUnitSize) );
             
-
+            // VolumeToVoxelCoord()
             float3 pos = currRayPos - currVolUnitPos;
             volUnitLocalIdx = (int3)
-            (( (int) (point4[0] * voxelSizeInv) ), 
-             ( (int) (point4[1] * voxelSizeInv) ), 
-             ( (int) (point4[2] * voxelSizeInv) ) );
+            (( (int) ( (float) (pos[0]) * voxelSizeInv) ), 
+             ( (int) ( (float) (pos[1]) * voxelSizeInv) ), 
+             ( (int) ( (float) (pos[2]) * voxelSizeInv) ) );
 
             struct TsdfVoxel currVoxel  = _at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr,  table_offset);
 
             currTsdf = tsdfToFloat(currVoxel.tsdf);
             currWeight = currVoxel.weight;
-            
-            if (currTsdf!=1)
-                printf("GPU [%d, %d] currTsdf=%f currWeight=%d \n", x, y, currTsdf, currWeight);
-
-            //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d]\n", 
-            //    x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row, currVolUnitPos[0], currVolUnitPos[1], currVolUnitPos[2], volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2]);
-            
-
             stepSize = tstep;
-            
+
+            //printf("GPU voxelSizeInv = %f", voxelSizeInv);
+            //if (currTsdf!=1)
+            //    printf("GPU [%d, %d] currTsdf=%f currWeight=%d \n", x, y, currTsdf, currWeight);
+            //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d\n", 
+            //    x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row, currVolUnitPos[0], currVolUnitPos[1], currVolUnitPos[2], volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
             //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] idx=[%d, %d, %d] row=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row);
+        }
+
+        
+        if (prevTsdf > 0.f && currTsdf <= 0.f && currWeight > 0)
+        {
+            float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
+            if ( !isnan(tInterp) && !isinf(tInterp) )
+            {
+                //printf("tInterp=%f \n", tInterp);
+
+                __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
+                                                (allVolumePtr + table_offset + (row) * 16*16*16);
+
+                int3 volResolution = (int3) (volResolution4[0], volResolution4[1], volResolution4[2]);
+                int3 volDims = (int3) (volDims4[0], volDims4[1], volDims4[2]);
+                
+                float3 pv = orig + tInterp * dir;
+                float3 nv = getNormalVoxel( pv, volumeptr, volResolution, volDims, neighbourCoords);
+
+                if(!any(isnan(nv)))
+                {
+                    printf("lol \n");
+                    //convert pv and nv to camera space
+                    normal = (float3)(dot(nv, volRot0),
+                                      dot(nv, volRot1),
+                                      dot(nv, volRot2));
+                    // interpolation optimized a little
+                    pv *= voxelSize;
+                    point = (float3)(dot(pv, volRot0),
+                                     dot(pv, volRot1),
+                                     dot(pv, volRot2)) + volTrans;
+                }
+
+            }
             
         }
 
@@ -529,156 +608,11 @@ __kernel void raycast(
     }
 
     
+    __global float* pts = (__global float*)(points  +  points_offset + y*points_step  + x*sizeof(ptype));
+    __global float* nrm = (__global float*)(normals + normals_offset + y*normals_step + x*sizeof(ptype));
+    vstore4((float4)(point,  0), 0, pts);
+    vstore4((float4)(normal, 0), 0, nrm);       
 
-
-
-
-
-
-
-
-
-    
-    //printf(" %d \n", test);
-    //printf("raycast_GPU \n");
-    //float4 point = points[points_offset + (i) * points_step];
-    //printf("point (%d) = [%f, %f, %f, %f] \n", i, point[0], point[1], point[2], point[3]);
-    //printf("GPU volumeUnitSize=%f \n", volumeUnitSize);
-    //printf("GPU volumeUnitSize=%f \n", volumeUnitSize);
-
-    /*
-    printf(" cam2volTransGPU [%f, %f, %f, %f] \n cam2volRotGPU | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | \n vol2camRotGPU | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | %f, %f, %f, %f | \n ", 
-    cam2volTransGPU[0], cam2volTransGPU[1], cam2volTransGPU[2], cam2volTransGPU[3],
-
-    cam2volRotGPU[0],cam2volRotGPU[1],cam2volRotGPU[2],cam2volRotGPU[3],cam2volRotGPU[4],cam2volRotGPU[5],cam2volRotGPU[6],cam2volRotGPU[7],
-    cam2volRotGPU[8],cam2volRotGPU[9],cam2volRotGPU[10],cam2volRotGPU[11],cam2volRotGPU[12],cam2volRotGPU[13],cam2volRotGPU[14],cam2volRotGPU[15], 
-    
-    vol2camRotGPU[0],vol2camRotGPU[1],vol2camRotGPU[2],vol2camRotGPU[3],vol2camRotGPU[4],vol2camRotGPU[5],vol2camRotGPU[6],vol2camRotGPU[7],
-    vol2camRotGPU[8],vol2camRotGPU[9],vol2camRotGPU[10],vol2camRotGPU[11],vol2camRotGPU[12],vol2camRotGPU[13],vol2camRotGPU[14],vol2camRotGPU[15] 
-    );
-    */
-
-
-        /*
-    printf("camRot0 [%f, %f, %f] \ncamRot1 [%f, %f, %f] \ncamRot2 [%f, %f, %f] \ncamTrans [%f, %f, %f] \n", 
-    camRot0[0], camRot0[1], camRot0[2],
-    camRot1[0], camRot1[1], camRot1[2],
-    camRot2[0], camRot2[1], camRot2[2],
-    camTrans[0], camTrans[1], camTrans[2]
-    );
-    */
-
-
-    
-    //printf("GPU [%d, %d] truncateThreshold=%f, orig=[%f, %f, %f] \n", x, y, truncateThreshold, orig[0], orig[1], orig[2]);
-
-    //printf("GPU tcurr=%f", tcurr);
-
-            
-        //if (row >= 0 && row <= lastVolIndex-1) {
-        //    printf("GPU [%d, %d] currRayPos=[%f, %f, %f] idx=[%d, %d, %d] row=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row);
-        //    return;
-        //}
-
-        /*
-        if ( point.x>-10 && point.x<10  &&  point.y>-10 && point.y<20  &&  point.z>-10 && point.z<10 )
-        {
-            printf("[%d, %d]  currRayPos=[%f, %f, %f] voxelSizeInv=%f point=[%d, %d, %d] \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, voxelSizeInv, point.x, point.y, point.z);
-        }
-        */
-
-
-
-
-
-
-
-
-
-    // coordinate-independent constants
-    /*
-    __global const float* cm = cam2volptr;
-    const float3 camRot0  = vload4(0, cm).xyz;
-    const float3 camRot1  = vload4(1, cm).xyz;
-    const float3 camRot2  = vload4(2, cm).xyz;
-    const float3 camTrans = (float3)(cm[3], cm[7], cm[11]);
-
-    __global const float* vm = vol2camptr;
-    const float3 volRot0  = vload4(0, vm).xyz;
-    const float3 volRot1  = vload4(1, vm).xyz;
-    const float3 volRot2  = vload4(2, vm).xyz;
-    const float3 volTrans = (float3)(vm[3], vm[7], vm[11]);
-
-    const float3 boxDown = boxDown4.xyz;
-    const float3 boxUp   = boxUp4.xyz;
-    const int3   volDims = volDims4.xyz;
-
-    const int3 volResolution = volResolution4.xyz;
-
-    const float invVoxelSize = native_recip(voxelSize);
-
-    // kernel itself
-
-    float3 point  = nan((uint)0);
-    float3 normal = nan((uint)0);
-
-    float3 orig = camTrans;
-
-    // get direction through pixel in volume space:
-    // 1. reproject (x, y) on projecting plane where z = 1.f
-    float3 planed = (float3)(((float2)(x, y) - cxy)*fixy, 1.f);
-
-    // 2. rotate to volume space
-    planed = (float3)(dot(planed, camRot0),
-                      dot(planed, camRot1),
-                      dot(planed, camRot2));
-
-    // 3. normalize
-    float3 dir = fast_normalize(planed);
-
-    // compute intersection of ray with all six bbox planes
-    float3 rayinv = native_recip(dir);
-    float3 tbottom = rayinv*(boxDown - orig); //incorrect value
-    float3 ttop    = rayinv*(boxUp   - orig); //incorrect value
-
-    // re-order intersections to find smallest and largest on each axis
-    float3 minAx = min(ttop, tbottom);
-    float3 maxAx = max(ttop, tbottom);
-
-    // near clipping plane
-    const float clip = 0.f;
-    float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
-    float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
-
-    // precautions against getting coordinates out of bounds
-    tmin = tmin + tstep;
-    tmax = tmax - tstep;
-    
-    //printf("GPU [%d, %d] tmin=%f tmax=%f minAx(%f, %f, %f) maxAx(%f, %f, %f) \n", 
-    //    x, y, tmin, tmax, minAx.x, minAx.y, minAx.z, maxAx.x, maxAx.y, maxAx.z);
-    
-    //printf("GPU [%d, %d] rayinv(%f, %f, %f) tbottom(%f, %f, %f) ttop(%f, %f, %f) \n",
-    //    x, y, rayinv.x, rayinv.y, rayinv.z, tbottom.x, tbottom.y, tbottom.z, ttop.x, ttop.y, ttop.z);
-
-    printf("GPU [%d, %d] orig(%f, %f, %f) boxDown(%f, %f, %f) boxUp(%f, %f, %f) \n",
-        x, y, orig.x, orig.y, orig.z, boxDown.x, boxDown.y, boxDown.z, boxUp.x, boxUp.y, boxUp.z);
-    
-
-    if(tmin < tmax)
-    {
-        // interpolation optimized a little
-        orig *= invVoxelSize;
-        dir  *= invVoxelSize;
-
-        float3 rayStep = dir*tstep;
-        float3 next = (orig + dir*tmin);
-
-        float3 currRayPos = orig + tmin * dir;
-
-        printf("[%f, %f, %f] \n",currRayPos[0], currRayPos[1], currRayPos[2]);
-
-    }
-    */
 
 
 

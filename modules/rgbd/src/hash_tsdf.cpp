@@ -1493,7 +1493,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
    
-    if(true)
+    if(false)
     {
 
         _points.create(frameSize, POINT_TYPE);
@@ -1584,6 +1584,12 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                             TsdfVoxel currVoxel = new_at(volUnitLocalIdx, idx);
                             currTsdf = tsdfToFloat(currVoxel.tsdf);
                             currWeight = currVoxel.weight;
+
+                            //if (x == 168 && y == 28)
+                            //    printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d \n",
+                            //        x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currVolUnitPos.x, currVolUnitPos.y, currVolUnitPos.z, volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
+
+
                             stepSize = tstep;
                         }
 
@@ -1735,6 +1741,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         //std::cout << totalVolUnits << std::endl;
         //printf("CPU volumeUnitSize=%f \n", volumeUnitSize);
 
+        //printf("CPU voxelSizeInv = %f", voxelSizeInv);
 
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
