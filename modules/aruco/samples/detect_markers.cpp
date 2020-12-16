@@ -217,23 +217,23 @@ int main(int argc, char *argv[]) {
         }
 
         // draw results
-//        image.copyTo(imageCopy);
-//        if(ids.size() > 0) {
-//            aruco::drawDetectedMarkers(imageCopy, corners, ids);
+        image.copyTo(imageCopy);
+        if(ids.size() > 0) {
+            aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-//            if(estimatePose) {
-//                for(unsigned int i = 0; i < ids.size(); i++)
-//                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-//                                    markerLength * 0.5f);
-//            }
-//        }
+            if(estimatePose) {
+                for(unsigned int i = 0; i < ids.size(); i++)
+                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
+                                    markerLength * 0.5f);
+            }
+        }
 
-        //if(showRejected && rejected.size() > 0)
-        //    aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
+        if(showRejected && rejected.size() > 0)
+            aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
-        //imshow("out", imageCopy);
-        //char key = (char)waitKey(waitTime);
-        //if(key == 27) break;
+        imshow("out", imageCopy);
+        char key = (char)waitKey(waitTime);
+        if(key == 27) break;
     }
 
     cout<<"Total number detected corners: "<<total_nr_detected_corners<<"\n";
