@@ -146,6 +146,33 @@ enum CornerRefineMethod{
  *   Parameter is the standard deviation in pixels.  Very noisy images benefit from non-zero values (e.g. 0.8). (default 0.0)
  * - detectInvertedMarker: to check if there is a white marker. In order to generate a "white" marker just
  *   invert a normal marker by using a tilde, ~markerImage. (default false)
+ * - useAruco3Detection: to enable the new and faster Aruco detection strategy. The most important observation from the authors of
+ *   Romero-Ramirez et al: Speeded up detection of squared fiducial markers (2018) is, that the binary
+ *   code of a marker can be reliably detected if the canonical image (that is used to extract the binary code)
+ *   has a size of minSideLengthCanonicalImg (in practice tau_c=16-32 pixels).
+ *   In addition, very small markers are barely useful for pose estimation and thus a we can define a minimum marker size that we
+ *   still want to be able to detect (e.g. 50x50 pixel).
+ *   To decouple this from the initial image size they propose to resize the input image
+ *   to (I_w_r, I_h_r) = (tau_c / tau_dot_i) * (I_w, I_h), with tau_dot_i = tau_c + max(I_w,I_h) * tau_i.
+ *   Here tau_i (parameter: minMarkerLengthRatioOriginalImg) is a ratio in the range [0,1].
+ *   If we set this to 0, the smallest marker we can detect
+ *   has a side length of tau_c. If we set it to 1 the marker would fill the entire image.
+ *   For a FullHD video a good value to start with is 0.1.
+ * - minSideLengthCanonicalImg: minimum side length of a marker in the canonical image.
+ *   Latter is the binarized image in which contours are searched.
+ *   So all contours with a size smaller than minSideLengthCanonicalImg*minSideLengthCanonicalImg will omitted from the search.
+ * - minMarkerLengthRatioOriginalImg:  range [0,1], eq (2) from paper
+ * - cameraMotionSpeed: is in the range [0,1]. This parameter (tau_s in the paper) implements the feature proposed
+ *   in Section 3.7. and is particularly useful for video sequences.
+ *   The parameter tau_i has a direct influence on the processing speed. Instead of setting a fixed value for it,
+ *   it can be adjusted at the end of each frame using
+ *   tau_i = (1-tau_s)*P(v_s)/4 (eq. 6 in paper).
+ *   Where P(v_s) is the perimeter of the smallest marker that was detected in the last frame.
+ * - useGlobalThreshold: if we process a video, the assumption is, that the illumination conditions remains
+ *   constant and global instead of adaptive thresholding can be applied, speeding up the binarization step.
+ * - foundGlobalThreshold: internal variable. It is used to cache the variable to the next detector call.
+ * - otsuGlobalThreshold: internal variable. It is used to cache the global otsu threshold to the next detector call.
+ * - foundMarkerInLastFrames: internal variable. It is used to cache if markers were found in the last frame.
  */
 struct CV_EXPORTS_W DetectorParameters {
 
@@ -188,6 +215,19 @@ struct CV_EXPORTS_W DetectorParameters {
 
     // to detect white (inverted) markers
     CV_PROP_RW bool detectInvertedMarker;
+
+    // New Aruco functionality proposed in the paper:
+    // Romero-Ramirez et al: Speeded up detection of squared fiducial markers (2018)
+    CV_PROP_RW bool useAruco3Detection;
+    CV_PROP_RW int minSideLengthCanonicalImg;
+    CV_PROP_RW float minMarkerLengthRatioOriginalImg;
+
+    // New Aruco functionality especially for video
+    CV_PROP_RW float cameraMotionSpeed;
+    CV_PROP_RW bool useGlobalThreshold;
+    CV_PROP_RW bool foundGlobalThreshold;
+    CV_PROP_RW float otsuGlobalThreshold;
+    CV_PROP_RW int foundMarkerInLastFrames;
 };
 
 
@@ -215,12 +255,13 @@ struct CV_EXPORTS_W DetectorParameters {
  * are searched. For each detected marker, it returns the 2D position of its corner in the image
  * and its corresponding identifier.
  * Note that this function does not perform pose estimation.
- * @sa estimatePoseSingleMarkers,  estimatePoseBoard
+ * The function returns an estimate of the parameter minMarkerLengthRatioOriginalImg if useAruco3Detection=1. If not it returns 0.0.
+ * @sa estimatePoseSingleMarkers, estimatePoseBoard
  *
  */
-CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
-                                OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
-                                OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
+CV_EXPORTS_W float detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
+                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
+                                 OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
 
 
 

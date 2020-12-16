@@ -160,6 +160,10 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
     public:
     CV_ArucoBoardPose();
 
+    enum checkWithParameter{
+        USE_ARUCO3 = 1               /// Check if aruco3 should be used
+    };
+
     protected:
     void run(int);
 };
@@ -168,7 +172,7 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
 CV_ArucoBoardPose::CV_ArucoBoardPose() {}
 
 
-void CV_ArucoBoardPose::run(int) {
+void CV_ArucoBoardPose::run(int run_with) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
@@ -181,8 +185,13 @@ void CV_ArucoBoardPose::run(int) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
+    double max_dist = 0.4;
+    // aruco3 detection is a bit worse from large distances it seems
+    if (run_with == checkWithParameter::USE_ARUCO3) {
+        max_dist = 0.2;
+    }
     // for different perspectives
-    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
+    for(double distance = 0.2; distance <= max_dist; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 50) {
                 for(unsigned int i = 0; i < gridboard->ids.size(); i++)
@@ -199,6 +208,9 @@ void CV_ArucoBoardPose::run(int) {
                 vector< int > ids;
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 3;
+                if (run_with == checkWithParameter::USE_ARUCO3) {
+                    params->useAruco3Detection = true;
+                }
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -255,15 +267,18 @@ class CV_ArucoRefine : public cvtest::BaseTest {
     public:
     CV_ArucoRefine();
 
+    enum checkWithParameter{
+        USE_ARUCO3 = 1               /// Check if aruco3 should be used
+    };
     protected:
-    void run(int);
+    void run(int run_with);
 };
 
 
 CV_ArucoRefine::CV_ArucoRefine() {}
 
 
-void CV_ArucoRefine::run(int) {
+void CV_ArucoRefine::run(int run_with) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
@@ -296,6 +311,9 @@ void CV_ArucoRefine::run(int) {
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 3;
                 params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+                if (run_with == checkWithParameter::USE_ARUCO3) {
+                    params->useAruco3Detection = true;
+                }
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
 
@@ -330,9 +348,22 @@ TEST(CV_ArucoBoardPose, accuracy) {
     test.safe_run();
 }
 
+typedef CV_ArucoBoardPose CV_Aruco3BoardPose;
+TEST(CV_Aruco3BoardPose, accuracy) {
+    CV_Aruco3BoardPose test;
+    test.safe_run(CV_Aruco3BoardPose::checkWithParameter::USE_ARUCO3);
+}
+
+typedef CV_ArucoRefine CV_Aruco3Refine;
+
 TEST(CV_ArucoRefine, accuracy) {
     CV_ArucoRefine test;
     test.safe_run();
+}
+
+TEST(CV_Aruco3Refine, accuracy) {
+    CV_Aruco3Refine test;
+    test.safe_run(CV_Aruco3Refine::checkWithParameter::USE_ARUCO3);
 }
 
 TEST(CV_ArucoBoardPose, CheckNegativeZ)

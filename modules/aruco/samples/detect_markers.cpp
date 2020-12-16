@@ -63,10 +63,63 @@ const char* keys  =
         "{dp       |       | File of marker detector parameters }"
         "{r        |       | show rejected candidates too }"
         "{refine   |       | Corner refinement: CORNER_REFINE_NONE=0, CORNER_REFINE_SUBPIX=1,"
-        "CORNER_REFINE_CONTOUR=2, CORNER_REFINE_APRILTAG=3}";
+        "CORNER_REFINE_CONTOUR=2, CORNER_REFINE_APRILTAG=3}"
+        "{ar3vid   |       | Adapt the paramater tau_i if aruco3 functionality is used. }";
 }
 //! [aruco_detect_markers_keys]
 
+/**
+ */
+static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
+    FileStorage fs(filename, FileStorage::READ);
+    if(!fs.isOpened())
+        return false;
+    fs["camera_matrix"] >> camMatrix;
+    fs["distortion_coefficients"] >> distCoeffs;
+    return true;
+}
+
+
+
+/**
+ */
+static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameters> &params) {
+    FileStorage fs(filename, FileStorage::READ);
+    if(!fs.isOpened())
+        return false;
+    fs["adaptiveThreshWinSizeMin"] >> params->adaptiveThreshWinSizeMin;
+    fs["adaptiveThreshWinSizeMax"] >> params->adaptiveThreshWinSizeMax;
+    fs["adaptiveThreshWinSizeStep"] >> params->adaptiveThreshWinSizeStep;
+    fs["adaptiveThreshConstant"] >> params->adaptiveThreshConstant;
+    fs["minMarkerPerimeterRate"] >> params->minMarkerPerimeterRate;
+    fs["maxMarkerPerimeterRate"] >> params->maxMarkerPerimeterRate;
+    fs["polygonalApproxAccuracyRate"] >> params->polygonalApproxAccuracyRate;
+    fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
+    fs["minDistanceToBorder"] >> params->minDistanceToBorder;
+    fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
+    fs["cornerRefinementMethod"] >> params->cornerRefinementMethod;
+    fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
+    fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
+    fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
+    fs["markerBorderBits"] >> params->markerBorderBits;
+    fs["perspectiveRemovePixelPerCell"] >> params->perspectiveRemovePixelPerCell;
+    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params->perspectiveRemoveIgnoredMarginPerCell;
+    fs["maxErroneousBitsInBorderRate"] >> params->maxErroneousBitsInBorderRate;
+    fs["minOtsuStdDev"] >> params->minOtsuStdDev;
+    fs["errorCorrectionRate"] >> params->errorCorrectionRate;
+    // new aruco functionality
+    fs["useAruco3Detection"] >> params->useAruco3Detection;
+    fs["minSideLengthCanonicalImg"] >> params->minSideLengthCanonicalImg;
+    fs["minMarkerLengthRatioOriginalImg"] >> params->minMarkerLengthRatioOriginalImg;
+    fs["cameraMotionSpeed"] >> params->cameraMotionSpeed;
+    fs["useGlobalThreshold"] >> params->useGlobalThreshold;
+    return true;
+}
+
+
+
+/**
+ */
 int main(int argc, char *argv[]) {
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
@@ -79,6 +132,7 @@ int main(int argc, char *argv[]) {
     bool showRejected = parser.has("r");
     bool estimatePose = parser.has("c");
     float markerLength = parser.get<float>("l");
+    bool useAruco3DynamicUpdates = parser.has("ar3vid");
 
     Ptr<aruco::DetectorParameters> detectorParams;
     if(parser.has("dp")) {
@@ -139,7 +193,7 @@ int main(int argc, char *argv[]) {
     int waitTime;
     if(!video.empty()) {
         inputVideo.open(video);
-        waitTime = 0;
+        waitTime = 1;
     } else {
         inputVideo.open(camId);
         waitTime = 10;
@@ -148,6 +202,8 @@ int main(int argc, char *argv[]) {
     double totalTime = 0;
     int totalIterations = 0;
 
+    float new_marker_length_ratio = 0.0;
+    size_t total_nr_detected_corners = 0;
     while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -159,7 +215,16 @@ int main(int argc, char *argv[]) {
         vector< Vec3d > rvecs, tvecs;
 
         // detect markers and estimate pose
-        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        if (useAruco3DynamicUpdates) {
+            // if new aruco3 features are used, we can also set the new min
+            // marker length ratio dymamically from the last frame
+            detectorParams->minMarkerLengthRatioOriginalImg = new_marker_length_ratio;
+            if(totalIterations % 30 == 0) {
+                cout<<"Current tau_i= "<<new_marker_length_ratio<<"\n";
+            }
+        }
+        new_marker_length_ratio = aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        total_nr_detected_corners += ids.size();
         if(estimatePose && ids.size() > 0)
             aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
                                              tvecs);
