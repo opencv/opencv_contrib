@@ -1566,12 +1566,11 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                         float stepSize = 0.5f * blockSize;
                         cv::Vec3i volUnitLocalIdx;
 
-                        if (x == 300 && y == 150)
-                        {
-                            printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n",
-                                x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currTsdf, currWeight, stepSize);
-
-                        }
+                        //if (x == 300 && y == 150)
+                        //{
+                        //    printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n",
+                        //        x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currTsdf, currWeight, stepSize);
+                        //}
 
                         //! The subvolume exists in hashtable
                         if (idx >= 0 && idx < _lastVolIndex)
@@ -1592,7 +1591,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                             currWeight = currVoxel.weight;
 
                             //if (x == 300 && y == 150)
-                            //    printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currVolUnitPos.x, currVolUnitPos.y, currVolUnitPos.z, volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
+                            //    printf("CPU [%d, %d]  row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d \n", x, y, idx, currVolUnitPos.x, currVolUnitPos.y, currVolUnitPos.z, volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
 
 
                             stepSize = tstep;
@@ -1604,14 +1603,14 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
                             if (!cvIsNaN(tInterp) && !cvIsInf(tInterp))
                             {
-                                //if (y == 150)
+                                //if (x == 300 && y == 150)
                                 //    printf("CPU [%d, %d] tInterp=%f \n", x, y, tInterp);
 
                                 Point3f pv = orig + tInterp * rayDirV;
                                 Point3f nv = volume._getNormalVoxel(pv);
 
-                                //if (y == 150)
-                                //    printf("CPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f]\n", x, y, pv.x, pv.y, pv.z, nv.x, nv.y, nv.z);
+                                if (x == 300 && y == 150)
+                                    printf("CPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f]\n", x, y, pv.x, pv.y, pv.z, nv.x, nv.y, nv.z);
 
                                 if (!isNaN(nv))
                                 {

@@ -385,9 +385,7 @@ struct TsdfVoxel _at(int3 volumeIdx, int row,
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* volumePtr,
                              int3 volResolution, int3 volDims, int8 neighbourCoords)
 {
-    if(any(p < 1) || any(p >= convert_float3(volResolution - 2)))
-        return nan((uint)0);
-
+    
     float3 fip = floor(p);
     int3 ip = convert_int3(fip);
     float3 t = p - fip;
@@ -420,6 +418,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* volumePt
     //gradientDeltaFactor is fixed at 1.0 of voxel size
     float3 n = vload3(0, an);
     float Norm = sqrt(n.x*n.x + n.y*n.y + n.z*n.z);
+    printf("[%f, %f, %f] \n", n[0], n[1], n[2]);
     return Norm < 0.0001f ? nan((uint)0) : n / Norm;
     //return fast_normalize(vload3(0, an));
 }
@@ -532,15 +531,15 @@ __kernel void raycast(
 
         // VolumeToVolumeUnitIdx()
         int3 currVolumeUnitIdx = (int3) (
-        (int) (currRayPos.x / volumeUnitSize),
-        (int) (currRayPos.y / volumeUnitSize),
-        (int) (currRayPos.z / volumeUnitSize) );
+        floor (currRayPos.x / volumeUnitSize),
+        floor (currRayPos.y / volumeUnitSize),
+        floor (currRayPos.z / volumeUnitSize) );
         
         // VolumeToVolumeUnitIdx4()
         int4 point4 = (int4) (
-        (int) (currRayPos.x / volumeUnitSize),
-        (int) (currRayPos.y / volumeUnitSize),
-        (int) (currRayPos.z / volumeUnitSize), 0);
+        floor (currRayPos.x / volumeUnitSize),
+        floor (currRayPos.y / volumeUnitSize),
+        floor (currRayPos.z / volumeUnitSize), 0);
 
         int row = findRow(hash_table, point4, list_size, bufferNums, hash_divisor);
         float currTsdf = prevTsdf;
@@ -548,8 +547,8 @@ __kernel void raycast(
         float stepSize = 0.5 * volumeUnitSize;
         int3 volUnitLocalIdx;
 
-        printf("GPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n", 
-            x, y, currRayPos[0], currRayPos[1], currRayPos[2], currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], row, currTsdf, currWeight, stepSize);
+        //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n", 
+        //    x, y, currRayPos[0], currRayPos[1], currRayPos[2], currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], row, currTsdf, currWeight, stepSize);
 
 
         if (row >= 0 && row < lastVolIndex) {
@@ -565,9 +564,9 @@ __kernel void raycast(
             // VolumeToVoxelCoord()
             float3 pos = currRayPos - currVolUnitPos;
             volUnitLocalIdx = (int3)
-            (( (int) ( (float) (pos[0]) * voxelSizeInv) ), 
-             ( (int) ( (float) (pos[1]) * voxelSizeInv) ), 
-             ( (int) ( (float) (pos[2]) * voxelSizeInv) ) );
+            (( floor ( (float) (pos[0]) * voxelSizeInv) ), 
+             ( floor ( (float) (pos[1]) * voxelSizeInv) ), 
+             ( floor ( (float) (pos[2]) * voxelSizeInv) ) );
 
             struct TsdfVoxel currVoxel  = _at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr,  table_offset);
 
@@ -575,11 +574,13 @@ __kernel void raycast(
             currWeight = currVoxel.weight;
             stepSize = tstep;
 
+            //printf("GPU [%d, %d]  row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d\n", 
+            //    x, y, row, currVolUnitPos[0], currVolUnitPos[1], currVolUnitPos[2], volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
+            
+
             //printf("GPU voxelSizeInv = %f", voxelSizeInv);
             //if (currTsdf!=1)
             //    printf("GPU [%d, %d] currTsdf=%f currWeight=%d \n", x, y, currTsdf, currWeight);
-            //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d\n", 
-            //    x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row, currVolUnitPos[0], currVolUnitPos[1], currVolUnitPos[2], volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
             //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] idx=[%d, %d, %d] row=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, point4[0], point4[1], point4[2], row);
         }
 
@@ -589,8 +590,8 @@ __kernel void raycast(
             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
-                if (y == 150)
-                    printf("GPU [%d, %d] tInterp=%f \n", x, y, tInterp);
+                //if (y == 150)
+                //    printf("GPU [%d, %d] tInterp=%f \n", x, y, tInterp);
 
                 __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
                                                 (allVolumePtr + table_offset + (row) * 16*16*16);
@@ -601,7 +602,7 @@ __kernel void raycast(
                 float3 pv = orig + tInterp * dir;
                 float3 nv = getNormalVoxel( pv, volumeptr, volResolution, volDims, neighbourCoords);
                 //if (y == 150)
-                //    printf("GPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f] \n", x, y, pv[0], pv[1], pv[2], nv[0], nv[1], nv[2]);
+                    printf("GPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f] \n", x, y, pv[0], pv[1], pv[2], nv[0], nv[1], nv[2]);
 
                 if(!any(isnan(nv)))
                 {
