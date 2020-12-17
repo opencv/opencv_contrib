@@ -1493,7 +1493,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
    
-    if(false)
+    if(true)
     {
 
         _points.create(frameSize, POINT_TYPE);
@@ -1535,6 +1535,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                     Point3f orig = cam2volTrans;
                     Point3f rayDirV = normalize(Vec3f(cam2volRot * reproj(Point3f(float(x), float(y), 1.f))));
 
+                    //if (x == 300 && y == 150)
+                    //    printf("CPU [%d, %d] orig=[%f, %f, %f] rayDirV=[%f, %f, %f] \n", x, y, orig.x, orig.y, orig.z, rayDirV.x, rayDirV.y, rayDirV.z);
+
+
                     float tmin = 0;
                     float tmax = volume.truncateThreshold;
                     float tcurr = tmin;
@@ -1547,8 +1551,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                     float prevTsdf = volume.truncDist;
                     Ptr<TSDFVolumeCPU> currVolumeUnit;
 
-                    //std::cout << "CPU " << tcurr << " " << tmax << std::endl;
-                    //printf("CPU [%d, %d] truncateThreshold=%f, orig=[%f, %f, %f] \n", x, y, truncateThreshold, orig.x, orig.y, orig.z);
+                    //if (x == 300 && y == 150)
+                    //    printf("CPU [%d, %d] tmin=%f tmax=%f tcurr=%f tprev=%f prevTsdf=%f \n", x, y, tmin, tmax, tcurr, tprev, prevTsdf);
 
                     while (tcurr < tmax)
                     {
@@ -1562,10 +1566,12 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                         float stepSize = 0.5f * blockSize;
                         cv::Vec3i volUnitLocalIdx;
 
-                        //if (x == 468 && y == 29)
-                        //    {
-                        //        std::cout << "CPU x,y=[" << x << ", " << y << "] currRayPos =" << currRayPos << " Idx=" << currVolumeUnitIdx << " row=" << idx << std::endl;
-                        //    }
+                        if (x == 300 && y == 150)
+                        {
+                            printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n",
+                                x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currTsdf, currWeight, stepSize);
+
+                        }
 
                         //! The subvolume exists in hashtable
                         if (idx >= 0 && idx < _lastVolIndex)
@@ -1585,9 +1591,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                             currTsdf = tsdfToFloat(currVoxel.tsdf);
                             currWeight = currVoxel.weight;
 
-                            //if (x == 168 && y == 28)
-                            //    printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d \n",
-                            //        x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currVolUnitPos.x, currVolUnitPos.y, currVolUnitPos.z, volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
+                            //if (x == 300 && y == 150)
+                            //    printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currVolUnitPos.x, currVolUnitPos.y, currVolUnitPos.z, volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
 
 
                             stepSize = tstep;
@@ -1599,8 +1604,14 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
                             if (!cvIsNaN(tInterp) && !cvIsInf(tInterp))
                             {
+                                //if (y == 150)
+                                //    printf("CPU [%d, %d] tInterp=%f \n", x, y, tInterp);
+
                                 Point3f pv = orig + tInterp * rayDirV;
                                 Point3f nv = volume._getNormalVoxel(pv);
+
+                                //if (y == 150)
+                                //    printf("CPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f]\n", x, y, pv.x, pv.y, pv.z, nv.x, nv.y, nv.z);
 
                                 if (!isNaN(nv))
                                 {
@@ -1730,18 +1741,26 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
         int resol = 1;
         size_t globalSize[2];
-        //globalSize[0] = (size_t) resol;
-        //globalSize[1] = (size_t) resol;
-        globalSize[0] = (size_t) frameSize.width;
-        globalSize[1] = (size_t) frameSize.height;
+        globalSize[0] = (size_t) resol;
+        globalSize[1] = (size_t) resol;
+        //globalSize[0] = (size_t) frameSize.width;
+        //globalSize[1] = (size_t) frameSize.height;
         //globalSize[0] = (size_t) points.cols;
         //globalSize[1] = (size_t) points.rows;
         
-        //std::cout << "voxelSizeInv = " << voxelSizeInv << std::endl;
-        //std::cout << totalVolUnits << std::endl;
-        //printf("CPU volumeUnitSize=%f \n", volumeUnitSize);
+        //printf("CPU voxelSizeInv=%f volumeUnitSize=%f truncDist=%f \n", voxelSizeInv, volumeUnitSize, truncDist);
+        
+        //std::cout << "CPU cam2volRotGPU=" << cam2volRotGPU << std::endl;
+        //printf("CPU camRot0=[%f, %f, %f] \n    camRot1=[%f, %f, %f] \n    camRot2=[%f, %f, %f] \n    volTrans=[%f, %f, %f] \n",
+        //    cam2volRotGPU.val[0], cam2volRotGPU.val[1], cam2volRotGPU.val[2], cam2volRotGPU.val[4], cam2volRotGPU.val[5], cam2volRotGPU.val[6],
+        //    cam2volRotGPU.val[8], cam2volRotGPU.val[9], cam2volRotGPU.val[10], cam2volRotGPU.val[3], cam2volRotGPU.val[7], cam2volRotGPU.val[11]);
+        
+        //std::cout << "CPU vol2camRotGPU=" << vol2camRotGPU << std::endl;
+        //printf("CPU camRot0=[%f, %f, %f] \n    camRot1=[%f, %f, %f] \n    camRot2=[%f, %f, %f] \n    camTrans=[%f, %f, %f] \n",
+        //    vol2camRotGPU.val[0], vol2camRotGPU.val[1], vol2camRotGPU.val[2], vol2camRotGPU.val[4], vol2camRotGPU.val[5], vol2camRotGPU.val[6],
+        //    vol2camRotGPU.val[8], vol2camRotGPU.val[9], vol2camRotGPU.val[10], vol2camRotGPU.val[3], vol2camRotGPU.val[7], vol2camRotGPU.val[11]);
+        
 
-        //printf("CPU voxelSizeInv = %f", voxelSizeInv);
 
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
