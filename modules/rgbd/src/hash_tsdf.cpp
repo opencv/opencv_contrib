@@ -1348,7 +1348,7 @@ Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
 
     Point3f ptVox = point * voxelSizeInv;
     Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
-
+    
     // A small hash table to reduce a number of find() calls
     bool queried[8];
     VolumeIndex iterMap[8];
@@ -1493,7 +1493,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
    
-    if(true)
+    if(false)
     {
 
         _points.create(frameSize, POINT_TYPE);
@@ -1609,8 +1609,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                                 Point3f pv = orig + tInterp * rayDirV;
                                 Point3f nv = volume._getNormalVoxel(pv);
 
-                                if (x == 300 && y == 150)
-                                    printf("CPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f]\n", x, y, pv.x, pv.y, pv.z, nv.x, nv.y, nv.z);
+                                //if (x == 300 && y == 150)
+                                //    printf("CPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f]\n", x, y, pv.x, pv.y, pv.z, nv.x, nv.y, nv.z);
 
                                 if (!isNaN(nv))
                                 {
@@ -1740,10 +1740,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
         int resol = 1;
         size_t globalSize[2];
-        globalSize[0] = (size_t) resol;
-        globalSize[1] = (size_t) resol;
-        //globalSize[0] = (size_t) frameSize.width;
-        //globalSize[1] = (size_t) frameSize.height;
+        //globalSize[0] = (size_t) resol;
+        //globalSize[1] = (size_t) resol;
+        globalSize[0] = (size_t) frameSize.width;
+        globalSize[1] = (size_t) frameSize.height;
         //globalSize[0] = (size_t) points.cols;
         //globalSize[1] = (size_t) points.rows;
         
@@ -1763,6 +1763,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
+
+
+        points.getMat(ACCESS_RW).copyTo(_points);
+        normals.getMat(ACCESS_RW).copyTo(_normals);
     }
 
 

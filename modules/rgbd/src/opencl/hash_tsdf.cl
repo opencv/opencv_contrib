@@ -382,45 +382,112 @@ struct TsdfVoxel _at(int3 volumeIdx, int row,
     return volData[coordBase];
 }
 
-inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* volumePtr,
-                             int3 volResolution, int3 volDims, int8 neighbourCoords)
+
+struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row, int lastVolIndex,
+              int volumeUnitResolution, int4 volStrides, 
+              __global const struct TsdfVoxel * allVolumePtr, int table_offset)
+
 {
-    
-    float3 fip = floor(p);
-    int3 ip = convert_int3(fip);
-    float3 t = p - fip;
-
-    int3 cmul = volDims*ip;
-    int coordBase = cmul.x + cmul.y + cmul.z;
-    int nco[8];
-    vstore8(neighbourCoords + coordBase, 0, nco);
-
-    int arDims[3];
-    vstore3(volDims, 0, arDims);
-    float an[3];
-    for(int c = 0; c < 3; c++)
+    //! Out of bounds
+    if (row < 0 || row > lastVolIndex - 1)
     {
-        int dim = arDims[c];
-
-        float vaz[8];
-        for(int i = 0; i < 8; i++)
-            vaz[i] = tsdfToFloat(volumePtr[nco[i] + dim].tsdf -
-                                 volumePtr[nco[i] - dim].tsdf);
-
-        float8 vz = vload8(0, vaz);
-
-        float4 vy = mix(vz.s0246, vz.s1357, t.z);
-        float2 vx = mix(vy.s02, vy.s13, t.y);
-
-        an[c] = mix(vx.s0, vx.s1, t.x);
+        struct TsdfVoxel dummy;
+        dummy.tsdf = floatToTsdf(1.0f);
+        dummy.weight = 0;
+        return dummy;
     }
 
-    //gradientDeltaFactor is fixed at 1.0 of voxel size
-    float3 n = vload3(0, an);
-    float Norm = sqrt(n.x*n.x + n.y*n.y + n.z*n.z);
-    printf("[%f, %f, %f] \n", n[0], n[1], n[2]);
-    return Norm < 0.0001f ? nan((uint)0) : n / Norm;
-    //return fast_normalize(vload3(0, an));
+    int3 volUnitLocalIdx = volumeIdx - volumeUnitIdx * volumeUnitResolution;
+    __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
+                                            (allVolumePtr + table_offset + (row) * 16*16*16);    
+    int coordBase =
+        volUnitLocalIdx[0] * volStrides[0] +
+        volUnitLocalIdx[1] * volStrides[1] +
+        volUnitLocalIdx[2] * volStrides[2];
+    return volData[coordBase];
+}
+
+
+inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
+                             int3 volResolution, int3 volDims, int8 neighbourCoords,
+                             float voxelSizeInv, int lastVolIndex,
+                             __global struct Volume_NODE * hash_table,
+                             const int list_size, 
+                             const int bufferNums, 
+                             const int hash_divisor,
+                             int4 volStrides, int table_offset)
+{
+    
+    float3 normal = (float3) (0.0f, 0.0f, 0.0f);
+    float3 ptVox = p * voxelSizeInv;
+    int3 iptVox = (int3) ( floor (ptVox.x), floor (ptVox.y), floor (ptVox.z) );
+
+    bool queried[8];
+    int  iterMap[8];
+
+    for (int i = 0; i < 8; i++)
+    {
+        iterMap[i] = lastVolIndex - 1;
+        queried[i] = false;
+    }
+
+    int3 offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3
+                       { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
+    };
+    
+    const int nVals = 6;
+    float vals[nVals];
+
+    for (int i = 0; i < nVals; i++)
+    {
+        int3 pt = iptVox + offsets[i];
+
+        // VoxelToVolumeUnitIdx() 
+        // TODO: add assertion - if (!(vuRes & (vuRes - 1)))
+        int3 volumeUnitIdx = (int3) (
+            floor ( (float) pt[0] / volResolution[0]),
+            floor ( (float) pt[1] / volResolution[1]),
+            floor ( (float) pt[2] / volResolution[2]) );
+        
+        int4 volumeUnitIdx4 = (int4) (
+            floor ( (float) pt[0] / volResolution[0]),
+            floor ( (float) pt[1] / volResolution[1]),
+            floor ( (float) pt[2] / volResolution[2]), 0 );
+
+
+        int dictIdx = (volumeUnitIdx[0] & 1) 
+                    + (volumeUnitIdx[1] & 1) * 2 
+                    + (volumeUnitIdx[2] & 1) * 4;
+
+        int it = iterMap[dictIdx];
+
+        if (!queried[dictIdx])
+        {
+            it = findRow(hash_table, volumeUnitIdx4, list_size, bufferNums, hash_divisor);
+            if (it >= 0 || it < lastVolIndex)
+            {
+                iterMap[dictIdx] = it;
+                queried[dictIdx] = true;
+            }
+        }
+
+        //_at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr,  table_offset);
+
+        struct TsdfVoxel tmp = _atVolumeUnit(pt, volumeUnitIdx, it, lastVolIndex, volResolution[0],  volStrides, allVolumePtr,  table_offset) ;
+        vals[i] = tsdfToFloat( tmp.tsdf );
+
+    }
+
+    for (int c = 0; c < 3; c++)
+    {
+        normal[c] = vals[c * 2] - vals[c * 2 + 1];
+    }
+
+    float norm = 
+    sqrt(normal.x*normal.x 
+       + normal.y*normal.y 
+       + normal.z*normal.z);
+    return norm < 0.0001f ? nan((uint)0) : normal / norm;
 }
 
 typedef float4 ptype;
@@ -593,20 +660,23 @@ __kernel void raycast(
                 //if (y == 150)
                 //    printf("GPU [%d, %d] tInterp=%f \n", x, y, tInterp);
 
-                __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
-                                                (allVolumePtr + table_offset + (row) * 16*16*16);
+                //__global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
+                //                                (allVolumePtr + table_offset + (row) * 16*16*16);
 
                 int3 volResolution = (int3) (volResolution4[0], volResolution4[1], volResolution4[2]);
                 int3 volDims = (int3) (volDims4[0], volDims4[1], volDims4[2]);
                 
                 float3 pv = orig + tInterp * dir;
-                float3 nv = getNormalVoxel( pv, volumeptr, volResolution, volDims, neighbourCoords);
+                float3 nv = getNormalVoxel( pv, allVolumePtr, volResolution, volDims, neighbourCoords, 
+                                            voxelSizeInv, lastVolIndex, hash_table,
+                                            list_size, bufferNums, hash_divisor,
+                                            volStrides, table_offset);
                 //if (y == 150)
-                    printf("GPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f] \n", x, y, pv[0], pv[1], pv[2], nv[0], nv[1], nv[2]);
+                //     printf("GPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f] \n", x, y, pv[0], pv[1], pv[2], nv[0], nv[1], nv[2]);
 
                 if(!any(isnan(nv)))
                 {
-                    printf("lol \n");
+                    //printf("lol \n");
                     //convert pv and nv to camera space
                     normal = (float3)(dot(nv, volRot0),
                                       dot(nv, volRot1),
@@ -635,10 +705,6 @@ __kernel void raycast(
     __global float* nrm = (__global float*)(normals + normals_offset + y*normals_step + x*sizeof(ptype));
     vstore4((float4)(point,  0), 0, pts);
     vstore4((float4)(normal, 0), 0, nrm);       
-
-
-
-
 
 
 }
