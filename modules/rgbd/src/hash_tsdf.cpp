@@ -1660,8 +1660,14 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         _points.create(frameSize, CV_32FC4);
         _normals.create(frameSize, CV_32FC4);
 
-        UMat points = _points.getUMat();
-        UMat normals = _normals.getUMat();
+        //Points points = _points.getMat();
+        //Normals normals = _normals.getMat();
+
+        //Points& new_points(points);
+        //Normals& new_normals(normals);
+
+        UMat Upoints = _points.getUMat();
+        UMat Unormals = _normals.getUMat();
 
         Intr::Reprojector r = intrinsics.makeReprojector();
         Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
@@ -1706,8 +1712,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             (int)_indexes.hash_divisor,
             (int)_lastVolIndex, 
             //ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-            ocl::KernelArg::ReadWrite(points),
-            ocl::KernelArg::ReadWrite(normals),
+            ocl::KernelArg::ReadWrite(Upoints),
+            ocl::KernelArg::ReadWrite(Unormals),
             frameSize,
 
             ocl::KernelArg::ReadWrite(U_volUnitsData),
@@ -1764,9 +1770,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
 
-
-        points.getMat(ACCESS_RW).copyTo(_points);
-        normals.getMat(ACCESS_RW).copyTo(_normals);
+        //std::cout << Upoints << std::endl;
+        std::cout << Unormals << std::endl;
+        //Upoints.getMat(ACCESS_RW).copyTo(new_points);
+        //Unormals.getMat(ACCESS_RW).copyTo(new_normals);
     }
 
 
