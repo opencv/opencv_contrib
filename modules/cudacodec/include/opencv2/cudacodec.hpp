@@ -255,6 +255,7 @@ enum Codec
     HEVC,
     VP8,
     VP9,
+    AV1,
     NumCodecs,
 
     Uncompressed_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   //!< Y,U,V (4:2:0)
