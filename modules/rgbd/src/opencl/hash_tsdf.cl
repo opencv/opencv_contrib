@@ -554,6 +554,7 @@ __kernel void raycast(
 
     float3 point  = nan((uint)0);
     float3 normal = nan((uint)0);
+    //float3 normal = (float3)(1, 1, 1);
 
     const float3 camRot0  = cam2volRotGPU.s012;
     const float3 camRot1  = cam2volRotGPU.s456;
@@ -702,16 +703,18 @@ __kernel void raycast(
         tprev = tcurr;
         tcurr += stepSize;
     }
+    
 
     //if (!isnan(point[0]))
     //printf("GPU [%d, %d] normal=[%f, %f, %f] point=[%f, %f, %f] \n",
     //    x, y, normal[0], normal[1], normal[2], point[0], point[1], point[2]);
                 
     
-    __global float* pts = (__global float*)(points  +  points_offset + y*points_step  + x*sizeof(ptype));
-    __global float* nrm = (__global float*)(normals + normals_offset + y*normals_step + x*sizeof(ptype));
-    //__global float* pts = (__global float*)(points  +  points_offset + y*points_step  + x);
-    //__global float* nrm = (__global float*)(normals + normals_offset + y*normals_step + x);
+    //__global float* pts = (__global float*)(points  +  points_offset + y*points_step  + x*sizeof(ptype));
+    //__global float* nrm = (__global float*)(normals + normals_offset + y*normals_step + x*sizeof(ptype));
+    //printf(" normals_step=%d points_step=%d sizeof=%d \n",normals_step, points_step, sizeof(ptype) );
+    __global float* pts = (__global float*)(points  +  points_offset + y*points_step/sizeof(ptype)  + x);
+    __global float* nrm = (__global float*)(normals + normals_offset + y*normals_step/sizeof(ptype)  + x);
     vstore4((float4)(point,  0), 0, pts);
     vstore4((float4)(normal, 0), 0, nrm);       
 

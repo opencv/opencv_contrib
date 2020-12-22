@@ -274,7 +274,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = false;
+static const bool display = true;
 static const bool parallelCheck = false;
 
 void normalsCheck(Mat normals)
