@@ -471,8 +471,6 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
             }
         }
 
-        //_at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr,  table_offset);
-
         struct TsdfVoxel tmp = _atVolumeUnit(pt, volumeUnitIdx, it, lastVolIndex, volResolution[0],  volStrides, allVolumePtr,  table_offset) ;
         vals[i] = tsdfToFloat( tmp.tsdf );
 
@@ -498,7 +496,6 @@ __kernel void raycast(
                     const int bufferNums, 
                     const int hash_divisor,
                     const int lastVolIndex, 
-                    //__global const int4 * totalVolUnits,
                     __global float4 * points,
                         int points_step, int points_offset,
                         int points_rows, int points_cols,
@@ -509,17 +506,6 @@ __kernel void raycast(
                     __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
-
-
-                    //__global const float * allVol2cam,
-                    //    int val2cam_step, int val2cam_offset,
-                    //    int val2cam_rows, int val2cam_cols,
-                    //__global const float * allCam2vol,
-                    //    int cam2vol_step, int cam2vol_offset,
-                    //    int cam2vol_rows, int cam2vol_cols,
-                    //__global const float * vol2camptr,
-                    //__global const float * cam2volptr,
-
                     float4  cam2volTransGPU,
                     float16 cam2volRotGPU,
                     float16 vol2camRotGPU,
@@ -536,25 +522,16 @@ __kernel void raycast(
                     float truncDist,
                     int volumeUnitResolution,
                     int4 volStrides
-                    //, int test
                     )
 {
     int x = get_global_id(0);
     int y = get_global_id(1);
-
-    // tmp posution for 1 pixel
-    //x+=468; y+=29;
-    //x+=168; y+=28;
-    //x+=300; y+=150;
-
-    //printf("GPU voxelSizeInv=%f volumeUnitSize=%f truncDist=%f \n", voxelSizeInv, volumeUnitSize, truncDist);
 
     if(x >= frameSize.x || y >= frameSize.y)
         return;
 
     float3 point  = nan((uint)0);
     float3 normal = nan((uint)0);
-    //float3 normal = (float3)(1, 1, 1);
 
     const float3 camRot0  = cam2volRotGPU.s012;
     const float3 camRot1  = cam2volRotGPU.s456;
@@ -571,27 +548,14 @@ __kernel void raycast(
                       dot(planed, camRot1),
                       dot(planed, camRot2));
 
-    //printf("GPU camRot0=[%f, %f, %f] \n    camRot1=[%f, %f, %f] \n    camRot2=[%f, %f, %f] \n    camTrans=[%f, %f, %f] \n",
-    //    camRot0[0], camRot0[1], camRot0[2], camRot1[0], camRot1[1], camRot1[2], 
-    //    camRot2[0], camRot2[1], camRot2[2], camTrans[0], camTrans[1], camTrans[2] );
-    
-    //printf("GPU volRot0=[%f, %f, %f] \n    volRot1=[%f, %f, %f] \n    volRot2=[%f, %f, %f] \n    volTrans=[%f, %f, %f] \n",
-    //    volRot0[0], volRot0[1], volRot0[2], volRot1[0], volRot1[1], volRot1[2], 
-    //    volRot2[0], volRot2[1], volRot2[2], volTrans[0], volTrans[1], volTrans[2] );
-
-
     float3 orig = (float3) (cam2volTransGPU[0], cam2volTransGPU[1], cam2volTransGPU[2]);
     float3 dir = fast_normalize(planed);
-
-    //printf("GPU [%d, %d] orig=[%f, %f, %f] dir=[%f, %f, %f] \n", x, y, orig[0], orig[1], orig[2], dir[0], dir[1], dir[2]);
 
     float tmin = 0;
     float tmax = truncateThreshold;
     float tcurr = tmin;
     float tprev = tcurr;
     float prevTsdf = truncDist;
-
-    //printf("GPU [%d, %d] tmin=%f tmax=%f tcurr=%f tprev=%f prevTsdf=%f \n", x, y, tmin, tmax, tcurr, tprev, prevTsdf);
 
     while (tcurr < tmax)
     {
@@ -615,10 +579,6 @@ __kernel void raycast(
         float stepSize = 0.5 * volumeUnitSize;
         int3 volUnitLocalIdx;
 
-        //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n", 
-        //    x, y, currRayPos[0], currRayPos[1], currRayPos[2], currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], row, currTsdf, currWeight, stepSize);
-
-
         if (row >= 0 && row < lastVolIndex) {
             
             
@@ -641,15 +601,6 @@ __kernel void raycast(
             currTsdf = tsdfToFloat(currVoxel.tsdf);
             currWeight = currVoxel.weight;
             stepSize = tstep;
-
-            //printf("GPU [%d, %d]  row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d\n", 
-            //    x, y, row, currVolUnitPos[0], currVolUnitPos[1], currVolUnitPos[2], volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
-            
-
-            //printf("GPU voxelSizeInv = %f", voxelSizeInv);
-            //if (currTsdf!=1)
-            //    printf("GPU [%d, %d] currTsdf=%f currWeight=%d \n", x, y, currTsdf, currWeight);
-            //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] idx=[%d, %d, %d] row=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx4[0], currVolumeUnitIdx4[1], currVolumeUnitIdx4[2], row);
         }
 
         
@@ -658,12 +609,6 @@ __kernel void raycast(
             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
-                //if (y == 150)
-                //    printf("GPU [%d, %d] tInterp=%f \n", x, y, tInterp);
-
-                //__global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
-                //                                (allVolumePtr + table_offset + (row) * 16*16*16);
-
                 int3 volResolution = (int3) (volResolution4[0], volResolution4[1], volResolution4[2]);
                 int3 volDims = (int3) (volDims4[0], volDims4[1], volDims4[2]);
                 
@@ -672,8 +617,6 @@ __kernel void raycast(
                                             voxelSizeInv, lastVolIndex, hash_table,
                                             list_size, bufferNums, hash_divisor,
                                             volStrides, table_offset);
-                //if (y == 150)
-                //printf("GPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f] \n", x, y, pv[0], pv[1], pv[2], nv[0], nv[1], nv[2]);
 
                 if(!any(isnan(nv)))
                 {
@@ -687,32 +630,15 @@ __kernel void raycast(
                     point = (float3)(dot(pv, volRot0),
                                      dot(pv, volRot1),
                                      dot(pv, volRot2)) + volTrans;
-                    
-                    //printf("GPU [%d, %d] normal=[%f, %f, %f] point=[%f, %f, %f] \n",
-                    //    x, y, normal[0], normal[1], normal[2], point[0], point[1], point[2]);
                 }
 
             }
             
         }
-
-        //printf("GPU [%d, %d] currRayPos=[%f, %f, %f] idx=[%d, %d, %d] row=%d \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx4[0], currVolumeUnitIdx4[1], currVolumeUnitIdx4[2], row);
-        //printf("[%d, %d]  currRayPos=[%f, %f, %f] voxelSizeInv=%f point=[%d, %d, %d] \n", x, y, currRayPos.x, currRayPos.y, currRayPos.z, voxelSizeInv, point.x, point.y, point.z);
-        //printf("lol [%d, %d] tcurr=%f tmax=%f tstep=%f [%d, %d, %d] \n", x, y, tcurr, tmax, tstep, point.x, point.y, point.z);
-        
         tprev = tcurr;
         tcurr += stepSize;
     }
-    
 
-    //if (!isnan(point[0]))
-    //printf("GPU [%d, %d] normal=[%f, %f, %f] point=[%f, %f, %f] \n",
-    //    x, y, normal[0], normal[1], normal[2], point[0], point[1], point[2]);
-                
-    
-    //__global float* pts = (__global float*)(points  +  points_offset + y*points_step  + x*sizeof(ptype));
-    //__global float* nrm = (__global float*)(normals + normals_offset + y*normals_step + x*sizeof(ptype));
-    //printf(" normals_step=%d points_step=%d sizeof=%d \n",normals_step, points_step, sizeof(ptype) );
     __global float* pts = (__global float*)(points  +  points_offset + y*points_step/sizeof(ptype)  + x);
     __global float* nrm = (__global float*)(normals + normals_offset + y*normals_step/sizeof(ptype)  + x);
     vstore4((float4)(point,  0), 0, pts);

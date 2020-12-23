@@ -865,23 +865,21 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstM
 void HashTSDFVolumeGPU::reset()
 {
     CV_TRACE_FUNCTION();
-    _lastVolIndex = 0;
+    lastVolIndex = 0;
     degree = 15;
     buff_lvl = pow(2, degree);
-    _volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     //volUnitsData = cv::Mat(VOLUMES_SIZE, 1, rawType<UMat>());
-    indexes = cv::Mat(buff_lvl, 1, rawType<Vec3i>());
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
-    _indexes = VolumesTable();
+    indexes = VolumesTable();
     allVol2cam = cv::Mat(buff_lvl, 16, rawType<float>());
     allCam2vol = cv::Mat(buff_lvl, 16, rawType<float>());
 }
 
-static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)
+static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
 {
-    for (int i = 0; i < _lastVolIndex+1; i++)
+    for (int i = 0; i < lastVolIndex +1; i++)
     {
         auto p = v.at<Vec3i>(i, 0);
         if (p == tsdf_idx)
@@ -894,7 +892,7 @@ static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int _lastVolIndex)
 
 inline int HashTSDFVolumeGPU::find_idx(cv::Mat v, Vec3i tsdf_idx) const
 {
-    for (int i = 0; i < _lastVolIndex; i++)
+    for (int i = 0; i < lastVolIndex; i++)
     {
         Vec3i p = v.at<Vec3i>(i, 0);
         if (p == tsdf_idx)
@@ -968,29 +966,28 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
-    int totalVolUnitsSize = _indexes.indexesGPU.size();
-    Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
+    int totalVolUnitsSize = indexes.indexesGPU.size();
+    Mat totalVolUnits(indexes.indexesGPU, rawType<Vec4i>());
 
     Mat _tmp;
-    _volUnitsData.copyTo(_tmp);
+    volUnitsData.copyTo(_tmp);
     UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
     _tmp.release();
 
-    _indexes.volumes.copyTo(_tmp);
+    indexes.volumes.copyTo(_tmp);
     UMat U_hashtable = _tmp.getUMat(ACCESS_RW);
 
 
     k.args(ocl::KernelArg::ReadOnly(depth),
-        //ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
         ocl::KernelArg::PtrReadWrite(U_hashtable),
-        (int)_indexes.list_size,
-        (int)_indexes.bufferNums,
-        (int)_indexes.hash_divisor,
+        (int)indexes.list_size,
+        (int)indexes.bufferNums,
+        (int)indexes.hash_divisor,
         ocl::KernelArg::ReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
         ocl::KernelArg::ReadWrite(U_volUnitsData),
-        ocl::KernelArg::PtrReadOnly(_pixNorms),
+        ocl::KernelArg::PtrReadOnly(pixNorms),
         ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
-        _lastVolIndex,
+        lastVolIndex,
         voxelSize,
         volResGpu.val,
         volStrides.val,
@@ -1011,8 +1008,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         throw std::runtime_error("Failed to run kernel");
 
     // add updating of isActive for volUnits
-    U_volUnitsData.getMat(ACCESS_RW).copyTo(_volUnitsData);
-    U_hashtable.getMat(ACCESS_RW).copyTo(_indexes.volumes);
+    U_volUnitsData.getMat(ACCESS_RW).copyTo(volUnitsData);
+    U_hashtable.getMat(ACCESS_RW).copyTo(indexes.volumes);
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -1073,26 +1070,23 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         {
             Vec3i idx = _localAccessVolUnits.at<Vec3i>(i, 0);
 
-            if (!_indexes.isExist(idx))
+            if (!indexes.isExist(idx))
             {
-                if (_lastVolIndex >= buff_lvl)
+                if (lastVolIndex >= buff_lvl)
                 {
                     degree++;
                     buff_lvl = pow(2, degree);
-                    indexes.resize(buff_lvl);
-                    _volUnitsData.resize(buff_lvl);
                     volUnitsData.resize(buff_lvl);
                     poses.resize(buff_lvl);
                     lastVisibleIndexes.resize(buff_lvl);
                     allVol2cam.resize(buff_lvl);
                     allCam2vol.resize(buff_lvl);
                 }
-                this->indexes.at<Vec3i>(_lastVolIndex, 0) = idx;
-                _indexes.update(idx, _lastVolIndex);
-                _newIndices.at<VolumeIndex>(vol_idx, 0) = _lastVolIndex;
+                indexes.update(idx, lastVolIndex);
+                _newIndices.at<VolumeIndex>(vol_idx, 0) = lastVolIndex;
                 newIndices.at<Vec3i>(vol_idx, 0) = idx;
                 vol_idx++;
-                _lastVolIndex++;
+                lastVolIndex++;
             }
         }
         mutex.unlock();
@@ -1105,13 +1099,13 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     for (int i = 0; i < vol_idx; i++)
     {
         Vec3i tsdf_idx  = newIndices.at<Vec3i>(i, 0);
-        VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
+        VolumeIndex idx = indexes.find_Volume(tsdf_idx);
 
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
 
         poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
         lastVisibleIndexes.at<int>(idx, 0) = frameId;
-        _indexes.updateActive(tsdf_idx, 1);
+        indexes.updateActive(tsdf_idx, 1);
 
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
         auto vol2camMatrix = vol2cam.matrix.val;
@@ -1127,11 +1121,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             allCam2vol.at<float>(idx, k) = cam2volMatrix[k];
         }
 
-        _volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
-            {
-                TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
-                v.tsdf = floatToTsdf(0.0f); v.weight = 0;
-            });
         volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
@@ -1140,7 +1129,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Get keys for all the allocated volume Units
-    std::vector<Vec3i> _totalVolUnits = _indexes.indexes;
+    std::vector<Vec3i> _totalVolUnits = indexes.indexes;
 
     //! Mark volumes in the camera frustum as active
     Range _inFrustumRange(0, (int)_totalVolUnits.size());
@@ -1152,23 +1141,23 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         {
             Vec3i tsdf_idx = _totalVolUnits[i];
 
-            VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
-            if (idx < 0 || idx == _lastVolIndex - 1) return;
+            VolumeIndex idx = indexes.find_Volume(tsdf_idx);
+            if (idx < 0 || idx == lastVolIndex - 1) return;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(poses.at<Vec3i>(idx, 0));
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
 
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
-                _indexes.updateActive(tsdf_idx, 0);
+                indexes.updateActive(tsdf_idx, 0);
                 return;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
             if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
             {
-                assert(idx == _lastVolIndex - 1);
+                assert(idx == lastVolIndex - 1);
                 lastVisibleIndexes.at<int>(idx, 0) = frameId;
-                _indexes.update(tsdf_idx, 1, frameId);
+                indexes.update(tsdf_idx, 1, frameId);
             }
         }
     };
@@ -1181,41 +1170,11 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     if (!(frameParams == newParams))
     {
         frameParams = newParams;
-        pixNorms = preCalculationPixNorm(depth, intrinsics);
         Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
-        _pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
+        pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
     }
 
     //! Integrate the correct volumeUnits
-    /*
-    auto Integrate = [&](const Range& range) {
-        for (int i = range.start; i < range.end; i++)
-        {
-            Vec3i tsdf_idx = _totalVolUnits[i];
-            VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
-            if (idx < 0 || idx == _lastVolIndex - 1) return;
-
-            bool _isActive = _indexes.getActive(tsdf_idx);
-
-            if (_isActive)
-            {
-                //! The volume unit should already be added into the Volume from the allocator
-                Matx44f _pose = poses.at<Matx44f>(idx, 0);
-
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
-                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, pixNorms, _volUnitsData.row(idx));
-
-                //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
-                //! Ensure all active volumeUnits are set to inactive for next integration
-                _indexes.updateActive(tsdf_idx, 0);
-            }
-        }
-    };
-    */
-    //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-    //Integrate(Range(0, (int)_totalVolUnits.size()));
-
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
 }
@@ -1256,7 +1215,7 @@ inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, VolumeInd
         return dummy;
     }
 
-    const TsdfVoxel* volData = _volUnitsData.ptr<TsdfVoxel>(indx);
+    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase =
         volumeIdx[0] * volStrides[0] +
         volumeIdx[1] * volStrides[1] +
@@ -1266,7 +1225,7 @@ inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, VolumeInd
 
 TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const
 {
-    if (indx < 0 || indx > _lastVolIndex - 1)
+    if (indx < 0 || indx > lastVolIndex - 1)
     {
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.f);
@@ -1276,7 +1235,7 @@ TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
     Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
 
     // expanding at(), removing bounds check
-    const TsdfVoxel* volData = _volUnitsData.ptr<TsdfVoxel>(indx);
+    const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
     int coordBase = volUnitLocalIdx[0] * volStrides[0] +
         volUnitLocalIdx[1] * volStrides[1] +
         volUnitLocalIdx[2] * volStrides[2];
@@ -1290,12 +1249,10 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
 
     // A small hash table to reduce a number of find() calls
     bool queried[8];
-    //VolumeUnitIndexes::const_iterator iterMap[8];
     VolumeIndex iterMap[8];
     for (int i = 0; i < 8; i++)
     {
-        //iterMap[i] = volumeUnits.end();
-        iterMap[i] = _lastVolIndex - 1;
+        iterMap[i] = lastVolIndex - 1;
         queried[i] = false;
     }
 
@@ -1318,19 +1275,14 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
         auto it = iterMap[dictIdx];
         if (!queried[dictIdx])
         {
-            //it = find_idx(indexes, volumeUnitIdx);
-            it = _indexes.find_Volume(volumeUnitIdx);
-            if (it >= 0 || it < _lastVolIndex)
+            it = indexes.find_Volume(volumeUnitIdx);
+            if (it >= 0 || it < lastVolIndex)
             {
                 iterMap[dictIdx] = it;
                 queried[dictIdx] = true;
             }
-            //it = volumeUnits.find(volumeUnitIdx);
-            //iterMap[dictIdx] = it;
-            //queried[dictIdx] = true;
         }
 
-        //vx[i] = atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
         vx[i] = new_atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
     }
 
@@ -1342,7 +1294,7 @@ inline float HashTSDFVolumeGPU::interpolateVoxel(const cv::Point3f& point) const
     return interpolateVoxelPoint(point * voxelSizeInv);
 }
 
-Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
+Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
 {
     Vec3f normal = Vec3f(0, 0, 0);
 
@@ -1355,7 +1307,7 @@ Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
 
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = _lastVolIndex - 1;
+        iterMap[i] = lastVolIndex - 1;
         queried[i] = false;
     }
 
@@ -1390,9 +1342,8 @@ Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
 
         if (!queried[dictIdx])
         {
-            //it = find_idx(indexes, volumeUnitIdx);
-            it = _indexes.find_Volume(volumeUnitIdx);
-            if (it >= 0 || it < _lastVolIndex)
+            it = indexes.find_Volume(volumeUnitIdx);
+            if (it >= 0 || it < lastVolIndex)
             {
                 iterMap[dictIdx] = it;
                 queried[dictIdx] = true;
@@ -1486,299 +1437,105 @@ Point3f HashTSDFVolumeGPU::_getNormalVoxel(const Point3f& point) const
 }
 
 
-
 void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
     OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
    
-    if(false)
-    {
+    String errorStr;
+    String name = "raycast";
+    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+    String options = "-cl-mad-enable";
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
 
-        _points.create(frameSize, POINT_TYPE);
-        _normals.create(frameSize, POINT_TYPE);
+    if (k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-        Points points = _points.getMat();
-        Normals normals = _normals.getMat();
-
-        Points& new_points(points);
-        Normals& new_normals(normals);
-
-        const HashTSDFVolumeGPU& volume(*this);
-        const float tstep(volume.truncDist * volume.raycastStepFactor);
-        const Affine3f cam2vol(volume.pose.inv() * Affine3f(cameraPose));
-        const Affine3f vol2cam(Affine3f(cameraPose.inv()) * volume.pose);
-        const Intr::Reprojector reproj(intrinsics.makeReprojector());
-
-        const int nstripes = -1;
-
-        auto _HashRaycastInvoker = [&](const Range& range)
-        {
-            const Point3f cam2volTrans = cam2vol.translation();
-            const Matx33f cam2volRot = cam2vol.rotation();
-            const Matx33f vol2camRot = vol2cam.rotation();
-
-            const float blockSize = volume.volumeUnitSize;
-
-            for (int y = range.start; y < range.end; y++)
-            {
-                ptype* _ptsRow = new_points[y];
-                ptype* _nrmRow = new_normals[y];
-
-                for (int x = 0; x < new_points.cols; x++)
-                {
-                    //! Initialize default value
-                    Point3f point = nan3, normal = nan3;
-
-                    //! Ray origin and direction in the volume coordinate frame
-                    Point3f orig = cam2volTrans;
-                    Point3f rayDirV = normalize(Vec3f(cam2volRot * reproj(Point3f(float(x), float(y), 1.f))));
-
-                    //if (x == 300 && y == 150)
-                    //    printf("CPU [%d, %d] orig=[%f, %f, %f] rayDirV=[%f, %f, %f] \n", x, y, orig.x, orig.y, orig.z, rayDirV.x, rayDirV.y, rayDirV.z);
-
-
-                    float tmin = 0;
-                    float tmax = volume.truncateThreshold;
-                    float tcurr = tmin;
-
-                    cv::Vec3i prevVolumeUnitIdx =
-                        cv::Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(),
-                            std::numeric_limits<int>::min());
-
-                    float tprev = tcurr;
-                    float prevTsdf = volume.truncDist;
-                    Ptr<TSDFVolumeCPU> currVolumeUnit;
-
-                    //if (x == 300 && y == 150)
-                    //    printf("CPU [%d, %d] tmin=%f tmax=%f tcurr=%f tprev=%f prevTsdf=%f \n", x, y, tmin, tmax, tcurr, tprev, prevTsdf);
-
-                    while (tcurr < tmax)
-                    {
-                        Point3f currRayPos = orig + tcurr * rayDirV;
-                        cv::Vec3i currVolumeUnitIdx = volume.volumeToVolumeUnitIdx(currRayPos);
-
-                        //VolumeIndex idx = find_idx(indexes, currVolumeUnitIdx);
-                        VolumeIndex idx = _indexes.find_Volume(currVolumeUnitIdx);
-                        float currTsdf = prevTsdf;
-                        int currWeight = 0;
-                        float stepSize = 0.5f * blockSize;
-                        cv::Vec3i volUnitLocalIdx;
-
-                        //if (x == 300 && y == 150)
-                        //{
-                        //    printf("CPU [%d, %d] currRayPos=[%f, %f, %f] currVolumeUnitIdx=[%d, %d, %d] row=%d currTsdf=%f currWeight=%d stepSize=%f \n",
-                        //        x, y, currRayPos.x, currRayPos.y, currRayPos.z, currVolumeUnitIdx[0], currVolumeUnitIdx[1], currVolumeUnitIdx[2], idx, currTsdf, currWeight, stepSize);
-                        //}
-
-                        //! The subvolume exists in hashtable
-                        if (idx >= 0 && idx < _lastVolIndex)
-                        {
-
-                            
-                            //std::cout << "CPU x,y=" << x << "," << y <<" currRayPos =" << currRayPos << " Idx=" << currVolumeUnitIdx <<" row=" << idx<< std::endl;
-                            //return;
-
-                            cv::Point3f currVolUnitPos =
-                                volume.volumeUnitIdxToVolume(currVolumeUnitIdx);
-                            volUnitLocalIdx = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
-
-
-                            //! TODO: Figure out voxel interpolation
-                            TsdfVoxel currVoxel = new_at(volUnitLocalIdx, idx);
-                            currTsdf = tsdfToFloat(currVoxel.tsdf);
-                            currWeight = currVoxel.weight;
-
-                            //if (x == 300 && y == 150)
-                            //    printf("CPU [%d, %d]  row=%d currVolUnitPos=[%f, %f, %f] volUnitLocalIdx=[%d, %d, %d] currTsdf=%f currWeight=%d \n", x, y, idx, currVolUnitPos.x, currVolUnitPos.y, currVolUnitPos.z, volUnitLocalIdx[0], volUnitLocalIdx[1], volUnitLocalIdx[2], currTsdf, currWeight);
-
-
-                            stepSize = tstep;
-                        }
-
-                        //! Surface crossing
-                        if (prevTsdf > 0.f && currTsdf <= 0.f && currWeight > 0)
-                        {
-                            float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
-                            if (!cvIsNaN(tInterp) && !cvIsInf(tInterp))
-                            {
-                                //if (x == 300 && y == 150)
-                                //    printf("CPU [%d, %d] tInterp=%f \n", x, y, tInterp);
-
-                                Point3f pv = orig + tInterp * rayDirV;
-                                Point3f nv = volume._getNormalVoxel(pv);
-
-                                //if (x == 300 && y == 150)
-                                //    printf("CPU [%d, %d] pv=[%f, %f, %f] nv=[%f, %f, %f]\n", x, y, pv.x, pv.y, pv.z, nv.x, nv.y, nv.z);
-
-                                if (!isNaN(nv))
-                                {
-                                    normal = vol2camRot * nv;
-                                    point = vol2cam * pv;
-                                }
-                            }
-                            break;
-                        }
-
-                        prevVolumeUnitIdx = currVolumeUnitIdx;
-                        prevTsdf = currTsdf;
-                        tprev = tcurr;
-                        tcurr += stepSize;
-
-                    }
-
-                    _ptsRow[x] = toPtype(point);
-                    _nrmRow[x] = toPtype(normal);
-
-                }
-
-            }
-
-        };
-
-        //parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
-        _HashRaycastInvoker(Range(0, new_points.rows));
-    
-    }
-    
-    if (true)
-    {
-        String errorStr;
-        String name = "raycast";
-        ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
-        String options = "-cl-mad-enable";
-        ocl::Kernel k;
-        k.create(name.c_str(), source, options, &errorStr);
-
-        if (k.empty())
-            throw std::runtime_error("Failed to create kernel: " + errorStr);
-
-        //int totalVolUnitsSize = _indexes.indexesGPU.size();
-        Mat totalVolUnits(_indexes.indexesGPU, rawType<Vec4i>());
+    //int totalVolUnitsSize = _indexes.indexesGPU.size();
+    Mat totalVolUnits(indexes.indexesGPU, rawType<Vec4i>());
         
-        _points.create(frameSize, CV_32FC4);
-        _normals.create(frameSize, CV_32FC4);
+    _points.create(frameSize, CV_32FC4);
+    _normals.create(frameSize, CV_32FC4);
 
-        Points points = _points.getMat();
-        Normals normals = _normals.getMat();
+    Points points = _points.getMat();
+    Normals normals = _normals.getMat();
 
-        Points& new_points(points);
-        Normals& new_normals(normals);
+    Points& new_points(points);
+    Normals& new_normals(normals);
 
-        UMat Upoints = points.getUMat(ACCESS_RW);
-        UMat Unormals = normals.getUMat(ACCESS_RW);
+    UMat Upoints = points.getUMat(ACCESS_RW);
+    UMat Unormals = normals.getUMat(ACCESS_RW);
 
-        Intr::Reprojector r = intrinsics.makeReprojector();
-        Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
+    Intr::Reprojector r = intrinsics.makeReprojector();
+    Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
         
-        Vec4f boxMin, boxMax(volumeUnitSize - voxelSize,
-            volumeUnitSize - voxelSize,
-            volumeUnitSize - voxelSize);
+    Vec4f boxMin, boxMax(volumeUnitSize - voxelSize,
+        volumeUnitSize - voxelSize,
+        volumeUnitSize - voxelSize);
 
-        float tstep = truncDist * raycastStepFactor;
-        Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
+    float tstep = truncDist * raycastStepFactor;
+    Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
 
-        const HashTSDFVolumeGPU& volume(*this);
-        const Affine3f cam2vol(volume.pose.inv()* Affine3f(cameraPose));
-        const Affine3f vol2cam(Affine3f(cameraPose.inv())* volume.pose);
+    const HashTSDFVolumeGPU& volume(*this);
+    const Affine3f cam2vol(volume.pose.inv()* Affine3f(cameraPose));
+    const Affine3f vol2cam(Affine3f(cameraPose.inv())* volume.pose);
 
-        const Point3f cam2volTrans = cam2vol.translation();
-        const Matx33f cam2volRot = cam2vol.rotation();
-        const Matx33f vol2camRot = vol2cam.rotation();
+    const Point3f cam2volTrans = cam2vol.translation();
+    const Matx33f cam2volRot = cam2vol.rotation();
+    const Matx33f vol2camRot = vol2cam.rotation();
 
-        Vec4f cam2volTransGPU(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0);
-        Matx44f cam2volRotGPU = cam2vol.matrix;
-        Matx44f vol2camRotGPU = vol2cam.matrix;
+    Vec4f cam2volTransGPU(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0);
+    Matx44f cam2volRotGPU = cam2vol.matrix;
+    Matx44f vol2camRotGPU = vol2cam.matrix;
 
-        Mat _tmp;
-        _volUnitsData.copyTo(_tmp);
-        UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
-        _tmp.release();
+    Mat _tmp;
+    volUnitsData.copyTo(_tmp);
+    UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
+    _tmp.release();
 
-        UMat volPoseGpu, invPoseGpu;
-        Mat(pose.matrix).copyTo(volPoseGpu);
-        Mat(pose.inv().matrix).copyTo(invPoseGpu);
+    UMat volPoseGpu, invPoseGpu;
+    Mat(pose.matrix).copyTo(volPoseGpu);
+    Mat(pose.inv().matrix).copyTo(invPoseGpu);
 
-        //std::cout << cam2volTrans << std::endl;
-        //std::cout << Vec4f(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0) << std::endl;
-        //std::cout << cam2volRot << std::endl;
-        //std::cout << cam2volRotGPU << std::endl;
+    k.args(
+        ocl::KernelArg::PtrReadWrite(indexes.volumes.getUMat(ACCESS_RW)),
+        (int)indexes.list_size,
+        (int)indexes.bufferNums,
+        (int)indexes.hash_divisor,
+        (int)lastVolIndex,
+        ocl::KernelArg::ReadWrite(Upoints),
+        ocl::KernelArg::ReadWrite(Unormals),
+        frameSize,
+        ocl::KernelArg::ReadWrite(U_volUnitsData),
+        cam2volTransGPU,
+        cam2volRotGPU,
+        vol2camRotGPU,
+        float(volume.truncateThreshold),
+        finv.val, cxy.val,
+        boxMin.val, boxMax.val,
+        tstep,
+        voxelSize,
+        volResGpu.val,
+        volStrides.val,
+        neighbourCoords.val,
+        voxelSizeInv,
+        volumeUnitSize,
+        volume.truncDist,
+        volumeUnitResolution,
+        volStrides
+    );
 
-        k.args(
-            ocl::KernelArg::PtrReadWrite(_indexes.volumes.getUMat(ACCESS_RW)),
-            (int)_indexes.list_size,
-            (int)_indexes.bufferNums,
-            (int)_indexes.hash_divisor,
-            (int)_lastVolIndex, 
-            //ocl::KernelArg::PtrReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-            ocl::KernelArg::ReadWrite(Upoints),
-            ocl::KernelArg::ReadWrite(Unormals),
-            frameSize,
+    size_t globalSize[2];
+    globalSize[0] = (size_t) frameSize.width;
+    globalSize[1] = (size_t) frameSize.height;
 
-            ocl::KernelArg::ReadWrite(U_volUnitsData),
+    if (!k.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
 
-
-            //ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
-            //ocl::KernelArg::ReadOnly(allCam2vol.getUMat(ACCESS_READ)),
-            //ocl::KernelArg::PtrReadOnly(volPoseGpu),
-            //ocl::KernelArg::PtrReadOnly(invPoseGpu),
-            cam2volTransGPU,
-            cam2volRotGPU,
-            vol2camRotGPU,
-            float(volume.truncateThreshold),
-            finv.val, cxy.val,
-            boxMin.val, boxMax.val,
-            tstep,
-            voxelSize,
-            volResGpu.val,
-            volStrides.val,
-            neighbourCoords.val,
-            voxelSizeInv,
-            volumeUnitSize,
-            volume.truncDist,
-            volumeUnitResolution,
-            volStrides
-
-
-            //, int(123456789)
-        );
-
-        int resol = 1;
-        size_t globalSize[2];
-        //globalSize[0] = (size_t) resol;
-        //globalSize[1] = (size_t) resol;
-        globalSize[0] = (size_t) frameSize.width;
-        globalSize[1] = (size_t) frameSize.height;
-        //globalSize[0] = (size_t) points.cols;
-        //globalSize[1] = (size_t) points.rows;
-        
-        //printf("CPU voxelSizeInv=%f volumeUnitSize=%f truncDist=%f \n", voxelSizeInv, volumeUnitSize, truncDist);
-        
-        //std::cout << "CPU cam2volRotGPU=" << cam2volRotGPU << std::endl;
-        //printf("CPU camRot0=[%f, %f, %f] \n    camRot1=[%f, %f, %f] \n    camRot2=[%f, %f, %f] \n    volTrans=[%f, %f, %f] \n",
-        //    cam2volRotGPU.val[0], cam2volRotGPU.val[1], cam2volRotGPU.val[2], cam2volRotGPU.val[4], cam2volRotGPU.val[5], cam2volRotGPU.val[6],
-        //    cam2volRotGPU.val[8], cam2volRotGPU.val[9], cam2volRotGPU.val[10], cam2volRotGPU.val[3], cam2volRotGPU.val[7], cam2volRotGPU.val[11]);
-        
-        //std::cout << "CPU vol2camRotGPU=" << vol2camRotGPU << std::endl;
-        //printf("CPU camRot0=[%f, %f, %f] \n    camRot1=[%f, %f, %f] \n    camRot2=[%f, %f, %f] \n    camTrans=[%f, %f, %f] \n",
-        //    vol2camRotGPU.val[0], vol2camRotGPU.val[1], vol2camRotGPU.val[2], vol2camRotGPU.val[4], vol2camRotGPU.val[5], vol2camRotGPU.val[6],
-        //    vol2camRotGPU.val[8], vol2camRotGPU.val[9], vol2camRotGPU.val[10], vol2camRotGPU.val[3], vol2camRotGPU.val[7], vol2camRotGPU.val[11]);
-        
-
-
-        if (!k.run(2, globalSize, NULL, true))
-            throw std::runtime_error("Failed to run kernel");
-
-        //std::cout << Upoints << std::endl;
-        //std::cout << Unormals << std::endl;
-        Upoints.getMat(ACCESS_RW).copyTo(new_points);
-        Unormals.getMat(ACCESS_RW).copyTo(new_normals);
-        //std::cout << new_normals << std::endl;
-
-    }
-
-
+    Upoints.getMat(ACCESS_RW).copyTo(new_points);
+    Unormals.getMat(ACCESS_RW).copyTo(new_normals);
 }
 
 void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
@@ -1788,10 +1545,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
     if (_points.needed())
     {
         std::vector<std::vector<ptype>> pVecs, nVecs;
-
-        //std::vector<Vec3i> _totalVolUnits;
-        std::vector<Vec3i> _totalVolUnits = _indexes.indexes;
-        //for (int i = 0; i < indexes.size().height; i++){_totalVolUnits.push_back(indexes.at<Vec3i>(i, 0));}
+        std::vector<Vec3i> _totalVolUnits = indexes.indexes;
 
         Range _fetchRange(0, (int)_totalVolUnits.size());
 
@@ -1810,10 +1564,10 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                 cv::Vec3i tsdf_idx = _totalVolUnits[i];
 
                 //VolumeIndex idx = find_idx(indexes, tsdf_idx);
-                VolumeIndex idx = _indexes.find_Volume(tsdf_idx);
+                VolumeIndex idx = indexes.find_Volume(tsdf_idx);
                 Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
 
-                if (idx >= 0 && idx < _lastVolIndex)
+                if (idx >= 0 && idx < lastVolIndex)
                 {
                     std::vector<ptype> localPoints;
                     std::vector<ptype> localNormals;
@@ -1831,7 +1585,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
                                     localPoints.push_back(toPtype(point));
                                     if (needNormals)
                                     {
-                                        Point3f normal = volume._getNormalVoxel(point);
+                                        Point3f normal = volume.getNormalVoxel(point);
                                         localNormals.push_back(toPtype(normal));
                                     }
                                 }
@@ -1887,7 +1641,7 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
             if (!isNaN(p))
             {
                 Point3f voxelPoint = invPose * p;
-                n                  = volume.pose.rotation() * volume._getNormalVoxel(voxelPoint);
+                n                  = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
             }
             normals(position[0], position[1]) = toPtype(n);
         };
@@ -1900,7 +1654,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 {
     int numVisibleBlocks = 0;
     //! TODO: Iterate over map parallely?
-    for (int i = 0; i < _lastVolIndex; i++)
+    for (int i = 0; i < lastVolIndex; i++)
     {
         if (lastVisibleIndexes.at<int>(i, 0) > (currFrameId - frameThreshold))
             numVisibleBlocks++;
