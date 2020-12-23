@@ -1300,7 +1300,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
 
     Point3f ptVox = point * voxelSizeInv;
     Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
-    
+
     // A small hash table to reduce a number of find() calls
     bool queried[8];
     VolumeIndex iterMap[8];
@@ -1442,7 +1442,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 {
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
-   
+
     String errorStr;
     String name = "raycast";
     ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
@@ -1455,7 +1455,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     //int totalVolUnitsSize = _indexes.indexesGPU.size();
     Mat totalVolUnits(indexes.indexesGPU, rawType<Vec4i>());
-        
+
     _points.create(frameSize, CV_32FC4);
     _normals.create(frameSize, CV_32FC4);
 
@@ -1470,7 +1470,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     Intr::Reprojector r = intrinsics.makeReprojector();
     Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
-        
+
     Vec4f boxMin, boxMax(volumeUnitSize - voxelSize,
         volumeUnitSize - voxelSize,
         volumeUnitSize - voxelSize);
