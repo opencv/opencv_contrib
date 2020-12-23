@@ -573,7 +573,7 @@ int VolumesTable::find_Volume(Vec3i indx) const
     int i = hash * num * list_size;
     while (i != -1)
     {
-        Volume_NODE v = volumes.at<Volume_NODE>(i, 0);
+        const Volume_NODE& v = *volumes.ptr<Volume_NODE>(i);
         if (v.idx == idx)
             return v.row;
         //find nan cheking for int or Vec3i

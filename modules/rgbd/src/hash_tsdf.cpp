@@ -877,7 +877,7 @@ void HashTSDFVolumeGPU::reset()
     allCam2vol = cv::Mat(buff_lvl, 16, rawType<float>());
 }
 
-static inline bool _find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
+static inline bool find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
 {
     for (int i = 0; i < lastVolIndex +1; i++)
     {
@@ -1055,7 +1055,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
 
-                            if (!_find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
+                            if (!find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
                             {
                                 _localAccessVolUnits.at<Vec3i>(loc_vol_idx, 0) = tsdf_idx;
                                 loc_vol_idx++;
