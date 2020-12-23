@@ -1114,8 +1114,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             allVol2cam.at<float>(idx, k) = vol2camMatrix[k];
         }
 
-        Affine3f cam2vol(Affine3f(subvolumePose.inv()) * Affine3f(cameraPose));
-        auto cam2volMatrix = vol2cam.matrix.val;
+        Affine3f cam2volum(Affine3f(subvolumePose.inv()) * Affine3f(cameraPose));
+        auto cam2volMatrix = cam2volum.matrix.val;
         for (int k = 0; k < 16; k++)
         {
             allCam2vol.at<float>(idx, k) = cam2volMatrix[k];
@@ -1244,7 +1244,7 @@ TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
 
 float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
 {
-    const Vec3i neighbourCoords[] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+    const Vec3i local_neighbourCoords[] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
                                       {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1} };
 
     // A small hash table to reduce a number of find() calls
@@ -1268,7 +1268,7 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
     float vx[8];
     for (int i = 0; i < 8; i++)
     {
-        Vec3i pt = iv + neighbourCoords[i];
+        Vec3i pt = iv + local_neighbourCoords[i];
 
         Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
@@ -1483,8 +1483,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     const Affine3f vol2cam(Affine3f(cameraPose.inv())* volume.pose);
 
     const Point3f cam2volTrans = cam2vol.translation();
-    const Matx33f cam2volRot = cam2vol.rotation();
-    const Matx33f vol2camRot = vol2cam.rotation();
+    //const Matx33f cam2volRot = cam2vol.rotation();
+    //const Matx33f vol2camRot = vol2cam.rotation();
 
     Vec4f cam2volTransGPU(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0);
     Matx44f cam2volRotGPU = cam2vol.matrix;
