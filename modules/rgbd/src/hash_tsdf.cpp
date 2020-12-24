@@ -967,7 +967,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
     int totalVolUnitsSize = (int) indexes.indexesGPU.size();
-    Mat totalVolUnits = cv::Mat(indexes.indexesGPU, rawType<Vec4i>());
+    Mat totalVolUnits = cv::Mat(indexes.indexesGPU, true);
 
     Mat _tmp;
     volUnitsData.copyTo(_tmp);
@@ -1454,7 +1454,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
     //int totalVolUnitsSize = _indexes.indexesGPU.size();
-    Mat totalVolUnits = cv::Mat(indexes.indexesGPU, rawType<Vec4i>());
+    Mat totalVolUnits = cv::Mat(indexes.indexesGPU, true);
 
     _points.create(frameSize, CV_32FC4);
     _normals.create(frameSize, CV_32FC4);
