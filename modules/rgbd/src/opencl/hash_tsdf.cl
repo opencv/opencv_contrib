@@ -4,10 +4,7 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-//#define NAN_NUM -2147483647;
-
 typedef __INT8_TYPE__ int8_t;
-typedef __UINT32_TYPE__ uint32_t;
 typedef __INT32_TYPE__ int32_t;
 
 typedef int8_t TsdfType;
@@ -51,18 +48,18 @@ __kernel void preCalculationPixNorm (__global float * pixNorms,
     pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
 }
 
-uint calc_hash(int4 x)
+static uint calc_hash(int4 x)
 {
-    uint32_t seed = 0;
+    unsigned int seed = 0;
     //uint GOLDEN_RATIO = 0x9e3779b9;
-    uint32_t GOLDEN_RATIO = 0x9e3779b9;
+    unsigned int GOLDEN_RATIO = 0x9e3779b9;
     seed ^= x[0] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     seed ^= x[1] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     return seed;
 }
 
-int findRow(__global struct Volume_NODE * hash_table, int4 indx,
+static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
@@ -85,7 +82,7 @@ int findRow(__global struct Volume_NODE * hash_table, int4 indx,
     return -2;
 }
 
-int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
+static int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
@@ -108,7 +105,7 @@ int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
     return 0;
 }
 
-void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, int isActive,
+static void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, int isActive,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
@@ -131,7 +128,7 @@ void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, int isA
 }
 
 
-void integrateVolumeUnit(
+static void integrateVolumeUnit(
                         int x, int y,
                         __global const char * depthptr,
                         int depth_step, int depth_offset,
@@ -358,7 +355,7 @@ __kernel void integrateAllVolumeUnits(
    
 }
 
-struct TsdfVoxel _at(int3 volumeIdx, int row, 
+static struct TsdfVoxel _at(int3 volumeIdx, int row, 
               int volumeUnitResolution, int4 volStrides, 
               __global struct TsdfVoxel * allVolumePtr, int table_offset)
 
@@ -383,7 +380,7 @@ struct TsdfVoxel _at(int3 volumeIdx, int row,
 }
 
 
-struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row, int lastVolIndex,
+static struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row, int lastVolIndex,
               int volumeUnitResolution, int4 volStrides, 
               __global const struct TsdfVoxel * allVolumePtr, int table_offset)
 
