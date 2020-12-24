@@ -867,7 +867,7 @@ void HashTSDFVolumeGPU::reset()
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
     degree = 15;
-    buff_lvl = pow(2, degree);
+    buff_lvl = (int) pow(2, degree);
     volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     //volUnitsData = cv::Mat(VOLUMES_SIZE, 1, rawType<UMat>());
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
@@ -966,8 +966,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
-    int totalVolUnitsSize = indexes.indexesGPU.size();
-    Mat totalVolUnits(indexes.indexesGPU, rawType<Vec4i>());
+    int totalVolUnitsSize = (int) indexes.indexesGPU.size();
+    Mat totalVolUnits(indexes.indexesGPU, (bool) rawType<Vec4i>());
 
     Mat _tmp;
     volUnitsData.copyTo(_tmp);
@@ -1075,7 +1075,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 if (lastVolIndex >= buff_lvl)
                 {
                     degree++;
-                    buff_lvl = pow(2, degree);
+                    buff_lvl = (int) pow(2, degree);
                     volUnitsData.resize(buff_lvl);
                     poses.resize(buff_lvl);
                     lastVisibleIndexes.resize(buff_lvl);
@@ -1454,7 +1454,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
     //int totalVolUnitsSize = _indexes.indexesGPU.size();
-    Mat totalVolUnits(indexes.indexesGPU, rawType<Vec4i>());
+    Mat totalVolUnits(indexes.indexesGPU, (bool) rawType<Vec4i>());
 
     _points.create(frameSize, CV_32FC4);
     _normals.create(frameSize, CV_32FC4);
