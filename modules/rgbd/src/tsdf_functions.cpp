@@ -393,12 +393,13 @@ VolumesTable::VolumesTable()
     this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
     for (int i = 0; i < volumes.size().height; i++)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        v.idx = nan4;
-        v.row = -1;
-        v.nextVolumeRow = -1;
-        v.isActive = 0;
-        v.lastVisibleIndex = -1;
+        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+        v->idx = nan4;
+        v->row = -1;
+        v->nextVolumeRow = -1;
+        v->isActive = 0;
+        v->lastVisibleIndex = -1;
         //v.tmp = i;
     }
 }
@@ -413,20 +414,21 @@ void VolumesTable::update(Vec3i indx)
 
     while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == idx)
+        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+        if (v->idx == idx)
             return;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == -2147483647)
+        if (v->idx[0] == -2147483647)
         {
-            v.idx = idx;
-            v.nextVolumeRow = getNextVolume(hash, num, i, start);
+            v->idx = idx;
+            v->nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
             indexesGPU.push_back(idx);
             return;
         }
-        i = v.nextVolumeRow;
+        i = v->nextVolumeRow;
     }
 }
 
@@ -440,24 +442,25 @@ void VolumesTable::update(Vec3i indx, int row)
 
     while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == idx)
+        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+        if (v->idx == idx)
         {
-            v.row = row;
+            v->row = row;
             return;
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == -2147483647)
+        if (v->idx[0] == -2147483647)
         {
-            v.idx = idx;
-            v.row = row;
-            v.nextVolumeRow = getNextVolume(hash, num, i, start);
+            v->idx = idx;
+            v->row = row;
+            v->nextVolumeRow = getNextVolume(hash, num, i, start);
             indexes.push_back(indx);
             indexesGPU.push_back(idx);
             return;
         }
-        i = v.nextVolumeRow;
+        i = v->nextVolumeRow;
     }
 }
 
@@ -471,26 +474,27 @@ void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
 
     while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == idx)
+        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+        if (v->idx == idx)
         {
-            v.isActive = isActive;
-            v.lastVisibleIndex = lastVisibleIndex;
+            v->isActive = isActive;
+            v->lastVisibleIndex = lastVisibleIndex;
             return;
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == -2147483647)
+        if (v->idx[0] == -2147483647)
         {
-            v.idx = idx;
-            v.nextVolumeRow = getNextVolume(hash, num, i, start);
-            v.isActive = isActive;
-            v.lastVisibleIndex = lastVisibleIndex;
+            v->idx = idx;
+            v->nextVolumeRow = getNextVolume(hash, num, i, start);
+            v->isActive = isActive;
+            v->lastVisibleIndex = lastVisibleIndex;
             indexes.push_back(indx);
             indexesGPU.push_back(idx);
             return;
         }
-        i = v.nextVolumeRow;
+        i = v->nextVolumeRow;
     }
 }
 
@@ -504,19 +508,20 @@ void VolumesTable::updateActive(Vec3i indx, int isActive)
 
     while (i != -1)
     {
-        Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
-        if (v.idx == idx)
+        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
+        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+        if (v->idx == idx)
         {
-            v.isActive = isActive;
+            v->isActive = isActive;
             return;
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == -2147483647)
+        if (v->idx[0] == -2147483647)
         {
             return;
         }
-        i = v.nextVolumeRow;
+        i = v->nextVolumeRow;
     }
 }
 
