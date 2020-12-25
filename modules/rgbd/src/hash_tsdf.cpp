@@ -1009,6 +1009,9 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     // add updating of isActive for volUnits
     U_volUnitsData.getMat(ACCESS_RW).copyTo(volUnitsData);
     U_hashtable.getMat(ACCESS_RW).copyTo(indexes.volumes);
+
+    U_volUnitsData.release();
+    U_hashtable.release();
 }
 
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -1535,6 +1538,10 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     Upoints.getMat(ACCESS_RW).copyTo(new_points);
     Unormals.getMat(ACCESS_RW).copyTo(new_normals);
+
+    Upoints.release();
+    Unormals.release();
+    U_volUnitsData.release();
 }
 
 void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const

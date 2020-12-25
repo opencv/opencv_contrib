@@ -533,7 +533,7 @@ __kernel void raycast(
     const float3 camRot0  = cam2volRotGPU.s012;
     const float3 camRot1  = cam2volRotGPU.s456;
     const float3 camRot2  = cam2volRotGPU.s89a;
-    const float3 camTrans = cam2volRotGPU.s37b;
+    //const float3 camTrans = cam2volRotGPU.s37b;
 
     const float3 volRot0  = vol2camRotGPU.s012;
     const float3 volRot1  = vol2camRotGPU.s456;
