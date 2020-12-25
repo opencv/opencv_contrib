@@ -393,7 +393,6 @@ VolumesTable::VolumesTable()
     this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
     for (int i = 0; i < volumes.size().height; i++)
     {
-        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
         v->idx = nan4;
         v->row = -1;
@@ -414,7 +413,6 @@ void VolumesTable::update(Vec3i indx)
 
     while (i != -1)
     {
-        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
         if (v->idx == idx)
             return;
@@ -442,7 +440,6 @@ void VolumesTable::update(Vec3i indx, int row)
 
     while (i != -1)
     {
-        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
         if (v->idx == idx)
         {
@@ -474,7 +471,6 @@ void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
 
     while (i != -1)
     {
-        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
         if (v->idx == idx)
         {
@@ -508,7 +504,6 @@ void VolumesTable::updateActive(Vec3i indx, int isActive)
 
     while (i != -1)
     {
-        //Volume_NODE& v = volumes.at<Volume_NODE>(i, 0);
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
         if (v->idx == idx)
         {

@@ -869,20 +869,19 @@ void HashTSDFVolumeGPU::reset()
     degree = 15;
     buff_lvl = (int) pow(2, degree);
     volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
-    //volUnitsData = cv::Mat(VOLUMES_SIZE, 1, rawType<UMat>());
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
-    lastVisibleIndexes = cv::Mat(buff_lvl, 1, rawType<int>());
+    lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
     indexes = VolumesTable();
-    allVol2cam = cv::Mat(buff_lvl, 16, rawType<float>());
-    allCam2vol = cv::Mat(buff_lvl, 16, rawType<float>());
+    allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
+    allCam2vol = cv::Mat(buff_lvl, 16, CV_32F);
 }
 
 static inline bool find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
 {
     for (int i = 0; i < lastVolIndex +1; i++)
     {
-        auto p = v.at<Vec3i>(i, 0);
-        if (p == tsdf_idx)
+        Vec3i* p = v.ptr<Vec3i>(i);
+        if (*p == tsdf_idx)
         {
             return true;
         }
@@ -894,8 +893,8 @@ inline int HashTSDFVolumeGPU::find_idx(cv::Mat v, Vec3i tsdf_idx) const
 {
     for (int i = 0; i < lastVolIndex; i++)
     {
-        Vec3i p = v.at<Vec3i>(i, 0);
-        if (p == tsdf_idx)
+        Vec3i* p = v.ptr<Vec3i>(i);
+        if (*p == tsdf_idx)
         {
             return i;
         }
@@ -910,9 +909,9 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     Mat _pixNorm(1, depth_rows * depth_cols, CV_32F);
 
     for (int i = 0; i < depth_cols; i++)
-        x.at<float>(0, i) = (i - cxy[0]) / fxy[0];
+        *x.ptr<float>(0, i) = (i - cxy[0]) / fxy[0];
     for (int i = 0; i < depth_rows; i++)
-        y.at<float>(0, i) = (i - cxy[1]) / fxy[1];
+        *y.ptr<float>(0, i) = (i - cxy[1]) / fxy[1];
 
     cv::String errorStr;
     cv::String name = "preCalculationPixNorm";
@@ -1025,15 +1024,15 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     const Intr::Reprojector reproj(intrinsics.makeReprojector());
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
     const Point3f truncPt(truncDist, truncDist, truncDist);
-    _VolumeUnitIndexSet _newIndices = cv::Mat(VOLUMES_SIZE, 1, rawType<VolumeIndex>());
-    cv::Mat newIndices = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
-    Mutex mutex;
+    _VolumeUnitIndexSet _newIndices = cv::Mat(VOLUMES_SIZE, 1, CV_32S);
+    cv::Mat newIndices = cv::Mat(VOLUMES_SIZE, 1, CV_32SC3);
+    //Mutex mutex;
     Range allocateRange(0, depth.rows);
     int loc_vol_idx = 0;
     int vol_idx = 0;
 
     auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
-        _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(VOLUMES_SIZE, 1, rawType<Vec3i>());
+        _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(VOLUMES_SIZE, 1, CV_32SC3);
 
         for (int y = range.start; y < range.end; y += depthStride)
         {
@@ -1057,7 +1056,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
                             if (!find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
                             {
-                                _localAccessVolUnits.at<Vec3i>(loc_vol_idx, 0) = tsdf_idx;
+                                *_localAccessVolUnits.ptr<Vec3i>(loc_vol_idx) = tsdf_idx;
                                 loc_vol_idx++;
                             }
 
@@ -1065,10 +1064,10 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
 
-        mutex.lock();
+        //mutex.lock();
         for (int i = 0; i < loc_vol_idx; i++)
         {
-            Vec3i idx = _localAccessVolUnits.at<Vec3i>(i, 0);
+            Vec3i idx = *_localAccessVolUnits.ptr<Vec3i>(i);
 
             if (!indexes.isExist(idx))
             {
@@ -1083,13 +1082,13 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                     allCam2vol.resize(buff_lvl);
                 }
                 indexes.update(idx, lastVolIndex);
-                _newIndices.at<VolumeIndex>(vol_idx, 0) = lastVolIndex;
-                newIndices.at<Vec3i>(vol_idx, 0) = idx;
+                *_newIndices.ptr<VolumeIndex>(vol_idx) = lastVolIndex;
+                *newIndices.ptr<Vec3i>(vol_idx) = idx;
                 vol_idx++;
                 lastVolIndex++;
             }
         }
-        mutex.unlock();
+        //mutex.unlock();
     };
 
     //parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
@@ -1098,27 +1097,27 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     //! Perform the allocation
     for (int i = 0; i < vol_idx; i++)
     {
-        Vec3i tsdf_idx  = newIndices.at<Vec3i>(i, 0);
+        Vec3i tsdf_idx  = *newIndices.ptr<Vec3i>(i);
         VolumeIndex idx = indexes.find_Volume(tsdf_idx);
 
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
 
-        poses.at<cv::Matx44f>(idx, 0) = subvolumePose;
-        lastVisibleIndexes.at<int>(idx, 0) = frameId;
+        *poses.ptr<cv::Matx44f>(idx, 0) = subvolumePose;
+        *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
         indexes.updateActive(tsdf_idx, 1);
 
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
         auto vol2camMatrix = vol2cam.matrix.val;
         for (int k = 0; k < 16; k++)
         {
-            allVol2cam.at<float>(idx, k) = vol2camMatrix[k];
+            *allVol2cam.ptr<float>(idx, k) = vol2camMatrix[k];
         }
 
         Affine3f cam2volum(Affine3f(subvolumePose.inv()) * Affine3f(cameraPose));
         auto cam2volMatrix = cam2volum.matrix.val;
         for (int k = 0; k < 16; k++)
         {
-            allCam2vol.at<float>(idx, k) = cam2volMatrix[k];
+            *allCam2vol.ptr<float>(idx, k) = cam2volMatrix[k];
         }
 
         volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
@@ -1144,7 +1143,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             VolumeIndex idx = indexes.find_Volume(tsdf_idx);
             if (idx < 0 || idx == lastVolIndex - 1) return;
 
-            Point3f volumeUnitPos = volumeUnitIdxToVolume(poses.at<Vec3i>(idx, 0));
+            Point3f volumeUnitPos = volumeUnitIdxToVolume(*poses.ptr<Vec3i>(idx));
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
 
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
@@ -1156,7 +1155,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
             {
                 assert(idx == lastVolIndex - 1);
-                lastVisibleIndexes.at<int>(idx, 0) = frameId;
+                *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
                 indexes.update(tsdf_idx, 1, frameId);
             }
         }
@@ -1656,7 +1655,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
     //! TODO: Iterate over map parallely?
     for (int i = 0; i < lastVolIndex; i++)
     {
-        if (lastVisibleIndexes.at<int>(i, 0) > (currFrameId - frameThreshold))
+        if (*lastVisibleIndexes.ptr<int>(i) > (currFrameId - frameThreshold))
             numVisibleBlocks++;
     }
     return numVisibleBlocks;
