@@ -124,9 +124,9 @@ class HashTSDFVolumeGPU : public HashTSDFVolume
 {
 public:
     HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
-        float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder = true);
+        float _truncateThreshold, int _volumeUnitRes, bool zFirstMemOrder = false);
 
-    HashTSDFVolumeGPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = true);
+    HashTSDFVolumeGPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = false);
 
     void reset() override;
 
