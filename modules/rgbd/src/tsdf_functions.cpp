@@ -407,8 +407,8 @@ void VolumesTable::update(Vec3i indx)
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
-    int num  = 1;
-    int start = hash * num * list_size;
+    int bufferNum = 1;
+    int start = hash * bufferNum * list_size;
     int i = start;
 
     while (i != -1)
@@ -421,7 +421,7 @@ void VolumesTable::update(Vec3i indx)
         if (v->idx[0] == -2147483647)
         {
             v->idx = idx;
-            v->nextVolumeRow = getNextVolume(hash, num, i, start);
+            v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
             indexes.push_back(indx);
             indexesGPU.push_back(idx);
             return;
@@ -434,8 +434,8 @@ void VolumesTable::update(Vec3i indx, int row)
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
-    int num = 1;
-    int start = hash * num * list_size;
+    int bufferNum = 1;
+    int start = hash * bufferNum * list_size;
     int i = start;
 
     while (i != -1)
@@ -452,7 +452,7 @@ void VolumesTable::update(Vec3i indx, int row)
         {
             v->idx = idx;
             v->row = row;
-            v->nextVolumeRow = getNextVolume(hash, num, i, start);
+            v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
             indexes.push_back(indx);
             indexesGPU.push_back(idx);
             return;
@@ -465,8 +465,8 @@ void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
-    int num = 1;
-    int start = hash * num * list_size;
+    int bufferNum = 1;
+    int start = hash * bufferNum * list_size;
     int i = start;
 
     while (i != -1)
@@ -483,7 +483,7 @@ void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
         if (v->idx[0] == -2147483647)
         {
             v->idx = idx;
-            v->nextVolumeRow = getNextVolume(hash, num, i, start);
+            v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
             v->isActive = isActive;
             v->lastVisibleIndex = lastVisibleIndex;
             indexes.push_back(indx);
@@ -498,8 +498,8 @@ void VolumesTable::updateActive(Vec3i indx, int isActive)
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
-    int num = 1;
-    int start = hash * num * list_size;
+    int bufferNum = 1;
+    int start = hash * bufferNum * list_size;
     int i = start;
 
     while (i != -1)
@@ -524,8 +524,8 @@ bool VolumesTable::getActive(Vec3i indx) const
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
-    int num = 1;
-    int i = hash * num * list_size;
+    int bufferNum = 1;
+    int i = hash * bufferNum * list_size;
     while (i != -1)
     {
         const Volume_NODE& v = *volumes.ptr<Volume_NODE>(i);
@@ -538,20 +538,20 @@ bool VolumesTable::getActive(Vec3i indx) const
     return false;
 }
 
-int VolumesTable::getNextVolume(int hash, int& num, int i, int start)
+int VolumesTable::getNextVolume(int hash, int& bufferNum, int i, int start)
 {
     if (i != start && i % list_size == 0)
     {
-        if (num < bufferNums)
+        if (bufferNum < bufferNums)
         {
-            num++;
+            bufferNum++;
         }
         else
         {
             this->expand();
-            num++;
+            bufferNum++;
         }
-        return hash * num * list_size;
+        return hash * bufferNum * list_size;
     }
     else
     {
@@ -569,8 +569,8 @@ int VolumesTable::find_Volume(Vec3i indx) const
 {
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
-    int num = 1;
-    int i = hash * num * list_size;
+    int bufferNum = 1;
+    int i = hash * bufferNum * list_size;
     while (i != -1)
     {
         const Volume_NODE& v = *volumes.ptr<Volume_NODE>(i);
