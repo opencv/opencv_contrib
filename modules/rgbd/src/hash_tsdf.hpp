@@ -170,7 +170,6 @@ public:
     cv::Mat poses;
     cv::Mat lastVisibleIndexes;
     cv::Mat allVol2cam;
-    cv::Mat allCam2vol;
     cv::Mat volUnitsData;
     cv::UMat pixNorms;
     VolumeIndex lastVolIndex;

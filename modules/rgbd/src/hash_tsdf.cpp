@@ -873,7 +873,6 @@ void HashTSDFVolumeGPU::reset()
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
     indexes = VolumesTable();
     allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
-    allCam2vol = cv::Mat(buff_lvl, 16, CV_32F);
 }
 
 static inline bool find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
@@ -1082,7 +1081,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                     poses.resize(buff_lvl);
                     lastVisibleIndexes.resize(buff_lvl);
                     allVol2cam.resize(buff_lvl);
-                    allCam2vol.resize(buff_lvl);
                 }
                 indexes.update(idx, lastVolIndex);
                 *_newIndices.ptr<VolumeIndex>(vol_idx) = lastVolIndex;
@@ -1114,13 +1112,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         for (int k = 0; k < 16; k++)
         {
             *allVol2cam.ptr<float>(idx, k) = vol2camMatrix[k];
-        }
-
-        Affine3f cam2volum(Affine3f(subvolumePose.inv()) * Affine3f(cameraPose));
-        auto cam2volMatrix = cam2volum.matrix.val;
-        for (int k = 0; k < 16; k++)
-        {
-            *allCam2vol.ptr<float>(idx, k) = cam2volMatrix[k];
         }
 
         volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
