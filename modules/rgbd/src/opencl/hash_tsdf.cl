@@ -4,6 +4,8 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
+#define NAN_ELEMENT -2147483647
+
 typedef __INT8_TYPE__ int8_t;
 typedef __INT32_TYPE__ int32_t;
 
@@ -66,7 +68,7 @@ static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
     
     int num = 1;
     int i = hash * num * list_size;
-    int NAN_NUM = -2147483647;
+    int NAN_NUM = NAN_ELEMENT;
     while (i != NAN_NUM)
     {
         struct Volume_NODE v = hash_table[i];
@@ -88,7 +90,7 @@ static int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
     int hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     int i = hash * num * list_size;
-    int NAN_NUM = -2147483647;
+    int NAN_NUM = NAN_ELEMENT;
 
     while (i != NAN_NUM)
     {
@@ -111,7 +113,7 @@ static void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, 
     int hash = calc_hash(indx) % hash_divisor;
     int num = 1;
     int i = hash * num * list_size;
-    int NAN_NUM = -2147483647;
+    int NAN_NUM = NAN_ELEMENT;
     while (i != NAN_NUM)
     {
         __global struct Volume_NODE * v = (hash_table + i);

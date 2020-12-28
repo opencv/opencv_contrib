@@ -10,6 +10,8 @@
 #include <opencv2/rgbd/volume.hpp>
 #include "tsdf.hpp"
 
+#define NAN_ELEMENT -2147483647
+
 namespace cv
 {
 namespace kinfu
@@ -56,12 +58,15 @@ struct Volume_NODE
 
 size_t calc_hash(Vec4i x);
 
+const int _hash_divisor = 32768;
+const int _list_size = 4;
+
 class VolumesTable
 {
 public:
-    int hash_divisor = 32768;
-    int list_size    = 4;
-    int bufferNums  = 1;
+    int hash_divisor = _hash_divisor;
+    int list_size    = _list_size;
+    int bufferNums   = 1;
 
     cv::Mat volumes;
     std::vector<Vec3i> indexes;

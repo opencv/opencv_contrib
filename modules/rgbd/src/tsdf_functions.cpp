@@ -418,7 +418,7 @@ void VolumesTable::update(Vec3i indx)
             return;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == -2147483647)
+        if (v->idx[0] == NAN_ELEMENT)
         {
             v->idx = idx;
             v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
@@ -448,7 +448,7 @@ void VolumesTable::update(Vec3i indx, int row)
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == -2147483647)
+        if (v->idx[0] == NAN_ELEMENT)
         {
             v->idx = idx;
             v->row = row;
@@ -480,7 +480,7 @@ void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == -2147483647)
+        if (v->idx[0] == NAN_ELEMENT)
         {
             v->idx = idx;
             v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
@@ -512,7 +512,7 @@ void VolumesTable::updateActive(Vec3i indx, int isActive)
         }
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == -2147483647)
+        if (v->idx[0] == NAN_ELEMENT)
         {
             return;
         }
@@ -531,7 +531,7 @@ bool VolumesTable::getActive(Vec3i indx) const
         const Volume_NODE& v = *volumes.ptr<Volume_NODE>(i);
         if (v.idx == idx)
             return (v.isActive == 1);
-        if (v.idx[0] == -2147483647)
+        if (v.idx[0] == NAN_ELEMENT)
             return false;
         i = v.nextVolumeRow;
     }
@@ -578,7 +578,7 @@ int VolumesTable::find_Volume(Vec3i indx) const
             return v.row;
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == -2147483647)
+        if (v.idx[0] == NAN_ELEMENT)
             return -2;
         i = v.nextVolumeRow;
     }
