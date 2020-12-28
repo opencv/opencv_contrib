@@ -66,8 +66,8 @@ static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
 {
     int hash = calc_hash(indx) % hash_divisor;
     
-    int num = 1;
-    int i = hash * num * list_size;
+    int bufferNum = 0;
+    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
     int NAN_NUM = NAN_ELEMENT;
     while (i != NAN_NUM)
     {
@@ -88,8 +88,8 @@ static int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
-    int num = 1;
-    int i = hash * num * list_size;
+    int bufferNum = 0;
+    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
     int NAN_NUM = NAN_ELEMENT;
 
     while (i != NAN_NUM)
@@ -111,8 +111,8 @@ static void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, 
                int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
-    int num = 1;
-    int i = hash * num * list_size;
+    int bufferNum = 0;
+    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
     int NAN_NUM = NAN_ELEMENT;
     while (i != NAN_NUM)
     {
