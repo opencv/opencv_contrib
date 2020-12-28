@@ -329,11 +329,7 @@ __kernel void integrateAllVolumeUnits(
         __global const float * p_vol2camMatrix = (__global const float *)
                                                  (allVol2camMatrix + val2cam_offset + (row) * 16);
         
-        const float16 vol2camMatrix = (float16) (
-        p_vol2camMatrix[0], p_vol2camMatrix[1], p_vol2camMatrix[2], p_vol2camMatrix[3],
-        p_vol2camMatrix[4], p_vol2camMatrix[5], p_vol2camMatrix[6], p_vol2camMatrix[7],
-        p_vol2camMatrix[8], p_vol2camMatrix[9], p_vol2camMatrix[10], p_vol2camMatrix[11],
-        p_vol2camMatrix[12], p_vol2camMatrix[13], p_vol2camMatrix[14], p_vol2camMatrix[15]);
+        const float16 vol2camMatrix = vload16(0, p_vol2camMatrix);
 
         integrateVolumeUnit(
             i, j,
