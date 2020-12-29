@@ -728,7 +728,7 @@ static void _identifyCandidates(InputArray _image,
             int currId;
 
             // implements equation (4)
-            const int perimeter_in_seg_img = cont[i].size();
+            const int perimeter_in_seg_img = _contours[i].size();
             int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
             const Mat& pyr_img = _image_pyr[n];
 
