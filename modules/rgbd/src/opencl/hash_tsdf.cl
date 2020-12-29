@@ -57,7 +57,7 @@ static uint calc_hash(int4 x)
     unsigned int GOLDEN_RATIO = 0x9e3779b9;
     seed ^= x.s0 + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     seed ^= x.s1 + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    seed ^= x.s2 + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+    seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     return seed;
 }
 
@@ -74,7 +74,7 @@ static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
         struct Volume_NODE v = hash_table[i];
         if (v.idx.s0 == indx.s0 &&
             v.idx.s1 == indx.s1 &&
-            v.idx.s2 == indx.s2)
+            v.idx[2] == indx[2])
             return v.row;
         if (v.idx.x == NAN_NUM)
             return -2;
@@ -98,7 +98,7 @@ static int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
 
         if (v.idx.s0 == indx.s0 &&
             v.idx.s1 == indx.s1 &&
-            v.idx.s2 == indx.s2)
+            v.idx[2] == indx[2])
             return v.isActive;
         if (v.idx.s0 == NAN_NUM)
             return 0;
@@ -120,7 +120,7 @@ static void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, 
 
         if (v->idx.s0 == indx.s0 &&
             v->idx.s1 == indx.s1 &&
-            v->idx.s2 == indx.s2)
+            v->idx[2] == indx[2])
             v->isActive = isActive;     
         if (v->idx.s0 == NAN_NUM)
             return;
@@ -363,7 +363,7 @@ static struct TsdfVoxel _at(int3 volumeIdx, int row,
     //! Out of bounds
     if ((volumeIdx.s0 >= volumeUnitResolution || volumeIdx.s0 < 0) ||
         (volumeIdx.s1 >= volumeUnitResolution || volumeIdx.s1 < 0) ||
-        (volumeIdx.s2 >= volumeUnitResolution || volumeIdx.s2 < 0))
+        (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0))
     {
         struct TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
@@ -375,7 +375,7 @@ static struct TsdfVoxel _at(int3 volumeIdx, int row,
                                             (allVolumePtr + table_offset + (row) * 16*16*16);    int coordBase =
         volumeIdx.s0 * volStrides.s0 +
         volumeIdx.s1 * volStrides.s1 +
-        volumeIdx.s2 * volStrides.s2;
+        volumeIdx[2] * volStrides[2];
     return volData[coordBase];
 }
 
@@ -400,7 +400,7 @@ static struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int ro
     int coordBase =
         volUnitLocalIdx.s0 * volStrides.s0 +
         volUnitLocalIdx.s1 * volStrides.s1 +
-        volUnitLocalIdx.s2 * volStrides.s2;
+        volUnitLocalIdx[2] * volStrides[2];
     return volData[coordBase];
 }
 
@@ -433,7 +433,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     };
     
     const int nVals = 6;
-    float vals[nVals];
+    float vals[6];
 
     for (int i = 0; i < nVals; i++)
     {
@@ -444,17 +444,17 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
         int3 volumeUnitIdx = (int3) (
             floor ( (float) pt.s0 / volResolution.s0),
             floor ( (float) pt.s1 / volResolution.s1),
-            floor ( (float) pt.s2 / volResolution.s2) );
+            floor ( (float) pt[2] / volResolution[2]) );
         
         int4 volumeUnitIdx4 = (int4) (
             floor ( (float) pt.s0 / volResolution.s0),
             floor ( (float) pt.s1 / volResolution.s1),
-            floor ( (float) pt.s2 / volResolution.s2), 0 );
+            floor ( (float) pt[2] / volResolution[2]), 0 );
 
 
         int dictIdx = (volumeUnitIdx.s0 & 1) 
                     + (volumeUnitIdx.s1 & 1) * 2 
-                    + (volumeUnitIdx.s2 & 1) * 4;
+                    + (volumeUnitIdx[2] & 1) * 4;
 
         int it = iterMap[dictIdx];
 
@@ -473,10 +473,11 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
     }
 
-    for (int c = 0; c < 3; c++)
-    {
-        normal[c] = vals[c * 2] - vals[c * 2 + 1];
-    }
+    //for (int c = 0; c < 3; c++){normal[c] = vals[c * 2] - vals[c * 2 + 1];}
+
+    normal.s0 = vals[0 * 2] - vals[0 * 2 + 1];
+    normal.s1 = vals[1 * 2] - vals[1 * 2 + 1];
+    normal.s2 = vals[2 * 2] - vals[2 * 2 + 1];
 
     float norm = 
     sqrt(normal.x*normal.x 
@@ -545,7 +546,7 @@ __kernel void raycast(
                       dot(planed, camRot1),
                       dot(planed, camRot2));
 
-    float3 orig = (float3) (cam2volTransGPU.s0, cam2volTransGPU.s1, cam2volTransGPU.s2);
+    float3 orig = (float3) (cam2volTransGPU.s0, cam2volTransGPU.s1, cam2volTransGPU[2]);
     float3 dir = fast_normalize(planed);
 
     float tmin = 0;
@@ -584,14 +585,14 @@ __kernel void raycast(
             float3 currVolUnitPos = (float3) 
             (( (float) (currVolumeUnitIdx.s0) * volumeUnitSize), 
              ( (float) (currVolumeUnitIdx.s1) * volumeUnitSize), 
-             ( (float) (currVolumeUnitIdx.s2) * volumeUnitSize) );
+             ( (float) (currVolumeUnitIdx[2]) * volumeUnitSize) );
             
             // VolumeToVoxelCoord()
             float3 pos = currRayPos - currVolUnitPos;
             volUnitLocalIdx = (int3)
             (( floor ( (float) (pos.s0) * voxelSizeInv) ), 
              ( floor ( (float) (pos.s1) * voxelSizeInv) ), 
-             ( floor ( (float) (pos.s2) * voxelSizeInv) ) );
+             ( floor ( (float) (pos[2]) * voxelSizeInv) ) );
 
             struct TsdfVoxel currVoxel  = _at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr,  table_offset);
 
@@ -606,8 +607,8 @@ __kernel void raycast(
             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
-                int3 volResolution = (int3) (volResolution4.s0, volResolution4.s1, volResolution4.s2);
-                int3 volDims = (int3) (volDims4.s0, volDims4.s1, volDims4.s2);
+                int3 volResolution = (int3) (volResolution4.s0, volResolution4.s1, volResolution4[2]);
+                int3 volDims = (int3) (volDims4.s0, volDims4.s1, volDims4[2]);
                 
                 float3 pv = orig + tInterp * dir;
                 float3 nv = getNormalVoxel( pv, allVolumePtr, volResolution, volDims, neighbourCoords, 
