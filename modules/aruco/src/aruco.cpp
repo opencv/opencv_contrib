@@ -40,6 +40,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/aruco.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+
 #include "apriltag_quad_thresh.hpp"
 #include "zarray.hpp"
 
@@ -48,15 +49,10 @@ the use of this software, even if advised of the possibility of such damage.
 #include "opencv2/imgcodecs.hpp"
 #endif
 
-
-#include <iostream>
-#include <chrono>
-
 namespace cv {
 namespace aruco {
 
 using namespace std;
-using namespace std::chrono;
 
 
 /**
@@ -64,7 +60,7 @@ using namespace std::chrono;
   */
 DetectorParameters::DetectorParameters()
     : adaptiveThreshWinSizeMin(3),
-      adaptiveThreshWinSizeMax(13),
+      adaptiveThreshWinSizeMax(23),
       adaptiveThreshWinSizeStep(10),
       adaptiveThreshConstant(7),
       minMarkerPerimeterRate(0.03),
@@ -73,9 +69,9 @@ DetectorParameters::DetectorParameters()
       minCornerDistanceRate(0.05),
       minDistanceToBorder(3),
       minMarkerDistanceRate(0.05),
-      cornerRefinementMethod(CORNER_REFINE_SUBPIX),
+      cornerRefinementMethod(CORNER_REFINE_NONE),
       cornerRefinementWinSize(5),
-      cornerRefinementMaxIterations(5),
+      cornerRefinementMaxIterations(30),
       cornerRefinementMinAccuracy(0.1),
       markerBorderBits(1),
       perspectiveRemovePixelPerCell(4),
@@ -712,6 +708,9 @@ static void _identifyCandidates(InputArray _image,
 
     CV_Assert(_image.getMat().total() != 0);
 
+    Mat grey;
+    _convertToGrey(_image.getMat(), grey);
+
     vector< int > idsTmp(ncandidates, -1);
     vector< int > rotated(ncandidates, 0);
     vector< uint8_t > validCandidates(ncandidates, 0);
@@ -724,8 +723,6 @@ static void _identifyCandidates(InputArray _image,
         const int end = range.end;
 
         vector< vector< Point2f > >& candidates = params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0];
-        vector< vector< Point > >& cont = params->detectInvertedMarker ? _contoursSet[1] : _contoursSet[0];
-
 
         for(int i = begin; i < end; i++) {
             int currId;

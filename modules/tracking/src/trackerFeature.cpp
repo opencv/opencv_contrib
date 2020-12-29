@@ -58,8 +58,8 @@ Ptr<TrackerContribFeature> TrackerContribFeature::create( const String& trackerF
 {
   if( trackerFeatureType.find( "FEATURE2D" ) == 0 )
   {
-    size_t firstSep = trackerFeatureType.find_first_of( "." );
-    size_t secondSep = trackerFeatureType.find_last_of( "." );
+    size_t firstSep = trackerFeatureType.find_first_of('.');
+    size_t secondSep = trackerFeatureType.find_last_of('.');
 
     String detector = trackerFeatureType.substr( firstSep, secondSep - firstSep );
     String descriptor = trackerFeatureType.substr( secondSep, trackerFeatureType.length() - secondSep );

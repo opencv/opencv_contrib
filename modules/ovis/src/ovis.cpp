@@ -187,6 +187,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     uint32_t h;
     int key_pressed;
     int flags;
+    Ogre::MaterialPtr casterMat;
 
     Application(const Ogre::String& _title, const Size& sz, int _flags)
         : OgreBites::ApplicationContext("ovis"), mainWin(NULL), title(_title), w(sz.width),
@@ -287,6 +288,9 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         MaterialManager& matMgr = MaterialManager::getSingleton();
         matMgr.setDefaultTextureFiltering(TFO_ANISOTROPIC);
         matMgr.setDefaultAnisotropy(16);
+        casterMat = matMgr.create("DepthCaster", Ogre::RGN_INTERNAL);
+        casterMat->setLightingEnabled(false);
+        casterMat->setDepthBias(-1, -1);
     }
 };
 
@@ -317,6 +321,21 @@ public:
             sceneMgr = root->createSceneManager("DefaultSceneManager", title);
             RTShader::ShaderGenerator& shadergen = RTShader::ShaderGenerator::getSingleton();
             shadergen.addSceneManager(sceneMgr); // must be done before we do anything with the scene
+
+            if (flags & SCENE_SHADOWS)
+            {
+                sceneMgr->setShadowTechnique(SHADOWTYPE_TEXTURE_MODULATIVE_INTEGRATED);
+                sceneMgr->setShadowTexturePixelFormat(PF_DEPTH32);
+                // arbitrary heuristic for shadowmap size
+                sceneMgr->setShadowTextureSize(std::max(sz.width, sz.height) * 2);
+                sceneMgr->setShadowCameraSetup(FocusedShadowCameraSetup::create());
+                sceneMgr->setShadowTextureCasterMaterial(app->casterMat);
+
+                // inject shadowmap into materials
+                const auto& schemeName = RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME;
+                auto rs = shadergen.getRenderState(schemeName);
+                rs->addTemplateSubRenderState(shadergen.createSubRenderState("SGX_IntegratedPSSM3"));
+            }
 
             sceneMgr->setAmbientLight(ColourValue(.1, .1, .1));
             _createBackground();
@@ -716,6 +735,13 @@ public:
         SceneNode& node = _getSceneNode(sceneMgr, name);
         switch(prop)
         {
+        case ENTITY_CAST_SHADOWS:
+        {
+            Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+            CV_Assert(ent && "invalid entity");
+            ent->setCastShadows(bool(value[0]));
+            break;
+        }
         case ENTITY_SCALE:
         {
             node.setScale(value[0], value[1], value[2]);
