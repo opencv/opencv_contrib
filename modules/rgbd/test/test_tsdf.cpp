@@ -522,10 +522,22 @@ TEST(TSDF_GPU, fetch_points_normals) { normal_test(false, false, true, false); }
 TEST(TSDF_GPU, fetch_normals)        { normal_test(false, false, false, true); }
 TEST(TSDF_GPU, valid_points)         { valid_points_test(false); }
 
-TEST(HashTSDF_GPU, raycast_normals)      { normal_test(true, true, false, false); }
-TEST(HashTSDF_GPU, fetch_points_normals) { normal_test(true, false, true, false); }
-TEST(HashTSDF_GPU, fetch_normals)        { normal_test(true, false, false, true); }
-TEST(HashTSDF_GPU, valid_points)         { valid_points_test(true); }
+TEST(HashTSDF_GPU, raycast_normals)      { 
+    cv::ocl::Context context;
+    cv::ocl::Device(context.device(1)); 
+    normal_test(true, true, false, false); }
+TEST(HashTSDF_GPU, fetch_points_normals) { 
+    cv::ocl::Context context;
+    cv::ocl::Device(context.device(1)); 
+    normal_test(true, false, true, false); }
+TEST(HashTSDF_GPU, fetch_normals)        { 
+    cv::ocl::Context context;
+    cv::ocl::Device(context.device(1)); 
+    normal_test(true, false, false, true); }
+TEST(HashTSDF_GPU, valid_points)         { 
+    cv::ocl::Context context;
+    cv::ocl::Device(context.device(1)); 
+    valid_points_test(true); }
 
 TEST(TSDF_CPU, raycast_normals)
 {
