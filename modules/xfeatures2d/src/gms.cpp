@@ -370,6 +370,9 @@ int GMSMatcher::run(const int rotationType)
         // Mark inliers
         for (size_t i = 0; i < mNumberMatches; i++)
         {
+            if (mvMatchPairs[i].first < 0)
+                continue;
+                
             if (mvMatchPairs[i].first >= 0 && mCellPairs[mvMatchPairs[i].first] == mvMatchPairs[i].second)
                 mvbInlierMask[i] = true;
         }
