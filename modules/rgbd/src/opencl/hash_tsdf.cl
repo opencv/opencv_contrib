@@ -315,8 +315,6 @@ __kernel void integrateAllVolumeUnits(
     int j = get_global_id(1);
     int k = get_global_id(2);
 
-    printf("x=%d, x=%d, vu=%d \n", i, j, k);
-
     int4 v = totalVolUnits[k];
     int row = findRow(hash_table, v, list_size, bufferNums, hash_divisor);
     if (row < 0 || row > lastVolIndex-1)
