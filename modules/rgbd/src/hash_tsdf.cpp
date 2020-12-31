@@ -1666,7 +1666,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 //template<typename T>
 Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _params)
 {
-#ifdef _HAVE_OPENCL
+#ifdef HAVE_OPENCL
     if (ocl::useOpenCL())
         return makePtr<HashTSDFVolumeGPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
             _params.depthTruncThreshold, _params.unitResolution);
@@ -1679,7 +1679,7 @@ Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _params)
 Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
     int _maxWeight, float truncateThreshold, int volumeUnitResolution)
 {
-#ifdef _HAVE_OPENCL
+#ifdef HAVE_OPENCL
     if (ocl::useOpenCL())
         return makePtr<HashTSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, truncateThreshold,
             volumeUnitResolution);

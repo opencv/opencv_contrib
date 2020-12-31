@@ -53,7 +53,6 @@ struct Volume_NODE
     int32_t nextVolumeRow = -1;
     int32_t isActive = 0;
     int32_t lastVisibleIndex = -1;
-    //int32_t tmp;
 };
 
 size_t calc_hash(Vec4i x);
@@ -80,6 +79,7 @@ public:
     void update(Vec3i indx, int row);
     void update(Vec3i indx, int isActive, int lastVisibleIndex);
     void updateActive(Vec3i indx, int isActive);
+    void updateVolumeUnit(int mode, Vec3i indx, int row, int isActive, int lastVisibleIndex);
     void expand();
     bool getActive(Vec3i indx) const;
     int getNextVolume(int hash, int& num, int i, int start);

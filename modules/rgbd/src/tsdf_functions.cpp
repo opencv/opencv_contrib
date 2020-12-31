@@ -403,8 +403,14 @@ VolumesTable::VolumesTable()
     }
 }
 
-void VolumesTable::update(Vec3i indx)
+inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row=-1, int isActive=0, int lastVisibleIndex=-1)
 {
+// modes:
+// 0 - Vec3i indx
+// 1 - Vec3i indx, int row
+// 2 - Vec3i indx, int isActive, int lastVisibleIndex
+// 3 - Vec3i indx, int isActive
+
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
     int bufferNum = 0;
@@ -414,110 +420,71 @@ void VolumesTable::update(Vec3i indx)
     while (i != -1)
     {
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
-        if (v->idx == idx)
-            return;
+        
         //find nan cheking for int or Vec3i
         //if (isNaN(Point3i(v.idx)))
         if (v->idx[0] == NAN_ELEMENT)
         {
             v->idx = idx;
+            v->row = row;
+            v->isActive = isActive;
+            v->lastVisibleIndex = lastVisibleIndex;
             v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
             indexes.push_back(indx);
             indexesGPU.push_back(idx);
             return;
         }
+
+        if (mode == 1)
+        {
+            if (v->idx == idx)
+            {
+                v->row = row;
+                return;
+            }
+        }
+        else if (mode == 2)
+        {
+            if (v->idx == idx)
+            {
+                v->isActive = isActive;
+                v->lastVisibleIndex = lastVisibleIndex;
+                return;
+            }
+
+        }
+        else if (mode == 3)
+        {
+            v->isActive = isActive;
+            return;
+        }
+
         i = v->nextVolumeRow;
     }
+}
+
+void VolumesTable::update(Vec3i indx)
+{
+    int mode = 0;
+    this->updateVolumeUnit(mode, indx);
 }
 
 void VolumesTable::update(Vec3i indx, int row)
 {
-    Vec4i idx(indx[0], indx[1], indx[2], 0);
-    int hash = int(calc_hash(idx) % hash_divisor);
-    int bufferNum = 0;
-    int start = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    int i = start;
-
-    while (i != -1)
-    {
-        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
-        if (v->idx == idx)
-        {
-            v->row = row;
-            return;
-        }
-        //find nan cheking for int or Vec3i
-        //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == NAN_ELEMENT)
-        {
-            v->idx = idx;
-            v->row = row;
-            v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
-            indexes.push_back(indx);
-            indexesGPU.push_back(idx);
-            return;
-        }
-        i = v->nextVolumeRow;
-    }
+    int mode = 1;
+    this->updateVolumeUnit(mode, indx);
 }
 
 void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
 {
-    Vec4i idx(indx[0], indx[1], indx[2], 0);
-    int hash = int(calc_hash(idx) % hash_divisor);
-    int bufferNum = 0;
-    int start = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    int i = start;
-
-    while (i != -1)
-    {
-        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
-        if (v->idx == idx)
-        {
-            v->isActive = isActive;
-            v->lastVisibleIndex = lastVisibleIndex;
-            return;
-        }
-        //find nan cheking for int or Vec3i
-        //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == NAN_ELEMENT)
-        {
-            v->idx = idx;
-            v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
-            v->isActive = isActive;
-            v->lastVisibleIndex = lastVisibleIndex;
-            indexes.push_back(indx);
-            indexesGPU.push_back(idx);
-            return;
-        }
-        i = v->nextVolumeRow;
-    }
+    int mode = 2;
+    this->updateVolumeUnit(mode, indx);
 }
 
 void VolumesTable::updateActive(Vec3i indx, int isActive)
 {
-    Vec4i idx(indx[0], indx[1], indx[2], 0);
-    int hash = int(calc_hash(idx) % hash_divisor);
-    int bufferNum = 0;
-    int start = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    int i = start;
-
-    while (i != -1)
-    {
-        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
-        if (v->idx == idx)
-        {
-            v->isActive = isActive;
-            return;
-        }
-        //find nan cheking for int or Vec3i
-        //if (isNaN(Point3i(v.idx)))
-        if (v->idx[0] == NAN_ELEMENT)
-        {
-            return;
-        }
-        i = v->nextVolumeRow;
-    }
+    int mode = 3;
+    this->updateVolumeUnit(mode, indx);
 }
 
 bool VolumesTable::getActive(Vec3i indx) const
