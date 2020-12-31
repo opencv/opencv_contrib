@@ -72,6 +72,9 @@ void HashTSDFVolumeCPU::reset()
     CV_TRACE_FUNCTION();
     lastVolIndex = 0;
     volUnitsData = cv::Mat(VOLUMES_SIZE, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
+    frameParams = Vec6f();
+    pixNorms = Mat();
+    volumeUnits = VolumeUnitIndexes();
 }
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -1135,7 +1138,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             Vec3i tsdf_idx = _totalVolUnits[i];
 
             VolumeIndex idx = indexes.find_Volume(tsdf_idx);
-            if (idx < 0 || idx == lastVolIndex - 1) return;
+            if (idx < 0 || idx == lastVolIndex) return;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(tsdf_idx);
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
@@ -1147,7 +1150,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             Point2f cameraPoint = proj(volUnitInCamSpace);
             if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
             {
-                assert(idx == lastVolIndex - 1);
+                assert(idx != lastVolIndex);
                 *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
                 indexes.update(tsdf_idx, 1, frameId);
             }
@@ -1217,7 +1220,7 @@ inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, VolumeInd
 
 TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const
 {
-    if (indx < 0 || indx > lastVolIndex - 1)
+    if (indx < 0 || indx > lastVolIndex)
     {
         TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.f);
@@ -1244,7 +1247,7 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
     VolumeIndex iterMap[8];
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = lastVolIndex - 1;
+        iterMap[i] = lastVolIndex;
         queried[i] = false;
     }
 
@@ -1299,7 +1302,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
 
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = lastVolIndex - 1;
+        iterMap[i] = lastVolIndex;
         queried[i] = false;
     }
 
@@ -1661,20 +1664,22 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 #endif
 
 //template<typename T>
-Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _volumeParams)
+Ptr<HashTSDFVolume> makeHashTSDFVolume(const VolumeParams& _params)
 {
-#ifdef HAVE_OPENCL
+#ifdef _HAVE_OPENCL
     if (ocl::useOpenCL())
-        return makePtr<HashTSDFVolumeGPU>(_volumeParams);
+        return makePtr<HashTSDFVolumeGPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+            _params.depthTruncThreshold, _params.unitResolution);
 #endif
-    return makePtr<HashTSDFVolumeCPU>(_volumeParams);
+    return makePtr<HashTSDFVolumeCPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+        _params.depthTruncThreshold, _params.unitResolution);
 }
 
 //template<typename T>
 Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
     int _maxWeight, float truncateThreshold, int volumeUnitResolution)
 {
-#ifdef HAVE_OPENCL
+#ifdef _HAVE_OPENCL
     if (ocl::useOpenCL())
         return makePtr<HashTSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, truncateThreshold,
             volumeUnitResolution);

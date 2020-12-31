@@ -42,7 +42,7 @@ class Submap
 
     Submap(int _id, const VolumeParams& volumeParams, const cv::Affine3f& _pose = cv::Affine3f::Identity(),
            int _startFrameId = 0)
-        : id(_id), pose(_pose), cameraPose(Affine3f::Identity()), startFrameId(_startFrameId), volume(volumeParams)
+        : id(_id), pose(_pose), cameraPose(Affine3f::Identity()), startFrameId(_startFrameId), volume(makeHashTSDFVolume(volumeParams))
     {
         std::cout << "Created volume\n";
     }
@@ -53,10 +53,10 @@ class Submap
                          OutputArray points, OutputArray normals);
     virtual void updatePyrPointsNormals(const int pyramidLevels);
 
-    virtual int getTotalAllocatedBlocks() const { return int(volume.getTotalVolumeUnits()); };
+    virtual int getTotalAllocatedBlocks() const { return int(volume->getTotalVolumeUnits()); };
     virtual int getVisibleBlocks(int currFrameId) const
     {
-        return volume.getVisibleBlocks(currFrameId, FRAME_VISIBILITY_THRESHOLD);
+        return volume->getVisibleBlocks(currFrameId, FRAME_VISIBILITY_THRESHOLD);
     }
 
     float calcVisibilityRatio(int currFrameId) const
@@ -91,7 +91,7 @@ class Submap
     //! TODO: Add support for GPU arrays (UMat)
     std::vector<MatType> pyrPoints;
     std::vector<MatType> pyrNormals;
-    HashTSDFVolumeCPU volume;
+    std::shared_ptr<HashTSDFVolume> volume;
 };
 
 template<typename MatType>
@@ -100,14 +100,14 @@ void Submap<MatType>::integrate(InputArray _depth, float depthFactor, const cv::
                                 const int currFrameId)
 {
     CV_Assert(currFrameId >= startFrameId);
-    volume.integrate(_depth, depthFactor, cameraPose.matrix, intrinsics, currFrameId);
+    volume->integrate(_depth, depthFactor, cameraPose.matrix, intrinsics, currFrameId);
 }
 
 template<typename MatType>
 void Submap<MatType>::raycast(const cv::Affine3f& _cameraPose, const cv::kinfu::Intr& intrinsics, cv::Size frameSize,
                               OutputArray points, OutputArray normals)
 {
-    volume.raycast(_cameraPose.matrix, intrinsics, frameSize, points, normals);
+    volume->raycast(_cameraPose.matrix, intrinsics, frameSize, points, normals);
 }
 
 template<typename MatType>

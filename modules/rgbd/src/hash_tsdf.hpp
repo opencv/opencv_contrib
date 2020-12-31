@@ -26,6 +26,9 @@ class HashTSDFVolume : public Volume
 
     virtual ~HashTSDFVolume() = default;
 
+    virtual int getVisibleBlocks(int currFrameId, int frameThreshold) const = 0;
+    virtual size_t getTotalVolumeUnits() const = 0;
+
    public:
     int maxWeight;
     float truncDist;
@@ -141,7 +144,7 @@ public:
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
-    VolumeIndex getTotalVolumeUnits() const { return lastVolIndex; }
+    size_t getTotalVolumeUnits() const { return size_t(lastVolIndex); }
     int getVisibleBlocks(int currFrameId, int frameThreshold) const;
 
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
