@@ -55,17 +55,17 @@ namespace cv { namespace cuda { namespace device
 {
     namespace hough
     {
-        int buildPointList_gpu(PtrStepSzb src, unsigned int* list);
+        int buildPointList_gpu(PtrStepSzb src, unsigned int* list, int* counterPtr, cudaStream_t stream);
     }
 
     namespace hough_lines
     {
-        void linesAccum_gpu(const unsigned int* list, int count, PtrStepSzi accum, float rho, float theta, size_t sharedMemPerBlock, bool has20);
+        void linesAccum_gpu(const unsigned int* list, int count, PtrStepSzi accum, float rho, float theta, size_t sharedMemPerBlock, bool has20, cudaStream_t stream);
     }
 
     namespace hough_segments
     {
-        int houghLinesProbabilistic_gpu(PtrStepSzb mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength);
+        int houghLinesProbabilistic_gpu(PtrStepSzb mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int* counterPtr, cudaStream_t stream);
     }
 }}}
 
@@ -74,10 +74,8 @@ namespace
     class HoughSegmentDetectorImpl : public HoughSegmentDetector
     {
     public:
-        HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines) :
-            rho_(rho), theta_(theta), minLineLength_(minLineLength), maxLineGap_(maxLineGap), maxLines_(maxLines)
-        {
-        }
+        HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines);
+        ~HoughSegmentDetectorImpl();
 
         void detect(InputArray src, OutputArray lines, Stream& stream);
 
@@ -127,7 +125,20 @@ namespace
         GpuMat accum_;
         GpuMat list_;
         GpuMat result_;
+
+        int* counterPtr_;
     };
+
+    HoughSegmentDetectorImpl::HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines) :
+        rho_(rho), theta_(theta), minLineLength_(minLineLength), maxLineGap_(maxLineGap), maxLines_(maxLines)
+    {
+        cudaSafeCall(cudaMalloc(&counterPtr_, sizeof(int)));
+    }
+
+    HoughSegmentDetectorImpl::~HoughSegmentDetectorImpl()
+    {
+        cudaSafeCall(cudaFree(counterPtr_));
+    }
 
     void HoughSegmentDetectorImpl::detect(InputArray _src, OutputArray lines, Stream& stream)
     {
@@ -138,6 +149,7 @@ namespace
         using namespace cv::cuda::device::hough_lines;
         using namespace cv::cuda::device::hough_segments;
 
+        auto cudaStream = StreamAccessor::getStream(stream);
         GpuMat src = _src.getGpuMat();
 
         CV_Assert( src.type() == CV_8UC1 );
@@ -147,7 +159,7 @@ namespace
         ensureSizeIsEnough(1, src.size().area(), CV_32SC1, list_);
         unsigned int* srcPoints = list_.ptr<unsigned int>();
 
-        const int pointsCount = buildPointList_gpu(src, srcPoints);
+        const int pointsCount = buildPointList_gpu(src, srcPoints, counterPtr_, cudaStream);
         if (pointsCount == 0)
         {
             lines.release();
@@ -159,14 +171,14 @@ namespace
         CV_Assert( numangle > 0 && numrho > 0 );
 
         ensureSizeIsEnough(numangle + 2, numrho + 2, CV_32SC1, accum_);
-        accum_.setTo(Scalar::all(0));
+        accum_.setTo(Scalar::all(0), stream);
 
         DeviceInfo devInfo;
-        linesAccum_gpu(srcPoints, pointsCount, accum_, rho_, theta_, devInfo.sharedMemPerBlock(), devInfo.supports(FEATURE_SET_COMPUTE_20));
+        linesAccum_gpu(srcPoints, pointsCount, accum_, rho_, theta_, devInfo.sharedMemPerBlock(), devInfo.supports(FEATURE_SET_COMPUTE_20), cudaStream);
 
         ensureSizeIsEnough(1, maxLines_, CV_32SC4, result_);
 
-        int linesCount = houghLinesProbabilistic_gpu(src, accum_, result_.ptr<int4>(), maxLines_, rho_, theta_, maxLineGap_, minLineLength_);
+        int linesCount = houghLinesProbabilistic_gpu(src, accum_, result_.ptr<int4>(), maxLines_, rho_, theta_, maxLineGap_, minLineLength_, counterPtr_, cudaStream);
 
         if (linesCount == 0)
         {
@@ -175,7 +187,7 @@ namespace
         }
 
         result_.cols = linesCount;
-        result_.copyTo(lines);
+        result_.copyTo(lines, stream);
     }
 }
 

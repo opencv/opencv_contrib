@@ -44,6 +44,7 @@
 
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
+#include <thrust/system/cuda/execution_policy.h>
 
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/emulation.hpp"
@@ -53,8 +54,6 @@ namespace cv { namespace cuda { namespace device
 {
     namespace hough_lines
     {
-        __device__ int g_counter;
-
         ////////////////////////////////////////////////////////////////////////
         // linesAccum
 
@@ -126,7 +125,7 @@ namespace cv { namespace cuda { namespace device
                 accumRow[i] = smem[i];
         }
 
-        void linesAccum_gpu(const unsigned int* list, int count, PtrStepSzi accum, float rho, float theta, size_t sharedMemPerBlock, bool has20)
+        void linesAccum_gpu(const unsigned int* list, int count, PtrStepSzi accum, float rho, float theta, size_t sharedMemPerBlock, bool has20, cudaStream_t stream)
         {
             const dim3 block(has20 ? 1024 : 512);
             const dim3 grid(accum.rows - 2);
@@ -134,19 +133,18 @@ namespace cv { namespace cuda { namespace device
             size_t smemSize = (accum.cols - 1) * sizeof(int);
 
             if (smemSize < sharedMemPerBlock - 1000)
-                linesAccumShared<<<grid, block, smemSize>>>(list, count, accum, 1.0f / rho, theta, accum.cols - 2);
+                linesAccumShared<<<grid, block, smemSize, stream>>>(list, count, accum, 1.0f / rho, theta, accum.cols - 2);
             else
-                linesAccumGlobal<<<grid, block>>>(list, count, accum, 1.0f / rho, theta, accum.cols - 2);
+                linesAccumGlobal<<<grid, block, 0, stream>>>(list, count, accum, 1.0f / rho, theta, accum.cols - 2);
 
             cudaSafeCall( cudaGetLastError() );
-
-            cudaSafeCall( cudaDeviceSynchronize() );
+            cudaSafeCall( cudaStreamSynchronize(stream) );
         }
 
         ////////////////////////////////////////////////////////////////////////
         // linesGetResult
 
-        __global__ void linesGetResult(const PtrStepSzi accum, float2* out, int* votes, const int maxSize, const float rho, const float theta, const int threshold, const int numrho)
+        __global__ void linesGetResult(const PtrStepSzi accum, float2* out, int* votes, const int maxSize, const float rho, const float theta, const int threshold, const int numrho, int* counterPtr)
         {
             const int r = blockIdx.x * blockDim.x + threadIdx.x;
             const int n = blockIdx.y * blockDim.y + threadIdx.y;
@@ -165,7 +163,7 @@ namespace cv { namespace cuda { namespace device
                 const float radius = (r - (numrho - 1) * 0.5f) * rho;
                 const float angle = n * theta;
 
-                const int ind = ::atomicAdd(&g_counter, 1);
+                const int ind = ::atomicAdd(counterPtr, 1);
                 if (ind < maxSize)
                 {
                     out[ind] = make_float2(radius, angle);
@@ -174,25 +172,22 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        int linesGetResult_gpu(PtrStepSzi accum, float2* out, int* votes, int maxSize, float rho, float theta, int threshold, bool doSort)
+        int linesGetResult_gpu(PtrStepSzi accum, float2* out, int* votes, int maxSize, float rho, float theta, int threshold, bool doSort, int* counterPtr, cudaStream_t stream)
         {
-            void* counterPtr;
-            cudaSafeCall( cudaGetSymbolAddress(&counterPtr, g_counter) );
-
-            cudaSafeCall( cudaMemset(counterPtr, 0, sizeof(int)) );
+            cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
             const dim3 block(32, 8);
             const dim3 grid(divUp(accum.cols - 2, block.x), divUp(accum.rows - 2, block.y));
 
             cudaSafeCall( cudaFuncSetCacheConfig(linesGetResult, cudaFuncCachePreferL1) );
 
-            linesGetResult<<<grid, block>>>(accum, out, votes, maxSize, rho, theta, threshold, accum.cols - 2);
+            linesGetResult<<<grid, block, 0, stream>>>(accum, out, votes, maxSize, rho, theta, threshold, accum.cols - 2, counterPtr);
             cudaSafeCall( cudaGetLastError() );
 
-            cudaSafeCall( cudaDeviceSynchronize() );
-
             int totalCount;
-            cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
+            cudaSafeCall( cudaMemcpyAsync(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
+
+            cudaSafeCall( cudaStreamSynchronize(stream) );
 
             totalCount = ::min(totalCount, maxSize);
 
@@ -200,7 +195,7 @@ namespace cv { namespace cuda { namespace device
             {
                 thrust::device_ptr<float2> outPtr(out);
                 thrust::device_ptr<int> votesPtr(votes);
-                thrust::sort_by_key(votesPtr, votesPtr + totalCount, outPtr, thrust::greater<int>());
+                thrust::sort_by_key(thrust::cuda::par.on(stream), votesPtr, votesPtr + totalCount, outPtr, thrust::greater<int>());
             }
 
             return totalCount;

@@ -49,10 +49,8 @@ namespace cv { namespace cuda { namespace device
 {
     namespace hough
     {
-        __device__ int g_counter;
-
         template <int PIXELS_PER_THREAD>
-        __global__ void buildPointList(const PtrStepSzb src, unsigned int* list)
+        __global__ void buildPointList(const PtrStepSzb src, unsigned int* list, int* counterPtr)
         {
             __shared__ unsigned int s_queues[4][32 * PIXELS_PER_THREAD];
             __shared__ int s_qsize[4];
@@ -94,7 +92,7 @@ namespace cv { namespace cuda { namespace device
                 }
 
                 // calculate the offset in the global list
-                const int globalOffset = atomicAdd(&g_counter, totalSize);
+                const int globalOffset = atomicAdd(counterPtr, totalSize);
                 for (int i = 0; i < blockDim.y; ++i)
                     s_globStart[i] += globalOffset;
             }
@@ -108,27 +106,23 @@ namespace cv { namespace cuda { namespace device
                 list[gidx] = s_queues[threadIdx.y][i];
         }
 
-        int buildPointList_gpu(PtrStepSzb src, unsigned int* list)
+        int buildPointList_gpu(PtrStepSzb src, unsigned int* list, int* counterPtr, cudaStream_t stream)
         {
             const int PIXELS_PER_THREAD = 16;
 
-            void* counterPtr;
-            cudaSafeCall( cudaGetSymbolAddress(&counterPtr, g_counter) );
-
-            cudaSafeCall( cudaMemset(counterPtr, 0, sizeof(int)) );
+            cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
             const dim3 block(32, 4);
             const dim3 grid(divUp(src.cols, block.x * PIXELS_PER_THREAD), divUp(src.rows, block.y));
 
             cudaSafeCall( cudaFuncSetCacheConfig(buildPointList<PIXELS_PER_THREAD>, cudaFuncCachePreferShared) );
 
-            buildPointList<PIXELS_PER_THREAD><<<grid, block>>>(src, list);
+            buildPointList<PIXELS_PER_THREAD><<<grid, block, 0, stream>>>(src, list, counterPtr);
             cudaSafeCall( cudaGetLastError() );
 
-            cudaSafeCall( cudaDeviceSynchronize() );
-
             int totalCount;
-            cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
+            cudaSafeCall( cudaMemcpyAsync(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
+            cudaSafeCall( cudaStreamSynchronize(stream) );
 
             return totalCount;
         }
