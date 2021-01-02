@@ -358,6 +358,31 @@ threshold types are not supported.
  */
 CV_EXPORTS_W double threshold(InputArray src, OutputArray dst, double thresh, double maxval, int type, Stream& stream = Stream::Null());
 
+/** @brief  Checks if array elements lie between two scalars.
+
+The function checks the range as follows:
+-   For every element of a single-channel input array:
+    \f[\texttt{dst} (I)= \texttt{lowerb}_0  \leq \texttt{src} (I)_0 \leq  \texttt{upperb}_0\f]
+-   For two-channel arrays:
+    \f[\texttt{dst} (I)= \texttt{lowerb}_0  \leq \texttt{src} (I)_0 \leq  \texttt{upperb}_0  \land \texttt{lowerb}_1  \leq \texttt{src} (I)_1 \leq  \texttt{upperb}_1\f]
+-   and so forth.
+
+That is, dst (I) is set to 255 (all 1 -bits) if src (I) is within the
+specified 1D, 2D, 3D, ... box and 0 otherwise.
+
+Note that unlike the CPU inRange, this does NOT accept an array for lowerb or
+upperb, only a cv::Scalar.
+
+@param src first input array.
+@param lowerb inclusive lower boundary cv::Scalar.
+@param upperb inclusive upper boundary cv::Scalar.
+@param dst output array of the same size as src and CV_8U type.
+@param stream Stream for the asynchronous version.
+
+@sa cv::inRange
+ */
+CV_EXPORTS_W void inRange(InputArray src, const Scalar& lowerb, const Scalar& upperb, OutputArray dst, Stream& stream = Stream::Null());
+
 /** @brief Computes magnitudes of complex matrix elements.
 
 @param xy Source complex matrix in the interleaved format ( CV_32FC2 ).
