@@ -66,6 +66,4 @@ protected:
 }
 }
 
-
 #endif //__OPENCV_BARCODE_BARDETECT_HPP__
-

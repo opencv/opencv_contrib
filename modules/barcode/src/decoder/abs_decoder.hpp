@@ -70,4 +70,3 @@ int patternMatch(std::vector<int> counters, const std::vector<int> &pattern, uin
 } // namespace cv
 
 #endif //! __OPENCV_BARCODE_ABS_DECODER_HPP__
-
