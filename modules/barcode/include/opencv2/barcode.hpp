@@ -6,9 +6,15 @@
 #ifndef __OPENCV_BARCODE_HPP__
 #define __OPENCV_BARCODE_HPP__
 
+/** @defgroup barcode Barcode detecting and decoding methods
+*/
 
 namespace cv {
 namespace barcode {
+
+//! @addtogroup barcode
+//! @{
+
 enum BarcodeType
 {
     EAN_8, EAN_13, UPC_A, UPC_E, UPC_EAN_EXTENSION, NONE
@@ -69,6 +75,9 @@ protected:
     struct Impl;
     Ptr <Impl> p;
 };
+
+//! @}
+
 }
 } // cv::barcode::
 #endif //__OPENCV_BARCODE_HPP__
