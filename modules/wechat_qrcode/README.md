@@ -1,8 +1,9 @@
 WeChat QR code detector for detecting and parsing QR code.
 ================================================ 
-There are four primary features of WeChat QR code detector:
+
+WeChat QR code detector is a high-performance and lightweight QR code detect and decode library, which has been widely used in various Tencent applications, including WeChat, WeCom, QQ, QQ Browser, and so on. There are four primary features of WeChat QR code detector:
  
-1. CNN-based QR code detector. Different to the traditional detector, we introduce a tiny CNN model for multiple code detection. The detector is based on SSD architecture with a MobileNetV2-like backbone, which is run on caffe inference framework.
+1. CNN-based QR code detector. Different from the traditional detector, we introduce a tiny CNN model for multiple code detection. The detector is based on SSD architecture with a MobileNetV2-like backbone, which is run on caffe inference framework.
  
 2. CNN-based QR code enhancement. To improve the performance of tiny QR code, we design a lighten super-resolution CNN model for QR code, called QRSR. Depth-wise convolution, DenseNet concat and deconvolution are the core techniques in the QRSR model.
  
