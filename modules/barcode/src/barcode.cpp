@@ -8,30 +8,6 @@
 
 namespace cv {
 namespace barcode {
-std::ostream &operator<<(std::ostream &out, BarcodeType format)
-{
-    switch (format)
-    {
-        case BarcodeType::EAN_8:
-            out << "EAN_8";
-            break;
-        case BarcodeType::EAN_13:
-            out << "EAN_13";
-            break;
-        case BarcodeType::UPC_E:
-            out << "UPC_E";
-            break;
-        case BarcodeType::UPC_A:
-            out << "UPC_A";
-            break;
-        case BarcodeType::UPC_EAN_EXTENSION:
-            out << "UPC_EAN_EXTENSION";
-            break;
-        default:
-            out << "NONE";
-    }
-    return out;
-}
 
 static bool checkBarInputImage(InputArray img, Mat &gray)
 {
@@ -141,7 +117,7 @@ bool BarcodeDetector::decode(InputArray img, InputArray points, vector<std::stri
 }
 
 bool BarcodeDetector::detectAndDecode(InputArray img, vector<std::string> &decoded_info,
-                                      vector<BarcodeType> &decoded_format, OutputArray points_) const
+                                      vector<BarcodeType> &decoded_type, OutputArray points_) const
 {
     Mat inarr;
     if (!checkBarInputImage(img, inarr))
@@ -158,12 +134,12 @@ bool BarcodeDetector::detectAndDecode(InputArray img, vector<std::string> &decod
     }
     updatePointsResult(points_, points);
     decoded_info.clear();
-    decoded_format.clear();
-    ok = this->decode(inarr, points, decoded_info, decoded_format);
+    decoded_type.clear();
+    ok = this->decode(inarr, points, decoded_info, decoded_type);
     return ok;
 }
 
-bool BarcodeDetector::decodeDirectly(InputArray img, std::string &decoded_info, BarcodeType &decoded_format) const
+bool BarcodeDetector::decodeDirectly(InputArray img, String &decoded_info, BarcodeType &decoded_type) const
 {
     Mat inarr;
     if (!checkBarInputImage(img, inarr))
@@ -174,8 +150,8 @@ bool BarcodeDetector::decodeDirectly(InputArray img, std::string &decoded_info, 
     std::unique_ptr<AbsDecoder> decoder{new Ean13Decoder()};
     _decoded_info = decoder->decodeImg(inarr);
     decoded_info = _decoded_info.result;
-    decoded_format = _decoded_info.format;
-    if (decoded_format == BarcodeType::NONE || decoded_info.empty())
+    decoded_type = _decoded_info.format;
+    if (decoded_type == BarcodeType::NONE || decoded_info.empty())
     {
         return false;
     }

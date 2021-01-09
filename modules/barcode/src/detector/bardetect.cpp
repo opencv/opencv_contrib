@@ -64,10 +64,10 @@ inline double Detect::computeOrientation(float y, float x)
 void Detect::init(const Mat &src)
 {
     const double min_side = std::min(src.size().width, src.size().height);
-    if (min_side > 1024.0)
+    if (min_side > 512.0)
     {
         purpose = SHRINKING;
-        coeff_expansion = min_side / 1024.0;
+        coeff_expansion = min_side / 512.0;
         width = cvRound(src.size().width / coeff_expansion);
         height = cvRound(src.size().height / coeff_expansion);
         Size new_size(width, height);
@@ -105,7 +105,7 @@ void Detect::localization()
     preprocess();
     float window_ratio = 0.01f;
     static constexpr float window_ratio_step = 0.02f;
-    static constexpr int window_ratio_stepTimes = 6; // 6 = (0.13-0.01)/0.02
+    static constexpr int window_ratio_stepTimes = 6;
     int window_size;
     for (size_t i = 0; i < window_ratio_stepTimes; i++)
     {
@@ -127,7 +127,7 @@ bool Detect::computeTransformationPoints()
     transformation_points.reserve(bbox_indices.size());
     RotatedRect rect;
     Point2f temp[4];
-    const float THRESHOLD_SCORE = float(width * height) / 1000;
+    const float THRESHOLD_SCORE = float(width * height) / 500;
     dnn::NMSBoxes(localization_bbox, bbox_scores, THRESHOLD_SCORE, 0.1, bbox_indices);
 
     for (const auto &bbox_index : bbox_indices)
@@ -198,10 +198,10 @@ void Detect::preprocess()
 // depend on width height integral_edges integral_x_sq integral_y_sq integral_xy
 void Detect::calConsistency(int window_size)
 {
-    static constexpr float THRESHOLD_CONSISTENCY = 0.85f;
+    static constexpr float THRESHOLD_CONSISTENCY = 0.9f;
     int right_col, left_col, top_row, bottom_row;
     float xy, x_sq, y_sq, d, rect_area;
-    const float THRESHOLD_AREA = float(window_size * window_size) * 0.5f;
+    const float THRESHOLD_AREA = float(window_size * window_size) * 0.42f;
     Size new_size(width / window_size, height / window_size);
     consistency = Mat(new_size, CV_8U), orientation = Mat(new_size, CV_32F), edge_nums = Mat(new_size, CV_32F);
 
@@ -268,7 +268,7 @@ void Detect::calConsistency(int window_size)
 // depend on consistency orientation edge_nums
 void Detect::regionGrowing(int window_size)
 {
-    static constexpr float LOCAL_THRESHOLD_CONSISTENCY = 0.98, THRESHOLD_RADIAN = PIDivideX<float, 40>::Value, THRESHOLD_BLOCK_NUM = 20, LOCAL_RATIO = 0.4;
+    static constexpr float LOCAL_THRESHOLD_CONSISTENCY = 0.95, THRESHOLD_RADIAN = PIDivideX<float, 30>::Value, THRESHOLD_BLOCK_NUM = 35, LOCAL_RATIO = 0.5, EXPANSION_FACTOR = 1.2;
     Point pt_to_grow, pt;                       //point to grow
 
     float src_value;
@@ -376,8 +376,8 @@ void Detect::regionGrowing(int window_size)
                 continue;
             }
             minRect.angle = static_cast<float>(local_orientation) * XDividePI<180, float>::Value;
-            minRect.size.width *= static_cast<float>(window_size + 1);
-            minRect.size.height *= static_cast<float>(window_size + 1);
+            minRect.size.width *= static_cast<float>(window_size) * EXPANSION_FACTOR;
+            minRect.size.height *= static_cast<float>(window_size);
             minRect.center.x = (minRect.center.x + 0.5) * window_size;
             minRect.center.y = (minRect.center.y + 0.5) * window_size;
             localization_bbox.push_back(minRect);
