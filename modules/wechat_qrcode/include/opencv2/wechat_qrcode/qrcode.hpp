@@ -33,7 +33,7 @@ public:
      * @param detector_prototxt_path prototxt file path for the detector
      * @param detector_caffe_model_path caffe model file path for the detector
      * @param super_resolution_prototxt_path prototxt file path for the super resolution model
-     * @param super_resolution_model_path caffe file path for the super resolution model
+     * @param super_resolution_caffe_model_path caffe file path for the super resolution model
      */
     CV_WRAP QRCodeDetector(const String& detector_prototxt_path = "",
                            const String& detector_caffe_model_path = "",
