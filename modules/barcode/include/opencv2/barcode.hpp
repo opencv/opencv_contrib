@@ -20,12 +20,12 @@ namespace barcode {
 
 enum BarcodeType
 {
-    EAN_8, EAN_13, UPC_A, UPC_E, UPC_EAN_EXTENSION, NONE
+    NONE, EAN_8, EAN_13, UPC_A, UPC_E, UPC_EAN_EXTENSION
 };
 
-static inline std::ostream &operator<<(std::ostream &out, const BarcodeType &format)
+static inline std::ostream &operator<<(std::ostream &out, const BarcodeType &barcode_type)
 {
-    switch (format)
+    switch (barcode_type)
     {
         case BarcodeType::EAN_8:
             out << "EAN_8";
