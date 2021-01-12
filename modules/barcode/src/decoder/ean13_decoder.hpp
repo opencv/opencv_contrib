@@ -13,6 +13,8 @@ namespace barcode {
 //extern struct EncodePair;
 using std::string;
 using std::vector;
+using std::pair;
+
 
 class Ean13Decoder : public UPCEANDecoder
 {
@@ -22,7 +24,7 @@ public:
     ~Ean13Decoder() override = default;
 
 protected:
-    Result decode(vector<uchar> data, int start) const override;
+    Result decode(vector<uchar> data, uint start) const override;
 
     bool isValid(string result) const override;
 };

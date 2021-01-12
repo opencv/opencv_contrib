@@ -21,24 +21,25 @@ void cutImage(InputArray _src, OutputArray &_dst, const std::vector<Point2f> &re
         vertices.push_back(v0);
     }
     std::vector<Point2f> dst_vertices{
-            Point2f(0, height - 1), Point2f(0, 0), Point2f(width - 1, 0), Point2f(width - 1, height - 1)};
+            Point2f(0, (float) (height - 1)), Point2f(0, 0), Point2f((float) (width - 1), 0),
+            Point2f((float) (width - 1), (float) (height - 1))};
     _dst.create(Size(width, height), CV_8UC1);
     Mat M = getPerspectiveTransform(vertices, dst_vertices);
     Mat dst = _dst.getMat();
     warpPerspective(_src.getMat(), dst, M, _dst.size(), cv::INTER_LINEAR, BORDER_CONSTANT, Scalar(255));
 }
 
-void fillCounter(const std::vector<uchar> &row, int start, std::vector<int> &counters)
+void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &counters)
 {
-    int counter_length = counters.size();
+    size_t counter_length = counters.size();
     std::fill(counters.begin(), counters.end(), 0);
-    int end = row.size();
+    size_t end = row.size();
     if (start >= end)
     {
         // TODO throw NotFoundException.getNotFoundInstance();
     }
     uchar isWhite = row[start];
-    int counterPosition = 0;
+    uint counterPosition = 0;
     while (start < end)
     {
         if (row[start] == isWhite)
@@ -69,7 +70,7 @@ void fillCounter(const std::vector<uchar> &row, int start, std::vector<int> &cou
 static inline int
 patternMatchVariance(std::vector<int> counters, const std::vector<int> &pattern, int maxIndividualVariance)
 {
-    int numCounters = counters.size();
+    size_t numCounters = counters.size();
     int total = std::accumulate(counters.cbegin(), counters.cend(), 0);
     int patternLength = std::accumulate(pattern.cbegin(), pattern.cend(), 0);
     if (total < patternLength)
@@ -86,7 +87,7 @@ patternMatchVariance(std::vector<int> counters, const std::vector<int> &pattern,
     int unitBarWidth = (total << INTEGER_MATH_SHIFT) / patternLength;
     maxIndividualVariance = (maxIndividualVariance * unitBarWidth) >> INTEGER_MATH_SHIFT;
     int totalVariance = 0;
-    for (int x = 0; x < numCounters; x++)
+    for (uint x = 0; x < numCounters; x++)
     {
         int counter = counters[x] << INTEGER_MATH_SHIFT;
         int scaledPattern = pattern[x] * unitBarWidth;

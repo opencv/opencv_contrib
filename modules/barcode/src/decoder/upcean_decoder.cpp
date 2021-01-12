@@ -13,16 +13,17 @@ namespace barcode {
 
 static constexpr int DIVIDE_PART = 16;
 
-std::pair<int, int> UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &row, int rowOffset, uchar whiteFirst,
-                                                     const std::vector<int> &pattern, std::vector<int> counters)
+bool UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &row, int rowOffset, uchar whiteFirst,
+                                      const std::vector<int> &pattern, std::vector<int> counters,
+                                      std::pair<int, int> &result)
 {
-    int patternLength = pattern.size();
-    int width = row.size();
+    size_t patternLength = pattern.size();
+    size_t width = row.size();
     uchar isWhite = whiteFirst ? WHITE : BLACK;
-    rowOffset = std::find(row.cbegin() + rowOffset, row.cend(), isWhite) - row.cbegin();
-    int counterPosition = 0;
+    rowOffset = (int) (std::find(row.cbegin() + rowOffset, row.cend(), isWhite) - row.cbegin());
+    uint counterPosition = 0;
     int patternStart = rowOffset;
-    for (int x = rowOffset; x < width; x++)
+    for (uint x = rowOffset; x < width; x++)
     {
         if (row[x] == isWhite)
         {
@@ -34,7 +35,9 @@ std::pair<int, int> UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &r
             {
                 if (patternMatch(counters, pattern, MAX_INDIVIDUAL_VARIANCE) < MAX_AVG_VARIANCE)
                 {
-                    return std::make_pair(patternStart, x);
+                    result.first = patternStart;
+                    result.second = x;
+                    return true;
                 }
                 patternStart += counters[0] + counters[1];
                 std::copy(counters.begin() + 2, counters.end(), counters.begin());
@@ -50,25 +53,27 @@ std::pair<int, int> UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &r
             isWhite = (std::numeric_limits<uchar>::max() - isWhite);
         }
     }
-    throw GuardPatternsNotFindException("pattern not find");
+    return false;
 }
 
-std::pair<int, int> UPCEANDecoder::findStartGuardPatterns(const std::vector<uchar> &row)
+bool UPCEANDecoder::findStartGuardPatterns(const std::vector<uchar> &row, std::pair<int, int> &start_range)
 {
     bool is_find = false;
-    std::pair<int, int> start_range{0, -1};
     int next_start = 0;
     while (!is_find)
     {
         std::vector<int> guard_counters{0, 0, 0};
-        start_range = findGuardPatterns(row, next_start, BLACK, BEGIN_PATTERN(), guard_counters);
+        if (!findGuardPatterns(row, next_start, BLACK, BEGIN_PATTERN(), guard_counters, start_range))
+        {
+            return false;
+        }
         int start = start_range.first;
         next_start = start_range.second;
         int quiet_start = max(start - (next_start - start), 0);
         is_find = (quiet_start != start) &&
                   (std::find(std::begin(row) + quiet_start, std::begin(row) + start, BLACK) == std::begin(row) + start);
     }
-    return start_range;
+    return true;
 }
 
 int UPCEANDecoder::decodeDigit(const std::vector<uchar> &row, std::vector<int> &counters, int rowOffset,
@@ -89,7 +94,7 @@ int UPCEANDecoder::decodeDigit(const std::vector<uchar> &row, std::vector<int> &
         i++;
     }
     return std::max(-1, bestMatch);
-    // -1 is dismatch or means error.
+    // -1 is Mismatch or means error.
 }
 
 /*Input a mat and it's position rect, return the decode result */
@@ -131,13 +136,13 @@ Result UPCEANDecoder::rectToResult(const Mat &gray, const std::vector<Point2f> &
     std::map<BarcodeType, int> format_vote;
     int vote_cnt = 0;
     int total_vote = 0;
-    std::string max_result = "ERROR";
+    std::string max_result;
     BarcodeType max_format = BarcodeType::NONE;
     auto rect_size_height = norm(points[0] - points[1]);
     auto rect_size_width = norm(points[1] - points[2]);
     if (max(rect_size_height, rect_size_width) < this->bits_num)
     {
-        return Result{"ERROR", BarcodeType::NONE};
+        return Result{string(), BarcodeType::NONE};
     }
 
     std::vector<std::pair<Point2i, Point2i>> begin_and_ends;
@@ -150,7 +155,6 @@ Result UPCEANDecoder::rectToResult(const Mat &gray, const std::vector<Point2f> &
     Result barcode;
     for (const auto &i: begin_and_ends)
     {
-        std::vector<uchar> middle;
         const auto &begin = i.first;
         const auto &end = i.second;
         barcode = decodeLine(gray, begin, end);
@@ -200,15 +204,14 @@ Result UPCEANDecoder::decodeLine(const Mat &bar_img, const Point2i &begin, const
 void UPCEANDecoder::linesFromRect(const Size2i &shape, int angle, int PART,
                                   std::vector<std::pair<Point2i, Point2i>> &results) const
 {
-    auto shapef = Size2f(shape);
-    Point2i step = Point2i(cvRound(shapef.height) / PART, 0);
-    Point2i cbegin = Point2i(shapef.height / 2, 0);
-    Point2i cend = Point2i(shapef.height / 2, shapef.width - 1);
+    Point2i step = Point2i(shape.height / PART, 0);
+    Point2i cbegin = Point2i(shape.height / 2, 0);
+    Point2i cend = Point2i(shape.height / 2, shape.width - 1);
     if (angle)
     {
-        step = Point2i(0, cvRound(shapef.width) / PART);
-        cbegin = Point2i(0, shapef.width / 2);
-        cend = Point2i(shapef.height - 1, shapef.width / 2);
+        step = Point2i(0, shape.width / PART);
+        cbegin = Point2i(0, shape.width / 2);
+        cend = Point2i(shape.height - 1, shape.width / 2);
     }
     results.reserve(results.size() + PART + 1);
     for (int i = 1; i <= (PART >> 1); ++i)
@@ -226,7 +229,8 @@ Result UPCEANDecoder::decodeImg(InputArray img) const
     auto gray = Mat.clone();
     constexpr int PART = 50;
     std::vector<Point2f> real_rect{
-            Point2f(0, Mat.rows), Point2f(0, 0), Point2f(Mat.cols, 0), Point2f(Mat.cols, Mat.rows)};
+            Point2f(0, (float) Mat.rows), Point2f(0, 0), Point2f((float) Mat.cols, 0),
+            Point2f((float) Mat.cols, (float) Mat.rows)};
     Result result = rectToResult(Mat, real_rect, PART, true);
     return result;
 }

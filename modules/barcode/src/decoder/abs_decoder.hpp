@@ -19,7 +19,6 @@ constexpr static int BLACK = std::numeric_limits<uchar>::min();
 constexpr static int WHITE = std::numeric_limits<uchar>::max();
 
 
-
 struct Result
 {
     std::string result;
@@ -46,21 +45,14 @@ public:
     virtual ~AbsDecoder() = default;
 
 protected:
-    virtual Result decode(vector<uchar> data, int start) const = 0;
+    virtual Result decode(vector<uchar> data, uint start) const = 0;
 
     virtual bool isValid(string result) const = 0;
 };
 
-class GuardPatternsNotFindException : Exception
-{
-public:
-    explicit GuardPatternsNotFindException(const std::string &error_msg) : Exception(0, error_msg, "", __FILE__, __LINE__)
-    {}
-};
-
 void cutImage(InputArray _src, OutputArray &_dst, const std::vector<Point2f> &rect);
 
-void fillCounter(const std::vector<uchar> &row, int start, std::vector<int> &counters);
+void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &counters);
 
 constexpr static uint INTEGER_MATH_SHIFT = 8;
 constexpr static int PATTERN_MATCH_RESULT_SCALE_FACTOR = 1 << INTEGER_MATH_SHIFT;

@@ -39,11 +39,11 @@ protected:
     int decodeDigit(const std::vector<uchar> &row, std::vector<int> &counters, int rowOffset,
                     const std::vector<std::vector<int>> &patterns) const;
 
-    static std::pair<int, int>
+    static bool
     findGuardPatterns(const std::vector<uchar> &row, int rowOffset, uchar whiteFirst, const std::vector<int> &pattern,
-                      std::vector<int> counters);
+                      std::vector<int> counters, std::pair<int, int> &result);
 
-    static std::pair<int, int> findStartGuardPatterns(const std::vector<uchar> &row);
+    static bool findStartGuardPatterns(const std::vector<uchar> &row, std::pair<int, int> &start_range);
 
     Result rectToResult(const Mat &gray, const std::vector<Point2f> &points, int PART, int directly) const;
 
@@ -52,7 +52,7 @@ protected:
     void
     linesFromRect(const Size2i &shape, int angle, int PART, std::vector<std::pair<Point2i, Point2i>> &results) const;
 
-    Result decode(std::vector<uchar> bar, int start) const override = 0;
+    Result decode(std::vector<uchar> bar, uint start) const override = 0;
 
     bool isValid(std::string result) const override = 0;
 };
