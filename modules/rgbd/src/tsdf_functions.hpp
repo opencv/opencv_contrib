@@ -83,7 +83,7 @@ public:
     void updateIsActive(Vec3i indx, int isActive);
     void updateLastVolumeIndx(Vec3i indx, int lastVisibleIndex);
     void updateActivity(Vec3i indx, int isActive, int lastVisibleIndex);
-    
+
     void expand();
     bool getActive(Vec3i indx) const;
     int getNextVolume(int hash, int& num, int i, int start);
