@@ -67,6 +67,9 @@ public:
     int list_size    = _list_size;
     int bufferNums   = 1;
 
+    int32_t free_row = -1;
+    int32_t free_isActive = 0;
+
     cv::Mat volumes;
     std::vector<Vec3i> indexes;
     std::vector<Vec4i> indexesGPU;
@@ -74,12 +77,13 @@ public:
     VolumesTable();
     ~VolumesTable() {};
 
-
-    void update(Vec3i indx);
-    void update(Vec3i indx, int row);
-    void update(Vec3i indx, int isActive, int lastVisibleIndex);
-    void updateActive(Vec3i indx, int isActive);
     void updateVolumeUnit(int mode, Vec3i indx, int row, int isActive, int lastVisibleIndex);
+    void updateIndx(Vec3i indx);
+    void updateRow(Vec3i indx, int row);
+    void updateIsActive(Vec3i indx, int isActive);
+    void updateLastVolumeIndx(Vec3i indx, int lastVisibleIndex);
+    void updateActivity(Vec3i indx, int isActive, int lastVisibleIndex);
+    
     void expand();
     bool getActive(Vec3i indx) const;
     int getNextVolume(int hash, int& num, int i, int start);

@@ -403,13 +403,13 @@ VolumesTable::VolumesTable()
     }
 }
 
-inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row=-1, int isActive=0, int lastVisibleIndex=-1)
+inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row = -1, int isActive = 0, int lastVisibleIndex = -1)
 {
-// modes:
-// 0 - Vec3i indx
-// 1 - Vec3i indx, int row
-// 2 - Vec3i indx, int isActive, int lastVisibleIndex
-// 3 - Vec3i indx, int isActive
+    // mode 0 updateIndx
+    // mode 1 updateRow
+    // mode 2 updateIsActive
+    // mode 3 updateLastVolumeIndx
+    // mode 4 updateActivity
 
     Vec4i idx(indx[0], indx[1], indx[2], 0);
     int hash = int(calc_hash(idx) % hash_divisor);
@@ -420,9 +420,7 @@ inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row=-1, int
     while (i != -1)
     {
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
-        
-        //find nan cheking for int or Vec3i
-        //if (isNaN(Point3i(v.idx)))
+
         if (v->idx[0] == NAN_ELEMENT)
         {
             v->idx = idx;
@@ -435,7 +433,15 @@ inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row=-1, int
             return;
         }
 
-        if (mode == 1)
+        if (mode == 0) // updateIndx
+        {
+            if (v->idx == idx)
+            {
+                return;
+            }
+        }
+
+        if (mode == 1) // updateRow
         {
             if (v->idx == idx)
             {
@@ -443,7 +449,26 @@ inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row=-1, int
                 return;
             }
         }
-        else if (mode == 2)
+
+        if (mode == 2) // updateIsActive
+        {
+            if (v->idx == idx)
+            {
+                v->isActive = isActive;
+                return;
+            }
+        }
+
+        if (mode == 3) // updateLastVolumeIndx
+        {
+            if (v->idx == idx)
+            {
+                v->lastVisibleIndex = lastVisibleIndex;
+                return;
+            }
+        }
+
+        if (mode == 4) // updateActivity
         {
             if (v->idx == idx)
             {
@@ -451,40 +476,40 @@ inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row=-1, int
                 v->lastVisibleIndex = lastVisibleIndex;
                 return;
             }
-
-        }
-        else if (mode == 3)
-        {
-            v->isActive = isActive;
-            return;
         }
 
         i = v->nextVolumeRow;
     }
 }
 
-void VolumesTable::update(Vec3i indx)
+void VolumesTable::updateIndx(Vec3i indx)
 {
-    int mode = 0;
-    this->updateVolumeUnit(mode, indx);
+    const int mode = 0;
+    updateVolumeUnit(mode, indx);
 }
 
-void VolumesTable::update(Vec3i indx, int row)
+void VolumesTable::updateRow(Vec3i indx, int row)
 {
-    int mode = 1;
-    this->updateVolumeUnit(mode, indx);
+    const int mode = 1;
+    updateVolumeUnit(mode, indx, row);
 }
 
-void VolumesTable::update(Vec3i indx, int isActive, int lastVisibleIndex)
+void VolumesTable::updateIsActive(Vec3i indx, int isActive)
 {
-    int mode = 2;
-    this->updateVolumeUnit(mode, indx);
+    const int mode = 2;
+    updateVolumeUnit(mode, indx, free_row, isActive);
 }
 
-void VolumesTable::updateActive(Vec3i indx, int isActive)
+void VolumesTable::updateLastVolumeIndx(Vec3i indx, int lastVisibleIndex)
 {
-    int mode = 3;
-    this->updateVolumeUnit(mode, indx);
+    const int mode = 3;
+    updateVolumeUnit(mode, indx, free_row, free_isActive, lastVisibleIndex);
+}
+
+void VolumesTable::updateActivity(Vec3i indx, int isActive, int lastVisibleIndex)
+{
+    const int mode = 4;
+    updateVolumeUnit(mode, indx, free_row, isActive, lastVisibleIndex);
 }
 
 bool VolumesTable::getActive(Vec3i indx) const

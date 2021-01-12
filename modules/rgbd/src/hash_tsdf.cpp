@@ -1085,7 +1085,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                     lastVisibleIndexes.resize(buff_lvl);
                     allVol2cam.resize(buff_lvl);
                 }
-                indexes.update(idx, lastVolIndex);
+                indexes.updateRow(idx, lastVolIndex);
                 *_newIndices.ptr<VolumeIndex>(vol_idx) = lastVolIndex;
                 *newIndices.ptr<Vec3i>(vol_idx) = idx;
                 vol_idx++;
@@ -1108,7 +1108,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         *poses.ptr<cv::Matx44f>(idx, 0) = subvolumePose;
         *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
-        indexes.updateActive(tsdf_idx, 1);
+        indexes.updateIsActive(tsdf_idx, 1);
 
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
         auto vol2camMatrix = vol2cam.matrix.val;
@@ -1144,7 +1144,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
-                indexes.updateActive(tsdf_idx, 0);
+                indexes.updateIsActive(tsdf_idx, 0);
                 return;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
@@ -1152,7 +1152,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             {
                 assert(idx != lastVolIndex);
                 *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
-                indexes.update(tsdf_idx, 1, frameId);
+                indexes.updateActivity(tsdf_idx, 1, frameId);
             }
         }
     };
