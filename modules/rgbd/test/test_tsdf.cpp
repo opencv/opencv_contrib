@@ -274,7 +274,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = true;
+static const bool display = false;
 static const bool parallelCheck = false;
 
 void normalsCheck(Mat normals)
@@ -358,7 +358,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         points = _points.getMat(af);
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(20000);
+        waitKey(2000);
     }
 
     if (isRaycast)
@@ -384,7 +384,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             points = _newPoints.getMat(af);
             renderPointsNormals(points, normals, image, _params->lightPose);
             imshow("render", image);
-            waitKey(20000);
+            waitKey(2000);
         }
 
     }
@@ -448,7 +448,7 @@ void valid_points_test(bool isHashTSDF)
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(20000);
+        waitKey(2000);
     }
 
     volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
@@ -463,7 +463,7 @@ void valid_points_test(bool isHashTSDF)
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(20000);
+        waitKey(2000);
     }
 
     float percentValidity;
@@ -522,22 +522,10 @@ TEST(TSDF_GPU, fetch_points_normals) { normal_test(false, false, true, false); }
 TEST(TSDF_GPU, fetch_normals)        { normal_test(false, false, false, true); }
 TEST(TSDF_GPU, valid_points)         { valid_points_test(false); }
 
-TEST(HashTSDF_GPU, raycast_normals)      { 
-    cv::ocl::Context context;
-    cv::ocl::Device(context.device(1)); 
-    normal_test(true, true, false, false); }
-TEST(HashTSDF_GPU, fetch_points_normals) { 
-    cv::ocl::Context context;
-    cv::ocl::Device(context.device(1)); 
-    normal_test(true, false, true, false); }
-TEST(HashTSDF_GPU, fetch_normals)        { 
-    cv::ocl::Context context;
-    cv::ocl::Device(context.device(1)); 
-    normal_test(true, false, false, true); }
-TEST(HashTSDF_GPU, valid_points)         { 
-    cv::ocl::Context context;
-    cv::ocl::Device(context.device(1)); 
-    valid_points_test(true); }
+TEST(HashTSDF_GPU, raycast_normals)      { normal_test(true, true, false, false); }
+TEST(HashTSDF_GPU, fetch_points_normals) { normal_test(true, false, true, false); }
+TEST(HashTSDF_GPU, fetch_normals)        { normal_test(true, false, false, true); }
+TEST(HashTSDF_GPU, valid_points)         { valid_points_test(true); }
 
 TEST(TSDF_CPU, raycast_normals)
 {
