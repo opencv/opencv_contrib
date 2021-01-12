@@ -84,8 +84,8 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
     void reset() override;
-    size_t getTotalVolumeUnits() const { return volumeUnits.size(); }
-    int getVisibleBlocks(int currFrameId, int frameThreshold) const;
+    size_t getTotalVolumeUnits() const override { return volumeUnits.size(); }
+    int getVisibleBlocks(int currFrameId, int frameThreshold) const override;
 
     //! Return the voxel given the voxel index in the universal volume (1 unit = 1 voxel_length)
     TsdfVoxel at(const Vec3i& volumeIdx) const;
@@ -144,8 +144,8 @@ public:
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
-    size_t getTotalVolumeUnits() const { return size_t(lastVolIndex); }
-    int getVisibleBlocks(int currFrameId, int frameThreshold) const;
+    size_t getTotalVolumeUnits() const override { return size_t(lastVolIndex); }
+    int getVisibleBlocks(int currFrameId, int frameThreshold) const override;
 
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
