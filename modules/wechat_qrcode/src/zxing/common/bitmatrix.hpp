@@ -62,12 +62,12 @@ private:
     ArrayRef<int> rowOffsets;
 
 public:
-    BitMatrix(int width, int height, bool* bitsPtr, ErrorHandler& err_handler);
+    BitMatrix(int _width, int _height, bool* bitsPtr, ErrorHandler& err_handler);
     BitMatrix(int dimension, ErrorHandler& err_handler);
-    BitMatrix(int width, int height, ErrorHandler& err_handler);
+    BitMatrix(int _width, int _height, ErrorHandler& err_handler);
 
-    void copyOf(Ref<BitMatrix> bits, ErrorHandler& err_handler);
-    void xxor(Ref<BitMatrix> bits);
+    void copyOf(Ref<BitMatrix> _bits, ErrorHandler& err_handler);
+    void xxor(Ref<BitMatrix> _bits);
 
     ~BitMatrix();
 
@@ -92,8 +92,8 @@ public:
     void flip(int x, int y);
     void flipAll();
     void clear();
-    void setRegion(int left, int top, int width, int height, ErrorHandler& err_handler);
-    void flipRegion(int left, int top, int width, int height, ErrorHandler& err_handler);
+    void setRegion(int left, int top, int _width, int _height, ErrorHandler& err_handler);
+    void flipRegion(int left, int top, int _width, int _height, ErrorHandler& err_handler);
     Ref<BitArray> getRow(int y, Ref<BitArray> row);
 
     int getWidth() const;
@@ -120,7 +120,7 @@ public:
 
 private:
     inline void init(int, int, ErrorHandler& err_handler);
-    inline void init(int width, int height, bool* bitsPtr, ErrorHandler& err_handler);
+    inline void init(int _width, int _height, bool* bitsPtr, ErrorHandler& err_handler);
 
     void setRowRecords(int y);
     void setColsRecords(int x);

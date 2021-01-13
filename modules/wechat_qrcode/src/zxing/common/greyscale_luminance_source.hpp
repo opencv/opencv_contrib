@@ -45,11 +45,11 @@ public:
     GreyscaleLuminanceSource(ArrayRef<char> greyData, int dataWidth, int dataHeight, int left,
                              int top, int width, int height, ErrorHandler& err_handler);
 
-    ArrayRef<char> getRow(int y, ArrayRef<char> row, ErrorHandler& err_handler) const;
-    ArrayRef<char> getMatrix() const;
-    Ref<ByteMatrix> getByteMatrix() const;
+    ArrayRef<char> getRow(int y, ArrayRef<char> row, ErrorHandler& err_handler) const override;
+    ArrayRef<char> getMatrix() const override;
+    Ref<ByteMatrix> getByteMatrix() const override;
 
-    bool isRotateSupported() const { return true; }
+    bool isRotateSupported() const override { return true; }
 
     Ref<LuminanceSource> rotateCounterClockwise(ErrorHandler& err_handler) const;
 };
