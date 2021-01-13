@@ -47,7 +47,7 @@ public:
     ~QRCodeDetector(){};
 
     /**
-     * @brief  Both detects and decodes QR code. 
+     * @brief  Both detects and decodes QR code.
      * To simplify the usage, there is a only API: detectAndDecode
      *
      * @param img supports grayscale or color (BGR) image.
