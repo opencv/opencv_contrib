@@ -162,7 +162,7 @@ int GlobalHistogramBinarizer::estimateBlackPoint(ArrayRef<int> const& _buckets,
 }
 
 // codes from sagazhou, only works well on one dataset
-int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& buckets) {
+int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& _buckets) {
     int midValue = LUMINANCE_BUCKETS / 2 + 1;
     // Find tallest and lowest peaks in histogram
     // const int numBuckets = buckets->size();
@@ -173,14 +173,14 @@ int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& buckets) 
     int minCrusor = 0;
 
     for (int i = 2; i < LUMINANCE_BUCKETS - 3; i++) {
-        if (buckets[i] < buckets[i + 1] && buckets[i] < buckets[i + 2] &&
-            buckets[i] < buckets[i - 1] && buckets[i] < buckets[i - 2]) {
+        if (_buckets[i] < _buckets[i + 1] && _buckets[i] < _buckets[i + 2] &&
+            _buckets[i] < _buckets[i - 1] && _buckets[i] < _buckets[i - 2]) {
             minPointArray[minCrusor++] = i;
-        } else if (buckets[i] > buckets[i + 1] && buckets[i] > buckets[i + 2] &&
-                   buckets[i] > buckets[i - 1] && buckets[i] > buckets[i - 2]) {
+        } else if (_buckets[i] > _buckets[i + 1] && _buckets[i] > _buckets[i + 2] &&
+                   _buckets[i] > _buckets[i - 1] && _buckets[i] > _buckets[i - 2]) {
             maxPointArray[maxCrusor++] = i;
-            if (buckets[i] > maxValue) {
-                maxValue = buckets[i];
+            if (_buckets[i] > maxValue) {
+                maxValue = _buckets[i];
                 maxIndex = i;
             }
         }

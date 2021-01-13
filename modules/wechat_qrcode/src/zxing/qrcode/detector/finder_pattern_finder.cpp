@@ -536,7 +536,7 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
         return vector<Ref<FinderPatternInfo>>();
     }
 
-    if (standardCenters.size() <= FP_INPUT_CNN_MAX_NUM) {
+    if (int(standardCenters.size()) <= FP_INPUT_CNN_MAX_NUM) {
         for (size_t x = 0; x < standardCenters.size(); x++) {
             for (size_t y = x + 1; y < standardCenters.size(); y++) {
                 for (size_t z = y + 1; z < standardCenters.size(); z++) {
@@ -589,15 +589,15 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
 
         sort(clusterPatterns.begin(), clusterPatterns.end(), BestComparator2());
 
-        for (size_t x = 0; x < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+        for (size_t x = 0; x < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
                          patternInfos.size() <= size_t(FPS_RESULT_MAX);
              x++) {
             for (size_t y = x + 1;
-                 y < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                 y < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
                  patternInfos.size() <= size_t(FPS_RESULT_MAX);
                  y++) {
                 for (size_t z = y + 1;
-                     z < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                     z < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
                      patternInfos.size() <= size_t(FPS_RESULT_MAX);
                      z++) {
                     bool check_result = IsPossibleFindPatterInfo(
@@ -1330,12 +1330,12 @@ int FinderPatternFinder::findRowSkip() {
 
     Ref<FinderPattern> firstConfirmedCenter, secondConfirmedCenter;
 
-    for (size_t i = 0; i < max - 1; i++) {
+    for (int i = 0; i < max - 1; i++) {
         firstConfirmedCenter = possibleCenters_[i];
         if (firstConfirmedCenter->getCount() >= CENTER_QUORUM) {
             float firstModuleSize = firstConfirmedCenter->getEstimatedModuleSize();
-            size_t j_start = (i < size_t(compared_finder_counts)) ? compared_finder_counts : i + 1;
-            for (size_t j = j_start; j < max; j++) {
+            int j_start = (i < compared_finder_counts) ? compared_finder_counts : i + 1;
+            for (int j = j_start; j < max; j++) {
                 secondConfirmedCenter = possibleCenters_[j];
                 if (secondConfirmedCenter->getCount() >= CENTER_QUORUM) {
                     float secondModuleSize = secondConfirmedCenter->getEstimatedModuleSize();

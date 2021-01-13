@@ -38,7 +38,6 @@ DataMask::DataMask() {}
 DataMask::~DataMask() {}
 
 vector<Ref<DataMask> > DataMask::DATA_MASKS;
-static int N_DATA_MASKS = DataMask::buildDataMasks();
 
 DataMask& DataMask::forReference(int reference, ErrorHandler& err_handler) {
     if (reference < 0 || reference > 7) {
