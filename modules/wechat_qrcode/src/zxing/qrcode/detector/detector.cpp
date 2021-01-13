@@ -863,7 +863,6 @@ void Detector::findPointsForLine(Ref<ResultPoint> &topLeft, Ref<ResultPoint> &to
                 }
             }
         } else {
-            
             // white->black points
             xMin = topRightRect.x + topRightRect.width - 2 * modelSize;
             xMax = topRightRect.x + topRightRect.width;
