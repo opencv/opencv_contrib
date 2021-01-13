@@ -52,22 +52,18 @@ public:
     explicit FastWindowBinarizer(Ref<LuminanceSource> source);
     virtual ~FastWindowBinarizer();
 
-    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler& err_handler);
-    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler& err_handler);
+    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler& err_handler) override;
+    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler& err_handler) override;
 
-    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source);
+    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source) override;
 
 private:
-    // void calcBlockTotals(ArrayRef<char> luminances, int* output, int width,
-    // int height, int aw, int ah);
-    void calcBlockTotals(int* luminancesInt, int* output, int width, int height, int aw, int ah);
-    void cumulative(int* data, int* output, int width, int height);
+    void calcBlockTotals(int* luminancesInt, int* output, int aw, int ah);
+    void cumulative(int* data, int* output, int _width, int _height);
     int binarizeImage0(ErrorHandler& err_handler);
-    void fastIntegral(const unsigned char* inputMatrix, unsigned int* outputMatrix, int width,
-                      int height);
+    void fastIntegral(const unsigned char* inputMatrix, unsigned int* outputMatrix);
     int binarizeImage1(ErrorHandler& err_handler);
-    void fastWindow(const unsigned char* src, unsigned char* dst, int width, int height,
-                    ErrorHandler& err_handler);
+    void fastWindow(const unsigned char* src, unsigned char* dst, ErrorHandler& err_handler);
 };
 
 }  // namespace zxing

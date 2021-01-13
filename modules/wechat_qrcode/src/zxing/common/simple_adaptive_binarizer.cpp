@@ -81,8 +81,7 @@ using namespace std;
 
 int SimpleAdaptiveBinarizer::binarizeImage0(ErrorHandler &err_handler) {
     LuminanceSource &source = *getLuminanceSource();
-    int width = source.getWidth();
-    int height = source.getHeight();
+
     Ref<BitMatrix> matrix(new BitMatrix(width, height, err_handler));
     if (err_handler.ErrCode()) return -1;
 
@@ -97,9 +96,6 @@ int SimpleAdaptiveBinarizer::binarizeImage0(ErrorHandler &err_handler) {
 
     return 0;
 }
-
-#define QR_MAXI(_a, _b) ((_a) - ((_a) - (_b) & -((_b) > (_a))))
-#define QR_MINI(_a, _b) ((_a) + ((_b) - (_a) & -((_b) < (_a))))
 
 /*A simplified adaptive thresholder.
   This compares the current pixel value to the mean value of a (large) window
@@ -139,7 +135,7 @@ int SimpleAdaptiveBinarizer::qrBinarize(const unsigned char *_img, unsigned char
             col_sums[x] = (g << (logwindh - 1)) + g;
         }
         for (y = 1; y < (windh >> 1); y++) {
-            y1offs = QR_MINI(y, _height - 1) * _width;
+            y1offs = min(y, _height - 1) * _width;
             for (x = 0; x < _width; x++) {
                 g = _img[y1offs + x];
                 col_sums[x] += g;
@@ -152,7 +148,7 @@ int SimpleAdaptiveBinarizer::qrBinarize(const unsigned char *_img, unsigned char
             /*Initialize the sum over the window.*/
             m = (col_sums[0] << (logwindw - 1)) + col_sums[0];
             for (x = 1; x < (windw >> 1); x++) {
-                x1 = QR_MINI(x, _width - 1);
+                x1 = min(x, _width - 1);
                 m += col_sums[x1];
             }
 
@@ -165,15 +161,15 @@ int SimpleAdaptiveBinarizer::qrBinarize(const unsigned char *_img, unsigned char
                 mask[offset + x] = ((g + 3) << (logwinds) < m);
                 /*Update the window sum.*/
                 if (x + 1 < _width) {
-                    x0 = QR_MAXI(0, x - (windw >> 1));
-                    x1 = QR_MINI(x + (windw >> 1), _width - 1);
+                    x0 = max(0, x - (windw >> 1));
+                    x1 = min(x + (windw >> 1), _width - 1);
                     m += col_sums[x1] - col_sums[x0];
                 }
             }
             /*Update the column sums.*/
             if (y + 1 < _height) {
-                y0offs = QR_MAXI(0, y - (windh >> 1)) * _width;
-                y1offs = QR_MINI(y + (windh >> 1), _height - 1) * _width;
+                y0offs = max(0, y - (windh >> 1)) * _width;
+                y1offs = min(y + (windh >> 1), _height - 1) * _width;
                 for (x = 0; x < _width; x++) {
                     col_sums[x] -= _img[y0offs + x];
                     col_sums[x] += _img[y1offs + x];

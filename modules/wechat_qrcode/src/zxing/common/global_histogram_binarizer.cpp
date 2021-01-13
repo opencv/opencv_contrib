@@ -87,26 +87,26 @@ Ref<BitMatrix> GlobalHistogramBinarizer::getBlackMatrix(ErrorHandler& err_handle
 
 using namespace std;
 
-int GlobalHistogramBinarizer::estimateBlackPoint(ArrayRef<int> const& buckets,
+int GlobalHistogramBinarizer::estimateBlackPoint(ArrayRef<int> const& _buckets,
                                                  ErrorHandler& err_handler) {
     // Find tallest peak in histogram
-    int numBuckets = buckets->size();
+    int numBuckets = _buckets->size();
     int maxBucketCount = 0;
     int firstPeak = 0;
     int firstPeakSize = 0;
     if (false) {
         for (int x = 0; x < numBuckets; x++) {
-            cerr << buckets[x] << " ";
+            cerr << _buckets[x] << " ";
         }
         cerr << endl;
     }
     for (int x = 0; x < numBuckets; x++) {
-        if (buckets[x] > firstPeakSize) {
+        if (_buckets[x] > firstPeakSize) {
             firstPeak = x;
-            firstPeakSize = buckets[x];
+            firstPeakSize = _buckets[x];
         }
-        if (buckets[x] > maxBucketCount) {
-            maxBucketCount = buckets[x];
+        if (_buckets[x] > maxBucketCount) {
+            maxBucketCount = _buckets[x];
         }
     }
 
@@ -118,7 +118,7 @@ int GlobalHistogramBinarizer::estimateBlackPoint(ArrayRef<int> const& buckets,
         int distanceToBiggest = x - firstPeak;
         // Encourage more distant second peaks by multiplying by square of
         // distance
-        int score = buckets[x] * distanceToBiggest * distanceToBiggest;
+        int score = _buckets[x] * distanceToBiggest * distanceToBiggest;
         if (score > secondPeakScore) {
             secondPeak = x;
             secondPeakScore = score;
@@ -298,8 +298,6 @@ int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& buckets) 
 
 int GlobalHistogramBinarizer::binarizeImage0(ErrorHandler& err_handler) {
     LuminanceSource& source = *getLuminanceSource();
-    int width = source.getWidth();
-    int height = source.getHeight();
     Ref<BitMatrix> matrix(new BitMatrix(width, height, err_handler));
     if (err_handler.ErrCode()) return -1;
 

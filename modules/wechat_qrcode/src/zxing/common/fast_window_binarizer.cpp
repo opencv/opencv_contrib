@@ -45,13 +45,12 @@ static int max(int a, int b) { return a > b ? a : b; }
 
 FastWindowBinarizer::FastWindowBinarizer(Ref<LuminanceSource> source)
     : GlobalHistogramBinarizer(source), matrix_(NULL), cached_row_(NULL) {
-    int width = source->getWidth();
-    int height = source->getHeight();
+    width = source->getWidth();
+    height = source->getHeight();
     int aw = width / BLOCK_SIZE;
     int ah = height / BLOCK_SIZE;
 
     int ah2 = ah;
-    // int aw2 = aw;
     int ow2 = aw + 1;
 
     _luminancesInt = new int[width * height];
@@ -121,8 +120,7 @@ Ref<BitArray> FastWindowBinarizer::getBlackRow(int y, Ref<BitArray> row,
     // return Binarizer::getBlackRow(y, row);
 }
 
-void FastWindowBinarizer::calcBlockTotals(int* luminancesInt, int* output, int width, int height,
-                                          int aw, int ah) {
+void FastWindowBinarizer::calcBlockTotals(int* luminancesInt, int* output, int aw, int ah) {
     for (int by = 0; by < ah; by++) {
         int ey = (by + 1) * BLOCK_SIZE;
         for (int bx = 0; bx < aw; bx++) {
@@ -141,10 +139,10 @@ void FastWindowBinarizer::calcBlockTotals(int* luminancesInt, int* output, int w
     }
 }
 
-void FastWindowBinarizer::cumulative(int* data, int* output, int width, int height) {
-    int ah = height;
-    int aw = width;
-    int ow = width + 1;
+void FastWindowBinarizer::cumulative(int* data, int* output, int _width, int _height) {
+    int ah = _height;
+    int aw = _width;
+    int ow = _width + 1;
     // int[][] totals = new int[ah + 1][aw + 1];
     // int* rowTotals = new int[ah*ow];
 
@@ -171,8 +169,7 @@ void FastWindowBinarizer::cumulative(int* data, int* output, int width, int heig
     }
 }
 
-void FastWindowBinarizer::fastIntegral(const unsigned char* inputMatrix, unsigned int* outputMatrix,
-                                       int width, int height) {
+void FastWindowBinarizer::fastIntegral(const unsigned char* inputMatrix, unsigned int* outputMatrix) {
     // memset(outputMatrix,0,sizeof(int)*(height+1)*(width+1));
     // unsigned int *columnSum = new unsigned int[width]; // sum of each column
     // calculate integral of the first line
@@ -198,13 +195,8 @@ void FastWindowBinarizer::fastIntegral(const unsigned char* inputMatrix, unsigne
     return;
 }
 
-#define QR_MAXI(_a, _b) ((_a) - ((_a) - (_b) & -((_b) > (_a))))
-#define QR_MINI(_a, _b) ((_a) + ((_b) - (_a) & -((_b) < (_a))))
-
 int FastWindowBinarizer::binarizeImage1(ErrorHandler& err_handler) {
     LuminanceSource& source = *getLuminanceSource();
-    int width = source.getWidth();
-    int height = source.getHeight();
     Ref<BitMatrix> matrix(new BitMatrix(width, height, err_handler));
     if (err_handler.ErrCode()) return -1;
 
@@ -214,7 +206,7 @@ int FastWindowBinarizer::binarizeImage1(ErrorHandler& err_handler) {
     unsigned char* dst = matrix->getPtr();
     // long area=width*height;
     // if((width*height)>LONG_MAX/255)
-    fastWindow(src, dst, width, height, err_handler);
+    fastWindow(src, dst, err_handler);
     if (err_handler.ErrCode()) return -1;
 
     // else
@@ -223,8 +215,7 @@ int FastWindowBinarizer::binarizeImage1(ErrorHandler& err_handler) {
     return 0;
 }
 
-void FastWindowBinarizer::fastWindow(const unsigned char* src, unsigned char* dst, int width,
-                                     int height, ErrorHandler& err_handler) {
+void FastWindowBinarizer::fastWindow(const unsigned char* src, unsigned char* dst, ErrorHandler& err_handler) {
     int r = (int)(min(width, height) * WINDOW_FRACTION / BLOCK_SIZE / 2 + 1);
     const int NEWH_BLOCK_SIZE = BLOCK_SIZE * r;
     if (height < NEWH_BLOCK_SIZE || width < NEWH_BLOCK_SIZE) {
@@ -233,7 +224,7 @@ void FastWindowBinarizer::fastWindow(const unsigned char* src, unsigned char* ds
     }
     const unsigned char* _img = src;
     // unsigned int* _internal=new unsigned int[(height+1)*(width+1)];
-    fastIntegral(_img, _internal, width, height);
+    fastIntegral(_img, _internal);
     int aw = width / BLOCK_SIZE;
     int ah = height / BLOCK_SIZE;
     memset(dst, 0, sizeof(char) * height * width);
@@ -270,8 +261,6 @@ int FastWindowBinarizer::binarizeImage0(ErrorHandler& err_handler) {
     //}
 
     LuminanceSource& source = *getLuminanceSource();
-    int width = source.getWidth();
-    int height = source.getHeight();
     if (width >= BLOCK_SIZE && height >= BLOCK_SIZE) {
         int r = (int)(min(width, height) * WINDOW_FRACTION / BLOCK_SIZE / 2 + 1);
 
@@ -279,14 +268,14 @@ int FastWindowBinarizer::binarizeImage0(ErrorHandler& err_handler) {
         int ah = height / BLOCK_SIZE;
         int ow = aw + 1;
 
-        ArrayRef<char> luminances = source.getMatrix();
+        ArrayRef<char> _luminances = source.getMatrix();
 
         // Get luminances for int value first
         for (int i = 0; i < width * height; i++) {
-            _luminancesInt[i] = luminances[i] & 0xff;
+            _luminancesInt[i] = _luminances[i] & 0xff;
         }
 
-        calcBlockTotals(_luminancesInt, _blockTotals, width, height, aw, ah);
+        calcBlockTotals(_luminancesInt, _blockTotals, aw, ah);
 
         cumulative(_blockTotals, _totals, aw, ah);
 
@@ -294,12 +283,12 @@ int FastWindowBinarizer::binarizeImage0(ErrorHandler& err_handler) {
         if (err_handler.ErrCode()) return -1;
         unsigned char* newimg = newMatrix->getPtr();
         for (int by = 0; by < ah; by++) {
-            int top = QR_MAXI(0, by - r + 1);
-            int bottom = QR_MINI(ah, by + r);
+            int top = max(0, by - r + 1);
+            int bottom = min(ah, by + r);
 
             for (int bx = 0; bx < aw; bx++) {
-                int left = QR_MAXI(0, bx - r + 1);
-                int right = QR_MINI(aw, bx + r);
+                int left = max(0, bx - r + 1);
+                int right = min(aw, bx + r);
 
                 int block = _totals[bottom * ow + right] + _totals[top * ow + left] -
                             _totals[top * ow + right] - _totals[bottom * ow + left];

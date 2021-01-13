@@ -77,8 +77,6 @@ private:
     ArrayRef<int> blackPoints_;
     int level_;
 
-    int width_;
-    int height_;
     int subWidth_;
     int subHeight_;
 
@@ -102,18 +100,15 @@ private:
     int getBlockThreshold(int x, int y, int subWidth, int sum, int min, int max,
                           int minDynamicRange, int SIZE_POWER);
 #else
-    ArrayRef<int> calculateBlackPoints(Ref<ByteMatrix>& luminances, int subWidth, int subHeight,
-                                       int width, int height);
+    ArrayRef<int> calculateBlackPoints(Ref<ByteMatrix>& luminances, int subWidth, int subHeight);
 #endif
 
 #ifdef USE_LEVEL_BINARIZER
     void calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth, int subHeight,
-                                    int _width, int _height, int SIZE_POWER,
-                                    // ArrayRef<int> &blackPoints,
-                                    Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
+                                    int SIZE_POWER, Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 #else
     void calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth, int subHeight,
-                                    int _width, int _height, ArrayRef<int>& blackPoints,
+                                    ArrayRef<int>& blackPoints,
                                     Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 #endif
 
@@ -121,7 +116,7 @@ private:
                         Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 
     void thresholdIrregularBlock(Ref<ByteMatrix>& luminances, int xoffset, int yoffset,
-                                 int blockWidth, int blockHeight, int threshold, 
+                                 int blockWidth, int blockHeight, int threshold,
                                  Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 
 #ifdef USE_SET_INT

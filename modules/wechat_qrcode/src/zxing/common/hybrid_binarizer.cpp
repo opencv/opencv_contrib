@@ -67,8 +67,6 @@ HybridBinarizer::HybridBinarizer(Ref<LuminanceSource> source) : GlobalHistogramB
 
     blocks_ = getBlockArray(subWidth * subHeight);
 
-    width_ = width;
-    height_ = height;
     subWidth_ = subWidth;
     subHeight_ = subHeight;
 
@@ -407,8 +405,7 @@ ArrayRef<int> HybridBinarizer::getBlackPoints() {
 
 // Original code 20140606
 void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& _luminances, int subWidth,
-                                                 int subHeight, int _width, int _height,
-                                                 int SIZE_POWER,
+                                                 int subHeight, int SIZE_POWER,
                                                  // ArrayRef<int> &blackPoints,
                                                  Ref<BitMatrix> const& matrix,
                                                  ErrorHandler& err_handler) {
@@ -479,8 +476,7 @@ void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& _luminances, i
 }
 #else
 void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth,
-                                                 int subHeight, int _width, int _height,
-                                                 ArrayRef<int>& blackPoints,
+                                                 int subHeight, ArrayRef<int>& blackPoints,
                                                  Ref<BitMatrix> const& matrix,
                                                  ErrorHandler& err_handler) {
     int maxYOffset = _height - BLOCK_SIZE;
@@ -760,14 +756,10 @@ int HybridBinarizer::initBlocks() {
     Ref<ByteMatrix>& _luminances = grayByte_;
     int subWidth = subWidth_;
     int subHeight = subHeight_;
-    int width = width_;
-    int height = height_;
 
     unsigned char* bytes = _luminances->bytes;
 
     const int minDynamicRange = 24;
-    // int maxYOffset = height - BLOCK_SIZE;
-    // int maxXOffset = width - BLOCK_SIZE;
 
     for (int y = 0; y < subHeight; y++) {
         int yoffset = y << BLOCK_SIZE_POWER;
@@ -877,10 +869,10 @@ int HybridBinarizer::getBlockThreshold(int x, int y, int subWidth, int sum, int 
 #else
 // Calculates a single black point for each block of pixels and saves it away.
 ArrayRef<int> HybridBinarizer::calculateBlackPoints(Ref<ByteMatrix>& luminances, int subWidth,
-                                                    int subHeight, int width, int height) {
+                                                    int subHeight, int _width, int _height) {
     const int minDynamicRange = 24;
-    int maxYOffset = height - BLOCK_SIZE;
-    int maxXOffset = width - BLOCK_SIZE;
+    int maxYOffset = _height - BLOCK_SIZE;
+    int maxXOffset = _width - BLOCK_SIZE;
 
 #ifndef USE_GOOGLE_CODE
 
@@ -894,34 +886,10 @@ ArrayRef<int> HybridBinarizer::calculateBlackPoints(Ref<ByteMatrix>& luminances,
     }
     unsigned char* pLuminanceTemp = luminances->bytes;
 
-    //  for(int y=0; y<subHeight;y++){
-    //	  int yoffset = y<<BLOCK_SIZE_POWER;
-    //	  if(yoffset>maxYOffset) yoffset = maxYOffset;
-    //	  BlacKPointsInfo* pInfoTemp=&blackPointsInfo[y*subWidth];
-    //	  for(int yy=0;yy<BLOCK_SIZE;yy++){
-    //		  pLuminanceTemp = luminances->getByteRow(yoffset+yy);
-    //		  for(int x=0;x<subWidth;x++){
-    //			  int xoffset = x<<BLOCK_SIZE_POWER;
-    //			  if(xoffset>maxXOffset) {
-    //				 pLuminanceTemp =pLuminanceTemp-(xoffset-maxXOffset);
-    //				  xoffset = maxXOffset;
-    //			  }
-    //			  for(int xx=0;xx<BLOCK_SIZE;xx++){
-    //				  int pixel = *pLuminanceTemp++;
-    //#ifdef USE_MAX_MIN
-    //				  if(pixel<pInfoTemp[x].min) pInfoTemp[x].min = pixel;
-    //				  if(pixel>pInfoTemp[x].max) pInfoTemp[x].max = pixel;
-    //#endif
-    //				  pInfoTemp[x].sum+=pixel;
-    //			  }
-    //		  }
-    //	  }
-    //  }
-
-    for (int i = 0; i < height; i++) {
+    for (int i = 0; i < _height; i++) {
         int i_black = i / 8;
         BlacKPointsInfo* pInfoTemp = &blackPointsInfo[i_black * subWidth];
-        for (int j = 0; j < width; j++) {
+        for (int j = 0; j < _width; j++) {
             int j_black = j / 8;
             int pixel = *pLuminanceTemp++;
 #ifdef USE_MAX_MIN
@@ -958,17 +926,17 @@ ArrayRef<int> HybridBinarizer::calculateBlackPoints(Ref<ByteMatrix>& luminances,
     ArrayRef<int> blackPoints(subWidth * subHeight);
     for (int y = 0; y < subHeight; y++) {
         int yoffset = y << BLOCK_SIZE_POWER;
-        int maxYOffset = height - BLOCK_SIZE;
+        int maxYOffset = _height - BLOCK_SIZE;
         if (yoffset > maxYOffset) yoffset = maxYOffset;
         for (int x = 0; x < subWidth; x++) {
             int xoffset = x << BLOCK_SIZE_POWER;
-            int maxXOffset = width - BLOCK_SIZE;
+            int maxXOffset = _width - BLOCK_SIZE;
             if (xoffset > maxXOffset) xoffset = maxXOffset;
             int sum = 0;
             int min = 0xFF;
             int max = 0;
-            for (int yy = 0, offset = yoffset * width + xoffset; yy < BLOCK_SIZE;
-                 yy++, offset += width) {
+            for (int yy = 0, offset = yoffset * _width + xoffset; yy < BLOCK_SIZE;
+                 yy++, offset += _width) {
                 for (int xx = 0; xx < BLOCK_SIZE; xx++) {
                     int pixel = luminances->bytes[offset + xx] & 0xFF;
                     sum += pixel;
@@ -984,7 +952,7 @@ ArrayRef<int> HybridBinarizer::calculateBlackPoints(Ref<ByteMatrix>& luminances,
                 // short-circuit min/max tests once dynamic range is met
                 if (max - min > minDynamicRange) {
                     // finish the rest of the rows quickly
-                    for (yy++, offset += width; yy < BLOCK_SIZE; yy++, offset += width) {
+                    for (yy++, offset += _width; yy < BLOCK_SIZE; yy++, offset += _width) {
                         for (int xx = 0; xx < BLOCK_SIZE; xx += 2) {
                             sum += luminances->bytes[offset + xx] & 0xFF;
                             sum += luminances->bytes[offset + xx + 1] & 0xFF;
@@ -1074,18 +1042,8 @@ int HybridBinarizer::binarizeByBlock(ErrorHandler& err_handler) {
         Ref<BitMatrix> newMatrix(new BitMatrix(width, height, err_handler));
         if (err_handler.ErrCode()) return -1;
 
-        calculateThresholdForBlock(grayByte_, subWidth_, subHeight_, width, height,
-                                   BLOCK_SIZE_POWER, newMatrix, err_handler);
+        calculateThresholdForBlock(grayByte_, subWidth_, subHeight_, BLOCK_SIZE_POWER, newMatrix, err_handler);
         if (err_handler.ErrCode()) return -1;
-
-        /*
-        calculateThresholdForBlock(grayByte_,
-            subWidth_,
-            subHeight_,
-            width,
-            height,
-            blackPoints,
-            newMatrix);*/
 
         matrix0_ = newMatrix;
 
