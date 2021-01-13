@@ -74,8 +74,7 @@ int UnicomBlock::GetMaxPoint(int y, int x, int &iMaxY, int &iMaxX) {
 }
 
 void UnicomBlock::Bfs(int y, int x) {
-    if (m_iNowIdx != -1) m_iNowIdx++;
-    if (m_iNowIdx == 0) m_iNowIdx++;
+    m_iNowIdx++;
 
     int iFront = 0;
     int iTail = 0;
@@ -104,7 +103,7 @@ void UnicomBlock::Bfs(int y, int x) {
             const int iNextX = iX + SEARCH_POS[i][0], iNextY = iY + SEARCH_POS[i][1];
             const int iPosition = iNextY * m_iWidth + iNextX;
 
-            if (iPosition >= 0 && iPosition < m_vcIndex.size() && 0 == m_vcIndex[iPosition]) {
+            if (iPosition >= 0 && iPosition < int(m_vcIndex.size()) && 0 == m_vcIndex[iPosition]) {
                 if (iNextX < 0 || iNextX >= m_poImage->getWidth() || iNextY < 0 ||
                     iNextY >= m_poImage->getHeight() || bValue != m_poImage->get(iNextX, iNextY))
                     continue;

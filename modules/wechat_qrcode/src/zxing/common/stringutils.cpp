@@ -581,7 +581,7 @@ int StringUtils::is_big5_code(char* str, int length) {
     unsigned char k = 0;
 
     unsigned char c = 0;
-    for (unsigned int i = 0; i < length;) {
+    for (int i = 0; i < length;) {
         c = (unsigned char)str[i];
         if (c >> 7 == one_byte) {
             i++;
@@ -653,14 +653,6 @@ int StringUtils::is_gbk_code(char* str, int length) {
     return 0;
 }
 
-int StringUtils::is_shiftjis_code(char* str, int length) {
-    /*
-    int first, second;
-
-    return shift_jis_to_jis(str, first, second);
-    */
-    return 1;
-}
 
 int StringUtils::is_ascii_code(char* str, int length) {
     unsigned char c = 0;
