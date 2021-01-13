@@ -137,9 +137,7 @@ public:
                                                      int estAlignmentX, int estAlignmentY);
     bool hasSameResult(vector<Ref<AlignmentPattern> > possibleAlignmentPatterns,
                        Ref<AlignmentPattern> alignmentPattern);
-    void fixAlignmentPattern(float &alignmentX, float &alignmentY, Ref<ResultPoint> topLeft,
-                             Ref<ResultPoint> topRight, Ref<ResultPoint> bottomLeft,
-                             float moduleSize);
+    void fixAlignmentPattern(float &alignmentX, float &alignmentY, float moduleSize);
 
     // void processFinderPatternInfo(Ref<FinderPatternInfo> info);
     Ref<PatternResult> processFinderPatternInfo(Ref<FinderPatternInfo> info,

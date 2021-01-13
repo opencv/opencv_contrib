@@ -81,7 +81,7 @@ void Detector::detect(DecodeHints const &hints, ErrorHandler &err_handler) {
     // Get all possible results
     possiblePatternResults_.clear();
 
-    for (int i = 0; i < finderInfos.size(); i++) {
+    for (size_t i = 0; i < finderInfos.size(); i++) {
         Ref<PatternResult> result(new PatternResult(finderInfos[i]));
         result->possibleVersion = 0;
         result->possibleFix = 0.0f;
@@ -93,7 +93,7 @@ void Detector::detect(DecodeHints const &hints, ErrorHandler &err_handler) {
 }
 
 int Detector::getPossibleAlignmentCount(int idx) {
-    if (idx >= possiblePatternResults_.size()) {
+    if (idx >= int(possiblePatternResults_.size())) {
         return -1;
     }
 
@@ -113,11 +113,11 @@ int Detector::getPossibleAlignmentCount(int idx) {
 Ref<DetectorResult> Detector::getResultViaAlignment(int patternIdx, int alignmentIdx,
                                                     int possibleDimension,
                                                     ErrorHandler &err_handler) {
-    if (patternIdx >= possiblePatternResults_.size() || patternIdx < 0) {
+    if (patternIdx >= int(possiblePatternResults_.size()) || patternIdx < 0) {
         return Ref<DetectorResult>(NULL);
     }
 
-    if (alignmentIdx >= possiblePatternResults_[patternIdx]->possibleAlignmentPatterns.size() ||
+    if (alignmentIdx >= int(possiblePatternResults_[patternIdx]->possibleAlignmentPatterns.size()) ||
         alignmentIdx < 0) {
         return Ref<DetectorResult>(NULL);
     }
@@ -169,7 +169,7 @@ bool Detector::hasSameResult(vector<Ref<AlignmentPattern> > possibleAlignmentPat
         moduleSize = 1.0;
     }
 
-    for (int i = 0; i < possibleAlignmentPatterns.size(); i++) {
+    for (size_t i = 0; i < possibleAlignmentPatterns.size(); i++) {
         if (possibleAlignmentPatterns[i]->aboutEquals(moduleSize, alignmentPattern->getY(),
                                                       alignmentPattern->getX())) {
             return true;
@@ -326,7 +326,7 @@ Ref<PatternResult> Detector::processFinderPatternInfo(Ref<FinderPatternInfo> inf
     {
         float alignmentX = fitLineCenter->getX();
         float alignmentY = fitLineCenter->getY();
-        fixAlignmentPattern(alignmentX, alignmentY, topLeft, topRight, bottomLeft, moduleSize);
+        fixAlignmentPattern(alignmentX, alignmentY, moduleSize);
         Ref<AlignmentPattern> fitLineCenterFixed =
             Ref<AlignmentPattern>(new AlignmentPattern(alignmentX, alignmentY, moduleSize));
         if (!hasSameResult(result->possibleAlignmentPatterns, fitLineCenterFixed)) {
@@ -342,7 +342,7 @@ Ref<PatternResult> Detector::processFinderPatternInfo(Ref<FinderPatternInfo> inf
     {
         float alignmentX = estimateCenter->getX();
         float alignmentY = estimateCenter->getY();
-        fixAlignmentPattern(alignmentX, alignmentY, topLeft, topRight, bottomLeft, moduleSize);
+        fixAlignmentPattern(alignmentX, alignmentY, moduleSize);
         Ref<AlignmentPattern> estimateCenterFixed =
             Ref<AlignmentPattern>(new AlignmentPattern(alignmentX, alignmentY, moduleSize));
         if (!hasSameResult(result->possibleAlignmentPatterns, estimateCenterFixed)) {
@@ -648,9 +648,7 @@ Ref<AlignmentPattern> Detector::findAlignmentWithFitLine(Ref<ResultPoint> topLef
     return result;
 }
 
-void Detector::fixAlignmentPattern(float &alignmentX, float &alignmentY, Ref<ResultPoint> topLeft,
-                                   Ref<ResultPoint> topRight, Ref<ResultPoint> bottomLeft,
-                                   float moduleSize) {
+void Detector::fixAlignmentPattern(float &alignmentX, float &alignmentY, float moduleSize) {
     int imgWidth = image_->getWidth();
     int imgHeight = image_->getHeight();
     int maxFixStep = moduleSize * 2;
