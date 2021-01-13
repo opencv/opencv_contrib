@@ -20,8 +20,8 @@ namespace zxing {
 class ByteMatrix : public Counted {
 public:
     explicit ByteMatrix(int dimension);
-    ByteMatrix(int width, int height);
-    ByteMatrix(int width, int height, ArrayRef<char> source);
+    ByteMatrix(int _width, int _height);
+    ByteMatrix(int _width, int _height, ArrayRef<char> source);
     ~ByteMatrix();
 
     char get(int x, int y) const {

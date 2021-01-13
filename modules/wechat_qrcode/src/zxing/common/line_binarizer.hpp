@@ -48,9 +48,9 @@ public:
 
 private:
     int binarizeImage(ErrorHandler &err_handler);
-    void binarizeImage(const unsigned char *src, unsigned char *dst, int width, int height);
-    bool binarizeLine(const unsigned char *src, unsigned char *dst, int width);
-    void scanLine(const unsigned char *line, int width, std::vector<short> &maxiam_index,
+    void binarizeImage(const unsigned char *src, unsigned char *dst, int _width, int _height);
+    bool binarizeLine(const unsigned char *src, unsigned char *dst, int _width);
+    void scanLine(const unsigned char *line, int _width, std::vector<short> &maxiam_index,
                   std::vector<short> &miniam_index);
 };
 

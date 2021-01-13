@@ -21,12 +21,12 @@ using zxing::ByteMatrix;
 using zxing::ErrorHandler;
 using zxing::Ref;
 
-void ByteMatrix::init(int width, int height) {
-    if (width < 1 || height < 1) {
+void ByteMatrix::init(int _width, int _height) {
+    if (_width < 1 || _height < 1) {
         return;
     }
-    this->width = width;
-    this->height = height;
+    this->width = _width;
+    this->height = _height;
     bytes = new unsigned char[width * height];
     row_offsets = new int[height];
     row_offsets[0] = 0;
@@ -37,11 +37,11 @@ void ByteMatrix::init(int width, int height) {
 
 ByteMatrix::ByteMatrix(int dimension) { init(dimension, dimension); }
 
-ByteMatrix::ByteMatrix(int width, int height) { init(width, height); }
+ByteMatrix::ByteMatrix(int _width, int _height) { init(_width, _height); }
 
-ByteMatrix::ByteMatrix(int width, int height, ArrayRef<char> source) {
-    init(width, height);
-    int size = width * height;
+ByteMatrix::ByteMatrix(int _width, int _height, ArrayRef<char> source) {
+    init(_width, _height);
+    int size = _width * _height;
     memcpy(&bytes[0], &source[0], size);
 }
 

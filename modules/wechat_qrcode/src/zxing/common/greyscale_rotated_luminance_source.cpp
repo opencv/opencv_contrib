@@ -39,12 +39,12 @@ using zxing::Ref;
 // rotated.
 GreyscaleRotatedLuminanceSource::GreyscaleRotatedLuminanceSource(ArrayRef<char> greyData,
                                                                  int dataWidth, int dataHeight,
-                                                                 int left, int top, int width,
-                                                                 int height,
+                                                                 int left, int top, int _width,
+                                                                 int _height,
                                                                  ErrorHandler& err_handler)
-    : Super(width, height), greyData_(greyData), dataWidth_(dataWidth), left_(left), top_(top) {
+    : Super(_width, _height), greyData_(greyData), dataWidth_(dataWidth), left_(left), top_(top) {
     // Intentionally comparing to the opposite dimension since we're rotated.
-    if (left + width > dataHeight || top + height > dataWidth) {
+    if (left + _width > dataHeight || top + _height > dataWidth) {
         err_handler = IllegalArgumentErrorHandler("Crop rectangle does not fit within image data.");
     }
 }

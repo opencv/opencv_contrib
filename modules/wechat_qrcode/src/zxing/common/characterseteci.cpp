@@ -85,13 +85,13 @@ CharacterSetECI::CharacterSetECI(int const* values, char const* const* names)
     : values_(values), names_(names) {
     zxing::Ref<CharacterSetECI> this_ref(this);
 
-    for (int const* values = values_; *values != -1; values++) {
+    for (int const* p_values = values_; *p_values != -1; p_values++) {
         // VALUE_TO_ECI[*values] = this;
-        VALUE_TO_ECI[*values] = this_ref;
+        VALUE_TO_ECI[*p_values] = this_ref;
     }
-    for (char const* const* names = names_; *names; names++) {
+    for (char const* const* p_names = names_; *p_names; p_names++) {
         // NAME_TO_ECI[string(*names)] = this;
-        NAME_TO_ECI[string(*names)] = this_ref;
+        NAME_TO_ECI[string(*p_names)] = this_ref;
     }
 }
 

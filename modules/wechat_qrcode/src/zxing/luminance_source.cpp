@@ -33,8 +33,8 @@
 using zxing::LuminanceSource;
 using zxing::Ref;
 
-LuminanceSource::LuminanceSource(int width_, int height_)
-    : width(width_), height(height_), tvInter(-1) {}
+LuminanceSource::LuminanceSource(int width, int height)
+    : width_(width), height_(height), tvInter(-1) {}
 
 LuminanceSource::~LuminanceSource() {}
 

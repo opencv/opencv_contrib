@@ -36,17 +36,17 @@ namespace zxing {
 
 class LuminanceSource : public Counted {
 private:
-    int width;
-    int height;
+    int width_;
+    int height_;
 
 public:
     LuminanceSource(int width, int height);
     virtual ~LuminanceSource();
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
-    void setWidth(int w) { width = w; }
-    void setHeight(int h) { height = h; }
+    int getWidth() const { return width_; }
+    int getHeight() const { return height_; }
+    void setWidth(int w) { width_ = w; }
+    void setHeight(int h) { height_ = h; }
     void filter();
     int tvInter;
     virtual void denoseLuminanceSource(int inter);
