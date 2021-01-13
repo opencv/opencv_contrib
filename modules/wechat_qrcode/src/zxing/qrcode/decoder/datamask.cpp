@@ -4,26 +4,9 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
-/*
- *  datamask.cpp
- *  zxing
- *
- *  Created by Christian Brunschen on 19/05/2008.
- *  Copyright 2008 ZXing authors All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+// Modified from ZXing. Copyright ZXing authors.
+// Licensed under the Apache License, Version 2.0 (the "License").
 
 #include "zxing/qrcode/decoder/datamask.hpp"
 #include "zxing/common/illegal_argument_exception.hpp"
@@ -36,9 +19,6 @@ using zxing::ErrorHandler;
 DataMask::DataMask() {}
 
 DataMask::~DataMask() {}
-
-vector<Ref<DataMask> > DataMask::DATA_MASKS;
-static int N_DATA_MASKS = DataMask::buildDataMasks();
 
 DataMask& DataMask::forReference(int reference, ErrorHandler& err_handler) {
     if (reference < 0 || reference > 7) {
@@ -129,17 +109,16 @@ public:
     bool isMasked(size_t x, size_t y) override { return ((((x + y) % 2) + ((x * y) % 3)) % 2) == 0; }
 };
 
-int DataMask::buildDataMasks() {
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask000()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask001()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask010()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask011()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask100()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask101()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask110()));
-    DATA_MASKS.push_back(Ref<DataMask>(new DataMask111()));
-    return DATA_MASKS.size();
-}
+vector<Ref<DataMask> > DataMask::DATA_MASKS = {
+    Ref<DataMask>(new DataMask000()),
+    Ref<DataMask>(new DataMask001()),
+    Ref<DataMask>(new DataMask010()),
+    Ref<DataMask>(new DataMask011()),
+    Ref<DataMask>(new DataMask100()),
+    Ref<DataMask>(new DataMask101()),
+    Ref<DataMask>(new DataMask110()),
+    Ref<DataMask>(new DataMask111()),
+};
 
 }  // namespace qrcode
 }  // namespace zxing

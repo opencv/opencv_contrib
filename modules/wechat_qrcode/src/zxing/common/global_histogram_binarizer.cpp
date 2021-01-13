@@ -4,25 +4,9 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
-/*
- *  global_histogram_binarizer.cpp
- *  zxing
- *
- *  Copyright 2010 ZXing authors. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+// Modified from ZXing. Copyright ZXing authors.
+// Licensed under the Apache License, Version 2.0 (the "License").
 
 #include "zxing/common/global_histogram_binarizer.hpp"
 #include "zxing/common/array.hpp"
@@ -162,7 +146,7 @@ int GlobalHistogramBinarizer::estimateBlackPoint(ArrayRef<int> const& _buckets,
 }
 
 // codes from sagazhou, only works well on one dataset
-int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& buckets) {
+int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& _buckets) {
     int midValue = LUMINANCE_BUCKETS / 2 + 1;
     // Find tallest and lowest peaks in histogram
     // const int numBuckets = buckets->size();
@@ -173,14 +157,14 @@ int GlobalHistogramBinarizer::estimateBlackPoint2(ArrayRef<int> const& buckets) 
     int minCrusor = 0;
 
     for (int i = 2; i < LUMINANCE_BUCKETS - 3; i++) {
-        if (buckets[i] < buckets[i + 1] && buckets[i] < buckets[i + 2] &&
-            buckets[i] < buckets[i - 1] && buckets[i] < buckets[i - 2]) {
+        if (_buckets[i] < _buckets[i + 1] && _buckets[i] < _buckets[i + 2] &&
+            _buckets[i] < _buckets[i - 1] && _buckets[i] < _buckets[i - 2]) {
             minPointArray[minCrusor++] = i;
-        } else if (buckets[i] > buckets[i + 1] && buckets[i] > buckets[i + 2] &&
-                   buckets[i] > buckets[i - 1] && buckets[i] > buckets[i - 2]) {
+        } else if (_buckets[i] > _buckets[i + 1] && _buckets[i] > _buckets[i + 2] &&
+                   _buckets[i] > _buckets[i - 1] && _buckets[i] > _buckets[i - 2]) {
             maxPointArray[maxCrusor++] = i;
-            if (buckets[i] > maxValue) {
-                maxValue = buckets[i];
+            if (_buckets[i] > maxValue) {
+                maxValue = _buckets[i];
                 maxIndex = i;
             }
         }

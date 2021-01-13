@@ -9,8 +9,6 @@
 
 namespace opencv_test {
 namespace {
-// Just skip test in case of missed testdata
-// static cv::String findDataFile(const String& path) { return cvtest::findDataFile(path, false); }
 std::string qrcode_images_name[] = {
     "version_1_down.jpg",  /*"version_1_left.jpg",  "version_1_right.jpg", "version_1_up.jpg",*/
     "version_1_top.jpg",   /*"version_2_down.jpg",*/  "version_2_left.jpg",  /*"version_2_right.jpg",*/

@@ -4,26 +4,9 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
-/*
- *  finder_pattern_finder.cpp
- *  zxing
- *
- *  Created by Christian Brunschen on 13/05/2008.
- *  Copyright 2008 ZXing authors All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+// Modified from ZXing. Copyright ZXing authors.
+// Licensed under the Apache License, Version 2.0 (the "License").
 
 #include "zxing/qrcode/detector/finder_pattern_finder.hpp"
 #include "zxing/common/kmeans.hpp"
@@ -536,7 +519,7 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
         return vector<Ref<FinderPatternInfo>>();
     }
 
-    if (standardCenters.size() <= FP_INPUT_CNN_MAX_NUM) {
+    if (standardCenters.size() <= size_t(FP_INPUT_CNN_MAX_NUM)) {
         for (size_t x = 0; x < standardCenters.size(); x++) {
             for (size_t y = x + 1; y < standardCenters.size(); y++) {
                 for (size_t z = y + 1; z < standardCenters.size(); z++) {
@@ -589,15 +572,15 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
 
         sort(clusterPatterns.begin(), clusterPatterns.end(), BestComparator2());
 
-        for (size_t x = 0; x < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+        for (size_t x = 0; x < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
                          patternInfos.size() <= size_t(FPS_RESULT_MAX);
              x++) {
             for (size_t y = x + 1;
-                 y < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                 y < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
                  patternInfos.size() <= size_t(FPS_RESULT_MAX);
                  y++) {
                 for (size_t z = y + 1;
-                     z < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                     z < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
                      patternInfos.size() <= size_t(FPS_RESULT_MAX);
                      z++) {
                     bool check_result = IsPossibleFindPatterInfo(
@@ -1330,12 +1313,12 @@ int FinderPatternFinder::findRowSkip() {
 
     Ref<FinderPattern> firstConfirmedCenter, secondConfirmedCenter;
 
-    for (size_t i = 0; i < max - 1; i++) {
+    for (int i = 0; i < max - 1; i++) {
         firstConfirmedCenter = possibleCenters_[i];
         if (firstConfirmedCenter->getCount() >= CENTER_QUORUM) {
             float firstModuleSize = firstConfirmedCenter->getEstimatedModuleSize();
-            size_t j_start = (i < size_t(compared_finder_counts)) ? compared_finder_counts : i + 1;
-            for (size_t j = j_start; j < max; j++) {
+            int j_start = (i < compared_finder_counts) ? compared_finder_counts : i + 1;
+            for (int j = j_start; j < max; j++) {
                 secondConfirmedCenter = possibleCenters_[j];
                 if (secondConfirmedCenter->getCount() >= CENTER_QUORUM) {
                     float secondModuleSize = secondConfirmedCenter->getEstimatedModuleSize();
