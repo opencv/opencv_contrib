@@ -1031,14 +1031,13 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     const Point3f truncPt(truncDist, truncDist, truncDist);
     _VolumeUnitIndexSet _newIndices = cv::Mat(VOLUMES_SIZE, 1, CV_32S);
     cv::Mat newIndices = cv::Mat(VOLUMES_SIZE, 1, CV_32SC3);
-    //Mutex mutex;
+    Mutex mutex;
     Range allocateRange(0, depth.rows);
-    int loc_vol_idx = 0;
     int vol_idx = 0;
 
     auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
         _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(VOLUMES_SIZE, 1, CV_32SC3);
-
+        int loc_vol_idx = 0;
         for (int y = range.start; y < range.end; y += depthStride)
         {
             const depthType* depthRow = depth[y];
@@ -1069,7 +1068,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
 
-        //mutex.lock();
+        mutex.lock();
         for (int i = 0; i < loc_vol_idx; i++)
         {
             Vec3i idx = *_localAccessVolUnits.ptr<Vec3i>(i);
@@ -1092,11 +1091,11 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 lastVolIndex++;
             }
         }
-        //mutex.unlock();
+        mutex.unlock();
     };
 
-    //parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
-    AllocateVolumeUnitsInvoker(allocateRange);
+    parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
+    //AllocateVolumeUnitsInvoker(allocateRange);
 
     //! Perform the allocation
     for (int i = 0; i < vol_idx; i++)
