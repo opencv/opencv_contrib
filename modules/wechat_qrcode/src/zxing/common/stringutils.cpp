@@ -200,7 +200,6 @@ string StringUtils::guessEncodingZXing(char* bytes, int length) {
     bool canBeShiftJIS = true;
     bool canBeUTF8 = true;
     bool canBeGB2312 = true;
-    bool canBeGB18030 = true;
     bool canBeGBK = true;
     bool canBeBIG5 = true;
     bool canBeASCII = true;
@@ -326,9 +325,6 @@ string StringUtils::guessEncodingZXing(char* bytes, int length) {
         canBeGBK = false;
     }
 
-    if (!is_gb18030_code(bytes, length)) {
-        canBeGB18030 = false;
-    }
 
     if (canBeUTF8 && utf8BytesLeft > 0) {
         canBeUTF8 = false;
@@ -656,92 +652,6 @@ int StringUtils::is_gbk_code(char* str, int length) {
         }
     }
     return 0;
-}
-
-int StringUtils::is_gb18030_code(char* str, int length) {
-    char* p = str;
-    int Size = length;
-    int r, s = Size;
-
-    while ((r = is_gb18030_code_one(p, s)) > 0) {
-        p += r;
-        s -= r;
-    }
-
-    if (r == 0)
-        return 0;
-    else
-        return 1;
-}
-
-int StringUtils::is_gb18030_code_one(char* str, int length) {
-    /*
-    unsigned one_byte = 0X00; //binary 00000000
-
-    int gb18030_yes = 0;
-    int gb18030_no = 0;
-
-    unsigned char k = 0;
-
-    unsigned char c = 0;
-    for (unsigned int  i=0; i<length;) {
-        c = (unsigned char)str[i];
-        if (c>>7 == one_byte) {
-            i++;
-            continue;
-        } else if (c >= 0X81 && c <= 0XFE) {
-            k = (unsigned char)str[i+1];
-            if (k >= 0X40 && k <= 0XFE) {
-                gb18030_yes++;
-                i += 2;
-                continue;
-            }
-        }
-
-        gb18030_no++;
-        i += 2;
-    }
-
-    //printf("gbk_yes: %d gbk_no:%d\n", gbk_yes, gbk_no);
-    if((gb18030_yes+gb18030_no)>0){
-        int ret = (100*gb18030_yes)/(gb18030_yes+gb18030_no);
-        if (ret == 100) {
-            //if (ret > 90) {
-            return 1;
-        } else {
-            return 0;
-        }
-    }
-    return 0;
-    */
-    const unsigned char* p = (unsigned char*)str;
-    int Size = length;
-
-    // check arguments
-    if (p == NULL || Size <= 0) return 0;
-
-    // Chinese 1st byte 0x81-0xFE
-    if (p[0] < 0x81 || p[0] > 0xFE) return 1;
-
-    // Chinese code size = 2, 4
-    if (Size < 2) return -1;
-
-    // Chinese 2nd byte 0x30-0x39, 0x40-0x7E, 0x80-0xFE
-    if (p[1] < 0x30 || (p[1] > 0x39 && p[1] < 0x40) || p[1] == 0x7F || p[1] > 0xFE) return -1;
-
-    // 2 bytes Chinese code
-    if (p[1] >= 0x40) return 2;
-
-    // Chinese code size = 4
-    if (Size < 4) return -1;
-
-    // Chinese 3rd byte 0x81-0xFE
-    if (p[2] < 0x81 || p[2] > 0xFE) return -1;
-
-    // Chinese 4th byte 0x30-0x39
-    if (p[3] < 0x30 || p[3] > 0x39) return -1;
-
-    return 4;
 }
 
 int StringUtils::is_shiftjis_code(char* str, int length) {

@@ -98,7 +98,7 @@ private:
     int initBlocks();
 
     // int calculateBlackPoints();
-    ArrayRef<int> getBlackPoints(int level);
+    ArrayRef<int> getBlackPoints();
     int getBlockThreshold(int x, int y, int subWidth, int sum, int min, int max,
                           int minDynamicRange, int SIZE_POWER);
 #else
@@ -108,20 +108,20 @@ private:
 
 #ifdef USE_LEVEL_BINARIZER
     void calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth, int subHeight,
-                                    int width, int height, int SIZE_POWER,
+                                    int _width, int _height, int SIZE_POWER,
                                     // ArrayRef<int> &blackPoints,
                                     Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 #else
     void calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth, int subHeight,
-                                    int width, int height, ArrayRef<int>& blackPoints,
+                                    int _width, int _height, ArrayRef<int>& blackPoints,
                                     Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 #endif
 
     void thresholdBlock(Ref<ByteMatrix>& luminances, int xoffset, int yoffset, int threshold,
-                        int stride, Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
+                        Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 
     void thresholdIrregularBlock(Ref<ByteMatrix>& luminances, int xoffset, int yoffset,
-                                 int blockWidth, int blockHeight, int threshold, int stride,
+                                 int blockWidth, int blockHeight, int threshold, 
                                  Ref<BitMatrix> const& matrix, ErrorHandler& err_handler);
 
 #ifdef USE_SET_INT
@@ -131,7 +131,7 @@ private:
 
     // Add for binarize image when call getBlackMatrix
     // By Skylook
-    int binarizeByBlock(int blockLevel, ErrorHandler& err_handler);
+    int binarizeByBlock(ErrorHandler& err_handler);
 };
 
 }  // namespace zxing

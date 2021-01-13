@@ -53,8 +53,6 @@ const int BITS_PER_WORD = BitMatrix::bitsPerWord;
 }  // namespace
 
 HybridBinarizer::HybridBinarizer(Ref<LuminanceSource> source) : GlobalHistogramBinarizer(source) {
-    int width = source->getWidth();
-    int height = source->getHeight();
 
     int subWidth = width >> BLOCK_SIZE_POWER;
     if ((width & BLOCK_SIZE_MASK) != 0) {
@@ -93,8 +91,6 @@ Ref<Binarizer> HybridBinarizer::createBinarizer(Ref<LuminanceSource> source) {
 
 #ifdef USE_LEVEL_BINARIZER
 int HybridBinarizer::initBlockIntegral() {
-    int width = subWidth_ + 1;
-    int height = subHeight_ + 1;
 
     blockIntegral_ = new Array<int>(width * height);
 
@@ -189,7 +185,7 @@ int HybridBinarizer::initIntegral()
 Ref<BitMatrix> HybridBinarizer::getBlackMatrix(ErrorHandler& err_handler) {
     // First call binarize image in child class to get matrix0_ and binCache
     if (!matrix0_) {
-        binarizeByBlock(0, err_handler);
+        binarizeByBlock(err_handler);
         if (err_handler.ErrCode()) return Ref<BitMatrix>();
     }
 
@@ -207,7 +203,7 @@ Ref<BitMatrix> HybridBinarizer::getBlackMatrix(ErrorHandler& err_handler) {
 Ref<BitArray> HybridBinarizer::getBlackRow(int y, Ref<BitArray> row, ErrorHandler& err_handler) {
     // First call binarize image in child class to get matrix0_ and binCache
     if (!matrix0_) {
-        binarizeByBlock(0, err_handler);
+        binarizeByBlock(err_handler);
         if (err_handler.ErrCode()) return Ref<BitArray>();
     }
 
@@ -388,11 +384,9 @@ matrix);
 
 #ifdef USE_LEVEL_BINARIZER
 // No use of level now
-ArrayRef<int> HybridBinarizer::getBlackPoints(int level) {
+ArrayRef<int> HybridBinarizer::getBlackPoints() {
     int blackWidth, blackHeight;
 
-    // blackWidth = subWidth_/level;
-    // blackHeight = subHeight_/level;
     blackWidth = subWidth_;
     blackHeight = subHeight_;
 
@@ -412,8 +406,8 @@ ArrayRef<int> HybridBinarizer::getBlackPoints(int level) {
 }
 
 // Original code 20140606
-void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth,
-                                                 int subHeight, int width, int height,
+void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& _luminances, int subWidth,
+                                                 int subHeight, int _width, int _height,
                                                  int SIZE_POWER,
                                                  // ArrayRef<int> &blackPoints,
                                                  Ref<BitMatrix> const& matrix,
@@ -478,19 +472,19 @@ void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& luminances, in
             */
 
             int average = sum / blockArea;
-            thresholdBlock(luminances, xoffset, yoffset, average, width, matrix, err_handler);
+            thresholdBlock(_luminances, xoffset, yoffset, average, matrix, err_handler);
             if (err_handler.ErrCode()) return;
         }
     }
 }
 #else
 void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& luminances, int subWidth,
-                                                 int subHeight, int width, int height,
+                                                 int subHeight, int _width, int _height,
                                                  ArrayRef<int>& blackPoints,
                                                  Ref<BitMatrix> const& matrix,
                                                  ErrorHandler& err_handler) {
-    int maxYOffset = height - BLOCK_SIZE;
-    int maxXOffset = width - BLOCK_SIZE;
+    int maxYOffset = _height - BLOCK_SIZE;
+    int maxXOffset = _width - BLOCK_SIZE;
 #ifdef START_TIMER2
     _LARGE_INTEGER time_start, time_over1, time_over2, time_over3;
     double time1 = 0.0, time2 = 0.0, time3 = 0.0;
@@ -563,7 +557,7 @@ void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& luminances, in
                 tmpDownSumRow[x + 5] - tmpDownSumRow[x] - tmpTopSumRow[x + 5] + tmpTopSumRow[x];
             int average = sum / 25;
 #ifndef USE_SET_INT
-            thresholdBlock(luminances, xoffset, yoffset, average, width, matrix, err_handler);
+            thresholdBlock(luminances, xoffset, yoffset, average, matrix, err_handler);
             if (err_handler.ErrCode()) return;
                 // thresholdIrregularBlock(luminances,xoffset,yoffset,blockWidth,blockHeight,average,width,matrix);
 #else
@@ -633,7 +627,7 @@ void HybridBinarizer::calculateThresholdForBlock(Ref<ByteMatrix>& luminances, in
                 }
             }
             int average = sum / blockArea;
-            thresholdBlock(luminances, xoffset, yoffset, average, width, matrix, err_handler);
+            thresholdBlock(luminances, xoffset, yoffset, average, matrix, err_handler);
             if (err_handler.ErrCode()) return;
         }
     }
@@ -669,8 +663,8 @@ void HybridBinarizer::thresholdFourBlocks(Ref<ByteMatrix>& luminances, int xoffs
 #endif
 
 // Applies a single threshold to a block of pixels
-void HybridBinarizer::thresholdBlock(Ref<ByteMatrix>& luminances, int xoffset, int yoffset,
-                                     int threshold, int stride, Ref<BitMatrix> const& matrix,
+void HybridBinarizer::thresholdBlock(Ref<ByteMatrix>& _luminances, int xoffset, int yoffset,
+                                     int threshold, Ref<BitMatrix> const& matrix,
                                      ErrorHandler& err_handler) {
     int rowBitsSize = matrix->getRowBitsSize();
     int rowSize = width;
@@ -678,7 +672,7 @@ void HybridBinarizer::thresholdBlock(Ref<ByteMatrix>& luminances, int xoffset, i
     int rowBitStep = rowBitsSize - BLOCK_SIZE;
     int rowStep = rowSize - BLOCK_SIZE;
 
-    unsigned char* pTemp = luminances->getByteRow(yoffset, err_handler);
+    unsigned char* pTemp = _luminances->getByteRow(yoffset, err_handler);
     if (err_handler.ErrCode()) return;
     bool* bpTemp = matrix->getRowBoolPtr(yoffset);
 
@@ -697,12 +691,12 @@ void HybridBinarizer::thresholdBlock(Ref<ByteMatrix>& luminances, int xoffset, i
     }
 }
 
-void HybridBinarizer::thresholdIrregularBlock(Ref<ByteMatrix>& luminances, int xoffset, int yoffset,
+void HybridBinarizer::thresholdIrregularBlock(Ref<ByteMatrix>& _luminances, int xoffset, int yoffset,
                                               int blockWidth, int blockHeight, int threshold,
-                                              int stride, Ref<BitMatrix> const& matrix,
+                                              Ref<BitMatrix> const& matrix,
                                               ErrorHandler& err_handler) {
     for (int y = 0; y < blockHeight; y++) {
-        unsigned char* pTemp = luminances->getByteRow(yoffset + y, err_handler);
+        unsigned char* pTemp = _luminances->getByteRow(yoffset + y, err_handler);
         if (err_handler.ErrCode()) return;
         pTemp = pTemp + xoffset;
         for (int x = 0; x < blockWidth; x++) {
@@ -763,13 +757,13 @@ namespace{
 #ifdef USE_LEVEL_BINARIZER
 // Calculates a single black point for each block of pixels and saves it away.
 int HybridBinarizer::initBlocks() {
-    Ref<ByteMatrix>& luminances = grayByte_;
+    Ref<ByteMatrix>& _luminances = grayByte_;
     int subWidth = subWidth_;
     int subHeight = subHeight_;
     int width = width_;
     int height = height_;
 
-    unsigned char* bytes = luminances->bytes;
+    unsigned char* bytes = _luminances->bytes;
 
     const int minDynamicRange = 24;
     // int maxYOffset = height - BLOCK_SIZE;
@@ -1045,7 +1039,7 @@ ArrayRef<int> HybridBinarizer::calculateBlackPoints(Ref<ByteMatrix>& luminances,
 }
 #endif
 
-int HybridBinarizer::binarizeByBlock(int blockLevel, ErrorHandler& err_handler) {
+int HybridBinarizer::binarizeByBlock(ErrorHandler& err_handler) {
     // LuminanceSource& source = *getLuminanceSource();
     // int width = source.getWidth();
     // int height = source.getHeight();

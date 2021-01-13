@@ -66,8 +66,6 @@ public:
     static int is_gb2312_code(char* str, int length);
     static int is_big5_code(char* str, int length);
     static int is_gbk_code(char* str, int length);
-    static int is_gb18030_code(char* str, int length);
-    static int is_gb18030_code_one(char* str, int length);
     static int is_shiftjis_code(char* str, int length);
     static int is_ascii_code(char* str, int length);
     static int shift_jis_to_jis(const unsigned char* may_be_shift_jis, int* jis_first_ptr,
