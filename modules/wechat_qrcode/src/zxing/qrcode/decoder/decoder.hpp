@@ -58,13 +58,10 @@ private:
 
 public:
     Decoder();
-    Ref<DecoderResult> decode(Ref<BitMatrix> bits, Ref<DetectorResult> detectResult,
-                              ErrorHandler& err_handler);
+    Ref<DecoderResult> decode(Ref<BitMatrix> bits, ErrorHandler& err_handler);
 
 private:
-    Ref<DecoderResult> decode(Ref<BitMatrix> bits, bool isMirror, Ref<DetectorResult> detectResult,
-                              ErrorHandler& err_handler);
-    // Ref<DecoderResult> decode(BitMatrixParser& parser);
+    Ref<DecoderResult> decode(Ref<BitMatrix> bits, bool isMirror, ErrorHandler& err_handler);
 
     float estimateFixedPattern(Ref<BitMatrix> bits, Version* version, ErrorHandler& err_handler);
 

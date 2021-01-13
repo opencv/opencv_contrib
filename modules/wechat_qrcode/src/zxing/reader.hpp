@@ -47,7 +47,6 @@ public:
     virtual void setDecodeID(unsigned int id);
 
     virtual float getPossibleFix();
-    virtual int getQrcodeInfo(const void *&pQBarQrcodeInfo);
 };
 
 }  // namespace zxing

@@ -72,9 +72,9 @@ Ref<Result> QRCodeReader::decode(Ref<BinaryBitmap> image, DecodeHints hints) {
         // black white mirro!!!
         Ref<BitMatrix> invertedMatrix = image->getInvertedMatrix(err_handler);
         if (err_handler.ErrCode() || invertedMatrix == NULL) return Ref<Result>();
-        Ref<Result> rst = decodeMore(image, invertedMatrix, hints, err_handler);
-        if (err_handler.ErrCode() || rst == NULL) return Ref<Result>();
-        return rst;
+        Ref<Result> tmp_rst = decodeMore(image, invertedMatrix, hints, err_handler);
+        if (err_handler.ErrCode() || tmp_rst == NULL) return Ref<Result>();
+        return tmp_rst;
     }
 
     return rst;
@@ -149,7 +149,7 @@ Ref<Result> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> ima
 
                 points = detectorResult->getPoints();
                 Ref<DecoderResult> decoderResult(
-                    decoder_.decode(detectorResult->getBits(), detectorResult, err_handler));
+                    decoder_.decode(detectorResult->getBits(), err_handler));
                 if (err_handler.ErrCode()) {
                     ept = err_handler.ErrCode();
                     setDecoderFix(decoder_.getPossibleFix(), points);
@@ -199,7 +199,7 @@ Ref<Result> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> ima
 
                         points = detectorResult->getPoints();
                         Ref<DecoderResult> decoderResult(decoder_.decode(
-                            detectorResult->getBits(), detectorResult, err_handler));
+                            detectorResult->getBits(), err_handler));
                         if (err_handler.ErrCode() || decoderResult == NULL) {
                             ept = err_handler.ErrMsg();
                             setDecoderFix(decoder_.getPossibleFix(), points);
@@ -456,7 +456,7 @@ void QRCodeReader::setDecoderFix(float possibleFix, ArrayRef<Ref<ResultPoint> > 
         possibleQrcodeInfo_.possibleFix = realFix;
         possibleQrcodeInfo_.qrcodeBorder.clear();
         possibleQrcodeInfo_.possibleModuleSize = possibleModuleSize_;
-        if (border != NULL) {
+        if (border) {
             for (int i = 0; i < 4; ++i) {
                 possibleQrcodeInfo_.qrcodeBorder.push_back(border[i]);
             }
@@ -466,7 +466,7 @@ void QRCodeReader::setDecoderFix(float possibleFix, ArrayRef<Ref<ResultPoint> > 
 void QRCodeReader::setSuccFix(ArrayRef<Ref<ResultPoint> > border) {
     possibleQrcodeInfo_.qrcodeBorder.clear();
     possibleQrcodeInfo_.possibleModuleSize = possibleModuleSize_;
-    if (border != NULL) {
+    if (border) {
         for (int i = 0; i < 4; ++i) {
             possibleQrcodeInfo_.qrcodeBorder.push_back(border[i]);
         }
@@ -519,10 +519,6 @@ void QRCodeReader::setReaderState(Decoder::DecoderState state) {
             break;
     }
     return;
-}
-int QRCodeReader::getQrcodeInfo(const void *&pQBarQrcodeInfo) {
-    pQBarQrcodeInfo = &possibleQrcodeInfo_;
-    return 1;
 }
 }  // namespace qrcode
 }  // namespace zxing

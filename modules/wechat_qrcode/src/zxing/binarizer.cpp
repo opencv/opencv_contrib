@@ -81,8 +81,8 @@ Ref<BitMatrix> Binarizer::getInvertedMatrix(ErrorHandler& err_handler) {
 
 // Return different black matrix according to cacheMode
 Ref<BitMatrix> Binarizer::getBlackMatrix(ErrorHandler& err_handler) {
+    if (err_handler.ErrCode()) return Ref<BitMatrix>();
     matrix_ = matrix0_;
-
     return matrix_;
 }
 

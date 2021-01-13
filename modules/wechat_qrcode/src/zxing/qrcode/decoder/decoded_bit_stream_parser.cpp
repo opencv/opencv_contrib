@@ -82,13 +82,12 @@ namespace {
 int GB2312_SUBSET = 1;
 }
 
-void DecodedBitStreamParser::append(std::string& result, string const& in, const char* src,
-                                    ErrorHandler& err_handler) {
-    append(result, (char const*)in.c_str(), in.length(), src, err_handler);
+void DecodedBitStreamParser::append(std::string& result, string const& in, ErrorHandler& err_handler) {
+    append(result, (char const*)in.c_str(), in.length(), err_handler);
 }
 
-void DecodedBitStreamParser::append(std::string& result, const char* bufIn, size_t nIn,
-                                    const char* src, ErrorHandler& err_handler) {
+void DecodedBitStreamParser::append(std::string& result, const char* bufIn, size_t nIn, ErrorHandler& err_handler) {
+    if (err_handler.ErrCode()) return;
 #ifndef NO_ICONV_INSIDE
     if (nIn == 0) {
         return;
@@ -165,7 +164,7 @@ void DecodedBitStreamParser::decodeHanziSegment(Ref<BitSource> bits_, string& re
     }
     // for(int i=0;i<nBytes;i++)
     // cout<<buffer[i]<<endl;
-    append(result, buffer, nBytes, StringUtils::GB2312, err_handler);
+    append(result, buffer, nBytes, err_handler);
     if (err_handler.ErrCode()) {
         delete[] buffer;
         return;
@@ -200,7 +199,7 @@ void DecodedBitStreamParser::decodeKanjiSegment(Ref<BitSource> bits, std::string
         count--;
     }
 
-    append(result, buffer, nBytes, StringUtils::SHIFT_JIS, err_handler);
+    append(result, buffer, nBytes, err_handler);
     if (err_handler.ErrCode()) {
         delete[] buffer;
         return;
@@ -259,7 +258,7 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
     }
     // cout<<"encoding: "<<encoding<<endl;
 
-    append(result, readBytes, nBytes, encoding.c_str(), err_handler);
+    append(result, readBytes, nBytes, err_handler);
     if (err_handler.ErrCode()) return;
 
     byteSegments->values().push_back(bytes_);
@@ -323,7 +322,7 @@ void DecodedBitStreamParser::decodeNumericSegment(Ref<BitSource> bits, std::stri
         }
         bytes[i++] = ALPHANUMERIC_CHARS[digitBits];
     }
-    append(result, bytes->data(), nBytes, StringUtils::ASCII, err_handler);
+    append(result, bytes->data(), nBytes, err_handler);
     if (err_handler.ErrCode()) return;
 }
 
@@ -382,7 +381,7 @@ void DecodedBitStreamParser::decodeAlphanumericSegment(Ref<BitSource> bits_, str
         }
         s = r.str();
     }
-    append(result, s, StringUtils::ASCII, err_handler);
+    append(result, s, err_handler);
     if (err_handler.ErrCode()) return;
 }
 

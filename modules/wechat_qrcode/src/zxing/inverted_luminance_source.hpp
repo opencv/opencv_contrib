@@ -39,20 +39,20 @@ private:
 public:
     explicit InvertedLuminanceSource(Ref<LuminanceSource> const&);
 
-    ArrayRef<char> getRow(int y, ArrayRef<char> row, ErrorHandler& err_handler) const;
-    ArrayRef<char> getMatrix() const;
-    Ref<ByteMatrix> getByteMatrix() const;
+    ArrayRef<char> getRow(int y, ArrayRef<char> row, ErrorHandler& err_handler) const override;
+    ArrayRef<char> getMatrix() const override;
+    Ref<ByteMatrix> getByteMatrix() const override;
 
-    bool isCropSupported() const;
-    Ref<LuminanceSource> crop(int left, int top, int width, int height) const;
+    bool isCropSupported() const override;
+    Ref<LuminanceSource> crop(int left, int top, int width, int height) const override;
 
-    bool isRotateSupported() const;
+    bool isRotateSupported() const override;
 
-    virtual Ref<LuminanceSource> invert() const;
+    virtual Ref<LuminanceSource> invert() const override;
 
-    Ref<LuminanceSource> rotateCounterClockwise() const;
+    Ref<LuminanceSource> rotateCounterClockwise() const override;
 
-    virtual void denoseLuminanceSource(int inter);
+    virtual void denoseLuminanceSource(int inter) override;
 };
 
 }  // namespace zxing

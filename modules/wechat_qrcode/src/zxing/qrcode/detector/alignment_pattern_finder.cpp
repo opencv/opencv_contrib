@@ -485,12 +485,6 @@ AlignmentPatternFinder::~AlignmentPatternFinder() {
     delete possibleCenters_;
 }
 
-Ref<AlignmentPattern> AlignmentPatternFinder::findByPattern(
-    Ref<AlignmentPattern> const &estimateCenter, Ref<FinderPattern> const &topLeft,
-    Ref<FinderPattern> const &topRight, Ref<FinderPattern> const &bottomLeft) {
-    Ref<AlignmentPattern> result;
-    return result;
-}
 
 static const double pi = 3.1415926535897932384626433832795029;
 

@@ -25,6 +25,6 @@ PatternResult::PatternResult(Ref<FinderPatternInfo> info) {
 }
 
 void PatternResult::setConfirmedAlignmentPattern(int index) {
-    if (index >= possibleAlignmentPatterns.size()) return;
+    if (index >= int(possibleAlignmentPatterns.size())) return;
     confirmedAlignmentPattern = possibleAlignmentPatterns[index];
 }

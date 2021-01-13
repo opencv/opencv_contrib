@@ -49,8 +49,6 @@ Ref<BitMatrix> AdaptiveThresholdMeanBinarizer::getBlackMatrix(ErrorHandler& err_
 int AdaptiveThresholdMeanBinarizer::binarizeImage(ErrorHandler& err_handler) {
     if (width >= BLOCK_SIZE && height >= BLOCK_SIZE) {
         LuminanceSource& source = *getLuminanceSource();
-        int height = source.getHeight();
-        int width = source.getWidth();
         Ref<BitMatrix> matrix(new BitMatrix(width, height, err_handler));
         if (err_handler.ErrCode()) return -1;
         auto src = (unsigned char*)source.getMatrix()->data();

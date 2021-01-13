@@ -64,7 +64,7 @@ void DataMask::unmaskBitMatrix(BitMatrix& bits, size_t dimension) {
  */
 class DataMask000 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t y) { return ((x + y) % 2) == 0; }
+    bool isMasked(size_t x, size_t y) override { return ((x + y) % 2) == 0; }
 };
 
 /**
@@ -72,7 +72,7 @@ public:
  */
 class DataMask001 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t) { return (x % 2) == 0; }
+    bool isMasked(size_t x, size_t) override { return (x % 2) == 0; }
 };
 
 /**
@@ -80,7 +80,7 @@ public:
  */
 class DataMask010 : public DataMask {
 public:
-    bool isMasked(size_t, size_t y) { return y % 3 == 0; }
+    bool isMasked(size_t, size_t y) override { return y % 3 == 0; }
 };
 
 /**
@@ -88,7 +88,7 @@ public:
  */
 class DataMask011 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t y) { return (x + y) % 3 == 0; }
+    bool isMasked(size_t x, size_t y) override { return (x + y) % 3 == 0; }
 };
 
 /**
@@ -96,7 +96,7 @@ public:
  */
 class DataMask100 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t y) { return (((x >> 1) + (y / 3)) % 2) == 0; }
+    bool isMasked(size_t x, size_t y) override { return (((x >> 1) + (y / 3)) % 2) == 0; }
 };
 
 /**
@@ -104,7 +104,7 @@ public:
  */
 class DataMask101 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t y) {
+    bool isMasked(size_t x, size_t y) override {
         size_t temp = x * y;
         return (temp % 2) + (temp % 3) == 0;
     }
@@ -115,7 +115,7 @@ public:
  */
 class DataMask110 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t y) {
+    bool isMasked(size_t x, size_t y) override {
         size_t temp = x * y;
         return (((temp % 2) + (temp % 3)) % 2) == 0;
     }
@@ -126,7 +126,7 @@ public:
  */
 class DataMask111 : public DataMask {
 public:
-    bool isMasked(size_t x, size_t y) { return ((((x + y) % 2) + ((x * y) % 3)) % 2) == 0; }
+    bool isMasked(size_t x, size_t y) override { return ((((x + y) % 2) + ((x * y) % 3)) % 2) == 0; }
 };
 
 int DataMask::buildDataMasks() {

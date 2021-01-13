@@ -120,7 +120,7 @@ void BitArray::initAllNextSetsFromCounters(std::vector<int> counters) {
     int count = 0;
     int prevCount = 0;
     int currCount = 0;
-    int size = counters.size();
+    int _size = counters.size();
 
     int *nextSetArray = nextSets->data();
     int *nextUnsetArray = nextUnSets->data();
@@ -128,7 +128,7 @@ void BitArray::initAllNextSetsFromCounters(std::vector<int> counters) {
     // int* countersArray = counters.data();
     int *countersArray = &counters[0];
 
-    while (c < size) {
+    while (c < _size) {
         currCount = countersArray[c];
 
         count += currCount;

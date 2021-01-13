@@ -67,10 +67,8 @@ private:
     void decodeNumericSegment(Ref<BitSource> bits, std::string& result, int count,
                               ErrorHandler& err_handler);
 
-    void append(std::string& ost, const char* bufIn, size_t nIn, const char* src,
-                ErrorHandler& err_handler);
-    void append(std::string& ost, std::string const& in, const char* src,
-                ErrorHandler& err_handler);
+    void append(std::string& ost, const char* bufIn, size_t nIn, ErrorHandler& err_handler);
+    void append(std::string& ost, std::string const& in, ErrorHandler& err_handler);
 
 public:
     Ref<DecoderResult> decode(ArrayRef<char> bytes, Version* version,

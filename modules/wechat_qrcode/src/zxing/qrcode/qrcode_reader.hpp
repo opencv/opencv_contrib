@@ -137,10 +137,6 @@ public:
     float calQrcodeArea(Ref<DetectorResult> detectorResult);
     float calTriangleArea(Ref<ResultPoint> centerA, Ref<ResultPoint> centerB,
                           Ref<ResultPoint> centerC);
-    // Ref<DetectorResult> getDetectorResult( Ref<BitMatrix> imageBitMatrix,
-    // Ref<Detector> detector, int dimension,bool whiteAlignmen=false);
-
-    int getQrcodeInfo(const void*& pQBarQrcodeInfo) override;
 
     vector<int> getPossibleDimentions(int detectDimension);
 };

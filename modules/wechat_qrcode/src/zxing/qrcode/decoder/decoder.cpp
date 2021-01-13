@@ -60,8 +60,7 @@ Decoder::Decoder() : rsDecoder_(Ref<GenericGF>(GF_QR_CODE_FIELD_256)) {
 
 // Convenience method that can decode a QR Code represented as a 2D array of
 // booleans. "true" is taken to mean a black module.
-Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, Ref<DetectorResult> detectResult,
-                                   ErrorHandler &err_handler) {
+Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, ErrorHandler &err_handler) {
     string errMsg = "";
 
     // Used for mirrored qrcode
@@ -70,7 +69,7 @@ Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, Ref<DetectorResult> dete
 
     Ref<BitMatrix> bits2(new BitMatrix(width, height, (bool *)bits->getPtr(), err_handler));
     if (err_handler.ErrCode()) return Ref<DecoderResult>();
-    Ref<DecoderResult> rst = decode(bits, false, detectResult, err_handler);
+    Ref<DecoderResult> rst = decode(bits, false, err_handler);
     if (err_handler.ErrCode() || rst == NULL) {
         errMsg = err_handler.ErrMsg();
     } else {
@@ -78,7 +77,7 @@ Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, Ref<DetectorResult> dete
     }
 
     err_handler.Reset();
-    Ref<DecoderResult> result = decode(bits2, true, detectResult, err_handler);
+    Ref<DecoderResult> result = decode(bits2, true, err_handler);
     if (err_handler.ErrCode()) {
         return Ref<DecoderResult>();
     } else {
@@ -91,8 +90,7 @@ Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, Ref<DetectorResult> dete
     return Ref<DecoderResult>();
 };
 
-Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, bool isMirror,
-                                   Ref<DetectorResult> detectResult, ErrorHandler &err_handler) {
+Ref<DecoderResult> Decoder::decode(Ref<BitMatrix> bits, bool isMirror, ErrorHandler &err_handler) {
     // Ref<DecoderResult> Decoder::decode(BitMatrixParser& parser) {
     // Construct a parser and read version, error-correction level
     BitMatrixParser parser(bits, err_handler);

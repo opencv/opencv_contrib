@@ -77,10 +77,6 @@ public:
                            float moduleSize);
     AlignmentPatternFinder(Ref<BitMatrix> image, float moduleSize);
     ~AlignmentPatternFinder();
-    Ref<AlignmentPattern> findByPattern(Ref<AlignmentPattern> const &estimateCenter,
-                                        Ref<FinderPattern> const &topLeft,
-                                        Ref<FinderPattern> const &topRight,
-                                        Ref<FinderPattern> const &bottomLeft);
 #ifdef FIND_WHITE_ALIGNMENTPATTERN
     std::vector<Ref<AlignmentPattern> > find(ErrorHandler &err_handler);
     void setLastTry(bool toSet) { lastTry = toSet; }
@@ -109,10 +105,7 @@ private:
 
 public:
     AlignmentPatternFinder(Ref<BitMatrix> image, float moduleSize);
-    // Ref<AlignmentPattern> findByPattern(Ref<AlignmentPattern>const
-    // &estimateCenter, Ref<FinderPattern>const &topLeft,
-    // Ref<FinderPattern>const
-    //&topRight, Ref<FinderPattern>const &bottomLeft);
+    
     void initAngleTable();
     bool findPatternLine(Ref<FinderPattern> const &from, Ref<FinderPattern> const &to,
                          double &aValue, double &pValue);

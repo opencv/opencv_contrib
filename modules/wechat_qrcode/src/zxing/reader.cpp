@@ -39,7 +39,6 @@ void Reader::setDecodeID(unsigned int) {}
 
 float Reader::getPossibleFix() { return 0.0; }
 
-int Reader::getQrcodeInfo(const void *&pQBarQrcodeInfo) { return 0; }
 
 string Reader::name() { return "unknow"; }
 
