@@ -105,7 +105,6 @@ private:
 
 public:
     AlignmentPatternFinder(Ref<BitMatrix> image, float moduleSize);
-    
     void initAngleTable();
     bool findPatternLine(Ref<FinderPattern> const &from, Ref<FinderPattern> const &to,
                          double &aValue, double &pValue);
