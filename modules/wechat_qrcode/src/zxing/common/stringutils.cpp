@@ -224,7 +224,6 @@ string StringUtils::guessEncodingZXing(char* bytes, int length) {
     int gb2312SCByteChars = 0;
     int big5TWBytesChars = 0;
 
-    typedef unsigned char byte;
     bool utf8bom = length > 3 && (unsigned char)bytes[0] == 0xEF &&
                    (unsigned char)bytes[1] == 0xBB && (unsigned char)bytes[2] == 0xBF;
 
@@ -437,7 +436,7 @@ string StringUtils::guessEncodingZXing(char* bytes, int length) {
 
 // judge the byte whether begin with binary 10
 int StringUtils::is_utf8_special_byte(unsigned char c) {
-    unsigned special_byte = 0X02;  // binary 00000010
+    unsigned char special_byte = 0X02;  // binary 00000010
     if (c >> 6 == special_byte) {
         return 1;
     } else {
@@ -446,12 +445,12 @@ int StringUtils::is_utf8_special_byte(unsigned char c) {
 }
 
 int StringUtils::is_utf8_code(char* str, int length) {
-    unsigned one_byte = 0X00;    // binary 00000000
-    unsigned two_byte = 0X06;    // binary 00000110
-    unsigned three_byte = 0X0E;  // binary 00001110
-    unsigned four_byte = 0X1E;   // binary 00011110
-    unsigned five_byte = 0X3E;   // binary 00111110
-    unsigned six_byte = 0X7E;    // binary 01111110
+    unsigned char one_byte = 0X00;    // binary 00000000
+    unsigned char two_byte = 0X06;    // binary 00000110
+    unsigned char three_byte = 0X0E;  // binary 00001110
+    unsigned char four_byte = 0X1E;   // binary 00011110
+    unsigned char five_byte = 0X3E;   // binary 00111110
+    unsigned char six_byte = 0X7E;    // binary 01111110
 
     int utf8_yes = 0;
     int utf8_no = 0;
@@ -463,7 +462,7 @@ int StringUtils::is_utf8_code(char* str, int length) {
     unsigned char q = 0;
 
     unsigned char c = 0;
-    for (unsigned int i = 0; i < length;) {
+    for (int i = 0; i < length;) {
         c = (unsigned char)str[i];
         if (c >> 7 == one_byte) {
             i++;
@@ -493,10 +492,10 @@ int StringUtils::is_utf8_code(char* str, int length) {
                 continue;
             }
         } else if (c >> 2 == five_byte) {
-            unsigned char k = (unsigned char)str[i + 1];
-            unsigned char m = (unsigned char)str[i + 2];
-            unsigned char n = (unsigned char)str[i + 3];
-            unsigned char p = (unsigned char)str[i + 4];
+            k = (unsigned char)str[i + 1];
+            m = (unsigned char)str[i + 2];
+            n = (unsigned char)str[i + 3];
+            p = (unsigned char)str[i + 4];
             if (is_utf8_special_byte(k) && is_utf8_special_byte(m) && is_utf8_special_byte(n) &&
                 is_utf8_special_byte(p)) {
                 utf8_yes++;
@@ -533,7 +532,7 @@ int StringUtils::is_utf8_code(char* str, int length) {
     return 0;
 }
 int StringUtils::is_gb2312_code(char* str, int length) {
-    unsigned one_byte = 0X00;  // binary 00000000
+    unsigned char one_byte = 0X00;  // binary 00000000
 
     int gb2312_yes = 0;
     int gb2312_no = 0;
@@ -541,7 +540,7 @@ int StringUtils::is_gb2312_code(char* str, int length) {
     unsigned char k = 0;
 
     unsigned char c = 0;
-    for (unsigned int i = 0; i < length;) {
+    for (int i = 0; i < length;) {
         c = (unsigned char)str[i];
         if (c >> 7 == one_byte) {
             i++;
@@ -574,7 +573,7 @@ int StringUtils::is_gb2312_code(char* str, int length) {
 }
 
 int StringUtils::is_big5_code(char* str, int length) {
-    unsigned one_byte = 0X00;  // binary 00000000
+    unsigned char one_byte = 0X00;  // binary 00000000
 
     int big5_yes = 0;
     int big5_no = 0;
@@ -615,7 +614,7 @@ int StringUtils::is_big5_code(char* str, int length) {
 }
 
 int StringUtils::is_gbk_code(char* str, int length) {
-    unsigned one_byte = 0X00;  // binary 00000000
+    unsigned char one_byte = 0X00;  // binary 00000000
 
     int gbk_yes = 0;
     int gbk_no = 0;
@@ -623,7 +622,7 @@ int StringUtils::is_gbk_code(char* str, int length) {
     unsigned char k = 0;
 
     unsigned char c = 0;
-    for (unsigned int i = 0; i < length;) {
+    for (int i = 0; i < length;) {
         c = (unsigned char)str[i];
         if (c >> 7 == one_byte) {
             i++;
