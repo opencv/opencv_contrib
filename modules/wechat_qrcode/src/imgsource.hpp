@@ -79,18 +79,18 @@ public:
                zxing::ErrorHandler& err_handler);
 
     zxing::ArrayRef<char> getRow(int y, zxing::ArrayRef<char> row,
-                                 zxing::ErrorHandler& err_handler) const;
-    zxing::ArrayRef<char> getMatrix() const;
-    zxing::Ref<zxing::ByteMatrix> getByteMatrix() const;
+                                 zxing::ErrorHandler& err_handler) const override;
+    zxing::ArrayRef<char> getMatrix() const override;
+    zxing::Ref<zxing::ByteMatrix> getByteMatrix() const override;
     int tvInter;
-    virtual void denoseLuminanceSource(int inter);
+    virtual void denoseLuminanceSource(int inter) override;
     void tvDenoising() const;
 
-    bool isCropSupported() const;
+    bool isCropSupported() const override;
     zxing::Ref<LuminanceSource> crop(int left, int top, int width, int height,
                                      zxing::ErrorHandler& err_handler) const;
 
-    bool isRotateSupported() const;
+    bool isRotateSupported() const override;
     zxing::Ref<LuminanceSource> rotateCounterClockwise(zxing::ErrorHandler& err_handler) const;
 
     int getMaxSize() { return maxDataHeight * maxDataWidth; }

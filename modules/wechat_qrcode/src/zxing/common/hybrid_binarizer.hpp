@@ -86,10 +86,10 @@ public:
     explicit HybridBinarizer(Ref<LuminanceSource> source);
     virtual ~HybridBinarizer();
 
-    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler& err_handler);
-    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler& err_handler);
+    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler& err_handler) override;
+    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler& err_handler) override;
 
-    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source);
+    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source) override;
 
 private:
 #ifdef USE_LEVEL_BINARIZER

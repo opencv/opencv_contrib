@@ -44,7 +44,7 @@ public:
             deleteMessage();
         }
     }
-    char const* what() const throw() { return message ? message : ""; }
+    char const* what() const throw() override { return message ? message : ""; }
 
 private:
     static char const* copy(char const*);

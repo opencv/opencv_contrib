@@ -44,16 +44,16 @@ namespace qrcode {
  */
 class QRCodeDecoderMetaData : public Counted {
 private:
-    bool mirrored;
+    bool mirrored_;
 
 public:
-    explicit QRCodeDecoderMetaData(bool mirrored) { this->mirrored = mirrored; }
+    explicit QRCodeDecoderMetaData(bool mirrored):mirrored_(mirrored) {}
 
 public:
     /**
      * @return true if the QR Code was mirrored.
      */
-    bool isMirrored() { return mirrored; };
+    bool isMirrored() { return mirrored_; };
 
     /**
      * Apply the result points' order correction due to mirroring.
@@ -61,7 +61,7 @@ public:
      * @param points Array of points to apply mirror correction to.
      */
     void applyMirroredCorrection(ArrayRef<Ref<ResultPoint> >& points) {
-        if (!mirrored || points->size() < 3) {
+        if (!mirrored_ || points->size() < 3) {
             return;
         }
         Ref<ResultPoint> bottomLeft = points[0];

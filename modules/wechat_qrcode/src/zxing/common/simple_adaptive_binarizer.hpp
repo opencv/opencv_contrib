@@ -47,11 +47,11 @@ public:
     explicit SimpleAdaptiveBinarizer(Ref<LuminanceSource> source);
     virtual ~SimpleAdaptiveBinarizer();
 
-    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler &err_handler);
-    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler &err_handler);
+    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler &err_handler) override;
+    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler &err_handler) override;
     // static int estimateBlackPoint(ArrayRef<int> const& buckets);
     // static int estimateBlackPoint2(ArrayRef<int> const& buckets);
-    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source);
+    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source) override;
 
 private:
     int binarizeImage0(ErrorHandler &err_handler);

@@ -42,9 +42,9 @@ public:
     explicit LineBinarizer(Ref<LuminanceSource> source);
     virtual ~LineBinarizer();
 
-    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler &err_handler);
-    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler &err_handler);
-    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source);
+    virtual Ref<BitMatrix> getBlackMatrix(ErrorHandler &err_handler) override;
+    virtual Ref<BitArray> getBlackRow(int y, Ref<BitArray> row, ErrorHandler &err_handler) override;
+    Ref<Binarizer> createBinarizer(Ref<LuminanceSource> source) override;
 
 private:
     int binarizeImage(ErrorHandler &err_handler);

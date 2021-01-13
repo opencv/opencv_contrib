@@ -89,10 +89,10 @@ protected:
 public:
     QRCodeReader();
     virtual ~QRCodeReader();
-    string name() { return "qrcode"; }
+    string name() override { return "qrcode"; }
 
-    Ref<Result> decode(Ref<BinaryBitmap> image);
-    Ref<Result> decode(Ref<BinaryBitmap> image, DecodeHints hints);
+    Ref<Result> decode(Ref<BinaryBitmap> image) override;
+    Ref<Result> decode(Ref<BinaryBitmap> image, DecodeHints hints) override;
 
     Ref<Result> decodeMore(Ref<BinaryBitmap> image, Ref<BitMatrix> imageBitMatrix,
                            DecodeHints hints, ErrorHandler& err_handler);
@@ -120,9 +120,9 @@ protected:
     unsigned int smoothMaxMultiple_;
 
 public:
-    virtual unsigned int getDecodeID();
-    virtual void setDecodeID(unsigned int id);
-    virtual float getPossibleFix();
+    virtual unsigned int getDecodeID() override;
+    virtual void setDecodeID(unsigned int id) override;
+    virtual float getPossibleFix() override;
     virtual unsigned int getPossibleAPType();
     virtual int getPossibleFixType();
 
@@ -140,7 +140,7 @@ public:
     // Ref<DetectorResult> getDetectorResult( Ref<BitMatrix> imageBitMatrix,
     // Ref<Detector> detector, int dimension,bool whiteAlignmen=false);
 
-    int getQrcodeInfo(const void*& pQBarQrcodeInfo);
+    int getQrcodeInfo(const void*& pQBarQrcodeInfo) override;
 
     vector<int> getPossibleDimentions(int detectDimension);
 };

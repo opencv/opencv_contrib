@@ -70,7 +70,7 @@ private:
             Init();                                                                             \
         };                                                                                      \
         __HANDLER__##ErrorHandler(const ErrorHandler& other) : ErrorHandler(other) { Init(); }; \
-        void Init() { handler_type_ = KErrorHandler_##__HANDLER__; }                            \
+        void Init() override { handler_type_ = KErrorHandler_##__HANDLER__; }                            \
     };
 
 DECLARE_ERROR_HANDLER(Reader)
