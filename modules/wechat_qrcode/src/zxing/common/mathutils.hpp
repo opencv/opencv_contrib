@@ -129,7 +129,7 @@ public:
         avg = sum / resultSet.size();
 
         double accum = 0.0;
-        for (int i = 0; i < resultSet.size(); i++) {
+        for (std::size_t i = 0; i < resultSet.size(); i++) {
             accum += (resultSet[i] - avg) * (resultSet[i] - avg);
         }
 

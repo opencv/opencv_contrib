@@ -229,7 +229,7 @@ std::vector<Ref<FinderPatternInfo>> FinderPatternFinder::find(DecodeHints const&
         size_t rj = matrix.getRowFirstIsWhite(i) ? 1 : 0;
         COUNTER_TYPE row_counter_width = matrix.getRowCounterOffsetEnd(i);
         // because the rj is black, rj+1 must be white, so we can skip it by +2
-        for (; (rj + 4) < row_counter_width && (rj + 4) < maxJ; rj += 2) {
+        for (; (rj + 4) < size_t(row_counter_width) && (rj + 4) < maxJ; rj += 2) {
             stateCount[0] = irow_states[rj];
             stateCount[1] = irow_states[rj + 1];
             stateCount[2] = irow_states[rj + 2];
@@ -290,7 +290,7 @@ std::vector<Ref<FinderPatternInfo>> FinderPatternFinder::find(DecodeHints const&
             COUNTER_TYPE* irow_offsets = matrix.getRowRecordsOffset(i);
             COUNTER_TYPE row_counter_width = matrix.getRowCounterOffsetEnd(i);
 
-            for (size_t rj = matrix.getRowFirstIsWhite(i) ? 1 : 0; (rj + 4) < row_counter_width;
+            for (size_t rj = matrix.getRowFirstIsWhite(i) ? 1 : 0; (rj + 4) < size_t(row_counter_width);
                  rj += 2) {
                 if (block_->GetUnicomBlockIndex(i, irow_offsets[rj]) ==
                         block_->GetUnicomBlockIndex(i, irow_offsets[rj + 4]) &&
@@ -395,7 +395,7 @@ int FinderPatternFinder::getMaxMinModuleSize(float& minModuleSize, float& maxMod
     minModuleSize = 1000000000000.0f;
     maxModuleSize = 0.0f;
 
-    for (int i = 0; i < possibleCenters_.size(); i++) {
+    for (size_t i = 0; i < possibleCenters_.size(); i++) {
         float moduleSize = possibleCenters_[i]->getEstimatedModuleSize();
 
         if (moduleSize < minModuleSize) {
@@ -477,9 +477,7 @@ void FinderPatternFinder::PushToResult(Ref<FinderPattern> a, Ref<FinderPattern> 
 
     Ref<FinderPatternInfo> patternInfo(new FinderPatternInfo(finderPattern));
 
-    bool hasResult = false;
-
-    for (int j = 0; j < patternInfos.size(); j++) {
+    for (size_t j = 0; j < patternInfos.size(); j++) {
         if (isEqualResult(patternInfos[j], patternInfo)) {
             return;
         }
@@ -524,12 +522,12 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
     sort(possibleCenters_.begin(), possibleCenters_.end(), ModuleSizeComparator());
     std::vector<Ref<FinderPattern>> standardCenters;
 
-    for (int i = 0; i < possibleCenters_.size(); i++) {
+    for (size_t i = 0; i < possibleCenters_.size(); i++) {
         if (possibleCenters_[i]->getEstimatedModuleSize() >= FP_MS_MIN &&
             possibleCenters_[i]->getCount() >= FP_COUNT_MIN) {
             standardCenters.push_back(possibleCenters_[i]);
-            if (standardCenters.size() >= FP_INPUT_MAX_NUM) break;
-            if (hints.getUseNNDetector() && standardCenters.size() >= FP_INPUT_CNN_MAX_NUM) break;
+            if (standardCenters.size() >= size_t(FP_INPUT_MAX_NUM)) break;
+            if (hints.getUseNNDetector() && standardCenters.size() >= size_t(FP_INPUT_CNN_MAX_NUM)) break;
         }
     }
 
@@ -539,9 +537,9 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
     }
 
     if (standardCenters.size() <= FP_INPUT_CNN_MAX_NUM) {
-        for (uint x = 0; x < standardCenters.size(); x++) {
-            for (uint y = x + 1; y < standardCenters.size(); y++) {
-                for (uint z = y + 1; z < standardCenters.size(); z++) {
+        for (size_t x = 0; x < standardCenters.size(); x++) {
+            for (size_t y = x + 1; y < standardCenters.size(); y++) {
+                for (size_t z = y + 1; z < standardCenters.size(); z++) {
                     bool check_result = IsPossibleFindPatterInfo(
                         standardCenters[x], standardCenters[y], standardCenters[z]);
                     if (check_result) {
@@ -564,7 +562,7 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
     vector<vector<double>> trainX;
     // sort(standardCenters.begin(), standardCenters.end(),
     // ModuleSizeComparator());
-    for (int i = 0; i < standardCenters.size(); i++) {
+    for (size_t i = 0; i < standardCenters.size(); i++) {
         vector<double> tmp;
         tmp.push_back(standardCenters[i]->getCount());
         tmp.push_back(standardCenters[i]->getEstimatedModuleSize());
@@ -573,34 +571,34 @@ vector<Ref<FinderPatternInfo>> FinderPatternFinder::getPatternInfosFileMode(
 
     vector<Cluster> clusters_out = k_means(trainX, k, maxepoches, minchanged);
 
-    for (uint i = 0; i < clusters_out.size(); i++) {
+    for (size_t i = 0; i < clusters_out.size(); i++) {
         int cluster_select = 0;
 
         if (clusters_out[i].samples.size() < 3) {
             if (i < clusters_out.size() - 1 && clusters_out[i + 1].samples.size() < 3) {
-                for (int j = 0; j < clusters_out[i].samples.size(); j++)
+                for (size_t j = 0; j < clusters_out[i].samples.size(); j++)
                     clusters_out[i + 1].samples.push_back(clusters_out[i].samples[j]);
             }
             continue;
         }
 
         vector<Ref<FinderPattern>> clusterPatterns;
-        for (int j = 0; j < clusters_out[i].samples.size(); j++) {
+        for (size_t j = 0; j < clusters_out[i].samples.size(); j++) {
             clusterPatterns.push_back(standardCenters[clusters_out[i].samples[j]]);
         }
 
         sort(clusterPatterns.begin(), clusterPatterns.end(), BestComparator2());
 
-        for (uint x = 0; x < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
-                         patternInfos.size() <= FPS_RESULT_MAX;
+        for (size_t x = 0; x < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                         patternInfos.size() <= size_t(FPS_RESULT_MAX);
              x++) {
-            for (uint y = x + 1;
-                 y < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
-                 patternInfos.size() <= FPS_RESULT_MAX;
+            for (size_t y = x + 1;
+                 y < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                 patternInfos.size() <= size_t(FPS_RESULT_MAX);
                  y++) {
-                for (uint z = y + 1;
-                     z < clusters_out[i].samples.size() && cluster_select <= FPS_CLUSTER_MAX &&
-                     patternInfos.size() <= FPS_RESULT_MAX;
+                for (size_t z = y + 1;
+                     z < clusters_out[i].samples.size() && cluster_select <= size_t(FPS_CLUSTER_MAX) &&
+                     patternInfos.size() <= size_t(FPS_RESULT_MAX);
                      z++) {
                     bool check_result = IsPossibleFindPatterInfo(
                         clusterPatterns[x], clusterPatterns[y], clusterPatterns[z]);
@@ -1047,10 +1045,10 @@ float FinderPatternFinder::crossCheckVertical(size_t startI, size_t centerJ, int
     bool vertical_check = foundPatternCross(stateCount);
     if (!vertical_check) return nan();
 
-    if (CURRENT_CHECK_STATE == FinderPatternFinder::LEFT_SPILL &&
-            tmpCheckState == FinderPatternFinder::RIHGT_SPILL ||
-        CURRENT_CHECK_STATE == FinderPatternFinder::RIHGT_SPILL &&
-            tmpCheckState == FinderPatternFinder::LEFT_SPILL) {
+    if ((CURRENT_CHECK_STATE == FinderPatternFinder::LEFT_SPILL &&
+            tmpCheckState == FinderPatternFinder::RIHGT_SPILL) ||
+        (CURRENT_CHECK_STATE == FinderPatternFinder::RIHGT_SPILL &&
+            tmpCheckState == FinderPatternFinder::LEFT_SPILL)) {
         return nan();
     }
 
@@ -1090,7 +1088,6 @@ float FinderPatternFinder::crossCheckHorizontal(size_t startJ, size_t centerI, i
 
     // This is slightly faster than using the Ref. Efficiency is important here
     BitMatrix& matrix = *image_;
-    int bitsize = matrix.getRowBitsSize();
     int j = startJ;
 
     bool* centerIrow = NULL;
@@ -1173,10 +1170,10 @@ float FinderPatternFinder::crossCheckHorizontal(size_t startJ, size_t centerI, i
         return nan();*/
 
     // Cannot be a LEFT-RIGHT center
-    if (CURRENT_CHECK_STATE == FinderPatternFinder::LEFT_SPILL &&
-            tmpCheckState == FinderPatternFinder::RIHGT_SPILL ||
-        CURRENT_CHECK_STATE == FinderPatternFinder::RIHGT_SPILL &&
-            tmpCheckState == FinderPatternFinder::LEFT_SPILL) {
+    if ((CURRENT_CHECK_STATE == FinderPatternFinder::LEFT_SPILL &&
+            tmpCheckState == FinderPatternFinder::RIHGT_SPILL) ||
+        (CURRENT_CHECK_STATE == FinderPatternFinder::RIHGT_SPILL &&
+            tmpCheckState == FinderPatternFinder::LEFT_SPILL)) {
         return nan();
     }
 
@@ -1190,7 +1187,7 @@ float FinderPatternFinder::crossCheckHorizontal(size_t startJ, size_t centerI, i
 }
 
 float FinderPatternFinder::hasHorizontalCheckedResult(size_t startJ, size_t centerI) {
-    for (int i = 0; i < _horizontalCheckedResult[startJ].size(); i++) {
+    for (size_t i = 0; i < _horizontalCheckedResult[startJ].size(); i++) {
         if (_horizontalCheckedResult[startJ][i].centerI == centerI) {
             return _horizontalCheckedResult[startJ][i].centerJ;
         }
@@ -1324,7 +1321,7 @@ bool FinderPatternFinder::handlePossibleCenter(int* stateCount, size_t i, size_t
 // position will allow us to infer that the third pattern must lie below a
 // certain point farther down the image.
 int FinderPatternFinder::findRowSkip() {
-    size_t max = possibleCenters_.size();
+    int max = possibleCenters_.size();
     if (max <= 1) {
         return 0;
     }
@@ -1337,7 +1334,7 @@ int FinderPatternFinder::findRowSkip() {
         firstConfirmedCenter = possibleCenters_[i];
         if (firstConfirmedCenter->getCount() >= CENTER_QUORUM) {
             float firstModuleSize = firstConfirmedCenter->getEstimatedModuleSize();
-            size_t j_start = (i < compared_finder_counts) ? compared_finder_counts : i + 1;
+            size_t j_start = (i < size_t(compared_finder_counts)) ? compared_finder_counts : i + 1;
             for (size_t j = j_start; j < max; j++) {
                 secondConfirmedCenter = possibleCenters_[j];
                 if (secondConfirmedCenter->getCount() >= CENTER_QUORUM) {
@@ -1433,14 +1430,14 @@ vector<Ref<FinderPattern>> FinderPatternFinder::selectBestPatterns(ErrorHandler&
         float possibleModuleSize = (possibleCenters_[0]->getEstimatedModuleSize() +
                                     possibleCenters_[1]->getEstimatedModuleSize()) /
                                    2.0f;
-        for (int i = 2; i < startSize; i++) {
+        for (size_t i = 2; i < startSize; i++) {
             if (abs(possibleCenters_[i]->getEstimatedModuleSize() - possibleModuleSize) <
                 0.5 * possibleModuleSize)
                 possibleThirdCenter.push_back(possibleCenters_[i]);
         }
         float longestSide = 0.0f;
-        int longestId = 0;
-        for (int i = 0; i < possibleThirdCenter.size(); i++) {
+        size_t longestId = 0;
+        for (size_t i = 0; i < possibleThirdCenter.size(); i++) {
             float tmpLongSide = 0.0f;
             if (checkIsoscelesRightTriangle(possibleCenters_[0], possibleCenters_[1],
                                             possibleThirdCenter[i], tmpLongSide)) {
@@ -1495,11 +1492,11 @@ vector<Ref<FinderPattern>> FinderPatternFinder::selectBestPatterns(ErrorHandler&
     int tryHardPossibleCenterSize = 15;
     int possibleCenterSize = 12;
 
-    if (possibleCenters_.size() > tryHardPossibleCenterSize && getFinderLoose()) {
+    if (possibleCenters_.size() > size_t(tryHardPossibleCenterSize) && getFinderLoose()) {
         sort(possibleCenters_.begin(), possibleCenters_.end(), CountComparator());
         possibleCenters_.erase(possibleCenters_.begin() + tryHardPossibleCenterSize,
                                possibleCenters_.end());
-    } else if (possibleCenters_.size() > possibleCenterSize && getFinderLoose()) {
+    } else if (possibleCenters_.size() > size_t(possibleCenterSize) && getFinderLoose()) {
         sort(possibleCenters_.begin(), possibleCenters_.end(), CountComparator());
         possibleCenters_.erase(possibleCenters_.begin() + possibleCenterSize,
                                possibleCenters_.end());
@@ -1669,12 +1666,12 @@ float FinderPatternFinder::distance(Ref<ResultPoint> p1, Ref<ResultPoint> p2) {
 }
 
 FinderPatternFinder::FinderPatternFinder(Ref<BitMatrix> image, Ref<UnicomBlock> block)
-    : image_(image),
+    : finder_time(0),
+      compared_finder_counts(0),
+      image_(image),
       possibleCenters_(),
       hasSkipped_(false),
-      block_(block),
-      finder_time(0),
-      compared_finder_counts(0) {
+      block_(block){
     CURRENT_CHECK_STATE = FinderPatternFinder::NORMAL;
 }
 

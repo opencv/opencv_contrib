@@ -52,7 +52,7 @@ void FinderPatternInfo::showDetail() {
     findPatterns.push_back(topRight_);
     findPatterns.push_back(bottomLeft_);
 
-    for (int i = 0; i < findPatterns.size(); i++) {
+    for (size_t i = 0; i < findPatterns.size(); i++) {
         printf("count %d ms %.4f hstate %d vstate %d anglefix %.4f\n", findPatterns[i]->getCount(),
                findPatterns[i]->getEstimatedModuleSize(),
                findPatterns[i]->getHorizontalCheckState(), findPatterns[i]->getVerticalCheckState(),

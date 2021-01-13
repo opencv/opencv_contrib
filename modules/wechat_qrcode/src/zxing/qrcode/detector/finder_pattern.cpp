@@ -38,18 +38,18 @@ namespace qrcode {
 FinderPattern::FinderPattern(float posX, float posY, float estimatedModuleSize)
     : ResultPoint(posX, posY),
       estimatedModuleSize_(estimatedModuleSize),
-      verticalState_(FinderPattern::VERTICAL_STATE_NORMAL),
+      count_(1),
       horizontalState_(FinderPattern::HORIZONTAL_STATE_NORMAL),
-      count_(1) {
+      verticalState_(FinderPattern::VERTICAL_STATE_NORMAL) {
     fix_ = -1.0f;
 }
 
 FinderPattern::FinderPattern(float posX, float posY, float estimatedModuleSize, int count)
     : ResultPoint(posX, posY),
       estimatedModuleSize_(estimatedModuleSize),
-      verticalState_(FinderPattern::VERTICAL_STATE_NORMAL),
+      count_(count),
       horizontalState_(FinderPattern::HORIZONTAL_STATE_NORMAL),
-      count_(count) {
+      verticalState_(FinderPattern::VERTICAL_STATE_NORMAL) {
     fix_ = -1.0f;
 }
 int FinderPattern::getCount() const { return count_; }
