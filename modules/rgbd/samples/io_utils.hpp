@@ -225,7 +225,7 @@ struct DepthSource
                 cx      = AstraParams::cx;
                 cy      = AstraParams::cy;
 
-                frameSize = AstraParams::frameSize; 
+                frameSize = AstraParams::frameSize;
             }
             else
             {
