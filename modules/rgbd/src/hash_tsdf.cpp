@@ -906,8 +906,8 @@ inline int HashTSDFVolumeGPU::find_idx(cv::Mat v, Vec3i tsdf_idx) const
 
 static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy)
 {
-    Mat x(1, depth_cols, CV_32F);
-    Mat y(1, depth_rows, CV_32F);
+    Mat x(1, depth_cols, CV_32FC1);
+    Mat y(1, depth_rows, CV_32FC1);
     Mat _pixNorm(1, depth_rows * depth_cols, CV_32F);
 
     for (int i = 0; i < depth_cols; i++)
@@ -1102,6 +1102,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     {
         Vec3i tsdf_idx  = *newIndices.ptr<Vec3i>(i);
         VolumeIndex idx = indexes.find_Volume(tsdf_idx);
+        if (idx < 0)
+            continue;
 
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
 
