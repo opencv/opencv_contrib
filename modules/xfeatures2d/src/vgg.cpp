@@ -66,6 +66,81 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifndef HAS_VGG_DOWNLOAD
+
+class VGG_Impl CV_FINAL : public VGG
+{
+public:
+
+    // constructor
+    explicit VGG_Impl( int, float, bool, bool, float, bool)
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual ~VGG_Impl() CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual int descriptorSize() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual int descriptorType() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual int defaultNorm() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual void compute( InputArray, vector<KeyPoint>&, OutputArray ) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual void setSigma(const float) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual float getSigma() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual void setUseNormalizeImage(const bool) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual bool getUseNormalizeImage() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual void setUseScaleOrientation(const bool) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual bool getUseScaleOrientation() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual void setScaleFactor(const float) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual float getScaleFactor() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual void setUseNormalizeDescriptor(const bool dsc_normalize) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+    virtual bool getUseNormalizeDescriptor() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without VGG support");
+    }
+};
+
+#else
+
 /*
  !VGG implementation
  */
@@ -536,3 +611,5 @@ Ptr<VGG> VGG::create( int desc, float isigma, bool img_normalize, bool use_scale
 
 } // END NAMESPACE XFEATURES2D
 } // END NAMESPACE CV
+
+#endif // HAS_VGG_DOWNLOAD

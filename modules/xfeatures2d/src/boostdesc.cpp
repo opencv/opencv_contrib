@@ -65,6 +65,53 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifndef HAS_BOOST_DOWNLOAD // cmake was not able to download external resources
+class BoostDesc_Impl CV_FINAL : public BoostDesc
+{
+
+public:
+    explicit BoostDesc_Impl( int, bool, float)
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual ~BoostDesc_Impl() CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual int descriptorSize() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual int descriptorType() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual int defaultNorm()    const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual void compute(InputArray, vector<KeyPoint>&, OutputArray)
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual void setUseScaleOrientation(const bool) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual bool getUseScaleOrientation() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual void setScaleFactor(const float) CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+    virtual float getScaleFactor() const CV_OVERRIDE
+    {
+        CV_Error(cv::Error::NotSupported, "The library is built without Boosting support");
+    }
+};
+#else
 /*
  !BoostDesc implementation
  */
@@ -737,3 +784,5 @@ Ptr<BoostDesc> BoostDesc::create( int desc, bool use_scale_orientation, float sc
 
 } // END NAMESPACE XFEATURES2D
 } // END NAMESPACE CV
+
+#endif // HAS_BOOST_DOWNLOAD
