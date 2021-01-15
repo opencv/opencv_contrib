@@ -16,8 +16,6 @@
 */
 namespace cv {
 namespace wechat_qrcode {
-using std::string;
-using std::vector;
 //! @addtogroup wechat_qrcode
 //! @{
 
@@ -40,10 +38,10 @@ public:
      * @param super_resolution_prototxt_path prototxt file path for the super resolution model
      * @param super_resolution_caffe_model_path caffe file path for the super resolution model
      */
-    CV_WRAP QRCodeDetector(const String& detector_prototxt_path = "",
-                           const String& detector_caffe_model_path = "",
-                           const String& super_resolution_prototxt_path = "",
-                           const String& super_resolution_caffe_model_path = "");
+    CV_WRAP QRCodeDetector(const std::string& detector_prototxt_path = "",
+                           const std::string& detector_caffe_model_path = "",
+                           const std::string& super_resolution_prototxt_path = "",
+                           const std::string& super_resolution_caffe_model_path = "");
     ~QRCodeDetector(){};
 
     /**
@@ -55,7 +53,7 @@ public:
      * empty if not found.
      * @return list of decoded string.
      */
-    CV_WRAP vector<string> detectAndDecode(InputArray img, OutputArrayOfArrays points = noArray());
+    CV_WRAP std::vector<std::string> detectAndDecode(InputArray img, OutputArrayOfArrays points = noArray());
 
 private:
     /**
@@ -64,7 +62,7 @@ private:
      * @param img supports grayscale or color (BGR) image.
      * @return vector<Mat> detected QR code bounding boxes.
      */
-    vector<Mat> detect(const Mat& img);
+    std::vector<Mat> detect(const Mat& img);
     /**
      * @brief decode QR codes from detected points
      *
@@ -74,10 +72,10 @@ private:
      * @param points succussfully decoded qrcode with bounding box points.
      * @return vector<string>
      */
-    vector<string> decode(const Mat& img, vector<Mat>& candidate_points, vector<Mat>& points);
-    int applyDetector(const Mat& img, vector<Mat>& points);
+    std::vector<std::string> decode(const Mat& img, std::vector<Mat>& candidate_points, std::vector<Mat>& points);
+    int applyDetector(const Mat& img, std::vector<Mat>& points);
     Mat cropObj(const Mat& img, const Mat& point, Align& aligner);
-    vector<float> getScaleList(const int width, const int height);
+    std::vector<float> getScaleList(const int width, const int height);
     std::shared_ptr<SSDDetector> detector_;
     std::shared_ptr<SuperScale> super_resolution_model_;
     bool use_nn_detector_, use_nn_sr_;
