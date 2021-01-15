@@ -5,7 +5,7 @@
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
 
-#include "opencv2/wechat_qrcode/ssd_detector.hpp"
+#include "ssd_detector.hpp"
 #include "precomp.hpp"
 #define CLIP(x, x1, x2) max(x1, min(x, x2))
 namespace cv {

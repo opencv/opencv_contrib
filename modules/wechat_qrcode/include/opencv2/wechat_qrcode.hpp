@@ -8,17 +8,12 @@
 #ifndef __OPENCV_WECHAT_QRCODE_HPP__
 #define __OPENCV_WECHAT_QRCODE_HPP__
 #include "opencv2/core.hpp"
-#include "opencv2/wechat_qrcode/align.hpp"
-#include "opencv2/wechat_qrcode/ssd_detector.hpp"
-#include "opencv2/wechat_qrcode/super_scale.hpp"
-
 /** @defgroup wechat_qrcode WeChat QR code detector for detecting and parsing QR code.
 */
 namespace cv {
 namespace wechat_qrcode {
 //! @addtogroup wechat_qrcode
 //! @{
-
 /**
  * @brief  QRCodeDetector includes two CNN-based models:
  * A object detection model and a super resolution model.
@@ -54,31 +49,9 @@ public:
      * @return list of decoded string.
      */
     CV_WRAP std::vector<std::string> detectAndDecode(InputArray img, OutputArrayOfArrays points = noArray());
-
-private:
-    /**
-     * @brief detect QR codes from the given image
-     *
-     * @param img supports grayscale or color (BGR) image.
-     * @return vector<Mat> detected QR code bounding boxes.
-     */
-    std::vector<Mat> detect(const Mat& img);
-    /**
-     * @brief decode QR codes from detected points
-     *
-     * @param img supports grayscale or color (BGR) image.
-     * @param candidate_points detected points. we name it "candidate points" which means no
-     * all the qrcode can be decoded.
-     * @param points succussfully decoded qrcode with bounding box points.
-     * @return vector<string>
-     */
-    std::vector<std::string> decode(const Mat& img, std::vector<Mat>& candidate_points, std::vector<Mat>& points);
-    int applyDetector(const Mat& img, std::vector<Mat>& points);
-    Mat cropObj(const Mat& img, const Mat& point, Align& aligner);
-    std::vector<float> getScaleList(const int width, const int height);
-    std::shared_ptr<SSDDetector> detector_;
-    std::shared_ptr<SuperScale> super_resolution_model_;
-    bool use_nn_detector_, use_nn_sr_;
+protected:
+    class Impl;
+    Ptr<Impl> p;
 };
 
 //! @}

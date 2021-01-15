@@ -9,45 +9,81 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/utils/filesystem.hpp"
 #include "opencv2/wechat_qrcode.hpp"
+#include "detector/align.hpp"
+#include "detector/ssd_detector.hpp"
+#include "scale/super_scale.hpp"
 #include "precomp.hpp"
 #include "zxing/result.hpp"
 using cv::InputArray;
 namespace cv {
 namespace wechat_qrcode {
+class QRCodeDetector::Impl
+{
+public:
+    Impl() {}
+    ~Impl() {}
+    /**
+     * @brief detect QR codes from the given image
+     *
+     * @param img supports grayscale or color (BGR) image.
+     * @return vector<Mat> detected QR code bounding boxes.
+     */
+    std::vector<Mat> detect(const Mat& img);
+    /**
+     * @brief decode QR codes from detected points
+     *
+     * @param img supports grayscale or color (BGR) image.
+     * @param candidate_points detected points. we name it "candidate points" which means no
+     * all the qrcode can be decoded.
+     * @param points succussfully decoded qrcode with bounding box points.
+     * @return vector<string>
+     */
+    std::vector<std::string> decode(const Mat& img, std::vector<Mat>& candidate_points, std::vector<Mat>& points);
+    int applyDetector(const Mat& img, std::vector<Mat>& points);
+    Mat cropObj(const Mat& img, const Mat& point, Align& aligner);
+    std::vector<float> getScaleList(const int width, const int height);
+    std::shared_ptr<SSDDetector> detector_;
+    std::shared_ptr<SuperScale> super_resolution_model_;
+    bool use_nn_detector_, use_nn_sr_;
+};
+
+
+
 QRCodeDetector::QRCodeDetector(const String& detector_prototxt_path,
                                const String& detector_caffe_model_path,
                                const String& super_resolution_prototxt_path,
                                const String& super_resolution_caffe_model_path) {
+    p = makePtr<QRCodeDetector::Impl>();
     if (!detector_caffe_model_path.empty() && !detector_prototxt_path.empty()) {
         // initialize detector model (caffe)
-        use_nn_detector_ = true;
+        p->use_nn_detector_ = true;
         CV_CheckEQ(utils::fs::exists(detector_prototxt_path), true,
                    "fail to find detector caffe prototxt file");
         CV_CheckEQ(utils::fs::exists(detector_caffe_model_path), true,
                    "fail to find detector caffe model file");
-        detector_ = make_shared<SSDDetector>();
-        auto ret = detector_->init(detector_prototxt_path, detector_caffe_model_path);
+        p->detector_ = make_shared<SSDDetector>();
+        auto ret = p->detector_->init(detector_prototxt_path, detector_caffe_model_path);
         CV_CheckEQ(ret, 0, "fail to load the detector model.");
     } else {
-        use_nn_detector_ = false;
-        detector_ = NULL;
+        p->use_nn_detector_ = false;
+        p->detector_ = NULL;
     }
     // initialize super_resolution_model
     // it could also support non model weights by cubic resizing
     // so, we initialize it first.
-    super_resolution_model_ = make_shared<SuperScale>();
+    p->super_resolution_model_ = make_shared<SuperScale>();
     if (!super_resolution_prototxt_path.empty() && !super_resolution_caffe_model_path.empty()) {
-        use_nn_sr_ = true;
+        p->use_nn_sr_ = true;
         // initialize dnn model (onnx format)
         CV_CheckEQ(utils::fs::exists(super_resolution_prototxt_path), true,
                    "fail to find super resolution prototxt model file");
         CV_CheckEQ(utils::fs::exists(super_resolution_caffe_model_path), true,
                    "fail to find super resolution caffe model file");
-        auto ret = super_resolution_model_->init(super_resolution_prototxt_path,
+        auto ret = p->super_resolution_model_->init(super_resolution_prototxt_path,
                                                  super_resolution_caffe_model_path);
         CV_CheckEQ(ret, 0, "fail to load the super resolution model.");
     } else {
-        use_nn_sr_ = false;
+        p->use_nn_sr_ = false;
     }
 }
 
@@ -66,9 +102,9 @@ vector<string> QRCodeDetector::detectAndDecode(InputArray img, OutputArrayOfArra
     } else {
         input_img = img.getMat();
     }
-    auto candidate_points = detect(input_img);
+    auto candidate_points = p->detect(input_img);
     auto res_points = vector<Mat>();
-    auto ret = decode(input_img, candidate_points, res_points);
+    auto ret = p->decode(input_img, candidate_points, res_points);
     // opencv type convert
     vector<Mat> tmp_points;
     if (points.needed()) {
@@ -86,7 +122,7 @@ vector<string> QRCodeDetector::detectAndDecode(InputArray img, OutputArrayOfArra
     return ret;
 };
 
-vector<string> QRCodeDetector::decode(const Mat& img, vector<Mat>& candidate_points,
+vector<string> QRCodeDetector::Impl::decode(const Mat& img, vector<Mat>& candidate_points,
                                       vector<Mat>& points) {
     if (candidate_points.size() == 0) {
         return vector<string>();
@@ -120,7 +156,7 @@ vector<string> QRCodeDetector::decode(const Mat& img, vector<Mat>& candidate_poi
     return decode_results;
 }
 
-vector<Mat> QRCodeDetector::detect(const Mat& img) {
+vector<Mat> QRCodeDetector::Impl::detect(const Mat& img) {
     auto points = vector<Mat>();
 
     if (use_nn_detector_) {
@@ -144,7 +180,7 @@ vector<Mat> QRCodeDetector::detect(const Mat& img) {
     return points;
 }
 
-int QRCodeDetector::applyDetector(const cv::Mat& img, vector<Mat>& points) {
+int QRCodeDetector::Impl::applyDetector(const cv::Mat& img, vector<Mat>& points) {
     int img_w = img.cols;
     int img_h = img.rows;
 
@@ -159,7 +195,7 @@ int QRCodeDetector::applyDetector(const cv::Mat& img, vector<Mat>& points) {
     return 0;
 }
 
-cv::Mat QRCodeDetector::cropObj(const cv::Mat& img, const Mat& point, Align& aligner) {
+cv::Mat QRCodeDetector::Impl::cropObj(const cv::Mat& img, const Mat& point, Align& aligner) {
     // make some padding to boost the qrcode details recall.
     float padding_w = 0.1, padding_h = 0.1;
     auto min_padding = 15;
@@ -168,7 +204,7 @@ cv::Mat QRCodeDetector::cropObj(const cv::Mat& img, const Mat& point, Align& ali
 }
 
 // empirical rules
-vector<float> QRCodeDetector::getScaleList(const int width, const int height) {
+vector<float> QRCodeDetector::Impl::getScaleList(const int width, const int height) {
     if (width < 320 || height < 320) return {1.0, 2.0, 0.5};
     if (width < 640 && height < 640) return {1.0, 0.5};
     return {0.5, 1.0};

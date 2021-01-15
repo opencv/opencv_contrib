@@ -5,7 +5,7 @@
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
 
-#include "opencv2/wechat_qrcode/align.hpp"
+#include "align.hpp"
 #include "precomp.hpp"
 using std::max;
 using std::min;
