@@ -34,12 +34,10 @@ Binarizer::~Binarizer() {}
 Ref<LuminanceSource> Binarizer::getLuminanceSource() const { return source_; }
 
 int Binarizer::getWidth() const {
-    // return source_->getWidth();
     return width;
 }
 
 int Binarizer::getHeight() const {
-    // return source_->getHeight();
     return height;
 }
 
