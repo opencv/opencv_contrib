@@ -65,6 +65,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
+
 /*
  !BoostDesc implementation
  */
@@ -729,9 +731,16 @@ BoostDesc_Impl::~BoostDesc_Impl()
 {
 }
 
+#endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
+
 Ptr<BoostDesc> BoostDesc::create( int desc, bool use_scale_orientation, float scale_factor )
 {
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
     return makePtr<BoostDesc_Impl>( desc, use_scale_orientation, scale_factor );
+#else
+    CV_UNUSED(desc); CV_UNUSED(use_scale_orientation); CV_UNUSED(scale_factor);
+    CV_Error(Error::StsNotImplemented, "The OpenCV xfeatures2d binaries is built without downloaded Boost decriptor features: https://github.com/opencv/opencv_contrib/issues/1301");
+#endif
 }
 
 

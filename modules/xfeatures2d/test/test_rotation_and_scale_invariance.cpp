@@ -641,6 +641,7 @@ TEST(DISABLED_Features2d_RotationInvariance_Descriptor_DAISY, regression)
     test.safe_run();
 }
 
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 TEST(Features2d_RotationInvariance_Descriptor_VGG120, regression)
 {
     DescriptorRotationInvarianceTest test(KAZE::create(),
@@ -676,6 +677,7 @@ TEST(Features2d_RotationInvariance_Descriptor_VGG48, regression)
                                           0.98f);
     test.safe_run();
 }
+#endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
 #ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_RotationInvariance_Descriptor_BRIEF_64, regression)
@@ -715,6 +717,7 @@ TEST(Features2d_RotationInvariance_Descriptor_FREAK, regression)
     test.safe_run();
 }
 
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
 TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM, regression)
 {
     DescriptorRotationInvarianceTest test(SURF::create(),
@@ -777,6 +780,7 @@ TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_256, regression
                                           0.98f);
     test.safe_run();
 }
+#endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
 
 /*
  * Detector's scale invariance check
@@ -840,6 +844,7 @@ TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
     test.safe_run();
 }
 
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 TEST(Features2d_ScaleInvariance_Descriptor_VGG120, regression)
 {
     DescriptorScaleInvarianceTest test(KAZE::create(),
@@ -875,8 +880,10 @@ TEST(Features2d_ScaleInvariance_Descriptor_VGG48, regression)
                                        0.93f);
     test.safe_run();
 }
+#endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
 #ifdef OPENCV_ENABLE_NONFREE
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
 TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM, regression)
 {
     DescriptorScaleInvarianceTest test(SURF::create(),
@@ -939,6 +946,7 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
                                        0.98f);
     test.safe_run();
 }
+#endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
 #endif // NONFREE
 
 }} // namespace
