@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <iterator>
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/utility.hpp"
@@ -11,7 +12,6 @@
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/video/tracking.hpp"
 
-using namespace std;
 using namespace cv;
 using namespace cv::cuda;
 
@@ -131,12 +131,88 @@ static void drawOpticalFlow(const Mat_<float>& flowx, const Mat_<float>& flowy
     }
 }
 
+/*
+ROI config file format.
+numrois 3
+roi0 640 96 1152 192
+roi1 640 64 896 864
+roi2 640 960 256 32
+*/
+bool parseROI(std::string ROIFileName, std::vector<Rect>& roiData)
+{
+    std::string str;
+    uint32_t nRois = 0;
+    std::ifstream hRoiFile;
+    hRoiFile.open(ROIFileName, std::ios::in);
+
+    if (hRoiFile.is_open())
+    {
+        while (std::getline(hRoiFile, str))
+        {
+            std::istringstream iss(str);
+            std::vector<std::string> tokens{ std::istream_iterator<std::string>{iss},
+                std::istream_iterator<std::string>{} };
+
+            if (tokens.size() == 0) continue; // if empty line, coninue
+
+            transform(tokens[0].begin(), tokens[0].end(), tokens[0].begin(), ::tolower);
+            if (tokens[0] == "numrois")
+            {
+                nRois = atoi(tokens[1].data());
+            }
+            else if (tokens[0].rfind("roi", 0) == 0)
+            {
+                cv::Rect roi;
+                roi.x = atoi(tokens[1].data());
+                roi.y = atoi(tokens[2].data());
+                roi.width = atoi(tokens[3].data());
+                roi.height = atoi(tokens[4].data());
+                roiData.push_back(roi);
+            }
+            else if (tokens[0].rfind("#", 0) == 0)
+            {
+                continue;
+            }
+            else
+            {
+                std::cout << "Unidentified keyword in roi config file " << tokens[0] << std::endl;
+                hRoiFile.close();
+                return false;
+            }
+        }
+    }
+    else
+    {
+        std::cout << "Unable to open ROI file " << std::endl;
+        return false;
+    }
+    if (nRois != roiData.size())
+    {
+        std::cout << "NumRois(" << nRois << ")and specified roi rects (" << roiData.size() << ")are not matching " << std::endl;
+        hRoiFile.close();
+        return false;
+    }
+    hRoiFile.close();
+    return true;
+}
+
 int main(int argc, char **argv)
 {
-    std::unordered_map<std::string, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL> presetMap = {
-        { "slow", NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW },
-        { "medium", NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_MEDIUM },
-        { "fast", NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST } };
+    std::unordered_map<std::string, NvidiaOpticalFlow_2_0::NVIDIA_OF_PERF_LEVEL> presetMap = {
+        { "slow", NvidiaOpticalFlow_2_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW },
+        { "medium", NvidiaOpticalFlow_2_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_MEDIUM },
+        { "fast", NvidiaOpticalFlow_2_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST } };
+
+    std::unordered_map<int, NvidiaOpticalFlow_2_0::NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE> outputGridSize = {
+        { 1, NvidiaOpticalFlow_2_0::NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE::NV_OF_OUTPUT_VECTOR_GRID_SIZE_1 },
+        { 2, NvidiaOpticalFlow_2_0::NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE::NV_OF_OUTPUT_VECTOR_GRID_SIZE_2 },
+        { 4, NvidiaOpticalFlow_2_0::NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE::NV_OF_OUTPUT_VECTOR_GRID_SIZE_4 } };
+
+    std::unordered_map<int, NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE> hintGridSize = {
+        { 1, NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE::NV_OF_HINT_VECTOR_GRID_SIZE_1 },
+        { 2, NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE::NV_OF_HINT_VECTOR_GRID_SIZE_2 },
+        { 4, NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE::NV_OF_HINT_VECTOR_GRID_SIZE_4 },
+        { 8, NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE::NV_OF_HINT_VECTOR_GRID_SIZE_8 } };
 
     try
     {
@@ -145,7 +221,10 @@ int main(int argc, char **argv)
             "{ r right  | ../data/basketball2.png | specify right image }"
             "{ g gpuid  | 0 | cuda device index}"
             "{ p preset | slow | perf preset for OF algo [ options : slow, medium, fast ]}"
+            "{ og outputGridSize | 1 | Output grid size of OF vector [ options : 1, 2, 4 ]}"
+            "{ hg hintGridSize | 1 | Hint grid size of OF vector [ options : 1, 2, 4, 8 ]}"
             "{ o output | OpenCVNvOF.flo | output flow vector file in middlebury format}"
+            "{ rc roiConfigFile | | Region of Interest config file }"
             "{ th enableTemporalHints | false | Enable temporal hints}"
             "{ eh enableExternalHints | false | Enable external hints}"
             "{ cb enableCostBuffer | false | Enable output cost buffer}"
@@ -159,60 +238,93 @@ int main(int argc, char **argv)
             return 0;
         }
 
-        string pathL = cmd.get<string>("left");
-        string pathR = cmd.get<string>("right");
-        string preset = cmd.get<string>("preset");
-        string output = cmd.get<string>("output");
+        std::string pathL = cmd.get<std::string>("left");
+        std::string pathR = cmd.get<std::string>("right");
+        std::string preset = cmd.get<std::string>("preset");
+        std::string output = cmd.get<std::string>("output");
+        std::string roiConfiFile = cmd.get<std::string>("roiConfigFile");
         bool enableExternalHints = cmd.get<bool>("enableExternalHints");
         bool enableTemporalHints = cmd.get<bool>("enableTemporalHints");
         bool enableCostBuffer = cmd.get<bool>("enableCostBuffer");
         int gpuId = cmd.get<int>("gpuid");
+        int outputBufferGridSize = cmd.get<int>("outputGridSize");
+        int hintBufferGridSize = cmd.get<int>("hintGridSize");
 
-        if (pathL.empty()) cout << "Specify left image path\n";
-        if (pathR.empty()) cout << "Specify right image path\n";
-        if (preset.empty()) cout << "Specify perf preset for OpticalFlow algo\n";
+        if (pathL.empty()) std::cout << "Specify left image path" << std::endl;
+        if (pathR.empty()) std::cout << "Specify right image path" << std::endl;
+        if (preset.empty()) std::cout << "Specify perf preset for OpticalFlow algo" << std::endl;
         if (pathL.empty() || pathR.empty()) return 0;
 
-        auto search = presetMap.find(preset);
-        if (search == presetMap.end())
+        auto p = presetMap.find(preset);
+        if (p == presetMap.end())
         {
             std::cout << "Invalid preset level : " << preset << std::endl;
             return 0;
         }
-        NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL perfPreset = search->second;
+        NvidiaOpticalFlow_2_0::NVIDIA_OF_PERF_LEVEL perfPreset = p->second;
+
+        auto o = outputGridSize.find(outputBufferGridSize);
+        if (o == outputGridSize.end())
+        {
+            std::cout << "Invalid output grid size: " << outputBufferGridSize << std::endl;
+            return 0;
+        }
+        NvidiaOpticalFlow_2_0::NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE outBufGridSize = o->second;
+
+        NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE hintBufGridSize =
+            NvidiaOpticalFlow_2_0::NV_OF_HINT_VECTOR_GRID_SIZE_UNDEFINED;
+        if (enableExternalHints)
+        {
+            auto h = hintGridSize.find(hintBufferGridSize);
+            if (h == hintGridSize.end())
+            {
+                std::cout << "Invalid hint grid size: " << hintBufferGridSize << std::endl;
+                return 0;
+            }
+            hintBufGridSize = h->second;
+        }
+
+        std::vector<Rect> roiData;
+
+        if (!roiConfiFile.empty())
+        {
+            if (!parseROI(roiConfiFile, roiData))
+            {
+                std::cout << "Wrong Region of Interest config file, proceeding without ROI" << std::endl;
+            }
+        }
 
         Mat frameL = imread(pathL, IMREAD_GRAYSCALE);
         Mat frameR = imread(pathR, IMREAD_GRAYSCALE);
-        if (frameL.empty()) cout << "Can't open '" << pathL << "'\n";
-        if (frameR.empty()) cout << "Can't open '" << pathR << "'\n";
+        if (frameL.empty()) std::cout << "Can't open '" << pathL << "'" << std::endl;
+        if (frameR.empty()) std::cout << "Can't open '" << pathR << "'" << std::endl;
         if (frameL.empty() || frameR.empty()) return -1;
 
-        Ptr<NvidiaOpticalFlow_1_0> nvof = NvidiaOpticalFlow_1_0::create(
-            frameL.size().width, frameL.size().height, perfPreset,
+        Ptr<NvidiaOpticalFlow_2_0> nvof = NvidiaOpticalFlow_2_0::create(
+            frameL.size(), roiData, perfPreset, outBufGridSize, hintBufGridSize,
             enableTemporalHints, enableExternalHints, enableCostBuffer, gpuId);
 
-        Mat flowx, flowy, flowxy, upsampledFlowXY, image;
+        Mat flowx, flowy, flowxy, floatFlow, image;
 
         nvof->calc(frameL, frameR, flowxy);
 
-        nvof->upSampler(flowxy, frameL.size().width, frameL.size().height,
-            nvof->getGridSize(), upsampledFlowXY);
+        nvof->convertToFloat(flowxy, floatFlow);
 
-        if (output.size() != 0)
+        if (!output.empty())
         {
-            if (!writeOpticalFlow(output, upsampledFlowXY))
-                cout << "Failed to save Flow Vector" << endl;
+            if (!writeOpticalFlow(output, floatFlow))
+                std::cout << "Failed to save Flow Vector" << std::endl;
             else
-                cout << "Flow vector saved as '" << output << "'\n";
+                std::cout << "Flow vector saved as '" << output << "'" << std::endl;
         }
 
         Mat planes[] = { flowx, flowy };
-        split(upsampledFlowXY, planes);
+        split(floatFlow, planes);
         flowx = planes[0]; flowy = planes[1];
 
         drawOpticalFlow(flowx, flowy, image, 10);
 
-        imshow("Colorize image",image);
+        imshow("Colorize image", image);
         waitKey(0);
         nvof->collectGarbage();
     }
