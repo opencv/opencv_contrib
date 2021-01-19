@@ -175,6 +175,7 @@ public:
     cv::Mat allVol2cam;
     cv::Mat volUnitsData;
     cv::UMat pixNorms;
+    cv::Mat pixNorms_tmp;
     VolumeIndex lastVolIndex;
     VolumesTable indexes;
     Vec8i neighbourCoords;
