@@ -227,6 +227,7 @@ public:
  * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 than pixelwise dense optical flow field is
  * computed by RLOF without using interpolation.
  *
+ * @note Note that in output, if no correspondences are found between \a I0 and \a I1, the \a flow is set to 0.
  * @see optflow::calcOpticalFlowDenseRLOF(), optflow::RLOFOpticalFlowParameter
 */
 class CV_EXPORTS_W DenseRLOFOpticalFlow : public DenseOpticalFlow
@@ -493,6 +494,7 @@ public:
  * computed with the RLOF.
  *
  * @note SIMD parallelization is only available when compiling with SSE4.1.
+ * @note Note that in output, if no correspondences are found between \a I0 and \a I1, the \a flow is set to 0.
  *
  * @sa optflow::DenseRLOFOpticalFlow, optflow::RLOFOpticalFlowParameter
 */

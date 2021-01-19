@@ -99,7 +99,7 @@ If you want to draw small glyph, small is better.
 
 The function putText renders the specified text string in the image. Symbols that cannot be rendered using the specified font are replaced by "Tofu" or non-drawn.
 
-@param img Image.
+@param img Image. (Only 8UC3 image is supported.)
 @param text Text string to be drawn.
 @param org Bottom-left/Top-left corner of the text string in the image.
 @param fontHeight Drawing font size by pixel unit.

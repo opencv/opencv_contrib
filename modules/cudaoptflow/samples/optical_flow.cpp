@@ -183,8 +183,11 @@ int main(int argc, const char* argv[])
     Ptr<cuda::DensePyrLKOpticalFlow> lk = cuda::DensePyrLKOpticalFlow::create(Size(7, 7));
     Ptr<cuda::FarnebackOpticalFlow> farn = cuda::FarnebackOpticalFlow::create();
     Ptr<cuda::OpticalFlowDual_TVL1> tvl1 = cuda::OpticalFlowDual_TVL1::create();
-    Ptr<cuda::NvidiaOpticalFlow_1_0> nvof = cuda::NvidiaOpticalFlow_1_0::create(frame0.size().width, frame0.size().height,
+    Ptr<cuda::NvidiaOpticalFlow_1_0> nvof_1_0 = cuda::NvidiaOpticalFlow_1_0::create(frame0.size(),
         NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST, false, false, false, 0, inputStream, outputStream);
+    Ptr<cuda::NvidiaOpticalFlow_2_0> nvof_2_0 = cuda::NvidiaOpticalFlow_2_0::create(frame0.size(),
+        NvidiaOpticalFlow_2_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST, NvidiaOpticalFlow_2_0::NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE::NV_OF_OUTPUT_VECTOR_GRID_SIZE_1,
+        NvidiaOpticalFlow_2_0::NVIDIA_OF_HINT_VECTOR_GRID_SIZE::NV_OF_HINT_VECTOR_GRID_SIZE_UNDEFINED, false, false, false, 0, inputStream, outputStream);
 
     {
         GpuMat d_frame0f;
@@ -242,16 +245,32 @@ int main(int argc, const char* argv[])
         //Hence it is expected to be more than what is displayed in the NVIDIA Optical Flow SDK documentation.
         const int64 start = getTickCount();
 
-        nvof->calc(d_frame0, d_frame1, d_flowxy);
+        nvof_1_0->calc(d_frame0, d_frame1, d_flowxy);
 
         const double timeSec = (getTickCount() - start) / getTickFrequency();
-        cout << "NVIDIAOpticalFlow : " << timeSec << " sec" << endl;
+        cout << "NVIDIAOpticalFlow_1_0 : " << timeSec << " sec" << endl;
 
-        nvof->upSampler(d_flowxy, frame0.size().width, frame0.size().height,
-            nvof->getGridSize(), d_flow);
+        nvof_1_0->upSampler(d_flowxy, frame0.size(), nvof_1_0->getGridSize(), d_flow);
 
-        showFlow("NVIDIAOpticalFlow", d_flow);
-        nvof->collectGarbage();
+        showFlow("NVIDIAOpticalFlow_1_0", d_flow);
+        nvof_1_0->collectGarbage();
+    }
+
+    {
+        //The timing displayed below includes the time taken to copy the input buffers to the OF CUDA input buffers
+        //and to copy the output buffers from the OF CUDA output buffer to the output buffer.
+        //Hence it is expected to be more than what is displayed in the NVIDIA Optical Flow SDK documentation.
+        const int64 start = getTickCount();
+
+        nvof_2_0->calc(d_frame0, d_frame1, d_flowxy);
+
+        const double timeSec = (getTickCount() - start) / getTickFrequency();
+        cout << "NVIDIAOpticalFlow_2_0 : " << timeSec << " sec" << endl;
+
+        nvof_2_0->convertToFloat(d_flowxy, d_flow);
+
+        showFlow("NVIDIAOpticalFlow_2_0", d_flow);
+        nvof_2_0->collectGarbage();
     }
 
     imshow("Frame 0", frame0);

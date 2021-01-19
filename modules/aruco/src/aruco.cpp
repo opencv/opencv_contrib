@@ -804,6 +804,7 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 
 	// saves extra group into corresponding
 	if( !cntPts[4].empty() ){
+            CV_CheckLT(group, 4, "FIXIT: avoiding infinite loop: implementation should be revised: https://github.com/opencv/opencv_contrib/issues/2738");
 		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
 			cntPts[group].push_back(cntPts[4].at(i));
 		cntPts[4].clear();

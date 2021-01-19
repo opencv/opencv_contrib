@@ -5,15 +5,14 @@
 
 namespace opencv_test { namespace {
 
-#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
+typedef perf::TestBaseWithParam<std::string> beblid;
 
-typedef perf::TestBaseWithParam<std::string> vgg;
-
-#define VGG_IMAGES \
+#define BEBLID_IMAGES \
     "cv/detectors_descriptors_evaluation/images_datasets/leuven/img1.png",\
     "stitching/a3.png"
 
-PERF_TEST_P(vgg, extract, testing::Values(VGG_IMAGES))
+#ifdef OPENCV_ENABLE_NONFREE
+PERF_TEST_P(beblid, extract, testing::Values(BEBLID_IMAGES))
 {
     string filename = getDataPath(GetParam());
     Mat frame = imread(filename, IMREAD_GRAYSCALE);
@@ -22,18 +21,16 @@ PERF_TEST_P(vgg, extract, testing::Values(VGG_IMAGES))
     Mat mask;
     declare.in(frame).time(90);
 
-    Ptr<KAZE> detector = KAZE::create();
+    Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
     detector->detect(frame, points, mask);
 
-    Ptr<VGG> descriptor = VGG::create();
-    Mat_<float> descriptors;
-    // compute keypoints descriptor
+    Ptr<BEBLID> descriptor = BEBLID::create(6.25f);
+    cv::Mat descriptors;
     TEST_CYCLE() descriptor->compute(frame, points, descriptors);
 
     SANITY_CHECK_NOTHING();
 }
-
-#endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
+#endif // NONFREE
 
 }} // namespace

@@ -52,7 +52,9 @@ enum SceneSettings
     /// Apply anti-aliasing. The first window determines the setting for all windows.
     SCENE_AA = 8,
     /// Render off-screen without a window. Allows separate AA setting. Requires manual update via @ref WindowScene::update
-    SCENE_OFFSCREEN = 16
+    SCENE_OFFSCREEN = 16,
+    /// Enable real-time shadows in the scene. All entities cast shadows by default. Control via @ref ENTITY_CAST_SHADOWS
+    SCENE_SHADOWS = 32
 };
 
 enum MaterialProperty
@@ -74,7 +76,8 @@ enum EntityProperty
     ENTITY_MATERIAL,
     ENTITY_SCALE,
     ENTITY_AABB_WORLD,
-    ENTITY_ANIMBLEND_MODE
+    ENTITY_ANIMBLEND_MODE,
+    ENTITY_CAST_SHADOWS
 };
 
 /**

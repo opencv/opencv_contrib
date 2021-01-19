@@ -179,6 +179,51 @@ public:
     CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
 };
 
+/** @brief Class implementing BEBLID (Boosted Efficient Binary Local Image Descriptor),
+ * described in @cite Suarez2020BEBLID .
+
+BEBLID \cite Suarez2020BEBLID is a efficient binary descriptor learned with boosting.
+It is able to describe keypoints from any detector just by changing the scale_factor parameter.
+In several benchmarks it has proved to largely improve other binary descriptors like ORB or
+BRISK with the same efficiency. BEBLID describes using the difference of mean gray values in
+different regions of the image around the KeyPoint, the descriptor is specifically optimized for
+image matching and patch retrieval addressing the asymmetries of these problems.
+
+If you find this code useful, please add a reference to the following paper:
+<BLOCKQUOTE> Iago Suárez, Ghesn Sfeir, José M. Buenaposada, and Luis Baumela.
+BEBLID: Boosted efficient binary local image descriptor.
+Pattern Recognition Letters, 133:366–372, 2020. </BLOCKQUOTE>
+
+The descriptor was trained using 1 million of randomly sampled pairs of patches
+(20% positives and 80% negatives) from the Liberty split of the UBC datasets
+\cite winder2007learning as described in the paper @cite Suarez2020BEBLID.
+You can check in the [AKAZE example](https://raw.githubusercontent.com/opencv/opencv/master/samples/cpp/tutorial_code/features2D/AKAZE_match.cpp)
+how well BEBLID works. Detecting 10000 keypoints with ORB and describing with BEBLID obtains
+561 inliers (75%) whereas describing with ORB obtains only 493 inliers (63%).
+*/
+class CV_EXPORTS_W BEBLID : public Feature2D
+{
+public:
+    /**
+     * @brief  Descriptor number of bits, each bit is a boosting weak-learner.
+     * The user can choose between 512 or 256 bits.
+     */
+    enum BeblidSize
+    {
+        SIZE_512_BITS = 100, SIZE_256_BITS = 101,
+    };
+    /** @brief Creates the BEBLID descriptor.
+    @param scale_factor Adjust the sampling window around detected keypoints:
+    - <b> 1.00f </b> should be the scale for ORB keypoints
+    - <b> 6.75f </b> should be the scale for SIFT detected keypoints
+    - <b> 6.25f </b> is default and fits for KAZE, SURF detected keypoints
+    - <b> 5.00f </b> should be the scale for AKAZE, MSD, AGAST, FAST, BRISK keypoints
+    @param n_bits Determine the number of bits in the descriptor. Should be either
+     BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS.
+    */
+    CV_WRAP static Ptr<BEBLID> create(float scale_factor, int n_bits = BEBLID::SIZE_512_BITS);
+};
+
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
 
 @param radius radius of the descriptor at the initial scale

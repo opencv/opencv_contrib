@@ -55,13 +55,13 @@ namespace cv { namespace cuda { namespace device
 {
     namespace hough
     {
-        int buildPointList_gpu(PtrStepSzb src, unsigned int* list);
+        int buildPointList_gpu(PtrStepSzb src, unsigned int* list, int* counterPtr, cudaStream_t stream);
     }
 
     namespace hough_lines
     {
-        void linesAccum_gpu(const unsigned int* list, int count, PtrStepSzi accum, float rho, float theta, size_t sharedMemPerBlock, bool has20);
-        int linesGetResult_gpu(PtrStepSzi accum, float2* out, int* votes, int maxSize, float rho, float theta, int threshold, bool doSort);
+        void linesAccum_gpu(const unsigned int* list, int count, PtrStepSzi accum, float rho, float theta, size_t sharedMemPerBlock, bool has20, cudaStream_t stream);
+        int linesGetResult_gpu(PtrStepSzi accum, float2* out, int* votes, int maxSize, float rho, float theta, int threshold, bool doSort, int* counterPtr, cudaStream_t stream);
     }
 }}}
 
@@ -70,10 +70,8 @@ namespace
     class HoughLinesDetectorImpl : public HoughLinesDetector
     {
     public:
-        HoughLinesDetectorImpl(float rho, float theta, int threshold, bool doSort, int maxLines) :
-            rho_(rho), theta_(theta), threshold_(threshold), doSort_(doSort), maxLines_(maxLines)
-        {
-        }
+        HoughLinesDetectorImpl(float rho, float theta, int threshold, bool doSort, int maxLines);
+        ~HoughLinesDetectorImpl();
 
         void detect(InputArray src, OutputArray lines, Stream& stream);
         void downloadResults(InputArray d_lines, OutputArray h_lines, OutputArray h_votes, Stream& stream);
@@ -124,16 +122,27 @@ namespace
         GpuMat accum_;
         GpuMat list_;
         GpuMat result_;
+
+        int* counterPtr_;
     };
+
+    HoughLinesDetectorImpl::HoughLinesDetectorImpl(float rho, float theta, int threshold, bool doSort, int maxLines) :
+        rho_(rho), theta_(theta), threshold_(threshold), doSort_(doSort), maxLines_(maxLines)
+    {
+        cudaSafeCall(cudaMalloc(&counterPtr_, sizeof(int)));
+    }
+
+    HoughLinesDetectorImpl::~HoughLinesDetectorImpl()
+    {
+        cudaSafeCall(cudaFree(counterPtr_));
+    }
 
     void HoughLinesDetectorImpl::detect(InputArray _src, OutputArray lines, Stream& stream)
     {
-        // TODO : implement async version
-        CV_UNUSED(stream);
-
         using namespace cv::cuda::device::hough;
         using namespace cv::cuda::device::hough_lines;
 
+        auto cudaStream = StreamAccessor::getStream(stream);
         GpuMat src = _src.getGpuMat();
 
         CV_Assert( src.type() == CV_8UC1 );
@@ -143,7 +152,7 @@ namespace
         ensureSizeIsEnough(1, src.size().area(), CV_32SC1, list_);
         unsigned int* srcPoints = list_.ptr<unsigned int>();
 
-        const int pointsCount = buildPointList_gpu(src, srcPoints);
+        const int pointsCount = buildPointList_gpu(src, srcPoints, counterPtr_, cudaStream);
         if (pointsCount == 0)
         {
             lines.release();
@@ -155,14 +164,14 @@ namespace
         CV_Assert( numangle > 0 && numrho > 0 );
 
         ensureSizeIsEnough(numangle + 2, numrho + 2, CV_32SC1, accum_);
-        accum_.setTo(Scalar::all(0));
+        accum_.setTo(Scalar::all(0), stream);
 
         DeviceInfo devInfo;
-        linesAccum_gpu(srcPoints, pointsCount, accum_, rho_, theta_, devInfo.sharedMemPerBlock(), devInfo.supports(FEATURE_SET_COMPUTE_20));
+        linesAccum_gpu(srcPoints, pointsCount, accum_, rho_, theta_, devInfo.sharedMemPerBlock(), devInfo.supports(FEATURE_SET_COMPUTE_20), cudaStream);
 
         ensureSizeIsEnough(2, maxLines_, CV_32FC2, result_);
 
-        int linesCount = linesGetResult_gpu(accum_, result_.ptr<float2>(0), result_.ptr<int>(1), maxLines_, rho_, theta_, threshold_, doSort_);
+        int linesCount = linesGetResult_gpu(accum_, result_.ptr<float2>(0), result_.ptr<int>(1), maxLines_, rho_, theta_, threshold_, doSort_, counterPtr_, cudaStream);
 
         if (linesCount == 0)
         {
@@ -171,7 +180,7 @@ namespace
         }
 
         result_.cols = linesCount;
-        result_.copyTo(lines);
+        result_.copyTo(lines, stream);
     }
 
     void HoughLinesDetectorImpl::downloadResults(InputArray _d_lines, OutputArray h_lines, OutputArray h_votes, Stream& stream)
