@@ -18,7 +18,7 @@
 #include "opencl_kernels_rgbd.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
-#define VOLUMES_SIZE 1024
+#define VOLUMES_SIZE 8192
 
 namespace cv
 {
@@ -880,7 +880,7 @@ void HashTSDFVolumeGPU::reset()
 
 static inline bool find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
 {
-    for (int i = 0; i < lastVolIndex +1; i++)
+    for (int i = 0; i < lastVolIndex; i++)
     {
         Vec3i* p = v.ptr<Vec3i>(i);
         if (*p == tsdf_idx)
@@ -1054,7 +1054,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
                 for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
                     for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
-                        for (int k = lower_bound[2]; k <= lower_bound[2]; k++)
+                        for (int k = lower_bound[2]; k <= upper_bound[2]; k++)
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
 
@@ -1109,7 +1109,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         *poses.ptr<cv::Matx44f>(idx, 0) = subvolumePose;
         *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
-        indexes.updateIsActive(tsdf_idx, 1);
+        indexes.updateActivity(tsdf_idx, 1, frameId);
 
         Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
         auto vol2camMatrix = vol2cam.matrix.val;
@@ -1139,7 +1139,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             Vec3i tsdf_idx = _totalVolUnits[i];
 
             VolumeIndex idx = indexes.find_Volume(tsdf_idx);
-            if (idx < 0 || idx == lastVolIndex) return;
+            if (idx < 0 || idx > lastVolIndex - 1) return;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(tsdf_idx);
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
@@ -1151,7 +1151,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             Point2f cameraPoint = proj(volUnitInCamSpace);
             if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
             {
-                assert(idx != lastVolIndex);
+                assert(idx >= 0 || idx < lastVolIndex);
                 *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
                 indexes.updateActivity(tsdf_idx, 1, frameId);
             }
