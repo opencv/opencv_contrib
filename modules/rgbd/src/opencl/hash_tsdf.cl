@@ -402,6 +402,18 @@ static struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int ro
     return volData[coordBase];
 }
 
+inline float interpolate(float tx, float ty, float tz, float vx[8])
+{
+    float v00 = vx[0] + tz * (vx[1] - vx[0]);
+    float v01 = vx[2] + tz * (vx[3] - vx[2]);
+    float v10 = vx[4] + tz * (vx[5] - vx[4]);
+    float v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+    float v0 = v00 + ty * (v01 - v00);
+    float v1 = v10 + ty * (v11 - v10);
+
+    return v0 + tx * (v1 - v0);
+}
 
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
                              int3 volResolution, int3 volDims, int8 neighbourCoords,
@@ -476,6 +488,41 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     normal.s0 = vals[0 * 2] - vals[0 * 2 + 1];
     normal.s1 = vals[1 * 2] - vals[1 * 2 + 1];
     normal.s2 = vals[2 * 2] - vals[2 * 2 + 1];
+
+// <========================================================>
+
+    float cxv[8], cyv[8], czv[8];
+
+    // How these numbers were obtained:
+    // 1. Take the basic interpolation sequence:
+    // 000, 001, 010, 011, 100, 101, 110, 111
+    // where each digit corresponds to shift by x, y, z axis respectively.
+    // 2. Add +1 for next or -1 for prev to each coordinate to corresponding axis
+    // 3. Search corresponding values in offsets
+    const int idxxp[8] = { 8,  9, 10, 11,  0,  1,  2,  3 };
+    const int idxxn[8] = { 4,  5,  6,  7, 12, 13, 14, 15 };
+    const int idxyp[8] = { 16, 17,  0,  1, 18, 19,  4,  5 };
+    const int idxyn[8] = { 2,  3, 20, 21,  6,  7, 22, 23 };
+    const int idxzp[8] = { 24,  0, 25,  2, 26,  4, 27,  6 };
+    const int idxzn[8] = { 1, 28,  3, 29,  5, 30,  7, 31 };
+
+    for (int i = 0; i < 8; i++)
+    {
+        cxv[i] = vals[idxxn[i]] - vals[idxxp[i]];
+        cyv[i] = vals[idxyn[i]] - vals[idxyp[i]];
+        czv[i] = vals[idxzn[i]] - vals[idxzp[i]];
+    }
+
+    float tx = ptVox.x - iptVox[0];
+    float ty = ptVox.y - iptVox[1];
+    float tz = ptVox.z - iptVox[2];
+
+    normal.s0 = interpolate(tx, ty, tz, cxv);
+    normal.s1 = interpolate(tx, ty, tz, cyv);
+    normal.s2 = interpolate(tx, ty, tz, czv);
+    printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
+
+// <========================================================>
 
     float norm = 
     sqrt(normal.x*normal.x 
