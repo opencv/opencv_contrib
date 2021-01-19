@@ -324,6 +324,8 @@ TEST(RGBD_Odometry_RgbdICP, algorithmic)
 
 TEST(RGBD_Odometry_FastICP, algorithmic)
 {
+    std::cout << "test output to indicate that test runs" << std::endl;
+
     CV_OdometryTest test(cv::rgbd::Odometry::create("FastICPOdometry"), 0.99, 0.99, FLT_EPSILON);
     test.safe_run();
 }
