@@ -1168,7 +1168,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         frameParams = newParams;
         Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
         pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
-        pixNorms_tmp = preCalculationPixNorm(depth, intrinsics);
     }
 
     //! Integrate the correct volumeUnits
@@ -1185,17 +1184,17 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 Matx44f _pose = *poses.ptr<cv::Matx44f>(idx, 0);
                 integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
                     Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, pixNorms_tmp, volUnitsData.row(idx));
+                    depthFactor, cameraPose, intrinsics, pixNorms, volUnitsData.row(idx));
                 //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
                 //! Ensure all active volumeUnits are set to inactive for next integration
             }
         }
     };
     //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-    Integrate(Range(0, (int)_totalVolUnits.size()));
+    //Integrate(Range(0, (int)_totalVolUnits.size()));
 
     //! Integrate the correct volumeUnits
-    //integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
+    integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
 
 }
 
