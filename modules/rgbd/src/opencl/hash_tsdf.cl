@@ -490,7 +490,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     normal.s2 = vals[2 * 2] - vals[2 * 2 + 1];
 
 // <========================================================>
-
+/*
     float cxv[8], cyv[8], czv[8];
 
     // How these numbers were obtained:
@@ -513,15 +513,17 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
         czv[i] = vals[idxzn[i]] - vals[idxzp[i]];
     }
 
-    float tx = ptVox.x - iptVox[0];
-    float ty = ptVox.y - iptVox[1];
-    float tz = ptVox.z - iptVox[2];
+    float tx = ptVox.x - iptVox.x;
+    float ty = ptVox.y - iptVox.y;
+    float tz = ptVox.z - iptVox.z;
 
     normal.s0 = interpolate(tx, ty, tz, cxv);
     normal.s1 = interpolate(tx, ty, tz, cyv);
     normal.s2 = interpolate(tx, ty, tz, czv);
-    printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
-
+    
+    if(!any(isnan(normal)))
+        printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
+*/
 // <========================================================>
 
     float norm = 
