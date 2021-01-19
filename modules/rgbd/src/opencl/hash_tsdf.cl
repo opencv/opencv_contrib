@@ -631,6 +631,7 @@ __kernel void raycast(
             }
             
         }
+        prevTsdf = currTsdf;
         tprev = tcurr;
         tcurr += stepSize;
     }
