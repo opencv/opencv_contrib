@@ -4,9 +4,9 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
-#include "super_scale.hpp"
 #include "../precomp.hpp"
+#include "super_scale.hpp"
+
 
 #define CLIP(x, x1, x2) max(x1, min(x, x2))
 namespace cv {
