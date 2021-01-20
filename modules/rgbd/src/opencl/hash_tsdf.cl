@@ -200,8 +200,7 @@ static void integrateVolumeUnit(
         else
         {
             // z loop shouldn't be performed
-            //startZ = endZ = 0;
-            return;
+            startZ = endZ = 0;
         }
     }
 
@@ -434,7 +433,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = lastVolIndex - 1;
+        iterMap[i] = lastVolIndex;
         queried[i] = false;
     }
 
@@ -483,8 +482,6 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
     }
 
-    //for (int c = 0; c < 3; c++){normal[c] = vals[c * 2] - vals[c * 2 + 1];}
-
     normal.s0 = vals[0 * 2] - vals[0 * 2 + 1];
     normal.s1 = vals[1 * 2] - vals[1 * 2 + 1];
     normal.s2 = vals[2 * 2] - vals[2 * 2 + 1];
@@ -525,6 +522,8 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
         printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
 */
 // <========================================================>
+
+    //normal.x*=(-1); normal.y*=(-1); normal.z*=(-1);
 
     float norm = 
     sqrt(normal.x*normal.x 

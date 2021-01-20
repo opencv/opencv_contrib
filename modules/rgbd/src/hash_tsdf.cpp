@@ -1017,6 +1017,8 @@ void HashTSDFVolumeGPU::reset()
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
     indexes = VolumesTable();
     allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
+    frameParams = Vec6f();
+    pixNorms = UMat();
 }
 
 static inline bool find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
@@ -1471,7 +1473,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
         queried[i] = false;
     }
 
-#if !USE_INTERPOLATION_IN_GETNORMAL
+#if USE_INTERPOLATION_IN_GETNORMAL
     const Vec3i offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3
                               { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
     };
