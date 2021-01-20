@@ -1473,7 +1473,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
         queried[i] = false;
     }
 
-#if USE_INTERPOLATION_IN_GETNORMAL
+#if !USE_INTERPOLATION_IN_GETNORMAL
     const Vec3i offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3
                               { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
     };
