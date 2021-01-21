@@ -1321,20 +1321,21 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             VolumeIndex idx = indexes.find_Volume(tsdf_idx);
             if (idx < 0 || idx == lastVolIndex - 1) return;
             bool _isActive = indexes.getActive(tsdf_idx);
+            
             if (_isActive)
             {
-                //! The volume unit should already be added into the Volume from the allocator
                 Matx44f _pose = *poses.ptr<cv::Matx44f>(idx, 0);
-                integrateVolumeUnit(truncDist, voxelSize, maxWeight, _pose,
-                    Point3i(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution), volStrides, depth,
-                    depthFactor, cameraPose, intrinsics, pixNorms, volUnitsData.row(idx));
-                //integrateVolumeUnitGPU(depth, depthFactor, _pose, intrinsics, idx);
-                //! Ensure all active volumeUnits are set to inactive for next integration
+                const cv::Affine3f vol2cam(Affine3f(cameraPose.inv())* Affine3f(_pose));
+                auto vol2camMatrix = vol2cam.matrix.val;
+                for (int k = 0; k < 16; k++)
+                {
+                    *allVol2cam.ptr<float>(idx, k) = vol2camMatrix[k];
+                }
             }
         }
     };
     //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-    //Integrate(Range(0, (int)_totalVolUnits.size()));
+    Integrate(Range(0, (int)_totalVolUnits.size()));
 
     //! Integrate the correct volumeUnits
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
