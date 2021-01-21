@@ -54,13 +54,11 @@ WeChatQRCode::WeChatQRCode(const String& detector_prototxt_path,
     if (!detector_caffe_model_path.empty() && !detector_prototxt_path.empty()) {
         // initialize detector model (caffe)
         p->use_nn_detector_ = true;
-        CV_CheckEQ(utils::fs::exists(detector_prototxt_path), true,
-                   "fail to find detector caffe prototxt file");
-        CV_CheckEQ(utils::fs::exists(detector_caffe_model_path), true,
-                   "fail to find detector caffe model file");
+        CV_Assert(utils::fs::exists(detector_prototxt_path));
+        CV_Assert(utils::fs::exists(detector_caffe_model_path));
         p->detector_ = make_shared<SSDDetector>();
         auto ret = p->detector_->init(detector_prototxt_path, detector_caffe_model_path);
-        CV_CheckEQ(ret, 0, "fail to load the detector model.");
+        CV_Assert(ret == 0);
     } else {
         p->use_nn_detector_ = false;
         p->detector_ = NULL;
@@ -71,14 +69,12 @@ WeChatQRCode::WeChatQRCode(const String& detector_prototxt_path,
     p->super_resolution_model_ = make_shared<SuperScale>();
     if (!super_resolution_prototxt_path.empty() && !super_resolution_caffe_model_path.empty()) {
         p->use_nn_sr_ = true;
-        // initialize dnn model (onnx format)
-        CV_CheckEQ(utils::fs::exists(super_resolution_prototxt_path), true,
-                   "fail to find super resolution prototxt model file");
-        CV_CheckEQ(utils::fs::exists(super_resolution_caffe_model_path), true,
-                   "fail to find super resolution caffe model file");
+        // initialize dnn model (caffe format)
+        CV_Assert(utils::fs::exists(super_resolution_prototxt_path));
+        CV_Assert(utils::fs::exists(super_resolution_caffe_model_path));
         auto ret = p->super_resolution_model_->init(super_resolution_prototxt_path,
                                                     super_resolution_caffe_model_path);
-        CV_CheckEQ(ret, 0, "fail to load the super resolution model.");
+        CV_Assert(ret == 0);
     } else {
         p->use_nn_sr_ = false;
     }
@@ -159,7 +155,7 @@ vector<Mat> WeChatQRCode::Impl::detect(const Mat& img) {
     if (use_nn_detector_) {
         // use cnn detector
         auto ret = applyDetector(img, points);
-        CV_CheckEQ(ret, 0, "fail to apply detector.");
+        CV_Assert(ret == 0);
     } else {
         auto width = img.cols, height = img.rows;
         // if there is no detector, use the full image as input
