@@ -1314,7 +1314,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     }
 
     //! Integrate the correct volumeUnits
-    auto Integrate = [&](const Range& range) {
+    auto preCalculateAllVol3Cam = [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
             Vec3i tsdf_idx = _totalVolUnits[i];
@@ -1334,8 +1334,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
     };
-    //parallel_for_(Range(0, (int)_totalVolUnits.size()), Integrate );
-    Integrate(Range(0, (int)_totalVolUnits.size()));
+    parallel_for_(Range(0, (int)_totalVolUnits.size()), preCalculateAllVol3Cam );
 
     //! Integrate the correct volumeUnits
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
