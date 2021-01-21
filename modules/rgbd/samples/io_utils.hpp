@@ -89,6 +89,19 @@ static const float k2    = -0.34f;
 static const float k3    = 0.12f;
 };  // namespace Kinect2Params
 
+namespace AstraParams
+{
+static const Size frameSize = Size(640, 480);
+// approximate values, no guarantee to be correct
+static const float fx    = 535.4f;
+static const float fy    = 539.2f;
+static const float cx    = 320.1f;
+static const float cy    = 247.6f;
+static const float k1    = 0.0f;
+static const float k2    = 0.0f;
+static const float k3    = 0.0f;
+};  // namespace Kinect2Params
+
 struct DepthSource
 {
    public:
@@ -97,7 +110,8 @@ struct DepthSource
         DEPTH_LIST,
         DEPTH_KINECT2_LIST,
         DEPTH_KINECT2,
-        DEPTH_REALSENSE
+        DEPTH_REALSENSE,
+        DEPTH_ASTRA
     };
 
     DepthSource(int cam) : DepthSource("", cam) {}
@@ -116,7 +130,10 @@ struct DepthSource
             vc = VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam);
             if (vc.isOpened())
             {
-                sourceType = Type::DEPTH_KINECT2;
+                if(cam == 20)
+                    sourceType = Type::DEPTH_ASTRA;
+                else
+                    sourceType = Type::DEPTH_KINECT2;
             }
             else
             {
@@ -200,6 +217,15 @@ struct DepthSource
                 cy      = Kinect2Params::cy;
 
                 frameSize = Kinect2Params::frameSize;
+            }
+            else if (sourceType == Type::DEPTH_ASTRA)
+            {
+                fx      = AstraParams::fx;
+                fy      = AstraParams::fy;
+                cx      = AstraParams::cx;
+                cy      = AstraParams::cy;
+
+                frameSize = AstraParams::frameSize;
             }
             else
             {
