@@ -1254,13 +1254,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         *lastVisibleIndexes.ptr<int>(idx, 0) = frameId;
         indexes.updateActivity(tsdf_idx, 1, frameId);
 
-        Affine3f vol2cam(Affine3f(cameraPose.inv()) * Affine3f(subvolumePose));
-        auto vol2camMatrix = vol2cam.matrix.val;
-        for (int k = 0; k < 16; k++)
-        {
-            *allVol2cam.ptr<float>(idx, k) = vol2camMatrix[k];
-        }
-
         volUnitsData.row(idx).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
             {
                 TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
