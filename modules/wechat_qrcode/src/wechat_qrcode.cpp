@@ -13,7 +13,6 @@
 #include "opencv2/core/utils/filesystem.hpp"
 #include "scale/super_scale.hpp"
 #include "zxing/result.hpp"
-using cv::InputArray;
 namespace cv {
 namespace wechat_qrcode {
 class WeChatQRCode::Impl {
@@ -91,7 +90,7 @@ vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays
     int incn = img.channels();
     CV_Check(incn, incn == 1 || incn == 3 || incn == 4, "");
     if (incn == 3 || incn == 4) {
-        cv::cvtColor(img, input_img, cv::COLOR_BGR2GRAY);
+        cvtColor(img, input_img, COLOR_BGR2GRAY);
     } else {
         input_img = img.getMat();
     }
@@ -122,7 +121,7 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
     }
     vector<string> decode_results;
     for (auto& point : candidate_points) {
-        cv::Mat cropped_img;
+        Mat cropped_img;
         if (use_nn_detector_) {
             Align aligner;
             cropped_img = cropObj(img, point, aligner);
@@ -132,7 +131,7 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
         // scale_list contains different scale ratios
         auto scale_list = getScaleList(cropped_img.cols, cropped_img.rows);
         for (auto cur_scale : scale_list) {
-            cv::Mat scaled_img =
+            Mat scaled_img =
                 super_resolution_model_->processImageScale(cropped_img, cur_scale, use_nn_sr_);
             string result;
             DecoderMgr decodemgr;
@@ -173,7 +172,7 @@ vector<Mat> WeChatQRCode::Impl::detect(const Mat& img) {
     return points;
 }
 
-int WeChatQRCode::Impl::applyDetector(const cv::Mat& img, vector<Mat>& points) {
+int WeChatQRCode::Impl::applyDetector(const Mat& img, vector<Mat>& points) {
     int img_w = img.cols;
     int img_h = img.rows;
 
@@ -188,7 +187,7 @@ int WeChatQRCode::Impl::applyDetector(const cv::Mat& img, vector<Mat>& points) {
     return 0;
 }
 
-cv::Mat WeChatQRCode::Impl::cropObj(const cv::Mat& img, const Mat& point, Align& aligner) {
+Mat WeChatQRCode::Impl::cropObj(const Mat& img, const Mat& point, Align& aligner) {
     // make some padding to boost the qrcode details recall.
     float padding_w = 0.1f, padding_h = 0.1f;
     auto min_padding = 15;
