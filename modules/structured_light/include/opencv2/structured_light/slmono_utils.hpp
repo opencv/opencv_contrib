@@ -35,6 +35,13 @@ namespace structured_light{
 
     void savePointCloud(InputArray phase, string filename); //filter image from outliers and save as txt
 
+    void circshift(OutputArray out, InputArray in, int xdim, int ydim, bool isFftshift);
+    void createGrid(OutputArray output, Size size);
+    void wrapSin(InputArray img, OutputArray out);
+    void wrapCos(InputArray img, OutputArray out);
+    void Laplacian(InputArray img, InputArray grid, OutputArray out, int flag);
+    void computeDelta(InputArray img, InputArray grid, OutputArray out);
+    void fft2(InputArray in, OutputArray complexI);
 }
 }
 

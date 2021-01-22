@@ -51,6 +51,8 @@ void fromMatToVector(InputArray pts, OutputArrayOfArrays v);
 
 void loadCalibrationData(string filename, OutputArray cameraIntrinsic, OutputArray projectorIntrinsic, OutputArray cameraDistortion, OutputArray projectorDistortion, OutputArray rotation, OutputArray translation);
 
+Point2f back(Point2f point, double fx, double fy, double ux, double uy);
+
 void distortImage(InputArray input, InputArray camMat, InputArray dist, OutputArray output);
 
 }

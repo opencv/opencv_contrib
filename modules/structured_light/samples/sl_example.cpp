@@ -21,7 +21,7 @@ void readImages(vector<string> refs_files, vector<string> imgs_files, OutputArra
     vector<Mat>& refs_ = *(vector<Mat>*) refs.getObj();
     vector<Mat>& imgs_ = *(vector<Mat>*) imgs.getObj();
 
-    for(auto i = 0; i < refs_files.size(); i++)
+    for(uint i = 0; i < refs_files.size(); i++)
     {
         auto img = imread(refs_files[i], IMREAD_COLOR);
         cvtColor(img, img, COLOR_RGBA2GRAY);
@@ -35,7 +35,7 @@ void readImages(vector<string> refs_files, vector<string> imgs_files, OutputArra
     }
 }
 
-void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, bool isCaptureRefs)
+void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, OutputArrayOfArrays imgs, cv::Size projector_size, bool isCaptureRefs)
 {
     vector<Mat>& patterns_ = *(vector<Mat>*)patterns.getObj();
     vector<Mat>& refs_ = *(vector<Mat>*)refs.getObj();
@@ -54,7 +54,7 @@ void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, Output
 
         if (isCaptureRefs)
         {
-            for(auto i = 0; i < patterns_.size(); i++)
+            for(uint i = 0; i < patterns_.size(); i++)
             {
                 Mat frame;
                 cap >> frame;
@@ -81,7 +81,7 @@ void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, Output
         imshow( "Display pattern", pause);
         waitKey();
 
-        for(auto i = 0; i < patterns_.size(); i++)
+        for(uint i = 0; i < patterns_.size(); i++)
         {
             Mat frame;
             cap >> frame;
@@ -103,7 +103,7 @@ void captureImages(InputArrayOfArrays patterns, OutputArrayOfArrays refs, Output
     }
 }
 
-int main()
+int main( int argc, char **argv )
 {
     int imgNum = 4;
     cv::Size projector_size = cv::Size(512, 512);
@@ -112,16 +112,16 @@ int main()
 
     structured_light::StructuredLightMono sl(projector_size, imgNum, 37, alg_type);
 
-    sl.generatePatterns(patterns, 0.3);
+    sl.generatePatterns(patterns, 0.3f);
 
-    captureImages(patterns, refs, imgs);
+    captureImages(patterns, refs, imgs, projector_size, true);
 
     string filename = "../images/calibration_result.xml";
     Mat cameraMatrix, projectorMatrix, cameraDistortion, projectorDistortion, rotation, translation;
     structured_light::loadCalibrationData(filename, cameraMatrix, projectorMatrix, cameraDistortion, projectorDistortion, rotation, translation);
 
 
-    for (unsigned i = 0; i < refs.size(); i++)
+    for (uint i = 0; i < refs.size(); i++)
     {
         Mat undistored;
         undistort(refs[i], undistored, cameraMatrix, cameraDistortion);

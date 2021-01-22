@@ -4,7 +4,11 @@ namespace cv{
 namespace structured_light{
 
 //quadrand swapping for FFT
-void circshift(Mat &out, const Mat in, int xdim, int ydim, bool isFftshift = true) {
+void circshift(OutputArray out, InputArray in, int xdim, int ydim, bool isFftshift = true) {
+
+    Mat in_ = in.getMat();
+    Mat& out_ = *(Mat*) out.getObj();
+
     if (isFftshift) {
         int xshift = (xdim / 2);
         int yshift = (ydim / 2);
@@ -13,7 +17,7 @@ void circshift(Mat &out, const Mat in, int xdim, int ydim, bool isFftshift = tru
             int ii = (i + xshift) % xdim;
             for (int j = 0; j < ydim; j++) {
                 int jj = (j + yshift) % ydim;
-                out.at<float>(ii * ydim + jj) = in.at<float>(i * ydim + j);
+                out_.at<float>(ii * ydim + jj) = in_.at<float>(i * ydim + j);
             }
         }
     }
@@ -25,7 +29,7 @@ void circshift(Mat &out, const Mat in, int xdim, int ydim, bool isFftshift = tru
             int ii = (i + xshift) % xdim;
             for (int j = 0; j < ydim; j++) {
                 int jj = (j + yshift) % ydim;
-                out.at<float>(ii * ydim + jj) = in.at<float>(i * ydim + j);
+                out_.at<float>(ii * ydim + jj) = in_.at<float>(i * ydim + j);
             }
         }
     }
@@ -119,10 +123,10 @@ void Laplacian(InputArray img, InputArray grid, OutputArray out, int flag = 0) {
 }
 
 void computeDelta(InputArray img, InputArray grid, OutputArray out) {
-        
+
     Mat x1, x2;
     Mat img_sin, img_cos;
-    
+
     wrapSin(img, img_sin);
     wrapCos(img, img_cos);
 
@@ -170,7 +174,7 @@ void unwrapPCG(InputArray img, OutputArray out, Size imgSize) {
 }
 
 void unwrapTPU(InputArray phase1, InputArray phase2, OutputArray out, int scale) {
-    
+
     Mat& phase1_ = *(Mat*) phase1.getObj();
     Mat& phase2_ = *(Mat*) phase2.getObj();
 
@@ -182,16 +186,20 @@ void unwrapTPU(InputArray phase1, InputArray phase2, OutputArray out, int scale)
     add(phase1_, phase2_, out);
 }
 
-void fft2(const cv::Mat in, cv::Mat &complexI) {
+void fft2(InputArray in, OutputArray complexI) {
+
+    Mat in_ = in.getMat();
+    Mat& complexI_ = *(Mat*) complexI.getObj();
+
     Mat padded;
-    int m = getOptimalDFTSize(in.rows);
-    int n = getOptimalDFTSize(in.cols);
+    int m = getOptimalDFTSize(in_.rows);
+    int n = getOptimalDFTSize(in_.cols);
     copyMakeBorder(in, padded, 0, m - in.rows, 0, n - in.cols,
             BORDER_CONSTANT, Scalar::all(0));
 
     Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F)};
-    merge(planes, 2, complexI);
-    dft(complexI, complexI);
+    merge(planes, 2, complexI_);
+    dft(complexI_, complexI_);
 }
 
 void lowPassFilter(InputArray image, OutputArray out, int filterSize) {
@@ -205,7 +213,7 @@ void lowPassFilter(InputArray image, OutputArray out, int filterSize) {
     fft2(greyMat, result);
     Mat matrix_(Size(rows, cols), CV_64FC1);
     circshift(matrix_, result, result.rows, result.cols, true);
-    
+
 
     Mat lowPass(Size(rows, cols), CV_64FC1, Scalar(0));
 
@@ -222,7 +230,7 @@ void lowPassFilter(InputArray image, OutputArray out, int filterSize) {
 }
 
 void highPassFilter(InputArray image, OutputArray out, int filterSize) {
-    
+
     Mat& image_ = *(Mat*) image.getObj();
     int rows = image_.rows;
     int cols = image_.cols;

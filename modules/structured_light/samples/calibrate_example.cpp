@@ -15,8 +15,8 @@ static const char* keys =
 
 enum calibrationPattern{CHESSBOARD, CIRCLES_GRID, ASYMETRIC_CIRCLES_GRID};
 
-int calibrate( int argc, char **argv )
-{   
+int main( int argc, char **argv )
+{
     VideoCapture cap(CAP_PVAPI);
     Mat frame;
 
@@ -58,7 +58,7 @@ int calibrate( int argc, char **argv )
 
     structured_light::createObjectPoints(tempCam, camSettings.patternSize,
                        camSettings.squareSize, camSettings.patternType);
-                       
+
     structured_light::createProjectorObjectPoints(tempProj, projSettings.patternSize,
                                 projSettings.squareSize, projSettings.patternType);
 

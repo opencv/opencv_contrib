@@ -41,7 +41,7 @@ double calibrate(InputArrayOfArrays objPoints, InputArrayOfArrays imgPoints,
 }
 
 void createObjectPoints(InputArrayOfArrays patternCorners, Size patternSize, float squareSize, int patternType)
-{   
+{
     std::vector<Point3f>& patternCorners_ = *( std::vector<Point3f>* ) patternCorners.getObj();
     switch( patternType )
     {
@@ -84,7 +84,7 @@ void createProjectorObjectPoints(InputArrayOfArrays patternCorners, Size pattern
 
 void fromCamToWorld(InputArray cameraMatrix, InputArrayOfArrays rV, InputArrayOfArrays tV,
                     InputArrayOfArrays imgPoints, OutputArrayOfArrays worldPoints)
-{   
+{
     std::vector<std::vector<Point2f>>& imgPoints_ = *( std::vector< std::vector<Point2f> >* ) imgPoints.getObj();
     std::vector<std::vector<Point3f>>& worldPoints_ = *( std::vector< std::vector<Point3f> >* ) worldPoints.getObj();
     std::vector<Mat>& rV_ = *( std::vector<Mat>* ) rV.getObj();
@@ -131,7 +131,7 @@ void fromCamToWorld(InputArray cameraMatrix, InputArrayOfArrays rV, InputArrayOf
 
 void saveCalibrationResults( String path, InputArray camK, InputArray camDistCoeffs, InputArray projK, InputArray projDistCoeffs,
                       InputArray fundamental )
-{   
+{
     Mat& camK_ = *(Mat*) camK.getObj();
     Mat& camDistCoeffs_ = *(Mat*) camDistCoeffs.getObj();
     Mat& projK_ = *(Mat*) projK.getObj();
@@ -147,9 +147,9 @@ void saveCalibrationResults( String path, InputArray camK, InputArray camDistCoe
     fs.release();
 }
 
-void saveCalibrationData(String path, InputArrayOfArrays T1, InputArrayOfArrays T2, InputArrayOfArrays ptsProjCam, 
+void saveCalibrationData(String path, InputArrayOfArrays T1, InputArrayOfArrays T2, InputArrayOfArrays ptsProjCam,
                         InputArrayOfArrays ptsProjProj, InputArrayOfArrays ptsProjCamN, InputArrayOfArrays ptsProjProjN)
-{   
+{
     std::vector<Mat>& T1_ = *( std::vector<Mat>* ) T1.getObj();
     std::vector<Mat>& T2_ = *( std::vector<Mat>* ) T2.getObj();
     std::vector<Mat>& ptsProjCam_ = *( std::vector<Mat>* ) ptsProjCam.getObj();
@@ -176,7 +176,7 @@ void saveCalibrationData(String path, InputArrayOfArrays T1, InputArrayOfArrays 
 
 }
 
-void loadCalibrationData(string filename, OutputArray cameraIntrinsic, OutputArray projectorIntrinsic, 
+void loadCalibrationData(string filename, OutputArray cameraIntrinsic, OutputArray projectorIntrinsic,
                         OutputArray cameraDistortion, OutputArray projectorDistortion, OutputArray rotation, OutputArray translation)
 {
     Mat& cameraIntrinsic_ = *(Mat*) cameraIntrinsic.getObj();
@@ -206,7 +206,7 @@ void loadCalibrationData(string filename, OutputArray cameraIntrinsic, OutputArr
 }
 
 void normalize( InputArray pts, const int& dim, InputOutputArray normpts, OutputArray T)
-{   
+{
     Mat& pts_ = *(Mat*) pts.getObj();
     Mat& normpts_ = *(Mat*) normpts.getObj();
     Mat& T_ = *(Mat*) T.getObj();
@@ -253,7 +253,7 @@ void normalize( InputArray pts, const int& dim, InputOutputArray normpts, Output
 }
 
 void fromVectorToMat(InputArrayOfArrays v, OutputArray pts)
-{   
+{
     Mat& pts_ = *(Mat*) pts.getObj();
     std::vector<Point2f>& v_ = *( std::vector<Point2f>* ) v.getObj();
 
@@ -294,7 +294,7 @@ Point2f back(Point2f point, double fx, double fy, double ux, double uy)
 }
 
 void distortImage(InputArray input, InputArray camMat, InputArray distCoef, OutputArray output)
-{   
+{
     Mat& camMat_ = *(Mat*) camMat.getObj();
     Mat& input_ = *(Mat*) input.getObj();
 
@@ -315,11 +315,11 @@ void distortImage(InputArray input, InputArray camMat, InputArray distCoef, Outp
 
     Mat mapx(cv::Size(input_.rows, input_.cols), CV_32FC1);
     Mat mapy(cv::Size(input_.rows, input_.cols), CV_32FC1);
-    
+
     for (int i = 0; i < input_.rows; i++)
     {
         for (int j = 0; j < input_.cols; j++)
-        {   
+        {
             distortedPoints[i*input_.cols+j] = back(distortedPoints[i*input_.cols+j], fx, fy, ux, uy);
             mapx.at<float>(j, i) = distortedPoints[i*input_.cols+j].x;
             mapy.at<float>(j, i) = distortedPoints[i*input_.cols+j].y;
