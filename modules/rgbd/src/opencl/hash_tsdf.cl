@@ -540,12 +540,10 @@ __kernel void raycast(
                     const int bufferNums, 
                     const int hash_divisor,
                     const int lastVolIndex, 
-                    __global float4 * points,
-                        int points_step, int points_offset,
-                        int points_rows, int points_cols,
-                    __global float4 * normals,
-                        int normals_step, int normals_offset,
-                        int normals_rows, int normals_cols,
+                    __global char * pointsptr,
+                      int points_step, int points_offset,
+                    __global char * normalsptr,
+                      int normals_step, int normals_offset,
                     const int2 frameSize,
                     __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
@@ -684,8 +682,8 @@ __kernel void raycast(
         tcurr += stepSize;
     }
 
-    __global float* pts = (__global float*)(points  +  points_offset + y*points_step/sizeof(ptype)  + x);
-    __global float* nrm = (__global float*)(normals + normals_offset + y*normals_step/sizeof(ptype)  + x);
+    __global float* pts = (__global float*)(pointsptr  +  points_offset + y*points_step  + x*sizeof(ptype));
+    __global float* nrm = (__global float*)(normalsptr + normals_offset + y*normals_step  + x*sizeof(ptype));
     vstore4((float4)(point,  0), 0, pts);
     vstore4((float4)(normal, 0), 0, nrm);       
 

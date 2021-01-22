@@ -1596,7 +1596,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     OutputArray _points, OutputArray _normals) const
 {
 
-    if (true)
+    if (false)
     {
         _points.create(frameSize, POINT_TYPE);
         _normals.create(frameSize, POINT_TYPE);
@@ -1690,7 +1690,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     }
 
-    if (false)
+    if (true)
     {
         CV_TRACE_FUNCTION();
         CV_Assert(frameSize.area() > 0);
@@ -1711,14 +1711,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         _points.create(frameSize, CV_32FC4);
         _normals.create(frameSize, CV_32FC4);
 
-        Points points = _points.getMat();
-        Normals normals = _normals.getMat();
-
-        Points& new_points(points);
-        Normals& new_normals(normals);
-
-        UMat Upoints = points.getUMat(ACCESS_RW);
-        UMat Unormals = normals.getUMat(ACCESS_RW);
+        UMat points = _points.getUMat();
+        UMat normals = _normals.getUMat();
 
         Intr::Reprojector r = intrinsics.makeReprojector();
         Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
@@ -1757,8 +1751,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             (int)indexes.bufferNums,
             (int)indexes.hash_divisor,
             (int)lastVolIndex,
-            ocl::KernelArg::ReadWrite(Upoints),
-            ocl::KernelArg::ReadWrite(Unormals),
+            ocl::KernelArg::WriteOnlyNoSize(points),
+            ocl::KernelArg::WriteOnlyNoSize(normals),
             frameSize,
             ocl::KernelArg::ReadWrite(U_volUnitsData),
             cam2volTransGPU,
@@ -1785,13 +1779,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
         if (!k.run(2, globalSize, NULL, true))
             throw std::runtime_error("Failed to run kernel");
-
-        Upoints.getMat(ACCESS_RW).copyTo(new_points);
-        Unormals.getMat(ACCESS_RW).copyTo(new_normals);
-
-        Upoints.release();
-        Unormals.release();
-        U_volUnitsData.release();
     }
 }
 
