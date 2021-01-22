@@ -668,7 +668,6 @@ __kernel void raycast(
                                       dot(nv, volRot1),
                                       dot(nv, volRot2));
                     // interpolation optimized a little
-                    pv *= voxelSize;
                     point = (float3)(dot(pv, volRot0),
                                      dot(pv, volRot1),
                                      dot(pv, volRot2)) + volTrans;
@@ -682,7 +681,7 @@ __kernel void raycast(
         tcurr += stepSize;
     }
 
-    __global float* pts = (__global float*)(pointsptr  +  points_offset + y*points_step  + x*sizeof(ptype));
+    __global float* pts = (__global float*)(pointsptr  +  points_offset + y*points_step   + x*sizeof(ptype));
     __global float* nrm = (__global float*)(normalsptr + normals_offset + y*normals_step  + x*sizeof(ptype));
     vstore4((float4)(point,  0), 0, pts);
     vstore4((float4)(normal, 0), 0, nrm);       
