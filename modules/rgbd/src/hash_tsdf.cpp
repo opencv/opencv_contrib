@@ -960,6 +960,9 @@ public:
     int buff_lvl;
     cv::Mat poses;
     cv::Mat lastVisibleIndexes;
+
+    cv::Mat isActiveFlags;
+
     cv::Mat allVol2cam;
     cv::Mat volUnitsData;
     cv::UMat pixNorms;
@@ -1016,6 +1019,9 @@ void HashTSDFVolumeGPU::reset()
     volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
+
+    isActiveFlags = cv::Mat(buff_lvl, 1, CV_8U);
+
     indexes = VolumesTable();
     allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
     frameParams = Vec6f();
@@ -1121,7 +1127,6 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     indexes.volumes.copyTo(_tmp);
     UMat U_hashtable = _tmp.getUMat(ACCESS_RW);
 
-
     k.args(ocl::KernelArg::ReadOnly(depth),
         ocl::KernelArg::PtrReadWrite(U_hashtable),
         (int)indexes.list_size,
@@ -1131,6 +1136,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         ocl::KernelArg::ReadWrite(U_volUnitsData),
         ocl::KernelArg::PtrReadOnly(pixNorms),
         ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
+        ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
         lastVolIndex,
         voxelSize,
         volResGpu.val,
@@ -1151,9 +1157,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 
-    // add updating of isActive for volUnits
     U_volUnitsData.getMat(ACCESS_RW).copyTo(volUnitsData);
-    U_hashtable.getMat(ACCESS_RW).copyTo(indexes.volumes);
 
     U_volUnitsData.release();
     U_hashtable.release();
@@ -1259,6 +1263,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         volUnitsData.resize(buff_lvl);
         poses.resize(buff_lvl);
         lastVisibleIndexes.resize(buff_lvl);
+
+        isActiveFlags.resize(buff_lvl);
+
         allVol2cam.resize(buff_lvl);
     }
 
@@ -1275,7 +1282,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         *poses.ptr<cv::Matx44f>(row, 0) = subvolumePose;
         *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
-        node->isActive = true;
+        
+        *isActiveFlags.ptr<uchar>(row, 0) = 1;
+
         node->lastVisibleIndex = frameId;
 
         volUnitsData.row(row).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
@@ -1320,7 +1329,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
-                node->isActive = false;
+                *isActiveFlags.ptr<uchar>(row, 0) = 0;
                 continue;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
@@ -1328,7 +1337,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             {
                 assert(row >= 0 || row < lastVolIndex);
                 *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
-                node->isActive = true;
+                *isActiveFlags.ptr<uchar>(row, 0) = 1;
                 node->lastVisibleIndex = frameId;
             }
         }
@@ -1368,13 +1377,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 CV_Error(Error::StsInternal, "Internal error: row < 0");
             }
 
-            bool _isActive = node->isActive;
-
-            /*
-            int idx = indexes.find_Volume(tsdf_idx);
-            if (idx < 0 || idx == lastVolIndex - 1) return;
-            bool _isActive = indexes.getActive(tsdf_idx);
-            */
+            bool _isActive = bool(*isActiveFlags.ptr<uchar>(row, 0));
             
             if (_isActive)
             {
@@ -1392,7 +1395,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     //! Integrate the correct volumeUnits
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
-
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const

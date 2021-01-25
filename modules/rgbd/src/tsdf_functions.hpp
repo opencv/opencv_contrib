@@ -50,7 +50,7 @@ struct Volume_NODE
     Vec4i idx = Vec4i(NAN_ELEMENT);
     int32_t row   = -1;
     int32_t nextVolumeRow = -1;
-    int32_t isActive = 0;
+    int32_t dummy = 0;
     int32_t lastVisibleIndex = -1;
 };
 
@@ -76,7 +76,7 @@ public:
     const VolumesTable& operator=(const VolumesTable&);
     ~VolumesTable() {};
 
-    Volume_NODE* insert(Vec3i idx, int row, bool isActive = false, int lastVisibleIndex = -1);
+    Volume_NODE* insert(Vec3i idx, int row, int lastVisibleIndex = -1);
     const Volume_NODE* find(Vec3i idx) const;
     Volume_NODE* find(Vec3i idx);
 

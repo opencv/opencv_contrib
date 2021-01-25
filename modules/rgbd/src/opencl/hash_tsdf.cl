@@ -23,7 +23,7 @@ struct Volume_NODE
     int4 idx;
     int32_t row;
     int32_t nextVolumeRow;
-    int32_t isActive;
+    int32_t dummy;
     int32_t lastVisibleIndex;
 };
 
@@ -62,12 +62,12 @@ static uint calc_hash(int4 x)
 }
 
 static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
-               int list_size, int bufferNums, int hash_divisor)
+                   int list_size, int bufferNums, int hash_divisor)
 {
     int hash = calc_hash(indx) % hash_divisor;
     
     int bufferNum = 0;
-    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
+    int i = (bufferNum * hash_divisor + hash) * list_size;
     int NAN_NUM = NAN_ELEMENT;
     while (i != NAN_NUM)
     {
@@ -82,51 +82,6 @@ static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
     }
 
     return -2;
-}
-
-static int getIsActive(__global struct Volume_NODE * hash_table, int4 indx,
-               int list_size, int bufferNums, int hash_divisor)
-{
-    int hash = calc_hash(indx) % hash_divisor;
-    int bufferNum = 0;
-    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    int NAN_NUM = NAN_ELEMENT;
-
-    while (i != NAN_NUM)
-    {
-        struct Volume_NODE v = hash_table[i];
-
-        if (v.idx.s0 == indx.s0 &&
-            v.idx.s1 == indx.s1 &&
-            v.idx.s2 == indx.s2)
-            return v.isActive;
-        if (v.idx.s0 == NAN_NUM)
-            return 0;
-        i = v.nextVolumeRow;
-    }
-    return 0;
-}
-
-static void updateIsActive(__global struct Volume_NODE * hash_table, int4 indx, int isActive,
-               int list_size, int bufferNums, int hash_divisor)
-{
-    int hash = calc_hash(indx) % hash_divisor;
-    int bufferNum = 0;
-    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    int NAN_NUM = NAN_ELEMENT;
-    while (i != NAN_NUM)
-    {
-        __global struct Volume_NODE * v = (hash_table + i);
-
-        if (v->idx.s0 == indx.s0 &&
-            v->idx.s1 == indx.s1 &&
-            v->idx.s2 == indx.s2)
-            v->isActive = isActive;     
-        if (v->idx.s0 == NAN_NUM)
-            return;
-        i = v->nextVolumeRow;
-    }
-    return;
 }
 
 
@@ -299,7 +254,12 @@ __kernel void integrateAllVolumeUnits(
                         __global const float * allVol2camMatrix,
                         int val2cam_step, int val2cam_offset,
                         int val2cam_rows, int val2cam_cols,
-                        const int lastVolIndex, 
+
+                        __global const uchar* isActiveFlagsPtr,
+                        int isActiveFlagsStep, int isActiveFlagsOffset,
+                        int isActiveFlagsRows, int isActiveFlagsCols,
+
+                        const int lastVolIndex,
                         const float voxelSize,
                         const int4 volResolution4,
                         const int4 volDims4,
@@ -319,9 +279,9 @@ __kernel void integrateAllVolumeUnits(
     if (row < 0 || row > lastVolIndex-1)
         return;
     
-    int isActive = getIsActive(hash_table, v, list_size, bufferNums, hash_divisor);
+    int isActive = (__global const uchar*)(isActiveFlagsPtr + isActiveFlagsOffset + (row));
 
-    if (isActive == 1)
+    if (isActive)
     {
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
                                                 (allVolumePtr + table_offset + (row) * 16*16*16);
@@ -352,8 +312,8 @@ __kernel void integrateAllVolumeUnits(
    
 }
 
-static struct TsdfVoxel _at(int3 volumeIdx, int row, 
-              int volumeUnitResolution, int4 volStrides, 
+static struct TsdfVoxel _at(int3 volumeIdx, int row,
+              int volumeUnitResolution, int4 volStrides,
               __global struct TsdfVoxel * allVolumePtr, int table_offset)
 
 {
@@ -369,10 +329,10 @@ static struct TsdfVoxel _at(int3 volumeIdx, int row,
     }
 
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
-                                            (allVolumePtr + table_offset + (row) * 16*16*16);    int coordBase =
-        volumeIdx.s0 * volStrides.s0 +
-        volumeIdx.s1 * volStrides.s1 +
-        volumeIdx.s2 * volStrides.s2;
+                                            (allVolumePtr + table_offset + (row) * 16*16*16);
+    int coordBase = volumeIdx.s0 * volStrides.s0 +
+                    volumeIdx.s1 * volStrides.s1 +
+                    volumeIdx.s2 * volStrides.s2;
     return volData[coordBase];
 }
 
@@ -638,7 +598,7 @@ __kernel void raycast(
              ( floor ( (float) (pos.s1) * voxelSizeInv) ), 
              ( floor ( (float) (pos.s2) * voxelSizeInv) ) );
 
-            struct TsdfVoxel currVoxel  = _at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr,  table_offset);
+            struct TsdfVoxel currVoxel  = _at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr, table_offset);
 
             currTsdf = tsdfToFloat(currVoxel.tsdf);
             currWeight = currVoxel.weight;
@@ -684,7 +644,5 @@ __kernel void raycast(
     __global float* pts = (__global float*)(pointsptr  +  points_offset + y*points_step   + x*sizeof(ptype));
     __global float* nrm = (__global float*)(normalsptr + normals_offset + y*normals_step  + x*sizeof(ptype));
     vstore4((float4)(point,  0), 0, pts);
-    vstore4((float4)(normal, 0), 0, nrm);       
-
-
+    vstore4((float4)(normal, 0), 0, nrm);
 }
