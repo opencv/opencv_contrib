@@ -10,8 +10,6 @@
 #include <opencv2/rgbd/volume.hpp>
 #include "tsdf.hpp"
 
-#define NAN_ELEMENT -2147483647
-
 namespace cv
 {
 namespace kinfu
@@ -45,6 +43,7 @@ void integrateVolumeUnit(
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
 
+const int NAN_ELEMENT = -2147483647;
 
 struct Volume_NODE
 {
@@ -63,17 +62,17 @@ const int _list_size = 4;
 class VolumesTable
 {
 public:
-    int hash_divisor = _hash_divisor;
-    int list_size    = _list_size;
-    int bufferNums   = 1;
+    const int hash_divisor = _hash_divisor;
+    const int list_size    = _list_size;
+    const int32_t free_row = -1;
+    const int32_t free_isActive = 0;
 
-    int32_t free_row = -1;
-    int32_t free_isActive = 0;
+    const cv::Vec4i nan4 = cv::Vec4i(NAN_ELEMENT);
 
+    int bufferNums;
     cv::Mat volumes;
     std::vector<Vec3i> indexes;
     std::vector<Vec4i> indexesGPU;
-    cv::Vec4i nan4 = cv::Vec4i(NAN_ELEMENT);
     VolumesTable();
     ~VolumesTable() {};
 
