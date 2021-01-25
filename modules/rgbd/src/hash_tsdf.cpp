@@ -53,11 +53,10 @@ struct tsdf_hash
     }
 };
 
-typedef int VolumeIndex;
 struct VolumeUnit
 {
     cv::Vec3i coord;
-    VolumeIndex index;
+    int index;
     cv::Matx44f pose;
     int lastVisibleIndex = 0;
     bool isActive;
@@ -93,7 +92,7 @@ public:
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
     virtual TsdfVoxel at(const cv::Point3f& point) const;
-    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
+    virtual TsdfVoxel _at(const cv::Vec3i& volumeIdx, int indx) const;
 
     TsdfVoxel atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const;
 
@@ -115,7 +114,7 @@ public:
     Mat pixNorms;
     VolumeUnitIndexes volumeUnits;
     cv::Mat volUnitsData;
-    VolumeIndex lastVolIndex;
+    int lastVolIndex;
 };
 
 
@@ -228,7 +227,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         vu.pose = subvolumePose;
         vu.index = lastVolIndex; lastVolIndex++;
-        if (lastVolIndex > VolumeIndex(volUnitsData.size().height))
+        if (lastVolIndex > int(volUnitsData.size().height))
         {
             volUnitsData.resize((lastVolIndex - 1) * 2);
         }
@@ -936,8 +935,8 @@ public:
 
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit =
     //! 1m)
-    virtual TsdfVoxel new_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const;
-    TsdfVoxel new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeIndex indx) const;
+    virtual TsdfVoxel new_at(const cv::Vec3i& volumeIdx, int indx) const;
+    TsdfVoxel new_atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, int indx) const;
 
 
     float interpolateVoxelPoint(const Point3f& point) const;
@@ -962,7 +961,7 @@ public:
     cv::Mat allVol2cam;
     cv::Mat volUnitsData;
     cv::UMat pixNorms;
-    VolumeIndex lastVolIndex;
+    int lastVolIndex;
     VolumesTable indexes;
     Vec8i neighbourCoords;
 };
@@ -1404,7 +1403,7 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
 
     // A small hash table to reduce a number of find() calls
     bool queried[8];
-    VolumeIndex iterMap[8];
+    int iterMap[8];
     for (int i = 0; i < 8; i++)
     {
         iterMap[i] = lastVolIndex;
@@ -1458,7 +1457,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
 
     // A small hash table to reduce a number of find() calls
     bool queried[8];
-    VolumeIndex iterMap[8];
+    int iterMap[8];
 
     for (int i = 0; i < 8; i++)
     {
