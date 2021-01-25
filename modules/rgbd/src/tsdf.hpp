@@ -17,9 +17,6 @@ namespace cv
 {
 namespace kinfu
 {
-// TODO: Optimization possible:
-// * TsdfType can be FP16
-// * WeightType can be uint16
 
 typedef int8_t TsdfType;
 typedef uchar WeightType;
@@ -107,8 +104,7 @@ class TSDFVolumeGPU : public TSDFVolume
     UMat pixNorms;
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
-    // Array elem is CV_32FC2, read as (float, int)
-    // TODO: optimization possible to (fp16, int16), see Voxel definition
+    // Array elem is CV_8UC2, read as (int8, uint8)
     UMat volume;
 };
 #endif
