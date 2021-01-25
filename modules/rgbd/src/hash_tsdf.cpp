@@ -259,14 +259,14 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
             Vec3i tsdf_idx = totalVolUnits[i];
             VolumeUnitIndexes::iterator it = volumeUnits.find(tsdf_idx);
             if (it == volumeUnits.end())
-                return;
+                continue;
 
             Point3f volumeUnitPos = volumeUnitIdxToVolume(it->first);
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
                 it->second.isActive = false;
-                return;
+                continue;
             }
             Point2f cameraPoint = proj(volUnitInCamSpace);
             if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
