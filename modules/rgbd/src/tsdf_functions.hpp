@@ -54,8 +54,6 @@ struct Volume_NODE
     int32_t lastVisibleIndex = -1;
 };
 
-size_t calc_hash(Vec4i x);
-
 const int _hash_divisor = 32768;
 const int _list_size = 4;
 
@@ -70,9 +68,10 @@ public:
     const cv::Vec4i nan4 = cv::Vec4i(NAN_ELEMENT);
 
     int bufferNums;
-    cv::Mat volumes;
     std::vector<Vec3i> indexes;
     std::vector<Vec4i> indexesGPU;
+    cv::Mat volumes;
+
     VolumesTable();
     ~VolumesTable() {};
 
@@ -88,6 +87,17 @@ public:
     int getNextVolume(int hash, int& num, int i, int start);
     int find_Volume(Vec3i indx) const;
     bool isExist(Vec3i indx);
+
+    inline size_t calc_hash(Vec3i x) const
+    {
+        uint32_t seed = 0;
+        constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
+        for (int i = 0; i < 3; i++)
+        {
+            seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
 };
 
 

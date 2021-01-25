@@ -373,22 +373,9 @@ void integrateVolumeUnit(
 
 }
 
-size_t calc_hash(Vec4i x)
-{
-    uint32_t seed = 0;
-    constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
-    //uint32_t GOLDEN_RATIO = 0x9e3779b9;
-    //seed ^= x[0] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    //seed ^= x[1] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    //seed ^= x[2] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    for (int i = 0; i < 3; i++)
-    {
-        seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-    }
-    return seed;
-}
+/// Custom Volume Hash Table
 
-VolumesTable::VolumesTable()
+VolumesTable::VolumesTable() : bufferNums(1), indexes(), indexesGPU()
 {
     this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
     for (int i = 0; i < volumes.size().height; i++)
