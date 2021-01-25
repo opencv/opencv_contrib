@@ -334,7 +334,7 @@ cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord(const cv::Point3f& point) const
                      cvFloor(point.z * voxelSizeInv));
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, VolumeIndex indx) const
+inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, int indx) const
 {
     //! Out of bounds
     if ((volumeIdx[0] >= volumeUnitResolution || volumeIdx[0] < 0) ||
