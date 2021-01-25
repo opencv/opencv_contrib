@@ -73,20 +73,18 @@ public:
     cv::Mat volumes;
 
     VolumesTable();
+    const VolumesTable& operator=(const VolumesTable&);
     ~VolumesTable() {};
 
-    void updateVolumeUnit(int mode, Vec3i indx, int row, int isActive, int lastVisibleIndex);
-    void updateIndx(Vec3i indx);
-    void updateRow(Vec3i indx, int row);
-    void updateIsActive(Vec3i indx, int isActive);
-    void updateLastVolumeIndx(Vec3i indx, int lastVisibleIndex);
-    void updateActivity(Vec3i indx, int isActive, int lastVisibleIndex);
+    Volume_NODE* insert(Vec3i idx, int row, bool isActive = false, int lastVisibleIndex = -1);
+    const Volume_NODE* find(Vec3i idx) const;
+    Volume_NODE* find(Vec3i idx);
 
-    void expand();
-    bool getActive(Vec3i indx) const;
-    int getNextVolume(int hash, int& num, int i, int start);
-    int find_Volume(Vec3i indx) const;
-    bool isExist(Vec3i indx);
+    inline int getPos(Vec3i idx, int bufferNum) const
+    {
+        int hash = int(calc_hash(idx) % hash_divisor);
+        return (bufferNum * hash_divisor + hash) * list_size;
+    }
 
     inline size_t calc_hash(Vec3i x) const
     {

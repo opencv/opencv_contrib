@@ -390,186 +390,94 @@ VolumesTable::VolumesTable() : bufferNums(1), indexes(), indexesGPU()
     }
 }
 
-inline void VolumesTable::updateVolumeUnit(int mode, Vec3i indx, int row = -1, int isActive = 0, int lastVisibleIndex = -1)
+const VolumesTable& VolumesTable::operator=(const VolumesTable& vt)
 {
-    // mode 0 updateIndx
-    // mode 1 updateRow
-    // mode 2 updateIsActive
-    // mode 3 updateLastVolumeIndx
-    // mode 4 updateActivity
+    this->volumes = vt.volumes;
+    this->bufferNums = vt.bufferNums;
+    this->indexes = vt.indexes;
+    this->indexesGPU = vt.indexesGPU;
+    return *this;
+}
 
-    Vec4i idx(indx[0], indx[1], indx[2], 0);
-    int hash = int(calc_hash(idx) % hash_divisor);
+Volume_NODE* VolumesTable::insert(Vec3i idx, int row, bool isActive, int lastVisibleIndex)
+{
     int bufferNum = 0;
-    int start = (bufferNum * list_size * hash_divisor) + (hash * list_size);
+    int hash = int(calc_hash(idx) % hash_divisor);
+    int start = getPos(idx, bufferNum);
     int i = start;
 
-    while (i != -1)
+    while (i >= 0)
     {
         Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
 
         if (v->idx[0] == NAN_ELEMENT)
         {
-            v->idx = idx;
+            Vec4i idx4(idx[0], idx[1], idx[2], 0);
+
+            if (i != start && i % list_size == 0)
+            {
+                if (bufferNum >= bufferNums - 1)
+                {
+                    volumes.resize(hash_divisor * bufferNums);
+                    bufferNums++;
+                }
+                bufferNum++;
+                v->nextVolumeRow = (bufferNum * hash_divisor + hash) * list_size;
+            }
+            else
+            {
+                v->nextVolumeRow = i + 1;
+            }
+
+            v->idx = idx4;
             v->row = row;
             v->isActive = isActive;
             v->lastVisibleIndex = lastVisibleIndex;
-            v->nextVolumeRow = getNextVolume(hash, bufferNum, i, start);
-            indexes.push_back(indx);
-            indexesGPU.push_back(idx);
-            return;
-        }
 
-        if (mode == 0) // updateIndx
-        {
-            if (v->idx == idx)
-            {
-                return;
-            }
-        }
-
-        if (mode == 1) // updateRow
-        {
-            if (v->idx == idx)
-            {
-                v->row = row;
-                return;
-            }
-        }
-
-        if (mode == 2) // updateIsActive
-        {
-            if (v->idx == idx)
-            {
-                v->isActive = isActive;
-                return;
-            }
-        }
-
-        if (mode == 3) // updateLastVolumeIndx
-        {
-            if (v->idx == idx)
-            {
-                v->lastVisibleIndex = lastVisibleIndex;
-                return;
-            }
-        }
-
-        if (mode == 4) // updateActivity
-        {
-            if (v->idx == idx)
-            {
-                v->isActive = isActive;
-                v->lastVisibleIndex = lastVisibleIndex;
-                return;
-            }
+            indexes.push_back(idx);
+            indexesGPU.push_back(idx4);
+            return v;
         }
 
         i = v->nextVolumeRow;
     }
 }
 
-void VolumesTable::updateIndx(Vec3i indx)
+const Volume_NODE* VolumesTable::find(Vec3i idx) const
 {
-    const int mode = 0;
-    updateVolumeUnit(mode, indx);
-}
-
-void VolumesTable::updateRow(Vec3i indx, int row)
-{
-    const int mode = 1;
-    updateVolumeUnit(mode, indx, row);
-}
-
-void VolumesTable::updateIsActive(Vec3i indx, int isActive)
-{
-    const int mode = 2;
-    updateVolumeUnit(mode, indx, free_row, isActive);
-}
-
-void VolumesTable::updateLastVolumeIndx(Vec3i indx, int lastVisibleIndex)
-{
-    const int mode = 3;
-    updateVolumeUnit(mode, indx, free_row, free_isActive, lastVisibleIndex);
-}
-
-void VolumesTable::updateActivity(Vec3i indx, int isActive, int lastVisibleIndex)
-{
-    const int mode = 4;
-    updateVolumeUnit(mode, indx, free_row, isActive, lastVisibleIndex);
-}
-
-bool VolumesTable::getActive(Vec3i indx) const
-{
-    Vec4i idx(indx[0], indx[1], indx[2], 0);
-    int hash = int(calc_hash(idx) % hash_divisor);
     int bufferNum = 0;
-    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    while (i != -1)
-    {
-        const Volume_NODE& v = *volumes.ptr<Volume_NODE>(i);
-        if (v.idx == idx)
-            return (v.isActive == 1);
-        if (v.idx[0] == NAN_ELEMENT)
-            return false;
-        i = v.nextVolumeRow;
-    }
-    return false;
-}
+    int i = getPos(idx, bufferNum);
 
-int VolumesTable::getNextVolume(int hash, int& bufferNum, int i, int start)
-{
-    if (i != start && i % list_size == 0)
+    while (i >= 0)
     {
-        if (bufferNum < bufferNums-1)
-        {
-            bufferNum++;
-        }
+        const Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+
+        if (v->idx == Vec4i(idx[0], idx[1], idx[2], 0))
+            return v;
         else
-        {
-            this->expand();
-            bufferNum++;
-        }
-        return (bufferNum * list_size * hash_divisor) + (hash * list_size);
+            i = v->nextVolumeRow;
     }
-    else
-    {
-        return i+1;
-    }
+
+    return nullptr;
 }
 
-void VolumesTable::expand()
+Volume_NODE* VolumesTable::find(Vec3i idx)
 {
-    this->volumes.resize(hash_divisor * (bufferNums));
-    this->bufferNums++;
-}
-
-int VolumesTable::find_Volume(Vec3i indx) const
-{
-    Vec4i idx(indx[0], indx[1], indx[2], 0);
-    int hash = int(calc_hash(idx) % hash_divisor);
     int bufferNum = 0;
-    int i = (bufferNum * list_size * hash_divisor) + (hash * list_size);
-    while (i != -1)
-    {
-        const Volume_NODE& v = *volumes.ptr<Volume_NODE>(i);
-        if (v.idx == idx)
-            return v.row;
-        //find nan cheking for int or Vec3i
-        //if (isNaN(Point3i(v.idx)))
-        if (v.idx[0] == NAN_ELEMENT)
-            return -2;
-        i = v.nextVolumeRow;
-    }
-    return -2;
-}
-bool VolumesTable::isExist(Vec3i indx)
-{
-    if (this->find_Volume(indx) == -2)
-        return false;
-    return true;
-}
+    int i = getPos(idx, bufferNum);
 
+    while (i >= 0)
+    {
+        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+
+        if (v->idx == Vec4i(idx[0], idx[1], idx[2], 0))
+            return v;
+        else
+            i = v->nextVolumeRow;
+    }
+
+    return nullptr;
+}
 
 } // namespace kinfu
 } // namespace cv
