@@ -9,26 +9,39 @@
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create
-    (int, int, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int, Stream&, Stream&) {
+    (cv::Size, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int, Stream&, Stream&) {
     throw_no_cuda(); return cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0>(); }
 
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create(
-    int, int, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
-    bool, int, cv::Rect*, bool, bool, bool, int, Stream&, Stream&) {
+    cv::Size, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
+    bool, bool, bool, int, Stream&, Stream&) {
+    throw_no_cuda(); return cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0>();
+}
+
+cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create(
+    cv::Size, std::vector<Rect>, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
+    bool, bool, bool, int, Stream&, Stream&) {
     throw_no_cuda(); return cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0>();
 }
 
 #elif !defined HAVE_NVIDIA_OPTFLOW
 
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(
-    int, int, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int, Stream&, Stream&)
+    cv::Size, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int, Stream&, Stream&)
 {
     CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
 }
 
 cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create(
-    int, int, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
-    bool, int, cv::Rect*, bool, bool, bool, int, , Stream&, Stream&)
+    cv::Size, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
+    bool, bool, bool, int, Stream&, Stream&)
+{
+    CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
+}
+
+cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create(
+    cv::Size, std::vector<Rect>, NVIDIA_OF_PERF_LEVEL, NVIDIA_OF_OUTPUT_VECTOR_GRID_SIZE, NVIDIA_OF_HINT_VECTOR_GRID_SIZE,
+    bool, bool, bool, int, Stream&, Stream&)
 {
     CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
 }
