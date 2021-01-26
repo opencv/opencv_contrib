@@ -22,7 +22,7 @@ typedef   signed int    int32_t;
 #define SMEM_COLS  ((BLOCKDIM_X)/2)
 #define SMEM_ROWS  ((BLOCKDIM_Y)/2)
 
-#ifdef HAVE_NVIDIA_OPTFLOW
+#if defined(__CUDACC_VER_MAJOR__) && (10 <= __CUDACC_VER_MAJOR__)
 namespace cv { namespace cuda { namespace device { namespace optflow_nvidia
 {
 static const char *_cudaGetErrorEnum(cudaError_t error) { return cudaGetErrorName(error); }
@@ -96,6 +96,6 @@ void FlowUpsample(void* srcDevPtr, uint32_t nSrcWidth, uint32_t nSrcPitch, uint3
 
         checkCudaErrors(cudaGetLastError());
 }}}}}
-#endif //HAVE_NVIDIA_OPTFLOW
+#endif //defined(__CUDACC_VER_MAJOR__) && (10 <= __CUDACC_VER_MAJOR__)
 
 #endif
