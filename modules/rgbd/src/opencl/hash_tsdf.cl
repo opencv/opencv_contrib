@@ -295,15 +295,14 @@ __kernel void integrateAllVolumeUnits(
     }
 }
 
-static struct TsdfVoxel _at(int3 volumeIdx, int row,
-              int volumeUnitResolution, int4 volStrides,
-              __global struct TsdfVoxel * allVolumePtr, int table_offset)
+static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitResolution,
+                           int3 volStrides, __global struct TsdfVoxel * allVolumePtr, int table_offset)
 
 {
     //! Out of bounds
-    if ((volumeIdx.s0 >= volumeUnitResolution || volumeIdx.s0 < 0) ||
-        (volumeIdx.s1 >= volumeUnitResolution || volumeIdx.s1 < 0) ||
-        (volumeIdx.s2 >= volumeUnitResolution || volumeIdx.s2 < 0))
+    if (any(volumeIdx >= volumeUnitResolution) ||
+        any(volumeIdx < 0))
+
     {
         struct TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
@@ -312,21 +311,20 @@ static struct TsdfVoxel _at(int3 volumeIdx, int row,
     }
 
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
-                                            (allVolumePtr + table_offset + (row) * 16*16*16);
-    int coordBase = volumeIdx.s0 * volStrides.s0 +
-                    volumeIdx.s1 * volStrides.s1 +
-                    volumeIdx.s2 * volStrides.s2;
+                                          (allVolumePtr + table_offset + row * 16*16*16);
+    int3 ismul = volumeIdx * volStrides;
+    int coordBase = ismul.x + ismul.y + ismul.z;
     return volData[coordBase];
 }
 
 
-static struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row, int lastVolIndex,
-              int volumeUnitResolution, int4 volStrides, 
-              __global const struct TsdfVoxel * allVolumePtr, int table_offset)
+static struct TsdfVoxel atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row,
+                                     int volumeUnitResolution, int3 volStrides,
+                                     __global const struct TsdfVoxel * allVolumePtr, int table_offset)
 
 {
     //! Out of bounds
-    if (row < 0 || row > lastVolIndex - 1)
+    if (row < 0)
     {
         struct TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
@@ -336,11 +334,9 @@ static struct TsdfVoxel _atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int ro
 
     int3 volUnitLocalIdx = volumeIdx - volumeUnitIdx * volumeUnitResolution;
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
-                                            (allVolumePtr + table_offset + (row) * 16*16*16);    
-    int coordBase =
-        volUnitLocalIdx.s0 * volStrides.s0 +
-        volUnitLocalIdx.s1 * volStrides.s1 +
-        volUnitLocalIdx.s2 * volStrides.s2;
+                                          (allVolumePtr + table_offset + row * 16*16*16);
+    int3 ismul = volUnitLocalIdx * volStrides;
+    int coordBase = ismul.x + ismul.y + ismul.z;
     return volData[coordBase];
 }
 
@@ -358,18 +354,18 @@ inline float interpolate(float tx, float ty, float tz, float vx[8])
 }
 
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
-                             int3 volResolution, int3 volDims, int8 neighbourCoords,
-                             float voxelSizeInv, int lastVolIndex,
+                             int3 volResolution,
+                             float voxelSizeInv,
                              __global struct Volume_NODE * hash_table,
-                             const int list_size, 
-                             const int bufferNums, 
+                             const int list_size,
+                             const int bufferNums,
                              const int hash_divisor,
-                             int4 volStrides, int table_offset)
+                             int3 volStrides, int table_offset)
 {
     
     float3 normal = (float3) (0.0f, 0.0f, 0.0f);
     float3 ptVox = p * voxelSizeInv;
-    int3 iptVox = (int3) ( floor (ptVox.x), floor (ptVox.y), floor (ptVox.z) );
+    int3 iptVox = convert_int3(floor(ptVox));
 
     bool queried[8];
     int  iterMap[8];
@@ -427,7 +423,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
             queried[dictIdx] = true;
         }
 
-        struct TsdfVoxel tmp = _atVolumeUnit(pt, volumeUnitIdx, it, lastVolIndex, volResolution.s0,  volStrides, allVolumePtr,  table_offset) ;
+        struct TsdfVoxel tmp = atVolumeUnit(pt, volumeUnitIdx, it, volResolution.s0, volStrides, allVolumePtr, table_offset);
         vals[i] = tsdfToFloat( tmp.tsdf );
     }
 
@@ -509,7 +505,7 @@ __kernel void raycast(
                     float volumeUnitSize,
                     float truncDist,
                     int volumeUnitResolution,
-                    int4 volStrides
+                    int4 volStrides4
                     )
 {
     int x = get_global_id(0);
@@ -545,6 +541,8 @@ __kernel void raycast(
     float tprev = tcurr;
     float prevTsdf = truncDist;
 
+    int3 volStrides = volStrides4.xyz;
+
     while (tcurr < tmax)
     {
         float3 currRayPos = orig + tcurr * dir;
@@ -561,7 +559,7 @@ __kernel void raycast(
         float stepSize = 0.5 * volumeUnitSize;
         int3 volUnitLocalIdx;
 
-        if (row >= 0 && row < lastVolIndex)
+        if (row >= 0)
         {
             //TsdfVoxel currVoxel
             // VolumeUnitIdxToVolume()
@@ -590,11 +588,10 @@ __kernel void raycast(
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
                 int3 volResolution = (int3) (volResolution4.s0, volResolution4.s1, volResolution4.s2);
-                int3 volDims = (int3) (volDims4.s0, volDims4.s1, volDims4.s2);
-                
+
                 float3 pv = orig + tInterp * dir;
-                float3 nv = getNormalVoxel( pv, allVolumePtr, volResolution, volDims, neighbourCoords, 
-                                            voxelSizeInv, lastVolIndex, hash_table,
+                float3 nv = getNormalVoxel( pv, allVolumePtr, volResolution,
+                                            voxelSizeInv, hash_table,
                                             list_size, bufferNums, hash_divisor,
                                             volStrides, table_offset);
 
