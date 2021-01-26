@@ -1437,12 +1437,13 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
                                       {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1} };
 
     // A small hash table to reduce a number of find() calls
-    bool queried[8];
+    // -2 and lower means not queried yet
+    // -1 means not found
+    // 0+ means found
     int iterMap[8];
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = lastVolIndex;
-        queried[i] = false;
+        iterMap[i] = -2;
     }
 
     int ix = cvFloor(point.x);
@@ -1462,11 +1463,10 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
         Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
-        if (!queried[dictIdx])
+        if (it < -1)
         {
             it = indexes.findRow(volumeUnitIdx);
             iterMap[dictIdx] = it;
-            queried[dictIdx] = true;
         }
 
         vx[i] = new_atVolumeUnit(pt, volumeUnitIdx, it).tsdf;
@@ -1488,13 +1488,13 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
     Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
 
     // A small hash table to reduce a number of find() calls
-    bool queried[8];
+    // -2 and lower means not queried yet
+    // -1 means not found
+    // 0+ means found
     int iterMap[8];
-
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = lastVolIndex;
-        queried[i] = false;
+        iterMap[i] = -2;
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
@@ -1525,12 +1525,10 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
 
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
-
-        if (!queried[dictIdx])
+        if (it < -1)
         {
             it = indexes.findRow(volumeUnitIdx);
             iterMap[dictIdx] = it;
-            queried[dictIdx] = true;
         }
 
         vals[i] = tsdfToFloat(new_atVolumeUnit(pt, volumeUnitIdx, it).tsdf);
