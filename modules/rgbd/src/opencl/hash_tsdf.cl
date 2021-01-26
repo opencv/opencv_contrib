@@ -5,6 +5,7 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #define NAN_ELEMENT -2147483647
+#define USE_INTERPOLATION_IN_GETNORMAL 1
 
 typedef __INT8_TYPE__ int8_t;
 typedef __INT32_TYPE__ int32_t;
@@ -384,12 +385,26 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
         queried[i] = false;
     }
 
+#if !USE_INTERPOLATION_IN_GETNORMAL
     int3 offsets[] = { { 1,  0,  0}, {-1,  0,  0}, { 0,  1,  0}, // 0-3
                        { 0, -1,  0}, { 0,  0,  1}, { 0,  0, -1}  // 4-7
     };
     
     const int nVals = 6;
     float vals[6];
+#else
+    int3 offsets[]={{ 0,  0,  0}, { 0,  0,  1}, { 0,  1,  0}, { 0,  1,  1}, //  0-3
+                    { 1,  0,  0}, { 1,  0,  1}, { 1,  1,  0}, { 1,  1,  1}, //  4-7
+                    {-1,  0,  0}, {-1,  0,  1}, {-1,  1,  0}, {-1,  1,  1}, //  8-11
+                    { 2,  0,  0}, { 2,  0,  1}, { 2,  1,  0}, { 2,  1,  1}, // 12-15
+                    { 0, -1,  0}, { 0, -1,  1}, { 1, -1,  0}, { 1, -1,  1}, // 16-19
+                    { 0,  2,  0}, { 0,  2,  1}, { 1,  2,  0}, { 1,  2,  1}, // 20-23
+                    { 0,  0, -1}, { 0,  1, -1}, { 1,  0, -1}, { 1,  1, -1}, // 24-27
+                    { 0,  0,  2}, { 0,  1,  2}, { 1,  0,  2}, { 1,  1,  2}, // 28-31
+    };
+    const int nVals = 32;
+    float vals[32];
+#endif
 
     for (int i = 0; i < nVals; i++)
     {
@@ -423,15 +438,14 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
         struct TsdfVoxel tmp = _atVolumeUnit(pt, volumeUnitIdx, it, lastVolIndex, volResolution.s0,  volStrides, allVolumePtr,  table_offset) ;
         vals[i] = tsdfToFloat( tmp.tsdf );
-
     }
 
+#if !USE_INTERPOLATION_IN_GETNORMAL
     normal.s0 = vals[0 * 2] - vals[0 * 2 + 1];
     normal.s1 = vals[1 * 2] - vals[1 * 2 + 1];
     normal.s2 = vals[2 * 2] - vals[2 * 2 + 1];
+#else
 
-// <========================================================>
-/*
     float cxv[8], cyv[8], czv[8];
 
     // How these numbers were obtained:
@@ -462,17 +476,14 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     normal.s1 = interpolate(tx, ty, tz, cyv);
     normal.s2 = interpolate(tx, ty, tz, czv);
     
-    if(!any(isnan(normal)))
-        printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
-*/
-// <========================================================>
+    //if(!any(isnan(normal)))
+    //    printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
 
-    //normal.x*=(-1); normal.y*=(-1); normal.z*=(-1);
+#endif
 
-    float norm = 
-    sqrt(normal.x*normal.x 
-       + normal.y*normal.y 
-       + normal.z*normal.z);
+    float norm = sqrt(normal.x*normal.x +
+                      normal.y*normal.y +
+                      normal.z*normal.z);
     return norm < 0.0001f ? nan((uint)0) : normal / norm;
 }
 
@@ -565,9 +576,8 @@ __kernel void raycast(
         float stepSize = 0.5 * volumeUnitSize;
         int3 volUnitLocalIdx;
 
-        if (row >= 0 && row < lastVolIndex) {
-            
-            
+        if (row >= 0 && row < lastVolIndex)
+        {
             //TsdfVoxel currVoxel
             // VolumeUnitIdxToVolume()
             float3 currVolUnitPos = (float3) 
