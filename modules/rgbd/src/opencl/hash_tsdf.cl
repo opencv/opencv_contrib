@@ -380,7 +380,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = lastVolIndex;
+        iterMap[i] = -1;
         queried[i] = false;
     }
 
@@ -417,11 +417,8 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
         if (!queried[dictIdx])
         {
             it = findRow(hash_table, volumeUnitIdx4, list_size, bufferNums, hash_divisor);
-            if (it >= 0 || it < lastVolIndex)
-            {
-                iterMap[dictIdx] = it;
-                queried[dictIdx] = true;
-            }
+            iterMap[dictIdx] = it;
+            queried[dictIdx] = true;
         }
 
         struct TsdfVoxel tmp = _atVolumeUnit(pt, volumeUnitIdx, it, lastVolIndex, volResolution.s0,  volStrides, allVolumePtr,  table_offset) ;
@@ -592,7 +589,6 @@ __kernel void raycast(
             stepSize = tstep;
         }
 
-        
         if (prevTsdf > 0.f && currTsdf <= 0.f && currWeight > 0)
         {
             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
@@ -609,7 +605,6 @@ __kernel void raycast(
 
                 if(!any(isnan(nv)))
                 {
-                    
                     //convert pv and nv to camera space
                     normal = (float3)(dot(nv, volRot0),
                                       dot(nv, volRot1),
@@ -619,9 +614,8 @@ __kernel void raycast(
                                      dot(pv, volRot1),
                                      dot(pv, volRot2)) + volTrans;
                 }
-
             }
-            
+            break;
         }
         prevTsdf = currTsdf;
         tprev = tcurr;
