@@ -51,10 +51,9 @@ __kernel void preCalculationPixNorm (__global float * pixNorms,
     pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
 }
 
-static uint calc_hash(int4 x)
+static uint calc_hash(int3 x)
 {
     unsigned int seed = 0;
-    //uint GOLDEN_RATIO = 0x9e3779b9;
     unsigned int GOLDEN_RATIO = 0x9e3779b9;
     seed ^= x.s0 + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
     seed ^= x.s1 + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
@@ -62,27 +61,23 @@ static uint calc_hash(int4 x)
     return seed;
 }
 
-static int findRow(__global struct Volume_NODE * hash_table, int4 indx,
+
+static int findRow(__global struct Volume_NODE * hash_table, int3 indx,
                    int list_size, int bufferNums, int hash_divisor)
 {
-    int hash = calc_hash(indx) % hash_divisor;
-    
     int bufferNum = 0;
+    int hash = calc_hash(indx) % hash_divisor;
     int i = (bufferNum * hash_divisor + hash) * list_size;
-    int NAN_NUM = NAN_ELEMENT;
-    while (i != NAN_NUM)
+    while (i >= 0)
     {
         struct Volume_NODE v = hash_table[i];
-        if (v.idx.s0 == indx.s0 &&
-            v.idx.s1 == indx.s1 &&
-            v.idx.s2 == indx.s2)
+        if (all(v.idx.s012 == indx.s012))
             return v.row;
-        if (v.idx.x == NAN_NUM)
-            return -2;
-        i = v.nextVolumeRow;
+        else
+            i = v.nextVolumeRow;
     }
 
-    return -2;
+    return -1;
 }
 
 
@@ -417,10 +412,6 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
             floor ( (float) pt.s1 / volResolution.s1),
             floor ( (float) pt.s2 / volResolution.s2) );
         
-        int4 volumeUnitIdx4 = (int4) (
-            floor ( (float) pt.s0 / volResolution.s0),
-            floor ( (float) pt.s1 / volResolution.s1),
-            floor ( (float) pt.s2 / volResolution.s2), 0 );
 
 
         int dictIdx = (volumeUnitIdx.s0 & 1) 
@@ -431,7 +422,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
         if (!queried[dictIdx])
         {
-            it = findRow(hash_table, volumeUnitIdx4, list_size, bufferNums, hash_divisor);
+            it = findRow(hash_table, volumeUnitIdx, list_size, bufferNums, hash_divisor);
             iterMap[dictIdx] = it;
             queried[dictIdx] = true;
         }
@@ -564,13 +555,7 @@ __kernel void raycast(
         floor (currRayPos.y / volumeUnitSize),
         floor (currRayPos.z / volumeUnitSize) );
         
-        // VolumeToVolumeUnitIdx4()
-        int4 currVolumeUnitIdx4 = (int4) (
-        floor (currRayPos.x / volumeUnitSize),
-        floor (currRayPos.y / volumeUnitSize),
-        floor (currRayPos.z / volumeUnitSize), 0);
-
-        int row = findRow(hash_table, currVolumeUnitIdx4, list_size, bufferNums, hash_divisor);
+        int row = findRow(hash_table, currVolumeUnitIdx, list_size, bufferNums, hash_divisor);
         float currTsdf = prevTsdf;
         int currWeight = 0;
         float stepSize = 0.5 * volumeUnitSize;
