@@ -367,13 +367,14 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     float3 ptVox = p * voxelSizeInv;
     int3 iptVox = convert_int3(floor(ptVox));
 
-    bool queried[8];
+    // A small hash table to reduce a number of findRow() calls
+    // -2 and lower means not queried yet
+    // -1 means not found
+    // 0+ means found
     int  iterMap[8];
-
     for (int i = 0; i < 8; i++)
     {
-        iterMap[i] = -1;
-        queried[i] = false;
+        iterMap[i] = -2;
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
@@ -403,24 +404,16 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
         // VoxelToVolumeUnitIdx() 
         // TODO: add assertion - if (!(vuRes & (vuRes - 1)))
-        int3 volumeUnitIdx = (int3) (
-            floor ( (float) pt.s0 / volResolution.s0),
-            floor ( (float) pt.s1 / volResolution.s1),
-            floor ( (float) pt.s2 / volResolution.s2) );
-        
+        int3 volumeUnitIdx = convert_int3(floor(convert_float3(pt.s012) / convert_float3(volResolution.s012)));
 
-
-        int dictIdx = (volumeUnitIdx.s0 & 1) 
-                    + (volumeUnitIdx.s1 & 1) * 2 
-                    + (volumeUnitIdx.s2 & 1) * 4;
+        int3 vand = (volumeUnitIdx & 1);
+        int dictIdx = vand.s0 + vand.s1 * 2 + vand.s2 * 4;
 
         int it = iterMap[dictIdx];
-
-        if (!queried[dictIdx])
+        if (it < -1)
         {
             it = findRow(hash_table, volumeUnitIdx, list_size, bufferNums, hash_divisor);
             iterMap[dictIdx] = it;
-            queried[dictIdx] = true;
         }
 
         struct TsdfVoxel tmp = atVolumeUnit(pt, volumeUnitIdx, it, volResolution.s0, volStrides, allVolumePtr, table_offset);
@@ -468,9 +461,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
 #endif
 
-    float norm = sqrt(normal.x*normal.x +
-                      normal.y*normal.y +
-                      normal.z*normal.z);
+    float norm = sqrt(dot(normal, normal));
     return norm < 0.0001f ? nan((uint)0) : normal / norm;
 }
 
