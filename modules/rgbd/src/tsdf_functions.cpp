@@ -375,7 +375,7 @@ void integrateVolumeUnit(
 
 /// Custom Volume Hash Table
 
-VolumesTable::VolumesTable() : bufferNums(1), indexes(), indexesGPU()
+VolumesTable::VolumesTable() : bufferNums(1)
 {
     this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
     for (int i = 0; i < volumes.size().height; i++)
@@ -391,8 +391,6 @@ const VolumesTable& VolumesTable::operator=(const VolumesTable& vt)
 {
     this->volumes = vt.volumes;
     this->bufferNums = vt.bufferNums;
-    this->indexes = vt.indexes;
-    this->indexesGPU = vt.indexesGPU;
     return *this;
 }
 
@@ -431,8 +429,6 @@ Volume_NODE* VolumesTable::insert(Vec3i idx, int row)
             v->idx = idx4;
             v->row = row;
 
-            indexes.push_back(idx);
-            indexesGPU.push_back(idx4);
             return v;
         }
 

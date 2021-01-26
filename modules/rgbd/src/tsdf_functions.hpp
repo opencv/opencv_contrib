@@ -68,8 +68,6 @@ public:
     const cv::Vec4i nan4 = cv::Vec4i(NAN_ELEMENT);
 
     int bufferNums;
-    std::vector<Vec3i> indexes;
-    std::vector<Vec4i> indexesGPU;
     cv::Mat volumes;
 
     VolumesTable();

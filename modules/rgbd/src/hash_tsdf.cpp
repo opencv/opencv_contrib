@@ -792,16 +792,12 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         bool needNormals(_normals.needed());
         Mutex mutex;
 
-
         auto HashFetchPointsNormalsInvoker = [&](const Range& range)
         {
-
-
             std::vector<ptype> points, normals;
             for (int i = range.start; i < range.end; i++)
             {
                 cv::Vec3i tsdf_idx = totalVolUnits[i];
-
 
                 VolumeUnitIndexes::const_iterator it = volume.volumeUnits.find(tsdf_idx);
                 Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
@@ -836,8 +832,6 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         };
 
         parallel_for_(fetchRange, HashFetchPointsNormalsInvoker, nstripes);
-
-
 
         std::vector<ptype> points, normals;
         for (size_t i = 0; i < pVecs.size(); i++)
@@ -958,13 +952,15 @@ public:
     Vec6f frameParams;
     int degree;
     int buff_lvl;
+    
+    // per-volume-unit data
+    cv::Mat volumeUnitIndices;
     cv::Mat poses;
     cv::Mat lastVisibleIndexes;
-
     cv::Mat isActiveFlags;
-
     cv::Mat allVol2cam;
     cv::Mat volUnitsData;
+
     cv::UMat pixNorms;
     int lastVolIndex;
     VolumesTable indexes;
@@ -1016,14 +1012,16 @@ void HashTSDFVolumeGPU::reset()
     lastVolIndex = 0;
     degree = 15;
     buff_lvl = (int) pow(2, degree);
+
     volUnitsData = cv::Mat(buff_lvl, volumeUnitResolution * volumeUnitResolution * volumeUnitResolution, rawType<TsdfVoxel>());
     poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
-
     isActiveFlags = cv::Mat(buff_lvl, 1, CV_8U);
+    allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
+    volumeUnitIndices = cv::Mat(buff_lvl, 1, CV_32SC4);
 
     indexes = VolumesTable();
-    allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
+
     frameParams = Vec6f();
     pixNorms = UMat();
 }
@@ -1116,51 +1114,38 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
-    int totalVolUnitsSize = (int) indexes.indexesGPU.size();
-    Mat totalVolUnits = cv::Mat(indexes.indexesGPU, true);
-
     Mat _tmp;
     volUnitsData.copyTo(_tmp);
     UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
     _tmp.release();
 
-    indexes.volumes.copyTo(_tmp);
-    UMat U_hashtable = _tmp.getUMat(ACCESS_RW);
-
     k.args(ocl::KernelArg::ReadOnly(depth),
-        ocl::KernelArg::PtrReadWrite(U_hashtable),
-        (int)indexes.list_size,
-        (int)indexes.bufferNums,
-        (int)indexes.hash_divisor,
-        ocl::KernelArg::ReadWrite(totalVolUnits.getUMat(ACCESS_RW)),
-        ocl::KernelArg::ReadWrite(U_volUnitsData),
-        ocl::KernelArg::PtrReadOnly(pixNorms),
-        ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
-        ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
-        lastVolIndex,
-        voxelSize,
-        volResGpu.val,
-        volStrides.val,
-        fxy.val,
-        cxy.val,
-        dfac,
-        truncDist,
-        int(maxWeight)
+           ocl::KernelArg::ReadOnly(volumeUnitIndices.getUMat(ACCESS_READ)),
+           ocl::KernelArg::ReadWrite(U_volUnitsData),
+           ocl::KernelArg::PtrReadOnly(pixNorms),
+           ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
+           ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
+           voxelSize,
+           volResGpu.val,
+           volStrides.val,
+           fxy.val,
+           cxy.val,
+           dfac,
+           truncDist,
+           int(maxWeight)
     );
 
     int resol = volumeUnitResolution;
     size_t globalSize[3];
     globalSize[0] = (size_t)resol; // volumeUnitResolution
     globalSize[1] = (size_t)resol; // volumeUnitResolution
-    globalSize[2] = (size_t)totalVolUnitsSize; // num of voxels
+    globalSize[2] = (size_t)lastVolIndex; // num of volume units
 
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 
     U_volUnitsData.getMat(ACCESS_RW).copyTo(volUnitsData);
-
     U_volUnitsData.release();
-    U_hashtable.release();
 }
 
 
@@ -1264,6 +1249,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         volUnitsData.resize(buff_lvl);
         poses.resize(buff_lvl);
         lastVisibleIndexes.resize(buff_lvl);
+        volumeUnitIndices.resize(buff_lvl);
         isActiveFlags.resize(buff_lvl);
         allVol2cam.resize(buff_lvl);
     }
@@ -1282,6 +1268,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         *poses.ptr<cv::Matx44f>(row, 0) = subvolumePose;
         *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
         *isActiveFlags.ptr<uchar>(row, 0) = 1;
+        *volumeUnitIndices.ptr<Vec4i>(row, 0) = idx4;
 
         volUnitsData.row(row).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
         {
@@ -1290,26 +1277,18 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         });
     }
 
-    //TODO: make isActive an array (as well as lastVisibleIndices)
-    //TODO: to iterate over them
-
-    //! Get keys for all the allocated volume Units
-    std::vector<Vec3i> _totalVolUnits = indexes.indexes;
-
     //! Mark volumes in the camera frustum as active
-    Range _inFrustumRange(0, (int)_totalVolUnits.size());
+    Range _inFrustumRange(0, lastVolIndex);
     auto markActive = [&](const Range& range) {
         const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         const Intr::Projector proj(intrinsics.makeProjector());
 
-        for (int i = range.start; i < range.end; ++i)
+        for (int row = range.start; row < range.end; ++row)
         {
-            Vec3i tsdf_idx = _totalVolUnits[i];
+            Vec4i idx4 = *volumeUnitIndices.ptr<Vec4i>(row, 0);
+            Vec3i idx(idx4[0], idx4[1], idx4[2]);
 
-            int row = indexes.findRow(tsdf_idx);
-            CV_Assert(row >= 0);
-
-            Point3f volumeUnitPos = volumeUnitIdxToVolume(tsdf_idx);
+            Point3f volumeUnitPos = volumeUnitIdxToVolume(idx);
             Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
             if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
             {
@@ -1337,16 +1316,12 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
     }
 
-    //TODO: the same about iteration
-
     //! Integrate the correct volumeUnits
     auto preCalculateAllVol3Cam = [&](const Range& range) {
-        for (int i = range.start; i < range.end; i++)
+        for (int row = range.start; row < range.end; row++)
         {
-            Vec3i tsdf_idx = _totalVolUnits[i];
-
-            int row = indexes.findRow(tsdf_idx);
-            CV_Assert(row >= 0);
+            Vec4i idx4 = *volumeUnitIndices.ptr<Vec4i>(row, 0);
+            Vec3i idx(idx4[0], idx4[1], idx4[2]);
 
             bool _isActive = bool(*isActiveFlags.ptr<uchar>(row, 0));
             
@@ -1362,7 +1337,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
             }
         }
     };
-    parallel_for_(Range(0, (int)_totalVolUnits.size()), preCalculateAllVol3Cam );
+    parallel_for_(Range(0, lastVolIndex), preCalculateAllVol3Cam );
 
     //! Integrate the correct volumeUnits
     integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
@@ -1730,9 +1705,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         if (k.empty())
             throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-        //int totalVolUnitsSize = _indexes.indexesGPU.size();
-        Mat totalVolUnits = cv::Mat(indexes.indexesGPU, true);
-
         _points.create(frameSize, CV_32FC4);
         _normals.create(frameSize, CV_32FC4);
 
@@ -1814,9 +1786,8 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
     if (_points.needed())
     {
         std::vector<std::vector<ptype>> pVecs, nVecs;
-        std::vector<Vec3i> _totalVolUnits = indexes.indexes;
 
-        Range _fetchRange(0, (int)_totalVolUnits.size());
+        Range _fetchRange(0, lastVolIndex);
 
         const int nstripes = -1;
 
@@ -1824,51 +1795,45 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         bool needNormals(_normals.needed());
         Mutex mutex;
 
-
         auto _HashFetchPointsNormalsInvoker = [&](const Range& range)
         {
             std::vector<ptype> points, normals;
-            for (int i = range.start; i < range.end; i++)
+            for (int row = range.start; row < range.end; row++)
             {
-                cv::Vec3i tsdf_idx = _totalVolUnits[i];
+                cv::Vec4i idx4 = *volumeUnitIndices.ptr<Vec4i>(row, 0);
+                cv::Vec3i idx(idx4[0], idx4[1], idx4[2]);
 
-                int row = indexes.findRow(tsdf_idx);
-                Point3f base_point = volume.volumeUnitIdxToVolume(tsdf_idx);
+                Point3f base_point = volume.volumeUnitIdxToVolume(idx);
 
-                if (row >= 0)
-                {
-                    std::vector<ptype> localPoints;
-                    std::vector<ptype> localNormals;
-                    for (int x = 0; x < volume.volumeUnitResolution; x++)
-                        for (int y = 0; y < volume.volumeUnitResolution; y++)
-                            for (int z = 0; z < volume.volumeUnitResolution; z++)
+                std::vector<ptype> localPoints;
+                std::vector<ptype> localNormals;
+                for (int x = 0; x < volume.volumeUnitResolution; x++)
+                    for (int y = 0; y < volume.volumeUnitResolution; y++)
+                        for (int z = 0; z < volume.volumeUnitResolution; z++)
+                        {
+                            cv::Vec3i voxelIdx(x, y, z);
+                            TsdfVoxel voxel = new_at(voxelIdx, row);
+
+                            if (voxel.tsdf != -128 && voxel.weight != 0)
                             {
-                                cv::Vec3i voxelIdx(x, y, z);
-                                TsdfVoxel voxel = new_at(voxelIdx, row);
+                                Point3f point = base_point + volume.voxelCoordToVolume(voxelIdx);
 
-                                if (voxel.tsdf != -128 && voxel.weight != 0)
+                                localPoints.push_back(toPtype(point));
+                                if (needNormals)
                                 {
-                                    Point3f point = base_point + volume.voxelCoordToVolume(voxelIdx);
-
-                                    localPoints.push_back(toPtype(point));
-                                    if (needNormals)
-                                    {
-                                        Point3f normal = volume.getNormalVoxel(point);
-                                        localNormals.push_back(toPtype(normal));
-                                    }
+                                    Point3f normal = volume.getNormalVoxel(point);
+                                    localNormals.push_back(toPtype(normal));
                                 }
                             }
+                        }
 
-                    AutoLock al(mutex);
-                    pVecs.push_back(localPoints);
-                    nVecs.push_back(localNormals);
-                }
+                AutoLock al(mutex);
+                pVecs.push_back(localPoints);
+                nVecs.push_back(localNormals);
             }
         };
 
         parallel_for_(_fetchRange, _HashFetchPointsNormalsInvoker, nstripes);
-        //_HashFetchPointsNormalsInvoker(_fetchRange);
-
 
         std::vector<ptype> points, normals;
         for (size_t i = 0; i < pVecs.size(); i++)

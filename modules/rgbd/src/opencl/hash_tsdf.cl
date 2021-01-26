@@ -240,13 +240,9 @@ __kernel void integrateAllVolumeUnits(
                         __global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
-                        __global struct Volume_NODE * hash_table,
-                        const int list_size, 
-                        const int bufferNums, 
-                        const int hash_divisor,
-                        __global const int4 * totalVolUnits,
-                        int totalVolUnits_step, int totalVolUnits_offset,
-                        int totalVolUnits_rows, int totalVolUnits_cols,
+                        __global const int4 * volumeUnitIndices,
+                        int volumeUnitIndices_step, int volumeUnitIndices_offset,
+                        int volumeUnitIndices_rows, int volumeUnitIndices_cols,
                         __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
@@ -254,12 +250,9 @@ __kernel void integrateAllVolumeUnits(
                         __global const float * allVol2camMatrix,
                         int val2cam_step, int val2cam_offset,
                         int val2cam_rows, int val2cam_cols,
-
                         __global const uchar* isActiveFlagsPtr,
                         int isActiveFlagsStep, int isActiveFlagsOffset,
                         int isActiveFlagsRows, int isActiveFlagsCols,
-
-                        const int lastVolIndex,
                         const float voxelSize,
                         const int4 volResolution4,
                         const int4 volDims4,
@@ -272,13 +265,9 @@ __kernel void integrateAllVolumeUnits(
 {
     int i = get_global_id(0);
     int j = get_global_id(1);
-    int k = get_global_id(2);
+    int row = get_global_id(2);
+    int4 idx = volumeUnitIndices[row];
 
-    int4 v = totalVolUnits[k];
-    int row = findRow(hash_table, v, list_size, bufferNums, hash_divisor);
-    if (row < 0 || row > lastVolIndex-1)
-        return;
-    
     int isActive = (__global const uchar*)(isActiveFlagsPtr + isActiveFlagsOffset + (row));
 
     if (isActive)
@@ -307,9 +296,7 @@ __kernel void integrateAllVolumeUnits(
             truncDist,
             maxWeight
             );
-        //updateIsActive(hash_table, v, 0, list_size, bufferNums, hash_divisor);
     }
-   
 }
 
 static struct TsdfVoxel _at(int3 volumeIdx, int row,
