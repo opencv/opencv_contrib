@@ -411,8 +411,8 @@ static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
     else
     {
         return Vec3i(cvFloor(float(pt[0]) / vuRes),
-            cvFloor(float(pt[1]) / vuRes),
-            cvFloor(float(pt[2]) / vuRes));
+                     cvFloor(float(pt[1]) / vuRes),
+                     cvFloor(float(pt[2]) / vuRes));
     }
 }
 
@@ -1409,7 +1409,7 @@ TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
 float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
 {
     const Vec3i local_neighbourCoords[] = { {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
-                                      {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1} };
+                                            {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1} };
 
     // A small hash table to reduce a number of find() calls
     // -2 and lower means not queried yet
@@ -1594,7 +1594,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
 
 
 void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
-    OutputArray _points, OutputArray _normals) const
+                                OutputArray _points, OutputArray _normals) const
 {
 
     if (false)
@@ -1685,8 +1685,8 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                 }
             }
         };
-        //parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
-        _HashRaycastInvoker(Range(0, new_points.rows));
+        parallel_for_(Range(0, new_points.rows), _HashRaycastInvoker, nstripes);
+        //_HashRaycastInvoker(Range(0, new_points.rows));
 
     }
 

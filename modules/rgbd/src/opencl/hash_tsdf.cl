@@ -592,7 +592,7 @@ __kernel void raycast(
              ( floor ( (float) (pos.s1) * voxelSizeInv) ), 
              ( floor ( (float) (pos.s2) * voxelSizeInv) ) );
 
-            struct TsdfVoxel currVoxel  = _at(volUnitLocalIdx, row, volumeUnitResolution,  volStrides, allVolumePtr, table_offset);
+            struct TsdfVoxel currVoxel  = at(volUnitLocalIdx, row, volumeUnitResolution, volStrides, allVolumePtr, table_offset);
 
             currTsdf = tsdfToFloat(currVoxel.tsdf);
             currWeight = currVoxel.weight;
