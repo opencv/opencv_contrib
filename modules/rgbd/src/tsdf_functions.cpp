@@ -440,7 +440,8 @@ Volume_NODE* VolumesTable::insert(Vec3i idx, int row)
     }
 }
 
-const Volume_NODE* VolumesTable::find(Vec3i idx) const
+
+int VolumesTable::findRow(Vec3i idx) const
 {
     int bufferNum = 0;
     int i = getPos(idx, bufferNum);
@@ -450,30 +451,12 @@ const Volume_NODE* VolumesTable::find(Vec3i idx) const
         const Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
 
         if (v->idx == Vec4i(idx[0], idx[1], idx[2], 0))
-            return v;
+            return v->row;
         else
             i = v->nextVolumeRow;
     }
 
-    return nullptr;
-}
-
-Volume_NODE* VolumesTable::find(Vec3i idx)
-{
-    int bufferNum = 0;
-    int i = getPos(idx, bufferNum);
-
-    while (i >= 0)
-    {
-        Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
-
-        if (v->idx == Vec4i(idx[0], idx[1], idx[2], 0))
-            return v;
-        else
-            i = v->nextVolumeRow;
-    }
-
-    return nullptr;
+    return -1;
 }
 
 } // namespace kinfu

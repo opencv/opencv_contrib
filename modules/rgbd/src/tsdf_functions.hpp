@@ -77,8 +77,7 @@ public:
     ~VolumesTable() {};
 
     Volume_NODE* insert(Vec3i idx, int row);
-    const Volume_NODE* find(Vec3i idx) const;
-    Volume_NODE* find(Vec3i idx);
+    int findRow(Vec3i idx) const;
 
     inline int getPos(Vec3i idx, int bufferNum) const
     {
@@ -97,7 +96,6 @@ public:
         return seed;
     }
 };
-
 
 
 }  // namespace kinfu
