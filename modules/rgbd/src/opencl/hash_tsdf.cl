@@ -24,7 +24,7 @@ struct Volume_NODE
     int32_t row;
     int32_t nextVolumeRow;
     int32_t dummy;
-    int32_t lastVisibleIndex;
+    int32_t dummy2;
 };
 
 static inline TsdfType floatToTsdf(float num)

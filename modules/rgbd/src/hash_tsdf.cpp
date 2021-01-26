@@ -1282,10 +1282,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
         *poses.ptr<cv::Matx44f>(row, 0) = subvolumePose;
         *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
-        
         *isActiveFlags.ptr<uchar>(row, 0) = 1;
-
-        node->lastVisibleIndex = frameId;
 
         volUnitsData.row(row).forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int*)
         {
@@ -1338,7 +1335,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
                 assert(row >= 0 || row < lastVolIndex);
                 *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
                 *isActiveFlags.ptr<uchar>(row, 0) = 1;
-                node->lastVisibleIndex = frameId;
             }
         }
     };

@@ -384,8 +384,6 @@ VolumesTable::VolumesTable() : bufferNums(1), indexes(), indexesGPU()
         v->idx = nan4;
         v->row = -1;
         v->nextVolumeRow = -1;
-        v->lastVisibleIndex = -1;
-        //v.tmp = i;
     }
 }
 
@@ -398,8 +396,10 @@ const VolumesTable& VolumesTable::operator=(const VolumesTable& vt)
     return *this;
 }
 
-Volume_NODE* VolumesTable::insert(Vec3i idx, int row, int lastVisibleIndex)
+Volume_NODE* VolumesTable::insert(Vec3i idx, int row)
 {
+    CV_Assert(row >= 0);
+
     int bufferNum = 0;
     int hash = int(calc_hash(idx) % hash_divisor);
     int start = getPos(idx, bufferNum);
@@ -430,7 +430,6 @@ Volume_NODE* VolumesTable::insert(Vec3i idx, int row, int lastVisibleIndex)
 
             v->idx = idx4;
             v->row = row;
-            v->lastVisibleIndex = lastVisibleIndex;
 
             indexes.push_back(idx);
             indexesGPU.push_back(idx4);
