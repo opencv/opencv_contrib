@@ -118,6 +118,8 @@ reconstruct(const std::vector<String> images, OutputArray Ps, OutputArray points
   @param points3d Output array with estimated 3d points.
   @param K Input/Output camera matrix \f$K = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$. Input parameters used as initial guess.
   @param is_projective if true, the cameras are supposed to be projective.
+  @param refinement if true , optimize all parameters the cameras are supposed to be projective.
+  @param valRefinement if refinement is true, value can be SFM_REFINE_FOCAL_LENGTH | SFM_REFINE_PRINCIPAL_POINT | SFM_REFINE_RADIAL_DISTORTION_K1 | SFM_REFINE_RADIAL_DISTORTION_K2.
 
   Internally calls libmv simple pipeline routine with some default parameters by instatiating SFMLibmvEuclideanReconstruction class.
 
@@ -129,7 +131,7 @@ reconstruct(const std::vector<String> images, OutputArray Ps, OutputArray points
 CV_EXPORTS
 void
 reconstruct(const std::vector<String> images, OutputArray Rs, OutputArray Ts,
-            InputOutputArray K, OutputArray points3d, bool is_projective = false);
+            InputOutputArray K, OutputArray points3d, bool is_projective = false, bool refinement = true, int valRefinement=0);
 
 #endif /* CV_DOXYGEN || CERES_FOUND */
 

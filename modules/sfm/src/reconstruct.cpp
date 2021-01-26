@@ -56,7 +56,7 @@ namespace sfm
 
   template<class T>
   void
-  reconstruct_(const T &input, OutputArray Rs, OutputArray Ts, InputOutputArray K, OutputArray points3d, const bool refinement=true)
+  reconstruct_(const T &input, OutputArray Rs, OutputArray Ts, InputOutputArray K, OutputArray points3d, const bool refinement=true, int valRefinement=0)
   {
     // Initial reconstruction
     const int keyframe1 = 1, keyframe2 = 2;
@@ -64,8 +64,8 @@ namespace sfm
     const int verbosity_level = -1; // mute libmv logs
 
     // Refinement parameters
-    const int refine_intrinsics = ( !refinement ) ? 0 :
-        SFM_REFINE_FOCAL_LENGTH | SFM_REFINE_PRINCIPAL_POINT | SFM_REFINE_RADIAL_DISTORTION_K1 | SFM_REFINE_RADIAL_DISTORTION_K2;
+    const int refine_intrinsics = (!refinement) ? 0 : valRefinement;
+//        SFM_REFINE_FOCAL_LENGTH | SFM_REFINE_PRINCIPAL_POINT | SFM_REFINE_RADIAL_DISTORTION_K1 | SFM_REFINE_RADIAL_DISTORTION_K2;
 
     // Camera data
     Matx33d Ka = K.getMat();
@@ -235,7 +235,7 @@ namespace sfm
 
   void
   reconstruct(const std::vector<cv::String> images, OutputArray Rs, OutputArray Ts,
-              InputOutputArray K, OutputArray points3d, bool is_projective)
+              InputOutputArray K, OutputArray points3d, bool is_projective, bool refinement, int valRefinement)
   {
     const int nviews = static_cast<int>(images.size());
     CV_Assert( nviews >= 2 );
@@ -244,7 +244,7 @@ namespace sfm
 
     if ( is_projective )
     {
-      reconstruct_(images, Rs, Ts, K, points3d);
+      reconstruct_(images, Rs, Ts, K, points3d, refinement, valRefinement);
     }
 
 

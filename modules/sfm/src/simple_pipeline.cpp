@@ -124,7 +124,7 @@ std::shared_ptr<libmv_Reconstruction> libmv_solveReconstructionImpl(
   const libmv_CameraIntrinsicsOptions* libmv_camera_intrinsics_options,
   libmv_ReconstructionOptions* libmv_reconstruction_options)
 {
-  Ptr<Feature2D> edetector = ORB::create(10000);
+  Ptr<Feature2D> edetector = ORB::create(libmv_reconstruction_options->nb_descriptors);
   Ptr<Feature2D> edescriber = xfeatures2d::DAISY::create();
   //Ptr<Feature2D> edescriber = xfeatures2d::LATCH::create(64, true, 4);
   std::vector<std::string> sImages;

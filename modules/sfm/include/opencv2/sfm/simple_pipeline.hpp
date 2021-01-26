@@ -93,13 +93,13 @@ public:
       polynomial_k1(_polynomial_k1),
       polynomial_k2(_polynomial_k2),
       polynomial_k3(_polynomial_k3),
-      division_k1(_polynomial_p1),
-      division_k2(_polynomial_p2)
+      polynomial_p1(_polynomial_p1),
+      polynomial_p2(_polynomial_p2)
   {
     if ( _distortion_model == SFM_DISTORTION_MODEL_DIVISION )
     {
-      division_k1 = _polynomial_k1;
-      division_k2 = _polynomial_k2;
+      division_k1 = polynomial_k1;
+      division_k2 = polynomial_k2;
     }
   }
 
@@ -143,16 +143,19 @@ public:
                               const int _keyframe2=2,
                               const int _refine_intrinsics=1,
                               const int _select_keyframes=1,
-                              const int _verbosity_level=-1)
+                              const int _verbosity_level=-1,
+                              const int _nb_descriptors=10000)
     : keyframe1(_keyframe1), keyframe2(_keyframe2),
       refine_intrinsics(_refine_intrinsics),
       select_keyframes(_select_keyframes),
-      verbosity_level(_verbosity_level) {}
+      verbosity_level(_verbosity_level),
+      nb_descriptors(_nb_descriptors){}
 
   CV_PROP_RW int keyframe1, keyframe2;
   CV_PROP_RW int refine_intrinsics;
   CV_PROP_RW int select_keyframes;
   CV_PROP_RW int verbosity_level;
+  CV_PROP_RW int nb_descriptors;
 };
 
 

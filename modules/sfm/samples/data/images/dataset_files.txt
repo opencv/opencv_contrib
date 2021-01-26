@@ -1,4 +1,4 @@
-resized_IMG_2889.jpg
-resized_IMG_2890.jpg
-resized_IMG_2891.jpg
-resized_IMG_2892.jpg
+G:\Lib\opencv_contrib\modules\sfm\samples\data\images\resized_IMG_2889.jpg
+G:\Lib\opencv_contrib\modules\sfm\samples\data\images\resized_IMG_2890.jpg
+G:\Lib\opencv_contrib\modules\sfm\samples\data\images\resized_IMG_2891.jpg
+G:\Lib\opencv_contrib\modules\sfm\samples\data\images\resized_IMG_2892.jpg
