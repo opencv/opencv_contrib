@@ -6,9 +6,6 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/barcode.hpp"
-
-namespace opencv_test {
-using namespace cv::barcode;
-}
+#include "utils.hpp"
 
 #endif

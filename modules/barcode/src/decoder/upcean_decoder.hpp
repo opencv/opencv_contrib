@@ -26,9 +26,9 @@ class UPCEANDecoder : public AbsDecoder
 public:
     ~UPCEANDecoder() override = default;
 
-    std::vector<Result> decodeImg(Mat &mat, const std::vector<std::vector<Point2f>> &pointsArrays) const override;
+    std::vector<Result> decodeImg(InputArray bar_img, const std::vector<std::vector<Point2f>> &pointsArrays) const override;
 
-    Result decodeImg(const Mat &gray, const std::vector<Point2f> &points) const override;
+    Result decodeImg(InputArray bar_img, const std::vector<Point2f> &points) const override;
 
     Result decodeImg(InputArray img) const override;
 
@@ -45,16 +45,19 @@ protected:
 
     static bool findStartGuardPatterns(const std::vector<uchar> &row, std::pair<int, int> &start_range);
 
-    Result rectToResult(const Mat &gray, const std::vector<Point2f> &points, int PART, int directly) const;
+    std::pair<Result, float> rectToResult(const Mat &bar_img, const std::vector<Point2f> &points, int PART) const;
 
     Result decodeLine(const Mat &bar_img, const Point2i &begin, const Point2i &end) const;
 
     void
-    linesFromRect(const Size2i &shape, int angle, int PART, std::vector<std::pair<Point2i, Point2i>> &results) const;
+    linesFromRect(const Size2i &shape, bool horizontal, int PART, std::vector<std::pair<Point2i, Point2i>> &results) const;
 
     Result decode(std::vector<uchar> bar, uint start) const override = 0;
 
     bool isValid(std::string result) const override = 0;
+
+private:
+    void drawDebugLine(Mat& debug_img, Point2i begin, Point2i end) const;
 };
 
 const std::vector<std::vector<int>> &get_A_or_C_Patterns();

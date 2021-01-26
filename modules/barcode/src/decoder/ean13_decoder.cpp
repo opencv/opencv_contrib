@@ -12,6 +12,7 @@ namespace barcode {
 
 static constexpr size_t constexpr_bitsNum = 95;
 static constexpr size_t constexpr_digitNumber = 13;
+// default thought that mat is a matrix after binary-transfer.
 /**
 * decode EAN-13
 * @prama: data: the input array,
@@ -71,7 +72,6 @@ Result Ean13Decoder::decode(vector<uchar> data, uint start) const
     if (!findGuardPatterns(data, start, false, BEGIN_PATTERN(), vector<int>(BEGIN_PATTERN().size()), pattern))
     {
         return Result("End Pattern Not Found", BarcodeType::NONE);
-
     }
     result = string(decode_result);
     if (!isValid(result))

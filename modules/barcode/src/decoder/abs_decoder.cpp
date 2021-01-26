@@ -8,7 +8,7 @@
 namespace cv {
 namespace barcode {
 
-void cutImage(InputArray _src, OutputArray &_dst, const std::vector<Point2f> &rects)
+void cutImage(Mat src, Mat & dst, const std::vector<Point2f> &rects)
 {
     std::vector<Point2f> vertices = rects;
     int height = cvRound(norm(vertices[0] - vertices[1]));
@@ -23,10 +23,9 @@ void cutImage(InputArray _src, OutputArray &_dst, const std::vector<Point2f> &re
     std::vector<Point2f> dst_vertices{
             Point2f(0, (float) (height - 1)), Point2f(0, 0), Point2f((float) (width - 1), 0),
             Point2f((float) (width - 1), (float) (height - 1))};
-    _dst.create(Size(width, height), CV_8UC1);
+    dst.create(Size(width, height), CV_8UC1);
     Mat M = getPerspectiveTransform(vertices, dst_vertices);
-    Mat dst = _dst.getMat();
-    warpPerspective(_src.getMat(), dst, M, _dst.size(), cv::INTER_LINEAR, BORDER_CONSTANT, Scalar(255));
+    warpPerspective(src, dst, M, dst.size(), cv::INTER_LINEAR, BORDER_CONSTANT, Scalar(255));
 }
 
 void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &counters)
@@ -36,7 +35,6 @@ void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &co
     size_t end = row.size();
     if (start >= end)
     {
-        // TODO throw NotFoundException.getNotFoundInstance();
     }
     uchar isWhite = row[start];
     uint counterPosition = 0;
@@ -63,7 +61,6 @@ void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &co
     }
     if (!(counterPosition == counter_length || (counterPosition == counter_length - 1 && start == end)))
     {
-        // throw a error or any others
     }
 }
 
@@ -102,22 +99,21 @@ patternMatchVariance(std::vector<int> counters, const std::vector<int> &pattern,
 }
 
 /**
- * Determines how closely a set of observed counts of runs of black/white values matches a given
- * target pattern. This is reported as the ratio of the total variance from the expected pattern
- * proportions across all pattern elements, to the length of the pattern.
- *
- * @param counters observed counters
- * @param pattern expected pattern
- * @param maxIndividualVariance The most any counter can differ before we give up
- * @return ratio of total variance between counters and pattern compared to total pattern size,
- *  where the ratio has been multiplied by 256. So, 0 means no variance (perfect match); 256 means
- *  the total variance between counters and patterns equals the pattern length, higher values mean
- *  even more variance
- */
+* Determines how closely a set of observed counts of runs of black/white values matches a given
+* target pattern. This is reported as the ratio of the total variance from the expected pattern
+* proportions across all pattern elements, to the length of the pattern.
+*
+* @param counters observed counters
+* @param pattern expected pattern
+* @param maxIndividualVariance The most any counter can differ before we give up
+* @return ratio of total variance between counters and pattern compared to total pattern size,
+*  where the ratio has been multiplied by 256. So, 0 means no variance (perfect match); 256 means
+*  the total variance between counters and patterns equals the pattern length, higher values mean
+*  even more variance
+*/
 int patternMatch(std::vector<int> counters, const std::vector<int> &pattern, uint maxIndividual)
 {
     CV_Assert(counters.size() == pattern.size());
-    //return patternMatchConsieDistance(std::move(counters), pattern, maxIndividual);
     return patternMatchVariance(std::move(counters), pattern, maxIndividual);
 }
 }

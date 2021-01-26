@@ -55,10 +55,6 @@ bool BarDecode::decodeMultiplyProcess()
             {
                 Mat bar_img;
                 cutImage(gray, bar_img, src_points[i]);
-                if (bar_img.cols < 500)
-                {
-                    resize(bar_img, bar_img, Size(500, bar_img.rows));
-                }
                 decoded_info[i] = decoder[i]->decodeImg(bar_img, src_points[i]);
             }
         }

@@ -36,9 +36,9 @@ struct Result
 class AbsDecoder
 {
 public:
-    virtual std::vector<Result> decodeImg(Mat &mat, const std::vector<std::vector<Point2f>> &pointsArrays) const = 0;
+    virtual std::vector<Result> decodeImg(InputArray bar_img, const std::vector<std::vector<Point2f>> &pointsArrays) const = 0;
 
-    virtual Result decodeImg(const Mat &gray, const std::vector<Point2f> &points) const = 0;
+    virtual Result decodeImg(InputArray bar_img, const std::vector<Point2f> &points) const = 0;
 
     virtual Result decodeImg(InputArray img) const = 0;
 
@@ -50,7 +50,7 @@ protected:
     virtual bool isValid(string result) const = 0;
 };
 
-void cutImage(InputArray _src, OutputArray &_dst, const std::vector<Point2f> &rect);
+void cutImage(Mat _src, Mat &_dst, const std::vector<Point2f> &rect);
 
 void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &counters);
 
