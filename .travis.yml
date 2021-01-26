@@ -17,3 +17,4 @@ script:
   - make -j5
 notifications:
   email: false
+
