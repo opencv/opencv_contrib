@@ -543,11 +543,9 @@ __kernel void raycast(
         float3 currRayPos = orig + tcurr * dir;
 
         // VolumeToVolumeUnitIdx()
-        int3 currVolumeUnitIdx = (int3) (
-        floor (currRayPos.x / volumeUnitSize),
-        floor (currRayPos.y / volumeUnitSize),
-        floor (currRayPos.z / volumeUnitSize) );
-        
+        float3 currVolUnitIdxF = floor(currRayPos / volumeUnitSize);
+        int3 currVolumeUnitIdx = convert_int3(currVolUnitIdxF);
+
         int row = findRow(hash_table, currVolumeUnitIdx, list_size, bufferNums, hash_divisor);
         float currTsdf = prevTsdf;
         int currWeight = 0;
@@ -556,20 +554,7 @@ __kernel void raycast(
 
         if (row >= 0)
         {
-            //TsdfVoxel currVoxel
-            // VolumeUnitIdxToVolume()
-            float3 currVolUnitPos = (float3) 
-            (( (float) (currVolumeUnitIdx.s0) * volumeUnitSize), 
-             ( (float) (currVolumeUnitIdx.s1) * volumeUnitSize), 
-             ( (float) (currVolumeUnitIdx.s2) * volumeUnitSize) );
-            
-            // VolumeToVoxelCoord()
-            float3 pos = currRayPos - currVolUnitPos;
-            volUnitLocalIdx = (int3)
-            (( floor ( (float) (pos.s0) * voxelSizeInv) ), 
-             ( floor ( (float) (pos.s1) * voxelSizeInv) ), 
-             ( floor ( (float) (pos.s2) * voxelSizeInv) ) );
-
+            volUnitLocalIdx = convert_int3(currRayPos*voxelSizeInv - currVolUnitIdxF*(float)volumeUnitResolution);
             struct TsdfVoxel currVoxel  = at(volUnitLocalIdx, row, volumeUnitResolution, volStrides, allVolumePtr, table_offset);
 
             currTsdf = tsdfToFloat(currVoxel.tsdf);
