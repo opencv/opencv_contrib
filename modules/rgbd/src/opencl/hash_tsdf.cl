@@ -268,8 +268,9 @@ __kernel void integrateAllVolumeUnits(
 
     if (isActive)
     {
+        int volCubed = volUnitResolution * volUnitResolution * volUnitResolution;
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
-                                                (allVolumePtr + table_offset + (row) * 16*16*16);
+                                                (allVolumePtr + table_offset + (row) * volCubed);
         __global const float * p_vol2camMatrix = (__global const float *)
                                                  (allVol2camMatrix + val2cam_offset + (row) * 16);
         
@@ -310,8 +311,9 @@ static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitResolution,
         return dummy;
     }
 
+    int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
-                                          (allVolumePtr + table_offset + row * 16*16*16);
+                                          (allVolumePtr + table_offset + row * volCubed);
     int3 ismul = volumeIdx * volStrides;
     int coordBase = ismul.x + ismul.y + ismul.z;
     return volData[coordBase];
@@ -333,8 +335,9 @@ static struct TsdfVoxel atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row
     }
 
     int3 volUnitLocalIdx = volumeIdx - volumeUnitIdx * volumeUnitResolution;
+    int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
-                                          (allVolumePtr + table_offset + row * 16*16*16);
+                                          (allVolumePtr + table_offset + row * volCubed);
     int3 ismul = volUnitLocalIdx * volStrides;
     int coordBase = ismul.x + ismul.y + ismul.z;
     return volData[coordBase];
