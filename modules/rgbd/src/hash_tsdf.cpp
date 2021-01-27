@@ -964,6 +964,8 @@ public:
 
     cv::UMat pixNorms;
     int lastVolIndex;
+
+    //TODO: move indexes.volumes to GPU
     VolumesTable indexes;
     Vec8i neighbourCoords;
 };
@@ -1157,13 +1159,14 @@ std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(Depth depth, fl
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
     const Point3f truncPt(truncDist, truncDist, truncDist);
     Mutex mutex;
-    Range allocateRange(0, depth.rows);
+    
+    // -----------------------
 
-    auto fillLocalAcessVolUnits = [&](const Range& range, _VolumeUnitIndexSet& _localAccessVolUnits, int& loc_vol_idx) {
-        for (int y = range.start; y < range.end; y += depthStride)
+    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, _VolumeUnitIndexSet& _localAccessVolUnits, int& loc_vol_idx) {
+        for (int y = yrange.start; y < yrange.end; y += depthStride)
         {
             const depthType* depthRow = depth[y];
-            for (int x = 0; x < depth.cols; x += depthStride)
+            for (int x = xrange.start; x < xrange.end; x += depthStride)
             {
                 depthType z = depthRow[x] * invDepthFactor;
                 if (z <= 0 || z > this->truncateThreshold)
@@ -1180,14 +1183,20 @@ std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(Depth depth, fl
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
 
-                            if (!find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
+                            if (indexes.findRow(tsdf_idx) < 0)
                             {
-                                *_localAccessVolUnits.ptr<Vec3i>(loc_vol_idx) = tsdf_idx;
-                                loc_vol_idx++;
-
-                                if (loc_vol_idx >= localCapacity)
+                                if (!find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
                                 {
-                                    return;
+                                    *_localAccessVolUnits.ptr<Vec3i>(loc_vol_idx) = tsdf_idx;
+                                    loc_vol_idx++;
+
+                                    if (loc_vol_idx >= localCapacity)
+                                    {
+                                        //DEBUG
+                                        std::cout << "allocate: local capacity exhausted" << std::endl;
+
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -1195,29 +1204,49 @@ std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(Depth depth, fl
         }
     };
 
-    auto AllocateVolumeUnitsInvoker = [&](const Range& range) {
-        _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(localCapacity, 1, CV_32SC3);
-        int loc_vol_idx = 0;
+    Rect dim(0, 0, depth.cols, depth.rows);
+    Size gsz(64, 64);
+    Size gg(divUp(dim.width, gsz.width), divUp(dim.height, gsz.height));
 
-        fillLocalAcessVolUnits(range, _localAccessVolUnits, loc_vol_idx);
+    auto allocateLambda = [&](const Range& r) {
 
-        mutex.lock();
-        for (int i = 0; i < loc_vol_idx; i++)
+    for (int yg = r.start; yg < r.end; yg++)
+    {
+        for (int xg = 0; xg < gg.width; xg++)
         {
-            Vec3i idx = *_localAccessVolUnits.ptr<Vec3i>(i);
+            Rect gr(xg * gsz.width, yg * gsz.height, (xg + 1) * gsz.width, (yg + 1) * gsz.height);
+            gr = gr & dim;
+            Range xr(gr.tl().x, gr.br().x), yr(gr.tl().y, gr.br().y);
 
-            // if not found
-            if (indexes.findRow(idx) < 0)
+            _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(localCapacity, 1, CV_32SC3);
+            int loc_vol_idx = 0;
+
+            fillLocalAcessVolUnits(xr, yr, _localAccessVolUnits, loc_vol_idx);
+
+            mutex.lock();
+            for (int i = 0; i < loc_vol_idx; i++)
             {
-                Volume_NODE* node = indexes.insert(idx, lastVolIndex);
-                nodePtrs.push_back(node);
-                lastVolIndex++;
+                Vec3i idx = *_localAccessVolUnits.ptr<Vec3i>(i);
+
+                // if not found
+                if (indexes.findRow(idx) < 0)
+                {
+                    Volume_NODE* node = indexes.insert(idx, lastVolIndex);
+                    nodePtrs.push_back(node);
+                    lastVolIndex++;
+                }
             }
+            mutex.unlock();
         }
-        mutex.unlock();
+    }
+
     };
 
-    parallel_for_(allocateRange, AllocateVolumeUnitsInvoker);
+    parallel_for_(Range(0, gg.height), allocateLambda);
+    //allocateLambda(Range(0, gg.height));
+
+
+    // ---------------------
 
     return nodePtrs;
 }
