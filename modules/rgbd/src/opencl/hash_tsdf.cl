@@ -340,17 +340,11 @@ static struct TsdfVoxel atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row
     return volData[coordBase];
 }
 
-inline float interpolate(float tx, float ty, float tz, float vx[8])
+inline float interpolate(float3 t, float8 vz)
 {
-    float v00 = vx[0] + tz * (vx[1] - vx[0]);
-    float v01 = vx[2] + tz * (vx[3] - vx[2]);
-    float v10 = vx[4] + tz * (vx[5] - vx[4]);
-    float v11 = vx[6] + tz * (vx[7] - vx[6]);
-
-    float v0 = v00 + ty * (v01 - v00);
-    float v1 = v10 + ty * (v11 - v10);
-
-    return v0 + tx * (v1 - v0);
+    float4 vy = mix(vz.s0246, vz.s1357, t.z);
+    float2 vx = mix(vy.s02, vy.s13, t.y);
+    return mix(vx.s0, vx.s1, t.x);
 }
 
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
@@ -421,9 +415,11 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
-    normal.s0 = vals[0 * 2] - vals[0 * 2 + 1];
-    normal.s1 = vals[1 * 2] - vals[1 * 2 + 1];
-    normal.s2 = vals[2 * 2] - vals[2 * 2 + 1];
+    float3 pv, nv;
+
+    pv = (float3)(vals[0*2  ], vals[1*2  ], vals[2*2  ]);
+    nv = (float3)(vals[0*2+1], vals[1*2+1], vals[2*2+1]);
+    normal = pv - nv;
 #else
 
     float cxv[8], cyv[8], czv[8];
@@ -441,24 +437,28 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     const int idxzp[8] = { 24,  0, 25,  2, 26,  4, 27,  6 };
     const int idxzn[8] = { 1, 28,  3, 29,  5, 30,  7, 31 };
 
+    float vcxp[8], vcxn[8];
+    float vcyp[8], vcyn[8];
+    float vczp[8], vczn[8];
+
     for (int i = 0; i < 8; i++)
     {
-        cxv[i] = vals[idxxn[i]] - vals[idxxp[i]];
-        cyv[i] = vals[idxyn[i]] - vals[idxyp[i]];
-        czv[i] = vals[idxzn[i]] - vals[idxzp[i]];
+        vcxp[i] = vals[idxxp[i]]; vcxn[i] = vals[idxxn[i]];
+        vcyp[i] = vals[idxyp[i]]; vcyn[i] = vals[idxyn[i]];
+        vczp[i] = vals[idxzp[i]]; vczn[i] = vals[idxzn[i]];
     }
 
-    float tx = ptVox.x - iptVox.x;
-    float ty = ptVox.y - iptVox.y;
-    float tz = ptVox.z - iptVox.z;
+    float8 cxp = vload8(0, vcxp), cxn = vload8(0, vcxn);
+    float8 cyp = vload8(0, vcyp), cyn = vload8(0, vcyn);
+    float8 czp = vload8(0, vczp), czn = vload8(0, vczn);
+    float8 cx = cxn - cxp;
+    float8 cy = cyn - cyp;
+    float8 cz = czn - czp;
 
-    normal.s0 = interpolate(tx, ty, tz, cxv);
-    normal.s1 = interpolate(tx, ty, tz, cyv);
-    normal.s2 = interpolate(tx, ty, tz, czv);
-    
-    //if(!any(isnan(normal)))
-    //    printf("%f, %f, %f" ,normal.s0, normal.s1, normal.s2);
-
+    float3 tv = ptVox - convert_float3(iptVox);
+    normal.x = interpolate(tv, cx);
+    normal.y = interpolate(tv, cy);
+    normal.z = interpolate(tv, cz);
 #endif
 
     float norm = sqrt(dot(normal, normal));
