@@ -13,6 +13,7 @@ before_script:
     -DBUILD_TESTS=OFF 
     -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules 
     ../opencv
+    
 script:
   - make -j5
 notifications:
