@@ -1636,17 +1636,12 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     Matx44f cam2volRotGPU = cam2vol.matrix;
     Matx44f vol2camRotGPU = vol2cam.matrix;
 
-    Mat _tmp;
-    volUnitsData.copyTo(_tmp);
-    UMat U_volUnitsData = _tmp.getUMat(ACCESS_RW);
-    _tmp.release();
-
     UMat volPoseGpu, invPoseGpu;
     Mat(pose.matrix).copyTo(volPoseGpu);
     Mat(pose.inv().matrix).copyTo(invPoseGpu);
 
     k.args(
-        ocl::KernelArg::PtrReadWrite(indexes.volumes.getUMat(ACCESS_RW)),
+        ocl::KernelArg::PtrReadOnly(indexes.volumes.getUMat(ACCESS_RW)),
         (int)indexes.list_size,
         (int)indexes.bufferNums,
         (int)indexes.hash_divisor,
@@ -1654,7 +1649,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         ocl::KernelArg::WriteOnlyNoSize(points),
         ocl::KernelArg::WriteOnlyNoSize(normals),
         frameSize,
-        ocl::KernelArg::ReadWrite(U_volUnitsData),
+        ocl::KernelArg::ReadOnly(volUnitsData),
         cam2volTransGPU,
         cam2volRotGPU,
         vol2camRotGPU,

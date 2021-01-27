@@ -475,7 +475,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 typedef float4 ptype;
 
 __kernel void raycast(
-                    __global struct Volume_NODE * hash_table,
+                    __global const struct Volume_NODE * hash_table,
                     const int list_size, 
                     const int bufferNums, 
                     const int hash_divisor,
@@ -485,7 +485,7 @@ __kernel void raycast(
                     __global char * normalsptr,
                       int normals_step, int normals_offset,
                     const int2 frameSize,
-                    __global struct TsdfVoxel * allVolumePtr,
+                    __global const struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
                     float4  cam2volTransGPU,
