@@ -354,7 +354,6 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, int indx) co
 }
 
 inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
-
 {
     Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution),
                                 cvFloor(volumeIdx[1] / volumeUnitResolution),
@@ -432,8 +431,6 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
     int coordBase = volUnitLocalIdx[0] * volStrides[0] + volUnitLocalIdx[1] * volStrides[1] + volUnitLocalIdx[2] * volStrides[2];
     return volData[coordBase];
 }
-
-
 
 #if USE_INTRINSICS
 inline float interpolate(float tx, float ty, float tz, float vx[8])
@@ -708,7 +705,6 @@ void HashTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                 cv::Vec3i prevVolumeUnitIdx =
                     cv::Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(),
                         std::numeric_limits<int>::min());
-
 
                 float tprev = tcurr;
                 float prevTsdf = volume.truncDist;
@@ -1111,7 +1107,6 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
     float dfac = 1.f / depthFactor;
-    Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
     Mat _tmp;
@@ -1126,7 +1121,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
            ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
            ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
            voxelSize,
-           volResGpu.val,
+           volumeUnitResolution,
            volStrides.val,
            fxy.val,
            cxy.val,
@@ -1719,7 +1714,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             volumeUnitSize - voxelSize);
 
         float tstep = truncDist * raycastStepFactor;
-        Vec4i volResGpu(volumeUnitResolution, volumeUnitResolution, volumeUnitResolution);
 
         const HashTSDFVolumeGPU& volume(*this);
         const Affine3f cam2vol(volume.pose.inv() * Affine3f(cameraPose));
@@ -1760,9 +1754,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
             boxMin.val, boxMax.val,
             tstep,
             voxelSize,
-            volResGpu.val,
-            volStrides.val,
-            neighbourCoords.val,
             voxelSizeInv,
             volumeUnitSize,
             volume.truncDist,

@@ -91,7 +91,7 @@ static void integrateVolumeUnit(
                         const float16 vol2camMatrix,
                         const float voxelSize,
                         const int4 volResolution4,
-                        const int4 volDims4,
+                        const int4 volStrides4,
                         const float2 fxy,
                         const float2 cxy,
                         const float dfac,
@@ -105,7 +105,7 @@ static void integrateVolumeUnit(
         return;
 
     // coord-independent constants
-    const int3 volDims = volDims4.xyz;
+    const int3 volStrides = volStrides4.xyz;
     const float2 limits = (float2)(depth_cols-1, depth_rows-1);
 
     const float4 vol2cam0 = vol2camMatrix.s0123;
@@ -125,7 +125,7 @@ static void integrateVolumeUnit(
     // zStep == vol2cam*(float3(x, y, 1)*voxelSize) - basePt;
     float3 zStep = ((float3)(vol2cam0.z, vol2cam1.z, vol2cam2.z))*voxelSize;
 
-    int volYidx = x*volDims.x + y*volDims.y;
+    int volYidx = x*volStrides.x + y*volStrides.y;
 
     int startZ, endZ;
     if(fabs(zStep.z) > 1e-5)
@@ -215,7 +215,7 @@ static void integrateVolumeUnit(
         if(sdf >= -truncDist)
         {
             float tsdf = fmin(1.0f, sdf * truncDistInv);
-            int volIdx = volYidx + z*volDims.z;
+            int volIdx = volYidx + z*volStrides.z;
 
             struct TsdfVoxel voxel = volumeptr[volIdx];
             float value  = tsdfToFloat(voxel.tsdf);
@@ -250,8 +250,8 @@ __kernel void integrateAllVolumeUnits(
                         int isActiveFlagsStep, int isActiveFlagsOffset,
                         int isActiveFlagsRows, int isActiveFlagsCols,
                         const float voxelSize,
-                        const int4 volResolution4,
-                        const int4 volDims4,
+                        const int volUnitResolution,
+                        const int4 volStrides4,
                         const float2 fxy,
                         const float2 cxy,
                         const float dfac,
@@ -263,6 +263,11 @@ __kernel void integrateAllVolumeUnits(
     int j = get_global_id(1);
     int row = get_global_id(2);
     int4 idx = volumeUnitIndices[row];
+
+    const int4 volResolution4 = (int4)(volUnitResolution,
+                                       volUnitResolution,
+                                       volUnitResolution,
+                                       volUnitResolution);
 
     int isActive = (__global const uchar*)(isActiveFlagsPtr + isActiveFlagsOffset + (row));
 
@@ -286,7 +291,7 @@ __kernel void integrateAllVolumeUnits(
             vol2camMatrix,
             voxelSize,
             volResolution4,
-            volDims4,
+            volStrides4,
             fxy,
             cxy,
             dfac,
@@ -351,7 +356,7 @@ inline float interpolate(float3 t, float8 vz)
 }
 
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
-                             int3 volResolution,
+                             int volumeUnitResolution,
                              float voxelSizeInv,
                              __global struct Volume_NODE * hash_table,
                              const int list_size,
@@ -359,7 +364,6 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
                              const int hash_divisor,
                              int3 volStrides, int table_offset)
 {
-    
     float3 normal = (float3) (0.0f, 0.0f, 0.0f);
     float3 ptVox = p * voxelSizeInv;
     int3 iptVox = convert_int3(floor(ptVox));
@@ -401,7 +405,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 
         // VoxelToVolumeUnitIdx() 
         // TODO: add assertion - if (!(vuRes & (vuRes - 1)))
-        int3 volumeUnitIdx = convert_int3(floor(convert_float3(pt.s012) / convert_float3(volResolution.s012)));
+        int3 volumeUnitIdx = convert_int3(floor(convert_float3(pt.s012) / (float)(volumeUnitResolution)));
 
         int3 vand = (volumeUnitIdx & 1);
         int dictIdx = vand.s0 + vand.s1 * 2 + vand.s2 * 4;
@@ -413,7 +417,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
             iterMap[dictIdx] = it;
         }
 
-        struct TsdfVoxel tmp = atVolumeUnit(pt, volumeUnitIdx, it, volResolution.s0, volStrides, allVolumePtr, table_offset);
+        struct TsdfVoxel tmp = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnitResolution, volStrides, allVolumePtr, table_offset);
         vals[i] = tsdfToFloat( tmp.tsdf );
     }
 
@@ -492,10 +496,7 @@ __kernel void raycast(
                     const float4 boxDown4, const float4 boxUp4,
                     const float tstep,
                     const float voxelSize,
-                    const int4 volResolution4,
-                    const int4 volDims4,
-                    const int8 neighbourCoords,
-                    float voxelSizeInv,
+                    const float voxelSizeInv,
                     float volumeUnitSize,
                     float truncDist,
                     int volumeUnitResolution,
@@ -581,10 +582,8 @@ __kernel void raycast(
             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
-                int3 volResolution = (int3) (volResolution4.s0, volResolution4.s1, volResolution4.s2);
-
                 float3 pv = orig + tInterp * dir;
-                float3 nv = getNormalVoxel( pv, allVolumePtr, volResolution,
+                float3 nv = getNormalVoxel( pv, allVolumePtr, volumeUnitResolution,
                                             voxelSizeInv, hash_table,
                                             list_size, bufferNums, hash_divisor,
                                             volStrides, table_offset);
