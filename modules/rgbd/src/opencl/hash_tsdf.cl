@@ -62,7 +62,7 @@ static uint calc_hash(int3 x)
 }
 
 
-static int findRow(__global struct Volume_NODE * hash_table, int3 indx,
+static int findRow(__global const struct Volume_NODE * hash_table, int3 indx,
                    int list_size, int bufferNums, int hash_divisor)
 {
     int bufferNum = 0;
@@ -269,7 +269,7 @@ __kernel void integrateAllVolumeUnits(
                                        volUnitResolution,
                                        volUnitResolution);
 
-    int isActive = (__global const uchar*)(isActiveFlagsPtr + isActiveFlagsOffset + (row));
+    int isActive = *(__global const uchar*)(isActiveFlagsPtr + isActiveFlagsOffset + row);
 
     if (isActive)
     {
@@ -301,8 +301,9 @@ __kernel void integrateAllVolumeUnits(
     }
 }
 
+
 static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitResolution,
-                           int3 volStrides, __global struct TsdfVoxel * allVolumePtr, int table_offset)
+                           int3 volStrides, __global const struct TsdfVoxel * allVolumePtr, int table_offset)
 
 {
     //! Out of bounds
