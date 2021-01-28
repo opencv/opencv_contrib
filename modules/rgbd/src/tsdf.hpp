@@ -23,6 +23,9 @@ typedef uchar WeightType;
 
 struct TsdfVoxel
 {
+    TsdfVoxel(TsdfType _tsdf, WeightType _weight) :
+        tsdf(_tsdf), weight(_weight)
+    { }
     TsdfType tsdf;
     WeightType weight;
 };

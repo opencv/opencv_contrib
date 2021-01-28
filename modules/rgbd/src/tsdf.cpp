@@ -102,10 +102,7 @@ TsdfVoxel TSDFVolumeCPU::at(const Vec3i& volumeIdx) const
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
-        TsdfVoxel dummy;
-        dummy.tsdf   = floatToTsdf(1.0f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
 
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();

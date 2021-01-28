@@ -341,10 +341,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, int indx) co
         (volumeIdx[1] >= volumeUnitResolution || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0))
     {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.0f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
 
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(indx);
@@ -363,10 +360,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 
     if (it == volumeUnits.end())
     {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
 
     cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
@@ -386,10 +380,7 @@ TsdfVoxel HashTSDFVolumeCPU::at(const Point3f& point) const
 
     if (it == volumeUnits.end())
     {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
 
     cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
@@ -419,10 +410,7 @@ TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volum
 {
     if (it == volumeUnits.end())
     {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
     Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
 
@@ -713,7 +701,6 @@ void HashTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
                 {
                     Point3f currRayPos = orig + tcurr * rayDirV;
                     cv::Vec3i currVolumeUnitIdx = volume.volumeToVolumeUnitIdx(currRayPos);
-
 
                     VolumeUnitIndexes::const_iterator it = volume.volumeUnits.find(currVolumeUnitIdx);
 
@@ -1297,11 +1284,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         *isActiveFlags.ptr<uchar>(row, 0) = 1;
         *volumeUnitIndices.ptr<Vec4i>(row, 0) = idx4;
     }
-    if (oldLastVolIndex > lastVolIndex)
+    if (oldLastVolIndex < lastVolIndex)
     {
-        TsdfVoxel emptyVoxel;
-        emptyVoxel.tsdf = floatToTsdf(0.0f);
-        emptyVoxel.weight = 0;
+        TsdfVoxel emptyVoxel(floatToTsdf(0.0f), 0);
         volUnitsData.rowRange(oldLastVolIndex, lastVolIndex) = Vec2b((uchar)(emptyVoxel.tsdf), (uchar)(emptyVoxel.weight));
     }
 
@@ -1378,10 +1363,7 @@ inline TsdfVoxel HashTSDFVolumeGPU::new_at(const cv::Vec3i& volumeIdx, int indx)
         (volumeIdx[1] >= volumeUnitResolution || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volumeUnitResolution || volumeIdx[2] < 0))
     {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.0f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.0f), 0);
     }
 
     const TsdfVoxel* volData = volUnitsDataCopy.ptr<TsdfVoxel>(indx);
@@ -1396,10 +1378,7 @@ TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
 {
     if (indx < 0)
     {
-        TsdfVoxel dummy;
-        dummy.tsdf = floatToTsdf(1.f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
     Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
 
