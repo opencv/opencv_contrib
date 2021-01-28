@@ -900,6 +900,8 @@ public:
 
     std::vector<Volume_NODE*> allocateVolumeUnits(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
+    void markActive(const Matx44f& cameraPose, const Intr& intrinsics, const Size frameSz, const int frameId);
+
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
@@ -940,8 +942,10 @@ public:
 
     // per-volume-unit data
     cv::Mat volumeUnitIndices;
-    cv::Mat lastVisibleIndexes;
-    cv::Mat isActiveFlags;
+
+    cv::UMat lastVisibleIndices;
+
+    cv::UMat isActiveFlags;
 
     cv::UMat volUnitsData;
     //TODO: remove it when there's no CPU parts
@@ -952,6 +956,7 @@ public:
 
     //TODO: move indexes.volumes to GPU
     VolumesTable indexes;
+    
     Vec8i neighbourCoords;
 };
 
@@ -1004,10 +1009,13 @@ void HashTSDFVolumeGPU::reset()
 
     int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
     volUnitsDataCopy = cv::Mat(buff_lvl, volCubed, rawType<TsdfVoxel>());
+
     volUnitsData = cv::UMat(buff_lvl, volCubed, CV_8UC2);
 
-    lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
-    isActiveFlags = cv::Mat(buff_lvl, 1, CV_8U);
+    lastVisibleIndices = cv::UMat(buff_lvl, 1, CV_32S);
+
+    isActiveFlags = cv::UMat(buff_lvl, 1, CV_8U);
+
     volumeUnitIndices = cv::Mat(buff_lvl, 1, CV_32SC4);
 
     indexes = VolumesTable();
@@ -1106,7 +1114,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
            ocl::KernelArg::ReadOnly(volumeUnitIndices.getUMat(ACCESS_READ)),
            ocl::KernelArg::ReadWrite(volUnitsData),
            ocl::KernelArg::ReadOnly(pixNorms),
-           ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
+           ocl::KernelArg::ReadOnly(isActiveFlags),
            vol2camMatrix,
            camInvMatrix,
            voxelSize,
@@ -1239,6 +1247,44 @@ std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _de
 }
 
 
+void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrinsics, const Size frameSz, const int frameId)
+{
+    //! Mark volumes in the camera frustum as active
+    String errorStr;
+    String name = "markActive";
+    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+    String options = "-cl-mad-enable";
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if (k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    UMat volumeUnitIndicesGPU = volumeUnitIndices.getUMat(ACCESS_READ);
+    const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
+    const Intr::Projector proj(intrinsics.makeProjector());
+    Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
+
+    k.args(
+        ocl::KernelArg::ReadOnly(volumeUnitIndicesGPU),
+        ocl::KernelArg::WriteOnly(isActiveFlags),
+        ocl::KernelArg::WriteOnly(lastVisibleIndices),
+        vol2cam.matrix,
+        fxy,
+        cxy,
+        frameSz,
+        volumeUnitSize,
+        lastVolIndex,
+        truncateThreshold,
+        frameId
+    );
+
+    size_t globalSize[1] = { (size_t)lastVolIndex };
+    if (!k.run(1, globalSize, nullptr, true))
+        throw std::runtime_error("Failed to run kernel");
+}
+
+
 void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
@@ -1256,17 +1302,26 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     if (lastVolIndex >= buff_lvl)
     {
         degree = (int)(log2(lastVolIndex) + 1); // clz() would be better
+        int oldBuffSize = buff_lvl;
         buff_lvl = (int)pow(2, degree);
 
         volUnitsDataCopy.resize(buff_lvl);
+
+        Range oldr(0, oldBuffSize);
         int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
         UMat newData(buff_lvl, volCubed, CV_8UC2);
-        volUnitsData.copyTo(newData(Range(0, volUnitsData.rows), Range::all()));
+        volUnitsData.copyTo(newData.rowRange(oldr));
         volUnitsData = newData;
         
-        lastVisibleIndexes.resize(buff_lvl);
+        UMat newLastVisibleIndices(buff_lvl, 1, CV_32S);
+        lastVisibleIndices.copyTo(newLastVisibleIndices.rowRange(oldr));
+        lastVisibleIndices = newLastVisibleIndices;
+
+        UMat newIsActiveFlags(buff_lvl, 1, CV_8U);
+        isActiveFlags.copyTo(newIsActiveFlags.rowRange(oldr));
+        isActiveFlags = newIsActiveFlags;
+
         volumeUnitIndices.resize(buff_lvl);
-        isActiveFlags.resize(buff_lvl);
     }
 
     // Place data for new volume units
@@ -1278,10 +1333,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         Vec4i idx4 = node->idx;
         Vec3i tsdf_idx(idx4[0], idx4[1], idx4[2]);
 
-
-        *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
-        *isActiveFlags.ptr<uchar>(row, 0) = 1;
-
         //TODO: replace .ptr<...> everywhere by .at<...>
         *volumeUnitIndices.ptr<Vec4i>(row, 0) = idx4;
     }
@@ -1289,41 +1340,15 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     {
         Range r(oldLastVolIndex, lastVolIndex);
 
-        //lastVisibleIndexes.rowRange(r) = frameId;
-        //isActiveFlags.rowRange(r) = 1;
+        lastVisibleIndices.rowRange(r) = frameId;
+        isActiveFlags.rowRange(r) = 1;
 
         TsdfVoxel emptyVoxel(floatToTsdf(0.0f), 0);
         volUnitsData.rowRange(r) = Vec2b((uchar)(emptyVoxel.tsdf), (uchar)(emptyVoxel.weight));
     }
 
     //! Mark volumes in the camera frustum as active
-    Range _inFrustumRange(0, lastVolIndex);
-    auto markActive = [&](const Range& range) {
-        const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
-        const Intr::Projector proj(intrinsics.makeProjector());
-
-        for (int row = range.start; row < range.end; ++row)
-        {
-            Vec4i idx4 = *volumeUnitIndices.ptr<Vec4i>(row, 0);
-            Vec3i idx(idx4[0], idx4[1], idx4[2]);
-
-            Point3f volumeUnitPos = volumeUnitIdxToVolume(idx);
-            Point3f volUnitInCamSpace = vol2cam * volumeUnitPos;
-            if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
-            {
-                *isActiveFlags.ptr<uchar>(row, 0) = 0;
-                continue;
-            }
-            Point2f cameraPoint = proj(volUnitInCamSpace);
-            if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
-            {
-                CV_Assert(row >= 0 || row < lastVolIndex);
-                *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
-                *isActiveFlags.ptr<uchar>(row, 0) = 1;
-            }
-        }
-    };
-    parallel_for_(_inFrustumRange, markActive);
+    markActive(cameraPose, intrinsics, depth.size(), frameId);
 
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
@@ -1773,11 +1798,13 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
 
 int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) const
 {
+    Mat cpuIndices = lastVisibleIndices.getMat(ACCESS_READ);
+
     int numVisibleBlocks = 0;
     //! TODO: Iterate over map parallely?
     for (int i = 0; i < lastVolIndex; i++)
     {
-        if (*lastVisibleIndexes.ptr<int>(i) > (currFrameId - frameThreshold))
+        if (*cpuIndices.ptr<int>(i) > (currFrameId - frameThreshold))
             numVisibleBlocks++;
     }
     return numVisibleBlocks;

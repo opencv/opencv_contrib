@@ -621,3 +621,59 @@ __kernel void raycast(
     vstore4((float4)(point,  0), 0, pts);
     vstore4((float4)(normal, 0), 0, nrm);
 }
+
+
+__kernel void markActive (
+        const __global char* volumeUnitIndicesPtr,
+        int volumeUnitIndicesStep, int volumeUnitIndicesOffset,
+        int volumeUnitIndicesRows, int volumeUnitIndicesCols,
+
+        __global char* isActiveFlagsPtr,
+        int isActiveFlagsStep, int isActiveFlagsOffset,
+        int isActiveFlagsRows, int isActiveFlagsCols,
+
+        __global char* lastVisibleIndicesPtr,
+        int lastVisibleIndicesStep, int lastVisibleIndicesOffset,
+        int lastVisibleIndicesRows, int lastVisibleIndicesCols,
+
+        const float16 vol2cam,
+        const float2 fxy,
+        const float2 cxy,
+        const int2 frameSz,
+        const float volumeUnitSize,
+        const int lastVolIndex,
+        const float truncateThreshold,
+        const int frameId
+        )
+{
+    int row = get_global_id(0);
+
+    if (row < lastVolIndex)
+    {
+        int3 idx = (*(__global const int4*)(volumeUnitIndicesPtr + volumeUnitIndicesOffset +
+                                            row * volumeUnitIndicesStep)).xyz;
+
+        float3 volumeUnitPos = convert_float3(idx) * volumeUnitSize;
+
+        float3 volUnitInCamSpace = (float3) (dot(volumeUnitPos, vol2cam.s012),
+                                             dot(volumeUnitPos, vol2cam.s456),
+                                             dot(volumeUnitPos, vol2cam.s89a)) + vol2cam.s37b;
+
+        if (volUnitInCamSpace.z < 0 || volUnitInCamSpace.z > truncateThreshold)
+        {
+            *(isActiveFlagsPtr + isActiveFlagsOffset + row * isActiveFlagsStep) = 0;
+            return;
+        }
+
+        float2 cameraPoint;
+        float invz = 1.f / volUnitInCamSpace.z;
+        cameraPoint.x = fxy.x*(volUnitInCamSpace.x*invz) + cxy.x;
+        cameraPoint.y = fxy.y*(volUnitInCamSpace.y*invz) + cxy.y;
+
+        if (all(cameraPoint >= 0) && all(cameraPoint < convert_float2(frameSz)))
+        {
+            *(__global int*)(lastVisibleIndicesPtr + lastVisibleIndicesOffset + row * lastVisibleIndicesStep) = frameId;
+            *(isActiveFlagsPtr + isActiveFlagsOffset + row * isActiveFlagsStep) = 1;
+        }
+    }
+}
