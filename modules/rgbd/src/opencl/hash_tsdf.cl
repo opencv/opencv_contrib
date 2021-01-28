@@ -40,15 +40,18 @@ static inline float tsdfToFloat(TsdfType num)
     return ( (float) num ) / (-128);
 }
 
-__kernel void preCalculationPixNorm (__global float * pixNorms,
+__kernel void preCalculationPixNorm (__global char * pixNormsPtr,
+                                     int pixNormsStep, int pixNormsOffset,
+                                     int pixNormsRows, int pixNormsCols,
                                      const __global float * xx,
-                                     const __global float * yy,
-                                     int width)
+                                     const __global float * yy)
 {    
     int i = get_global_id(0);
     int j = get_global_id(1);
-    int idx = i*width + j;
-    pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
+    if (i < pixNormsRows && j < pixNormsCols)
+    {
+        *(__global float*)(pixNormsPtr + pixNormsOffset + i*pixNormsStep + j*sizeof(float)) = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
+    }
 }
 
 static uint calc_hash(int3 x)
@@ -87,7 +90,9 @@ static void integrateVolumeUnit(
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
                         __global struct TsdfVoxel * volumeptr,
-                        const __global float * pixNorms,
+                        const __global char * pixNormsPtr,
+                        int pixNormsStep, int pixNormsOffset,
+                        int pixNormsRows, int pixNormsCols,
                         const float16 vol2camMatrix,
                         const float voxelSize,
                         const int4 volResolution4,
@@ -128,7 +133,7 @@ static void integrateVolumeUnit(
     int volYidx = x*volStrides.x + y*volStrides.y;
 
     int startZ, endZ;
-    if(fabs(zStep.z) > 1e-5)
+    if(fabs(zStep.z) > 1e-5f)
     {
         int baseZ = convert_int(-basePt.z / zStep.z);
         if(zStep.z > 0)
@@ -204,8 +209,8 @@ static void integrateVolumeUnit(
         if(v == 0)
             continue;
 
-        int idx = projected.y * depth_rows + projected.x;
-        float pixNorm = pixNorms[idx];
+        int2 projInt = convert_int2(projected);
+        float pixNorm = *(__global const float*)(pixNormsPtr + pixNormsOffset + projInt.y*pixNormsStep + projInt.x*sizeof(float));
         //float pixNorm = length(camPixVec);
 
         // difference between distances of point and of surface to camera
@@ -246,8 +251,10 @@ __kernel void integrateAllVolumeUnits(
                         __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
-                        // Ptr(pixNorms)
-                        __global const float * pixNorms,
+                        // pixNorms
+                        const __global char * pixNormsPtr,
+                        int pixNormsStep, int pixNormsOffset,
+                        int pixNormsRows, int pixNormsCols,
                         // isActiveFlags
                         __global const uchar* isActiveFlagsPtr,
                         int isActiveFlagsStep, int isActiveFlagsOffset,
@@ -301,7 +308,9 @@ __kernel void integrateAllVolumeUnits(
             depth_step, depth_offset,
             depth_rows, depth_cols,
             volumeptr,
-            pixNorms,
+            pixNormsPtr,
+            pixNormsStep, pixNormsOffset,
+            pixNormsRows, pixNormsCols,
             volUnit2cam,
             voxelSize,
             volResolution4,
@@ -373,7 +382,7 @@ inline float interpolate(float3 t, float8 vz)
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
                              int volumeUnitResolution,
                              float voxelSizeInv,
-                             __global struct Volume_NODE * hash_table,
+                             const __global struct Volume_NODE * hash_table,
                              const int list_size,
                              const int bufferNums,
                              const int hash_divisor,

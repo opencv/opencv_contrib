@@ -1046,7 +1046,7 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 {
     Mat x(1, depth_cols, CV_32FC1);
     Mat y(1, depth_rows, CV_32FC1);
-    UMat pixNorm(1, depth_rows * depth_cols, CV_32F);
+    UMat pixNorm(depth_rows, depth_cols, CV_32F);
 
     for (int i = 0; i < depth_cols; i++)
         *x.ptr<float>(0, i) = (i - cxy[0]) / fxy[0];
@@ -1067,10 +1067,9 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     UMat xx = x.getUMat(af);
     UMat yy = y.getUMat(af);
 
-    kk.args(ocl::KernelArg::PtrWriteOnly(pixNorm),
+    kk.args(ocl::KernelArg::WriteOnly(pixNorm),
             ocl::KernelArg::PtrReadOnly(xx),
-            ocl::KernelArg::PtrReadOnly(yy),
-            depth_cols);
+            ocl::KernelArg::PtrReadOnly(yy));
 
     size_t globalSize[2];
     globalSize[0] = depth_rows;
@@ -1108,7 +1107,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::ReadOnly(volumeUnitIndices.getUMat(ACCESS_READ)),
            ocl::KernelArg::ReadWrite(volUnitsData),
-           ocl::KernelArg::PtrReadOnly(pixNorms),
+           ocl::KernelArg::ReadOnly(pixNorms),
            ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
            vol2camMatrix,
            camInvMatrix,
