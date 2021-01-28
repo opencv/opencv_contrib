@@ -896,9 +896,9 @@ public:
 
     void reset() override;
 
-    void integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
+    void integrateAllVolumeUnitsGPU(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
-    std::vector<Volume_NODE*> allocateVolumeUnits(Depth depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
+    std::vector<Volume_NODE*> allocateVolumeUnits(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
@@ -1082,12 +1082,10 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
 }
 
 
-void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
+void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
-    CV_Assert(!_depth.empty());
-
-    UMat depth = _depth.getUMat();
+    CV_Assert(!depth.empty());
 
     String errorStr;
     String name = "integrateAllVolumeUnits";
@@ -1132,12 +1130,14 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 }
 
 
-std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(Depth depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
+std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     const int newIndicesCapacity = VOLUMES_SIZE;
     const int localCapacity = VOLUMES_SIZE;
     std::vector<Volume_NODE*> nodePtrs;
     nodePtrs.reserve(newIndicesCapacity);
+
+    Depth depth = _depth.getMat(ACCESS_READ);
 
     //! Compute volumes to be allocated
     const int depthStride = int(log2(volumeUnitResolution));
@@ -1244,7 +1244,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
-    Depth depth = _depth.getMat();
+    UMat depth = _depth.getUMat();
 
     // Save pointers to avoid searches when allocating
     int oldLastVolIndex = lastVolIndex;
