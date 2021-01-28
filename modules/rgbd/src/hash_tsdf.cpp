@@ -909,8 +909,7 @@ public:
 
     void reset() override;
 
-    //void integrateVolumeUnitGPU(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics, VolumeIndex idx);
-    void integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics);
+    void integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
     std::vector<Volume_NODE*> allocateVolumeUnits(Depth depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
@@ -951,15 +950,14 @@ public:
     Vec6f frameParams;
     int degree;
     int buff_lvl;
-    
+
     // per-volume-unit data
     cv::Mat volumeUnitIndices;
-    cv::Mat poses;
     cv::Mat lastVisibleIndexes;
     cv::Mat isActiveFlags;
-    cv::Mat allVol2cam;
-    //TODO: make it UMat
+
     cv::UMat volUnitsData;
+    //TODO: remove it when there's no CPU parts
     cv::Mat volUnitsDataCopy;
 
     cv::UMat pixNorms;
@@ -1007,6 +1005,7 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstM
     : HashTSDFVolume(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
         _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
 {
+    //TODO: move reset() contents here, reset() just clears the data
 }
 // zero volume, leave rest params the same
 void HashTSDFVolumeGPU::reset()
@@ -1020,10 +1019,8 @@ void HashTSDFVolumeGPU::reset()
     volUnitsDataCopy = cv::Mat(buff_lvl, volCubed, rawType<TsdfVoxel>());
     volUnitsData = cv::UMat(buff_lvl, volCubed, CV_8UC2);
 
-    poses = cv::Mat(buff_lvl, 1, rawType<cv::Matx44f>());
     lastVisibleIndexes = cv::Mat(buff_lvl, 1, CV_32S);
     isActiveFlags = cv::Mat(buff_lvl, 1, CV_8U);
-    allVol2cam = cv::Mat(buff_lvl, 16, CV_32F);
     volumeUnitIndices = cv::Mat(buff_lvl, 1, CV_32SC4);
 
     indexes = VolumesTable();
@@ -1098,7 +1095,8 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     return pixNorm;
 }
 
-void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Intr& intrinsics)
+
+void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
     CV_Assert(!_depth.empty());
@@ -1117,13 +1115,16 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(InputArray _depth, float dept
 
     float dfac = 1.f / depthFactor;
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
+    Matx44f vol2camMatrix = (Affine3f(cameraPose).inv() * pose).matrix;
+    Matx44f camInvMatrix = Affine3f(cameraPose).inv().matrix;
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::ReadOnly(volumeUnitIndices.getUMat(ACCESS_READ)),
            ocl::KernelArg::ReadWrite(volUnitsData),
            ocl::KernelArg::PtrReadOnly(pixNorms),
-           ocl::KernelArg::ReadOnly(allVol2cam.getUMat(ACCESS_READ)),
            ocl::KernelArg::ReadOnly(isActiveFlags.getUMat(ACCESS_READ)),
+           vol2camMatrix,
+           camInvMatrix,
            voxelSize,
            volumeUnitResolution,
            volStrides.val,
@@ -1261,6 +1262,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
 
     // Save pointers to avoid searches when allocating
     //TODO: return range of rows instead
+    int oldLastVolIndex = lastVolIndex;
     std::vector<Volume_NODE*> nodePtrs = allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
 
     //! Perform the allocation
@@ -1277,11 +1279,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         volUnitsData.copyTo(newData(Range(0, volUnitsData.rows), Range::all()));
         volUnitsData = newData;
         
-        poses.resize(buff_lvl);
         lastVisibleIndexes.resize(buff_lvl);
         volumeUnitIndices.resize(buff_lvl);
         isActiveFlags.resize(buff_lvl);
-        allVol2cam.resize(buff_lvl);
     }
 
     // Place data for new volume units
@@ -1293,18 +1293,16 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         Vec4i idx4 = node->idx;
         Vec3i tsdf_idx(idx4[0], idx4[1], idx4[2]);
 
-        Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(tsdf_idx)).matrix;
-
-        *poses.ptr<cv::Matx44f>(row, 0) = subvolumePose;
         *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
         *isActiveFlags.ptr<uchar>(row, 0) = 1;
         *volumeUnitIndices.ptr<Vec4i>(row, 0) = idx4;
-
-        //TODO: init a whole row range instead
+    }
+    if (oldLastVolIndex > lastVolIndex)
+    {
         TsdfVoxel emptyVoxel;
         emptyVoxel.tsdf = floatToTsdf(0.0f);
         emptyVoxel.weight = 0;
-        volUnitsData.row(row) = Vec2b((uchar)(emptyVoxel.tsdf), (uchar)(emptyVoxel.weight));
+        volUnitsData.rowRange(oldLastVolIndex, lastVolIndex) = Vec2b((uchar)(emptyVoxel.tsdf), (uchar)(emptyVoxel.weight));
     }
 
     //! Mark volumes in the camera frustum as active
@@ -1346,32 +1344,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
     }
 
-    //TODO: maybe to merge this into integrateAllVolumeUnits
     //! Integrate the correct volumeUnits
-    auto preCalculateAllVol3Cam = [&](const Range& range) {
-        for (int row = range.start; row < range.end; row++)
-        {
-            Vec4i idx4 = *volumeUnitIndices.ptr<Vec4i>(row, 0);
-            Vec3i idx(idx4[0], idx4[1], idx4[2]);
-
-            bool _isActive = bool(*isActiveFlags.ptr<uchar>(row, 0));
-            
-            if (_isActive)
-            {
-                Matx44f _pose = *poses.ptr<cv::Matx44f>(row, 0);
-                const cv::Affine3f vol2cam(Affine3f(cameraPose.inv())* Affine3f(_pose));
-                auto vol2camMatrix = vol2cam.matrix.val;
-                for (int k = 0; k < 16; k++)
-                {
-                    *allVol2cam.ptr<float>(row, k) = vol2camMatrix[k];
-                }
-            }
-        }
-    };
-    parallel_for_(Range(0, lastVolIndex), preCalculateAllVol3Cam );
-
-    //! Integrate the correct volumeUnits
-    integrateAllVolumeUnitsGPU(depth, depthFactor, intrinsics);
+    integrateAllVolumeUnitsGPU(depth, depthFactor, cameraPose, intrinsics);
 }
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const

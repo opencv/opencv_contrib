@@ -232,23 +232,30 @@ static void integrateVolumeUnit(
 
 }
 
+
 __kernel void integrateAllVolumeUnits(
+                        // depth
                         __global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
+                        // volumeUnitIndices
                         __global const int4 * volumeUnitIndices,
                         int volumeUnitIndices_step, int volumeUnitIndices_offset,
                         int volumeUnitIndices_rows, int volumeUnitIndices_cols,
+                        // volUnitsData
                         __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
+                        // Ptr(pixNorms)
                         __global const float * pixNorms,
-                        __global const float * allVol2camMatrix,
-                        int val2cam_step, int val2cam_offset,
-                        int val2cam_rows, int val2cam_cols,
+                        // isActiveFlags
                         __global const uchar* isActiveFlagsPtr,
                         int isActiveFlagsStep, int isActiveFlagsOffset,
                         int isActiveFlagsRows, int isActiveFlagsCols,
+                        // cam matrices:
+                        const float16 vol2cam,
+                        const float16 camInv,
+                        // scalars:
                         const float voxelSize,
                         const int volUnitResolution,
                         const int4 volStrides4,
@@ -262,7 +269,7 @@ __kernel void integrateAllVolumeUnits(
     int i = get_global_id(0);
     int j = get_global_id(1);
     int row = get_global_id(2);
-    int4 idx = volumeUnitIndices[row];
+    int3 idx = volumeUnitIndices[row].xyz;
 
     const int4 volResolution4 = (int4)(volUnitResolution,
                                        volUnitResolution,
@@ -275,11 +282,18 @@ __kernel void integrateAllVolumeUnits(
     {
         int volCubed = volUnitResolution * volUnitResolution * volUnitResolution;
         __global struct TsdfVoxel * volumeptr = (__global struct TsdfVoxel*)
-                                                (allVolumePtr + table_offset + (row) * volCubed);
-        __global const float * p_vol2camMatrix = (__global const float *)
-                                                 (allVol2camMatrix + val2cam_offset + (row) * 16);
-        
-        const float16 vol2camMatrix = vload16(0, p_vol2camMatrix);
+                                                (allVolumePtr + table_offset + row * volCubed);
+
+        // volUnit2cam = world2cam * volUnit2world =
+        // camPoseInv * volUnitPose = camPoseInv * (volPose + idx * volUnitSize) =
+        // camPoseInv * (volPose + idx * volUnitResolution * voxelSize) =
+        // camPoseInv * (volPose + mulIdx) = camPoseInv * volPose + camPoseInv * mulIdx =
+        // vol2cam + camPoseInv * mulIdx
+        float3 mulIdx = convert_float3(idx * volUnitResolution) * voxelSize;
+        float16 volUnit2cam = vol2cam;
+        volUnit2cam.s37b += (float3)(dot(mulIdx, camInv.s012),
+                                     dot(mulIdx, camInv.s456),
+                                     dot(mulIdx, camInv.s89a));
 
         integrateVolumeUnit(
             i, j,
@@ -288,7 +302,7 @@ __kernel void integrateAllVolumeUnits(
             depth_rows, depth_cols,
             volumeptr,
             pixNorms,
-            vol2camMatrix,
+            volUnit2cam,
             voxelSize,
             volResolution4,
             volStrides4,
