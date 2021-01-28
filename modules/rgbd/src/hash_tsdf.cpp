@@ -1248,7 +1248,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     Depth depth = _depth.getMat();
 
     // Save pointers to avoid searches when allocating
-    //TODO: return range of rows instead
     int oldLastVolIndex = lastVolIndex;
     std::vector<Volume_NODE*> nodePtrs = allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
 
@@ -1280,14 +1279,22 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         Vec4i idx4 = node->idx;
         Vec3i tsdf_idx(idx4[0], idx4[1], idx4[2]);
 
+
         *lastVisibleIndexes.ptr<int>(row, 0) = frameId;
         *isActiveFlags.ptr<uchar>(row, 0) = 1;
+
+        //TODO: replace .ptr<...> everywhere by .at<...>
         *volumeUnitIndices.ptr<Vec4i>(row, 0) = idx4;
     }
     if (oldLastVolIndex < lastVolIndex)
     {
+        Range r(oldLastVolIndex, lastVolIndex);
+
+        //lastVisibleIndexes.rowRange(r) = frameId;
+        //isActiveFlags.rowRange(r) = 1;
+
         TsdfVoxel emptyVoxel(floatToTsdf(0.0f), 0);
-        volUnitsData.rowRange(oldLastVolIndex, lastVolIndex) = Vec2b((uchar)(emptyVoxel.tsdf), (uchar)(emptyVoxel.weight));
+        volUnitsData.rowRange(r) = Vec2b((uchar)(emptyVoxel.tsdf), (uchar)(emptyVoxel.weight));
     }
 
     //! Mark volumes in the camera frustum as active
