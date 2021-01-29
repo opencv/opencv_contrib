@@ -667,8 +667,7 @@ __kernel void markActive (
 
         float2 cameraPoint;
         float invz = 1.f / volUnitInCamSpace.z;
-        cameraPoint.x = fxy.x*(volUnitInCamSpace.x*invz) + cxy.x;
-        cameraPoint.y = fxy.y*(volUnitInCamSpace.y*invz) + cxy.y;
+        cameraPoint = fxy * volUnitInCamSpace.xy * invz + cxy;
 
         if (all(cameraPoint >= 0) && all(cameraPoint < convert_float2(frameSz)))
         {
