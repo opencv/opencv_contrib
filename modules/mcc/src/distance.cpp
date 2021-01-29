@@ -139,7 +139,8 @@ double deltaCIEDE2000_(const Vec3d& lab1, const Vec3d& lab2, const double& kL,
     double sC = 1.0 + 0.045 * C_bar_apo;
     double sH = 1.0 + 0.015 * C_bar_apo * T;
     double sL = 1.0 + ((0.015 * pow(l_bar_apo - 50.0, 2.0)) / sqrt(20.0 + pow(l_bar_apo - 50.0, 2.0)));
-    double RT = -2.0 * G * sin(toRad(60.0) * exp(-pow((H_bar_apo - toRad(275.0)) / toRad(25.0), 2.0)));
+    double R_C = 2.0 * sqrt(pow(C_bar_apo, 7.0) / (pow(C_bar_apo, 7.0) + pow(25, 7)));
+    double RT = -sin(toRad(60.0) * exp(-pow((H_bar_apo - toRad(275.0)) / toRad(25.0), 2.0))) * R_C;
     double res = (pow(delta_L_apo / (kL * sL), 2.0) + pow(delta_C_apo / (kC * sC), 2.0) + pow(delta_H_apo / (kH * sH), 2.0) + RT * (delta_C_apo / (kC * sC)) * (delta_H_apo / (kH * sH)));
     return res > 0 ? sqrt(res) : 0;
 }
