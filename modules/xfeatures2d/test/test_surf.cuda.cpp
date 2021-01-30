@@ -181,7 +181,7 @@ testing::internal::ValueArray3<SURF_HessianThreshold, SURF_HessianThreshold, SUR
 // hessian computation is not bit-exact and lower threshold causes different count of detection
 testing::internal::ValueArray2<SURF_HessianThreshold, SURF_HessianThreshold> thresholdValues =
     testing::Values(
-            SURF_HessianThreshold(813.0),
+            SURF_HessianThreshold(830.0),
             SURF_HessianThreshold(1000.0));
 #endif
 
