@@ -898,7 +898,7 @@ public:
 
     void integrateAllVolumeUnitsGPU(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
-    std::vector<Volume_NODE*> allocateVolumeUnits(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
+    UMat allocateVolumeUnits(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
     void markActive(const Matx44f& cameraPose, const Intr& intrinsics, const Size frameSz, const int frameId);
 
@@ -941,7 +941,7 @@ public:
     int buff_lvl;
 
     // per-volume-unit data
-    cv::Mat volumeUnitIndices;
+    cv::UMat volumeUnitIndices;
 
     cv::UMat lastVisibleIndices;
 
@@ -995,7 +995,7 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, flo
 
 HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstMemOrder)
     : HashTSDFVolume(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
-        _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
+                     _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
 {
     //TODO: move reset() contents here, reset() just clears the data
 }
@@ -1016,7 +1016,7 @@ void HashTSDFVolumeGPU::reset()
 
     isActiveFlags = cv::UMat(buff_lvl, 1, CV_8U);
 
-    volumeUnitIndices = cv::Mat(buff_lvl, 1, CV_32SC4);
+    volumeUnitIndices = cv::UMat(buff_lvl, 1, CV_32SC4);
 
     indexes = VolumesTable();
 
@@ -1111,7 +1111,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     Matx44f camInvMatrix = Affine3f(cameraPose).inv().matrix;
 
     k.args(ocl::KernelArg::ReadOnly(depth),
-           ocl::KernelArg::ReadOnly(volumeUnitIndices.getUMat(ACCESS_READ)),
+           ocl::KernelArg::ReadOnly(volumeUnitIndices),
            ocl::KernelArg::ReadWrite(volUnitsData),
            ocl::KernelArg::ReadOnly(pixNorms),
            ocl::KernelArg::ReadOnly(isActiveFlags),
@@ -1138,12 +1138,12 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
 }
 
 
-std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
+UMat HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     const int newIndicesCapacity = VOLUMES_SIZE;
     const int localCapacity = VOLUMES_SIZE;
-    std::vector<Volume_NODE*> nodePtrs;
-    nodePtrs.reserve(newIndicesCapacity);
+    std::vector<Vec4i> nodeIndices;
+    nodeIndices.reserve(newIndicesCapacity);
 
     Depth depth = _depth.getMat(ACCESS_READ);
 
@@ -1243,7 +1243,9 @@ std::vector<Volume_NODE*> HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _de
 
     // ---------------------
 
-    return nodePtrs;
+    UMat uni(nodeIndices.size(), 1, CV_32SC4);
+    Mat(nodeIndices).copyTo(uni);
+    return uni;
 }
 
 
@@ -1260,13 +1262,12 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     if (k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-    UMat volumeUnitIndicesGPU = volumeUnitIndices.getUMat(ACCESS_READ);
     const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
     const Intr::Projector proj(intrinsics.makeProjector());
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
     k.args(
-        ocl::KernelArg::ReadOnly(volumeUnitIndicesGPU),
+        ocl::KernelArg::ReadOnly(volumeUnitIndices),
         ocl::KernelArg::WriteOnly(isActiveFlags),
         ocl::KernelArg::WriteOnly(lastVisibleIndices),
         vol2cam.matrix,
@@ -1292,9 +1293,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     CV_Assert(_depth.type() == DEPTH_TYPE);
     UMat depth = _depth.getUMat();
 
-    // Save pointers to avoid searches when allocating
+    // Save length to fill new data in ranges
     int oldLastVolIndex = lastVolIndex;
-    std::vector<Volume_NODE*> nodePtrs = allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
+    UMat nodeIndices = allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
 
     //! Perform the allocation
 
@@ -1321,25 +1322,16 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         isActiveFlags.copyTo(newIsActiveFlags.rowRange(oldr));
         isActiveFlags = newIsActiveFlags;
 
-        volumeUnitIndices.resize(buff_lvl);
+        UMat newVolumeUnitIndices(buff_lvl, 1, CV_32SC4);
+        volumeUnitIndices.copyTo(newVolumeUnitIndices.rowRange(oldr));
+        volumeUnitIndices = newVolumeUnitIndices;
     }
 
-    // Place data for new volume units
-    for (size_t i = 0; i < nodePtrs.size(); i++)
+    // Fill data for new volume units
+    Range r(oldLastVolIndex, lastVolIndex);
+    if (r.start < r.end)
     {
-        Volume_NODE* node = nodePtrs[i];
-        int row = node->row;
-
-        Vec4i idx4 = node->idx;
-        Vec3i tsdf_idx(idx4[0], idx4[1], idx4[2]);
-
-        //TODO: replace .ptr<...> everywhere by .at<...>
-        *volumeUnitIndices.ptr<Vec4i>(row, 0) = idx4;
-    }
-    if (oldLastVolIndex < lastVolIndex)
-    {
-        Range r(oldLastVolIndex, lastVolIndex);
-
+        nodeIndices.copyTo(volumeUnitIndices.rowRange(r));
         lastVisibleIndices.rowRange(r) = frameId;
         isActiveFlags.rowRange(r) = 1;
 
@@ -1351,8 +1343,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     markActive(cameraPose, intrinsics, depth.size(), frameId);
 
     Vec6f newParams((float)depth.rows, (float)depth.cols,
-        intrinsics.fx, intrinsics.fy,
-        intrinsics.cx, intrinsics.cy);
+                     intrinsics.fx, intrinsics.fy,
+                     intrinsics.cx, intrinsics.cy);
     if (!(frameParams == newParams))
     {
         frameParams = newParams;
@@ -1363,6 +1355,8 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     //! Integrate the correct volumeUnits
     integrateAllVolumeUnitsGPU(depth, depthFactor, cameraPose, intrinsics);
 }
+
+//TODO: replace .ptr<...> everywhere by .at<...>
 
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
 {
@@ -1690,11 +1684,13 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 {
     CV_TRACE_FUNCTION();
 
-    //TODO: remove it when it works w/o CPU code
-    volUnitsData.copyTo(volUnitsDataCopy);
-
     if (_points.needed())
     {
+        //TODO: remove it when it works w/o CPU code
+        volUnitsData.copyTo(volUnitsDataCopy);
+        Mat volumeUnitIndicesCopy(buff_lvl, 1, CV_32SC4);
+        volumeUnitIndices.copyTo(volumeUnitIndicesCopy);
+
         std::vector<std::vector<ptype>> pVecs, nVecs;
 
         Range _fetchRange(0, lastVolIndex);
@@ -1710,7 +1706,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
             std::vector<ptype> points, normals;
             for (int row = range.start; row < range.end; row++)
             {
-                cv::Vec4i idx4 = *volumeUnitIndices.ptr<Vec4i>(row, 0);
+                cv::Vec4i idx4 = *volumeUnitIndicesCopy.ptr<Vec4i>(row, 0);
                 cv::Vec3i idx(idx4[0], idx4[1], idx4[2]);
 
                 Point3f base_point = volume.volumeUnitIdxToVolume(idx);
@@ -1769,11 +1765,11 @@ void HashTSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) c
 {
     CV_TRACE_FUNCTION();
 
-    //TODO: remove it when it works w/o CPU code
-    volUnitsData.copyTo(volUnitsDataCopy);
-
     if (_normals.needed())
     {
+        //TODO: remove it when it works w/o CPU code
+        volUnitsData.copyTo(volUnitsDataCopy);
+
         Points points = _points.getMat();
         CV_Assert(points.type() == POINT_TYPE);
         _normals.createSameSize(_points, _points.type());
