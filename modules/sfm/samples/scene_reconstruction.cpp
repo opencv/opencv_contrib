@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 
     vector<Affine3d> path;
     for (size_t i = 0; i < Rs_est.size(); ++i)
-        path.push_back(Affine3d(Rs_est[i], ts_est[i]).inv());
+        path.push_back(Affine3d(Rs_est[i], ts_est[i]));
 
     cout << "[DONE]" << endl;
 
