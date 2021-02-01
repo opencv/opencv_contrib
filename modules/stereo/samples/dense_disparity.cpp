@@ -46,7 +46,7 @@ int main()
 
 
 //!     [export]
-    vector<stereo::Match> matches;
+    vector<stereo::MatchQuasiDense> matches;
     stereo->getDenseMatches(matches);
     std::ofstream dense("./dense.txt", std::ios::out);
     for (uint i=0; i< matches.size(); i++)

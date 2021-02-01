@@ -66,6 +66,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
+
 /*
  !VGG implementation
  */
@@ -527,10 +529,18 @@ VGG_Impl::~VGG_Impl()
 {
 }
 
+#endif
+
 Ptr<VGG> VGG::create( int desc, float isigma, bool img_normalize, bool use_scale_orientation,
                       float scale_factor, bool dsc_normalize )
 {
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
     return makePtr<VGG_Impl>( desc, isigma, img_normalize, use_scale_orientation, scale_factor, dsc_normalize );
+#else
+    CV_UNUSED(desc); CV_UNUSED(isigma); CV_UNUSED(img_normalize);
+    CV_UNUSED(use_scale_orientation); CV_UNUSED(scale_factor); CV_UNUSED(dsc_normalize);
+    CV_Error(Error::StsNotImplemented, "The OpenCV xfeatures2d binaries is built without downloaded VGG decriptor features: https://github.com/opencv/opencv_contrib/issues/1301");
+#endif
 }
 
 

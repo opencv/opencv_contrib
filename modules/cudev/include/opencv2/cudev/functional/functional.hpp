@@ -786,6 +786,156 @@ __host__ __device__ ThreshToZeroInvFunc<T> thresh_to_zero_inv_func(T thresh)
     return f;
 }
 
+// InRange functors
+
+/** @brief  Functor that checks if a CUDA vector v is in the range between lowerb and upperb
+
+  Implemented as a recursive template
+
+@tparam T      underlying floating point/integral type
+@tparam cn     total number of channels in the input arguments
+@tparam i      number of the channel to check (will check this channel and lower)
+@param  lowerb inclusive scalar lower bound, as a CUDA vector, e.g. a uchar3
+@param  upperb inclusive scalar upper bound, as a CUDA vector, e.g. a uchar3
+@param  v      scalar to check, as a CUDA vector, e.g. a uchar3
+ */
+template <typename T, int cn, int i>
+struct InRangeComparator {
+    __device__ bool operator()(const typename MakeVec<T, cn>::type& lowerb,
+                               const typename MakeVec<T, cn>::type& upperb,
+                               const typename MakeVec<T, cn>::type& v) const;
+};
+
+// Specialize InRangeComparator for MakeVec<T, N>
+#define OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COMPARATOR(i, field)          \
+    template <typename T, int cn>                                           \
+    struct InRangeComparator<T, cn, i> {                                    \
+        __device__ bool operator()(                                         \
+                const typename MakeVec<T, cn>::type& lowerb,                \
+                const typename MakeVec<T, cn>::type& upperb,                \
+                const typename MakeVec<T, cn>::type& v) const {             \
+            const bool in_range =                                           \
+                    lowerb.field <= v.field && v.field <= upperb.field;     \
+            return in_range                                                 \
+                   && InRangeComparator<T, cn, i - 1>{}(lowerb, upperb, v); \
+        }                                                                   \
+    };
+
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COMPARATOR(4, w)
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COMPARATOR(3, z)
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COMPARATOR(2, y)
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COMPARATOR(1, x)
+
+#undef OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COMPARATOR
+
+// Specialize for the base case of i=0
+template <typename T, int cn>
+struct InRangeComparator<T, cn, 0> {
+    __device__ bool operator()(const typename MakeVec<T, cn>::type&,
+                               const typename MakeVec<T, cn>::type&,
+                               const typename MakeVec<T, cn>::type&) const {
+        return true;
+    }
+};
+
+// Specialize for MakeVec<T, 1>::type, which is e.g. uchar instead of uchar1
+template <typename T>
+struct InRangeComparator<T, 1, 1> {
+    static constexpr const int cn = 1;
+
+    __device__ bool operator()(const typename MakeVec<T, cn>::type& lowerb,
+                               const typename MakeVec<T, cn>::type& upperb,
+                               const typename MakeVec<T, cn>::type& v) const {
+        return lowerb <= v && v <= upperb;
+    }
+};
+
+/** @brief  Functor that copies a cv::Scalar into a CUDA vector, e.g. a uchar3
+
+  Implemented as a recursive template
+
+@tparam T   underlying floating point/integral type
+@tparam cn  total number of channels in the input arguments
+@tparam i   number of the channel to check (will check this channel and lower)
+@param  in  cv::Scalar to copy from
+@param  out CUDA vector to copy into, e.g. a uchar3
+ */
+template <typename T, int cn, int i>
+struct InRangeCopier {
+    void operator()(const Scalar& in,
+                    typename MakeVec<T, cn>::type& out) const;
+};
+
+// Specialize InRangeCopier for MakeVec<T, N>
+#define OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COPIER(i, field)           \
+    template <typename T, int cn>                                        \
+    struct InRangeCopier<T, cn, i> {                                     \
+        void operator()(const Scalar& in,                                \
+                        typename MakeVec<T, cn>::type& out) const {      \
+            const double in_rounded = (std::is_same<T, double>::value    \
+                                       || std::is_same<T, float>::value) \
+                                              ? in[i - 1]                \
+                                              : std::round(in[i - 1]);   \
+            out.field = static_cast<T>(in_rounded);                      \
+            InRangeCopier<T, cn, i - 1>{}(in, out);                      \
+        }                                                                \
+    };
+
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COPIER(4, w)
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COPIER(3, z)
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COPIER(2, y)
+OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COPIER(1, x)
+
+#undef OPENCV_CUDEV_FUNCTIONAL_MAKE_IN_RANGE_COPIER
+
+// Specialize for the base case of i=0
+template <typename T, int cn>
+struct InRangeCopier<T, cn, 0> {
+    void operator()(const Scalar&, typename MakeVec<T, cn>::type&) const {
+        return;
+    }
+};
+
+// Specialize for MakeVec<T, 1>::type, which is e.g. uchar instead of uchar1
+template <typename T>
+struct InRangeCopier<T, 1, 1> {
+    void operator()(const Scalar& in, typename MakeVec<T, 1>::type& out) const {
+        const double in_rounded = (std::is_same<T, double>::value
+                                   || std::is_same<T, float>::value)
+                                          ? in[0]
+                                          : std::round(in[0]);
+        out = static_cast<T>(in_rounded);
+    }
+};
+
+/** @brief  unary_function implementation of inRange
+
+  Intended to be used to create an Op for gridTransformUnary
+
+@tparam T      underlying floating point/integral type
+@tparam cn     total number of channels in the source image
+ */
+template <typename T, int cn>
+struct InRangeFunc : unary_function<typename MakeVec<T, cn>::type, uchar> {
+    typename MakeVec<T, cn>::type lowerb;
+    typename MakeVec<T, cn>::type upperb;
+
+    /** @brief  Builds an InRangeFunc with the given lower and upper bound scalars
+
+    @param  lowerb_scalar inclusive lower bound
+    @param  upperb_scalar inclusive upper bound
+     */
+    __host__ InRangeFunc(const Scalar& lowerb_scalar, const Scalar& upperb_scalar) {
+        InRangeCopier<T, cn, cn>{}(lowerb_scalar, lowerb);
+        InRangeCopier<T, cn, cn>{}(upperb_scalar, upperb);
+    }
+
+    __device__ uchar
+    operator()(const typename MakeVec<T, cn>::type& src) const {
+        return InRangeComparator<T, cn, cn>{}(lowerb, upperb, src) ? 255 : 0;
+    }
+};
+
 // Function Object Adaptors
 
 template <class Predicate> struct UnaryNegate : unary_function<typename Predicate::argument_type, typename Predicate::result_type>

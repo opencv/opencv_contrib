@@ -192,13 +192,16 @@ TEST(Features2d_DescriptorExtractor_BEBLID, regression )
     test.safe_run();
 }
 
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 TEST( Features2d_DescriptorExtractor_VGG, regression )
 {
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-vgg",  0.03f,
                                              VGG::create() );
     test.safe_run();
 }
+#endif // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
 TEST( Features2d_DescriptorExtractor_BGM, regression )
 {
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm",
@@ -254,7 +257,7 @@ TEST( Features2d_DescriptorExtractor_BINBOOST_256, regression )
                                             BoostDesc::create(BoostDesc::BINBOOST_256) );
     test.safe_run();
 }
-
+#endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
 
 #ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)

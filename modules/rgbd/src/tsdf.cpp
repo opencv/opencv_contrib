@@ -419,8 +419,11 @@ struct RaycastInvoker : ParallelLoopBody
 
                 // near clipping plane
                 const float clip = 0.f;
-                float tmin       = max(v_reduce_max(minAx), clip);
-                float tmax       = v_reduce_min(maxAx);
+                float _minAx[4], _maxAx[4];
+                v_store(_minAx, minAx);
+                v_store(_maxAx, maxAx);
+                float tmin       = max( {_minAx[0], _minAx[1], _minAx[2], clip} );
+                float tmax       = min( {_maxAx[0], _maxAx[1], _maxAx[2]} );
 
                 // precautions against getting coordinates out of bounds
                 tmin = tmin + tstep;

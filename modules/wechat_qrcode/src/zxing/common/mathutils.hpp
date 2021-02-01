@@ -15,6 +15,8 @@
 #if (defined __GNUC__ && defined __x86_64__ && defined __SSE2__ && !defined __APPLE__ && \
      !defined __GXX_WEAK__)
 #include <ammintrin.h>
+#elif defined _MSC_VER && (defined _M_X64 || defined _M_IX86)
+#include <emmintrin.h>
 #endif
 
 #include <algorithm>

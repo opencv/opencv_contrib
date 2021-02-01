@@ -203,7 +203,11 @@ public:
             filtered_prevPoints = prevPoints;
             filtered_currPoints = currPoints;
         }
-
+        // Interpolators below expect non empty matches
+        if (filtered_prevPoints.empty()) {
+            flow.setTo(0);
+            return;
+        }
         if (interp_type == InterpolationType::INTERP_EPIC)
         {
             Ptr<ximgproc::EdgeAwareInterpolator> gd = ximgproc::createEdgeAwareInterpolator();
