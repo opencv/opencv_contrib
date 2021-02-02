@@ -410,6 +410,8 @@ public:
             {
                 texMgr.remove(texName, RESOURCEGROUP_NAME);
             }
+
+            root->destroySceneManager(sceneMgr);
         }
 
         if(_app->mainWin == this && (flags & SCENE_SEPARATE))
