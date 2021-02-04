@@ -836,11 +836,11 @@ void TSDFVolumeGPU::reset()
     volume.setTo(Scalar(0, 0));
 }
 
-static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy)
+static void preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy, UMat& pixNorm)
 {
     Mat x(1, depth_cols, CV_32F);
     Mat y(1, depth_rows, CV_32F);
-    Mat _pixNorm(1, depth_rows * depth_cols, CV_32F);
+    pixNorm.create(1, depth_rows * depth_cols, CV_32F);
 
     for (int i = 0; i < depth_cols; i++)
         x.at<float>(0, i) = (i - cxy[0]) / fxy[0];
@@ -859,14 +859,13 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
     AccessFlag af = ACCESS_READ;
-    UMat pixNorm = _pixNorm.getUMat(af);
     UMat xx = x.getUMat(af);
     UMat yy = y.getUMat(af);
 
-    kk.args(ocl::KernelArg::PtrReadWrite(pixNorm),
+    kk.args(ocl::KernelArg::ReadWrite(pixNorm),
         ocl::KernelArg::PtrReadOnly(xx),
         ocl::KernelArg::PtrReadOnly(yy),
-        depth_cols);
+        depth_cols, depth_rows);
 
     size_t globalSize[2];
     globalSize[0] = depth_rows;
@@ -875,7 +874,7 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     if (!kk.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 
-    return pixNorm;
+    return;
 }
 
 // use depth instead of distance (optimization)
@@ -910,7 +909,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
         frameParams[2] = intrinsics.fx;     frameParams[3] = intrinsics.fy;
         frameParams[4] = intrinsics.cx;     frameParams[5] = intrinsics.cy;
 
-        pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
+        preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy, pixNorms);
     }
 
     // TODO: optimization possible
