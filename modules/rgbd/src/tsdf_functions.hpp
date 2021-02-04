@@ -74,7 +74,7 @@ public:
     const VolumesTable& operator=(const VolumesTable&);
     ~VolumesTable() {};
 
-    Volume_NODE* insert(Vec3i idx, int row);
+    bool insert(Vec3i idx, int row);
     int findRow(Vec3i idx) const;
 
     inline int getPos(Vec3i idx, int bufferNum) const

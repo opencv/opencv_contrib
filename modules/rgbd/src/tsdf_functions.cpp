@@ -394,7 +394,7 @@ const VolumesTable& VolumesTable::operator=(const VolumesTable& vt)
     return *this;
 }
 
-Volume_NODE* VolumesTable::insert(Vec3i idx, int row)
+bool VolumesTable::insert(Vec3i idx, int row)
 {
     CV_Assert(row >= 0);
 
@@ -411,10 +411,12 @@ Volume_NODE* VolumesTable::insert(Vec3i idx, int row)
         {
             Vec4i idx4(idx[0], idx[1], idx[2], 0);
 
+            bool extend = false;
             if (i != start && i % list_size == 0)
             {
                 if (bufferNum >= bufferNums - 1)
                 {
+                    extend = true;
                     volumes.resize(hash_divisor * bufferNums);
                     bufferNums++;
                 }
@@ -429,7 +431,7 @@ Volume_NODE* VolumesTable::insert(Vec3i idx, int row)
             v->idx = idx4;
             v->row = row;
 
-            return v;
+            return extend;
         }
 
         i = v->nextVolumeRow;
