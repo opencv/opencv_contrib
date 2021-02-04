@@ -13,8 +13,6 @@
 #include "bitarray.hpp"
 #include "counted.hpp"
 
-#include <limits>
-
 namespace zxing {
 
 class ByteMatrix : public Counted {

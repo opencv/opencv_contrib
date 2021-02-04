@@ -7,16 +7,12 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "version.hpp"
 #include "format_information.hpp"
 
 #include <cstdarg>
-#include <iostream>
-#include <limits>
-
 using std::numeric_limits;
-using std::vector;
 using zxing::ErrorHandler;
 
 namespace zxing {

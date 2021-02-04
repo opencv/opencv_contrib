@@ -17,9 +17,6 @@
 #include "../../errorhandler.hpp"
 #include "finder_pattern.hpp"
 #include "finder_pattern_info.hpp"
-
-#include <vector>
-
 using zxing::ErrorHandler;
 using zxing::ReaderErrorHandler;
 

@@ -13,9 +13,6 @@
 
 #include "../../common/bitmatrix.hpp"
 #include "../../resultpoint.hpp"
-
-#include <cmath>
-
 namespace zxing {
 namespace qrcode {
 

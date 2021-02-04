@@ -7,12 +7,10 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "decoded_bit_stream_parser.hpp"
 #include "../../common/stringutils.hpp"
 #include "../../zxing.hpp"
-
-#include <iostream>
 #ifndef NO_ICONV_INSIDE
 #include <iconv.h>
 #endif

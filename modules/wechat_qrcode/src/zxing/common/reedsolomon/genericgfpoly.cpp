@@ -7,11 +7,9 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "genericgfpoly.hpp"
 #include "genericgf.hpp"
-
-#include <iostream>
 
 using zxing::ArrayRef;
 using zxing::ErrorHandler;

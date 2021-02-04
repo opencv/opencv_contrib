@@ -15,8 +15,6 @@
 #include "../array.hpp"
 #include "../counted.hpp"
 
-#include <vector>
-
 namespace zxing {
 
 class GenericGF;

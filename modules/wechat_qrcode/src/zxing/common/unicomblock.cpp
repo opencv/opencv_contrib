@@ -4,11 +4,8 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
+#include "../../precomp.hpp"
 #include "unicomblock.hpp"
-#include <stdio.h>
-
-#include <algorithm>
 
 namespace zxing {
 short UnicomBlock::SEARCH_POS[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};

@@ -7,7 +7,7 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "qrcode_reader.hpp"
 #include <ctime>
 #include "../common/bitarray.hpp"

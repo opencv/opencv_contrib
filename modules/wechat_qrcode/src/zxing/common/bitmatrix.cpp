@@ -7,14 +7,8 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "bitmatrix.hpp"
-#include <iostream>
-#include <sstream>
-#include <string>
-
-using std::ostream;
-using std::ostringstream;
 
 using zxing::ArrayRef;
 using zxing::BitArray;

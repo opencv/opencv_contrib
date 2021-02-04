@@ -13,8 +13,6 @@
 
 #include "common/counted.hpp"
 
-#include <vector>
-
 namespace zxing {
 
 class ResultPoint : public Counted {

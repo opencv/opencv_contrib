@@ -58,7 +58,7 @@ Mat Align::crop(const Mat &inputImg, const Mat &srcPts, const float paddingW, co
     Rect crop_roi(crop_x_, crop_y_, end_x - crop_x_ + 1, end_y - crop_y_ + 1);
 
     Mat dst = inputImg(crop_roi).clone();
-    if (rotate90_) dst = dst.t();  // really is just transpose
+    if (rotate90_) dst = dst.t();  // transpose
     return dst;
 }
 

@@ -22,8 +22,6 @@
 #include "finder_pattern_info.hpp"
 #include "pattern_result.hpp"
 
-#include <vector>
-
 namespace zxing {
 class DecodeHints;
 

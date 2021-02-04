@@ -19,9 +19,6 @@
 #include "alignment_pattern.hpp"
 #include "finder_pattern.hpp"
 #include "finder_pattern_info.hpp"
-
-#include <vector>
-
 namespace zxing {
 namespace qrcode {
 class PatternResult : public Counted {

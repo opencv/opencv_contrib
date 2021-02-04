@@ -16,8 +16,6 @@
 #include "counted.hpp"
 #include "str.hpp"
 
-#include <string>
-
 namespace zxing {
 
 class DecoderResult : public Counted {

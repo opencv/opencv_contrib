@@ -21,7 +21,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-
+#include <map>
 #include "imgsource.hpp"
 using std::ostringstream;
 using std::string;

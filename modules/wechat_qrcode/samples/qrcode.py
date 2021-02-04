@@ -32,7 +32,7 @@ prevstr = ""
 
 if camIdx < 0:
     res, points = detector.detectAndDecode(img)
-    print(res)
+    print(res,points)
 else:
     cap = cv2.VideoCapture(camIdx)
     while True:

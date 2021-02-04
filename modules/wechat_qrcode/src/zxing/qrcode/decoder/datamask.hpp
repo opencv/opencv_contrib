@@ -15,9 +15,6 @@
 #include "../../common/bitmatrix.hpp"
 #include "../../common/counted.hpp"
 #include "../../errorhandler.hpp"
-
-#include <vector>
-
 namespace zxing {
 namespace qrcode {
 

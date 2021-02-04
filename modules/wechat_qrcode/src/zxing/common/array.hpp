@@ -13,8 +13,6 @@
 
 #include "counted.hpp"
 
-#include <vector>
-
 namespace zxing {
 
 template <typename T>

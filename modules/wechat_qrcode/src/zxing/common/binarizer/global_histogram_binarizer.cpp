@@ -7,19 +7,9 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "global_histogram_binarizer.hpp"
-
-using zxing::ArrayRef;
-using zxing::Binarizer;
-using zxing::BitArray;
-using zxing::BitMatrix;
-using zxing::ErrorHandler;
 using zxing::GlobalHistogramBinarizer;
-using zxing::Ref;
-
-// VC++
-using zxing::LuminanceSource;
 
 namespace {
 const int LUMINANCE_BITS = 5;
@@ -76,12 +66,6 @@ int GlobalHistogramBinarizer::estimateBlackPoint(ArrayRef<int> const& _buckets,
     int maxBucketCount = 0;
     int firstPeak = 0;
     int firstPeakSize = 0;
-    if (false) {
-        for (int x = 0; x < numBuckets; x++) {
-            cerr << _buckets[x] << " ";
-        }
-        cerr << endl;
-    }
     for (int x = 0; x < numBuckets; x++) {
         if (_buckets[x] > firstPeakSize) {
             firstPeak = x;
@@ -282,23 +266,6 @@ int GlobalHistogramBinarizer::binarizeImage0(ErrorHandler& err_handler) {
     LuminanceSource& source = *getLuminanceSource();
     Ref<BitMatrix> matrix(new BitMatrix(width, height, err_handler));
     if (err_handler.ErrCode()) return -1;
-
-#ifdef INPUT_BINARIZED
-    {
-        ArrayRef<char> localLuminances = source.getMatrix();
-        for (int y = 0; y < height; y++) {
-            int offset = y * width;
-            for (int x = 0; x < width; x++) {
-                int pixel = localLuminances[offset + x] & 0xff;
-                if (pixel < 128) {
-                    matrix->set(x, y);
-                }
-            }
-        }
-    }
-    matrix0_ = matrix;
-    return 0;
-#endif
     // Quickly calculates the histogram by sampling four rows from the image.
     // This proved to be more robust on the blackbox tests than sampling a
     // diagonal as we used to do.
