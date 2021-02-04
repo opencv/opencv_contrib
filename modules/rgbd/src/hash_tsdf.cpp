@@ -883,8 +883,115 @@ int HashTSDFVolumeCPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 
 #ifdef HAVE_OPENCL
 
-typedef cv::Mat _VolumeUnitIndexSet;
-typedef cv::Mat _VolumeUnitIndexes;
+
+//TODO: hash set, not hash map
+class ToyHashMap
+{
+public:
+    static const int hashDivisor = 32768;
+    static const int startCapacity = 1024; // 32768*4;
+
+    std::vector<int> hashes;
+    // 0-3 for key, 4th for internal use
+    // don't keep keep value
+    std::vector<Vec4i> data;
+    int capacity;
+    int last;
+
+    ToyHashMap()
+    {
+        hashes.resize(hashDivisor);
+        for (int i = 0; i < hashDivisor; i++)
+            hashes[i] = -1;
+        capacity = startCapacity;
+
+        data.resize(capacity);
+        for (int i = 0; i < capacity; i++)
+            data[i] = { 0, 0, 0, -1 };
+
+        last = 0;
+    }
+
+    ~ToyHashMap() { }
+
+    inline size_t calc_hash(Vec3i x) const
+    {
+        uint32_t seed = 0;
+        constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
+        for (int i = 0; i < 3; i++)
+        {
+            seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+
+    // should work on existing elements too
+    int insert(Vec3i idx)
+    {
+        if (last < capacity)
+        {
+            int hash = int(calc_hash(idx) % hashDivisor);
+            int place = hashes[hash];
+            if (place >= 0)
+            {
+                int oldPlace = place;
+                while (place >= 0)
+                {
+                    if (data[place][0] == idx[0] &&
+                        data[place][1] == idx[1] &&
+                        data[place][2] == idx[2])
+                        return 2;
+                    else
+                    {
+                        oldPlace = place;
+                        place = data[place][3];
+                        //std::cout << "place=" << place << std::endl;
+                    }
+                }
+
+                // found, create here
+                data[oldPlace][3] = last;
+            }
+            else
+            {
+                // insert at last
+                hashes[hash] = last;
+            }
+
+            data[last][0] = idx[0];
+            data[last][1] = idx[1];
+            data[last][2] = idx[2];
+            data[last][3] = -1;
+            last++;
+
+            return 1;
+        }
+        else
+            return 0;
+    }
+
+    int find(Vec3i idx) const
+    {
+        int hash = int(calc_hash(idx) % hashDivisor);
+        int place = hashes[hash];
+        // search a place
+        while (place >= 0)
+        {
+            if (data[place][0] == idx[0] &&
+                data[place][1] == idx[1] &&
+                data[place][2] == idx[2])
+                break;
+            else
+            {
+                place = data[place][3];
+            }
+        }
+
+        return place;
+    }
+};
+
+
 
 class HashTSDFVolumeGPU : public HashTSDFVolume
 {
@@ -898,7 +1005,7 @@ public:
 
     void integrateAllVolumeUnitsGPU(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
-    UMat allocateVolumeUnits(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
+    void allocateVolumeUnits(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics);
 
     void markActive(const Matx44f& cameraPose, const Intr& intrinsics, const Size frameSz, const int frameId);
 
@@ -911,7 +1018,7 @@ public:
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
-    size_t getTotalVolumeUnits() const override { return size_t(lastVolIndex); }
+    size_t getTotalVolumeUnits() const override { return size_t(hashMap.last); }
     int getVisibleBlocks(int currFrameId, int frameThreshold) const override;
 
 
@@ -932,7 +1039,6 @@ public:
 
     Point3f voxelCoordToVolume(const Vec3i& voxelIdx) const;
     Vec3i volumeToVoxelCoord(const Point3f& point) const;
-    int find_idx(cv::Mat v, Vec3i tsdf_idx) const;
 
 public:
     Vec4i volStrides;
@@ -941,8 +1047,6 @@ public:
     int buff_lvl;
 
     // per-volume-unit data
-    cv::UMat volumeUnitIndices;
-
     cv::UMat lastVisibleIndices;
 
     cv::UMat isActiveFlags;
@@ -952,10 +1056,12 @@ public:
     cv::Mat volUnitsDataCopy;
 
     cv::UMat pixNorms;
-    int lastVolIndex;
 
     //TODO: move indexes.volumes to GPU
-    VolumesTable indexes;
+    //VolumesTable indexes;
+    ToyHashMap hashMap;
+
+
     
     Vec8i neighbourCoords;
 };
@@ -1003,7 +1109,6 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstM
 void HashTSDFVolumeGPU::reset()
 {
     CV_TRACE_FUNCTION();
-    lastVolIndex = 0;
     degree = 15;
     buff_lvl = (int) pow(2, degree);
 
@@ -1016,39 +1121,13 @@ void HashTSDFVolumeGPU::reset()
 
     isActiveFlags = cv::UMat(buff_lvl, 1, CV_8U);
 
-    volumeUnitIndices = cv::UMat(buff_lvl, 1, CV_32SC4);
-
-    indexes = VolumesTable();
+    //indexes = VolumesTable();
+    hashMap = ToyHashMap();
 
     frameParams = Vec6f();
     pixNorms = UMat();
 }
 
-static inline bool find(cv::Mat v, Vec3i tsdf_idx, int lastVolIndex)
-{
-    for (int i = 0; i < lastVolIndex; i++)
-    {
-        Vec3i* p = v.ptr<Vec3i>(i);
-        if (*p == tsdf_idx)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-inline int HashTSDFVolumeGPU::find_idx(cv::Mat v, Vec3i tsdf_idx) const
-{
-    for (int i = 0; i < lastVolIndex; i++)
-    {
-        Vec3i* p = v.ptr<Vec3i>(i);
-        if (*p == tsdf_idx)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
 
 static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy)
 {
@@ -1110,8 +1189,16 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     Matx44f vol2camMatrix = (Affine3f(cameraPose).inv() * pose).matrix;
     Matx44f camInvMatrix = Affine3f(cameraPose).inv().matrix;
 
+    UMat hashesGpu(hashMap.hashDivisor, 1, CV_32S);
+    Mat(hashMap.hashes, false).copyTo(hashesGpu);
+
+    UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
+    Mat(hashMap.data, false).copyTo(hashDataGpu);
+
     k.args(ocl::KernelArg::ReadOnly(depth),
-           ocl::KernelArg::ReadOnly(volumeUnitIndices),
+           ocl::KernelArg::PtrReadOnly(hashesGpu),
+           ocl::KernelArg::PtrReadOnly(hashDataGpu),
+           (int)hashMap.hashDivisor,
            ocl::KernelArg::ReadWrite(volUnitsData),
            ocl::KernelArg::ReadOnly(pixNorms),
            ocl::KernelArg::ReadOnly(isActiveFlags),
@@ -1131,19 +1218,18 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     size_t globalSize[3];
     globalSize[0] = (size_t)resol; // volumeUnitResolution
     globalSize[1] = (size_t)resol; // volumeUnitResolution
-    globalSize[2] = (size_t)lastVolIndex; // num of volume units
+    globalSize[2] = (size_t)hashMap.last; // num of volume units
 
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 }
 
 
-UMat HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
+void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     const int newIndicesCapacity = VOLUMES_SIZE;
-    const int localCapacity = VOLUMES_SIZE;
-    std::vector<Vec4i> nodeIndices;
-    nodeIndices.reserve(newIndicesCapacity);
+    constexpr size_t pixCapacity = 16;
+    typedef std::array<Vec3i, pixCapacity> LocalVolUnits;
 
     Depth depth = _depth.getMat(ACCESS_READ);
 
@@ -1155,9 +1241,89 @@ UMat HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     const Point3f truncPt(truncDist, truncDist, truncDist);
     Mutex mutex;
     
+    // for new indices
+    ToyHashMap thm;
+
+    /* -----------------------
+        
+    String errorStr;
+    String name = "toy_alloc";
+
+    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+    String options = "-cl-mad-enable";
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if (k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    ToyHashMap ths;
+    UMat newSetHashes(ths.hashDivisor, 1, CV_32S);
+    Mat(ths.hashes, false).copyTo(newSetHashes);
+    int dt = CV_MAKETYPE(CV_32S, 8);
+    UMat newSetData(ths.capacity, 1, dt);
+    Mat(ths.data, false).copyTo(newSetData);
+    UMat newSetLast(1, 1, CV_32S);
+    newSetLast = ths.last;
+
+    k.args(ocl::KernelArg::PtrReadWrite(newSetHashes),
+           ocl::KernelArg::PtrReadWrite(newSetData),
+           ocl::KernelArg::PtrReadWrite(newSetLast),
+           ths.capacity,
+           ths.hashDivisor,
+           
+           
+
+    );
+
+    size_t globalSize[2];
+    globalSize[0] = divUp(depth.cols, depthStride);
+    globalSize[1] = divUp(depth.rows, depthStride);
+
+    if (!k.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
+    newSetHashes.copyTo(Mat(ths.hashes, false));
+    newSetData.copyTo(Mat(ths.data, false));
+
+    //TODO HUGE: add to globalMap instead
+            
+    ------------------------------------------- */
+    /*
+                         __global int* newSetHashes,
+                         __global int8* newSetData,
+                         __global int* newSetLast,
+                         const int newSetCapacity,
+                         const int newSetHashDivisor,
+
+                        __global const int* globalMapHashes,
+                        __global const int8* globalMapData,
+                        const int globalMapHashDivisor,
+
+                        __global const char * depthPtr,
+                        int depthStep, int depthOffset,
+                        int depthRows, int depthCols,
+
+                        const int depthStride,
+                        const float invDepthFactor,
+                        const float truncateThreshold,
+
+                        const float2 fixy, const float2 cxy,
+
+                        const float16 cam2vol,
+                        const float volumeUnitSizeInv,
+                        const float truncDist,
+
+                        __global volatile int* hsMutex, // set to 0 initially
+                        __global int* full // set to 0 initially
+    
+    */
+
+
     // -----------------------
 
-    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, _VolumeUnitIndexSet& _localAccessVolUnits, int& loc_vol_idx) {
+    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, ToyHashMap& ghm/*LocalVolUnits& localAccessVolUnits, int& locVolIdx*/)
+    {
         for (int y = yrange.start; y < yrange.end; y += depthStride)
         {
             const depthType* depthRow = depth[y];
@@ -1171,39 +1337,62 @@ UMat HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
                 //! Find accessed TSDF volume unit for valid 3D vertex
                 Vec3i lower_bound = this->volumeToVolumeUnitIdx(volPoint - truncPt);
                 Vec3i upper_bound = this->volumeToVolumeUnitIdx(volPoint + truncPt);
-
+                
+                int pixLocalCounter = 0;
+                LocalVolUnits pixLocalVolUnits;
                 for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
                     for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
                         for (int k = lower_bound[2]; k <= upper_bound[2]; k++)
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
 
-                            if (indexes.findRow(tsdf_idx) < 0)
+                            //if (indexes.findRow(tsdf_idx) < 0)
+                            if (hashMap.find(tsdf_idx) < 0)
                             {
-                                if (!find(_localAccessVolUnits, tsdf_idx, loc_vol_idx))
+                                bool found = false;
+                                for (int i = 0; i < pixLocalCounter; i++)
                                 {
-                                    *_localAccessVolUnits.ptr<Vec3i>(loc_vol_idx) = tsdf_idx;
-                                    loc_vol_idx++;
-
-                                    if (loc_vol_idx >= localCapacity)
+                                    if (pixLocalVolUnits[i] == tsdf_idx)
+                                    {
+                                        found = true; break;
+                                    }
+                                }
+                                if (!found)
+                                {
+                                    pixLocalVolUnits[pixLocalCounter++] = tsdf_idx;
+                                    if (pixLocalCounter >= pixCapacity)
                                     {
                                         //DEBUG
-                                        std::cout << "allocate: local capacity exhausted" << std::endl;
-
+                                        std::cout << "allocate: pix capacity exhausted" << std::endl;
                                         return;
                                     }
                                 }
                             }
                         }
+
+                // lock localAccessVolUnits somehow
+                for (int i = 0; i < pixLocalCounter; i++)
+                {
+                    Vec3i idx = pixLocalVolUnits[i];
+                    if (!ghm.insert(idx))
+                    {
+                        //DEBUG
+                        std::cout << "allocate: local capacity exhausted" << std::endl;
+                        //return;
+                    }
+                }
+                // unlock
             }
         }
     };
 
     Rect dim(0, 0, depth.cols, depth.rows);
-    Size gsz(64, 64);
+    Size gsz(32, 32);
     Size gg(divUp(dim.width, gsz.width), divUp(dim.height, gsz.height));
 
-    auto allocateLambda = [&](const Range& r) {
+    bool needReallocation = false;
+    auto allocateLambda = [&](const Range& r)
+    {
 
     for (int yg = r.start; yg < r.end; yg++)
     {
@@ -1213,39 +1402,190 @@ UMat HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
             gr = gr & dim;
             Range xr(gr.tl().x, gr.br().x), yr(gr.tl().y, gr.br().y);
 
-            _VolumeUnitIndexSet _localAccessVolUnits = cv::Mat(localCapacity, 1, CV_32SC3);
+            /*
+            LocalVolUnits localAccessVolUnits;
             int loc_vol_idx = 0;
+            */
 
-            fillLocalAcessVolUnits(xr, yr, _localAccessVolUnits, loc_vol_idx);
+            ToyHashMap ghm;
 
-            mutex.lock();
-            for (int i = 0; i < loc_vol_idx; i++)
+            fillLocalAcessVolUnits(xr, yr, ghm /*localAccessVolUnits, loc_vol_idx*/);
+
+            if (ghm.last)
             {
-                Vec3i idx = *_localAccessVolUnits.ptr<Vec3i>(i);
+                std::lock_guard<std::recursive_mutex> al(mutex);
 
-                // if not found
-                if (indexes.findRow(idx) < 0)
+                //mutex.lock();
+                for (int i = 0; i < ghm.last; i++)
                 {
-                    Volume_NODE* node = indexes.insert(idx, lastVolIndex);
-                    nodePtrs.push_back(node);
-                    lastVolIndex++;
+                    Vec4i node = ghm.data[i];
+                    Vec3i idx(node[0], node[1], node[2]);
+                    
+                    //TODO: 1. add to separate hash map instead, then merge on GPU side
+
+                    int result = thm.insert(idx);
+                    if (!result)
+                    {
+                        needReallocation = true;
+                        //DEBUG
+                        std::cout << "new indices: need reallocation, exiting" << std::endl;
+
+                        return;
+                    }
+
+                    /*
+                    // if not found
+                    //if (indexes.findRow(idx) < 0)
+                    if (hashMap.find(idx) < 0)
+                    {
+                        //bool extend = indexes.insert(idx, lastVolIndex);
+                        int result = hashMap.insert(idx, lastVolIndex);
+                        //TODO: replace 1 by enum
+                        if (result == 1)
+                        {
+                            Vec4i idx4(idx[0], idx[1], idx[2], 0);
+                            nodeIndices.push_back(idx4);
+                            lastVolIndex++;
+                        }
+                        else if (result == 0)
+                        {
+                            needReallocation = true;
+                            //DEBUG
+                            std::cout << "need reallocation, exiting" << std::endl;
+
+                            return;
+                        }
+                    }
+                    */
+
                 }
+                //mutex.unlock();
+
             }
-            mutex.unlock();
+
+            /*
+            if (loc_vol_idx > 0)
+            {
+                //DEBUG
+                //std::cout << "loc_vol_idx: " << loc_vol_idx << std::endl;
+
+                mutex.lock();
+                for (int i = 0; i < loc_vol_idx; i++)
+                {
+                    Vec3i idx = localAccessVolUnits[i];
+
+                    // if not found
+                    if (indexes.findRow(idx) < 0)
+                    {
+                        Volume_NODE* node = indexes.insert(idx, lastVolIndex);
+                        nodePtrs.push_back(node);
+                        lastVolIndex++;
+                    }
+                }
+                mutex.unlock();
+            }
+            */
         }
     }
 
     };
 
-    parallel_for_(Range(0, gg.height), allocateLambda);
-    //allocateLambda(Range(0, gg.height));
+    do
+    {
+        if (needReallocation)
+        {
+            /*
+            std::cout << "reallocation!! from: " << hashMap.capacity << " to x2: " << hashMap.capacity * 2 << std::endl;
+            hashMap.capacity *= 2;
+            hashMap.data.resize(hashMap.capacity);
+            */
+            std::cout << "reallocation group!! from: " << thm.capacity << " to x2: " << thm.capacity * 2 << std::endl;
+            thm.capacity *= 2;
+            thm.data.resize(thm.capacity);
+
+            needReallocation = false;
+        }
+
+        parallel_for_(Range(0, gg.height), allocateLambda);
+        //allocateLambda(Range(0, gg.height));
+    } while (needReallocation);
 
 
+    auto pushToGlobal = [](const ToyHashMap thm, ToyHashMap& globalHashMap,
+                           bool& needReallocation, Mutex& mutex)
+    {
+        for (int i = 0; i < thm.last; i++)
+        {
+                Vec4i node = thm.data[i];
+                Vec3i idx(node[0], node[1], node[2]);
+
+                std::lock_guard<std::recursive_mutex> al(mutex);
+
+                int result = globalHashMap.insert(idx);
+                if (result == 0)
+                {
+                    needReallocation = true;
+                    //DEBUG
+                    std::cout << "need reallocation, exiting" << std::endl;
+                    return;
+                }
+        }
+    };
+    /*
+    String errorStr;
+    String name = "push_to_global";
+
+    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
+    String options = "-cl-mad-enable";
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if (k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+    
+    ToyHashMap ths;
+    UMat newSetHashes(ths.hashDivisor, 1, CV_32S);
+    Mat(ths.hashes, false).copyTo(newSetHashes);
+    int dt = CV_MAKETYPE(CV_32S, 8);
+    UMat newSetData(ths.capacity, 1, dt);
+    Mat(ths.data, false).copyTo(newSetData);
+    UMat newSetLast(1, 1, CV_32S);
+    newSetLast = ths.last;
+
+    k.args(ocl::KernelArg::PtrReadWrite(newSetHashes),
+        ocl::KernelArg::PtrReadWrite(newSetData),
+        ocl::KernelArg::PtrReadWrite(newSetLast),
+        ths.capacity,
+        ths.hashDivisor,
+
+        );
+
+    size_t globalSize[1];
+    globalSize[0] = thm.last;
+
+    if (!k.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
+    newSetHashes.copyTo(Mat(ths.hashes, false));
+    newSetData.copyTo(Mat(ths.data, false));
+    */
+
+    needReallocation = false;
+    do
+    {
+        if (needReallocation)
+        {
+            std::cout << "reallocation global!! from: " << hashMap.capacity << " to x2: " << hashMap.capacity * 2 << std::endl;
+            hashMap.capacity *= 2;
+            hashMap.data.resize(hashMap.capacity);
+
+            needReallocation = false;
+        }
+
+        pushToGlobal(thm, hashMap, needReallocation, mutex);
+    } while (needReallocation);
+        
     // ---------------------
-
-    UMat uni(nodeIndices.size(), 1, CV_32SC4);
-    Mat(nodeIndices).copyTo(uni);
-    return uni;
 }
 
 
@@ -1266,8 +1606,16 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     const Intr::Projector proj(intrinsics.makeProjector());
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
+    UMat hashesGpu(hashMap.hashDivisor, 1, CV_32S);
+    Mat(hashMap.hashes, false).copyTo(hashesGpu);
+
+    UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
+    Mat(hashMap.data, false).copyTo(hashDataGpu);
+
     k.args(
-        ocl::KernelArg::ReadOnly(volumeUnitIndices),
+        ocl::KernelArg::PtrReadOnly(hashesGpu),
+        ocl::KernelArg::PtrReadOnly(hashDataGpu),
+        (int)hashMap.hashDivisor,
         ocl::KernelArg::WriteOnly(isActiveFlags),
         ocl::KernelArg::WriteOnly(lastVisibleIndices),
         vol2cam.matrix,
@@ -1275,12 +1623,12 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
         cxy,
         frameSz,
         volumeUnitSize,
-        lastVolIndex,
+        hashMap.last,
         truncateThreshold,
         frameId
     );
 
-    size_t globalSize[1] = { (size_t)lastVolIndex };
+    size_t globalSize[1] = { (size_t)hashMap.last };
     if (!k.run(1, globalSize, nullptr, true))
         throw std::runtime_error("Failed to run kernel");
 }
@@ -1294,15 +1642,15 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     UMat depth = _depth.getUMat();
 
     // Save length to fill new data in ranges
-    int oldLastVolIndex = lastVolIndex;
-    UMat nodeIndices = allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
-
+    int sizeBefore = hashMap.last;
+    allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
+    int sizeAfter = hashMap.last;
     //! Perform the allocation
 
     // Grow buffers
-    if (lastVolIndex >= buff_lvl)
+    if (sizeAfter >= buff_lvl)
     {
-        degree = (int)(log2(lastVolIndex) + 1); // clz() would be better
+        degree = (int)(log2(sizeAfter) + 1); // clz() would be better
         int oldBuffSize = buff_lvl;
         buff_lvl = (int)pow(2, degree);
 
@@ -1321,17 +1669,12 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         UMat newIsActiveFlags(buff_lvl, 1, CV_8U);
         isActiveFlags.copyTo(newIsActiveFlags.rowRange(oldr));
         isActiveFlags = newIsActiveFlags;
-
-        UMat newVolumeUnitIndices(buff_lvl, 1, CV_32SC4);
-        volumeUnitIndices.copyTo(newVolumeUnitIndices.rowRange(oldr));
-        volumeUnitIndices = newVolumeUnitIndices;
     }
 
     // Fill data for new volume units
-    Range r(oldLastVolIndex, lastVolIndex);
+    Range r(sizeBefore, sizeAfter);
     if (r.start < r.end)
     {
-        nodeIndices.copyTo(volumeUnitIndices.rowRange(r));
         lastVisibleIndices.rowRange(r) = frameId;
         isActiveFlags.rowRange(r) = 1;
 
@@ -1449,7 +1792,8 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
         auto it = iterMap[dictIdx];
         if (it < -1)
         {
-            it = indexes.findRow(volumeUnitIdx);
+            //it = indexes.findRow(volumeUnitIdx);
+            it = hashMap.find(volumeUnitIdx);
             iterMap[dictIdx] = it;
         }
 
@@ -1511,7 +1855,8 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
         auto it = iterMap[dictIdx];
         if (it < -1)
         {
-            it = indexes.findRow(volumeUnitIdx);
+            //it = indexes.findRow(volumeUnitIdx);
+            it = hashMap.find(volumeUnitIdx);
             iterMap[dictIdx] = it;
         }
 
@@ -1647,12 +1992,24 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     Mat(pose.matrix).copyTo(volPoseGpu);
     Mat(pose.inv().matrix).copyTo(invPoseGpu);
 
+    UMat hashesGpu(hashMap.hashDivisor, 1, CV_32S);
+    Mat(hashMap.hashes, false).copyTo(hashesGpu);
+
+    UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
+    Mat(hashMap.data, false).copyTo(hashDataGpu);
+
     k.args(
+        ocl::KernelArg::PtrReadOnly(hashesGpu),
+        ocl::KernelArg::PtrReadOnly(hashDataGpu),
+        (int)hashMap.hashDivisor,
+        /*
         ocl::KernelArg::PtrReadOnly(indexes.volumes.getUMat(ACCESS_RW)),
         (int)indexes.list_size,
         (int)indexes.bufferNums,
         (int)indexes.hash_divisor,
-        (int)lastVolIndex,
+        */
+
+
         ocl::KernelArg::WriteOnlyNoSize(points),
         ocl::KernelArg::WriteOnlyNoSize(normals),
         frameSize,
@@ -1688,12 +2045,14 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
     {
         //TODO: remove it when it works w/o CPU code
         volUnitsData.copyTo(volUnitsDataCopy);
-        Mat volumeUnitIndicesCopy(buff_lvl, 1, CV_32SC4);
-        volumeUnitIndices.copyTo(volumeUnitIndicesCopy);
+        //TODO: remove it when it works w/o CPU code
+        //TODO: enable it when it's on GPU
+        //UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
+        //Mat(hashMap.data, false).copyTo(hashDataGpu);
 
         std::vector<std::vector<ptype>> pVecs, nVecs;
 
-        Range _fetchRange(0, lastVolIndex);
+        Range _fetchRange(0, hashMap.last);
 
         const int nstripes = -1;
 
@@ -1706,7 +2065,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
             std::vector<ptype> points, normals;
             for (int row = range.start; row < range.end; row++)
             {
-                cv::Vec4i idx4 = *volumeUnitIndicesCopy.ptr<Vec4i>(row, 0);
+                cv::Vec4i idx4 = hashMap.data[row];
                 cv::Vec3i idx(idx4[0], idx4[1], idx4[2]);
 
                 Point3f base_point = volume.volumeUnitIdxToVolume(idx);
@@ -1798,7 +2157,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 
     int numVisibleBlocks = 0;
     //! TODO: Iterate over map parallely?
-    for (int i = 0; i < lastVolIndex; i++)
+    for (int i = 0; i < hashMap.last; i++)
     {
         if (*cpuIndices.ptr<int>(i) > (currFrameId - frameThreshold))
             numVisibleBlocks++;

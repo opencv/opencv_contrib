@@ -45,7 +45,7 @@ __kernel void preCalculationPixNorm (__global char * pixNormsPtr,
                                      int pixNormsRows, int pixNormsCols,
                                      const __global float * xx,
                                      const __global float * yy)
-{    
+{
     int i = get_global_id(0);
     int j = get_global_id(1);
     if (i < pixNormsRows && j < pixNormsCols)
@@ -82,6 +82,25 @@ static int findRow(__global const struct Volume_NODE * hash_table, int3 indx,
 
     return -1;
 }
+
+//TODO: make hashDivisor a power of 2
+static int toy_find(int3 idx, const int hashDivisor, __global const int* hashes,
+                    __global const int4* data)
+{
+    int hash = calc_hash(idx) % hashDivisor;
+    int place = hashes[hash];
+    // search a place
+    while (place >= 0)
+    {
+        if (all(data[place].s012 == idx))
+            break;
+        else
+            place = data[place].s3;
+    }
+
+    return place;
+}
+
 
 
 static void integrateVolumeUnit(
@@ -243,10 +262,10 @@ __kernel void integrateAllVolumeUnits(
                         __global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
-                        // volumeUnitIndices
-                        __global const int4 * volumeUnitIndices,
-                        int volumeUnitIndices_step, int volumeUnitIndices_offset,
-                        int volumeUnitIndices_rows, int volumeUnitIndices_cols,
+                        // hashMap
+                        __global const int* hashes,
+                        __global const int4* data,
+                        const int hash_divisor,
                         // volUnitsData
                         __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
@@ -276,7 +295,7 @@ __kernel void integrateAllVolumeUnits(
     int i = get_global_id(0);
     int j = get_global_id(1);
     int row = get_global_id(2);
-    int3 idx = volumeUnitIndices[row].xyz;
+    int3 idx = data[row].xyz;
 
     const int4 volResolution4 = (int4)(volUnitResolution,
                                        volUnitResolution,
@@ -382,10 +401,17 @@ inline float interpolate(float3 t, float8 vz)
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
                              int volumeUnitResolution,
                              float voxelSizeInv,
+                             
+                             /*
                              const __global struct Volume_NODE * hash_table,
                              const int list_size,
                              const int bufferNums,
                              const int hash_divisor,
+                             */
+                             const int hash_divisor,
+                             __global const int* hashes,
+                             __global const int4* data,
+
                              int3 volStrides, int table_offset)
 {
     float3 normal = (float3) (0.0f, 0.0f, 0.0f);
@@ -437,7 +463,8 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
         int it = iterMap[dictIdx];
         if (it < -1)
         {
-            it = findRow(hash_table, volumeUnitIdx, list_size, bufferNums, hash_divisor);
+            //it = findRow(hash_table, volumeUnitIdx, list_size, bufferNums, hash_divisor);
+            it = toy_find(volumeUnitIdx, hash_divisor, hashes, data);
             iterMap[dictIdx] = it;
         }
 
@@ -499,11 +526,16 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 typedef float4 ptype;
 
 __kernel void raycast(
-                    __global const struct Volume_NODE * hash_table,
-                    const int list_size, 
-                    const int bufferNums, 
+                    __global const int* hashes,
+                    __global const int4* data,
                     const int hash_divisor,
-                    const int lastVolIndex, 
+                    /*
+                    __global const struct Volume_NODE * hash_table,
+                    const int list_size,
+                    const int bufferNums,
+                    const int hash_divisor,
+                    */
+
                     __global char * pointsptr,
                       int points_step, int points_offset,
                     __global char * normalsptr,
@@ -570,7 +602,9 @@ __kernel void raycast(
         float3 currVolUnitIdxF = floor(currRayPos / volumeUnitSize);
         int3 currVolumeUnitIdx = convert_int3(currVolUnitIdxF);
 
-        int row = findRow(hash_table, currVolumeUnitIdx, list_size, bufferNums, hash_divisor);
+        //int row = findRow(hash_table, currVolumeUnitIdx, list_size, bufferNums, hash_divisor);
+        int row = toy_find(currVolumeUnitIdx, hash_divisor, hashes, data);
+
         float currTsdf = prevTsdf;
         int currWeight = 0;
         float stepSize = 0.5 * volumeUnitSize;
@@ -593,8 +627,9 @@ __kernel void raycast(
             {
                 float3 pv = orig + tInterp * dir;
                 float3 nv = getNormalVoxel( pv, allVolumePtr, volumeUnitResolution,
-                                            voxelSizeInv, hash_table,
-                                            list_size, bufferNums, hash_divisor,
+                                            voxelSizeInv,
+                                            //hash_table, list_size, bufferNums, hash_divisor,
+                                            hash_divisor, hashes, data,
                                             volStrides, table_offset);
 
                 if(!any(isnan(nv)))
@@ -624,9 +659,9 @@ __kernel void raycast(
 
 
 __kernel void markActive (
-        const __global char* volumeUnitIndicesPtr,
-        int volumeUnitIndicesStep, int volumeUnitIndicesOffset,
-        int volumeUnitIndicesRows, int volumeUnitIndicesCols,
+        __global const int* hashes,
+        __global const int4* data,
+        const int hash_divisor,
 
         __global char* isActiveFlagsPtr,
         int isActiveFlagsStep, int isActiveFlagsOffset,
@@ -650,8 +685,7 @@ __kernel void markActive (
 
     if (row < lastVolIndex)
     {
-        int3 idx = (*(__global const int4*)(volumeUnitIndicesPtr + volumeUnitIndicesOffset +
-                                            row * volumeUnitIndicesStep)).xyz;
+        int3 idx = data[row].xyz;
 
         float3 volumeUnitPos = convert_float3(idx) * volumeUnitSize;
 
