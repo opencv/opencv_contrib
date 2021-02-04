@@ -32,12 +32,13 @@ template<class Scene>
 struct RenderInvoker : ParallelLoopBody
 {
     RenderInvoker(Mat_<float>& _frame, Affine3f _pose,
-        Reprojector _reproj,
-        float _depthFactor) : ParallelLoopBody(),
+        Reprojector _reproj, float _depthFactor, bool _onlySemisphere) 
+        : ParallelLoopBody(),
         frame(_frame),
         pose(_pose),
         reproj(_reproj),
-        depthFactor(_depthFactor)
+        depthFactor(_depthFactor),
+        onlySemisphere(_onlySemisphere)
     { }
 
     virtual void operator ()(const cv::Range& r) const
@@ -64,7 +65,7 @@ struct RenderInvoker : ParallelLoopBody
                 for (int step = 0; step < maxSteps && t < maxDepth; step++)
                 {
                     Point3f p = orig + dir * t;
-                    float d = Scene::map(p);
+                    float d = Scene::map(p, onlySemisphere);
                     if (d < 0.000001f)
                     {
                         float depth = std::sqrt(t * t * xyt);
@@ -83,12 +84,13 @@ struct RenderInvoker : ParallelLoopBody
     Affine3f pose;
     Reprojector reproj;
     float depthFactor;
+    bool onlySemisphere;
 };
 
 struct Scene
 {
     virtual ~Scene() {}
-    static Ptr<Scene> create(Size sz, Matx33f _intr, float _depthFactor);
+    static Ptr<Scene> create(Size sz, Matx33f _intr, float _depthFactor, bool onlySemisphere);
     virtual Mat depth(Affine3f pose) = 0;
     virtual std::vector<Affine3f> getPoses() = 0;
 };
@@ -102,12 +104,13 @@ struct SemisphereScene : Scene
     Size frameSize;
     Matx33f intr;
     float depthFactor;
+    bool onlySemisphere;
 
-    SemisphereScene(Size sz, Matx33f _intr, float _depthFactor) :
-        frameSize(sz), intr(_intr), depthFactor(_depthFactor)
+    SemisphereScene(Size sz, Matx33f _intr, float _depthFactor, bool _onlySemisphere) :
+        frameSize(sz), intr(_intr), depthFactor(_depthFactor), onlySemisphere(_onlySemisphere)
     { }
 
-    static float map(Point3f p)
+    static float map(Point3f p, bool onlySemisphere)
     {
         float plane = p.y + 0.5f;
 
@@ -129,7 +132,12 @@ struct SemisphereScene : Scene
         Point3f subSpherePose = p - Point3f(0.3f, -0.1f, -0.3f);
         float subSphere = (float)cv::norm(subSpherePose) - subSphereRadius;
 
-        float res = min({sphereMinusBox, subSphere, plane});
+        float res;
+        if (!onlySemisphere)
+            res = min({sphereMinusBox, subSphere, plane});
+        else
+            res = sphereMinusBox;
+
         return res;
     }
 
@@ -139,7 +147,7 @@ struct SemisphereScene : Scene
         Reprojector reproj(intr);
 
         Range range(0, frame.rows);
-        parallel_for_(range, RenderInvoker<SemisphereScene>(frame, pose, reproj, depthFactor));
+        parallel_for_(range, RenderInvoker<SemisphereScene>(frame, pose, reproj, depthFactor, onlySemisphere));
 
         return std::move(frame);
     }
@@ -164,9 +172,9 @@ struct SemisphereScene : Scene
 
 };
 
-Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
+Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor, bool _onlySemisphere)
 {
-    return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
+    return makePtr<SemisphereScene>(sz, _intr, _depthFactor, _onlySemisphere);
 }
 
 // this is a temporary solution
@@ -274,7 +282,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = false;
+static const bool display = true;
 static const bool parallelCheck = false;
 
 void normalsCheck(Mat normals)
@@ -288,7 +296,7 @@ void normalsCheck(Mat normals)
             float length = vector[0] * vector[0] +
                 vector[1] * vector[1] +
                 vector[2] * vector[2];
-            ASSERT_LT(abs(1 - length), 0.0001f);
+            ASSERT_LT(abs(1 - length), 0.0001f) << "There is normal with length != 1";
         }
     }
 }
@@ -301,7 +309,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     else
         _params = kinfu::Params::coarseParams();
 
-    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor, false);
     std::vector<Affine3f> poses = scene->getPoses();
 
     Mat depth = scene->depth(poses[0]);
@@ -318,7 +326,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             float length = vector[0] * vector[0] +
                 vector[1] * vector[1] +
                 vector[2] * vector[2];
-            ASSERT_LT(abs(1 - length), 0.0001f);
+            ASSERT_LT(abs(1 - length), 0.0001f) << "There is normal with length != 1";
         }
     };
 
@@ -421,7 +429,7 @@ void valid_points_test(bool isHashTSDF)
     else
         _params = kinfu::Params::coarseParams();
 
-    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor, true);
     std::vector<Affine3f> poses = scene->getPoses();
 
     Mat depth = scene->depth(poses[0]);
@@ -467,7 +475,9 @@ void valid_points_test(bool isHashTSDF)
     }
 
     float percentValidity = float(profile) / float(anfas);
-    ASSERT_LT(0.5 - percentValidity, 0.3);
+    ASSERT_NE(profile, 0) << "There is no points in profile";
+    ASSERT_NE(anfas, 0) << "There is no points in anfas"; 
+    ASSERT_LT(abs(0.5 - percentValidity), 0.3) << "percentValidity out of [0.3; 0.7] (percentValidity=" << percentValidity << ")";
 }
 
 #ifndef HAVE_OPENCL
