@@ -358,7 +358,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         points = _points.getMat(af);
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(20000);
+        waitKey(2000);
     }
 
     if (isRaycast)
@@ -384,7 +384,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             points = _newPoints.getMat(af);
             renderPointsNormals(points, normals, image, _params->lightPose);
             imshow("render", image);
-            waitKey(20000);
+            waitKey(2000);
         }
 
     }
@@ -448,7 +448,7 @@ void valid_points_test(bool isHashTSDF)
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(20000);
+        waitKey(2000);
     }
 
     volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
@@ -463,7 +463,7 @@ void valid_points_test(bool isHashTSDF)
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(20000);
+        waitKey(2000);
     }
 
     float percentValidity = float(profile) / float(anfas);
