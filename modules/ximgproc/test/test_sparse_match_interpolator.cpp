@@ -93,6 +93,14 @@ TEST(InterpolatorTest, ReferenceAccuracy)
 
     EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_INF), MAX_DIF);
     EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1) , MAX_MEAN_DIF*res_flow.total());
+
+    Mat from_point_mat(from_points);
+    Mat to_points_mat(to_points);
+    interpolator->interpolate(src,from_point_mat,Mat(),to_points_mat,res_flow);
+
+    EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_INF), MAX_DIF);
+    EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1) , MAX_MEAN_DIF*res_flow.total());
+
 }
 
 TEST(InterpolatorTest, RICReferenceAccuracy)
@@ -141,6 +149,13 @@ TEST(InterpolatorTest, RICReferenceAccuracy)
 
     EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_INF), MAX_DIF);
     EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1), MAX_MEAN_DIF*res_flow.total());
+
+    Mat from_point_mat(from_points);
+    Mat to_points_mat(to_points);
+    interpolator->interpolate(src, from_point_mat, src1, to_points_mat, res_flow);
+
+    EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_INF), MAX_DIF);
+    EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1) , MAX_MEAN_DIF*res_flow.total());
 }
 
 TEST_P(InterpolatorTest, MultiThreadReproducibility)
