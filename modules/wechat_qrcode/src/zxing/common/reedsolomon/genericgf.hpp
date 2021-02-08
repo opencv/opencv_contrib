@@ -14,8 +14,6 @@
 #include "../../errorhandler.hpp"
 #include "../counted.hpp"
 
-#include <vector>
-
 namespace zxing {
 class GenericGFPoly;
 

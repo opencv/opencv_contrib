@@ -16,8 +16,6 @@
 #include "../errorhandler.hpp"
 #include "error_correction_level.hpp"
 
-#include <vector>
-
 namespace zxing {
 namespace qrcode {
 

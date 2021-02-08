@@ -9,7 +9,6 @@
 #define __ZXING_COMMON_ADAPTIVE_THRESHOLD_MEAN_BINARIZER_HPP__
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <vector>
 #include "../../binarizer.hpp"
 #include "../../errorhandler.hpp"
 #include "../bitarray.hpp"

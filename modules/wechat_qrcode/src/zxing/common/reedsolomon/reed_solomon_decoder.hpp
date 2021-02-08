@@ -17,9 +17,6 @@
 #include "genericgf.hpp"
 #include "genericgfpoly.hpp"
 
-#include <memory>
-#include <vector>
-
 namespace zxing {
 class GenericGFPoly;
 class GenericGF;

@@ -17,10 +17,6 @@
 #include "alignment_pattern.hpp"
 #include "finder_pattern.hpp"
 
-#include "alignment_pattern.hpp"
-
-#include <vector>
-
 namespace zxing {
 namespace qrcode {
 

@@ -15,9 +15,6 @@
 #include "array.hpp"
 #include "bitarray.hpp"
 #include "counted.hpp"
-
-#include <iostream>
-#include <limits>
 using namespace std;
 
 namespace zxing {

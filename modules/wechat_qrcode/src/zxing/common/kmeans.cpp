@@ -4,14 +4,9 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
+#include "../../precomp.hpp"
 #include "kmeans.hpp"
 
-#include <cmath>
-#include <iostream>
-#include <vector>
-
-using namespace std;
 typedef unsigned int uint;
 
 namespace zxing {
@@ -21,8 +16,6 @@ double cal_distance(vector<double> a, vector<double> b) {
     const float KMEANS_MS_FACTOR = 1;
 
     uint da = a.size();
-    uint db = b.size();
-    if (da != db) cerr << "Dimensions of two vectors must be same!!\n";
     double val = 0.0;
     for (uint i = 0; i < da; i++) {
         if (i == 1)

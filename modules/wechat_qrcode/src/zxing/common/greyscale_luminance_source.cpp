@@ -7,7 +7,7 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "greyscale_luminance_source.hpp"
 #include "bytematrix.hpp"
 #include "greyscale_rotated_luminance_source.hpp"

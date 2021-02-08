@@ -7,14 +7,10 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "../common/stringutils.hpp"
 #include "../decodehints.hpp"
 
-#include <cstring>
-
-using namespace std;
-using namespace zxing;
 using namespace zxing::common;
 
 // N.B.: these are the iconv strings for at least some versions of iconv

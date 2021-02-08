@@ -7,13 +7,11 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "perspective_transform.hpp"
 
-#include <cmath>
 
 namespace zxing {
-using namespace std;
 
 // This class implements a perspective transform in two dimensions. Given four
 // source and four destination points, it will compute the transformation

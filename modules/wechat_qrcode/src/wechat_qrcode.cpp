@@ -103,10 +103,7 @@ vector<string> WeChatQRCode::detectAndDecode(InputArray img, OutputArrayOfArrays
         for (size_t i = 0; i < res_points.size(); i++) {
             Mat tmp_point;
             tmp_points.push_back(tmp_point);
-            res_points[i].convertTo(((OutputArray)tmp_points[i]),
-                                    ((OutputArray)tmp_points[i]).fixedType()
-                                        ? ((OutputArray)tmp_points[i]).type()
-                                        : CV_32FC2);
+            res_points[i].convertTo(((OutputArray)tmp_points[i]), CV_32FC2);
         }
         points.createSameSize(tmp_points, CV_32FC2);
         points.assign(tmp_points);

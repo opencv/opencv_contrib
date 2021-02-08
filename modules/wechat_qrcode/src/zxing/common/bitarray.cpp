@@ -7,14 +7,12 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "bitarray.hpp"
 
-using std::vector;
 using zxing::ArrayRef;
 using zxing::BitArray;
 using zxing::ErrorHandler;
-// VC++
 using zxing::Ref;
 
 #if __WORDSIZE == 64

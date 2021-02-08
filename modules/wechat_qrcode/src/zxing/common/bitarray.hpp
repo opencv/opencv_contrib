@@ -16,9 +16,6 @@
 #include "array.hpp"
 #include "counted.hpp"
 #include <cstring>
-#include <iostream>
-#include <limits>
-#include <vector>
 
 namespace zxing {
 

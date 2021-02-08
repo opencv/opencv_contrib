@@ -26,9 +26,13 @@ vector<Mat> SSDDetector::forward(Mat img, const int target_width, const int targ
 
     auto prob = net_.forward("detection_output");
     vector<Mat> point_list;
+    // the shape is (1,1,100,7)=>(batch,channel,count,dim)
     for (int row = 0; row < prob.size[2]; row++) {
         const float* prob_score = prob.ptr<float>(0, 0, row);
+        // prob_score[0] is not used.
+        // prob_score[1]==1 stands for qrcode
         if (prob_score[1] == 1) {
+            // prob_score[2] is the probability of the qrcode, which is not used.
             auto point = Mat(4, 2, CV_32FC1);
             float x0 = CLIP(prob_score[3] * img_w, 0.0f, img_w - 1.0f);
             float y0 = CLIP(prob_score[4] * img_h, 0.0f, img_h - 1.0f);

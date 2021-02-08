@@ -7,7 +7,7 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "decoder.hpp"
 #include "../error_correction_level.hpp"
 #include "../version.hpp"
@@ -15,10 +15,6 @@
 #include "decoded_bit_stream_parser.hpp"
 #include "qrcode_decoder_metadata.hpp"
 
-#include <iostream>
-
-using std::cout;
-using std::endl;
 using zxing::DecoderResult;
 using zxing::Ref;
 using zxing::qrcode::Decoder;

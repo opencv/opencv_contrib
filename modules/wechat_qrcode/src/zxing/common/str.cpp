@@ -7,18 +7,12 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "str.hpp"
 
-#include <cstring>
-
-using std::string;
 using zxing::Ref;
 using zxing::String;
 using zxing::StrUtil;
-
-using namespace std;
-
 String::String(const std::string& text) : text_(text) {}
 
 String::String(int capacity) { text_.reserve(capacity); }
@@ -84,7 +78,7 @@ string StrUtil::numberToString(T Number) {
 
 template <typename T>
 T StrUtil::stringToNumber(const string& Text) {
-    istringstream ss(Text);
+    std::istringstream ss(Text);
     T result;
     return ss >> result ? result : 0;
 }

@@ -7,17 +7,9 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "alignment_pattern_finder.hpp"
 
-#include <cmath>
-#include <cstdlib>
-#include <map>
-#include <vector>
-
-using std::abs;
-using std::map;
-using std::vector;
 using zxing::ErrorHandler;
 using zxing::ReaderErrorHandler;
 using zxing::Ref;

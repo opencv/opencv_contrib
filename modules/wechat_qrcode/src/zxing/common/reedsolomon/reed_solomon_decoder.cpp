@@ -7,19 +7,14 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "reed_solomon_decoder.hpp"
-#include <iostream>
-#include <memory>
 
-using std::vector;
 using zxing::ArrayRef;
 using zxing::ErrorHandler;
 using zxing::GenericGFPoly;
 using zxing::ReedSolomonDecoder;
 using zxing::Ref;
-
-// VC++
 using zxing::GenericGF;
 
 ReedSolomonDecoder::ReedSolomonDecoder(Ref<GenericGF> field_) : field(field_) {}
