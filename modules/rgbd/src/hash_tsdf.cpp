@@ -195,7 +195,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
                         for (int k = lower_bound[2]; k <= upper_bound[2]; k++)
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
-                            if (!localAccessVolUnits.count(tsdf_idx))
+                            if (localAccessVolUnits.count(tsdf_idx) <= 0 && this->volumeUnits.count(tsdf_idx) <= 0)
                             {
                                 //! This volume unit will definitely be required for current integration
                                 localAccessVolUnits.emplace(tsdf_idx);
@@ -208,10 +208,9 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
         for (const auto& tsdf_idx : localAccessVolUnits)
         {
             //! If the insert into the global set passes
-            if (!this->volumeUnits.count(tsdf_idx))
+            if (!newIndices.count(tsdf_idx))
             {
                 // Volume allocation can be performed outside of the lock
-                this->volumeUnits.emplace(tsdf_idx, VolumeUnit());
                 newIndices.emplace(tsdf_idx);
             }
         }
@@ -222,7 +221,8 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     //! Perform the allocation
     for (auto idx : newIndices)
     {
-        VolumeUnit& vu = volumeUnits[idx];
+        VolumeUnit& vu = this->volumeUnits.emplace(idx, VolumeUnit()).first->second;
+
         Matx44f subvolumePose = pose.translate(volumeUnitIdxToVolume(idx)).matrix;
 
         vu.pose = subvolumePose;
