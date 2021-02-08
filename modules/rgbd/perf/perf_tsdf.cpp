@@ -298,6 +298,20 @@ public:
     }
 };
 
+void displayImage(Mat depth, UMat _points, UMat _normals, float depthFactor, Vec3f lightPose)
+{
+    Mat  points, normals, image;
+    AccessFlag af = ACCESS_READ;
+    normals = _normals.getMat(af);
+    points = _points.getMat(af);
+    patchNaNs(points);
+
+    imshow("depth", depth * (1.f / depthFactor / 4.f));
+    renderPointsNormals(points, normals, image, lightPose);
+    imshow("render", image);
+    waitKey(2000);
+}
+
 static const bool display = true;
 
 PERF_TEST(Perf_TSDF, integrate)
@@ -320,8 +334,6 @@ PERF_TEST(Perf_TSDF, raycast)
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
-        Mat  points, normals, image;
-        AccessFlag af = ACCESS_READ;
         Matx44f pose = settings.poses[i].matrix;
         Mat depth = settings.scene->depth(pose);
 
@@ -329,18 +341,11 @@ PERF_TEST(Perf_TSDF, raycast)
         startTimer();
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
-        normals = _normals.getMat(af);
-        points = _points.getMat(af);
-        patchNaNs(points);
 
         if (display)
         {
-            imshow("depth", depth * (1.f / settings._params->depthFactor / 4.f));
-            renderPointsNormals(points, normals, image, settings._params->lightPose);
-            imshow("render", image);
-            waitKey(2000);
+            displayImage(depth, _points, _normals, settings._params->depthFactor, settings._params->lightPose);
         }
-
     }
     SANITY_CHECK_NOTHING();
 }
@@ -356,8 +361,6 @@ PERF_TEST(Perf_HashTSDF, integrate)
         startTimer();
         settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
-
-        
     }
     SANITY_CHECK_NOTHING();
 }
@@ -368,8 +371,6 @@ PERF_TEST(Perf_HashTSDF, raycast)
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
-        Mat  points, normals, image;
-        AccessFlag af = ACCESS_READ;
         Matx44f pose = settings.poses[i].matrix;
         Mat depth = settings.scene->depth(pose);
 
@@ -378,15 +379,9 @@ PERF_TEST(Perf_HashTSDF, raycast)
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
         
-        normals = _normals.getMat(af);
-        points = _points.getMat(af);
-        patchNaNs(points);
         if (display)
         {
-            imshow("depth", depth * (1.f / settings._params->depthFactor / 4.f));
-            renderPointsNormals(points, normals, image, settings._params->lightPose);
-            imshow("render", image);
-            waitKey(2000);
+            displayImage(depth, _points, _normals, settings._params->depthFactor, settings._params->lightPose);
         }
     }
     SANITY_CHECK_NOTHING();
