@@ -231,11 +231,11 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(const Point3f& _p) const
 
 inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
-    if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
-                   (p >= v_float32x4((float)(volResolution.x-2),
+    if(v_check_any (p < v_float32x4(1.f, 1.f, 1.f, 0.f)) ||
+       v_check_any (p >= v_float32x4((float)(volResolution.x-2),
                                      (float)(volResolution.y-2),
                                      (float)(volResolution.z-2), 1.f))
-                   ))
+                   )
         return nanv;
 
     v_int32x4 ip  = v_floor(p);
