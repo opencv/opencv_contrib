@@ -169,6 +169,111 @@ Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
 
+// this is a temporary solution
+// ----------------------------
+
+typedef cv::Vec4f ptype;
+typedef cv::Mat_< ptype > Points;
+typedef Points Normals;
+typedef Size2i Size;
+
+template<int p>
+inline float specPow(float x)
+{
+    if (p % 2 == 0)
+    {
+        float v = specPow<p / 2>(x);
+        return v * v;
+    }
+    else
+    {
+        float v = specPow<(p - 1) / 2>(x);
+        return v * v * x;
+    }
+}
+
+template<>
+inline float specPow<0>(float /*x*/)
+{
+    return 1.f;
+}
+
+template<>
+inline float specPow<1>(float x)
+{
+    return x;
+}
+
+inline cv::Vec3f fromPtype(const ptype& x)
+{
+    return cv::Vec3f(x[0], x[1], x[2]);
+}
+
+inline Point3f normalize(const Vec3f& v)
+{
+    double nv = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    return v * (nv ? 1. / nv : 0.);
+}
+
+void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, Affine3f lightPose)
+{
+    Size sz = _points.size();
+    image.create(sz, CV_8UC4);
+
+    Points  points = _points.getMat();
+    Normals normals = _normals.getMat();
+
+    Mat_<Vec4b> img = image.getMat();
+
+    Range range(0, sz.height);
+    const int nstripes = -1;
+    parallel_for_(range, [&](const Range&)
+        {
+            for (int y = range.start; y < range.end; y++)
+            {
+                Vec4b* imgRow = img[y];
+                const ptype* ptsRow = points[y];
+                const ptype* nrmRow = normals[y];
+
+                for (int x = 0; x < sz.width; x++)
+                {
+                    Point3f p = fromPtype(ptsRow[x]);
+                    Point3f n = fromPtype(nrmRow[x]);
+
+                    Vec4b color;
+
+                    if (cvIsNaN(p.x) || cvIsNaN(p.y) || cvIsNaN(p.z) )
+                    {
+                        color = Vec4b(0, 32, 0, 0);
+                    }
+                    else
+                    {
+                        const float Ka = 0.3f;  //ambient coeff
+                        const float Kd = 0.5f;  //diffuse coeff
+                        const float Ks = 0.2f;  //specular coeff
+                        const int   sp = 20;  //specular power
+
+                        const float Ax = 1.f;   //ambient color,  can be RGB
+                        const float Dx = 1.f;   //diffuse color,  can be RGB
+                        const float Sx = 1.f;   //specular color, can be RGB
+                        const float Lx = 1.f;   //light color
+
+                        Point3f l = normalize(lightPose.translation() - Vec3f(p));
+                        Point3f v = normalize(-Vec3f(p));
+                        Point3f r = normalize(Vec3f(2.f * n * n.dot(l) - l));
+
+                        uchar ix = (uchar)((Ax * Ka * Dx + Lx * Kd * Dx * max(0.f, n.dot(l)) +
+                            Lx * Ks * Sx * specPow<sp>(max(0.f, r.dot(v)))) * 255.f);
+                        color = Vec4b(ix, ix, ix, 0);
+                    }
+
+                    imgRow[x] = color;
+                }
+            }
+        }, nstripes);
+}
+// ----------------------------
+
 class Settings
 {
 public:
@@ -193,6 +298,8 @@ public:
     }
 };
 
+static const bool display = true;
+
 PERF_TEST(Perf_TSDF, integrate)
 {
     Settings settings(false);
@@ -213,6 +320,8 @@ PERF_TEST(Perf_TSDF, raycast)
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
+        Mat  points, normals, image;
+        AccessFlag af = ACCESS_READ;
         Matx44f pose = settings.poses[i].matrix;
         Mat depth = settings.scene->depth(pose);
 
@@ -220,6 +329,18 @@ PERF_TEST(Perf_TSDF, raycast)
         startTimer();
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
+        normals = _normals.getMat(af);
+        points = _points.getMat(af);
+        patchNaNs(points);
+
+        if (display)
+        {
+            imshow("depth", depth * (1.f / settings._params->depthFactor / 4.f));
+            renderPointsNormals(points, normals, image, settings._params->lightPose);
+            imshow("render", image);
+            waitKey(2000);
+        }
+
     }
     SANITY_CHECK_NOTHING();
 }
@@ -235,6 +356,8 @@ PERF_TEST(Perf_HashTSDF, integrate)
         startTimer();
         settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
+
+        
     }
     SANITY_CHECK_NOTHING();
 }
@@ -245,6 +368,8 @@ PERF_TEST(Perf_HashTSDF, raycast)
     for (size_t i = 0; i < settings.poses.size(); i++)
     {
         UMat _points, _normals;
+        Mat  points, normals, image;
+        AccessFlag af = ACCESS_READ;
         Matx44f pose = settings.poses[i].matrix;
         Mat depth = settings.scene->depth(pose);
 
@@ -252,6 +377,17 @@ PERF_TEST(Perf_HashTSDF, raycast)
         startTimer();
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
+        
+        normals = _normals.getMat(af);
+        points = _points.getMat(af);
+        patchNaNs(points);
+        if (display)
+        {
+            imshow("depth", depth * (1.f / settings._params->depthFactor / 4.f));
+            renderPointsNormals(points, normals, image, settings._params->lightPose);
+            imshow("render", image);
+            waitKey(2000);
+        }
     }
     SANITY_CHECK_NOTHING();
 }
