@@ -411,6 +411,7 @@ public:
                 texMgr.remove(texName, RESOURCEGROUP_NAME);
             }
 
+            RTShader::ShaderGenerator::getSingleton().removeSceneManager(sceneMgr);
             root->destroySceneManager(sceneMgr);
         }
 
