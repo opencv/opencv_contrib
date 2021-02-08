@@ -1030,9 +1030,9 @@ static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f f
     UMat pixNorm(depth_rows, depth_cols, CV_32F);
 
     for (int i = 0; i < depth_cols; i++)
-        *x.ptr<float>(0, i) = (i - cxy[0]) / fxy[0];
+        x.at<float>(i) = (i - cxy[0]) / fxy[0];
     for (int i = 0; i < depth_rows; i++)
-        *y.ptr<float>(0, i) = (i - cxy[1]) / fxy[1];
+        y.at<float>(i) = (i - cxy[1]) / fxy[1];
 
     cv::String errorStr;
     cv::String name = "preCalculationPixNorm";
@@ -1519,7 +1519,6 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     integrateAllVolumeUnitsGPU(depth, depthFactor, cameraPose, intrinsics);
 }
 
-//TODO: replace .ptr<...> everywhere by .at<...>
 
 //TODO: remove these functions when everything is done on GPU
 cv::Vec3i HashTSDFVolumeGPU::volumeToVolumeUnitIdx(const cv::Point3f& p) const
@@ -1972,7 +1971,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
     //! TODO: Iterate over map parallely?
     for (int i = 0; i < hashMap.last; i++)
     {
-        if (*cpuIndices.ptr<int>(i) > (currFrameId - frameThreshold))
+        if (cpuIndices.at<int>(i) > (currFrameId - frameThreshold))
             numVisibleBlocks++;
     }
     return numVisibleBlocks;
