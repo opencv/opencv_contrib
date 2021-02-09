@@ -100,7 +100,7 @@ class ToyHashSet
 {
 public:
     static const int hashDivisor = 32768;
-    static const int startCapacity = 16384;
+    static const int startCapacity = 1024;
 
     std::vector<int> hashes;
     // 0-3 for key, 4th for internal use
