@@ -411,7 +411,13 @@ public:
                 texMgr.remove(texName, RESOURCEGROUP_NAME);
             }
 
+            RTShader::ShaderGenerator::getSingleton().removeSceneManager(sceneMgr);
             root->destroySceneManager(sceneMgr);
+        }
+        else
+        {
+            // we share everything, but the camera
+            sceneMgr->destroyCamera(title);
         }
 
         if(_app->mainWin == this && (flags & SCENE_SEPARATE))
