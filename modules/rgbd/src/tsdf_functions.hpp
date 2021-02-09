@@ -96,12 +96,11 @@ public:
 };
 
 
-//TODO: hash set, not hash map
-class ToyHashMap
+class ToyHashSet
 {
 public:
     static const int hashDivisor = 32768;
-    static const int startCapacity = 1024; // 32768*4;
+    static const int startCapacity = 16384;
 
     std::vector<int> hashes;
     // 0-3 for key, 4th for internal use
@@ -110,7 +109,7 @@ public:
     int capacity;
     int last;
 
-    ToyHashMap()
+    ToyHashSet()
     {
         hashes.resize(hashDivisor);
         for (int i = 0; i < hashDivisor; i++)
@@ -124,7 +123,7 @@ public:
         last = 0;
     }
 
-    ~ToyHashMap() { }
+    ~ToyHashSet() { }
 
     inline size_t calc_hash(Vec3i x) const
     {

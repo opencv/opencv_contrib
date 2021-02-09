@@ -903,7 +903,7 @@ public:
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
-    size_t getTotalVolumeUnits() const override { return size_t(hashMap.last); }
+    size_t getTotalVolumeUnits() const override { return size_t(hashTable.last); }
     int getVisibleBlocks(int currFrameId, int frameThreshold) const override;
 
 
@@ -945,8 +945,7 @@ public:
     cv::UMat pixNorms;
 
     //TODO: move indexes.volumes to GPU
-    //VolumesTable indexes;
-    ToyHashMap hashMap;
+    ToyHashSet hashTable;
 
     Vec8i neighbourCoords;
 };
@@ -1012,7 +1011,7 @@ void HashTSDFVolumeGPU::reset()
 
     isActiveFlags = cv::UMat(buff_lvl, 1, CV_8U);
 
-    hashMap = ToyHashMap();
+    hashTable = ToyHashSet();
 
     frameParams = Vec6f();
     pixNorms = UMat();
@@ -1079,16 +1078,16 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     Matx44f vol2camMatrix = (Affine3f(cameraPose).inv() * pose).matrix;
     Matx44f camInvMatrix = Affine3f(cameraPose).inv().matrix;
 
-    UMat hashesGpu(hashMap.hashDivisor, 1, CV_32S);
-    Mat(hashMap.hashes, false).copyTo(hashesGpu);
+    UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
+    Mat(hashTable.hashes, false).copyTo(hashesGpu);
 
-    UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
-    Mat(hashMap.data, false).copyTo(hashDataGpu);
+    UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
+    Mat(hashTable.data, false).copyTo(hashDataGpu);
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadOnly(hashesGpu),
            ocl::KernelArg::PtrReadOnly(hashDataGpu),
-           (int)hashMap.hashDivisor,
+           (int)hashTable.hashDivisor,
            ocl::KernelArg::ReadWrite(volUnitsData),
            ocl::KernelArg::ReadOnly(pixNorms),
            ocl::KernelArg::ReadOnly(isActiveFlags),
@@ -1108,7 +1107,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     size_t globalSize[3];
     globalSize[0] = (size_t)resol;
     globalSize[1] = (size_t)resol;
-    globalSize[2] = (size_t)hashMap.last; // num of volume units
+    globalSize[2] = (size_t)hashTable.last; // num of volume units
 
     if (!k.run(3, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
@@ -1132,11 +1131,11 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     Mutex mutex;
     
     // for new indices
-    ToyHashMap thm;
+    ToyHashSet thm;
 
     // -----------------------
 
-    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, ToyHashMap& ghm)
+    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, ToyHashSet& ghm)
     {
         for (int y = yrange.start; y < yrange.end; y += depthStride)
         {
@@ -1160,8 +1159,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
 
-                            //if (indexes.findRow(tsdf_idx) < 0)
-                            if (hashMap.find(tsdf_idx) < 0)
+                            if (hashTable.find(tsdf_idx) < 0)
                             {
                                 bool found = false;
                                 for (int i = 0; i < pixLocalCounter; i++)
@@ -1221,7 +1219,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
             int loc_vol_idx = 0;
             */
 
-            ToyHashMap ghm;
+            ToyHashSet ghm;
 
             fillLocalAcessVolUnits(xr, yr, ghm /*localAccessVolUnits, loc_vol_idx*/);
 
@@ -1297,7 +1295,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     } while (needReallocation);
 
 
-    auto pushToGlobal = [](const ToyHashMap thm, ToyHashMap& globalHashMap,
+    auto pushToGlobal = [](const ToyHashSet thm, ToyHashSet& globalHashMap,
                            bool& needReallocation, Mutex& mutex)
     {
         for (int i = 0; i < thm.last; i++)
@@ -1319,7 +1317,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     };
     
     //TODO: remove it
-    auto pushToGlobalGpu = [](const ToyHashMap thm, ToyHashMap& globalHashMap, bool& needReallocation)
+    auto pushToGlobalGpu = [](const ToyHashSet thm, ToyHashSet& globalHashMap, bool& needReallocation)
     {
         //TODO: set needReallocation based on thm.last + globalHashMap.last < globalHashMap.capacity
 
@@ -1383,22 +1381,21 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
         }
     };
 
-
-
     needReallocation = false;
     do
     {
         if (needReallocation)
         {
-            std::cout << "reallocation global!! from: " << hashMap.capacity << " to x2: " << hashMap.capacity * 2 << std::endl;
-            hashMap.capacity *= 2;
-            hashMap.data.resize(hashMap.capacity);
+            //DEBUG
+            std::cout << "reallocation global!! from: " << hashTable.capacity << " to x2: " << hashTable.capacity * 2 << std::endl;
+            hashTable.capacity *= 2;
+            hashTable.data.resize(hashTable.capacity);
 
             needReallocation = false;
         }
 
-        pushToGlobal(thm, hashMap, needReallocation, mutex);
-        //pushToGlobalGpu(thm, hashMap, needReallocation);
+        pushToGlobal(thm, hashTable, needReallocation, mutex);
+        //pushToGlobalGpu(thm, hashTable, needReallocation);
     } while (needReallocation);
         
     // ---------------------
@@ -1422,16 +1419,16 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     const Intr::Projector proj(intrinsics.makeProjector());
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
-    UMat hashesGpu(hashMap.hashDivisor, 1, CV_32S);
-    Mat(hashMap.hashes, false).copyTo(hashesGpu);
+    UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
+    Mat(hashTable.hashes, false).copyTo(hashesGpu);
 
-    UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
-    Mat(hashMap.data, false).copyTo(hashDataGpu);
+    UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
+    Mat(hashTable.data, false).copyTo(hashDataGpu);
 
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
         ocl::KernelArg::PtrReadOnly(hashDataGpu),
-        (int)hashMap.hashDivisor,
+        (int)hashTable.hashDivisor,
         ocl::KernelArg::WriteOnly(isActiveFlags),
         ocl::KernelArg::WriteOnly(lastVisibleIndices),
         vol2cam.matrix,
@@ -1439,12 +1436,12 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
         cxy,
         frameSz,
         volumeUnitSize,
-        hashMap.last,
+        hashTable.last,
         truncateThreshold,
         frameId
     );
 
-    size_t globalSize[1] = { (size_t)hashMap.last };
+    size_t globalSize[1] = { (size_t)hashTable.last };
     if (!k.run(1, globalSize, nullptr, true))
         throw std::runtime_error("Failed to run kernel");
 }
@@ -1458,9 +1455,9 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     UMat depth = _depth.getUMat();
 
     // Save length to fill new data in ranges
-    int sizeBefore = hashMap.last;
+    int sizeBefore = hashTable.last;
     allocateVolumeUnits(depth, depthFactor, cameraPose, intrinsics);
-    int sizeAfter = hashMap.last;
+    int sizeAfter = hashTable.last;
     //! Perform the allocation
 
     // Grow buffers
@@ -1610,8 +1607,7 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
         auto it = iterMap[dictIdx];
         if (it < -1)
         {
-            //it = indexes.findRow(volumeUnitIdx);
-            it = hashMap.find(volumeUnitIdx);
+            it = hashTable.find(volumeUnitIdx);
             iterMap[dictIdx] = it;
         }
 
@@ -1673,8 +1669,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
         auto it = iterMap[dictIdx];
         if (it < -1)
         {
-            //it = indexes.findRow(volumeUnitIdx);
-            it = hashMap.find(volumeUnitIdx);
+            it = hashTable.find(volumeUnitIdx);
             iterMap[dictIdx] = it;
         }
 
@@ -1759,8 +1754,8 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
     normal[2] = interpolate(tx, ty, tz, czv);
 #endif
     float nv = sqrt(normal[0] * normal[0] +
-        normal[1] * normal[1] +
-        normal[2] * normal[2]);
+                    normal[1] * normal[1] +
+                    normal[2] * normal[2]);
     return nv < 0.0001f ? nan3 : normal / nv;
 }
 
@@ -1810,16 +1805,16 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     Mat(pose.matrix).copyTo(volPoseGpu);
     Mat(pose.inv().matrix).copyTo(invPoseGpu);
 
-    UMat hashesGpu(hashMap.hashDivisor, 1, CV_32S);
-    Mat(hashMap.hashes, false).copyTo(hashesGpu);
+    UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
+    Mat(hashTable.hashes, false).copyTo(hashesGpu);
 
-    UMat hashDataGpu(hashMap.capacity, 1, CV_32SC4);
-    Mat(hashMap.data, false).copyTo(hashDataGpu);
+    UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
+    Mat(hashTable.data, false).copyTo(hashDataGpu);
 
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
         ocl::KernelArg::PtrReadOnly(hashDataGpu),
-        (int)hashMap.hashDivisor,
+        (int)hashTable.hashDivisor,
         ocl::KernelArg::WriteOnlyNoSize(points),
         ocl::KernelArg::WriteOnlyNoSize(normals),
         frameSize,
@@ -1862,7 +1857,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
 
         std::vector<std::vector<ptype>> pVecs, nVecs;
 
-        Range _fetchRange(0, hashMap.last);
+        Range _fetchRange(0, hashTable.last);
 
         const int nstripes = -1;
 
@@ -1875,7 +1870,7 @@ void HashTSDFVolumeGPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
             std::vector<ptype> points, normals;
             for (int row = range.start; row < range.end; row++)
             {
-                cv::Vec4i idx4 = hashMap.data[row];
+                cv::Vec4i idx4 = hashTable.data[row];
                 cv::Vec3i idx(idx4[0], idx4[1], idx4[2]);
 
                 Point3f base_point = volume.volumeUnitIdxToVolume(idx);
@@ -1967,7 +1962,7 @@ int HashTSDFVolumeGPU::getVisibleBlocks(int currFrameId, int frameThreshold) con
 
     int numVisibleBlocks = 0;
     //! TODO: Iterate over map parallely?
-    for (int i = 0; i < hashMap.last; i++)
+    for (int i = 0; i < hashTable.last; i++)
     {
         if (cpuIndices.at<int>(i) > (currFrameId - frameThreshold))
             numVisibleBlocks++;
