@@ -285,9 +285,34 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 static const bool display = true;
 static const bool parallelCheck = false;
 
+class Settings
+{
+public:
+    Ptr<kinfu::Params> params;
+    Ptr<kinfu::Volume> volume;
+    Ptr<Scene> scene;
+    std::vector<Affine3f> poses;
+
+    Settings(bool useHashTSDF, bool onlySemisphere)
+    {
+        if (useHashTSDF)
+            params = kinfu::Params::hashTSDFParams(true);
+        else
+            params = kinfu::Params::coarseParams();
+
+        volume = kinfu::makeVolume(params->volumeType, params->voxelSize, params->volumePose.matrix,
+            params->raycast_step_factor, params->tsdf_trunc_dist, params->tsdf_max_weight,
+            params->truncateThreshold, params->volumeDims);
+
+        scene = Scene::create(params->frameSize, params->intr, params->depthFactor, onlySemisphere);
+        poses = scene->getPoses();
+    }
+};
+
 void displayImage(Mat depth, Mat points, Mat normals, float depthFactor, Vec3f lightPose)
 {
     Mat image;
+    patchNaNs(points);
     imshow("depth", depth * (1.f / depthFactor / 4.f));
     renderPointsNormals(points, normals, image, lightPose);
     imshow("render", image);
@@ -333,16 +358,9 @@ int counterOfValid(Mat points)
 
 void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
 {
-    Ptr<kinfu::Params> _params;
-    if (isHashTSDF)
-        _params = kinfu::Params::hashTSDFParams(true);
-    else
-        _params = kinfu::Params::coarseParams();
-
-    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor, false);
-    std::vector<Affine3f> poses = scene->getPoses();
-
-    Mat depth = scene->depth(poses[0]);
+    Settings settings(isHashTSDF, false);
+    
+    Mat depth = settings.scene->depth(settings.poses[0]);
     UMat _points, _normals, _tmpnormals;
     UMat _newPoints, _newNormals;
     Mat  points,  normals;
@@ -359,26 +377,24 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         }
     };
 
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
-                                _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
-                                _params->truncateThreshold, _params->volumeDims);
-    volume->integrate(depth, _params->depthFactor, poses[0].matrix, _params->intr);
+    settings.volume->integrate(depth, settings.params->depthFactor, settings.poses[0].matrix, settings.params->intr);
 
     if (isRaycast)
     {
-        volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
+        settings.volume->raycast(settings.poses[0].matrix, settings.params->intr, settings.params->frameSize, _points, _normals);
     }
     if (isFetchPointsNormals)
     {
-        volume->fetchPointsNormals(_points, _normals);
+        settings.volume->fetchPointsNormals(_points, _normals);
     }
     if (isFetchNormals)
     {
-        volume->fetchPointsNormals(_points, _tmpnormals);
-        volume->fetchNormals(_points, _normals);
+        settings.volume->fetchPointsNormals(_points, _tmpnormals);
+        settings.volume->fetchNormals(_points, _normals);
     }
 
     normals = _normals.getMat(af);
+    points  = _points.getMat(af);
 
     if (parallelCheck)
     {
@@ -391,12 +407,12 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
     if (isRaycast && display)
     {
-        displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
+        displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
     }
 
     if (isRaycast)
     {
-        volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
+        settings.volume->raycast(settings.poses[17].matrix, settings.params->intr, settings.params->frameSize, _newPoints, _newNormals);
 
         normals = _newNormals.getMat(af);
         normalsCheck(normals);
@@ -410,10 +426,9 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             normalsCheck(normals);
         }
 
-
         if (display)
         {
-            displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
+            displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
         }
 
     }
@@ -423,28 +438,18 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
 void valid_points_test(bool isHashTSDF)
 {
-    Ptr<kinfu::Params> _params;
-    if (isHashTSDF)
-        _params = kinfu::Params::hashTSDFParams(true);
-    else
-        _params = kinfu::Params::coarseParams();
+    Settings settings(isHashTSDF, false);
 
-    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor, true);
-    std::vector<Affine3f> poses = scene->getPoses();
-
-    Mat depth = scene->depth(poses[0]);
+    Mat depth = settings.scene->depth(settings.poses[0]);
     UMat _points, _normals;
     UMat _newPoints, _newNormals;
     Mat  points, normals;
     int anfas, profile;
     AccessFlag af = ACCESS_READ;
 
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
-        _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
-        _params->truncateThreshold, _params->volumeDims);
-    volume->integrate(depth, _params->depthFactor, poses[0].matrix, _params->intr);
+    settings.volume->integrate(depth, settings.params->depthFactor, settings.poses[0].matrix, settings.params->intr);
 
-    volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
+    settings.volume->raycast(settings.poses[0].matrix, settings.params->intr, settings.params->frameSize, _points, _normals);
     normals = _normals.getMat(af);
     points = _points.getMat(af);
     patchNaNs(points);
@@ -452,10 +457,10 @@ void valid_points_test(bool isHashTSDF)
 
     if (display)
     {
-        displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
+        displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
     }
 
-    volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
+    settings.volume->raycast(settings.poses[17].matrix, settings.params->intr, settings.params->frameSize, _newPoints, _newNormals);
 
     normals = _newNormals.getMat(af);
     points = _newPoints.getMat(af);
@@ -464,7 +469,7 @@ void valid_points_test(bool isHashTSDF)
 
     if (display)
     {
-        displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
+        displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
     }
 
     float percentValidity = float(profile) / float(anfas);
