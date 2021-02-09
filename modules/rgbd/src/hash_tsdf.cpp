@@ -36,6 +36,16 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     zFirstMemOrder(_zFirstMemOrder)
 {
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
+
+    if (!(volumeUnitResolution & (volumeUnitResolution - 1)))
+    {
+        // vuRes is a power of 2, let's get this power
+        volumeUnitDegree = trailingZeros32(volumeUnitResolution);
+    }
+    else
+    {
+        CV_Error(Error::StsBadArg, "Volume unit resolution should be a power of 2");
+    }
 }
 
 //! Spatial hashing
@@ -165,7 +175,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
     Depth depth = _depth.getMat();
 
     //! Compute volumes to be allocated
-    const int depthStride = int(log2(volumeUnitResolution));
+    const int depthStride = volumeUnitDegree;
     const float invDepthFactor = 1.f / depthFactor;
     const Intr::Reprojector reproj(intrinsics.makeReprojector());
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
@@ -352,9 +362,9 @@ inline TsdfVoxel HashTSDFVolumeCPU::_at(const cv::Vec3i& volumeIdx, int indx) co
 
 inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 {
-    Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution),
-                                cvFloor(volumeIdx[1] / volumeUnitResolution),
-                                cvFloor(volumeIdx[2] / volumeUnitResolution));
+    Vec3i volumeUnitIdx = Vec3i(volumeIdx[0] >> volumeUnitDegree,
+                                volumeIdx[1] >> volumeUnitDegree,
+                                volumeIdx[2] >> volumeUnitDegree);
 
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
@@ -362,10 +372,10 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
     {
         return TsdfVoxel(floatToTsdf(1.f), 0);
     }
-
-    cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution,
-                                                      volumeUnitIdx[1] * volumeUnitResolution,
-                                                      volumeUnitIdx[2] * volumeUnitResolution);
+    
+    cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] << volumeUnitDegree,
+                                                      volumeUnitIdx[1] << volumeUnitDegree,
+                                                      volumeUnitIdx[2] << volumeUnitDegree);
 
     volUnitLocalIdx =
         cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
@@ -375,7 +385,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
 
 TsdfVoxel HashTSDFVolumeCPU::at(const Point3f& point) const
 {
-    cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
+    cv::Vec3i volumeUnitIdx = volumeToVolumeUnitIdx(point);
     VolumeUnitIndexes::const_iterator it = volumeUnits.find(volumeUnitIdx);
 
     if (it == volumeUnits.end())
@@ -390,29 +400,15 @@ TsdfVoxel HashTSDFVolumeCPU::at(const Point3f& point) const
     return _at(volUnitLocalIdx, it->second.index);
 }
 
-static inline Vec3i voxelToVolumeUnitIdx(const Vec3i& pt, const int vuRes)
-{
-    if (!(vuRes & (vuRes - 1)))
-    {
-        // vuRes is a power of 2, let's get this power
-        const int p2 = trailingZeros32(vuRes);
-        return Vec3i(pt[0] >> p2, pt[1] >> p2, pt[2] >> p2);
-    }
-    else
-    {
-        return Vec3i(cvFloor(float(pt[0]) / vuRes),
-                     cvFloor(float(pt[1]) / vuRes),
-                     cvFloor(float(pt[2]) / vuRes));
-    }
-}
-
 TsdfVoxel HashTSDFVolumeCPU::atVolumeUnit(const Vec3i& point, const Vec3i& volumeUnitIdx, VolumeUnitIndexes::const_iterator it) const
 {
     if (it == volumeUnits.end())
     {
         return TsdfVoxel(floatToTsdf(1.f), 0);
     }
-    Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
+    Vec3i volUnitLocalIdx = point - Vec3i(volumeUnitIdx[0] << volumeUnitDegree,
+                                          volumeUnitIdx[1] << volumeUnitDegree,
+                                          volumeUnitIdx[2] << volumeUnitDegree);
 
     // expanding at(), removing bounds check
     const TsdfVoxel* volData = volUnitsData.ptr<TsdfVoxel>(it->second.index);
@@ -482,7 +478,7 @@ float HashTSDFVolumeCPU::interpolateVoxelPoint(const Point3f& point) const
     {
         Vec3i pt = iv + neighbourCoords[i];
 
-        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
+        Vec3i volumeUnitIdx = Vec3i(pt[0] >> volumeUnitDegree, pt[1] >> volumeUnitDegree, pt[2] >> volumeUnitDegree);
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
         if (!queried[dictIdx])
@@ -544,7 +540,7 @@ Point3f HashTSDFVolumeCPU::getNormalVoxel(const Point3f &point) const
     {
         Vec3i pt = iptVox + offsets[i];
 
-        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
+        Vec3i volumeUnitIdx = Vec3i(pt[0] >> volumeUnitDegree, pt[1] >> volumeUnitDegree, pt[2] >> volumeUnitDegree);
 
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
@@ -1110,8 +1106,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
 
     int resol = volumeUnitResolution;
     size_t globalSize[3];
-    globalSize[0] = (size_t)resol; // volumeUnitResolution
-    globalSize[1] = (size_t)resol; // volumeUnitResolution
+    globalSize[0] = (size_t)resol;
+    globalSize[1] = (size_t)resol;
     globalSize[2] = (size_t)hashMap.last; // num of volume units
 
     if (!k.run(3, globalSize, NULL, true))
@@ -1128,7 +1124,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     Depth depth = _depth.getMat(ACCESS_READ);
 
     //! Compute volumes to be allocated
-    const int depthStride = int(log2(volumeUnitResolution));
+    const int depthStride = volumeUnitDegree;
     const float invDepthFactor = 1.f / depthFactor;
     const Intr::Reprojector reproj(intrinsics.makeReprojector());
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
@@ -1568,7 +1564,9 @@ TsdfVoxel HashTSDFVolumeGPU::new_atVolumeUnit(const Vec3i& point, const Vec3i& v
     {
         return TsdfVoxel(floatToTsdf(1.f), 0);
     }
-    Vec3i volUnitLocalIdx = point - volumeUnitIdx * volumeUnitResolution;
+    Vec3i volUnitLocalIdx = point - Vec3i(volumeUnitIdx[0] << volumeUnitDegree,
+                                          volumeUnitIdx[1] << volumeUnitDegree,
+                                          volumeUnitIdx[2] << volumeUnitDegree);
 
     // expanding at(), removing bounds check
     const TsdfVoxel* volData = volUnitsDataCopy.ptr<TsdfVoxel>(indx);
@@ -1607,7 +1605,7 @@ float HashTSDFVolumeGPU::interpolateVoxelPoint(const Point3f& point) const
     {
         Vec3i pt = iv + local_neighbourCoords[i];
 
-        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
+        Vec3i volumeUnitIdx = Vec3i(pt[0] >> volumeUnitDegree, pt[1] >> volumeUnitDegree, pt[2] >> volumeUnitDegree);
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
         if (it < -1)
@@ -1669,7 +1667,7 @@ Point3f HashTSDFVolumeGPU::getNormalVoxel(const Point3f& point) const
     {
         Vec3i pt = iptVox + offsets[i];
 
-        Vec3i volumeUnitIdx = voxelToVolumeUnitIdx(pt, volumeUnitResolution);
+        Vec3i volumeUnitIdx = Vec3i(pt[0] >> volumeUnitDegree, pt[1] >> volumeUnitDegree, pt[2] >> volumeUnitDegree);
 
         int dictIdx = (volumeUnitIdx[0] & 1) + (volumeUnitIdx[1] & 1) * 2 + (volumeUnitIdx[2] & 1) * 4;
         auto it = iterMap[dictIdx];
@@ -1837,7 +1835,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         voxelSizeInv,
         volumeUnitSize,
         volume.truncDist,
-        volumeUnitResolution,
+        volumeUnitDegree,
         volStrides
     );
 

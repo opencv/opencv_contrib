@@ -344,14 +344,13 @@ __kernel void integrateAllVolumeUnits(
 }
 
 
-static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitResolution,
+static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitDegree,
                            int3 volStrides, __global const struct TsdfVoxel * allVolumePtr, int table_offset)
 
 {
     //! Out of bounds
-    if (any(volumeIdx >= volumeUnitResolution) ||
+    if (any(volumeIdx >= (1 << volumeUnitDegree)) ||
         any(volumeIdx < 0))
-
     {
         struct TsdfVoxel dummy;
         dummy.tsdf = floatToTsdf(1.0f);
@@ -359,7 +358,7 @@ static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitResolution,
         return dummy;
     }
 
-    int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
+    int volCubed = 1 << (volumeUnitDegree*3);
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
                                           (allVolumePtr + table_offset + row * volCubed);
     int3 ismul = volumeIdx * volStrides;
@@ -369,7 +368,7 @@ static struct TsdfVoxel at(int3 volumeIdx, int row, int volumeUnitResolution,
 
 
 static struct TsdfVoxel atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row,
-                                     int volumeUnitResolution, int3 volStrides,
+                                     int volumeUnitDegree, int3 volStrides,
                                      __global const struct TsdfVoxel * allVolumePtr, int table_offset)
 
 {
@@ -382,8 +381,8 @@ static struct TsdfVoxel atVolumeUnit(int3 volumeIdx, int3 volumeUnitIdx, int row
         return dummy;
     }
 
-    int3 volUnitLocalIdx = volumeIdx - volumeUnitIdx * volumeUnitResolution;
-    int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
+    int3 volUnitLocalIdx = volumeIdx - (volumeUnitIdx << volumeUnitDegree);
+    int volCubed = 1 << (volumeUnitDegree*3);
     __global struct TsdfVoxel * volData = (__global struct TsdfVoxel*)
                                           (allVolumePtr + table_offset + row * volCubed);
     int3 ismul = volUnitLocalIdx * volStrides;
@@ -399,7 +398,7 @@ inline float interpolate(float3 t, float8 vz)
 }
 
 inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
-                             int volumeUnitResolution,
+                             int volumeUnitDegree,
                              float voxelSizeInv,
                              
                              /*
@@ -453,9 +452,8 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     {
         int3 pt = iptVox + offsets[i];
 
-        // VoxelToVolumeUnitIdx() 
-        // TODO: add assertion - if (!(vuRes & (vuRes - 1)))
-        int3 volumeUnitIdx = convert_int3(floor(convert_float3(pt.s012) / (float)(volumeUnitResolution)));
+        // VoxelToVolumeUnitIdx()
+        int3 volumeUnitIdx = pt >> volumeUnitDegree;
 
         int3 vand = (volumeUnitIdx & 1);
         int dictIdx = vand.s0 + vand.s1 * 2 + vand.s2 * 4;
@@ -468,7 +466,7 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
             iterMap[dictIdx] = it;
         }
 
-        struct TsdfVoxel tmp = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnitResolution, volStrides, allVolumePtr, table_offset);
+        struct TsdfVoxel tmp = atVolumeUnit(pt, volumeUnitIdx, it, volumeUnitDegree, volStrides, allVolumePtr, table_offset);
         vals[i] = tsdfToFloat( tmp.tsdf );
     }
 
@@ -555,7 +553,7 @@ __kernel void raycast(
                     const float voxelSizeInv,
                     float volumeUnitSize,
                     float truncDist,
-                    int volumeUnitResolution,
+                    int volumeUnitDegree,
                     int4 volStrides4
                     )
 {
@@ -599,8 +597,8 @@ __kernel void raycast(
         float3 currRayPos = orig + tcurr * dir;
 
         // VolumeToVolumeUnitIdx()
-        float3 currVolUnitIdxF = floor(currRayPos / volumeUnitSize);
-        int3 currVolumeUnitIdx = convert_int3(currVolUnitIdxF);
+        int3 currVoxel = convert_int3(floor(currRayPos * voxelSizeInv));
+        int3 currVolumeUnitIdx = currVoxel >> volumeUnitDegree;
 
         //int row = findRow(hash_table, currVolumeUnitIdx, list_size, bufferNums, hash_divisor);
         int row = toy_find(currVolumeUnitIdx, hash_divisor, hashes, data);
@@ -612,8 +610,8 @@ __kernel void raycast(
 
         if (row >= 0)
         {
-            volUnitLocalIdx = convert_int3(currRayPos*voxelSizeInv - currVolUnitIdxF*(float)volumeUnitResolution);
-            struct TsdfVoxel currVoxel  = at(volUnitLocalIdx, row, volumeUnitResolution, volStrides, allVolumePtr, table_offset);
+            volUnitLocalIdx = currVoxel - (currVolumeUnitIdx << volumeUnitDegree);
+            struct TsdfVoxel currVoxel = at(volUnitLocalIdx, row, volumeUnitDegree, volStrides, allVolumePtr, table_offset);
 
             currTsdf = tsdfToFloat(currVoxel.tsdf);
             currWeight = currVoxel.weight;
@@ -626,7 +624,7 @@ __kernel void raycast(
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
                 float3 pv = orig + tInterp * dir;
-                float3 nv = getNormalVoxel( pv, allVolumePtr, volumeUnitResolution,
+                float3 nv = getNormalVoxel( pv, allVolumePtr, volumeUnitDegree,
                                             voxelSizeInv,
                                             //hash_table, list_size, bufferNums, hash_divisor,
                                             hash_divisor, hashes, data,
