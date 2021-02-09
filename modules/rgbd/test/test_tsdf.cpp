@@ -358,14 +358,6 @@ int counterOfValid(Mat points)
 
 void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
 {
-    Settings settings(isHashTSDF, false);
-    
-    Mat depth = settings.scene->depth(settings.poses[0]);
-    UMat _points, _normals, _tmpnormals;
-    UMat _newPoints, _newNormals;
-    Mat  points,  normals;
-    AccessFlag af = ACCESS_READ;
-
     auto normalCheck = [](Vec4f& vector, const int*)
     {
         if (!cvIsNaN(vector[0]))
@@ -376,6 +368,14 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             ASSERT_LT(abs(1 - length), 0.0001f) << "There is normal with length != 1";
         }
     };
+
+    Settings settings(isHashTSDF, false);
+    
+    Mat depth = settings.scene->depth(settings.poses[0]);
+    UMat _points, _normals, _tmpnormals;
+    UMat _newPoints, _newNormals;
+    Mat  points,  normals;
+    AccessFlag af = ACCESS_READ;
 
     settings.volume->integrate(depth, settings.params->depthFactor, settings.poses[0].matrix, settings.params->intr);
 
@@ -397,40 +397,27 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     points  = _points.getMat(af);
 
     if (parallelCheck)
-    {
         normals.forEach<Vec4f>(normalCheck);
-    }
     else
-    {
         normalsCheck(normals);
-    }
-
+        
     if (isRaycast && display)
-    {
         displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
-    }
 
     if (isRaycast)
     {
         settings.volume->raycast(settings.poses[17].matrix, settings.params->intr, settings.params->frameSize, _newPoints, _newNormals);
-
         normals = _newNormals.getMat(af);
+        points  = _newPoints.getMat(af);
         normalsCheck(normals);
 
         if (parallelCheck)
-        {
             normals.forEach<Vec4f>(normalCheck);
-        }
         else
-        {
             normalsCheck(normals);
-        }
 
         if (display)
-        {
             displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
-        }
-
     }
 
     points.release(); normals.release();
@@ -441,36 +428,29 @@ void valid_points_test(bool isHashTSDF)
     Settings settings(isHashTSDF, false);
 
     Mat depth = settings.scene->depth(settings.poses[0]);
-    UMat _points, _normals;
-    UMat _newPoints, _newNormals;
+    UMat _points, _normals, _newPoints, _newNormals;
+    AccessFlag af = ACCESS_READ;
     Mat  points, normals;
     int anfas, profile;
-    AccessFlag af = ACCESS_READ;
 
     settings.volume->integrate(depth, settings.params->depthFactor, settings.poses[0].matrix, settings.params->intr);
-
     settings.volume->raycast(settings.poses[0].matrix, settings.params->intr, settings.params->frameSize, _points, _normals);
     normals = _normals.getMat(af);
-    points = _points.getMat(af);
+    points  = _points.getMat(af);
     patchNaNs(points);
     anfas = counterOfValid(points);
 
     if (display)
-    {
         displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
-    }
 
     settings.volume->raycast(settings.poses[17].matrix, settings.params->intr, settings.params->frameSize, _newPoints, _newNormals);
-
     normals = _newNormals.getMat(af);
-    points = _newPoints.getMat(af);
+    points  = _newPoints.getMat(af);
     patchNaNs(points);
     profile = counterOfValid(points);
 
     if (display)
-    {
         displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
-    }
 
     float percentValidity = float(profile) / float(anfas);
     ASSERT_NE(profile, 0) << "There is no points in profile";

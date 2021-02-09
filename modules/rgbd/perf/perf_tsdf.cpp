@@ -343,9 +343,7 @@ PERF_TEST(Perf_TSDF, raycast)
         stopTimer();
 
         if (display)
-        {
             displayImage(depth, _points, _normals, settings._params->depthFactor, settings._params->lightPose);
-        }
     }
     SANITY_CHECK_NOTHING();
 }
@@ -380,9 +378,7 @@ PERF_TEST(Perf_HashTSDF, raycast)
         stopTimer();
         
         if (display)
-        {
             displayImage(depth, _points, _normals, settings._params->depthFactor, settings._params->lightPose);
-        }
     }
     SANITY_CHECK_NOTHING();
 }
