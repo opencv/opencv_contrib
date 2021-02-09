@@ -285,6 +285,15 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 static const bool display = true;
 static const bool parallelCheck = false;
 
+void displayImage(Mat depth, Mat points, Mat normals, float depthFactor, Vec3f lightPose)
+{
+    Mat image;
+    imshow("depth", depth * (1.f / depthFactor / 4.f));
+    renderPointsNormals(points, normals, image, lightPose);
+    imshow("render", image);
+    waitKey(2000);
+}
+
 void normalsCheck(Mat normals)
 {
     Vec4f vector;
@@ -299,6 +308,27 @@ void normalsCheck(Mat normals)
             ASSERT_LT(abs(1 - length), 0.0001f) << "There is normal with length != 1";
         }
     }
+}
+
+int counterOfValid(Mat points)
+{
+    Vec4f* v;
+    int i, j;
+    int count = 0;
+    for (i = 0; i < points.rows; ++i)
+    {
+        v = (points.ptr<Vec4f>(i));
+        for (j = 0; j < points.cols; ++j)
+        {
+            if ((v[j])[0] != 0 ||
+                (v[j])[1] != 0 ||
+                (v[j])[2] != 0)
+            {
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
 void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
@@ -316,7 +346,6 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     UMat _points, _normals, _tmpnormals;
     UMat _newPoints, _newNormals;
     Mat  points,  normals;
-    Mat image;
     AccessFlag af = ACCESS_READ;
 
     auto normalCheck = [](Vec4f& vector, const int*)
@@ -362,11 +391,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
     if (isRaycast && display)
     {
-        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        points = _points.getMat(af);
-        renderPointsNormals(points, normals, image, _params->lightPose);
-        imshow("render", image);
-        waitKey(2000);
+        displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
     }
 
     if (isRaycast)
@@ -388,37 +413,12 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
         if (display)
         {
-            imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-            points = _newPoints.getMat(af);
-            renderPointsNormals(points, normals, image, _params->lightPose);
-            imshow("render", image);
-            waitKey(2000);
+            displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
         }
 
     }
 
     points.release(); normals.release();
-}
-
-int counterOfValid(Mat points)
-{
-    Vec4f* v;
-    int i, j;
-    int count = 0;
-    for (i = 0; i < points.rows; ++i)
-    {
-        v = (points.ptr<Vec4f>(i));
-        for (j = 0; j < points.cols; ++j)
-        {
-            if ((v[j])[0] != 0 ||
-                (v[j])[1] != 0 ||
-                (v[j])[2] != 0)
-            {
-                count++;
-            }
-        }
-    }
-    return count;
 }
 
 void valid_points_test(bool isHashTSDF)
@@ -436,7 +436,6 @@ void valid_points_test(bool isHashTSDF)
     UMat _points, _normals;
     UMat _newPoints, _newNormals;
     Mat  points, normals;
-    Mat image;
     int anfas, profile;
     AccessFlag af = ACCESS_READ;
 
@@ -453,10 +452,7 @@ void valid_points_test(bool isHashTSDF)
 
     if (display)
     {
-        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        renderPointsNormals(points, normals, image, _params->lightPose);
-        imshow("render", image);
-        waitKey(2000);
+        displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
     }
 
     volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
@@ -468,10 +464,7 @@ void valid_points_test(bool isHashTSDF)
 
     if (display)
     {
-        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        renderPointsNormals(points, normals, image, _params->lightPose);
-        imshow("render", image);
-        waitKey(2000);
+        displayImage(depth, points, normals, _params->depthFactor, _params->lightPose);
     }
 
     float percentValidity = float(profile) / float(anfas);
