@@ -398,16 +398,8 @@ inline float interpolate(float3 t, float8 vz)
     return mix(vx.s0, vx.s1, t.x);
 }
 
-inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolumePtr,
+inline float3 getNormalVoxel(float3 ptVox, __global const struct TsdfVoxel* allVolumePtr,
                              int volumeUnitDegree,
-                             float voxelSizeInv,
-                             
-                             /*
-                             const __global struct Volume_NODE * hash_table,
-                             const int list_size,
-                             const int bufferNums,
-                             const int hash_divisor,
-                             */
                              const int hash_divisor,
                              __global const int* hashes,
                              __global const int4* data,
@@ -415,7 +407,6 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
                              int3 volStrides, int table_offset)
 {
     float3 normal = (float3) (0.0f, 0.0f, 0.0f);
-    float3 ptVox = p * voxelSizeInv;
     float3 fip = floor(ptVox);
     int3 iptVox = convert_int3(fip);
 
@@ -584,6 +575,8 @@ __kernel void raycast(
 
     float3 orig = (float3) (cam2volTransGPU.s0, cam2volTransGPU.s1, cam2volTransGPU.s2);
     float3 dir = fast_normalize(planed);
+    float3 origScaled = orig * voxelSizeInv;
+    float3 dirScaled = dir * voxelSizeInv;
 
     float tmin = 0;
     float tmax = truncateThreshold;
@@ -595,13 +588,12 @@ __kernel void raycast(
 
     while (tcurr < tmax)
     {
-        float3 currRayPos = orig + tcurr * dir;
+        float3 currRayPosVox = origScaled + tcurr * dirScaled;
 
         // VolumeToVolumeUnitIdx()
-        int3 currVoxel = convert_int3(floor(currRayPos * voxelSizeInv));
+        int3 currVoxel = convert_int3(floor(currRayPosVox));
         int3 currVolumeUnitIdx = currVoxel >> volumeUnitDegree;
 
-        //int row = findRow(hash_table, currVolumeUnitIdx, list_size, bufferNums, hash_divisor);
         int row = toy_find(currVolumeUnitIdx, hash_divisor, hashes, data);
 
         float currTsdf = prevTsdf;
@@ -624,10 +616,8 @@ __kernel void raycast(
             float tInterp = (tcurr * prevTsdf - tprev * currTsdf) / (prevTsdf - currTsdf);
             if ( !isnan(tInterp) && !isinf(tInterp) )
             {
-                float3 pv = orig + tInterp * dir;
-                float3 nv = getNormalVoxel( pv, allVolumePtr, volumeUnitDegree,
-                                            voxelSizeInv,
-                                            //hash_table, list_size, bufferNums, hash_divisor,
+                float3 pvox = origScaled + tInterp * dirScaled;
+                float3 nv = getNormalVoxel( pvox, allVolumePtr, volumeUnitDegree,
                                             hash_divisor, hashes, data,
                                             volStrides, table_offset);
 
@@ -638,6 +628,7 @@ __kernel void raycast(
                                       dot(nv, volRot1),
                                       dot(nv, volRot2));
                     // interpolation optimized a little
+                    float3 pv = pvox * voxelSize;
                     point = (float3)(dot(pv, volRot0),
                                      dot(pv, volRot1),
                                      dot(pv, volRot2)) + volTrans;
