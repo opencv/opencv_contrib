@@ -258,6 +258,7 @@ class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
     enum checkWithParameter{
         USE_APRILTAG=1,             /// Detect marker candidates :: using AprilTag
         DETECT_INVERTED_MARKER,     /// Check if there is a white marker
+        USE_ARUCO3                  /// Check if aruco3 should be used
     };
 
     protected:
@@ -304,6 +305,11 @@ void CV_ArucoDetectionPerspective::run(int tryWith) {
 
                 if(CV_ArucoDetectionPerspective::USE_APRILTAG == tryWith){
                     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
+                }
+
+                if (CV_ArucoDetectionPerspective::USE_ARUCO3 == tryWith) {
+                    params->useAruco3Detection = true;
+                    params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
                 }
 
                 // detect markers
@@ -523,6 +529,7 @@ void CV_ArucoBitCorrection::run(int) {
 
 typedef CV_ArucoDetectionPerspective CV_AprilTagDetectionPerspective;
 typedef CV_ArucoDetectionPerspective CV_InvertedArucoDetectionPerspective;
+typedef CV_ArucoDetectionPerspective CV_Aruco3DetectionPerspective;
 
 TEST(CV_InvertedArucoDetectionPerspective, algorithmic) {
     CV_InvertedArucoDetectionPerspective test;
@@ -532,6 +539,11 @@ TEST(CV_InvertedArucoDetectionPerspective, algorithmic) {
 TEST(CV_AprilTagDetectionPerspective, algorithmic) {
     CV_AprilTagDetectionPerspective test;
     test.safe_run(CV_ArucoDetectionPerspective::USE_APRILTAG);
+}
+
+TEST(CV_Aruco3DetectionPerspective, algorithmic) {
+    CV_Aruco3DetectionPerspective test;
+    test.safe_run(CV_ArucoDetectionPerspective::USE_ARUCO3);
 }
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {

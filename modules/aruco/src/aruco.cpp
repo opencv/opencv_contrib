@@ -723,13 +723,14 @@ static void _identifyCandidates(InputArray _image,
         const int end = range.end;
 
         vector< vector< Point2f > >& candidates = params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0];
+        vector< vector< Point > >& contourS = params->detectInvertedMarker ? _contoursSet[1] : _contoursSet[0];
 
         for(int i = begin; i < end; i++) {
             int currId;
 
             // implements equation (4)
             if (params->useAruco3Detection) {
-                const int perimeter_in_seg_img = _contours[i].size();
+                const int perimeter_in_seg_img = contourS[i].size();
                 int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
                 const Mat& pyr_img = _image_pyr[n];
                 double scale = (double)_image_pyr_sizes[n].width / _image.cols();
