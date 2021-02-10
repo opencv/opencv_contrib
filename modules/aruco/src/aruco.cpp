@@ -89,11 +89,12 @@ DetectorParameters::DetectorParameters()
       aprilTagDeglitch(0),
       detectInvertedMarker(false),
       useAruco3Detection(false),
-      minSideLengthCanonicalImg(16),
-      minMarkerLengthRatioOriginalImg(0.02),
+      minSideLengthCanonicalImg(32),
+      minMarkerLengthRatioOriginalImg(0.0),
       cameraMotionSpeed(1.0),
       useGlobalThreshold(true),
       foundGlobalThreshold(false),
+      otsuGlobalThreshold(0.0),
       foundMarkerInLastFrames(0)
 {}
 
@@ -576,7 +577,7 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
     // get bits
     // scale corners to the correct size to search on the corresponding image pyramid
     vector<Point2f> scaled_corners(4);
-    for (int i=0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
         scaled_corners[i].x = _corners[i].x * scale;
         scaled_corners[i].y = _corners[i].y * scale;
     }
@@ -676,11 +677,13 @@ static unsigned int _findOptPyrImageForCanonicalImg(
 
     unsigned int h = 0;
     double dist = std::numeric_limits<double>::max();
-    for (size_t i=0; i < img_pyr_sizes.size(); ++i) {
+    for (size_t i = 0; i < img_pyr_sizes.size(); ++i) {
         const double factor = (double)resized_seg_image.width / img_pyr_sizes[i].width;
-        double perimeter_scaled = cur_perimeter * factor;
-        const double new_dist = std::abs(perimeter_scaled - min_perimeter);
-        if (new_dist < dist) {
+        const double perimeter_scaled = cur_perimeter * factor;
+        // instead of std::abs() favor the larger pyramid level by checking if the distance is postive
+        // will slow down the algorithm but find more corners in the end
+        const double new_dist = perimeter_scaled - min_perimeter;
+        if (new_dist < dist && new_dist > 0.0) {
             dist = new_dist;
             h = i;
         }
@@ -730,10 +733,10 @@ static void _identifyCandidates(InputArray _image,
 
             // implements equation (4)
             if (params->useAruco3Detection) {
-                const int perimeter_in_seg_img = contourS[i].size();
-                int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
+                const size_t perimeter_in_seg_img = contourS[i].size();
+                const int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
                 const Mat& pyr_img = _image_pyr[n];
-                double scale = (double)_image_pyr_sizes[n].width / _image.cols();
+                const double scale = (double)_image_pyr_sizes[n].width / _image.cols();
                 validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
             } else {
                 validCandidates[i] = _identifyOneCandidate(_dictionary, _image, candidates[i], currId, params, rotated[i]);
@@ -1096,6 +1099,9 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
         _params->foundGlobalThreshold = false;
         _params->minMarkerLengthRatioOriginalImg = 0.0;
         _params->minSideLengthCanonicalImg = 0;
+    } else {
+        // always turn on corner refinement in case of Aruco3, due to upsampling
+        _params->cornerRefinementMethod = CORNER_REFINE_SUBPIX;
     }
 
     /// Step 0: equation (2) from paper [1]
@@ -1103,7 +1109,10 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
             std::max(grey.cols, grey.rows) * _params->minMarkerLengthRatioOriginalImg;
 
     //// Step 0.1: resize image with equation (1) from paper [1]
-    const float fxfy = (float)_params->minSideLengthCanonicalImg / tau_i_dot;
+    float fxfy = (float)_params->minSideLengthCanonicalImg / tau_i_dot;
+    if (!_params->useAruco3Detection) {
+        fxfy = 1.0;
+    }
     const cv::Size seg_img_size = cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows));
 
     const int image_area = seg_img_size.width * seg_img_size.height;
@@ -1140,7 +1149,9 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
 
         // resize to segmentation image
         // in this reduces size the contours will be detected
-        cv::resize(grey, grey, seg_img_size);
+        if (grey.size() != seg_img_size) {
+            cv::resize(grey, grey, seg_img_size);
+        }
     }
     else {
         grey_pyramid.push_back(grey);
@@ -1214,7 +1225,7 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
                   _params->cornerRefinementMaxIterations > 0 &&
                   _params->cornerRefinementMinAccuracy > 0);
         if (_params->useAruco3Detection) {
-            // if Aruco3 featue is selected we use
+            // if Aruco3 feature is selected we use
             const float scale_init = (float)grey_pyramid[closest_pyr_image_idx].cols / grey.cols;
             const float scale_pyr  = (float)grey_pyramid[0].cols / grey_pyramid[1].cols;
 
@@ -1235,9 +1246,10 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
                         for (int p = 0; p < 4; ++p) {
                             _corners.getMat(i).ptr<Point2f>(0)[p] *= scale_pyr;
                         }
-
+                        // use larger win size for larger images
+                        const int subpix_win_size = std::max(grey_pyramid[n].cols, grey_pyramid[n].rows) > 1080 ? 5 : 3;
                         cornerSubPix(grey_pyramid[n], _corners.getMat(i),
-                                     Size(_params->cornerRefinementWinSize, _params->cornerRefinementWinSize),
+                                     Size(subpix_win_size, subpix_win_size),
                                      Size(-1, -1),
                                      TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
                                                   _params->cornerRefinementMaxIterations,

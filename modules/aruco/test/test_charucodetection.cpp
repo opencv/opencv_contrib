@@ -214,7 +214,7 @@ class CV_CharucoDetection : public cvtest::BaseTest {
 CV_CharucoDetection::CV_CharucoDetection() {}
 
 
-void CV_CharucoDetection::run(int) {
+void CV_CharucoDetection::run(int try_with) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
@@ -227,7 +227,6 @@ void CV_CharucoDetection::run(int) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
@@ -326,6 +325,7 @@ void CV_CharucoPoseEstimation::run(int) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
