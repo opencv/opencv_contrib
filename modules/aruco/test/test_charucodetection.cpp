@@ -214,7 +214,7 @@ class CV_CharucoDetection : public cvtest::BaseTest {
 CV_CharucoDetection::CV_CharucoDetection() {}
 
 
-void CV_CharucoDetection::run(int try_with) {
+void CV_CharucoDetection::run(int) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
