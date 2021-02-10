@@ -88,7 +88,7 @@ DetectorParameters::DetectorParameters()
       aprilTagMinWhiteBlackDiff(5),
       aprilTagDeglitch(0),
       detectInvertedMarker(false),
-      useAruco3Detection(true),
+      useAruco3Detection(false),
       minSideLengthCanonicalImg(16),
       minMarkerLengthRatioOriginalImg(0.02),
       cameraMotionSpeed(1.0),
@@ -728,12 +728,15 @@ static void _identifyCandidates(InputArray _image,
             int currId;
 
             // implements equation (4)
-            const int perimeter_in_seg_img = _contours[i].size();
-            int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
-            const Mat& pyr_img = _image_pyr[n];
-
-            double scale = (double)_image_pyr_sizes[n].width / _image.cols();
-            validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
+            if (params->useAruco3Detection) {
+                const int perimeter_in_seg_img = _contours[i].size();
+                int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
+                const Mat& pyr_img = _image_pyr[n];
+                double scale = (double)_image_pyr_sizes[n].width / _image.cols();
+                validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
+            } else {
+                validCandidates[i] = _identifyOneCandidate(_dictionary, _image, candidates[i], currId, params, rotated[i]);
+            }
 
             if(validCandidates[i] > 0)
                 idsTmp[i] = currId;
