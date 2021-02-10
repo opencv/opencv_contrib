@@ -40,6 +40,7 @@ INSTANTIATE_TEST_CASE_P(DAISY, DescriptorRotationInvariance, Values(
                DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
                0.79f)
 ));
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 INSTANTIATE_TEST_CASE_P(VGG120, DescriptorRotationInvariance, Values(
     make_tuple(IMAGE_TSUKUBA,
                KAZE::create(),
@@ -64,7 +65,7 @@ INSTANTIATE_TEST_CASE_P(VGG48, DescriptorRotationInvariance, Values(
                VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
                0.97f)
 ));
-
+#endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
 #ifdef OPENCV_ENABLE_NONFREE
 
@@ -96,6 +97,7 @@ INSTANTIATE_TEST_CASE_P(FREAK, DescriptorRotationInvariance, Values(
                0.90f)
 ));
 
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
 INSTANTIATE_TEST_CASE_P(BoostDesc_BGM, DescriptorRotationInvariance, Values(
     make_tuple(IMAGE_TSUKUBA,
                SURF::create(),
@@ -144,6 +146,7 @@ INSTANTIATE_TEST_CASE_P(BoostDesc_BINBOOST_256, DescriptorRotationInvariance, Va
                BoostDesc::create(BoostDesc::BINBOOST_256, true, 6.25f),
                0.999f)
 ));
+#endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
 #endif
 
 
@@ -170,6 +173,7 @@ INSTANTIATE_TEST_CASE_P(DISABLED_DAISY, DescriptorScaleInvariance, Values(
 ));
 #endif
 
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 INSTANTIATE_TEST_CASE_P(VGG120, DescriptorScaleInvariance, Values(
     make_tuple(IMAGE_BIKES,
                KAZE::create(),
@@ -194,8 +198,10 @@ INSTANTIATE_TEST_CASE_P(VGG48, DescriptorScaleInvariance, Values(
                VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
                0.93f)
 ));
+#endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
 #ifdef OPENCV_ENABLE_NONFREE  // SURF detector is used in tests
+#ifdef OPENCV_XFEATURES2D_HAS_BOOST_DATA
 INSTANTIATE_TEST_CASE_P(BoostDesc_BGM, DescriptorScaleInvariance, Values(
     make_tuple(IMAGE_BIKES,
                SURF::create(),
@@ -238,6 +244,7 @@ INSTANTIATE_TEST_CASE_P(BoostDesc_BINBOOST_256, DescriptorScaleInvariance, Value
                BoostDesc::create(BoostDesc::BINBOOST_256, true, 6.25f),
                0.98f)
 ));
+#endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
 #endif // NONFREE
 
 

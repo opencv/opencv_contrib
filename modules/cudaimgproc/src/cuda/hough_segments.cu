@@ -49,15 +49,14 @@ namespace cv { namespace cuda { namespace device
 {
     namespace hough_segments
     {
-        __device__ int g_counter;
-
         texture<uchar, cudaTextureType2D, cudaReadModeElementType> tex_mask(false, cudaFilterModePoint, cudaAddressModeClamp);
 
         __global__ void houghLinesProbabilistic(const PtrStepSzi accum,
                                                 int4* out, const int maxSize,
                                                 const float rho, const float theta,
                                                 const int lineGap, const int lineLength,
-                                                const int rows, const int cols)
+                                                const int rows, const int cols,
+                                                int* counterPtr)
         {
             const int r = blockIdx.x * blockDim.x + threadIdx.x;
             const int n = blockIdx.y * blockDim.y + threadIdx.y;
@@ -182,7 +181,7 @@ namespace cv { namespace cuda { namespace device
 
                             if (good_line)
                             {
-                                const int ind = ::atomicAdd(&g_counter, 1);
+                                const int ind = ::atomicAdd(counterPtr, 1);
                                 if (ind < maxSize)
                                     out[ind] = make_int4(line_end[0].x, line_end[0].y, line_end[1].x, line_end[1].y);
                             }
@@ -202,7 +201,7 @@ namespace cv { namespace cuda { namespace device
 
                             if (good_line)
                             {
-                                const int ind = ::atomicAdd(&g_counter, 1);
+                                const int ind = ::atomicAdd(counterPtr, 1);
                                 if (ind < maxSize)
                                     out[ind] = make_int4(line_end[0].x, line_end[0].y, line_end[1].x, line_end[1].y);
                             }
@@ -214,29 +213,27 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        int houghLinesProbabilistic_gpu(PtrStepSzb mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength)
+        int houghLinesProbabilistic_gpu(PtrStepSzb mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int* counterPtr, cudaStream_t stream)
         {
-            void* counterPtr;
-            cudaSafeCall( cudaGetSymbolAddress(&counterPtr, g_counter) );
-
-            cudaSafeCall( cudaMemset(counterPtr, 0, sizeof(int)) );
+            cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
             const dim3 block(32, 8);
             const dim3 grid(divUp(accum.cols - 2, block.x), divUp(accum.rows - 2, block.y));
 
             bindTexture(&tex_mask, mask);
 
-            houghLinesProbabilistic<<<grid, block>>>(accum,
+            houghLinesProbabilistic<<<grid, block, 0, stream>>>(accum,
                                                      out, maxSize,
                                                      rho, theta,
                                                      lineGap, lineLength,
-                                                     mask.rows, mask.cols);
+                                                     mask.rows, mask.cols,
+                                                     counterPtr);
             cudaSafeCall( cudaGetLastError() );
 
-            cudaSafeCall( cudaDeviceSynchronize() );
-
             int totalCount;
-            cudaSafeCall( cudaMemcpy(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost) );
+            cudaSafeCall( cudaMemcpyAsync(&totalCount, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
+
+            cudaSafeCall( cudaStreamSynchronize(stream) );
 
             totalCount = ::min(totalCount, maxSize);
 

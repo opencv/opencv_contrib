@@ -108,7 +108,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Ma
 
                 for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
                     for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
-                        for (int k = lower_bound[2]; k <= lower_bound[2]; k++)
+                        for (int k = lower_bound[2]; k <= upper_bound[2]; k++)
                         {
                             const Vec3i tsdf_idx = Vec3i(i, j, k);
                             if (!localAccessVolUnits.count(tsdf_idx))

@@ -1501,4 +1501,41 @@ PERF_TEST_P(Sz_Depth_Op, Threshold,
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+// InRange
+
+PERF_TEST_P(Sz_Depth_Cn, InRange,
+            Combine(CUDA_TYPICAL_MAT_SIZES,
+            Values(CV_8U, CV_16U, CV_32F, CV_64F),
+            CUDA_CHANNELS_1_3_4))
+{
+    const cv::Size size = GET_PARAM(0);
+    const int depth = GET_PARAM(1);
+    const int channels = GET_PARAM(2);
+
+    cv::Mat src(size, CV_MAKE_TYPE(depth, channels));
+    declare.in(src, WARMUP_RNG);
+
+    const cv::Scalar lowerb(10, 50, 100);
+    const cv::Scalar upperb(70, 85, 200);
+
+    if (PERF_RUN_CUDA())
+    {
+        const cv::cuda::GpuMat d_src(src);
+        cv::cuda::GpuMat dst;
+
+        TEST_CYCLE() cv::cuda::inRange(d_src, lowerb, upperb, dst);
+
+        CUDA_SANITY_CHECK(dst, 0);
+    }
+    else
+    {
+        cv::Mat dst;
+
+        TEST_CYCLE() cv::inRange(src, lowerb, upperb, dst);
+
+        CPU_SANITY_CHECK(dst);
+    }
+}
+
 }} // namespace
