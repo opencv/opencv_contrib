@@ -416,13 +416,14 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
 {
     float3 normal = (float3) (0.0f, 0.0f, 0.0f);
     float3 ptVox = p * voxelSizeInv;
-    int3 iptVox = convert_int3(floor(ptVox));
+    float3 fip = floor(ptVox);
+    int3 iptVox = convert_int3(fip);
 
     // A small hash table to reduce a number of findRow() calls
     // -2 and lower means not queried yet
     // -1 means not found
     // 0+ means found
-    int  iterMap[8];
+    int iterMap[8];
     for (int i = 0; i < 8; i++)
     {
         iterMap[i] = -2;
@@ -486,12 +487,12 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     // where each digit corresponds to shift by x, y, z axis respectively.
     // 2. Add +1 for next or -1 for prev to each coordinate to corresponding axis
     // 3. Search corresponding values in offsets
-    const int idxxp[8] = { 8,  9, 10, 11,  0,  1,  2,  3 };
-    const int idxxn[8] = { 4,  5,  6,  7, 12, 13, 14, 15 };
-    const int idxyp[8] = { 16, 17,  0,  1, 18, 19,  4,  5 };
-    const int idxyn[8] = { 2,  3, 20, 21,  6,  7, 22, 23 };
-    const int idxzp[8] = { 24,  0, 25,  2, 26,  4, 27,  6 };
-    const int idxzn[8] = { 1, 28,  3, 29,  5, 30,  7, 31 };
+    const int idxxn[8] = {  8,  9, 10, 11,  0,  1,  2,  3 };
+    const int idxxp[8] = {  4,  5,  6,  7, 12, 13, 14, 15 };
+    const int idxyn[8] = { 16, 17,  0,  1, 18, 19,  4,  5 };
+    const int idxyp[8] = {  2,  3, 20, 21,  6,  7, 22, 23 };
+    const int idxzn[8] = { 24,  0, 25,  2, 26,  4, 27,  6 };
+    const int idxzp[8] = {  1, 28,  3, 29,  5, 30,  7, 31 };
 
     float vcxp[8], vcxn[8];
     float vcyp[8], vcyn[8];
@@ -507,11 +508,11 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* allVolum
     float8 cxp = vload8(0, vcxp), cxn = vload8(0, vcxn);
     float8 cyp = vload8(0, vcyp), cyn = vload8(0, vcyn);
     float8 czp = vload8(0, vczp), czn = vload8(0, vczn);
-    float8 cx = cxn - cxp;
-    float8 cy = cyn - cyp;
-    float8 cz = czn - czp;
+    float8 cx = cxp - cxn;
+    float8 cy = cyp - cyn;
+    float8 cz = czp - czn;
 
-    float3 tv = ptVox - convert_float3(iptVox);
+    float3 tv = ptVox - fip;
     normal.x = interpolate(tv, cx);
     normal.y = interpolate(tv, cy);
     normal.z = interpolate(tv, cz);
