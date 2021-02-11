@@ -377,7 +377,7 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
 
     vector< vector< vector< Point2f > > > candidatesArrays((size_t) nScales);
     vector< vector< vector< Point > > > contoursArrays((size_t) nScales);
-    double otsu_treshold = 0.0;
+    float otsu_treshold = 0.0;
     // extract with global theshold)
     if (params->useGlobalThreshold && params->foundMarkerInLastFrames > 2 && params->useAruco3Detection) {
         Mat thresh;
@@ -391,8 +391,9 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
 
         }
         // get lines
-        int el_size = 3;
-        cv::Mat struc_el = cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(el_size,el_size), cv::Point(el_size/2.0,el_size/2.0));
+        const int el_size = 3;
+        const int el_size_half = el_size / 2.0;
+        cv::Mat struc_el = cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(el_size,el_size), cv::Point(el_size_half,el_size_half));
         cv::Mat eroded_imaged;
         cv::erode(thresh, eroded_imaged, struc_el);
         cv::bitwise_xor(eroded_imaged, thresh, thresh);
@@ -567,7 +568,7 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
 static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
                                   const vector<Point2f>& _corners, int& idx,
                                   const Ptr<DetectorParameters>& params, int& rotation,
-                                  const double& scale = 1.0)
+                                  const float& scale = 1.f)
 {
     CV_Assert(_corners.size() == 4);
     CV_Assert(_image.getMat().total() != 0);
@@ -669,13 +670,13 @@ static void correctCornerPosition( vector< Point2f >& _candidate, int rotate){
     std::rotate(_candidate.begin(), _candidate.begin() + 4 - rotate, _candidate.end());
 }
 
-static unsigned int _findOptPyrImageForCanonicalImg(
+static size_t _findOptPyrImageForCanonicalImg(
         const std::vector<cv::Size>& img_pyr_sizes,
         const cv::Size& resized_seg_image,
         const int& cur_perimeter,
         const int& min_perimeter) {
 
-    unsigned int h = 0;
+    size_t h = 0;
     double dist = std::numeric_limits<double>::max();
     for (size_t i = 0; i < img_pyr_sizes.size(); ++i) {
         const double factor = (double)resized_seg_image.width / img_pyr_sizes[i].width;
@@ -734,9 +735,9 @@ static void _identifyCandidates(InputArray _image,
             // implements equation (4)
             if (params->useAruco3Detection) {
                 const size_t perimeter_in_seg_img = contourS[i].size();
-                const int n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
+                const size_t n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
                 const Mat& pyr_img = _image_pyr[n];
-                const double scale = (double)_image_pyr_sizes[n].width / _image.cols();
+                const float scale = (float)_image_pyr_sizes[n].width / _image.cols();
                 validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
             } else {
                 validCandidates[i] = _identifyOneCandidate(_dictionary, _image, candidates[i], currId, params, rotated[i]);
@@ -1304,11 +1305,11 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
     // sort contours according to perimeter
     if (contours.size() > 0 && _params->cameraMotionSpeed > 0 && _params->useAruco3Detection) {
         std::sort(contours.begin(), contours.end(), [](vector<Point> a, vector<Point> b) {return a.size() < b.size();});
-        const float next_frame_tau_i = (1.0 - _params->cameraMotionSpeed) * contours[0].size() / 4.0;
+        const float next_frame_tau_i = (1.f - _params->cameraMotionSpeed) * contours[0].size() / 4.f;
         return next_frame_tau_i / std::max(img_pyr_sizes[0].width, img_pyr_sizes[0].height); // normalize new tau_i
     }
     else {
-        return 0.0f;
+        return 0.f;
     }
 }
 
