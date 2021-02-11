@@ -1116,8 +1116,7 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
 
 void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
-    const int newIndicesCapacity = VOLUMES_SIZE;
-    constexpr size_t pixCapacity = 16;
+    constexpr int pixCapacity = 16;
     typedef std::array<Vec3i, pixCapacity> LocalVolUnits;
 
     Depth depth = _depth.getMat(ACCESS_READ);
@@ -1162,9 +1161,9 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
                             if (hashTable.find(tsdf_idx) < 0)
                             {
                                 bool found = false;
-                                for (int i = 0; i < pixLocalCounter; i++)
+                                for (int c = 0; c < pixLocalCounter; c++)
                                 {
-                                    if (pixLocalVolUnits[i] == tsdf_idx)
+                                    if (pixLocalVolUnits[c] == tsdf_idx)
                                     {
                                         found = true; break;
                                     }
@@ -1317,6 +1316,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     };
 
     //TODO: remove it
+    /*
     auto pushToGlobalGpu = [](const ToyHashSet thm, ToyHashSet& globalHashMap, bool& needReallocation)
     {
         //TODO: set needReallocation based on thm.last + globalHashMap.last < globalHashMap.capacity
@@ -1380,7 +1380,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
             std::cout << "need reallocation" << std::endl;
         }
     };
-
+    */
     needReallocation = false;
     do
     {
