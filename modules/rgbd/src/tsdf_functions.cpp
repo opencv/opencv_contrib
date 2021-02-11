@@ -436,6 +436,7 @@ bool VolumesTable::insert(Vec3i idx, int row)
 
         i = v->nextVolumeRow;
     }
+    return false;
 }
 
 
