@@ -377,13 +377,13 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
 
     vector< vector< vector< Point2f > > > candidatesArrays((size_t) nScales);
     vector< vector< vector< Point > > > contoursArrays((size_t) nScales);
-    float otsu_treshold = 0.0;
+    double otsu_treshold = 0.0;
     // extract with global theshold)
     if (params->useGlobalThreshold && params->foundMarkerInLastFrames > 2 && params->useAruco3Detection) {
         Mat thresh;
         if (params->foundGlobalThreshold) {
-            cv::threshold(grey, thresh, params->otsuGlobalThreshold, 255, cv::THRESH_BINARY_INV);
-            otsu_treshold = params->otsuGlobalThreshold;
+            cv::threshold(grey, thresh, (double)params->otsuGlobalThreshold, 255, cv::THRESH_BINARY_INV);
+            otsu_treshold = (double)params->otsuGlobalThreshold;
         }
         else { // first time get threshold with otsu
             otsu_treshold = cv::threshold(grey, thresh, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
@@ -392,7 +392,7 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
         }
         // get lines
         const int el_size = 3;
-        const int el_size_half = el_size / 2.0;
+        const int el_size_half = static_cast<int>(el_size / 2.0);
         cv::Mat struc_el = cv::getStructuringElement(cv::MORPH_CROSS, cv::Size(el_size,el_size), cv::Point(el_size_half,el_size_half));
         cv::Mat eroded_imaged;
         cv::erode(thresh, eroded_imaged, struc_el);
@@ -429,7 +429,7 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
         }
     }
 
-    return otsu_treshold;
+    return (float)otsu_treshold;
 }
 
 
@@ -734,7 +734,7 @@ static void _identifyCandidates(InputArray _image,
 
             // implements equation (4)
             if (params->useAruco3Detection) {
-                const size_t perimeter_in_seg_img = contourS[i].size();
+                const int perimeter_in_seg_img = (int)contourS[i].size();
                 const size_t n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
                 const Mat& pyr_img = _image_pyr[n];
                 const float scale = (float)_image_pyr_sizes[n].width / _image.cols();
@@ -1106,13 +1106,13 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
     }
 
     /// Step 0: equation (2) from paper [1]
-    const unsigned int tau_i_dot = _params->minSideLengthCanonicalImg +
+    const int tau_i_dot = _params->minSideLengthCanonicalImg +
             std::max(grey.cols, grey.rows) * _params->minMarkerLengthRatioOriginalImg;
 
     //// Step 0.1: resize image with equation (1) from paper [1]
     float fxfy = (float)_params->minSideLengthCanonicalImg / tau_i_dot;
     if (!_params->useAruco3Detection) {
-        fxfy = 1.0;
+        fxfy = 1.f;
     }
     const cv::Size seg_img_size = cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows));
 
