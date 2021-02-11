@@ -1294,20 +1294,20 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     } while (needReallocation);
 
 
-    auto pushToGlobal = [](const ToyHashSet thm, ToyHashSet& globalHashMap,
-                           bool& needReallocation, Mutex& mutex)
+    auto pushToGlobal = [](const ToyHashSet _thm, ToyHashSet& _globalHashMap,
+                           bool& _needReallocation, Mutex& _mutex)
     {
-        for (int i = 0; i < thm.last; i++)
+        for (int i = 0; i < _thm.last; i++)
         {
-                Vec4i node = thm.data[i];
+                Vec4i node = _thm.data[i];
                 Vec3i idx(node[0], node[1], node[2]);
 
-                std::lock_guard<std::recursive_mutex> al(mutex);
+                std::lock_guard<std::recursive_mutex> al(_mutex);
 
-                int result = globalHashMap.insert(idx);
+                int result = _globalHashMap.insert(idx);
                 if (result == 0)
                 {
-                    needReallocation = true;
+                    _needReallocation = true;
                     //DEBUG
                     std::cout << "need reallocation, exiting" << std::endl;
                     return;
