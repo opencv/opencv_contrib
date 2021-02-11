@@ -421,21 +421,21 @@ inline float3 getNormalVoxel(float3 ptVox, __global const struct TsdfVoxel* allV
     }
 
 #if !USE_INTERPOLATION_IN_GETNORMAL
-    int3 offsets[] = { (int3)( 1,  0,  0), (int3)(-1,  0,  0), (int3)( 0,  1,  0), // 0-3
-                       (int3)( 0, -1,  0), (int3)( 0,  0,  1), (int3)( 0,  0, -1)  // 4-7
+    int4 offsets[] = { (int4)( 1,  0,  0, 0), (int4)(-1,  0,  0, 0), (int4)( 0,  1,  0, 0), // 0-3
+                       (int4)( 0, -1,  0, 0), (int4)( 0,  0,  1, 0), (int4)( 0,  0, -1, 0)  // 4-7
     };
     
     const int nVals = 6;
     float vals[6];
 #else
-    int3 offsets[]={(int3)( 0,  0,  0), (int3)( 0,  0,  1), (int3)( 0,  1,  0), (int3)( 0,  1,  1), //  0-3
-                    (int3)( 1,  0,  0), (int3)( 1,  0,  1), (int3)( 1,  1,  0), (int3)( 1,  1,  1), //  4-7
-                    (int3)(-1,  0,  0), (int3)(-1,  0,  1), (int3)(-1,  1,  0), (int3)(-1,  1,  1), //  8-11
-                    (int3)( 2,  0,  0), (int3)( 2,  0,  1), (int3)( 2,  1,  0), (int3)( 2,  1,  1), // 12-15
-                    (int3)( 0, -1,  0), (int3)( 0, -1,  1), (int3)( 1, -1,  0), (int3)( 1, -1,  1), // 16-19
-                    (int3)( 0,  2,  0), (int3)( 0,  2,  1), (int3)( 1,  2,  0), (int3)( 1,  2,  1), // 20-23
-                    (int3)( 0,  0, -1), (int3)( 0,  1, -1), (int3)( 1,  0, -1), (int3)( 1,  1, -1), // 24-27
-                    (int3)( 0,  0,  2), (int3)( 0,  1,  2), (int3)( 1,  0,  2), (int3)( 1,  1,  2), // 28-31
+    int4 offsets[]={(int4)( 0,  0,  0, 0), (int4)( 0,  0,  1, 0), (int4)( 0,  1,  0, 0), (int4)( 0,  1,  1, 0), //  0-3
+                    (int4)( 1,  0,  0, 0), (int4)( 1,  0,  1, 0), (int4)( 1,  1,  0, 0), (int4)( 1,  1,  1, 0), //  4-7
+                    (int4)(-1,  0,  0, 0), (int4)(-1,  0,  1, 0), (int4)(-1,  1,  0, 0), (int4)(-1,  1,  1, 0), //  8-11
+                    (int4)( 2,  0,  0, 0), (int4)( 2,  0,  1, 0), (int4)( 2,  1,  0, 0), (int4)( 2,  1,  1, 0), // 12-15
+                    (int4)( 0, -1,  0, 0), (int4)( 0, -1,  1, 0), (int4)( 1, -1,  0, 0), (int4)( 1, -1,  1, 0), // 16-19
+                    (int4)( 0,  2,  0, 0), (int4)( 0,  2,  1, 0), (int4)( 1,  2,  0, 0), (int4)( 1,  2,  1, 0), // 20-23
+                    (int4)( 0,  0, -1, 0), (int4)( 0,  1, -1, 0), (int4)( 1,  0, -1, 0), (int4)( 1,  1, -1, 0), // 24-27
+                    (int4)( 0,  0,  2, 0), (int4)( 0,  1,  2, 0), (int4)( 1,  0,  2, 0), (int4)( 1,  1,  2, 0), // 28-31
     };
     const int nVals = 32;
     float vals[32];
@@ -443,7 +443,7 @@ inline float3 getNormalVoxel(float3 ptVox, __global const struct TsdfVoxel* allV
 
     for (int i = 0; i < nVals; i++)
     {
-        int3 pt = iptVox + offsets[i];
+        int3 pt = iptVox + offsets[i].s012;
 
         // VoxelToVolumeUnitIdx()
         int3 volumeUnitIdx = pt >> volumeUnitDegree;
