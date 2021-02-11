@@ -372,7 +372,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
     {
         return TsdfVoxel(floatToTsdf(1.f), 0);
     }
-    
+
     cv::Vec3i volUnitLocalIdx = volumeIdx - cv::Vec3i(volumeUnitIdx[0] << volumeUnitDegree,
                                                       volumeUnitIdx[1] << volumeUnitDegree,
                                                       volumeUnitIdx[2] << volumeUnitDegree);
@@ -1129,7 +1129,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     const Affine3f cam2vol(pose.inv() * Affine3f(cameraPose));
     const Point3f truncPt(truncDist, truncDist, truncDist);
     Mutex mutex;
-    
+
     // for new indices
     ToyHashSet thm;
 
@@ -1150,7 +1150,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
                 //! Find accessed TSDF volume unit for valid 3D vertex
                 Vec3i lower_bound = this->volumeToVolumeUnitIdx(volPoint - truncPt);
                 Vec3i upper_bound = this->volumeToVolumeUnitIdx(volPoint + truncPt);
-                
+
                 int pixLocalCounter = 0;
                 LocalVolUnits pixLocalVolUnits;
                 for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
@@ -1232,7 +1232,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
                 {
                     Vec4i node = ghm.data[i];
                     Vec3i idx(node[0], node[1], node[2]);
-                    
+
                     //TODO: 1. add to separate hash map instead, then merge on GPU side
 
                     int result = thm.insert(idx);
@@ -1315,7 +1315,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
                 }
         }
     };
-    
+
     //TODO: remove it
     auto pushToGlobalGpu = [](const ToyHashSet thm, ToyHashSet& globalHashMap, bool& needReallocation)
     {
@@ -1397,7 +1397,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
         pushToGlobal(thm, hashTable, needReallocation, mutex);
         //pushToGlobalGpu(thm, hashTable, needReallocation);
     } while (needReallocation);
-        
+
     // ---------------------
 }
 
@@ -1474,7 +1474,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
         UMat newData(buff_lvl, volCubed, CV_8UC2);
         volUnitsData.copyTo(newData.rowRange(oldr));
         volUnitsData = newData;
-        
+
         UMat newLastVisibleIndices(buff_lvl, 1, CV_32S);
         lastVisibleIndices.copyTo(newLastVisibleIndices.rowRange(oldr));
         lastVisibleIndices = newLastVisibleIndices;
@@ -1784,7 +1784,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
 
     Intr::Reprojector r = intrinsics.makeReprojector();
     Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
-    
+
     Vec4f boxMin, boxMax(volumeUnitSize - voxelSize,
                          volumeUnitSize - voxelSize,
                          volumeUnitSize - voxelSize);
