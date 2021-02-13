@@ -127,7 +127,6 @@ int main(int argc, char** argv)
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
-    // Disabled until there is no OpenCL accelerated HashTSDF is available
     cv::setUseOptimized(true);
 
     if (!idle)
