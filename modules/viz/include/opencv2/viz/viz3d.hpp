@@ -64,9 +64,10 @@ namespace cv
 
         /** @brief The Viz3d class represents a 3D visualizer window. This class is implicitly shared.
         */
-        class CV_EXPORTS Viz3d
+        class CV_EXPORTS_W Viz3d
         {
         public:
+            CV_WRAP static cv::Ptr<Viz3d> create(const String& window_name = String());
             typedef cv::viz::Color Color;
             typedef void (*KeyboardCallback)(const KeyboardEvent&, void*);
             typedef void (*MouseCallback)(const MouseEvent&, void*);
@@ -75,10 +76,10 @@ namespace cv
 
             @param window_name Name of the window.
              */
-            Viz3d(const String& window_name = String());
+            CV_WRAP Viz3d(const String& window_name = String());
             Viz3d(const Viz3d&);
             Viz3d& operator=(const Viz3d&);
-            ~Viz3d();
+            CV_WRAP ~Viz3d();
 
             /** @brief Shows a widget in the window.
 
@@ -87,11 +88,18 @@ namespace cv
              */
             void showWidget(const String &id, const Widget &widget, const Affine3d &pose = Affine3d::Identity());
 
+            /** @brief Shows a widget in the window.
+
+            @param id A unique id for the widget. @param widget The widget to be displayed in the window.
+            @param pose Pose of the widget.
+             */
+            CV_WRAP void showWidget(CV_IN_OUT ParamWidget &widget);
+
             /** @brief Removes a widget from the window.
 
             @param id The id of the widget that will be removed.
              */
-            void removeWidget(const String &id);
+            CV_WRAP void removeWidget(const String &id);
 
             /** @brief Retrieves a widget from the window.
 
@@ -104,7 +112,7 @@ namespace cv
 
             /** @brief Removes all widgets from the window.
             */
-            void removeAllWidgets();
+            CV_WRAP void removeAllWidgets();
 
             /** @brief Removed all widgets and displays image scaled to whole window area.
 
@@ -220,14 +228,14 @@ namespace cv
 
             /** @brief The window renders and starts the event loop.
             */
-            void spin();
+            CV_WRAP void spin();
 
             /** @brief Starts the event loop for a given time.
 
             @param time Amount of time in milliseconds for the event loop to keep running.
             @param force_redraw If true, window renders.
              */
-            void spinOnce(int time = 1, bool force_redraw = false);
+            CV_WRAP void spinOnce(int time = 1, bool force_redraw = false);
 
             /** @brief Create a window in memory instead of on the screen.
              */
@@ -252,7 +260,7 @@ namespace cv
 
             /** @brief Returns whether the event loop has been stopped.
             */
-            bool wasStopped() const;
+            CV_WRAP bool wasStopped() const;
             void close();
 
             /** @brief Sets keyboard handler.
@@ -339,7 +347,7 @@ namespace cv
             struct VizImpl;
             VizImpl* impl_;
 
-            void create(const String &window_name);
+            void create_internal(const String &window_name);
             void release();
 
             friend class VizStorage;

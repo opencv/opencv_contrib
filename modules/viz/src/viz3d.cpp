@@ -45,7 +45,12 @@
 
 #include "precomp.hpp"
 
-cv::viz::Viz3d::Viz3d(const String& window_name) : impl_(0) { create(window_name); }
+cv::Ptr<cv::viz::Viz3d> cv::viz::Viz3d::Viz3d::create(const String& window_name)
+{
+    return cv::makePtr<cv::viz::Viz3d>(window_name);
+}
+
+cv::viz::Viz3d::Viz3d(const String& window_name) : impl_(0) { create_internal(window_name); }
 
 cv::viz::Viz3d::Viz3d(const Viz3d& other) : impl_(other.impl_)
 {
@@ -67,7 +72,7 @@ cv::viz::Viz3d& cv::viz::Viz3d::operator=(const Viz3d& other)
 
 cv::viz::Viz3d::~Viz3d() { release(); }
 
-void cv::viz::Viz3d::create(const String &window_name)
+void cv::viz::Viz3d::create_internal(const String &window_name)
 {
     if (impl_)
         release();
@@ -115,6 +120,29 @@ void cv::viz::Viz3d::registerMouseCallback(MouseCallback callback, void* cookie)
 { impl_->registerMouseCallback(callback, cookie); }
 
 void cv::viz::Viz3d::showWidget(const String &id, const Widget &widget, const Affine3d &pose) { impl_->showWidget(id, widget, pose); }
+
+void cv::viz::Viz3d::showWidget(ParamWidget &widget)
+{
+    if (widget.widget_type == WIDGET_WArrow)
+    {
+        WArrow w(widget.p1, widget.p2, widget.thickness, Color(widget.blue, widget.green, widget.red));
+        CV_Assert(widget.rot_vec.rows == 3 && widget.rot_vec.cols == 1);
+        Affine3d pose(widget.rot_vec, widget.trans_vec);
+        impl_->showWidget(widget.widget_name, w, pose);
+    }
+    if (widget.widget_type == WIDGET_WCoordinateSystem)
+    {
+        WCoordinateSystem w;
+        impl_->showWidget(widget.widget_name, w);
+    }
+    if (widget.widget_type == WIDGET_WCube)
+    {
+        WCube w(widget.p1, widget.p2, true, Color(widget.blue, widget.green, widget.red));
+        w.setRenderingProperty(viz::LINE_WIDTH, widget.thickness);
+        impl_->showWidget(widget.widget_name, w);
+    }
+}
+
 void cv::viz::Viz3d::removeWidget(const String &id) { impl_->removeWidget(id); }
 cv::viz::Widget cv::viz::Viz3d::getWidget(const String &id) const { return impl_->getWidget(id); }
 void cv::viz::Viz3d::removeAllWidgets() { impl_->removeAllWidgets(); }

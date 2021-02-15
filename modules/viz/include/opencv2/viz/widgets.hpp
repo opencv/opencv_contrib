@@ -55,6 +55,43 @@ namespace cv
 
 //! @addtogroup viz_widget
 //! @{
+        enum WidgetId{
+            WIDGET_WArrow,
+            WIDGET_WLine,
+            WIDGET_WCube,
+            WIDGET_WCoordinateSystem,
+
+        };
+
+        struct CV_EXPORTS_W_SIMPLE ParamWidget {
+            CV_PROP_RW cv::Point3d p1;
+            CV_PROP_RW cv::Point3d p2;
+            CV_PROP_RW double thickness;
+            CV_PROP_RW double   blue;
+            CV_PROP_RW double   green;
+            CV_PROP_RW double   red;
+            CV_PROP_RW int widget_type;
+            CV_PROP_RW String widget_name;
+            CV_PROP_RW Mat  rot_vec; //  Mat::zeros(1,3,CV_32F);
+            CV_PROP_RW Mat  trans_vec; //  Vec3f must be compatible with Affine3 (const Mat3 &R, const Vec3 &t=Vec3::all(0))
+            CV_WRAP ParamWidget(cv::Point3d p_ini= cv::Point3d(), cv::Point3d p_fin= cv::Point3d(),
+                                double thick=0.3, double b=255, double g = 255, double r = 255,
+                                int type= WIDGET_WCoordinateSystem, const String name="", Mat r_vec=Mat(), Mat t_vec=Mat())
+            {
+                p1 = p_ini;
+                p2 = p_fin;
+                thickness = thick;
+                blue = b;
+                green = g;
+                red = r;
+                widget_type = type;
+                widget_name = name;
+                rot_vec = r_vec;
+                trans_vec = t_vec;
+
+
+            }
+        };
 
         /////////////////////////////////////////////////////////////////////////////
         /// Widget rendering properties
