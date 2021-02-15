@@ -72,6 +72,12 @@ namespace cv
          */
         CV_EXPORTS Affine3d makeTransformToGlobal(const Vec3d& axis_x, const Vec3d& axis_y, const Vec3d& axis_z, const Vec3d& origin = Vec3d::all(0));
 
+
+        /**
+        This is an overloaded member function, provided for convenience. It differs from the above function only in what argument(s) it accepts.
+        */
+        CV_EXPORTS_W PyAffine3 makeTransformToGlobalPy(const Vec3d& axis_x, const Vec3d& axis_y, const Vec3d& axis_z, const Vec3d& origin = Vec3d::all(0));
+
         /** @brief Constructs camera pose from position, focal_point and up_vector (see gluLookAt() for more
         information).
 
@@ -83,6 +89,10 @@ namespace cv
          */
         CV_EXPORTS Affine3d makeCameraPose(const Vec3d& position, const Vec3d& focal_point, const Vec3d& y_dir);
 
+        /**
+        This is an overloaded member function, provided for convenience. It differs from the above function only in what argument(s) it accepts.
+        */
+        CV_EXPORTS_W PyAffine3 makeCameraPosePy(const Vec3d& position, const Vec3d& focal_point, const Vec3d& y_dir);
         /** @brief Retrieves a window by its name.
 
         @param window_name Name of the window that is to be retrieved.
@@ -148,7 +158,7 @@ namespace cv
          *                Supported channels: 3 and 4.
          * @param binary Used only for PLY format.
          */
-        CV_EXPORTS void writeCloud(const String& file, InputArray cloud, InputArray colors = noArray(), InputArray normals = noArray(), bool binary = false);
+        CV_EXPORTS_W void writeCloud(const String& file, InputArray cloud, InputArray colors = noArray(), InputArray normals = noArray(), bool binary = false);
 
         /**
          * @param file Filename with extension. Supported formats: PLY, XYZ, OBJ and STL.
@@ -157,12 +167,12 @@ namespace cv
          * @return A mat containing the point coordinates with depth CV_32F or CV_64F and number of
          *         channels 3 or 4 with only 1 row.
          */
-        CV_EXPORTS Mat  readCloud (const String& file, OutputArray colors = noArray(), OutputArray normals = noArray());
+        CV_EXPORTS_W Mat  readCloud (const String& file, OutputArray colors = noArray(), OutputArray normals = noArray());
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /// Reads mesh. Only ply format is supported now and no texture load support
 
-        CV_EXPORTS Mesh readMesh(const String& file);
+        CV_EXPORTS_W Mesh readMesh(const String& file);
 
         ///////////////////////////////////////////////////////////////////////////////////////////////
         /// Read/write poses and trajectories
@@ -211,7 +221,7 @@ namespace cv
          * @param mesh Input mesh.
          * @param normals Normals at very point in the mesh of type CV_64FC3.
          */
-        CV_EXPORTS void computeNormals(const Mesh& mesh, OutputArray normals);
+        CV_EXPORTS_W void computeNormals(const Mesh& mesh, OutputArray normals);
 
 //! @}
 

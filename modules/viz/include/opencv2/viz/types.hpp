@@ -57,7 +57,6 @@ namespace cv
 
 //! @addtogroup viz
 //! @{
-
         /** @brief This class represents color in BGR order.
         */
         class Color : public Scalar
@@ -115,27 +114,87 @@ namespace cv
             static Color not_set();
         };
 
+        struct CV_EXPORTS_W_SIMPLE PyColor
+        {
+            //! The three channels will have the same value equal to gray.
+            CV_WRAP PyColor() { c = Color(0, 0, 0); };
+            CV_WRAP PyColor(double gray) { c = Color(gray, gray, gray); };
+            CV_WRAP  PyColor(double blue, double green, double red) { c = Color(blue, green, red); }
+            PyColor(Color v) { c = v; }
+
+/*            Color get() { return c; };*/
+
+            CV_WRAP static PyColor black() { return PyColor(Color::black()); }
+            CV_WRAP static  PyColor white() { return PyColor(Color::white()); }
+            CV_WRAP static PyColor blue() { return PyColor(Color::blue()); }
+            CV_WRAP static PyColor green() { return PyColor(Color::green()); }
+            CV_WRAP static PyColor red() { return PyColor(Color::red()); }
+            CV_WRAP static  PyColor cyan() { return PyColor(Color::cyan()); }
+            CV_WRAP static  PyColor yellow() { return PyColor(Color::yellow()); }
+            CV_WRAP static  PyColor magenta() { return PyColor(Color::magenta()); }
+
+            CV_WRAP static  PyColor gray() { return PyColor(Color::gray()); }
+            CV_WRAP static  PyColor silver() { return PyColor(Color::silver()); }
+
+            CV_WRAP static  PyColor mlab() { return PyColor(Color::mlab()); }
+
+            CV_WRAP static  PyColor navy() { return PyColor(Color::navy()); }
+            CV_WRAP static  PyColor maroon() { return PyColor(Color::maroon()); }
+            CV_WRAP static  PyColor teal() { return PyColor(Color::teal()); }
+            CV_WRAP static  PyColor olive() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor purple() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor azure() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor chartreuse() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor rose() { return PyColor(Color::olive()); };
+
+            CV_WRAP static PyColor lime() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor gold() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor orange() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor orange_red() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor indigo() { return PyColor(Color::olive()); };
+
+            CV_WRAP static PyColor brown() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor apricot() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor pink() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor raspberry() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor cherry() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor violet() { return PyColor(Color::olive()); };
+            CV_WRAP static PyColor amethyst() { return PyColor(Color::amethyst()); };
+            CV_WRAP static PyColor bluberry() { return PyColor(Color::bluberry()); };
+            CV_WRAP static PyColor celestial_blue() { return PyColor(Color::celestial_blue()); };
+            CV_WRAP static PyColor turquoise() { return PyColor(Color::turquoise()); };
+
+            static PyColor not_set() { return PyColor(Color::not_set()); };
+            CV_WRAP double get_blue() { return c[0]; };
+            CV_WRAP double get_green() { return c[1]; };
+            CV_WRAP double get_red() { return c[2]; };
+
+            Color c;
+
+        };
+
         /** @brief This class wraps mesh attributes, and it can load a mesh from a ply file. :
         */
-        class CV_EXPORTS Mesh
+        class CV_EXPORTS_W_SIMPLE Mesh
         {
         public:
+            CV_WRAP Mesh() {};
             enum {
                 LOAD_AUTO = 0,
                 LOAD_PLY = 1,
                 LOAD_OBJ = 2
             };
 
-            Mat cloud; //!< point coordinates of type CV_32FC3 or CV_64FC3 with only 1 row
-            Mat colors; //!< point color of type CV_8UC3 or CV_8UC4 with only 1 row
-            Mat normals; //!< point normals of type CV_32FC3, CV_32FC4, CV_64FC3 or CV_64FC4 with only 1 row
+            CV_PROP_RW Mat cloud; //!< point coordinates of type CV_32FC3 or CV_64FC3 with only 1 row
+            CV_PROP_RW Mat colors; //!< point color of type CV_8UC3 or CV_8UC4 with only 1 row
+            CV_PROP_RW Mat normals; //!< point normals of type CV_32FC3, CV_32FC4, CV_64FC3 or CV_64FC4 with only 1 row
 
             //! Raw integer list of the form: (n,id1,id2,...,idn, n,id1,id2,...,idn, ...)
             //! where n is the number of points in the polygon, and id is a zero-offset index into an associated cloud.
-            Mat polygons; //!< CV_32SC1 with only 1 row
+            CV_PROP_RW Mat polygons; //!< CV_32SC1 with only 1 row
 
-            Mat texture;
-            Mat tcoords; //!< CV_32FC2 or CV_64FC2 with only 1 row
+            CV_PROP_RW Mat texture;
+            CV_PROP_RW Mat tcoords; //!< CV_32FC2 or CV_64FC2 with only 1 row
 
             /** @brief Loads a mesh from a ply or a obj file.
 
@@ -383,6 +442,7 @@ inline cv::viz::Color cv::viz::Color::celestial_blue() { return Color(208, 151, 
 inline cv::viz::Color cv::viz::Color::turquoise()      { return Color(208, 224,  64); }
 
 inline cv::viz::Color cv::viz::Color::not_set()        { return Color(-1, -1, -1); }
+
 
 //! @endcond
 

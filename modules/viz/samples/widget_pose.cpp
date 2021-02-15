@@ -32,7 +32,8 @@ static void help()
 int main()
 {
     help();
-
+    Mat rot(1, 3, CV_64FC1);
+    viz::PyAffine3f p(rot);
     /// Create a window
     viz::Viz3d myWindow("Coordinate Frame");
 
@@ -52,6 +53,26 @@ int main()
     /// Rodrigues vector
     Mat rot_vec = Mat::zeros(1,3,CV_32F);
     float translation_phase = 0.0, translation = 0.0;
+
+    rot_vec.at<float>(0, 0) += (float)CV_PI * 0.01f;
+    rot_vec.at<float>(0, 1) += (float)CV_PI * 0.01f;
+    rot_vec.at<float>(0, 2) += (float)CV_PI * 0.01f;
+
+    /// Shift on (1,1,1)
+    translation_phase += (float)CV_PI * 0.01f;
+    translation = sin(translation_phase);
+
+    Mat rot_mat;
+    Rodrigues(rot_vec, rot_mat);
+    cout << "rot_mat = " << rot_mat << endl;
+    /// Construct pose
+    Affine3f pose(rot_mat, Vec3f(translation, translation, translation));
+    Affine3f pose2(pose.matrix);
+    cout << "pose = " << pose.matrix << endl;
+    cout << "pose = " << pose2.matrix << endl;
+
+
+
     while(!myWindow.wasStopped())
     {
         /* Rotation using rodrigues */

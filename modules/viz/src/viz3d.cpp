@@ -44,8 +44,15 @@
 //M*/
 
 #include "precomp.hpp"
+#include <opencv2/core/utils/logger.hpp>
 
-cv::viz::Viz3d::Viz3d(const String& window_name) : impl_(0) { create(window_name); }
+cv::Ptr<cv::viz::Viz3d> cv::viz::Viz3d::Viz3d::create(const String& window_name)
+{
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_WARNING);
+    return cv::makePtr<cv::viz::Viz3d>(window_name);
+}
+
+cv::viz::Viz3d::Viz3d(const String& window_name) : impl_(0) { create_internal(window_name); }
 
 cv::viz::Viz3d::Viz3d(const Viz3d& other) : impl_(other.impl_)
 {
@@ -67,7 +74,7 @@ cv::viz::Viz3d& cv::viz::Viz3d::operator=(const Viz3d& other)
 
 cv::viz::Viz3d::~Viz3d() { release(); }
 
-void cv::viz::Viz3d::create(const String &window_name)
+void cv::viz::Viz3d::create_internal(const String &window_name)
 {
     if (impl_)
         release();
@@ -115,6 +122,9 @@ void cv::viz::Viz3d::registerMouseCallback(MouseCallback callback, void* cookie)
 { impl_->registerMouseCallback(callback, cookie); }
 
 void cv::viz::Viz3d::showWidget(const String &id, const Widget &widget, const Affine3d &pose) { impl_->showWidget(id, widget, pose); }
+
+
+
 void cv::viz::Viz3d::removeWidget(const String &id) { impl_->removeWidget(id); }
 cv::viz::Widget cv::viz::Viz3d::getWidget(const String &id) const { return impl_->getWidget(id); }
 void cv::viz::Viz3d::removeAllWidgets() { impl_->removeAllWidgets(); }
@@ -122,6 +132,8 @@ void cv::viz::Viz3d::removeAllWidgets() { impl_->removeAllWidgets(); }
 void cv::viz::Viz3d::showImage(InputArray image, const Size& window_size) { impl_->showImage(image, window_size); }
 
 void cv::viz::Viz3d::setWidgetPose(const String &id, const Affine3d &pose) { impl_->setWidgetPose(id, pose); }
+
+
 void cv::viz::Viz3d::updateWidgetPose(const String &id, const Affine3d &pose) { impl_->updateWidgetPose(id, pose); }
 cv::Affine3d cv::viz::Viz3d::getWidgetPose(const String &id) const { return impl_->getWidgetPose(id); }
 
@@ -144,6 +156,11 @@ void cv::viz::Viz3d::saveScreenshot(const String &file) { impl_->saveScreenshot(
 void cv::viz::Viz3d::setWindowPosition(const Point& window_position) { impl_->setWindowPosition(window_position); }
 void cv::viz::Viz3d::setFullScreen(bool mode) { impl_->setFullScreen(mode); }
 void cv::viz::Viz3d::setBackgroundColor(const Color& color, const Color& color2) { impl_->setBackgroundColor(color, color2); }
+void cv::viz::Viz3d::setBackgroundColor(const PyColor& color, const PyColor& color2)
+{
+    setBackgroundColor(color.c, color2.c);
+}
+
 
 void cv::viz::Viz3d::setBackgroundTexture(InputArray image) { impl_->setBackgroundTexture(image); }
 void cv::viz::Viz3d::setBackgroundMeshLab() {impl_->setBackgroundMeshLab(); }
@@ -154,3 +171,250 @@ double cv::viz::Viz3d::getRenderingProperty(const String &id, int property) { re
 void cv::viz::Viz3d::setRepresentation(int representation) { impl_->setRepresentation(representation); }
 
 void cv::viz::Viz3d::setGlobalWarnings(bool enabled) { vtkObject::SetGlobalWarningDisplay(enabled ? 1 : 0); }
+
+void cv::viz::Viz3d::setWidgetPosePy(const String &id, const PyAffine3 &pose) { setWidgetPose(id, pose.pose); }
+void cv::viz::Viz3d::updateWidgetPosePy(const String &id, const PyAffine3 &pose) { updateWidgetPose(id, pose.pose); }
+
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWArrow &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+void cv::viz::Viz3d::showWidget(const String &id, PyWArrow &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCircle &widget)
+{
+    impl_->showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCircle &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCoordinateSystem &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+void cv::viz::Viz3d::showWidget(const String &id, PyWLine &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWLine &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWPlane &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWPlane &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCube &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCube &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCone &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCone &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCylinder &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCylinder &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCloudCollection &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCloudCollection &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+
+
+
+void cv::viz::Viz3d::setViewerPosePy(const PyAffine3 &pose)
+{
+    setViewerPose(pose.pose);
+}
+
+
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCameraPosition &py_widget)
+{
+    impl_->showWidget(id, *py_widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCameraPosition &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCloud &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCloud &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWGrid &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWGrid &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWImage3D &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWImage3D &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWText &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWText &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWText3D &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWText3D &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWPaintedCloud &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWPaintedCloud &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWMesh &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWMesh &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWPolyLine &widget)
+{
+	showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWPolyLine &widget, PyAffine3 &pose)
+{
+	showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCloudNormals &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWCloudNormals &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWTrajectory &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWTrajectory &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWTrajectorySpheres &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWTrajectorySpheres &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWTrajectoryFrustums &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+void cv::viz::Viz3d::showWidget(const String &id, PyWTrajectoryFrustums &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWSphere &widget)
+{
+    showWidget(id, *widget.widget);
+}
+void cv::viz::Viz3d::showWidget(const String &id, PyWSphere &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWImageOverlay &widget)
+{
+    showWidget(id, *widget.widget);
+}
+
+void cv::viz::Viz3d::showWidget(const String &id, PyWImageOverlay &widget, PyAffine3 &pose)
+{
+    showWidget(id, *widget.widget, pose.pose);
+}
+

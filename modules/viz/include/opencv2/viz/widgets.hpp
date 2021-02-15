@@ -55,6 +55,94 @@ namespace cv
 
 //! @addtogroup viz_widget
 //! @{
+        enum WidgetId{
+            WIDGET_WArrow,
+            WIDGET_WLine,
+            WIDGET_WCube,
+            WIDGET_WCoordinateSystem,
+            WIDGET_WPlane,
+            WIDGET_WSphere,
+            WIDGET_WCylinder,
+            WIDGET_WCircle,
+            WIDGET_WCone,
+            WIDGET_WPolyLine,
+            WIDGET_WGrid,
+            WIDGET_WText3D,
+            WIDGET_WText,
+            WIDGET_WImageOverlay,
+            WIDGET_WImage3D,
+            WIDGET_WCameraPosition,
+            WIDGET_WTrajectory,
+            WIDGET_WTrajectoryFrustums,
+            WIDGET_WTrajectorySpheres,
+            WIDGET_WCloud,
+            WIDGET_WPaintedCloud,
+            WIDGET_WCloudCollection,
+            WIDGET_WCloudNormals,
+            WIDGET_WMesh,
+            WIDGET_WWidgetMerger
+        };
+/**
+PyAffine3 is an overloaded structure, provided for convenience.
+*/
+        struct CV_EXPORTS_W_SIMPLE PyAffine3 {
+            CV_WRAP PyAffine3() { pose = Affine3d(); }
+            CV_WRAP PyAffine3(const Vec3d &  	rvec, const Vec3d &t = Vec3d::all(0))
+            {
+                pose = Affine3d(rvec, t);
+            }
+                CV_WRAP PyAffine3(const Mat &rot, const Vec3f &t = Vec3d::all(0))
+            {
+                if (rot.rows == 3 && rot.cols == 3)
+                {
+                    Matx33d a(rot);
+                    pose = Affine3d(a, t);
+                }
+                else if (rot.rows == 1 && rot.cols == 3)
+                {
+                    Vec3d a(rot);
+                    pose = Affine3d(a, t);
+                }
+                else
+                    CV_Error(-1, "Unknown format");
+
+            };
+            CV_WRAP PyAffine3 translate(const Vec3d &t)
+            {
+                PyAffine3 x;
+                x.pose = pose.translate(t);
+                return x;
+            }
+            CV_WRAP PyAffine3 rotate(const Vec3d &t)
+            {
+                PyAffine3 x;
+                x.pose = pose.rotate(t);
+                return x;
+            }
+            CV_WRAP PyAffine3 product(const PyAffine3 &t)
+            {
+                PyAffine3 x;
+                x.pose = pose * t.pose;
+                return x;
+            }
+            static CV_WRAP PyAffine3 Identity()
+            {
+                PyAffine3 x;
+                x.pose = Affine3d::Identity();
+                return x;
+            }
+            CV_WRAP PyAffine3 inv()
+            {
+                PyAffine3 x;
+                x.pose = pose.inv();
+                return x;
+            }
+            CV_WRAP Mat mat()
+            {
+                return Mat(pose.matrix);
+            }
+            Affine3d pose;
+        };
 
         /////////////////////////////////////////////////////////////////////////////
         /// Widget rendering properties
@@ -842,7 +930,840 @@ namespace cv
         template<> CV_EXPORTS WMesh Widget::cast<WMesh>() const;
         template<> CV_EXPORTS WWidgetMerger Widget::cast<WWidgetMerger>() const;
 
-//! @}
+
+/**
+PyWLine is an overloaded structure, provided for convenience.
+*/
+        struct CV_EXPORTS_W_SIMPLE PyWLine
+        {
+            CV_WRAP PyWLine()
+            {
+            }
+            /** @brief Constructs a WLine.
+
+            @param pt1 Start point of the line.
+            @param pt2 End point of the line.
+            @param color Color of the line.
+             */
+            CV_WRAP PyWLine(const Point3d &pt1, const Point3d &pt2, const PyColor &color)
+            {
+                widget = cv::makePtr<cv::viz::WLine>(pt1, pt2, color.c);
+            };
+
+            CV_WRAP void setRenderingProperty(int property, double value);
+
+            Ptr<cv::viz::WLine> widget;
+        };
+
+        /** @brief This 3D Widget defines a finite plane.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWPlane
+        {
+        public:
+            /** @brief Constructs a default plane with center point at origin and normal oriented along z-axis.
+
+            @param size Size of the plane
+            @param color Color of the plane.
+            */
+            CV_WRAP PyWPlane(const Point2d& size = Point2d(1.0, 1.0), const PyColor &color = PyColor(255, 255,255))
+            {
+                widget = cv::makePtr<cv::viz::WPlane>(size, color.c);
+            }
+
+            /** @brief Constructs a repositioned plane
+
+            @param center Center of the plane
+            @param normal Plane normal orientation
+            @param new_yaxis Up-vector. New orientation of plane y-axis.
+            @param size
+            @param color Color of the plane.
+             */
+            CV_WRAP PyWPlane(const Point3d& center, const Vec3d& normal, const Vec3d& new_yaxis,
+                const Point2d& size = Point2d(1.0, 1.0), const PyColor &color = PyColor(255, 255, 255))
+            {
+                widget = cv::makePtr<cv::viz::WPlane>(center, normal, new_yaxis, size, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value);
+            Ptr<cv::viz::WPlane> widget;
+        };
+
+        /** @brief This 3D Widget defines a sphere. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWSphere
+        {
+        public:
+            CV_WRAP PyWSphere()
+            {
+
+            }
+            /** @brief Constructs a WSphere.
+
+            @param center Center of the sphere.
+            @param radius Radius of the sphere.
+            @param sphere_resolution Resolution of the sphere.
+            @param color Color of the sphere.
+             */
+            CV_WRAP PyWSphere(const cv::Point3d &center, double radius, int sphere_resolution = 10, const PyColor &color = PyColor(255, 255,255))
+            {
+                widget = cv::makePtr<cv::viz::WSphere>(center, radius, sphere_resolution,  color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value);
+            Ptr<cv::viz::WSphere> widget;
+        };
+
+        /** @brief This 3D Widget defines an arrow.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWArrow
+        {
+        public:
+            CV_WRAP PyWArrow()
+            {
+            }
+            /** @brief Constructs an WArrow.
+
+            @param pt1 Start point of the arrow.
+            @param pt2 End point of the arrow.
+            @param thickness Thickness of the arrow. Thickness of arrow head is also adjusted
+            accordingly.
+            @param color Color of the arrow.
+
+            Arrow head is located at the end point of the arrow.
+             */
+            CV_WRAP PyWArrow(const Point3d& pt1, const Point3d& pt2, double thickness = 0.03, const PyColor &color = PyColor(255, 255, 255))
+            {
+                widget = cv::makePtr<cv::viz::WArrow>(pt1, pt2, thickness, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value);
+            Ptr<cv::viz::WArrow> widget;
+        };
+
+        /** @brief This 3D Widget defines a cube.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCube
+        {
+        public:
+            /** @brief Constructs a WCube.
+
+            @param min_point Specifies minimum (or maximum) point of the bounding box.
+            @param max_point Specifies maximum (or minimum) point of the bounding box, opposite to the first parameter.
+            @param wire_frame If true, cube is represented as wireframe.
+            @param color Color of the cube.
+
+            ![Cube Widget](images/cube_widget.png)
+             */
+            CV_WRAP PyWCube(const Point3d& min_point = Vec3d::all(-0.5), const Point3d& max_point = Vec3d::all(0.5),
+                bool wire_frame = true, const PyColor &color = PyColor(255, 255, 255))
+            {
+                widget = cv::makePtr<cv::viz::WCube>(min_point, max_point, wire_frame, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value);
+            Ptr<cv::viz::WCube> widget;
+        };
+
+        /** @brief This 3D Widget defines a PyWCircle.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCircle
+        {
+        public:
+            PyWCircle() {};
+            /** @brief Constructs default planar circle centered at origin with plane normal along z-axis
+
+            @param radius Radius of the circle.
+            @param thickness Thickness of the circle.
+            @param color Color of the circle.
+             */
+            CV_WRAP PyWCircle(double radius, double thickness = 0.01, const PyColor &color = Color::white())
+            {
+                widget = cv::makePtr<WCircle>(radius, thickness, color.c);
+            }
+
+            /** @brief Constructs repositioned planar circle.
+
+            @param radius Radius of the circle.
+            @param center Center of the circle.
+            @param normal Normal of the plane in which the circle lies.
+            @param thickness Thickness of the circle.
+            @param color Color of the circle.
+             */
+            CV_WRAP PyWCircle(double radius, const Point3d& center, const Vec3d& normal, double thickness = 0.01, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<WCircle>(radius, center, normal, thickness, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WCircle> widget;
+        };
+
+        /** @brief This 3D Widget defines a cone. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCone
+        {
+        public:
+            PyWCone() {};
+            /** @brief Constructs default cone oriented along x-axis with center of its base located at origin
+
+            @param length Length of the cone.
+            @param radius Radius of the cone.
+            @param resolution Resolution of the cone.
+            @param color Color of the cone.
+             */
+            CV_WRAP PyWCone(double length, double radius, int resolution = 6.0, const PyColor &color = Color::white())
+            {
+                widget = cv::makePtr<WCone>(length, radius, resolution, color.c);
+            }
+
+            /** @brief Constructs repositioned planar cone.
+
+            @param radius Radius of the cone.
+            @param center Center of the cone base.
+            @param tip Tip of the cone.
+            @param resolution Resolution of the cone.
+            @param color Color of the cone.
+
+             */
+            CV_WRAP PyWCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6.0, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<WCone>(radius, center, tip, resolution, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WCone> widget;
+        };
+
+        /** @brief This 3D Widget defines a PyWCylinder. :
+*/
+        struct CV_EXPORTS_W_SIMPLE PyWCylinder
+        {
+        public:
+            CV_WRAP PyWCylinder() {};
+            /** @brief Constructs a WCylinder.
+
+            @param axis_point1 A point1 on the axis of the cylinder.
+            @param axis_point2 A point2 on the axis of the cylinder.
+            @param radius Radius of the cylinder.
+            @param numsides Resolution of the cylinder.
+            @param color Color of the cylinder.
+             */
+            CV_WRAP PyWCylinder(const Point3d& axis_point1, const Point3d& axis_point2, double radius, int numsides = 30, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<WCylinder>(axis_point1, axis_point2, radius, numsides, color.c);
+            }
+            Ptr<cv::viz::WCylinder> widget;
+        };
+
+        /** @brief This 3D Widget represents camera position in a scene by its axes or viewing frustum. :
+*/
+        struct CV_EXPORTS_W_SIMPLE PyWCameraPosition
+        {
+        public:
+            /** @brief Creates camera coordinate frame at the origin.
+
+            ![Camera coordinate frame](images/cpw1.png)
+             */
+            CV_WRAP PyWCameraPosition(double scale = 1.0)
+            {
+                widget = cv::makePtr<cv::viz::WCameraPosition>(scale);
+            }
+            /** @brief Display the viewing frustum
+            @param K Intrinsic matrix of the camera or fov Field of view of the camera (horizontal, vertical).
+            @param scale Scale of the frustum.
+            @param color Color of the frustum.
+
+            Creates viewing frustum of the camera based on its intrinsic matrix K.
+
+            ![Camera viewing frustum](images/cpw2.png)
+            */
+            CV_WRAP PyWCameraPosition(InputArray  K, double scale = 1.0, const PyColor &color = PyColor(255, 255, 255))
+            {
+                if (K.kind() == _InputArray::MAT)
+                {
+                    Mat k = K.getMat();
+                    if (k.rows == 3 && k.cols == 3)
+                    {
+                        Matx33d x = k;
+                        widget = cv::makePtr<cv::viz::WCameraPosition>(x, scale, color.c);
+
+                    }
+                    else if (k.rows==2 && k.cols==1)
+                        widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0,0), k.at<double>(0,1)), scale, color.c);
+                    else
+                        CV_Error(-5, "unknown size");
+                }
+                else
+                    CV_Error(-5, "unknown type");
+            }
+
+            /** @brief Display image on the far plane of the viewing frustum
+
+            @param K Intrinsic matrix of the camera.
+            @param image BGR or Gray-Scale image that is going to be displayed on the far plane of the frustum.
+            @param scale Scale of the frustum and image.
+            @param color Color of the frustum.
+
+            Creates viewing frustum of the camera based on its intrinsic matrix K, and displays image on
+            the far end plane.
+
+            ![Camera viewing frustum with image](images/cpw3.png)
+             */
+            CV_WRAP PyWCameraPosition(InputArray K, InputArray image, double scale = 1.0, const PyColor &color = PyColor(255, 255, 255))
+            {
+                if (K.kind() == _InputArray::MAT)
+                {
+                    Mat k = K.getMat();
+                    if (k.rows == 3 && k.cols == 3)
+                    {
+                        Matx33d x = k;
+                        widget = cv::makePtr<cv::viz::WCameraPosition>(x, image, scale, color.c);
+
+                    }
+                    else if (k.rows == 2 && k.cols == 1)
+                        widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0, 0), k.at<double>(0, 1)), image, scale, color.c);
+                    else
+                        CV_Error(-5, "unknown size");
+                }
+                else
+                    CV_Error(-5, "unknown type");
+
+            }
+            /** @brief  Display image on the far plane of the viewing frustum
+
+            @param fov Field of view of the camera (horizontal, vertical).
+            @param image BGR or Gray-Scale image that is going to be displayed on the far plane of the frustum.
+            @param scale Scale of the frustum and image.
+            @param color Color of the frustum.
+
+            Creates viewing frustum of the camera based on its intrinsic matrix K, and displays image on
+            the far end plane.
+
+            ![Camera viewing frustum with image](images/cpw3.png)
+             */
+            CV_WRAP PyWCameraPosition(const Point2d &fov, InputArray image, double scale = 1.0, const PyColor &color = PyColor(255, 255, 255))
+            {
+                widget = cv::makePtr<cv::viz::WCameraPosition>(fov, image, scale, color.c);
+            }
+
+            Ptr<cv::viz::WCameraPosition> widget;
+        };
+        /////////////////////////////////////////////////////////////////////////////
+        /// Compound widgets
+
+        /** @brief This 3D Widget represents a coordinate system. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCoordinateSystem
+        {
+        public:
+            /** @brief Constructs a WCoordinateSystem.
+
+            @param scale Determines the size of the axes.
+             */
+            CV_WRAP PyWCoordinateSystem(double scale = 1.0)
+            {
+                widget = cv::makePtr<cv::viz::WCoordinateSystem>(scale);
+
+            }
+            Ptr<cv::viz::WCoordinateSystem> widget;
+        };
+
+        /////////////////////////////////////////////////////////////////////////////
+        /// Clouds
+
+        /** @brief This 3D Widget defines a point cloud. :
+
+        @note In case there are four channels in the cloud, fourth channel is ignored.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCloud
+        {
+        public:
+            CV_WRAP PyWCloud()
+                {
+                }
+
+            /** @brief Constructs a WCloud.
+            @param cloud Set of points which can be of type: CV_32FC3, CV_32FC4, CV_64FC3, CV_64FC4.
+            @param color A single Color for the whole cloud.
+
+            Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
+             */
+            CV_WRAP PyWCloud(InputArray cloud, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<cv::viz::WCloud>(cloud, color.c);
+            }
+
+            CV_WRAP PyWCloud(InputArray cloud, InputArray colors)
+            {
+                widget = cv::makePtr<cv::viz::WCloud>(cloud, colors);
+            }
+
+            CV_WRAP PyWCloud(InputArray cloud, InputArray colors, InputArray normals)
+            {
+                widget = cv::makePtr<cv::viz::WCloud>(cloud, colors, normals);
+            }
+
+            /** @brief Constructs a WCloud.
+            @param cloud Set of points which can be of type: CV_32FC3, CV_32FC4, CV_64FC3, CV_64FC4.
+            @param color A single Color for the whole cloud.
+            @param normals Normals for each point in cloud.
+
+            Size and type should match with the cloud parameter.
+            Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
+             */
+            CV_WRAP PyWCloud(InputArray cloud, const PyColor &color, InputArray normals)
+            {
+                widget = cv::makePtr<cv::viz::WCloud>(cloud, color.c, normals);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WCloud> widget;
+        };
+        /** @brief This 3D Widget defines a poly line. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWPolyLine
+        {
+        public:
+            CV_WRAP PyWPolyLine()
+            {
+            }
+            CV_WRAP PyWPolyLine(InputArray points, InputArray colors)
+            {
+                widget = cv::makePtr<cv::viz::WPolyLine>(points, colors);
+            }
+            /** @brief Constructs a WPolyLine.
+
+            @param points Point set.
+            @param color Color of the poly line.
+             */
+            CV_WRAP PyWPolyLine(InputArray points, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<cv::viz::WPolyLine>(points, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WPolyLine> widget;
+        };
+
+        /////////////////////////////////////////////////////////////////////////////
+        /// Text and image widgets
+
+        /** @brief This 2D Widget represents text overlay.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWText
+        {
+        public:
+            CV_WRAP PyWText()
+            {
+            }
+            /** @brief Constructs a WText.
+
+            @param text Text content of the widget.
+            @param pos Position of the text.
+            @param font_size Font size.
+            @param color Color of the text.
+             */
+            CV_WRAP PyWText(const String &text, const Point &pos, int font_size = 20, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<cv::viz::WText>(text, pos, font_size, color.c);
+            }
+
+            /** @brief Sets the text content of the widget.
+
+            @param text Text content of the widget.
+             */
+            CV_WRAP void setText(const String &text)
+            {
+                widget->setText(text);
+            }
+            /** @brief Returns the current text content of the widget.
+            */
+            CV_WRAP String getText() const
+            {
+                return widget->getText();
+            }
+            Ptr<cv::viz::WText> widget;
+        };
+
+        /** @brief This 3D Widget represents 3D text. The text always faces the camera.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWText3D
+        {
+        public:
+            CV_WRAP PyWText3D()
+            {}
+            /** @brief Constructs a WText3D.
+
+            @param text Text content of the widget.
+            @param position Position of the text.
+            @param text_scale Size of the text.
+            @param face_camera If true, text always faces the camera.
+            @param color Color of the text.
+             */
+            CV_WRAP PyWText3D(const String &text, const Point3d &position, double text_scale = 1., bool face_camera = true, const PyColor &color = Color::white())
+            {
+                widget = cv::makePtr<WText3D>(text, position, text_scale, face_camera, color.c);
+            }
+            /** @brief Sets the text content of the widget.
+
+            @param text Text content of the widget.
+
+             */
+            CV_WRAP void setText(const String &text)
+            {
+                widget->setText(text);
+            }
+            /** @brief Returns the current text content of the widget.
+            */
+            CV_WRAP String getText() const
+            {
+                return widget->getText();
+            }
+            Ptr<cv::viz::WText3D> widget;
+        };
+
+        /** @brief This 2D Widget represents an image overlay. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWImageOverlay
+        {
+        public:
+            CV_WRAP PyWImageOverlay()
+            {
+            }
+            /** @brief Constructs an WImageOverlay.
+
+            @param image BGR or Gray-Scale image.
+            @param rect Image is scaled and positioned based on rect.
+             */
+            CV_WRAP PyWImageOverlay(InputArray image, const Rect &rect)
+            {
+                widget = cv::makePtr<WImageOverlay>(image, rect);
+            }
+            /** @brief Sets the image content of the widget.
+
+            @param image BGR or Gray-Scale image.
+             */
+            CV_WRAP void setImage(InputArray image)
+            {
+                widget->setImage(image);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WImageOverlay> widget;
+        };
+
+        /** @brief This 3D Widget represents an image in 3D space. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWImage3D
+        {
+            CV_WRAP PyWImage3D()
+            {
+            }
+        public:
+            /** @brief Constructs an WImage3D.
+
+            @param image BGR or Gray-Scale image.
+            @param size Size of the image.
+             */
+            CV_WRAP  PyWImage3D(InputArray image, const Point2d &size)
+            {
+                widget = cv::makePtr<WImage3D>(image, size);
+            }
+
+            /** @brief Constructs an WImage3D.
+
+            @param image BGR or Gray-Scale image.
+            @param size Size of the image.
+            @param center Position of the image.
+            @param normal Normal of the plane that represents the image.
+            @param up_vector Determines orientation of the image.
+             */
+            CV_WRAP PyWImage3D(InputArray image, const Point2d &size, const Vec3d &center, const Vec3d &normal, const Vec3d &up_vector)
+            {
+                widget = cv::makePtr<WImage3D>(image, size, center, normal, up_vector);
+            }
+
+
+            /** @brief Sets the image content of the widget.
+
+            @param image BGR or Gray-Scale image.
+             */
+            CV_WRAP void setImage(InputArray image)
+            {
+                widget->setImage(image);
+            }
+            /** @brief Sets the image size of the widget.
+
+            @param size the new size of the image.
+             */
+            CV_WRAP void setSize(const Size& size)
+            {
+                widget->setSize(size);
+            }
+            Ptr<cv::viz::WImage3D> widget;
+        };
+
+
+        /** @brief This 3D Widget defines a grid. :
+         */
+        struct CV_EXPORTS_W_SIMPLE PyWGrid
+        {
+        public:
+            PyWGrid() {};
+            /** @brief Constructs a WGrid.
+
+            @param cells Number of cell columns and rows, respectively.
+            @param cells_spacing Size of each cell, respectively.
+            @param color Color of the grid.
+             */
+            CV_WRAP PyWGrid(InputArray cells, InputArray cells_spacing, const PyColor &color = PyColor::white());
+
+            //! Creates repositioned grid
+            CV_WRAP PyWGrid(const Point3d& center, const Vec3d& normal, const Vec3d& new_yaxis,
+                const Vec2i &cells = Vec2i::all(10), const Vec2d &cells_spacing = Vec2d::all(1.0), const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<WGrid>(center, normal, new_yaxis, cells, cells_spacing, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WGrid> widget;
+        };
+
+
+        /////////////////////////////////////////////////////////////////////////////
+        /// Trajectories
+
+        /** @brief This 3D Widget represents a trajectory. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWTrajectory
+        {
+        public:
+            enum { FRAMES = 1, PATH = 2, BOTH = FRAMES + PATH };
+            PyWTrajectory() {};
+            /** @brief Constructs a WTrajectory.
+
+            @param path List of poses on a trajectory. Takes std::vector\<Affine\<T\>\> with T == [float | double]
+            @param display_mode Display mode. This can be PATH, FRAMES, and BOTH.
+            @param scale Scale of the frames. Polyline is not affected.
+            @param color Color of the polyline that represents path.
+
+            Frames are not affected.
+            Displays trajectory of the given path as follows:
+            -   PATH : Displays a poly line that represents the path.
+            -   FRAMES : Displays coordinate frames at each pose.
+            -   PATH & FRAMES : Displays both poly line and coordinate frames.
+             */
+            CV_WRAP PyWTrajectory(InputArray path, int display_mode = WTrajectory::PATH, double scale = 1.0, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<cv::viz::WTrajectory>(path, display_mode, scale, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WTrajectory> widget;
+        };
+
+        /** @brief This 3D Widget represents a trajectory. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWTrajectoryFrustums
+        {
+        public:
+            PyWTrajectoryFrustums() {};
+            /** @brief Constructs a WTrajectoryFrustums.
+
+            @param path List of poses on a trajectory. Takes std::vector\<Affine\<T\>\> with T == [float | double]
+            @param K Intrinsic matrix of the camera or fov Field of view of the camera (horizontal, vertical).
+            @param scale Scale of the frustums.
+            @param color Color of the frustums.
+
+            Displays frustums at each pose of the trajectory.
+             */
+            CV_WRAP PyWTrajectoryFrustums(InputArray path, InputArray K, double scale = 1.0, const PyColor &color = PyColor::white());
+            /** @brief setRenderingProperty of a WTrajectoryFrustums.
+
+            @param path List of poses on a trajectory. Takes std::vector\<Affine\<T\>\> with T == [float | double]
+            @param .
+            @param property property to change.
+            @param value new property value .
+
+             */
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WTrajectoryFrustums> widget;
+        };
+
+        /** @brief This 3D Widget represents a trajectory using spheres and lines
+
+        where spheres represent the positions of the camera, and lines represent the direction from
+        previous position to the current. :
+         */
+        struct CV_EXPORTS_W_SIMPLE PyWTrajectorySpheres
+        {
+        public:
+            PyWTrajectorySpheres() {};
+            /** @brief Constructs a WTrajectorySpheres.
+
+            @param path List of poses on a trajectory. Takes std::vector\<Affine\<T\>\> with T == [float | double]
+            @param line_length Max length of the lines which point to previous position
+            @param radius Radius of the spheres.
+            @param from Color for first sphere.
+            @param to Color for last sphere. Intermediate spheres will have interpolated color.
+             */
+            CV_WRAP PyWTrajectorySpheres(InputArray path, double line_length = 0.05, double radius = 0.007,
+                const PyColor &from = PyColor::red(), const PyColor &to = PyColor::white())
+            {
+                widget = cv::makePtr<WTrajectorySpheres>(path, line_length, radius, from.c, to.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WTrajectorySpheres> widget;
+        };
+
+
+        struct CV_EXPORTS_W_SIMPLE PyWPaintedCloud
+        {
+        public:
+            //! Paint cloud with default gradient between cloud bounds points
+            PyWPaintedCloud()
+            {
+            }
+
+            CV_WRAP PyWPaintedCloud(InputArray cloud)
+            {
+                widget = cv::makePtr<WPaintedCloud>(cloud);
+            }
+
+            //! Paint cloud with default gradient between given points
+            CV_WRAP PyWPaintedCloud(InputArray cloud, const Point3d& p1, const Point3d& p2)
+            {
+                widget = cv::makePtr<WPaintedCloud>(cloud, p1, p2);
+            }
+
+            //! Paint cloud with gradient specified by given colors between given points
+            CV_WRAP PyWPaintedCloud(InputArray cloud, const Point3d& p1, const Point3d& p2, const PyColor& c1, const PyColor &c2)
+            {
+                widget = cv::makePtr<WPaintedCloud>(cloud, p1, p2, c1.c, c2.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WPaintedCloud> widget;
+        };
+
+        /** @brief This 3D Widget defines a collection of clouds. :
+        @note In case there are four channels in the cloud, fourth channel is ignored.
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCloudCollection
+        {
+        public:
+            CV_WRAP PyWCloudCollection()
+            {
+                widget = cv::makePtr<WCloudCollection>();
+            }
+
+            /** @brief Adds a cloud to the collection.
+
+            @param cloud Point set which can be of type: CV_32FC3, CV_32FC4, CV_64FC3, CV_64FC4.
+            @param colors Set of colors. It has to be of the same size with cloud.
+            @param pose Pose of the cloud. Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
+             */
+            CV_WRAP void addCloud(InputArray cloud, InputArray colors, const PyAffine3 &pose = PyAffine3::Identity())
+            {
+                widget->addCloud(cloud, colors, pose.pose);
+            }
+            /** @brief Adds a cloud to the collection.
+
+            @param cloud Point set which can be of type: CV_32FC3, CV_32FC4, CV_64FC3, CV_64FC4.
+            @param color A single Color for the whole cloud.
+            @param pose Pose of the cloud. Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
+             */
+            CV_WRAP void addCloud(InputArray cloud, const PyColor &color = PyColor::white(), const PyAffine3 &pose = PyAffine3::Identity())
+            {
+                widget->addCloud(cloud, color.c, pose.pose);
+            }
+            /** @brief Finalizes cloud data by repacking to single cloud.
+
+            Useful for large cloud collections to reduce memory usage
+            */
+            CV_WRAP void finalize()
+            {
+                widget->finalize();
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WCloudCollection> widget;
+        };
+
+        /** @brief This 3D Widget represents normals of a point cloud. :
+        */
+        struct CV_EXPORTS_W_SIMPLE PyWCloudNormals
+        {
+        public:
+			PyWCloudNormals()
+			{
+			}
+            /** @brief Constructs a WCloudNormals.
+
+            @param cloud Point set which can be of type: CV_32FC3, CV_32FC4, CV_64FC3, CV_64FC4.
+            @param normals A set of normals that has to be of same type with cloud.
+            @param level Display only every level th normal.
+            @param scale Scale of the arrows that represent normals.
+            @param color Color of the arrows that represent normals.
+
+            @note In case there are four channels in the cloud, fourth channel is ignored.
+             */
+            CV_WRAP PyWCloudNormals(InputArray cloud, InputArray normals, int level = 64, double scale = 0.1, const PyColor &color = PyColor::white())
+            {
+                widget = cv::makePtr<WCloudNormals>(cloud, normals, level, scale, color.c);
+            }
+            CV_WRAP void setRenderingProperty(int property, double value)
+            {
+                widget->setRenderingProperty(property, value);
+            }
+            Ptr<cv::viz::WCloudNormals> widget;
+        };
+
+        /** @brief Constructs a WMesh.
+
+        @param mesh Mesh object that will be displayed.
+        @param cloud Points of the mesh object.
+        @param polygons Points of the mesh object.
+        @param colors Point colors.
+        @param normals Point normals.
+         */
+        struct CV_EXPORTS_W_SIMPLE PyWMesh
+        {
+        public:
+            PyWMesh()
+            {
+            }
+            CV_WRAP PyWMesh(const Mesh &mesh);
+            CV_WRAP PyWMesh(const PyWMesh &mesh);
+            CV_WRAP PyWMesh(InputArray cloud, InputArray polygons, InputArray colors = noArray(), InputArray normals = noArray());
+            CV_WRAP void setColors(InputArray colors)
+            {
+            }
+
+            Ptr<cv::viz::WMesh> widget;
+        };
+
+        //! @}
 
     } /* namespace viz */
 } /* namespace cv */

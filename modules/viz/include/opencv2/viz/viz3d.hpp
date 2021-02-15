@@ -64,9 +64,10 @@ namespace cv
 
         /** @brief The Viz3d class represents a 3D visualizer window. This class is implicitly shared.
         */
-        class CV_EXPORTS Viz3d
+        class CV_EXPORTS_W Viz3d
         {
         public:
+            CV_WRAP static cv::Ptr<Viz3d> create(const String& window_name = String());
             typedef cv::viz::Color Color;
             typedef void (*KeyboardCallback)(const KeyboardEvent&, void*);
             typedef void (*MouseCallback)(const MouseEvent&, void*);
@@ -75,10 +76,10 @@ namespace cv
 
             @param window_name Name of the window.
              */
-            Viz3d(const String& window_name = String());
+            CV_WRAP Viz3d(const String& window_name = String());
             Viz3d(const Viz3d&);
             Viz3d& operator=(const Viz3d&);
-            ~Viz3d();
+            CV_WRAP ~Viz3d();
 
             /** @brief Shows a widget in the window.
 
@@ -87,11 +88,66 @@ namespace cv
              */
             void showWidget(const String &id, const Widget &widget, const Affine3d &pose = Affine3d::Identity());
 
+            /** @brief Shows a widget in the window.
+
+            @param id A unique id for the widget. @param widget The widget to be displayed in the window.
+            @param pose Pose of the widget.
+             */
+
+            CV_WRAP void showWidget(const String &id, PyWLine &widget);
+            CV_WRAP void showWidget(const String &id, PyWLine &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWSphere &widget);
+            CV_WRAP void showWidget(const String &id, PyWSphere &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCameraPosition &widget);
+            CV_WRAP void showWidget(const String &id, PyWCameraPosition &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWArrow &widget);
+            CV_WRAP void showWidget(const String &id, PyWArrow &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCircle &widget);
+            CV_WRAP void showWidget(const String &id, PyWCircle &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWPlane &widget);
+            CV_WRAP void showWidget(const String &id, PyWPlane &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCone &widget);
+            CV_WRAP void showWidget(const String &id, PyWCone &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCube &widget);
+            CV_WRAP void showWidget(const String &id, PyWCube &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCylinder &widget);
+            CV_WRAP void showWidget(const String &id, PyWCylinder &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCoordinateSystem &widget);
+            CV_WRAP void showWidget(const String &id, PyWPaintedCloud &widget);
+            CV_WRAP void showWidget(const String &id, PyWPaintedCloud &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCloudCollection &widget);
+            CV_WRAP void showWidget(const String &id, PyWCloudCollection &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWGrid &widget);
+            CV_WRAP void showWidget(const String &id, PyWGrid &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWMesh &widget);
+            CV_WRAP void showWidget(const String &id, PyWMesh &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWPolyLine &widget);
+            CV_WRAP void showWidget(const String &id, PyWPolyLine &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCloud &widget);
+            CV_WRAP void showWidget(const String &id, PyWCloud &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWImage3D &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWImage3D &widget);
+            CV_WRAP void showWidget(const String &id, PyWImageOverlay &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWImageOverlay &widget);
+            CV_WRAP void showWidget(const String &id, PyWText &widget);
+            CV_WRAP void showWidget(const String &id, PyWText &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWText3D &widget);
+            CV_WRAP void showWidget(const String &id, PyWText3D &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCloudNormals &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWCloudNormals &widget);
+            CV_WRAP void showWidget(const String &id, PyWTrajectory &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWTrajectory &widget);
+            CV_WRAP void showWidget(const String &id, PyWTrajectorySpheres &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWTrajectorySpheres &widget);
+            CV_WRAP void showWidget(const String &id, PyWTrajectoryFrustums &widget, PyAffine3 &pose);
+            CV_WRAP void showWidget(const String &id, PyWTrajectoryFrustums &widget);
+
+
             /** @brief Removes a widget from the window.
 
             @param id The id of the widget that will be removed.
              */
-            void removeWidget(const String &id);
+            CV_WRAP void removeWidget(const String &id);
 
             /** @brief Retrieves a widget from the window.
 
@@ -104,14 +160,14 @@ namespace cv
 
             /** @brief Removes all widgets from the window.
             */
-            void removeAllWidgets();
+            CV_WRAP void removeAllWidgets();
 
             /** @brief Removed all widgets and displays image scaled to whole window area.
 
             @param image Image to be displayed.
             @param window_size Size of Viz3d window. Default value means no change.
              */
-            void showImage(InputArray image, const Size& window_size = Size(-1, -1));
+            CV_WRAP void showImage(InputArray image, const Size& window_size = Size(-1, -1));
 
             /** @brief Sets pose of a widget in the window.
 
@@ -119,12 +175,24 @@ namespace cv
              */
             void setWidgetPose(const String &id, const Affine3d &pose);
 
+            /** @brief Sets pose of a widget in the window.
+
+            @widget full info for the widget whose pose will be set.
+             */
+            CV_WRAP void setWidgetPosePy(const String &id, const PyAffine3 &pose);
+
             /** @brief Updates pose of a widget in the window by pre-multiplying its current pose.
 
             @param id The id of the widget whose pose will be updated. @param pose The pose that the current
             pose of the widget will be pre-multiplied by.
              */
             void updateWidgetPose(const String &id, const Affine3d &pose);
+            /** @brief Updates pose of a widget in the window by pre-multiplying its current pose.
+
+            @param id The id of the widget whose pose will be updated. @param pose The pose that the current
+            pose of the widget will be pre-multiplied by.
+             */
+            CV_WRAP void updateWidgetPosePy(const String &id, const PyAffine3 &pose);
 
             /** @brief Returns the current pose of a widget in the window.
 
@@ -152,15 +220,21 @@ namespace cv
              */
             void setViewerPose(const Affine3d &pose);
 
+            /** @brief Sets pose of the viewer.
+
+            @param pose The new pose of the viewer.
+             */
+            CV_WRAP void setViewerPosePy(const PyAffine3 &pose);
+
             /** @brief Resets camera viewpoint to a 3D widget in the scene.
 
             @param id Id of a 3D widget.
              */
-            void resetCameraViewpoint(const String &id);
+            CV_WRAP void resetCameraViewpoint(const String &id);
 
             /** @brief Resets camera.
             */
-            void resetCamera();
+            CV_WRAP void resetCamera();
 
             /** @brief Transforms a point in world coordinate system to window coordinate system.
 
@@ -178,12 +252,12 @@ namespace cv
 
             /** @brief Returns the current size of the window.
             */
-            Size getWindowSize() const;
+            CV_WRAP Size getWindowSize() const;
             /** @brief Sets the size of the window.
 
             @param window_size New size of the window.
              */
-            void setWindowSize(const Size &window_size);
+            CV_WRAP void setWindowSize(const Size &window_size);
 
             /** @brief Returns the name of the window which has been set in the constructor.
              *  `Viz - ` is prepended to the name if necessary.
@@ -198,44 +272,45 @@ namespace cv
 
             @param file Name of the file.
              */
-            void saveScreenshot(const String &file);
+            CV_WRAP void saveScreenshot(const String &file);
 
             /** @brief Sets the position of the window in the screen.
 
             @param window_position coordinates of the window
              */
-            void setWindowPosition(const Point& window_position);
+            CV_WRAP void setWindowPosition(const Point& window_position);
 
             /** @brief Sets or unsets full-screen rendering mode.
 
             @param mode If true, window will use full-screen mode.
              */
-            void setFullScreen(bool mode = true);
+            CV_WRAP void setFullScreen(bool mode = true);
 
             /** @brief Sets background color.
             */
             void setBackgroundColor(const Color& color = Color::black(), const Color& color2 = Color::not_set());
-            void setBackgroundTexture(InputArray image = noArray());
-            void setBackgroundMeshLab();
+            CV_WRAP void setBackgroundColor(const PyColor& color , const PyColor& color2 = PyColor::not_set());
+            CV_WRAP  void setBackgroundTexture(InputArray image = noArray());
+            CV_WRAP void setBackgroundMeshLab();
 
             /** @brief The window renders and starts the event loop.
             */
-            void spin();
+            CV_WRAP void spin();
 
             /** @brief Starts the event loop for a given time.
 
             @param time Amount of time in milliseconds for the event loop to keep running.
             @param force_redraw If true, window renders.
              */
-            void spinOnce(int time = 1, bool force_redraw = false);
+            CV_WRAP void spinOnce(int time = 1, bool force_redraw = false);
 
             /** @brief Create a window in memory instead of on the screen.
              */
-            void setOffScreenRendering();
+            CV_WRAP void setOffScreenRendering();
 
             /** @brief Remove all lights from the current scene.
             */
-            void removeAllLights();
+            CV_WRAP void removeAllLights();
 
             /** @brief Add a light in the scene.
 
@@ -252,8 +327,8 @@ namespace cv
 
             /** @brief Returns whether the event loop has been stopped.
             */
-            bool wasStopped() const;
-            void close();
+            CV_WRAP bool wasStopped() const;
+            CV_WRAP void close();
 
             /** @brief Sets keyboard handler.
 
@@ -296,7 +371,7 @@ namespace cv
             -   **SHADING_GOURAUD**
             -   **SHADING_PHONG**
              */
-            void setRenderingProperty(const String &id, int property, double value);
+            CV_WRAP void setRenderingProperty(const String &id, int property, double value);
             /** @brief Returns rendering property of a widget.
 
             @param id Id of the widget.
@@ -322,7 +397,7 @@ namespace cv
             -   **SHADING_GOURAUD**
             -   **SHADING_PHONG**
              */
-            double getRenderingProperty(const String &id, int property);
+            CV_WRAP double getRenderingProperty(const String &id, int property);
 
             /** @brief Sets geometry representation of the widgets to surface, wireframe or points.
 
@@ -331,15 +406,15 @@ namespace cv
             -   **REPRESENTATION_WIREFRAME**
             -   **REPRESENTATION_SURFACE**
              */
-            void setRepresentation(int representation);
+            CV_WRAP void setRepresentation(int representation);
 
-            void setGlobalWarnings(bool enabled = false);
+            CV_WRAP void setGlobalWarnings(bool enabled = false);
         private:
 
             struct VizImpl;
             VizImpl* impl_;
 
-            void create(const String &window_name);
+            void create_internal(const String &window_name);
             void release();
 
             friend class VizStorage;

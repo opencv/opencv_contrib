@@ -350,3 +350,82 @@ template<> cv::viz::Widget2D cv::viz::Widget::cast<cv::viz::Widget2D>() const
     WidgetAccessor::setProp(widget, actor);
     return widget;
 }
+
+void cv::viz::PyWLine::setRenderingProperty(int property, double value)
+{
+    widget->setRenderingProperty(property, value);
+}
+
+void cv::viz::PyWPlane::setRenderingProperty(int property, double value)
+{
+    widget->setRenderingProperty(property, value);
+}
+
+void cv::viz::PyWSphere::setRenderingProperty(int property, double value)
+{
+    widget->setRenderingProperty(property, value);
+}
+
+void cv::viz::PyWArrow::setRenderingProperty(int property, double value)
+{
+    widget->setRenderingProperty(property, value);
+}
+
+void cv::viz::PyWCube::setRenderingProperty(int property, double value)
+{
+    widget->setRenderingProperty(property, value);
+}
+
+cv::viz::PyWMesh::PyWMesh(const cv::viz::Mesh &mesh)
+{
+    widget = cv::makePtr<WMesh>(mesh);
+}
+cv::viz::PyWMesh::PyWMesh(const cv::viz::PyWMesh &mesh)
+{
+    widget = mesh.widget;
+}
+cv::viz::PyWMesh::PyWMesh(InputArray cloud, InputArray polygons, InputArray colors, InputArray normals)
+{
+    widget = cv::makePtr<WMesh>(cloud, polygons, colors, normals);
+}
+
+cv::viz::PyWGrid::PyWGrid(InputArray cells, InputArray cells_spacing, const PyColor &color)
+{
+    if (cells.kind() == _InputArray::MAT && cells_spacing.kind() == _InputArray::MAT)
+    {
+        Mat k = cells.getMat();
+        Mat l = cells_spacing.getMat();
+        if (k.rows == 2 && k.cols == 1 && l.rows == 2 && l.cols == 1)
+        {
+            CV_Assert(k.type() == CV_64FC1 && k.type() == CV_64FC1);
+            Vec2i c1(k.at<double>(0, 0), k.at<double>(0, 1));
+            Vec2d c2(l.at<double>(0, 0), l.at<double>(0, 1));
+            widget = cv::makePtr<WGrid>(c1, c2, color.c);
+        }
+        else
+            CV_Error(-5, "unknown size");
+    }
+    else
+        CV_Error(-5, "unknown type");
+}
+
+
+cv::viz::PyWTrajectoryFrustums::PyWTrajectoryFrustums(InputArray path, InputArray K, double scale, const PyColor &color)
+{
+    if (K.kind() == _InputArray::MAT)
+    {
+        Mat k = K.getMat();
+        if (k.rows == 3 && k.cols == 3)
+        {
+            Matx33d x = k;
+            widget = cv::makePtr<WTrajectoryFrustums>(path, x, scale, color.c);
+
+        }
+        else if (k.rows == 2 && k.cols == 1)
+            widget = cv::makePtr<WTrajectoryFrustums>(path, Vec2d(k.at<double>(0, 0), k.at<double>(0, 1)), 1.0, color.c);
+        else
+            CV_Error(-5, "unknown size");
+    }
+    else
+        CV_Error(-5, "unknown type");
+}
