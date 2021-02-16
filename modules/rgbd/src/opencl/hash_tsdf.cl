@@ -85,7 +85,7 @@ static int findRow(__global const struct Volume_NODE * hash_table, int3 indx,
 
 //TODO: make hashDivisor a power of 2
 //TODO: put it to this .cl file as a constant
-static int toy_find(int3 idx, const int hashDivisor, __global const int* hashes,
+static int custom_find(int3 idx, const int hashDivisor, __global const int* hashes,
                     __global const int4* data)
 {
     int hash = calc_hash(idx) % hashDivisor;
@@ -454,7 +454,7 @@ inline float3 getNormalVoxel(float3 ptVox, __global const struct TsdfVoxel* allV
         int it = iterMap[dictIdx];
         if (it < -1)
         {
-            it = toy_find(volumeUnitIdx, hash_divisor, hashes, data);
+            it = custom_find(volumeUnitIdx, hash_divisor, hashes, data);
             iterMap[dictIdx] = it;
         }
 
@@ -594,7 +594,7 @@ __kernel void raycast(
         int3 currVoxel = convert_int3(floor(currRayPosVox));
         int3 currVolumeUnitIdx = currVoxel >> volumeUnitDegree;
 
-        int row = toy_find(currVolumeUnitIdx, hash_divisor, hashes, data);
+        int row = custom_find(currVolumeUnitIdx, hash_divisor, hashes, data);
 
         float currTsdf = prevTsdf;
         int currWeight = 0;

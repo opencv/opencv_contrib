@@ -43,64 +43,12 @@ void integrateVolumeUnit(
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
 
-const int NAN_ELEMENT = -2147483647;
 
-struct Volume_NODE
-{
-    Vec4i idx = Vec4i(NAN_ELEMENT);
-    int32_t row   = -1;
-    int32_t nextVolumeRow = -1;
-    int32_t dummy = 0;
-    int32_t dummy2 = 0;
-};
-
-const int _hash_divisor = 32768;
-const int _list_size = 4;
-
-class VolumesTable
-{
-public:
-    const int hash_divisor = _hash_divisor;
-    const int list_size    = _list_size;
-    const int32_t free_row = -1;
-    const int32_t free_isActive = 0;
-
-    const cv::Vec4i nan4 = cv::Vec4i(NAN_ELEMENT);
-
-    int bufferNums;
-    cv::Mat volumes;
-
-    VolumesTable();
-    const VolumesTable& operator=(const VolumesTable&);
-    ~VolumesTable() {};
-
-    bool insert(Vec3i idx, int row);
-    int findRow(Vec3i idx) const;
-
-    inline int getPos(Vec3i idx, int bufferNum) const
-    {
-        int hash = int(calc_hash(idx) % hash_divisor);
-        return (bufferNum * hash_divisor + hash) * list_size;
-    }
-
-    inline size_t calc_hash(Vec3i x) const
-    {
-        uint32_t seed = 0;
-        constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
-        for (int i = 0; i < 3; i++)
-        {
-            seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
-        }
-        return seed;
-    }
-};
-
-
-class ToyHashSet
+class CustomHashSet
 {
 public:
     static const int hashDivisor = 32768;
-    static const int startCapacity = 1024;
+    static const int startCapacity = 2048;
 
     std::vector<int> hashes;
     // 0-3 for key, 4th for internal use
@@ -109,7 +57,7 @@ public:
     int capacity;
     int last;
 
-    ToyHashSet()
+    CustomHashSet()
     {
         hashes.resize(hashDivisor);
         for (int i = 0; i < hashDivisor; i++)
@@ -123,7 +71,7 @@ public:
         last = 0;
     }
 
-    ~ToyHashSet() { }
+    ~CustomHashSet() { }
 
     inline size_t calc_hash(Vec3i x) const
     {
@@ -137,6 +85,9 @@ public:
     }
 
     // should work on existing elements too
+    // 0 - need resize
+    // 1 - idx is inserted
+    // 2 - idx already exists
     int insert(Vec3i idx)
     {
         if (last < capacity)
@@ -199,6 +150,135 @@ public:
         }
 
         return place;
+    }
+};
+
+// TODO: remove this structure as soon as HashTSDFGPU data is completely on GPU;
+// until then CustomHashTable can be replaced by this one if needed
+
+const int NAN_ELEMENT = -2147483647;
+
+struct Volume_NODE
+{
+    Vec4i idx = Vec4i(NAN_ELEMENT);
+    int32_t row = -1;
+    int32_t nextVolumeRow = -1;
+    int32_t dummy = 0;
+    int32_t dummy2 = 0;
+};
+
+const int _hash_divisor = 32768;
+const int _list_size = 4;
+
+class VolumesTable
+{
+public:
+    const int hash_divisor = _hash_divisor;
+    const int list_size = _list_size;
+    const int32_t free_row = -1;
+    const int32_t free_isActive = 0;
+
+    const cv::Vec4i nan4 = cv::Vec4i(NAN_ELEMENT);
+
+    int bufferNums;
+    cv::Mat volumes;
+
+    VolumesTable() : bufferNums(1)
+    {
+        this->volumes = cv::Mat(hash_divisor * list_size, 1, rawType<Volume_NODE>());
+        for (int i = 0; i < volumes.size().height; i++)
+        {
+            Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+            v->idx = nan4;
+            v->row = -1;
+            v->nextVolumeRow = -1;
+        }
+    }
+    const VolumesTable& operator=(const VolumesTable& vt)
+    {
+        this->volumes = vt.volumes;
+        this->bufferNums = vt.bufferNums;
+        return *this;
+    }
+    ~VolumesTable() {};
+
+    bool insert(Vec3i idx, int row)
+    {
+        CV_Assert(row >= 0);
+
+        int bufferNum = 0;
+        int hash = int(calc_hash(idx) % hash_divisor);
+        int start = getPos(idx, bufferNum);
+        int i = start;
+
+        while (i >= 0)
+        {
+            Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+
+            if (v->idx[0] == NAN_ELEMENT)
+            {
+                Vec4i idx4(idx[0], idx[1], idx[2], 0);
+
+                bool extend = false;
+                if (i != start && i % list_size == 0)
+                {
+                    if (bufferNum >= bufferNums - 1)
+                    {
+                        extend = true;
+                        volumes.resize(hash_divisor * bufferNums);
+                        bufferNums++;
+                    }
+                    bufferNum++;
+                    v->nextVolumeRow = (bufferNum * hash_divisor + hash) * list_size;
+                }
+                else
+                {
+                    v->nextVolumeRow = i + 1;
+                }
+
+                v->idx = idx4;
+                v->row = row;
+
+                return extend;
+            }
+
+            i = v->nextVolumeRow;
+        }
+        return false;
+    }
+    int findRow(Vec3i idx) const
+    {
+        int bufferNum = 0;
+        int i = getPos(idx, bufferNum);
+
+        while (i >= 0)
+        {
+            const Volume_NODE* v = volumes.ptr<Volume_NODE>(i);
+
+            if (v->idx == Vec4i(idx[0], idx[1], idx[2], 0))
+                return v->row;
+            else
+                i = v->nextVolumeRow;
+        }
+
+        return -1;
+    }
+
+    inline int getPos(Vec3i idx, int bufferNum) const
+    {
+        int hash = int(calc_hash(idx) % hash_divisor);
+        return (bufferNum * hash_divisor + hash) * list_size;
+    }
+
+    inline size_t calc_hash(Vec3i x) const
+    {
+        uint32_t seed = 0;
+        constexpr uint32_t GOLDEN_RATIO = 0x9e3779b9;
+        for (int i = 0; i < 3; i++)
+        {
+            seed ^= x[i] + GOLDEN_RATIO + (seed << 6) + (seed >> 2);
+        }
+        return seed;
     }
 };
 

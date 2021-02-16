@@ -945,7 +945,7 @@ public:
     cv::UMat pixNorms;
 
     //TODO: move indexes.volumes to GPU
-    ToyHashSet hashTable;
+    CustomHashSet hashTable;
 
     Vec8i neighbourCoords;
 };
@@ -1011,7 +1011,7 @@ void HashTSDFVolumeGPU::reset()
 
     isActiveFlags = cv::UMat(buff_lvl, 1, CV_8U);
 
-    hashTable = ToyHashSet();
+    hashTable = CustomHashSet();
 
     frameParams = Vec6f();
     pixNorms = UMat();
@@ -1130,11 +1130,11 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     Mutex mutex;
 
     // for new indices
-    ToyHashSet thm;
+    CustomHashSet thm;
 
     // -----------------------
 
-    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, ToyHashSet& ghm)
+    auto fillLocalAcessVolUnits = [&](const Range& xrange, const Range& yrange, CustomHashSet& ghm)
     {
         for (int y = yrange.start; y < yrange.end; y += depthStride)
         {
@@ -1218,7 +1218,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
             int loc_vol_idx = 0;
             */
 
-            ToyHashSet ghm;
+            CustomHashSet ghm;
 
             fillLocalAcessVolUnits(xr, yr, ghm /*localAccessVolUnits, loc_vol_idx*/);
 
@@ -1294,7 +1294,7 @@ void HashTSDFVolumeGPU::allocateVolumeUnits(const UMat& _depth, float depthFacto
     } while (needReallocation);
 
 
-    auto pushToGlobal = [](const ToyHashSet _thm, ToyHashSet& _globalHashMap,
+    auto pushToGlobal = [](const CustomHashSet _thm, CustomHashSet& _globalHashMap,
                            bool& _needReallocation, Mutex& _mutex)
     {
         for (int i = 0; i < _thm.last; i++)
