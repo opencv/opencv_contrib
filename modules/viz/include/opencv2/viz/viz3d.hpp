@@ -127,6 +127,12 @@ namespace cv
              */
             void setWidgetPose(const String &id, const Affine3d &pose);
 
+            /** @brief Sets pose of a widget in the window.
+
+            @widget full info for the widget whose pose will be set.
+             */
+            CV_WRAP void setWidgetPose(CV_IN_OUT ParamWidget &widget);
+
             /** @brief Updates pose of a widget in the window by pre-multiplying its current pose.
 
             @param id The id of the widget whose pose will be updated. @param pose The pose that the current

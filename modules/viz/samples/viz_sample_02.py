@@ -33,15 +33,25 @@ p_cube.blue = 255
 p_cube.green = 0
 p_cube.red = 0
 p_cube.widget_name = "Cube Widget"
-p_cube.rot_vec = np.zeros(shape=(1,3),dtype=np.float64)
-p_cube.trans_vec= np.zeros(shape=(3,1),dtype=np.float64)
+p_cube.rot_vec = np.zeros(shape=(1,3),dtype=np.float32)
+p_cube.trans_vec= np.zeros(shape=(3,1),dtype=np.float32)
 p_cube.trans_vec[0,0]=2
 v.showWidget(p_cube)
-
-print("First event loop is over")
-v.spin()
-print("Second event loop is over")
-v.spinOnce(1, True)
+pi = np.arccos(-1)
+translation_phase = 0.0
+translation = 0.0
+rot_mat = np.zeros(shape=(3, 3), dtype=np.float32)
+p_cube.pose = np.zeros(shape=(4, 4), dtype=np.float32)
+p_cube.pose[3, 3] = 1
 while not v.wasStopped():
+    p_cube.rot_vec[0, 0] += pi * 0.01
+    p_cube.rot_vec[0, 1] += pi * 0.01
+    p_cube.rot_vec[0, 2] += pi * 0.01
+    translation_phase += pi * 0.01
+    translation = np.sin(translation_phase)
+    cv.Rodrigues(p_cube.rot_vec, rot_mat)
+    p_cube.pose[0:3,0:3] = rot_mat
+    p_cube.pose[0:3,3] = translation
+    v.setWidgetPose(p_cube)
     v.spinOnce(1, True)
 print("Last event loop is over")

@@ -150,6 +150,13 @@ void cv::viz::Viz3d::removeAllWidgets() { impl_->removeAllWidgets(); }
 void cv::viz::Viz3d::showImage(InputArray image, const Size& window_size) { impl_->showImage(image, window_size); }
 
 void cv::viz::Viz3d::setWidgetPose(const String &id, const Affine3d &pose) { impl_->setWidgetPose(id, pose); }
+
+void cv::viz::Viz3d::setWidgetPose(ParamWidget &widget)
+{
+    Affine3f pose(widget.pose);
+    impl_->setWidgetPose(widget.widget_name, pose);
+}
+
 void cv::viz::Viz3d::updateWidgetPose(const String &id, const Affine3d &pose) { impl_->updateWidgetPose(id, pose); }
 cv::Affine3d cv::viz::Viz3d::getWidgetPose(const String &id) const { return impl_->getWidgetPose(id); }
 
