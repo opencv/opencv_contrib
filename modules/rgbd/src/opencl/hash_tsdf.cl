@@ -18,14 +18,6 @@ struct TsdfVoxel
     WeightType weight;
 };
 
-struct Volume_NODE
-{
-    int4 idx;
-    int32_t row;
-    int32_t nextVolumeRow;
-    int32_t dummy;
-    int32_t dummy2;
-};
 
 static inline TsdfType floatToTsdf(float num)
 {
@@ -49,24 +41,6 @@ static uint calc_hash(int3 x)
     return seed;
 }
 
-
-static int findRow(__global const struct Volume_NODE * hash_table, int3 indx,
-                   int list_size, int bufferNums, int hash_divisor)
-{
-    int bufferNum = 0;
-    int hash = calc_hash(indx) % hash_divisor;
-    int i = (bufferNum * hash_divisor + hash) * list_size;
-    while (i >= 0)
-    {
-        struct Volume_NODE v = hash_table[i];
-        if (all(v.idx.s012 == indx.s012))
-            return v.row;
-        else
-            i = v.nextVolumeRow;
-    }
-
-    return -1;
-}
 
 //TODO: make hashDivisor a power of 2
 //TODO: put it to this .cl file as a constant
@@ -504,13 +478,6 @@ __kernel void raycast(
                     __global const int* hashes,
                     __global const int4* data,
                     const int hash_divisor,
-                    /*
-                    __global const struct Volume_NODE * hash_table,
-                    const int list_size,
-                    const int bufferNums,
-                    const int hash_divisor,
-                    */
-
                     __global char * pointsptr,
                       int points_step, int points_offset,
                     __global char * normalsptr,
