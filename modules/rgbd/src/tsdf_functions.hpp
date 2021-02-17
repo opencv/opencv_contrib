@@ -35,6 +35,8 @@ inline float tsdfToFloat(TsdfType num)
 }
 
 cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics);
+cv::UMat preCalculationPixNormGPU(const UMat& depth, const Intr& intrinsics);
+
 depthType bilinearDepth(const Depth& m, cv::Point2f pt);
 
 void integrateVolumeUnit(

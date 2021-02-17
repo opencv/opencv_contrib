@@ -985,46 +985,6 @@ void HashTSDFVolumeGPU::reset()
 }
 
 
-static cv::UMat preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy)
-{
-    Mat x(1, depth_cols, CV_32FC1);
-    Mat y(1, depth_rows, CV_32FC1);
-    UMat pixNorm(depth_rows, depth_cols, CV_32F);
-
-    for (int i = 0; i < depth_cols; i++)
-        x.at<float>(i) = (i - cxy[0]) / fxy[0];
-    for (int i = 0; i < depth_rows; i++)
-        y.at<float>(i) = (i - cxy[1]) / fxy[1];
-
-    cv::String errorStr;
-    cv::String name = "preCalculationPixNorm";
-    ocl::ProgramSource source = ocl::rgbd::hash_tsdf_oclsrc;
-    cv::String options = "-cl-mad-enable";
-    ocl::Kernel kk;
-    kk.create(name.c_str(), source, options, &errorStr);
-
-    if (kk.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
-
-    AccessFlag af = ACCESS_READ;
-    UMat xx = x.getUMat(af);
-    UMat yy = y.getUMat(af);
-
-    kk.args(ocl::KernelArg::WriteOnly(pixNorm),
-            ocl::KernelArg::PtrReadOnly(xx),
-            ocl::KernelArg::PtrReadOnly(yy));
-
-    size_t globalSize[2];
-    globalSize[0] = depth_rows;
-    globalSize[1] = depth_cols;
-
-    if (!kk.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
-
-    return pixNorm;
-}
-
-
 void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
@@ -1472,8 +1432,7 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     if (!(frameParams == newParams))
     {
         frameParams = newParams;
-        Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
-        pixNorms = preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy);
+        pixNorms = preCalculationPixNormGPU(depth, intrinsics);
     }
 
     //! Integrate the correct volumeUnits

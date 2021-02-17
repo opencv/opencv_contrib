@@ -6,6 +6,7 @@
 
 #include "precomp.hpp"
 #include "tsdf_functions.hpp"
+#include "opencl_kernels_rgbd.hpp"
 
 namespace cv {
 
@@ -32,6 +33,49 @@ cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
             pixNorm.at<float>(i, j) = sqrtf(x[j] * x[j] + y[i] * y[i] + 1.0f);
         }
     }
+    return pixNorm;
+}
+
+cv::UMat preCalculationPixNormGPU(const UMat& depth, const Intr& intrinsics)
+{
+    int depth_cols = depth.cols;
+    int depth_rows = depth.rows;
+    Point2f fl(intrinsics.fx, intrinsics.fy);
+    Point2f pp(intrinsics.cx, intrinsics.cy);
+    Mat x(1, depth_cols, CV_32FC1);
+    Mat y(1, depth_rows, CV_32FC1);
+    UMat pixNorm(depth_rows, depth_cols, CV_32F);
+
+    for (int i = 0; i < depth_cols; i++)
+        x.at<float>(i) = (i - pp.x) / fl.x;
+    for (int i = 0; i < depth_rows; i++)
+        y.at<float>(i) = (i - pp.y) / fl.y;
+
+    cv::String errorStr;
+    cv::String name = "preCalculationPixNorm";
+    ocl::ProgramSource source = ocl::rgbd::tsdf_functions_oclsrc;
+    cv::String options = "-cl-mad-enable";
+    ocl::Kernel kk;
+    kk.create(name.c_str(), source, options, &errorStr);
+
+    if (kk.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    AccessFlag af = ACCESS_READ;
+    UMat xx = x.getUMat(af);
+    UMat yy = y.getUMat(af);
+
+    kk.args(ocl::KernelArg::WriteOnly(pixNorm),
+        ocl::KernelArg::PtrReadOnly(xx),
+        ocl::KernelArg::PtrReadOnly(yy));
+
+    size_t globalSize[2];
+    globalSize[0] = depth_rows;
+    globalSize[1] = depth_cols;
+
+    if (!kk.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
     return pixNorm;
 }
 
