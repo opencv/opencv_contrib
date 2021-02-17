@@ -928,10 +928,7 @@ public:
 public:
     Vec4i volStrides;
     Vec6f frameParams;
-    //TODO: rename this
-    int degree;
-    //TODO: rename this
-    int buff_lvl;
+    int bufferSizeDegree;
 
     // per-volume-unit data
     cv::UMat lastVisibleIndices;
@@ -946,8 +943,6 @@ public:
 
     //TODO: move indexes.volumes to GPU
     CustomHashSet hashTable;
-
-    Vec8i neighbourCoords;
 };
 
 HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
@@ -969,17 +964,6 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, flo
     }
     volStrides = Vec4i(xdim, ydim, zdim);
 
-    neighbourCoords = Vec8i(
-        volStrides.dot(Vec4i(0, 0, 0)),
-        volStrides.dot(Vec4i(0, 0, 1)),
-        volStrides.dot(Vec4i(0, 1, 0)),
-        volStrides.dot(Vec4i(0, 1, 1)),
-        volStrides.dot(Vec4i(1, 0, 0)),
-        volStrides.dot(Vec4i(1, 0, 1)),
-        volStrides.dot(Vec4i(1, 1, 0)),
-        volStrides.dot(Vec4i(1, 1, 1))
-    );
-
     reset();
 }
 
@@ -999,8 +983,8 @@ void HashTSDFVolumeGPU::reset()
 {
     CV_TRACE_FUNCTION();
 
-    degree = 15;
-    buff_lvl = (int) pow(2, degree);
+    bufferSizeDegree = 15;
+    int buff_lvl = (int) (1 << bufferSizeDegree);
 
     int volCubed = volumeUnitResolution * volumeUnitResolution * volumeUnitResolution;
     volUnitsDataCopy = cv::Mat(buff_lvl, volCubed, rawType<TsdfVoxel>());
@@ -1461,11 +1445,12 @@ void HashTSDFVolumeGPU::integrate(InputArray _depth, float depthFactor, const Ma
     //! Perform the allocation
 
     // Grow buffers
+    int buff_lvl = (int)(1 << bufferSizeDegree);
     if (sizeAfter >= buff_lvl)
     {
-        degree = (int)(log2(sizeAfter) + 1); // clz() would be better
+        bufferSizeDegree = (int)(log2(sizeAfter) + 1); // clz() would be better
         int oldBuffSize = buff_lvl;
-        buff_lvl = (int)pow(2, degree);
+        buff_lvl = (int)pow(2, bufferSizeDegree);
 
         volUnitsDataCopy.resize(buff_lvl);
 
