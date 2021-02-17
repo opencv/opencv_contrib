@@ -1729,11 +1729,11 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     Matx44f vol2camRotGPU = vol2cam.matrix;
 
     UMat volPoseGpu, invPoseGpu;
-    Mat(pose.matrix).copyTo(volPoseGpu);
-    Mat(pose.inv().matrix).copyTo(invPoseGpu);
+    volPoseGpu = Mat(pose.matrix).getUMat(ACCESS_READ);
+    invPoseGpu = Mat(pose.inv().matrix).getUMat(ACCESS_READ);;
 
     UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
-    Mat(hashTable.hashes, false).copyTo(hashesGpu);
+    hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
 
     UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
     Mat(hashTable.data, false).copyTo(hashDataGpu);
