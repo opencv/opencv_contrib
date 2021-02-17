@@ -1005,11 +1005,8 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     Matx44f vol2camMatrix = (Affine3f(cameraPose).inv() * pose).matrix;
     Matx44f camInvMatrix = Affine3f(cameraPose).inv().matrix;
 
-    UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
-    hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
-
-    UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
-    hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
+    UMat hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
+    UMat hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadOnly(hashesGpu),
@@ -1227,8 +1224,7 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     const Intr::Projector proj(intrinsics.makeProjector());
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
-    UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
-    hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
+    UMat hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(
         ocl::KernelArg::PtrReadOnly(hashDataGpu),
@@ -1604,15 +1600,11 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     Matx44f cam2volRotGPU = cam2vol.matrix;
     Matx44f vol2camRotGPU = vol2cam.matrix;
 
-    UMat volPoseGpu, invPoseGpu;
-    volPoseGpu = Mat(pose.matrix).getUMat(ACCESS_READ);
-    invPoseGpu = Mat(pose.inv().matrix).getUMat(ACCESS_READ);;
+    UMat volPoseGpu = Mat(pose.matrix).getUMat(ACCESS_READ);
+    UMat invPoseGpu = Mat(pose.inv().matrix).getUMat(ACCESS_READ);
 
-    UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
-    hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
-
-    UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
-    hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
+    UMat hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
+    UMat hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
