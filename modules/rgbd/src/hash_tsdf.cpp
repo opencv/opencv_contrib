@@ -1006,10 +1006,10 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     Matx44f camInvMatrix = Affine3f(cameraPose).inv().matrix;
 
     UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
-    Mat(hashTable.hashes, false).copyTo(hashesGpu);
+    hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
 
     UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
-    Mat(hashTable.data, false).copyTo(hashDataGpu);
+    hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadOnly(hashesGpu),
@@ -1229,10 +1229,10 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
     UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
-    Mat(hashTable.hashes, false).copyTo(hashesGpu);
+    hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
 
     UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
-    Mat(hashTable.data, false).copyTo(hashDataGpu);
+    hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
@@ -1618,7 +1618,7 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
 
     UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
-    Mat(hashTable.data, false).copyTo(hashDataGpu);
+    hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
