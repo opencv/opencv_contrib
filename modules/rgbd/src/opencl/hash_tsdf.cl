@@ -7,8 +7,8 @@
 #define NAN_ELEMENT -2147483647
 #define USE_INTERPOLATION_IN_GETNORMAL 1
 
-typedef __INT8_TYPE__ int8_t;
-typedef __INT32_TYPE__ int32_t;
+typedef char int8_t;
+typedef uint int32_t;
 
 typedef int8_t TsdfType;
 typedef uchar WeightType;
