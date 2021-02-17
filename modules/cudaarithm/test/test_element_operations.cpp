@@ -2578,6 +2578,64 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Threshold, testing::Combine(
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
+// InRange
+
+PARAM_TEST_CASE(InRange, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int depth;
+    int channels;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        depth = GET_PARAM(2);
+        channels = GET_PARAM(3);
+        useRoi = GET_PARAM(4);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(InRange, Accuracy)
+{
+    // Set max value to 127 for signed char
+    const int max_bound = (depth == CV_8S) ? 127 : 255;
+
+    // Create lower and upper bound scalars, and make sure lowerb[i] <=
+    // upperb[i]
+    const cv::Scalar bound1 = randomScalar(0, max_bound);
+    const cv::Scalar bound2 = randomScalar(0, max_bound);
+
+    cv::Scalar lowerb, upperb;
+    for (int i = 0; i < 4; i++) {
+        lowerb[i] = std::min(bound1[i], bound2[i]);
+        upperb[i] = std::max(bound1[i], bound2[i]);
+    }
+
+    // Create mats and run CPU and GPU versions
+    const cv::Mat src = randomMat(size, CV_MAKE_TYPE(depth, channels));
+
+    cv::cuda::GpuMat dst;
+    cv::cuda::inRange(loadMat(src, useRoi), lowerb, upperb, dst);
+
+    cv::Mat dst_gold;
+    cv::inRange(src, lowerb, upperb, dst_gold);
+
+    EXPECT_MAT_NEAR(dst_gold, dst, 0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Arithm, InRange, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    ALL_DEPTH,
+    ALL_CHANNELS,
+    WHOLE_SUBMAT));
+
+////////////////////////////////////////////////////////////////////////////////
 // Magnitude
 
 PARAM_TEST_CASE(Magnitude, cv::cuda::DeviceInfo, cv::Size, UseRoi)

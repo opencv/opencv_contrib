@@ -174,5 +174,24 @@ class cudaarithm_test(NewOpenCVTests):
         self.assertTrue(np.allclose(cuMatDst.download(),
                     cv.filter2D(npMat,-1,kernel,anchor=(-1,-1))[iS[0]:iE[0]+1,iS[1]:iE[1]+1]))
 
+    def test_inrange(self):
+        npMat = (np.random.random((128, 128, 3)) * 255).astype(np.float32)
+
+        bound1 = np.random.random((4,)) * 255
+        bound2 = np.random.random((4,)) * 255
+        lowerb = np.minimum(bound1, bound2).tolist()
+        upperb = np.maximum(bound1, bound2).tolist()
+
+        cuMat = cv.cuda_GpuMat()
+        cuMat.upload(npMat)
+
+        self.assertTrue((cv.cuda.inRange(cuMat, lowerb, upperb).download() ==
+                         cv.inRange(npMat, np.array(lowerb), np.array(upperb))).all())
+
+        cuMatDst = cv.cuda_GpuMat(cuMat.size(), cv.CV_8UC1)
+        cv.cuda.inRange(cuMat, lowerb, upperb, cuMatDst)
+        self.assertTrue((cuMatDst.download() ==
+                         cv.inRange(npMat, np.array(lowerb), np.array(upperb))).all())
+
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()

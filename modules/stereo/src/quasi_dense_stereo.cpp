@@ -13,7 +13,7 @@ namespace stereo {
 
 #define NO_MATCH cv::Point(0,0)
 
-typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matchPriorityQueue;
+typedef std::priority_queue<MatchQuasiDense, std::vector<MatchQuasiDense>, std::less<MatchQuasiDense> > t_matchPriorityQueue;
 
 
 class QuasiDenseStereoImpl : public QuasiDenseStereo
@@ -165,7 +165,7 @@ public:
             t_matchPriorityQueue Local;
 
             // Get the best seed at the moment
-            Match m = seeds.top();
+            MatchQuasiDense m = seeds.top();
             seeds.pop();
 
             // Ignore the border
@@ -209,7 +209,7 @@ public:
                             // push back if this is valid match
                             if( corr > Param.correlationThreshold )
                             {
-                                Match nm;
+                                MatchQuasiDense nm;
                                 nm.p0 = p0;
                                 nm.p1 = p1;
                                 nm.corr = corr;
@@ -223,7 +223,7 @@ public:
             // Get seeds from the local
             while( !Local.empty() )
             {
-                Match lm = Local.top();
+                MatchQuasiDense lm = Local.top();
                 Local.pop();
                 // Check if its unique in both ref and dst.
                 if(refMap.at<cv::Point2i>(lm.p0.y, lm.p0.x) != NO_MATCH)
@@ -410,7 +410,7 @@ public:
         for(uint i=0; i < featuresLeft.size(); i++)
         {
             // Calculate correlation and store match in Seeds.
-            Match m;
+            MatchQuasiDense m;
             m.p0 = cv::Point2i(featuresLeft[i]);
             m.p1 = cv::Point2i(featuresRight[i]);
             m.corr = 0;
@@ -442,7 +442,7 @@ public:
      * @retval true If the feature is in the border of the image.
      * @retval false If the feature is not in the border of image.
      */
-    bool CheckBorder(Match m, int bx, int by, int w, int h)
+    bool CheckBorder(MatchQuasiDense m, int bx, int by, int w, int h)
     {
         if(m.p0.x<bx || m.p0.x>w-bx || m.p0.y<by || m.p0.y>h-by ||
         m.p1.x<bx || m.p1.x>w-bx || m.p1.y<by || m.p1.y>h-by)
@@ -492,9 +492,9 @@ public:
     //-------------------------------------------------------------------------
 
 
-    void getSparseMatches(std::vector<stereo::Match> &sMatches) override
+    void getSparseMatches(std::vector<stereo::MatchQuasiDense> &sMatches) override
     {
-        Match tmpMatch;
+        MatchQuasiDense tmpMatch;
         sMatches.clear();
         sMatches.reserve(leftFeatures.size());
         for (uint i=0; i<leftFeatures.size(); i++)
@@ -594,9 +594,9 @@ public:
         return -1;
     }
 
-    void getDenseMatches(std::vector<stereo::Match> &denseMatches) override
+    void getDenseMatches(std::vector<stereo::MatchQuasiDense> &denseMatches) override
     {
-        Match tmpMatch;
+        MatchQuasiDense tmpMatch;
         denseMatches.clear();
         denseMatches.reserve(dMatchesLen);
         for (int row=0; row<height; row++)

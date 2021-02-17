@@ -99,9 +99,9 @@ TEST(CV_ccmRunColorCorrection, test_model)
 
 
     Mat ccm = (Mat_<double>(3, 3) <<
-				0.37408717, 0.02066172, 0.05796725,
-				0.12684056, 0.77364991, -0.01566532,
-				-0.27464866, 0.00652140, 2.74593262);
+				0.37406520, 0.02066507, 0.05804047,
+				0.12719672, 0.77389268, -0.01569404,
+				-0.27627010, 0.00603427, 2.74272981);
     ASSERT_MAT_NEAR(model.getCCM(), ccm, 1e-4);
 }
 TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
