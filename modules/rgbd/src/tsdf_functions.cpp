@@ -253,8 +253,8 @@ void integrateVolumeUnit(
                     int _v = (int)v_rotate_right<1>(projected).get0();
                     if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
                         continue;
-                    //float pixNorm = pixNorms.at<float>(_v, _u);
-                    float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
+                    float pixNorm = pixNorms.at<float>(_v, _u);
+                    //float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm * (v * dfac - zCamSpace);
                     // possible alternative is:
