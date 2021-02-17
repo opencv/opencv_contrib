@@ -602,8 +602,7 @@ __kernel void raycast(
 
 
 __kernel void markActive (
-        __global const int* hashes,
-        __global const int4* data,
+        __global const int4* hashSetData,
 
         __global char* isActiveFlagsPtr,
         int isActiveFlagsStep, int isActiveFlagsOffset,
@@ -628,7 +627,7 @@ __kernel void markActive (
 
     if (row < lastVolIndex)
     {
-        int3 idx = data[row].xyz;
+        int3 idx = hashSetData[row].xyz;
 
         float3 volumeUnitPos = convert_float3(idx) * volumeUnitSize;
 

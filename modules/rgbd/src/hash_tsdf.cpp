@@ -1227,14 +1227,10 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     const Intr::Projector proj(intrinsics.makeProjector());
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
-    UMat hashesGpu(hashTable.hashDivisor, 1, CV_32S);
-    hashesGpu = Mat(hashTable.hashes, false).getUMat(ACCESS_READ);
-
     UMat hashDataGpu(hashTable.capacity, 1, CV_32SC4);
     hashDataGpu = Mat(hashTable.data, false).getUMat(ACCESS_READ);
 
     k.args(
-        ocl::KernelArg::PtrReadOnly(hashesGpu),
         ocl::KernelArg::PtrReadOnly(hashDataGpu),
         ocl::KernelArg::WriteOnly(isActiveFlags),
         ocl::KernelArg::WriteOnly(lastVisibleIndices),
