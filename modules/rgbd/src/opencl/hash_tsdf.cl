@@ -4,7 +4,6 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-#define NAN_ELEMENT -2147483647
 #define USE_INTERPOLATION_IN_GETNORMAL 1
 
 typedef char int8_t;
