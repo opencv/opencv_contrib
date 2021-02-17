@@ -46,6 +46,21 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _rayca
     {
         CV_Error(Error::StsBadArg, "Volume unit resolution should be a power of 2");
     }
+
+    int xdim, ydim, zdim;
+    if (zFirstMemOrder)
+    {
+        xdim = volumeUnitResolution * volumeUnitResolution;
+        ydim = volumeUnitResolution;
+        zdim = 1;
+    }
+    else
+    {
+        xdim = 1;
+        ydim = volumeUnitResolution;
+        zdim = volumeUnitResolution * volumeUnitResolution;
+    }
+    volStrides = Vec4i(xdim, ydim, zdim);
 }
 
 //! Spatial hashing
@@ -119,7 +134,6 @@ public:
     Vec3i volumeToVoxelCoord(const Point3f& point) const;
 
 public:
-    Vec4i volStrides;
     Vec6f frameParams;
     Mat pixNorms;
     VolumeUnitIndexes volumeUnits;
@@ -133,21 +147,6 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, const Matx44f& _pose, flo
     :HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes,
            _zFirstMemOrder)
 {
-    int xdim, ydim, zdim;
-    if (zFirstMemOrder)
-    {
-        xdim = volumeUnitResolution * volumeUnitResolution;
-        ydim = volumeUnitResolution;
-        zdim = 1;
-    }
-    else
-    {
-        xdim = 1;
-        ydim = volumeUnitResolution;
-        zdim = volumeUnitResolution * volumeUnitResolution;
-    }
-    volStrides = Vec4i(xdim, ydim, zdim);
-
     reset();
 }
 
@@ -926,7 +925,6 @@ public:
     Vec3i volumeToVoxelCoord(const Point3f& point) const;
 
 public:
-    Vec4i volStrides;
     Vec6f frameParams;
     int bufferSizeDegree;
 
@@ -949,21 +947,6 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(float _voxelSize, const Matx44f& _pose, flo
     float _truncateThreshold, int _volumeUnitRes, bool _zFirstMemOrder)
     :HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
 {
-    int xdim, ydim, zdim;
-    if (zFirstMemOrder)
-    {
-        xdim = volumeUnitResolution * volumeUnitResolution;
-        ydim = volumeUnitResolution;
-        zdim = 1;
-    }
-    else
-    {
-        xdim = 1;
-        ydim = volumeUnitResolution;
-        zdim = volumeUnitResolution * volumeUnitResolution;
-    }
-    volStrides = Vec4i(xdim, ydim, zdim);
-
     reset();
 }
 

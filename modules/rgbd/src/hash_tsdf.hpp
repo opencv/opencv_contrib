@@ -37,6 +37,7 @@ class HashTSDFVolume : public Volume
     int volumeUnitDegree;
     float volumeUnitSize;
     bool zFirstMemOrder;
+    Vec4i volStrides;
 };
 
 //template<typename T>
