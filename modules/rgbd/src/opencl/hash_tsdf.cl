@@ -5,6 +5,7 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
+#define HASH_DIVISOR 32768
 
 typedef char int8_t;
 typedef uint int32_t;
@@ -225,7 +226,6 @@ __kernel void integrateAllVolumeUnits(
                         // hashMap
                         __global const int* hashes,
                         __global const int4* data,
-                        const int hash_divisor,
                         // volUnitsData
                         __global struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
@@ -252,6 +252,7 @@ __kernel void integrateAllVolumeUnits(
                         const int maxWeight
                         )
 {
+    const int hash_divisor = HASH_DIVISOR;
     int i = get_global_id(0);
     int j = get_global_id(1);
     int row = get_global_id(2);
@@ -477,7 +478,6 @@ typedef float4 ptype;
 __kernel void raycast(
                     __global const int* hashes,
                     __global const int4* data,
-                    const int hash_divisor,
                     __global char * pointsptr,
                       int points_step, int points_offset,
                     __global char * normalsptr,
@@ -501,6 +501,7 @@ __kernel void raycast(
                     int4 volStrides4
                     )
 {
+    const int hash_divisor = HASH_DIVISOR;
     int x = get_global_id(0);
     int y = get_global_id(1);
 
@@ -603,7 +604,6 @@ __kernel void raycast(
 __kernel void markActive (
         __global const int* hashes,
         __global const int4* data,
-        const int hash_divisor,
 
         __global char* isActiveFlagsPtr,
         int isActiveFlagsStep, int isActiveFlagsOffset,
@@ -623,6 +623,7 @@ __kernel void markActive (
         const int frameId
         )
 {
+    const int hash_divisor = HASH_DIVISOR;
     int row = get_global_id(0);
 
     if (row < lastVolIndex)

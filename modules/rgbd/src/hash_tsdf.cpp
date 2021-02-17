@@ -1014,7 +1014,6 @@ void HashTSDFVolumeGPU::integrateAllVolumeUnitsGPU(const UMat& depth, float dept
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadOnly(hashesGpu),
            ocl::KernelArg::PtrReadOnly(hashDataGpu),
-           (int)hashTable.hashDivisor,
            ocl::KernelArg::ReadWrite(volUnitsData),
            ocl::KernelArg::ReadOnly(pixNorms),
            ocl::KernelArg::ReadOnly(isActiveFlags),
@@ -1237,7 +1236,6 @@ void HashTSDFVolumeGPU::markActive(const Matx44f& cameraPose, const Intr& intrin
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
         ocl::KernelArg::PtrReadOnly(hashDataGpu),
-        (int)hashTable.hashDivisor,
         ocl::KernelArg::WriteOnly(isActiveFlags),
         ocl::KernelArg::WriteOnly(lastVisibleIndices),
         vol2cam.matrix,
@@ -1623,7 +1621,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     k.args(
         ocl::KernelArg::PtrReadOnly(hashesGpu),
         ocl::KernelArg::PtrReadOnly(hashDataGpu),
-        (int)hashTable.hashDivisor,
         ocl::KernelArg::WriteOnlyNoSize(points),
         ocl::KernelArg::WriteOnlyNoSize(normals),
         frameSize,
