@@ -36,6 +36,7 @@ cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics)
     return pixNorm;
 }
 
+#ifdef HAVE_OPENCL
 cv::UMat preCalculationPixNormGPU(const UMat& depth, const Intr& intrinsics)
 {
     int depth_cols = depth.cols;
@@ -78,6 +79,7 @@ cv::UMat preCalculationPixNormGPU(const UMat& depth, const Intr& intrinsics)
 
     return pixNorm;
 }
+#endif
 
 const bool fixMissingData = false;
 depthType bilinearDepth(const Depth& m, cv::Point2f pt)
