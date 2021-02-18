@@ -1590,9 +1590,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
     const Affine3f cam2vol(volume.pose.inv() * Affine3f(cameraPose));
     const Affine3f vol2cam(Affine3f(cameraPose.inv()) * volume.pose);
 
-    const Point3f cam2volTrans = cam2vol.translation();
-
-    Vec4f cam2volTransGPU(cam2volTrans.x, cam2volTrans.y, cam2volTrans.z, 0);
     Matx44f cam2volRotGPU = cam2vol.matrix;
     Matx44f vol2camRotGPU = vol2cam.matrix;
 
@@ -1609,7 +1606,6 @@ void HashTSDFVolumeGPU::raycast(const Matx44f& cameraPose, const kinfu::Intr& in
         ocl::KernelArg::WriteOnlyNoSize(normals),
         frameSize,
         ocl::KernelArg::ReadOnly(volUnitsData),
-        cam2volTransGPU,
         cam2volRotGPU,
         vol2camRotGPU,
         float(volume.truncateThreshold),

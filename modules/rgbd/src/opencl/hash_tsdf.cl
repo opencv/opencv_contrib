@@ -486,7 +486,6 @@ __kernel void raycast(
                     __global const struct TsdfVoxel * allVolumePtr,
                         int table_step, int table_offset,
                         int table_rows, int table_cols,
-                    float4  cam2volTransGPU,
                     float16 cam2volRotGPU,
                     float16 vol2camRotGPU,
                     float truncateThreshold,
@@ -526,7 +525,7 @@ __kernel void raycast(
                       dot(planed, camRot1),
                       dot(planed, camRot2));
 
-    float3 orig = (float3) (cam2volTransGPU.s0, cam2volTransGPU.s1, cam2volTransGPU.s2);
+    float3 orig = (float3) (camTrans.s0, camTrans.s1, camTrans.s2);
     float3 dir = fast_normalize(planed);
     float3 origScaled = orig * voxelSizeInv;
     float3 dirScaled = dir * voxelSizeInv;
