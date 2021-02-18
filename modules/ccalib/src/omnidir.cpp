@@ -330,7 +330,7 @@ void cv::omnidir::undistortPoints( InputArray distorted, OutputArray undistorted
         Vec3d Xs = Xw / cv::norm(Xw);
 
         // reproject to camera plane
-        Vec3d ppu = Vec3d(Xs[0]/(Xs[2]+_xi), Xs[1]/(Xs[2]+_xi), 1.0);
+        Vec3d ppu = Vec3d(Xs[0]/Xs[2], Xs[1]/Xs[2], 1.0);
         if (undistorted.depth() == CV_32F)
         {
             dstf[i] = Vec2f((float)ppu[0], (float)ppu[1]);
