@@ -151,10 +151,11 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, const Matx44f& _pose, flo
 }
 
 HashTSDFVolumeCPU::HashTSDFVolumeCPU(const VolumeParams& _params, bool _zFirstMemOrder)
-    : HashTSDFVolume(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+    : HashTSDFVolumeCPU(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
            _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
 {
 }
+
 // zero volume, leave rest params the same
 void HashTSDFVolumeCPU::reset()
 {
