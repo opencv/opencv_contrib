@@ -954,13 +954,8 @@ HashTSDFVolumeGPU::HashTSDFVolumeGPU(const VolumeParams & _params, bool _zFirstM
     : HashTSDFVolumeGPU(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
                      _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
 {
-    if (truncDist >= volumeUnitSize)
-    {
-        std::cout << "truncDist exceeds volume unit size, allocation may work incorrectly" << std::endl;
-    }
-
-    reset();
 }
+
 // zero volume, leave rest params the same
 void HashTSDFVolumeGPU::reset()
 {
