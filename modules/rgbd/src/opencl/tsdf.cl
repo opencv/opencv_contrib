@@ -26,20 +26,6 @@ static inline float tsdfToFloat(TsdfType num)
     return ( (float) num ) / (-128);
 }
 
-__kernel void preCalculationPixNorm (__global float * pixNorms,
-                                     int pix_step, int pix_offset,
-                                     int pix_rows, int pix_cols,
-                                     const __global float * xx,
-                                     const __global float * yy,
-                                     int width, int height)
-{    
-    int i = get_global_id(0);
-    int j = get_global_id(1);
-    int idx = i*width + j;
-    if(i < height && j < width && idx < pix_cols)
-        pixNorms[idx] = sqrt(xx[j] * xx[j] + yy[i] * yy[i] + 1.0f);
-}
-
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,

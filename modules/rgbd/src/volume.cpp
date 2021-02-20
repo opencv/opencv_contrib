@@ -68,7 +68,7 @@ Ptr<Volume> makeVolume(const VolumeParams& _volumeParams)
     if(_volumeParams.type == VolumeType::TSDF)
         return kinfu::makeTSDFVolume(_volumeParams);
     else if(_volumeParams.type == VolumeType::HASHTSDF)
-        return kinfu::makeHashTSDFVolume<HashTSDFVolumeCPU>(_volumeParams);
+        return kinfu::makeHashTSDFVolume(_volumeParams);
     CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
@@ -79,13 +79,11 @@ Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
     Point3i _presolution = _resolution;
     if (_volumeType == VolumeType::TSDF)
     {
-        return makeTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
-                              _presolution);
+        return makeTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _presolution);
     }
     else if (_volumeType == VolumeType::HASHTSDF)
     {
-        return makeHashTSDFVolume<kinfu::HashTSDFVolumeCPU>(
-            _voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold);
+        return makeHashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold);
     }
     CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }

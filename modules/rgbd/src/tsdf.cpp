@@ -102,10 +102,7 @@ TsdfVoxel TSDFVolumeCPU::at(const Vec3i& volumeIdx) const
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
-        TsdfVoxel dummy;
-        dummy.tsdf   = floatToTsdf(1.0f);
-        dummy.weight = 0;
-        return dummy;
+        return TsdfVoxel(floatToTsdf(1.f), 0);
     }
 
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
@@ -836,47 +833,6 @@ void TSDFVolumeGPU::reset()
     volume.setTo(Scalar(0, 0));
 }
 
-static void preCalculationPixNormGPU(int depth_rows, int depth_cols, Vec2f fxy, Vec2f cxy, UMat& pixNorm)
-{
-    Mat x(1, depth_cols, CV_32F);
-    Mat y(1, depth_rows, CV_32F);
-    pixNorm.create(1, depth_rows * depth_cols, CV_32F);
-
-    for (int i = 0; i < depth_cols; i++)
-        x.at<float>(0, i) = (i - cxy[0]) / fxy[0];
-    for (int i = 0; i < depth_rows; i++)
-        y.at<float>(0, i) = (i - cxy[1]) / fxy[1];
-
-    cv::String errorStr;
-    cv::String name = "preCalculationPixNorm";
-    ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options = "-cl-mad-enable";
-    ocl::Kernel kk;
-    kk.create(name.c_str(), source, options, &errorStr);
-
-
-    if (kk.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
-
-    AccessFlag af = ACCESS_READ;
-    UMat xx = x.getUMat(af);
-    UMat yy = y.getUMat(af);
-
-    kk.args(ocl::KernelArg::ReadWrite(pixNorm),
-        ocl::KernelArg::PtrReadOnly(xx),
-        ocl::KernelArg::PtrReadOnly(yy),
-        depth_cols, depth_rows);
-
-    size_t globalSize[2];
-    globalSize[0] = depth_rows;
-    globalSize[1] = depth_cols;
-
-    if (!kk.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
-
-    return;
-}
-
 // use depth instead of distance (optimization)
 void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
                               const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
@@ -901,15 +857,13 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
     float dfac = 1.f/depthFactor;
     Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
-    if (!(frameParams[0] == depth.rows && frameParams[1] == depth.cols &&
-        frameParams[2] == intrinsics.fx && frameParams[3] == intrinsics.fy &&
-        frameParams[4] == intrinsics.cx && frameParams[5] == intrinsics.cy))
+    Vec6f newParams((float)depth.rows, (float)depth.cols,
+        intrinsics.fx, intrinsics.fy,
+        intrinsics.cx, intrinsics.cy);
+    if (!(frameParams == newParams))
     {
-        frameParams[0] = (float)depth.rows; frameParams[1] = (float)depth.cols;
-        frameParams[2] = intrinsics.fx;     frameParams[3] = intrinsics.fy;
-        frameParams[4] = intrinsics.cx;     frameParams[5] = intrinsics.cy;
-
-        preCalculationPixNormGPU(depth.rows, depth.cols, fxy, cxy, pixNorms);
+        frameParams = newParams;
+        pixNorms = preCalculationPixNormGPU(depth, intrinsics);
     }
 
     // TODO: optimization possible
