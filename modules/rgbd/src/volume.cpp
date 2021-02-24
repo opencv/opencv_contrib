@@ -4,10 +4,11 @@
 
 #include <opencv2/rgbd/volume.hpp>
 
-#include "hash_tsdf.hpp"
 #include "opencv2/core/base.hpp"
 #include "precomp.hpp"
 #include "tsdf.hpp"
+#include "hash_tsdf.hpp"
+#include "colored_tsdf.hpp"
 
 namespace cv
 {
