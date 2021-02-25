@@ -12,7 +12,8 @@
 #include "kinfu_frame.hpp"
 
 namespace cv {
-namespace kinfu {
+namespace colored_kinfu {
+using namespace kinfu;
 
 void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 {
@@ -108,9 +109,20 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     return p;
 }
 
+Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
+{
+    Ptr<Params> p;
+    if(isCoarse)
+        p = coarseParams();
+    else
+        p = defaultParams();
+    p->volumeType = VolumeType::COLOREDTSDF;
+    return p;
+}
+
 // MatType should be Mat or UMat
 template< typename MatType>
-class ColoredKinFuImpl : public KinFu
+class ColoredKinFuImpl : public ColoredKinFu
 {
 public:
     ColoredKinFuImpl(const Params& _params);
@@ -320,19 +332,15 @@ void ColoredKinFuImpl<MatType>::getNormals(InputArray points, OutputArray normal
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
+Ptr<ColoredKinFu> ColoredKinFu::create(const Ptr<Params>& params)
 {
     CV_Assert((int)params->icpIterations.size() == params->pyramidLevels);
     CV_Assert(params->intr(0,1) == 0 && params->intr(1,0) == 0 && params->intr(2,0) == 0 && params->intr(2,1) == 0 && params->intr(2,2) == 1);
-#ifdef HAVE_OPENCL
-    if(cv::ocl::useOpenCL())
-        return makePtr< ColoredKinFuImpl<UMat> >(*params);
-#endif
-        return makePtr< ColoredKinFuImpl<Mat> >(*params);
+    return makePtr< ColoredKinFuImpl<Mat> >(*params);
 }
 
 #else
-Ptr<KinFu> KinFu::create(const Ptr<Params>& /* params */)
+Ptr<ColoredKinFu> ColoredKinFu::create(const Ptr<Params>& /* params */)
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "
@@ -340,7 +348,7 @@ Ptr<KinFu> KinFu::create(const Ptr<Params>& /* params */)
 }
 #endif
 
-KinFu::~KinFu() {}
+ColoredKinFu::~ColoredKinFu() {}
 
 } // namespace kinfu
 } // namespace cv

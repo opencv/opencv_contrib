@@ -12,7 +12,7 @@
 #include <opencv2/rgbd/volume.hpp>
 
 namespace cv {
-namespace kinfu {
+namespace colored_kinfu {
 //! @addtogroup kinect_fusion
 //! @{
 
@@ -73,6 +73,9 @@ struct CV_EXPORTS_W Params
       A set of parameters suitable for use with HashTSDFVolume
     */
     CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
+
+
+    CV_WRAP static Ptr<Params> coloredTSDFParams(bool isCoarse);
 
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
@@ -181,11 +184,11 @@ struct CV_EXPORTS_W Params
 
   That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
 */
-class CV_EXPORTS_W KinFu
+class CV_EXPORTS_W ColoredKinFu
 {
 public:
-    CV_WRAP static Ptr<KinFu> create(const Ptr<Params>& _params);
-    virtual ~KinFu();
+    CV_WRAP static Ptr<ColoredKinFu> create(const Ptr<Params>& _params);
+    virtual ~ColoredKinFu();
 
     /** @brief Get current parameters */
     virtual const Params& getParams() const = 0;

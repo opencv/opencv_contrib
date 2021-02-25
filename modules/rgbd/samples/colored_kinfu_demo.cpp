@@ -27,10 +27,10 @@ const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
 {
-    PauseCallbackArgs(KinFu& _kf) : kf(_kf)
+    PauseCallbackArgs(ColoredKinFu& _kf) : kf(_kf)
     { }
 
-    KinFu& kf;
+    ColoredKinFu& kf;
 };
 
 void pauseCallback(const viz::MouseEvent& me, void* args);
@@ -125,16 +125,10 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<Params> params;
-    Ptr<KinFu> kf;
-
-    if(coarse)
-        params = Params::coarseParams();
-    else
-        params = Params::defaultParams();
-
-    if(useHashTSDF)
-        params = Params::hashTSDFParams(coarse);
+    Ptr<colored_kinfu::Params> params;
+    Ptr<ColoredKinFu> kf;
+    
+    params = colored_kinfu::Params::coloredTSDFParams(coarse);
 
     // These params can be different for each depth sensor
     ds->updateParams(*params);
@@ -151,7 +145,7 @@ int main(int argc, char **argv)
     //params->tsdf_max_weight = 16;
 
     if(!idle)
-        kf = KinFu::create(params);
+        kf = ColoredKinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);

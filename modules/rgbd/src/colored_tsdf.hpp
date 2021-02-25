@@ -21,16 +21,16 @@ namespace kinfu
 typedef int8_t TsdfType;
 typedef uchar WeightType;
 
-struct TsdfVoxel
+struct RGBTsdfVoxel
 {
-    TsdfVoxel(TsdfType _tsdf, WeightType _weight) :
+    RGBTsdfVoxel(TsdfType _tsdf, WeightType _weight) :
         tsdf(_tsdf), weight(_weight)
     { }
     TsdfType tsdf;
     WeightType weight;
 };
 
-typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
+typedef Vec<uchar, sizeof(RGBTsdfVoxel)> VecRGBTsdfVoxel;
 
 class ColoredTSDFVolume : public Volume
 {
@@ -51,9 +51,10 @@ class ColoredTSDFVolume : public Volume
     Vec8i neighbourCoords;
 };
 
-Ptr<ColoredTSDFVolume> makeTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor,
+Ptr<ColoredTSDFVolume> makeColoredTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor,
                                float _truncDist, int _maxWeight, Point3i _resolution);
-Ptr<ColoredTSDFVolume> makeTSDFVolume(const VolumeParams& _params);
+Ptr<ColoredTSDFVolume> makeColoredTSDFVolume(const VolumeParams& _params);
+
 }  // namespace kinfu
 }  // namespace cv
 #endif

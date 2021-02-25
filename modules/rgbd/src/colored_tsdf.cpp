@@ -56,7 +56,7 @@ ColoredTSDFVolume::ColoredTSDFVolume(float _voxelSize, Matx44f _pose, float _ray
     );
 }
 
-class ColoredTSDFVolumeCPU : public TSDFVolume
+class ColoredTSDFVolumeCPU : public ColoredTSDFVolume
 {
 public:
     // dimension in voxels, size in meters
@@ -72,7 +72,7 @@ public:
     virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
     virtual void reset() override;
-    virtual TsdfVoxel at(const Vec3i& volumeIdx) const;
+    virtual RGBTsdfVoxel at(const Vec3i& volumeIdx) const;
 
     float interpolateVoxel(const cv::Point3f& p) const;
     Point3f getNormalVoxel(const cv::Point3f& p) const;
@@ -90,7 +90,7 @@ public:
 ColoredTSDFVolumeCPU::ColoredTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                              float _truncDist, int _maxWeight, Vec3i _resolution,
                              bool zFirstMemOrder)
-    : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
+    : ColoredTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
                  zFirstMemOrder)
 {
     int xdim, ydim, zdim;
@@ -118,24 +118,24 @@ void ColoredTSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
 
-    volume.forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
+    volume.forEach<VecRGBTsdfVoxel>([](VecRGBTsdfVoxel& vv, const int* /* position */)
     {
-        TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
+        RGBTsdfVoxel& v = reinterpret_cast<RGBTsdfVoxel&>(vv);
         v.tsdf = floatToTsdf(0.0f); v.weight = 0;
     });
 }
 
-TsdfVoxel ColoredTSDFVolumeCPU::at(const Vec3i& volumeIdx) const
+RGBTsdfVoxel ColoredTSDFVolumeCPU::at(const Vec3i& volumeIdx) const
 {
     //! Out of bounds
     if ((volumeIdx[0] >= volResolution.x || volumeIdx[0] < 0) ||
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
-        return TsdfVoxel(floatToTsdf(1.f), 0);
+        return RGBTsdfVoxel(floatToTsdf(1.f), 0);
     }
 
-    const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
     int coordBase =
         volumeIdx[0] * volDims[0] + volumeIdx[1] * volDims[1] + volumeIdx[2] * volDims[2];
     return volData[coordBase];
@@ -178,7 +178,7 @@ inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
     float tz = p.z - iz;
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
-    const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
 
     float vx[8];
     for (int i = 0; i < 8; i++)
@@ -199,7 +199,7 @@ inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
 inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 {
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
-    const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
 
     if(p.x < 1 || p.x >= volResolution.x - 2 ||
        p.y < 1 || p.y >= volResolution.y - 2 ||
@@ -327,7 +327,7 @@ struct RaycastInvoker : ParallelLoopBody
                         int ix = cvRound(next.x);
                         int iy = cvRound(next.y);
                         int iz = cvRound(next.z);
-                        fnext = tsdfToFloat(volume.volume.at<TsdfVoxel>(ix*xdim + iy*ydim + iz*zdim).tsdf);
+                        fnext = tsdfToFloat(volume.volume.at<RGBTsdfVoxel>(ix*xdim + iy*ydim + iz*zdim).tsdf);
                         if(fnext != f)
                         {
                             fnext = volume.interpolateVoxel(next);
@@ -418,7 +418,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
         nVecs(_nVecs),
         needNormals(_needNormals)
     {
-        volDataStart = vol.volume.ptr<TsdfVoxel>();
+        volDataStart = vol.volume.ptr<RGBTsdfVoxel>();
     }
 
     inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals,
@@ -449,7 +449,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
         if(limits)
         {
-            const TsdfVoxel& voxeld = volDataStart[(x+shift.x)*vol.volDims[0] +
+            const RGBTsdfVoxel& voxeld = volDataStart[(x+shift.x)*vol.volDims[0] +
                                                    (y+shift.y)*vol.volDims[1] +
                                                    (z+shift.z)*vol.volDims[2]];
             float vd = tsdfToFloat(voxeld.tsdf);
@@ -482,13 +482,13 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
         std::vector<ptype> points, normals;
         for(int x = range.start; x < range.end; x++)
         {
-            const TsdfVoxel* volDataX = volDataStart + x*vol.volDims[0];
+            const RGBTsdfVoxel* volDataX = volDataStart + x*vol.volDims[0];
             for(int y = 0; y < vol.volResolution.y; y++)
             {
-                const TsdfVoxel* volDataY = volDataX + y*vol.volDims[1];
+                const RGBTsdfVoxel* volDataY = volDataX + y*vol.volDims[1];
                 for(int z = 0; z < vol.volResolution.z; z++)
                 {
-                    const TsdfVoxel& voxel0 = volDataY[z*vol.volDims[2]];
+                    const RGBTsdfVoxel& voxel0 = volDataY[z*vol.volDims[2]];
                     float v0             = tsdfToFloat(voxel0.tsdf);
                     if(voxel0.weight != 0 && v0 != 1.f)
                     {
@@ -511,7 +511,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     const ColoredTSDFVolumeCPU& vol;
     std::vector<std::vector<ptype>>& pVecs;
     std::vector<std::vector<ptype>>& nVecs;
-    const TsdfVoxel* volDataStart;
+    const RGBTsdfVoxel* volDataStart;
     bool needNormals;
     mutable Mutex mutex;
 };
@@ -578,13 +578,13 @@ void ColoredTSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals
     }
 }
 
-Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor,
+Ptr<ColoredTSDFVolume> makeColoredTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
     return makePtr<ColoredTSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution);
 }
 
-Ptr<TSDFVolume> makeTSDFVolume(const VolumeParams& _params)
+Ptr<ColoredTSDFVolume> makeColoredTSDFVolume(const VolumeParams& _params)
 {
     return makePtr<ColoredTSDFVolumeCPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor,
                                   _params.tsdfTruncDist, _params.maxWeight, _params.resolution);

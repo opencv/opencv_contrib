@@ -326,6 +326,28 @@ struct DepthSource
             }
         }
     }
+    
+    void updateParams(colored_kinfu::Params& params)
+    {
+        if (vc.isOpened())
+        {
+            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
+            updateVolumeParams(params.volumeDims, params.voxelSize,
+                               params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
+            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
+
+            if (sourceType == Type::DEPTH_KINECT2)
+            {
+                Matx<float, 1, 5> distCoeffs;
+                distCoeffs(0) = Kinect2Params::k1;
+                distCoeffs(1) = Kinect2Params::k2;
+                distCoeffs(4) = Kinect2Params::k3;
+
+                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
+                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
+            }
+        }
+    }
 
     std::vector<std::string> depthFileList;
     size_t frameIdx;
