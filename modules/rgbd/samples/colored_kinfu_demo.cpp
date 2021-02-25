@@ -73,7 +73,6 @@ int main(int argc, char **argv)
 {
     bool coarse = false;
     bool idle = false;
-    bool useHashTSDF = false;
     std::string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
@@ -99,10 +98,6 @@ int main(int argc, char **argv)
     {
         recordPath = parser.get<String>("record");
     }
-    if(parser.has("useHashTSDF"))
-    {
-        useHashTSDF = true;
-    }
     if(parser.has("idle"))
     {
         idle = true;
@@ -110,7 +105,7 @@ int main(int argc, char **argv)
 
     Ptr<DepthSource> ds;
     if (parser.has("depth"))
-        ds = makePtr<DepthSource>(parser.get<String>("depth"));
+        ds = makePtr<DepthSource>(parser.get<String>("depth") + "/depth.txt");
     else
         ds = makePtr<DepthSource>(parser.get<int>("camera"));
 
