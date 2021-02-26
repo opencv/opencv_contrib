@@ -104,10 +104,14 @@ int main(int argc, char **argv)
     }
 
     Ptr<DepthSource> ds;
+    Ptr<RGBSource> rgbs;
+
     if (parser.has("depth"))
         ds = makePtr<DepthSource>(parser.get<String>("depth") + "/depth.txt");
     else
         ds = makePtr<DepthSource>(parser.get<int>("camera"));
+
+    rgbs = makePtr<RGBSource>(parser.get<String>("depth") + "/rgb.txt");
 
     if (ds->empty())
     {
@@ -128,8 +132,10 @@ int main(int argc, char **argv)
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
+    rgbs->updateParams(*params);
+
     // Enables OpenCL explicitly (by default can be switched-off)
-    cv::setUseOptimized(true);
+    cv::setUseOptimized(false);
 
     // Scene-specific params should be tuned for each scene individually
     //float cubeSize = 1.f;
@@ -158,7 +164,9 @@ int main(int argc, char **argv)
     {
         if(depthWriter)
             depthWriter->append(frame);
-
+        
+        UMat rgb_frame = rgbs->getRGB();
+        imshow("rgb", rgb_frame);
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
