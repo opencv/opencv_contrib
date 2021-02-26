@@ -85,13 +85,13 @@ int main()
         translation_phase += (float)CV_PI * 0.01f;
         translation = sin(translation_phase);
 
-        Mat rot_mat;
-        Rodrigues(rot_vec, rot_mat);
+        Mat rot_mat1;
+        Rodrigues(rot_vec, rot_mat1);
 
         /// Construct pose
-        Affine3f pose(rot_mat, Vec3f(translation, translation, translation));
+        Affine3f pose1(rot_mat1, Vec3f(translation, translation, translation));
 
-        myWindow.setWidgetPose("Cube Widget", pose);
+        myWindow.setWidgetPose("Cube Widget", pose1);
 
         myWindow.spinOnce(1, true);
     }

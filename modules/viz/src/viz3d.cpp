@@ -417,4 +417,3 @@ void cv::viz::Viz3d::showWidget(const String &id, PyWImageOverlay &widget, PyAff
 {
     showWidget(id, *widget.widget, pose.pose);
 }
-

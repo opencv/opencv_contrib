@@ -1589,9 +1589,6 @@ PyWLine is an overloaded structure, provided for convenience.
              */
             CV_WRAP PyWTrajectoryFrustums(InputArray path, InputArray K, double scale = 1.0, const PyColor &color = PyColor::white());
             /** @brief setRenderingProperty of a WTrajectoryFrustums.
-
-            @param path List of poses on a trajectory. Takes std::vector\<Affine\<T\>\> with T == [float | double]
-            @param .
             @param property property to change.
             @param value new property value .
 
@@ -1756,10 +1753,6 @@ PyWLine is an overloaded structure, provided for convenience.
             CV_WRAP PyWMesh(const Mesh &mesh);
             CV_WRAP PyWMesh(const PyWMesh &mesh);
             CV_WRAP PyWMesh(InputArray cloud, InputArray polygons, InputArray colors = noArray(), InputArray normals = noArray());
-            CV_WRAP void setColors(InputArray colors)
-            {
-            }
-
             Ptr<cv::viz::WMesh> widget;
         };
 

@@ -88,13 +88,17 @@ namespace cv
              */
             void showWidget(const String &id, const Widget &widget, const Affine3d &pose = Affine3d::Identity());
 
-            /** @brief Shows a widget in the window.
+            /** @brief Shows a widget in the window. Pthon binding function
+
+            @param id A unique id for the widget. @param widget The widget to be displayed in the window.
+             */
+
+            CV_WRAP void showWidget(const String &id, PyWLine &widget);
+            /** @brief Shows a widget in the window. Pthon binding function
 
             @param id A unique id for the widget. @param widget The widget to be displayed in the window.
             @param pose Pose of the widget.
              */
-
-            CV_WRAP void showWidget(const String &id, PyWLine &widget);
             CV_WRAP void showWidget(const String &id, PyWLine &widget, PyAffine3 &pose);
             CV_WRAP void showWidget(const String &id, PyWSphere &widget);
             CV_WRAP void showWidget(const String &id, PyWSphere &widget, PyAffine3 &pose);
@@ -177,7 +181,7 @@ namespace cv
 
             /** @brief Sets pose of a widget in the window.
 
-            @widget full info for the widget whose pose will be set.
+            @param id The id of the widget whose pose will be set. @param pose The new pose of the widget.
              */
             CV_WRAP void setWidgetPosePy(const String &id, const PyAffine3 &pose);
 
