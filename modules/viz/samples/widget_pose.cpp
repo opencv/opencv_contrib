@@ -32,8 +32,7 @@ static void help()
 int main()
 {
     help();
-    Mat rot(1, 3, CV_64FC1);
-    viz::PyAffine3f p(rot);
+
     /// Create a window
     viz::Viz3d myWindow("Coordinate Frame");
 
