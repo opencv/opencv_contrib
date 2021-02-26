@@ -117,6 +117,8 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
     else
         p = defaultParams();
     p->volumeType = VolumeType::COLOREDTSDF;
+
+
     return p;
 }
 
@@ -140,9 +142,9 @@ public:
 
     const Affine3f getPose() const CV_OVERRIDE;
 
-    bool update(InputArray depth) CV_OVERRIDE;
+    bool update(InputArray depth, InputArray rgb) CV_OVERRIDE;
 
-    bool updateT(const MatType& depth);
+    bool updateT(const MatType& depth, const MatType& rgb);
 
 private:
     Params params;
@@ -194,52 +196,61 @@ const Affine3f ColoredKinFuImpl<MatType>::getPose() const
 
 
 template<>
-bool ColoredKinFuImpl<Mat>::update(InputArray _depth)
+bool ColoredKinFuImpl<Mat>::update(InputArray _depth, InputArray _rgb)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     Mat depth;
+    Mat rgb;
     if(_depth.isUMat())
     {
         _depth.copyTo(depth);
-        return updateT(depth);
+        _rgb.copyTo(rgb);
+        return updateT(depth, rgb);
     }
     else
     {
-        return updateT(_depth.getMat());
+        return updateT(_depth.getMat(), _rgb.getMat());
     }
 }
 
 
 template<>
-bool ColoredKinFuImpl<UMat>::update(InputArray _depth)
+bool ColoredKinFuImpl<UMat>::update(InputArray _depth, InputArray _rgb)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     UMat depth;
+    UMat rgb;
     if(!_depth.isUMat())
     {
         _depth.copyTo(depth);
-        return updateT(depth);
+        _rgb.copyTo(rgb);
+        return updateT(depth, rgb);
     }
     else
     {
-        return updateT(_depth.getUMat());
+        return updateT(_depth.getUMat(), _rgb.getUMat());
     }
 }
 
 
 template< typename MatType >
-bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth)
+bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _rgb)
 {
     CV_TRACE_FUNCTION();
 
     MatType depth;
+    MatType rgb;
     if(_depth.type() != DEPTH_TYPE)
         _depth.convertTo(depth, DEPTH_TYPE);
     else
         depth = _depth;
-
+    
+    if(_rgb.type() != POINT_TYPE)
+        _rgb.convertTo(rgb, POINT_TYPE);
+    else
+        rgb = _rgb;
 
     std::vector<MatType> newPoints, newNormals;
     makeFrameFromDepth(depth, newPoints, newNormals, params.intr,
@@ -252,7 +263,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth)
     if(frameCounter == 0)
     {
         // use depth instead of distance
-        volume->integrate(depth, params.depthFactor, pose, params.intr);
+        volume->integrate(depth, rgb, params.depthFactor, pose, params.intr);
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
     }
@@ -271,7 +282,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth)
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr);
+            volume->integrate(depth, rgb, params.depthFactor, pose, params.intr);
         }
         MatType& points  = pyrPoints [0];
         MatType& normals = pyrNormals[0];

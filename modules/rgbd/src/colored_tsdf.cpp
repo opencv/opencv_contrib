@@ -62,9 +62,11 @@ public:
     // dimension in voxels, size in meters
     ColoredTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
         int _maxWeight, Vec3i _resolution, bool zFirstMemOrder = true);
-
     virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
+        const kinfu::Intr& intrinsics, const int frameId = 0) override {};
+    virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
         const kinfu::Intr& intrinsics, const int frameId = 0) override;
+
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
         OutputArray points, OutputArray normals) const override;
 
@@ -142,7 +144,7 @@ RGBTsdfVoxel ColoredTSDFVolumeCPU::at(const Vec3i& volumeIdx) const
 }
 
 // use depth instead of distance (optimization)
-void ColoredTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
+void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
                               const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();

@@ -40,6 +40,9 @@ class TSDFVolume : public Volume
                int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
     virtual ~TSDFVolume() = default;
 
+    virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
+        const kinfu::Intr& intrinsics, const int frameId = 0) override {};
+
    public:
 
     Point3i volResolution;

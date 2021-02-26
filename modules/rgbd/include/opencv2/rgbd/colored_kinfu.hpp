@@ -246,7 +246,7 @@ public:
     @param depth one-channel image which size and depth scale is described in algorithm's parameters
     @return true if succeeded to align new frame with current scene, false if opposite
     */
-    CV_WRAP virtual bool update(InputArray depth) = 0;
+    CV_WRAP virtual bool update(InputArray depth, InputArray rgb) = 0;
 };
 
 //! @}

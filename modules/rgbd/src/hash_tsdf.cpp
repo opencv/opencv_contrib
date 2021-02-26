@@ -99,6 +99,8 @@ public:
 
     HashTSDFVolumeCPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = true);
 
+    virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
+        const kinfu::Intr& intrinsics, const int frameId = 0) override {};
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
@@ -894,6 +896,8 @@ public:
 
     void markActive(const Matx44f& cameraPose, const Intr& intrinsics, const Size frameSz, const int frameId);
 
+    virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
+        const kinfu::Intr& intrinsics, const int frameId = 0) override {};
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,

@@ -88,6 +88,15 @@ static const float cy    = 204.f;
 static const float k1    = 0.12f;
 static const float k2    = -0.34f;
 static const float k3    = 0.12f;
+
+static const Size rgb_frameSize = Size(640, 480);
+static const float rgb_focal = 525.0f;
+static const float rgb_cx = 319.5f;
+static const float rgb_cy = 239.5f;
+static const float rgb_k1 = 0.0f;
+static const float rgb_k2 = 0.0f;
+static const float rgb_k3 = 0.0f;
+
 };  // namespace Kinect2Params
 
 namespace AstraParams
@@ -496,7 +505,7 @@ struct RGBSource
             // workaround for Kinect 2
             if (sourceType == Type::RGB_KINECT2)
             {
-                out = out(Rect(Point(), Kinect2Params::frameSize));
+                out = out(Rect(Point(), Kinect2Params::rgb_frameSize));
 
                 UMat outCopy;
                 // linear remap adds gradient between valid and invalid pixels
@@ -527,11 +536,11 @@ struct RGBSource
             Size frameSize;
             if (sourceType == Type::RGB_KINECT2)
             {
-                fx = fy = Kinect2Params::focal;
-                cx      = Kinect2Params::cx;
-                cy      = Kinect2Params::cy;
+                fx = fy = Kinect2Params::rgb_focal;
+                cx      = Kinect2Params::rgb_cx;
+                cy      = Kinect2Params::rgb_cy;
 
-                frameSize = Kinect2Params::frameSize;
+                frameSize = Kinect2Params::rgb_frameSize;
             }
             else if (sourceType == Type::RGB_ASTRA)
             {
@@ -611,9 +620,9 @@ struct RGBSource
             if (sourceType == Type::RGB_KINECT2)
             {
                 Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
+                distCoeffs(0) = Kinect2Params::rgb_k1;
+                distCoeffs(1) = Kinect2Params::rgb_k2;
+                distCoeffs(4) = Kinect2Params::rgb_k3;
 
                 initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
                                         params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
@@ -633,9 +642,9 @@ struct RGBSource
             if (sourceType == Type::RGB_KINECT2)
             {
                 Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
+                distCoeffs(0) = Kinect2Params::rgb_k1;
+                distCoeffs(1) = Kinect2Params::rgb_k2;
+                distCoeffs(4) = Kinect2Params::rgb_k3;
 
                 initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
                                         params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
@@ -655,9 +664,9 @@ struct RGBSource
             if (sourceType == Type::RGB_KINECT2)
             {
                 Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
+                distCoeffs(0) = Kinect2Params::rgb_k1;
+                distCoeffs(1) = Kinect2Params::rgb_k2;
+                distCoeffs(4) = Kinect2Params::rgb_k3;
 
                 initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
                                         params.frameSize, CV_16SC2, undistortMap1, undistortMap2);

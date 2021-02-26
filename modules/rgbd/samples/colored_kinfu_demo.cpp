@@ -121,9 +121,13 @@ int main(int argc, char **argv)
     }
 
     Ptr<DepthWriter> depthWriter;
-    if(!recordPath.empty())
-        depthWriter = makePtr<DepthWriter>(recordPath);
+    Ptr<RGBWriter> rgbWriter;
 
+    if (!recordPath.empty())
+    {
+        depthWriter = makePtr<DepthWriter>(recordPath);
+        rgbWriter = makePtr<RGBWriter>(recordPath);
+    }
     Ptr<colored_kinfu::Params> params;
     Ptr<ColoredKinFu> kf;
     
@@ -166,7 +170,7 @@ int main(int argc, char **argv)
             depthWriter->append(frame);
         
         UMat rgb_frame = rgbs->getRGB();
-        imshow("rgb", rgb_frame);
+        //imshow("rgb", rgb_frame);
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
@@ -206,7 +210,7 @@ int main(int argc, char **argv)
             {
                 imshow("depth", cvt8);
 
-                if(!kf->update(frame))
+                if(!kf->update(frame, rgb_frame))
                 {
                     kf->reset();
                     std::cout << "reset" << std::endl;
