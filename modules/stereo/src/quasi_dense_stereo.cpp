@@ -34,7 +34,6 @@ public:
         ssum1 = cv::Mat_<double>(integralSize);
         // the disparity image.
         disparity = cv::Mat_<float>(monoImgSize);
-        disparityImg = cv::Mat_<uchar>(monoImgSize);
         // texture images.
         textureDescLeft = cv::Mat_<int> (monoImgSize);
         textureDescRight = cv::Mat_<int> (monoImgSize);
@@ -55,7 +54,6 @@ public:
         ssum1.release();
         // the disparity image.
         disparity.release();
-        disparityImg.release();
         // texture images.
         textureDescLeft.release();
         textureDescRight.release();
@@ -248,7 +246,6 @@ public:
      * @param[in] matchMap A matrix of points, the same size as the left channel. Each cell of this
      * matrix stores the location of the corresponding point in the right image.
      * @param[out] dispMat The disparity map.
-     * @sa quantizeDisparity
      * @sa getDisparity
      */
     void computeDisparity(const cv::Mat_<cv::Point2i> &matchMap,
@@ -262,7 +259,7 @@ public:
 
                 if (matchMap.at<cv::Point2i>(tmpPoint) == NO_MATCH)
                 {
-                    dispMat.at<float>(tmpPoint) = 200;
+                    dispMat.at<float>(tmpPoint) = NAN;
                     continue;
                 }
                 //if a match is found, compute the difference in location of the match and current
@@ -274,37 +271,6 @@ public:
             }
         }
     }
-
-
-    /**
-     * @brief Disparity map normalization for display purposes. If needed specify the quantization
-     * level as input argument.
-     * @param[in] dispMat The disparity Map.
-     * @param[in] lvls The quantization level of the output disparity map.
-     * @return Disparity image.
-     * @note Stores the output in the disparityImage class variable.
-     * @sa computeDisparity
-     * @sa getDisparity
-     */
-    cv::Mat quantiseDisparity(const cv::Mat_<float> &dispMat, const int lvls)
-   {
-       float tmpPixelVal ;
-       double min, max;
-//	   minMaxLoc(disparity, &min, &max);
-       min = 0;
-       max = lvls;
-       for(int row=0; row<height; row++)
-       {
-           for(int col=0; col<width; col++)
-           {
-               tmpPixelVal = dispMat.at<float>(row, col);
-               tmpPixelVal = (float) (255. - 255.0*(tmpPixelVal-min)/(max-min));
-
-               disparityImg.at<uchar>(row, col) =  (uint8_t) tmpPixelVal;
-           }
-       }
-       return disparityImg;
-   }
 
 
     /**
@@ -635,10 +601,10 @@ public:
         return refMap.at<cv::Point2i>(y, x);
     }
 
-    cv::Mat getDisparity(uint8_t disparityLvls) override
+    cv::Mat getDisparity() override
     {
         computeDisparity(refMap, disparity);
-        return quantiseDisparity(disparity, disparityLvls);
+        return disparity;
     }
 
     // Variables used at sparse feature extraction.
@@ -663,8 +629,6 @@ public:
     cv::Mat_<double> ssum1;
     // Container to store the disparity un-normalized
     cv::Mat_<float> disparity;
-    // Container to store the disparity image.
-    cv::Mat_<uchar> disparityImg;
     // Containers to store textures descriptors.
     cv::Mat_<int> textureDescLeft;
     cv::Mat_<int> textureDescRight;

@@ -31,9 +31,8 @@ int main()
 
 
 //!     [disp]
-    uint8_t displvl = 80;
     cv::Mat disp;
-    disp = stereo->getDisparity(displvl);
+    disp = stereo->getDisparity();
     cv::namedWindow("disparity map");
     cv::imshow("disparity map", disp);
 //!     [disp]
