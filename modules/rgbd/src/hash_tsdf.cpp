@@ -105,7 +105,8 @@ public:
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
         OutputArray normals) const override;
-
+    void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
+        OutputArray points, OutputArray normals, OutputArray colors) const override {};
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
 
@@ -902,7 +903,8 @@ public:
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
         OutputArray normals) const override;
-
+    void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
+        OutputArray points, OutputArray normals, OutputArray colors) const override {};
 
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;

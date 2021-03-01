@@ -78,6 +78,7 @@ enum
 
 typedef cv::Mat_< ptype > Points;
 typedef Points Normals;
+typedef Points Colors;
 
 typedef cv::Mat_< depthType > Depth;
 

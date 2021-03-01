@@ -34,6 +34,8 @@ class CV_EXPORTS_W Volume
                            const kinfu::Intr& intrinsics, const int frameId = 0)               = 0;
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
                          const Size& frameSize, OutputArray points, OutputArray normals) const = 0;
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
+                         OutputArray points, OutputArray normals, OutputArray colors) const    = 0;
     virtual void fetchNormals(InputArray points, OutputArray _normals) const                   = 0;
     virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const             = 0;
     virtual void reset()                                                                       = 0;

@@ -42,7 +42,8 @@ class TSDFVolume : public Volume
 
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
         const kinfu::Intr& intrinsics, const int frameId = 0) override {};
-
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
+        OutputArray points, OutputArray normals, OutputArray colors) const override {};
    public:
 
     Point3i volResolution;
