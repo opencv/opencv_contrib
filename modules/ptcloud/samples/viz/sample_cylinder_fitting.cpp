@@ -1,3 +1,4 @@
+#ifdef HAVE_OPENCV_VIZ
 #include <opencv2/viz.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/viz/widgets.hpp>
@@ -29,7 +30,7 @@ int main() {
     viz::Viz3d window("original cloud");
     viz::WCloud original_cloud(ptset);
     window.showWidget("cloud", original_cloud);
-    
+
     cylinder_segmentation.set_threshold(0.5);
     cylinder_segmentation.set_iterations(80000);
     cylinder_segmentation.set_normal_distance_weight(0.5);
@@ -59,10 +60,15 @@ int main() {
     viz::WCloud cloud_widget2(fit_cloud, viz::Color::red());
     fitted.showWidget("fit_cloud", cloud_widget2);
     window.showWidget("fit_cloud", cloud_widget2);
-    fitted.spin(); 
+    fitted.spin();
 
 
     window.spin();
     waitKey(1);
 
 }
+#else
+int main() {
+    return CV_ERROR(-215, "this sample needs to be build with opencv's viz module");
+}
+#endif

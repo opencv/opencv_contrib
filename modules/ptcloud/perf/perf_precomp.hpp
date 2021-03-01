@@ -4,13 +4,12 @@
 #ifndef __OPENCV_TEST_PRECOMP_HPP__
 #define __OPENCV_TEST_PRECOMP_HPP__
 
-#include <numeric> // std::iota
-
+#include "opencv2/opencv_modules.hpp"
 #include "opencv2/ts.hpp"
-#include "opencv2/surface_matching/ppf_helpers.hpp" // normals
-
+#include "opencv2/ts/ts_perf.hpp"
 #include "opencv2/ptcloud/sac_segmentation.hpp"
 #include "opencv2/ptcloud/sac_utils.hpp"
 
+using namespace perf;
 
 #endif
