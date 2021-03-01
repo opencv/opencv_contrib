@@ -73,7 +73,8 @@ inline ptype toPtype(const cv::Vec3f& x)
 enum
 {
     DEPTH_TYPE = DataType<depthType>::type,
-    POINT_TYPE = DataType<ptype    >::type
+    POINT_TYPE = DataType<ptype    >::type,
+    COLOR_TYPE = DataType<ptype    >::type
 };
 
 typedef cv::Mat_< ptype > Points;
@@ -81,6 +82,7 @@ typedef Points Normals;
 typedef Points Colors;
 
 typedef cv::Mat_< depthType > Depth;
+typedef cv::Mat_< ptype > Rgb;
 
 void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, cv::Affine3f lightPose);
 void makeFrameFromDepth(InputArray depth, OutputArray pyrPoints, OutputArray pyrNormals,

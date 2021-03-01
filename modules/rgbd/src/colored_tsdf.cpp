@@ -111,7 +111,7 @@ ColoredTSDFVolumeCPU::ColoredTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, 
     }
     volStrides = Vec4i(xdim, ydim, zdim);
 
-    volume = Mat(1, volResolution.x * volResolution.y * volResolution.z, rawType<TsdfVoxel>());
+    volume = Mat(1, volResolution.x * volResolution.y * volResolution.z, rawType<RGBTsdfVoxel>());
 
     reset();
 }
@@ -135,7 +135,7 @@ RGBTsdfVoxel ColoredTSDFVolumeCPU::at(const Vec3i& volumeIdx) const
         (volumeIdx[1] >= volResolution.y || volumeIdx[1] < 0) ||
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
-        return RGBTsdfVoxel(floatToTsdf(1.f), 0);
+        return RGBTsdfVoxel(floatToTsdf(1.f), 0, 160, 160, 160);
     }
 
     const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
@@ -153,6 +153,7 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
+    Rgb rgb = _rgb.getMat();
 
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
@@ -163,7 +164,7 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
         pixNorms = preCalculationPixNorm(depth, intrinsics);
     }
 
-    integrateVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution, volStrides, depth,
+    integrateRGBVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution, volStrides, depth, rgb,
         depthFactor, cameraPose, intrinsics, pixNorms, volume);
 }
 

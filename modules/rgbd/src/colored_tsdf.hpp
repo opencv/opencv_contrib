@@ -20,14 +20,15 @@ namespace kinfu
 
 typedef int8_t TsdfType;
 typedef uchar WeightType;
-
+typedef short int ColorType;
 struct RGBTsdfVoxel
 {
-    RGBTsdfVoxel(TsdfType _tsdf, WeightType _weight) :
-        tsdf(_tsdf), weight(_weight)
+    RGBTsdfVoxel(TsdfType _tsdf, WeightType _weight, ColorType _r, ColorType _g, ColorType _b) :
+        tsdf(_tsdf), weight(_weight), r(_r), g(_g), b(_b)
     { }
     TsdfType tsdf;
     WeightType weight;
+    ColorType r, g, b;
 };
 
 typedef Vec<uchar, sizeof(RGBTsdfVoxel)> VecRGBTsdfVoxel;

@@ -9,6 +9,7 @@
 
 #include <opencv2/rgbd/volume.hpp>
 #include "tsdf.hpp"
+#include "colored_tsdf.hpp"
 
 namespace cv
 {
@@ -43,6 +44,12 @@ void integrateVolumeUnit(
     float truncDist, float voxelSize, int maxWeight,
     cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
+    const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
+
+void integrateRGBVolumeUnit(
+    float truncDist, float voxelSize, int maxWeight,
+    cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
+    InputArray _depth, InputArray _rgb, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
 
 
