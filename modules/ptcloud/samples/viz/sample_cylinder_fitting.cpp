@@ -1,4 +1,5 @@
 #ifdef HAVE_OPENCV_VIZ
+
 #include <opencv2/viz.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/viz/widgets.hpp>
@@ -17,55 +18,50 @@ using namespace std;
 int main() {
     // Mat cloud = cv::ppf_match_3d::loadPLYSimple("./data/semi-cylinder-with-normals-usingOpenCV2.ply", true);
     Mat cloud = cv::ppf_match_3d::loadPLYSimple("./data/cylinder-big.ply", false);
+
     Mat ptset;
     Mat(cloud.colRange(0,3)).copyTo(ptset);
     long unsigned num_points = ptset.rows;
     ptset = ptset.reshape(3, num_points);
     ptset = ptset.t();
 
-    cv::ptcloud::SACModelFitting cylinder_segmentation(CYLINDER_MODEL);
-    cylinder_segmentation.setCloud(cloud, false);
+    Ptr<cv::ptcloud::SACModelFitting> cylinder_segmentation = cv::ptcloud::SACModelFitting::create(cloud, CYLINDER_MODEL);
 
     // add original cloud to window
     viz::Viz3d window("original cloud");
     viz::WCloud original_cloud(ptset);
     window.showWidget("cloud", original_cloud);
 
-    cylinder_segmentation.set_threshold(0.5);
-    cylinder_segmentation.set_iterations(80000);
-    cylinder_segmentation.set_normal_distance_weight(0.5);
-    cylinder_segmentation.fit_once();
+    cylinder_segmentation->set_threshold(0.5);
+    cylinder_segmentation->set_iterations(80000);
+    cylinder_segmentation->set_normal_distance_weight(0.5);
 
-    cout << cylinder_segmentation.inliers.size();
-    vector<unsigned> inlier_vec =  cylinder_segmentation.inliers.at(0);
+    vector<cv::ptcloud::SACModel> models;
+    cylinder_segmentation->segment(models);
+    cout << models[0].points.size();
 
+    vector<double> model_coefficients = models.at(0).coefficients;
+    cout << model_coefficients.size();
 
-    vector<double> model_coefficients = cylinder_segmentation.model_instances.at(0).ModelCoefficients;
-    cout << cylinder_segmentation.model_instances.at(0).ModelCoefficients.size();
-    cv::ptcloud::SACCylinderModel cylinder (model_coefficients);
-        cout << cylinder.pt_on_axis << endl;
-        cout << cylinder.axis_dir << endl;
-        cout << cylinder.radius << endl;
-
-    viz::WCylinder model = cylinder.WindowWidget();
+    double size = 10;
+    double radius = model_coefficients[6];
+    Point3d pt_on_axis(model_coefficients[0], model_coefficients[1], model_coefficients[2]);
+    Point3d axis_dir(model_coefficients[3], model_coefficients[4], model_coefficients[5]);
+    Point3d first_point = Point3d(Vec3d(pt_on_axis) + size * (axis_dir));
+    Point3d second_point = Point3d(Vec3d(pt_on_axis) - size * (axis_dir));
+    viz::WCylinder model(first_point, second_point, radius, 40, viz::Color::green());
     window.showWidget("model", model);
 
-    const Vec3f* points = ptset.ptr<Vec3f>(0);
-    cout << endl << endl << inlier_vec.size();
-    cv::Mat fit_cloud(1, inlier_vec.size(), CV_32FC3);
-    for(int j=0; j<fit_cloud.cols; ++j){
-        fit_cloud.at<Vec3f>(0, j) = points[(j)];
-    }
     viz::Viz3d fitted("fitted cloud");
-    viz::WCloud cloud_widget2(fit_cloud, viz::Color::red());
+    viz::WCloud cloud_widget2(models[0].points, viz::Color::red());
     fitted.showWidget("fit_cloud", cloud_widget2);
     window.showWidget("fit_cloud", cloud_widget2);
     fitted.spin();
 
-
     window.spin();
     waitKey(1);
 
+    return 0;
 }
 #else
 int main() {
