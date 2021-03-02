@@ -131,7 +131,6 @@ struct RenderColorInvoker : ParallelLoopBody
                 Point3f p = fromPtype(ptsRow[x]);
                 Point3f n = fromPtype(nrmRow[x]);
                 Point3f c = fromPtype(clrRow[x]);
-
                 Vec4b color;
 
                 if(isNaN(p) || isNaN(c))

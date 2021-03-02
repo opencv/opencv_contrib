@@ -279,17 +279,25 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
         }
     return Point3f(r / 24.f, g / 24.f, b / 24.f);
     */
-    int counter = 0;
+    /*
+    float counter = 0;
+    //std::cout << "======" << std::endl;
     for (int i = 0; i < 8; i++)
     {
         if (volData[neighbourCoords[i] + coordBase].r == volData[neighbourCoords[i] + coordBase].r)
         {
-            r += volData[neighbourCoords[i] + coordBase].r;
-            g += volData[neighbourCoords[i] + coordBase].g;
-            b += volData[neighbourCoords[i] + coordBase].b;
+            r += (float) volData[neighbourCoords[i] + coordBase].r;
+            g += (float) volData[neighbourCoords[i] + coordBase].g;
+            b += (float) volData[neighbourCoords[i] + coordBase].b;
+            //std::cout <<r <<" " << g << " " << b << std::endl;
+            counter+=1.0f;
         }
     }
-    return Point3f(r / 24.f, g / 24.f, b / 24.f);
+    */
+    //Point3f res(r / counter, g / counter, b / counter);
+    Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
+    //std::cout << counter << " " << res << std::endl;
+    return res;
 
     
 }

@@ -529,9 +529,10 @@ void integrateRGBVolumeUnit(
                         ColorType& b = voxel.b;
 
                         // update TSDF
-                        r = (r * weight + colorRGB.x) / (weight + 1);
-                        g = (g * weight + colorRGB.y) / (weight + 1);
-                        b = (b * weight + colorRGB.z) / (weight + 1);
+                        r = (ColorType) ((int) (r * weight) + (colorRGB.x) / 65536) / (weight + 1);
+                        g = (ColorType) ((int) (g * weight) + (colorRGB.y) / 65536) / (weight + 1);
+                        b = (ColorType) ((int) (b * weight) + (colorRGB.z) / 65536) / (weight + 1);
+                        //std::cout<<"("<<r<<" "<<g<<" "<<b<<") ["<<colorRGB<<"]"<<std::endl;
                         value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));
                         weight = min(int(weight + 1), int(maxWeight));
                     }
