@@ -156,6 +156,7 @@ private:
     Matx44f pose;
     std::vector<MatType> pyrPoints;
     std::vector<MatType> pyrNormals;
+    std::vector<MatType> pyrColors;
 };
 
 
@@ -163,7 +164,7 @@ template< typename MatType >
 ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     params(_params),
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    pyrPoints(), pyrNormals()
+    pyrPoints(), pyrNormals(), pyrColors()
 {
     volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
                         params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
@@ -252,8 +253,8 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
         rgb = _rgb;
 
-    std::vector<MatType> newPoints, newNormals;
-    makeFrameFromDepth(depth, newPoints, newNormals, params.intr,
+    std::vector<MatType> newPoints, newNormals, newColors;
+    makeColoredFrameFromDepth(depth, newPoints, newNormals, newColors, params.intr,
                        params.pyramidLevels,
                        params.depthFactor,
                        params.bilateral_sigma_depth,
@@ -266,6 +267,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         volume->integrate(depth, rgb, params.depthFactor, pose, params.intr);
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
+        pyrColors  = newColors;
     }
     else
     {
@@ -286,7 +288,8 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         }
         MatType& points  = pyrPoints [0];
         MatType& normals = pyrNormals[0];
-        volume->raycast(pose, params.intr, params.frameSize, points, normals);
+        MatType& colors  = pyrColors [0];
+        volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
         buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
                                   params.pyramidLevels);
     }
@@ -312,8 +315,8 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
     }
     else
     {
-        MatType points, normals;
-        volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals);
+        MatType points, normals, colors;
+        volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
         renderPointsNormals(points, normals, image, params.lightPose);
     }
 }

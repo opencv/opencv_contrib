@@ -89,6 +89,11 @@ void makeFrameFromDepth(InputArray depth, OutputArray pyrPoints, OutputArray pyr
                         const Intr intr, int levels, float depthFactor,
                         float sigmaDepth, float sigmaSpatial, int kernelSize,
                         float truncateThreshold);
+void makeColoredFrameFromDepth(InputArray _depth,
+                        OutputArray pyrPoints, OutputArray pyrNormals, OutputArray pyrColors,
+                        const Intr intr, int levels, float depthFactor,
+                        float sigmaDepth, float sigmaSpatial, int kernelSize,
+                        float truncateThreshold);
 void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
                                OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
                                int levels);

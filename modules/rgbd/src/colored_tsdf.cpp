@@ -67,9 +67,9 @@ public:
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
         const kinfu::Intr& intrinsics, const int frameId = 0) override;
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
-        OutputArray points, OutputArray normals, OutputArray colors) const override {};
+        OutputArray points, OutputArray normals, OutputArray colors) const override;
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
-        OutputArray points, OutputArray normals) const override;
+        OutputArray points, OutputArray normals) const override {};
 
     virtual void fetchNormals(InputArray points, OutputArray _normals) const override;
     virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
@@ -391,7 +391,7 @@ struct RaycastInvoker : ParallelLoopBody
 
 
 void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, const Size& frameSize,
-                            OutputArray _points, OutputArray _normals) const
+                            OutputArray _points, OutputArray _normals, OutputArray _colors) const
 {
     CV_TRACE_FUNCTION();
 
