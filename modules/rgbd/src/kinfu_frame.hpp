@@ -85,6 +85,7 @@ typedef cv::Mat_< depthType > Depth;
 typedef cv::Mat_< ptype > Rgb;
 
 void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, cv::Affine3f lightPose);
+void renderPointsNormalsColors(InputArray _points, InputArray _normals, InputArray _colors, OutputArray image, Affine3f lightPose);
 void makeFrameFromDepth(InputArray depth, OutputArray pyrPoints, OutputArray pyrNormals,
                         const Intr intr, int levels, float depthFactor,
                         float sigmaDepth, float sigmaSpatial, int kernelSize,

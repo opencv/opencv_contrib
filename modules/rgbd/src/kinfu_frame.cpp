@@ -105,6 +105,57 @@ struct RenderInvoker : ParallelLoopBody
     Size sz;
 };
 
+struct RenderColorInvoker : ParallelLoopBody
+{
+    RenderColorInvoker(const Points& _points, const Normals& _normals, const Colors& _colors, Mat_<Vec4b>& _img, Affine3f _lightPose, Size _sz) :
+        ParallelLoopBody(),
+        points(_points),
+        normals(_normals),
+        colors(_colors),
+        img(_img),
+        lightPose(_lightPose),
+        sz(_sz)
+    { }
+
+    virtual void operator ()(const Range& range) const override
+    {
+        for(int y = range.start; y < range.end; y++)
+        {
+            Vec4b* imgRow = img[y];
+            const ptype* ptsRow = points[y];
+            const ptype* nrmRow = normals[y];
+            const ptype* clrRow = colors[y];
+
+            for(int x = 0; x < sz.width; x++)
+            {
+                Point3f p = fromPtype(ptsRow[x]);
+                Point3f n = fromPtype(nrmRow[x]);
+                Point3f c = fromPtype(clrRow[x]);
+
+                Vec4b color;
+
+                if(isNaN(p) || isNaN(c))
+                {
+                    color = Vec4b(0, 32, 0, 0);
+                }
+                else
+                {
+                    color = Vec4b(c.x, c.y, c.z, 0);
+                }
+
+                imgRow[x] = color;
+            }
+        }
+    }
+
+    const Points& points;
+    const Normals& normals;
+    const Colors& colors;
+    Mat_<Vec4b>& img;
+    Affine3f lightPose;
+    Size sz;
+};
+
 
 void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normals &ndown)
 {
@@ -683,6 +734,33 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
     Mat_<Vec4b> img = image.getMat();
 
     RenderInvoker ri(points, normals, img, lightPose, sz);
+    Range range(0, sz.height);
+    const int nstripes = -1;
+    parallel_for_(range, ri, nstripes);
+}
+
+void renderPointsNormalsColors(InputArray _points, InputArray _normals, InputArray _colors, OutputArray image, Affine3f lightPose)
+{
+    CV_TRACE_FUNCTION();
+
+    CV_Assert(_points.size().area() > 0);
+    CV_Assert(_points.size() == _normals.size());
+
+    Size sz = _points.size();
+    image.create(sz, CV_8UC4);
+
+    CV_OCL_RUN(_points.isUMat() && _normals.isUMat() && image.isUMat(),
+               ocl_renderPointsNormals(_points.getUMat(),
+                                       _normals.getUMat(),
+                                       image.getUMat(), lightPose))
+
+    Points  points  = _points.getMat();
+    Normals normals = _normals.getMat();
+    Colors colors = _colors.getMat();
+
+    Mat_<Vec4b> img = image.getMat();
+
+    RenderColorInvoker ri(points, normals, colors, img, lightPose, sz);
     Range range(0, sz.height);
     const int nstripes = -1;
     parallel_for_(range, ri, nstripes);

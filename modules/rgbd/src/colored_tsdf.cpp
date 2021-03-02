@@ -79,6 +79,7 @@ public:
 
     float interpolateVoxel(const cv::Point3f& p) const;
     Point3f getNormalVoxel(const cv::Point3f& p) const;
+    Point3f getColorVoxel(const cv::Point3f& p) const;
 
     Vec4i volStrides;
     Vec6f frameParams;
@@ -248,14 +249,60 @@ inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
     return nv < 0.0001f ? nan3 : an / nv;
 }
 
+inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
+{
+    const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
+
+    if(p.x < 1 || p.x >= volResolution.x - 2 ||
+       p.y < 1 || p.y >= volResolution.y - 2 ||
+       p.z < 1 || p.z >= volResolution.z - 2)
+        return nan3;
+
+    int ix = cvFloor(p.x);
+    int iy = cvFloor(p.y);
+    int iz = cvFloor(p.z);
+
+    float tx = p.x - ix;
+    float ty = p.y - iy;
+    float tz = p.z - iz;
+
+    int coordBase = ix*xdim + iy*ydim + iz*zdim;
+    float r = 0, g = 0, b = 0;
+    /*
+    for(int i = 0; i < 8; i++)
+        for (int c = 0; c < 3; c++)
+        {
+            r = volData[neighbourCoords[i] + coordBase + 1 * volDims[c]].r;
+            g = volData[neighbourCoords[i] + coordBase + 1 * volDims[c]].g;
+            b = volData[neighbourCoords[i] + coordBase + 1 * volDims[c]].b;
+        }
+    return Point3f(r / 24.f, g / 24.f, b / 24.f);
+    */
+    int counter = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        if (volData[neighbourCoords[i] + coordBase].r == volData[neighbourCoords[i] + coordBase].r)
+        {
+            r += volData[neighbourCoords[i] + coordBase].r;
+            g += volData[neighbourCoords[i] + coordBase].g;
+            b += volData[neighbourCoords[i] + coordBase].b;
+        }
+    }
+    return Point3f(r / 24.f, g / 24.f, b / 24.f);
+
+    
+}
+
 
 struct RaycastInvoker : ParallelLoopBody
 {
-    RaycastInvoker(Points& _points, Normals& _normals, const Matx44f& cameraPose,
+    RaycastInvoker(Points& _points, Normals& _normals, Colors& _colors, const Matx44f& cameraPose,
                   const Intr& intrinsics, const ColoredTSDFVolumeCPU& _volume) :
         ParallelLoopBody(),
         points(_points),
         normals(_normals),
+        colors(_colors),
         volume(_volume),
         tstep(volume.truncDist * volume.raycastStepFactor),
         // We do subtract voxel size to minimize checks after
@@ -280,10 +327,11 @@ struct RaycastInvoker : ParallelLoopBody
         {
             ptype* ptsRow = points[y];
             ptype* nrmRow = normals[y];
+            ptype* clrRow = colors[y];
 
             for(int x = 0; x < points.cols; x++)
             {
-                Point3f point = nan3, normal = nan3;
+                Point3f point = nan3, normal = nan3, color = nan3;
 
                 Point3f orig = camTrans;
                 // direction through pixel in volume space
@@ -358,11 +406,12 @@ struct RaycastInvoker : ParallelLoopBody
                         {
                             Point3f pv = (orig + dir*ts);
                             Point3f nv = volume.getNormalVoxel(pv);
-
+                            Point3f cv = volume.getColorVoxel(pv);
                             if(!isNaN(nv))
                             {
                                 //convert pv and nv to camera space
                                 normal = volRot * nv;
+                                color = cv;
                                 // interpolation optimized a little
                                 point = vol2cam * (pv*volume.voxelSize);
                             }
@@ -371,12 +420,14 @@ struct RaycastInvoker : ParallelLoopBody
                 }
                 ptsRow[x] = toPtype(point);
                 nrmRow[x] = toPtype(normal);
+                clrRow[x] = toPtype(color);
             }
         }
     }
 
     Points& points;
     Normals& normals;
+    Colors& colors;
     const ColoredTSDFVolumeCPU& volume;
 
     const float tstep;
@@ -399,11 +450,12 @@ void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrin
 
     _points.create (frameSize, POINT_TYPE);
     _normals.create(frameSize, POINT_TYPE);
+    _colors.create(frameSize, POINT_TYPE);
 
     Points points   =  _points.getMat();
     Normals normals = _normals.getMat();
-
-    RaycastInvoker ri(points, normals, cameraPose, intrinsics, *this);
+    Colors colors = _colors.getMat();
+    RaycastInvoker ri(points, normals, colors, cameraPose, intrinsics, *this);
 
     const int nstripes = -1;
     parallel_for_(Range(0, points.rows), ri, nstripes);

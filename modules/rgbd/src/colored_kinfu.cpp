@@ -311,13 +311,14 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
     if((cameraPose.rotation() == _pose.rotation() && cameraPose.translation() == _pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
-        renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
+        renderPointsNormalsColors(pyrPoints[0], pyrNormals[0], pyrColors[0],image, params.lightPose);
     }
     else
     {
         MatType points, normals, colors;
         volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
-        renderPointsNormals(points, normals, image, params.lightPose);
+        //renderPointsNormals(points, normals, image, params.lightPose);
+        renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
     }
 }
 
