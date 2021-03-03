@@ -55,7 +55,8 @@ enum {
 
 /** @brief Data structure describing the camera model and its parameters.
   @param _distortion_model Type of camera model.
-  @param _focal_length focal length of the camera (in pixels).
+  @param _focal_length_x focal length of the camera (in pixels).
+  @param _focal_length_y focal length of the camera (in pixels).
   @param _principal_point_x principal point of the camera in the x direction (in pixels).
   @param _principal_point_y principal point of the camera in the y direction (in pixels).
   @param _polynomial_k1 radial distortion parameter.
@@ -73,7 +74,8 @@ class CV_EXPORTS_W_SIMPLE libmv_CameraIntrinsicsOptions
 public:
   CV_WRAP
   libmv_CameraIntrinsicsOptions(const int _distortion_model=0,
-                                const double _focal_length=0,
+                                const double _focal_length_x=0,
+                                const double _focal_length_y=0,
                                 const double _principal_point_x=0,
                                 const double _principal_point_y=0,
                                 const double _polynomial_k1=0,
@@ -84,7 +86,8 @@ public:
     : distortion_model(_distortion_model),
       image_width(2*_principal_point_x),
       image_height(2*_principal_point_y),
-      focal_length(_focal_length),
+      focal_length_x(_focal_length_x),
+      focal_length_y(_focal_length_y),
       principal_point_x(_principal_point_x),
       principal_point_y(_principal_point_y),
       polynomial_k1(_polynomial_k1),
@@ -103,7 +106,8 @@ public:
   // Common settings of all distortion models.
   CV_PROP_RW int distortion_model;
   CV_PROP_RW int image_width, image_height;
-  CV_PROP_RW double focal_length;
+  CV_PROP_RW double focal_length_x;
+  CV_PROP_RW double focal_length_y;
   CV_PROP_RW double principal_point_x, principal_point_y;
 
   // Radial distortion model.

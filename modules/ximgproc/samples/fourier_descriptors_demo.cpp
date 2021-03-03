@@ -104,11 +104,11 @@ int main(void)
             vector<Point2f> ctrRef2d, ctrRot2d;
             // sampling contour we want 256 points
             ximgproc::contourSampling(ctrRef, ctrRef2d, 256); // use a mat
-            ximgproc::contourSampling(ctrNoisyRotateShift, ctrRot2d, 256); // use a vector og point
+            ximgproc::contourSampling(ctrNoisyRotateShift, ctrRot2d, 256); // use a vector of points
             fit.setFDSize(16);
             Mat t;
             fit.estimateTransformation(ctrRot2d, ctrRef2d, t, &dist, false);
-            cout << "Transform *********\n "<<"Origin = "<< t.at<double>(0,0)*ctrNoisy.size() <<" expected "<< (p.origin*ctrNoisy.size()) / 100 <<" ("<< ctrNoisy.size()<<")\n";
+            cout << "Transform *********\n "<<"Origin = "<< 1-t.at<double>(0,0) <<" expected "<< p.origin/100.0 <<" ("<< ctrNoisy.size()<<")\n";
             cout << "Angle = " << t.at<double>(0, 1) * 180 / M_PI << " expected " << p.angle  <<"\n";
             cout << "Scale = " << t.at<double>(0, 2) << " expected " << p.scale10 / 10.0 << "\n";
             Mat dst;

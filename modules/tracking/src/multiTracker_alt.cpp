@@ -40,8 +40,11 @@
  //M*/
 
 #include "precomp.hpp"
+#include "opencv2/tracking/tracking_legacy.hpp"
 
 namespace cv {
+namespace legacy {
+inline namespace tracking {
 
   // constructor
   MultiTracker::MultiTracker(){};
@@ -105,4 +108,4 @@ namespace cv {
       return makePtr<MultiTracker>();
   }
 
-} /* namespace cv */
+}}}  // namespace

@@ -102,6 +102,92 @@ void createPointCloudMesh(const String& name, InputArray vertices, InputArray co
     mesh->_setBounds(bounds);
 }
 
+void createTriangleMesh(const String& name, InputArray vertices, InputArray normals, InputArray indices)
+{
+    CV_CheckTypeEQ(vertices.type(), CV_32FC3, "vertices type must be Vec3f");
+    CV_Assert(vertices.isContinuous());
+
+    if(!normals.empty())
+    {
+        CV_CheckTypeEQ(normals.type(), CV_32FC3, "normals type must be Vec3f");
+        CV_Assert(normals.isContinuous());
+        CV_Assert(normals.size() == vertices.size());
+    }
+    if(!indices.empty())
+    {
+        CV_CheckTypeEQ(indices.type(), CV_32S, "indices type must be int");
+        CV_Assert(indices.isContinuous());
+    }
+
+    // default material
+    auto mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
+
+    // mesh
+    MeshPtr mesh = MeshManager::getSingleton().createManual(name, RESOURCEGROUP_NAME);
+    SubMesh* sub = mesh->createSubMesh();
+    sub->useSharedVertices = true;
+    sub->operationType = RenderOperation::OT_TRIANGLE_LIST;
+    sub->setMaterialName(name);
+
+    int n = vertices.rows();
+
+    mesh->sharedVertexData = new VertexData();
+    mesh->sharedVertexData->vertexCount = n;
+    VertexDeclaration* decl = mesh->sharedVertexData->vertexDeclaration;
+
+    // vertex data
+    HardwareBufferManager& hbm = HardwareBufferManager::getSingleton();
+
+    Mat _vertices = vertices.getMat();
+
+    int source = 0;
+    HardwareVertexBufferSharedPtr hwbuf;
+
+    decl->addElement(source, 0, VET_FLOAT3, VES_POSITION);
+    hwbuf = hbm.createVertexBuffer(decl->getVertexSize(source), n, HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+    hwbuf->writeData(0, hwbuf->getSizeInBytes(), _vertices.ptr(), true);
+    mesh->sharedVertexData->vertexBufferBinding->setBinding(source, hwbuf);
+
+    // normals
+    if (!normals.empty())
+    {
+        source += 1;
+
+        Mat _normals = normals.getMat();
+        decl->addElement(source, 0, VET_FLOAT3, VES_NORMAL);
+        hwbuf =
+            hbm.createVertexBuffer(decl->getVertexSize(source), n, HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+        hwbuf->writeData(0, hwbuf->getSizeInBytes(), _normals.ptr(), true);
+        mesh->sharedVertexData->vertexBufferBinding->setBinding(source, hwbuf);
+    }
+    else
+    {
+        mat->setLightingEnabled(false);
+    }
+
+    // indices
+    if (!indices.empty())
+    {
+        Mat _indices = indices.getMat();
+
+        HardwareIndexBufferSharedPtr ibuf = HardwareBufferManager::getSingleton().createIndexBuffer(
+            HardwareIndexBuffer::IT_32BIT, indices.total(), HardwareBuffer::HBU_STATIC_WRITE_ONLY);
+        ibuf->writeData(0, ibuf->getSizeInBytes(), _indices.ptr(), true);
+
+        sub->indexData->indexBuffer = ibuf;
+        sub->indexData->indexStart = 0;
+        sub->indexData->indexCount = indices.total();
+    }
+
+    AxisAlignedBox bounds(AxisAlignedBox::EXTENT_NULL);
+    for (int i = 0; i < n; i++)
+    {
+        Vec3f v = _vertices.at<Vec3f>(i);
+        bounds.merge(Vector3(v[0], v[1], v[2]));
+    }
+    mesh->_setBounds(bounds);
+}
+
 void createGridMesh(const String& name, const Size2f& size, const Size& segments)
 {
     CV_Assert_N(_app, !segments.empty());

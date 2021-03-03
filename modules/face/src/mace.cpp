@@ -106,7 +106,7 @@ struct MACEImpl CV_FINAL : MACE {
         complexInput.copyTo(dftImg(Rect(0,0,IMGSIZE,IMGSIZE)));
 
         dft(dftImg, dftImg);
-        return CV_CXX_MOVE(dftImg);
+        return std::move(dftImg);
     }
 
 

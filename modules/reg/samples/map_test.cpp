@@ -39,9 +39,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp> // OpenCV window I/O
 #include <opencv2/imgproc.hpp> // OpenCV image transformations
-#include <opencv2/imgproc/types_c.h>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
-#include <opencv2/highgui/highgui_c.h>
 
 #ifdef COMPARE_FEATURES
 #include <opencv2/xfeatures2d.hpp>
@@ -115,8 +112,8 @@ static void testShift(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testEuclidean(const Mat& img1)
@@ -152,8 +149,8 @@ static void testEuclidean(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testSimilarity(const Mat& img1)
@@ -190,8 +187,8 @@ static void testSimilarity(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testAffine(const Mat& img1)
@@ -224,8 +221,8 @@ static void testAffine(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testProjective(const Mat& img1)
@@ -256,8 +253,8 @@ static void testProjective(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 #ifdef COMPARE_FEATURES

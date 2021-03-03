@@ -33,6 +33,26 @@ if(NOT HAVE_TESSERACT
       endif()
     endif()
     set(HAVE_TESSERACT 1)
+    set(HAVE_TESSERACT 1)
+
+    # TODO use ocv_add_external_target
+    set(name "tesseract")
+    set(inc "${Tesseract_INCLUDE_DIRS}")
+    set(link "${Tesseract_LIBRARIES}")
+    set(def "")
+    if(BUILD_SHARED_LIBS)
+      set(imp IMPORTED)
+    endif()
+    add_library(ocv.3rdparty.${name} INTERFACE ${imp})
+    set_target_properties(ocv.3rdparty.${name} PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${inc}"
+      INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${inc}"
+      INTERFACE_LINK_LIBRARIES "${link}"
+      INTERFACE_COMPILE_DEFINITIONS "${def}")
+    if(NOT BUILD_SHARED_LIBS)
+      install(TARGETS ocv.3rdparty.${name} EXPORT OpenCVModules)
+    endif()
+
   else()
     message(STATUS "Tesseract:   NO")
   endif()

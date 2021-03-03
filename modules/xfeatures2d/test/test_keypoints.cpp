@@ -137,4 +137,10 @@ TEST(Features2d_Detector_Keypoints_MSDDetector, validation)
     test.safe_run();
 }
 
+TEST(Features2d_Detector_Keypoints_TBMRDetector, validation)
+{
+    CV_FeatureDetectorKeypointsTest test(xfeatures2d::TBMR::create());
+    test.safe_run();
+}
+
 }} // namespace

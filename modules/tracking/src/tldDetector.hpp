@@ -42,15 +42,15 @@
 #ifndef OPENCV_TLD_DETECTOR
 #define OPENCV_TLD_DETECTOR
 
-#include "precomp.hpp"
 #include "opencl_kernels_tracking.hpp"
 #include "tldEnsembleClassifier.hpp"
 #include "tldUtils.hpp"
 
-namespace cv
-{
-	namespace tld
-	{
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
+
 		const int STANDARD_PATCH_SIZE = 15;
 		const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
 		const int MAX_EXAMPLES_IN_MODEL = 500;
@@ -116,7 +116,6 @@ namespace cv
 		};
 
 
-	}
-}
+}}}}  // namespace
 
 #endif

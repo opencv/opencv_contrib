@@ -13,24 +13,28 @@
 // Cracki: for the idea of only converting the used patch to gray
 //
 
-#include "opencv2/tracking.hpp"
+#include "precomp.hpp"
+
+#include "opencv2/tracking/tracking_legacy.hpp"
 
 namespace cv {
-namespace tracking {
+inline namespace tracking {
+namespace impl {
+namespace {
 
-struct DummyModel : TrackerModel
+struct DummyModel : detail::tracking::TrackerModel
 {
      virtual void modelUpdateImpl() CV_OVERRIDE {}
      virtual void modelEstimationImpl( const std::vector<Mat>& ) CV_OVERRIDE {}
 };
 
-
 const double eps=0.00001;      // for normalization
 const double rate=0.2;         // learning rate
 const double psrThreshold=5.7; // no detection, if PSR is smaller than this
 
+}  // namespace
 
-struct MosseImpl CV_FINAL : TrackerMOSSE
+struct MosseImpl CV_FINAL : legacy::TrackerMOSSE
 {
 protected:
 
@@ -237,13 +241,12 @@ public:
 
 }; // MosseImpl
 
-} // tracking
+}}  // namespace
 
-
-Ptr<TrackerMOSSE> TrackerMOSSE::create()
+Ptr<legacy::tracking::TrackerMOSSE> legacy::tracking::TrackerMOSSE::create()
 {
-    return makePtr<tracking::MosseImpl>();
+    return makePtr<impl::MosseImpl>();
 }
 
 
-} // cv
+}  // namespace

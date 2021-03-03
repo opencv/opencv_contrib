@@ -186,8 +186,8 @@ namespace ximgproc
             bs_params()
             {
                 lam = 128.0;
-                A_diag_min = 1e-5;
-                cg_tol = 1e-5;
+                A_diag_min = 1e-5f;
+                cg_tol = 1e-5f;
                 cg_maxiter = 25;
             }
         };
@@ -261,7 +261,7 @@ namespace ximgproc
                     ++pix_idx;
                 }
             }
-            nvertices = hashed_coords.size();
+            nvertices = static_cast<int>(hashed_coords.size());
 
             // construct Blur matrices
             Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
@@ -373,7 +373,7 @@ namespace ximgproc
                     ++pix_idx;
                 }
             }
-            nvertices = hashed_coords.size();
+            nvertices = static_cast<int>(hashed_coords.size());
 
             // construct Blur matrices
             Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);

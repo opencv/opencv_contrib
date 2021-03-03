@@ -39,10 +39,15 @@
  //
  //M*/
 
+#include "precomp.hpp"
+#include "opencv2/tracking/tracking_legacy.hpp"
 #include "tldTracker.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace legacy {
+inline namespace tracking {
+using namespace impl;
+using namespace impl::tld;
 
 	TrackerTLD::Params::Params(){}
 
@@ -60,8 +65,11 @@ Ptr<TrackerTLD> TrackerTLD::create()
     return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl());
 }
 
-namespace tld
-{
+}}  // namespace
+
+inline namespace tracking {
+namespace impl {
+namespace tld {
 
 TrackerTLDImpl::TrackerTLDImpl(const TrackerTLD::Params &parameters) :
     params( parameters )
@@ -323,6 +331,4 @@ void Data::printme(FILE*  port)
     dfprintf((port, "\tminSize = %dx%d\n", minSize.width, minSize.height));
 }
 
-}
-
-}
+}}}}  // namespace

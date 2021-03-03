@@ -54,6 +54,7 @@ using namespace cv::cuda;
 
 cv::cuda::SURF_CUDA::SURF_CUDA() { throw_no_nonfree }
 cv::cuda::SURF_CUDA::SURF_CUDA(double, int, int, bool, float, bool) { throw_no_nonfree }
+Ptr<SURF_CUDA> cv::cuda::SURF_CUDA::create(double, int, int, bool, float, bool) { throw_no_nonfree }
 int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_nonfree }
 int cv::cuda::SURF_CUDA::defaultNorm() const { throw_no_nonfree }
 void cv::cuda::SURF_CUDA::uploadKeypoints(const std::vector<KeyPoint>&, GpuMat&) { throw_no_nonfree }
@@ -71,6 +72,7 @@ void cv::cuda::SURF_CUDA::releaseMemory() { throw_no_nonfree }
 
 cv::cuda::SURF_CUDA::SURF_CUDA() { throw_no_cuda(); }
 cv::cuda::SURF_CUDA::SURF_CUDA(double, int, int, bool, float, bool) { throw_no_cuda(); }
+Ptr<SURF_CUDA> cv::cuda::SURF_CUDA::create(double, int, int, bool, float, bool) { throw_no_cuda(); }
 int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_cuda(); }
 int cv::cuda::SURF_CUDA::defaultNorm() const { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::uploadKeypoints(const std::vector<KeyPoint>&, GpuMat&) { throw_no_cuda(); }
@@ -449,6 +451,12 @@ void cv::cuda::SURF_CUDA::releaseMemory()
     det.release();
     trace.release();
     maxPosBuffer.release();
+}
+
+Ptr<SURF_CUDA> cv::cuda::SURF_CUDA::create(double _hessianThreshold, int _nOctaves,
+    int _nOctaveLayers, bool _extended, float _keypointsRatio, bool _upright)
+{
+    return makePtr<SURF_CUDA>(_hessianThreshold, _nOctaves, _nOctaveLayers, _extended, _keypointsRatio, _upright);
 }
 
 #endif // !defined (OPENCV_ENABLE_NONFREE)

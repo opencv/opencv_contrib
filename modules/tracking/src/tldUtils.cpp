@@ -39,13 +39,14 @@
  //
  //M*/
 
+#include "precomp.hpp"
 #include "tldUtils.hpp"
 
 
-namespace cv
-{
-namespace tld
-{
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
 
 //Debug functions and variables
 Rect2d etalon(14.0, 110.0, 20.0, 20.0);
@@ -192,4 +193,4 @@ void resample(const Mat& img, const Rect2d& r2, Mat_<uchar>& samples)
 }
 
 
-}}
+}}}}  // namespace

@@ -42,18 +42,17 @@
 #ifndef OPENCV_TLD_TRACKER
 #define OPENCV_TLD_TRACKER
 
-#include "precomp.hpp"
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/imgproc.hpp"
 #include "tldModel.hpp"
-#include<algorithm>
-#include<limits.h>
+#include <algorithm>
+#include <limits.h>
 
-namespace cv
-{
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
 
-namespace tld
-{
 class TrackerProxy
 {
 public:
@@ -168,7 +167,6 @@ public:
 
 };
 
-}
-}
+}}}}  // namespace
 
 #endif
