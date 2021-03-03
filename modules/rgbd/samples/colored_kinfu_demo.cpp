@@ -209,7 +209,7 @@ int main(int argc, char **argv)
             if(!idle)
             {
                 imshow("depth", cvt8);
-
+                //std::cout << rgb_frame.rows << " " << rgb_frame.cols << std::endl;
                 if(!kf->update(frame, rgb_frame))
                 {
                     kf->reset();

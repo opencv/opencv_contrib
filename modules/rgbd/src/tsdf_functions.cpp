@@ -431,7 +431,7 @@ void integrateRGBVolumeUnit(
     cv::Affine3f vpose(_pose);
     Depth depth = _depth.getMat();
     Rgb color = _rgb.getMat();
-
+    //std::cout << color << std::endl;
     Range integrateRange(0, volResolution.x);
 
     Mat volume = _volume.getMat();
@@ -512,7 +512,12 @@ void integrateRGBVolumeUnit(
                     if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
                         continue;
                     float pixNorm = pixNorms.at<float>(_v, _u);
-                    Point3i colorRGB = color.at<Point3i>(_v, _u);
+                    if (!(_u >= 0 && _u < color.cols && _v >= 0 && _v < color.rows))
+                        continue;
+
+                    Vec4f colorRGB = color.at<Vec4f>(_v, _u);
+                    //std::cout << colorRGB << std::endl;
+                    //std::cout << color.type() << std::endl;
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm * (v * dfac - camSpacePt.z);
                     // possible alternative is:
@@ -528,11 +533,23 @@ void integrateRGBVolumeUnit(
                         ColorType& g = voxel.g;
                         ColorType& b = voxel.b;
 
-                        // update TSDF
-                        r = (ColorType) ((int) (r * weight) + (colorRGB.x) / 65536) / (weight + 1);
-                        g = (ColorType) ((int) (g * weight) + (colorRGB.y) / 65536) / (weight + 1);
-                        b = (ColorType) ((int) (b * weight) + (colorRGB.z) / 65536) / (weight + 1);
+                        /*
+                        if (abs(((float)(r + g + b)) - (colorRGB.x + colorRGB.y + colorRGB.z)) < 1000 || weight < 1)
+                        {
+                            r = (ColorType)((int)(r * weight) + (colorRGB.x) / 65536) / (weight + 1);
+                            g = (ColorType)((int)(g * weight) + (colorRGB.y) / 65536) / (weight + 1);
+                            b = (ColorType)((int)(b * weight) + (colorRGB.z) / 65536) / (weight + 1);
+                        }
+                        */
+                        if (abs(((float)(r + g + b)) - (colorRGB[0] + colorRGB[1] + colorRGB[2])) < 1000 || weight < 1)
+                        {
+                            r = (ColorType)((float)(r * weight) + (colorRGB[0])) / (weight + 1);
+                            g = (ColorType)((float)(g * weight) + (colorRGB[1])) / (weight + 1);
+                            b = (ColorType)((float)(b * weight) + (colorRGB[2])) / (weight + 1);
+                        }
                         //std::cout<<"("<<r<<" "<<g<<" "<<b<<") ["<<colorRGB<<"]"<<std::endl;
+
+                        // update TSDF
                         value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));
                         weight = min(int(weight + 1), int(maxWeight));
                     }

@@ -156,6 +156,11 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
     Depth depth = _depth.getMat();
     Rgb rgb = _rgb.getMat();
 
+    std::cout << "+rgb   " << rgb.rows << " " << rgb.cols << std::endl;
+    std::cout << "+depth " << depth.rows << " " << depth.cols << std::endl;
+
+    //std::cout << rgb.rows << " " << rgb.cols << std::endl;
+    //std::cout << rgb << std::endl;
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
         intrinsics.cx, intrinsics.cy);
@@ -279,12 +284,16 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
         }
     return Point3f(r / 24.f, g / 24.f, b / 24.f);
     */
-    /*
+
+    float mainRGBsum = (float) (volData[coordBase].r + volData[coordBase].g + volData[coordBase].b);
+
+    
     float counter = 0;
     //std::cout << "======" << std::endl;
     for (int i = 0; i < 8; i++)
     {
-        if (volData[neighbourCoords[i] + coordBase].r == volData[neighbourCoords[i] + coordBase].r)
+        float sum = (float) (volData[neighbourCoords[i] + coordBase].r + volData[neighbourCoords[i] + coordBase].g + volData[neighbourCoords[i] + coordBase].b );
+        if (volData[neighbourCoords[i] + coordBase].r == volData[neighbourCoords[i] + coordBase].r && abs(sum - mainRGBsum) < 1000)
         {
             r += (float) volData[neighbourCoords[i] + coordBase].r;
             g += (float) volData[neighbourCoords[i] + coordBase].g;
@@ -293,9 +302,9 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
             counter+=1.0f;
         }
     }
-    */
-    //Point3f res(r / counter, g / counter, b / counter);
-    Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
+    
+    Point3f res(r / counter, g / counter, b / counter);
+    //Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
     //std::cout << counter << " " << res << std::endl;
     return res;
 
