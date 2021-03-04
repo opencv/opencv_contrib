@@ -66,7 +66,7 @@ public:
         const kinfu::Intr& intrinsics, const int frameId = 0) override 
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
-        const kinfu::Intr& intrinsics, const int frameId = 0) override;
+        const kinfu::Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId = 0) override;
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
         OutputArray points, OutputArray normals, OutputArray colors) const override;
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
@@ -149,7 +149,7 @@ RGBTsdfVoxel ColoredTSDFVolumeCPU::at(const Vec3i& volumeIdx) const
 
 // use depth instead of distance (optimization)
 void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
-                              const Intr& intrinsics, const int frameId)
+                              const Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
     CV_UNUSED(frameId);
@@ -173,7 +173,7 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
     }
 
     integrateRGBVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution, volStrides, depth, rgb,
-        depthFactor, cameraPose, intrinsics, pixNorms, volume);
+        depthFactor, cameraPose, intrinsics, rgb_intrinsics, pixNorms, volume);
 }
 
 

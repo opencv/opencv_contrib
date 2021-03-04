@@ -84,6 +84,7 @@ struct CV_EXPORTS_W Params
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
+    CV_PROP_RW Matx33f rgb_intr;
 
     /** @brief pre-scale per 1 meter for input values
 

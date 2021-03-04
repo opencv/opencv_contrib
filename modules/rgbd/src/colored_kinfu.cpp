@@ -41,6 +41,24 @@ Ptr<Params> Params::defaultParams()
                       0, fy, cy,
                       0,  0,  1);
 
+    float rgb_fx, rgb_fy, rgb_cx, rgb_cy;
+    rgb_fx = rgb_fy = 525.f;
+    //rgb_cx = p.frameSize.width / 2 - 0.5f;
+    //rgb_cy = p.frameSize.height / 2 - 0.5f;
+    rgb_cx = 319.5f;
+    rgb_cy = 239.5f;
+    p.rgb_intr = Matx33f(rgb_fx, 0, rgb_cx, 0, rgb_fy, rgb_cy, 0, 0, 1);
+
+    /*
+    static const Size rgb_frameSize = Size(640, 480);
+static const float rgb_focal = 525.0f;
+static const float rgb_cx = 319.5f;
+static const float rgb_cy = 239.5f;
+static const float rgb_k1 = 0.0f;
+static const float rgb_k2 = 0.0f;
+static const float rgb_k3 = 0.0f
+    */
+
     // 5000 for the 16-bit PNG files
     // 1 for the 32-bit float images in the ROS bag files
     p.depthFactor = 5000;
@@ -256,6 +274,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     //std::cout << rgb << std::endl;
     //std::cout << "-rgb   " << rgb.rows << " " << rgb.cols << std::endl;
     //std::cout << "-depth " << depth.rows << " " << depth.cols << std::endl;
+    
     std::vector<MatType> newPoints, newNormals, newColors;
     makeColoredFrameFromDepth(depth, newPoints, newNormals, newColors, params.intr,
                        params.pyramidLevels,
@@ -267,7 +286,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     if(frameCounter == 0)
     {
         // use depth instead of distance
-        volume->integrate(depth, rgb, params.depthFactor, pose, params.intr);
+        volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
         pyrColors  = newColors;
@@ -287,7 +306,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, rgb, params.depthFactor, pose, params.intr);
+            volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
         }
         MatType& points  = pyrPoints [0];
         MatType& normals = pyrNormals[0];

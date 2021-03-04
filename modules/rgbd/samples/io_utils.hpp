@@ -110,6 +110,15 @@ static const float cy    = 247.6f;
 static const float k1    = 0.0f;
 static const float k2    = 0.0f;
 static const float k3    = 0.0f;
+
+static const Size rgb_frameSize = Size(640, 480);
+static const float rgb_focal = 525.0f;
+static const float rgb_cx = 319.5f;
+static const float rgb_cy = 239.5f;
+static const float rgb_k1 = 0.0f;
+static const float rgb_k2 = 0.0f;
+static const float rgb_k3 = 0.0f;
+
 };  // namespace Kinect2Params
 
 struct DepthSource
@@ -522,7 +531,7 @@ struct RGBSource
 
     bool empty() { return rgbFileList.empty() && !(vc.isOpened()); }
 
-    void updateIntrinsics(Matx33f& _intrinsics, Size& _frameSize, float& _depthFactor)
+    void updateIntrinsics(Matx33f& _intrinsics, Matx33f& _rgb_intrinsics, Size& _frameSize, float& _depthFactor)
     {
         if (vc.isOpened())
         {
@@ -532,15 +541,20 @@ struct RGBSource
 
             // it's recommended to calibrate sensor to obtain its intrinsics
             float fx, fy, cx, cy;
+            float rgb_fx, rgb_fy, rgb_cx, rgb_cy;
             float depthFactor = 1000.f;
-            Size frameSize;
+            Size frameSize, rgb_frameSize;
             if (sourceType == Type::RGB_KINECT2)
             {
-                fx = fy = Kinect2Params::rgb_focal;
-                cx      = Kinect2Params::rgb_cx;
-                cy      = Kinect2Params::rgb_cy;
+                fx = fy = Kinect2Params::focal;
+                cx = Kinect2Params::cx;
+                cy = Kinect2Params::cy;
+                
+                rgb_fx = rgb_fy = Kinect2Params::rgb_focal;
+                rgb_cx      = Kinect2Params::rgb_cx;
+                rgb_cy      = Kinect2Params::rgb_cy;
 
-                frameSize = Kinect2Params::rgb_frameSize;
+                rgb_frameSize = Kinect2Params::rgb_frameSize;
             }
             else if (sourceType == Type::RGB_ASTRA)
             {
@@ -550,6 +564,12 @@ struct RGBSource
                 cy      = AstraParams::cy;
 
                 frameSize = AstraParams::frameSize;
+
+                rgb_fx = rgb_fy = AstraParams::rgb_focal;
+                rgb_cx = AstraParams::rgb_cx;
+                rgb_cy = AstraParams::rgb_cy;
+
+                rgb_frameSize = AstraParams::rgb_frameSize;
             }
             else
             {
@@ -573,7 +593,9 @@ struct RGBSource
             }
 
             Matx33f camMatrix = Matx33f(fx, 0, cx, 0, fy, cy, 0, 0, 1);
+            Matx33f rgb_camMatrix = Matx33f(rgb_fx, 0, rgb_cx, 0, rgb_fy, rgb_cy, 0, 0, 1);
             _intrinsics       = camMatrix;
+            _rgb_intrinsics   = rgb_camMatrix;
             _frameSize        = frameSize;
             _depthFactor      = depthFactor;
         }
@@ -611,7 +633,7 @@ struct RGBSource
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
+            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize, params.depthFactor);
             updateVolumeParams(params.volumeParams.resolution, params.volumeParams.voxelSize,
                                params.volumeParams.tsdfTruncDist, params.volumeParams.pose,
                                params.truncateThreshold);
@@ -634,7 +656,7 @@ struct RGBSource
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
+            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize, params.depthFactor);
             updateVolumeParams(params.volumeDims, params.voxelSize,
                                params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
@@ -656,7 +678,7 @@ struct RGBSource
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
+            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize, params.depthFactor);
             updateVolumeParams(params.volumeDims, params.voxelSize,
                                params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
