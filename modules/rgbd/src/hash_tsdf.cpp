@@ -898,13 +898,15 @@ public:
     void markActive(const Matx44f& cameraPose, const Intr& intrinsics, const Size frameSz, const int frameId);
 
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
-        const kinfu::Intr& intrinsics, const int frameId = 0) override {};
+        const kinfu::Intr& intrinsics, const int frameId = 0) override
+        { CV_Error(Error::StsNotImplemented, "Not implemented"); };
     void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
         const int frameId = 0) override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize, OutputArray points,
         OutputArray normals) const override;
     void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
-        OutputArray points, OutputArray normals, OutputArray colors) const override {};
+        OutputArray points, OutputArray normals, OutputArray colors) const override
+        { CV_Error(Error::StsNotImplemented, "Not implemented"); };
 
     void fetchNormals(InputArray points, OutputArray _normals) const override;
     void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
