@@ -254,8 +254,8 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         rgb = _rgb;
 
     //std::cout << rgb << std::endl;
-    std::cout << "-rgb   " << rgb.rows << " " << rgb.cols << std::endl;
-    std::cout << "-depth " << depth.rows << " " << depth.cols << std::endl;
+    //std::cout << "-rgb   " << rgb.rows << " " << rgb.cols << std::endl;
+    //std::cout << "-depth " << depth.rows << " " << depth.cols << std::endl;
     std::vector<MatType> newPoints, newNormals, newColors;
     makeColoredFrameFromDepth(depth, newPoints, newNormals, newColors, params.intr,
                        params.pyramidLevels,

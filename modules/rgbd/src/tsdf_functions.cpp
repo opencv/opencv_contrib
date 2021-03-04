@@ -509,13 +509,16 @@ void integrateRGBVolumeUnit(
 
                     int _u = projected.x;
                     int _v = projected.y;
-                    if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows))
+                    int _uShift = 5;
+                    int _vShift = -5;
+                    if (!(_v >= 0 && _v < depth.rows && _u >= 0 && _u < depth.cols  &&
+                        (_v + _vShift) >= 0 && (_v + _vShift) < depth.rows && (_u + _uShift) >= 0 && (_u + _uShift) < depth.cols))
                         continue;
                     float pixNorm = pixNorms.at<float>(_v, _u);
-                    if (!(_u >= 0 && _u < color.cols && _v >= 0 && _v < color.rows))
-                        continue;
+                    //if (!(_u >= 0 && _u < color.cols && _v >= 0 && _v < color.rows))
+                    //    continue;
 
-                    Vec4f colorRGB = color.at<Vec4f>(_v, _u);
+                    Vec3f colorRGB = color.at<Vec3f>(_v + _vShift, _u + _uShift);
                     //std::cout << colorRGB << std::endl;
                     //std::cout << color.type() << std::endl;
                     // difference between distances of point and of surface to camera
