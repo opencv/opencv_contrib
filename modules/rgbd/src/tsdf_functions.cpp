@@ -439,7 +439,7 @@ void integrateRGBVolumeUnit(
     const Intr::Projector proj(intrinsics.makeProjector());
 
     const Intr::Projector projRGB(rgb_intrinsics);
-    std::cout << rgb_intrinsics.cx << " " << rgb_intrinsics.cy << " " << rgb_intrinsics.fx << " " << rgb_intrinsics.fy << " " << std::endl;
+    //std::cout << rgb_intrinsics.cx << " " << rgb_intrinsics.cy << " " << rgb_intrinsics.fx << " " << rgb_intrinsics.fy << " " << std::endl;
     const cv::Affine3f vol2cam(Affine3f(cameraPose.inv()) * vpose);
     const float truncDistInv(1.f / truncDist);
     const float dfac(1.f / depthFactor);

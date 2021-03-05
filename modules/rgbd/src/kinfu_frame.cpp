@@ -327,14 +327,16 @@ struct ComputePointsNormalsInvoker : ParallelLoopBody
 
 struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
 {
-    ComputePointsNormalsColorsInvoker(const Depth& _depth, Points& _points, Normals& _normals, Colors& _colors,
-                                const Intr::Reprojector& _reproj, float _dfac) :
+    ComputePointsNormalsColorsInvoker(const Depth& _depth, const Colors& _rgb, Points& _points, Normals& _normals, Colors& _colors,
+                                const Intr::Reprojector& _reproj, const Intr::Reprojector& _rgb_reproj, float _dfac) :
         ParallelLoopBody(),
         depth(_depth),
+        rgb(_rgb),
         points(_points),
         normals(_normals),
         colors(_colors),
         reproj(_reproj),
+        rgb_reproj(_rgb_reproj),
         dfac(_dfac)
     { }
 
@@ -354,7 +356,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                 depthType z00 = d00*dfac;
                 Point3f v00 = reproj(Point3f((float)x, (float)y, z00));
 
-                Point3f p = nan3, n = nan3;
+                Point3f p = nan3, n = nan3, c = nan3;
 
                 if(x < depth.cols - 1 && y < depth.rows - 1)
                 {
@@ -374,21 +376,24 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                         cv::Vec3f vec = (v01-v00).cross(v10-v00);
                         n = -normalize(vec);
                         p = v00;
+                        c = rgb.at<Vec3f>(y, x);
                     }
                 }
 
                 ptsRow[x] = toPtype(p);
                 normRow[x] = toPtype(n);
-                clrRow[x] = toPtype(nan3);
+                clrRow[x] = toPtype(c);
             }
         }
     }
 
     const Depth& depth;
+    const Colors& rgb;
     Points& points;
     Normals& normals;
     Colors& colors;
     const Intr::Reprojector& reproj;
+    const Intr::Reprojector& rgb_reproj;
     float dfac;
 };
 
@@ -414,8 +419,8 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
     parallel_for_(range, ci, nstripes);
 }
 
-void computePointsNormalsColors(const Intr intr, float depthFactor, const Depth depth,
-                          Points points, Normals normals, Colors colors)
+void computePointsNormalsColors(const Intr intr, const Intr rgb_intr, float depthFactor,
+    const Depth depth, const Colors rgb, Points points, Normals normals, Colors colors)
 {
     CV_TRACE_FUNCTION();
 
@@ -430,8 +435,9 @@ void computePointsNormalsColors(const Intr intr, float depthFactor, const Depth 
     float dfac = 1.f/depthFactor;
 
     Intr::Reprojector reproj = intr.makeReprojector();
+    Intr::Reprojector reprojRGB = rgb_intr.makeReprojector();
 
-    ComputePointsNormalsColorsInvoker ci(depth, points, normals, colors, reproj, dfac);
+    ComputePointsNormalsColorsInvoker ci(depth, rgb, points, normals, colors, reproj, reprojRGB, dfac);
     Range range(0, depth.rows);
     const int nstripes = -1;
     parallel_for_(range, ci, nstripes);
@@ -826,9 +832,9 @@ void makeFrameFromDepth(InputArray _depth,
     }
 }
 
-void makeColoredFrameFromDepth(InputArray _depth,
+void makeColoredFrameFromDepth(InputArray _depth, InputArray _rgb,
                         OutputArray pyrPoints, OutputArray pyrNormals, OutputArray pyrColors,
-                        const Intr intr, int levels, float depthFactor,
+                        const Intr intr, const Intr rgb_intr, int levels, float depthFactor,
                         float sigmaDepth, float sigmaSpatial, int kernelSize,
                         float truncateThreshold)
 {
@@ -843,7 +849,7 @@ void makeColoredFrameFromDepth(InputArray _depth,
     CV_Assert(kc == _InputArray::STD_ARRAY_MAT || kc == _InputArray::STD_VECTOR_MAT);
 
     Depth depth = _depth.getMat();
-
+    Colors rgb  = _rgb.getMat();
     // looks like OpenCV's bilateral filter works the same as KinFu's
     Depth smooth;
     Depth depthNoNans = depth.clone();
@@ -875,7 +881,7 @@ void makeColoredFrameFromDepth(InputArray _depth,
         Normals n = pyrNormals.getMatRef(i);
         Colors  c = pyrColors. getMatRef(i);
 
-        computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
+        computePointsNormalsColors(intr.scale(i), rgb_intr.scale(i), depthFactor, scaled, rgb, p, n, c);
 
         if(i < levels - 1)
         {
