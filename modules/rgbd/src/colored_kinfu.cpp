@@ -42,9 +42,11 @@ Ptr<Params> Params::defaultParams()
                       0,  0,  1);
 
     float rgb_fx, rgb_fy, rgb_cx, rgb_cy;
-    rgb_fx = rgb_fy = 525.f;
-    //rgb_cx = p.frameSize.width / 2 - 0.5f;
-    //rgb_cy = p.frameSize.height / 2 - 0.5f;
+    //rgb_fx = rgb_fy = 525.f;
+    //rgb_cx = 319.5f;
+    //rgb_cy = 239.5f;
+    rgb_fx = 515.0f;
+    rgb_fy = 550.0f;
     rgb_cx = 319.5f;
     rgb_cy = 239.5f;
     p.rgb_intr = Matx33f(rgb_fx, 0, rgb_cx, 0, rgb_fy, rgb_cy, 0, 0, 1);
