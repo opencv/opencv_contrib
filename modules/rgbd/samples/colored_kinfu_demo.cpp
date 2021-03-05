@@ -168,9 +168,8 @@ int main(int argc, char **argv)
     {
         if(depthWriter)
             depthWriter->append(frame);
-        //std::cout << << std::endl;
         UMat rgb_frame = rgbs->getRGB();
-        //imshow("rgb", rgb_frame);
+
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
@@ -209,11 +208,10 @@ int main(int argc, char **argv)
             if(!idle)
             {
                 imshow("depth", cvt8);
-                //std::cout << rgb_frame.rows << " " << rgb_frame.cols << std::endl;
+                imshow("rgb", rgb_frame);
                 if(!kf->update(frame, rgb_frame))
                 {
                     kf->reset();
-                    //std::cout << "reset" << std::endl;
                 }
 #ifdef HAVE_OPENCV_VIZ
                 else

@@ -158,11 +158,6 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
     Depth depth = _depth.getMat();
     Rgb rgb = _rgb.getMat();
 
-    //std::cout << "+rgb   " << rgb.rows << " " << rgb.cols << std::endl;
-    //std::cout << "+depth " << depth.rows << " " << depth.cols << std::endl;
-
-    //std::cout << rgb.rows << " " << rgb.cols << std::endl;
-    //std::cout << rgb << std::endl;
     Vec6f newParams((float)depth.rows, (float)depth.cols,
         intrinsics.fx, intrinsics.fy,
         intrinsics.cx, intrinsics.cy);
@@ -276,22 +271,11 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
     float r = 0, g = 0, b = 0;
-    /*
-    for(int i = 0; i < 8; i++)
-        for (int c = 0; c < 3; c++)
-        {
-            r = volData[neighbourCoords[i] + coordBase + 1 * volDims[c]].r;
-            g = volData[neighbourCoords[i] + coordBase + 1 * volDims[c]].g;
-            b = volData[neighbourCoords[i] + coordBase + 1 * volDims[c]].b;
-        }
-    return Point3f(r / 24.f, g / 24.f, b / 24.f);
-    */
+    
+    // TODO: create better interpolation or remove this simple version
     /*
     float mainRGBsum = (float) (volData[coordBase].r + volData[coordBase].g + volData[coordBase].b);
-
-    
     float counter = 0;
-    //std::cout << "======" << std::endl;
     for (int i = 0; i < 8; i++)
     {
         float sum = (float) (volData[neighbourCoords[i] + coordBase].r + volData[neighbourCoords[i] + coordBase].g + volData[neighbourCoords[i] + coordBase].b );
@@ -300,15 +284,12 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
             r += (float) volData[neighbourCoords[i] + coordBase].r;
             g += (float) volData[neighbourCoords[i] + coordBase].g;
             b += (float) volData[neighbourCoords[i] + coordBase].b;
-            //std::cout <<r <<" " << g << " " << b << std::endl;
             counter+=1.0f;
         }
     }
-    
     Point3f res(r / counter, g / counter, b / counter);
     */
     Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
-    //std::cout << counter << " " << res << std::endl;
     return res;
 
     

@@ -431,7 +431,6 @@ void integrateRGBVolumeUnit(
     cv::Affine3f vpose(_pose);
     Depth depth = _depth.getMat();
     Rgb color = _rgb.getMat();
-    //std::cout << color << std::endl;
     Range integrateRange(0, volResolution.x);
 
     Mat volume = _volume.getMat();
@@ -439,7 +438,6 @@ void integrateRGBVolumeUnit(
     const Intr::Projector proj(intrinsics.makeProjector());
 
     const Intr::Projector projRGB(rgb_intrinsics);
-    //std::cout << rgb_intrinsics.cx << " " << rgb_intrinsics.cy << " " << rgb_intrinsics.fx << " " << rgb_intrinsics.fy << " " << std::endl;
     const cv::Affine3f vol2cam(Affine3f(cameraPose.inv()) * vpose);
     const float truncDistInv(1.f / truncDist);
     const float dfac(1.f / depthFactor);
@@ -519,23 +517,13 @@ void integrateRGBVolumeUnit(
                     
                     int rgb_u = projectedRGB.x;
                     int rgb_v = projectedRGB.y;
-                    //std::cout <<_u << " " << _v << " | " << rgb_u << " " << rgb_v << std::endl;
 
                     if (!(_v >= 0 && _v < depth.rows && _u >= 0 && _u < depth.cols  &&
-                        //(_v + _vShift) >= 0 && (_v + _vShift) < depth.rows && (_u + _uShift) >= 0 && (_u + _uShift) < depth.cols))
                         rgb_v >= 0 && rgb_v < depth.rows && rgb_u >= 0 && rgb_u < depth.cols))
                         continue;
                     
-                    //std::cout << "pix " << _v << " " << _u << " | rgb " << rgb_v << " "<< rgb_u << std::endl;
-
                     float pixNorm = pixNorms.at<float>(_v, _u);
-                    //if (!(_u >= 0 && _u < color.cols && _v >= 0 && _v < color.rows))
-                    //    continue;
-
-                    //Vec3f colorRGB = color.at<Vec3f>(_v + _vShift, _u + _uShift);
                     Vec3f colorRGB = color.at<Vec3f>(rgb_v, rgb_u);
-                    //std::cout << colorRGB << std::endl;
-                    //std::cout << color.type() << std::endl;
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm * (v * dfac - camSpacePt.z);
                     // possible alternative is:
@@ -551,21 +539,13 @@ void integrateRGBVolumeUnit(
                         ColorType& g = voxel.g;
                         ColorType& b = voxel.b;
 
-                        /*
-                        if (abs(((float)(r + g + b)) - (colorRGB.x + colorRGB.y + colorRGB.z)) < 1000 || weight < 1)
-                        {
-                            r = (ColorType)((int)(r * weight) + (colorRGB.x) / 65536) / (weight + 1);
-                            g = (ColorType)((int)(g * weight) + (colorRGB.y) / 65536) / (weight + 1);
-                            b = (ColorType)((int)(b * weight) + (colorRGB.z) / 65536) / (weight + 1);
-                        }
-                        */
+                        // update RGB
                         if (abs(((float)(r + g + b)) - (colorRGB[0] + colorRGB[1] + colorRGB[2])) < 1000 || weight < 1)
                         {
                             r = (ColorType)((float)(r * weight) + (colorRGB[0])) / (weight + 1);
                             g = (ColorType)((float)(g * weight) + (colorRGB[1])) / (weight + 1);
                             b = (ColorType)((float)(b * weight) + (colorRGB[2])) / (weight + 1);
                         }
-                        //std::cout<<"("<<r<<" "<<g<<" "<<b<<") ["<<colorRGB<<"]"<<std::endl;
 
                         // update TSDF
                         value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));

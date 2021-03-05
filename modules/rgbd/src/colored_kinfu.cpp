@@ -42,14 +42,13 @@ Ptr<Params> Params::defaultParams()
                       0,  0,  1);
 
     float rgb_fx, rgb_fy, rgb_cx, rgb_cy;
-    //rgb_fx = rgb_fy = 525.f;
-    //rgb_cx = 319.5f;
-    //rgb_cy = 239.5f;
     rgb_fx = 515.0f;
     rgb_fy = 550.0f;
     rgb_cx = 319.5f;
     rgb_cy = 239.5f;
-    p.rgb_intr = Matx33f(rgb_fx, 0, rgb_cx, 0, rgb_fy, rgb_cy, 0, 0, 1);
+    p.rgb_intr = Matx33f(rgb_fx,      0, rgb_cx,
+                              0, rgb_fy, rgb_cy,
+                              0,      0,      1);
 
     /*
     static const Size rgb_frameSize = Size(640, 480);
@@ -272,10 +271,6 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         _rgb.convertTo(rgb, COLOR_TYPE);
     else
         rgb = _rgb;
-
-    //std::cout << rgb << std::endl;
-    //std::cout << "-rgb   " << rgb.rows << " " << rgb.cols << std::endl;
-    //std::cout << "-depth " << depth.rows << " " << depth.cols << std::endl;
     
     std::vector<MatType> newPoints, newNormals, newColors;
     makeColoredFrameFromDepth(depth, rgb, 
@@ -343,7 +338,6 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
     {
         MatType points, normals, colors;
         volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
-        //renderPointsNormals(points, normals, image, params.lightPose);
         renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
     }
 }
