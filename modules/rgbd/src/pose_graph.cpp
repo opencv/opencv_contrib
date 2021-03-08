@@ -28,14 +28,14 @@ bool PoseGraph::isValid() const
     std::unordered_set<int> nodesVisited;
     std::vector<int> nodesToVisit;
 
-    nodesToVisit.push_back(nodes.at(0).getId());
+    nodesToVisit.push_back(nodes.begin()->first);
 
     bool isGraphConnected = false;
     while (!nodesToVisit.empty())
     {
         int currNodeId = nodesToVisit.back();
         nodesToVisit.pop_back();
-        std::cout << "Visiting node: " << currNodeId << "\n";
+        //std::cout << "Visiting node: " << currNodeId << "\n";
         nodesVisited.insert(currNodeId);
         // Since each node does not maintain its neighbor list
         for (int i = 0; i < numEdges; i++)
@@ -53,8 +53,8 @@ bool PoseGraph::isValid() const
             }
             if (nextNodeId != -1)
             {
-                std::cout << "Next node: " << nextNodeId << " " << nodesVisited.count(nextNodeId)
-                          << std::endl;
+                //std::cout << "Next node: " << nextNodeId << " " << nodesVisited.count(nextNodeId)
+                //          << std::endl;
                 if (nodesVisited.count(nextNodeId) == 0)
                 {
                     nodesToVisit.push_back(nextNodeId);
@@ -82,10 +82,62 @@ bool PoseGraph::isValid() const
 }
 
 #if defined(CERES_FOUND) && defined(HAVE_EIGEN)
+
+class MyQuaternionParameterization
+    : public ceres::LocalParameterization {
+public:
+    virtual ~MyQuaternionParameterization() {}
+    bool Plus(const double* x_ptr, const double* delta_ptr, double* x_plus_delta_ptr) const override
+    {
+        Vec4d vx(x_ptr);
+        Quatd x(vx);
+        Vec3d delta(delta_ptr);
+
+        const double norm_delta = norm(delta);
+        Quatd x_plus_delta;
+        if (norm_delta > 0.0)
+        {
+            const double sin_delta_by_delta = std::sin(norm_delta) / norm_delta;
+
+            // Note, in the constructor w is first.
+            Quatd delta_q(std::cos(norm_delta),
+                          sin_delta_by_delta * delta[0],
+                          sin_delta_by_delta * delta[1],
+                          sin_delta_by_delta * delta[2]);
+            x_plus_delta = delta_q * x;
+        }
+        else
+        {
+            x_plus_delta = x;
+        }
+
+        Vec4d xpd = x_plus_delta.toVec();
+        x_plus_delta_ptr[0] = xpd[0];
+        x_plus_delta_ptr[1] = xpd[1];
+        x_plus_delta_ptr[2] = xpd[2];
+        x_plus_delta_ptr[3] = xpd[3];
+
+        return true;
+    }
+
+    bool ComputeJacobian(const double* x, double* jacobian) const override
+    {
+        // clang-format off
+        jacobian[0] = -x[1];  jacobian[1]  = -x[2];   jacobian[2]  = -x[3];
+        jacobian[3] =  x[0];  jacobian[4]  =  x[3];   jacobian[5]  = -x[2];
+        jacobian[6] = -x[3];  jacobian[7]  =  x[0];   jacobian[8]  =  x[1];
+        jacobian[9] =  x[2];  jacobian[10] = -x[1];   jacobian[11] =  x[0];
+        // clang-format on
+        return true;
+    }
+
+    int GlobalSize() const override { return 4; }
+    int LocalSize() const override { return 3; }
+};
+
 void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& problem)
 {
     int numEdges = poseGraph.getNumEdges();
-    int numNodes = poseGraph.getNumNodes();
     if (numEdges == 0)
     {
         CV_Error(Error::StsBadArg, "PoseGraph has no edges, no optimization to be done");
@@ -97,34 +149,48 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
     ceres::LocalParameterization* quatLocalParameterization =
         new ceres::EigenQuaternionParameterization;
 
-    for (int currEdgeNum = 0; currEdgeNum < numEdges; ++currEdgeNum)
+    for (const PoseGraphEdge& currEdge : poseGraph.edges)
     {
-        const PoseGraphEdge& currEdge = poseGraph.edges.at(currEdgeNum);
-        int sourceNodeId              = currEdge.getSourceNodeId();
-        int targetNodeId              = currEdge.getTargetNodeId();
-        Pose3d& sourcePose            = poseGraph.nodes.at(sourceNodeId).se3Pose;
-        Pose3d& targetPose            = poseGraph.nodes.at(targetNodeId).se3Pose;
+        int sourceNodeId = currEdge.getSourceNodeId();
+        int targetNodeId = currEdge.getTargetNodeId();
+        Pose3d& sourcePose = poseGraph.nodes.at(sourceNodeId).se3Pose;
+        Pose3d& targetPose = poseGraph.nodes.at(targetNodeId).se3Pose;
 
-        const Matx66f& informationMatrix = currEdge.information;
+        // -------
+
+        Eigen::Matrix<double, 6, 6> info;
+        cv2eigen(Matx66d(currEdge.information), info);
+        const Eigen::Matrix<double, 6, 6> sqrt_information = info.llt().matrixL();
+        Matx66d sqrtInfo;
+        eigen2cv(sqrt_information, sqrtInfo);
 
         ceres::CostFunction* costFunction = Pose3dErrorFunctor::create(
             Pose3d(currEdge.transformation.rotation(), currEdge.transformation.translation()),
-            informationMatrix);
+            sqrtInfo);
 
-        problem.AddResidualBlock(costFunction, lossFunction, sourcePose.t.data(),
-                                 sourcePose.r.coeffs().data(), targetPose.t.data(),
-                                 targetPose.r.coeffs().data());
-        problem.SetParameterization(sourcePose.r.coeffs().data(), quatLocalParameterization);
-        problem.SetParameterization(targetPose.r.coeffs().data(), quatLocalParameterization);
+        // -------
+
+        ceres::CostFunction* costFunction2 = Pose3dAnalyticCostFunction::create(
+            Vec3d(currEdge.transformation.translation()),
+            Quatd::createFromRotMat(Matx33d(currEdge.transformation.rotation())),
+            currEdge.information);
+
+        // -------
+
+        problem.AddResidualBlock(costFunction2, lossFunction,
+            sourcePose.t.val, sourcePose.vq.val,
+            targetPose.t.val, targetPose.vq.val);
+        problem.SetParameterization(sourcePose.vq.val, quatLocalParameterization);
+        problem.SetParameterization(targetPose.vq.val, quatLocalParameterization);
     }
 
-    for (int currNodeId = 0; currNodeId < numNodes; ++currNodeId)
+    for (const auto& it : poseGraph.nodes)
     {
-        PoseGraphNode& currNode = poseGraph.nodes.at(currNodeId);
-        if (currNode.isPoseFixed())
+        const PoseGraphNode& node = it.second;
+        if (node.isPoseFixed())
         {
-            problem.SetParameterBlockConstant(currNode.se3Pose.t.data());
-            problem.SetParameterBlockConstant(currNode.se3Pose.r.coeffs().data());
+            problem.SetParameterBlockConstant(node.se3Pose.t.val);
+            problem.SetParameterBlockConstant(node.se3Pose.vq.val);
         }
     }
 }
