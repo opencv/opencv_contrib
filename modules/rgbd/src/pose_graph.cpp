@@ -4,6 +4,7 @@
 
 #include "pose_graph.hpp"
 
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <unordered_set>
@@ -80,6 +81,97 @@ bool PoseGraph::isValid() const
     }
     return isGraphConnected && !invalidEdgeNode;
 }
+
+
+// Taken from Ceres pose graph demo: https://ceres-solver.org/
+PoseGraph::PoseGraph(const std::string& g2oFileName) :
+    nodes(), edges()
+{
+    auto readAffine = [](std::istream& input) -> Affine3d
+    {
+        Vec3d p;
+        Vec4d q;
+        input >> p[0] >> p[1] >> p[2];
+        input >> q[1] >> q[2] >> q[3] >> q[0];
+        // Normalize the quaternion to account for precision loss due to
+        // serialization.
+        return Affine3d(Quatd(q).toRotMat3x3(), p);
+    };
+
+    // for debugging purposes
+    int minId = 0, maxId = 1 << 24;
+
+    std::ifstream infile(g2oFileName.c_str());
+    if (!infile)
+    {
+        CV_Error(cv::Error::StsError, "failed to open file");
+    }
+    
+    while (infile.good())
+    {
+        std::string data_type;
+        // Read whether the type is a node or a constraint
+        infile >> data_type;
+        if (data_type == "VERTEX_SE3:QUAT")
+        {
+            int id;
+            infile >> id;
+            Affine3d pose = readAffine(infile);
+
+            if (id < minId || id >= maxId)
+                continue;
+
+            kinfu::PoseGraphNode n(id, pose);
+            if (id == minId)
+                n.setFixed();
+
+            // Ensure we don't have duplicate poses
+            const auto& it = nodes.find(id);
+            if (it != nodes.end())
+            {
+                std::cout << "duplicated node, id=" << id << std::endl;
+                nodes.insert(it, { id, n });
+            }
+            else
+            {
+                nodes.insert({ id, n });
+            }
+        }
+        else if (data_type == "EDGE_SE3:QUAT")
+        {
+            int startId, endId;
+            infile >> startId >> endId;
+            Affine3d pose = readAffine(infile);
+
+            if (!((startId >= minId && startId < maxId) && (endId >= minId && endId < maxId)))
+                continue;
+
+            Matx66d info;
+            for (int i = 0; i < 6 && infile.good(); ++i)
+            {
+                for (int j = i; j < 6 && infile.good(); ++j)
+                {
+                    infile >> info(i, j);
+                    if (i != j)
+                    {
+                        info(j, i) = info(i, j);
+                    }
+                }
+            }
+            
+            edges.push_back(PoseGraphEdge(startId, endId, pose, info));
+        }
+        else
+        {
+            CV_Error(cv::Error::StsError, "unknown tag");
+        }
+        
+        // Clear any trailing whitespace from the line
+        infile >> std::ws;
+    }
+}
+
+
 
 #if defined(CERES_FOUND) && defined(HAVE_EIGEN)
 

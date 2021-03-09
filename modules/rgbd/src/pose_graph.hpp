@@ -50,14 +50,14 @@ struct Pose3d
     inline Pose3d operator*(const Pose3d& otherPose) const
     {
         Pose3d out(*this);
-        out.t += Quatd(vq).toRotMat3x3() * otherPose.t;
+        out.t += Quatd(vq).toRotMat3x3(QUAT_ASSUME_UNIT) * otherPose.t;
         out.vq = (Quatd(out.vq) * Quatd(otherPose.vq)).toVec();
         return out;
     }
 
     Affine3d getAffine() const
     {
-        return Affine3d(Quatd(vq).toRotMat3x3(), t);
+        return Affine3d(Quatd(vq).toRotMat3x3(QUAT_ASSUME_UNIT), t);
     }
 
     inline Pose3d inverse() const
@@ -77,7 +77,7 @@ struct Pose3d
 struct PoseGraphNode
 {
    public:
-    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose)
+    explicit PoseGraphNode(int _nodeId, const Affine3d& _pose)
         : nodeId(_nodeId), isFixed(false), pose(_pose)
     {
         se3Pose = Pose3d(_pose.rotation(), _pose.translation());
@@ -85,11 +85,12 @@ struct PoseGraphNode
     virtual ~PoseGraphNode() = default;
 
     int getId() const { return nodeId; }
-    inline Affine3f getPose() const
+    inline Affine3d getPose() const
     {
+        pose = se3Pose.getAffine();
         return pose;
     }
-    void setPose(const Affine3f& _pose)
+    void setPose(const Affine3d& _pose)
     {
         pose = _pose;
         se3Pose = Pose3d(pose.rotation(), pose.translation());
@@ -97,7 +98,7 @@ struct PoseGraphNode
     void setPose(const Pose3d& _pose)
     {
         se3Pose = _pose;
-        pose = Affine3d(Quatd(se3Pose.vq).toRotMat3x3(QUAT_ASSUME_UNIT), se3Pose.t);
+        pose = se3Pose.getAffine();
     }
     void setFixed(bool val = true) { isFixed = val; }
     bool isPoseFixed() const { return isFixed; }
@@ -105,7 +106,7 @@ struct PoseGraphNode
    public:
     int nodeId;
     bool isFixed;
-    Affine3f pose;
+    mutable Affine3d pose;
     Pose3d se3Pose;
 };
 
@@ -185,9 +186,7 @@ struct PoseGraphEdge
 class PoseGraph
 {
    public:
-       typedef std::map<int, PoseGraphNode> Nodes;
-       //typedef std::vector<PoseGraphNode> NodeVector;
-       typedef std::vector<PoseGraphEdge> EdgeVector;
+
 
     explicit PoseGraph() {};
     virtual ~PoseGraph() = default;
@@ -195,6 +194,9 @@ class PoseGraph
     //! PoseGraph can be copied/cloned
     PoseGraph(const PoseGraph&) = default;
     PoseGraph& operator=(const PoseGraph&) = default;
+
+    // can be used for debugging
+    PoseGraph(const std::string& g2oFileName);
 
     void addNode(const PoseGraphNode& node)
     {
@@ -228,8 +230,9 @@ class PoseGraph
     int getNumEdges() const { return int(edges.size()); }
 
    public:
-    Nodes nodes;
-    EdgeVector edges;
+
+    std::map<int, PoseGraphNode> nodes;
+    std::vector<PoseGraphEdge>   edges;
 };
 
 namespace Optimizer
