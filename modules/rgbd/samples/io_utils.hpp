@@ -531,7 +531,7 @@ struct RGBSource
 
     bool empty() { return rgbFileList.empty() && !(vc.isOpened()); }
 
-    void updateIntrinsics(Matx33f& _intrinsics, Matx33f& _rgb_intrinsics, Size& _frameSize)
+    void updateIntrinsics(Matx33f& _rgb_intrinsics, Size& _rgb_frameSize)
     {
         if (vc.isOpened())
         {
@@ -540,15 +540,10 @@ struct RGBSource
             int h = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
 
             // it's recommended to calibrate sensor to obtain its intrinsics
-            float fx, fy, cx, cy;
             float rgb_fx, rgb_fy, rgb_cx, rgb_cy;
-            Size frameSize, rgb_frameSize;
+            Size rgb_frameSize;
             if (sourceType == Type::RGB_KINECT2)
             {
-                fx = fy = Kinect2Params::focal;
-                cx = Kinect2Params::cx;
-                cy = Kinect2Params::cy;
-                
                 rgb_fx = rgb_fy = Kinect2Params::rgb_focal;
                 rgb_cx      = Kinect2Params::rgb_cx;
                 rgb_cy      = Kinect2Params::rgb_cy;
@@ -557,13 +552,6 @@ struct RGBSource
             }
             else if (sourceType == Type::RGB_ASTRA)
             {
-                fx      = AstraParams::fx;
-                fy      = AstraParams::fy;
-                cx      = AstraParams::cx;
-                cy      = AstraParams::cy;
-
-                frameSize = AstraParams::frameSize;
-
                 rgb_fx = rgb_fy = AstraParams::rgb_focal;
                 rgb_cx = AstraParams::rgb_cx;
                 rgb_cy = AstraParams::rgb_cy;
@@ -573,29 +561,11 @@ struct RGBSource
             else
             {
                 // TODO: replace to rgb types
-                if (sourceType == Type::RGB_REALSENSE)
-                {
-                    // TODO: find correct rgd focal length
-                    fx          = (float)vc.get(CAP_PROP_INTELPERC_DEPTH_FOCAL_LENGTH_HORZ);
-                    fy          = (float)vc.get(CAP_PROP_INTELPERC_DEPTH_FOCAL_LENGTH_VERT);
-                }
-                else
-                {
-                    fx = fy =
-                        (float)vc.get(CAP_OPENNI_IMAGE_GENERATOR | CAP_PROP_OPENNI_FOCAL_LENGTH);
-                }
-
-                cx = w / 2 - 0.5f;
-                cy = h / 2 - 0.5f;
-
-                frameSize = Size(w, h);
             }
 
-            Matx33f camMatrix = Matx33f(fx, 0, cx, 0, fy, cy, 0, 0, 1);
             Matx33f rgb_camMatrix = Matx33f(rgb_fx, 0, rgb_cx, 0, rgb_fy, rgb_cy, 0, 0, 1);
-            _intrinsics       = camMatrix;
-            _rgb_intrinsics   = rgb_camMatrix;
-            _frameSize        = frameSize;
+            _rgb_intrinsics = rgb_camMatrix;
+            _rgb_frameSize  = rgb_frameSize;
         }
     }
 
@@ -609,55 +579,11 @@ struct RGBSource
         // TODO: do this settings for rgb image icp
     }
 
-    void updateParams(large_kinfu::Params& params)
-    {
-        if (vc.isOpened())
-        {
-            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize);
-            updateVolumeParams(params.volumeParams.resolution, params.volumeParams.voxelSize,
-                               params.volumeParams.tsdfTruncDist, params.volumeParams.pose );
-            updateICPParams(params.icpDistThresh);
-
-            if (sourceType == Type::RGB_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::rgb_k1;
-                distCoeffs(1) = Kinect2Params::rgb_k2;
-                distCoeffs(4) = Kinect2Params::rgb_k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
-        }
-    }
-
-    void updateParams(kinfu::Params& params)
-    {
-        if (vc.isOpened())
-        {
-            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize);
-            updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, params.volumePose);
-            updateICPParams(params.icpDistThresh);
-
-            if (sourceType == Type::RGB_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::rgb_k1;
-                distCoeffs(1) = Kinect2Params::rgb_k2;
-                distCoeffs(4) = Kinect2Params::rgb_k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
-        }
-    }
-    
     void updateParams(colored_kinfu::Params& params)
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize);
+            updateIntrinsics(params.rgb_intr, params.rgb_frameSize);
             updateVolumeParams(params.volumeDims, params.voxelSize,
                                params.tsdf_trunc_dist, params.volumePose);
             updateICPParams(params.icpDistThresh);

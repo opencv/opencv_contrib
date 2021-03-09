@@ -79,6 +79,7 @@ struct CV_EXPORTS_W Params
 
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
+    CV_PROP_RW Size rgb_frameSize;
 
     CV_PROP_RW kinfu::VolumeType volumeType;
 
