@@ -328,7 +328,7 @@ struct ComputePointsNormalsInvoker : ParallelLoopBody
 struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
 {
     ComputePointsNormalsColorsInvoker(const Depth& _depth, const Colors& _rgb, Points& _points, Normals& _normals, Colors& _colors,
-                                const Intr::Reprojector& _reproj, const Intr::Reprojector& _rgb_reproj, float _dfac) :
+                                const Intr::Reprojector& _reproj, const Intr::Projector& _rgb_reproj, float _dfac) :
         ParallelLoopBody(),
         depth(_depth),
         rgb(_rgb),
@@ -336,7 +336,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
         normals(_normals),
         colors(_colors),
         reproj(_reproj),
-        rgb_reproj(_rgb_reproj),
+        rgb_proj(_rgb_reproj),
         dfac(_dfac)
     { }
 
@@ -355,10 +355,12 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                 depthType d00 = depthRow0[x];
                 depthType z00 = d00*dfac;
                 Point3f v00 = reproj(Point3f((float)x, (float)y, z00));
+                Point2f proj = rgb_proj(v00);
+                int rgb_u = proj.x, rgb_v = proj.y;
 
                 Point3f p = nan3, n = nan3, c = nan3;
-
-                if(x < depth.cols - 1 && y < depth.rows - 1)
+                if(x < depth.cols - 1 && y < depth.rows - 1 &&
+                   rgb_v >= 0 && rgb_v < depth.rows && rgb_u >= 0 && rgb_u < depth.cols)
                 {
                     depthType d01 = depthRow0[x+1];
                     depthType d10 = depthRow1[x];
@@ -376,7 +378,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                         cv::Vec3f vec = (v01-v00).cross(v10-v00);
                         n = -normalize(vec);
                         p = v00;
-                        c = rgb.at<Vec3f>(y, x);
+                        c = rgb.at<Vec3f>(rgb_v, rgb_u);
                     }
                 }
 
@@ -393,7 +395,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
     Normals& normals;
     Colors& colors;
     const Intr::Reprojector& reproj;
-    const Intr::Reprojector& rgb_reproj;
+    const Intr::Projector& rgb_proj;
     float dfac;
 };
 
@@ -435,9 +437,9 @@ void computePointsNormalsColors(const Intr intr, const Intr rgb_intr, float dept
     float dfac = 1.f/depthFactor;
 
     Intr::Reprojector reproj = intr.makeReprojector();
-    Intr::Reprojector reprojRGB = rgb_intr.makeReprojector();
+    Intr::Projector projRGB = rgb_intr.makeProjector();
 
-    ComputePointsNormalsColorsInvoker ci(depth, rgb, points, normals, colors, reproj, reprojRGB, dfac);
+    ComputePointsNormalsColorsInvoker ci(depth, rgb, points, normals, colors, reproj, projRGB, dfac);
     Range range(0, depth.rows);
     const int nstripes = -1;
     parallel_for_(range, ci, nstripes);
