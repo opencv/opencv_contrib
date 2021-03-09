@@ -57,7 +57,6 @@ static const char* keys =
     "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
-    "{useHashTSDF | | Use the newer hashtable based TSDFVolume (relatively fast) and for larger reconstructions}"
     "{idle   | | Do not run KinFu, just display depth frames }"
     "{record | | Write depth frames to specified file list"
         " (the same format as for the 'depth' key) }"

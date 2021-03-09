@@ -531,7 +531,7 @@ struct RGBSource
 
     bool empty() { return rgbFileList.empty() && !(vc.isOpened()); }
 
-    void updateIntrinsics(Matx33f& _intrinsics, Matx33f& _rgb_intrinsics, Size& _frameSize, float& _depthFactor)
+    void updateIntrinsics(Matx33f& _intrinsics, Matx33f& _rgb_intrinsics, Size& _frameSize)
     {
         if (vc.isOpened())
         {
@@ -542,7 +542,6 @@ struct RGBSource
             // it's recommended to calibrate sensor to obtain its intrinsics
             float fx, fy, cx, cy;
             float rgb_fx, rgb_fy, rgb_cx, rgb_cy;
-            float depthFactor = 1000.f;
             Size frameSize, rgb_frameSize;
             if (sourceType == Type::RGB_KINECT2)
             {
@@ -576,9 +575,9 @@ struct RGBSource
                 // TODO: replace to rgb types
                 if (sourceType == Type::RGB_REALSENSE)
                 {
+                    // TODO: find correct rgd focal length
                     fx          = (float)vc.get(CAP_PROP_INTELPERC_DEPTH_FOCAL_LENGTH_HORZ);
                     fy          = (float)vc.get(CAP_PROP_INTELPERC_DEPTH_FOCAL_LENGTH_VERT);
-                    depthFactor = 1.f / (float)vc.get(CAP_PROP_INTELPERC_DEPTH_SATURATION_VALUE);
                 }
                 else
                 {
@@ -597,47 +596,27 @@ struct RGBSource
             _intrinsics       = camMatrix;
             _rgb_intrinsics   = rgb_camMatrix;
             _frameSize        = frameSize;
-            _depthFactor      = depthFactor;
         }
     }
 
-    void updateVolumeParams(const Vec3i& _resolution, float& _voxelSize, float& _tsdfTruncDist,
-                            Affine3f& _volumePose, float& _depthTruncateThreshold)
+    void updateVolumeParams(const Vec3i& _resolution, float& _voxelSize, float& _tsdfTruncDist, Affine3f& _volumePose)
     {
-        float volumeSize        = 3.0f;
-        _depthTruncateThreshold = 0.0f;
-        // RealSense has shorter depth range, some params should be tuned
-        if (sourceType == Type::RGB_REALSENSE)
-        {
-            volumeSize              = 1.f;
-            _voxelSize              = volumeSize / _resolution[0];
-            _tsdfTruncDist          = 0.01f;
-            _depthTruncateThreshold = 2.5f;
-        }
-        _volumePose = Affine3f().translate(Vec3f(-volumeSize / 2.f, -volumeSize / 2.f, 0.05f));
+        // TODO: do this settings for rgb image
     }
 
-    void updateICPParams(float& _icpDistThresh, float& _bilateralSigmaDepth)
+    void updateICPParams(float& _icpDistThresh)
     {
-        _icpDistThresh       = 0.1f;
-        _bilateralSigmaDepth = 0.04f;
-        // RealSense has shorter depth range, some params should be tuned
-        if (sourceType == Type::RGB_REALSENSE)
-        {
-            _icpDistThresh       = 0.01f;
-            _bilateralSigmaDepth = 0.01f;
-        }
+        // TODO: do this settings for rgb image icp
     }
 
     void updateParams(large_kinfu::Params& params)
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize, params.depthFactor);
+            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize);
             updateVolumeParams(params.volumeParams.resolution, params.volumeParams.voxelSize,
-                               params.volumeParams.tsdfTruncDist, params.volumeParams.pose,
-                               params.truncateThreshold);
-            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
+                               params.volumeParams.tsdfTruncDist, params.volumeParams.pose );
+            updateICPParams(params.icpDistThresh);
 
             if (sourceType == Type::RGB_KINECT2)
             {
@@ -656,10 +635,10 @@ struct RGBSource
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize, params.depthFactor);
+            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize);
             updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
-            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
+                               params.tsdf_trunc_dist, params.volumePose);
+            updateICPParams(params.icpDistThresh);
 
             if (sourceType == Type::RGB_KINECT2)
             {
@@ -678,10 +657,10 @@ struct RGBSource
     {
         if (vc.isOpened())
         {
-            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize, params.depthFactor);
+            updateIntrinsics(params.intr, params.rgb_intr, params.frameSize);
             updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
-            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
+                               params.tsdf_trunc_dist, params.volumePose);
+            updateICPParams(params.icpDistThresh);
 
             if (sourceType == Type::RGB_KINECT2)
             {
