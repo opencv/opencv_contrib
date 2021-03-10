@@ -512,14 +512,12 @@ void integrateRGBVolumeUnit(
 
                     int _u = projected.x;
                     int _v = projected.y;
-                    int _uShift = 5;
-                    int _vShift = -5;
                     
                     int rgb_u = projectedRGB.x;
                     int rgb_v = projectedRGB.y;
 
                     if (!(_v >= 0 && _v < depth.rows && _u >= 0 && _u < depth.cols  &&
-                        rgb_v >= 0 && rgb_v < depth.rows && rgb_u >= 0 && rgb_u < depth.cols))
+                        rgb_v >= 0 && rgb_v < color.rows && rgb_u >= 0 && rgb_u < color.cols))
                         continue;
                     
                     float pixNorm = pixNorms.at<float>(_v, _u);

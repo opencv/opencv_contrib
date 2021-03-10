@@ -360,7 +360,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
 
                 Point3f p = nan3, n = nan3, c = nan3;
                 if(x < depth.cols - 1 && y < depth.rows - 1 &&
-                   rgb_v >= 0 && rgb_v < depth.rows && rgb_u >= 0 && rgb_u < depth.cols)
+                   rgb_v >= 0 && rgb_v < rgb.rows && rgb_u >= 0 && rgb_u < rgb.cols)
                 {
                     depthType d01 = depthRow0[x+1];
                     depthType d10 = depthRow1[x];
