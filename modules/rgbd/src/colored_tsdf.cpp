@@ -63,7 +63,7 @@ public:
     ColoredTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
         int _maxWeight, Vec3i _resolution, bool zFirstMemOrder = true);
     virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
-        const kinfu::Intr& intrinsics, const int frameId = 0) override 
+        const kinfu::Intr& intrinsics, const int frameId = 0) override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
         const kinfu::Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId = 0) override;
@@ -270,7 +270,7 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
     float r = 0, g = 0, b = 0;
-    
+
     // TODO: create better interpolation or remove this simple version
     /*
     float mainRGBsum = (float) (volData[coordBase].r + volData[coordBase].g + volData[coordBase].b);
@@ -290,8 +290,6 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     */
     Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
     return res;
-
-    
 }
 
 

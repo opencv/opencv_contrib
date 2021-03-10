@@ -512,14 +512,14 @@ void integrateRGBVolumeUnit(
 
                     int _u = projected.x;
                     int _v = projected.y;
-                    
+
                     int rgb_u = projectedRGB.x;
                     int rgb_v = projectedRGB.y;
 
                     if (!(_v >= 0 && _v < depth.rows && _u >= 0 && _u < depth.cols  &&
                         rgb_v >= 0 && rgb_v < color.rows && rgb_u >= 0 && rgb_u < color.cols))
                         continue;
-                    
+
                     float pixNorm = pixNorms.at<float>(_v, _u);
                     Vec4f colorRGB = color.at<Vec4f>(rgb_v, rgb_u);
                     // difference between distances of point and of surface to camera

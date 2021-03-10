@@ -345,7 +345,7 @@ struct DepthSource
             }
         }
     }
-    
+
     void updateParams(colored_kinfu::Params& params)
     {
         if (vc.isOpened())

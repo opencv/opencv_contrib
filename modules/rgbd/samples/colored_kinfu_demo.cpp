@@ -130,7 +130,7 @@ int main(int argc, char **argv)
     }
     Ptr<colored_kinfu::Params> params;
     Ptr<ColoredKinFu> kf;
-    
+
     params = colored_kinfu::Params::coloredTSDFParams(coarse);
 
     // These params can be different for each depth sensor

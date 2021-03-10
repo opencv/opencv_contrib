@@ -245,7 +245,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         _depth.convertTo(depth, DEPTH_TYPE);
     else
         depth = _depth;
-    
+
     if (_rgb.type() != COLOR_TYPE)
     {
         cv::Mat rgb_tmp, rgbchannel[3], z;
@@ -259,11 +259,11 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     }
     else
         rgb = _rgb;
-    
+
 
     std::vector<MatType> newPoints, newNormals, newColors;
-    makeColoredFrameFromDepth(depth, rgb, 
-                       newPoints, newNormals, newColors, 
+    makeColoredFrameFromDepth(depth, rgb,
+                       newPoints, newNormals, newColors,
                        params.intr, params.rgb_intr,
                        params.pyramidLevels,
                        params.depthFactor,

@@ -241,6 +241,8 @@ public:
     virtual const Affine3f getPose() const = 0;
 
     /** @brief Process next depth frame
+        @param depth input Mat of depth frame
+        @param rgb   input Mat of rgb (colored) frame
 
       Integrates depth into voxel space with respect to its ICP-calculated pose.
       Input image is converted to CV_32F internally if has another type.
