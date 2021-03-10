@@ -50,16 +50,6 @@ Ptr<Params> Params::defaultParams()
                               0, rgb_fy, rgb_cy,
                               0,      0,      1);
 
-    /*
-    static const Size rgb_frameSize = Size(640, 480);
-static const float rgb_focal = 525.0f;
-static const float rgb_cx = 319.5f;
-static const float rgb_cy = 239.5f;
-static const float rgb_k1 = 0.0f;
-static const float rgb_k2 = 0.0f;
-static const float rgb_k3 = 0.0f
-    */
-
     // 5000 for the 16-bit PNG files
     // 1 for the 32-bit float images in the ROS bag files
     p.depthFactor = 5000;
@@ -116,17 +106,6 @@ Ptr<Params> Params::coarseParams()
 
     return p;
 }
-Ptr<Params> Params::hashTSDFParams(bool isCoarse)
-{
-    Ptr<Params> p;
-    if(isCoarse)
-        p = coarseParams();
-    else
-        p = defaultParams();
-    p->volumeType = VolumeType::HASHTSDF;
-    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
-    return p;
-}
 
 Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
 {
@@ -136,7 +115,6 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
     else
         p = defaultParams();
     p->volumeType = VolumeType::COLOREDTSDF;
-
 
     return p;
 }
@@ -262,16 +240,27 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
     MatType depth;
     MatType rgb;
+
     if(_depth.type() != DEPTH_TYPE)
         _depth.convertTo(depth, DEPTH_TYPE);
     else
         depth = _depth;
     
-    if(_rgb.type() != COLOR_TYPE)
-        _rgb.convertTo(rgb, COLOR_TYPE);
+    if (_rgb.type() != COLOR_TYPE)
+    {
+        cv::Mat rgb_tmp, rgbchannel[3], z;
+        std::vector<Mat> channels;
+        _rgb.convertTo(rgb_tmp, COLOR_TYPE);
+        cv::split(rgb_tmp, rgbchannel);
+        z = cv::Mat::zeros(rgbchannel[0].size(), CV_32F);
+        channels.push_back(rgbchannel[0]); channels.push_back(rgbchannel[1]);
+        channels.push_back(rgbchannel[2]); channels.push_back(z);
+        merge(channels, rgb);
+    }
     else
         rgb = _rgb;
     
+
     std::vector<MatType> newPoints, newNormals, newColors;
     makeColoredFrameFromDepth(depth, rgb, 
                        newPoints, newNormals, newColors, 
@@ -282,6 +271,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
                        params.bilateral_sigma_spatial,
                        params.bilateral_kernel_size,
                        params.truncateThreshold);
+
     if(frameCounter == 0)
     {
         // use depth instead of distance

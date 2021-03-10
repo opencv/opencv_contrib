@@ -110,6 +110,7 @@ int main(int argc, char **argv)
     else
         ds = makePtr<DepthSource>(parser.get<int>("camera"));
 
+    //TODO: intrinsics for camera
     rgbs = makePtr<RGBSource>(parser.get<String>("depth") + "/rgb.txt");
 
     if (ds->empty())
@@ -168,7 +169,6 @@ int main(int argc, char **argv)
         if(depthWriter)
             depthWriter->append(frame);
         UMat rgb_frame = rgbs->getRGB();
-
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {

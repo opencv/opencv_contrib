@@ -82,7 +82,6 @@ typedef Points Normals;
 typedef Points Colors;
 
 typedef cv::Mat_< depthType > Depth;
-typedef cv::Mat_< ptype > Rgb;
 
 void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, cv::Affine3f lightPose);
 void renderPointsNormalsColors(InputArray _points, InputArray _normals, InputArray _colors, OutputArray image, Affine3f lightPose);

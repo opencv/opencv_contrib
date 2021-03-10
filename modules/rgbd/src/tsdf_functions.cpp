@@ -430,7 +430,7 @@ void integrateRGBVolumeUnit(
     CV_Assert(!_depth.empty());
     cv::Affine3f vpose(_pose);
     Depth depth = _depth.getMat();
-    Rgb color = _rgb.getMat();
+    Colors color = _rgb.getMat();
     Range integrateRange(0, volResolution.x);
 
     Mat volume = _volume.getMat();
@@ -523,7 +523,7 @@ void integrateRGBVolumeUnit(
                         continue;
                     
                     float pixNorm = pixNorms.at<float>(_v, _u);
-                    Vec3f colorRGB = color.at<Vec3f>(rgb_v, rgb_u);
+                    Vec4f colorRGB = color.at<Vec4f>(rgb_v, rgb_u);
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm * (v * dfac - camSpacePt.z);
                     // possible alternative is:

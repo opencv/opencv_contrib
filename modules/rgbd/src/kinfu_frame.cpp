@@ -378,7 +378,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                         cv::Vec3f vec = (v01-v00).cross(v10-v00);
                         n = -normalize(vec);
                         p = v00;
-                        c = rgb.at<Vec3f>(rgb_v, rgb_u);
+                        c = fromPtype(rgb.at<Vec4f>(rgb_v, rgb_u));
                     }
                 }
 
