@@ -62,15 +62,13 @@ public:
     // dimension in voxels, size in meters
     ColoredTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
         int _maxWeight, Vec3i _resolution, bool zFirstMemOrder = true);
-    virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose,
-        const kinfu::Intr& intrinsics, const int frameId = 0) override
+    virtual void integrate(InputArray, float, const Matx44f&, const kinfu::Intr&, const int) override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
         const kinfu::Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId = 0) override;
     virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
         OutputArray points, OutputArray normals, OutputArray colors) const override;
-    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
-        OutputArray points, OutputArray normals) const override
+    virtual void raycast(const Matx44f&, const kinfu::Intr&, const Size&, OutputArray, OutputArray) const override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
 
     virtual void fetchNormals(InputArray points, OutputArray _normals) const override;

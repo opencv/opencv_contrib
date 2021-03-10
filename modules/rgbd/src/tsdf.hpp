@@ -40,11 +40,9 @@ class TSDFVolume : public Volume
                int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
     virtual ~TSDFVolume() = default;
 
-    virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
-        const kinfu::Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId = 0) override
+    virtual void integrate(InputArray, InputArray, float, const Matx44f&, const kinfu::Intr&, const Intr&, const int) override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
-    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
-        OutputArray points, OutputArray normals, OutputArray colors) const override
+    virtual void raycast(const Matx44f&, const kinfu::Intr&, const Size&, OutputArray, OutputArray, OutputArray) const override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
    public:
 
