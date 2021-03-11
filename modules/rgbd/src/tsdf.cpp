@@ -658,7 +658,6 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals,
                       int x, int y, int z, Point3f V, float v0, int axis) const
     {
-        std::cout << "4" << std::endl;
         // 0 for x, 1 for y, 2 for z
         bool limits = false;
         Point3i shift;
@@ -681,14 +680,13 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
             limits = (z + 1 < vol.volResolution.z);
             Vc     = V.z;
         }
-        std::cout << "4" << std::endl;
+
         if(limits)
         {
             const TsdfVoxel& voxeld = volDataStart[(x+shift.x)*vol.volDims[0] +
                                                    (y+shift.y)*vol.volDims[1] +
                                                    (z+shift.z)*vol.volDims[2]];
             float vd = tsdfToFloat(voxeld.tsdf);
-            std::cout << "4" << std::endl;
             if(voxeld.weight != 0 && vd != 1.f)
             {
                 if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
@@ -701,10 +699,8 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
                     Point3f p(shift.x ? inter : V.x,
                               shift.y ? inter : V.y,
                               shift.z ? inter : V.z);
-                    std::cout << "4" << std::endl;
                     {
                         points.push_back(toPtype(vol.pose * p));
-                        std::cout << "4" << std::endl;
                         if(needNormals)
                             normals.push_back(toPtype(vol.pose.rotation() *
                                                       vol.getNormalVoxel(p*vol.voxelSizeInv)));
@@ -716,7 +712,6 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
     virtual void operator() (const Range& range) const override
     {
-        std::cout << "3" << std::endl;
         std::vector<ptype> points, normals;
         for(int x = range.start; x < range.end; x++)
         {
@@ -760,31 +755,29 @@ void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals
 
     if(_points.needed())
     {
-        std::cout << "2" << std::endl;
         std::vector<std::vector<ptype>> pVecs, nVecs;
         FetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
         Range range(0, volResolution.x);
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
+
         std::vector<ptype> points, normals;
-        std::cout << "2" << std::endl;
         for(size_t i = 0; i < pVecs.size(); i++)
         {
             points.insert(points.end(), pVecs[i].begin(), pVecs[i].end());
             normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
         }
-        std::cout << "2" << std::endl;
+
         _points.create((int)points.size(), 1, POINT_TYPE);
         if(!points.empty())
             Mat((int)points.size(), 1, POINT_TYPE, &points[0]).copyTo(_points.getMat());
-        std::cout << "2" << std::endl;
+
         if(_normals.needed())
         {
             _normals.create((int)normals.size(), 1, POINT_TYPE);
             if(!normals.empty())
                 Mat((int)normals.size(), 1, POINT_TYPE, &normals[0]).copyTo(_normals.getMat());
         }
-        std::cout << "2" << std::endl;
     }
 }
 
