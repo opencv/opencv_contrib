@@ -561,6 +561,9 @@ struct RGBSource
             else
             {
                 // TODO: replace to rgb types
+                rgb_fx = rgb_fy = Kinect2Params::rgb_focal;
+                rgb_cx = Kinect2Params::rgb_cx;
+                rgb_cy = Kinect2Params::rgb_cy;
                 rgb_frameSize = Size(w, h);
             }
 
