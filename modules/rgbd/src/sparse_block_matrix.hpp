@@ -123,22 +123,23 @@ struct BlockSparseMat
 
 //! Function to solve a sparse linear system of equations HX = B
 //! Requires Eigen
-static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B,
+template<typename T>
+static bool sparseSolve(const BlockSparseMat<T, 6, 6>& H, const Mat& B,
                         OutputArray X, OutputArray predB = cv::noArray())
 {
 #if defined(HAVE_EIGEN)
-    Eigen::SparseMatrix<float> bigA = H.toEigen();
-    Eigen::VectorXf bigB;
+    Eigen::SparseMatrix<T> bigA = H.toEigen();
+    Eigen::Matrix<T, -1, 1> bigB;
     cv2eigen(B, bigB);
 
-    Eigen::SparseMatrix<float> bigAtranspose = bigA.transpose();
+    Eigen::SparseMatrix<T> bigAtranspose = bigA.transpose();
     if(!bigA.isApprox(bigAtranspose))
     {
         CV_Error(Error::StsBadArg, "H matrix is not symmetrical");
         return false;
     }
 
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>> solver;
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<T>> solver;
 
     solver.compute(bigA);
     if (solver.info() != Eigen::Success)
@@ -148,7 +149,7 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B,
     }
     else
     {
-        Eigen::VectorXf solutionX = solver.solve(bigB);
+        Eigen::Matrix<T, -1, 1> solutionX = solver.solve(bigB);
         if (solver.info() != Eigen::Success)
         {
             std::cout << "failed to eigen-solve" << std::endl;
@@ -159,7 +160,7 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B,
             eigen2cv(solutionX, X);
             if (predB.needed())
             {
-                Eigen::VectorXf predBEigen = bigA * solutionX;
+                Eigen::Matrix<T, -1, 1> predBEigen = bigA * solutionX;
                 eigen2cv(predBEigen, predB);
             }
             return true;
