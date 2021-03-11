@@ -95,7 +95,7 @@ struct Scene
 
 struct SemisphereScene : Scene
 {
-    const int framesPerCycle = 72;
+    const int framesPerCycle = 18;
     const float nCycles = 1.0f;
     const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -1.5f));
 
@@ -203,6 +203,7 @@ PERF_TEST(Perf_TSDF, integrate)
         startTimer();
         settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
+        depth.release();
     }
     SANITY_CHECK_NOTHING();
 }
@@ -220,6 +221,8 @@ PERF_TEST(Perf_TSDF, raycast)
         startTimer();
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
+        depth.release();
+        _points.release(); _normals.release();
     }
     SANITY_CHECK_NOTHING();
 }
@@ -235,6 +238,7 @@ PERF_TEST(Perf_HashTSDF, integrate)
         startTimer();
         settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
+        depth.release();
     }
     SANITY_CHECK_NOTHING();
 }
@@ -252,6 +256,8 @@ PERF_TEST(Perf_HashTSDF, raycast)
         startTimer();
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
+        depth.release();
+        _points.release(); _normals.release();
     }
     SANITY_CHECK_NOTHING();
 }

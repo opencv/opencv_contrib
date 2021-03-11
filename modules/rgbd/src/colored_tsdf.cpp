@@ -287,9 +287,9 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 }
 
 
-struct RaycastInvoker : ParallelLoopBody
+struct ColorRaycastInvoker : ParallelLoopBody
 {
-    RaycastInvoker(Points& _points, Normals& _normals, Colors& _colors, const Matx44f& cameraPose,
+    ColorRaycastInvoker(Points& _points, Normals& _normals, Colors& _colors, const Matx44f& cameraPose,
                   const Intr& intrinsics, const ColoredTSDFVolumeCPU& _volume) :
         ParallelLoopBody(),
         points(_points),
@@ -447,7 +447,7 @@ void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrin
     Points points   =  _points.getMat();
     Normals normals = _normals.getMat();
     Colors colors = _colors.getMat();
-    RaycastInvoker ri(points, normals, colors, cameraPose, intrinsics, *this);
+    ColorRaycastInvoker ri(points, normals, colors, cameraPose, intrinsics, *this);
 
     const int nstripes = -1;
     parallel_for_(Range(0, points.rows), ri, nstripes);
