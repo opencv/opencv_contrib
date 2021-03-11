@@ -454,9 +454,9 @@ void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrin
 }
 
 
-struct FetchPointsNormalsInvoker : ParallelLoopBody
+struct ColorFetchPointsNormalsInvoker : ParallelLoopBody
 {
-    FetchPointsNormalsInvoker(const ColoredTSDFVolumeCPU& _volume,
+    ColorFetchPointsNormalsInvoker(const ColoredTSDFVolumeCPU& _volume,
                               std::vector<std::vector<ptype>>& _pVecs,
                               std::vector<std::vector<ptype>>& _nVecs,
                               bool _needNormals) :
