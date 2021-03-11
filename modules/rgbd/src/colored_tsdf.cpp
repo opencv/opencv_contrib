@@ -571,7 +571,7 @@ void ColoredTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _
     if(_points.needed())
     {
         std::vector<std::vector<ptype>> pVecs, nVecs;
-        FetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
+        ColorFetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
         Range range(0, volResolution.x);
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
