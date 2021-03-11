@@ -79,7 +79,7 @@ namespace cv
             CV_WRAP Viz3d(const String& window_name = String());
             Viz3d(const Viz3d&);
             Viz3d& operator=(const Viz3d&);
-            CV_WRAP ~Viz3d();
+            ~Viz3d();
 
             /** @brief Shows a widget in the window.
 

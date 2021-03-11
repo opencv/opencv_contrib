@@ -1,27 +1,8 @@
-#exec(open(r'G:\Lib\opencv_contrib\modules\viz\samples\viz_sample_03.py').read())
-import os
-os.add_dll_directory(r'G:\Lib\install\opencv\x64\vc15\bin')
-os.add_dll_directory(r'G:\Lib\install\vtk\bin')
-os.add_dll_directory(r'G:\Lib\install\ceres-solver\bin')
-os.add_dll_directory(r'G:\Lib\install\glog\bin')
-os.add_dll_directory(r'F:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin')
-os.add_dll_directory(r'F:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2')
-
-import cv2 as cv
 import numpy as np
-
-def affine_translate(v):
-    pose = np.zeros(shape=(4,4),dtype=np.float64)
-    pose[0, 3] = 1
-    pose[1, 3] = 1
-    pose[1, 3] = 1
-    pose[0:3, 0] = v[0]
-    pose[0:3, 1] = v[1]
-    pose[0:3, 2] = v[2]
-    return pose
+import cv2 as cv
 
 def load_bunny():
-    with open(r'G:\Lib\opencv_contrib\modules\viz\samples\data\bunny.ply', 'r') as f:
+    with open(cv.samples.findFile("viz/bunny.ply"), 'r') as f:
         s = f.read()
     ligne = s.split('\n')
     if len(ligne) == 5753:

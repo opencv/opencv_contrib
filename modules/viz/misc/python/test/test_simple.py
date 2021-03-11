@@ -1,6 +1,6 @@
-#exec(open(r'G:\Lib\opencv_contrib\modules\viz\samples\viz_sample_03.py').read())
-import cv2 as cv
+import os
 import numpy as np
+import cv2 as cv
 
 from tests_common import NewOpenCVTests
 
@@ -40,6 +40,10 @@ def tutorial3(camera_pov, filename):
         myWindow.setViewerPosePy(camera_pose)
 
 class viz_test(NewOpenCVTests):
+    def setUp(self):
+        super(viz_test, self).setUp()
+        if not bool(os.environ.get('OPENCV_PYTEST_RUN_VIZ', False)):
+            self.skipTest("Use OPENCV_PYTEST_RUN_VIZ=1 to enable VIZ UI tests")
 
     def test_viz_tutorial3_global_view(self):
         tutorial3(False, self.find_file("viz\dragon.ply"))

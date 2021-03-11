@@ -87,7 +87,7 @@ PyAffine3 is an overloaded structure, provided for convenience.
 */
         struct CV_EXPORTS_W_SIMPLE PyAffine3 {
             CV_WRAP PyAffine3() { pose = Affine3d(); }
-            CV_WRAP PyAffine3(const Vec3d &  	rvec, const Vec3d &t = Vec3d::all(0))
+            CV_WRAP PyAffine3(const Vec3d &rvec, const Vec3d &t = Vec3d::all(0))
             {
                 pose = Affine3d(rvec, t);
             }
@@ -1712,9 +1712,9 @@ PyWLine is an overloaded structure, provided for convenience.
         struct CV_EXPORTS_W_SIMPLE PyWCloudNormals
         {
         public:
-			PyWCloudNormals()
-			{
-			}
+            PyWCloudNormals()
+            {
+            }
             /** @brief Constructs a WCloudNormals.
 
             @param cloud Point set which can be of type: CV_32FC3, CV_32FC4, CV_64FC3, CV_64FC4.

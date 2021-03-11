@@ -48,7 +48,6 @@
 
 cv::Ptr<cv::viz::Viz3d> cv::viz::Viz3d::Viz3d::create(const String& window_name)
 {
-    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_WARNING);
     return cv::makePtr<cv::viz::Viz3d>(window_name);
 }
 
