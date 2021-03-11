@@ -107,6 +107,18 @@ Ptr<Params> Params::coarseParams()
     return p;
 }
 
+Ptr<Params> Params::hashTSDFParams(bool isCoarse)
+{
+    Ptr<Params> p;
+    if (isCoarse)
+        p = coarseParams();
+    else
+        p = defaultParams();
+    p->volumeType = VolumeType::HASHTSDF;
+    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
+    return p;
+}
+
 Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
 {
     Ptr<Params> p;

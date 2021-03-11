@@ -137,7 +137,7 @@ struct RenderColorInvoker : ParallelLoopBody
                 }
                 else
                 {
-                    color = Vec4b(c.x, c.y, c.z, 0);
+                    color = Vec4b((uchar)c.x, (uchar)c.y, (uchar)c.z, (uchar)0);
                 }
 
                 imgRow[x] = color;
@@ -353,7 +353,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                 depthType z00 = d00*dfac;
                 Point3f v00 = reproj(Point3f((float)x, (float)y, z00));
                 Point2f proj = rgb_proj(v00);
-                int rgb_u = proj.x, rgb_v = proj.y;
+                int rgb_u = (int) proj.x, rgb_v = (int) proj.y;
 
                 Point3f p = nan3, n = nan3, c = nan3;
                 if(x < depth.cols - 1 && y < depth.rows - 1 &&
