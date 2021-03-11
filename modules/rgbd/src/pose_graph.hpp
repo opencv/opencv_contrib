@@ -261,6 +261,9 @@ class PoseGraph
 
 namespace Optimizer
 {
+
+void MyOptimize(PoseGraph& poseGraph);
+
 void optimize(PoseGraph& poseGraph);
 
 #if defined(CERES_FOUND)

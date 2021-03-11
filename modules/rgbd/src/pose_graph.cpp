@@ -249,6 +249,224 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
 }
 #endif
 
+void Optimizer::MyOptimize(PoseGraph& poseGraph)
+{
+    PoseGraph poseGraphOriginal = poseGraph;
+
+    if (!poseGraphOriginal.isValid())
+    {
+        CV_Error(Error::StsBadArg,
+            "Invalid PoseGraph that is either not connected or has invalid nodes");
+        return;
+    }
+
+    int numNodes = poseGraph.getNumNodes();
+    int numEdges = poseGraph.getNumEdges();
+
+    // Allocate indices for nodes
+    std::vector<int> placesIds;
+    std::map<int, int> idToPlace;
+    for (const auto& ni : poseGraph.nodes)
+    {
+        if (!ni.second.isPoseFixed())
+        {
+            idToPlace[ni.first] = placesIds.size();
+            placesIds.push_back(ni.first);
+        }
+    }
+
+    int nVarNodes = placesIds.size();
+    if (!nVarNodes)
+    {
+        CV_Error(Error::StsBadArg, "PoseGraph has no non-constant nodes, no optimization to be done");
+        return;
+    }
+
+    if (numEdges == 0)
+    {
+        CV_Error(Error::StsBadArg, "PoseGraph has no edges, no optimization to be done");
+        return;
+    }
+
+    std::cout << "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges" << std::endl;
+
+    // estimate current energy
+
+    auto calcEnergy = [&poseGraph](const std::map<int, PoseGraphNode>& nodes) -> double
+    {
+        double totalErr = 0;
+        for (const auto& e : poseGraph.edges)
+        {
+            Pose3d srcP = nodes.at(e.getSourceNodeId()).se3Pose;
+            Pose3d tgtP = nodes.at(e.getTargetNodeId()).se3Pose;
+
+            Vec6d res;
+            Matx<double, 6, 3> stj, ttj;
+            Matx<double, 6, 4> sqj, tqj;
+            double err = poseError(srcP.getQuat(), srcP.t, tgtP.getQuat(), tgtP.t,
+                                   e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ false,
+                                   sqj, stj, tqj, ttj, res);
+
+            totalErr += err;
+        }
+        return totalErr;
+    };
+    double energy = calcEnergy(poseGraph.nodes);
+    double startEnergy = energy;
+    double oldEnergy = energy;
+
+    std::cout << "#s" << " energy: " << energy << std::endl;
+
+    const double initialLambdaLevMarq = 0.1;
+    const double lmUpFactor = 2.0;
+    const double lmDownFactor = 3.0;
+    const double coeffILM = 0.1f;
+    const double minTolerance = 1e-6;
+    unsigned int maxIterations = 100;
+
+    double lambdaLevMarq = initialLambdaLevMarq;
+    unsigned int iter = 0;
+    bool done = false;
+    while (!done)
+    {
+        BlockSparseMat<double, 6, 6> jtj(nVarNodes);
+        std::vector<double> jtb(nVarNodes * 6);
+
+        // caching nodes jacobians
+        std::vector<cv::Matx<double, 7, 6>> cachedJac;
+        for (auto id : placesIds)
+        {
+            Pose3d p = poseGraph.nodes.at(id).se3Pose;
+            Matx43d qj = expQuatJacobian(p.getQuat());
+            // x node layout is (rot_x, rot_y, rot_z, trans_x, trans_y, trans_z)
+            // pose layout is (q_w, q_x, q_y, q_z, trans_x, trans_y, trans_z)
+            Matx<double, 7, 6> j = concatVert(concatHor(qj, Matx43d()),
+                                              concatHor(Matx33d(), Matx33d::eye()));
+            cachedJac.push_back(j);
+        }
+
+        // fill jtj and jtb
+        for (const auto& e : poseGraph.edges)
+        {
+            int srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
+            Pose3d srcP = poseGraph.nodes.at(srcId).se3Pose;
+            Pose3d tgtP = poseGraph.nodes.at(dstId).se3Pose;
+
+            Vec6d res;
+            Matx<double, 6, 3> stj, ttj;
+            Matx<double, 6, 4> sqj, tqj;
+            double err = poseError(srcP.getQuat(), srcP.t, tgtP.getQuat(), tgtP.t,
+                                   e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ true,
+                                   sqj, stj, tqj, ttj, res);
+
+            size_t srcPlace = idToPlace[srcId], dstPlace = idToPlace[dstId];
+            Matx66d sj = concatHor(sqj, stj) * cachedJac[srcPlace];
+            Matx66d tj = concatHor(tqj, ttj) * cachedJac[dstPlace];
+
+            jtj.refBlock(srcPlace, srcPlace) += sj.t() * sj;
+            jtj.refBlock(dstPlace, dstPlace) += tj.t() * tj;
+            Matx66d sjttj = sj.t() * tj;
+            jtj.refBlock(srcPlace, dstPlace) += sjttj;
+            jtj.refBlock(dstPlace, srcPlace) += sjttj.t();
+
+            Vec6f jtbSrc = sj.t() * res, jtbDst = tj.t() * res;
+            for (int i = 0; i < 6; i++)
+            {
+                jtb[6 * srcPlace + i] += jtbSrc[i];
+                jtb[6 * dstPlace + i] += jtbDst[i];
+            }
+        }
+
+        std::cout << "#LM#s" << " energy: " << energy << std::endl;
+        
+        // Solve using LevMarq and get delta transform
+        bool enough = false;
+
+        // Save original diagonal of jtj matrix
+        std::vector<float> diag(nVarNodes*6);
+        for (int i = 0; i < nVarNodes*6; i++)
+        {
+            diag[i] = jtj.refElem(i, i);
+        }
+
+        decltype(poseGraph.nodes) tempNodes = poseGraph.nodes;
+
+        while (!enough && !done)
+        {
+            // form LevMarq matrix
+            for (int i = 0; i < nVarNodes*6; i++)
+            {
+                float v = diag[i];
+                jtj.refElem(i, i) = v + lambdaLevMarq * (v + coeffILM);
+            }
+
+            // use double or convert everything to float
+            std::vector<double> x;
+            bool solved = kinfu::sparseSolve(jtj, Mat(jtb), x);
+
+            if (solved)
+            {
+                tempNodes = poseGraph.nodes;
+
+                // Update temp nodes using x
+                for (int i = 0; i < nVarNodes; i++)
+                {
+                    Vec6d dx(&x[i * 6]);
+                    Vec3d deltaRot(dx[0], dx[1], dx[2]), deltaTrans(dx[3], dx[4], dx[5]);
+                    Pose3d& p = tempNodes.at(placesIds[i]).se3Pose;
+                    
+                    p.vq = (Quatd(0, deltaRot[0], deltaRot[1], deltaRot[2]).exp() * p.getQuat()).toVec();
+                    p.t += deltaTrans;
+                }
+
+                // calc energy with temp nodes
+                energy = calcEnergy(tempNodes);
+
+                std::cout << "#LM#" << iter;
+                std::cout << " energy: " << energy;
+            }
+            else
+            {
+                std::cout << "not solved" << std::endl;
+            }
+
+            std::cout << std::endl;
+
+            if (!solved || (energy > oldEnergy))
+            {
+                // failed to optimize, increase lambda and repeat
+
+                lambdaLevMarq *= lmUpFactor;
+
+                std::cout << "LM up, old energy = " << oldEnergy << std::endl;
+            }
+            else
+            {
+                // optimized successfully, decrease lambda and set variables for next iteration
+                enough = true;
+
+                lambdaLevMarq /= lmDownFactor;
+
+                poseGraph.nodes = tempNodes;
+
+                std::cout << "#" << iter;
+                std::cout << " energy: " << energy;
+                std::cout << std::endl;
+
+                oldEnergy = energy;
+
+                std::cout << "LM down" << std::endl;
+            }
+
+            iter++;
+
+            done = (iter >= maxIterations) || (startEnergy - energy) < minTolerance * startEnergy;
+        }
+    }
+
+    // TODO: set timers & produce report
+}
+
 void Optimizer::optimize(PoseGraph& poseGraph)
 {
     PoseGraph poseGraphOriginal = poseGraph;
