@@ -228,14 +228,11 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
         Pose3d& sourcePose = poseGraph.nodes.at(sourceNodeId).se3Pose;
         Pose3d& targetPose = poseGraph.nodes.at(targetNodeId).se3Pose;
 
-        ceres::CostFunction* costFunction = Pose3dAnalyticCostFunction::create(
-            Vec3d(currEdge.transformation.translation()),
-            Quatd::createFromRotMat(Matx33d(currEdge.transformation.rotation())),
-            currEdge.information);
+        ceres::CostFunction* costFunction = Pose3dAnalyticCostFunction::create(Vec3d(currEdge.pose.t), currEdge.pose.getQuat(), currEdge.information);
 
         problem.AddResidualBlock(costFunction, lossFunction,
-            sourcePose.t.val, sourcePose.vq.val,
-            targetPose.t.val, targetPose.vq.val);
+                                 sourcePose.t.val, sourcePose.vq.val,
+                                 targetPose.t.val, targetPose.vq.val);
         problem.SetParameterization(sourcePose.vq.val, quatLocalParameterization);
         problem.SetParameterization(targetPose.vq.val, quatLocalParameterization);
     }

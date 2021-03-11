@@ -29,6 +29,27 @@ namespace kinfu
  *  Detailed description
  */
 
+// Cholesky decomposition of symmetrical 6x6 matrix
+inline cv::Matx66d llt6(Matx66d m)
+{
+    Matx66d L;
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < (i + 1); j++)
+        {
+            double sum = 0;
+            for (int k = 0; k < j; k++)
+                sum += L(i, k) * L(j, k);
+
+            if (i == j)
+                L(i, i) = sqrt(m(i, i) - sum);
+            else
+                L(i, j) = (1.0 / L(j, j) * (m(i, j) - sum));
+        }
+    }
+    return L;
+}
+
 struct Pose3d
 {
     Vec3d t;
@@ -83,7 +104,7 @@ struct PoseGraphNode
 {
    public:
     explicit PoseGraphNode(int _nodeId, const Affine3d& _pose)
-        : nodeId(_nodeId), isFixed(false), pose(_pose)
+        : nodeId(_nodeId), isFixed(false)
     {
         se3Pose = Pose3d(_pose.rotation(), _pose.translation());
     }
@@ -92,18 +113,15 @@ struct PoseGraphNode
     int getId() const { return nodeId; }
     inline Affine3d getPose() const
     {
-        pose = se3Pose.getAffine();
-        return pose;
+        return se3Pose.getAffine();
     }
     void setPose(const Affine3d& _pose)
     {
-        pose = _pose;
-        se3Pose = Pose3d(pose.rotation(), pose.translation());
+        se3Pose = Pose3d(_pose.rotation(), _pose.translation());
     }
     void setPose(const Pose3d& _pose)
     {
         se3Pose = _pose;
-        pose = se3Pose.getAffine();
     }
     void setFixed(bool val = true) { isFixed = val; }
     bool isPoseFixed() const { return isFixed; }
@@ -111,7 +129,6 @@ struct PoseGraphNode
    public:
     int nodeId;
     bool isFixed;
-    mutable Affine3d pose;
     Pose3d se3Pose;
 };
 
@@ -127,8 +144,9 @@ struct PoseGraphEdge
                   const Matx66f& _information = Matx66f::eye())
         : sourceNodeId(_sourceNodeId),
           targetNodeId(_targetNodeId),
-          transformation(_transformation),
-          information(_information)
+          pose(_transformation.rotation(), _transformation.translation()),
+          information(_information),
+          sqrtInfo(llt6(_information))
     {
     }
     virtual ~PoseGraphEdge() = default;
@@ -147,8 +165,9 @@ struct PoseGraphEdge
    public:
     int sourceNodeId;
     int targetNodeId;
-    Affine3f transformation;
+    Pose3d pose;
     Matx66f information;
+    Matx66f sqrtInfo;
 };
 
 //! @brief Reference: A tutorial on SE(3) transformation parameterizations and on-manifold
@@ -296,6 +315,7 @@ inline Matx43d expQuatJacobian(Quatd q)
                     y, -x,  w);
 }
 
+
 // concatenate matrices vertically
 template<typename _Tp, int m, int n, int k> static inline
 Matx<_Tp, m + k, n> concatVert(const Matx<_Tp, m, n>& a, const Matx<_Tp, k, n>& b)
@@ -342,6 +362,78 @@ Matx<_Tp, m, n + k> concatHor(const Matx<_Tp, m, n>& a, const Matx<_Tp, m, k>& b
 }
 
 
+inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd targetQuat, Vec3d targetTrans,
+                        Quatd rotMeasured, Vec3d transMeasured, Matx66d sqrtInfoMatrix, bool needJacobians,
+                        Matx<double, 6, 4>& sqj, Matx<double, 6, 3>& stj,
+                        Matx<double, 6, 4>& tqj, Matx<double, 6, 3>& ttj,
+                        Vec6d& res)
+{
+    // err_r = 2*Im(conj(rel_r) * measure_r) = 2*Im(conj(target_r) * source_r * measure_r)
+    // err_t = conj(source_r) * (target_t - source_t) * source_r - measure_t
+
+    Quatd sourceQuatInv = sourceQuat.conjugate();
+    Vec3d deltaTrans = targetTrans - sourceTrans;
+
+    Quatd relativeQuat = sourceQuatInv * targetQuat;
+    Vec3d relativeTrans = sourceQuatInv.toRotMat3x3(cv::QUAT_ASSUME_UNIT) * deltaTrans;
+
+    //! Definition should actually be relativeQuat * rotMeasured.conjugate()
+    Quatd deltaRot = relativeQuat.conjugate() * rotMeasured;
+
+    Vec3d terr = relativeTrans - transMeasured;
+    Vec3d rerr = 2.0 * Vec3d(deltaRot.x, deltaRot.y, deltaRot.z);
+    Vec6d rterr(terr[0], terr[1], terr[2], rerr[0], rerr[1], rerr[2]);
+
+    res = sqrtInfoMatrix * rterr;
+
+    if (needJacobians)
+    {
+        // d(err_r) = 2*Im(d(conj(target_r) * source_r * measure_r)) = < measure_r is constant > =
+        // 2*Im((conj(d(target_r)) * source_r + conj(target_r) * d(source_r)) * measure_r)
+        // d(target_r) == 0:
+        //  # d(err_r) = 2*Im(conj(target_r) * d(source_r) * measure_r)
+        //  # V(d(err_r)) = 2 * M_Im * M_right(measure_r) * M_left(conj(target_r)) * V(d(source_r))
+        //  # d(err_r) / d(source_r) = 2 * M_Im * M_right(measure_r) * M_left(conj(target_r))
+        Matx34d drdsq = 2.0 * (m_right(rotMeasured) * m_left(targetQuat.conjugate())).get_minor<3, 4>(1, 0);
+
+        // d(source_r) == 0:
+        //  # d(err_r) = 2*Im(conj(d(target_r)) * source_r * measure_r)
+        //  # V(d(err_r)) = 2 * M_Im * M_right(source_r * measure_r) * M_Conj * V(d(target_r))
+        //  # d(err_r) / d(target_r) = 2 * M_Im * M_right(source_r * measure_r) * M_Conj
+        Matx34d drdtq = 2.0 * (m_right(sourceQuat * rotMeasured) * M_Conj).get_minor<3, 4>(1, 0);
+
+        // d(err_t) = d(conj(source_r) * (target_t - source_t) * source_r) =
+        // conj(source_r) * (d(target_t) - d(source_t)) * source_r +
+        // conj(d(source_r)) * (target_t - source_t) * source_r +
+        // conj(source_r) * (target_t - source_t) * d(source_r) =
+        // <conj(a*b) == conj(b)*conj(a), conj(target_t - source_t) = - (target_t - source_t), 2 * Im(x) = (x - conj(x))>
+        // conj(source_r) * (d(target_t) - d(source_t)) * source_r +
+        // 2 * Im(conj(source_r) * (target_t - source_t) * d(source_r))
+        // d(*_t) == 0:
+        //  # d(err_t) = 2 * Im(conj(source_r) * (target_t - source_t) * d(source_r))
+        //  # V(d(err_t)) = 2 * M_Im * M_left(conj(source_r) * (target_t - source_t)) * V(d(source_r))
+        //  # d(err_t) / d(source_r) = 2 * M_Im * M_left(conj(source_r) * (target_t - source_t))
+        Matx34d dtdsq = 2 * m_left(sourceQuatInv * Quatd(0, deltaTrans[0], deltaTrans[1], deltaTrans[2])).get_minor<3, 4>(1, 0);
+        // deltaTrans is rotated by sourceQuatInv, so the jacobian is rot matrix of sourceQuatInv by +1 or -1
+        Matx33d dtdtt = sourceQuatInv.toRotMat3x3(QUAT_ASSUME_UNIT);
+        Matx33d dtdst = -dtdtt;
+
+        Matx33d z;
+        sqj = concatVert(dtdsq, drdsq);
+        tqj = concatVert(Matx34d(), drdtq);
+        stj = concatVert(dtdst, z);
+        ttj = concatVert(dtdtt, z);
+
+        stj = sqrtInfoMatrix * stj;
+        ttj = sqrtInfoMatrix * ttj;
+        sqj = sqrtInfoMatrix * sqj;
+        tqj = sqrtInfoMatrix * tqj;
+    }
+
+    return res.ddot(res);
+}
+
+
 class Pose3dAnalyticCostFunction : public ceres::SizedCostFunction<6, 3, 4, 3, 4>
 {
 public:
@@ -353,26 +445,7 @@ public:
         sqrtInfoMatrix(llt6(infoMatrix))
     { }
 
-    static Matx66d llt6(Matx66d m)
-    {
-        Matx66d L;
-        for (int i = 0; i < 6; i++)
-        {
-            for (int j = 0; j < (i + 1); j++)
-            {
-                double sum = 0;
-                for (int k = 0; k < j; k++)
-                    sum += L(i, k) * L(j, k);
-
-                if (i == j)
-                    L(i, i) = sqrt(m(i, i) - sum);
-                else
-                    L(i, j) = (1.0 / L(j, j) * (m(i, j) - sum));
-            }
-        }
-        return L;
-    }
-
+    
     bool Evaluate(double const* const* parameters,
                   double* residuals,
                   double** jacobians) const override
@@ -384,99 +457,27 @@ public:
         Vec4d p3(parameters[3]);
         Quatd targetQuat(p3);
 
-        // err_r = 2*Im(conj(rel_r) * measure_r) = 2*Im(conj(target_r) * source_r * measure_r)
-        // err_t = conj(source_r) * (target_t - source_t) * source_r - measure_t
-
         Vec6d res;
-
-        Quatd sourceQuatInv = sourceQuat.conjugate();
-        Vec3d deltaTrans = targetTrans - sourceTrans;
-
-        Quatd relativeQuat = sourceQuatInv * targetQuat;
-        Vec3d relativeTrans = sourceQuatInv.toRotMat3x3(cv::QUAT_ASSUME_UNIT) * deltaTrans;
-
-        //! Definition should actually be relativeQuat * rotMeasured.conjugate()
-        Quatd deltaRot = relativeQuat.conjugate() * rotMeasured;
-
-        Vec3d terr = relativeTrans - transMeasured;
-        Vec3d rerr = 2.0 * Vec3d(deltaRot.x, deltaRot.y, deltaRot.z);
-        Vec6d rterr(terr[0], terr[1], terr[2], rerr[0], rerr[1], rerr[2]);
-
-        res = sqrtInfoMatrix * rterr;
+        Matx<double, 6, 3> stj, ttj;
+        Matx<double, 6, 4> sqj, tqj;
+        poseError(sourceQuat, sourceTrans, targetQuat, targetTrans,
+                  rotMeasured, transMeasured, sqrtInfoMatrix, /* needJacobians = */ (bool)(jacobians),
+                  sqj, stj, tqj, ttj, res);
 
         if (jacobians)
         {
-            Matx<double, 6, 3> stj, ttj;
-            Matx<double, 6, 4> sqj, tqj;
+            // source trans, source quat, target trans, target quat
+            double* ptrs[4] = { stj.val, sqj.val, ttj.val, tqj.val };
+            size_t sizes[4] = { 6 * 3, 6 * 4, 6 * 3, 6 * 4 };
 
-            // d(err_r) = 2*Im(d(conj(target_r) * source_r * measure_r)) = < measure_r is constant > =
-            // 2*Im((conj(d(target_r)) * source_r + conj(target_r) * d(source_r)) * measure_r)
-            // d(target_r) == 0:
-            //  # d(err_r) = 2*Im(conj(target_r) * d(source_r) * measure_r)
-            //  # V(d(err_r)) = 2 * M_Im * M_right(measure_r) * M_left(conj(target_r)) * V(d(source_r))
-            //  # d(err_r) / d(source_r) = 2 * M_Im * M_right(measure_r) * M_left(conj(target_r))
-            Matx34d drdsq = 2.0 * (m_right(rotMeasured) * m_left(targetQuat.conjugate())).get_minor<3, 4>(1, 0);
-
-            // d(source_r) == 0:
-            //  # d(err_r) = 2*Im(conj(d(target_r)) * source_r * measure_r)
-            //  # V(d(err_r)) = 2 * M_Im * M_right(source_r * measure_r) * M_Conj * V(d(target_r))
-            //  # d(err_r) / d(target_r) = 2 * M_Im * M_right(source_r * measure_r) * M_Conj
-            Matx34d drdtq = 2.0 * (m_right(sourceQuat * rotMeasured) * M_Conj).get_minor<3, 4>(1, 0);
-
-            // d(err_t) = d(conj(source_r) * (target_t - source_t) * source_r) =
-            // conj(source_r) * (d(target_t) - d(source_t)) * source_r +
-            // conj(d(source_r)) * (target_t - source_t) * source_r +
-            // conj(source_r) * (target_t - source_t) * d(source_r) =
-            // <conj(a*b) == conj(b)*conj(a), conj(target_t - source_t) = - (target_t - source_t), 2 * Im(x) = (x - conj(x))>
-            // conj(source_r) * (d(target_t) - d(source_t)) * source_r +
-            // 2 * Im(conj(source_r) * (target_t - source_t) * d(source_r))
-            // d(*_t) == 0:
-            //  # d(err_t) = 2 * Im(conj(source_r) * (target_t - source_t) * d(source_r))
-            //  # V(d(err_t)) = 2 * M_Im * M_left(conj(source_r) * (target_t - source_t)) * V(d(source_r))
-            //  # d(err_t) / d(source_r) = 2 * M_Im * M_left(conj(source_r) * (target_t - source_t))
-            Vec3d td = targetTrans - sourceTrans;
-            Matx34d dtdsq = 2 * m_left(sourceQuatInv * Quatd(0, deltaTrans[0], deltaTrans[1], deltaTrans[2])).get_minor<3, 4>(1, 0);
-            // deltaTrans is rotated by sourceQuatInv, so the jacobian is rot matrix of sourceQuatInv by +1 or -1
-            Matx33d dtdtt = sourceQuatInv.toRotMat3x3(QUAT_ASSUME_UNIT);
-            Matx33d dtdst = - dtdtt;
-
-            Matx33d z;
-            sqj = concatVert(dtdsq, drdsq);
-            tqj = concatVert(Matx34d(), drdtq);
-            stj = concatVert(dtdst, z);
-            ttj = concatVert(dtdtt, z);
-
-            stj = sqrtInfoMatrix * stj;
-            ttj = sqrtInfoMatrix * ttj;
-            sqj = sqrtInfoMatrix * sqj;
-            tqj = sqrtInfoMatrix * tqj;
-
-            // sourceTrans
-            if (jacobians[0])
+            for (int k = 0; k < 4; k++)
             {
-                for (int i = 0; i < 6 * 3; i++)
-                    jacobians[0][i] = stj.val[i];
-            }
-            
-            // sourceQuat
-            if (jacobians[1])
-            {
-                for (int i = 0; i < 6 * 4; i++)
-                    jacobians[1][i] = sqj.val[i];
-            }
+                if (jacobians[k])
+                {
+                    for (int i = 0; i < sizes[k]; i++)
+                        jacobians[k][i] = ptrs[k][i];
 
-            // targetTrans
-            if (jacobians[2])
-            {
-                for (int i = 0; i < 6 * 3; i++)
-                    jacobians[2][i] = ttj.val[i];
-            }
-
-            // targetQuat
-            if (jacobians[3])
-            {
-                for (int i = 0; i < 6 * 4; i++)
-                    jacobians[3][i] = tqj.val[i];
+                }
             }
         }
 
