@@ -12,6 +12,7 @@ namespace cv {
 namespace kinfu {
 
 static void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth, Points, Normals );
+void computePointsNormalsColors(const Intr, const Intr, float, const Depth, const Colors, Points, Normals, Colors);
 static Depth pyrDownBilateral(const Depth depth, float sigma);
 static void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
@@ -107,10 +108,9 @@ struct RenderInvoker : ParallelLoopBody
 
 struct RenderColorInvoker : ParallelLoopBody
 {
-    RenderColorInvoker(const Points& _points, const Normals& _normals, const Colors& _colors, Mat_<Vec4b>& _img, Affine3f _lightPose, Size _sz) :
+    RenderColorInvoker(const Points& _points, const Colors& _colors, Mat_<Vec4b>& _img, Affine3f _lightPose, Size _sz) :
         ParallelLoopBody(),
         points(_points),
-        normals(_normals),
         colors(_colors),
         img(_img),
         lightPose(_lightPose),
@@ -123,13 +123,11 @@ struct RenderColorInvoker : ParallelLoopBody
         {
             Vec4b* imgRow = img[y];
             const ptype* ptsRow = points[y];
-            const ptype* nrmRow = normals[y];
             const ptype* clrRow = colors[y];
 
             for(int x = 0; x < sz.width; x++)
             {
                 Point3f p = fromPtype(ptsRow[x]);
-                Point3f n = fromPtype(nrmRow[x]);
                 Point3f c = fromPtype(clrRow[x]);
                 Vec4b color;
 
@@ -148,7 +146,6 @@ struct RenderColorInvoker : ParallelLoopBody
     }
 
     const Points& points;
-    const Normals& normals;
     const Colors& colors;
     Mat_<Vec4b>& img;
     Affine3f lightPose;
@@ -767,7 +764,7 @@ void renderPointsNormalsColors(InputArray _points, InputArray _normals, InputArr
 
     Mat_<Vec4b> img = image.getMat();
 
-    RenderColorInvoker ri(points, normals, colors, img, lightPose, sz);
+    RenderColorInvoker ri(points, colors, img, lightPose, sz);
     Range range(0, sz.height);
     const int nstripes = -1;
     parallel_for_(range, ri, nstripes);

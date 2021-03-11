@@ -561,6 +561,7 @@ struct RGBSource
             else
             {
                 // TODO: replace to rgb types
+                rgb_frameSize = Size(w, h);
             }
 
             Matx33f rgb_camMatrix = Matx33f(rgb_fx, 0, rgb_cx, 0, rgb_fy, rgb_cy, 0, 0, 1);
@@ -569,12 +570,12 @@ struct RGBSource
         }
     }
 
-    void updateVolumeParams(const Vec3i& _resolution, float& _voxelSize, float& _tsdfTruncDist, Affine3f& _volumePose)
+    void updateVolumeParams(const Vec3i&, float&, float&, Affine3f&)
     {
         // TODO: do this settings for rgb image
     }
 
-    void updateICPParams(float& _icpDistThresh)
+    void updateICPParams(float&)
     {
         // TODO: do this settings for rgb image icp
     }

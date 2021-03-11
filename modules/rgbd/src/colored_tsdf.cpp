@@ -262,15 +262,11 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     int iy = cvFloor(p.y);
     int iz = cvFloor(p.z);
 
-    float tx = p.x - ix;
-    float ty = p.y - iy;
-    float tz = p.z - iz;
-
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
-    float r = 0, g = 0, b = 0;
 
     // TODO: create better interpolation or remove this simple version
     /*
+    float r = 0, g = 0, b = 0;
     float mainRGBsum = (float) (volData[coordBase].r + volData[coordBase].g + volData[coordBase].b);
     float counter = 0;
     for (int i = 0; i < 8; i++)
