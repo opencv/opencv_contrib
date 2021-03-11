@@ -756,28 +756,31 @@ void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals
 
     if(_points.needed())
     {
+        std::cout << "2" << std::endl;
         std::vector<std::vector<ptype>> pVecs, nVecs;
         FetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
         Range range(0, volResolution.x);
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
         std::vector<ptype> points, normals;
+        std::cout << "2" << std::endl;
         for(size_t i = 0; i < pVecs.size(); i++)
         {
             points.insert(points.end(), pVecs[i].begin(), pVecs[i].end());
             normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
         }
-
+        std::cout << "2" << std::endl;
         _points.create((int)points.size(), 1, POINT_TYPE);
         if(!points.empty())
             Mat((int)points.size(), 1, POINT_TYPE, &points[0]).copyTo(_points.getMat());
-
+        std::cout << "2" << std::endl;
         if(_normals.needed())
         {
             _normals.create((int)normals.size(), 1, POINT_TYPE);
             if(!normals.empty())
                 Mat((int)normals.size(), 1, POINT_TYPE, &normals[0]).copyTo(_normals.getMat());
         }
+        std::cout << "2" << std::endl;
     }
 }
 
