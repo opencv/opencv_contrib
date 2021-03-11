@@ -60,6 +60,11 @@ struct Pose3d
         return Affine3d(Quatd(vq).toRotMat3x3(QUAT_ASSUME_UNIT), t);
     }
 
+    Quatd getQuat() const
+    {
+        return Quatd(vq);
+    }
+
     inline Pose3d inverse() const
     {
         Pose3d out;
@@ -242,77 +247,6 @@ void optimize(PoseGraph& poseGraph);
 #if defined(CERES_FOUND)
 void createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& problem);
 
-//! Error Functor required for Ceres to obtain an auto differentiable cost function
-class Pose3dErrorFunctor
-{
-   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Pose3dErrorFunctor(const Pose3d& _poseMeasurement, const Matx66d& _sqrtInformation)
-        : poseMeasurement(_poseMeasurement)
-    {
-        cv2eigen(_sqrtInformation, sqrtInfo);
-    }
-    Pose3dErrorFunctor(const Pose3d& _poseMeasurement,
-                       const Eigen::Matrix<double, 6, 6>& _sqrtInformation)
-        : poseMeasurement(_poseMeasurement), sqrtInfo(_sqrtInformation)
-    {
-    }
-
-    template<typename T>
-    bool operator()(const T* const _pSourceTrans, const T* const _pSourceQuat,
-                    const T* const _pTargetTrans, const T* const _pTargetQuat, T* _pResidual) const
-    {
-        Eigen::Map<const Eigen::Matrix<T, 3, 1>> sourceTrans(_pSourceTrans);
-        Eigen::Map<const Eigen::Matrix<T, 3, 1>> targetTrans(_pTargetTrans);
-
-        //Eigen::Quaternion<T> sourceQuat(_pSourceQuat[3], _pSourceQuat[0], _pSourceQuat[1], _pSourceQuat[2]);
-        //Eigen::Quaternion<T> targetQuat(_pTargetQuat[3], _pTargetQuat[0], _pTargetQuat[1], _pTargetQuat[2]);
-        Eigen::Quaternion<T> sourceQuat(_pSourceQuat[0], _pSourceQuat[1], _pSourceQuat[2], _pSourceQuat[3]);
-        Eigen::Quaternion<T> targetQuat(_pTargetQuat[0], _pTargetQuat[1], _pTargetQuat[2], _pTargetQuat[3]);
-        
-        Eigen::Map<Eigen::Matrix<T, 6, 1>> residual(_pResidual);
-
-        //Eigen::Quaternion<T> targetQuatInv = targetQuat.conjugate();
-
-        //Eigen::Quaternion<T> relativeQuat    = targetQuatInv * sourceQuat;
-        //Eigen::Matrix<T, 3, 1> relativeTrans = targetQuatInv * (targetTrans - sourceTrans);
-
-        Eigen::Quaternion<T> sourceQuatInv = sourceQuat.conjugate();
-
-        Eigen::Quaternion<T> relativeQuat = sourceQuatInv * targetQuat;
-        Eigen::Matrix<T, 3, 1> relativeTrans = sourceQuatInv * (targetTrans - sourceTrans);
-
-        //! Definition should actually be relativeQuat * poseMeasurement.r.conjugate()
-        Eigen::Quaternion<T> pmr(T(poseMeasurement.vq[0]), T(poseMeasurement.vq[1]), T(poseMeasurement.vq[2]), T(poseMeasurement.vq[3]));
-        
-        //DEBUG
-        //Eigen::Quaternion<T> deltaRot = pmr * relativeQuat.conjugate();
-        Eigen::Quaternion<T> deltaRot = relativeQuat.conjugate() * pmr;
-
-        //DEBUG
-        //deltaRot = (deltaRot.w() < T(0)) ? deltaRot * Eigen::Quaternion<T>(T(-1), T(0), T(0), T(0)) : deltaRot;
-
-        Eigen::Matrix<T, 3, 1> pmt(T(poseMeasurement.t[0]), T(poseMeasurement.t[1]), T(poseMeasurement.t[2]));
-        residual.template block<3, 1>(0, 0) = relativeTrans -  pmt;
-        residual.template block<3, 1>(3, 0) = T(2.0) * deltaRot.vec();
-
-        residual.applyOnTheLeft(sqrtInfo.template cast<T>());
-
-        return true;
-    }
-
-    static ceres::CostFunction* create(const Pose3d& _poseMeasurement,
-                                       const Matx66f& _sqrtInformation)
-    {
-        return new ceres::AutoDiffCostFunction<Pose3dErrorFunctor, 6, 3, 4, 3, 4>(
-            new Pose3dErrorFunctor(_poseMeasurement, _sqrtInformation));
-    }
-
-   private:
-    const Pose3d poseMeasurement;
-    Eigen::Matrix<double, 6, 6> sqrtInfo;
-};
-
 // matrix form of Im(a)
 const Matx44d M_Im{ 0, 0, 0, 0,
                     0, 1, 0, 0,
@@ -351,6 +285,15 @@ inline Matx44d m_right(Quatd q)
              x,  w,  z, -y,
              y, -z,  w,  x,
              z,  y, -x,  w };
+}
+
+inline Matx43d expQuatJacobian(Quatd q)
+{
+    double w = q.w, x = q.x, y = q.y, z = q.z;
+    return Matx43d(-x, -y, -z,
+                    w,  z, -y,
+                   -z,  w,  x,
+                    y, -x,  w);
 }
 
 // concatenate matrices vertically

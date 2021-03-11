@@ -99,7 +99,7 @@ PoseGraph::PoseGraph(const std::string& g2oFileName) :
     };
 
     // for debugging purposes
-    int minId = 0, maxId = 1 << 24;
+    int minId = 0, maxId = 1 << 30;
 
     std::ifstream infile(g2oFileName.c_str());
     if (!infile)
@@ -143,9 +143,6 @@ PoseGraph::PoseGraph(const std::string& g2oFileName) :
             infile >> startId >> endId;
             Affine3d pose = readAffine(infile);
 
-            if (!((startId >= minId && startId < maxId) && (endId >= minId && endId < maxId)))
-                continue;
-
             Matx66d info;
             for (int i = 0; i < 6 && infile.good(); ++i)
             {
@@ -158,8 +155,11 @@ PoseGraph::PoseGraph(const std::string& g2oFileName) :
                     }
                 }
             }
-            
-            edges.push_back(PoseGraphEdge(startId, endId, pose, info));
+
+            if ((startId >= minId && startId < maxId) && (endId >= minId && endId < maxId))
+            {
+                edges.push_back(PoseGraphEdge(startId, endId, pose, info));
+            }
         }
         else
         {
@@ -185,41 +185,21 @@ public:
         Quatd x(vx);
         Vec3d delta(delta_ptr);
 
-        const double norm_delta = norm(delta);
-        Quatd x_plus_delta;
-        if (norm_delta > 0.0)
-        {
-            const double sin_delta_by_delta = std::sin(norm_delta) / norm_delta;
+        Quatd x_plus_delta = Quatd(0, delta[0], delta[1], delta[2]).exp() * x;
 
-            // Note, in the constructor w is first.
-            Quatd delta_q(std::cos(norm_delta),
-                          sin_delta_by_delta * delta[0],
-                          sin_delta_by_delta * delta[1],
-                          sin_delta_by_delta * delta[2]);
-            x_plus_delta = delta_q * x;
-        }
-        else
-        {
-            x_plus_delta = x;
-        }
-
-        Vec4d xpd = x_plus_delta.toVec();
-        x_plus_delta_ptr[0] = xpd[0];
-        x_plus_delta_ptr[1] = xpd[1];
-        x_plus_delta_ptr[2] = xpd[2];
-        x_plus_delta_ptr[3] = xpd[3];
+        *(Vec4d*)(x_plus_delta_ptr) = x_plus_delta.toVec();
 
         return true;
     }
 
     bool ComputeJacobian(const double* x, double* jacobian) const override
     {
-        // clang-format off
-        jacobian[0] = -x[1];  jacobian[1]  = -x[2];   jacobian[2]  = -x[3];
-        jacobian[3] =  x[0];  jacobian[4]  =  x[3];   jacobian[5]  = -x[2];
-        jacobian[6] = -x[3];  jacobian[7]  =  x[0];   jacobian[8]  =  x[1];
-        jacobian[9] =  x[2];  jacobian[10] = -x[1];   jacobian[11] =  x[0];
-        // clang-format on
+        Vec4d vx(x);
+        Matx43d jm = Optimizer::expQuatJacobian(Quatd(vx));
+
+        for (int ii = 0; ii < 12; ii++)
+            jacobian[ii] = jm.val[ii];
+
         return true;
     }
 
@@ -239,7 +219,7 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
     ceres::LossFunction* lossFunction = nullptr;
     // TODO: Experiment with SE3 parameterization
     ceres::LocalParameterization* quatLocalParameterization =
-        new ceres::EigenQuaternionParameterization;
+         new MyQuaternionParameterization;
 
     for (const PoseGraphEdge& currEdge : poseGraph.edges)
     {
@@ -248,28 +228,12 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
         Pose3d& sourcePose = poseGraph.nodes.at(sourceNodeId).se3Pose;
         Pose3d& targetPose = poseGraph.nodes.at(targetNodeId).se3Pose;
 
-        // -------
-
-        Eigen::Matrix<double, 6, 6> info;
-        cv2eigen(Matx66d(currEdge.information), info);
-        const Eigen::Matrix<double, 6, 6> sqrt_information = info.llt().matrixL();
-        Matx66d sqrtInfo;
-        eigen2cv(sqrt_information, sqrtInfo);
-
-        ceres::CostFunction* costFunction = Pose3dErrorFunctor::create(
-            Pose3d(currEdge.transformation.rotation(), currEdge.transformation.translation()),
-            sqrtInfo);
-
-        // -------
-
-        ceres::CostFunction* costFunction2 = Pose3dAnalyticCostFunction::create(
+        ceres::CostFunction* costFunction = Pose3dAnalyticCostFunction::create(
             Vec3d(currEdge.transformation.translation()),
             Quatd::createFromRotMat(Matx33d(currEdge.transformation.rotation())),
             currEdge.information);
 
-        // -------
-
-        problem.AddResidualBlock(costFunction2, lossFunction,
+        problem.AddResidualBlock(costFunction, lossFunction,
             sourcePose.t.val, sourcePose.vq.val,
             targetPose.t.val, targetPose.vq.val);
         problem.SetParameterization(sourcePose.vq.val, quatLocalParameterization);
