@@ -297,7 +297,7 @@ Mat_<Vec3b> creareRGBframe(Size s)
     return rgb;
 }
 
-void CheckFrequency(Mat image)
+static inline void CheckFrequency(Mat image)
 {
     float all = (float) image.size().height * image.size().width;
     int cc1 = 0, cc2 = 0, cc3 = 0, cc4 = 0;
