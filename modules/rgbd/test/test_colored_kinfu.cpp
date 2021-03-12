@@ -283,7 +283,6 @@ Mat_<Vec3b> creareRGBframe(Size s)
     {
         for (int j = 0; j < s.width; j++)
         {
-            
             if (i < ci && j < cj) // red
                 rgb.at<Vec3b>(i, j) = Vec3b(200, 0, 0);
             if (i < ci && j > cj) // green
@@ -359,7 +358,7 @@ void flyTest(bool hiDense, bool test_colors)
             imshow("render", rendered);
             waitKey(10);
         }
-        
+
         if (test_colors)
         {
             Mat rendered;
