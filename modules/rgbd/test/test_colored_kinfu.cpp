@@ -299,11 +299,10 @@ Mat_<Vec3b> creareRGBframe(Size s)
 
 void CheckFrequency(Mat image)
 {
-    float all = image.size().height * image.size().width;
+    float all = (float) image.size().height * image.size().width;
     int cc1 = 0, cc2 = 0, cc3 = 0, cc4 = 0;
     Vec3b c1 = Vec3b(200, 0, 0), c2 = Vec3b(0, 200, 0);
     Vec3b c3 = Vec3b(0, 0, 200), c4 = Vec3b(100, 100, 100);
-    float fc1, fc2, fc3, fc4;
     for (int i = 0; i < image.size().height; i++)
     {
         for (int j = 0; j < image.size().width; j++)
