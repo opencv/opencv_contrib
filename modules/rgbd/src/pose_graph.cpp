@@ -251,6 +251,7 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
 
 void Optimizer::MyOptimize(PoseGraph& poseGraph)
 {
+    //TODO: no copying
     PoseGraph poseGraphOriginal = poseGraph;
 
     if (!poseGraphOriginal.isValid())
@@ -309,7 +310,7 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
 
             totalErr += err;
         }
-        return totalErr;
+        return totalErr*0.5;
     };
     double energy = calcEnergy(poseGraph.nodes);
     double startEnergy = energy;
@@ -349,8 +350,13 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
         for (const auto& e : poseGraph.edges)
         {
             int srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
-            Pose3d srcP = poseGraph.nodes.at(srcId).se3Pose;
-            Pose3d tgtP = poseGraph.nodes.at(dstId).se3Pose;
+            const PoseGraphNode& srcNode = poseGraph.nodes.at(srcId);
+            const PoseGraphNode& dstNode = poseGraph.nodes.at(dstId);
+
+            Pose3d srcP = srcNode.se3Pose;
+            Pose3d tgtP = dstNode.se3Pose;
+            bool srcFixed = srcNode.isPoseFixed();
+            bool dstFixed = dstNode.isPoseFixed();
 
             Vec6d res;
             Matx<double, 6, 3> stj, ttj;
@@ -359,21 +365,43 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
                                    e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ true,
                                    sqj, stj, tqj, ttj, res);
 
-            size_t srcPlace = idToPlace[srcId], dstPlace = idToPlace[dstId];
-            Matx66d sj = concatHor(sqj, stj) * cachedJac[srcPlace];
-            Matx66d tj = concatHor(tqj, ttj) * cachedJac[dstPlace];
-
-            jtj.refBlock(srcPlace, srcPlace) += sj.t() * sj;
-            jtj.refBlock(dstPlace, dstPlace) += tj.t() * tj;
-            Matx66d sjttj = sj.t() * tj;
-            jtj.refBlock(srcPlace, dstPlace) += sjttj;
-            jtj.refBlock(dstPlace, srcPlace) += sjttj.t();
-
-            Vec6f jtbSrc = sj.t() * res, jtbDst = tj.t() * res;
-            for (int i = 0; i < 6; i++)
+            size_t srcPlace, dstPlace;
+            Matx66d sj, tj;
+            if (!srcFixed)
             {
-                jtb[6 * srcPlace + i] += jtbSrc[i];
-                jtb[6 * dstPlace + i] += jtbDst[i];
+                srcPlace = idToPlace.at(srcId);
+                sj = concatHor(sqj, stj) * cachedJac[srcPlace];
+
+                jtj.refBlock(srcPlace, srcPlace) += sj.t() * sj;
+
+                Vec6f jtbSrc = sj.t() * res;
+                for (int i = 0; i < 6; i++)
+                {
+                    //TODO: there were no minus, check if this is correct
+                    jtb[6 * srcPlace + i] += - jtbSrc[i];
+                }
+            }
+
+            if (!dstFixed)
+            {
+                dstPlace = idToPlace.at(dstId);
+                tj = concatHor(tqj, ttj) * cachedJac[dstPlace];
+                
+                jtj.refBlock(dstPlace, dstPlace) += tj.t() * tj;
+
+                Vec6f jtbDst = tj.t() * res;
+                for (int i = 0; i < 6; i++)
+                {
+                    //TODO: there were no minus, check if this is correct
+                    jtb[6 * dstPlace + i] += -jtbDst[i];
+                }
+            }
+            
+            if (!(srcFixed || dstFixed))
+            {
+                Matx66d sjttj = sj.t() * tj;
+                jtj.refBlock(srcPlace, dstPlace) += sjttj;
+                jtj.refBlock(dstPlace, srcPlace) += sjttj.t();
             }
         }
 
@@ -438,7 +466,7 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
 
                 lambdaLevMarq *= lmUpFactor;
 
-                std::cout << "LM up, old energy = " << oldEnergy << std::endl;
+                std::cout << "LM up: " << lambdaLevMarq << ", old energy = " << oldEnergy << std::endl;
             }
             else
             {
@@ -455,12 +483,13 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
 
                 oldEnergy = energy;
 
-                std::cout << "LM down" << std::endl;
+                std::cout << "LM down: " << lambdaLevMarq << std::endl;
             }
 
             iter++;
 
-            done = (iter >= maxIterations) || (startEnergy - energy) < minTolerance * startEnergy;
+            //TODO: fix this
+            done = (iter >= maxIterations); //  || (startEnergy - energy) < minTolerance * startEnergy;
         }
     }
 
