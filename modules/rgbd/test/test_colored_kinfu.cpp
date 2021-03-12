@@ -362,6 +362,7 @@ void flyTest(bool hiDense, bool test_colors)
         {
             Mat rendered;
             kf->render(rendered);
+            CheckFrequency(rendered);
             return;
         }
     }
