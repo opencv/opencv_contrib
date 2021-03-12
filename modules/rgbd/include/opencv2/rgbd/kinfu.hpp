@@ -73,6 +73,11 @@ struct CV_EXPORTS_W Params
       A set of parameters suitable for use with HashTSDFVolume
     */
     CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
+    /** @brief ColoredTSDF parameters
+      A set of parameters suitable for use with ColoredTSDFVolume
+    */
+    CV_WRAP static Ptr<Params> coloredTSDFParams(bool isCoarse);
+
 
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
