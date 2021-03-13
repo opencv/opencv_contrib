@@ -2222,7 +2222,7 @@ void cv::omnidir::stereoRectify(InputArray R, InputArray T, OutputArray R1, Outp
     e1.copyTo(_R1.row(0));
     e2.copyTo(_R1.row(1));
     e3.copyTo(_R1.row(2));
-    _R2 = R21 * _R1;
+    _R2 = _R1 * R21;
 
 }
 
