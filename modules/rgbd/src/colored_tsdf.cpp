@@ -81,6 +81,12 @@ public:
     Point3f getNormalVoxel(const cv::Point3f& p) const;
     Point3f getColorVoxel(const cv::Point3f& p) const;
 
+#if USE_INTRINSICS
+    float interpolateVoxel(const v_float32x4& p) const;
+    v_float32x4 getNormalVoxel(const v_float32x4& p) const;
+    v_float32x4 getColorVoxel(const v_float32x4& p) const;
+#endif
+
     Vec4i volStrides;
     Vec6f frameParams;
     Mat pixNorms;
@@ -168,7 +174,55 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
         depthFactor, cameraPose, intrinsics, rgb_intrinsics, pixNorms, volume);
 }
 
+#if USE_INTRINSICS
+// all coordinate checks should be done in inclosing cycle
+inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& _p) const
+{
+    v_float32x4 p(_p.x, _p.y, _p.z, 0);
+    return interpolateVoxel(p);
+}
 
+inline float ColoredTSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
+{
+    // tx, ty, tz = floor(p)
+    v_int32x4 ip = v_floor(p);
+    v_float32x4 t = p - v_cvt_f32(ip);
+    float tx = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float ty = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float tz = t.get0();
+
+    int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
+
+    int ix = ip.get0();
+    ip = v_rotate_right<1>(ip);
+    int iy = ip.get0();
+    ip = v_rotate_right<1>(ip);
+    int iz = ip.get0();
+
+    int coordBase = ix * xdim + iy * ydim + iz * zdim;
+
+    TsdfType vx[8];
+    for (int i = 0; i < 8; i++)
+        vx[i] = volData[neighbourCoords[i] + coordBase].tsdf;
+
+    v_float32x4 v0246 = tsdfToFloat_INTR(v_int32x4(vx[0], vx[2], vx[4], vx[6]));
+    v_float32x4 v1357 = tsdfToFloat_INTR(v_int32x4(vx[1], vx[3], vx[5], vx[7]));
+    v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
+
+    v_float32x4 v00_10 = vxx;
+    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
+    float v0 = v0_1.get0();
+    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+    float v1 = v0_1.get0();
+
+    return v0 + tx * (v1 - v0);
+}
+#else
 inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
 {
     int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
@@ -197,9 +251,80 @@ inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
     float v1 = v10 + ty*(v11 - v10);
 
     return v0 + tx*(v1 - v0);
+}
+#endif
 
+
+#if USE_INTRINSICS
+//gradientDeltaFactor is fixed at 1.0 of voxel size
+inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& _p) const
+{
+    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
+    v_float32x4 result = getNormalVoxel(p);
+    float CV_DECL_ALIGNED(16) ares[4];
+    v_store_aligned(ares, result);
+    return Point3f(ares[0], ares[1], ares[2]);
 }
 
+inline v_float32x4 ColoredTSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
+{
+    if (v_check_any(p < v_float32x4(1.f, 1.f, 1.f, 0.f)) ||
+        v_check_any(p >= v_float32x4((float)(volResolution.x - 2),
+            (float)(volResolution.y - 2),
+            (float)(volResolution.z - 2), 1.f))
+        )
+        return nanv;
+
+    v_int32x4 ip = v_floor(p);
+    v_float32x4 t = p - v_cvt_f32(ip);
+    float tx = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float ty = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float tz = t.get0();
+
+    const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
+
+    int ix = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iy = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iz = ip.get0();
+
+    int coordBase = ix * xdim + iy * ydim + iz * zdim;
+
+    float CV_DECL_ALIGNED(16) an[4];
+    an[0] = an[1] = an[2] = an[3] = 0.f;
+    for (int c = 0; c < 3; c++)
+    {
+        const int dim = volDims[c];
+        float& nv = an[c];
+
+        TsdfType vx[8];
+        for (int i = 0; i < 8; i++)
+            vx[i] = volData[neighbourCoords[i] + coordBase + 1 * dim].tsdf -
+            volData[neighbourCoords[i] + coordBase - 1 * dim].tsdf;
+
+        v_float32x4 v0246 = tsdfToFloat_INTR(v_int32x4(vx[0], vx[2], vx[4], vx[6]));
+        v_float32x4 v1357 = tsdfToFloat_INTR(v_int32x4(vx[1], vx[3], vx[5], vx[7]));
+        v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
+
+        v_float32x4 v00_10 = vxx;
+        v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+        v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
+        float v0 = v0_1.get0();
+        v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+        float v1 = v0_1.get0();
+
+        nv = v0 + tx * (v1 - v0);
+    }
+
+    v_float32x4 n = v_load_aligned(an);
+    v_float32x4 Norm = v_sqrt(v_setall_f32(v_reduce_sum(n * n)));
+
+    return Norm.get0() < 0.0001f ? nanv : n / Norm;
+}
+#else
 inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 {
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
@@ -247,7 +372,53 @@ inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
                     an[2] * an[2]);
     return nv < 0.0001f ? nan3 : an / nv;
 }
+#endif
 
+#if USE_INTRINSICS
+//gradientDeltaFactor is fixed at 1.0 of voxel size
+inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& _p) const
+{
+    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
+    v_float32x4 result = getColorVoxel(p);
+    float CV_DECL_ALIGNED(16) ares[4];
+    v_store_aligned(ares, result);
+    return Point3f(ares[0], ares[1], ares[2]);
+}
+inline v_float32x4 ColoredTSDFVolumeCPU::getColorVoxel(const v_float32x4& p) const
+{
+    if (v_check_any(p < v_float32x4(1.f, 1.f, 1.f, 0.f)) ||
+        v_check_any(p >= v_float32x4((float)(volResolution.x - 2),
+            (float)(volResolution.y - 2),
+            (float)(volResolution.z - 2), 1.f))
+        )
+        return nanv;
+
+    v_int32x4 ip = v_floor(p);
+    v_float32x4 t = p - v_cvt_f32(ip);
+    float tx = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float ty = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float tz = t.get0();
+
+    const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
+    const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
+
+    int ix = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iy = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iz = ip.get0();
+
+    int coordBase = ix * xdim + iy * ydim + iz * zdim;
+    float CV_DECL_ALIGNED(16) rgb[4];
+    rgb[0] = volData[coordBase].r;
+    rgb[1] = volData[coordBase].g;
+    rgb[2] = volData[coordBase].b;
+    rgb[3] = 0.f;
+
+    v_float32x4 res = v_load_aligned(rgb);
+    return res;
+}
+#else
 inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 {
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
@@ -285,7 +456,7 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
     return res;
 }
-
+#endif
 
 struct ColorRaycastInvoker : ParallelLoopBody
 {
@@ -308,7 +479,154 @@ struct ColorRaycastInvoker : ParallelLoopBody
         vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
         reproj(intrinsics.makeReprojector())
     {  }
+#if USE_INTRINSICS
+    virtual void operator() (const Range& range) const override
+    {
+        const v_float32x4 vfxy(reproj.fxinv, reproj.fyinv, 0, 0);
+        const v_float32x4 vcxy(reproj.cx, reproj.cy, 0, 0);
 
+        const float(&cm)[16] = cam2vol.matrix.val;
+        const v_float32x4 camRot0(cm[0], cm[4], cm[8], 0);
+        const v_float32x4 camRot1(cm[1], cm[5], cm[9], 0);
+        const v_float32x4 camRot2(cm[2], cm[6], cm[10], 0);
+        const v_float32x4 camTrans(cm[3], cm[7], cm[11], 0);
+
+        const v_float32x4 boxDown(boxMin.x, boxMin.y, boxMin.z, 0.f);
+        const v_float32x4 boxUp(boxMax.x, boxMax.y, boxMax.z, 0.f);
+
+        const v_float32x4 invVoxelSize = v_float32x4(volume.voxelSizeInv,
+            volume.voxelSizeInv,
+            volume.voxelSizeInv, 1.f);
+
+        const float(&vm)[16] = vol2cam.matrix.val;
+        const v_float32x4 volRot0(vm[0], vm[4], vm[8], 0);
+        const v_float32x4 volRot1(vm[1], vm[5], vm[9], 0);
+        const v_float32x4 volRot2(vm[2], vm[6], vm[10], 0);
+        const v_float32x4 volTrans(vm[3], vm[7], vm[11], 0);
+
+        for (int y = range.start; y < range.end; y++)
+        {
+            ptype* ptsRow = points[y];
+            ptype* nrmRow = normals[y];
+            ptype* clrRow = colors[y];
+
+            for (int x = 0; x < points.cols; x++)
+            {
+                v_float32x4 point = nanv, normal = nanv, color = nanv;
+
+                v_float32x4 orig = camTrans;
+
+                // get direction through pixel in volume space:
+
+                // 1. reproject (x, y) on projecting plane where z = 1.f
+                v_float32x4 planed = (v_float32x4((float)x, (float)y, 0.f, 0.f) - vcxy) * vfxy;
+                planed = v_combine_low(planed, v_float32x4(1.f, 0.f, 0.f, 0.f));
+
+                // 2. rotate to volume space
+                planed = v_matmuladd(planed, camRot0, camRot1, camRot2, v_setzero_f32());
+
+                // 3. normalize
+                v_float32x4 invNorm = v_invsqrt(v_setall_f32(v_reduce_sum(planed * planed)));
+                v_float32x4 dir = planed * invNorm;
+
+                // compute intersection of ray with all six bbox planes
+                v_float32x4 rayinv = v_setall_f32(1.f) / dir;
+                // div by zero should be eliminated by these products
+                v_float32x4 tbottom = rayinv * (boxDown - orig);
+                v_float32x4 ttop = rayinv * (boxUp - orig);
+
+                // re-order intersections to find smallest and largest on each axis
+                v_float32x4 minAx = v_min(ttop, tbottom);
+                v_float32x4 maxAx = v_max(ttop, tbottom);
+
+                // near clipping plane
+                const float clip = 0.f;
+                float _minAx[4], _maxAx[4];
+                v_store(_minAx, minAx);
+                v_store(_maxAx, maxAx);
+                float tmin = max({ _minAx[0], _minAx[1], _minAx[2], clip });
+                float tmax = min({ _maxAx[0], _maxAx[1], _maxAx[2] });
+
+                // precautions against getting coordinates out of bounds
+                tmin = tmin + tstep;
+                tmax = tmax - tstep;
+
+                if (tmin < tmax)
+                {
+                    // interpolation optimized a little
+                    orig *= invVoxelSize;
+                    dir *= invVoxelSize;
+
+                    int xdim = volume.volDims[0];
+                    int ydim = volume.volDims[1];
+                    int zdim = volume.volDims[2];
+                    v_float32x4 rayStep = dir * v_setall_f32(tstep);
+                    v_float32x4 next = (orig + dir * v_setall_f32(tmin));
+                    float f = volume.interpolateVoxel(next), fnext = f;
+
+                    //raymarch
+                    int steps = 0;
+                    int nSteps = cvFloor((tmax - tmin) / tstep);
+                    for (; steps < nSteps; steps++)
+                    {
+                        next += rayStep;
+                        v_int32x4 ip = v_round(next);
+                        int ix = ip.get0(); ip = v_rotate_right<1>(ip);
+                        int iy = ip.get0(); ip = v_rotate_right<1>(ip);
+                        int iz = ip.get0();
+                        int coord = ix * xdim + iy * ydim + iz * zdim;
+
+                        fnext = tsdfToFloat(volume.volume.at<RGBTsdfVoxel>(coord).tsdf);
+                        if (fnext != f)
+                        {
+                            fnext = volume.interpolateVoxel(next);
+
+                            // when ray crosses a surface
+                            if (std::signbit(f) != std::signbit(fnext))
+                                break;
+
+                            f = fnext;
+                        }
+                    }
+
+                    // if ray penetrates a surface from outside
+                    // linearly interpolate t between two f values
+                    if (f > 0.f && fnext < 0.f)
+                    {
+                        v_float32x4 tp = next - rayStep;
+                        float ft = volume.interpolateVoxel(tp);
+                        float ftdt = volume.interpolateVoxel(next);
+                        float ts = tmin + tstep * (steps - ft / (ftdt - ft));
+
+                        // avoid division by zero
+                        if (!cvIsNaN(ts) && !cvIsInf(ts))
+                        {
+                            v_float32x4 pv = (orig + dir * v_setall_f32(ts));
+                            v_float32x4 nv = volume.getNormalVoxel(pv);
+                            v_float32x4 cl = volume.getColorVoxel(pv);
+
+                            if (!isNaN(nv))
+                            {
+                                color = cl;
+                                //convert pv and nv to camera space
+                                normal = v_matmuladd(nv, volRot0, volRot1, volRot2, v_setzero_f32());
+                                // interpolation optimized a little
+                                point = v_matmuladd(pv * v_float32x4(volume.voxelSize,
+                                    volume.voxelSize,
+                                    volume.voxelSize, 1.f),
+                                    volRot0, volRot1, volRot2, volTrans);
+                            }
+                        }
+                    }
+                }
+
+                v_store((float*)(&ptsRow[x]), point);
+                v_store((float*)(&nrmRow[x]), normal);
+                v_store((float*)(&clrRow[x]), color);
+            }
+        }
+    }
+#else
     virtual void operator() (const Range& range) const override
     {
         const Point3f camTrans = cam2vol.translation();
@@ -416,6 +734,7 @@ struct ColorRaycastInvoker : ParallelLoopBody
             }
         }
     }
+#endif
 
     Points& points;
     Normals& normals;
