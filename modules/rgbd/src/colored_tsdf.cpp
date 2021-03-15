@@ -394,12 +394,6 @@ inline v_float32x4 ColoredTSDFVolumeCPU::getColorVoxel(const v_float32x4& p) con
         return nanv;
 
     v_int32x4 ip = v_floor(p);
-    v_float32x4 t = p - v_cvt_f32(ip);
-    float tx = t.get0();
-    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
-    float ty = t.get0();
-    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
-    float tz = t.get0();
 
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
     const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();

@@ -512,7 +512,7 @@ void integrateRGBVolumeUnit(
                     // leave only first 2 lanes
                     projected = v_reinterpret_as_f32(v_reinterpret_as_u32(projected) &
                         v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0, 0));
-                    
+
                     v_float32x4 projectedRGB = v_muladd(camPixVec, rgb_vfxy, rgb_vcxy);
                     // leave only first 2 lanes
                     projectedRGB = v_reinterpret_as_f32(v_reinterpret_as_u32(projected) &
