@@ -93,43 +93,40 @@ struct Scene
     virtual std::vector<Affine3f> getPoses() = 0;
 };
 
-struct SemisphereScene : Scene
+struct RotatingScene : Scene
 {
-    const int framesPerCycle = 72;
-    const float nCycles = 1.0f;
-    const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -1.5f));
+    const int framesPerCycle = 32;
+    const float nCycles = 0.5f;
+    const Affine3f startPose = Affine3f(Vec3f(-1.f, 0.f, 0.f), Vec3f(1.5f, 2.f, -1.5f));
 
-    Size frameSize;
-    Matx33f intr;
-    float depthFactor;
-
-    SemisphereScene(Size sz, Matx33f _intr, float _depthFactor) :
+    RotatingScene(Size sz, Matx33f _intr, float _depthFactor) :
         frameSize(sz), intr(_intr), depthFactor(_depthFactor)
-    { }
+    {
+        cv::RNG rng(0);
+        rng.fill(randTexture, cv::RNG::UNIFORM, 0.f, 1.f);
+    }
 
     static float map(Point3f p)
     {
-        float plane = p.y + 0.5f;
+        const Point3f torPlace(0.f, 0.f, 0.f);
+        Point3f torPos(p - torPlace);
+        const Point2f torusParams(1.f, 0.2f);
+        Point2f torq(std::sqrt(torPos.x * torPos.x + torPos.z * torPos.z) - torusParams.x, torPos.y);
+        float torus = (float)cv::norm(torq) - torusParams.y;
 
-        Point3f boxPose = p - Point3f(-0.0f, 0.3f, 0.5f);
-        float boxSize = 0.5f;
-        float roundness = 0.08f;
-        Point3f boxTmp;
-        boxTmp.x = max(abs(boxPose.x) - boxSize, 0.0f);
-        boxTmp.y = max(abs(boxPose.y) - boxSize, 0.0f);
-        boxTmp.z = max(abs(boxPose.z) - boxSize, 0.0f);
-        float roundBox = (float)cv::norm(boxTmp) - roundness;
+        const Point3f cylShift(0.25f, 0.25f, 0.25f);
 
-        Point3f spherePose = p - Point3f(-0.0f, 0.3f, 0.0f);
-        float sphereRadius = 0.5f;
-        float sphere = (float)cv::norm(spherePose) - sphereRadius;
-        float sphereMinusBox = max(sphere, -roundBox);
+        Point3f cylPos = Point3f(abs(std::fmod(p.x - 0.1f, cylShift.x)),
+            p.y,
+            abs(std::fmod(p.z - 0.2f, cylShift.z))) - cylShift * 0.5f;
 
-        float subSphereRadius = 0.05f;
-        Point3f subSpherePose = p - Point3f(0.3f, -0.1f, -0.3f);
-        float subSphere = (float)cv::norm(subSpherePose) - subSphereRadius;
+        const Point2f cylParams(0.1f,
+            0.1f + 0.1f * sin(p.x * p.y * 5.f /* +std::log(1.f+abs(p.x*0.1f)) */));
+        Point2f cyld = Point2f(abs(std::sqrt(cylPos.x * cylPos.x + cylPos.z * cylPos.z)), abs(cylPos.y)) - cylParams;
+        float pins = min(max(cyld.x, cyld.y), 0.0f) + (float)cv::norm(Point2f(max(cyld.x, 0.f), max(cyld.y, 0.f)));
 
-        float res = min({ sphereMinusBox, subSphere, plane });
+        float res = max(-pins, torus);
+
         return res;
     }
 
@@ -139,7 +136,7 @@ struct SemisphereScene : Scene
         Reprojector reproj(intr);
 
         Range range(0, frame.rows);
-        parallel_for_(range, RenderInvoker<SemisphereScene>(frame, pose, reproj, depthFactor));
+        parallel_for_(range, RenderInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
 
         return std::move(frame);
     }
@@ -162,11 +159,17 @@ struct SemisphereScene : Scene
         return poses;
     }
 
+    Size frameSize;
+    Matx33f intr;
+    float depthFactor;
+    static cv::Mat_<float> randTexture;
 };
+
+Mat_<float> RotatingScene::randTexture(256, 256);
 
 Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
 {
-    return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
+    return makePtr<RotatingScene>(sz, _intr, _depthFactor);
 }
 
 // this is a temporary solution
@@ -272,6 +275,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
             }
         }, nstripes);
 }
+
 // ----------------------------
 
 class Settings
