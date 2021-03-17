@@ -65,8 +65,8 @@ public:
     virtual void integrate(InputArray, float, const Matx44f&, const kinfu::Intr&, const int) override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
     virtual void integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
-        const kinfu::Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId = 0) override;
-    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, const Size& frameSize,
+        const kinfu::Intr& depth_intrinsics, const Intr& rgb_intrinsics, const int frameId = 0) override;
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& depth_intrinsics, const Size& frameSize,
         OutputArray points, OutputArray normals, OutputArray colors) const override;
     virtual void raycast(const Matx44f&, const kinfu::Intr&, const Size&, OutputArray, OutputArray) const override
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
@@ -153,7 +153,7 @@ RGBTsdfVoxel ColoredTSDFVolumeCPU::at(const Vec3i& volumeIdx) const
 
 // use depth instead of distance (optimization)
 void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float depthFactor, const Matx44f& cameraPose,
-                              const Intr& intrinsics, const Intr& rgb_intrinsics, const int frameId)
+                              const Intr& depth_intrinsics, const Intr& rgb_intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
     CV_UNUSED(frameId);
@@ -162,16 +162,16 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
     Depth depth = _depth.getMat();
     Colors rgb = _rgb.getMat();
     Vec6f newParams((float)depth.rows, (float)depth.cols,
-        intrinsics.fx, intrinsics.fy,
-        intrinsics.cx, intrinsics.cy);
+        depth_intrinsics.fx, depth_intrinsics.fy,
+        depth_intrinsics.cx, depth_intrinsics.cy);
     if (!(frameParams == newParams))
     {
         frameParams = newParams;
-        pixNorms = preCalculationPixNorm(depth, intrinsics);
+        pixNorms = preCalculationPixNorm(depth, depth_intrinsics);
     }
 
     integrateRGBVolumeUnit(truncDist, voxelSize, maxWeight, (this->pose).matrix, volResolution, volStrides, depth, rgb,
-        depthFactor, cameraPose, intrinsics, rgb_intrinsics, pixNorms, volume);
+        depthFactor, cameraPose, depth_intrinsics, rgb_intrinsics, pixNorms, volume);
 }
 
 #if USE_INTRINSICS
@@ -455,7 +455,7 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 struct ColorRaycastInvoker : ParallelLoopBody
 {
     ColorRaycastInvoker(Points& _points, Normals& _normals, Colors& _colors, const Matx44f& cameraPose,
-                  const Intr& intrinsics, const ColoredTSDFVolumeCPU& _volume) :
+                  const Intr& depth_intrinsics, const ColoredTSDFVolumeCPU& _volume) :
         ParallelLoopBody(),
         points(_points),
         normals(_normals),
@@ -471,13 +471,13 @@ struct ColorRaycastInvoker : ParallelLoopBody
         boxMin(),
         cam2vol(volume.pose.inv() * Affine3f(cameraPose)),
         vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
-        reproj(intrinsics.makeReprojector())
+        reprojDepth(depth_intrinsics.makeReprojector())
     {  }
 #if USE_INTRINSICS
     virtual void operator() (const Range& range) const override
     {
-        const v_float32x4 vfxy(reproj.fxinv, reproj.fyinv, 0, 0);
-        const v_float32x4 vcxy(reproj.cx, reproj.cy, 0, 0);
+        const v_float32x4 vfxy(reprojDepth.fxinv, reprojDepth.fyinv, 0, 0);
+        const v_float32x4 vcxy(reprojDepth.cx, reprojDepth.cy, 0, 0);
 
         const float(&cm)[16] = cam2vol.matrix.val;
         const v_float32x4 camRot0(cm[0], cm[4], cm[8], 0);
@@ -597,11 +597,11 @@ struct ColorRaycastInvoker : ParallelLoopBody
                         {
                             v_float32x4 pv = (orig + dir * v_setall_f32(ts));
                             v_float32x4 nv = volume.getNormalVoxel(pv);
-                            v_float32x4 cl = volume.getColorVoxel(pv);
+                            v_float32x4 cv = volume.getColorVoxel(pv);
 
                             if (!isNaN(nv))
                             {
-                                color = cl;
+                                color = cv;
                                 //convert pv and nv to camera space
                                 normal = v_matmuladd(nv, volRot0, volRot1, volRot2, v_setzero_f32());
                                 // interpolation optimized a little
@@ -639,7 +639,7 @@ struct ColorRaycastInvoker : ParallelLoopBody
 
                 Point3f orig = camTrans;
                 // direction through pixel in volume space
-                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f(float(x), float(y), 1.f))));
+                Point3f dir = normalize(Vec3f(camRot * reprojDepth(Point3f(float(x), float(y), 1.f))));
 
                 // compute intersection of ray with all six bbox planes
                 Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
@@ -742,11 +742,11 @@ struct ColorRaycastInvoker : ParallelLoopBody
 
     const Affine3f cam2vol;
     const Affine3f vol2cam;
-    const Intr::Reprojector reproj;
+    const Intr::Reprojector reprojDepth;
 };
 
 
-void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrinsics, const Size& frameSize,
+void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& depth_intrinsics, const Size& frameSize,
                             OutputArray _points, OutputArray _normals, OutputArray _colors) const
 {
     CV_TRACE_FUNCTION();
@@ -760,7 +760,7 @@ void ColoredTSDFVolumeCPU::raycast(const Matx44f& cameraPose, const Intr& intrin
     Points points   =  _points.getMat();
     Normals normals = _normals.getMat();
     Colors colors = _colors.getMat();
-    ColorRaycastInvoker ri(points, normals, colors, cameraPose, intrinsics, *this);
+    ColorRaycastInvoker ri(points, normals, colors, cameraPose, depth_intrinsics, *this);
 
     const int nstripes = -1;
     parallel_for_(Range(0, points.rows), ri, nstripes);

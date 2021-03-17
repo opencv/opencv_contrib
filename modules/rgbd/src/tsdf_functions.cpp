@@ -422,7 +422,7 @@ void integrateRGBVolumeUnit(
     float truncDist, float voxelSize, int maxWeight,
     cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
     InputArray _depth, InputArray _rgb, float depthFactor, const cv::Matx44f& cameraPose,
-    const cv::kinfu::Intr& intrinsics, const cv::kinfu::Intr& rgb_intrinsics, InputArray _pixNorms, InputArray _volume)
+    const cv::kinfu::Intr& depth_intrinsics, const cv::kinfu::Intr& rgb_intrinsics, InputArray _pixNorms, InputArray _volume)
 {
     CV_TRACE_FUNCTION();
 
@@ -435,8 +435,7 @@ void integrateRGBVolumeUnit(
 
     Mat volume = _volume.getMat();
     Mat pixNorms = _pixNorms.getMat();
-    const Intr::Projector proj(intrinsics.makeProjector());
-
+    const Intr::Projector projDepth(depth_intrinsics.makeProjector());
     const Intr::Projector projRGB(rgb_intrinsics);
     const cv::Affine3f vol2cam(Affine3f(cameraPose.inv()) * vpose);
     const float truncDistInv(1.f / truncDist);
@@ -452,7 +451,7 @@ void integrateRGBVolumeUnit(
             vol2cam.matrix(2, 2)) * voxelSize;
 
         v_float32x4 zStep(zStepPt.x, zStepPt.y, zStepPt.z, 0);
-        v_float32x4 vfxy(proj.fx, proj.fy, 0.f, 0.f), vcxy(proj.cx, proj.cy, 0.f, 0.f);
+        v_float32x4 vfxy(projDepth.fx, projDepth.fy, 0.f, 0.f), vcxy(projDepth.cx, projDepth.cy, 0.f, 0.f);
         v_float32x4 rgb_vfxy(projRGB.fx, projRGB.fy, 0.f, 0.f), rgb_vcxy(projRGB.cx, projRGB.cy, 0.f, 0.f);
         const v_float32x4 upLimits = v_cvt_f32(v_int32x4(depth.cols - 1, depth.rows - 1, 0, 0));
 
@@ -667,7 +666,7 @@ void integrateRGBVolumeUnit(
                         continue;
 
                     Point3f camPixVec;
-                    Point2f projected = proj(camSpacePt, camPixVec);
+                    Point2f projected = projDepth(camSpacePt, camPixVec);
                     Point2f projectedRGB = projRGB(camSpacePt, camPixVec);
 
 
