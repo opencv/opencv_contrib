@@ -14,7 +14,7 @@ from tests_common import NewOpenCVTests
 
 class sac_test(NewOpenCVTests):
 
-    def test_plane():
+    def test_plane(self):
         N = 64;
         plane = np.zeros((N,N,3),np.float32)
         for i in range(0,N):

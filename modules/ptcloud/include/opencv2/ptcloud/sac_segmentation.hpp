@@ -94,7 +94,7 @@ public:
     */
     CV_WRAP virtual void set_method_type(int method_type) = 0;
 
-    /** @brief Use Wald's Sequential Probabilistic Ratio Test with ransac fitting
+    /** @brief Use Wald's Sequential Probability Ratio Test with ransac fitting
 
     This will result in less iterations and less evaluated data points, and thus be
     much faster, but it might miss some inliers

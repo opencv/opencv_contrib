@@ -1,5 +1,5 @@
+#include "opencv2/opencv_modules.hpp"
 #ifdef HAVE_OPENCV_VIZ
-
 #include <opencv2/viz.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/viz/widgets.hpp>
@@ -16,7 +16,6 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    // Mat cloud = cv::ppf_match_3d::loadPLYSimple("./data/semi-cylinder-with-normals-usingOpenCV2.ply", true);
     Mat cloud = cv::ppf_match_3d::loadPLYSimple("./data/cylinder-big.ply", false);
 
     Mat ptset;

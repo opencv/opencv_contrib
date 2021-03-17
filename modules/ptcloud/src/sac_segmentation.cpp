@@ -40,7 +40,7 @@ static box bbox(const Mat &cloud) {
     b.m = Point3f(9999,9999,9999);
     b.M = Point3f(-9999,-9999,-9999);
     for (size_t i=0; i<cloud.total(); i++) {
-        const Point3f &p = cloud.at<Point3f>(i);
+        const Point3f &p = cloud.at<Point3f>(int(i));
         b.M.x = std::max(b.M.x,p.x);
         b.M.y = std::max(b.M.y,p.y);
         b.M.z = std::max(b.M.z,p.z);
@@ -56,7 +56,7 @@ static box bbox(const Mat &cloud) {
 template<class T>
 static void knuth_shuffle(std::vector<T> &vec) {
     for (size_t t=0; t<vec.size(); t++ ) {
-        size_t r = theRNG().uniform(0, vec.size());
+        int r = theRNG().uniform(0, (int)vec.size());
         std::swap(vec[t], vec[r]);
     }
 }
@@ -88,11 +88,11 @@ struct PlaneModel : public Error_ {
     virtual void setModelParameters (const Mat &model_) CV_OVERRIDE {model = model_;}
     virtual float getError (int point_idx)  CV_OVERRIDE {
         Point3f p = pts(point_idx);
-        float a = model(0) * p.x;
-        float b = model(1) * p.y;
-        float c = model(2) * p.z;
-        float d = a + b + c + model(3);
-        return abs(d);
+        double a = model(0) * p.x;
+        double b = model(1) * p.y;
+        double c = model(2) * p.z;
+        double d = a + b + c + model(3);
+        return (float)abs(d);
     }
 };
 
@@ -104,11 +104,11 @@ struct SphereModel : public Error_ {
     virtual void setModelParameters (const Mat &model_) CV_OVERRIDE {model = model_;}
     virtual float getError (int point_idx)  CV_OVERRIDE {
         Point3f p = pts(point_idx);
-        Point3f center(model(0),model(1),model(2));
+        Point3f center(float(model(0)),float(model(1)),float(model(2)));
         double distanceFromCenter  = norm(p - center);
         double distanceFromSurface = fabs(distanceFromCenter - model(3));
 
-        return distanceFromSurface;
+        return (float)distanceFromSurface;
     }
 };
 
@@ -135,7 +135,7 @@ struct CylinderModel : public Error_ {
         double d_normal = 0.0;
         if ((! normals.empty()) && (weight > 0)) {
             // Calculate the point's projection on the cylinder axis
-            float dist = (pt.dot(axis_dir) - pt_on_axis.dot(axis_dir));
+            double dist = (pt.dot(axis_dir) - pt_on_axis.dot(axis_dir));
             Point3d pt_proj = pt_on_axis + dist * axis_dir;
             Point3d dir = pt - pt_proj;
             dir = dir / sqrt(dir.dot(dir));
@@ -149,7 +149,7 @@ struct CylinderModel : public Error_ {
         }
 
         // calculate overall distance as weighted sum of the two distances.
-        return fabs (weight * d_normal + (1 - weight) * distanceFromSurface);
+        return (float)fabs(weight * d_normal + (1 - weight) * distanceFromSurface);
     }
 };
 
@@ -270,8 +270,7 @@ struct SPRTImpl : public SPRT {
             if (tested_inliers + points_size - tested_point < highest_inlier_number) {
                 return false;
             }
-        }// else errors[points_random_pool[random_pool_idx-1]] = (float)error;
-
+        }
         return true;
     }
 
@@ -492,7 +491,7 @@ SACScore getInliers(int model_type, const std::vector<double> &coeffs, const Mat
     }
     mdl->setModelParameters(Mat(coeffs));
 
-    double msac=0;
+    double msac=0; // use same calculation as SPRT
     double norm_thr = (threshold*9/4);
     double one_over_thr = (1/norm_thr);
     size_t num_points = indices.size();
@@ -507,7 +506,7 @@ SACScore getInliers(int model_type, const std::vector<double> &coeffs, const Mat
         double distance = mdl->getError(indices[i]);
 
         if (!sprt.empty()) {
-            if (! sprt->addDataPoint(i,distance)) {
+            if (! sprt->addDataPoint(int(i),distance)) {
                 break;
             }
         }
@@ -520,11 +519,11 @@ SACScore getInliers(int model_type, const std::vector<double> &coeffs, const Mat
     }
 
     if (!sprt.empty()) {
-        if (sprt->isModelGood(i))
+        if (sprt->isModelGood(int(i)))
             return sprt->getScore();
     }
 
-    return SACScore(inliers.size(), msac);
+    return SACScore((double)inliers.size(), msac);
 }
 
 
@@ -542,7 +541,7 @@ static bool getSphereFromPoints(const Mat &cloud, const std::vector<int> &inlier
         tempi[3] = 1;
     }
     double m11 = determinant(temp);
-    if (fequal(m11, 0)) return false; // no sphere exists
+    if (fequal(float(m11), 0)) return false; // no sphere exists
 
     for (int i = 0; i < 4; i++) {
         size_t point_idx = inliers[i];
@@ -635,7 +634,7 @@ static bool getPlaneFromPoints(const Mat &cloud, const std::vector<int> &inliers
     double magnitude_abc = sqrt(abc[0]*abc[0] + abc[1]*abc[1] + abc[2]*abc[2]);
 
     // Return invalid plane if the points don't span a plane.
-    if (fequal(magnitude_abc, 0))
+    if (fequal(float(magnitude_abc), 0))
         return false;
 
     abc /= magnitude_abc;
@@ -699,7 +698,7 @@ static bool getCylinderFromPoints(const Mat &cloud, const Mat &normals_cld, cons
 
     // radius of cylinder
     double radius_squared = fabs(line_normal.dot(line_normal)) / line_len_sqr;
-    if (fequal(radius_squared, 0))
+    if (fequal(float(radius_squared), 0))
         return false;
     model_coefficients[6] = sqrt(radius_squared);
 
@@ -791,18 +790,18 @@ struct SphereSolverCallback : LMSolver::Callback {
     bool compute (InputArray param, OutputArray err, OutputArray J) const CV_OVERRIDE {
         Mat_<double> in = param.getMat();
 
-        Point3f c(in(0),in(1),in(2));
+        Point3f c(float(in(0)),float(in(1)),float(in(2)));
         double r = in(3);
 
         // the levmarquard solver needs an error metrics for each callback
-        int count = P.total();
+        int count = (int)P.total();
         err.create(count,1,CV_64F);
         Mat_<double> e = err.getMat();
 
         // but the jacobian matrix needs only to be (re)generated, if the error falls beyond some threshold
         Mat_<double> j;
         if (J.needed()) {
-            J.create(count, in.total(), CV_64F);
+            J.create(count, (int)in.total(), CV_64F);
             j = J.getMat();
         }
 
@@ -856,13 +855,13 @@ struct CylinderSolverCallback : LMSolver::Callback {
         double len = sqrt(a*a+b*b+c*c) + 0.000001;
         a /= len; b /= len; c /= len;
 
-        int count = P.total();
+        int count = (int)P.total();
         err.create(count, 1, CV_64F);
         Mat_<double> e = err.getMat();
 
         Mat_<double> j;
         if (J.needed()) {
-            J.create(count, in.total(), CV_64F);
+            J.create(count, (int)in.total(), CV_64F);
             j = J.getMat();
         }
 
@@ -920,8 +919,8 @@ std::vector<double> optimizeModel(int model_type, const Mat &cloud, const std::v
             return optimizeSphere(cloud, inliers_indices, old_coeff);
         case CYLINDER_MODEL:
             return optimizeCylinder(cloud, inliers_indices, old_coeff);
-        default:
-            CV_Error(215, format("invalid model_type %d", model_type).c_str());
+    //    default:
+    //        CV_Error(215, format("invalid model_type %d", model_type).c_str());
     }
     return std::vector<double>();
 }
@@ -947,11 +946,11 @@ static std::vector<int> sampleHypothesis(RNG &rng, const Mat &cloud, const std::
         // NAPSAC like sampling strategy,
         // assume good hypothesis inliers are locally close to each other
         // (enforce spatial proximity)
-        int start = rng.uniform(0, indices.size());
+        int start = rng.uniform(0, (int)indices.size());
         current_model_inliers.emplace_back(start);
         Point3f a = cloud.at<Point3f>(indices[start]);
         for (int n=0; n<100; n++) {
-            int next = rng.uniform(0, indices.size());
+            int next = rng.uniform(0, (int)indices.size());
             Point3f b = cloud.at<Point3f>(indices[next]);
             if (norm(a-b) > max_napsac_radius)
                 continue;
@@ -963,7 +962,7 @@ static std::vector<int> sampleHypothesis(RNG &rng, const Mat &cloud, const std::
     } else {
         // uniform sample from indices
         for (size_t j = 0; j < num_rnd_model_points; j++)
-            current_model_inliers.emplace_back(rng.uniform(0, indices.size()));
+            current_model_inliers.emplace_back(rng.uniform(0, (int)indices.size()));
     }
 
     return current_model_inliers;
@@ -980,7 +979,6 @@ bool generateHypothesis(int model_type, const Mat &cloud, const std::vector<int>
         if (coefficients[3] > max_radius) return false;
         return true;
     }
-
     if (model_type == CYLINDER_MODEL) {
         if ((normals.total() > 0) && (normal_distance_weight_ > 0))
             return getCylinderFromPoints(cloud, normals, current_model_inliers, coefficients);
@@ -988,7 +986,6 @@ bool generateHypothesis(int model_type, const Mat &cloud, const std::vector<int>
             return getCylinderFromPoints(cloud, current_model_inliers, coefficients);
     }
 
-    CV_Error(215, format("unsupported model type %d", model_type).c_str());
     return false;
 }
 
@@ -1005,7 +1002,7 @@ Mat generateNormals(const Mat &cloud) {
 
     Mat normals;
     Mat(_pointsAndNormals.colRange(3,6)).copyTo(normals);
-    normals = normals.reshape(3, cloud.total());
+    normals = normals.reshape(3, (int)cloud.total());
     return normals.t();
 }
 
@@ -1069,12 +1066,12 @@ bool SACModelFittingImpl::fit_ransac(const std::vector<int> &indices, std::vecto
     size_t num_rnd_model_points = rnd_model_points(model_type, normals);
     CV_Assert(indices.size() >= num_rnd_model_points);
 
-    int stop = stopping(min_inliers, indices.size(), num_rnd_model_points);
+    int stop = (int)stopping(min_inliers, indices.size(), num_rnd_model_points);
 
     if (use_sprt) {
-        sprt = SPRT::create(9999, indices.size(),
+        sprt = SPRT::create(9999, (int)indices.size(),
               threshold, 0.01, 0.008,
-              200, 3, num_rnd_model_points, max_iters, (ScoreMethod)method_type);
+              200, 3, (int)num_rnd_model_points, max_iters, (ScoreMethod)method_type);
     }
 
     for (int i = 0; i < std::min(stop, max_iters); ++i) {
@@ -1122,9 +1119,9 @@ bool SACModelFittingImpl::fit_ransac(const std::vector<int> &indices, std::vecto
             }
 
             if (!sprt.empty())
-                stop = i + sprt->update(curModel.score.first);
+                stop = i + (int)sprt->update((int)curModel.score.first);
             else
-                stop = i + stopping(curModel.score.first, indices.size(), num_rnd_model_points);
+                stop = i + (int)stopping((size_t)curModel.score.first, indices.size(), num_rnd_model_points);
 
             bestModel = curModel;
         }
@@ -1140,7 +1137,7 @@ bool SACModelFittingImpl::fit_ransac(const std::vector<int> &indices, std::vecto
 // how many models to retain after each data block
 // RaguramECCV08.pdf (5)
 inline
-double preemptive_func(int i, int M, int B) {
+double preemptive_func(size_t i, size_t M, size_t B) {
     return M * std::pow(2.0, -(double(i)/B));
 }
 
@@ -1199,7 +1196,7 @@ bool SACModelFittingImpl::fit_preemptive(const std::vector<int> &indices, std::v
         }
 
         // prune models
-        int retain = preemptive_func(preemptive_pos, preemptive_count, preemptive_step);
+        int retain = (int)preemptive_func(preemptive_pos, (size_t)preemptive_count, preemptive_step);
         preemptive.erase(preemptive.begin() + retain + 1, preemptive.end());
     }
 
@@ -1223,6 +1220,8 @@ bool SACModelFittingImpl::fit_preemptive(const std::vector<int> &indices, std::v
 
 
 void SACModelFittingImpl::segment(std::vector<SACModel> &model_instances, OutputArray new_cloud) {
+    sprt.release(); // make sure it's only used in fit_ransac() and only if use_sprt is on.
+
     size_t num_points = cloud.total();
 
     // optionally generate normals for the Cylinder model
@@ -1240,7 +1239,7 @@ void SACModelFittingImpl::segment(std::vector<SACModel> &model_instances, Output
         // filter unused point indices
         std::vector<int> indices;
         for (size_t i = 0; i < num_points; i++) {
-            if (point_labels[i] == 0) indices.push_back(i);
+            if (point_labels[i] == 0) indices.push_back(int(i));
         }
         if (indices.empty())
             break;
@@ -1255,7 +1254,7 @@ void SACModelFittingImpl::segment(std::vector<SACModel> &model_instances, Output
             break;
 
         SACModel &latest = model_instances.back();
-        num_segmented_points += latest.indices.size();
+        num_segmented_points += (long)latest.indices.size();
 
         if (num_segmented_points == 0)
             break;
@@ -1275,7 +1274,7 @@ void SACModelFittingImpl::segment(std::vector<SACModel> &model_instances, Output
         Mat _cloud;
         for (size_t i=0; i<point_labels.size(); i++) {
             int p = point_labels[i];
-            if (p == 0) _cloud.push_back(cloud.at<Point3f>(i));
+            if (p == 0) _cloud.push_back(cloud.at<Point3f>(int(i)));
         }
         new_cloud.assign(_cloud);
     }
@@ -1377,7 +1376,7 @@ void cluster(InputArray _cloud, double distance, int min_inliers, std::vector<SA
 
     std::vector<SACModel> mdl(n);
     for (size_t i=0; i<pts.size(); i++) {
-        mdl[cluster_indices[i]].indices.push_back(i);
+        mdl[cluster_indices[i]].indices.push_back(int(i));
         mdl[cluster_indices[i]].points.push_back(pts[i]);
     }
 
