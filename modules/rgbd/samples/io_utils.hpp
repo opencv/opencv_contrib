@@ -80,44 +80,44 @@ struct DepthWriter
 
 namespace Kinect2Params
 {
-static const Size frameSize = Size(512, 424);
+static const Size depth_frameSize = Size(512, 424);
 // approximate values, no guarantee to be correct
-static const float focal = 366.1f;
-static const float cx    = 258.2f;
-static const float cy    = 204.f;
-static const float k1    = 0.12f;
-static const float k2    = -0.34f;
-static const float k3    = 0.12f;
+static const float depth_focal = 366.1f;
+static const float depth_cx    = 258.2f;
+static const float depth_cy    = 204.f;
+static const float depth_k1    = 0.12f;
+static const float depth_k2    = -0.34f;
+static const float depth_k3    = 0.12f;
 
 static const Size rgb_frameSize = Size(640, 480);
 static const float rgb_focal = 525.0f;
-static const float rgb_cx = 319.5f;
-static const float rgb_cy = 239.5f;
-static const float rgb_k1 = 0.0f;
-static const float rgb_k2 = 0.0f;
-static const float rgb_k3 = 0.0f;
+static const float rgb_cx    = 319.5f;
+static const float rgb_cy    = 239.5f;
+static const float rgb_k1    = 0.0f;
+static const float rgb_k2    = 0.0f;
+static const float rgb_k3    = 0.0f;
 
 };  // namespace Kinect2Params
 
 namespace AstraParams
 {
-static const Size frameSize = Size(640, 480);
+static const Size depth_frameSize = Size(640, 480);
 // approximate values, no guarantee to be correct
-static const float fx    = 535.4f;
-static const float fy    = 539.2f;
-static const float cx    = 320.1f;
-static const float cy    = 247.6f;
-static const float k1    = 0.0f;
-static const float k2    = 0.0f;
-static const float k3    = 0.0f;
+static const float depth_fx = 535.4f;
+static const float depth_fy = 539.2f;
+static const float depth_cx = 320.1f;
+static const float depth_cy = 247.6f;
+static const float depth_k1 = 0.0f;
+static const float depth_k2 = 0.0f;
+static const float depth_k3 = 0.0f;
 
 static const Size rgb_frameSize = Size(640, 480);
 static const float rgb_focal = 525.0f;
-static const float rgb_cx = 319.5f;
-static const float rgb_cy = 239.5f;
-static const float rgb_k1 = 0.0f;
-static const float rgb_k2 = 0.0f;
-static const float rgb_k3 = 0.0f;
+static const float rgb_cx    = 319.5f;
+static const float rgb_cy    = 239.5f;
+static const float rgb_k1    = 0.0f;
+static const float rgb_k2    = 0.0f;
+static const float rgb_k3    = 0.0f;
 
 };  // namespace Kinect2Params
 
@@ -200,7 +200,7 @@ struct DepthSource
             // workaround for Kinect 2
             if (sourceType == Type::DEPTH_KINECT2)
             {
-                out = out(Rect(Point(), Kinect2Params::frameSize));
+                out = out(Rect(Point(), Kinect2Params::depth_frameSize));
 
                 UMat outCopy;
                 // linear remap adds gradient between valid and invalid pixels
@@ -231,20 +231,20 @@ struct DepthSource
             Size frameSize;
             if (sourceType == Type::DEPTH_KINECT2)
             {
-                fx = fy = Kinect2Params::focal;
-                cx      = Kinect2Params::cx;
-                cy      = Kinect2Params::cy;
+                fx = fy = Kinect2Params::depth_focal;
+                cx      = Kinect2Params::depth_cx;
+                cy      = Kinect2Params::depth_cy;
 
-                frameSize = Kinect2Params::frameSize;
+                frameSize = Kinect2Params::depth_frameSize;
             }
             else if (sourceType == Type::DEPTH_ASTRA)
             {
-                fx      = AstraParams::fx;
-                fy      = AstraParams::fy;
-                cx      = AstraParams::cx;
-                cy      = AstraParams::cy;
+                fx      = AstraParams::depth_fx;
+                fy      = AstraParams::depth_fy;
+                cx      = AstraParams::depth_cx;
+                cy      = AstraParams::depth_cy;
 
-                frameSize = AstraParams::frameSize;
+                frameSize = AstraParams::depth_frameSize;
             }
             else
             {
@@ -314,9 +314,9 @@ struct DepthSource
             if (sourceType == Type::DEPTH_KINECT2)
             {
                 Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
+                distCoeffs(0) = Kinect2Params::depth_k1;
+                distCoeffs(1) = Kinect2Params::depth_k2;
+                distCoeffs(4) = Kinect2Params::depth_k3;
 
                 initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
                                         params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
@@ -336,9 +336,9 @@ struct DepthSource
             if (sourceType == Type::DEPTH_KINECT2)
             {
                 Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
+                distCoeffs(0) = Kinect2Params::depth_k1;
+                distCoeffs(1) = Kinect2Params::depth_k2;
+                distCoeffs(4) = Kinect2Params::depth_k3;
 
                 initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
                                         params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
@@ -358,9 +358,9 @@ struct DepthSource
             if (sourceType == Type::DEPTH_KINECT2)
             {
                 Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::k1;
-                distCoeffs(1) = Kinect2Params::k2;
-                distCoeffs(4) = Kinect2Params::k3;
+                distCoeffs(0) = Kinect2Params::depth_k1;
+                distCoeffs(1) = Kinect2Params::depth_k2;
+                distCoeffs(4) = Kinect2Params::depth_k3;
 
                 initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
                                         params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
@@ -414,20 +414,20 @@ struct RGBWriter
         dir = fileList.substr(0, slashIdx);
 
         if (!file.is_open())
-            throw std::runtime_error("Failed to write depth list");
+            throw std::runtime_error("Failed to write rgb list");
 
-        file << "# depth maps saved from device" << std::endl;
+        file << "# rgb maps saved from device" << std::endl;
         file << "# useless_number filename" << std::endl;
     }
 
-    void append(InputArray _depth)
+    void append(InputArray _rgb)
     {
-        Mat depth = _depth.getMat();
-        std::string depthFname = cv::format("%04d.png", count);
-        std::string fullDepthFname = dir + '/' + depthFname;
-        if (!imwrite(fullDepthFname, depth))
-            throw std::runtime_error("Failed to write depth to file " + fullDepthFname);
-        file << count++ << " " << depthFname << std::endl;
+        Mat rgb = _rgb.getMat();
+        std::string rgbFname = cv::format("%04d.png", count);
+        std::string fullRGBFname = dir + '/' + rgbFname;
+        if (!imwrite(fullRGBFname, rgb))
+            throw std::runtime_error("Failed to write rgb to file " + fullRGBFname);
+        file << count++ << " " << rgbFname << std::endl;
     }
 
     std::fstream file;
