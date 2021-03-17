@@ -1188,8 +1188,8 @@ PyWLine is an overloaded structure, provided for convenience.
                         widget = cv::makePtr<cv::viz::WCameraPosition>(x, scale, color.c);
 
                     }
-                    else if (k.rows==2 && k.cols==1)
-                        widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0,0), k.at<double>(0,1)), scale, color.c);
+                    else if (k.total() == 2)
+                        widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0), k.at<double>(1)), scale, color.c);
                     else
                         CV_Error(cv::Error::StsVecLengthErr, "unknown size");
                 }

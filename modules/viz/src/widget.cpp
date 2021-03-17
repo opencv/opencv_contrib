@@ -395,18 +395,18 @@ cv::viz::PyWGrid::PyWGrid(InputArray cells, InputArray cells_spacing, const PyCo
     {
         Mat k = cells.getMat();
         Mat l = cells_spacing.getMat();
-        if (k.rows == 2 && k.cols == 1 && l.rows == 2 && l.cols == 1)
+        if (k.total() == 2  && l.total() == 2 )
         {
             CV_Assert(k.type() == CV_64FC1 && k.type() == CV_64FC1);
-            Vec2i c1(k.at<double>(0, 0), k.at<double>(0, 1));
-            Vec2d c2(l.at<double>(0, 0), l.at<double>(0, 1));
+            Vec2i c1(k.at<double>(0), k.at<double>(1));
+            Vec2d c2(l.at<double>(0), l.at<double>(1));
             widget = cv::makePtr<WGrid>(c1, c2, color.c);
         }
         else
-            CV_Error(-5, "unknown size");
+            CV_Error(cv::Error::StsVecLengthErr, "unknown size");
     }
     else
-        CV_Error(-5, "unknown type");
+        CV_Error(cv::Error::StsUnsupportedFormat, "unknown type");
 }
 
 
