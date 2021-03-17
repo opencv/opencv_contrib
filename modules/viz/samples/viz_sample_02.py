@@ -8,10 +8,10 @@ axis = cv.viz_PyWLine((-1.0,-1.0,-1.0), (1.0,1.0,1.0), cv.viz_PyColor().green())
 axis.setRenderingProperty(cv.viz.LINE_WIDTH, 4.0);
 my_window.showWidget("axe",axis)
 plan = cv.viz_PyWPlane((-1.0,-1.0,-1.0), (1.0,.0,.0), (-.0,.0,-1.0))
-my_window.showWidget("plan", plan)
+#my_window.showWidget("plan", plan)
 cube = cv.viz_PyWCube((0.5,0.5,0.0), (0.0,0.0,-0.5), True, cv.viz_PyColor().blue())
 
-my_window.showWidget("Cube Widget",cube)
+#my_window.showWidget("Cube Widget",cube)
 pi = np.arccos(-1)
 print("First event loop is over")
 my_window.spin()
@@ -28,7 +28,6 @@ while not my_window.wasStopped():
     translation_phase += pi * 0.01
     translation = np.sin(translation_phase)
     pose = cv.viz_PyAffine3(rot_vec, (translation, translation, translation))
-    print ("ok")
     my_window.setWidgetPosePy("Cube Widget", pose)
     my_window.spinOnce(1, True)
 print("Last event loop is over")

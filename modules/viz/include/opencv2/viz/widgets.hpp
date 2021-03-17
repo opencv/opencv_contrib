@@ -104,7 +104,7 @@ PyAffine3 is an overloaded structure, provided for convenience.
                     pose = Affine3d(a, t);
                 }
                 else
-                    CV_Error(-1, "Unknown format");
+                    CV_Error(cv::Error::StsUnsupportedFormat, "unknown type");
 
             };
             CV_WRAP PyAffine3 translate(const Vec3d &t)
@@ -1191,10 +1191,10 @@ PyWLine is an overloaded structure, provided for convenience.
                     else if (k.rows==2 && k.cols==1)
                         widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0,0), k.at<double>(0,1)), scale, color.c);
                     else
-                        CV_Error(-5, "unknown size");
+                        CV_Error(cv::Error::StsVecLengthErr, "unknown size");
                 }
                 else
-                    CV_Error(-5, "unknown type");
+                    CV_Error(cv::Error::StsUnsupportedFormat, "unknown type");
             }
 
             /** @brief Display image on the far plane of the viewing frustum
@@ -1220,13 +1220,13 @@ PyWLine is an overloaded structure, provided for convenience.
                         widget = cv::makePtr<cv::viz::WCameraPosition>(x, image, scale, color.c);
 
                     }
-                    else if (k.rows == 2 && k.cols == 1)
-                        widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0, 0), k.at<double>(0, 1)), image, scale, color.c);
+                    else if (k.total() == 2)
+                        widget = cv::makePtr<cv::viz::WCameraPosition>(Vec2d(k.at<double>(0), k.at<double>(1)), image, scale, color.c);
                     else
-                        CV_Error(-5, "unknown size");
+                        CV_Error(cv::Error::StsVecLengthErr, "unknown size");
                 }
                 else
-                    CV_Error(-5, "unknown type");
+                    CV_Error(cv::Error::StsUnsupportedFormat, "unknown type");
 
             }
             /** @brief  Display image on the far plane of the viewing frustum

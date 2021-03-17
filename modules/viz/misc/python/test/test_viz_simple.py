@@ -46,13 +46,13 @@ class viz_test(NewOpenCVTests):
             self.skipTest("Use OPENCV_PYTEST_RUN_VIZ=1 to enable VIZ UI tests")
 
     def test_viz_tutorial3_global_view(self):
-        tutorial3(False, self.find_file("viz\dragon.ply"))
+        tutorial3(False, self.find_file("viz/dragon.ply"))
 
     def test_viz_tutorial3_camera_view(self):
-        tutorial3(True, self.find_file("viz\dragon.ply"))
+        tutorial3(True, self.find_file("viz/dragon.ply"))
 
     def test_viz(self):
-        dragon_cloud,_,_ = cv.viz.readCloud(self.find_file("viz\dragon.ply"))
+        dragon_cloud,_,_ = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
         myWindow = cv.viz_Viz3d("abc")
         myWindow.showWidget("coo", cv.viz_PyWCoordinateSystem(1))
         myWindow.showWidget("cloud", cv.viz_PyWPaintedCloud(dragon_cloud))
@@ -149,7 +149,7 @@ class viz_test(NewOpenCVTests):
 
 
     def test_viz_show_cloud_bluberry(self):
-        dragon_cloud,_,_ = cv.viz.readCloud(self.find_file("viz\dragon.ply"))
+        dragon_cloud,_,_ = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
 
         pose = cv.viz_PyAffine3()
         pose = pose.rotate((0, 0.8, 0));
@@ -162,7 +162,7 @@ class viz_test(NewOpenCVTests):
         viz.spinOnce(500, True)
 
     def test_viz_show_cloud_random_color(self):
-        dragon_cloud,_,_ = cv.viz.readCloud(self.find_file("viz\dragon.ply"))
+        dragon_cloud,_,_ = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
 
         colors = np.random.randint(0, 255, size=(dragon_cloud.shape[0],dragon_cloud.shape[1],3), dtype=np.uint8)
 
@@ -177,7 +177,7 @@ class viz_test(NewOpenCVTests):
         viz.spinOnce(500, True)
 
     def test_viz_show_cloud_masked(self):
-        dragon_cloud,_,_  = cv.viz.readCloud(self.find_file("viz\dragon.ply"))
+        dragon_cloud,_,_  = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
 
         qnan =  np.NAN
         for idx in range(dragon_cloud.shape[0]):
@@ -195,7 +195,7 @@ class viz_test(NewOpenCVTests):
         viz.spinOnce(500, True)
 
     def test_viz_show_cloud_collection(self):
-        cloud,_,_  = cv.viz.readCloud(self.find_file("viz\dragon.ply"))
+        cloud,_,_  = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
         ccol = cv.viz_PyWCloudCollection()
         pose = cv.viz_PyAffine3()
         pose1 =  cv.viz_PyAffine3().translate((0, 0, 0)).rotate((np.pi/2, 0, 0))
@@ -212,7 +212,7 @@ class viz_test(NewOpenCVTests):
         viz.spinOnce(500, True)
 
     def test_viz_show_painted_clouds(self):
-        cloud,_,_  = cv.viz.readCloud(self.find_file("viz\dragon.ply"))
+        cloud,_,_  = cv.viz.readCloud(self.find_file("viz/dragon.ply"))
         viz = cv.viz_Viz3d("show_painted_clouds")
         viz.setBackgroundMeshLab()
         viz.showWidget("coosys", cv.viz_PyWCoordinateSystem())
@@ -227,7 +227,7 @@ class viz_test(NewOpenCVTests):
         viz.spinOnce(500, True)
 
     def test_viz_show_mesh(self):
-        mesh  = cv.viz.readMesh(self.find_file("viz\dragon.ply"))
+        mesh  = cv.viz.readMesh(self.find_file("viz/dragon.ply"))
 
         viz = cv.viz_Viz3d("show_mesh")
         viz.showWidget("coosys", cv.viz_PyWCoordinateSystem());
@@ -237,7 +237,7 @@ class viz_test(NewOpenCVTests):
 
 
     def test_viz_show_mesh_random_colors(self):
-        mesh  = cv.viz.readMesh(self.find_file("viz\dragon.ply"))
+        mesh  = cv.viz.readMesh(self.find_file("viz/dragon.ply"))
         mesh.colors = np.random.randint(0, 255, size=mesh.colors.shape, dtype=np.uint8)
         viz = cv.viz_Viz3d("show_mesh")
         viz.showWidget("coosys", cv.viz_PyWCoordinateSystem());
@@ -304,7 +304,7 @@ class viz_test(NewOpenCVTests):
 
     def test_viz_show_sampled_normals(self):
 
-        mesh  = cv.viz.readMesh(self.find_file("viz\dragon.ply"))
+        mesh  = cv.viz.readMesh(self.find_file("viz/dragon.ply"))
         mesh.normals = cv.viz.computeNormals(mesh)
         pose = cv.viz_PyAffine3().rotate((0, 0.8, 0))
         viz = cv.viz_Viz3d("show_sampled_normals")
@@ -316,7 +316,7 @@ class viz_test(NewOpenCVTests):
 
 
     def test_viz_show_cloud_shaded_by_normals(self):
-        mesh  = cv.viz.readMesh(self.find_file("viz\dragon.ply"))
+        mesh  = cv.viz.readMesh(self.find_file("viz/dragon.ply"))
         mesh.normals = cv.viz.computeNormals(mesh)
         pose = cv.viz_PyAffine3().rotate((0, 0.8, 0))
 
@@ -436,5 +436,4 @@ TEST(Viz, show_widget_merger)
 
 """
 if __name__ == '__main__':
-    print("OK")
     NewOpenCVTests.bootstrap()
