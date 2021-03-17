@@ -421,11 +421,11 @@ cv::viz::PyWTrajectoryFrustums::PyWTrajectoryFrustums(InputArray path, InputArra
             widget = cv::makePtr<WTrajectoryFrustums>(path, x, scale, color.c);
 
         }
-        else if (k.rows == 2 && k.cols == 1)
-            widget = cv::makePtr<WTrajectoryFrustums>(path, Vec2d(k.at<double>(0, 0), k.at<double>(0, 1)), 1.0, color.c);
+        else if (k.total() == 2)
+            widget = cv::makePtr<WTrajectoryFrustums>(path, Vec2d(k.at<double>(0), k.at<double>(1)), 1.0, color.c);
         else
-            CV_Error(-5, "unknown size");
+            CV_Error(cv::Error::StsVecLengthErr, "unknown size");
     }
     else
-        CV_Error(-5, "unknown type");
+        CV_Error(cv::Error::StsVecLengthErr, "unknown size");
 }
