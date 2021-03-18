@@ -32,12 +32,13 @@ template<class Scene>
 struct RenderInvoker : ParallelLoopBody
 {
     RenderInvoker(Mat_<float>& _frame, Affine3f _pose,
-        Reprojector _reproj,
-        float _depthFactor) : ParallelLoopBody(),
+        Reprojector _reproj, float _depthFactor, bool _onlySemisphere)
+        : ParallelLoopBody(),
         frame(_frame),
         pose(_pose),
         reproj(_reproj),
-        depthFactor(_depthFactor)
+        depthFactor(_depthFactor),
+        onlySemisphere(_onlySemisphere)
     { }
 
     virtual void operator ()(const cv::Range& r) const
@@ -64,7 +65,7 @@ struct RenderInvoker : ParallelLoopBody
                 for (int step = 0; step < maxSteps && t < maxDepth; step++)
                 {
                     Point3f p = orig + dir * t;
-                    float d = Scene::map(p);
+                    float d = Scene::map(p, onlySemisphere);
                     if (d < 0.000001f)
                     {
                         float depth = std::sqrt(t * t * xyt);
@@ -83,49 +84,49 @@ struct RenderInvoker : ParallelLoopBody
     Affine3f pose;
     Reprojector reproj;
     float depthFactor;
+    bool onlySemisphere;
 };
 
 struct Scene
 {
     virtual ~Scene() {}
-    static Ptr<Scene> create(Size sz, Matx33f _intr, float _depthFactor);
+    static Ptr<Scene> create(Size sz, Matx33f _intr, float _depthFactor, bool onlySemisphere);
     virtual Mat depth(Affine3f pose) = 0;
     virtual std::vector<Affine3f> getPoses() = 0;
 };
 
-struct RotatingScene : Scene
+struct SemisphereScene : Scene
 {
-    const int framesPerCycle = 32;
-    const float nCycles = 0.5f;
-    const Affine3f startPose = Affine3f(Vec3f(-1.f, 0.f, 0.f), Vec3f(1.5f, 2.f, -1.5f));
+    const int framesPerCycle = 72;
+    const float nCycles = 0.25f;
+    const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -2.1f));
 
-    RotatingScene(Size sz, Matx33f _intr, float _depthFactor) :
-        frameSize(sz), intr(_intr), depthFactor(_depthFactor)
+    Size frameSize;
+    Matx33f intr;
+    float depthFactor;
+    bool onlySemisphere;
+
+    SemisphereScene(Size sz, Matx33f _intr, float _depthFactor, bool _onlySemisphere) :
+        frameSize(sz), intr(_intr), depthFactor(_depthFactor), onlySemisphere(_onlySemisphere)
+    { }
+
+    static float map(Point3f p, bool onlySemisphere)
     {
-        cv::RNG rng(0);
-        rng.fill(randTexture, cv::RNG::UNIFORM, 0.f, 1.f);
-    }
+        float plane = p.y + 0.5f;
+        Point3f spherePose = p - Point3f(-0.0f, 0.3f, 1.1f);
+        float sphereRadius = 0.5f;
+        float sphere = (float)cv::norm(spherePose) - sphereRadius;
+        float sphereMinusBox = sphere;
 
-    static float map(Point3f p)
-    {
-        const Point3f torPlace(0.f, 0.f, 0.f);
-        Point3f torPos(p - torPlace);
-        const Point2f torusParams(1.f, 0.2f);
-        Point2f torq(std::sqrt(torPos.x * torPos.x + torPos.z * torPos.z) - torusParams.x, torPos.y);
-        float torus = (float)cv::norm(torq) - torusParams.y;
+        float subSphereRadius = 0.05f;
+        Point3f subSpherePose = p - Point3f(0.3f, -0.1f, -0.3f);
+        float subSphere = (float)cv::norm(subSpherePose) - subSphereRadius;
 
-        const Point3f cylShift(0.25f, 0.25f, 0.25f);
-
-        Point3f cylPos = Point3f(abs(std::fmod(p.x - 0.1f, cylShift.x)),
-            p.y,
-            abs(std::fmod(p.z - 0.2f, cylShift.z))) - cylShift * 0.5f;
-
-        const Point2f cylParams(0.1f,
-            0.1f + 0.1f * sin(p.x * p.y * 5.f /* +std::log(1.f+abs(p.x*0.1f)) */));
-        Point2f cyld = Point2f(abs(std::sqrt(cylPos.x * cylPos.x + cylPos.z * cylPos.z)), abs(cylPos.y)) - cylParams;
-        float pins = min(max(cyld.x, cyld.y), 0.0f) + (float)cv::norm(Point2f(max(cyld.x, 0.f), max(cyld.y, 0.f)));
-
-        float res = max(-pins, torus);
+        float res;
+        if (!onlySemisphere)
+            res = min({ sphereMinusBox, subSphere, plane });
+        else
+            res = sphereMinusBox;
 
         return res;
     }
@@ -136,7 +137,7 @@ struct RotatingScene : Scene
         Reprojector reproj(intr);
 
         Range range(0, frame.rows);
-        parallel_for_(range, RenderInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
+        parallel_for_(range, RenderInvoker<SemisphereScene>(frame, pose, reproj, depthFactor, onlySemisphere));
 
         return std::move(frame);
     }
@@ -149,7 +150,7 @@ struct RotatingScene : Scene
             float angle = (float)(CV_2PI * i / framesPerCycle);
             Affine3f pose;
             pose = pose.rotate(startPose.rotation());
-            pose = pose.rotate(Vec3f(0.f, -1.f, 0.f) * angle);
+            pose = pose.rotate(Vec3f(0.f, -0.5f, 0.f) * angle);
             pose = pose.translate(Vec3f(startPose.translation()[0] * sin(angle),
                 startPose.translation()[1],
                 startPose.translation()[2] * cos(angle)));
@@ -159,17 +160,11 @@ struct RotatingScene : Scene
         return poses;
     }
 
-    Size frameSize;
-    Matx33f intr;
-    float depthFactor;
-    static cv::Mat_<float> randTexture;
 };
 
-Mat_<float> RotatingScene::randTexture(256, 256);
-
-Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
+Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor, bool _onlySemisphere)
 {
-    return makePtr<RotatingScene>(sz, _intr, _depthFactor);
+    return makePtr<SemisphereScene>(sz, _intr, _depthFactor, _onlySemisphere);
 }
 
 // this is a temporary solution
@@ -297,7 +292,7 @@ public:
             _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
             _params->truncateThreshold, _params->volumeDims);
 
-        scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+        scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor, true);
         poses = scene->getPoses();
     }
 };
@@ -316,7 +311,7 @@ void displayImage(Mat depth, UMat _points, UMat _normals, float depthFactor, Vec
     waitKey(2000);
 }
 
-static const bool display = true;
+static const bool display = false;
 
 PERF_TEST(Perf_TSDF, integrate)
 {
