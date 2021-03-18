@@ -375,7 +375,7 @@ PERF_TEST(Perf_HashTSDF, raycast)
         startTimer();
         settings.volume->raycast(pose, settings._params->intr, settings._params->frameSize, _points, _normals);
         stopTimer();
-        
+
         if (display)
             displayImage(depth, _points, _normals, settings._params->depthFactor, settings._params->lightPose);
     }
