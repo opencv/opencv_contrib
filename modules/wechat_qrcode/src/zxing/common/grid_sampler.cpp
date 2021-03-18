@@ -7,15 +7,12 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "grid_sampler.hpp"
 #include "perspective_transform.hpp"
-
-#include <iostream>
 #include <sstream>
 
 namespace zxing {
-using namespace std;
 
 GridSampler GridSampler::gridSampler;
 
@@ -28,7 +25,7 @@ Ref<BitMatrix> GridSampler::sampleGrid(Ref<BitMatrix> image, int dimension,
     Ref<BitMatrix> bits(new BitMatrix(dimension, err_handler));
     if (err_handler.ErrCode()) return Ref<BitMatrix>();
 
-    vector<float> points(dimension << 1, (const float)0.0f);
+    vector<float> points(dimension << 1, 0.0f);
 
     int outlier = 0;
     int maxOutlier = dimension * dimension * 3 / 10 - 1;

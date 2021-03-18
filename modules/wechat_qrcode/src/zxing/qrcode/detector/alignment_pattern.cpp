@@ -7,11 +7,8 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "alignment_pattern.hpp"
-
-#include <algorithm>
-using std::abs;
 using zxing::Ref;
 using zxing::qrcode::AlignmentPattern;
 namespace zxing {

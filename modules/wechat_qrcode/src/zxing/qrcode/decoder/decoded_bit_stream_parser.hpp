@@ -20,9 +20,6 @@
 #include "../../errorhandler.hpp"
 #include "mode.hpp"
 
-#include <map>
-#include <sstream>
-#include <string>
 
 namespace zxing {
 namespace qrcode {

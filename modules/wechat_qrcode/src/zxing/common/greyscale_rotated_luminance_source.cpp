@@ -7,7 +7,7 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "greyscale_rotated_luminance_source.hpp"
 #include "bytematrix.hpp"
 using zxing::ArrayRef;
@@ -42,11 +42,6 @@ ArrayRef<char> GreyscaleRotatedLuminanceSource::getRow(int y, ArrayRef<char> row
         row = ArrayRef<char>(getWidth());
     }
     int offset = (left_ * dataWidth_) + (dataWidth_ - 1 - (y + top_));
-    using namespace std;
-    if (false) {
-        cerr << offset << " = " << top_ << " " << left_ << " " << getHeight() << " " << getWidth()
-             << " " << y << endl;
-    }
     for (int x = 0; x < getWidth(); x++) {
         row[x] = greyData_[offset];
         offset += dataWidth_;

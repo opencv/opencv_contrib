@@ -7,20 +7,13 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "finder_pattern_finder.hpp"
 #include "../../common/kmeans.hpp"
 #include "../../common/mathutils.hpp"
 #include "../../decodehints.hpp"
 #include "../../errorhandler.hpp"
 
-#include <algorithm>
-#include <cmath>
-
-using std::abs;
-using std::max;
-using std::sort;
-using std::vector;
 using zxing::Ref;
 using zxing::qrcode::FinderPattern;
 using zxing::qrcode::FinderPatternFinder;

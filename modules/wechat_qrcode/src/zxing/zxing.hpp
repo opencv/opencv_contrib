@@ -52,34 +52,21 @@ typedef unsigned char boolean;
 
 #include <limits>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_MSC_VER)
 
 #ifndef NO_ICONV
 #define NO_ICONV
 #endif
 
-#include <float.h>
-
-namespace zxing {
-inline bool isnan(float v) { return _isnan(v) != 0; }
-inline bool isnan(double v) { return _isnan(v) != 0; }
-inline float nan() { return std::numeric_limits<float>::quiet_NaN(); }
-}  // namespace zxing
-
-#else
+#endif
 
 #include <cmath>
 
-#undef isnan
 namespace zxing {
 inline bool isnan(float v) { return std::isnan(v); }
 inline bool isnan(double v) { return std::isnan(v); }
 inline float nan() { return std::numeric_limits<float>::quiet_NaN(); }
 }  // namespace zxing
-
-//#endif
-
-#endif
 
 #ifndef ZXING_TIME
 #define ZXING_TIME(string) (void)0

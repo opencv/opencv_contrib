@@ -392,8 +392,13 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         normalsCheck(normals);
         
     if (isRaycast && display)
-        displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
-
+    {
+        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+        points = _points.getMat(af);
+        renderPointsNormals(points, normals, image, _params->lightPose);
+        imshow("render", image);
+        waitKey(2000);
+    }
     if (isRaycast)
     {
         settings.volume->raycast(settings.poses[17].matrix, settings.params->intr, settings.params->frameSize, _newPoints, _newNormals);
@@ -407,7 +412,13 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             normalsCheck(normals);
 
         if (display)
-            displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
+        {
+            imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+            points = _newPoints.getMat(af);
+            renderPointsNormals(points, normals, image, _params->lightPose);
+            imshow("render", image);
+            waitKey(2000);
+        }
     }
 
     points.release(); normals.release();
@@ -431,8 +442,14 @@ void valid_points_test(bool isHashTSDF)
     anfas = counterOfValid(points);
 
     if (display)
-        displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
+    {
+        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+        renderPointsNormals(points, normals, image, _params->lightPose);
+        imshow("render", image);
+        waitKey(2000);
+    }
 
+    volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
     settings.volume->raycast(settings.poses[17].matrix, settings.params->intr, settings.params->frameSize, _newPoints, _newNormals);
     normals = _newNormals.getMat(af);
     points  = _newPoints.getMat(af);
@@ -440,14 +457,18 @@ void valid_points_test(bool isHashTSDF)
     profile = counterOfValid(points);
 
     if (display)
-        displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
+    {
+        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+        renderPointsNormals(points, normals, image, _params->lightPose);
+        imshow("render", image);
+        waitKey(2000);
+    }
 
-    // TODO: why profile == 2*anfas ?
-    float percentValidity = float(anfas) / float(profile);
-
-    ASSERT_NE(profile, 0) << "There is no points in profile";
-    ASSERT_NE(anfas, 0) << "There is no points in anfas"; 
-    ASSERT_LT(abs(0.5 - percentValidity), 0.3) << "percentValidity out of [0.3; 0.7] (percentValidity=" << percentValidity << ")";
+    float percentValidity;
+    if (profile == 0)    percentValidity = -0.5;
+    else if (anfas == 0) percentValidity = 0;
+    else                 percentValidity = float(profile) / float(anfas);
+    ASSERT_LT(0.5 - percentValidity, 0.3);
 }
 
 #ifndef HAVE_OPENCL
@@ -529,7 +550,6 @@ TEST(HashTSDF_CPU, valid_points)
     valid_points_test(true);
     cv::ocl::setUseOpenCL(true);
 }
-
 #endif
 
 }}  // namespace

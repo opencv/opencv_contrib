@@ -10,9 +10,6 @@
 #include "bitmatrix.hpp"
 #include "counted.hpp"
 
-#include <cstring>
-#include <vector>
-
 namespace zxing {
 class UnicomBlock : public Counted {
 public:

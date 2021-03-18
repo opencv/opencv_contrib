@@ -7,15 +7,11 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "simple_adaptive_binarizer.hpp"
-#include <cstdlib>
 
-using namespace std;
-using namespace zxing;
+using zxing::SimpleAdaptiveBinarizer;
 
-// VC++
-using zxing::LuminanceSource;
 
 SimpleAdaptiveBinarizer::SimpleAdaptiveBinarizer(Ref<LuminanceSource> source)
     : GlobalHistogramBinarizer(source) {

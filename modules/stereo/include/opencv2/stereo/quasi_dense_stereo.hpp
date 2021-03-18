@@ -176,13 +176,12 @@ public:
 
     /**
      * @brief Compute and return the disparity map based on the correspondences found in the "process" method.
-     * @param[in] disparityLvls The level of detail in output disparity image.
      * @note Default level is 50
      * @return cv::Mat containing a the disparity image in grayscale.
      * @sa computeDisparity
      * @sa quantizeDisparity
      */
-    CV_WRAP virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
+    CV_WRAP virtual cv::Mat getDisparity() = 0;
 
 
     CV_WRAP static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath = cv::String());

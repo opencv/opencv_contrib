@@ -16,8 +16,17 @@
 #include "../array.hpp"
 #include "../bitarray.hpp"
 #include "../bitmatrix.hpp"
+#include "../bytematrix.hpp"
 
-//#define INPUT_BINARIZED
+using zxing::ArrayRef;
+using zxing::Binarizer;
+using zxing::BitArray;
+using zxing::BitMatrix;
+using zxing::ByteMatrix;
+using zxing::ErrorHandler;
+using zxing::LuminanceSource;
+using zxing::Ref;
+
 namespace zxing {
 
 class GlobalHistogramBinarizer : public Binarizer {

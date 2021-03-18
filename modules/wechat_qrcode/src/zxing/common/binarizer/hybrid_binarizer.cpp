@@ -7,15 +7,11 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "hybrid_binarizer.hpp"
-#include <stdint.h>
-#include <fstream>
-#include <iostream>
-#include <string>
 
-using namespace std;
-using namespace zxing;
+using zxing::HybridBinarizer;
+using zxing::BINARIZER_BLOCK;
 
 // This class uses 5*5 blocks to compute local luminance, where each block is
 // 8*8 pixels So this is the smallest dimension in each axis we can accept.
@@ -52,9 +48,6 @@ HybridBinarizer::HybridBinarizer(Ref<LuminanceSource> source) : GlobalHistogramB
 }
 
 HybridBinarizer::~HybridBinarizer() {
-    // delete [] _bitCached;
-    // delete [] subSumPoints;
-    // delete [] subSumColumn;
 }
 
 Ref<Binarizer> HybridBinarizer::createBinarizer(Ref<LuminanceSource> source) {

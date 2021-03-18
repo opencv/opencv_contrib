@@ -7,12 +7,13 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../precomp.hpp"
 #include "decoder_result.hpp"
 
-using namespace std;
-using namespace zxing;
-
+using zxing::DecoderResult;
+using zxing::Ref;
+using zxing::ArrayRef;
+using zxing::String;
 DecoderResult::DecoderResult(ArrayRef<char> rawBytes, Ref<String> text,
                              ArrayRef<ArrayRef<char> >& byteSegments, string const& ecLevel)
     : rawBytes_(rawBytes), text_(text), byteSegments_(byteSegments), ecLevel_(ecLevel) {

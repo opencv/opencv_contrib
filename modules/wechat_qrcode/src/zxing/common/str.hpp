@@ -11,16 +11,11 @@
 #ifndef __ZXING_COMMON_STR_HPP__
 #define __ZXING_COMMON_STR_HPP__
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "counted.hpp"
 
-#include <iostream>
 #include <sstream>
 #include <string>
-
-using namespace std;
-
+using std::string;
 namespace zxing {
 
 class String : public Counted {

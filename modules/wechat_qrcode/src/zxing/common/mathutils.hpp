@@ -32,44 +32,6 @@ private:
     ~MathUtils();
 
 public:
-    /**
-     * Ends up being a bit faster than {@link Math#round(float)}. This merely
-     * rounds its argument to the nearest int, where x.5 rounds up to x+1.
-     */
-    static inline int round(double value) {
-        // return (int) (d + 0.5f);
-
-#if (defined _MSC_VER && defined _M_X64) ||                                              \
-    (defined __GNUC__ && defined __x86_64__ && defined __SSE2__ && !defined __APPLE__ && \
-     !defined __GXX_WEAK__)
-        __m128d t = _mm_set_sd(value);
-        return _mm_cvtsd_si32(t);
-#elif defined _MSC_VER && defined _M_IX86
-        int t;
-        __asm
-        {
-			  fld value;
-			  fistp t;
-        }
-        return t;
-#elif defined _MSC_VER && defined _M_ARM && defined HAVE_TEGRA_OPTIMIZATION
-        TEGRA_ROUND(value);
-#elif defined HAVE_LRINT || defined CV_ICC || defined __GNUC__
-#ifdef HAVE_TEGRA_OPTIMIZATION
-        TEGRA_ROUND(value);
-#else
-        return (int)lrint(value);
-#endif
-#else
-        double intpart, fractpart;
-        fractpart = modf(value, &intpart);
-        if ((fabs(fractpart) != 0.5) || ((((int)intpart) % 2) != 0))
-            return (int)(value + (value >= 0 ? 0.5 : -0.5));
-        else
-            return (int)intpart;
-#endif
-    }
-
     static inline float distance(float aX, float aY, float bX, float bY) {
         float xDiff = aX - bX;
         float yDiff = aY - bY;

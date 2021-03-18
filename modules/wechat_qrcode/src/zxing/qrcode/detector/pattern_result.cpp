@@ -7,14 +7,10 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
+#include "../../../precomp.hpp"
 #include "pattern_result.hpp"
 
-// VC++
-using namespace std;
-using namespace zxing;
-using namespace qrcode;
 
-using std::abs;
 using zxing::Ref;
 using zxing::ResultPoint;
 using zxing::qrcode::FinderPattern;

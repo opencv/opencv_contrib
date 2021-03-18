@@ -4,15 +4,8 @@
 //
 // Tencent is pleased to support the open source community by making WeChat QRCode available.
 // Copyright (C) 2020 THL A29 Limited, a Tencent company. All rights reserved.
-
+#include "../../precomp.hpp"
 #include "bytematrix.hpp"
-#include <stdio.h>
-#include <iostream>
-#include <sstream>
-#include <string>
-
-using std::ostream;
-using std::ostringstream;
 
 using zxing::ArrayRef;
 using zxing::ByteMatrix;

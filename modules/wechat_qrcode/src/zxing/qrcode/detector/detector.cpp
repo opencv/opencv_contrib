@@ -7,11 +7,8 @@
 //
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
-
+#include "../../../precomp.hpp"
 #include "detector.hpp"
-#include <algorithm>
-#include <cstdlib>
-#include <iostream>
 #include <sstream>
 #include "../../common/grid_sampler.hpp"
 #include "../../common/mathutils.hpp"
@@ -21,11 +18,8 @@
 #include "alignment_pattern_finder.hpp"
 #include "finder_pattern.hpp"
 #include "finder_pattern_finder.hpp"
+#include "opencv2/core.hpp"
 
-using std::abs;
-using std::max;
-using std::min;
-using std::ostringstream;
 using zxing::BitMatrix;
 using zxing::DetectorResult;
 using zxing::ErrorHandler;
@@ -1027,7 +1021,7 @@ int Detector::computeDimension(Ref<ResultPoint> topLeft, Ref<ResultPoint> topRig
     int tlblCentersDimension = ResultPoint::distance(topLeft, bottomLeft) / moduleSizeY;
 
     float tmp_dimension = ((tltrCentersDimension + tlblCentersDimension) / 2.0) + 7.0;
-    int dimension = MathUtils::round(tmp_dimension);
+    int dimension = cvRound(tmp_dimension);
     int mod = dimension & 0x03;  // mod 4
 
     switch (mod) {  // mod 4

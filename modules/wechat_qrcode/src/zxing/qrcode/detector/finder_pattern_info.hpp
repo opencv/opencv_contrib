@@ -15,8 +15,6 @@
 #include "../../common/counted.hpp"
 #include "finder_pattern.hpp"
 
-#include <vector>
-
 namespace zxing {
 namespace qrcode {
 
