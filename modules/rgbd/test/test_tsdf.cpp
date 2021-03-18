@@ -99,7 +99,7 @@ struct SemisphereScene : Scene
 {
     const int framesPerCycle = 72;
     const float nCycles = 0.25f;
-    const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -2.3f));
+    const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -2.1f));
 
     Size frameSize;
     Matx33f intr;
@@ -113,20 +113,10 @@ struct SemisphereScene : Scene
     static float map(Point3f p, bool onlySemisphere)
     {
         float plane = p.y + 0.5f;
-
-        Point3f boxPose = p - Point3f(-0.0f, 0.3f, 0.5f);
-        float boxSize = 0.5f;
-        float roundness = 0.08f;
-        Point3f boxTmp;
-        boxTmp.x = max(abs(boxPose.x) - boxSize, 0.0f);
-        boxTmp.y = max(abs(boxPose.y) - boxSize, 0.0f);
-        boxTmp.z = max(abs(boxPose.z) - boxSize, 0.0f);
-        float roundBox = (float)cv::norm(boxTmp) - roundness;
-
-        Point3f spherePose = p - Point3f(-0.0f, 0.3f, 0.0f);
+        Point3f spherePose = p - Point3f(-0.0f, 0.3f, 1.1f);
         float sphereRadius = 0.5f;
         float sphere = (float)cv::norm(spherePose) - sphereRadius;
-        float sphereMinusBox = max(sphere, -roundBox);
+        float sphereMinusBox = sphere;
 
         float subSphereRadius = 0.05f;
         Point3f subSpherePose = p - Point3f(0.3f, -0.1f, -0.3f);
@@ -160,7 +150,7 @@ struct SemisphereScene : Scene
             float angle = (float)(CV_2PI * i / framesPerCycle);
             Affine3f pose;
             pose = pose.rotate(startPose.rotation());
-            pose = pose.rotate(Vec3f(0.f, -1.f, 0.f) * angle);
+            pose = pose.rotate(Vec3f(0.f, -0.5f, 0.f) * angle);
             pose = pose.translate(Vec3f(startPose.translation()[0] * sin(angle),
                 startPose.translation()[1],
                 startPose.translation()[2] * cos(angle)));
@@ -282,7 +272,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = true;
+static const bool display = false;
 static const bool parallelCheck = false;
 
 class Settings
@@ -425,7 +415,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
 void valid_points_test(bool isHashTSDF)
 {
-    Settings settings(isHashTSDF, false);
+    Settings settings(isHashTSDF, true);
 
     Mat depth = settings.scene->depth(settings.poses[0]);
     UMat _points, _normals, _newPoints, _newNormals;
@@ -452,7 +442,9 @@ void valid_points_test(bool isHashTSDF)
     if (display)
         displayImage(depth, points, normals, settings.params->depthFactor, settings.params->lightPose);
 
-    float percentValidity = float(profile) / float(anfas);
+    // TODO: why profile == 2*anfas ?
+    float percentValidity = float(anfas) / float(profile);
+
     ASSERT_NE(profile, 0) << "There is no points in profile";
     ASSERT_NE(anfas, 0) << "There is no points in anfas"; 
     ASSERT_LT(abs(0.5 - percentValidity), 0.3) << "percentValidity out of [0.3; 0.7] (percentValidity=" << percentValidity << ")";
