@@ -249,6 +249,24 @@ void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& 
 }
 #endif
 
+//DEBUG
+void writePg(const PoseGraph& pg, std::string fname)
+{
+    std::fstream of(fname, std::fstream::out);
+    for (const auto& n : pg.nodes)
+    {
+        Point3d d = n.second.getPose().translation();
+        of << "v " << d.x << " " << d.y << " " << d.z << std::endl;
+    }
+    for (const auto& e : pg.edges)
+    {
+        int sid = e.sourceNodeId, tid = e.targetNodeId;
+        of << "l " << sid + 1 << " " << tid + 1 << std::endl;
+    }
+    of.close();
+};
+
+
 void Optimizer::MyOptimize(PoseGraph& poseGraph)
 {
     //TODO: no copying
@@ -291,8 +309,11 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
 
     std::cout << "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges" << std::endl;
 
-    // estimate current energy
+    size_t nVars = nVarNodes * 6;
+    BlockSparseMat<double, 6, 6> jtj(nVarNodes);
+    std::vector<double> jtb(nVars);
 
+    // estimate current energy
     auto calcEnergy = [&poseGraph](const std::map<int, PoseGraphNode>& nodes) -> double
     {
         double totalErr = 0;
@@ -312,26 +333,70 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
         }
         return totalErr*0.5;
     };
+    
+    // from Ceres, equation energy change:
+    // eq. energy = 1/2 * (residuals + J * step)^2 =
+    // 1/2 * ( residuals^2 + 2 * residuals^T * J * step + (J*step)^T * J * step)
+    // eq. energy change = 1/2 * residuals^2 - eq. energy =
+    // residuals^T * J * step + 1/2 * (J*step)^T * J * step =
+    // (residuals^T * J + 1/2 * step^T * J^T * J) * step =
+    // step^T * ((residuals^T * J)^T + 1/2 * (step^T * J^T * J)^T) =
+    // 1/2 * step^T * (2 * J^T * residuals + J^T * J * step) =
+    // 1/2 * step^T * (2 * J^T * residuals + (J^T * J + LMDiag - LMDiag) * step) =
+    // 1/2 * step^T * (2 * J^T * residuals + (J^T * J + LMDiag) * step - LMDiag * step) =
+    // 1/2 * step^T * (J^T * residuals - LMDiag * step) =
+    // 1/2 * x^T * (jtb - lmDiag^T * x)
+    auto calcJacCostChange = [nVars, &jtb](const std::vector<double>& x, const std::vector<double>& lmDiag) -> double
+    {
+        double jdiag = 0.0;
+        for (int i = 0; i < nVars; i++)
+        {
+            jdiag += x[i] * (jtb[i] - lmDiag[i] * x[i]);
+        }
+        double costChange = jdiag * 0.5;
+        return costChange;
+    };
+
     double energy = calcEnergy(poseGraph.nodes);
     double startEnergy = energy;
     double oldEnergy = energy;
 
     std::cout << "#s" << " energy: " << energy << std::endl;
 
-    const double initialLambdaLevMarq = 0.1;
-    const double lmUpFactor = 2.0;
-    const double lmDownFactor = 3.0;
-    const double coeffILM = 0.1f;
-    const double minTolerance = 1e-6;
-    unsigned int maxIterations = 100;
+    // options
+    // stop conditions
+    const unsigned int maxIterations = 100;
+    const double maxGradientTolerance = 1e-6;
+    const double stepNorm2Tolerance = 1e-6;
+    const double relEnergyDeltaTolerance = 1e-6;
+    // normalize jac columns for better conditioning
+    const bool jacobiScaling = true;
+    const double minDiag = 1e-6;
+    const double maxDiag = 1e32;
 
+    const double initialLambdaLevMarq = 0.0001;
+    const double initialLmUpFactor = 2.0;
+    const double initialLmDownFactor = 3.0;
+
+    // finish reasons
+    bool tooLong = false; // => not found
+    bool smallGradient = false; // => found
+    bool smallStep = false; // => found
+    bool smallEnergyDelta = false; // => found
+
+    // column scale inverted, for jacobi scaling
+    std::vector<double> di(nVars);
+
+    double lmUpFactor = initialLmUpFactor;
+    double decreaseFactorLevMarq = 2.0;
     double lambdaLevMarq = initialLambdaLevMarq;
+
     unsigned int iter = 0;
     bool done = false;
     while (!done)
     {
-        BlockSparseMat<double, 6, 6> jtj(nVarNodes);
-        std::vector<double> jtb(nVarNodes * 6);
+        jtj.clear();
+        std::fill(jtb.begin(), jtb.end(), 0.0);
 
         // caching nodes jacobians
         std::vector<cv::Matx<double, 7, 6>> cachedJac;
@@ -377,7 +442,6 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
                 Vec6f jtbSrc = sj.t() * res;
                 for (int i = 0; i < 6; i++)
                 {
-                    //TODO: there were no minus, check if this is correct
                     jtb[6 * srcPlace + i] += - jtbSrc[i];
                 }
             }
@@ -392,7 +456,6 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
                 Vec6f jtbDst = tj.t() * res;
                 for (int i = 0; i < 6; i++)
                 {
-                    //TODO: there were no minus, check if this is correct
                     jtb[6 * dstPlace + i] += -jtbDst[i];
                 }
             }
@@ -406,34 +469,119 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
         }
 
         std::cout << "#LM#s" << " energy: " << energy << std::endl;
+
+        // do the jacobian conditioning improvement used in Ceres
+        if (jacobiScaling)
+        {
+            // L2-normalize each jacobian column
+            // vec d = {d_j = sum(J_ij^2) for each column j of J} = get_diag{ J^T * J }
+            // di = { 1/(1+sqrt(d_j)) }, extra +1 to avoid div by zero
+            if (iter == 0)
+            {
+                for (int i = 0; i < nVars; i++)
+                {
+                    double ds = sqrt(jtj.valElem(i, i)) + 1.0;
+                    di[i] = 1.0 / ds;
+                }
+            }
+
+            // J := J * d_inv, d_inv = make_diag(di)
+            // J^T*J := (J * d_inv)^T * J * d_inv = diag(di)* (J^T * J)* diag(di) = eltwise_mul(J^T*J, di*di^T)
+            // J^T*b := (J * d_inv)^T * b = d_inv^T * J^T*b = eltwise_mul(J^T*b, di)
+
+            // scaling J^T*J
+            for (auto& ijv : jtj.ijValue)
+            {
+                Point2i bpt = ijv.first;
+                Matx66d& m = ijv.second;
+                for (int i = 0; i < 6; i++)
+                {
+                    for (int j = 0; j < 6; j++)
+                    {
+                        Point2i pt(bpt.x * 6 + i, bpt.y * 6 + j);
+                        m(i, j) *= di[pt.x] * di[pt.y];
+                    }
+                }
+            }
+
+            // scaling J^T*b
+            for (int i = 0; i < nVars; i++)
+            {
+                jtb[i] *= di[i];
+            }
+        }
+
+        double gradientMax = 0.0;
+        // gradient max
+        for (int i = 0; i < nVars; i++)
+        {
+            gradientMax = std::max(gradientMax, abs(jtb[i]));
+        }
+
+        // Save original diagonal of jtj matrix for LevMarq
+        std::vector<double> diag(nVars);
+        for (int i = 0; i < nVars; i++)
+        {
+            diag[i] = jtj.valElem(i, i);
+        }
         
         // Solve using LevMarq and get delta transform
         bool enough = false;
-
-        // Save original diagonal of jtj matrix
-        std::vector<float> diag(nVarNodes*6);
-        for (int i = 0; i < nVarNodes*6; i++)
-        {
-            diag[i] = jtj.refElem(i, i);
-        }
 
         decltype(poseGraph.nodes) tempNodes = poseGraph.nodes;
 
         while (!enough && !done)
         {
             // form LevMarq matrix
-            for (int i = 0; i < nVarNodes*6; i++)
+            std::vector<double> lmDiag(nVars);
+            for (int i = 0; i < nVars; i++)
             {
-                float v = diag[i];
-                jtj.refElem(i, i) = v + lambdaLevMarq * (v + coeffILM);
+                double v = diag[i];
+
+                //double ld = lambdaLevMarq * (v + coeffILM);
+                double ld = std::min(max(v * lambdaLevMarq, minDiag), maxDiag);
+
+                lmDiag[i] = ld;
+
+                jtj.refElem(i, i) = v + ld;
+
+                //DEBUG
+                //std::cout << jtj.refElem(i, i) << " ";
             }
+
+            std::cout << std::endl;
+
+            std::cout << "sparse solve...";
 
             // use double or convert everything to float
             std::vector<double> x;
             bool solved = kinfu::sparseSolve(jtj, Mat(jtb), x);
 
+            std::cout << "solve finished: " << std::endl;
+
+            double costChange = 0.0;
+            double jacCostChange = 0.0;
+            double stepQuality = 0.0;
+            double xNorm2 = 0.0;
             if (solved)
             {
+                jacCostChange = calcJacCostChange(x, lmDiag);
+
+                // x squared norm
+                for (int i = 0; i < nVars; i++)
+                {
+                    xNorm2 += x[i] * x[i];
+                }
+
+                // undo jacobi scaling
+                if (jacobiScaling)
+                {
+                    for (int i = 0; i < nVars; i++)
+                    {
+                        x[i] *= di[i];
+                    }
+                }
+
                 tempNodes = poseGraph.nodes;
 
                 // Update temp nodes using x
@@ -450,8 +598,17 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
                 // calc energy with temp nodes
                 energy = calcEnergy(tempNodes);
 
+                costChange = oldEnergy - energy;
+
+                stepQuality = costChange / jacCostChange;
+
                 std::cout << "#LM#" << iter;
                 std::cout << " energy: " << energy;
+                std::cout << " deltaEnergy: " << costChange;
+                std::cout << " deltaEqEnergy: " << jacCostChange;
+                std::cout << " max(J^T*b): " << gradientMax;
+                std::cout << " norm2(x): " << xNorm2;
+                std::cout << " deltaEnergy/energy: " << costChange / energy;
             }
             else
             {
@@ -460,11 +617,12 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
 
             std::cout << std::endl;
 
-            if (!solved || (energy > oldEnergy))
+            if (!solved || costChange < 0)
             {
                 // failed to optimize, increase lambda and repeat
 
                 lambdaLevMarq *= lmUpFactor;
+                lmUpFactor *= 2.0;
 
                 std::cout << "LM up: " << lambdaLevMarq << ", old energy = " << oldEnergy << std::endl;
             }
@@ -473,7 +631,12 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
                 // optimized successfully, decrease lambda and set variables for next iteration
                 enough = true;
 
-                lambdaLevMarq /= lmDownFactor;
+                lambdaLevMarq *= std::max(1.0 / 3.0, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
+                lmUpFactor = initialLmUpFactor;
+
+                smallGradient = (gradientMax < maxGradientTolerance);
+                smallStep = (xNorm2 < stepNorm2Tolerance);
+                smallEnergyDelta = (costChange / energy < relEnergyDeltaTolerance);
 
                 poseGraph.nodes = tempNodes;
 
@@ -483,17 +646,36 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
 
                 oldEnergy = energy;
 
-                std::cout << "LM down: " << lambdaLevMarq << std::endl;
+                std::cout << "LM down: " << lambdaLevMarq;
+                std::cout << " step quality: " << stepQuality;
+                std::cout << std::endl;
             }
 
             iter++;
 
-            //TODO: fix this
-            done = (iter >= maxIterations); //  || (startEnergy - energy) < minTolerance * startEnergy;
+            tooLong = (iter >= maxIterations);
+
+            done = tooLong || smallGradient || smallStep || smallEnergyDelta;
         }
+
+        }
+        //writePg(poseGraph, format("C:\\Temp\\g2opt\\it%03d.obj", iter));
+
+
     }
 
     // TODO: set timers & produce report
+    bool found = smallGradient || smallStep || smallEnergyDelta;
+
+    std::cout << "Finished:";
+    if (!found)
+        std::cout << " not";
+    std::cout << " found" << std::endl;
+
+    std::cout << "smallGradient: "    << (smallGradient    ? "true" : "false") << std::endl;
+    std::cout << "smallStep: "        << (smallStep        ? "true" : "false") << std::endl;
+    std::cout << "smallEnergyDelta: " << (smallEnergyDelta ? "true" : "false") << std::endl;
+    std::cout << "tooLong: "          << (tooLong          ? "true" : "false") << std::endl;
 }
 
 void Optimizer::optimize(PoseGraph& poseGraph)
