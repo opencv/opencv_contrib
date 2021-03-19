@@ -43,28 +43,20 @@ struct BlockSparseMat
 
     BlockSparseMat(size_t _nBlocks) : nBlocks(_nBlocks), ijValue() {}
 
+    void clear()
+    {
+        ijValue.clear();
+    }
+
     MatType& refBlock(size_t i, size_t j)
     {
         Point2i p((int)i, (int)j);
         auto it = ijValue.find(p);
         if (it == ijValue.end())
         {
-            it = ijValue.insert({ p, Matx<_Tp, blockM, blockN>::zeros() }).first;
+            it = ijValue.insert({ p, MatType::zeros() }).first;
         }
         return it->second;
-    }
-
-    Mat diagonal()
-    {
-        // Diagonal max length is the number of columns in the sparse matrix
-        int diagLength = blockN * nBlocks;
-        cv::Mat diag   = cv::Mat::zeros(diagLength, 1, cv::DataType<_Tp>::type);
-
-        for (int i = 0; i < diagLength; i++)
-        {
-            diag.at<_Tp>(i, 0) = refElem(i, i);
-        }
-        return diag;
     }
 
     _Tp& refElem(size_t i, size_t j)
@@ -74,10 +66,40 @@ struct BlockSparseMat
         return refBlock(ib.x, ib.y)(iv.x, iv.y);
     }
 
+    MatType valBlock(size_t i, size_t j) const
+    {
+        Point2i p((int)i, (int)j);
+        auto it = ijValue.find(p);
+        if (it == ijValue.end())
+            return MatType::zeros();
+        else
+            return it->second;
+    }
+
+    _Tp valElem(size_t i, size_t j) const
+    {
+        Point2i ib((int)(i / blockM), (int)(j / blockN));
+        Point2i iv((int)(i % blockM), (int)(j % blockN));
+        return valBlock(ib.x, ib.y)(iv.x, iv.y);
+    }
+
+    Mat diagonal() const
+    {
+        // Diagonal max length is the number of columns in the sparse matrix
+        int diagLength = blockN * nBlocks;
+        cv::Mat diag   = cv::Mat::zeros(diagLength, 1, cv::DataType<_Tp>::type);
+
+        for (int i = 0; i < diagLength; i++)
+        {
+            diag.at<_Tp>(i, 0) = valElem(i, i);
+        }
+        return diag;
+    }
+
 #if defined(HAVE_EIGEN)
     Eigen::SparseMatrix<_Tp> toEigen() const
     {
-        std::vector<Eigen::Triplet<double>> tripletList;
+        std::vector<Eigen::Triplet<_Tp>> tripletList;
         tripletList.reserve(ijValue.size() * blockM * blockN);
         for (const auto& ijv : ijValue)
         {
@@ -87,10 +109,10 @@ struct BlockSparseMat
             {
                 for (int j = 0; j < blockN; j++)
                 {
-                    float val = vblock(i, j);
+                    _Tp val = vblock(i, j);
                     if (abs(val) >= NON_ZERO_VAL_THRESHOLD)
                     {
-                        tripletList.push_back(Eigen::Triplet<double>(blockM * xb + i, blockN * yb + j, val));
+                        tripletList.push_back(Eigen::Triplet<_Tp>(blockM * xb + i, blockN * yb + j, val));
                     }
                 }
             }
@@ -116,7 +138,7 @@ struct BlockSparseMat
         return *this;
     }
 
-    static constexpr float NON_ZERO_VAL_THRESHOLD = 0.0001f;
+    static constexpr _Tp NON_ZERO_VAL_THRESHOLD = _Tp(0.0001);
     size_t nBlocks;
     IDtoBlockValueMap ijValue;
 };
