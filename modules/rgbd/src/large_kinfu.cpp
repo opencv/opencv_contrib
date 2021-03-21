@@ -208,6 +208,7 @@ bool LargeKinfuImpl<UMat>::update(InputArray _depth)
     }
 }
 
+
 template<typename MatType>
 bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 {
@@ -279,7 +280,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         // TODO: Convert constraints to posegraph
         PoseGraph poseGraph = submapMgr->MapToPoseGraph();
         std::cout << "Created posegraph\n";
-        Optimizer::optimize(poseGraph);
+        poseGraph.optimize();
         submapMgr->PoseGraphToMap(poseGraph);
 
     }

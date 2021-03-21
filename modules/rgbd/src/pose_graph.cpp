@@ -10,14 +10,42 @@
 #include <unordered_set>
 #include <vector>
 
-#if defined(CERES_FOUND)
-#include <ceres/ceres.h>
-#endif
 
 namespace cv
 {
 namespace kinfu
 {
+
+// Cholesky decomposition of symmetrical 6x6 matrix
+static inline cv::Matx66d llt6(Matx66d m)
+{
+    Matx66d L;
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < (i + 1); j++)
+        {
+            double sum = 0;
+            for (int k = 0; k < j; k++)
+                sum += L(i, k) * L(j, k);
+
+            if (i == j)
+                L(i, i) = sqrt(m(i, i) - sum);
+            else
+                L(i, j) = (1.0 / L(j, j) * (m(i, j) - sum));
+        }
+    }
+    return L;
+}
+
+PoseGraphEdge::PoseGraphEdge(int _sourceNodeId, int _targetNodeId, const Affine3f& _transformation,
+                             const Matx66f& _information) :
+                             sourceNodeId(_sourceNodeId),
+                             targetNodeId(_targetNodeId),
+                             pose(_transformation.rotation(), _transformation.translation()),
+                             information(_information),
+                             sqrtInfo(llt6(_information))
+{ }
+
 bool PoseGraph::isValid() const
 {
     int numNodes = getNumNodes();
@@ -36,7 +64,6 @@ bool PoseGraph::isValid() const
     {
         int currNodeId = nodesToVisit.back();
         nodesToVisit.pop_back();
-        //std::cout << "Visiting node: " << currNodeId << "\n";
         nodesVisited.insert(currNodeId);
         // Since each node does not maintain its neighbor list
         for (int i = 0; i < numEdges; i++)
@@ -54,8 +81,6 @@ bool PoseGraph::isValid() const
             }
             if (nextNodeId != -1)
             {
-                //std::cout << "Next node: " << nextNodeId << " " << nodesVisited.count(nextNodeId)
-                //          << std::endl;
                 if (nodesVisited.count(nextNodeId) == 0)
                 {
                     nodesToVisit.push_back(nextNodeId);
@@ -65,8 +90,8 @@ bool PoseGraph::isValid() const
     }
 
     isGraphConnected = (int(nodesVisited.size()) == numNodes);
-    std::cout << "nodesVisited: " << nodesVisited.size()
-              << " IsGraphConnected: " << isGraphConnected << std::endl;
+    //std::cout << "nodesVisited: " << nodesVisited.size();
+    //std::cout << " IsGraphConnected: " << isGraphConnected << std::endl;
     bool invalidEdgeNode = false;
     for (int i = 0; i < numEdges; i++)
     {
@@ -82,21 +107,27 @@ bool PoseGraph::isValid() const
     return isGraphConnected && !invalidEdgeNode;
 }
 
-
-// Taken from Ceres pose graph demo: https://ceres-solver.org/
 PoseGraph::PoseGraph(const std::string& g2oFileName) :
     nodes(), edges()
 {
-    auto readAffine = [](std::istream& input) -> Affine3d
-    {
-        Vec3d p;
-        Vec4d q;
-        input >> p[0] >> p[1] >> p[2];
-        input >> q[1] >> q[2] >> q[3] >> q[0];
-        // Normalize the quaternion to account for precision loss due to
-        // serialization.
-        return Affine3d(Quatd(q).toRotMat3x3(), p);
-    };
+    readG2OFile(g2oFileName);
+}
+
+static Affine3d readAffine(std::istream& input)
+{
+    Vec3d p;
+    Vec4d q;
+    input >> p[0] >> p[1] >> p[2];
+    input >> q[1] >> q[2] >> q[3] >> q[0];
+    // Normalize the quaternion to account for precision loss due to
+    // serialization.
+    return Affine3d(Quatd(q).toRotMat3x3(), p);
+};
+
+// Rewritten from Ceres pose graph demo: https://ceres-solver.org/
+void PoseGraph::readG2OFile(const std::string& g2oFileName)
+{
+    nodes.clear(); edges.clear();
 
     // for debugging purposes
     int minId = 0, maxId = 1 << 30;
@@ -172,93 +203,16 @@ PoseGraph::PoseGraph(const std::string& g2oFileName) :
 }
 
 
-
-#if defined(CERES_FOUND) && defined(HAVE_EIGEN)
-
-class MyQuaternionParameterization
-    : public ceres::LocalParameterization {
-public:
-    virtual ~MyQuaternionParameterization() {}
-    bool Plus(const double* x_ptr, const double* delta_ptr, double* x_plus_delta_ptr) const override
-    {
-        Vec4d vx(x_ptr);
-        Quatd x(vx);
-        Vec3d delta(delta_ptr);
-
-        Quatd x_plus_delta = Quatd(0, delta[0], delta[1], delta[2]).exp() * x;
-
-        *(Vec4d*)(x_plus_delta_ptr) = x_plus_delta.toVec();
-
-        return true;
-    }
-
-    bool ComputeJacobian(const double* x, double* jacobian) const override
-    {
-        Vec4d vx(x);
-        Matx43d jm = Optimizer::expQuatJacobian(Quatd(vx));
-
-        for (int ii = 0; ii < 12; ii++)
-            jacobian[ii] = jm.val[ii];
-
-        return true;
-    }
-
-    int GlobalSize() const override { return 4; }
-    int LocalSize() const override { return 3; }
-};
-
-void Optimizer::createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& problem)
-{
-    int numEdges = poseGraph.getNumEdges();
-    if (numEdges == 0)
-    {
-        CV_Error(Error::StsBadArg, "PoseGraph has no edges, no optimization to be done");
-        return;
-    }
-
-    ceres::LossFunction* lossFunction = nullptr;
-    // TODO: Experiment with SE3 parameterization
-    ceres::LocalParameterization* quatLocalParameterization =
-         new MyQuaternionParameterization;
-
-    for (const PoseGraphEdge& currEdge : poseGraph.edges)
-    {
-        int sourceNodeId = currEdge.getSourceNodeId();
-        int targetNodeId = currEdge.getTargetNodeId();
-        Pose3d& sourcePose = poseGraph.nodes.at(sourceNodeId).se3Pose;
-        Pose3d& targetPose = poseGraph.nodes.at(targetNodeId).se3Pose;
-
-        ceres::CostFunction* costFunction = Pose3dAnalyticCostFunction::create(Vec3d(currEdge.pose.t), currEdge.pose.getQuat(), currEdge.information);
-
-        problem.AddResidualBlock(costFunction, lossFunction,
-                                 sourcePose.t.val, sourcePose.vq.val,
-                                 targetPose.t.val, targetPose.vq.val);
-        problem.SetParameterization(sourcePose.vq.val, quatLocalParameterization);
-        problem.SetParameterization(targetPose.vq.val, quatLocalParameterization);
-    }
-
-    for (const auto& it : poseGraph.nodes)
-    {
-        const PoseGraphNode& node = it.second;
-        if (node.isPoseFixed())
-        {
-            problem.SetParameterBlockConstant(node.se3Pose.t.val);
-            problem.SetParameterBlockConstant(node.se3Pose.vq.val);
-        }
-    }
-}
-#endif
-
-//DEBUG
-void writePg(const PoseGraph& pg, std::string fname)
+// Writes edge-only model of how nodes are located in space
+void PoseGraph::writeToObjFile(const std::string& fname) const
 {
     std::fstream of(fname, std::fstream::out);
-    for (const auto& n : pg.nodes)
+    for (const auto& n : nodes)
     {
         Point3d d = n.second.getPose().translation();
         of << "v " << d.x << " " << d.y << " " << d.z << std::endl;
     }
-    for (const auto& e : pg.edges)
+    for (const auto& e : edges)
     {
         int sid = e.sourceNodeId, tid = e.targetNodeId;
         of << "l " << sid + 1 << " " << tid + 1 << std::endl;
@@ -266,26 +220,241 @@ void writePg(const PoseGraph& pg, std::string fname)
     of.close();
 };
 
+//////////////////////////
+// Optimization itself //
+////////////////////////
 
-void Optimizer::optimize(PoseGraph& poseGraph)
+// matrix form of Im(a)
+const Matx44d M_Im{ 0, 0, 0, 0,
+                    0, 1, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1 };
+
+// matrix form of conjugation
+const Matx44d M_Conj{ 1,  0,  0,  0,
+                      0, -1,  0,  0,
+                      0,  0, -1,  0,
+                      0,  0,  0, -1 };
+
+// matrix form of quaternion multiplication from left side
+static inline Matx44d m_left(Quatd q)
 {
-    //TODO: no copying
-    PoseGraph poseGraphOriginal = poseGraph;
+    // M_left(a)* V(b) =
+    //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
+    //                   av | 0_3] +  0_3x1 | skew(av)]) * V(b)
 
-    if (!poseGraphOriginal.isValid())
+    float w = q.w, x = q.x, y = q.y, z = q.z;
+    return { w, -x, -y, -z,
+             x,  w, -z,  y,
+             y,  z,  w, -x,
+             z, -y,  x,  w };
+}
+
+// matrix form of quaternion multiplication from right side
+static inline Matx44d m_right(Quatd q)
+{
+    // M_right(b)* V(a) =
+    //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
+    //                   bv | 0_3] +  0_3x1 | skew(-bv)]) * V(a)
+
+    float w = q.w, x = q.x, y = q.y, z = q.z;
+    return { w, -x, -y, -z,
+             x,  w,  z, -y,
+             y, -z,  w,  x,
+             z,  y, -x,  w };
+}
+
+static inline Matx43d expQuatJacobian(Quatd q)
+{
+    double w = q.w, x = q.x, y = q.y, z = q.z;
+    return Matx43d(-x, -y, -z,
+                    w,  z, -y,
+                   -z,  w,  x,
+                    y, -x,  w);
+}
+
+// concatenate matrices vertically
+template<typename _Tp, int m, int n, int k> static inline
+Matx<_Tp, m + k, n> concatVert(const Matx<_Tp, m, n>& a, const Matx<_Tp, k, n>& b)
+{
+    Matx<_Tp, m + k, n> res;
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(i, j) = a(i, j);
+        }
+    }
+    for (int i = 0; i < k; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(m + i, j) = b(i, j);
+        }
+    }
+    return res;
+}
+
+// concatenate matrices horizontally
+template<typename _Tp, int m, int n, int k> static inline
+Matx<_Tp, m, n + k> concatHor(const Matx<_Tp, m, n>& a, const Matx<_Tp, m, k>& b)
+{
+    Matx<_Tp, m, n + k> res;
+
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(i, j) = a(i, j);
+        }
+    }
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < k; j++)
+        {
+            res(i, n + j) = b(i, j);
+        }
+    }
+    return res;
+}
+
+
+static inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd targetQuat, Vec3d targetTrans,
+                               Quatd rotMeasured, Vec3d transMeasured, Matx66d sqrtInfoMatrix, bool needJacobians,
+                               Matx<double, 6, 4>& sqj, Matx<double, 6, 3>& stj,
+                               Matx<double, 6, 4>& tqj, Matx<double, 6, 3>& ttj,
+                               Vec6d& res)
+{
+    // err_r = 2*Im(conj(rel_r) * measure_r) = 2*Im(conj(target_r) * source_r * measure_r)
+    // err_t = conj(source_r) * (target_t - source_t) * source_r - measure_t
+
+    Quatd sourceQuatInv = sourceQuat.conjugate();
+    Vec3d deltaTrans = targetTrans - sourceTrans;
+
+    Quatd relativeQuat = sourceQuatInv * targetQuat;
+    Vec3d relativeTrans = sourceQuatInv.toRotMat3x3(cv::QUAT_ASSUME_UNIT) * deltaTrans;
+
+    //! Definition should actually be relativeQuat * rotMeasured.conjugate()
+    Quatd deltaRot = relativeQuat.conjugate() * rotMeasured;
+
+    Vec3d terr = relativeTrans - transMeasured;
+    Vec3d rerr = 2.0 * Vec3d(deltaRot.x, deltaRot.y, deltaRot.z);
+    Vec6d rterr(terr[0], terr[1], terr[2], rerr[0], rerr[1], rerr[2]);
+
+    res = sqrtInfoMatrix * rterr;
+
+    if (needJacobians)
+    {
+        // d(err_r) = 2*Im(d(conj(target_r) * source_r * measure_r)) = < measure_r is constant > =
+        // 2*Im((conj(d(target_r)) * source_r + conj(target_r) * d(source_r)) * measure_r)
+        // d(target_r) == 0:
+        //  # d(err_r) = 2*Im(conj(target_r) * d(source_r) * measure_r)
+        //  # V(d(err_r)) = 2 * M_Im * M_right(measure_r) * M_left(conj(target_r)) * V(d(source_r))
+        //  # d(err_r) / d(source_r) = 2 * M_Im * M_right(measure_r) * M_left(conj(target_r))
+        Matx34d drdsq = 2.0 * (m_right(rotMeasured) * m_left(targetQuat.conjugate())).get_minor<3, 4>(1, 0);
+
+        // d(source_r) == 0:
+        //  # d(err_r) = 2*Im(conj(d(target_r)) * source_r * measure_r)
+        //  # V(d(err_r)) = 2 * M_Im * M_right(source_r * measure_r) * M_Conj * V(d(target_r))
+        //  # d(err_r) / d(target_r) = 2 * M_Im * M_right(source_r * measure_r) * M_Conj
+        Matx34d drdtq = 2.0 * (m_right(sourceQuat * rotMeasured) * M_Conj).get_minor<3, 4>(1, 0);
+
+        // d(err_t) = d(conj(source_r) * (target_t - source_t) * source_r) =
+        // conj(source_r) * (d(target_t) - d(source_t)) * source_r +
+        // conj(d(source_r)) * (target_t - source_t) * source_r +
+        // conj(source_r) * (target_t - source_t) * d(source_r) =
+        // <conj(a*b) == conj(b)*conj(a), conj(target_t - source_t) = - (target_t - source_t), 2 * Im(x) = (x - conj(x))>
+        // conj(source_r) * (d(target_t) - d(source_t)) * source_r +
+        // 2 * Im(conj(source_r) * (target_t - source_t) * d(source_r))
+        // d(*_t) == 0:
+        //  # d(err_t) = 2 * Im(conj(source_r) * (target_t - source_t) * d(source_r))
+        //  # V(d(err_t)) = 2 * M_Im * M_left(conj(source_r) * (target_t - source_t)) * V(d(source_r))
+        //  # d(err_t) / d(source_r) = 2 * M_Im * M_left(conj(source_r) * (target_t - source_t))
+        Matx34d dtdsq = 2 * m_left(sourceQuatInv * Quatd(0, deltaTrans[0], deltaTrans[1], deltaTrans[2])).get_minor<3, 4>(1, 0);
+        // deltaTrans is rotated by sourceQuatInv, so the jacobian is rot matrix of sourceQuatInv by +1 or -1
+        Matx33d dtdtt = sourceQuatInv.toRotMat3x3(QUAT_ASSUME_UNIT);
+        Matx33d dtdst = -dtdtt;
+
+        Matx33d z;
+        sqj = concatVert(dtdsq, drdsq);
+        tqj = concatVert(Matx34d(), drdtq);
+        stj = concatVert(dtdst, z);
+        ttj = concatVert(dtdtt, z);
+
+        stj = sqrtInfoMatrix * stj;
+        ttj = sqrtInfoMatrix * ttj;
+        sqj = sqrtInfoMatrix * sqj;
+        tqj = sqrtInfoMatrix * tqj;
+    }
+
+    return res.ddot(res);
+}
+
+
+// estimate current energy
+double PoseGraph::calcEnergy(const std::map<int, PoseGraphNode>& newNodes) const
+{
+    double totalErr = 0;
+    for (const auto& e : edges)
+    {
+        Pose3d srcP = newNodes.at(e.getSourceNodeId()).se3Pose;
+        Pose3d tgtP = newNodes.at(e.getTargetNodeId()).se3Pose;
+
+        Vec6d res;
+        Matx<double, 6, 3> stj, ttj;
+        Matx<double, 6, 4> sqj, tqj;
+        double err = poseError(srcP.getQuat(), srcP.t, tgtP.getQuat(), tgtP.t,
+                               e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ false,
+                               sqj, stj, tqj, ttj, res);
+
+        totalErr += err;
+    }
+    return totalErr * 0.5;
+};
+
+
+// from Ceres, equation energy change:
+// eq. energy = 1/2 * (residuals + J * step)^2 =
+// 1/2 * ( residuals^2 + 2 * residuals^T * J * step + (J*step)^T * J * step)
+// eq. energy change = 1/2 * residuals^2 - eq. energy =
+// residuals^T * J * step + 1/2 * (J*step)^T * J * step =
+// (residuals^T * J + 1/2 * step^T * J^T * J) * step =
+// step^T * ((residuals^T * J)^T + 1/2 * (step^T * J^T * J)^T) =
+// 1/2 * step^T * (2 * J^T * residuals + J^T * J * step) =
+// 1/2 * step^T * (2 * J^T * residuals + (J^T * J + LMDiag - LMDiag) * step) =
+// 1/2 * step^T * (2 * J^T * residuals + (J^T * J + LMDiag) * step - LMDiag * step) =
+// 1/2 * step^T * (J^T * residuals - LMDiag * step) =
+// 1/2 * x^T * (jtb - lmDiag^T * x)
+static inline double calcJacCostChange(const std::vector<double>& jtb,
+                                       const std::vector<double>& x,
+                                       const std::vector<double>& lmDiag)
+{
+    double jdiag = 0.0;
+    for (size_t i = 0; i < x.size(); i++)
+    {
+        jdiag += x[i] * (jtb[i] - lmDiag[i] * x[i]);
+    }
+    double costChange = jdiag * 0.5;
+    return costChange;
+};
+
+
+void PoseGraph::optimize()
+{
+    if (!isValid())
     {
         CV_Error(Error::StsBadArg,
             "Invalid PoseGraph that is either not connected or has invalid nodes");
         return;
     }
 
-    int numNodes = poseGraph.getNumNodes();
-    int numEdges = poseGraph.getNumEdges();
+    int numNodes = getNumNodes();
+    int numEdges = getNumEdges();
 
     // Allocate indices for nodes
     std::vector<int> placesIds;
     std::map<int, int> idToPlace;
-    for (const auto& ni : poseGraph.nodes)
+    for (const auto& ni : nodes)
     {
         if (!ni.second.isPoseFixed())
         {
@@ -297,13 +466,13 @@ void Optimizer::optimize(PoseGraph& poseGraph)
     int nVarNodes = placesIds.size();
     if (!nVarNodes)
     {
-        CV_Error(Error::StsBadArg, "PoseGraph has no non-constant nodes, no optimization to be done");
+        std::cout << "PoseGraph contains no non-constant nodes, skipping optimization" << std::endl;
         return;
     }
 
     if (numEdges == 0)
     {
-        CV_Error(Error::StsBadArg, "PoseGraph has no edges, no optimization to be done");
+        std::cout << "PoseGraph has no edges, no optimization to be done" << std::endl;
         return;
     }
 
@@ -312,52 +481,8 @@ void Optimizer::optimize(PoseGraph& poseGraph)
     size_t nVars = nVarNodes * 6;
     BlockSparseMat<double, 6, 6> jtj(nVarNodes);
     std::vector<double> jtb(nVars);
-
-    // estimate current energy
-    auto calcEnergy = [&poseGraph](const std::map<int, PoseGraphNode>& nodes) -> double
-    {
-        double totalErr = 0;
-        for (const auto& e : poseGraph.edges)
-        {
-            Pose3d srcP = nodes.at(e.getSourceNodeId()).se3Pose;
-            Pose3d tgtP = nodes.at(e.getTargetNodeId()).se3Pose;
-
-            Vec6d res;
-            Matx<double, 6, 3> stj, ttj;
-            Matx<double, 6, 4> sqj, tqj;
-            double err = poseError(srcP.getQuat(), srcP.t, tgtP.getQuat(), tgtP.t,
-                                   e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ false,
-                                   sqj, stj, tqj, ttj, res);
-
-            totalErr += err;
-        }
-        return totalErr*0.5;
-    };
-    
-    // from Ceres, equation energy change:
-    // eq. energy = 1/2 * (residuals + J * step)^2 =
-    // 1/2 * ( residuals^2 + 2 * residuals^T * J * step + (J*step)^T * J * step)
-    // eq. energy change = 1/2 * residuals^2 - eq. energy =
-    // residuals^T * J * step + 1/2 * (J*step)^T * J * step =
-    // (residuals^T * J + 1/2 * step^T * J^T * J) * step =
-    // step^T * ((residuals^T * J)^T + 1/2 * (step^T * J^T * J)^T) =
-    // 1/2 * step^T * (2 * J^T * residuals + J^T * J * step) =
-    // 1/2 * step^T * (2 * J^T * residuals + (J^T * J + LMDiag - LMDiag) * step) =
-    // 1/2 * step^T * (2 * J^T * residuals + (J^T * J + LMDiag) * step - LMDiag * step) =
-    // 1/2 * step^T * (J^T * residuals - LMDiag * step) =
-    // 1/2 * x^T * (jtb - lmDiag^T * x)
-    auto calcJacCostChange = [nVars, &jtb](const std::vector<double>& x, const std::vector<double>& lmDiag) -> double
-    {
-        double jdiag = 0.0;
-        for (int i = 0; i < nVars; i++)
-        {
-            jdiag += x[i] * (jtb[i] - lmDiag[i] * x[i]);
-        }
-        double costChange = jdiag * 0.5;
-        return costChange;
-    };
-
-    double energy = calcEnergy(poseGraph.nodes);
+ 
+    double energy = calcEnergy(nodes);
     double startEnergy = energy;
     double oldEnergy = energy;
 
@@ -366,10 +491,10 @@ void Optimizer::optimize(PoseGraph& poseGraph)
     // options
     // stop conditions
     const unsigned int maxIterations = 100;
-    const double maxGradientTolerance = 1e-6;
+    const double minGradientTolerance = 1e-6;
     const double stepNorm2Tolerance = 1e-6;
     const double relEnergyDeltaTolerance = 1e-6;
-    // normalize jac columns for better conditioning
+    // normalize jacobian columns for better conditioning
     const bool jacobiScaling = true;
     const double minDiag = 1e-6;
     const double maxDiag = 1e32;
@@ -379,12 +504,12 @@ void Optimizer::optimize(PoseGraph& poseGraph)
     const double initialLmDownFactor = 3.0;
 
     // finish reasons
-    bool tooLong = false; // => not found
-    bool smallGradient = false; // => found
-    bool smallStep = false; // => found
+    bool tooLong          = false; // => not found
+    bool smallGradient    = false; // => found
+    bool smallStep        = false; // => found
     bool smallEnergyDelta = false; // => found
 
-    // column scale inverted, for jacobi scaling
+    // column scale inverted, for jacobian scaling
     std::vector<double> di(nVars);
 
     double lmUpFactor = initialLmUpFactor;
@@ -402,7 +527,7 @@ void Optimizer::optimize(PoseGraph& poseGraph)
         std::vector<cv::Matx<double, 7, 6>> cachedJac;
         for (auto id : placesIds)
         {
-            Pose3d p = poseGraph.nodes.at(id).se3Pose;
+            Pose3d p = nodes.at(id).se3Pose;
             Matx43d qj = expQuatJacobian(p.getQuat());
             // x node layout is (rot_x, rot_y, rot_z, trans_x, trans_y, trans_z)
             // pose layout is (q_w, q_x, q_y, q_z, trans_x, trans_y, trans_z)
@@ -412,11 +537,11 @@ void Optimizer::optimize(PoseGraph& poseGraph)
         }
 
         // fill jtj and jtb
-        for (const auto& e : poseGraph.edges)
+        for (const auto& e : edges)
         {
             int srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
-            const PoseGraphNode& srcNode = poseGraph.nodes.at(srcId);
-            const PoseGraphNode& dstNode = poseGraph.nodes.at(dstId);
+            const PoseGraphNode& srcNode = nodes.at(srcId);
+            const PoseGraphNode& dstNode = nodes.at(dstId);
 
             Pose3d srcP = srcNode.se3Pose;
             Pose3d tgtP = dstNode.se3Pose;
@@ -528,7 +653,7 @@ void Optimizer::optimize(PoseGraph& poseGraph)
         // Solve using LevMarq and get delta transform
         bool enough = false;
 
-        decltype(poseGraph.nodes) tempNodes = poseGraph.nodes;
+        decltype(nodes) tempNodes = nodes;
 
         while (!enough && !done)
         {
@@ -537,12 +662,8 @@ void Optimizer::optimize(PoseGraph& poseGraph)
             for (int i = 0; i < nVars; i++)
             {
                 double v = diag[i];
-
-                //double ld = lambdaLevMarq * (v + coeffILM);
                 double ld = std::min(max(v * lambdaLevMarq, minDiag), maxDiag);
-
                 lmDiag[i] = ld;
-
                 jtj.refElem(i, i) = v + ld;
             }
 
@@ -552,9 +673,9 @@ void Optimizer::optimize(PoseGraph& poseGraph)
 
             // use double or convert everything to float
             std::vector<double> x;
-            bool solved = kinfu::sparseSolve(jtj, Mat(jtb), x);
+            bool solved = kinfu::sparseSolve(jtj, jtb, x, false);
 
-            std::cout << "solve finished: " << std::endl;
+            std::cout << (solved ? "OK" : "FAIL") << std::endl;
 
             double costChange = 0.0;
             double jacCostChange = 0.0;
@@ -562,7 +683,7 @@ void Optimizer::optimize(PoseGraph& poseGraph)
             double xNorm2 = 0.0;
             if (solved)
             {
-                jacCostChange = calcJacCostChange(x, lmDiag);
+                jacCostChange = calcJacCostChange(jtb, x, lmDiag);
 
                 // x squared norm
                 for (int i = 0; i < nVars; i++)
@@ -579,7 +700,7 @@ void Optimizer::optimize(PoseGraph& poseGraph)
                     }
                 }
 
-                tempNodes = poseGraph.nodes;
+                tempNodes = nodes;
 
                 // Update temp nodes using x
                 for (int i = 0; i < nVarNodes; i++)
@@ -606,13 +727,8 @@ void Optimizer::optimize(PoseGraph& poseGraph)
                 std::cout << " max(J^T*b): " << gradientMax;
                 std::cout << " norm2(x): " << xNorm2;
                 std::cout << " deltaEnergy/energy: " << costChange / energy;
+                std::cout << std::endl;
             }
-            else
-            {
-                std::cout << "not solved" << std::endl;
-            }
-
-            std::cout << std::endl;
 
             if (!solved || costChange < 0)
             {
@@ -631,11 +747,11 @@ void Optimizer::optimize(PoseGraph& poseGraph)
                 lambdaLevMarq *= std::max(1.0 / 3.0, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
                 lmUpFactor = initialLmUpFactor;
 
-                smallGradient = (gradientMax < maxGradientTolerance);
+                smallGradient = (gradientMax < minGradientTolerance);
                 smallStep = (xNorm2 < stepNorm2Tolerance);
                 smallEnergyDelta = (costChange / energy < relEnergyDeltaTolerance);
 
-                poseGraph.nodes = tempNodes;
+                nodes = tempNodes;
 
                 std::cout << "#" << iter;
                 std::cout << " energy: " << energy;
@@ -656,12 +772,10 @@ void Optimizer::optimize(PoseGraph& poseGraph)
         }
 
         }
-        //writePg(poseGraph, format("C:\\Temp\\g2opt\\it%03d.obj", iter));
-
 
     }
 
-    // TODO: set timers & produce report
+    // TODO: set timers
     bool found = smallGradient || smallStep || smallEnergyDelta;
 
     std::cout << "Finished:";
@@ -681,42 +795,7 @@ void Optimizer::optimize(PoseGraph& poseGraph)
     std::cout << "(";
     for (const auto& t : txtFlags)
         std::cout << " " << t;
-    std::cout << ")" << std::endl;
-}
-
-void Optimizer::CeresOptimize(PoseGraph& poseGraph)
-{
-    PoseGraph poseGraphOriginal = poseGraph;
-
-    if (!poseGraphOriginal.isValid())
-    {
-        CV_Error(Error::StsBadArg,
-                 "Invalid PoseGraph that is either not connected or has invalid nodes");
-        return;
-    }
-
-    int numNodes = poseGraph.getNumNodes();
-    int numEdges = poseGraph.getNumEdges();
-    std::cout << "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges"
-              << std::endl;
-
-#if defined(CERES_FOUND) && defined(HAVE_EIGEN)
-    ceres::Problem problem;
-    createOptimizationProblem(poseGraph, problem);
-
-    ceres::Solver::Options options;
-    options.max_num_iterations = 100;
-    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
-
-    std::cout << summary.FullReport() << '\n';
-
-    std::cout << "Is solution usable: " << summary.IsSolutionUsable() << std::endl;
-#else
-    CV_Error(Error::StsNotImplemented, "Ceres and Eigen required for Pose Graph optimization");
-#endif
+    std::cout << " )" << std::endl;
 }
 
 }  // namespace kinfu

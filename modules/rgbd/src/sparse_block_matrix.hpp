@@ -146,16 +146,17 @@ struct BlockSparseMat
 //! Function to solve a sparse linear system of equations HX = B
 //! Requires Eigen
 template<typename T>
-static bool sparseSolve(const BlockSparseMat<T, 6, 6>& H, const Mat& B,
-                        OutputArray X, OutputArray predB = cv::noArray())
+static bool sparseSolve(const BlockSparseMat<T, 6, 6>& H, InputArray B,
+                        OutputArray X, bool checkSymmetry = true, OutputArray predB = cv::noArray())
 {
 #if defined(HAVE_EIGEN)
     Eigen::SparseMatrix<T> bigA = H.toEigen();
+    Mat mb = B.getMat().t();
     Eigen::Matrix<T, -1, 1> bigB;
-    cv2eigen(B, bigB);
+    cv2eigen(mb, bigB);
 
     Eigen::SparseMatrix<T> bigAtranspose = bigA.transpose();
-    if(!bigA.isApprox(bigAtranspose))
+    if(checkSymmetry && !bigA.isApprox(bigAtranspose))
     {
         CV_Error(Error::StsBadArg, "H matrix is not symmetrical");
         return false;
