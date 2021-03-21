@@ -37,13 +37,12 @@ static inline cv::Matx66d llt6(Matx66d m)
     return L;
 }
 
-PoseGraphEdge::PoseGraphEdge(int _sourceNodeId, int _targetNodeId, const Affine3f& _transformation,
-                             const Matx66f& _information) :
-                             sourceNodeId(_sourceNodeId),
-                             targetNodeId(_targetNodeId),
-                             pose(_transformation.rotation(), _transformation.translation()),
-                             information(_information),
-                             sqrtInfo(llt6(_information))
+PoseGraph::Edge::Edge(int _sourceNodeId, int _targetNodeId, const Affine3f& _transformation,
+                      const Matx66f& _information) :
+                      sourceNodeId(_sourceNodeId),
+                      targetNodeId(_targetNodeId),
+                      pose(_transformation.rotation(), _transformation.translation()),
+                      sqrtInfo(llt6(_information))
 { }
 
 bool PoseGraph::isValid() const
@@ -68,7 +67,7 @@ bool PoseGraph::isValid() const
         // Since each node does not maintain its neighbor list
         for (int i = 0; i < numEdges; i++)
         {
-            const PoseGraphEdge& potentialEdge = edges.at(i);
+            const Edge& potentialEdge = edges.at(i);
             int nextNodeId                     = -1;
 
             if (potentialEdge.getSourceNodeId() == currNodeId)
@@ -95,7 +94,7 @@ bool PoseGraph::isValid() const
     bool invalidEdgeNode = false;
     for (int i = 0; i < numEdges; i++)
     {
-        const PoseGraphEdge& edge = edges.at(i);
+        const Edge& edge = edges.at(i);
         // edges have spurious source/target nodes
         if ((nodesVisited.count(edge.getSourceNodeId()) != 1) ||
             (nodesVisited.count(edge.getTargetNodeId()) != 1))
@@ -152,7 +151,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
             if (id < minId || id >= maxId)
                 continue;
 
-            kinfu::PoseGraphNode n(id, pose);
+            Node n(id, pose);
             if (id == minId)
                 n.setFixed();
 
@@ -189,7 +188,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
 
             if ((startId >= minId && startId < maxId) && (endId >= minId && endId < maxId))
             {
-                edges.push_back(PoseGraphEdge(startId, endId, pose, info));
+                edges.push_back(Edge(startId, endId, pose, info));
             }
         }
         else
@@ -392,20 +391,19 @@ static inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd target
 
 
 // estimate current energy
-double PoseGraph::calcEnergy(const std::map<int, PoseGraphNode>& newNodes) const
+double PoseGraph::calcEnergy(const std::map<int, Node>& newNodes) const
 {
     double totalErr = 0;
     for (const auto& e : edges)
     {
-        Pose3d srcP = newNodes.at(e.getSourceNodeId()).se3Pose;
-        Pose3d tgtP = newNodes.at(e.getTargetNodeId()).se3Pose;
+        Pose3d srcP = newNodes.at(e.getSourceNodeId()).pose;
+        Pose3d tgtP = newNodes.at(e.getTargetNodeId()).pose;
 
         Vec6d res;
         Matx<double, 6, 3> stj, ttj;
         Matx<double, 6, 4> sqj, tqj;
-        double err = poseError(srcP.getQuat(), srcP.t, tgtP.getQuat(), tgtP.t,
-                               e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ false,
-                               sqj, stj, tqj, ttj, res);
+        double err = poseError(srcP.q, srcP.t, tgtP.q, tgtP.t, e.pose.q, e.pose.t, e.sqrtInfo,
+                               /* needJacobians = */ false, sqj, stj, tqj, ttj, res);
 
         totalErr += err;
     }
@@ -463,7 +461,7 @@ void PoseGraph::optimize()
         }
     }
 
-    int nVarNodes = placesIds.size();
+    size_t nVarNodes = placesIds.size();
     if (!nVarNodes)
     {
         std::cout << "PoseGraph contains no non-constant nodes, skipping optimization" << std::endl;
@@ -527,8 +525,8 @@ void PoseGraph::optimize()
         std::vector<cv::Matx<double, 7, 6>> cachedJac;
         for (auto id : placesIds)
         {
-            Pose3d p = nodes.at(id).se3Pose;
-            Matx43d qj = expQuatJacobian(p.getQuat());
+            Pose3d p = nodes.at(id).pose;
+            Matx43d qj = expQuatJacobian(p.q);
             // x node layout is (rot_x, rot_y, rot_z, trans_x, trans_y, trans_z)
             // pose layout is (q_w, q_x, q_y, q_z, trans_x, trans_y, trans_z)
             Matx<double, 7, 6> j = concatVert(concatHor(qj, Matx43d()),
@@ -540,20 +538,19 @@ void PoseGraph::optimize()
         for (const auto& e : edges)
         {
             int srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
-            const PoseGraphNode& srcNode = nodes.at(srcId);
-            const PoseGraphNode& dstNode = nodes.at(dstId);
+            const Node& srcNode = nodes.at(srcId);
+            const Node& dstNode = nodes.at(dstId);
 
-            Pose3d srcP = srcNode.se3Pose;
-            Pose3d tgtP = dstNode.se3Pose;
+            Pose3d srcP = srcNode.pose;
+            Pose3d tgtP = dstNode.pose;
             bool srcFixed = srcNode.isPoseFixed();
             bool dstFixed = dstNode.isPoseFixed();
 
             Vec6d res;
             Matx<double, 6, 3> stj, ttj;
             Matx<double, 6, 4> sqj, tqj;
-            double err = poseError(srcP.getQuat(), srcP.t, tgtP.getQuat(), tgtP.t,
-                                   e.pose.getQuat(), e.pose.t, e.sqrtInfo, /* needJacobians = */ true,
-                                   sqj, stj, tqj, ttj, res);
+            double err = poseError(srcP.q, srcP.t, tgtP.q, tgtP.t, e.pose.q, e.pose.t, e.sqrtInfo,
+                                   /* needJacobians = */ true, sqj, stj, tqj, ttj, res);
 
             size_t srcPlace, dstPlace;
             Matx66d sj, tj;
@@ -703,13 +700,13 @@ void PoseGraph::optimize()
                 tempNodes = nodes;
 
                 // Update temp nodes using x
-                for (int i = 0; i < nVarNodes; i++)
+                for (size_t i = 0; i < nVarNodes; i++)
                 {
                     Vec6d dx(&x[i * 6]);
                     Vec3d deltaRot(dx[0], dx[1], dx[2]), deltaTrans(dx[3], dx[4], dx[5]);
-                    Pose3d& p = tempNodes.at(placesIds[i]).se3Pose;
+                    Pose3d& p = tempNodes.at(placesIds[i]).pose;
                     
-                    p.vq = (Quatd(0, deltaRot[0], deltaRot[1], deltaRot[2]).exp() * p.getQuat()).toVec();
+                    p.q = Quatd(0, deltaRot[0], deltaRot[1], deltaRot[2]).exp() * p.q;
                     p.t += deltaTrans;
                 }
 
@@ -775,7 +772,6 @@ void PoseGraph::optimize()
 
     }
 
-    // TODO: set timers
     bool found = smallGradient || smallStep || smallEnergyDelta;
 
     std::cout << "Finished:";

@@ -498,7 +498,6 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
 {
     PoseGraph localPoseGraph;
 
-
     for(const auto& currSubmap : submapList)
     {
         const typename SubmapT::Constraints& constraintList = currSubmap->constraints;
@@ -507,22 +506,20 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
             // TODO: Handle case with duplicate constraints A -> B and B -> A
             /* Matx66f informationMatrix = Matx66f::eye() * (currConstraintPair.second.weight/10); */
             Matx66f informationMatrix = Matx66f::eye();
-            PoseGraphEdge currEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
+            PoseGraph::Edge currEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
             localPoseGraph.addEdge(currEdge);
         }
     }
 
     for(const auto& currSubmap : submapList)
     {
-        PoseGraphNode currNode(currSubmap->id, currSubmap->pose);
+        PoseGraph::Node currNode(currSubmap->id, currSubmap->pose);
         if(currSubmap->id == 0)
         {
             currNode.setFixed();
         }
         localPoseGraph.addNode(currNode);
     }
-
-
 
     return localPoseGraph;
 }
@@ -532,7 +529,7 @@ void SubmapManager<MatType>::PoseGraphToMap(const PoseGraph &updatedPoseGraph)
 {
     for(const auto& currSubmap : submapList)
     {
-        const PoseGraphNode& currNode = updatedPoseGraph.nodes.at(currSubmap->id);
+        const PoseGraph::Node& currNode = updatedPoseGraph.nodes.at(currSubmap->id);
         if(!currNode.isPoseFixed())
             currSubmap->pose = currNode.getPose();
         std::cout << "Current node: " << currSubmap->id << " Updated Pose: \n" << currSubmap->pose.matrix << std::endl;
