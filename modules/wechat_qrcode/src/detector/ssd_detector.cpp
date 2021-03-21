@@ -31,7 +31,8 @@ vector<Mat> SSDDetector::forward(Mat img, const int target_width, const int targ
         const float* prob_score = prob.ptr<float>(0, 0, row);
         // prob_score[0] is not used.
         // prob_score[1]==1 stands for qrcode
-        if (prob_score[1] == 1) {
+        if (prob_score[1] == 1 && prob_score[2] > 1E-5) {
+            // add a safe score threshold due to https://github.com/opencv/opencv_contrib/issues/2877
             // prob_score[2] is the probability of the qrcode, which is not used.
             auto point = Mat(4, 2, CV_32FC1);
             float x0 = CLIP(prob_score[3] * img_w, 0.0f, img_w - 1.0f);
