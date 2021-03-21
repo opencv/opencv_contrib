@@ -267,7 +267,7 @@ void writePg(const PoseGraph& pg, std::string fname)
 };
 
 
-void Optimizer::MyOptimize(PoseGraph& poseGraph)
+void Optimizer::optimize(PoseGraph& poseGraph)
 {
     //TODO: no copying
     PoseGraph poseGraphOriginal = poseGraph;
@@ -544,9 +544,6 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
                 lmDiag[i] = ld;
 
                 jtj.refElem(i, i) = v + ld;
-
-                //DEBUG
-                //std::cout << jtj.refElem(i, i) << " ";
             }
 
             std::cout << std::endl;
@@ -671,14 +668,23 @@ void Optimizer::MyOptimize(PoseGraph& poseGraph)
     if (!found)
         std::cout << " not";
     std::cout << " found" << std::endl;
+    std::vector < std::string > txtFlags;
+    if (smallGradient)
+        txtFlags.push_back("smallGradient");
+    if (smallStep)
+        txtFlags.push_back("smallStep");
+    if (smallEnergyDelta)
+        txtFlags.push_back("smallEnergyDelta");
+    if (tooLong)
+        txtFlags.push_back("tooLong");
 
-    std::cout << "smallGradient: "    << (smallGradient    ? "true" : "false") << std::endl;
-    std::cout << "smallStep: "        << (smallStep        ? "true" : "false") << std::endl;
-    std::cout << "smallEnergyDelta: " << (smallEnergyDelta ? "true" : "false") << std::endl;
-    std::cout << "tooLong: "          << (tooLong          ? "true" : "false") << std::endl;
+    std::cout << "(";
+    for (const auto& t : txtFlags)
+        std::cout << " " << t;
+    std::cout << ")" << std::endl;
 }
 
-void Optimizer::optimize(PoseGraph& poseGraph)
+void Optimizer::CeresOptimize(PoseGraph& poseGraph)
 {
     PoseGraph poseGraphOriginal = poseGraph;
 

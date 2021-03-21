@@ -262,7 +262,7 @@ class PoseGraph
 namespace Optimizer
 {
 
-void MyOptimize(PoseGraph& poseGraph);
+void CeresOptimize(PoseGraph& poseGraph);
 
 void optimize(PoseGraph& poseGraph);
 
