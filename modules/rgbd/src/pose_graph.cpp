@@ -37,7 +37,7 @@ static inline cv::Matx66d llt6(Matx66d m)
     return L;
 }
 
-PoseGraph::Edge::Edge(int _sourceNodeId, int _targetNodeId, const Affine3f& _transformation,
+PoseGraph::Edge::Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
                       const Matx66f& _information) :
                       sourceNodeId(_sourceNodeId),
                       targetNodeId(_targetNodeId),
@@ -47,10 +47,10 @@ PoseGraph::Edge::Edge(int _sourceNodeId, int _targetNodeId, const Affine3f& _tra
 
 bool PoseGraph::isValid() const
 {
-    int numNodes = getNumNodes();
-    int numEdges = getNumEdges();
+    size_t numNodes = getNumNodes();
+    size_t numEdges = getNumEdges();
 
-    if (numNodes <= 0 || numEdges <= 0)
+    if (!numNodes || !numEdges)
         return false;
 
     std::unordered_set<size_t> nodesVisited;
@@ -65,10 +65,10 @@ bool PoseGraph::isValid() const
         nodesToVisit.pop_back();
         nodesVisited.insert(currNodeId);
         // Since each node does not maintain its neighbor list
-        for (int i = 0; i < numEdges; i++)
+        for (size_t i = 0; i < numEdges; i++)
         {
             const Edge& potentialEdge = edges.at(i);
-            int nextNodeId                     = -1;
+            size_t nextNodeId = (size_t)(-1);
 
             if (potentialEdge.getSourceNodeId() == currNodeId)
             {
@@ -78,7 +78,7 @@ bool PoseGraph::isValid() const
             {
                 nextNodeId = potentialEdge.getSourceNodeId();
             }
-            if (nextNodeId != -1)
+            if (nextNodeId != (size_t)(-1))
             {
                 if (nodesVisited.count(nextNodeId) == 0)
                 {
@@ -88,11 +88,11 @@ bool PoseGraph::isValid() const
         }
     }
 
-    isGraphConnected = (int(nodesVisited.size()) == numNodes);
+    isGraphConnected = (nodesVisited.size() == numNodes);
     //std::cout << "nodesVisited: " << nodesVisited.size();
     //std::cout << " IsGraphConnected: " << isGraphConnected << std::endl;
     bool invalidEdgeNode = false;
-    for (int i = 0; i < numEdges; i++)
+    for (size_t i = 0; i < numEdges; i++)
     {
         const Edge& edge = edges.at(i);
         // edges have spurious source/target nodes
@@ -144,7 +144,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
         infile >> data_type;
         if (data_type == "VERTEX_SE3:QUAT")
         {
-            int id;
+            size_t id;
             infile >> id;
             Affine3d pose = readAffine(infile);
 
@@ -169,7 +169,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
         }
         else if (data_type == "EDGE_SE3:QUAT")
         {
-            int startId, endId;
+            size_t startId, endId;
             infile >> startId >> endId;
             Affine3d pose = readAffine(infile);
 
@@ -213,7 +213,7 @@ void PoseGraph::writeToObjFile(const std::string& fname) const
     }
     for (const auto& e : edges)
     {
-        int sid = e.sourceNodeId, tid = e.targetNodeId;
+        size_t sid = e.sourceNodeId, tid = e.targetNodeId;
         of << "l " << sid + 1 << " " << tid + 1 << std::endl;
     }
     of.close();
@@ -474,8 +474,8 @@ void PoseGraph::optimize()
         return;
     }
 
-    int numNodes = getNumNodes();
-    int numEdges = getNumEdges();
+    size_t numNodes = getNumNodes();
+    size_t numEdges = getNumEdges();
 
     // Allocate indices for nodes
     std::vector<size_t> placesIds;
@@ -564,7 +564,7 @@ void PoseGraph::optimize()
         // fill jtj and jtb
         for (const auto& e : edges)
         {
-            int srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
+            size_t srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
             const Node& srcNode = nodes.at(srcId);
             const Node& dstNode = nodes.at(dstId);
 

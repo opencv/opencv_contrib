@@ -72,12 +72,12 @@ public:
     struct Node
     {
     public:
-        explicit Node(int _nodeId, const Affine3d& _pose)
+        explicit Node(size_t _nodeId, const Affine3d& _pose)
             : nodeId(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
         { }
         virtual ~Node() = default;
 
-        int getId() const { return nodeId; }
+        size_t getId() const { return nodeId; }
         inline Affine3d getPose() const
         {
             return pose.getAffine();
@@ -94,7 +94,7 @@ public:
         bool isPoseFixed() const { return isFixed; }
 
     public:
-        int nodeId;
+        size_t nodeId;
         bool isFixed;
         Pose3d pose;
     };
@@ -107,13 +107,13 @@ public:
     struct Edge
     {
     public:
-        Edge(int _sourceNodeId, int _targetNodeId, const Affine3f& _transformation,
+        Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
              const Matx66f& _information = Matx66f::eye());
 
         virtual ~Edge() = default;
 
-        int getSourceNodeId() const { return sourceNodeId; }
-        int getTargetNodeId() const { return targetNodeId; }
+        size_t getSourceNodeId() const { return sourceNodeId; }
+        size_t getTargetNodeId() const { return targetNodeId; }
 
         bool operator==(const Edge& edge)
         {
@@ -124,8 +124,8 @@ public:
         }
 
     public:
-        int sourceNodeId;
-        int targetNodeId;
+        size_t sourceNodeId;
+        size_t targetNodeId;
         Pose3d pose;
         Matx66f sqrtInfo;
     };
@@ -145,7 +145,7 @@ public:
 
     void addNode(const Node& node)
     {
-        int id = node.getId();
+        size_t id = node.getId();
         const auto& it = nodes.find(id);
         if (it != nodes.end())
         {
@@ -159,15 +159,15 @@ public:
     }
     void addEdge(const Edge& edge) { edges.push_back(edge); }
 
-    bool nodeExists(int nodeId) const
+    bool nodeExists(size_t nodeId) const
     {
         return (nodes.find(nodeId) != nodes.end());
     }
 
     bool isValid() const;
 
-    int getNumNodes() const { return int(nodes.size()); }
-    int getNumEdges() const { return int(edges.size()); }
+    size_t getNumNodes() const { return nodes.size(); }
+    size_t getNumEdges() const { return edges.size(); }
 
    public:
 
