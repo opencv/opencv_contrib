@@ -12,7 +12,7 @@
 #endif
 
 #include "sparse_block_matrix.hpp"
-#include "opencv2/core/dualquaternion.hpp"
+#include "opencv2/core/quaternion.hpp"
 
 namespace cv
 {
@@ -175,9 +175,9 @@ public:
 
     // used during optimization
     // nodes is a set of parameters to be used instead of contained in the graph
-    double calcEnergy(const std::map<int, Node>& newNodes) const;
+    double calcEnergy(const std::map<size_t, Node>& newNodes) const;
 
-    std::map<int, Node> nodes;
+    std::map<size_t, Node> nodes;
     std::vector<Edge>   edges;
 };
 

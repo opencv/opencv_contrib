@@ -105,14 +105,14 @@ struct BlockSparseMat
         {
             int xb = ijv.first.x, yb = ijv.first.y;
             MatType vblock = ijv.second;
-            for (int i = 0; i < blockM; i++)
+            for (size_t i = 0; i < blockM; i++)
             {
-                for (int j = 0; j < blockN; j++)
+                for (size_t j = 0; j < blockN; j++)
                 {
-                    _Tp val = vblock(i, j);
+                    _Tp val = vblock((int)i, (int)j);
                     if (abs(val) >= NON_ZERO_VAL_THRESHOLD)
                     {
-                        tripletList.push_back(Eigen::Triplet<_Tp>(blockM * xb + i, blockN * yb + j, val));
+                        tripletList.push_back(Eigen::Triplet<_Tp>((int)(blockM * xb + i), (int)(blockN * yb + j), val));
                     }
                 }
             }
@@ -143,13 +143,14 @@ struct BlockSparseMat
     IDtoBlockValueMap ijValue;
 };
 
+#if defined(HAVE_EIGEN)
 //! Function to solve a sparse linear system of equations HX = B
 //! Requires Eigen
 template<typename T>
 static bool sparseSolve(const BlockSparseMat<T, 6, 6>& H, InputArray B,
                         OutputArray X, bool checkSymmetry = true, OutputArray predB = cv::noArray())
 {
-#if defined(HAVE_EIGEN)
+
     Eigen::SparseMatrix<T> bigA = H.toEigen();
     Mat mb = B.getMat().t();
     Eigen::Matrix<T, -1, 1> bigB;
@@ -189,10 +190,17 @@ static bool sparseSolve(const BlockSparseMat<T, 6, 6>& H, InputArray B,
             return true;
         }
     }
+
+}
 #else
+template<typename T>
+static bool sparseSolve(const BlockSparseMat<T, 6, 6>& /*H*/, InputArray /*B*/,
+    OutputArray /*X*/, bool /*checkSymmetry*/ = true, OutputArray /*predB*/ = cv::noArray())
+{
     std::cout << "no eigen library" << std::endl;
     CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
-#endif
 }
+#endif
+
 }  // namespace kinfu
 }  // namespace cv

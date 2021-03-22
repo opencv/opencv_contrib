@@ -53,15 +53,15 @@ bool PoseGraph::isValid() const
     if (numNodes <= 0 || numEdges <= 0)
         return false;
 
-    std::unordered_set<int> nodesVisited;
-    std::vector<int> nodesToVisit;
+    std::unordered_set<size_t> nodesVisited;
+    std::vector<size_t> nodesToVisit;
 
     nodesToVisit.push_back(nodes.begin()->first);
 
     bool isGraphConnected = false;
     while (!nodesToVisit.empty())
     {
-        int currNodeId = nodesToVisit.back();
+        size_t currNodeId = nodesToVisit.back();
         nodesToVisit.pop_back();
         nodesVisited.insert(currNodeId);
         // Since each node does not maintain its neighbor list
@@ -136,7 +136,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
     {
         CV_Error(cv::Error::StsError, "failed to open file");
     }
-    
+
     while (infile.good())
     {
         std::string data_type;
@@ -195,7 +195,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
         {
             CV_Error(cv::Error::StsError, "unknown tag");
         }
-        
+
         // Clear any trailing whitespace from the line
         infile >> std::ws;
     }
@@ -242,7 +242,7 @@ static inline Matx44d m_left(Quatd q)
     //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
     //                   av | 0_3] +  0_3x1 | skew(av)]) * V(b)
 
-    float w = q.w, x = q.x, y = q.y, z = q.z;
+    double w = q.w, x = q.x, y = q.y, z = q.z;
     return { w, -x, -y, -z,
              x,  w, -z,  y,
              y,  z,  w, -x,
@@ -256,7 +256,7 @@ static inline Matx44d m_right(Quatd q)
     //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
     //                   bv | 0_3] +  0_3x1 | skew(-bv)]) * V(a)
 
-    float w = q.w, x = q.x, y = q.y, z = q.z;
+    double w = q.w, x = q.x, y = q.y, z = q.z;
     return { w, -x, -y, -z,
              x,  w,  z, -y,
              y, -z,  w,  x,
@@ -391,7 +391,7 @@ static inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd target
 
 
 // estimate current energy
-double PoseGraph::calcEnergy(const std::map<int, Node>& newNodes) const
+double PoseGraph::calcEnergy(const std::map<size_t, Node>& newNodes) const
 {
     double totalErr = 0;
     for (const auto& e : edges)
@@ -450,8 +450,8 @@ void PoseGraph::optimize()
     int numEdges = getNumEdges();
 
     // Allocate indices for nodes
-    std::vector<int> placesIds;
-    std::map<int, int> idToPlace;
+    std::vector<size_t> placesIds;
+    std::map<size_t, size_t> idToPlace;
     for (const auto& ni : nodes)
     {
         if (!ni.second.isPoseFixed())
@@ -481,7 +481,6 @@ void PoseGraph::optimize()
     std::vector<double> jtb(nVars);
  
     double energy = calcEnergy(nodes);
-    double startEnergy = energy;
     double oldEnergy = energy;
 
     std::cout << "#s" << " energy: " << energy << std::endl;
@@ -511,7 +510,6 @@ void PoseGraph::optimize()
     std::vector<double> di(nVars);
 
     double lmUpFactor = initialLmUpFactor;
-    double decreaseFactorLevMarq = 2.0;
     double lambdaLevMarq = initialLambdaLevMarq;
 
     unsigned int iter = 0;
@@ -549,10 +547,10 @@ void PoseGraph::optimize()
             Vec6d res;
             Matx<double, 6, 3> stj, ttj;
             Matx<double, 6, 4> sqj, tqj;
-            double err = poseError(srcP.q, srcP.t, tgtP.q, tgtP.t, e.pose.q, e.pose.t, e.sqrtInfo,
-                                   /* needJacobians = */ true, sqj, stj, tqj, ttj, res);
+            poseError(srcP.q, srcP.t, tgtP.q, tgtP.t, e.pose.q, e.pose.t, e.sqrtInfo,
+                      /* needJacobians = */ true, sqj, stj, tqj, ttj, res);
 
-            size_t srcPlace, dstPlace;
+            size_t srcPlace = (size_t)(-1), dstPlace = (size_t)(-1);
             Matx66d sj, tj;
             if (!srcFixed)
             {
@@ -572,7 +570,7 @@ void PoseGraph::optimize()
             {
                 dstPlace = idToPlace.at(dstId);
                 tj = concatHor(tqj, ttj) * cachedJac[dstPlace];
-                
+
                 jtj.refBlock(dstPlace, dstPlace) += tj.t() * tj;
 
                 Vec6f jtbDst = tj.t() * res;
@@ -581,7 +579,7 @@ void PoseGraph::optimize()
                     jtb[6 * dstPlace + i] += -jtbDst[i];
                 }
             }
-            
+
             if (!(srcFixed || dstFixed))
             {
                 Matx66d sjttj = sj.t() * tj;
@@ -600,7 +598,7 @@ void PoseGraph::optimize()
             // di = { 1/(1+sqrt(d_j)) }, extra +1 to avoid div by zero
             if (iter == 0)
             {
-                for (int i = 0; i < nVars; i++)
+                for (size_t i = 0; i < nVars; i++)
                 {
                     double ds = sqrt(jtj.valElem(i, i)) + 1.0;
                     di[i] = 1.0 / ds;
@@ -627,7 +625,7 @@ void PoseGraph::optimize()
             }
 
             // scaling J^T*b
-            for (int i = 0; i < nVars; i++)
+            for (size_t i = 0; i < nVars; i++)
             {
                 jtb[i] *= di[i];
             }
@@ -635,18 +633,18 @@ void PoseGraph::optimize()
 
         double gradientMax = 0.0;
         // gradient max
-        for (int i = 0; i < nVars; i++)
+        for (size_t i = 0; i < nVars; i++)
         {
             gradientMax = std::max(gradientMax, abs(jtb[i]));
         }
 
         // Save original diagonal of jtj matrix for LevMarq
         std::vector<double> diag(nVars);
-        for (int i = 0; i < nVars; i++)
+        for (size_t i = 0; i < nVars; i++)
         {
             diag[i] = jtj.valElem(i, i);
         }
-        
+
         // Solve using LevMarq and get delta transform
         bool enough = false;
 
@@ -656,7 +654,7 @@ void PoseGraph::optimize()
         {
             // form LevMarq matrix
             std::vector<double> lmDiag(nVars);
-            for (int i = 0; i < nVars; i++)
+            for (size_t i = 0; i < nVars; i++)
             {
                 double v = diag[i];
                 double ld = std::min(max(v * lambdaLevMarq, minDiag), maxDiag);
@@ -683,7 +681,7 @@ void PoseGraph::optimize()
                 jacCostChange = calcJacCostChange(jtb, x, lmDiag);
 
                 // x squared norm
-                for (int i = 0; i < nVars; i++)
+                for (size_t i = 0; i < nVars; i++)
                 {
                     xNorm2 += x[i] * x[i];
                 }
@@ -691,7 +689,7 @@ void PoseGraph::optimize()
                 // undo jacobi scaling
                 if (jacobiScaling)
                 {
-                    for (int i = 0; i < nVars; i++)
+                    for (size_t i = 0; i < nVars; i++)
                     {
                         x[i] *= di[i];
                     }
@@ -705,7 +703,7 @@ void PoseGraph::optimize()
                     Vec6d dx(&x[i * 6]);
                     Vec3d deltaRot(dx[0], dx[1], dx[2]), deltaTrans(dx[3], dx[4], dx[5]);
                     Pose3d& p = tempNodes.at(placesIds[i]).pose;
-                    
+
                     p.q = Quatd(0, deltaRot[0], deltaRot[1], deltaRot[2]).exp() * p.q;
                     p.t += deltaTrans;
                 }
@@ -741,7 +739,7 @@ void PoseGraph::optimize()
                 // optimized successfully, decrease lambda and set variables for next iteration
                 enough = true;
 
-                lambdaLevMarq *= std::max(1.0 / 3.0, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
+                lambdaLevMarq *= std::max(1.0 / initialLmDownFactor, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
                 lmUpFactor = initialLmUpFactor;
 
                 smallGradient = (gradientMax < minGradientTolerance);
