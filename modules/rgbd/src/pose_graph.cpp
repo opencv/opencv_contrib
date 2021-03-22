@@ -437,6 +437,34 @@ static inline double calcJacCostChange(const std::vector<double>& jtb,
 };
 
 
+// J := J * d_inv, d_inv = make_diag(di)
+// J^T*J := (J * d_inv)^T * J * d_inv = diag(di)* (J^T * J)* diag(di) = eltwise_mul(J^T*J, di*di^T)
+// J^T*b := (J * d_inv)^T * b = d_inv^T * J^T*b = eltwise_mul(J^T*b, di)
+static inline void doJacobiScaling(BlockSparseMat<double, 6, 6>& jtj, std::vector<double>& jtb, const std::vector<double>& di)
+{
+    // scaling J^T*J
+    for (auto& ijv : jtj.ijValue)
+    {
+        Point2i bpt = ijv.first;
+        Matx66d& m = ijv.second;
+        for (int i = 0; i < 6; i++)
+        {
+            for (int j = 0; j < 6; j++)
+            {
+                Point2i pt(bpt.x * 6 + i, bpt.y * 6 + j);
+                m(i, j) *= di[pt.x] * di[pt.y];
+            }
+        }
+    }
+
+    // scaling J^T*b
+    for (size_t i = 0; i < di.size(); i++)
+    {
+        jtb[i] *= di[i];
+    }
+}
+
+
 void PoseGraph::optimize()
 {
     if (!isValid())
@@ -492,7 +520,8 @@ void PoseGraph::optimize()
     const double stepNorm2Tolerance = 1e-6;
     const double relEnergyDeltaTolerance = 1e-6;
     // normalize jacobian columns for better conditioning
-    const bool jacobiScaling = true;
+    // slows down sparse solver, but maybe this'd be useful for some other solver
+    const bool jacobiScaling = false;
     const double minDiag = 1e-6;
     const double maxDiag = 1e32;
 
@@ -605,30 +634,7 @@ void PoseGraph::optimize()
                 }
             }
 
-            // J := J * d_inv, d_inv = make_diag(di)
-            // J^T*J := (J * d_inv)^T * J * d_inv = diag(di)* (J^T * J)* diag(di) = eltwise_mul(J^T*J, di*di^T)
-            // J^T*b := (J * d_inv)^T * b = d_inv^T * J^T*b = eltwise_mul(J^T*b, di)
-
-            // scaling J^T*J
-            for (auto& ijv : jtj.ijValue)
-            {
-                Point2i bpt = ijv.first;
-                Matx66d& m = ijv.second;
-                for (int i = 0; i < 6; i++)
-                {
-                    for (int j = 0; j < 6; j++)
-                    {
-                        Point2i pt(bpt.x * 6 + i, bpt.y * 6 + j);
-                        m(i, j) *= di[pt.x] * di[pt.y];
-                    }
-                }
-            }
-
-            // scaling J^T*b
-            for (size_t i = 0; i < nVars; i++)
-            {
-                jtb[i] *= di[i];
-            }
+            doJacobiScaling(jtj, jtb, di);
         }
 
         double gradientMax = 0.0;
@@ -646,11 +652,11 @@ void PoseGraph::optimize()
         }
 
         // Solve using LevMarq and get delta transform
-        bool enough = false;
+        bool enoughLm = false;
 
         decltype(nodes) tempNodes = nodes;
 
-        while (!enough && !done)
+        while (!enoughLm && !done)
         {
             // form LevMarq matrix
             std::vector<double> lmDiag(nVars);
@@ -737,7 +743,7 @@ void PoseGraph::optimize()
             else
             {
                 // optimized successfully, decrease lambda and set variables for next iteration
-                enough = true;
+                enoughLm = true;
 
                 lambdaLevMarq *= std::max(1.0 / initialLmDownFactor, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
                 lmUpFactor = initialLmUpFactor;
@@ -763,20 +769,17 @@ void PoseGraph::optimize()
 
             tooLong = (iter >= maxIterations);
 
-            done = tooLong || smallGradient || smallStep || smallEnergyDelta;
+            done = (tooLong || smallGradient || smallStep || smallEnergyDelta);
         }
-
-        }
-
     }
 
-    bool found = smallGradient || smallStep || smallEnergyDelta;
+    bool found = (smallGradient || smallStep || smallEnergyDelta);
 
     std::cout << "Finished:";
     if (!found)
         std::cout << " not";
     std::cout << " found" << std::endl;
-    std::vector < std::string > txtFlags;
+    std::vector<std::string> txtFlags;
     if (smallGradient)
         txtFlags.push_back("smallGradient");
     if (smallStep)
