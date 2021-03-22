@@ -467,6 +467,10 @@ static inline void doJacobiScaling(BlockSparseMat<double, 6, 6>& jtj, std::vecto
 
 void PoseGraph::optimize()
 {
+#if !defined(HAVE_EIGEN)
+    CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
+#endif
+
     if (!isValid())
     {
         CV_Error(Error::StsBadArg,
