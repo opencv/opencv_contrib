@@ -129,7 +129,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
     nodes.clear(); edges.clear();
 
     // for debugging purposes
-    int minId = 0, maxId = 1 << 30;
+    size_t minId = 0, maxId = 1 << 30;
 
     std::ifstream infile(g2oFileName.c_str());
     if (!infile)
