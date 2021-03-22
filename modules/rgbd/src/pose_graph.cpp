@@ -507,7 +507,7 @@ void PoseGraph::optimize()
     size_t nVars = nVarNodes * 6;
     BlockSparseMat<double, 6, 6> jtj(nVarNodes);
     std::vector<double> jtb(nVars);
- 
+
     double energy = calcEnergy(nodes);
     double oldEnergy = energy;
 
