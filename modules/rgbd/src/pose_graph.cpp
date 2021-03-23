@@ -467,8 +467,6 @@ static inline void doJacobiScaling(BlockSparseMat<double, 6, 6>& jtj, std::vecto
 
 void PoseGraph::optimize()
 {
-    #if defined(HAVE_EIGEN)
-
     if (!isValid())
     {
         CV_Error(Error::StsBadArg,
@@ -676,7 +674,7 @@ void PoseGraph::optimize()
 
             // use double or convert everything to float
             std::vector<double> x;
-            bool solved = kinfu::sparseSolve(jtj, jtb, x, false);
+            bool solved = jtj.sparseSolve(jtb, x, false);
 
             std::cout << (solved ? "OK" : "FAIL") << std::endl;
 
@@ -795,10 +793,6 @@ void PoseGraph::optimize()
     for (const auto& t : txtFlags)
         std::cout << " " << t;
     std::cout << " )" << std::endl;
-
-#else
-    CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
-#endif
 }
 
 }  // namespace kinfu

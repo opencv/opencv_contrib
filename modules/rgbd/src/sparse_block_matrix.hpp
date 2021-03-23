@@ -138,69 +138,63 @@ struct BlockSparseMat
         return *this;
     }
 
-    static constexpr _Tp NON_ZERO_VAL_THRESHOLD = _Tp(0.0001);
-    size_t nBlocks;
-    IDtoBlockValueMap ijValue;
-};
-
 #if defined(HAVE_EIGEN)
-//! Function to solve a sparse linear system of equations HX = B
-//! Requires Eigen
-template<typename T>
-static bool sparseSolve(const BlockSparseMat<T, 6, 6>& H, InputArray B,
-                        OutputArray X, bool checkSymmetry = true, OutputArray predB = cv::noArray())
-{
-
-    Eigen::SparseMatrix<T> bigA = H.toEigen();
-    Mat mb = B.getMat().t();
-    Eigen::Matrix<T, -1, 1> bigB;
-    cv2eigen(mb, bigB);
-
-    Eigen::SparseMatrix<T> bigAtranspose = bigA.transpose();
-    if(checkSymmetry && !bigA.isApprox(bigAtranspose))
+    //! Function to solve a sparse linear system of equations HX = B
+    //! Requires Eigen
+    bool sparseSolve(InputArray B, OutputArray X, bool checkSymmetry = true, OutputArray predB = cv::noArray()) const
     {
-        CV_Error(Error::StsBadArg, "H matrix is not symmetrical");
-        return false;
-    }
+        Eigen::SparseMatrix<_Tp> bigA = toEigen();
+        Mat mb = B.getMat().t();
+        Eigen::Matrix<_Tp, -1, 1> bigB;
+        cv2eigen(mb, bigB);
 
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<T>> solver;
+        Eigen::SparseMatrix<_Tp> bigAtranspose = bigA.transpose();
+        if(checkSymmetry && !bigA.isApprox(bigAtranspose))
+        {
+            CV_Error(Error::StsBadArg, "H matrix is not symmetrical");
+            return false;
+        }
 
-    solver.compute(bigA);
-    if (solver.info() != Eigen::Success)
-    {
-        std::cout << "failed to eigen-decompose" << std::endl;
-        return false;
-    }
-    else
-    {
-        Eigen::Matrix<T, -1, 1> solutionX = solver.solve(bigB);
+        Eigen::SimplicialLDLT<Eigen::SparseMatrix<_Tp>> solver;
+
+        solver.compute(bigA);
         if (solver.info() != Eigen::Success)
         {
-            std::cout << "failed to eigen-solve" << std::endl;
+            std::cout << "failed to eigen-decompose" << std::endl;
             return false;
         }
         else
         {
-            eigen2cv(solutionX, X);
-            if (predB.needed())
+            Eigen::Matrix<_Tp, -1, 1> solutionX = solver.solve(bigB);
+            if (solver.info() != Eigen::Success)
             {
-                Eigen::Matrix<T, -1, 1> predBEigen = bigA * solutionX;
-                eigen2cv(predBEigen, predB);
+                std::cout << "failed to eigen-solve" << std::endl;
+                return false;
             }
-            return true;
+            else
+            {
+                eigen2cv(solutionX, X);
+                if (predB.needed())
+                {
+                    Eigen::Matrix<_Tp, -1, 1> predBEigen = bigA * solutionX;
+                    eigen2cv(predBEigen, predB);
+                }
+                return true;
+            }
         }
     }
-
-}
 #else
-template<typename T>
-static bool sparseSolve(const BlockSparseMat<T, 6, 6>& /*H*/, InputArray /*B*/,
-    OutputArray /*X*/, bool /*checkSymmetry*/ = true, OutputArray /*predB*/ = cv::noArray())
-{
-    std::cout << "no eigen library" << std::endl;
-    CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
-}
+    bool sparseSolve(InputArray /*B*/, OutputArray /*X*/, bool /*checkSymmetry*/ = true, OutputArray /*predB*/ = cv::noArray())
+    {
+        std::cout << "no eigen library" << std::endl;
+        CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
+    }
 #endif
+
+    static constexpr _Tp NON_ZERO_VAL_THRESHOLD = _Tp(0.0001);
+    size_t nBlocks;
+    IDtoBlockValueMap ijValue;
+};
 
 }  // namespace kinfu
 }  // namespace cv
