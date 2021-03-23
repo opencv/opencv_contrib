@@ -48,7 +48,7 @@ struct BlockSparseMat
         ijValue.clear();
     }
 
-    MatType& refBlock(size_t i, size_t j)
+    inline MatType& refBlock(size_t i, size_t j)
     {
         Point2i p((int)i, (int)j);
         auto it = ijValue.find(p);
@@ -59,14 +59,14 @@ struct BlockSparseMat
         return it->second;
     }
 
-    _Tp& refElem(size_t i, size_t j)
+    inline _Tp& refElem(size_t i, size_t j)
     {
         Point2i ib((int)(i / blockM), (int)(j / blockN));
         Point2i iv((int)(i % blockM), (int)(j % blockN));
         return refBlock(ib.x, ib.y)(iv.x, iv.y);
     }
 
-    MatType valBlock(size_t i, size_t j) const
+    inline MatType valBlock(size_t i, size_t j) const
     {
         Point2i p((int)i, (int)j);
         auto it = ijValue.find(p);
@@ -76,7 +76,7 @@ struct BlockSparseMat
             return it->second;
     }
 
-    _Tp valElem(size_t i, size_t j) const
+    inline _Tp valElem(size_t i, size_t j) const
     {
         Point2i ib((int)(i / blockM), (int)(j / blockN));
         Point2i iv((int)(i % blockM), (int)(j % blockN));
@@ -124,7 +124,7 @@ struct BlockSparseMat
         return EigenMat;
     }
 #endif
-    size_t nonZeroBlocks() const { return ijValue.size(); }
+    inline size_t nonZeroBlocks() const { return ijValue.size(); }
 
     BlockSparseMat<_Tp, blockM, blockN>& operator+=(const BlockSparseMat<_Tp, blockM, blockN>& other)
     {
@@ -184,11 +184,9 @@ struct BlockSparseMat
         }
     }
 #else
-    bool sparseSolve(InputArray /*B*/, OutputArray /*X*/, bool /*checkSymmetry*/ = true, OutputArray /*predB*/ = cv::noArray())
+    bool sparseSolve(InputArray /*B*/, OutputArray /*X*/, bool /*checkSymmetry*/ = true, OutputArray /*predB*/ = cv::noArray()) const
     {
-        std::cout << "no eigen library" << std::endl;
         CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
-        return false;
     }
 #endif
 

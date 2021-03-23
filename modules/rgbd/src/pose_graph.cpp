@@ -10,6 +10,10 @@
 #include <unordered_set>
 #include <vector>
 
+// a very stupid workaround against unreachable code warning
+#if defined(_MSC_VER)
+#pragma warning(disable : 4702)
+#endif
 
 namespace cv
 {
