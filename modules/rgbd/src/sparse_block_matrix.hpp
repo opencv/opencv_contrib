@@ -188,6 +188,7 @@ struct BlockSparseMat
     {
         std::cout << "no eigen library" << std::endl;
         CV_Error(Error::StsNotImplemented, "Eigen library required for matrix solve, dense solver is not implemented");
+        return false;
     }
 #endif
 
