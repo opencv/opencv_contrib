@@ -10,11 +10,6 @@
 #include <unordered_set>
 #include <vector>
 
-// a very stupid workaround against unreachable code warning
-#if defined(_MSC_VER)
-#pragma warning(disable : 4702)
-#endif
-
 namespace cv
 {
 namespace kinfu
@@ -471,6 +466,7 @@ static inline void doJacobiScaling(BlockSparseMat<double, 6, 6>& jtj, std::vecto
 
 void PoseGraph::optimize()
 {
+#if defined(HAVE_EIGEN)
     if (!isValid())
     {
         CV_Error(Error::StsBadArg,
@@ -797,7 +793,11 @@ void PoseGraph::optimize()
     for (const auto& t : txtFlags)
         std::cout << " " << t;
     std::cout << " )" << std::endl;
+#else
+    CV_Error(Error::StsNotImplemented, "Eigen library required for sparse matrix solve during pose graph optimization, dense solver is not implemented");
+#endif
 }
+
 
 }  // namespace kinfu
 }  // namespace cv
