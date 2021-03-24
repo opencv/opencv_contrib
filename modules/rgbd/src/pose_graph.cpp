@@ -9,6 +9,94 @@
 #include <unordered_set>
 #include <vector>
 
+// matrix form of conjugation
+static const cv::Matx44d M_Conj{ 1,  0,  0,  0,
+                                 0, -1,  0,  0,
+                                 0,  0, -1,  0,
+                                 0,  0,  0, -1 };
+
+// matrix form of quaternion multiplication from left side
+static inline cv::Matx44d m_left(cv::Quatd q)
+{
+    // M_left(a)* V(b) =
+    //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
+    //                   av | 0_3] +  0_3x1 | skew(av)]) * V(b)
+
+    double w = q.w, x = q.x, y = q.y, z = q.z;
+    return { w, -x, -y, -z,
+             x,  w, -z,  y,
+             y,  z,  w, -x,
+             z, -y,  x,  w };
+}
+
+// matrix form of quaternion multiplication from right side
+static inline cv::Matx44d m_right(cv::Quatd q)
+{
+    // M_right(b)* V(a) =
+    //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
+    //                   bv | 0_3] +  0_3x1 | skew(-bv)]) * V(a)
+
+    double w = q.w, x = q.x, y = q.y, z = q.z;
+    return { w, -x, -y, -z,
+             x,  w,  z, -y,
+             y, -z,  w,  x,
+             z,  y, -x,  w };
+}
+
+static inline cv::Matx43d expQuatJacobian(cv::Quatd q)
+{
+    double w = q.w, x = q.x, y = q.y, z = q.z;
+    return cv::Matx43d(-x, -y, -z,
+                        w,  z, -y,
+                       -z,  w,  x,
+                        y, -x,  w);
+}
+
+// concatenate matrices vertically
+template<typename _Tp, int m, int n, int k> static inline
+cv::Matx<_Tp, m + k, n> concatVert(const cv::Matx<_Tp, m, n>& a, const cv::Matx<_Tp, k, n>& b)
+{
+    cv::Matx<_Tp, m + k, n> res;
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(i, j) = a(i, j);
+        }
+    }
+    for (int i = 0; i < k; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(m + i, j) = b(i, j);
+        }
+    }
+    return res;
+}
+
+// concatenate matrices horizontally
+template<typename _Tp, int m, int n, int k> static inline
+cv::Matx<_Tp, m, n + k> concatHor(const cv::Matx<_Tp, m, n>& a, const cv::Matx<_Tp, m, k>& b)
+{
+    cv::Matx<_Tp, m, n + k> res;
+
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(i, j) = a(i, j);
+        }
+    }
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < k; j++)
+        {
+            res(i, n + j) = b(i, j);
+        }
+    }
+    return res;
+}
+
 namespace cv
 {
 namespace kinfu
@@ -222,90 +310,7 @@ void PoseGraph::writeToObjFile(const std::string& fname) const
 // Optimization itself //
 ////////////////////////
 
-// matrix form of Im(a)
-const Matx44d M_Im{ 0, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1 };
 
-// matrix form of conjugation
-const Matx44d M_Conj{ 1,  0,  0,  0,
-                      0, -1,  0,  0,
-                      0,  0, -1,  0,
-                      0,  0,  0, -1 };
-
-// matrix form of quaternion multiplication from left side
-static inline Matx44d m_left(Quatd q)
-{
-    // M_left(a)* V(b) =
-    //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
-    //                   av | 0_3] +  0_3x1 | skew(av)]) * V(b)
-
-    double w = q.w, x = q.x, y = q.y, z = q.z;
-    return { w, -x, -y, -z,
-             x,  w, -z,  y,
-             y,  z,  w, -x,
-             z, -y,  x,  w };
-}
-
-// matrix form of quaternion multiplication from right side
-static inline Matx44d m_right(Quatd q)
-{
-    // M_right(b)* V(a) =
-    //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
-    //                   bv | 0_3] +  0_3x1 | skew(-bv)]) * V(a)
-
-    double w = q.w, x = q.x, y = q.y, z = q.z;
-    return { w, -x, -y, -z,
-             x,  w,  z, -y,
-             y, -z,  w,  x,
-             z,  y, -x,  w };
-}
-
-// concatenate matrices vertically
-template<typename _Tp, int m, int n, int k> static inline
-Matx<_Tp, m + k, n> concatVert(const Matx<_Tp, m, n>& a, const Matx<_Tp, k, n>& b)
-{
-    Matx<_Tp, m + k, n> res;
-    for (int i = 0; i < m; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            res(i, j) = a(i, j);
-        }
-    }
-    for (int i = 0; i < k; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            res(m + i, j) = b(i, j);
-        }
-    }
-    return res;
-}
-
-// concatenate matrices horizontally
-template<typename _Tp, int m, int n, int k> static inline
-Matx<_Tp, m, n + k> concatHor(const Matx<_Tp, m, n>& a, const Matx<_Tp, m, k>& b)
-{
-    Matx<_Tp, m, n + k> res;
-
-    for (int i = 0; i < m; i++)
-    {
-        for (int j = 0; j < n; j++)
-        {
-            res(i, j) = a(i, j);
-        }
-    }
-    for (int i = 0; i < m; i++)
-    {
-        for (int j = 0; j < k; j++)
-        {
-            res(i, n + j) = b(i, j);
-        }
-    }
-    return res;
-}
 
 
 static inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd targetQuat, Vec3d targetTrans,
@@ -402,15 +407,6 @@ double PoseGraph::calcEnergy(const std::map<size_t, Node>& newNodes) const
 
 
 #if defined(HAVE_EIGEN)
-
-static inline Matx43d expQuatJacobian(Quatd q)
-{
-    double w = q.w, x = q.x, y = q.y, z = q.z;
-    return Matx43d(-x, -y, -z,
-                    w,  z, -y,
-                   -z,  w,  x,
-                    y, -x,  w);
-}
 
 // from Ceres, equation energy change:
 // eq. energy = 1/2 * (residuals + J * step)^2 =
