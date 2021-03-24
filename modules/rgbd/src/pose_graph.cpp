@@ -262,15 +262,6 @@ static inline Matx44d m_right(Quatd q)
              z,  y, -x,  w };
 }
 
-static inline Matx43d expQuatJacobian(Quatd q)
-{
-    double w = q.w, x = q.x, y = q.y, z = q.z;
-    return Matx43d(-x, -y, -z,
-                    w,  z, -y,
-                   -z,  w,  x,
-                    y, -x,  w);
-}
-
 // concatenate matrices vertically
 template<typename _Tp, int m, int n, int k> static inline
 Matx<_Tp, m + k, n> concatVert(const Matx<_Tp, m, n>& a, const Matx<_Tp, k, n>& b)
@@ -410,6 +401,17 @@ double PoseGraph::calcEnergy(const std::map<size_t, Node>& newNodes) const
 };
 
 
+#if defined(HAVE_EIGEN)
+
+static inline Matx43d expQuatJacobian(Quatd q)
+{
+    double w = q.w, x = q.x, y = q.y, z = q.z;
+    return Matx43d(-x, -y, -z,
+                    w,  z, -y,
+                   -z,  w,  x,
+                    y, -x,  w);
+}
+
 // from Ceres, equation energy change:
 // eq. energy = 1/2 * (residuals + J * step)^2 =
 // 1/2 * ( residuals^2 + 2 * residuals^T * J * step + (J*step)^T * J * step)
@@ -466,7 +468,6 @@ static inline void doJacobiScaling(BlockSparseMat<double, 6, 6>& jtj, std::vecto
 
 void PoseGraph::optimize()
 {
-#if defined(HAVE_EIGEN)
     if (!isValid())
     {
         CV_Error(Error::StsBadArg,
@@ -591,7 +592,7 @@ void PoseGraph::optimize()
                 Vec6f jtbSrc = sj.t() * res;
                 for (int i = 0; i < 6; i++)
                 {
-                    jtb[6 * srcPlace + i] += - jtbSrc[i];
+                    jtb[6 * srcPlace + i] += -jtbSrc[i];
                 }
             }
 
@@ -793,10 +794,13 @@ void PoseGraph::optimize()
     for (const auto& t : txtFlags)
         std::cout << " " << t;
     std::cout << " )" << std::endl;
-#else
-    CV_Error(Error::StsNotImplemented, "Eigen library required for sparse matrix solve during pose graph optimization, dense solver is not implemented");
-#endif
 }
+#else
+void PoseGraph::optimize()
+{
+    CV_Error(Error::StsNotImplemented, "Eigen library required for sparse matrix solve during pose graph optimization, dense solver is not implemented");
+}
+#endif
 
 
 }  // namespace kinfu
