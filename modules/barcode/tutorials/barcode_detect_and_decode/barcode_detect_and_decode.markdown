@@ -15,7 +15,9 @@ Bar code is major technique to identify commodity in real life.  A common bar co
 
 ### EAN 13
 
-To be done
+The EAN-13 bar code is based on the UPC-A standard, which was first implemented in Europe by the International Item Coding Association and later gradually spread worldwide. Most of the common goods in life use EAN-13 barcode.
+
+for more detail see [EAN - Wikipedia](https://en.wikipedia.org/wiki/International_Article_Number)
 
 ### BarcodeDetector
 Several algorithms were introduced for bar code recognition.
@@ -35,14 +37,33 @@ See a simple example below:
 using namespace cv;
 barcode::BarcodeDetector bardet;
 Mat frame = imread("bar_code.jpg");
-std::vector<Point> corners,
+std::vector<Point> corners;
 bool ok = bardet.detect(frame, corners);
 @endcode
 ( All the results are stored in `corners`, and `ok` would be true if there is  bar code detected ).
 
 #### decode
 
-To be done...
+This function first sharpens the image and then binaries it by OSTU or local binarization. At last reads the contents of the barcode by matching the similarity of the specified barcode pattern. Only EAN-13 barcode currently supported.
+
+@code{.cpp}
+
+#include "opencv2/barcode.hpp"
+#include "opencv2/imgproc.hpp"
+
+using namespace cv;
+barcode::BarcodeDetector bardet;
+Mat frame = imread("bar_code.jpg");
+std::vector<Point> corners; // used to store 4 corners of barcode
+bool ok = bardet.detect(frame, corners);
+
+std::vector<std::string> decoded_info;
+
+std::vector<barcode::BarcodeType> decoded_format;
+
+ok = bardet.decode(frame, corners, decoded_info, decoded_format);
+
+@endcode
 
 #### detectAndDecode
 
@@ -57,7 +78,7 @@ This function combines `detect`  and `decode`.  A simple example below to use th
 using namespace cv;
 barcode::BarcodeDetector bardet;
 Mat frame = imread("bar_code.jpg");
-std::vector<Point> corners,
+std::vector<Point> corners;
 std::vector<std::string> decoded_info;
 std::vector<barcode::BarcodeType> decoded_format;
 

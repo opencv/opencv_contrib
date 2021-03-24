@@ -65,7 +65,6 @@ public:
     CV_WRAP bool detect(InputArray img, OutputArray points) const;
 
     /** @brief Decodes barcode in image once it's found by the detect() method.
-     * Returns UTF8-encoded output string or empty string if the code cannot be decoded.
      *
      * @param img grayscale or color (BGR) image containing bar code.
      * @param points vector of rotated rectangle vertices found by detect() method (or some other algorithm).
