@@ -43,6 +43,9 @@ static inline cv::Matx44d m_right(cv::Quatd q)
              z,  y, -x,  w };
 }
 
+// precaution against "unused function" warning when there's no Eigen
+#if defined(HAVE_EIGEN)
+// jacobian of quaternionic (exp(x)*q) : R_3 -> H near x == 0
 static inline cv::Matx43d expQuatJacobian(cv::Quatd q)
 {
     double w = q.w, x = q.x, y = q.y, z = q.z;
@@ -51,6 +54,7 @@ static inline cv::Matx43d expQuatJacobian(cv::Quatd q)
                        -z,  w,  x,
                         y, -x,  w);
 }
+#endif
 
 // concatenate matrices vertically
 template<typename _Tp, int m, int n, int k> static inline
