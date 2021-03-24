@@ -5,7 +5,6 @@
 #include "pose_graph.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <unordered_set>
 #include <vector>
@@ -88,8 +87,9 @@ bool PoseGraph::isValid() const
     }
 
     isGraphConnected = (nodesVisited.size() == numNodes);
-    //std::cout << "nodesVisited: " << nodesVisited.size();
-    //std::cout << " IsGraphConnected: " << isGraphConnected << std::endl;
+
+    CV_LOG_INFO(NULL, "nodesVisited: " << nodesVisited.size() << " IsGraphConnected: " << isGraphConnected);
+
     bool invalidEdgeNode = false;
     for (size_t i = 0; i < numEdges; i++)
     {
@@ -158,7 +158,7 @@ void PoseGraph::readG2OFile(const std::string& g2oFileName)
             const auto& it = nodes.find(id);
             if (it != nodes.end())
             {
-                std::cout << "duplicated node, id=" << id << std::endl;
+                CV_LOG_INFO(NULL, "duplicated node, id=" << id);
                 nodes.insert(it, { id, n });
             }
             else
@@ -493,17 +493,17 @@ void PoseGraph::optimize()
     size_t nVarNodes = placesIds.size();
     if (!nVarNodes)
     {
-        std::cout << "PoseGraph contains no non-constant nodes, skipping optimization" << std::endl;
+        CV_LOG_INFO(NULL, "PoseGraph contains no non-constant nodes, skipping optimization");
         return;
     }
 
     if (numEdges == 0)
     {
-        std::cout << "PoseGraph has no edges, no optimization to be done" << std::endl;
+        CV_LOG_INFO(NULL, "PoseGraph has no edges, no optimization to be done");
         return;
     }
 
-    std::cout << "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges" << std::endl;
+    CV_LOG_INFO(NULL, "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges");
 
     size_t nVars = nVarNodes * 6;
     BlockSparseMat<double, 6, 6> jtj(nVarNodes);
@@ -512,7 +512,7 @@ void PoseGraph::optimize()
     double energy = calcEnergy(nodes);
     double oldEnergy = energy;
 
-    std::cout << "#s" << " energy: " << energy << std::endl;
+    CV_LOG_INFO(NULL, "#s" << " energy: " << energy);
 
     // options
     // stop conditions
@@ -618,7 +618,7 @@ void PoseGraph::optimize()
             }
         }
 
-        std::cout << "#LM#s" << " energy: " << energy << std::endl;
+        CV_LOG_INFO(NULL, "#LM#s" << " energy: " << energy);
 
         // do the jacobian conditioning improvement used in Ceres
         if (jacobiScaling)
@@ -669,15 +669,13 @@ void PoseGraph::optimize()
                 jtj.refElem(i, i) = v + ld;
             }
 
-            std::cout << std::endl;
-
-            std::cout << "sparse solve...";
+            CV_LOG_INFO(NULL, "sparse solve...");
 
             // use double or convert everything to float
             std::vector<double> x;
             bool solved = jtj.sparseSolve(jtb, x, false);
 
-            std::cout << (solved ? "OK" : "FAIL") << std::endl;
+            CV_LOG_INFO(NULL, (solved ? "OK" : "FAIL"));
 
             double costChange = 0.0;
             double jacCostChange = 0.0;
@@ -722,14 +720,13 @@ void PoseGraph::optimize()
 
                 stepQuality = costChange / jacCostChange;
 
-                std::cout << "#LM#" << iter;
-                std::cout << " energy: " << energy;
-                std::cout << " deltaEnergy: " << costChange;
-                std::cout << " deltaEqEnergy: " << jacCostChange;
-                std::cout << " max(J^T*b): " << gradientMax;
-                std::cout << " norm2(x): " << xNorm2;
-                std::cout << " deltaEnergy/energy: " << costChange / energy;
-                std::cout << std::endl;
+                CV_LOG_INFO(NULL, "#LM#" << iter
+                               << " energy: " << energy
+                               << " deltaEnergy: " << costChange
+                               << " deltaEqEnergy: " << jacCostChange
+                               << " max(J^T*b): " << gradientMax
+                               << " norm2(x): " << xNorm2
+                               << " deltaEnergy/energy: " << costChange / energy);
             }
 
             if (!solved || costChange < 0)
@@ -739,7 +736,7 @@ void PoseGraph::optimize()
                 lambdaLevMarq *= lmUpFactor;
                 lmUpFactor *= 2.0;
 
-                std::cout << "LM up: " << lambdaLevMarq << ", old energy = " << oldEnergy << std::endl;
+                CV_LOG_INFO(NULL, "LM up: " << lambdaLevMarq << ", old energy = " << oldEnergy);
             }
             else
             {
@@ -755,15 +752,11 @@ void PoseGraph::optimize()
 
                 nodes = tempNodes;
 
-                std::cout << "#" << iter;
-                std::cout << " energy: " << energy;
-                std::cout << std::endl;
+                CV_LOG_INFO(NULL, "#" << iter << " energy: " << energy);
 
                 oldEnergy = energy;
 
-                std::cout << "LM down: " << lambdaLevMarq;
-                std::cout << " step quality: " << stepQuality;
-                std::cout << std::endl;
+                CV_LOG_INFO(NULL, "LM down: " << lambdaLevMarq << " step quality: " << stepQuality);
             }
 
             iter++;
@@ -776,24 +769,15 @@ void PoseGraph::optimize()
 
     bool found = (smallGradient || smallStep || smallEnergyDelta);
 
-    std::cout << "Finished:";
-    if (!found)
-        std::cout << " not";
-    std::cout << " found" << std::endl;
-    std::vector<std::string> txtFlags;
+    CV_LOG_INFO(NULL, "Finished: " << (found ? "" : "not") << "found");
     if (smallGradient)
-        txtFlags.push_back("smallGradient");
+        CV_LOG_INFO(NULL, "Finish reason: gradient max val dropped below threshold");
     if (smallStep)
-        txtFlags.push_back("smallStep");
+        CV_LOG_INFO(NULL, "Finish reason: step size dropped below threshold");
     if (smallEnergyDelta)
-        txtFlags.push_back("smallEnergyDelta");
+        CV_LOG_INFO(NULL, "Finish reason: relative energy change between iterations dropped below threshold");
     if (tooLong)
-        txtFlags.push_back("tooLong");
-
-    std::cout << "(";
-    for (const auto& t : txtFlags)
-        std::cout << " " << t;
-    std::cout << " )" << std::endl;
+        CV_LOG_INFO(NULL, "Finish reason: max number of iterations reached");
 }
 #else
 void PoseGraph::optimize()

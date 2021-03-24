@@ -7,6 +7,7 @@
 
 #include "opencv2/core/base.hpp"
 #include "opencv2/core/types.hpp"
+#include "opencv2/core/utils/logger.hpp"
 
 #if defined(HAVE_EIGEN)
 #include <Eigen/Core>
@@ -160,7 +161,7 @@ struct BlockSparseMat
         solver.compute(bigA);
         if (solver.info() != Eigen::Success)
         {
-            std::cout << "failed to eigen-decompose" << std::endl;
+            CV_LOG_INFO(NULL, "Failed to eigen-decompose");
             return false;
         }
         else
@@ -168,7 +169,7 @@ struct BlockSparseMat
             Eigen::Matrix<_Tp, -1, 1> solutionX = solver.solve(bigB);
             if (solver.info() != Eigen::Success)
             {
-                std::cout << "failed to eigen-solve" << std::endl;
+                CV_LOG_INFO(NULL, "Failed to eigen-solve");
                 return false;
             }
             else
