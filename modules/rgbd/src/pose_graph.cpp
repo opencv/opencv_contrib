@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-#include "pose_graph.hpp"
+#include "precomp.hpp"
 
 #include <fstream>
 #include <limits>
@@ -106,6 +106,175 @@ namespace cv
 namespace kinfu
 {
 
+class PoseGraphImpl : public detail::PoseGraph
+{
+    struct Pose3d
+    {
+        Vec3d t;
+        Quatd q;
+
+        Pose3d() : t(), q(1, 0, 0, 0) { }
+
+        Pose3d(const Matx33d& rotation, const Vec3d& translation)
+            : t(translation), q(Quatd::createFromRotMat(rotation).normalize())
+        { }
+
+        explicit Pose3d(const Matx44d& pose) :
+            Pose3d(pose.get_minor<3, 3>(0, 0), Vec3d(pose(0, 3), pose(1, 3), pose(2, 3)))
+        { }
+
+        inline Pose3d operator*(const Pose3d& otherPose) const
+        {
+            Pose3d out(*this);
+            out.t += q.toRotMat3x3(QUAT_ASSUME_UNIT) * otherPose.t;
+            out.q = out.q * otherPose.q;
+            return out;
+        }
+
+        Affine3d getAffine() const
+        {
+            return Affine3d(q.toRotMat3x3(QUAT_ASSUME_UNIT), t);
+        }
+
+        inline Pose3d inverse() const
+        {
+            Pose3d out;
+            out.q = q.conjugate();
+            out.t = -(out.q.toRotMat3x3(QUAT_ASSUME_UNIT) * t);
+            return out;
+        }
+
+        inline void normalizeRotation()
+        {
+            q = q.normalize();
+        }
+    };
+
+    /*! \class GraphNode
+     *  \brief Defines a node/variable that is optimizable in a posegraph
+     *
+     *  Detailed description
+     */
+    struct Node
+    {
+    public:
+        explicit Node(size_t _nodeId, const Affine3d& _pose)
+            : nodeId(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
+        { }
+        virtual ~Node() = default;
+
+        size_t getId() const { return nodeId; }
+        inline Affine3d getPose() const
+        {
+            return pose.getAffine();
+        }
+        void setPose(const Affine3d& _pose)
+        {
+            pose = Pose3d(_pose.rotation(), _pose.translation());
+        }
+        void setPose(const Pose3d& _pose)
+        {
+            pose = _pose;
+        }
+        void setFixed(bool val = true) { isFixed = val; }
+        bool isPoseFixed() const { return isFixed; }
+
+    public:
+        size_t nodeId;
+        bool isFixed;
+        Pose3d pose;
+    };
+
+    /*! \class PoseGraphEdge
+     *  \brief Defines the constraints between two PoseGraphNodes
+     *
+     *  Detailed description
+     */
+    struct Edge
+    {
+    public:
+        Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
+            const Matx66f& _information = Matx66f::eye());
+
+        virtual ~Edge() = default;
+
+        size_t getSourceNodeId() const { return sourceNodeId; }
+        size_t getTargetNodeId() const { return targetNodeId; }
+
+        bool operator==(const Edge& edge)
+        {
+            if ((edge.getSourceNodeId() == sourceNodeId && edge.getTargetNodeId() == targetNodeId) ||
+                (edge.getSourceNodeId() == targetNodeId && edge.getTargetNodeId() == sourceNodeId))
+                return true;
+            return false;
+        }
+
+    public:
+        size_t sourceNodeId;
+        size_t targetNodeId;
+        Pose3d pose;
+        Matx66f sqrtInfo;
+    };
+
+
+public:
+    virtual ~PoseGraphImpl();
+    
+    virtual void addNode(const Node& node) CV_OVERRIDE;
+    virtual void addEdge(const Edge& edge) CV_OVERRIDE;
+    virtual bool nodeExists(size_t nodeId) CV_OVERRIDE;
+
+        // checks if graph is connected and each edge connects exactly 2 nodes
+        virtual bool isValid() = 0;
+
+        virtual Report optimize(const cv::TermCriteria& tc) = 0;
+
+        // calculate cost function based on current nodes parameters
+        virtual double calcEnergy() const;
+
+        /*
+        void addNode(const Node& node)
+        {
+            size_t id = node.getId();
+            const auto& it = nodes.find(id);
+            if (it != nodes.end())
+            {
+                std::cout << "duplicated node, id=" << id << std::endl;
+                nodes.insert(it, { id, node });
+            }
+            else
+            {
+                nodes.insert({ id, node });
+            }
+        }
+        void addEdge(const Edge& edge) { edges.push_back(edge); }
+
+        bool nodeExists(size_t nodeId) const
+        {
+            return (nodes.find(nodeId) != nodes.end());
+        }
+
+        bool isValid() const;
+
+        size_t getNumNodes() const { return nodes.size(); }
+        size_t getNumEdges() const { return edges.size(); }
+        */
+
+        // used during optimization
+        // nodes is a set of parameters to be used instead of contained in the graph
+        //double calcNodesEnergy(const std::map<size_t, Node>& newNodes) const;
+
+    //TODO: pImpl
+        //std::map<size_t, Node> nodes;
+        //std::vector<Edge>   edges;
+    };
+
+Ptr<detail::PoseGraph> detail::PoseGraph::create()
+{
+    return makePtr<PoseGraphImpl>();
+}
+
+
 // Cholesky decomposition of symmetrical 6x6 matrix
 static inline cv::Matx66d llt6(Matx66d m)
 {
@@ -203,119 +372,9 @@ PoseGraph::PoseGraph(const std::string& g2oFileName) :
     readG2OFile(g2oFileName);
 }
 
-static Affine3d readAffine(std::istream& input)
-{
-    Vec3d p;
-    Vec4d q;
-    input >> p[0] >> p[1] >> p[2];
-    input >> q[1] >> q[2] >> q[3] >> q[0];
-    // Normalize the quaternion to account for precision loss due to
-    // serialization.
-    return Affine3d(Quatd(q).toRotMat3x3(), p);
-};
-
-// Rewritten from Ceres pose graph demo: https://ceres-solver.org/
-void PoseGraph::readG2OFile(const std::string& g2oFileName)
-{
-    nodes.clear(); edges.clear();
-
-    // for debugging purposes
-    size_t minId = 0, maxId = 1 << 30;
-
-    std::ifstream infile(g2oFileName.c_str());
-    if (!infile)
-    {
-        CV_Error(cv::Error::StsError, "failed to open file");
-    }
-
-    while (infile.good())
-    {
-        std::string data_type;
-        // Read whether the type is a node or a constraint
-        infile >> data_type;
-        if (data_type == "VERTEX_SE3:QUAT")
-        {
-            size_t id;
-            infile >> id;
-            Affine3d pose = readAffine(infile);
-
-            if (id < minId || id >= maxId)
-                continue;
-
-            Node n(id, pose);
-            if (id == minId)
-                n.setFixed();
-
-            // Ensure we don't have duplicate poses
-            const auto& it = nodes.find(id);
-            if (it != nodes.end())
-            {
-                CV_LOG_INFO(NULL, "duplicated node, id=" << id);
-                nodes.insert(it, { id, n });
-            }
-            else
-            {
-                nodes.insert({ id, n });
-            }
-        }
-        else if (data_type == "EDGE_SE3:QUAT")
-        {
-            size_t startId, endId;
-            infile >> startId >> endId;
-            Affine3d pose = readAffine(infile);
-
-            Matx66d info;
-            for (int i = 0; i < 6 && infile.good(); ++i)
-            {
-                for (int j = i; j < 6 && infile.good(); ++j)
-                {
-                    infile >> info(i, j);
-                    if (i != j)
-                    {
-                        info(j, i) = info(i, j);
-                    }
-                }
-            }
-
-            if ((startId >= minId && startId < maxId) && (endId >= minId && endId < maxId))
-            {
-                edges.push_back(Edge(startId, endId, pose, info));
-            }
-        }
-        else
-        {
-            CV_Error(cv::Error::StsError, "unknown tag");
-        }
-
-        // Clear any trailing whitespace from the line
-        infile >> std::ws;
-    }
-}
-
-
-// Writes edge-only model of how nodes are located in space
-void PoseGraph::writeToObjFile(const std::string& fname) const
-{
-    std::fstream of(fname, std::fstream::out);
-    for (const auto& n : nodes)
-    {
-        Point3d d = n.second.getPose().translation();
-        of << "v " << d.x << " " << d.y << " " << d.z << std::endl;
-    }
-    for (const auto& e : edges)
-    {
-        size_t sid = e.sourceNodeId, tid = e.targetNodeId;
-        of << "l " << sid + 1 << " " << tid + 1 << std::endl;
-    }
-    of.close();
-};
-
 //////////////////////////
 // Optimization itself //
 ////////////////////////
-
-
-
 
 static inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd targetQuat, Vec3d targetTrans,
                                Quatd rotMeasured, Vec3d transMeasured, Matx66d sqrtInfoMatrix, bool needJacobians,

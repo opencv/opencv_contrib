@@ -21,169 +21,47 @@ namespace kinfu
 namespace detail
 {
 
-// TODO: text about unstable API
-class PoseGraph
+// ATTENTION! This class is used internally in Large KinFu.
+// It has been pushed to publicly available headers for tests only.
+// Source compatibility of this API is not guaranteed in the future.
+
+// This class provides tools to solve so-called pose graph problem often arisen in SLAM problems
+// The pose graph format, cost function and optimization techniques
+// repeat the ones used in Ceres 3D Pose Graph Optimization:
+// http://ceres-solver.org/nnls_tutorial.html#other-examples, pose_graph_3d.cc bullet
+class CV_EXPORTS_W PoseGraph
 {
 public:
-    struct Pose3d
-    {
-        Vec3d t;
-        Quatd q;
+    CV_WRAP static Ptr<PoseGraph> create();
+    virtual ~PoseGraph() = 0;
 
-        Pose3d() : t(), q(1, 0, 0, 0) { }
+    // Node may have any id >= 0
+    virtual void addNode(size_t _nodeId, const Affine3d& _pose, bool fixed) = 0;
+    virtual bool isNodeExist(size_t nodeId) const = 0;
+    virtual bool setNodeFixed(size_t nodeId, bool fixed) = 0;
+    virtual bool isNodeFixed(size_t nodeId) = 0;
+    virtual Affine3d getNodePose(size_t nodeId) = 0;
+    virtual std::vector<size_t> getNodesIds() const = 0;
+    virtual size_t getNumNodes() const = 0;
 
-        Pose3d(const Matx33d& rotation, const Vec3d& translation)
-            : t(translation), q(Quatd::createFromRotMat(rotation).normalize())
-        { }
+    // Edges have consequent indices starting from 0
+    virtual void addEdge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
+                         const Matx66f& _information = Matx66f::eye()) = 0;
+    virtual size_t getEdgeStart(size_t i) const = 0;
+    virtual size_t getEdgeEnd(size_t i) const = 0;
+    virtual size_t getNumEdges() const = 0;
 
-        explicit Pose3d(const Matx44d& pose) :
-            Pose3d(pose.get_minor<3, 3>(0, 0), Vec3d(pose(0, 3), pose(1, 3), pose(2, 3)))
-        { }
+    // checks if graph is connected and each edge connects exactly 2 nodes
+    virtual bool isValid() const = 0;
 
-        inline Pose3d operator*(const Pose3d& otherPose) const
-        {
-            Pose3d out(*this);
-            out.t += q.toRotMat3x3(QUAT_ASSUME_UNIT) * otherPose.t;
-            out.q = out.q * otherPose.q;
-            return out;
-        }
+    // Termination criteria are max number of iterations and min relative energy change to current energy
+    // Returns number of iterations elapsed or -1 if max number of iterations was reached or failed to optimize
+    virtual int optimize(const cv::TermCriteria& tc = cv::TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 100, 1e-6)) = 0;
 
-        Affine3d getAffine() const
-        {
-            return Affine3d(q.toRotMat3x3(QUAT_ASSUME_UNIT), t);
-        }
-
-        inline Pose3d inverse() const
-        {
-            Pose3d out;
-            out.q = q.conjugate();
-            out.t = -(out.q.toRotMat3x3(QUAT_ASSUME_UNIT) * t);
-            return out;
-        }
-
-        inline void normalizeRotation()
-        {
-            q = q.normalize();
-        }
-    };
-
-    /*! \class GraphNode
-     *  \brief Defines a node/variable that is optimizable in a posegraph
-     *
-     *  Detailed description
-     */
-    struct Node
-    {
-    public:
-        explicit Node(size_t _nodeId, const Affine3d& _pose)
-            : nodeId(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
-        { }
-        virtual ~Node() = default;
-
-        size_t getId() const { return nodeId; }
-        inline Affine3d getPose() const
-        {
-            return pose.getAffine();
-        }
-        void setPose(const Affine3d& _pose)
-        {
-            pose = Pose3d(_pose.rotation(), _pose.translation());
-        }
-        void setPose(const Pose3d& _pose)
-        {
-            pose = _pose;
-        }
-        void setFixed(bool val = true) { isFixed = val; }
-        bool isPoseFixed() const { return isFixed; }
-
-    public:
-        size_t nodeId;
-        bool isFixed;
-        Pose3d pose;
-    };
-
-    /*! \class PoseGraphEdge
-     *  \brief Defines the constraints between two PoseGraphNodes
-     *
-     *  Detailed description
-     */
-    struct Edge
-    {
-    public:
-        Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
-             const Matx66f& _information = Matx66f::eye());
-
-        virtual ~Edge() = default;
-
-        size_t getSourceNodeId() const { return sourceNodeId; }
-        size_t getTargetNodeId() const { return targetNodeId; }
-
-        bool operator==(const Edge& edge)
-        {
-            if ((edge.getSourceNodeId() == sourceNodeId && edge.getTargetNodeId() == targetNodeId) ||
-                (edge.getSourceNodeId() == targetNodeId && edge.getTargetNodeId() == sourceNodeId))
-                return true;
-            return false;
-        }
-
-    public:
-        size_t sourceNodeId;
-        size_t targetNodeId;
-        Pose3d pose;
-        Matx66f sqrtInfo;
-    };
-
-   public:
-    explicit PoseGraph() {};
-    virtual ~PoseGraph() = default;
-
-    //! PoseGraph can be copied/cloned
-    PoseGraph(const PoseGraph&) = default;
-    PoseGraph& operator=(const PoseGraph&) = default;
-
-    // can be used for debugging
-    PoseGraph(const std::string& g2oFileName);
-    void readG2OFile(const std::string& g2oFileName);
-    void writeToObjFile(const std::string& objFname) const;
-
-    void addNode(const Node& node)
-    {
-        size_t id = node.getId();
-        const auto& it = nodes.find(id);
-        if (it != nodes.end())
-        {
-            std::cout << "duplicated node, id=" << id << std::endl;
-            nodes.insert(it, { id, node });
-        }
-        else
-        {
-            nodes.insert({ id, node });
-        }
-    }
-    void addEdge(const Edge& edge) { edges.push_back(edge); }
-
-    bool nodeExists(size_t nodeId) const
-    {
-        return (nodes.find(nodeId) != nodes.end());
-    }
-
-    bool isValid() const;
-
-    size_t getNumNodes() const { return nodes.size(); }
-    size_t getNumEdges() const { return edges.size(); }
-
-   public:
-
-    void optimize(const cv::TermCriteria& tc);
-
-    // used during optimization
-    // nodes is a set of parameters to be used instead of contained in the graph
-    double calcEnergy(const std::map<size_t, Node>& newNodes) const;
-
-//TODO: pImpl
-    std::map<size_t, Node> nodes;
-    std::vector<Edge>   edges;
+    // calculate cost function based on current nodes parameters
+    virtual double calcEnergy() const = 0;
 };
+
 }  // namespace detail
 }  // namespace kinfu
 }  // namespace cv

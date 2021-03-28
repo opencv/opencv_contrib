@@ -8,11 +8,95 @@ namespace opencv_test { namespace {
 
 using namespace cv;
 
+static Affine3d readAffine(std::istream& input)
+{
+    Vec3d p;
+    Vec4d q;
+    input >> p[0] >> p[1] >> p[2];
+    input >> q[1] >> q[2] >> q[3] >> q[0];
+    // Normalize the quaternion to account for precision loss due to
+    // serialization.
+    return Affine3d(Quatd(q).toRotMat3x3(), p);
+};
+
+// Rewritten from Ceres pose graph demo: https://ceres-solver.org/
+static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
+{
+    Ptr<kinfu::detail::PoseGraph> pg = kinfu::detail::PoseGraph::create();
+
+    // for debugging purposes
+    size_t minId = 0, maxId = 1 << 30;
+
+    std::ifstream infile(g2oFileName.c_str());
+    if (!infile)
+    {
+        CV_Error(cv::Error::StsError, "failed to open file");
+    }
+
+    while (infile.good())
+    {
+        std::string data_type;
+        // Read whether the type is a node or a constraint
+        infile >> data_type;
+        if (data_type == "VERTEX_SE3:QUAT")
+        {
+            size_t id;
+            infile >> id;
+            Affine3d pose = readAffine(infile);
+
+            if (id < minId || id >= maxId)
+                continue;
+
+            bool fixed = (id == minId);
+
+            // Ensure we don't have duplicate poses
+            if (pg->isNodeExist(id))
+            {
+                CV_LOG_INFO(NULL, "duplicated node, id=" << id);
+            }
+            pg->addNode(id, pose, fixed);
+        }
+        else if (data_type == "EDGE_SE3:QUAT")
+        {
+            size_t startId, endId;
+            infile >> startId >> endId;
+            Affine3d pose = readAffine(infile);
+
+            Matx66d info;
+            for (int i = 0; i < 6 && infile.good(); ++i)
+            {
+                for (int j = i; j < 6 && infile.good(); ++j)
+                {
+                    infile >> info(i, j);
+                    if (i != j)
+                    {
+                        info(j, i) = info(i, j);
+                    }
+                }
+            }
+
+            if ((startId >= minId && startId < maxId) && (endId >= minId && endId < maxId))
+            {
+                pg->addEdge(startId, endId, pose, info);
+            }
+        }
+        else
+        {
+            CV_Error(cv::Error::StsError, "unknown tag");
+        }
+
+        // Clear any trailing whitespace from the line
+        infile >> std::ws;
+    }
+}
+
+// Turn it on if you want to see resulting pose graph nodes
+static const bool writeToObjFile = false;
+
+
 TEST( PoseGraph, sphereG2O )
 {
-    //TODO: add code itself
-
-    //DEBUG
+    //TODO: optional
     cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_INFO);
 
     // The dataset was taken from here: https://lucacarlone.mit.edu/datasets/
@@ -22,33 +106,38 @@ TEST( PoseGraph, sphereG2O )
     // In IEEE Intl.Conf.on Robotics and Automation(ICRA), pages 4597 - 4604, 2015.
 
     std::string filename = cvtest::TS::ptr()->get_data_path() + "sphere_bignoise_vertex3.g2o";
-    //std::string filename = "C:\\Users\\rvasilik\\Downloads\\torus3D.g2o";
-    PoseGraph pg(filename);
-
-    //writePg(pg, "C:\\Temp\\g2opt\\in.obj");
+    Ptr<kinfu::detail::PoseGraph> pg = readG2OFile(filename);
 
     double t0 = cv::getTickCount();
 
-    pg.optimize();
+    int iters = pg->optimize();
+
 
     double t1 = cv::getTickCount();
 
     std::cout << "time: " << (t1 - t0) / cv::getTickFrequency() << std::endl;
 
-    //writePg(pg, "C:\\Temp\\g2opt\\out.obj");
-
-    viz::Viz3d debug("debug");
-    std::vector<Point3d> sv, dv;
-    for (const auto& e : pg.edges)
+    if (writeToObjFile)
     {
-        size_t sid = e.sourceNodeId, tid = e.targetNodeId;
-        Point3d sp = pg.nodes.at(sid).getPose().translation();
-        Point3d tp = pg.nodes.at(tid).getPose().translation();
-        sv.push_back(sp);
-        dv.push_back(tp - sp);
+        // Write edge-only model of how nodes are located in space
+        std::string fname = "pgout.obj";
+        std::fstream of(fname, std::fstream::out);
+        std::vector<size_t> ids = pg->getNodesIds();
+        for (const size_t& id : ids)
+        {
+            Point3d d = pg->getNodePose(id).translation();
+            of << "v " << d.x << " " << d.y << " " << d.z << std::endl;
+        }
+
+        size_t esz = pg->getNumEdges();
+        for (size_t i = 0; i < esz; i++)
+        {
+            size_t sid = pg->getEdgeStart(i), tid = pg->getEdgeEnd(i);
+            of << "l " << sid + 1 << " " << tid + 1 << std::endl;
+        }
+        
+        of.close();
     }
-    debug.showWidget("after", viz::WCloudNormals(sv, dv, 1, 1, viz::Color::green()));
-    debug.spin();
 
 }
 
