@@ -18,7 +18,10 @@ namespace cv
 {
 namespace kinfu
 {
+namespace detail
+{
 
+// TODO: text about unstable API
 class PoseGraph
 {
 public:
@@ -171,16 +174,17 @@ public:
 
    public:
 
-    void optimize();
+    void optimize(const cv::TermCriteria& tc);
 
     // used during optimization
     // nodes is a set of parameters to be used instead of contained in the graph
     double calcEnergy(const std::map<size_t, Node>& newNodes) const;
 
+//TODO: pImpl
     std::map<size_t, Node> nodes;
     std::vector<Edge>   edges;
 };
-
+}  // namespace detail
 }  // namespace kinfu
 }  // namespace cv
 #endif /* ifndef OPENCV_RGBD_GRAPH_NODE_H */
