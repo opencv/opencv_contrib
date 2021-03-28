@@ -736,7 +736,7 @@ void PoseGraph::optimize()
                 lambdaLevMarq *= lmUpFactor;
                 lmUpFactor *= 2.0;
 
-                CV_LOG_INFO(NULL, "LM up: " << lambdaLevMarq << ", old energy = " << oldEnergy);
+                CV_LOG_INFO(NULL, "LM goes up, lambda: " << lambdaLevMarq << ", old energy: " << oldEnergy);
             }
             else
             {
@@ -756,7 +756,7 @@ void PoseGraph::optimize()
 
                 oldEnergy = energy;
 
-                CV_LOG_INFO(NULL, "LM down: " << lambdaLevMarq << " step quality: " << stepQuality);
+                CV_LOG_INFO(NULL, "LM goes down, lambda: " << lambdaLevMarq << " step quality: " << stepQuality);
             }
 
             iter++;
