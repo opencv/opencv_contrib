@@ -141,7 +141,7 @@ TEST( PoseGraph, sphereG2O )
             size_t sid = pg->getEdgeStart(i), tid = pg->getEdgeEnd(i);
             of << "l " << sid + 1 << " " << tid + 1 << std::endl;
         }
-        
+
         of.close();
     }
 }
