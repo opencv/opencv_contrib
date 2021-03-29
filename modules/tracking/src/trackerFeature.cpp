@@ -41,27 +41,20 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
 
 /*
- *  TrackerFeature
+ *  TrackerContribFeature
  */
 
-TrackerFeature::~TrackerFeature()
+TrackerContribFeature::~TrackerContribFeature()
 {
 
 }
 
-void TrackerFeature::compute( const std::vector<Mat>& images, Mat& response )
-{
-  if( images.empty() )
-    return;
-
-  computeImpl( images, response );
-}
-
-Ptr<TrackerFeature> TrackerFeature::create( const String& trackerFeatureType )
+Ptr<TrackerContribFeature> TrackerContribFeature::create( const String& trackerFeatureType )
 {
   if( trackerFeatureType.find( "FEATURE2D" ) == 0 )
   {
@@ -81,7 +74,7 @@ Ptr<TrackerFeature> TrackerFeature::create( const String& trackerFeatureType )
 
   if( trackerFeatureType.find( "HAAR" ) == 0 )
   {
-    return Ptr<TrackerFeatureHAAR>( new TrackerFeatureHAAR() );
+    return Ptr<TrackerContribFeatureHAAR>( new TrackerContribFeatureHAAR() );
   }
 
   if( trackerFeatureType.find( "LBP" ) == 0 )
@@ -92,7 +85,7 @@ Ptr<TrackerFeature> TrackerFeature::create( const String& trackerFeatureType )
   CV_Error( -1, "Tracker feature type not supported" );
 }
 
-String TrackerFeature::getClassName() const
+String TrackerContribFeature::getClassName() const
 {
   return className;
 }
@@ -144,21 +137,21 @@ void TrackerFeatureHOG::selection( Mat& /*response*/, int /*npoints*/)
 }
 
 /**
- * TrackerFeatureHAAR
+ * TrackerContribFeatureHAAR
  */
 
 /**
  * Parameters
  */
 
-TrackerFeatureHAAR::Params::Params()
+TrackerContribFeatureHAAR::Params::Params()
 {
   numFeatures = 250;
   rectSize = Size( 100, 100 );
   isIntegral = false;
 }
 
-TrackerFeatureHAAR::TrackerFeatureHAAR( const TrackerFeatureHAAR::Params &parameters ) :
+TrackerContribFeatureHAAR::TrackerContribFeatureHAAR( const TrackerContribFeatureHAAR::Params &parameters ) :
     params( parameters )
 {
   className = "HAAR";
@@ -170,23 +163,23 @@ TrackerFeatureHAAR::TrackerFeatureHAAR( const TrackerFeatureHAAR::Params &parame
   featureEvaluator->init( &haarParams, 1, params.rectSize );
 }
 
-TrackerFeatureHAAR::~TrackerFeatureHAAR()
+TrackerContribFeatureHAAR::~TrackerContribFeatureHAAR()
 {
 
 }
 
-CvHaarEvaluator::FeatureHaar& TrackerFeatureHAAR::getFeatureAt( int id )
+CvHaarEvaluator::FeatureHaar& TrackerContribFeatureHAAR::getFeatureAt( int id )
 {
   return featureEvaluator->getFeatures( id );
 }
 
-bool TrackerFeatureHAAR::swapFeature( int id, CvHaarEvaluator::FeatureHaar& feature )
+bool TrackerContribFeatureHAAR::swapFeature( int id, CvHaarEvaluator::FeatureHaar& feature )
 {
   featureEvaluator->getFeatures( id ) = feature;
   return true;
 }
 
-bool TrackerFeatureHAAR::swapFeature( int source, int target )
+bool TrackerContribFeatureHAAR::swapFeature( int source, int target )
 {
   CvHaarEvaluator::FeatureHaar feature = featureEvaluator->getFeatures( source );
   featureEvaluator->getFeatures( source ) = featureEvaluator->getFeatures( target );
@@ -194,7 +187,7 @@ bool TrackerFeatureHAAR::swapFeature( int source, int target )
   return true;
 }
 
-bool TrackerFeatureHAAR::extractSelected( const std::vector<int> selFeatures, const std::vector<Mat>& images, Mat& response )
+bool TrackerContribFeatureHAAR::extractSelected( const std::vector<int> selFeatures, const std::vector<Mat>& images, Mat& response )
 {
   if( images.empty() )
   {
@@ -263,7 +256,7 @@ class Parallel_compute : public cv::ParallelLoopBody
   }
 };
 
-bool TrackerFeatureHAAR::computeImpl( const std::vector<Mat>& images, Mat& response )
+bool TrackerContribFeatureHAAR::computeImpl( const std::vector<Mat>& images, Mat& response )
 {
   if( images.empty() )
   {
@@ -293,7 +286,7 @@ bool TrackerFeatureHAAR::computeImpl( const std::vector<Mat>& images, Mat& respo
   return true;
 }
 
-void TrackerFeatureHAAR::selection( Mat& /*response*/, int /*npoints*/)
+void TrackerContribFeatureHAAR::selection( Mat& /*response*/, int /*npoints*/)
 {
 
 }
@@ -321,4 +314,4 @@ void TrackerFeatureLBP::selection( Mat& /*response*/, int /*npoints*/)
 
 }
 
-} /* namespace cv */
+}}}  // namespace

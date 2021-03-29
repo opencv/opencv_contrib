@@ -10,11 +10,11 @@ ocv_define_module(text
     WRAP
       python
       java
+      objc
 )
 
-if(HAVE_TESSERACT)
-  ocv_include_directories(${Tesseract_INCLUDE_DIRS})
-  ocv_target_link_libraries(${the_module} ${Tesseract_LIBRARIES})
+if(TARGET ocv.3rdparty.tesseract)
+  ocv_target_link_libraries(${the_module} LINK_PRIVATE ocv.3rdparty.tesseract)
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in

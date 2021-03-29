@@ -1,6 +1,5 @@
 #include "opencv2/xobjdetect.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgcodecs/imgcodecs_c.h"
 #include "opencv2/imgproc.hpp"
 #include <iostream>
 #include <cstdio>
@@ -28,7 +27,7 @@ int main(int argc, char **argv)
         assert(argc == 6);
         vector<Rect> bboxes;
         vector<double> confidences;
-        Mat img = imread(argv[3], CV_LOAD_IMAGE_GRAYSCALE);
+        Mat img = imread(argv[3], IMREAD_GRAYSCALE);
         FileStorage fs(argv[2], FileStorage::READ);
         detector->read(fs.getFirstTopLevelNode());
         detector->detect(img, bboxes, confidences);

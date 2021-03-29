@@ -46,6 +46,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/stereo/descriptor.hpp"
+#include <opencv2/stereo/quasi_dense_stereo.hpp>
 
 /**
 @defgroup stereo Stereo Correspondance Algorithms

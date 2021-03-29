@@ -1,7 +1,6 @@
 #ifndef OPENCV_GTR_UTILS
 #define OPENCV_GTR_UTILS
 
-#include "precomp.hpp"
 #include <vector>
 
 namespace cv

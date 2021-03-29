@@ -38,11 +38,11 @@ Explanation
     You can add all tracked objects at once to the MultiTracker as shown in the code.
     In this case, all objects will be tracked using same tracking algorithm as specified in decaration of MultiTracker object.
     If you want to use different tracker algorithms for each tracked object,
-    You should add the tracked objects one by one and specify their tracking algorithm using the variant of @ref cv::MultiTracker::add.
-    @sa cv::MultiTracker::add( const String& trackerType, const Mat& image, const Rect2d& boundingBox )
+    You should add the tracked objects one by one and specify their tracking algorithm using the variant of @ref cv::legacy::MultiTracker::add.
+    @sa cv::legacy::MultiTracker::add( const String& trackerType, const Mat& image, const Rect2d& boundingBox )
 
 -#  **Obtaining the result**
 
     @snippet tracking/samples/tutorial_multitracker.cpp result
 
-    You can access the result from the public variable @ref cv::MultiTracker::objects provided by the MultiTracker class as shown in the code.
+    You can access the result from the public variable @ref cv::legacy::MultiTracker::objects provided by the MultiTracker class as shown in the code.

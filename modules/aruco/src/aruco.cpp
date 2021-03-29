@@ -345,49 +345,6 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
     contoursSetOut.push_back(smallerContours);
 }
 
-
-/**
-  * ParallelLoopBody class for the parallelization of the basic candidate detections using
-  * different threhold window sizes. Called from function _detectInitialCandidates()
-  */
-class DetectInitialCandidatesParallel : public ParallelLoopBody {
-    public:
-    DetectInitialCandidatesParallel(const Mat *_grey,
-                                    vector< vector< vector< Point2f > > > *_candidatesArrays,
-                                    vector< vector< vector< Point > > > *_contoursArrays,
-                                    const Ptr<DetectorParameters> &_params)
-        : grey(_grey), candidatesArrays(_candidatesArrays), contoursArrays(_contoursArrays),
-          params(_params) {}
-
-    void operator()(const Range &range) const CV_OVERRIDE {
-        const int begin = range.start;
-        const int end = range.end;
-
-        for(int i = begin; i < end; i++) {
-            int currScale =
-                params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
-            // threshold
-            Mat thresh;
-            _threshold(*grey, thresh, currScale, params->adaptiveThreshConstant);
-
-            // detect rectangles
-            _findMarkerContours(thresh, (*candidatesArrays)[i], (*contoursArrays)[i],
-                                params->minMarkerPerimeterRate, params->maxMarkerPerimeterRate,
-                                params->polygonalApproxAccuracyRate, params->minCornerDistanceRate,
-                                params->minDistanceToBorder);
-        }
-    }
-
-    private:
-    DetectInitialCandidatesParallel &operator=(const DetectInitialCandidatesParallel &);
-
-    const Mat *grey;
-    vector< vector< vector< Point2f > > > *candidatesArrays;
-    vector< vector< vector< Point > > > *contoursArrays;
-    const Ptr<DetectorParameters> &params;
-};
-
-
 /**
  * @brief Initial steps on finding square candidates
  */
@@ -407,21 +364,23 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
     vector< vector< vector< Point > > > contoursArrays((size_t) nScales);
 
     ////for each value in the interval of thresholding window sizes
-    // for(int i = 0; i < nScales; i++) {
-    //    int currScale = params.adaptiveThreshWinSizeMin + i*params.adaptiveThreshWinSizeStep;
-    //    // treshold
-    //    Mat thresh;
-    //    _threshold(grey, thresh, currScale, params.adaptiveThreshConstant);
-    //    // detect rectangles
-    //    _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
-    // params.minMarkerPerimeterRate,
-    //                        params.maxMarkerPerimeterRate, params.polygonalApproxAccuracyRate,
-    //                        params.minCornerDistance, params.minDistanceToBorder);
-    //}
+    parallel_for_(Range(0, nScales), [&](const Range& range) {
+        const int begin = range.start;
+        const int end = range.end;
 
-    // this is the parallel call for the previous commented loop (result is equivalent)
-    parallel_for_(Range(0, nScales), DetectInitialCandidatesParallel(&grey, &candidatesArrays,
-                                                                     &contoursArrays, params));
+        for (int i = begin; i < end; i++) {
+            int currScale = params->adaptiveThreshWinSizeMin + i * params->adaptiveThreshWinSizeStep;
+            // threshold
+            Mat thresh;
+            _threshold(grey, thresh, currScale, params->adaptiveThreshConstant);
+
+            // detect rectangles
+            _findMarkerContours(thresh, candidatesArrays[i], contoursArrays[i],
+                                params->minMarkerPerimeterRate, params->maxMarkerPerimeterRate,
+                                params->polygonalApproxAccuracyRate, params->minCornerDistanceRate,
+                                params->minDistanceToBorder);
+        }
+    });
 
     // join candidates
     for(int i = 0; i < nScales; i++) {
@@ -612,50 +571,6 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
     return typ;
 }
 
-
-/**
-  * ParallelLoopBody class for the parallelization of the marker identification step
-  * Called from function _identifyCandidates()
-  */
-class IdentifyCandidatesParallel : public ParallelLoopBody {
-    public:
-    IdentifyCandidatesParallel(const Mat& _grey, vector< vector< Point2f > >& _candidates,
-                               const Ptr<Dictionary> &_dictionary,
-                               vector< int >& _idsTmp, vector< uint8_t >& _validCandidates,
-                               const Ptr<DetectorParameters> &_params,
-                               vector< int > &_rotated)
-        : grey(_grey), candidates(_candidates), dictionary(_dictionary),
-          idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params), rotated(_rotated) {}
-
-    void operator()(const Range &range) const CV_OVERRIDE
-    {
-        const int begin = range.start;
-        const int end = range.end;
-
-        for(int i = begin; i < end; i++) {
-            int currId;
-            validCandidates[i] = _identifyOneCandidate(dictionary, grey, candidates[i], currId, params, rotated[i]);
-
-            if(validCandidates[i] > 0)
-                idsTmp[i] = currId;
-        }
-
-    }
-
-    private:
-    IdentifyCandidatesParallel &operator=(const IdentifyCandidatesParallel &); // to quiet MSVC
-
-    const Mat &grey;
-    vector< vector< Point2f > >& candidates;
-    const Ptr<Dictionary> &dictionary;
-    vector< int > &idsTmp;
-    vector< uint8_t > &validCandidates;
-    const Ptr<DetectorParameters> &params;
-    vector< int > &rotated;
-};
-
-
-
 /**
  * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
  */
@@ -721,11 +636,20 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
     vector< uint8_t > validCandidates(ncandidates, 0);
 
     //// Analyze each of the candidates
-    parallel_for_(Range(0, ncandidates),
-                  IdentifyCandidatesParallel(grey,
-                                             params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0],
-                                             _dictionary, idsTmp,
-                                             validCandidates, params, rotated));
+    parallel_for_(Range(0, ncandidates), [&](const Range &range) {
+        const int begin = range.start;
+        const int end = range.end;
+
+        vector< vector< Point2f > >& candidates = params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0];
+
+        for(int i = begin; i < end; i++) {
+            int currId;
+            validCandidates[i] = _identifyOneCandidate(_dictionary, grey, candidates[i], currId, params, rotated[i]);
+
+            if(validCandidates[i] > 0)
+                idsTmp[i] = currId;
+        }
+    });
 
     for(int i = 0; i < ncandidates; i++) {
         if(validCandidates[i] > 0) {
@@ -775,40 +699,6 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
     objPoints.ptr< Vec3f >(0)[2] = Vec3f(markerLength / 2.f, -markerLength / 2.f, 0);
     objPoints.ptr< Vec3f >(0)[3] = Vec3f(-markerLength / 2.f, -markerLength / 2.f, 0);
 }
-
-
-
-
-/**
-  * ParallelLoopBody class for the parallelization of the marker corner subpixel refinement
-  * Called from function detectMarkers()
-  */
-class MarkerSubpixelParallel : public ParallelLoopBody {
-    public:
-    MarkerSubpixelParallel(const Mat *_grey, OutputArrayOfArrays _corners,
-                           const Ptr<DetectorParameters> &_params)
-        : grey(_grey), corners(_corners), params(_params) {}
-
-    void operator()(const Range &range) const CV_OVERRIDE {
-        const int begin = range.start;
-        const int end = range.end;
-
-        for(int i = begin; i < end; i++) {
-            cornerSubPix(*grey, corners.getMat(i),
-                         Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize),
-                         Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
-                                                    params->cornerRefinementMaxIterations,
-                                                    params->cornerRefinementMinAccuracy));
-        }
-    }
-
-    private:
-    MarkerSubpixelParallel &operator=(const MarkerSubpixelParallel &); // to quiet MSVC
-
-    const Mat *grey;
-    OutputArrayOfArrays corners;
-    const Ptr<DetectorParameters> &params;
-};
 
 /**
  * Line fitting  A * B = C :: Called from function refineCandidateLines
@@ -952,34 +842,6 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 		_distortPoints(nCorners, camMatrix, distCoeff);
 	}
 }
-
-
-/**
-  * ParallelLoopBody class for the parallelization of the marker corner contour refinement
-  * Called from function detectMarkers()
-  */
-class MarkerContourParallel : public ParallelLoopBody {
-    public:
-    MarkerContourParallel( vector< vector< Point > >& _contours, vector< vector< Point2f > >& _candidates,  const Mat& _camMatrix, const Mat& _distCoeff)
-        : contours(_contours), candidates(_candidates), camMatrix(_camMatrix), distCoeff(_distCoeff){}
-
-    void operator()(const Range &range) const CV_OVERRIDE {
-
-        for(int i = range.start; i < range.end; i++) {
-            _refineCandidateLines(contours[i], candidates[i], camMatrix, distCoeff);
-        }
-    }
-
-    private:
-    MarkerContourParallel &operator=(const MarkerContourParallel &){
-        return *this;
-    }
-
-    vector< vector< Point > >& contours;
-    vector< vector< Point2f > >& candidates;
-    const Mat& camMatrix;
-    const Mat& distCoeff;
-};
 
 #ifdef APRIL_DEBUG
 static void _darken(const Mat &im){
@@ -1160,17 +1022,19 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
                   _params->cornerRefinementMinAccuracy > 0);
 
         //// do corner refinement for each of the detected markers
-        // for (unsigned int i = 0; i < _corners.cols(); i++) {
-        //    cornerSubPix(grey, _corners.getMat(i),
-        //                 Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize),
-        //                 Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
-        //                                            params.cornerRefinementMaxIterations,
-        //                                            params.cornerRefinementMinAccuracy));
-        //}
+        parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
+            const int begin = range.start;
+            const int end = range.end;
 
-        // this is the parallel call for the previous commented loop (result is equivalent)
-        parallel_for_(Range(0, _corners.cols()),
-                      MarkerSubpixelParallel(&grey, _corners, _params));
+            for (int i = begin; i < end; i++) {
+                cornerSubPix(grey, _corners.getMat(i),
+                             Size(_params->cornerRefinementWinSize, _params->cornerRefinementWinSize),
+                             Size(-1, -1),
+                             TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
+                                          _params->cornerRefinementMaxIterations,
+                                          _params->cornerRefinementMinAccuracy));
+            }
+        });
     }
 
     /// STEP 3, Optional : Corner refinement :: use contour container
@@ -1179,49 +1043,18 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
         if(! _ids.empty()){
 
             // do corner refinement using the contours for each detected markers
-            parallel_for_(Range(0, _corners.cols()), MarkerContourParallel(contours, candidates, camMatrix.getMat(), distCoeff.getMat()));
+            parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
+                for (int i = range.start; i < range.end; i++) {
+                    _refineCandidateLines(contours[i], candidates[i], camMatrix.getMat(),
+                                          distCoeff.getMat());
+                }
+            });
 
             // copy the corners to the output array
             _copyVector2Output(candidates, _corners);
         }
     }
 }
-
-
-
-/**
-  * ParallelLoopBody class for the parallelization of the single markers pose estimation
-  * Called from function estimatePoseSingleMarkers()
-  */
-class SinglePoseEstimationParallel : public ParallelLoopBody {
-    public:
-    SinglePoseEstimationParallel(Mat& _markerObjPoints, InputArrayOfArrays _corners,
-                                 InputArray _cameraMatrix, InputArray _distCoeffs,
-                                 Mat& _rvecs, Mat& _tvecs)
-        : markerObjPoints(_markerObjPoints), corners(_corners), cameraMatrix(_cameraMatrix),
-          distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs) {}
-
-    void operator()(const Range &range) const CV_OVERRIDE {
-        const int begin = range.start;
-        const int end = range.end;
-
-        for(int i = begin; i < end; i++) {
-            solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
-                    rvecs.at<Vec3d>(i), tvecs.at<Vec3d>(i));
-        }
-    }
-
-    private:
-    SinglePoseEstimationParallel &operator=(const SinglePoseEstimationParallel &); // to quiet MSVC
-
-    Mat& markerObjPoints;
-    InputArrayOfArrays corners;
-    InputArray cameraMatrix, distCoeffs;
-    Mat& rvecs, tvecs;
-};
-
-
-
 
 /**
   */
@@ -1240,15 +1073,16 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
     Mat rvecs = _rvecs.getMat(), tvecs = _tvecs.getMat();
 
     //// for each marker, calculate its pose
-    // for (int i = 0; i < nMarkers; i++) {
-    //    solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs,
-    //             _rvecs.getMat(i), _tvecs.getMat(i));
-    //}
+    parallel_for_(Range(0, nMarkers), [&](const Range& range) {
+        const int begin = range.start;
+        const int end = range.end;
 
-    // this is the parallel call for the previous commented loop (result is equivalent)
-    parallel_for_(Range(0, nMarkers),
-                  SinglePoseEstimationParallel(markerObjPoints, _corners, _cameraMatrix,
-                                               _distCoeffs, rvecs, tvecs));
+        for (int i = begin; i < end; i++) {
+            solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs, rvecs.at<Vec3d>(i),
+                     tvecs.at<Vec3d>(i));
+        }
+    });
+
     if(_objPoints.needed()){
         markerObjPoints.convertTo(_objPoints, -1);
     }
@@ -1600,8 +1434,8 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
 /**
   */
 int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Board> &board,
-                      InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
-                      OutputArray _tvec, bool useExtrinsicGuess) {
+                      InputArray _cameraMatrix, InputArray _distCoeffs, InputOutputArray _rvec,
+                      InputOutputArray _tvec, bool useExtrinsicGuess) {
 
     CV_Assert(_corners.total() == _ids.total());
 

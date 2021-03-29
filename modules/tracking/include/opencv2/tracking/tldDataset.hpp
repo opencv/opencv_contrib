@@ -44,13 +44,21 @@
 
 #include "opencv2/core.hpp"
 
-namespace cv
-{
+namespace cv {
+namespace detail {
+inline namespace tracking {
+
+//! @addtogroup tracking_detail
+//! @{
+
 	namespace tld
 	{
 		CV_EXPORTS cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath = "TLD_dataset", int datasetInd = 0);
 		CV_EXPORTS cv::String tld_getNextDatasetFrame();
 	}
-}
+
+//! @}
+
+}}}
 
 #endif

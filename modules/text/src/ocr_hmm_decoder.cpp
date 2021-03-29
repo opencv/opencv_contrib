@@ -666,16 +666,6 @@ public:
 };
 
 Ptr<OCRHMMDecoder> OCRHMMDecoder::create( Ptr<OCRHMMDecoder::ClassifierCallback> _classifier,
-                                          const string& _vocabulary,
-                                          InputArray transition_p,
-                                          InputArray emission_p,
-                                          decoder_mode _mode)
-{
-    return makePtr<OCRHMMDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, _mode);
-}
-
-
-Ptr<OCRHMMDecoder> OCRHMMDecoder::create( Ptr<OCRHMMDecoder::ClassifierCallback> _classifier,
                                           const String& _vocabulary,
                                           InputArray transition_p,
                                           InputArray emission_p,

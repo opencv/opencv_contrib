@@ -9,10 +9,18 @@
 //
 //                           License Agreement
 //                For Open Source Computer Vision Library
+//                       (3-clause BSD License)
 //
-// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
+// Copyright (C) 2000-2019, Intel Corporation, all rights reserved.
 // Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2009-2016, NVIDIA Corporation, all rights reserved.
+// Copyright (C) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
+// Copyright (C) 2015-2016, OpenCV Foundation, all rights reserved.
+// Copyright (C) 2015-2016, Itseez Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
+//
+// Redistribution and use in source and binary forms, with or without modification,
+// are permitted provided that the following conditions are met:
 //
 //   * Redistribution's of source code must retain the above copyright notice,
 //     this list of conditions and the following disclaimer.
@@ -21,8 +29,9 @@
 //     this list of conditions and the following disclaimer in the documentation
 //     and/or other materials provided with the distribution.
 //
-//   * The name of Intel Corporation may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
+//   * Neither the names of the copyright holders nor the names of the contributors
+//    may be used to endorse or promote products derived from this software
+//    without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
 // any express or implied warranties, including, but not limited to, the implied
@@ -46,6 +55,8 @@
 #include <fstream>
 #include <time.h>
 #include <functional>
+#include <string>
+#include <tuple>
 
 #include "opencv2/xphoto.hpp"
 
@@ -61,6 +72,8 @@
 #include "photomontage.hpp"
 #include "annf.hpp"
 #include "advanced_types.hpp"
+
+#include "inpainting_fsr.impl.hpp"
 
 namespace cv
 {
@@ -298,17 +311,9 @@ namespace xphoto
         }
     }
 
-    /*! The function reconstructs the selected image area from known area.
-    *  \param src : source image.
-    *  \param mask : inpainting mask, 8-bit 1-channel image. Zero pixels indicate the area that needs to be inpainted.
-    *  \param dst : destination image.
-    *  \param algorithmType : inpainting method.
-    */
-    void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType)
+    static
+    void inpaint_shiftmap(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType)
     {
-        CV_Assert( mask.channels() == 1 && mask.depth() == CV_8U );
-        CV_Assert( src.rows == mask.rows && src.cols == mask.cols );
-
         switch ( src.type() )
         {
             case CV_8SC1:
@@ -399,8 +404,25 @@ namespace xphoto
                 CV_Error_( CV_StsNotImplemented,
                     ("Unsupported source image format (=%d)",
                     src.type()) );
-                break;
         }
     }
+
+void inpaint(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType)
+{
+    CV_Assert(!src.empty());
+    CV_Assert(!mask.empty());
+    CV_CheckTypeEQ(mask.type(), CV_8UC1, "");
+    CV_Assert(src.rows == mask.rows && src.cols == mask.cols);
+
+    switch (algorithmType)
+    {
+        case xphoto::INPAINT_SHIFTMAP:
+            return inpaint_shiftmap(src, mask, dst, algorithmType);
+        case xphoto::INPAINT_FSR_BEST:
+        case xphoto::INPAINT_FSR_FAST:
+            return inpaint_fsr(src, mask, dst, algorithmType);
+    }
+    CV_Error_(Error::StsNotImplemented, ("Unsupported inpainting algorithm type (=%d)", algorithmType));
 }
-}
+
+}}  // namespace

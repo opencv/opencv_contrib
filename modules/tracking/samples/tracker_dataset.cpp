@@ -66,7 +66,7 @@ using namespace cv::datasets;
 //#define RECORD_VIDEO_FLG
 
 static Mat image;
-static Rect2d boundingBox;
+static Rect boundingBox;
 static bool paused;
 static bool selectObject = false;
 static bool startSelection = false;
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 
 	//Create Tracker
     Ptr<Tracker> tracker = createTrackerByName(tracker_algorithm);
-	if (tracker == NULL)
+	if (!tracker)
 	{
 		cout << "***Error in the instantiation of the tracker...***\n";
 		getchar();
@@ -186,11 +186,7 @@ int main(int argc, char *argv[])
 			if (!initialized && selectObject)
 			{
 				//initializes the tracker
-				if (!tracker->init(frame, boundingBox))
-				{
-					cout << "***Could not initialize tracker...***\n";
-					return -1;
-				}
+				tracker->init(frame, boundingBox);
 				initialized = true;
 			}
 			else if (initialized)

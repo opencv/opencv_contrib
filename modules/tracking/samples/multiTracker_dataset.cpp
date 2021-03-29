@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 	namedWindow("Tracking API", 0);
 	setMouseCallback("Tracking API", onMouse, 0);
 
-	MultiTrackerTLD mt;
+	legacy::MultiTrackerTLD mt;
 	//Init Dataset
 	Ptr<TRACK_vot> dataset = TRACK_vot::create();
 	dataset->load(datasetRootPath);
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 				//Initialize the tracker and add targets
 				for (int i = 0; i < (int)boundingBoxes.size(); i++)
 				{
-                    if (!mt.addTarget(frame, boundingBoxes[i], createTrackerByName(tracker_algorithm)))
+                    if (!mt.addTarget(frame, boundingBoxes[i], createTrackerByName_legacy(tracker_algorithm)))
 					{
 						cout << "Trackers Init Error!!!";
 						return 0;

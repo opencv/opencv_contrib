@@ -819,7 +819,7 @@ namespace cv {
                 Ptr<SelectiveSearchSegmentationStrategyTexture> texture2 = createSelectiveSearchSegmentationStrategyTexture();
                 Ptr<SelectiveSearchSegmentationStrategySize> size2 = createSelectiveSearchSegmentationStrategySize();
 
-                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill, texture, size);
+                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill2, texture2, size2);
 
                 addStrategy(m2);
 
@@ -847,10 +847,7 @@ namespace cv {
                 addImage(channel[0]);
 
                 split(base_image, channel);
-                std::vector<Mat> channel2;
-                channel2.push_back(channel[2]);
-                channel2.push_back(channel[1]);
-                channel2.push_back(I);
+                std::vector<Mat> channel2 = {channel[2], channel[1], I};
 
                 Mat rgI;
                 merge(channel2, rgI);
@@ -876,7 +873,7 @@ namespace cv {
                 Ptr<SelectiveSearchSegmentationStrategyTexture> texture2 = createSelectiveSearchSegmentationStrategyTexture();
                 Ptr<SelectiveSearchSegmentationStrategySize> size2 = createSelectiveSearchSegmentationStrategySize();
 
-                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill, texture, size);
+                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill2, texture2, size2);
 
                 addStrategy(m2);
 

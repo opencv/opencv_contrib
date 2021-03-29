@@ -114,7 +114,7 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
   /* draw matches */
   for ( size_t counter = 0; counter < matches1to2.size(); counter++ )
   {
-    if( matchesMask[counter] != 0 )
+    if( counter < matchesMask.size() && matchesMask[counter] != 0 )
     {
       DMatch dm = matches1to2[counter];
       KeyLine left = keylines1[dm.queryIdx];

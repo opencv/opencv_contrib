@@ -39,15 +39,15 @@
 //
 //M*/
 
+#include "precomp.hpp"
+
 #include "tldDetector.hpp"
 #include "tracking_utils.hpp"
 
-#include <opencv2/core/utility.hpp>
-
-namespace cv
-{
-	namespace tld
-	{
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
 		// Calculate offsets for classifiers
 		void TLDDetector::prepareClassifiers(int rowstep)
 		{
@@ -619,5 +619,4 @@ namespace cv
 			return ((p2 - p * p) > VARIANCE_THRESHOLD * *originalVariance);
 		}
 
-	}
-}
+}}}}  // namespace

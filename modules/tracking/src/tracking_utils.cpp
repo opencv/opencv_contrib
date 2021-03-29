@@ -2,9 +2,10 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "precomp.hpp"
 #include "tracking_utils.hpp"
 
-using namespace cv;
+namespace cv {
 
 double tracking_internal::computeNCC(const Mat& patch1, const Mat& patch2)
 {
@@ -67,3 +68,5 @@ double tracking_internal::computeNCC(const Mat& patch1, const Mat& patch2)
         return (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
     }
 }
+
+} // namespace

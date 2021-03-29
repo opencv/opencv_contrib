@@ -93,7 +93,7 @@ struct AlgoWrap
 
     Ptr<Tracker> tracker;
     bool lastRes;
-    Rect2d lastBox;
+    Rect lastBox;
     State lastState;
 
     // visual
@@ -112,14 +112,14 @@ struct AlgoWrap
     void eval(const Mat &frame, const Rect2d &gtBox, bool isVerbose)
     {
         // RUN
-        lastBox = Rect2d();
+        lastBox = Rect();
         int64 frameTime = getTickCount();
         lastRes = tracker->update(frame, lastBox);
         frameTime = getTickCount() - frameTime;
 
         // RESULTS
-        double intersectArea = (gtBox & lastBox).area();
-        double unionArea = (gtBox | lastBox).area();
+        double intersectArea = (gtBox & (Rect2d)lastBox).area();
+        double unionArea = (gtBox | (Rect2d)lastBox).area();
         numTotal++;
         numResponse += (lastRes && isGoodBox(lastBox)) ? 1 : 0;
         numPresent += isGoodBox(gtBox) ? 1 : 0;

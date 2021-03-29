@@ -1,12 +1,11 @@
 #ifndef OPENCV_TLD_UTILS
 #define OPENCV_TLD_UTILS
 
-#include "precomp.hpp"
+namespace cv {
+inline namespace tracking {
+namespace impl {
+namespace tld {
 
-namespace cv
-{
-	namespace tld
-	{
 		//debug functions and variables
 		#define ALEX_DEBUG
 		#ifdef ALEX_DEBUG
@@ -48,7 +47,7 @@ namespace cv
 		double variance(const Mat& img);
 		void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<Rect2d>& res);
 		double scaleAndBlur(const Mat& originalImg, int scale, Mat& scaledImg, Mat& blurredImg, Size GaussBlurKernelSize, double scaleStep);
-	}
-}
+
+}}}}  // namespace
 
 #endif
