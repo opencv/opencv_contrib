@@ -1,17 +1,7 @@
 #ifndef OPENCV_RGBD_GRAPH_NODE_H
 #define OPENCV_RGBD_GRAPH_NODE_H
 
-#include <map>
-#include <unordered_map>
-
 #include "opencv2/core/affine.hpp"
-#if defined(HAVE_EIGEN)
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include "opencv2/core/eigen.hpp"
-#endif
-
-#include "sparse_block_matrix.hpp"
 #include "opencv2/core/quaternion.hpp"
 
 namespace cv
@@ -32,15 +22,15 @@ namespace detail
 class CV_EXPORTS_W PoseGraph
 {
 public:
-    CV_WRAP static Ptr<PoseGraph> create();
-    virtual ~PoseGraph() = 0;
+    static Ptr<PoseGraph> create();
+    virtual ~PoseGraph();
 
     // Node may have any id >= 0
     virtual void addNode(size_t _nodeId, const Affine3d& _pose, bool fixed) = 0;
     virtual bool isNodeExist(size_t nodeId) const = 0;
     virtual bool setNodeFixed(size_t nodeId, bool fixed) = 0;
-    virtual bool isNodeFixed(size_t nodeId) = 0;
-    virtual Affine3d getNodePose(size_t nodeId) = 0;
+    virtual bool isNodeFixed(size_t nodeId) const = 0;
+    virtual Affine3d getNodePose(size_t nodeId) const = 0;
     virtual std::vector<size_t> getNodesIds() const = 0;
     virtual size_t getNumNodes() const = 0;
 

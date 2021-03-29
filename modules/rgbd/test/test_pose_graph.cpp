@@ -88,6 +88,8 @@ static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
         // Clear any trailing whitespace from the line
         infile >> std::ws;
     }
+
+    return pg;
 }
 
 // Turn it on if you want to see resulting pose graph nodes
