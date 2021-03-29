@@ -162,12 +162,10 @@ class PoseGraphImpl : public detail::PoseGraph
     {
     public:
         explicit Node(size_t _nodeId, const Affine3d& _pose)
-            : nodeId(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
+            : id(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
         { }
-        virtual ~Node() = default;
 
-        size_t getId() const { return nodeId; }
-        inline Affine3d getPose() const
+        Affine3d getPose() const
         {
             return pose.getAffine();
         }
@@ -175,15 +173,9 @@ class PoseGraphImpl : public detail::PoseGraph
         {
             pose = Pose3d(_pose.rotation(), _pose.translation());
         }
-        void setPose(const Pose3d& _pose)
-        {
-            pose = _pose;
-        }
-        void setFixed(bool val = true) { isFixed = val; }
-        bool isPoseFixed() const { return isFixed; }
 
     public:
-        size_t nodeId;
+        size_t id;
         bool isFixed;
         Pose3d pose;
     };
@@ -196,18 +188,13 @@ class PoseGraphImpl : public detail::PoseGraph
     struct Edge
     {
     public:
-        Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
-            const Matx66f& _information = Matx66f::eye());
-
-        virtual ~Edge() = default;
-
-        size_t getSourceNodeId() const { return sourceNodeId; }
-        size_t getTargetNodeId() const { return targetNodeId; }
+        explicit Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
+                      const Matx66f& _information = Matx66f::eye());
 
         bool operator==(const Edge& edge)
         {
-            if ((edge.getSourceNodeId() == sourceNodeId && edge.getTargetNodeId() == targetNodeId) ||
-                (edge.getSourceNodeId() == targetNodeId && edge.getTargetNodeId() == sourceNodeId))
+            if ((edge.sourceNodeId == sourceNodeId && edge.targetNodeId == targetNodeId) ||
+                (edge.sourceNodeId == targetNodeId && edge.targetNodeId == sourceNodeId))
                 return true;
             return false;
         }
@@ -359,12 +346,12 @@ static inline cv::Matx66d llt6(Matx66d m)
     return L;
 }
 
-PoseGraph::Edge::Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
-                      const Matx66f& _information) :
-                      sourceNodeId(_sourceNodeId),
-                      targetNodeId(_targetNodeId),
-                      pose(_transformation.rotation(), _transformation.translation()),
-                      sqrtInfo(llt6(_information))
+PoseGraphImpl::Edge::Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
+                          const Matx66f& _information) :
+                          sourceNodeId(_sourceNodeId),
+                          targetNodeId(_targetNodeId),
+                          pose(_transformation.rotation(), _transformation.translation()),
+                          sqrtInfo(llt6(_information))
 { }
 
 bool PoseGraph::isValid() const
