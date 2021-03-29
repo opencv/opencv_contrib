@@ -227,8 +227,8 @@ inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* volumePt
 
         float vaz[8];
         for(int i = 0; i < 8; i++)
-            vaz[i] = tsdfToFloat(volumePtr[nco[i] + dim].tsdf -
-                                 volumePtr[nco[i] - dim].tsdf);
+            vaz[i] = tsdfToFloat(volumePtr[nco[i] + dim].tsdf) -
+                     tsdfToFloat(volumePtr[nco[i] - dim].tsdf);
 
         float8 vz = vload8(0, vaz);
 
