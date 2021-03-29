@@ -577,13 +577,12 @@ static inline void doJacobiScaling(BlockSparseMat<double, 6, 6>& jtj, std::vecto
 }
 
 
-void PoseGraph::optimize()
+int PoseGraphImpl::optimize(const cv::TermCriteria& tc)
 {
     if (!isValid())
     {
-        CV_Error(Error::StsBadArg,
-            "Invalid PoseGraph that is either not connected or has invalid nodes");
-        return;
+        CV_LOG_INFO(NULL, "Invalid PoseGraph that is either not connected or has invalid nodes");
+        return -1;
     }
 
     size_t numNodes = getNumNodes();
@@ -605,13 +604,13 @@ void PoseGraph::optimize()
     if (!nVarNodes)
     {
         CV_LOG_INFO(NULL, "PoseGraph contains no non-constant nodes, skipping optimization");
-        return;
+        return -1;
     }
 
     if (numEdges == 0)
     {
         CV_LOG_INFO(NULL, "PoseGraph has no edges, no optimization to be done");
-        return;
+        return -1;
     }
 
     CV_LOG_INFO(NULL, "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges");
@@ -876,11 +875,12 @@ void PoseGraph::optimize()
 
             tooLong = (iter >= maxIterations);
 
-            done = (tooLong || smallGradient || smallStep || smallEnergyDelta);
+            done = ( (checkIterations && tooLong) || smallGradient || smallStep || (checkEps && smallEnergyDelta) );
         }
     }
 
-    bool found = (smallGradient || smallStep || smallEnergyDelta);
+    // if maxIterations is given as a stop criteria, let's consider tooLong as a successful finish
+    bool found = (smallGradient || smallStep || smallEnergyDelta || (checkIterations && tooLong));
 
     CV_LOG_INFO(NULL, "Finished: " << (found ? "" : "not") << "found");
     if (smallGradient)
@@ -891,7 +891,10 @@ void PoseGraph::optimize()
         CV_LOG_INFO(NULL, "Finish reason: relative energy change between iterations dropped below threshold");
     if (tooLong)
         CV_LOG_INFO(NULL, "Finish reason: max number of iterations reached");
+
+    return (found ? iter : -1);
 }
+
 #else
 int PoseGraphImpl::optimize(const cv::TermCriteria& /*tc*/)
 {
