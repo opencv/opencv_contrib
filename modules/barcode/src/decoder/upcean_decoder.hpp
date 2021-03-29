@@ -7,9 +7,6 @@
 
 #include "abs_decoder.hpp"
 #include <opencv2/core.hpp>
-#include <map>
-#include <utility>
-#include <string>
 
 /**
  *   upcean_decoder the abstract basic class for decode formats,

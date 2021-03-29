@@ -6,6 +6,7 @@
 #include "../precomp.hpp"
 #include "upcean_decoder.hpp"
 #include "common/utils.hpp"
+#include <map>
 
 namespace cv {
 namespace barcode {
