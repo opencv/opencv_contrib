@@ -97,6 +97,7 @@ static const bool writeToObjFile = false;
 // Turn if off if you don't need log messages
 static const bool verbose = true;
 
+#if !defined _DEBUG
 TEST( PoseGraph, sphereG2O )
 {
     // The dataset was taken from here: https://lucacarlone.mit.edu/datasets/
@@ -144,5 +145,13 @@ TEST( PoseGraph, sphereG2O )
         of.close();
     }
 }
+#else
+TEST(PoseGraph, DISABLED)
+{
+    // Disabled for Debug mode, it takes 400 sec to run test vs 15 sec in Release
+    CV_UNUSED(readG2OFile);
+}
+#endif
+
 
 }} // namespace
