@@ -94,30 +94,33 @@ static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
 
 // Turn it on if you want to see resulting pose graph nodes
 static const bool writeToObjFile = false;
-
+// Turn if off if you don't need log messages
+static const bool verbose = true;
 
 TEST( PoseGraph, sphereG2O )
 {
-    //TODO: optional
-    cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_INFO);
-
     // The dataset was taken from here: https://lucacarlone.mit.edu/datasets/
     // Connected paper:
     // L.Carlone, R.Tron, K.Daniilidis, and F.Dellaert.
     // Initialization Techniques for 3D SLAM : a Survey on Rotation Estimation and its Use in Pose Graph Optimization.
     // In IEEE Intl.Conf.on Robotics and Automation(ICRA), pages 4597 - 4604, 2015.
 
-    std::string filename = cvtest::TS::ptr()->get_data_path() + "sphere_bignoise_vertex3.g2o";
+    std::string filename = cvtest::TS::ptr()->get_data_path() + "rgbd/sphere_bignoise_vertex3.g2o";
     Ptr<kinfu::detail::PoseGraph> pg = readG2OFile(filename);
 
-    double t0 = cv::getTickCount();
+    if (verbose)
+    {
+        cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_INFO);
+    }
 
     int iters = pg->optimize();
 
+    ASSERT_GE(iters, 0);
+    ASSERT_LE(iters, 36); // should converge in 36 iterations
 
-    double t1 = cv::getTickCount();
+    double energy = pg->calcEnergy();
 
-    std::cout << "time: " << (t1 - t0) / cv::getTickFrequency() << std::endl;
+    ASSERT_LE(energy, 1.47723e+06); // should converge to 1.47722e+06 or less
 
     if (writeToObjFile)
     {
@@ -140,7 +143,6 @@ TEST( PoseGraph, sphereG2O )
         
         of.close();
     }
-
 }
 
 }} // namespace
