@@ -354,7 +354,8 @@ PoseGraphImpl::Edge::Edge(size_t _sourceNodeId, size_t _targetNodeId, const Affi
                           sqrtInfo(llt6(_information))
 { }
 
-bool PoseGraph::isValid() const
+
+bool PoseGraphImpl::isValid() const
 {
     size_t numNodes = getNumNodes();
     size_t numEdges = getNumEdges();
@@ -379,13 +380,13 @@ bool PoseGraph::isValid() const
             const Edge& potentialEdge = edges.at(i);
             size_t nextNodeId = (size_t)(-1);
 
-            if (potentialEdge.getSourceNodeId() == currNodeId)
+            if (potentialEdge.sourceNodeId == currNodeId)
             {
-                nextNodeId = potentialEdge.getTargetNodeId();
+                nextNodeId = potentialEdge.targetNodeId;
             }
-            else if (potentialEdge.getTargetNodeId() == currNodeId)
+            else if (potentialEdge.targetNodeId == currNodeId)
             {
-                nextNodeId = potentialEdge.getSourceNodeId();
+                nextNodeId = potentialEdge.sourceNodeId;
             }
             if (nextNodeId != (size_t)(-1))
             {
@@ -406,8 +407,8 @@ bool PoseGraph::isValid() const
     {
         const Edge& edge = edges.at(i);
         // edges have spurious source/target nodes
-        if ((nodesVisited.count(edge.getSourceNodeId()) != 1) ||
-            (nodesVisited.count(edge.getTargetNodeId()) != 1))
+        if ((nodesVisited.count(edge.sourceNodeId) != 1) ||
+            (nodesVisited.count(edge.targetNodeId) != 1))
         {
             invalidEdgeNode = true;
             break;
@@ -416,11 +417,6 @@ bool PoseGraph::isValid() const
     return isGraphConnected && !invalidEdgeNode;
 }
 
-PoseGraph::PoseGraph(const std::string& g2oFileName) :
-    nodes(), edges()
-{
-    readG2OFile(g2oFileName);
-}
 
 //////////////////////////
 // Optimization itself //
@@ -498,14 +494,20 @@ static inline double poseError(Quatd sourceQuat, Vec3d sourceTrans, Quatd target
 }
 
 
+double PoseGraphImpl::calcEnergy() const
+{
+    return calcEnergyNodes(nodes);
+}
+
+
 // estimate current energy
-double PoseGraph::calcEnergy(const std::map<size_t, Node>& newNodes) const
+double PoseGraphImpl::calcEnergyNodes(const std::map<size_t, Node>& newNodes) const
 {
     double totalErr = 0;
     for (const auto& e : edges)
     {
-        Pose3d srcP = newNodes.at(e.getSourceNodeId()).pose;
-        Pose3d tgtP = newNodes.at(e.getTargetNodeId()).pose;
+        Pose3d srcP = newNodes.at(e.sourceNodeId).pose;
+        Pose3d tgtP = newNodes.at(e.targetNodeId).pose;
 
         Vec6d res;
         Matx<double, 6, 3> stj, ttj;
@@ -592,7 +594,7 @@ void PoseGraph::optimize()
     std::map<size_t, size_t> idToPlace;
     for (const auto& ni : nodes)
     {
-        if (!ni.second.isPoseFixed())
+        if (!ni.second.isFixed)
         {
             idToPlace[ni.first] = placesIds.size();
             placesIds.push_back(ni.first);
@@ -618,17 +620,19 @@ void PoseGraph::optimize()
     BlockSparseMat<double, 6, 6> jtj(nVarNodes);
     std::vector<double> jtb(nVars);
 
-    double energy = calcEnergy(nodes);
+    double energy = calcEnergyNodes(nodes);
     double oldEnergy = energy;
 
     CV_LOG_INFO(NULL, "#s" << " energy: " << energy);
 
     // options
     // stop conditions
-    const unsigned int maxIterations = 100;
+    bool checkIterations = (tc.type & TermCriteria::COUNT);
+    bool checkEps = (tc.type & TermCriteria::EPS);
+    const unsigned int maxIterations = tc.maxCount;
     const double minGradientTolerance = 1e-6;
     const double stepNorm2Tolerance = 1e-6;
-    const double relEnergyDeltaTolerance = 1e-6;
+    const double relEnergyDeltaTolerance = tc.epsilon;
     // normalize jacobian columns for better conditioning
     // slows down sparse solver, but maybe this'd be useful for some other solver
     const bool jacobiScaling = false;
@@ -674,14 +678,14 @@ void PoseGraph::optimize()
         // fill jtj and jtb
         for (const auto& e : edges)
         {
-            size_t srcId = e.getSourceNodeId(), dstId = e.getTargetNodeId();
+            size_t srcId = e.sourceNodeId, dstId = e.targetNodeId;
             const Node& srcNode = nodes.at(srcId);
             const Node& dstNode = nodes.at(dstId);
 
             Pose3d srcP = srcNode.pose;
             Pose3d tgtP = dstNode.pose;
-            bool srcFixed = srcNode.isPoseFixed();
-            bool dstFixed = dstNode.isPoseFixed();
+            bool srcFixed = srcNode.isFixed;
+            bool dstFixed = dstNode.isFixed;
 
             Vec6d res;
             Matx<double, 6, 3> stj, ttj;
@@ -823,7 +827,7 @@ void PoseGraph::optimize()
                 }
 
                 // calc energy with temp nodes
-                energy = calcEnergy(tempNodes);
+                energy = calcEnergyNodes(tempNodes);
 
                 costChange = oldEnergy - energy;
 
