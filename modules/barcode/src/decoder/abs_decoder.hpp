@@ -5,10 +5,8 @@
 #ifndef __OPENCV_BARCODE_ABS_DECODER_HPP__
 #define __OPENCV_BARCODE_ABS_DECODER_HPP__
 
-#include <opencv2/imgproc.hpp>
 #include <opencv2/barcode.hpp>
-#include <numeric>
-#include <utility>
+
 
 namespace cv {
 namespace barcode {

@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
+#include "../../precomp.hpp"
 #include "hybrid_binarizer.hpp"
-#include <vector>
 
 namespace cv{
 namespace barcode{

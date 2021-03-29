@@ -18,7 +18,6 @@ limitations under the License.
 #ifndef __OPENCV_BARCODE_UTILS_HPP__
 #define __OPENCV_BARCODE_UTILS_HPP__
 
-#include <opencv2/imgproc.hpp>
 
 namespace cv{
 namespace barcode{

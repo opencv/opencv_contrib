@@ -3,16 +3,12 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
 //
-// Created by 97659 on 2020/10/14.
-//
 #ifndef __OPENCV_BARCODE_BARDETECT_HPP__
 #define __OPENCV_BARCODE_BARDETECT_HPP__
 
-#include <utility>
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/dnn/dnn.hpp"
+#include <opencv2/core.hpp>
+#include <opencv2/dnn/dnn.hpp>
 
 namespace cv {
 namespace barcode {

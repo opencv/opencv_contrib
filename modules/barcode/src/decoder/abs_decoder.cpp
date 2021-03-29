@@ -3,6 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
 
+#include "../precomp.hpp"
 #include "abs_decoder.hpp"
 
 namespace cv {

@@ -6,12 +6,6 @@
 #define __OPENCV_PRECOMP_H__
 
 #include <opencv2/imgproc.hpp>
-#include "decoder/bardecode.hpp"
-#include "decoder/ean13_decoder.hpp"
-#include "detector/bardetect.hpp"
-
-#include <deque>
-#include <array>
-#include <memory>
+#include <numeric>
 
 #endif

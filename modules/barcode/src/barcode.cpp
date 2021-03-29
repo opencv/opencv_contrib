@@ -5,6 +5,10 @@
 
 
 #include "precomp.hpp"
+#include <opencv2/barcode.hpp>
+#include "decoder/bardecode.hpp"
+#include "decoder/ean13_decoder.hpp"
+#include "detector/bardetect.hpp"
 
 namespace cv {
 namespace barcode {
@@ -48,19 +52,17 @@ static void updatePointsResult(OutputArray points_, const vector<Point2f> &point
     }
 }
 
-struct BarcodeDetector::Impl
-{
-public:
-    Impl() = default;
+//struct BarcodeDetector::Impl
+//{
+//public:
+//    Impl() {};
+//
+//    ~Impl() {};
+//};
 
-    ~Impl() = default;
-};
+BarcodeDetector::BarcodeDetector() {};
 
-BarcodeDetector::BarcodeDetector() : p(new Impl)
-{
-}
-
-BarcodeDetector::~BarcodeDetector() = default;
+BarcodeDetector::~BarcodeDetector() {};
 
 bool BarcodeDetector::detect(InputArray img, OutputArray points) const
 {

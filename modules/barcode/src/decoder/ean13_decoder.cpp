@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
-
+#include "../precomp.hpp"
 #include "ean13_decoder.hpp"
 
 // three digit decode method from https://baike.baidu.com/item/EAN-13

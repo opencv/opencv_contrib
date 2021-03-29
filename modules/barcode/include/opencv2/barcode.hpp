@@ -96,9 +96,9 @@ public:
     decodeDirectly(InputArray img, CV_OUT String &decoded_info, CV_OUT BarcodeType &decoded_type) const;
 
 
-protected:
-    struct Impl;
-    Ptr <Impl> p;
+//protected:
+//    struct Impl;
+//    Ptr <Impl> p;
 };
 
 //! @}

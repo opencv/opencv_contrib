@@ -3,9 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
 
+#include "../precomp.hpp"
 #include "upcean_decoder.hpp"
-#include <vector>
-#include <array>
 #include "common/utils.hpp"
 
 namespace cv {

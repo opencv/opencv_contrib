@@ -1,6 +1,6 @@
 //
-// Created by 97659 on 2020/10/14.
 //
+#include "../precomp.hpp"
 #include "bardetect.hpp"
 
 

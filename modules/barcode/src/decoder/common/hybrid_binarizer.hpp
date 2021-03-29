@@ -6,7 +6,6 @@
 #ifndef __OPENCV_BARCODE_HYBRID_BINARIZER_HPP__
 #define __OPENCV_BARCODE_HYBRID_BINARIZER_HPP__
 
-#include <opencv2/imgproc.hpp>
 namespace cv {
 namespace barcode {
 
