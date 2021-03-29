@@ -8,6 +8,7 @@
 #include <limits>
 #include <unordered_set>
 #include <vector>
+#include "sparse_block_matrix.hpp"
 
 // matrix form of conjugation
 static const cv::Matx44d M_Conj{ 1,  0,  0,  0,
@@ -104,6 +105,8 @@ cv::Matx<_Tp, m, n + k> concatHor(const cv::Matx<_Tp, m, n>& a, const cv::Matx<_
 namespace cv
 {
 namespace kinfu
+{
+namespace detail
 {
 
 class PoseGraphImpl : public detail::PoseGraph
@@ -218,60 +221,120 @@ class PoseGraphImpl : public detail::PoseGraph
 
 
 public:
-    virtual ~PoseGraphImpl();
-    
-    virtual void addNode(const Node& node) CV_OVERRIDE;
-    virtual void addEdge(const Edge& edge) CV_OVERRIDE;
-    virtual bool nodeExists(size_t nodeId) CV_OVERRIDE;
+    PoseGraphImpl() : nodes(), edges()
+    { }
+    virtual ~PoseGraphImpl() CV_OVERRIDE
+    { }
 
-        // checks if graph is connected and each edge connects exactly 2 nodes
-        virtual bool isValid() = 0;
+    // Node may have any id >= 0
+    virtual void addNode(size_t _nodeId, const Affine3d& _pose, bool fixed) CV_OVERRIDE;
+    virtual bool isNodeExist(size_t nodeId) const CV_OVERRIDE
+    {
+        return (nodes.find(nodeId) != nodes.end());
+    }
 
-        virtual Report optimize(const cv::TermCriteria& tc) = 0;
-
-        // calculate cost function based on current nodes parameters
-        virtual double calcEnergy() const;
-
-        /*
-        void addNode(const Node& node)
+    virtual bool setNodeFixed(size_t nodeId, bool fixed) CV_OVERRIDE
+    {
+        auto it = nodes.find(nodeId);
+        if (it != nodes.end())
         {
-            size_t id = node.getId();
-            const auto& it = nodes.find(id);
-            if (it != nodes.end())
-            {
-                std::cout << "duplicated node, id=" << id << std::endl;
-                nodes.insert(it, { id, node });
-            }
-            else
-            {
-                nodes.insert({ id, node });
-            }
+            it->second.isFixed = fixed;
+            return true;
         }
-        void addEdge(const Edge& edge) { edges.push_back(edge); }
+        else
+            return false;
+    }
 
-        bool nodeExists(size_t nodeId) const
+    virtual bool isNodeFixed(size_t nodeId) const CV_OVERRIDE
+    {
+        auto it = nodes.find(nodeId);
+        if (it != nodes.end())
+            return it->second.isFixed;
+        else
+            return false;
+    }
+
+    virtual Affine3d getNodePose(size_t nodeId) const CV_OVERRIDE
+    {
+        auto it = nodes.find(nodeId);
+        if (it != nodes.end())
+            return it->second.getPose();
+        else
+            return Affine3d();
+    }
+
+    virtual std::vector<size_t> getNodesIds() const CV_OVERRIDE
+    {
+        std::vector<size_t> ids;
+        for (const auto& it : nodes)
         {
-            return (nodes.find(nodeId) != nodes.end());
+            ids.push_back(it.first);
         }
+        return ids;
+    }
 
-        bool isValid() const;
+    virtual size_t getNumNodes() const CV_OVERRIDE
+    {
+        return nodes.size();
+    }
 
-        size_t getNumNodes() const { return nodes.size(); }
-        size_t getNumEdges() const { return edges.size(); }
-        */
+    // Edges have consequent indices starting from 0
+    virtual void addEdge(size_t _sourceNodeId, size_t _targetNodeId, const Affine3f& _transformation,
+                         const Matx66f& _information = Matx66f::eye()) CV_OVERRIDE
+    {
+        Edge e(_sourceNodeId, _targetNodeId, _transformation, _information);
+        edges.push_back(e);
+    }
 
-        // used during optimization
-        // nodes is a set of parameters to be used instead of contained in the graph
-        //double calcNodesEnergy(const std::map<size_t, Node>& newNodes) const;
+    virtual size_t getEdgeStart(size_t i) const CV_OVERRIDE
+    {
+        return edges[i].sourceNodeId;
+    }
 
-    //TODO: pImpl
-        //std::map<size_t, Node> nodes;
-        //std::vector<Edge>   edges;
-    };
+    virtual size_t getEdgeEnd(size_t i) const CV_OVERRIDE
+    {
+        return edges[i].targetNodeId;
+    }
 
-Ptr<detail::PoseGraph> detail::PoseGraph::create()
+    virtual size_t getNumEdges() const CV_OVERRIDE
+    {
+        return edges.size();
+    }
+
+    // checks if graph is connected and each edge connects exactly 2 nodes
+    virtual bool isValid() const CV_OVERRIDE;
+
+    // calculate cost function based on current nodes parameters
+    virtual double calcEnergy() const CV_OVERRIDE;
+
+    // calculate cost function based on provided nodes parameters
+    double calcEnergyNodes(const std::map<size_t, Node>& newNodes) const;
+
+    // Termination criteria are max number of iterations and min relative energy change to current energy
+    // Returns number of iterations elapsed or -1 if max number of iterations was reached or failed to optimize
+    virtual int optimize(const cv::TermCriteria& tc = cv::TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-6)) CV_OVERRIDE;
+
+    std::map<size_t, Node> nodes;
+    std::vector<Edge>   edges;
+};
+
+
+void PoseGraphImpl::addNode(size_t _nodeId, const Affine3d& _pose, bool fixed)
 {
-    return makePtr<PoseGraphImpl>();
+    Node node(_nodeId, _pose);
+    node.isFixed = fixed;
+
+    size_t id = node.id;
+    const auto& it = nodes.find(id);
+    if (it != nodes.end())
+    {
+        std::cout << "duplicated node, id=" << id << std::endl;
+        nodes.insert(it, { id, node });
+    }
+    else
+    {
+        nodes.insert({ id, node });
+    }
 }
 
 
@@ -839,12 +902,20 @@ void PoseGraph::optimize()
         CV_LOG_INFO(NULL, "Finish reason: max number of iterations reached");
 }
 #else
-void PoseGraph::optimize()
+int PoseGraphImpl::optimize(const cv::TermCriteria& /*tc*/)
 {
     CV_Error(Error::StsNotImplemented, "Eigen library required for sparse matrix solve during pose graph optimization, dense solver is not implemented");
 }
 #endif
 
 
+Ptr<detail::PoseGraph> detail::PoseGraph::create()
+{
+    return makePtr<PoseGraphImpl>();
+}
+
+PoseGraph::~PoseGraph() { }
+
+}  // namespace detail
 }  // namespace kinfu
 }  // namespace cv
