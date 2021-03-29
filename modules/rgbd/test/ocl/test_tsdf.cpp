@@ -2,7 +2,10 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-#include "test_precomp.hpp"
+#include "../test_precomp.hpp"
+#include "opencv2/ts/ocl_test.hpp"
+
+#ifdef HAVE_OPENCL
 
 namespace opencv_test {
 namespace {
@@ -451,61 +454,17 @@ void valid_points_test(bool isHashTSDF)
     ASSERT_LT(abs(0.5 - percentValidity), 0.3) << "percentValidity out of [0.3; 0.7] (percentValidity=" << percentValidity << ")";
 }
 
-TEST(TSDF_CPU, raycast_normals)
-{
-    cv::ocl::setUseOpenCL(false);
-    normal_test(false, true, false, false);
-    cv::ocl::setUseOpenCL(true);
-}
+TEST(TSDF_GPU, raycast_normals) { normal_test(false, true, false, false); }
+TEST(TSDF_GPU, fetch_points_normals) { normal_test(false, false, true, false); }
+TEST(TSDF_GPU, fetch_normals) { normal_test(false, false, false, true); }
+TEST(TSDF_GPU, valid_points) { valid_points_test(false); }
 
-TEST(TSDF_CPU, fetch_points_normals)
-{
-    cv::ocl::setUseOpenCL(false);
-    normal_test(false, false, true, false);
-    cv::ocl::setUseOpenCL(true);
-}
-
-TEST(TSDF_CPU, fetch_normals)
-{
-    cv::ocl::setUseOpenCL(false);
-    normal_test(false, false, false, true);
-    cv::ocl::setUseOpenCL(true);
-}
-
-TEST(TSDF_CPU, valid_points)
-{
-    cv::ocl::setUseOpenCL(false);
-    valid_points_test(false);
-    cv::ocl::setUseOpenCL(true);
-}
-
-TEST(HashTSDF_CPU, raycast_normals)
-{
-    cv::ocl::setUseOpenCL(false);
-    normal_test(true, true, false, false);
-    cv::ocl::setUseOpenCL(true);
-}
-
-TEST(HashTSDF_CPU, fetch_points_normals)
-{
-    cv::ocl::setUseOpenCL(false);
-    normal_test(true, false, true, false);
-    cv::ocl::setUseOpenCL(true);
-}
-
-TEST(HashTSDF_CPU, fetch_normals)
-{
-    cv::ocl::setUseOpenCL(false);
-    normal_test(true, false, false, true);
-    cv::ocl::setUseOpenCL(true);
-}
-
-TEST(HashTSDF_CPU, valid_points)
-{
-    cv::ocl::setUseOpenCL(false);
-    valid_points_test(true);
-    cv::ocl::setUseOpenCL(true);
-}
+TEST(HashTSDF_GPU, raycast_normals) { normal_test(true, true, false, false); }
+TEST(HashTSDF_GPU, fetch_points_normals) { normal_test(true, false, true, false); }
+TEST(HashTSDF_GPU, fetch_normals) { normal_test(true, false, false, true); }
+TEST(HashTSDF_GPU, valid_points) { valid_points_test(true); }
 
 }
 }  // namespace
+
+#endif
