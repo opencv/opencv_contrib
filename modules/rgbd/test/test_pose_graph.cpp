@@ -97,7 +97,7 @@ static const bool writeToObjFile = false;
 // Turn if off if you don't need log messages
 static const bool verbose = true;
 
-#if !defined _DEBUG
+#if !defined(_DEBUG) && defined(HAVE_EIGEN)
 TEST( PoseGraph, sphereG2O )
 {
     // The dataset was taken from here: https://lucacarlone.mit.edu/datasets/
