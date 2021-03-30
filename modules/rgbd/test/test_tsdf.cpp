@@ -451,6 +451,17 @@ void valid_points_test(bool isHashTSDF)
     ASSERT_LT(abs(0.5 - percentValidity), 0.3) << "percentValidity out of [0.3; 0.7] (percentValidity=" << percentValidity << ")";
 }
 
+#ifndef HAVE_OPENCL
+TEST(TSDF, raycast_normals) { normal_test(false, true, false, false); }
+TEST(TSDF, fetch_points_normals) { normal_test(false, false, true, false); }
+TEST(TSDF, fetch_normals) { normal_test(false, false, false, true); }
+TEST(TSDF, valid_points) { valid_points_test(false); }
+
+TEST(HashTSDF, raycast_normals) { normal_test(true, true, false, false); }
+TEST(HashTSDF, fetch_points_normals) { normal_test(true, false, true, false); }
+TEST(HashTSDF, fetch_normals) { normal_test(true, false, false, true); }
+TEST(HashTSDF, valid_points) { valid_points_test(true); }
+#else
 TEST(TSDF_CPU, raycast_normals)
 {
     cv::ocl::setUseOpenCL(false);
@@ -506,6 +517,6 @@ TEST(HashTSDF_CPU, valid_points)
     valid_points_test(true);
     cv::ocl::setUseOpenCL(true);
 }
-
+#endif
 }
 }  // namespace
