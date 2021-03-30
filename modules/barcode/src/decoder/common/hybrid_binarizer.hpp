@@ -3,6 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Modified from ZXing. Copyright ZXing authors.
 // Licensed under the Apache License, Version 2.0 (the "License").
+
 #ifndef __OPENCV_BARCODE_HYBRID_BINARIZER_HPP__
 #define __OPENCV_BARCODE_HYBRID_BINARIZER_HPP__
 
@@ -18,10 +19,16 @@ constexpr static int MINIMUM_DIMENSION = BLOCK_SIZE * 5;
 constexpr static int MIN_DYNAMIC_RANGE = 24;
 
 int cap(int value, int min, int max);
-void thresholdBlock(std::vector<uchar> luminances, int xoffset, int yoffset, int threshold, int stride, Mat& dst);
-void hybridBinarization(Mat src, Mat & dst);
-void calculateThresholdForBlock(std::vector<uchar> luminances, int sub_width, int sub_height, int width, int height,Mat black_points, Mat& dst);
+
+void thresholdBlock(std::vector<uchar> luminances, int xoffset, int yoffset, int threshold, int stride, Mat &dst);
+
+void hybridBinarization(Mat src, Mat &dst);
+
+void
+calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, int sub_height, int width, int height,
+                           Mat black_points, Mat &dst);
+
 Mat calculateBlackPoints(std::vector<uchar> luminances, int sub_width, int sub_height, int width, int height);
-};
-};
+}
+}
 #endif //__OPENCV_BARCODE_HYBRID_BINARIZER_HPP__

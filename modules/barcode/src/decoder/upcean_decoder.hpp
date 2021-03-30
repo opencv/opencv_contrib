@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
+
 #ifndef __OPENCV_BARCODE_UPCEAN_DECODER_HPP__
 #define __OPENCV_BARCODE_UPCEAN_DECODER_HPP__
 
@@ -23,11 +24,7 @@ class UPCEANDecoder : public AbsDecoder
 public:
     ~UPCEANDecoder() override = default;
 
-    std::vector<Result> decodeImg(InputArray bar_img, const std::vector<std::vector<Point2f>> &pointsArrays) const override;
-
-    Result decodeImg(InputArray bar_img, const std::vector<Point2f> &points) const override;
-
-    Result decodeImg(InputArray img) const override;
+    std::pair<Result, float> decodeROI(InputArray bar_img) const override;
 
 protected:
     size_t bits_num;
@@ -46,15 +43,15 @@ protected:
 
     Result decodeLine(const Mat &bar_img, const Point2i &begin, const Point2i &end) const;
 
-    void
-    linesFromRect(const Size2i &shape, bool horizontal, int PART, std::vector<std::pair<Point2i, Point2i>> &results) const;
+    void linesFromRect(const Size2i &shape, bool horizontal, int PART,
+                       std::vector<std::pair<Point2i, Point2i>> &results) const;
 
     Result decode(std::vector<uchar> bar, uint start) const override = 0;
 
     bool isValid(std::string result) const override = 0;
 
 private:
-    void drawDebugLine(Mat& debug_img, Point2i begin, Point2i end) const;
+    void drawDebugLine(Mat &debug_img, const Point2i &begin, const Point2i &end) const;
 };
 
 const std::vector<std::vector<int>> &get_A_or_C_Patterns();

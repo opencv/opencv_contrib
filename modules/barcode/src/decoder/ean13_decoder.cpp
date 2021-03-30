@@ -2,6 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
+
 #include "../precomp.hpp"
 #include "ean13_decoder.hpp"
 
@@ -19,7 +20,6 @@ static constexpr size_t constexpr_digitNumber = 13;
 * @prama: start: the index of start order, begin at 0, max-value is data.size()-1
 * it scan begin at the data[start]
 */
-// TODO!, need fix the param: stars's usage
 Result Ean13Decoder::decode(vector<uchar> data, uint start) const
 {
     string result;

@@ -1,5 +1,8 @@
-//
-//
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+// Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
+
 #include "../precomp.hpp"
 #include "bardetect.hpp"
 
@@ -8,7 +11,6 @@ namespace cv {
 namespace barcode {
 static constexpr float PI = static_cast<float>(CV_PI);
 static constexpr float HALF_PI = static_cast<float>(CV_PI / 2);
-
 
 #define CALCULATE_SUM(ptr, result) \
     ptr += left_col + integral_cols * top_row;\

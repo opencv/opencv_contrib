@@ -3,7 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
 
-
 #include <iostream>
 #include "opencv2/barcode.hpp"
 #include "opencv2/imgproc.hpp"
@@ -18,13 +17,17 @@ static int imageBarCodeDetect(const string &in_file);
 
 static bool g_detectOnly = false;
 
+static Ptr<barcode::BarcodeDetector> bardet;
+
 int main(int argc, char **argv)
 {
 
 
     const string keys = "{h help ? |        | print help messages }"
                         "{i in     |        | input image path (also switches to image detection mode) }"
-                        "{detect   | false  | detect 1D barcode only (skip decoding) }";
+                        "{detect   | false  | detect 1D barcode only (skip decoding) }"
+                        "{sr_prototxt|      | super resolution prototxt path }"
+                        "{sr_model |        | super resolution model path }";
 
     CommandLineParser cmd_parser(argc, argv, keys);
 
@@ -36,6 +39,8 @@ int main(int argc, char **argv)
     }
 
     string in_file_name = cmd_parser.get<string>("in");    // path to input image
+    string sr_prototxt = cmd_parser.get<string>("sr_prototxt");    // path to sr_prototxt
+    string sr_model = cmd_parser.get<string>("sr_model");    // path to sr_model
 
     if (!cmd_parser.check())
     {
@@ -43,6 +48,20 @@ int main(int argc, char **argv)
         return -1;
     }
     g_detectOnly = cmd_parser.has("detect") && cmd_parser.get<bool>("detect");
+    try{
+        bardet = makePtr<barcode::BarcodeDetector>(sr_prototxt, sr_model);
+    } catch (const std::exception& e)
+    {
+        cout <<
+             "\n---------------------------------------------------------------\n"
+             "Failed to initialize super resolution.\n"
+             "Please, download 'sr.*' from\n"
+             "https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode\n"
+             "and put them into the current directory.\n"
+             "---------------------------------------------------------------\n";
+        cout << e.what() << endl;
+        return -1;
+    }
     int return_code;
     if (in_file_name.empty())
     {
@@ -124,18 +143,18 @@ static void drawBarcodeResults(Mat &frame, const vector<Point> &corners, const v
 }
 
 static void
-runBarcode(barcode::BarcodeDetector &barcode, const Mat &input, vector<Point> &corners, vector<cv::String> &decode_info,
+runBarcode(const Mat &input, vector<Point> &corners, vector<cv::String> &decode_info,
            vector<cv::barcode::BarcodeType> &decode_type
 )
 {
     if (!g_detectOnly)
     {
-        bool result_detection = barcode.detectAndDecode(input, decode_info, decode_type, corners);
+        bool result_detection = bardet->detectAndDecode(input, decode_info, decode_type, corners);
         CV_UNUSED(result_detection);
     }
     else
     {
-        bool result_detection = barcode.detect(input, corners);
+        bool result_detection = bardet->detect(input, corners);
         CV_UNUSED(result_detection);
     }
 }
@@ -152,7 +171,6 @@ int liveBarCodeDetect()
 
     cout << "Press 'd' to switch between decoder and detector" << endl;
     cout << "Press 'ESC' to exit" << endl;
-    barcode::BarcodeDetector barcode;
 
     for (;;)
     {
@@ -180,7 +198,7 @@ int liveBarCodeDetect()
         vector<Point> corners;
 
         timer.start();
-        runBarcode(barcode, frame, corners, decode_info, decoded_type);
+        runBarcode(frame, corners, decode_info, decoded_type);
         timer.stop();
 
         double fps = 1 / timer.getTimeSec();
@@ -222,7 +240,6 @@ int imageBarCodeDetect(const string &in_file)
     cout << "Run BarCode" << (g_detectOnly ? " detector" : " decoder") << " on image: " << input.size() << " ("
          << typeToString(input.type()) << ")" << endl;
 
-    barcode::BarcodeDetector barcode;
     vector<Point> corners;
     vector<cv::String> decode_info;
     vector<barcode::BarcodeType> decoded_type;
@@ -233,7 +250,7 @@ int imageBarCodeDetect(const string &in_file)
         decode_info.clear();
 
         timer.start();
-        runBarcode(barcode, input, corners, decode_info, decoded_type);
+        runBarcode(input, corners, decode_info, decoded_type);
         timer.stop();
     }
     double fps = count_experiments / timer.getTimeSec();

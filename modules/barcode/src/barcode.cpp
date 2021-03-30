@@ -3,11 +3,13 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
 
-
 #include "precomp.hpp"
 #include <opencv2/barcode.hpp>
+#include <opencv2/core/utils/filesystem.hpp>
 #include "decoder/ean13_decoder.hpp"
 #include "detector/bardetect.hpp"
+#include "decoder/common/super_scale.hpp"
+#include "decoder/common/utils.hpp"
 
 namespace cv {
 namespace barcode {
@@ -54,7 +56,7 @@ static void updatePointsResult(OutputArray points_, const vector<Point2f> &point
 class BarDecode
 {
 public:
-    void init(const Mat &src, const vector<Point2f> &points);
+    void init(const vector<Mat> &bar_imgs_);
 
     const vector<Result> &getDecodeInformation()
     { return result_info; }
@@ -62,74 +64,115 @@ public:
     bool decodeMultiplyProcess();
 
 private:
-    vector<vector<Point2f>> src_points;
-    Mat original;
+    vector<Mat> bar_imgs;
     vector<Result> result_info;
 };
 
-void BarDecode::init(const cv::Mat &src, const std::vector <cv::Point2f> &points) {
-    //CV_TRACE_FUNCTION();
-    original = src.clone();
-    CV_Assert(!points.empty());
-    CV_Assert((points.size() % 4) == 0);
-    src_points.clear();
-    for (size_t i = 0; i < points.size(); i += 4) {
-        vector <Point2f> tempMat{points.cbegin() + i, points.cbegin() + i + 4};
-        if (contourArea(tempMat) > 0.0) {
-            src_points.push_back(tempMat);
-        }
-    }
-    CV_Assert(!src_points.empty());
+void BarDecode::init(const vector<Mat> &bar_imgs_)
+{
+    bar_imgs = bar_imgs_;
 }
 
-bool BarDecode::decodeMultiplyProcess() {
-    class ParallelBarCodeDecodeProcess : public ParallelLoopBody {
+bool BarDecode::decodeMultiplyProcess()
+{
+    class ParallelBarCodeDecodeProcess : public ParallelLoopBody
+    {
     public:
-        ParallelBarCodeDecodeProcess(Mat &inarr_, vector <vector<Point2f>> &src_points_,
-                                     vector <Result> &decoded_info_)
-                : inarr(inarr_), decoded_info(decoded_info_), src_points(src_points_) {
-            for (size_t i = 0; i < src_points.size(); ++i) {
-                decoder.push_back(std::unique_ptr<AbsDecoder>(new Ean13Decoder()));
-            }
+        ParallelBarCodeDecodeProcess(vector<Mat> &bar_imgs_, vector<Result> &decoded_info_) : bar_imgs(bar_imgs_),
+                                                                                              decoded_info(
+                                                                                                      decoded_info_)
+        {
+            //indicate Decoder
+            decoders.push_back(std::shared_ptr<AbsDecoder>(new Ean13Decoder()));
         }
 
-        void operator()(const Range &range) const
-
-        CV_OVERRIDE
+        void operator()(const Range &range) const CV_OVERRIDE
         {
-            CV_Assert(inarr.channels() == 1);
-            Mat gray = inarr.clone();
-            for (int i = range.start; i < range.end; i++) {
-                Mat bar_img;
-                cutImage(gray, bar_img, src_points[i]);
-                decoded_info[i] = decoder[i]->decodeImg(bar_img, src_points[i]);
+            for (int i = range.start; i < range.end; i++)
+            {
+                auto res = decoders[0]->decodeROI(bar_imgs[i]);
+                decoded_info[i] = res.first;
             }
         }
 
     private:
-        Mat &inarr;
-        vector <Result> &decoded_info;
-        vector <vector<Point2f>> &src_points;
-        vector <std::unique_ptr<AbsDecoder>> decoder;
+        vector<Mat> bar_imgs;
+        vector<Result> &decoded_info;
+        vector<std::shared_ptr<AbsDecoder>> decoders;
     };
     result_info.clear();
-    result_info.resize(src_points.size());
-    ParallelBarCodeDecodeProcess parallelDecodeProcess{original, src_points, result_info};
-    parallel_for_(Range(0, int(src_points.size())), parallelDecodeProcess);
+    result_info.resize(bar_imgs.size());
+    //sr and cut img
+
+    ParallelBarCodeDecodeProcess parallelDecodeProcess{bar_imgs, result_info};
+    parallel_for_(Range(0, int(bar_imgs.size())), parallelDecodeProcess);
     return !result_info.empty();
 }
 
-//struct BarcodeDetector::Impl
-//{
-//public:
-//    Impl() {};
-//
-//    ~Impl() {};
-//};
 
-BarcodeDetector::BarcodeDetector() {};
+struct BarcodeDetector::Impl
+{
+public:
+    Impl() = default;;
 
-BarcodeDetector::~BarcodeDetector() {};
+    ~Impl() = default;;
+
+    vector<Mat> initDecode(const cv::Mat &src, const std::vector<cv::Point2f> &points) const;
+
+    std::shared_ptr<SuperScale> sr;
+    bool use_nn_sr = false;
+};
+
+vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<cv::Point2f> &points) const
+{
+    vector<vector<Point2f>> src_points;
+    //CV_TRACE_FUNCTION();
+    CV_Assert(!points.empty());
+    CV_Assert((points.size() % 4) == 0);
+    src_points.clear();
+    for (size_t i = 0; i < points.size(); i += 4)
+    {
+        vector<Point2f> tempMat{points.cbegin() + i, points.cbegin() + i + 4};
+        if (contourArea(tempMat) > 0.0)
+        {
+            src_points.push_back(tempMat);
+        }
+    }
+    CV_Assert(!src_points.empty());
+    vector<Mat> bar_imgs;
+    for (auto &corners : src_points)
+    {
+        Mat bar_img;
+        cropROI(src, bar_img, corners);
+        preprocess(bar_img, bar_img);
+        // empirical settings
+        if (bar_img.cols < 320 || bar_img.cols > 640)
+        {
+            float scale = 620.0f / static_cast<float>(bar_img.cols);
+            bar_img = sr->processImageScale(bar_img, scale, use_nn_sr);
+        }
+        bar_img = binarize(bar_img, OTSU);
+        bar_imgs.emplace_back(bar_img);
+    }
+    return bar_imgs;
+
+}
+
+BarcodeDetector::BarcodeDetector(const string &prototxt_path, const string &model_path) : p(new Impl)
+{
+    if (!prototxt_path.empty() && !model_path.empty())
+    {
+        CV_Assert(utils::fs::exists(prototxt_path));
+        CV_Assert(utils::fs::exists(model_path));
+        p->sr = std::make_shared<SuperScale>();
+        int res = p->sr->init(prototxt_path, model_path);
+        CV_Assert(res == 0);
+        p->use_nn_sr = true;
+    }
+}
+
+
+BarcodeDetector::~BarcodeDetector() = default;
 
 bool BarcodeDetector::detect(InputArray img, OutputArray points) const
 {
@@ -171,8 +214,9 @@ bool BarcodeDetector::decode(InputArray img, InputArray points, vector<std::stri
     CV_Assert((points.size().width % 4) == 0);
     vector<Point2f> src_points;
     points.copyTo(src_points);
+    vector<Mat> bar_imgs = p->initDecode(img.getMat(), src_points);
     BarDecode bardec;
-    bardec.init(img.getMat(), src_points);
+    bardec.init(bar_imgs);
     bool ok = bardec.decodeMultiplyProcess();
     const vector<Result> &_decoded_info = bardec.getDecodeInformation();
     decoded_info.clear();
@@ -185,8 +229,9 @@ bool BarcodeDetector::decode(InputArray img, InputArray points, vector<std::stri
     return ok;
 }
 
-bool BarcodeDetector::detectAndDecode(InputArray img, vector<std::string> &decoded_info,
-                                      vector<BarcodeType> &decoded_type, OutputArray points_) const
+bool
+BarcodeDetector::detectAndDecode(InputArray img, vector<std::string> &decoded_info, vector<BarcodeType> &decoded_type,
+                                 OutputArray points_) const
 {
     Mat inarr;
     if (!checkBarInputImage(img, inarr))

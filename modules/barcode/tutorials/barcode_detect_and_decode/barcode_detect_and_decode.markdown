@@ -24,6 +24,16 @@ Several algorithms were introduced for bar code recognition.
 
 While coding, we firstly need to create a **cv::barcode::BarcodeDetector** object.  It has mainly three member functions, which will be introduced in the following.
 
+#### Initilization
+
+`cv::barcode::BarcodeDetector bardet("sr.prototxt", "sr.caffemodel");`
+
+User can construct BarcodeDetector with super resolution model which should be downloaded automatically to `<opencv_build_dir>/downloads/barcode`. If not, please download them from `https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode`
+
+or choose not to use super resolution.
+
+
+
 #### detect
 
 It is a algorithm based on directional consistency. First of all, we compute the average squared gradients of every pixels. It was proposed in the paper "Systematic methods for the computation of the directional  fields and singular points of fingerprints" by A.M. Bazen and S.H. Gerez in 2002. Then we divide the image into some square patches and compute the **gradient variance** and **mean gradient direction** of each patch. At last we connected the patches that have **low gradient variance** and **similar gradient direction**. In this stage, we use multi-size patches to capture the gradient distribution of multi-size bar codes, and apply non-maximum suppression to filter duplicate proposals.
@@ -52,7 +62,7 @@ This function first sharpens the image and then binaries it by OSTU or local bin
 #include "opencv2/imgproc.hpp"
 
 using namespace cv;
-barcode::BarcodeDetector bardet;
+barcode::BarcodeDetector bardet("sr.prototxt", "sr.caffemodel"); //load sr model
 Mat frame = imread("bar_code.jpg");
 std::vector<Point> corners; // used to store 4 corners of barcode
 bool ok = bardet.detect(frame, corners);
@@ -76,7 +86,7 @@ This function combines `detect`  and `decode`.  A simple example below to use th
 #include "opencv2/highgui.hpp"
 
 using namespace cv;
-barcode::BarcodeDetector bardet;
+barcode::BarcodeDetector bardet("sr.prototxt", "sr.caffemodel"); //load sr model
 Mat frame = imread("bar_code.jpg");
 std::vector<Point> corners;
 std::vector<std::string> decoded_info;

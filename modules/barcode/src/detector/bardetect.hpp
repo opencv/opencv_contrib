@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
-//
+
 #ifndef __OPENCV_BARCODE_BARDETECT_HPP__
 #define __OPENCV_BARCODE_BARDETECT_HPP__
 

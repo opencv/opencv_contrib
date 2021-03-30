@@ -1,68 +1,39 @@
-/*
-Copyright 2020 ${ALL COMMITTERS}
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+// Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 #include "../../precomp.hpp"
 #include "utils.hpp"
 #include "hybrid_binarizer.hpp"
 
-namespace cv{
-namespace barcode{
+namespace cv {
+namespace barcode {
 
-void resize(Mat & src, Mat & dst)
-{
-    if (src.cols < 600)
-    {
-        resize(src, dst, Size(600, src.rows));
-    }
-    else
-    {
-        dst.create(src.size(), src.type());
-    }
-}
 
-void ostuPreprocess(Mat & src, Mat & dst)
+void preprocess(Mat &src, Mat &dst)
 {
-    resize(src, dst);
     Mat blur;
     GaussianBlur(src, blur, Size(0, 0), 25);
     addWeighted(src, 2, blur, -1, 0, dst);
     dst.convertTo(dst, CV_8UC1, 1, -20);
-    threshold(dst, dst, 155, 255, THRESH_OTSU + THRESH_BINARY);
 }
 
-void hybridPreprocess(Mat & src, Mat & dst)
+Mat binarize(const Mat &src, int mode)
 {
-    resize(src, dst);
-    medianBlur(src, dst, 3);
-    hybridBinarization(dst, dst);
-}
-
-void preprocess(Mat & src, Mat & dst, int mode)
-{
+    Mat dst;
     switch (mode)
     {
-        case OSTU:
-            ostuPreprocess(src, dst);
+        case OTSU:
+            threshold(src, dst, 155, 255, THRESH_OTSU + THRESH_BINARY);
             break;
         case HYBRID:
-            hybridPreprocess(src, dst);
+            hybridBinarization(src, dst);
             break;
         default:
             break;
     }
+    return dst;
 }
-
 }
 }

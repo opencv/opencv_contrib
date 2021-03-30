@@ -5,7 +5,6 @@
 
 #include "../precomp.hpp"
 #include "upcean_decoder.hpp"
-#include "common/utils.hpp"
 #include <map>
 
 namespace cv {
@@ -13,7 +12,7 @@ namespace barcode {
 
 static constexpr int DIVIDE_PART = 16;
 
-void UPCEANDecoder::drawDebugLine(Mat& debug_img, Point2i begin, Point2i end) const
+void UPCEANDecoder::drawDebugLine(Mat &debug_img, const Point2i &begin, const Point2i &end) const
 {
     Result result;
     std::vector<uchar> middle;
@@ -23,8 +22,8 @@ void UPCEANDecoder::drawDebugLine(Mat& debug_img, Point2i begin, Point2i end) co
     {
         middle.push_back(debug_img.at<uchar>(line.pos()));
     }
-    std::pair<int,int> start_range;
-    if(findStartGuardPatterns(middle, start_range))
+    std::pair<int, int> start_range;
+    if (findStartGuardPatterns(middle, start_range))
     {
         circle(debug_img, Point2i(begin.x + start_range.second, begin.y), 2, Scalar(0), 2);
     }
@@ -33,7 +32,7 @@ void UPCEANDecoder::drawDebugLine(Mat& debug_img, Point2i begin, Point2i end) co
     {
         result = this->decode(std::vector<uchar>(middle.crbegin(), middle.crend()), 0);
     }
-    if(result.result.size() == this->digit_number)
+    if (result.result.size() == this->digit_number)
     {
         cv::line(debug_img, begin, end, Scalar(0), 2);
         cv::putText(debug_img, result.result, begin, cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 0, 255), 1);
@@ -124,45 +123,13 @@ int UPCEANDecoder::decodeDigit(const std::vector<uchar> &row, std::vector<int> &
     // -1 is Mismatch or means error.
 }
 
-/*Input a mat and it's position rect, return the decode result */
-
-std::vector<Result> UPCEANDecoder::decodeImg(InputArray bar_img, const std::vector<std::vector<Point2f>> &pointsArrays) const
+/*Input a ROI mat return result */
+std::pair<Result, float> UPCEANDecoder::decodeROI(InputArray bar_img) const
 {
-    CV_Assert(bar_img.channels() == 1);
-    std::vector<Result> will_return;
-    Mat gray = bar_img.getMat();
-    for (const auto &points : pointsArrays)
-    {
-        Mat bar;
-        cutImage(gray, bar, points);
-        Result max_result = decodeImg(bar, points);
-        will_return.push_back(max_result);
-    }
-    return will_return;
-}
-
-Result UPCEANDecoder::decodeImg(InputArray bar_img, const vector<Point2f> &points) const
-{
-    Mat ostu = bar_img.getMat();
-    Mat hybrid = ostu.clone();
-    preprocess(ostu, ostu, OSTU);
-    auto result_pair_ostu = rectToResult(ostu, points, DIVIDE_PART);
-    if(result_pair_ostu.second == 1.0)
-    {
-        return result_pair_ostu.first;
-    }
-    preprocess(hybrid, hybrid, HYBRID);
-    auto result_pair_hybrid = rectToResult(hybrid, points, DIVIDE_PART);
-    Result max_result;
-    if(result_pair_hybrid.second > result_pair_ostu.second)
-    {
-        max_result = result_pair_hybrid.first;
-    }
-    else
-    {
-        max_result = result_pair_ostu.first;
-    }
-    return max_result;
+    vector<Point2f> corners{
+            Point2f(0, bar_img.rows() - 1), Point2f(0, 0), Point2f(bar_img.cols() - 1, 0),
+            Point2f(bar_img.rows() - 1, bar_img.cols() - 1)};
+    return rectToResult(bar_img.getMat(), corners, DIVIDE_PART);
 }
 
 /**
@@ -216,9 +183,9 @@ UPCEANDecoder::rectToResult(const Mat &bar_img, const std::vector<Point2f> &poin
         }
     }
     float accuracy = 0;
-    if(total_vote != 0)
+    if (total_vote != 0)
     {
-        accuracy = (float)vote_cnt / (float)total_vote;
+        accuracy = (float) vote_cnt / (float) total_vote;
     }
     return std::make_pair(Result(max_result, max_format), accuracy);
 }
@@ -252,12 +219,12 @@ void UPCEANDecoder::linesFromRect(const Size2i &shape, bool horizontal, int PART
                                   std::vector<std::pair<Point2i, Point2i>> &results) const
 {
     // scan area around center line
-    Point2i step = Point2i((PART-1)*shape.height / (PART*PART), 0);
+    Point2i step = Point2i((PART - 1) * shape.height / (PART * PART), 0);
     Point2i cbegin = Point2i(shape.height / 2, 0);
     Point2i cend = Point2i(shape.height / 2, shape.width - 1);
     if (horizontal)
     {
-        step = Point2i(0, (PART-1)*shape.width / (PART*PART));
+        step = Point2i(0, (PART - 1) * shape.width / (PART * PART));
         cbegin = Point2i(0, shape.width / 2);
         cend = Point2i(shape.height - 1, shape.width / 2);
     }
@@ -269,20 +236,6 @@ void UPCEANDecoder::linesFromRect(const Size2i &shape, bool horizontal, int PART
         results.emplace_back(cbegin - i * step, cend - i * step);
     }
     results.emplace_back(cbegin, cend);
-}
-
-
-Result UPCEANDecoder::decodeImg(InputArray img) const
-{
-    auto gray = img.getMat();
-    constexpr int PART = 50;
-    std::vector<Point2f> real_rect{
-            Point2f(0, (float) gray.rows), Point2f(0, 0), Point2f((float) gray.cols, 0),
-            Point2f((float) gray.cols, (float) gray.rows)};
-    Mat binary;
-    hybridPreprocess(gray, binary);
-    Result result = rectToResult(binary, real_rect, PART).first;
-    return result;
 }
 
 

@@ -9,7 +9,7 @@
 namespace cv {
 namespace barcode {
 
-void cutImage(Mat src, Mat & dst, const std::vector<Point2f> &rects)
+void cropROI(const Mat &src, Mat &dst, const std::vector<Point2f> &rects)
 {
     std::vector<Point2f> vertices = rects;
     int height = cvRound(norm(vertices[0] - vertices[1]));
