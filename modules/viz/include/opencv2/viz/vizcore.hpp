@@ -72,12 +72,6 @@ namespace cv
          */
         CV_EXPORTS Affine3d makeTransformToGlobal(const Vec3d& axis_x, const Vec3d& axis_y, const Vec3d& axis_z, const Vec3d& origin = Vec3d::all(0));
 
-
-        /**
-        This is an overloaded member function, provided for convenience. It differs from the above function only in what argument(s) it accepts.
-        */
-        CV_EXPORTS_W PyAffine3 makeTransformToGlobalPy(const Vec3d& axis_x, const Vec3d& axis_y, const Vec3d& axis_z, const Vec3d& origin = Vec3d::all(0));
-
         /** @brief Constructs camera pose from position, focal_point and up_vector (see gluLookAt() for more
         information).
 
@@ -89,10 +83,6 @@ namespace cv
          */
         CV_EXPORTS Affine3d makeCameraPose(const Vec3d& position, const Vec3d& focal_point, const Vec3d& y_dir);
 
-        /**
-        This is an overloaded member function, provided for convenience. It differs from the above function only in what argument(s) it accepts.
-        */
-        CV_EXPORTS_W PyAffine3 makeCameraPosePy(const Vec3d& position, const Vec3d& focal_point, const Vec3d& y_dir);
         /** @brief Retrieves a window by its name.
 
         @param window_name Name of the window that is to be retrieved.

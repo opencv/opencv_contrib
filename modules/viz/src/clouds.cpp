@@ -44,6 +44,7 @@
 //M*/
 
 #include "precomp.hpp"
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// Point Cloud Widget implementation
 
@@ -368,6 +369,7 @@ template<> cv::viz::WCloudNormals cv::viz::Widget::cast<cv::viz::WCloudNormals>(
 cv::viz::WMesh::WMesh(const Mesh &mesh)
 {
     CV_Assert(mesh.cloud.rows == 1 && mesh.polygons.type() == CV_32SC1);
+
     vtkSmartPointer<vtkCloudMatSource> source = vtkSmartPointer<vtkCloudMatSource>::New();
     source->SetColorCloudNormalsTCoords(mesh.cloud, mesh.colors, mesh.normals, mesh.tcoords);
     source->Update();
@@ -411,6 +413,7 @@ cv::viz::WMesh::WMesh(const Mesh &mesh)
     for (size_t i = 0; i < polygons_size; ++idx)
     {
         int n_points = polygons[i++];
+
         cell_array->InsertNextCell(n_points);
         for (int j = 0; j < n_points; ++j, ++idx)
             cell_array->InsertCellPoint(lookup[polygons[i++]]);

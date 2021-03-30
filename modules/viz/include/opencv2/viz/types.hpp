@@ -57,120 +57,69 @@ namespace cv
 
 //! @addtogroup viz
 //! @{
+
         /** @brief This class represents color in BGR order.
         */
-        class Color : public Scalar
+        class CV_EXPORTS_W_SIMPLE Color
+#ifndef OPENCV_BINDING_PARSER
+            : public Scalar
+#endif
         {
         public:
-            Color();
+            CV_WRAP Color();
             //! The three channels will have the same value equal to gray.
-            Color(double gray);
-            Color(double blue, double green, double red);
+            CV_WRAP Color(double gray);
+            CV_WRAP Color(double blue, double green, double red);
 
             Color(const Scalar& color);
 
             operator Vec3b() const;
 
-            static Color black();
-            static Color blue();
-            static Color green();
-            static Color red();
-            static Color cyan();
-            static Color yellow();
-            static Color magenta();
-            static Color white();
+            CV_WRAP static Color black();
+            CV_WRAP static Color blue();
+            CV_WRAP static Color green();
+            CV_WRAP static Color red();
+            CV_WRAP static Color cyan();
+            CV_WRAP static Color yellow();
+            CV_WRAP static Color magenta();
+            CV_WRAP static Color white();
 
-            static Color gray();
-            static Color silver();
+            CV_WRAP static Color gray();
+            CV_WRAP static Color silver();
 
-            static Color mlab();
+            CV_WRAP static Color mlab();
 
-            static Color navy();
-            static Color maroon();
-            static Color teal();
-            static Color olive();
-            static Color purple();
-            static Color azure();
-            static Color chartreuse();
-            static Color rose();
+            CV_WRAP static Color navy();
+            CV_WRAP static Color maroon();
+            CV_WRAP static Color teal();
+            CV_WRAP static Color olive();
+            CV_WRAP static Color purple();
+            CV_WRAP static Color azure();
+            CV_WRAP static Color chartreuse();
+            CV_WRAP static Color rose();
 
-            static Color lime();
-            static Color gold();
-            static Color orange();
-            static Color orange_red();
-            static Color indigo();
+            CV_WRAP static Color lime();
+            CV_WRAP static Color gold();
+            CV_WRAP static Color orange();
+            CV_WRAP static Color orange_red();
+            CV_WRAP static Color indigo();
 
-            static Color brown();
-            static Color apricot();
-            static Color pink();
-            static Color raspberry();
-            static Color cherry();
-            static Color violet();
-            static Color amethyst();
-            static Color bluberry();
-            static Color celestial_blue();
-            static Color turquoise();
+            CV_WRAP static Color brown();
+            CV_WRAP static Color apricot();
+            CV_WRAP static Color pink();
+            CV_WRAP static Color raspberry();
+            CV_WRAP static Color cherry();
+            CV_WRAP static Color violet();
+            CV_WRAP static Color amethyst();
+            CV_WRAP static Color bluberry();
+            CV_WRAP static Color celestial_blue();
+            CV_WRAP static Color turquoise();
 
-            static Color not_set();
-        };
+            CV_WRAP static Color not_set();
 
-        struct CV_EXPORTS_W_SIMPLE PyColor
-        {
-            //! The three channels will have the same value equal to gray.
-            CV_WRAP PyColor() { c = Color(0, 0, 0); };
-            CV_WRAP PyColor(double gray) { c = Color(gray, gray, gray); };
-            CV_WRAP  PyColor(double blue, double green, double red) { c = Color(blue, green, red); }
-            PyColor(Color v) { c = v; }
-
-/*            Color get() { return c; };*/
-
-            CV_WRAP static PyColor black() { return PyColor(Color::black()); }
-            CV_WRAP static  PyColor white() { return PyColor(Color::white()); }
-            CV_WRAP static PyColor blue() { return PyColor(Color::blue()); }
-            CV_WRAP static PyColor green() { return PyColor(Color::green()); }
-            CV_WRAP static PyColor red() { return PyColor(Color::red()); }
-            CV_WRAP static  PyColor cyan() { return PyColor(Color::cyan()); }
-            CV_WRAP static  PyColor yellow() { return PyColor(Color::yellow()); }
-            CV_WRAP static  PyColor magenta() { return PyColor(Color::magenta()); }
-
-            CV_WRAP static  PyColor gray() { return PyColor(Color::gray()); }
-            CV_WRAP static  PyColor silver() { return PyColor(Color::silver()); }
-
-            CV_WRAP static  PyColor mlab() { return PyColor(Color::mlab()); }
-
-            CV_WRAP static  PyColor navy() { return PyColor(Color::navy()); }
-            CV_WRAP static  PyColor maroon() { return PyColor(Color::maroon()); }
-            CV_WRAP static  PyColor teal() { return PyColor(Color::teal()); }
-            CV_WRAP static  PyColor olive() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor purple() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor azure() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor chartreuse() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor rose() { return PyColor(Color::olive()); };
-
-            CV_WRAP static PyColor lime() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor gold() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor orange() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor orange_red() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor indigo() { return PyColor(Color::olive()); };
-
-            CV_WRAP static PyColor brown() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor apricot() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor pink() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor raspberry() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor cherry() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor violet() { return PyColor(Color::olive()); };
-            CV_WRAP static PyColor amethyst() { return PyColor(Color::amethyst()); };
-            CV_WRAP static PyColor bluberry() { return PyColor(Color::bluberry()); };
-            CV_WRAP static PyColor celestial_blue() { return PyColor(Color::celestial_blue()); };
-            CV_WRAP static PyColor turquoise() { return PyColor(Color::turquoise()); };
-
-            static PyColor not_set() { return PyColor(Color::not_set()); };
-            CV_WRAP double get_blue() { return c[0]; };
-            CV_WRAP double get_green() { return c[1]; };
-            CV_WRAP double get_red() { return c[2]; };
-
-            Color c;
-
+            CV_WRAP double get_blue() { return (*this)[0]; };
+            CV_WRAP double get_green() { return (*this)[1]; };
+            CV_WRAP double get_red() { return (*this)[2]; };
         };
 
         /** @brief This class wraps mesh attributes, and it can load a mesh from a ply file. :
@@ -178,7 +127,6 @@ namespace cv
         class CV_EXPORTS_W_SIMPLE Mesh
         {
         public:
-            CV_WRAP Mesh() {};
             enum {
                 LOAD_AUTO = 0,
                 LOAD_PLY = 1,
@@ -195,6 +143,11 @@ namespace cv
 
             CV_PROP_RW Mat texture;
             CV_PROP_RW Mat tcoords; //!< CV_32FC2 or CV_64FC2 with only 1 row
+
+            CV_WRAP Mesh()
+            {
+                // nothing
+            }
 
             /** @brief Loads a mesh from a ply or a obj file.
 
@@ -442,7 +395,6 @@ inline cv::viz::Color cv::viz::Color::celestial_blue() { return Color(208, 151, 
 inline cv::viz::Color cv::viz::Color::turquoise()      { return Color(208, 224,  64); }
 
 inline cv::viz::Color cv::viz::Color::not_set()        { return Color(-1, -1, -1); }
-
 
 //! @endcond
 

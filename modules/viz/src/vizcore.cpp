@@ -48,17 +48,10 @@
 cv::Affine3d cv::viz::makeTransformToGlobal(const Vec3d& axis_x, const Vec3d& axis_y, const Vec3d& axis_z, const Vec3d& origin)
 {
     Affine3d::Mat3 R(axis_x[0], axis_y[0], axis_z[0],
-        axis_x[1], axis_y[1], axis_z[1],
-        axis_x[2], axis_y[2], axis_z[2]);
+                     axis_x[1], axis_y[1], axis_z[1],
+                     axis_x[2], axis_y[2], axis_z[2]);
 
     return Affine3d(R, origin);
-}
-
-cv::viz::PyAffine3 cv::viz::makeTransformToGlobalPy(const Vec3d& axis_x, const Vec3d& axis_y, const Vec3d& axis_z, const Vec3d& origin)
-{
-    PyAffine3 x;
-    x.pose = makeTransformToGlobal(axis_x, axis_y, axis_z, origin);
-    return x;
 }
 
 cv::Affine3d cv::viz::makeCameraPose(const Vec3d& position, const Vec3d& focal_point, const Vec3d& y_dir)
@@ -70,14 +63,6 @@ cv::Affine3d cv::viz::makeCameraPose(const Vec3d& position, const Vec3d& focal_p
 
     return makeTransformToGlobal(u, v, n, position);
 }
-
-cv::viz::PyAffine3 cv::viz::makeCameraPosePy(const Vec3d& position, const Vec3d& focal_point, const Vec3d& y_dir)
-{
-    PyAffine3 x;
-    x.pose = makeCameraPose(position, focal_point, y_dir);
-    return x;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// VizStorage implementation
@@ -256,15 +241,6 @@ cv::Mat cv::viz::readCloud(const String& file, OutputArray colors, OutputArray n
 }
 
 cv::viz::Mesh cv::viz::readMesh(const String& file) { return Mesh::load(file); }
-
-/*cv::viz::PyWMesh cv::viz::readMeshPy(const String& file)
-{
-    cv::viz::Mesh m = Mesh::load(file);
-    cv::Ptr<WMesh> a = cv::makePtr<WMesh>(m);
-    PyWMesh w;
-    w.widget = a;
-    return w;
-}*/
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 /// Read/write poses and trajectories
