@@ -149,7 +149,7 @@ TEST( PoseGraph, sphereG2O )
 TEST(PoseGraph, DISABLED)
 {
     // Disabled for Debug mode, it takes 400 sec to run test vs 15 sec in Release
-    CV_UNUSED(readG2OFile);
+    (void)(&readG2OFile);
     CV_UNUSED(writeToObjFile);
     CV_UNUSED(verbose);
 }
