@@ -4,10 +4,6 @@
 
 #include "precomp.hpp"
 
-#include <fstream>
-#include <limits>
-#include <unordered_set>
-#include <vector>
 #include "sparse_block_matrix.hpp"
 
 // matrix form of conjugation
