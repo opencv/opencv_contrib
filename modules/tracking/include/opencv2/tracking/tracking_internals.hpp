@@ -15,7 +15,7 @@
  *
  */
 
-#include "opencv2/video/detail/tracking.private.hpp"
+#include "opencv2/video/detail/tracking.detail.hpp"
 
 #include "feature.hpp"  // CvHaarEvaluator
 #include "onlineBoosting.hpp"  // StrongClassifierDirectSelection
