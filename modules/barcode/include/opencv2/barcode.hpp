@@ -52,7 +52,7 @@ class CV_EXPORTS_W BarcodeDetector
 {
 public:
     /**
-     * @brief initialize the BarcodeDetector
+     * @brief Initialize the BarcodeDetector.
      * @param prototxt_path prototxt file path for the super resolution model
      * @param model_path model file path for the super resolution model
      */

@@ -17,6 +17,8 @@ static int imageBarCodeDetect(const string &in_file);
 
 static bool g_detectOnly = false;
 
+static string g_out_file_name, g_out_file_ext;
+
 static Ptr<barcode::BarcodeDetector> bardet;
 
 int main(int argc, char **argv)
@@ -26,6 +28,7 @@ int main(int argc, char **argv)
     const string keys = "{h help ? |        | print help messages }"
                         "{i in     |        | input image path (also switches to image detection mode) }"
                         "{detect   | false  | detect 1D barcode only (skip decoding) }"
+                        "{o out    |        | path to result file (only for single image decode) }"
                         "{sr_prototxt|      | super resolution prototxt path }"
                         "{sr_model |        | super resolution model path }";
 
@@ -41,13 +44,28 @@ int main(int argc, char **argv)
     string in_file_name = cmd_parser.get<string>("in");    // path to input image
     string sr_prototxt = cmd_parser.get<string>("sr_prototxt");    // path to sr_prototxt
     string sr_model = cmd_parser.get<string>("sr_model");    // path to sr_model
-
+    if (cmd_parser.has("out"))
+    {
+        std::string fpath = cmd_parser.get<string>("out");   // path to output image
+        std::string::size_type idx = fpath.rfind('.');
+        if (idx != std::string::npos)
+        {
+            g_out_file_name = fpath.substr(0, idx);
+            g_out_file_ext = fpath.substr(idx);
+        }
+        else
+        {
+            g_out_file_name = fpath;
+            g_out_file_ext = ".png";
+        }
+    }
     if (!cmd_parser.check())
     {
         cmd_parser.printErrors();
         return -1;
     }
     g_detectOnly = cmd_parser.has("detect") && cmd_parser.get<bool>("detect");
+    //! [initialize]
     try{
         bardet = makePtr<barcode::BarcodeDetector>(sr_prototxt, sr_model);
     } catch (const std::exception& e)
@@ -62,6 +80,7 @@ int main(int argc, char **argv)
         cout << e.what() << endl;
         return -1;
     }
+    //! [initialize]
     int return_code;
     if (in_file_name.empty())
     {
@@ -98,6 +117,7 @@ static void drawBarcodeContour(Mat &color_image, const vector<Point> &corners, b
     }
 }
 
+//! [visualize]
 static void drawFPS(Mat &color_image, double fps)
 {
     ostringstream convert;
@@ -141,6 +161,7 @@ static void drawBarcodeResults(Mat &frame, const vector<Point> &corners, const v
 
     drawFPS(frame, fps);
 }
+//! [visualize]
 
 static void
 runBarcode(const Mat &input, vector<Point> &corners, vector<cv::String> &decode_info,
@@ -149,12 +170,16 @@ runBarcode(const Mat &input, vector<Point> &corners, vector<cv::String> &decode_
 {
     if (!g_detectOnly)
     {
+        //! [detectAndDecode]
         bool result_detection = bardet->detectAndDecode(input, decode_info, decode_type, corners);
+        //! [detectAndDecode]
         CV_UNUSED(result_detection);
     }
     else
     {
+        //! [detect]
         bool result_detection = bardet->detect(input, corners);
+        //! [detect]
         CV_UNUSED(result_detection);
     }
 }
@@ -193,10 +218,11 @@ int liveBarCodeDetect()
             frame.copyTo(result);
         }
         TickMeter timer;
+        //! [output]
         vector<cv::String> decode_info;
         vector<barcode::BarcodeType> decoded_type;
         vector<Point> corners;
-
+        //! [output]
         timer.start();
         runBarcode(frame, corners, decode_info, decoded_type);
         timer.stop();
@@ -259,7 +285,12 @@ int imageBarCodeDetect(const string &in_file)
     Mat result;
     input.copyTo(result);
     drawBarcodeResults(result, corners, decode_info, decoded_type, fps);
-
+    if (!g_out_file_name.empty())
+    {
+        string out_file = g_out_file_name + g_out_file_ext;
+        cout << "Saving result: " << out_file << endl;
+        imwrite(out_file, result);
+    }
     imshow("barcode", result);
     waitKey(1);
 
