@@ -92,9 +92,6 @@ static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
     return pg;
 }
 
-// Turn it on if you want to see resulting pose graph nodes
-static const bool writeToObjFile = false;
-
 #if !defined(_DEBUG) && defined(HAVE_EIGEN)
 TEST( PoseGraph, sphereG2O )
 {
@@ -119,7 +116,8 @@ TEST( PoseGraph, sphereG2O )
 
     ASSERT_LE(energy, 1.47723e+06); // should converge to 1.47722e+06 or less
 
-    if (writeToObjFile)
+    // Add the "--test_debug" to arguments to see resulting pose graph nodes positions
+    if (cvtest::debugLevel > 0)
     {
         // Write edge-only model of how nodes are located in space
         std::string fname = "pgout.obj";
@@ -146,7 +144,6 @@ TEST(PoseGraph, DISABLED)
 {
     // Disabled for Debug mode, it takes 400 sec to run test vs 15 sec in Release
     (void)(&readG2OFile);
-    CV_UNUSED(writeToObjFile);
 }
 #endif
 
