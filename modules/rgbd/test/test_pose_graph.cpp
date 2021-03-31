@@ -94,8 +94,6 @@ static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
 
 // Turn it on if you want to see resulting pose graph nodes
 static const bool writeToObjFile = false;
-// Turn if off if you don't need log messages
-static const bool verbose = true;
 
 #if !defined(_DEBUG) && defined(HAVE_EIGEN)
 TEST( PoseGraph, sphereG2O )
@@ -109,10 +107,8 @@ TEST( PoseGraph, sphereG2O )
     std::string filename = cvtest::TS::ptr()->get_data_path() + "rgbd/sphere_bignoise_vertex3.g2o";
     Ptr<kinfu::detail::PoseGraph> pg = readG2OFile(filename);
 
-    if (verbose)
-    {
-        cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_INFO);
-    }
+    // You may change logging level to view detailed optimization report
+    // For example, set env. variable like this: OPENCV_LOG_LEVEL=INFO
 
     int iters = pg->optimize();
 
@@ -151,7 +147,6 @@ TEST(PoseGraph, DISABLED)
     // Disabled for Debug mode, it takes 400 sec to run test vs 15 sec in Release
     (void)(&readG2OFile);
     CV_UNUSED(writeToObjFile);
-    CV_UNUSED(verbose);
 }
 #endif
 
