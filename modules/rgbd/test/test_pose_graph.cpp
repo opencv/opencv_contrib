@@ -143,6 +143,9 @@ TEST( PoseGraph, sphereG2O )
         of.close();
     }
 #else
+    // suppress "unused function" warning
+    (void)(&readG2OFile);
+
     throw SkipTestException("Build with Eigen required for pose graph optimization");
 #endif
 }
