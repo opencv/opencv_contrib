@@ -92,9 +92,13 @@ static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
     return pg;
 }
 
-#if !defined(_DEBUG) && defined(HAVE_EIGEN)
+
 TEST( PoseGraph, sphereG2O )
 {
+#ifdef HAVE_EIGEN
+    // Test takes 15+ sec in Release mode and 400+ sec in Debug mode
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
+
     // The dataset was taken from here: https://lucacarlone.mit.edu/datasets/
     // Connected paper:
     // L.Carlone, R.Tron, K.Daniilidis, and F.Dellaert.
@@ -138,14 +142,10 @@ TEST( PoseGraph, sphereG2O )
 
         of.close();
     }
-}
 #else
-TEST(PoseGraph, DISABLED)
-{
-    // Disabled for Debug mode, it takes 400 sec to run test vs 15 sec in Release
-    (void)(&readG2OFile);
-}
+    throw SkipTestException("Build with Eigen required for pose graph optimization");
 #endif
+}
 
 
 }} // namespace
