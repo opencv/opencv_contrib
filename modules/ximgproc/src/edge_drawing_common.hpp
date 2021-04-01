@@ -334,6 +334,7 @@ void AngleSet::_set(double sTheta, double eTheta)
         // End of the list. Add to the end
         if (current < 0)
         {
+            CV_Assert(prev >= 0);
             angles[prev].next = arc;
             break;
         }
