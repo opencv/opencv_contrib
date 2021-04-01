@@ -95,7 +95,6 @@ static Ptr<kinfu::detail::PoseGraph> readG2OFile(const std::string& g2oFileName)
 
 TEST( PoseGraph, sphereG2O )
 {
-#ifdef HAVE_EIGEN
     // Test takes 15+ sec in Release mode and 400+ sec in Debug mode
     applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
 
@@ -108,6 +107,7 @@ TEST( PoseGraph, sphereG2O )
     std::string filename = cvtest::TS::ptr()->get_data_path() + "rgbd/sphere_bignoise_vertex3.g2o";
     Ptr<kinfu::detail::PoseGraph> pg = readG2OFile(filename);
 
+#ifdef HAVE_EIGEN
     // You may change logging level to view detailed optimization report
     // For example, set env. variable like this: OPENCV_LOG_LEVEL=INFO
 
@@ -143,9 +143,6 @@ TEST( PoseGraph, sphereG2O )
         of.close();
     }
 #else
-    // suppress "unused function" warning
-    (void)(&readG2OFile);
-
     throw SkipTestException("Build with Eigen required for pose graph optimization");
 #endif
 }
