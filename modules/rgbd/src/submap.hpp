@@ -13,7 +13,7 @@
 
 #include "hash_tsdf.hpp"
 #include "opencv2/core/mat.inl.hpp"
-#include "pose_graph.hpp"
+#include "opencv2/rgbd/detail/pose_graph.hpp"
 
 namespace cv
 {
@@ -166,15 +166,15 @@ class SubmapManager
     int estimateConstraint(int fromSubmapId, int toSubmapId, int& inliers, Affine3f& inlierPose);
     bool updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals);
 
-    PoseGraph MapToPoseGraph();
-    void PoseGraphToMap(const PoseGraph& updatedPoseGraph);
+    Ptr<detail::PoseGraph> MapToPoseGraph();
+    void PoseGraphToMap(const Ptr<detail::PoseGraph>& updatedPoseGraph);
 
     VolumeParams volumeParams;
 
     std::vector<Ptr<SubmapT>> submapList;
     IdToActiveSubmaps activeSubmaps;
 
-    PoseGraph poseGraph;
+    Ptr<detail::PoseGraph> poseGraph;
 };
 
 template<typename MatType>
@@ -494,10 +494,9 @@ bool SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
 }
 
 template<typename MatType>
-PoseGraph SubmapManager<MatType>::MapToPoseGraph()
+Ptr<detail::PoseGraph> SubmapManager<MatType>::MapToPoseGraph()
 {
-    PoseGraph localPoseGraph;
-
+    Ptr<detail::PoseGraph> localPoseGraph = detail::PoseGraph::create();
 
     for(const auto& currSubmap : submapList)
     {
@@ -507,34 +506,26 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
             // TODO: Handle case with duplicate constraints A -> B and B -> A
             /* Matx66f informationMatrix = Matx66f::eye() * (currConstraintPair.second.weight/10); */
             Matx66f informationMatrix = Matx66f::eye();
-            PoseGraphEdge currEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
-            localPoseGraph.addEdge(currEdge);
+            localPoseGraph->addEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
         }
     }
 
     for(const auto& currSubmap : submapList)
     {
-        PoseGraphNode currNode(currSubmap->id, currSubmap->pose);
-        if(currSubmap->id == 0)
-        {
-            currNode.setFixed();
-        }
-        localPoseGraph.addNode(currNode);
+        localPoseGraph->addNode(currSubmap->id, currSubmap->pose, (currSubmap->id == 0));
     }
-
-
 
     return localPoseGraph;
 }
 
 template <typename MatType>
-void SubmapManager<MatType>::PoseGraphToMap(const PoseGraph &updatedPoseGraph)
+void SubmapManager<MatType>::PoseGraphToMap(const Ptr<detail::PoseGraph>& updatedPoseGraph)
 {
     for(const auto& currSubmap : submapList)
     {
-        const PoseGraphNode& currNode = updatedPoseGraph.nodes.at(currSubmap->id);
-        if(!currNode.isPoseFixed())
-            currSubmap->pose = currNode.getPose();
+        Affine3d pose = updatedPoseGraph->getNodePose(currSubmap->id);
+        if(!updatedPoseGraph->isNodeFixed(currSubmap->id))
+            currSubmap->pose = pose;
         std::cout << "Current node: " << currSubmap->id << " Updated Pose: \n" << currSubmap->pose.matrix << std::endl;
     }
 }

@@ -69,6 +69,7 @@ static void thinningIteration(Mat img, int iter, int thinningType){
 // Apply the thinning procedure to a given image
 void thinning(InputArray input, OutputArray output, int thinningType){
     Mat processed = input.getMat().clone();
+    CV_CheckTypeEQ(processed.type(), CV_8UC1, "");
     // Enforce the range of the input image to be in between 0 - 255
     processed /= 255;
 

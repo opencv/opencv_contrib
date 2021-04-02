@@ -350,7 +350,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
             Vec3f diff = oldPoints.at<Vec3f>(y, x) - Vec3f(newP);
             if(diff.dot(diff) > 0.0004f) continue;
-            if(abs(newN.dot(oldNormals.at<Point3f>(y, x))) < cos((float)CV_PI / 2)) continue;
+            if(abs(newN.dot(oldNormals.at<Point3f>(y, x))) < std::cos((float)CV_PI / 2)) continue;
 
             float rd = newN.dot(diff);
 

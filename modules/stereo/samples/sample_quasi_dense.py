@@ -8,7 +8,7 @@ frame_size = leftImg.shape[0:2];
 
 stereo = cv.stereo.QuasiDenseStereo_create(frame_size[::-1])
 stereo.process(left_img, right_img)
-disp = stereo.getDisparity(80)
+disp = stereo.getDisparity()
 cv.imshow("disparity", disp)
 cv.waitKey()
 dense_matches = stereo.getDenseMatches()

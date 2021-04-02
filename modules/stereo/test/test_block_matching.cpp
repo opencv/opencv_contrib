@@ -166,7 +166,7 @@ void CV_SGBlockMatchingTest::run(int )
     image2 = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im6.png", IMREAD_GRAYSCALE);
     gt = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/disp2.png", IMREAD_GRAYSCALE);
 
-
+    ts->printf(cvtest::TS::LOG,(ts->get_data_path() + "stereomatching/datasets/tsukuba/im2.png").c_str());
     if(image1.empty() || image2.empty() || gt.empty())
     {
         ts->printf(cvtest::TS::LOG, "Wrong input data \n");
