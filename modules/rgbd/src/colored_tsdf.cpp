@@ -299,7 +299,7 @@ inline v_float32x4 ColoredTSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) co
         const int dim = volDims[c];
         float& nv = an[c];
 
-        TsdfType vx[8];
+        float vx[8];
         for (int i = 0; i < 8; i++)
             vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1 * dim].tsdf) -
                     tsdfToFloat(volData[neighbourCoords[i] + coordBase - 1 * dim].tsdf);
