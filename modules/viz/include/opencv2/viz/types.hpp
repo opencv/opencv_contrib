@@ -60,66 +60,59 @@ namespace cv
 
         /** @brief This class represents color in BGR order.
         */
-        class CV_EXPORTS_W_SIMPLE Color
-#ifndef OPENCV_BINDING_PARSER
-            : public Scalar
-#endif
+        class Color : public Scalar  // FIXIT design bug, missing CV_EXPORTS
         {
         public:
-            CV_WRAP Color();
+            Color();
             //! The three channels will have the same value equal to gray.
-            CV_WRAP Color(double gray);
-            CV_WRAP Color(double blue, double green, double red);
+            Color(double gray);
+            Color(double blue, double green, double red);
 
             Color(const Scalar& color);
 
             operator Vec3b() const;
 
-            CV_WRAP static Color black();
-            CV_WRAP static Color blue();
-            CV_WRAP static Color green();
-            CV_WRAP static Color red();
-            CV_WRAP static Color cyan();
-            CV_WRAP static Color yellow();
-            CV_WRAP static Color magenta();
-            CV_WRAP static Color white();
+            static Color black();
+            static Color blue();
+            static Color green();
+            static Color red();
+            static Color cyan();
+            static Color yellow();
+            static Color magenta();
+            static Color white();
 
-            CV_WRAP static Color gray();
-            CV_WRAP static Color silver();
+            static Color gray();
+            static Color silver();
 
-            CV_WRAP static Color mlab();
+            static Color mlab();
 
-            CV_WRAP static Color navy();
-            CV_WRAP static Color maroon();
-            CV_WRAP static Color teal();
-            CV_WRAP static Color olive();
-            CV_WRAP static Color purple();
-            CV_WRAP static Color azure();
-            CV_WRAP static Color chartreuse();
-            CV_WRAP static Color rose();
+            static Color navy();
+            static Color maroon();
+            static Color teal();
+            static Color olive();
+            static Color purple();
+            static Color azure();
+            static Color chartreuse();
+            static Color rose();
 
-            CV_WRAP static Color lime();
-            CV_WRAP static Color gold();
-            CV_WRAP static Color orange();
-            CV_WRAP static Color orange_red();
-            CV_WRAP static Color indigo();
+            static Color lime();
+            static Color gold();
+            static Color orange();
+            static Color orange_red();
+            static Color indigo();
 
-            CV_WRAP static Color brown();
-            CV_WRAP static Color apricot();
-            CV_WRAP static Color pink();
-            CV_WRAP static Color raspberry();
-            CV_WRAP static Color cherry();
-            CV_WRAP static Color violet();
-            CV_WRAP static Color amethyst();
-            CV_WRAP static Color bluberry();
-            CV_WRAP static Color celestial_blue();
-            CV_WRAP static Color turquoise();
+            static Color brown();
+            static Color apricot();
+            static Color pink();
+            static Color raspberry();
+            static Color cherry();
+            static Color violet();
+            static Color amethyst();
+            static Color bluberry();
+            static Color celestial_blue();
+            static Color turquoise();
 
-            CV_WRAP static Color not_set();
-
-            CV_WRAP double get_blue() { return (*this)[0]; };
-            CV_WRAP double get_green() { return (*this)[1]; };
-            CV_WRAP double get_red() { return (*this)[2]; };
+            static Color not_set();
         };
 
         /** @brief This class wraps mesh attributes, and it can load a mesh from a ply file. :

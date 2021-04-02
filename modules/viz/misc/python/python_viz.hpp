@@ -5,6 +5,64 @@
 
 namespace cv { namespace viz {
 
+struct CV_EXPORTS_W_SIMPLE CV_WRAP_AS(Color) PyColor
+{
+    CV_WRAP PyColor() {}
+    CV_WRAP PyColor(double gray) : c(gray) {}
+    CV_WRAP PyColor(double blue, double green, double red) : c(blue, green, red) {}
+    PyColor(const Color& v) : c(v) { }
+
+    operator Color() const { return c; }
+
+    CV_WRAP static PyColor black() { return PyColor(Color::black()); }
+    CV_WRAP static PyColor white() { return PyColor(Color::white()); }
+    CV_WRAP static PyColor blue() { return PyColor(Color::blue()); }
+    CV_WRAP static PyColor green() { return PyColor(Color::green()); }
+    CV_WRAP static PyColor red() { return PyColor(Color::red()); }
+    CV_WRAP static PyColor cyan() { return PyColor(Color::cyan()); }
+    CV_WRAP static PyColor yellow() { return PyColor(Color::yellow()); }
+    CV_WRAP static PyColor magenta() { return PyColor(Color::magenta()); }
+
+    CV_WRAP static PyColor gray() { return PyColor(Color::gray()); }
+    CV_WRAP static PyColor silver() { return PyColor(Color::silver()); }
+
+    CV_WRAP static PyColor mlab() { return PyColor(Color::mlab()); }
+
+    CV_WRAP static PyColor navy() { return PyColor(Color::navy()); }
+    CV_WRAP static PyColor maroon() { return PyColor(Color::maroon()); }
+    CV_WRAP static PyColor teal() { return PyColor(Color::teal()); }
+    CV_WRAP static PyColor olive() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor purple() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor azure() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor chartreuse() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor rose() { return PyColor(Color::olive()); }
+
+    CV_WRAP static PyColor lime() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor gold() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor orange() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor orange_red() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor indigo() { return PyColor(Color::olive()); }
+
+    CV_WRAP static PyColor brown() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor apricot() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor pink() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor raspberry() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor cherry() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor violet() { return PyColor(Color::olive()); }
+    CV_WRAP static PyColor amethyst() { return PyColor(Color::amethyst()); }
+    CV_WRAP static PyColor bluberry() { return PyColor(Color::bluberry()); }
+    CV_WRAP static PyColor celestial_blue() { return PyColor(Color::celestial_blue()); }
+    CV_WRAP static PyColor turquoise() { return PyColor(Color::turquoise()); }
+
+    static PyColor not_set() { return PyColor(Color::not_set()); }
+    CV_WRAP double get_blue() { return c[0]; }
+    CV_WRAP double get_green() { return c[1]; }
+    CV_WRAP double get_red() { return c[2]; }
+
+    Color c;
+};
+
+
 struct CV_EXPORTS_W_SIMPLE CV_WRAP_AS(Affine3d) PyAffine3d
 #ifndef OPENCV_BINDING_PARSER
     : public Affine3d
@@ -66,7 +124,7 @@ struct CV_EXPORTS_W_SIMPLE CV_WRAP_AS(WLine) PyWLine
     @param pt2 End point of the line.
     @param color Color of the line.
      */
-    CV_WRAP PyWLine(const Point3d &pt1, const Point3d &pt2, const Color &color)
+    CV_WRAP PyWLine(const Point3d &pt1, const Point3d &pt2, const PyColor& color)
     {
         widget = cv::makePtr<cv::viz::WLine>(pt1, pt2, color);
     }
@@ -88,7 +146,7 @@ public:
     @param size Size of the plane
     @param color Color of the plane.
     */
-    CV_WRAP PyWPlane(const Point2d& size = Point2d(1.0, 1.0), const Color &color = Color(255, 255,255))
+    CV_WRAP PyWPlane(const Point2d& size = Point2d(1.0, 1.0), const PyColor& color = Color(255, 255,255))
     {
         widget = cv::makePtr<cv::viz::WPlane>(size, color);
     }
@@ -102,7 +160,7 @@ public:
     @param color Color of the plane.
      */
     CV_WRAP PyWPlane(const Point3d& center, const Vec3d& normal, const Vec3d& new_yaxis,
-        const Point2d& size = Point2d(1.0, 1.0), const Color &color = Color(255, 255, 255))
+        const Point2d& size = Point2d(1.0, 1.0), const PyColor& color = Color(255, 255, 255))
     {
         widget = cv::makePtr<cv::viz::WPlane>(center, normal, new_yaxis, size, color);
     }
@@ -132,7 +190,7 @@ public:
     @param sphere_resolution Resolution of the sphere.
     @param color Color of the sphere.
      */
-    CV_WRAP PyWSphere(const cv::Point3d &center, double radius, int sphere_resolution = 10, const Color &color = Color(255, 255,255))
+    CV_WRAP PyWSphere(const cv::Point3d &center, double radius, int sphere_resolution = 10, const PyColor& color = Color(255, 255,255))
     {
         widget = cv::makePtr<cv::viz::WSphere>(center, radius, sphere_resolution,  color);
     }
@@ -164,7 +222,7 @@ public:
 
     Arrow head is located at the end point of the arrow.
      */
-    CV_WRAP PyWArrow(const Point3d& pt1, const Point3d& pt2, double thickness = 0.03, const Color &color = Color(255, 255, 255))
+    CV_WRAP PyWArrow(const Point3d& pt1, const Point3d& pt2, double thickness = 0.03, const PyColor& color = Color(255, 255, 255))
     {
         widget = cv::makePtr<cv::viz::WArrow>(pt1, pt2, thickness, color);
     }
@@ -193,7 +251,7 @@ public:
     ![Cube Widget](images/cube_widget.png)
      */
     CV_WRAP PyWCube(const Point3d& min_point = Vec3d::all(-0.5), const Point3d& max_point = Vec3d::all(0.5),
-        bool wire_frame = true, const Color &color = Color(255, 255, 255))
+        bool wire_frame = true, const PyColor& color = Color(255, 255, 255))
     {
         widget = cv::makePtr<cv::viz::WCube>(min_point, max_point, wire_frame, color);
     }
@@ -219,7 +277,7 @@ public:
     @param thickness Thickness of the circle.
     @param color Color of the circle.
      */
-    CV_WRAP PyWCircle(double radius, double thickness = 0.01, const Color &color = Color::white())
+    CV_WRAP PyWCircle(double radius, double thickness = 0.01, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WCircle>(radius, thickness, color);
     }
@@ -232,7 +290,7 @@ public:
     @param thickness Thickness of the circle.
     @param color Color of the circle.
      */
-    CV_WRAP PyWCircle(double radius, const Point3d& center, const Vec3d& normal, double thickness = 0.01, const Color &color = Color::white())
+    CV_WRAP PyWCircle(double radius, const Point3d& center, const Vec3d& normal, double thickness = 0.01, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WCircle>(radius, center, normal, thickness, color);
     }
@@ -259,7 +317,7 @@ public:
     @param resolution Resolution of the cone.
     @param color Color of the cone.
      */
-    CV_WRAP PyWCone(double length, double radius, int resolution = 6.0, const Color &color = Color::white())
+    CV_WRAP PyWCone(double length, double radius, int resolution = 6, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WCone>(length, radius, resolution, color);
     }
@@ -273,7 +331,7 @@ public:
     @param color Color of the cone.
 
      */
-    CV_WRAP PyWCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6.0, const Color &color = Color::white())
+    CV_WRAP PyWCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WCone>(radius, center, tip, resolution, color);
     }
@@ -301,7 +359,7 @@ public:
     @param numsides Resolution of the cylinder.
     @param color Color of the cylinder.
      */
-    CV_WRAP PyWCylinder(const Point3d& axis_point1, const Point3d& axis_point2, double radius, int numsides = 30, const Color &color = Color::white())
+    CV_WRAP PyWCylinder(const Point3d& axis_point1, const Point3d& axis_point2, double radius, int numsides = 30, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WCylinder>(axis_point1, axis_point2, radius, numsides, color);
     }
@@ -330,7 +388,7 @@ public:
 
     ![Camera viewing frustum](images/cpw2.png)
     */
-    CV_WRAP PyWCameraPosition(InputArray  K, double scale = 1.0, const Color &color = Color(255, 255, 255))
+    CV_WRAP PyWCameraPosition(InputArray  K, double scale = 1.0, const PyColor& color = Color(255, 255, 255))
     {
         if (K.kind() == _InputArray::MAT)
         {
@@ -362,7 +420,7 @@ public:
 
     ![Camera viewing frustum with image](images/cpw3.png)
      */
-    CV_WRAP PyWCameraPosition(InputArray K, InputArray image, double scale = 1.0, const Color &color = Color(255, 255, 255))
+    CV_WRAP PyWCameraPosition(InputArray K, InputArray image, double scale = 1.0, const PyColor& color = Color(255, 255, 255))
     {
         if (K.kind() == _InputArray::MAT)
         {
@@ -394,7 +452,7 @@ public:
 
     ![Camera viewing frustum with image](images/cpw3.png)
      */
-    CV_WRAP PyWCameraPosition(const Point2d &fov, InputArray image, double scale = 1.0, const Color &color = Color(255, 255, 255))
+    CV_WRAP PyWCameraPosition(const Point2d &fov, InputArray image, double scale = 1.0, const PyColor& color = Color(255, 255, 255))
     {
         widget = cv::makePtr<cv::viz::WCameraPosition>(fov, image, scale, color);
     }
@@ -442,7 +500,7 @@ public:
 
     Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
      */
-    CV_WRAP PyWCloud(InputArray cloud, const Color &color = Color::white())
+    CV_WRAP PyWCloud(InputArray cloud, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<cv::viz::WCloud>(cloud, color);
     }
@@ -465,7 +523,7 @@ public:
     Size and type should match with the cloud parameter.
     Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
      */
-    CV_WRAP PyWCloud(InputArray cloud, const Color &color, InputArray normals)
+    CV_WRAP PyWCloud(InputArray cloud, const PyColor& color, InputArray normals)
     {
         widget = cv::makePtr<cv::viz::WCloud>(cloud, color, normals);
     }
@@ -495,7 +553,7 @@ public:
     @param points Point set.
     @param color Color of the poly line.
      */
-    CV_WRAP PyWPolyLine(InputArray points, const Color &color = Color::white())
+    CV_WRAP PyWPolyLine(InputArray points, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<cv::viz::WPolyLine>(points, color);
     }
@@ -527,7 +585,7 @@ public:
     @param font_size Font size.
     @param color Color of the text.
      */
-    CV_WRAP PyWText(const String &text, const Point &pos, int font_size = 20, const Color &color = Color::white())
+    CV_WRAP PyWText(const String &text, const Point &pos, int font_size = 20, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<cv::viz::WText>(text, pos, font_size, color);
     }
@@ -564,7 +622,7 @@ public:
     @param face_camera If true, text always faces the camera.
     @param color Color of the text.
      */
-    CV_WRAP PyWText3D(const String &text, const Point3d &position, double text_scale = 1., bool face_camera = true, const Color &color = Color::white())
+    CV_WRAP PyWText3D(const String &text, const Point3d &position, double text_scale = 1., bool face_camera = true, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WText3D>(text, position, text_scale, face_camera, color);
     }
@@ -685,11 +743,11 @@ public:
     @param cells_spacing Size of each cell, respectively.
     @param color Color of the grid.
      */
-    CV_WRAP PyWGrid(InputArray cells, InputArray cells_spacing, const Color &color = Color::white());
+    CV_WRAP PyWGrid(InputArray cells, InputArray cells_spacing, const PyColor& color = Color::white());
 
     //! Creates repositioned grid
     CV_WRAP PyWGrid(const Point3d& center, const Vec3d& normal, const Vec3d& new_yaxis,
-        const Vec2i &cells = Vec2i::all(10), const Vec2d &cells_spacing = Vec2d::all(1.0), const Color &color = Color::white())
+        const Vec2i &cells = Vec2i::all(10), const Vec2d &cells_spacing = Vec2d::all(1.0), const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WGrid>(center, normal, new_yaxis, cells, cells_spacing, color);
     }
@@ -727,7 +785,7 @@ public:
     -   FRAMES : Displays coordinate frames at each pose.
     -   PATH & FRAMES : Displays both poly line and coordinate frames.
      */
-    CV_WRAP PyWTrajectory(InputArray path, int display_mode = WTrajectory::PATH, double scale = 1.0, const Color &color = Color::white())
+    CV_WRAP PyWTrajectory(InputArray path, int display_mode = WTrajectory::PATH, double scale = 1.0, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<cv::viz::WTrajectory>(path, display_mode, scale, color);
     }
@@ -756,7 +814,7 @@ public:
 
     Displays frustums at each pose of the trajectory.
      */
-    CV_WRAP PyWTrajectoryFrustums(InputArray path, InputArray K, double scale = 1.0, const Color &color = Color::white());
+    CV_WRAP PyWTrajectoryFrustums(InputArray path, InputArray K, double scale = 1.0, const PyColor& color = Color::white());
 
     CV_WRAP void setRenderingProperty(int property, double value)
     {
@@ -785,7 +843,7 @@ public:
     @param to Color for last sphere. Intermediate spheres will have interpolated color.
      */
     CV_WRAP PyWTrajectorySpheres(InputArray path, double line_length = 0.05, double radius = 0.007,
-        const Color &from = Color::red(), const Color &to = Color::white())
+        const PyColor& from = Color::red(), const PyColor& to = Color::white())
     {
         widget = cv::makePtr<WTrajectorySpheres>(path, line_length, radius, from, to);
     }
@@ -820,7 +878,7 @@ public:
     }
 
     //! Paint cloud with gradient specified by given colors between given points
-    CV_WRAP PyWPaintedCloud(InputArray cloud, const Point3d& p1, const Point3d& p2, const Color& c1, const Color &c2)
+    CV_WRAP PyWPaintedCloud(InputArray cloud, const Point3d& p1, const Point3d& p2, const PyColor& c1, const PyColor& c2)
     {
         widget = cv::makePtr<WPaintedCloud>(cloud, p1, p2, c1, c2);
     }
@@ -861,7 +919,7 @@ public:
     @param color A single Color for the whole cloud.
     @param pose Pose of the cloud. Points in the cloud belong to mask when they are set to (NaN, NaN, NaN).
      */
-    CV_WRAP void addCloud(InputArray cloud, const Color &color = Color::white(), const PyAffine3d &pose = PyAffine3d::Identity())
+    CV_WRAP void addCloud(InputArray cloud, const PyColor& color = Color::white(), const PyAffine3d& pose = PyAffine3d::Identity())
     {
         widget->addCloud(cloud, color, pose);
     }
@@ -901,7 +959,7 @@ public:
 
     @note In case there are four channels in the cloud, fourth channel is ignored.
      */
-    CV_WRAP PyWCloudNormals(InputArray cloud, InputArray normals, int level = 64, double scale = 0.1, const Color &color = Color::white())
+    CV_WRAP PyWCloudNormals(InputArray cloud, InputArray normals, int level = 64, double scale = 0.1, const PyColor& color = Color::white())
     {
         widget = cv::makePtr<WCloudNormals>(cloud, normals, level, scale, color);
     }
@@ -1149,7 +1207,7 @@ public:
     /** @brief Sets background color.
     */
     CV_WRAP
-    void setBackgroundColor(const Color& color, const Color& color2 = Color::not_set())
+    void setBackgroundColor(const PyColor& color, const PyColor& color2 = Color::not_set())
     { return Viz3d::setBackgroundColor(color, color2); }
 
     CV_WRAP

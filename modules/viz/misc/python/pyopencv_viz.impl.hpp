@@ -68,7 +68,7 @@ inline void PyViz3d::showWidget(const String &id, PyWTrajectoryFrustums &widget)
 #undef WRAP_SHOW_WIDGET_2
 
 
-PyWGrid::PyWGrid(InputArray cells, InputArray cells_spacing, const Color &color)
+PyWGrid::PyWGrid(InputArray cells, InputArray cells_spacing, const PyColor& color)
 {
     if (cells.kind() == _InputArray::MAT && cells_spacing.kind() == _InputArray::MAT)
     {
@@ -77,7 +77,7 @@ PyWGrid::PyWGrid(InputArray cells, InputArray cells_spacing, const Color &color)
         if (k.total() == 2  && l.total() == 2 )
         {
             CV_Assert(k.type() == CV_64FC1 && k.type() == CV_64FC1);
-            Vec2i c1(k.at<double>(0), k.at<double>(1));
+            Vec2i c1((int)k.at<double>(0), (int)k.at<double>(1));
             Vec2d c2(l.at<double>(0), l.at<double>(1));
             widget = cv::makePtr<WGrid>(c1, c2, color);
         }
@@ -89,7 +89,7 @@ PyWGrid::PyWGrid(InputArray cells, InputArray cells_spacing, const Color &color)
 }
 
 
-PyWTrajectoryFrustums::PyWTrajectoryFrustums(InputArray path, InputArray K, double scale, const Color &color)
+PyWTrajectoryFrustums::PyWTrajectoryFrustums(InputArray path, InputArray K, double scale, const PyColor& color)
 {
     if (K.kind() == _InputArray::MAT)
     {

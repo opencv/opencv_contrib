@@ -337,7 +337,7 @@ namespace cv
             @param resolution Resolution of the cone.
             @param color Color of the cone.
              */
-            WCone(double length, double radius, int resolution = 6.0, const Color &color = Color::white());
+            WCone(double length, double radius, int resolution = 6, const Color &color = Color::white());
 
             /** @brief Constructs repositioned planar cone.
 
@@ -348,7 +348,7 @@ namespace cv
             @param color Color of the cone.
 
              */
-            WCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6.0, const Color &color = Color::white());
+            WCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6, const Color &color = Color::white());
         };
 
         /** @brief This 3D Widget defines a cylinder. :
