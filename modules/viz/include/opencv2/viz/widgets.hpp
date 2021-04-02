@@ -337,7 +337,7 @@ namespace cv
             @param resolution Resolution of the cone.
             @param color Color of the cone.
              */
-            WCone(double length, double radius, int resolution = 6.0, const Color &color = Color::white());
+            WCone(double length, double radius, int resolution = 6, const Color &color = Color::white());
 
             /** @brief Constructs repositioned planar cone.
 
@@ -348,7 +348,7 @@ namespace cv
             @param color Color of the cone.
 
              */
-            WCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6.0, const Color &color = Color::white());
+            WCone(double radius, const Point3d& center, const Point3d& tip, int resolution = 6, const Color &color = Color::white());
         };
 
         /** @brief This 3D Widget defines a cylinder. :
@@ -785,11 +785,14 @@ namespace cv
         @param colors Point colors.
         @param normals Point normals.
          */
-        class CV_EXPORTS WMesh : public Widget3D
+        class CV_EXPORTS_W WMesh
+#ifndef OPENCV_BINDING_PARSER
+            : public Widget3D
+#endif
         {
         public:
-            WMesh(const Mesh &mesh);
-            WMesh(InputArray cloud, InputArray polygons, InputArray colors = noArray(), InputArray normals = noArray());
+            CV_WRAP WMesh(const Mesh &mesh);
+            CV_WRAP WMesh(InputArray cloud, InputArray polygons, InputArray colors = noArray(), InputArray normals = noArray());
         };
 
         /** @brief This class allows to merge several widgets to single one.

@@ -69,7 +69,7 @@ public:
                                          If zero, Canny() is not applied and the input
                                          image is taken as an edge image.
 @param _do_merge            false      - If true, incremental merging of segments
-                                         will be perfomred
+                                         will be performed
 */
 CV_EXPORTS_W Ptr<FastLineDetector> createFastLineDetector(
         int _length_threshold = 10, float _distance_threshold = 1.414213562f,
