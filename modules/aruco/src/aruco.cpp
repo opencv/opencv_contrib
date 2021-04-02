@@ -564,7 +564,7 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
     Mat onlyBits =
         candidateBits.rowRange(params->markerBorderBits,
                                candidateBits.rows - params->markerBorderBits)
-            .colRange(params->markerBorderBits, candidateBits.rows - params->markerBorderBits);
+            .colRange(params->markerBorderBits, candidateBits.cols - params->markerBorderBits);
 
     // try to indentify the marker
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
