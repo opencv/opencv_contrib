@@ -5,9 +5,9 @@
 
 namespace opencv_test { namespace {
 
-const Size img_size(640, 480);
+const Size img_size(320, 240);
 const int FLD_TEST_SEED = 0x134679;
-const int EPOCHS = 20;
+const int EPOCHS = 10;
 
 class FLDBase : public testing::Test
 {
@@ -33,6 +33,14 @@ class ximgproc_FLD: public FLDBase
 {
     public:
         ximgproc_FLD() { }
+    protected:
+
+};
+
+class ximgproc_ED: public FLDBase
+{
+    public:
+        ximgproc_ED() { }
     protected:
 
 };
@@ -199,5 +207,75 @@ TEST_F(ximgproc_FLD, rotatedRect)
     ASSERT_EQ(EPOCHS, passedtests);
 }
 
+//************** EDGE DRAWING *******************
+
+TEST_F(ximgproc_ED, whiteNoise)
+{
+    for (int i = 0; i < EPOCHS; ++i)
+    {
+        GenerateWhiteNoise(test_image);
+        Ptr<EdgeDrawing> detector = createEdgeDrawing();
+        detector->detectEdges(test_image);
+        detector->detectLines(lines);
+
+        if(40u >= lines.size()) ++passedtests;
+    }
+    ASSERT_EQ(EPOCHS, passedtests);
+}
+
+TEST_F(ximgproc_ED, constColor)
+{
+    for (int i = 0; i < EPOCHS; ++i)
+    {
+        GenerateConstColor(test_image);
+        Ptr<EdgeDrawing> detector = createEdgeDrawing();
+        detector->detectEdges(test_image);
+        detector->detectLines(lines);
+        if(0u == lines.size()) ++passedtests;
+    }
+    ASSERT_EQ(EPOCHS, passedtests);
+}
+
+TEST_F(ximgproc_ED, lines)
+{
+    for (int i = 0; i < EPOCHS; ++i)
+    {
+        const unsigned int numOfLines = 1;
+        GenerateLines(test_image, numOfLines);
+        Ptr<EdgeDrawing> detector = createEdgeDrawing();
+        detector->detectEdges(test_image);
+        detector->detectLines(lines);
+        if(numOfLines * 2 == lines.size()) ++passedtests;  // * 2 because of Gibbs effect
+    }
+    ASSERT_EQ(EPOCHS, passedtests);
+}
+
+TEST_F(ximgproc_ED, mergeLines)
+{
+    for (int i = 0; i < EPOCHS; ++i)
+    {
+        const unsigned int numOfLines = 1;
+        GenerateBrokenLines(test_image, numOfLines);
+        Ptr<EdgeDrawing> detector = createEdgeDrawing();
+        detector->detectEdges(test_image);
+        detector->detectLines(lines);
+        if(numOfLines * 2 == lines.size()) ++passedtests;  // * 2 because of Gibbs effect
+    }
+    ASSERT_EQ(EPOCHS, passedtests);
+}
+
+TEST_F(ximgproc_ED, rotatedRect)
+{
+    for (int i = 0; i < EPOCHS; ++i)
+    {
+        GenerateRotatedRect(test_image);
+        Ptr<EdgeDrawing> detector = createEdgeDrawing();
+        detector->detectEdges(test_image);
+        detector->detectLines(lines);
+
+        if(2u <= lines.size())  ++passedtests;
+    }
+    ASSERT_EQ(EPOCHS, passedtests);
+}
 
 }} // namespace

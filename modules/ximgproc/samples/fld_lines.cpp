@@ -11,14 +11,14 @@ using namespace cv::ximgproc;
 
 int main(int argc, char** argv)
 {
-    std::string in;
-    cv::CommandLineParser parser(argc, argv, "{@input|../samples/data/corridor.jpg|input image}{help h||show help message}");
+    string in;
+    CommandLineParser parser(argc, argv, "{@input|corridor.jpg|input image}{help h||show help message}");
     if (parser.has("help"))
     {
         parser.printMessage();
         return 0;
     }
-    in = parser.get<string>("@input");
+    in = samples::findFile(parser.get<string>("@input"));
 
     Mat image = imread(in, IMREAD_GRAYSCALE);
 
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     //                                     If zero, Canny() is not applied and the input
     //                                     image is taken as an edge image.
     // do_merge            false         - If true, incremental merging of segments
-    //                                     will be perfomred
+    //                                     will be performed
     int length_threshold = 10;
     float distance_threshold = 1.41421356f;
     double canny_th1 = 50.0;
@@ -51,27 +51,84 @@ int main(int argc, char** argv)
     Ptr<FastLineDetector> fld = createFastLineDetector(length_threshold,
             distance_threshold, canny_th1, canny_th2, canny_aperture_size,
             do_merge);
-    vector<Vec4f> lines_fld;
+    vector<Vec4f> lines;
 
     // Because of some CPU's power strategy, it seems that the first running of
     // an algorithm takes much longer. So here we run the algorithm 10 times
     // to see the algorithm's processing time with sufficiently warmed-up
     // CPU performance.
-    for(int run_count = 0; run_count < 10; run_count++) {
+    for (int run_count = 0; run_count < 5; run_count++) {
         double freq = getTickFrequency();
-        lines_fld.clear();
+        lines.clear();
         int64 start = getTickCount();
         // Detect the lines with FLD
-        fld->detect(image, lines_fld);
+        fld->detect(image, lines);
         double duration_ms = double(getTickCount() - start) * 1000 / freq;
-        std::cout << "Elapsed time for FLD " << duration_ms << " ms." << std::endl;
+        cout << "Elapsed time for FLD " << duration_ms << " ms." << endl;
     }
 
     // Show found lines with FLD
     Mat line_image_fld(image);
-    fld->drawSegments(line_image_fld, lines_fld);
+    fld->drawSegments(line_image_fld, lines);
     imshow("FLD result", line_image_fld);
 
+    waitKey(1);
+
+    Ptr<EdgeDrawing> ed = createEdgeDrawing();
+    ed->params.EdgeDetectionOperator = EdgeDrawing::SOBEL;
+    ed->params.GradientThresholdValue = 38;
+    ed->params.AnchorThresholdValue = 8;
+
+    vector<Vec6d> ellipses;
+
+    for (int run_count = 0; run_count < 5; run_count++) {
+        double freq = getTickFrequency();
+        lines.clear();
+        int64 start = getTickCount();
+
+        // Detect edges
+        //you should call this before detectLines() and detectEllipses()
+        ed->detectEdges(image);
+
+        // Detect lines
+        ed->detectLines(lines);
+        double duration_ms = double(getTickCount() - start) * 1000 / freq;
+        cout << "Elapsed time for EdgeDrawing detectLines " << duration_ms << " ms." << endl;
+
+        start = getTickCount();
+        // Detect circles and ellipses
+        ed->detectEllipses(ellipses);
+        duration_ms = double(getTickCount() - start) * 1000 / freq;
+        cout << "Elapsed time for EdgeDrawing detectEllipses " << duration_ms << " ms." << endl;
+    }
+
+    Mat edge_image_ed = Mat::zeros(image.size(), CV_8UC3);
+    vector<vector<Point> > segments = ed->getSegments();
+
+    for (size_t i = 0; i < segments.size(); i++)
+    {
+        const Point* pts = &segments[i][0];
+        int n = (int)segments[i].size();
+        polylines(edge_image_ed, &pts, &n, 1, false, Scalar((rand() & 255), (rand() & 255), (rand() & 255)), 1);
+    }
+
+    imshow("EdgeDrawing detected edges", edge_image_ed);
+
+    Mat line_image_ed(image);
+    fld->drawSegments(line_image_ed, lines);
+
+    // Draw circles and ellipses
+    for (size_t i = 0; i < ellipses.size(); i++)
+    {
+        Point center((int)ellipses[i][0], (int)ellipses[i][1]);
+        Size axes((int)ellipses[i][2] + (int)ellipses[i][3], (int)ellipses[i][2] + (int)ellipses[i][4]);
+        double angle(ellipses[i][5]);
+        Scalar color = ellipses[i][2] == 0 ? Scalar(255, 255, 0) : Scalar(0, 255, 0);
+
+        ellipse(line_image_ed, center, axes, angle, 0, 360, color, 2, LINE_AA);
+    }
+
+    imshow("EdgeDrawing result", line_image_ed);
     waitKey();
     return 0;
 }
