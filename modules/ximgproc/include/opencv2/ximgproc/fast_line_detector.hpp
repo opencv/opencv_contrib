@@ -68,7 +68,7 @@ public:
 @param _canny_aperture_size 3          - Aperturesize for the sobel
                                          operator in Canny()
 @param _do_merge            false      - If true, incremental merging of segments
-                                         will be perfomred
+                                         will be performed
 */
 CV_EXPORTS_W Ptr<FastLineDetector> createFastLineDetector(
         int _length_threshold = 10, float _distance_threshold = 1.414213562f,
