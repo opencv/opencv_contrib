@@ -60,7 +60,7 @@ namespace cv
 
         /** @brief This class represents color in BGR order.
         */
-        class Color : public Scalar
+        class Color : public Scalar  // FIXIT design bug, missing CV_EXPORTS
         {
         public:
             Color();
@@ -117,7 +117,7 @@ namespace cv
 
         /** @brief This class wraps mesh attributes, and it can load a mesh from a ply file. :
         */
-        class CV_EXPORTS Mesh
+        class CV_EXPORTS_W_SIMPLE Mesh
         {
         public:
             enum {
@@ -126,16 +126,21 @@ namespace cv
                 LOAD_OBJ = 2
             };
 
-            Mat cloud; //!< point coordinates of type CV_32FC3 or CV_64FC3 with only 1 row
-            Mat colors; //!< point color of type CV_8UC3 or CV_8UC4 with only 1 row
-            Mat normals; //!< point normals of type CV_32FC3, CV_32FC4, CV_64FC3 or CV_64FC4 with only 1 row
+            CV_PROP_RW Mat cloud; //!< point coordinates of type CV_32FC3 or CV_64FC3 with only 1 row
+            CV_PROP_RW Mat colors; //!< point color of type CV_8UC3 or CV_8UC4 with only 1 row
+            CV_PROP_RW Mat normals; //!< point normals of type CV_32FC3, CV_32FC4, CV_64FC3 or CV_64FC4 with only 1 row
 
             //! Raw integer list of the form: (n,id1,id2,...,idn, n,id1,id2,...,idn, ...)
             //! where n is the number of points in the polygon, and id is a zero-offset index into an associated cloud.
-            Mat polygons; //!< CV_32SC1 with only 1 row
+            CV_PROP_RW Mat polygons; //!< CV_32SC1 with only 1 row
 
-            Mat texture;
-            Mat tcoords; //!< CV_32FC2 or CV_64FC2 with only 1 row
+            CV_PROP_RW Mat texture;
+            CV_PROP_RW Mat tcoords; //!< CV_32FC2 or CV_64FC2 with only 1 row
+
+            CV_WRAP Mesh()
+            {
+                // nothing
+            }
 
             /** @brief Loads a mesh from a ply or a obj file.
 
