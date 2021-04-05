@@ -9,7 +9,8 @@
 // Inspired by Inigo Quilez' raymarching guide:
 // http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
 
-namespace opencv_test { namespace {
+namespace opencv_test {
+namespace {
 
 using namespace cv;
 
@@ -19,7 +20,7 @@ struct Reprojector
     Reprojector() {}
     inline Reprojector(Matx33f intr)
     {
-        fxinv = 1.f/intr(0, 0), fyinv = 1.f/intr(1, 1);
+        fxinv = 1.f / intr(0, 0), fyinv = 1.f / intr(1, 1);
         cx = intr(0, 2), cy = intr(1, 2);
     }
     template<typename T>
@@ -37,8 +38,8 @@ template<class Scene>
 struct RenderInvoker : ParallelLoopBody
 {
     RenderInvoker(Mat_<float>& _frame, Affine3f _pose,
-                  Reprojector _reproj,
-                  float _depthFactor) : ParallelLoopBody(),
+        Reprojector _reproj,
+        float _depthFactor) : ParallelLoopBody(),
         frame(_frame),
         pose(_pose),
         reproj(_reproj),
@@ -47,33 +48,33 @@ struct RenderInvoker : ParallelLoopBody
 
     virtual void operator ()(const cv::Range& r) const
     {
-        for(int y = r.start; y < r.end; y++)
+        for (int y = r.start; y < r.end; y++)
         {
             float* frameRow = frame[y];
-            for(int x = 0; x < frame.cols; x++)
+            for (int x = 0; x < frame.cols; x++)
             {
                 float pix = 0;
 
                 Point3f orig = pose.translation();
                 // direction through pixel
                 Point3f screenVec = reproj(Point3f((float)x, (float)y, 1.f));
-                float xyt = 1.f/(screenVec.x*screenVec.x +
-                                 screenVec.y*screenVec.y + 1.f);
+                float xyt = 1.f / (screenVec.x * screenVec.x +
+                    screenVec.y * screenVec.y + 1.f);
                 Point3f dir = normalize(Vec3f(pose.rotation() * screenVec));
                 // screen space axis
-                dir.y = - dir.y;
+                dir.y = -dir.y;
 
                 const float maxDepth = 20.f;
                 const float maxSteps = 256;
                 float t = 0.f;
-                for(int step = 0; step < maxSteps && t < maxDepth; step++)
+                for (int step = 0; step < maxSteps && t < maxDepth; step++)
                 {
-                    Point3f p = orig + dir*t;
+                    Point3f p = orig + dir * t;
                     float d = Scene::map(p);
-                    if(d < 0.000001f)
+                    if (d < 0.000001f)
                     {
-                        float depth = std::sqrt(t*t*xyt);
-                        pix = depth*depthFactor;
+                        float depth = std::sqrt(t * t * xyt);
+                        pix = depth * depthFactor;
                         break;
                     }
                     t += d;
@@ -90,11 +91,77 @@ struct RenderInvoker : ParallelLoopBody
     float depthFactor;
 };
 
+template<class Scene>
+struct RenderColorInvoker : ParallelLoopBody
+{
+    RenderColorInvoker(Mat_<Vec3f>& _frame, Affine3f _pose,
+        Reprojector _reproj,
+        float _depthFactor) : ParallelLoopBody(),
+        frame(_frame),
+        pose(_pose),
+        reproj(_reproj),
+        depthFactor(_depthFactor)
+    { }
+
+    virtual void operator ()(const cv::Range& r) const
+    {
+        for (int y = r.start; y < r.end; y++)
+        {
+            Vec3f* frameRow = frame[y];
+            for (int x = 0; x < frame.cols; x++)
+            {
+                Vec3f pix = 0;
+
+                Point3f orig = pose.translation();
+                // direction through pixel
+                Point3f screenVec = reproj(Point3f((float)x, (float)y, 1.f));
+                float xyt = 1.f / (screenVec.x * screenVec.x +
+                    screenVec.y * screenVec.y + 1.f);
+                Point3f dir = normalize(Vec3f(pose.rotation() * screenVec));
+                // screen space axis
+                dir.y = -dir.y;
+
+                const float maxDepth = 20.f;
+                const float maxSteps = 256;
+                float t = 0.f;
+                for (int step = 0; step < maxSteps && t < maxDepth; step++)
+                {
+                    Point3f p = orig + dir * t;
+                    float d = Scene::map(p);
+                    if (d < 0.000001f)
+                    {
+                        float m = 0.25f;
+                        float p0 = float(abs(fmod(p.x, m)) > m / 2.f);
+                        float p1 = float(abs(fmod(p.y, m)) > m / 2.f);
+                        float p2 = float(abs(fmod(p.z, m)) > m / 2.f);
+
+                        pix[0] = p0 + p1;
+                        pix[1] = p1 + p2;
+                        pix[2] = p0 + p2;
+
+                        pix *= 128.f;
+                        break;
+                    }
+                    t += d;
+                }
+
+                frameRow[x] = pix;
+            }
+        }
+    }
+
+    Mat_<Vec3f>& frame;
+    Affine3f pose;
+    Reprojector reproj;
+    float depthFactor;
+};
+
 struct Scene
 {
     virtual ~Scene() {}
     static Ptr<Scene> create(int nScene, Size sz, Matx33f _intr, float _depthFactor);
     virtual Mat depth(Affine3f pose) = 0;
+    virtual Mat rgb(Affine3f pose) = 0;
     virtual std::vector<Affine3f> getPoses() = 0;
 };
 
@@ -144,18 +211,29 @@ struct CubeSpheresScene : Scene
         return std::move(frame);
     }
 
+    Mat rgb(Affine3f pose) override
+    {
+        Mat_<Vec3f> frame(frameSize);
+        Reprojector reproj(intr);
+
+        Range range(0, frame.rows);
+        parallel_for_(range, RenderColorInvoker<CubeSpheresScene>(frame, pose, reproj, depthFactor));
+
+        return std::move(frame);
+    }
+
     std::vector<Affine3f> getPoses() override
     {
         std::vector<Affine3f> poses;
-        for(int i = 0; i < (int)(framesPerCycle*nCycles); i++)
+        for (int i = 0; i < (int)(framesPerCycle * nCycles); i++)
         {
-            float angle = (float)(CV_2PI*i/framesPerCycle);
+            float angle = (float)(CV_2PI * i / framesPerCycle);
             Affine3f pose;
             pose = pose.rotate(startPose.rotation());
-            pose = pose.rotate(Vec3f(0.f, -1.f, 0.f)*angle);
-            pose = pose.translate(Vec3f(startPose.translation()[0]*sin(angle),
-                                        startPose.translation()[1],
-                                        startPose.translation()[2]*cos(angle)));
+            pose = pose.rotate(Vec3f(0.f, -1.f, 0.f) * angle);
+            pose = pose.translate(Vec3f(startPose.translation()[0] * sin(angle),
+                startPose.translation()[1],
+                startPose.translation()[2] * cos(angle)));
             poses.push_back(pose);
         }
 
@@ -189,18 +267,18 @@ struct RotatingScene : Scene
 
         int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
 
-        const float* row0 = randTexture[(yi+0)%256];
-        const float* row1 = randTexture[(yi+1)%256];
+        const float* row0 = randTexture[(yi + 0) % 256];
+        const float* row1 = randTexture[(yi + 1) % 256];
 
-        float v00 = row0[(xi+0)%256];
-        float v01 = row0[(xi+1)%256];
-        float v10 = row1[(xi+0)%256];
-        float v11 = row1[(xi+1)%256];
+        float v00 = row0[(xi + 0) % 256];
+        float v01 = row0[(xi + 1) % 256];
+        float v10 = row1[(xi + 0) % 256];
+        float v11 = row1[(xi + 1) % 256];
 
         float tx = pt.x - xi, ty = pt.y - yi;
-        float v0 = v00 + tx*(v01 - v00);
-        float v1 = v10 + tx*(v11 - v10);
-        return v0 + ty*(v1 - v0);
+        float v0 = v00 + tx * (v01 - v00);
+        float v1 = v10 + tx * (v11 - v10);
+        return v0 + ty * (v1 - v0);
     }
 
     static float map(Point3f p)
@@ -208,21 +286,21 @@ struct RotatingScene : Scene
         const Point3f torPlace(0.f, 0.f, 0.f);
         Point3f torPos(p - torPlace);
         const Point2f torusParams(1.f, 0.2f);
-        Point2f torq(std::sqrt(torPos.x*torPos.x + torPos.z*torPos.z) - torusParams.x, torPos.y);
+        Point2f torq(std::sqrt(torPos.x * torPos.x + torPos.z * torPos.z) - torusParams.x, torPos.y);
         float torus = (float)cv::norm(torq) - torusParams.y;
 
         const Point3f cylShift(0.25f, 0.25f, 0.25f);
 
-        Point3f cylPos = Point3f(abs(std::fmod(p.x-0.1f, cylShift.x)),
-                                 p.y,
-                                 abs(std::fmod(p.z-0.2f, cylShift.z)))  - cylShift*0.5f;
+        Point3f cylPos = Point3f(abs(std::fmod(p.x - 0.1f, cylShift.x)),
+            p.y,
+            abs(std::fmod(p.z - 0.2f, cylShift.z))) - cylShift * 0.5f;
 
         const Point2f cylParams(0.1f,
-                                0.1f+0.1f*sin(p.x*p.y*5.f /* +std::log(1.f+abs(p.x*0.1f)) */));
-        Point2f cyld = Point2f(abs(std::sqrt(cylPos.x*cylPos.x + cylPos.z*cylPos.z)), abs(cylPos.y)) - cylParams;
+            0.1f + 0.1f * sin(p.x * p.y * 5.f /* +std::log(1.f+abs(p.x*0.1f)) */));
+        Point2f cyld = Point2f(abs(std::sqrt(cylPos.x * cylPos.x + cylPos.z * cylPos.z)), abs(cylPos.y)) - cylParams;
         float pins = min(max(cyld.x, cyld.y), 0.0f) + (float)cv::norm(Point2f(max(cyld.x, 0.f), max(cyld.y, 0.f)));
 
-        float terrain = p.y + 0.25f*noise(Point2f(p.x, p.z)*0.01f);
+        float terrain = p.y + 0.25f * noise(Point2f(p.x, p.z) * 0.01f);
 
         float res = min(terrain, max(-pins, torus));
 
@@ -240,18 +318,29 @@ struct RotatingScene : Scene
         return std::move(frame);
     }
 
+    Mat rgb(Affine3f pose) override
+    {
+        Mat_<Vec3f> frame(frameSize);
+        Reprojector reproj(intr);
+
+        Range range(0, frame.rows);
+        parallel_for_(range, RenderColorInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
+
+        return std::move(frame);
+    }
+
     std::vector<Affine3f> getPoses() override
     {
         std::vector<Affine3f> poses;
-        for(int i = 0; i < framesPerCycle*nCycles; i++)
+        for (int i = 0; i < framesPerCycle * nCycles; i++)
         {
-            float angle = (float)(CV_2PI*i/framesPerCycle);
+            float angle = (float)(CV_2PI * i / framesPerCycle);
             Affine3f pose;
             pose = pose.rotate(startPose.rotation());
-            pose = pose.rotate(Vec3f(0.f, -1.f, 0.f)*angle);
-            pose = pose.translate(Vec3f(startPose.translation()[0]*sin(angle),
-                                        startPose.translation()[1],
-                                        startPose.translation()[2]*cos(angle)));
+            pose = pose.rotate(Vec3f(0.f, -1.f, 0.f) * angle);
+            pose = pose.translate(Vec3f(startPose.translation()[0] * sin(angle),
+                startPose.translation()[1],
+                startPose.translation()[2] * cos(angle)));
             poses.push_back(pose);
         }
 
@@ -268,7 +357,7 @@ Mat_<float> RotatingScene::randTexture(256, 256);
 
 Ptr<Scene> Scene::create(int nScene, Size sz, Matx33f _intr, float _depthFactor)
 {
-    if(nScene == 0)
+    if (nScene == 0)
         return makePtr<RotatingScene>(sz, _intr, _depthFactor);
     else
         return makePtr<CubeSpheresScene>(sz, _intr, _depthFactor);
@@ -299,7 +388,7 @@ Mat_<Vec3b> creareRGBframe(Size s)
 
 static inline void CheckFrequency(Mat image)
 {
-    float all = (float) image.size().height * image.size().width;
+    float all = (float)image.size().height * image.size().width;
     int cc1 = 0, cc2 = 0, cc3 = 0, cc4 = 0;
     Vec3b c1 = Vec3b(200, 0, 0), c2 = Vec3b(0, 200, 0);
     Vec3b c3 = Vec3b(0, 0, 200), c4 = Vec3b(100, 100, 100);
@@ -333,25 +422,26 @@ void flyTest(bool hiDense, bool test_colors)
     std::vector<Affine3f> poses = scene->getPoses();
     Affine3f startPoseGT = poses[0], startPoseKF;
     Affine3f pose, kfPose;
-    for(size_t i = 0; i < poses.size(); i++)
+    for (size_t i = 0; i < poses.size(); i++)
     {
         pose = poses[i];
 
         Mat depth = scene->depth(pose);
-        Mat rgb = creareRGBframe(depth.size());
+        //DEBUG
+        Mat rgb = scene->rgb(pose);// creareRGBframe(depth.size());
 
         ASSERT_TRUE(kf->update(depth, rgb));
 
         kfPose = kf->getPose();
-        if(i == 0)
+        if (i == 0)
             startPoseKF = kfPose;
 
-        pose = (  startPoseGT.inv() * pose  )*startPoseKF;
+        pose = (startPoseGT.inv() * pose) * startPoseKF;
 
-        if(display)
+        if (display)
         {
-            imshow("depth", depth*(1.f/params->depthFactor/4.f));
-            imshow("rgb", rgb);
+            imshow("depth", depth * (1.f / params->depthFactor / 4.f));
+            imshow("rgb", rgb * (1.f / 255.f));
             Mat rendered;
             kf->render(rendered);
             imshow("render", rendered);
@@ -375,7 +465,7 @@ void flyTest(bool hiDense, bool test_colors)
 
 
 #ifdef OPENCV_ENABLE_NONFREE
-TEST( ColoredKinectFusion, lowDense )
+TEST(ColoredKinectFusion, lowDense)
 #else
 TEST(ColoredKinectFusion, DISABLED_lowDense)
 #endif
@@ -393,7 +483,7 @@ TEST(KinectFusion, DISABLED_highDense)
 }
 
 #ifdef OPENCV_ENABLE_NONFREE
-TEST( ColoredKinectFusion, color_lowDense )
+TEST(ColoredKinectFusion, color_lowDense)
 #else
 TEST(ColoredKinectFusion, DISABLED_color_lowDense)
 #endif
@@ -410,4 +500,5 @@ TEST(KinectFusion, DISABLED_color_highDense)
     flyTest(true, true);
 }
 
-}} // namespace
+}
+} // namespace
