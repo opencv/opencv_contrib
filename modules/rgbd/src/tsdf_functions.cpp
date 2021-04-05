@@ -592,7 +592,7 @@ void integrateRGBVolumeUnit(
                         ColorType& b = voxel.b;
 
                         // update RGB
-                        if (abs(((float)(r + g + b)) - (colorRGB[0] + colorRGB[1] + colorRGB[2])) < 1000 || weight < 1)
+                        if (weight < 1)
                         {
                             r = (ColorType)((float)(r * weight) + (colorRGB[0])) / (weight + 1);
                             g = (ColorType)((float)(g * weight) + (colorRGB[1])) / (weight + 1);
@@ -703,7 +703,7 @@ void integrateRGBVolumeUnit(
                         ColorType& b = voxel.b;
 
                         // update RGB
-                        if (abs(((float)(r + g + b)) - (colorRGB[0] + colorRGB[1] + colorRGB[2])) < 1000 || weight < 1)
+                        if (weight < 1)
                         {
                             r = (ColorType)((float)(r * weight) + (colorRGB[0])) / (weight + 1);
                             g = (ColorType)((float)(g * weight) + (colorRGB[1])) / (weight + 1);
