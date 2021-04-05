@@ -9,6 +9,8 @@
 #include "tsdf_functions.hpp"
 #include "opencl_kernels_rgbd.hpp"
 
+#define USE_INTERPOLATION_IN_GETNORMAL 1
+
 namespace cv {
 
 namespace kinfu {
@@ -79,9 +81,10 @@ public:
 
     float interpolateVoxel(const cv::Point3f& p) const;
     Point3f getNormalVoxel(const cv::Point3f& p) const;
+    float interpolateColor(float tx, float ty, float tz, float vx[8]) const;
     Point3f getColorVoxel(const cv::Point3f& p) const;
 
-#if USE_INTRINSICS
+#if USE_INTRINSICS  && 0
     float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
     v_float32x4 getColorVoxel(const v_float32x4& p) const;
@@ -174,7 +177,7 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
         depthFactor, cameraPose, depth_intrinsics, rgb_intrinsics, pixNorms, volume);
 }
 
-#if USE_INTRINSICS
+#if USE_INTRINSICS  && 0
 // all coordinate checks should be done in inclosing cycle
 inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& _p) const
 {
@@ -255,7 +258,7 @@ inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
 #endif
 
 
-#if USE_INTRINSICS
+#if USE_INTRINSICS  && 0
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& _p) const
 {
@@ -374,7 +377,20 @@ inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 }
 #endif
 
-#if USE_INTRINSICS
+inline float ColoredTSDFVolumeCPU::interpolateColor(float tx, float ty, float tz, float vx[8]) const
+{
+    float v00 = vx[0] + tz * (vx[1] - vx[0]);
+    float v01 = vx[2] + tz * (vx[3] - vx[2]);
+    float v10 = vx[4] + tz * (vx[5] - vx[4]);
+    float v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+    float v0 = v00 + ty * (v01 - v00);
+    float v1 = v10 + ty * (v11 - v10);
+
+    return v0 + tx * (v1 - v0);
+}
+
+#if USE_INTRINSICS  && 0
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& _p) const
 {
@@ -418,6 +434,8 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
     const RGBTsdfVoxel* volData = volume.ptr<RGBTsdfVoxel>();
 
+
+
     if(p.x < 1 || p.x >= volResolution.x - 2 ||
        p.y < 1 || p.y >= volResolution.y - 2 ||
        p.z < 1 || p.z >= volResolution.z - 2)
@@ -428,26 +446,30 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     int iz = cvFloor(p.z);
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
+    Point3f res;
 
+#if USE_INTERPOLATION_IN_GETNORMAL
     // TODO: create better interpolation or remove this simple version
-    /*
-    float r = 0, g = 0, b = 0;
-    float mainRGBsum = (float) (volData[coordBase].r + volData[coordBase].g + volData[coordBase].b);
-    float counter = 0;
+    float r[8], g[8], b[8];
     for (int i = 0; i < 8; i++)
     {
-        float sum = (float) (volData[neighbourCoords[i] + coordBase].r + volData[neighbourCoords[i] + coordBase].g + volData[neighbourCoords[i] + coordBase].b );
-        if (volData[neighbourCoords[i] + coordBase].r == volData[neighbourCoords[i] + coordBase].r && abs(sum - mainRGBsum) < 1000)
-        {
-            r += (float) volData[neighbourCoords[i] + coordBase].r;
-            g += (float) volData[neighbourCoords[i] + coordBase].g;
-            b += (float) volData[neighbourCoords[i] + coordBase].b;
-            counter+=1.0f;
-        }
+        r[i] = (float) volData[neighbourCoords[i] + coordBase].r;
+        g[i] = (float) volData[neighbourCoords[i] + coordBase].g;
+        b[i] = (float) volData[neighbourCoords[i] + coordBase].b;
     }
-    Point3f res(r / counter, g / counter, b / counter);
-    */
-    Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
+
+    Point3f ptVox = p * voxelSizeInv;
+    Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
+    float tx = ptVox.x - iptVox[0];
+    float ty = ptVox.y - iptVox[1];
+    float tz = ptVox.z - iptVox[2];
+
+    res=Point3f(interpolateColor(tx, ty, tz, r),
+                interpolateColor(tx, ty, tz, g),
+                interpolateColor(tx, ty, tz, b));
+#else
+    res=Point3f(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
+#endif
     return res;
 }
 #endif
@@ -473,7 +495,7 @@ struct ColorRaycastInvoker : ParallelLoopBody
         vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
         reprojDepth(depth_intrinsics.makeReprojector())
     {  }
-#if USE_INTRINSICS
+#if USE_INTRINSICS && 0
     virtual void operator() (const Range& range) const override
     {
         const v_float32x4 vfxy(reprojDepth.fxinv, reprojDepth.fyinv, 0, 0);
