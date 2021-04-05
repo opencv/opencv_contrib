@@ -115,8 +115,6 @@ struct RenderColorInvoker : ParallelLoopBody
                 Point3f orig = pose.translation();
                 // direction through pixel
                 Point3f screenVec = reproj(Point3f((float)x, (float)y, 1.f));
-                float xyt = 1.f / (screenVec.x * screenVec.x +
-                    screenVec.y * screenVec.y + 1.f);
                 Point3f dir = normalize(Vec3f(pose.rotation() * screenVec));
                 // screen space axis
                 dir.y = -dir.y;
@@ -361,29 +359,6 @@ Ptr<Scene> Scene::create(int nScene, Size sz, Matx33f _intr, float _depthFactor)
         return makePtr<RotatingScene>(sz, _intr, _depthFactor);
     else
         return makePtr<CubeSpheresScene>(sz, _intr, _depthFactor);
-}
-
-Mat_<Vec3b> creareRGBframe(Size s)
-{
-    Mat rgb(s.height, s.width, CV_8UC3, Scalar(0, 0, 0));
-    int ci = s.height / 2;
-    int cj = s.width / 2;
-    for (int i = 0; i < s.height; i++)
-    {
-        for (int j = 0; j < s.width; j++)
-        {
-            if (i < ci && j < cj) // red
-                rgb.at<Vec3b>(i, j) = Vec3b(200, 0, 0);
-            if (i < ci && j > cj) // green
-                rgb.at<Vec3b>(i, j) = Vec3b(0, 200, 0);
-            if (i > ci && j < cj) // blue
-                rgb.at<Vec3b>(i, j) = Vec3b(0, 0, 200);
-            if (i > ci && j > cj) // mixed
-                rgb.at<Vec3b>(i, j) = Vec3b(100, 100, 100);
-
-        }
-    }
-    return rgb;
 }
 
 static inline void CheckFrequency(Mat image)

@@ -567,8 +567,8 @@ void integrateRGBVolumeUnit(
                     // norm(camPixVec) produces double which is too slow
                     int _u = (int)projected.get0();
                     int _v = (int)v_rotate_right<1>(projected).get0();
-                    int rgb_u = (int)projected.get0();
-                    int rgb_v = (int)v_rotate_right<1>(projected).get0();
+                    int rgb_u = (int)projectedRGB.get0();
+                    int rgb_v = (int)v_rotate_right<1>(projectedRGB).get0();
 
                     if (!(_u >= 0 && _u < depth.cols && _v >= 0 && _v < depth.rows &&
                         rgb_v >= 0 && rgb_v < color.rows && rgb_u >= 0 && rgb_u < color.cols))
