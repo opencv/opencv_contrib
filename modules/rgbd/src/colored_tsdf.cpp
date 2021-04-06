@@ -84,7 +84,7 @@ public:
     float interpolateColor(float tx, float ty, float tz, float vx[8]) const;
     Point3f getColorVoxel(const cv::Point3f& p) const;
 
-#if USE_INTRINSICS  && 0
+#if USE_INTRINSICS
     float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
     v_float32x4 getColorVoxel(const v_float32x4& p) const;
@@ -177,7 +177,7 @@ void ColoredTSDFVolumeCPU::integrate(InputArray _depth, InputArray _rgb, float d
         depthFactor, cameraPose, depth_intrinsics, rgb_intrinsics, pixNorms, volume);
 }
 
-#if USE_INTRINSICS  && 0
+#if USE_INTRINSICS
 // all coordinate checks should be done in inclosing cycle
 inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& _p) const
 {
@@ -258,7 +258,7 @@ inline float ColoredTSDFVolumeCPU::interpolateVoxel(const Point3f& p) const
 #endif
 
 
-#if USE_INTRINSICS  && 0
+#if USE_INTRINSICS
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& _p) const
 {
@@ -377,6 +377,25 @@ inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 }
 #endif
 
+#if USE_INTRINSICS
+inline float ColoredTSDFVolumeCPU::interpolateColor(float tx, float ty, float tz, float vx[8]) const
+{
+    v_float32x4 v0246, v1357;
+    v_load_deinterleave(vx, v0246, v1357);
+
+    v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
+
+    v_float32x4 v00_10 = vxx;
+    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
+    float v0 = v0_1.get0();
+    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+    float v1 = v0_1.get0();
+
+    return v0 + tx * (v1 - v0);
+}
+#else
 inline float ColoredTSDFVolumeCPU::interpolateColor(float tx, float ty, float tz, float vx[8]) const
 {
     float v00 = vx[0] + tz * (vx[1] - vx[0]);
@@ -389,8 +408,9 @@ inline float ColoredTSDFVolumeCPU::interpolateColor(float tx, float ty, float tz
 
     return v0 + tx * (v1 - v0);
 }
+#endif
 
-#if USE_INTRINSICS  && 0
+#if USE_INTRINSICS
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& _p) const
 {
@@ -420,11 +440,33 @@ inline v_float32x4 ColoredTSDFVolumeCPU::getColorVoxel(const v_float32x4& p) con
 
     int coordBase = ix * xdim + iy * ydim + iz * zdim;
     float CV_DECL_ALIGNED(16) rgb[4];
+
+#if USE_INTERPOLATION_IN_GETNORMAL
+    float r[8], g[8], b[8];
+    for (int i = 0; i < 8; i++)
+    {
+        r[i] = (float)volData[neighbourCoords[i] + coordBase].r;
+        g[i] = (float)volData[neighbourCoords[i] + coordBase].g;
+        b[i] = (float)volData[neighbourCoords[i] + coordBase].b;
+    }
+
+    v_float32x4 vsi(voxelSizeInv, voxelSizeInv, voxelSizeInv, voxelSizeInv);
+    v_float32x4 ptVox = p * vsi;
+    v_int32x4 iptVox = v_floor(ptVox);
+    v_float32x4 t = ptVox - v_cvt_f32(iptVox);
+    float tx = t.get0(); t = v_rotate_right<1>(t);
+    float ty = t.get0(); t = v_rotate_right<1>(t);
+    float tz = t.get0();
+    rgb[0] = interpolateColor(tx, ty, tz, r);
+    rgb[1] = interpolateColor(tx, ty, tz, g);
+    rgb[2] = interpolateColor(tx, ty, tz, b);
+    rgb[3] = 0.f;
+#else
     rgb[0] = volData[coordBase].r;
     rgb[1] = volData[coordBase].g;
     rgb[2] = volData[coordBase].b;
     rgb[3] = 0.f;
-
+#endif
     v_float32x4 res = v_load_aligned(rgb);
     return res;
 }
@@ -496,7 +538,7 @@ struct ColorRaycastInvoker : ParallelLoopBody
         vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
         reprojDepth(depth_intrinsics.makeReprojector())
     {  }
-#if USE_INTRINSICS && 0
+#if USE_INTRINSICS
     virtual void operator() (const Range& range) const override
     {
         const v_float32x4 vfxy(reprojDepth.fxinv, reprojDepth.fyinv, 0, 0);
