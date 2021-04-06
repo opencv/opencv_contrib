@@ -595,7 +595,7 @@ void integrateRGBVolumeUnit(
                         r = (ColorType)((float)(r * weight) + (colorRGB[0])) / (weight + 1);
                         g = (ColorType)((float)(g * weight) + (colorRGB[1])) / (weight + 1);
                         b = (ColorType)((float)(b * weight) + (colorRGB[2])) / (weight + 1);
-
+                        colorFix(r, g, b);
                         // update TSDF
                         value = floatToTsdf((tsdfToFloat(value) * weight + tsdfToFloat(tsdf)) / (weight + 1));
                         weight = WeightType(min(int(weight + 1), int(maxWeight)));

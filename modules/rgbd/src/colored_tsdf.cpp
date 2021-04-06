@@ -470,6 +470,7 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 #else
     res=Point3f(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
 #endif
+    colorFix(res);
     return res;
 }
 #endif

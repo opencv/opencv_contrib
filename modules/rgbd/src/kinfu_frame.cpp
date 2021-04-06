@@ -43,6 +43,13 @@ inline float specPow<1>(float x)
     return x;
 }
 
+inline void colorFix(Point3f& c)
+{
+    if (c.x > 255) c.x = 255;
+    if (c.y > 255) c.y = 255;
+    if (c.z > 255) c.z = 255;
+}
+
 struct RenderInvoker : ParallelLoopBody
 {
     RenderInvoker(const Points& _points, const Normals& _normals, Mat_<Vec4b>& _img, Affine3f _lightPose, Size _sz) :
@@ -376,6 +383,7 @@ struct ComputePointsNormalsColorsInvoker : ParallelLoopBody
                         n = -normalize(vec);
                         p = v00;
                         c = fromPtype(rgb.at<Vec4f>(rgb_v, rgb_u));
+                        colorFix(c);
                     }
                 }
 

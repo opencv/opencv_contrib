@@ -35,6 +35,20 @@ inline float tsdfToFloat(TsdfType num)
     return float(num) * (-1.f / 128.f);
 }
 
+inline void colorFix(ColorType& r, ColorType& g, ColorType&b)
+{
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+}
+
+inline void colorFix(Point3f& c)
+{
+    if (c.x > 255) c.x = 255;
+    if (c.y > 255) c.y = 255;
+    if (c.z > 255) c.z = 255;
+}
+
 cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics);
 cv::UMat preCalculationPixNormGPU(const UMat& depth, const Intr& intrinsics);
 
