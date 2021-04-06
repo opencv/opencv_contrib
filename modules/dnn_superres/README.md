@@ -40,7 +40,7 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-E
 - Advantage: It is tiny and fast, and still performs well.
 - Disadvantage: Perform worse visually than newer, more robust models.
 - Speed: < 0.01 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network](https://arxiv.org/pdf/1707.02921.pdf) [2]
+- Original paper: [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network](https://arxiv.org/pdf/1609.05158.pdf) [2]
 
 #### FSRCNN
 
@@ -66,7 +66,7 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-L
 - Advantage: The model can do multi-scale super-resolution with one forward pass. It can now support 2x, 4x, 8x, and [2x, 4x] and [2x, 4x, 8x] super-resolution.
 - Disadvantage: It is slower than ESPCN and FSRCNN, and the accuracy is worse than EDSR.
 - Speed: < 0.1 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Deep laplacian pyramid networks for fast and accurate super-resolution](https://arxiv.org/pdf/1707.02921.pdf) [4]
+- Original paper: [Deep laplacian pyramid networks for fast and accurate super-resolution](https://arxiv.org/pdf/1704.03915.pdf) [4]
 
 ### Benchmarks
 
@@ -92,4 +92,4 @@ Refer to the benchmarks located in the tutorials for more detailed benchmarking.
 [3] Chao Dong, Chen Change Loy, Xiaoou Tang. **"Accelerating the Super-Resolution Convolutional Neural Network"**, <i> in Proceedings of European Conference on Computer Vision </i>**ECCV 2016**. [[PDF](http://personal.ie.cuhk.edu.hk/~ccloy/files/eccv_2016_accelerating.pdf)]
 [[arXiv](https://arxiv.org/abs/1608.00367)] [[Project Page](http://mmlab.ie.cuhk.edu.hk/projects/FSRCNN.html)]
 
-[4] Lai, W. S., Huang, J. B., Ahuja, N., and Yang, M. H., **"Deep laplacian pyramid networks for fast and accurate super-resolution"**, <i> In Proceedings of the IEEE conference on computer vision and pattern recognition </i>**CVPR 2017**. [[PDF](http://openaccess.thecvf.com/content_cvpr_2017/papers/Lai_Deep_Laplacian_Pyramid_CVPR_2017_paper.pdf)] [[arXiv](https://arxiv.org/abs/1710.01992)] [[Project Page](http://vllab.ucmerced.edu/wlai24/LapSRN/)]
+[4] Lai, W. S., Huang, J. B., Ahuja, N., and Yang, M. H., **"Deep laplacian pyramid networks for fast and accurate super-resolution"**, <i> In Proceedings of the IEEE conference on computer vision and pattern recognition </i>**CVPR 2017**. [[PDF](http://openaccess.thecvf.com/content_cvpr_2017/papers/Lai_Deep_Laplacian_Pyramid_CVPR_2017_paper.pdf)] [[arXiv](https://arxiv.org/abs/1704.03915)] [[Project Page](http://vllab.ucmerced.edu/wlai24/LapSRN/)]
