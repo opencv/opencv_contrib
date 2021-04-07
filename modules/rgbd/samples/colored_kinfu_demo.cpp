@@ -53,7 +53,7 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
 static const char* keys =
 {
     "{help h usage ? | | print this message   }"
-    "{depth  | | Path to depth.txt file listing a set of depth images }"
+    "{depth  | | Path to folder with depth.txt and rgb.txt files listing a set of depth and rgb images }"
     "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
