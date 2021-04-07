@@ -323,6 +323,7 @@ PERF_TEST(Perf_TSDF, integrate)
         startTimer();
         settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
+        depth.release();
     }
     SANITY_CHECK_NOTHING();
 }
@@ -358,6 +359,7 @@ PERF_TEST(Perf_HashTSDF, integrate)
         startTimer();
         settings.volume->integrate(depth, settings._params->depthFactor, pose, settings._params->intr);
         stopTimer();
+        depth.release();
     }
     SANITY_CHECK_NOTHING();
 }

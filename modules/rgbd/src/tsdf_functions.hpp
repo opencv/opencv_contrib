@@ -9,6 +9,7 @@
 
 #include <opencv2/rgbd/volume.hpp>
 #include "tsdf.hpp"
+#include "colored_tsdf.hpp"
 
 namespace cv
 {
@@ -34,6 +35,20 @@ inline float tsdfToFloat(TsdfType num)
     return float(num) * (-1.f / 128.f);
 }
 
+inline void colorFix(ColorType& r, ColorType& g, ColorType&b)
+{
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+}
+
+inline void colorFix(Point3f& c)
+{
+    if (c.x > 255) c.x = 255;
+    if (c.y > 255) c.y = 255;
+    if (c.z > 255) c.z = 255;
+}
+
 cv::Mat preCalculationPixNorm(Depth depth, const Intr& intrinsics);
 cv::UMat preCalculationPixNormGPU(const UMat& depth, const Intr& intrinsics);
 
@@ -44,6 +59,12 @@ void integrateVolumeUnit(
     cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
     InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
     const cv::kinfu::Intr& intrinsics, InputArray _pixNorms, InputArray _volume);
+
+void integrateRGBVolumeUnit(
+    float truncDist, float voxelSize, int maxWeight,
+    cv::Matx44f _pose, Point3i volResolution, Vec4i volStrides,
+    InputArray _depth, InputArray _rgb, float depthFactor, const cv::Matx44f& cameraPose,
+    const cv::kinfu::Intr& depth_intrinsics, const cv::kinfu::Intr& rgb_intrinsics, InputArray _pixNorms, InputArray _volume);
 
 
 class CustomHashSet
