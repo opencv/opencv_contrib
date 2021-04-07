@@ -10,12 +10,16 @@
 namespace cv {
 namespace barcode {
 
-constexpr int OTSU = 0;
-constexpr int HYBRID = 1;
+enum BinaryType
+{
+    OTSU = 0, HYBRID = 1
+};
+static constexpr BinaryType binary_types[] = {OTSU, HYBRID};
 
-void preprocess(Mat &src, Mat &dst);
+void preprocess(const Mat &src, const Mat &dst);
 
-Mat binarize(const Mat &src, int mode);
+void binarize(const Mat &src, Mat &dst, BinaryType mode);
+
 }
 }
 #endif //__OPENCV_BARCODE_UTILS_HPP__

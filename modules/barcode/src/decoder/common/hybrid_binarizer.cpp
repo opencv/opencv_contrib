@@ -10,39 +10,8 @@
 namespace cv {
 namespace barcode {
 
-int cap(int value, int min, int max)
-{
-    if (value < min)
-    {
-        return min;
-    }
-    else
-    {
-        return value > max ? max : value;
-    }
-}
 
-void thresholdBlock(std::vector<uchar> luminances, int xoffset, int yoffset, int threshold, int stride, Mat &dst)
-{
-    int y = 0;
-
-    for (int offset = yoffset * stride + xoffset; y < 8; offset += stride)
-    {
-        for (int x = 0; x < 8; ++x)
-        {
-            if ((luminances[offset + x] & 255) <= threshold)
-            {
-                dst.at<uchar>(yoffset + y, xoffset + x) = 0;
-            }
-            else
-            {
-                dst.at<uchar>(yoffset + y, xoffset + x) = 255;
-            }
-        }
-        ++y;
-    }
-
-}
+#define CAP(x, x1, x2) x < x1 ? x1 : (x > x2 ? x2 : x)
 
 void
 calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, int sub_height, int width, int height,
@@ -57,7 +26,7 @@ calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, 
         {
             yoffset = maxYOffset;
         }
-        int top = cap(y, 2, sub_height - 3);
+        int top = CAP(y, 2, sub_height - 3);
         for (int x = 0; x < sub_width; x++)
         {
             int xoffset = x << BLOCK_SIZE_POWER;
@@ -65,16 +34,28 @@ calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, 
             {
                 xoffset = maxXOffset;
             }
-            int left = cap(x, 2, sub_width - 3);
+            int left = CAP(x, 2, sub_width - 3);
             int sum = 0;
-            for (int z = -2; z <= 2; z++)
+            const uchar *black_row = black_points.ptr<uchar>(top - 2);
+            for (int z = 0; z <= 4; z++)
             {
-                const uchar *black_row = black_points.ptr<uchar>(top + z);
                 sum += black_row[left - 2] + black_row[left - 1] + black_row[left] + black_row[left + 1] +
                        black_row[left + 2];
+                black_row += black_points.cols;
             }
             int average = sum / 25;
-            thresholdBlock(luminances, xoffset, yoffset, average, width, dst);
+            int temp_y = 0;
+
+            auto *ptr = dst.ptr<uchar>(yoffset, xoffset);
+            for (int offset = yoffset * width + xoffset; temp_y < 8; offset += width)
+            {
+                for (int temp_x = 0; temp_x < 8; ++temp_x)
+                {
+                    *(ptr + temp_x) = (luminances[offset + temp_x] & 255) <= average ? 0 : 255;
+                }
+                ++temp_y;
+                ptr += width;
+            }
         }
     }
 
@@ -170,7 +151,7 @@ Mat calculateBlackPoints(std::vector<uchar> luminances, int sub_width, int sub_h
 }
 
 
-void hybridBinarization(Mat src, Mat &dst)
+void hybridBinarization(const Mat &src, Mat &dst)
 {
     int width = src.cols;
     int height = src.rows;

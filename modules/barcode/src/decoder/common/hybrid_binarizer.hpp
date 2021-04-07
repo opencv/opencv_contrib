@@ -18,11 +18,8 @@ constexpr static int BLOCK_SIZE_MASK = BLOCK_SIZE - 1;   // ...0011...11
 constexpr static int MINIMUM_DIMENSION = BLOCK_SIZE * 5;
 constexpr static int MIN_DYNAMIC_RANGE = 24;
 
-int cap(int value, int min, int max);
 
-void thresholdBlock(std::vector<uchar> luminances, int xoffset, int yoffset, int threshold, int stride, Mat &dst);
-
-void hybridBinarization(Mat src, Mat &dst);
+void hybridBinarization(const Mat &src, Mat &dst);
 
 void
 calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, int sub_height, int width, int height,

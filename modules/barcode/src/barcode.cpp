@@ -90,8 +90,35 @@ bool BarDecode::decodeMultiplyProcess()
         {
             for (int i = range.start; i < range.end; i++)
             {
-                auto res = decoders[0]->decodeROI(bar_imgs[i]);
-                decoded_info[i] = res.first;
+                Mat bin_bar;
+                Result max_res;
+                float max_rate = -1;
+                bool decoded = false;
+                for (const auto binary_type : binary_types)
+                {
+                    if (decoded)
+                    { break; }
+                    binarize(bar_imgs[i], bin_bar, binary_type);
+                    for (auto const &decoder:decoders)
+                    {
+                        auto cur_res = decoder->decodeROI(bin_bar);
+
+                        if (cur_res.second > max_rate)
+                        {
+                            max_res = cur_res.first;
+                            max_rate = cur_res.second;
+                            if (max_rate > 0.6)
+                            {
+                                // code decoded
+                                decoded = true;
+                                break;
+                            }
+                        }
+
+                    }
+                }
+
+                decoded_info[i] = max_res;
             }
         }
 
@@ -102,7 +129,6 @@ bool BarDecode::decodeMultiplyProcess()
     };
     result_info.clear();
     result_info.resize(bar_imgs.size());
-    //sr and cut img
 
     ParallelBarCodeDecodeProcess parallelDecodeProcess{bar_imgs, result_info};
     parallel_for_(Range(0, int(bar_imgs.size())), parallelDecodeProcess);
@@ -123,6 +149,7 @@ public:
     bool use_nn_sr = false;
 };
 
+// return cropped and scaled bar img
 vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<cv::Point2f> &points) const
 {
     vector<vector<Point2f>> src_points;
@@ -144,14 +171,13 @@ vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<cv::P
     {
         Mat bar_img;
         cropROI(src, bar_img, corners);
-        preprocess(bar_img, bar_img);
+//        preprocess(bar_img, bar_img);
         // empirical settings
         if (bar_img.cols < 320 || bar_img.cols > 640)
         {
             float scale = 620.0f / static_cast<float>(bar_img.cols);
             bar_img = sr->processImageScale(bar_img, scale, use_nn_sr);
         }
-        bar_img = binarize(bar_img, OTSU);
         bar_imgs.emplace_back(bar_img);
     }
     return bar_imgs;
@@ -214,17 +240,23 @@ bool BarcodeDetector::decode(InputArray img, InputArray points, vector<std::stri
     CV_Assert((points.size().width % 4) == 0);
     vector<Point2f> src_points;
     points.copyTo(src_points);
-    vector<Mat> bar_imgs = p->initDecode(img.getMat(), src_points);
+    vector<Mat> bar_imgs = p->initDecode(inarr, src_points);
     BarDecode bardec;
     bardec.init(bar_imgs);
-    bool ok = bardec.decodeMultiplyProcess();
-    const vector<Result> &_decoded_info = bardec.getDecodeInformation();
+    bardec.decodeMultiplyProcess();
+    const vector<Result> info = bardec.getDecodeInformation();
     decoded_info.clear();
     decoded_type.clear();
-    for (const auto &info : _decoded_info)
+    bool ok = false;
+    for (const auto &res : info)
     {
-        decoded_info.emplace_back(info.result);
-        decoded_type.emplace_back(info.format);
+        if (res.format != NONE)
+        {
+            ok = true;
+        }
+
+        decoded_info.emplace_back(res.result);
+        decoded_type.emplace_back(res.format);
     }
     return ok;
 }

@@ -161,7 +161,6 @@ void Detect::preprocess()
 
     for (int y = 0; y < height; y++)
     {
-        //pixels_position.clear();
         auto *const x_row = scharr_x.ptr<float_t>(y);
         auto *const y_row = scharr_y.ptr<float_t>(y);
         auto *const magnitude_row = gradient_magnitude.ptr<uint8_t>(y);
