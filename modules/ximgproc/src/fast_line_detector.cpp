@@ -21,46 +21,14 @@ namespace ximgproc{
 class FastLineDetectorImpl : public FastLineDetector
 {
     public:
-        /**
-         * @param _length_threshold    10         - Segment shorter than this will be discarded
-         * @param _distance_threshold  1.41421356 - A point placed from a hypothesis line segment
-         *                                          farther than this will be regarded as an outlier
-         * @param _canny_th1           50         - First threshold for
-         *        _                                 hysteresis procedure in Canny()
-         * @param _canny_th2           50         - Second threshold for
-         *        _                                 hysteresis procedure in Canny()
-         * @param _canny_aperture_size 3          - Aperturesize for the sobel operator in Canny().
-         *                                          If zero, Canny() is not applied and the input
-         *                                          image is taken as an edge image.
-         * @param _do_merge            false      - If true, incremental merging of segments
-         *                                          will be performed
-         */
+
         FastLineDetectorImpl(int _length_threshold = 10, float _distance_threshold = 1.414213562f,
                 double _canny_th1 = 50.0, double _canny_th2 = 50.0, int _canny_aperture_size = 3,
                 bool _do_merge = false);
 
-        /**
-         * Detect lines in the input image.
-         *
-         * @param _image    A grayscale(CV_8UC1) input image.
-         *                  If only a roi needs to be selected, use
-         *                  lsd_ptr->detect(image(roi), ..., lines);
-         *                  lines += Scalar(roi.x, roi.y, roi.x, roi.y);
-         * @param _lines    Return: A vector of Vec4f elements specifying the beginning and ending point of
-         *                  a line. Where Vec4f is (x1, y1, x2, y2), point 1 is the start, point 2 is the end.
-         *                  Returned lines are directed so that the brighter side is placed on left.
-         */
-        void detect(InputArray _image, OutputArray _lines) CV_OVERRIDE;
+        void detect(InputArray image, OutputArray lines) CV_OVERRIDE;
 
-        /**
-         * Draw lines on the given canvas.
-         *
-         * @param image          The image, where lines will be drawn
-         *                       Should have the size of the image, where the lines were found
-         * @param lines          The lines that need to be drawn
-         * @param draw_arrow     If true, arrow heads will be drawn
-         */
-        void drawSegments(InputOutputArray _image, InputArray lines, bool draw_arrow = false) CV_OVERRIDE;
+        void drawSegments(InputOutputArray image, InputArray lines, bool draw_arrow = false, Scalar linecolor = Scalar(0, 0, 255), int linethickness = 1) CV_OVERRIDE;
 
     private:
         int imagewidth, imageheight, threshold_length;
@@ -85,25 +53,24 @@ class FastLineDetectorImpl : public FastLineDetector
 
         void lineDetection(const Mat& src, std::vector<SEGMENT>& segments_all);
 
-        void pointInboardTest(const Mat& src, Point2i& pt);
+        void pointInboardTest(const Size srcSize, Point2i& pt);
 
         inline void getAngle(SEGMENT& seg);
 
         void additionalOperationsOnSegment(const Mat& src, SEGMENT& seg);
 
-        void drawSegment(Mat& mat, const SEGMENT& seg, Scalar bgr = Scalar(0,255,0),
-                int thickness = 1, bool directed = true);
+        void drawSegment(InputOutputArray image, const SEGMENT& seg, Scalar bgr = Scalar(0,255,0), int thickness = 1, bool directed = true);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 CV_EXPORTS Ptr<FastLineDetector> createFastLineDetector(
-        int _length_threshold, float _distance_threshold,
-        double _canny_th1, double _canny_th2, int _canny_aperture_size, bool _do_merge)
+        int length_threshold, float distance_threshold,
+        double canny_th1, double canny_th2, int canny_aperture_size, bool do_merge)
 {
     return makePtr<FastLineDetectorImpl>(
-            _length_threshold, _distance_threshold,
-            _canny_th1, _canny_th2, _canny_aperture_size, _do_merge);
+            length_threshold, distance_threshold,
+            canny_th1, canny_th2, canny_aperture_size, do_merge);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -136,29 +103,22 @@ void FastLineDetectorImpl::detect(InputArray _image, OutputArray _lines)
     Mat(lines).copyTo(_lines);
 }
 
-void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray lines, bool draw_arrow)
+void FastLineDetectorImpl::drawSegments(InputOutputArray image, InputArray lines, bool draw_arrow, Scalar linecolor, int linethickness)
 {
     CV_INSTRUMENT_REGION();
 
-    CV_Assert(!_image.empty() && (_image.channels() == 1 || _image.channels() == 3));
+    int cn = image.channels();
+    CV_Assert(!image.empty() && ( cn == 1 || cn == 3 || cn == 4));
 
-    Mat gray;
-    if (_image.channels() == 1)
+    if (cn == 1)
     {
-        gray = _image.getMatRef();
+        cvtColor(image, image, COLOR_GRAY2BGR);
     }
-    else if (_image.channels() == 3)
+    else
     {
-        cvtColor(_image, gray, COLOR_BGR2GRAY);
+        cvtColor(image, image, COLOR_BGRA2GRAY);
+        cvtColor(image, image, cn == 3 ? COLOR_GRAY2BGR : COLOR_GRAY2BGRA);
     }
-
-    // Create a 3 channel image in order to draw colored lines
-    std::vector<Mat> planes;
-    planes.push_back(gray);
-    planes.push_back(gray);
-    planes.push_back(gray);
-
-    merge(planes, _image);
 
     double gap = 10.0;
     double arrow_angle = 30.0;
@@ -172,7 +132,7 @@ void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray line
         const Vec4f& v = _lines.at<Vec4f>(i);
         Point2f b(v[0], v[1]);
         Point2f e(v[2], v[3]);
-        line(_image.getMatRef(), b, e, Scalar(0, 0, 255), 1);
+        line(image, b, e, linecolor, linethickness);
         if(draw_arrow)
         {
             SEGMENT seg;
@@ -185,8 +145,8 @@ void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray line
             Point2i p1;
             p1.x = cvRound(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
             p1.y = cvRound(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
-            pointInboardTest(_image.getMatRef(), p1);
-            line(_image.getMatRef(), Point(cvRound(seg.x2), cvRound(seg.y2)), p1, Scalar(0,0,255), 1);
+            pointInboardTest(image.size(), p1);
+            line(image, Point(cvRound(seg.x2), cvRound(seg.y2)), p1, linecolor, linethickness);
         }
     }
 }
@@ -477,10 +437,10 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
     }
 }
 
-void FastLineDetectorImpl::pointInboardTest(const Mat& src, Point2i& pt)
+void FastLineDetectorImpl::pointInboardTest(const Size srcSize, Point2i& pt)
 {
-    pt.x = pt.x <= 5 ? 5 : pt.x >= src.cols - 5 ? src.cols - 5 : pt.x;
-    pt.y = pt.y <= 5 ? 5 : pt.y >= src.rows - 5 ? src.rows - 5 : pt.y;
+    pt.x = pt.x <= 5 ? 5 : pt.x >= srcSize.width - 5 ? srcSize.width - 5 : pt.x;
+    pt.y = pt.y <= 5 ? 5 : pt.y >= srcSize.height - 5 ? srcSize.height - 5 : pt.y;
 }
 
 bool FastLineDetectorImpl::getPointChain(const Mat& img, Point pt,
@@ -692,8 +652,8 @@ void FastLineDetectorImpl::additionalOperationsOnSegment(const Mat& src, SEGMENT
         points_right[i].y = cvRound(points[i].y + gap*sin(90.0 * CV_PI / 180.0 + ang));
         points_left[i].x = cvRound(points[i].x - gap*cos(90.0 * CV_PI / 180.0 + ang));
         points_left[i].y = cvRound(points[i].y - gap*sin(90.0 * CV_PI / 180.0 + ang));
-        pointInboardTest(src, points_right[i]);
-        pointInboardTest(src, points_left[i]);
+        pointInboardTest(src.size(), points_right[i]);
+        pointInboardTest(src.size(), points_left[i]);
     }
 
     int iR = 0, iL = 0;
@@ -717,21 +677,5 @@ void FastLineDetectorImpl::additionalOperationsOnSegment(const Mat& src, SEGMENT
     return;
 }
 
-void FastLineDetectorImpl::drawSegment(Mat& mat, const SEGMENT& seg, Scalar bgr, int thickness, bool directed)
-{
-    double gap = 10.0;
-    double ang = (double)seg.angle;
-    double arrow_angle = 30.0;
-
-    Point2i p1;
-    p1.x = cvRound(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
-    p1.y = cvRound(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
-    pointInboardTest(mat, p1);
-
-    line(mat, Point(cvRound(seg.x1), cvRound(seg.y1)),
-            Point(cvRound(seg.x2), cvRound(seg.y2)), bgr, thickness, 1);
-    if(directed)
-        line(mat, Point(cvRound(seg.x2), cvRound(seg.y2)), p1, bgr, thickness, 1);
-}
 } // namespace cv
 } // namespace ximgproc

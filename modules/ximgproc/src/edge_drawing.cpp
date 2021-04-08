@@ -391,6 +391,7 @@ void EdgeDrawingImpl::ComputeGradient()
             case SCHARR:
                 gx = abs(3 * (com1 + com2) + 10 * (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
                 gy = abs(3 * (com1 - com2) + 10 * (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
+                break;
             case LSD:
                 // com1 and com2 differs from previous operators, because LSD has 2x2 kernel
                 com1 = smoothImg[(i + 1) * width + j + 1] - smoothImg[i * width + j];
@@ -398,6 +399,7 @@ void EdgeDrawingImpl::ComputeGradient()
 
                 gx = abs(com1 + com2);
                 gy = abs(com1 - com2);
+                break;
             }
 
             int sum;
@@ -2943,7 +2945,7 @@ void EdgeDrawingImpl::DetectArcs()
                 bm->move(noPixels);
 
                 // Try to fit a circle to the entire arc of lines
-                double xc, yc, radius, circleFitError;
+                double xc = -1, yc = -1, radius = -1, circleFitError = -1;
                 CircleFit(x, y, noPixels, &xc, &yc, &radius, &circleFitError);
 
                 double coverage = noPixels / (CV_2PI * radius);
