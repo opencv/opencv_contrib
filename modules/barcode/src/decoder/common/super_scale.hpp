@@ -22,7 +22,7 @@ public:
 
     int init(const std::string &proto_path, const std::string &model_path);
 
-    Mat processImageScale(const Mat &src, float scale, const bool &use_sr, int sr_max_size = 160);
+    void processImageScale(const Mat &src, Mat &dst, float scale, const bool &use_sr, int sr_max_size = 160);
 
 private:
     dnn::Net srnet_;

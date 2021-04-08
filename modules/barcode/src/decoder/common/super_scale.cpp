@@ -20,11 +20,10 @@ int SuperScale::init(const std::string &proto_path, const std::string &model_pat
     return 0;
 }
 
-Mat SuperScale::processImageScale(const Mat &src, float scale, const bool &use_sr, int sr_max_size)
+void SuperScale::processImageScale(const Mat &src, Mat &dst, float scale, const bool &use_sr, int sr_max_size)
 {
-    Mat dst = src;
     if (scale <= .0)
-    { return dst; }
+    { return; }
     scale = min(scale, MAX_SCALE);
     int width = src.cols;
     int height = src.rows;
@@ -45,15 +44,12 @@ Mat SuperScale::processImageScale(const Mat &src, float scale, const bool &use_s
             { resize(src, dst, Size(), scale, scale, INTER_CUBIC); }
             if (scale > 2.0)
             {
-                dst = processImageScale(dst, scale / 2.0f, use_sr);
+                processImageScale(dst, dst, scale / 2.0f, use_sr);
             }
         }
         else
         { resize(src, dst, Size(), scale, scale, INTER_CUBIC); }
-
     }
-
-    return dst;
 }
 
 int SuperScale::superResolutionScale(const Mat &src, Mat &dst)

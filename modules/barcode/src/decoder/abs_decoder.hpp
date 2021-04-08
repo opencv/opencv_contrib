@@ -7,6 +7,7 @@
 #define __OPENCV_BARCODE_ABS_DECODER_HPP__
 
 #include <opencv2/barcode.hpp>
+#include <utility>
 
 namespace cv {
 namespace barcode {
@@ -31,27 +32,39 @@ struct Result
     }
 };
 
+struct Counter
+{
+    std::vector<int> pattern;
+    uint sum;
+
+    explicit Counter(vector<int> _pattern)
+    {
+        pattern = std::move(_pattern);
+        sum = 0;
+    }
+};
+
 class AbsDecoder
 {
 public:
-    virtual std::pair<Result, float> decodeROI(InputArray bar_img) const = 0;
+    virtual std::pair<Result, float> decodeROI(const Mat &bar_img) const = 0;
 
     virtual ~AbsDecoder() = default;
 
 protected:
-    virtual Result decode(vector<uchar> data, uint start) const = 0;
+    virtual Result decode(vector<uchar> data) const = 0;
 
     virtual bool isValid(string result) const = 0;
 };
 
 void cropROI(const Mat &_src, Mat &_dst, const std::vector<Point2f> &rect);
 
-void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &counters);
+void fillCounter(const std::vector<uchar> &row, uint start, Counter &counter);
 
 constexpr static uint INTEGER_MATH_SHIFT = 8;
 constexpr static int PATTERN_MATCH_RESULT_SCALE_FACTOR = 1 << INTEGER_MATH_SHIFT;
 
-int patternMatch(std::vector<int> counters, const std::vector<int> &pattern, uint maxIndividual);
+int patternMatch(const Counter &counters, const std::vector<int> &pattern, uint maxIndividual);
 }
 } // namespace cv
 

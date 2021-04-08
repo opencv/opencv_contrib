@@ -20,11 +20,11 @@ static constexpr size_t constexpr_digitNumber = 13;
 * @prama: start: the index of start order, begin at 0, max-value is data.size()-1
 * it scan begin at the data[start]
 */
-Result Ean13Decoder::decode(vector<uchar> data, uint start) const
+Result Ean13Decoder::decode(vector<uchar> data) const
 {
     string result;
     char decode_result[constexpr_digitNumber + 1]{'\0'};
-    if (data.size() < constexpr_bitsNum + start)
+    if (data.size() < constexpr_bitsNum)
     {
         return Result("Wrong Size", BarcodeType::NONE);
     }
@@ -33,27 +33,28 @@ Result Ean13Decoder::decode(vector<uchar> data, uint start) const
     {
         return Result("Begin Pattern Not Found", BarcodeType::NONE);
     }
-    start = pattern.second;
-    vector<int> counters = {0, 0, 0, 0};
+    uint start = pattern.second;
+    Counter counter(vector<int>{0, 0, 0, 0});
     size_t end = data.size();
     int first_char_bit = 0;
     // [1,6] are left part of EAN, [7,12] are right part, index 0 is calculated by left part
     for (int i = 1; i < 7 && start < end; ++i)
     {
-        int bestMatch = decodeDigit(data, counters, start, get_AB_Patterns());
+        int bestMatch = decodeDigit(data, counter, start, get_AB_Patterns());
         if (bestMatch == -1)
         {
             return Result("Decode Error", BarcodeType::NONE);
         }
         decode_result[i] = static_cast<char>('0' + bestMatch % 10);
-        start = std::accumulate(counters.cbegin(), counters.cend(), start);
+        start = counter.sum + start;
         first_char_bit += (bestMatch >= 10) << i;
     }
     decode_result[0] = static_cast<char>(FIRST_CHAR_ARRAY()[first_char_bit >> 2] + '0');
     // why there need >> 2?
     // first, the i in for-cycle is begin in 1
     // second, the first i = 1 is always
-    if (!findGuardPatterns(data, start, true, MIDDLE_PATTERN(), vector<int>(MIDDLE_PATTERN().size()), pattern))
+    Counter middle_counter(vector<int>(MIDDLE_PATTERN().size()));
+    if (!findGuardPatterns(data, start, true, MIDDLE_PATTERN(), middle_counter, pattern))
     {
         return Result("Middle Pattern Not Found", BarcodeType::NONE);
 
@@ -61,15 +62,16 @@ Result Ean13Decoder::decode(vector<uchar> data, uint start) const
     start = pattern.second;
     for (int i = 0; i < 6 && start < end; ++i)
     {
-        int bestMatch = decodeDigit(data, counters, start, get_A_or_C_Patterns());
+        int bestMatch = decodeDigit(data, counter, start, get_A_or_C_Patterns());
         if (bestMatch == -1)
         {
             return Result("Decode Error", BarcodeType::NONE);
         }
         decode_result[i + 7] = static_cast<char>('0' + bestMatch);
-        start = std::accumulate(counters.cbegin(), counters.cend(), start);
+        start = counter.sum + start;
     }
-    if (!findGuardPatterns(data, start, false, BEGIN_PATTERN(), vector<int>(BEGIN_PATTERN().size()), pattern))
+    Counter end_counter(vector<int>(BEGIN_PATTERN().size()));
+    if (!findGuardPatterns(data, start, false, BEGIN_PATTERN(), end_counter, pattern))
     {
         return Result("End Pattern Not Found", BarcodeType::NONE);
     }

@@ -92,7 +92,7 @@ bool BarDecode::decodeMultiplyProcess()
             {
                 Mat bin_bar;
                 Result max_res;
-                float max_rate = -1;
+                float max_conf = -1;
                 bool decoded = false;
                 for (const auto binary_type : binary_types)
                 {
@@ -103,11 +103,11 @@ bool BarDecode::decodeMultiplyProcess()
                     {
                         auto cur_res = decoder->decodeROI(bin_bar);
 
-                        if (cur_res.second > max_rate)
+                        if (cur_res.second > max_conf)
                         {
                             max_res = cur_res.first;
-                            max_rate = cur_res.second;
-                            if (max_rate > 0.6)
+                            max_conf = cur_res.second;
+                            if (max_conf > 0.6)
                             {
                                 // code decoded
                                 decoded = true;
@@ -143,14 +143,14 @@ public:
 
     ~Impl() = default;;
 
-    vector<Mat> initDecode(const cv::Mat &src, const std::vector<cv::Point2f> &points) const;
+    vector<Mat> initDecode(const Mat &src, const vector<Point2f> &points) const;
 
     std::shared_ptr<SuperScale> sr;
     bool use_nn_sr = false;
 };
 
 // return cropped and scaled bar img
-vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<cv::Point2f> &points) const
+vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<Point2f> &points) const
 {
     vector<vector<Point2f>> src_points;
     //CV_TRACE_FUNCTION();
@@ -175,8 +175,8 @@ vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<cv::P
         // empirical settings
         if (bar_img.cols < 320 || bar_img.cols > 640)
         {
-            float scale = 620.0f / static_cast<float>(bar_img.cols);
-            bar_img = sr->processImageScale(bar_img, scale, use_nn_sr);
+            float scale = 560.0f / static_cast<float>(bar_img.cols);
+            sr->processImageScale(bar_img, bar_img, scale, use_nn_sr);
         }
         bar_imgs.emplace_back(bar_img);
     }

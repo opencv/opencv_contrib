@@ -29,21 +29,23 @@ void cropROI(const Mat &src, Mat &dst, const std::vector<Point2f> &rects)
     warpPerspective(src, dst, M, dst.size(), cv::INTER_LINEAR, BORDER_CONSTANT, Scalar(255));
 }
 
-void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &counters)
+void fillCounter(const std::vector<uchar> &row, uint start, Counter &counter)
 {
-    size_t counter_length = counters.size();
-    std::fill(counters.begin(), counters.end(), 0);
+    size_t counter_length = counter.pattern.size();
+    std::fill(counter.pattern.begin(), counter.pattern.end(), 0);
+    counter.sum = 0;
     size_t end = row.size();
     if (start >= end)
     {
     }
-    uchar isWhite = row[start];
+    uchar color = row[start];
     uint counterPosition = 0;
     while (start < end)
     {
-        if (row[start] == isWhite)
+        if (row[start] == color)
         { // that is, exactly one is true
-            counters[counterPosition]++;
+            counter.pattern[counterPosition]++;
+            counter.sum++;
         }
         else
         {
@@ -54,8 +56,9 @@ void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &co
             }
             else
             {
-                counters[counterPosition] = 1;
-                isWhite = 255 - isWhite;
+                counter.pattern[counterPosition] = 1;
+                counter.sum++;
+                color = 255 - color;
             }
         }
         ++start;
@@ -66,17 +69,17 @@ void fillCounter(const std::vector<uchar> &row, uint start, std::vector<int> &co
 }
 
 static inline int
-patternMatchVariance(std::vector<int> counters, const std::vector<int> &pattern, int maxIndividualVariance)
+patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, int maxIndividualVariance)
 {
-    size_t numCounters = counters.size();
-    int total = std::accumulate(counters.cbegin(), counters.cend(), 0);
+    size_t numCounters = counter.pattern.size();
+    int total = counter.sum;
     int patternLength = std::accumulate(pattern.cbegin(), pattern.cend(), 0);
     if (total < patternLength)
     {
         // If we don't even have one pixel per unit of bar width, assume this is too small
         // to reliably match, so fail:
         // and use constexpr functions
-        return std::numeric_limits<int32_t>::max();
+        return 2147483647;// max
     }
     // We're going to fake floating-point math in integers. We just need to use more bits.
     // Scale up patternLength so that intermediate values below like scaledCounter will have
@@ -87,9 +90,9 @@ patternMatchVariance(std::vector<int> counters, const std::vector<int> &pattern,
     int totalVariance = 0;
     for (uint x = 0; x < numCounters; x++)
     {
-        int counter = counters[x] << INTEGER_MATH_SHIFT;
+        int cnt = counter.pattern[x] << INTEGER_MATH_SHIFT;
         int scaledPattern = pattern[x] * unitBarWidth;
-        int variance = std::abs(counter - scaledPattern);
+        int variance = std::abs(cnt - scaledPattern);
         if (variance > maxIndividualVariance)
         {
             return std::numeric_limits<int32_t>::max();
@@ -112,10 +115,10 @@ patternMatchVariance(std::vector<int> counters, const std::vector<int> &pattern,
 *  the total variance between counters and patterns equals the pattern length, higher values mean
 *  even more variance
 */
-int patternMatch(std::vector<int> counters, const std::vector<int> &pattern, uint maxIndividual)
+int patternMatch(const Counter &counters, const std::vector<int> &pattern, uint maxIndividual)
 {
-    CV_Assert(counters.size() == pattern.size());
-    return patternMatchVariance(std::move(counters), pattern, maxIndividual);
+    CV_Assert(counters.pattern.size() == pattern.size());
+    return patternMatchVariance(counters, pattern, maxIndividual);
 }
 }
 }
