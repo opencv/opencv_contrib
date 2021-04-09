@@ -107,6 +107,18 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     return p;
 }
 
+Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
+{
+    Ptr<Params> p;
+    if (isCoarse)
+        p = coarseParams();
+    else
+        p = defaultParams();
+    p->volumeType = VolumeType::COLOREDTSDF;
+
+    return p;
+}
+
 // MatType should be Mat or UMat
 template< typename MatType>
 class KinFuImpl : public KinFu

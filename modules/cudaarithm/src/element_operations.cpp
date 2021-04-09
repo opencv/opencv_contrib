@@ -77,6 +77,8 @@ void cv::cuda::addWeighted(InputArray, double, InputArray, double, double, Outpu
 
 double cv::cuda::threshold(InputArray, OutputArray, double, double, int, Stream&) {throw_no_cuda(); return 0.0;}
 
+void cv::cuda::inRange(InputArray, const Scalar&, const Scalar&, OutputArray, Stream&) { throw_no_cuda(); }
+
 void cv::cuda::magnitude(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::magnitude(InputArray, InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 void cv::cuda::magnitudeSqr(InputArray, OutputArray, Stream&) { throw_no_cuda(); }

@@ -13,7 +13,7 @@ namespace stereo {
 
 #define NO_MATCH cv::Point(0,0)
 
-typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matchPriorityQueue;
+typedef std::priority_queue<MatchQuasiDense, std::vector<MatchQuasiDense>, std::less<MatchQuasiDense> > t_matchPriorityQueue;
 
 
 class QuasiDenseStereoImpl : public QuasiDenseStereo
@@ -34,7 +34,6 @@ public:
         ssum1 = cv::Mat_<double>(integralSize);
         // the disparity image.
         disparity = cv::Mat_<float>(monoImgSize);
-        disparityImg = cv::Mat_<uchar>(monoImgSize);
         // texture images.
         textureDescLeft = cv::Mat_<int> (monoImgSize);
         textureDescRight = cv::Mat_<int> (monoImgSize);
@@ -55,7 +54,6 @@ public:
         ssum1.release();
         // the disparity image.
         disparity.release();
-        disparityImg.release();
         // texture images.
         textureDescLeft.release();
         textureDescRight.release();
@@ -165,7 +163,7 @@ public:
             t_matchPriorityQueue Local;
 
             // Get the best seed at the moment
-            Match m = seeds.top();
+            MatchQuasiDense m = seeds.top();
             seeds.pop();
 
             // Ignore the border
@@ -209,7 +207,7 @@ public:
                             // push back if this is valid match
                             if( corr > Param.correlationThreshold )
                             {
-                                Match nm;
+                                MatchQuasiDense nm;
                                 nm.p0 = p0;
                                 nm.p1 = p1;
                                 nm.corr = corr;
@@ -223,7 +221,7 @@ public:
             // Get seeds from the local
             while( !Local.empty() )
             {
-                Match lm = Local.top();
+                MatchQuasiDense lm = Local.top();
                 Local.pop();
                 // Check if its unique in both ref and dst.
                 if(refMap.at<cv::Point2i>(lm.p0.y, lm.p0.x) != NO_MATCH)
@@ -248,7 +246,6 @@ public:
      * @param[in] matchMap A matrix of points, the same size as the left channel. Each cell of this
      * matrix stores the location of the corresponding point in the right image.
      * @param[out] dispMat The disparity map.
-     * @sa quantizeDisparity
      * @sa getDisparity
      */
     void computeDisparity(const cv::Mat_<cv::Point2i> &matchMap,
@@ -262,7 +259,7 @@ public:
 
                 if (matchMap.at<cv::Point2i>(tmpPoint) == NO_MATCH)
                 {
-                    dispMat.at<float>(tmpPoint) = 200;
+                    dispMat.at<float>(tmpPoint) = NAN;
                     continue;
                 }
                 //if a match is found, compute the difference in location of the match and current
@@ -274,37 +271,6 @@ public:
             }
         }
     }
-
-
-    /**
-     * @brief Disparity map normalization for display purposes. If needed specify the quantization
-     * level as input argument.
-     * @param[in] dispMat The disparity Map.
-     * @param[in] lvls The quantization level of the output disparity map.
-     * @return Disparity image.
-     * @note Stores the output in the disparityImage class variable.
-     * @sa computeDisparity
-     * @sa getDisparity
-     */
-    cv::Mat quantiseDisparity(const cv::Mat_<float> &dispMat, const int lvls)
-   {
-       float tmpPixelVal ;
-       double min, max;
-//	   minMaxLoc(disparity, &min, &max);
-       min = 0;
-       max = lvls;
-       for(int row=0; row<height; row++)
-       {
-           for(int col=0; col<width; col++)
-           {
-               tmpPixelVal = dispMat.at<float>(row, col);
-               tmpPixelVal = (float) (255. - 255.0*(tmpPixelVal-min)/(max-min));
-
-               disparityImg.at<uchar>(row, col) =  (uint8_t) tmpPixelVal;
-           }
-       }
-       return disparityImg;
-   }
 
 
     /**
@@ -410,7 +376,7 @@ public:
         for(uint i=0; i < featuresLeft.size(); i++)
         {
             // Calculate correlation and store match in Seeds.
-            Match m;
+            MatchQuasiDense m;
             m.p0 = cv::Point2i(featuresLeft[i]);
             m.p1 = cv::Point2i(featuresRight[i]);
             m.corr = 0;
@@ -442,7 +408,7 @@ public:
      * @retval true If the feature is in the border of the image.
      * @retval false If the feature is not in the border of image.
      */
-    bool CheckBorder(Match m, int bx, int by, int w, int h)
+    bool CheckBorder(MatchQuasiDense m, int bx, int by, int w, int h)
     {
         if(m.p0.x<bx || m.p0.x>w-bx || m.p0.y<by || m.p0.y>h-by ||
         m.p1.x<bx || m.p1.x>w-bx || m.p1.y<by || m.p1.y>h-by)
@@ -492,9 +458,9 @@ public:
     //-------------------------------------------------------------------------
 
 
-    void getSparseMatches(std::vector<stereo::Match> &sMatches) override
+    void getSparseMatches(std::vector<stereo::MatchQuasiDense> &sMatches) override
     {
-        Match tmpMatch;
+        MatchQuasiDense tmpMatch;
         sMatches.clear();
         sMatches.reserve(leftFeatures.size());
         for (uint i=0; i<leftFeatures.size(); i++)
@@ -594,9 +560,9 @@ public:
         return -1;
     }
 
-    void getDenseMatches(std::vector<stereo::Match> &denseMatches) override
+    void getDenseMatches(std::vector<stereo::MatchQuasiDense> &denseMatches) override
     {
-        Match tmpMatch;
+        MatchQuasiDense tmpMatch;
         denseMatches.clear();
         denseMatches.reserve(dMatchesLen);
         for (int row=0; row<height; row++)
@@ -635,10 +601,10 @@ public:
         return refMap.at<cv::Point2i>(y, x);
     }
 
-    cv::Mat getDisparity(uint8_t disparityLvls) override
+    cv::Mat getDisparity() override
     {
         computeDisparity(refMap, disparity);
-        return quantiseDisparity(disparity, disparityLvls);
+        return disparity;
     }
 
     // Variables used at sparse feature extraction.
@@ -663,8 +629,6 @@ public:
     cv::Mat_<double> ssum1;
     // Container to store the disparity un-normalized
     cv::Mat_<float> disparity;
-    // Container to store the disparity image.
-    cv::Mat_<uchar> disparityImg;
     // Containers to store textures descriptors.
     cv::Mat_<int> textureDescLeft;
     cv::Mat_<int> textureDescRight;

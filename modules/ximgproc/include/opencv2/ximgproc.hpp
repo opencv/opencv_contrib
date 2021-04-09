@@ -42,6 +42,7 @@
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/edgeboxes.hpp"
+#include "ximgproc/edge_drawing.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
@@ -77,6 +78,8 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     @defgroup ximgproc_segmentation Image segmentation
 
     @defgroup ximgproc_fast_line_detector Fast line detector
+
+    @defgroup ximgproc_edge_drawing EdgeDrawing
 
     @defgroup ximgproc_fourier Fourier descriptors
 

@@ -308,34 +308,36 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
     vector< vector< Point > > smallerContours;
 
     // save possible candidates
-    for( unsigned int i = 0; i < groupedCandidates.size(); i++ ) {
-        int smallerIdx = groupedCandidates[i][0];
-        int biggerIdx = -1;
+    for(unsigned int i = 0; i < groupedCandidates.size(); i++) {
+        unsigned int smallerIdx = groupedCandidates[i][0];
+        unsigned int biggerIdx = smallerIdx;
+        double smallerArea = contourArea(candidatesIn[smallerIdx]);
+        double biggerArea = smallerArea;
 
         // evaluate group elements
-        for( unsigned int j = 1; j < groupedCandidates[i].size(); j++ ) {
-            size_t currPerim = contoursIn[ groupedCandidates[i][j] ].size();
+        for(unsigned int j = 1; j < groupedCandidates[i].size(); j++) {
+            unsigned int currIdx = groupedCandidates[i][j];
+            double currArea = contourArea(candidatesIn[currIdx]);
 
             // check if current contour is bigger
-            if ( biggerIdx < 0 )
-                biggerIdx = groupedCandidates[i][j];
-            else if(currPerim >= contoursIn[ biggerIdx ].size())
-                biggerIdx = groupedCandidates[i][j];
+            if(currArea >= biggerArea) {
+                biggerIdx = currIdx;
+                biggerArea = currArea;
+            }
 
             // check if current contour is smaller
-            if(currPerim < contoursIn[ smallerIdx ].size() && detectInvertedMarker)
-                smallerIdx = groupedCandidates[i][j];
-        }
-        // add contours und candidates
-        if(biggerIdx > -1){
-
-            biggerCandidates.push_back(candidatesIn[biggerIdx]);
-            biggerContours.push_back(contoursIn[biggerIdx]);
-
-            if( detectInvertedMarker ){
-                smallerCandidates.push_back(alignContourOrder(candidatesIn[biggerIdx][0], candidatesIn[smallerIdx]));
-                smallerContours.push_back(contoursIn[smallerIdx]);
+            if(currArea < smallerArea && detectInvertedMarker) {
+                smallerIdx = currIdx;
+                smallerArea = currArea;
             }
+        }
+
+        // add contours and candidates
+        biggerCandidates.push_back(candidatesIn[biggerIdx]);
+        biggerContours.push_back(contoursIn[biggerIdx]);
+        if(detectInvertedMarker) {
+            smallerCandidates.push_back(alignContourOrder(candidatesIn[biggerIdx][0], candidatesIn[smallerIdx]));
+            smallerContours.push_back(contoursIn[smallerIdx]);
         }
     }
     // to preserve the structure :: candidateSet< defaultCandidates, whiteCandidates >
@@ -564,7 +566,7 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
     Mat onlyBits =
         candidateBits.rowRange(params->markerBorderBits,
                                candidateBits.rows - params->markerBorderBits)
-            .colRange(params->markerBorderBits, candidateBits.rows - params->markerBorderBits);
+            .colRange(params->markerBorderBits, candidateBits.cols - params->markerBorderBits);
 
     // try to indentify the marker
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
@@ -806,6 +808,7 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 
 	// saves extra group into corresponding
 	if( !cntPts[4].empty() ){
+            CV_CheckLT(group, 4, "FIXIT: avoiding infinite loop: implementation should be revised: https://github.com/opencv/opencv_contrib/issues/2738");
 		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
 			cntPts[group].push_back(cntPts[4].at(i));
 		cntPts[4].clear();

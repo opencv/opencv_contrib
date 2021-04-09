@@ -173,19 +173,33 @@ Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create()
 void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray from_points, InputArray, InputArray to_points, OutputArray dense_flow)
 {
     CV_Assert( !from_image.empty() && (from_image.depth() == CV_8U) && (from_image.channels() == 3 || from_image.channels() == 1) );
-    CV_Assert( !from_points.empty() && from_points.isVector() &&
-               !to_points  .empty() && to_points  .isVector() &&
-               from_points.sameSize(to_points) );
+    CV_Assert( !from_points.empty() && !to_points.empty() && from_points.sameSize(to_points) );
+    CV_Assert((from_points.isVector() || from_points.isMat()) && from_points.depth() == CV_32F);
+    CV_Assert((to_points.isVector() || to_points.isMat()) && to_points.depth() == CV_32F);
+    CV_Assert(from_points.sameSize(to_points));
 
     w = from_image.cols();
     h = from_image.rows();
 
-    vector<Point2f> from_vector = *(const vector<Point2f>*)from_points.getObj();
-    vector<Point2f> to_vector   = *(const vector<Point2f>*)to_points  .getObj();
-    vector<SparseMatch> matches_vector(from_vector.size());
-    for(unsigned int i=0;i<from_vector.size();i++)
-        matches_vector[i] = SparseMatch(from_vector[i],to_vector[i]);
+    Mat from_mat = from_points.getMat();
+    Mat to_mat = to_points.getMat();
+    int npoints = from_mat.checkVector(2, CV_32F, false);
+    if (from_mat.channels() != 2)
+        from_mat = from_mat.reshape(2, npoints);
+
+    if (to_mat.channels() != 2){
+        to_mat = to_mat.reshape(2, npoints);
+        npoints = from_mat.checkVector(2, CV_32F, false);
+    }
+
+
+    vector<SparseMatch> matches_vector(npoints);
+    for(unsigned int i=0;i<matches_vector.size();i++)
+        matches_vector[i] = SparseMatch(from_mat.at<Point2f>(i), to_mat.at<Point2f>(i));
+
+
     sort(matches_vector.begin(),matches_vector.end());
+
     match_num = (int)matches_vector.size();
     CV_Assert(match_num<SHRT_MAX);
 
@@ -1102,17 +1116,29 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     CV_Assert(use_variational_refinement == false || !to_image.empty());
     CV_Assert(use_variational_refinement == false || to_image.depth() == CV_8U);
     CV_Assert(use_variational_refinement == false || to_image.channels() == 3 || to_image.channels() == 1);
-    CV_Assert(!from_points.empty() && from_points.isVector());
-    CV_Assert(!to_points.empty() && to_points.isVector());
+    CV_Assert(!from_points.empty());
+    CV_Assert(!to_points.empty());
+    CV_Assert((from_points.isVector() || from_points.isMat()) && from_points.depth() == CV_32F);
+    CV_Assert((to_points.isVector() || to_points.isMat()) && to_points.depth() == CV_32F);
     CV_Assert(from_points.sameSize(to_points));
 
-    vector<Point2f> from_vector = *(const vector<Point2f>*)from_points.getObj();
-    vector<Point2f> to_vector = *(const vector<Point2f>*)to_points.getObj();
-    vector<SparseMatch> matches_vector(from_vector.size());
-    for (unsigned int i = 0; i < from_vector.size(); i++)
-        matches_vector[i] = SparseMatch(from_vector[i], to_vector[i]);
+    Mat from_mat = from_points.getMat();
+    Mat to_mat = to_points.getMat();
+    int npoints = from_mat.checkVector(2, CV_32F, false);
 
-    match_num = static_cast<int>(from_vector.size());
+    if (from_mat.channels() != 2)
+        from_mat = from_mat.reshape(2, npoints);
+
+    if (to_mat.channels() != 2 ){
+        to_mat = to_mat.reshape(2, npoints);
+        npoints = from_mat.checkVector(2, CV_32F, false);
+    }
+
+    vector<SparseMatch> matches_vector(npoints);
+    for(unsigned int i=0;i<matches_vector.size();i++)
+        matches_vector[i] = SparseMatch(from_mat.at<Point2f>(i),to_mat.at<Point2f>(i));
+
+    match_num = static_cast<int>(matches_vector.size());
 
     Mat src = from_image.getMat();
     Size src_size = src.size();

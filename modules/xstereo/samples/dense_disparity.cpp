@@ -31,9 +31,8 @@ int main()
 
 
 //!     [disp]
-    uint8_t displvl = 80;
     cv::Mat disp;
-    disp = stereo->getDisparity(displvl);
+    disp = stereo->getDisparity();
     cv::namedWindow("disparity map");
     cv::imshow("disparity map", disp);
 //!     [disp]
@@ -46,7 +45,7 @@ int main()
 
 
 //!     [export]
-    vector<stereo::Match> matches;
+    vector<stereo::MatchQuasiDense> matches;
     stereo->getDenseMatches(matches);
     std::ofstream dense("./dense.txt", std::ios::out);
     for (uint i=0; i< matches.size(); i++)

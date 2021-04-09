@@ -24,42 +24,44 @@ namespace stereo
 
 
 // A basic match structure
-struct CV_EXPORTS Match
+struct CV_EXPORTS_W_SIMPLE MatchQuasiDense
 {
-    cv::Point2i p0;
-    cv::Point2i p1;
-    float	corr;
+    CV_PROP_RW cv::Point2i p0;
+    CV_PROP_RW cv::Point2i p1;
+    CV_PROP_RW float	corr;
 
-    bool operator < (const Match & rhs) const//fixme  may be used uninitialized in this function
+    CV_WRAP MatchQuasiDense() { corr = 0; }
+
+    CV_WRAP_AS(apply) bool operator < (const MatchQuasiDense & rhs) const//fixme  may be used uninitialized in this function
     {
         return this->corr < rhs.corr;
     }
 };
-struct CV_EXPORTS PropagationParameters
+struct CV_EXPORTS_W_SIMPLE PropagationParameters
 {
-    int	corrWinSizeX;			// similarity window
-    int	corrWinSizeY;
+    CV_PROP_RW int	corrWinSizeX;			// similarity window
+    CV_PROP_RW int	corrWinSizeY;
 
-    int borderX;					// border to ignore
-    int borderY;
+    CV_PROP_RW int borderX;					// border to ignore
+    CV_PROP_RW int borderY;
 
     //matching
-    float correlationThreshold;	// correlation threshold
-    float textrureThreshold;		// texture threshold
+    CV_PROP_RW float correlationThreshold;	// correlation threshold
+    CV_PROP_RW float textrureThreshold;		// texture threshold
 
-    int	  neighborhoodSize;		// neighborhood size
-    int	  disparityGradient;	// disparity gradient threshold
+    CV_PROP_RW int	  neighborhoodSize;		// neighborhood size
+    CV_PROP_RW int	  disparityGradient;	// disparity gradient threshold
 
     // Parameters for LK flow algorithm
-    int lkTemplateSize;
-    int lkPyrLvl;
-    int lkTermParam1;
-    float lkTermParam2;
+    CV_PROP_RW int lkTemplateSize;
+    CV_PROP_RW int lkPyrLvl;
+    CV_PROP_RW int lkTermParam1;
+    CV_PROP_RW float lkTermParam2;
 
     // Parameters for GFT algorithm.
-    float gftQualityThres;
-    int gftMinSeperationDist;
-    int gftMaxNumFeatures;
+    CV_PROP_RW float gftQualityThres;
+    CV_PROP_RW int gftMinSeperationDist;
+    CV_PROP_RW int gftMaxNumFeatures;
 
 };
 
@@ -90,14 +92,14 @@ struct CV_EXPORTS PropagationParameters
  *
  */
 
-class CV_EXPORTS QuasiDenseStereo
+class  CV_EXPORTS_W QuasiDenseStereo
 {
 public:
     /**
      * @brief destructor
      * Method to free all the memory allocated by matrices and vectors in this class.
      */
-    virtual ~QuasiDenseStereo() = 0;
+    CV_WRAP virtual ~QuasiDenseStereo() = 0;
 
 
     /**
@@ -113,7 +115,7 @@ public:
      * in case of video processing.
      * @sa loadParameters
      */
-    virtual int loadParameters(cv::String filepath) = 0;
+    CV_WRAP virtual int loadParameters(cv::String filepath) = 0;
 
 
     /**
@@ -124,7 +126,7 @@ public:
      * @note This method can be used to generate a template file for tuning the class.
      * @sa loadParameters
      */
-    virtual int saveParameters(cv::String filepath) = 0;
+    CV_WRAP virtual int saveParameters(cv::String filepath) = 0;
 
 
     /**
@@ -133,7 +135,7 @@ public:
      * @note The method clears the sMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    virtual void getSparseMatches(std::vector<stereo::Match> &sMatches) = 0;
+    CV_WRAP virtual void getSparseMatches(CV_OUT std::vector<MatchQuasiDense> &sMatches) = 0;
 
 
     /**
@@ -142,7 +144,7 @@ public:
      * @note The method clears the denseMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    virtual void getDenseMatches(std::vector<stereo::Match> &denseMatches) = 0;
+    CV_WRAP virtual void getDenseMatches(CV_OUT  std::vector<MatchQuasiDense> &denseMatches) = 0;
 
 
 
@@ -158,7 +160,7 @@ public:
      * @sa sparseMatching
      * @sa quasiDenseMatching
      */
-    virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
+    CV_WRAP virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
 
 
     /**
@@ -169,24 +171,23 @@ public:
      * @retval cv::Point(0, 0) (NO_MATCH)  if no match is found in the right image for the specified pixel location in the left image.
      * @note This method should be always called after process, otherwise the matches will not be correct.
      */
-    virtual cv::Point2f getMatch(const int x, const int y) = 0;
+    CV_WRAP virtual cv::Point2f getMatch(const int x, const int y) = 0;
 
 
     /**
      * @brief Compute and return the disparity map based on the correspondences found in the "process" method.
-     * @param[in] disparityLvls The level of detail in output disparity image.
      * @note Default level is 50
      * @return cv::Mat containing a the disparity image in grayscale.
      * @sa computeDisparity
      * @sa quantizeDisparity
      */
-    virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
+    CV_WRAP virtual cv::Mat getDisparity() = 0;
 
 
-    static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath = cv::String());
+    CV_WRAP static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath = cv::String());
 
 
-    PropagationParameters Param;
+    CV_PROP_RW PropagationParameters Param;
 };
 
 } //namespace cv

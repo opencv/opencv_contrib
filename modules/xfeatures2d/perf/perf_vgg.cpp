@@ -5,6 +5,8 @@
 
 namespace opencv_test { namespace {
 
+#ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
+
 typedef perf::TestBaseWithParam<std::string> vgg;
 
 #define VGG_IMAGES \
@@ -31,5 +33,7 @@ PERF_TEST_P(vgg, extract, testing::Values(VGG_IMAGES))
 
     SANITY_CHECK_NOTHING();
 }
+
+#endif  // OPENCV_XFEATURES2D_HAS_VGG_DATA
 
 }} // namespace

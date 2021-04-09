@@ -11,14 +11,17 @@
 #define __OPENCV_PRECOMP_H__
 
 #include <iostream>
+#include <vector>
 #include <list>
 #include <set>
+#include <unordered_set>
 #include <limits>
 
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/hal/intrin.hpp"
 #include "opencv2/core/ocl.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/3d.hpp"
 #include "opencv2/rgbd.hpp"
