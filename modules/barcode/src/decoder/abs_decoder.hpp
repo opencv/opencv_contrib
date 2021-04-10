@@ -52,9 +52,12 @@ public:
     virtual ~AbsDecoder() = default;
 
 protected:
-    virtual Result decode(vector<uchar> data) const = 0;
+    virtual Result decode(const vector<uchar> &data) const = 0;
 
     virtual bool isValid(string result) const = 0;
+
+    size_t bits_num{};
+    size_t digit_number{};
 };
 
 void cropROI(const Mat &_src, Mat &_dst, const std::vector<Point2f> &rect);

@@ -191,33 +191,20 @@ Result UPCEANDecoder::decodeLine(const vector<uchar> &line) const
     return result;
 }
 
-/**@Prama img_size is the graph's size ,
-* @Prama angle from [0,180)
-* 0 is horizontal
-* (0-90) top Left to bottom Right
-* 90 vertical
-* (90-180) lower left to upper right
-* */
-//void
-//UPCEANDecoder::linesFromRect(const Size2i &shape, int PART, std::vector<std::pair<Point2i, Point2i>> &results) const
-//{
-//    // scan area around center line
-//
-//    Point2i cbegin = Point2i(shape.height / 2, 0);
-//    Point2i cend = Point2i(shape.height / 2, shape.width - 1);
-//    Point2i step = Point2i(0, (PART - 1) * shape.width / (PART * PART));
-//    cbegin = Point2i(0, shape.width / 2);
-//    cend = Point2i(shape.height - 1, shape.width / 2);
-//    results.reserve(results.size() + PART + 1);
-//    results.emplace_back(cbegin, cend);
-//    for (int i = 1; i <= (PART >> 1); ++i)
-//    {
-//        results.emplace_back(cbegin + i * step, cend + i * step);
-//        results.emplace_back(cbegin - i * step, cend - i * step);
-//    }
-//    results.emplace_back(cbegin, cend);
-//}
-
+bool UPCEANDecoder::isValid(std::string result) const
+{
+    if (result.size() != digit_number)
+    {
+        return false;
+    }
+    int sum = 0;
+    for (int index = (int) result.size() - 2, i = 1; index >= 0; index--, i++)
+    {
+        int temp = result[index] - '0';
+        sum += (temp + ((i & 1) != 0 ? temp << 1 : 0));
+    }
+    return (result.back() - '0') == ((10 - (sum % 10)) % 10);
+}
 
 // right for A
 const std::vector<std::vector<int>> &get_A_or_C_Patterns()

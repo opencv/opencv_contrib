@@ -7,6 +7,7 @@
 #include <opencv2/barcode.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include "decoder/ean13_decoder.hpp"
+#include "decoder/ean8_decoder.hpp"
 #include "detector/bardetect.hpp"
 #include "decoder/common/super_scale.hpp"
 #include "decoder/common/utils.hpp"
@@ -53,6 +54,14 @@ static void updatePointsResult(OutputArray points_, const vector<Point2f> &point
     }
 }
 
+inline const std::array<std::shared_ptr<AbsDecoder>, 2> &getDecoders()
+{
+    //indicate Decoder
+    static const std::array<std::shared_ptr<AbsDecoder>, 2> decoders{
+            std::shared_ptr<AbsDecoder>(new Ean13Decoder()), std::shared_ptr<AbsDecoder>(new Ean8Decoder())};
+    return decoders;
+}
+
 class BarDecode
 {
 public:
@@ -81,10 +90,7 @@ bool BarDecode::decodeMultiplyProcess()
         ParallelBarCodeDecodeProcess(vector<Mat> &bar_imgs_, vector<Result> &decoded_info_) : bar_imgs(bar_imgs_),
                                                                                               decoded_info(
                                                                                                       decoded_info_)
-        {
-            //indicate Decoder
-            decoders.push_back(std::shared_ptr<AbsDecoder>(new Ean13Decoder()));
-        }
+        {}
 
         void operator()(const Range &range) const CV_OVERRIDE
         {
@@ -94,15 +100,14 @@ bool BarDecode::decodeMultiplyProcess()
                 Result max_res;
                 float max_conf = -1;
                 bool decoded = false;
-                for (const auto binary_type : binary_types)
+                for (const auto &decoder:getDecoders())
                 {
                     if (decoded)
                     { break; }
-                    binarize(bar_imgs[i], bin_bar, binary_type);
-                    for (auto const &decoder:decoders)
+                    for (const auto binary_type : binary_types)
                     {
+                        binarize(bar_imgs[i], bin_bar, binary_type);
                         auto cur_res = decoder->decodeROI(bin_bar);
-
                         if (cur_res.second > max_conf)
                         {
                             max_res = cur_res.first;
@@ -125,7 +130,6 @@ bool BarDecode::decodeMultiplyProcess()
     private:
         vector<Mat> bar_imgs;
         vector<Result> &decoded_info;
-        vector<std::shared_ptr<AbsDecoder>> decoders;
     };
     result_info.clear();
     result_info.resize(bar_imgs.size());
