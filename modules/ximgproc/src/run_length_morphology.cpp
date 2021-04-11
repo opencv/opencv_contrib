@@ -700,13 +700,13 @@ CV_EXPORTS bool isRLMorphologyPossible(InputArray rlStructuringElement)
   return true;
 }
 
-CV_EXPORTS void createRLEImage(std::vector<cv::Point3i>& runs, OutputArray res, Size size)
+CV_EXPORTS void createRLEImage(const std::vector<cv::Point3i>& runs, OutputArray res, Size size)
 {
     size_t nRuns = runs.size();
     rlVec runsConverted(nRuns);
     for (size_t i = 0u; i < nRuns; ++i)
     {
-        Point3i &curIn = runs[i];
+        const Point3i &curIn = runs[i];
         runsConverted[i] = rlType(curIn.x, curIn.y, curIn.z);
     }
     sortChords(runsConverted);
