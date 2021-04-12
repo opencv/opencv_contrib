@@ -280,7 +280,7 @@ public:
     the matches vector does not contain matches for fully masked-out query descriptors.
      */
     CV_WRAP virtual void knnMatchConvert(InputArray gpu_matches,
-                                 std::vector< std::vector<DMatch> >& matches,
+                                 CV_OUT std::vector< std::vector<DMatch> >& matches,
                                  bool compactResult = false) = 0;
 
     //
@@ -364,7 +364,7 @@ public:
     the matches vector does not contain matches for fully masked-out query descriptors.
      */
     CV_WRAP virtual void radiusMatchConvert(InputArray gpu_matches,
-                                    std::vector< std::vector<DMatch> >& matches,
+                                    CV_OUT std::vector< std::vector<DMatch> >& matches,
                                     bool compactResult = false) = 0;
 };
 
