@@ -84,6 +84,7 @@ set(LIBMV_LIGHT_LIBS
   multiview
   numeric
   ${GLOG_LIBRARIES}
+  ${Glog_LIBS}
   ${GFLAGS_LIBRARIES}
 )
 
