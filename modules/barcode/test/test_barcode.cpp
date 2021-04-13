@@ -16,9 +16,8 @@ TEST(Barcode_BarcodeDetector_single, regression)
 {
     const std::string root = "barcode/single/";
     datasetType validation = initValidation(root + "result.csv");
-    barcode::BarcodeDetector barcode;
+    auto bardet = barcode::BarcodeDetector();
     datasetType::iterator iterator = validation.begin();
-    std::vector<std::string> error_list;
     while (iterator != validation.end())
     {
         std::string img_name = iterator->first;
@@ -29,19 +28,15 @@ TEST(Barcode_BarcodeDetector_single, regression)
         std::vector<cv::Point2f> points;
         std::vector<std::string> infos;
         std::vector<cv::barcode::BarcodeType> formats;
-        barcode.detectAndDecode(img, infos, formats, points);
-        EXPECT_FALSE(infos.empty()) << "Decoded nothing";
-        EXPECT_FALSE(points.empty()) << "Nothing detected";
+        bardet.detectAndDecode(img, infos, formats, points);
+        EXPECT_FALSE(points.empty()) << "Nothing detected: " << image_path;
         bool is_correct = false;
         for (const auto &ans : infos)
         {
-            if (validation.find(img_name) != validation.end())
+            if (ans == result)
             {
-                if (ans == result)
-                {
-                    is_correct = true;
-                    break;
-                }
+                is_correct = true;
+                break;
             }
         }
         EXPECT_TRUE(is_correct) << "No results for " << img_name;
@@ -53,6 +48,7 @@ TEST(Barcode_BarcodeDetector_detect_multi, detect_regression)
 {
     const std::string root = "barcode/multiple/";
     datasetType validation = initValidation(root + "result.csv");
+    auto bardet = barcode::BarcodeDetector();
     datasetType::iterator iterator = validation.begin();
     while (iterator != validation.end())
     {
@@ -62,9 +58,8 @@ TEST(Barcode_BarcodeDetector_detect_multi, detect_regression)
         Mat src = imread(image_path);
         EXPECT_FALSE(src.empty()) << "Can't read image: " << image_path;
 
-        barcode::BarcodeDetector barcode;
         std::vector<Point> corners;
-        barcode.detect(src, corners);
+        bardet.detect(src, corners);
         EXPECT_EQ(corners.size(), expect_corners_size) << "Can't detect all barcodes: " << img;
         iterator++;
     }
@@ -72,13 +67,13 @@ TEST(Barcode_BarcodeDetector_detect_multi, detect_regression)
 
 TEST(Barcode_BarcodeDetector_basic, not_found_barcode)
 {
-    barcode::BarcodeDetector barcode;
+    auto bardet = barcode::BarcodeDetector();
     std::vector<Point> corners;
     vector<cv::String> decoded_info;
     vector<barcode::BarcodeType> decoded_type;
     Mat zero_image = Mat::zeros(256, 256, CV_8UC1);
-    EXPECT_FALSE(barcode.detect(zero_image, corners));
+    EXPECT_FALSE(bardet.detect(zero_image, corners));
     corners = std::vector<Point>(4);
-    EXPECT_ANY_THROW(barcode.decode(zero_image, corners, decoded_info, decoded_type));
+    EXPECT_ANY_THROW(bardet.decode(zero_image, corners, decoded_info, decoded_type));
 }
 }} // namespace

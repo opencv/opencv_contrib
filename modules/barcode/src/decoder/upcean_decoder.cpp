@@ -39,15 +39,15 @@ static constexpr int BIAS_PART = 2;
 //    }
 //}
 
-bool UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &row, int rowOffset, uchar whiteFirst,
-                                      const std::vector<int> &pattern, Counter &counter, std::pair<int, int> &result)
+bool UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &row, uint rowOffset, uchar whiteFirst,
+                                      const std::vector<int> &pattern, Counter &counter, std::pair<uint, uint> &result)
 {
     size_t patternLength = pattern.size();
     size_t width = row.size();
     uchar color = whiteFirst ? WHITE : BLACK;
     rowOffset = (int) (std::find(row.cbegin() + rowOffset, row.cend(), color) - row.cbegin());
     uint counterPosition = 0;
-    int patternStart = rowOffset;
+    uint patternStart = rowOffset;
     for (uint x = rowOffset; x < width; x++)
     {
         if (row[x] == color)
@@ -86,7 +86,7 @@ bool UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &row, int rowOffs
     return false;
 }
 
-bool UPCEANDecoder::findStartGuardPatterns(const std::vector<uchar> &row, std::pair<int, int> &start_range)
+bool UPCEANDecoder::findStartGuardPatterns(const std::vector<uchar> &row, std::pair<uint, uint> &start_range)
 {
     bool is_find = false;
     int next_start = 0;
@@ -97,8 +97,8 @@ bool UPCEANDecoder::findStartGuardPatterns(const std::vector<uchar> &row, std::p
         {
             return false;
         }
-        int start = start_range.first;
-        next_start = start_range.second;
+        int start = static_cast<int>(start_range.first);
+        next_start = static_cast<int>(start_range.second);
         int quiet_start = max(start - (next_start - start), 0);
         is_find = (quiet_start != start) &&
                   (std::find(std::begin(row) + quiet_start, std::begin(row) + start, BLACK) == std::begin(row) + start);
@@ -106,16 +106,16 @@ bool UPCEANDecoder::findStartGuardPatterns(const std::vector<uchar> &row, std::p
     return true;
 }
 
-int UPCEANDecoder::decodeDigit(const std::vector<uchar> &row, Counter &counters, int rowOffset,
-                               const std::vector<std::vector<int>> &patterns) const
+int UPCEANDecoder::decodeDigit(const std::vector<uchar> &row, Counter &counters, uint rowOffset,
+                               const std::vector<std::vector<int>> &patterns)
 {
     fillCounter(row, rowOffset, counters);
     int bestMatch = -1;
-    int bestVariance = MAX_AVG_VARIANCE; // worst variance we'll accept
+    uint bestVariance = MAX_AVG_VARIANCE; // worst variance we'll accept
     int i = 0;
     for (const auto &pattern : patterns)
     {
-        int variance = patternMatch(counters, pattern, MAX_INDIVIDUAL_VARIANCE);
+        uint variance = patternMatch(counters, pattern, MAX_INDIVIDUAL_VARIANCE);
         if (variance < bestVariance)
         {
             bestVariance = variance;

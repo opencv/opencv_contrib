@@ -11,7 +11,15 @@ namespace cv {
 namespace barcode {
 
 
-#define CAP(x, x1, x2) x < x1 ? x1 : (x > x2 ? x2 : x)
+#define CAP(x, x1, x2) x < (x1) ? (x1) : ((x) > (x2) ? (x2) : (x))
+
+// This class uses 5x5 blocks to compute local luminance, where each block is 8x8 pixels.
+// So this is the smallest dimension in each axis we can accept.
+constexpr static int BLOCK_SIZE_POWER = 3;
+constexpr static int BLOCK_SIZE = 1 << BLOCK_SIZE_POWER; // ...0100...00
+constexpr static int BLOCK_SIZE_MASK = BLOCK_SIZE - 1;   // ...0011...11
+constexpr static int MINIMUM_DIMENSION = BLOCK_SIZE * 5;
+constexpr static int MIN_DYNAMIC_RANGE = 24;
 
 void
 calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, int sub_height, int width, int height,

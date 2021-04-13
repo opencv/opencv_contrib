@@ -68,11 +68,11 @@ void fillCounter(const std::vector<uchar> &row, uint start, Counter &counter)
     }
 }
 
-static inline int
-patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, int maxIndividualVariance)
+static inline uint
+patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, uint maxIndividualVariance)
 {
     size_t numCounters = counter.pattern.size();
-    int total = counter.sum;
+    int total = static_cast<int>(counter.sum);
     int patternLength = std::accumulate(pattern.cbegin(), pattern.cend(), 0);
     if (total < patternLength)
     {
@@ -87,12 +87,12 @@ patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, in
 
     int unitBarWidth = (total << INTEGER_MATH_SHIFT) / patternLength;
     maxIndividualVariance = (maxIndividualVariance * unitBarWidth) >> INTEGER_MATH_SHIFT;
-    int totalVariance = 0;
+    uint totalVariance = 0;
     for (uint x = 0; x < numCounters; x++)
     {
         int cnt = counter.pattern[x] << INTEGER_MATH_SHIFT;
         int scaledPattern = pattern[x] * unitBarWidth;
-        int variance = std::abs(cnt - scaledPattern);
+        uint variance = std::abs(cnt - scaledPattern);
         if (variance > maxIndividualVariance)
         {
             return std::numeric_limits<int32_t>::max();
@@ -115,7 +115,7 @@ patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, in
 *  the total variance between counters and patterns equals the pattern length, higher values mean
 *  even more variance
 */
-int patternMatch(const Counter &counters, const std::vector<int> &pattern, uint maxIndividual)
+uint patternMatch(const Counter &counters, const std::vector<int> &pattern, uint maxIndividual)
 {
     CV_Assert(counters.pattern.size() == pattern.size());
     return patternMatchVariance(counters, pattern, maxIndividual);

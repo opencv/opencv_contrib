@@ -14,16 +14,16 @@ static constexpr float HALF_PI = static_cast<float>(CV_PI / 2);
 
 #define CALCULATE_SUM(ptr, result) \
     ptr += left_col + integral_cols * top_row;\
-    top_left = static_cast<float>(*ptr);\
-    ptr += right_col - left_col;\
-    top_right = static_cast<float>(*ptr);\
-    ptr += (bottom_row - top_row) * integral_cols;\
-    bottom_right = static_cast<float>(*ptr);\
-    ptr -= right_col - left_col;\
-    bottom_left = static_cast<float>(*ptr);\
-    ptr -= (bottom_row - top_row) * integral_cols;\
-    ptr -= left_col + integral_cols * top_row;\
-    result = (bottom_right - bottom_left - top_right + top_left);
+    top_left = static_cast<float>(*(ptr));\
+    (ptr) += right_col - left_col;\
+    top_right = static_cast<float>(*(ptr));\
+    (ptr) += (bottom_row - top_row) * integral_cols;\
+    bottom_right = static_cast<float>(*(ptr));\
+    (ptr) -= right_col - left_col;\
+    bottom_left = static_cast<float>(*(ptr));\
+    (ptr) -= (bottom_row - top_row) * integral_cols;\
+    (ptr) -= left_col + integral_cols * top_row;\
+    (result) = (bottom_right - bottom_left - top_right + top_left);
 
 
 inline bool Detect::isValidCoord(const Point &coord, const Size &limit)
@@ -97,17 +97,16 @@ void Detect::localization()
 
     // get integral image
     preprocess();
-    float window_ratio = 0.01f;
-    static constexpr float window_ratio_step = 0.02f;
-    static constexpr int window_ratio_stepTimes = 6;
+    // empirical setting
+    static constexpr float SCALE_LIST[] = {0.01f, 0.03f, 0.06f, 0.08f};
+    const auto min_side = static_cast<float>(std::min(width, height));
     int window_size;
-    for (size_t i = 0; i < window_ratio_stepTimes; i++)
+    for (const float scale:SCALE_LIST)
     {
-        window_size = cvRound(min(width, height) * window_ratio);
+        window_size = cvRound(min_side * scale);
         calConsistency(window_size);
         barcodeErode();
         regionGrowing(window_size);
-        window_ratio += window_ratio_step;
     }
 
 }
@@ -154,7 +153,7 @@ void Detect::preprocess()
     Scharr(resized_barcode, scharr_y, CV_32F, 0, 1);
     // calculate magnitude of gradient, normalize and threshold
     magnitude(scharr_x, scharr_y, gradient_magnitude);
-    threshold(gradient_magnitude, gradient_magnitude, 48, 1, THRESH_BINARY);
+    threshold(gradient_magnitude, gradient_magnitude, 56, 1, THRESH_BINARY);
     gradient_magnitude.convertTo(gradient_magnitude, CV_8U);
     integral(gradient_magnitude, integral_edges, CV_32F);
 

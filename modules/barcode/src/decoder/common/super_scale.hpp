@@ -8,7 +8,6 @@
 #ifndef __OPENCV_BARCODE_SUPER_SCALE_HPP__
 #define __OPENCV_BARCODE_SUPER_SCALE_HPP__
 
-#include "opencv2/dnn.hpp"
 
 namespace cv {
 namespace barcode {
@@ -27,7 +26,6 @@ public:
 private:
     dnn::Net srnet_;
     bool net_loaded_ = false;
-    constexpr static float MAX_SCALE = 4.0f;
 
     int superResolutionScale(const cv::Mat &src, cv::Mat &dst);
 };

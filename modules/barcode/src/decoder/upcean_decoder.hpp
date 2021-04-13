@@ -7,7 +7,6 @@
 #define __OPENCV_BARCODE_UPCEAN_DECODER_HPP__
 
 #include "abs_decoder.hpp"
-#include <opencv2/core.hpp>
 
 /**
  *   upcean_decoder the abstract basic class for decode formats,
@@ -27,14 +26,14 @@ public:
     std::pair<Result, float> decodeROI(const Mat &bar_img) const override;
 
 protected:
-    int decodeDigit(const std::vector<uchar> &row, Counter &counters, int rowOffset,
-                    const std::vector<std::vector<int>> &patterns) const;
+    static int decodeDigit(const std::vector<uchar> &row, Counter &counters, uint rowOffset,
+                           const std::vector<std::vector<int>> &patterns);
 
     static bool
-    findGuardPatterns(const std::vector<uchar> &row, int rowOffset, uchar whiteFirst, const std::vector<int> &pattern,
-                      Counter &counter, std::pair<int, int> &result);
+    findGuardPatterns(const std::vector<uchar> &row, uint rowOffset, uchar whiteFirst, const std::vector<int> &pattern,
+                      Counter &counter, std::pair<uint, uint> &result);
 
-    static bool findStartGuardPatterns(const std::vector<uchar> &row, std::pair<int, int> &start_range);
+    static bool findStartGuardPatterns(const std::vector<uchar> &row, std::pair<uint, uint> &start_range);
 
     Result decodeLine(const vector<uchar> &line) const;
 
@@ -57,8 +56,8 @@ const std::vector<int> &MIDDLE_PATTERN();
 const std::array<char, 32> &FIRST_CHAR_ARRAY();
 
 constexpr static uint PATTERN_LENGTH = 4;
-constexpr static int MAX_AVG_VARIANCE = static_cast<int>(PATTERN_MATCH_RESULT_SCALE_FACTOR * 0.48f);
-constexpr static int MAX_INDIVIDUAL_VARIANCE = static_cast<int>(PATTERN_MATCH_RESULT_SCALE_FACTOR * 0.7f);
+constexpr static uint MAX_AVG_VARIANCE = static_cast<uint>(PATTERN_MATCH_RESULT_SCALE_FACTOR * 0.48f);
+constexpr static uint MAX_INDIVIDUAL_VARIANCE = static_cast<uint>(PATTERN_MATCH_RESULT_SCALE_FACTOR * 0.7f);
 
 }
 } // namespace cv

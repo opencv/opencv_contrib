@@ -10,15 +10,6 @@
 namespace cv {
 namespace barcode {
 
-// This class uses 5x5 blocks to compute local luminance, where each block is 8x8 pixels.
-// So this is the smallest dimension in each axis we can accept.
-constexpr static int BLOCK_SIZE_POWER = 3;
-constexpr static int BLOCK_SIZE = 1 << BLOCK_SIZE_POWER; // ...0100...00
-constexpr static int BLOCK_SIZE_MASK = BLOCK_SIZE - 1;   // ...0011...11
-constexpr static int MINIMUM_DIMENSION = BLOCK_SIZE * 5;
-constexpr static int MIN_DYNAMIC_RANGE = 24;
-
-
 void hybridBinarization(const Mat &src, Mat &dst);
 
 void

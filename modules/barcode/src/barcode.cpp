@@ -98,7 +98,7 @@ bool BarDecode::decodeMultiplyProcess()
             {
                 Mat bin_bar;
                 Result max_res;
-                float max_conf = -1;
+                float max_conf = -1.f;
                 bool decoded = false;
                 for (const auto &decoder:getDecoders())
                 {
@@ -161,7 +161,7 @@ vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<Point
     CV_Assert(!points.empty());
     CV_Assert((points.size() % 4) == 0);
     src_points.clear();
-    for (size_t i = 0; i < points.size(); i += 4)
+    for (int i = 0; (uint) i < points.size(); i += 4)
     {
         vector<Point2f> tempMat{points.cbegin() + i, points.cbegin() + i + 4};
         if (contourArea(tempMat) > 0.0)

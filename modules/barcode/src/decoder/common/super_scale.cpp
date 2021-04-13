@@ -7,12 +7,15 @@
 // Modified by darkliang wangberlinT
 
 #include "../../precomp.hpp"
+#include "opencv2/dnn.hpp"
 #include "super_scale.hpp"
 
 
-#define CLIP(x, x1, x2) max(x1, min(x, x2))
 namespace cv {
 namespace barcode {
+#define CLIP(x, x1, x2) max(x1, min(x, x2))
+constexpr static float MAX_SCALE = 4.0f;
+
 int SuperScale::init(const std::string &proto_path, const std::string &model_path)
 {
     srnet_ = dnn::readNetFromCaffe(proto_path, model_path);
@@ -39,9 +42,7 @@ void SuperScale::processImageScale(const Mat &src, Mat &dst, float scale, const 
     {
         if (use_sr && (int) sqrt(width * height * 1.0) < sr_max_size && net_loaded_)
         {
-            int ret = superResolutionScale(src, dst);
-            if (ret != 0)
-            { resize(src, dst, Size(), scale, scale, INTER_CUBIC); }
+            superResolutionScale(src, dst);
             if (scale > 2.0)
             {
                 processImageScale(dst, dst, scale / 2.0f, use_sr);
@@ -67,7 +68,7 @@ int SuperScale::superResolutionScale(const Mat &src, Mat &dst)
         const float *prob_score = prob.ptr<float>(0, 0, row);
         for (int col = 0; col < prob.size[3]; col++)
         {
-            float pixel = prob_score[col] * 255.0;
+            float pixel = prob_score[col] * 255.0f;
             dst.at<uint8_t>(row, col) = static_cast<uint8_t>(CLIP(pixel, 0.0f, 255.0f));
         }
     }

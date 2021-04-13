@@ -19,7 +19,7 @@ Result Ean8Decoder::decode(const vector<uchar> &data) const
     {
         return Result("Wrong Size", BarcodeType::NONE);
     }
-    pair<int, int> pattern;
+    pair<uint, uint> pattern;
     if (!findStartGuardPatterns(data, pattern))
     {
         return Result("Begin Pattern Not Found", BarcodeType::NONE);

@@ -36,7 +36,7 @@ We need create variables to store the outputs.
 
 #### detect
 
-It is a algorithm based on directional consistency. First of all, we compute the average squared gradients of every pixels. It was proposed in the paper "Systematic methods for the computation of the directional  fields and singular points of fingerprints" by A.M. Bazen and S.H. Gerez in 2002. Then we divide the image into some square patches and compute the **gradient variance** and **mean gradient direction** of each patch. At last we connected the patches that have **low gradient variance** and **similar gradient direction**. In this stage, we use multi-size patches to capture the gradient distribution of multi-size bar codes, and apply non-maximum suppression to filter duplicate proposals.
+It is a algorithm based on directional consistency. First of all, we compute the average squared gradients of every pixels. It was proposed in the paper "Systematic methods for the computation of the directional fields and singular points of fingerprints" by A.M. Bazen and S.H. Gerez in 2002. Then we divide the image into some square patches and compute the **gradient variance** and **mean gradient direction** of each patch. At last we connected the patches that have **low gradient variance** and **similar gradient direction**. In this stage, we use multi-size patches to capture the gradient distribution of multi-size bar codes, and apply non-maximum suppression to filter duplicate proposals.
 
 Detect codes in the input image, and output the corners of detected rectangles:
 
