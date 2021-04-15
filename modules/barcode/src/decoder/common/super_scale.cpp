@@ -25,21 +25,19 @@ int SuperScale::init(const std::string &proto_path, const std::string &model_pat
 
 void SuperScale::processImageScale(const Mat &src, Mat &dst, float scale, const bool &use_sr, int sr_max_size)
 {
-    if (scale <= .0)
-    { return; }
     scale = min(scale, MAX_SCALE);
-    int width = src.cols;
-    int height = src.rows;
     if (scale > .0 && scale < 1.0)
     {  // down sample
         resize(src, dst, Size(), scale, scale, INTER_AREA);
     }
-    else if (scale > 1.0 && scale < 2.0)
+    else if (scale > 1.5 && scale < 2.0)
     {
         resize(src, dst, Size(), scale, scale, INTER_CUBIC);
     }
     else if (scale >= 2.0)
     {
+        int width = src.cols;
+        int height = src.rows;
         if (use_sr && (int) sqrt(width * height * 1.0) < sr_max_size && net_loaded_)
         {
             superResolutionScale(src, dst);

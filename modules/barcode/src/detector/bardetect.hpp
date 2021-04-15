@@ -43,11 +43,11 @@ protected:
 
     double coeff_expansion = 1.0;
     int height, width;
-    Mat resized_barcode, gradient_magnitude, consistency, orientation, edge_nums, integral_x_sq, integral_y_sq, integral_xy, integral_edges;
+    Mat resized_barcode, gradient_magnitude, coherence, orientation, edge_nums, integral_x_sq, integral_y_sq, integral_xy, integral_edges;
 
     void preprocess();
 
-    void calConsistency(int window_size);
+    void calCoherence(int window_size);
 
     static inline bool isValidCoord(const Point &coord, const Size &limit);
 

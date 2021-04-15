@@ -11,12 +11,11 @@ namespace cv {
 namespace barcode {
 
 
-void preprocess(const Mat &src, const Mat &dst)
+void sharpen(const Mat &src, const Mat &dst)
 {
     Mat blur;
     GaussianBlur(src, blur, Size(0, 0), 25);
-    addWeighted(src, 2, blur, -1, 0, dst);
-    dst.convertTo(dst, CV_8UC1, 1, -20);
+    addWeighted(src, 2, blur, -1, -20, dst);
 }
 
 void binarize(const Mat &src, Mat &dst, BinaryType mode)

@@ -175,7 +175,7 @@ vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<Point
     {
         Mat bar_img;
         cropROI(src, bar_img, corners);
-//        preprocess(bar_img, bar_img);
+//        sharpen(bar_img, bar_img);
         // empirical settings
         if (bar_img.cols < 320 || bar_img.cols > 640)
         {

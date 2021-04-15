@@ -16,7 +16,7 @@ enum BinaryType
 };
 static constexpr BinaryType binary_types[] = {OTSU, HYBRID};
 
-void preprocess(const Mat &src, const Mat &dst);
+void sharpen(const Mat &src, const Mat &dst);
 
 void binarize(const Mat &src, Mat &dst, BinaryType mode);
 

@@ -104,7 +104,7 @@ void Detect::localization()
     for (const float scale:SCALE_LIST)
     {
         window_size = cvRound(min_side * scale);
-        calConsistency(window_size);
+        calCoherence(window_size);
         barcodeErode();
         regionGrowing(window_size);
     }
@@ -184,23 +184,23 @@ void Detect::preprocess()
 }
 
 
-// Change consistency orientation edge_nums
+// Change coherence orientation edge_nums
 // depend on width height integral_edges integral_x_sq integral_y_sq integral_xy
-void Detect::calConsistency(int window_size)
+void Detect::calCoherence(int window_size)
 {
-    static constexpr float THRESHOLD_CONSISTENCY = 0.9f;
+    static constexpr float THRESHOLD_COHERENCE = 0.9f;
     int right_col, left_col, top_row, bottom_row;
     float xy, x_sq, y_sq, d, rect_area;
     const float THRESHOLD_AREA = float(window_size * window_size) * 0.42f;
     Size new_size(width / window_size, height / window_size);
-    consistency = Mat(new_size, CV_8U), orientation = Mat(new_size, CV_32F), edge_nums = Mat(new_size, CV_32F);
+    coherence = Mat(new_size, CV_8U), orientation = Mat(new_size, CV_32F), edge_nums = Mat(new_size, CV_32F);
 
     float top_left, top_right, bottom_left, bottom_right;
     int integral_cols = width + 1;
     const auto *edges_ptr = integral_edges.ptr<float_t>(), *x_sq_ptr = integral_x_sq.ptr<float_t>(), *y_sq_ptr = integral_y_sq.ptr<float_t>(), *xy_ptr = integral_xy.ptr<float_t>();
     for (int y = 0; y < new_size.height; y++)
     {
-        auto *consistency_row = consistency.ptr<uint8_t>(y);
+        auto *coherence_row = coherence.ptr<uint8_t>(y);
         auto *orientation_row = orientation.ptr<float_t>(y);
         auto *edge_nums_row = edge_nums.ptr<float_t>(y);
         if (y * window_size >= height)
@@ -227,7 +227,7 @@ void Detect::calConsistency(int window_size)
             if (rect_area < THRESHOLD_AREA)
             {
                 // smooth region
-                consistency_row[pos] = 0;
+                coherence_row[pos] = 0;
                 continue;
             }
 
@@ -237,15 +237,15 @@ void Detect::calConsistency(int window_size)
 
             // get the values of the rectangle corners from the integral image - 0 if outside bounds
             d = sqrt((x_sq - y_sq) * (x_sq - y_sq) + 4 * xy * xy) / (x_sq + y_sq);
-            if (d > THRESHOLD_CONSISTENCY)
+            if (d > THRESHOLD_COHERENCE)
             {
-                consistency_row[pos] = 255;
+                coherence_row[pos] = 255;
                 orientation_row[pos] = computeOrientation(x_sq - y_sq, 2 * xy) / 2.0f;
                 edge_nums_row[pos] = rect_area;
             }
             else
             {
-                consistency_row[pos] = 0;
+                coherence_row[pos] = 0;
             }
 
         }
@@ -254,11 +254,11 @@ void Detect::calConsistency(int window_size)
 }
 
 // will change localization_bbox bbox_scores
-// will change consistency,
-// depend on consistency orientation edge_nums
+// will change coherence,
+// depend on coherence orientation edge_nums
 void Detect::regionGrowing(int window_size)
 {
-    static constexpr float LOCAL_THRESHOLD_CONSISTENCY = 0.95f, THRESHOLD_RADIAN =
+    static constexpr float LOCAL_THRESHOLD_COHERENCE = 0.95f, THRESHOLD_RADIAN =
             PI / 30, THRESHOLD_BLOCK_NUM = 35, LOCAL_RATIO = 0.5f, EXPANSION_FACTOR = 1.2f;
     Point pt_to_grow, pt;                       //point to grow
 
@@ -277,18 +277,18 @@ void Detect::regionGrowing(int window_size)
                                       {-1, 1},
                                       {-1, 0}};
     vector<Point2f> growingPoints, growingImgPoints;
-    for (int y = 0; y < consistency.rows; y++)
+    for (int y = 0; y < coherence.rows; y++)
     {
-        auto *consistency_row = consistency.ptr<uint8_t>(y);
+        auto *coherence_row = coherence.ptr<uint8_t>(y);
 
-        for (int x = 0; x < consistency.cols; x++)
+        for (int x = 0; x < coherence.cols; x++)
         {
-            if (consistency_row[x] == 0)
+            if (coherence_row[x] == 0)
             {
                 continue;
             }
             // flag
-            consistency_row[x] = 0;
+            coherence_row[x] = 0;
             growingPoints.clear();
             growingImgPoints.clear();
 
@@ -312,12 +312,12 @@ void Detect::regionGrowing(int window_size)
                     pt_to_grow = Point(pt.x + i[0], pt.y + i[1]);
 
                     //check if out of boundary
-                    if (!isValidCoord(pt_to_grow, consistency.size()))
+                    if (!isValidCoord(pt_to_grow, coherence.size()))
                     {
                         continue;
                     }
 
-                    if (consistency.at<uint8_t>(pt_to_grow) == 0)
+                    if (coherence.at<uint8_t>(pt_to_grow) == 0)
                     {
                         continue;
                     }
@@ -325,7 +325,7 @@ void Detect::regionGrowing(int window_size)
                     if (abs(cur_value - src_value) < THRESHOLD_RADIAN ||
                         abs(cur_value - src_value) > PI - THRESHOLD_RADIAN)
                     {
-                        consistency.at<uint8_t>(pt_to_grow) = 0;
+                        coherence.at<uint8_t>(pt_to_grow) = 0;
                         sin_sum += sin(2 * cur_value);
                         cos_sum += cos(2 * cur_value);
                         counter += 1;
@@ -340,9 +340,9 @@ void Detect::regionGrowing(int window_size)
             {
                 continue;
             }
-            float local_consistency = (sin_sum * sin_sum + cos_sum * cos_sum) / counter / counter;
-            // minimum local gradient orientation_arg consistency_arg
-            if (local_consistency < LOCAL_THRESHOLD_CONSISTENCY)
+            float local_coherence = (sin_sum * sin_sum + cos_sum * cos_sum) / counter / counter;
+            // minimum local gradient orientation_arg coherence_arg
+            if (local_coherence < LOCAL_THRESHOLD_COHERENCE)
             {
                 continue;
             }
@@ -394,26 +394,26 @@ void Detect::barcodeErode()
 {
     static const std::array<Mat, 4> &structuringElement = getStructuringElement();
     Mat m0, m1, m2, m3;
-    dilate(consistency, m0, structuringElement[0]);
-    dilate(consistency, m1, structuringElement[1]);
-    dilate(consistency, m2, structuringElement[2]);
-    dilate(consistency, m3, structuringElement[3]);
+    dilate(coherence, m0, structuringElement[0]);
+    dilate(coherence, m1, structuringElement[1]);
+    dilate(coherence, m2, structuringElement[2]);
+    dilate(coherence, m3, structuringElement[3]);
     int sum;
-    for (int y = 0; y < consistency.rows; y++)
+    for (int y = 0; y < coherence.rows; y++)
     {
-        auto consistency_row = consistency.ptr<uint8_t>(y);
+        auto coherence_row = coherence.ptr<uint8_t>(y);
         auto m0_row = m0.ptr<uint8_t>(y);
         auto m1_row = m1.ptr<uint8_t>(y);
         auto m2_row = m2.ptr<uint8_t>(y);
         auto m3_row = m3.ptr<uint8_t>(y);
 
-        for (int pos = 0; pos < consistency.cols; pos++)
+        for (int pos = 0; pos < coherence.cols; pos++)
         {
-            if (consistency_row[pos] != 0)
+            if (coherence_row[pos] != 0)
             {
                 sum = m0_row[pos] + m1_row[pos] + m2_row[pos] + m3_row[pos];
                 //more than 2 group
-                consistency_row[pos] = sum > 600 ? 255 : 0;
+                coherence_row[pos] = sum > 600 ? 255 : 0;
             }
         }
     }
