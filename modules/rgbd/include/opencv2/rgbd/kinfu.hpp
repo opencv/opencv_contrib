@@ -219,7 +219,7 @@ public:
     */
 
     CV_WRAP virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
-	//TODO: rewrite render() for 1 and 2 args, like update()/updateT()
+
     /** @brief Gets points and normals of current 3d mesh
 
       The order of normals corresponds to order of points.
