@@ -112,6 +112,7 @@ class LargeKinfuImpl : public LargeKinfu
 
     const Params& getParams() const CV_OVERRIDE;
 
+    void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
     virtual void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
@@ -296,28 +297,29 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     return true;
 }
 
+
+template<typename MatType>
+void LargeKinfuImpl<MatType>::render(OutputArray image) const
+{
+    CV_TRACE_FUNCTION();
+    auto currSubmap = submapMgr->getCurrentSubmap();
+    //! TODO: Can render be dependent on current submap
+    renderPointsNormals(currSubmap->pyrPoints[0], currSubmap->pyrNormals[0], image, params.lightPose);
+}
+
+
 template<typename MatType>
 void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     CV_TRACE_FUNCTION();
 
     Affine3f cameraPose(_cameraPose);
-
     auto currSubmap = submapMgr->getCurrentSubmap();
-    const Affine3f id = Affine3f::Identity();
-    if ((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
-        (cameraPose.rotation() == id.rotation() && cameraPose.translation() == id.translation()))
-    {
-        //! TODO: Can render be dependent on current submap
-        renderPointsNormals(currSubmap->pyrPoints[0], currSubmap->pyrNormals[0], image, params.lightPose);
-    }
-    else
-    {
-        MatType points, normals;
-        currSubmap->raycast(cameraPose, params.intr, params.frameSize, points, normals);
-        renderPointsNormals(points, normals, image, params.lightPose);
-    }
+    MatType points, normals;
+    currSubmap->raycast(cameraPose, params.intr, params.frameSize, points, normals);
+    renderPointsNormals(points, normals, image, params.lightPose);
 }
+
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const

@@ -141,6 +141,7 @@ public:
 
     const Params& getParams() const CV_OVERRIDE;
 
+    void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
     virtual void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
@@ -323,25 +324,22 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
 
 template< typename MatType >
+void ColoredKinFuImpl<MatType>::render(OutputArray image) const
+{
+    CV_TRACE_FUNCTION();
+
+    renderPointsNormalsColors(pyrPoints[0], pyrNormals[0], pyrColors[0],image, params.lightPose);
+}
+
+template< typename MatType >
 void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     CV_TRACE_FUNCTION();
 
     Affine3f cameraPose(_cameraPose);
-    Affine3f _pose(pose);
-
-    const Affine3f id = Affine3f::Identity();
-    if((cameraPose.rotation() == _pose.rotation() && cameraPose.translation() == _pose.translation()) ||
-       (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
-    {
-        renderPointsNormalsColors(pyrPoints[0], pyrNormals[0], pyrColors[0],image, params.lightPose);
-    }
-    else
-    {
-        MatType points, normals, colors;
-        volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
-        renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
-    }
+    MatType points, normals, colors;
+    volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
+    renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
 }
 
 
