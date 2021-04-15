@@ -1,4 +1,7 @@
 set(BUILD_opencv_cnn_3dobj_INIT OFF)  # Must be disabled by default - requires custom build of Caffe.
+if(NOT BUILD_opencv_cnn_3dobj)
+  return()
+endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 
