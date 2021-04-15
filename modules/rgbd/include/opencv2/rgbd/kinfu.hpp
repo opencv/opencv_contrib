@@ -207,7 +207,7 @@ public:
     */
 
     CV_WRAP virtual void render(OutputArray image) const = 0;
-	
+
     /** @brief Renders a volume into an image
 
       Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
