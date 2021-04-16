@@ -5,7 +5,7 @@
 // Author: darkliang
 
 #ifndef BARCODE_CONVERTERS_HPP
-#define	BARCODE_CONVERTERS_HPP
+#define BARCODE_CONVERTERS_HPP
 
 #include <jni.h>
 #include "opencv_java.hpp"

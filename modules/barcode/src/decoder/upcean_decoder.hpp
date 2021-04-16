@@ -39,10 +39,12 @@ protected:
 
     Result decode(const vector<uchar> &bar) const override = 0;
 
-    bool isValid(std::string result) const override;
+    bool isValid(const string &result) const override;
 
-//private:
-//    void drawDebugLine(Mat &debug_img, const Point2i &begin, const Point2i &end) const;
+private:
+    #if 0
+    void drawDebugLine(Mat &debug_img, const Point2i &begin, const Point2i &end) const;
+    #endif
 };
 
 const std::vector<std::vector<int>> &get_A_or_C_Patterns();

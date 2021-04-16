@@ -1,8 +1,3 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
-// Copyright (c) 2020-2021 darkliang wangberlinT Certseeds
-
 #include <iostream>
 #include "opencv2/barcode.hpp"
 #include "opencv2/imgproc.hpp"
@@ -76,6 +71,7 @@ int main(int argc, char **argv)
              "Please, download 'sr.*' from\n"
              "https://github.com/WeChatCV/opencv_3rdparty/tree/wechat_qrcode\n"
              "and put them into the current directory.\n"
+             "Or you can leave sr_prototxt and sr_model unspecified.\n"
              "---------------------------------------------------------------\n";
         cout << e.what() << endl;
         return -1;
@@ -133,10 +129,10 @@ static void drawBarcodeResults(Mat &frame, const vector<Point> &corners, const v
         for (size_t i = 0; i < corners.size(); i += 4)
         {
             size_t bar_idx = i / 4;
-            vector<Point> qrcode_contour(corners.begin() + i, corners.begin() + i + 4);
-            drawBarcodeContour(frame, qrcode_contour, g_detectOnly || decode_type[bar_idx] != barcode::NONE);
+            vector<Point> barcode_contour(corners.begin() + i, corners.begin() + i + 4);
+            drawBarcodeContour(frame, barcode_contour, g_detectOnly || decode_type[bar_idx] != barcode::NONE);
 
-            cout << "BAR[" << bar_idx << "] @ " << Mat(qrcode_contour).reshape(2, 1) << ": ";
+            cout << "BAR[" << bar_idx << "] @ " << Mat(barcode_contour).reshape(2, 1) << ": ";
             if (decode_info.size() > bar_idx)
             {
                 if (!decode_info[bar_idx].empty())

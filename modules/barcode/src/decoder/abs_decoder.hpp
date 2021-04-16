@@ -24,9 +24,9 @@ struct Result
 
     Result() = default;
 
-    Result(std::string _result, BarcodeType _format)
+    Result(const std::string &_result, BarcodeType _format)
     {
-        result = std::move(_result);
+        result = _result;
         format = _format;
     }
 };
@@ -36,9 +36,9 @@ struct Counter
     std::vector<int> pattern;
     uint sum;
 
-    explicit Counter(vector<int> _pattern)
+    explicit Counter(const vector<int> &_pattern)
     {
-        pattern = std::move(_pattern);
+        pattern = _pattern;
         sum = 0;
     }
 };
@@ -53,7 +53,7 @@ public:
 protected:
     virtual Result decode(const vector<uchar> &data) const = 0;
 
-    virtual bool isValid(string result) const = 0;
+    virtual bool isValid(const string &result) const = 0;
 
     size_t bits_num{};
     size_t digit_number{};

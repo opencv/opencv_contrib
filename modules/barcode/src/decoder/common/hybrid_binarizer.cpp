@@ -11,7 +11,7 @@ namespace cv {
 namespace barcode {
 
 
-#define CAP(x, x1, x2) x < (x1) ? (x1) : ((x) > (x2) ? (x2) : (x))
+#define CLAMP(x, x1, x2) x < (x1) ? (x1) : ((x) > (x2) ? (x2) : (x))
 
 // This class uses 5x5 blocks to compute local luminance, where each block is 8x8 pixels.
 // So this is the smallest dimension in each axis we can accept.
@@ -23,7 +23,7 @@ constexpr static int MIN_DYNAMIC_RANGE = 24;
 
 void
 calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, int sub_height, int width, int height,
-                           Mat black_points, Mat &dst)
+                           const Mat &black_points, Mat &dst)
 {
     int maxYOffset = height - BLOCK_SIZE;
     int maxXOffset = width - BLOCK_SIZE;
@@ -34,7 +34,7 @@ calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, 
         {
             yoffset = maxYOffset;
         }
-        int top = CAP(y, 2, sub_height - 3);
+        int top = CLAMP(y, 2, sub_height - 3);
         for (int x = 0; x < sub_width; x++)
         {
             int xoffset = x << BLOCK_SIZE_POWER;
@@ -42,9 +42,9 @@ calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, 
             {
                 xoffset = maxXOffset;
             }
-            int left = CAP(x, 2, sub_width - 3);
+            int left = CLAMP(x, 2, sub_width - 3);
             int sum = 0;
-            const uchar *black_row = black_points.ptr<uchar>(top - 2);
+            const auto *black_row = black_points.ptr<uchar>(top - 2);
             for (int z = 0; z <= 4; z++)
             {
                 sum += black_row[left - 2] + black_row[left - 1] + black_row[left] + black_row[left + 1] +

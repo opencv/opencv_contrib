@@ -12,32 +12,35 @@ namespace barcode {
 
 static constexpr int DIVIDE_PART = 15;
 static constexpr int BIAS_PART = 2;
-//void UPCEANDecoder::drawDebugLine(Mat &debug_img, const Point2i &begin, const Point2i &end) const
-//{
-//    Result result;
-//    std::vector<uchar> middle;
-//    LineIterator line = LineIterator(debug_img, begin, end);
-//    middle.reserve(line.count);
-//    for (int cnt = 0; cnt < line.count; cnt++, line++)
-//    {
-//        middle.push_back(debug_img.at<uchar>(line.pos()));
-//    }
-//    std::pair<int, int> start_range;
-//    if (findStartGuardPatterns(middle, start_range))
-//    {
-//        circle(debug_img, Point2i(begin.x + start_range.second, begin.y), 2, Scalar(0), 2);
-//    }
-//    result = this->decode(middle);
-//    if (result.format == BarcodeType::NONE)
-//    {
-//        result = this->decode(std::vector<uchar>(middle.crbegin(), middle.crend()));
-//    }
-//    if (result.format == BarcodeType::NONE)
-//    {
-//        cv::line(debug_img, begin, end, Scalar(0), 2);
-//        cv::putText(debug_img, result.result, begin, cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 0, 255), 1);
-//    }
-//}
+
+#if 0
+void UPCEANDecoder::drawDebugLine(Mat &debug_img, const Point2i &begin, const Point2i &end) const
+{
+    Result result;
+    std::vector<uchar> middle;
+    LineIterator line = LineIterator(debug_img, begin, end);
+    middle.reserve(line.count);
+    for (int cnt = 0; cnt < line.count; cnt++, line++)
+    {
+        middle.push_back(debug_img.at<uchar>(line.pos()));
+    }
+    std::pair<int, int> start_range;
+    if (findStartGuardPatterns(middle, start_range))
+    {
+        circle(debug_img, Point2i(begin.x + start_range.second, begin.y), 2, Scalar(0), 2);
+    }
+    result = this->decode(middle);
+    if (result.format == BarcodeType::NONE)
+    {
+        result = this->decode(std::vector<uchar>(middle.crbegin(), middle.crend()));
+    }
+    if (result.format == BarcodeType::NONE)
+    {
+        cv::line(debug_img, begin, end, Scalar(0), 2);
+        cv::putText(debug_img, result.result, begin, cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 0, 255), 1);
+    }
+}
+#endif
 
 bool UPCEANDecoder::findGuardPatterns(const std::vector<uchar> &row, uint rowOffset, uchar whiteFirst,
                                       const std::vector<int> &pattern, Counter &counter, std::pair<uint, uint> &result)
@@ -191,7 +194,7 @@ Result UPCEANDecoder::decodeLine(const vector<uchar> &line) const
     return result;
 }
 
-bool UPCEANDecoder::isValid(std::string result) const
+bool UPCEANDecoder::isValid(const string &result) const
 {
     if (result.size() != digit_number)
     {

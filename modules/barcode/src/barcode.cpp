@@ -84,58 +84,41 @@ void BarDecode::init(const vector<Mat> &bar_imgs_)
 
 bool BarDecode::decodeMultiplyProcess()
 {
-    class ParallelBarCodeDecodeProcess : public ParallelLoopBody
-    {
-    public:
-        ParallelBarCodeDecodeProcess(vector<Mat> &bar_imgs_, vector<Result> &decoded_info_) : bar_imgs(bar_imgs_),
-                                                                                              decoded_info(
-                                                                                                      decoded_info_)
-        {}
-
-        void operator()(const Range &range) const CV_OVERRIDE
-        {
-            for (int i = range.start; i < range.end; i++)
-            {
-                Mat bin_bar;
-                Result max_res;
-                float max_conf = -1.f;
-                bool decoded = false;
-                for (const auto &decoder:getDecoders())
-                {
-                    if (decoded)
-                    { break; }
-                    for (const auto binary_type : binary_types)
-                    {
-                        binarize(bar_imgs[i], bin_bar, binary_type);
-                        auto cur_res = decoder->decodeROI(bin_bar);
-                        if (cur_res.second > max_conf)
-                        {
-                            max_res = cur_res.first;
-                            max_conf = cur_res.second;
-                            if (max_conf > 0.6)
-                            {
-                                // code decoded
-                                decoded = true;
-                                break;
-                            }
-                        }
-
-                    }
-                }
-
-                decoded_info[i] = max_res;
-            }
-        }
-
-    private:
-        vector<Mat> bar_imgs;
-        vector<Result> &decoded_info;
-    };
+    static float constexpr THRESHOLD_CONF = 0.6f;
     result_info.clear();
     result_info.resize(bar_imgs.size());
+    parallel_for_(Range(0, int(bar_imgs.size())), [&](const Range &range) {
+        for (int i = range.start; i < range.end; i++)
+        {
+            Mat bin_bar;
+            Result max_res;
+            float max_conf = -1.f;
+            bool decoded = false;
+            for (const auto &decoder:getDecoders())
+            {
+                if (decoded)
+                { break; }
+                for (const auto binary_type : binary_types)
+                {
+                    binarize(bar_imgs[i], bin_bar, binary_type);
+                    auto cur_res = decoder->decodeROI(bin_bar);
+                    if (cur_res.second > max_conf)
+                    {
+                        max_res = cur_res.first;
+                        max_conf = cur_res.second;
+                        if (max_conf > THRESHOLD_CONF)
+                        {
+                            // code decoded
+                            decoded = true;
+                            break;
+                        }
+                    }
+                } //binary types
+            } //decoder types
 
-    ParallelBarCodeDecodeProcess parallelDecodeProcess{bar_imgs, result_info};
-    parallel_for_(Range(0, int(bar_imgs.size())), parallelDecodeProcess);
+            result_info[i] = max_res;
+        }
+    });
     return !result_info.empty();
 }
 
@@ -143,9 +126,9 @@ bool BarDecode::decodeMultiplyProcess()
 struct BarcodeDetector::Impl
 {
 public:
-    Impl() = default;;
+    Impl() = default;
 
-    ~Impl() = default;;
+    ~Impl() = default;
 
     vector<Mat> initDecode(const Mat &src, const vector<Point2f> &points) const;
 
@@ -157,7 +140,6 @@ public:
 vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<Point2f> &points) const
 {
     vector<vector<Point2f>> src_points;
-    //CV_TRACE_FUNCTION();
     CV_Assert(!points.empty());
     CV_Assert((points.size() % 4) == 0);
     src_points.clear();

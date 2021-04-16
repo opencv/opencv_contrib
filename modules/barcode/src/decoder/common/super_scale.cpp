@@ -13,7 +13,6 @@
 
 namespace cv {
 namespace barcode {
-#define CLIP(x, x1, x2) max(x1, min(x, x2))
 constexpr static float MAX_SCALE = 4.0f;
 
 int SuperScale::init(const std::string &proto_path, const std::string &model_path)
@@ -64,10 +63,10 @@ int SuperScale::superResolutionScale(const Mat &src, Mat &dst)
     for (int row = 0; row < prob.size[2]; row++)
     {
         const float *prob_score = prob.ptr<float>(0, 0, row);
+        auto *dst_row = dst.ptr<uchar>(row);
         for (int col = 0; col < prob.size[3]; col++)
         {
-            float pixel = prob_score[col] * 255.0f;
-            dst.at<uint8_t>(row, col) = static_cast<uint8_t>(CLIP(pixel, 0.0f, 255.0f));
+            dst_row[col] = saturate_cast<uchar>(prob_score[col] * 255.0f);
         }
     }
     return 0;

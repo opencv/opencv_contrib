@@ -35,9 +35,6 @@ void fillCounter(const std::vector<uchar> &row, uint start, Counter &counter)
     std::fill(counter.pattern.begin(), counter.pattern.end(), 0);
     counter.sum = 0;
     size_t end = row.size();
-    if (start >= end)
-    {
-    }
     uchar color = row[start];
     uint counterPosition = 0;
     while (start < end)
@@ -63,9 +60,6 @@ void fillCounter(const std::vector<uchar> &row, uint start, Counter &counter)
         }
         ++start;
     }
-    if (!(counterPosition == counter_length || (counterPosition == counter_length - 1 && start == end)))
-    {
-    }
 }
 
 static inline uint
@@ -79,7 +73,7 @@ patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, ui
         // If we don't even have one pixel per unit of bar width, assume this is too small
         // to reliably match, so fail:
         // and use constexpr functions
-        return 2147483647;// max
+        return std::numeric_limits<uint>::max();// max
     }
     // We're going to fake floating-point math in integers. We just need to use more bits.
     // Scale up patternLength so that intermediate values below like scaledCounter will have
@@ -95,7 +89,7 @@ patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, ui
         uint variance = std::abs(cnt - scaledPattern);
         if (variance > maxIndividualVariance)
         {
-            return std::numeric_limits<int32_t>::max();
+            return std::numeric_limits<uint>::max();
         }
         totalVariance += variance;
     }

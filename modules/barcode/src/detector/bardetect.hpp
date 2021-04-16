@@ -51,8 +51,6 @@ protected:
 
     static inline bool isValidCoord(const Point &coord, const Size &limit);
 
-    static inline float computeOrientation(float y, float x);
-
     void regionGrowing(int window_size);
 
     void barcodeErode();

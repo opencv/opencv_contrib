@@ -14,7 +14,7 @@ void hybridBinarization(const Mat &src, Mat &dst);
 
 void
 calculateThresholdForBlock(const std::vector<uchar> &luminances, int sub_width, int sub_height, int width, int height,
-                           Mat black_points, Mat &dst);
+                           const Mat &black_points, Mat &dst);
 
 Mat calculateBlackPoints(std::vector<uchar> luminances, int sub_width, int sub_height, int width, int height);
 }
