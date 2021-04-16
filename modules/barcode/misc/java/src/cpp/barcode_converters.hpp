@@ -17,4 +17,4 @@ using namespace cv::barcode;
 
 void Copy_vector_BarcodeType_to_List(JNIEnv* env, std::vector<cv::barcode::BarcodeType>& vs, jobject list);
 
-#endif	/* BARCODE_CONVERTERS_HPP */
+#endif    /* BARCODE_CONVERTERS_HPP */
