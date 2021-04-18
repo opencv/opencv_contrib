@@ -130,30 +130,17 @@ public:
 
     ~Impl() = default;
 
-    vector<Mat> initDecode(const Mat &src, const vector<Point2f> &points) const;
+    vector<Mat> initDecode(const Mat &src, const vector<vector<Point2f>> &points) const;
 
     std::shared_ptr<SuperScale> sr;
     bool use_nn_sr = false;
 };
 
 // return cropped and scaled bar img
-vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<Point2f> &points) const
+vector<Mat> BarcodeDetector::Impl::initDecode(const Mat &src, const vector<vector<Point2f>> &points) const
 {
-    vector<vector<Point2f>> src_points;
-    CV_Assert(!points.empty());
-    CV_Assert((points.size() % 4) == 0);
-    src_points.clear();
-    for (int i = 0; (uint) i < points.size(); i += 4)
-    {
-        vector<Point2f> tempMat{points.cbegin() + i, points.cbegin() + i + 4};
-        if (contourArea(tempMat) > 0.0)
-        {
-            src_points.push_back(tempMat);
-        }
-    }
-    CV_Assert(!src_points.empty());
     vector<Mat> bar_imgs;
-    for (auto &corners : src_points)
+    for (auto &corners : points)
     {
         Mat bar_img;
         cropROI(src, bar_img, corners);
@@ -224,8 +211,18 @@ bool BarcodeDetector::decode(InputArray img, InputArray points, vector<std::stri
     }
     CV_Assert(points.size().width > 0);
     CV_Assert((points.size().width % 4) == 0);
-    vector<Point2f> src_points;
-    points.copyTo(src_points);
+    vector<vector<Point2f>> src_points;
+    Mat bar_points = points.getMat();
+    bar_points = bar_points.reshape(2, 1);
+    for (int i = 0; i < bar_points.size().width; i += 4)
+    {
+        vector<Point2f> tempMat = bar_points.colRange(i, i + 4);
+        if (contourArea(tempMat) > 0.0)
+        {
+            src_points.push_back(tempMat);
+        }
+    }
+    CV_Assert(!src_points.empty());
     vector<Mat> bar_imgs = p->initDecode(inarr, src_points);
     BarDecode bardec;
     bardec.init(bar_imgs);

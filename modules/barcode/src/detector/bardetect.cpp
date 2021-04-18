@@ -131,7 +131,7 @@ bool Detect::computeTransformationPoints()
 void Detect::preprocess()
 {
     Mat scharr_x, scharr_y, temp;
-    static constexpr double THRESHOLD_MAGNITUDE = 56.;
+    static constexpr double THRESHOLD_MAGNITUDE = 64.;
     Scharr(resized_barcode, scharr_x, CV_32F, 1, 0);
     Scharr(resized_barcode, scharr_y, CV_32F, 0, 1);
     // calculate magnitude of gradient and truncate

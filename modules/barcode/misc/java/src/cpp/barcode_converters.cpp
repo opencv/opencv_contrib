@@ -16,8 +16,8 @@ void Copy_vector_BarcodeType_to_List(JNIEnv* env, std::vector<cv::barcode::Barco
     jmethodID m_clear = LIST_CLEAR(env, juArrayList);
     env->CallVoidMethod(list, m_clear);
 
-    static jclass jInteger = env->FindClass("java/lang/Integer");
-    static jmethodID m_create_Integer = env->GetMethodID(jInteger, "<init>", "(I)V");
+    jclass jInteger = env->FindClass("java/lang/Integer");
+    jmethodID m_create_Integer = CONSTRUCTOR(env, jInteger);
 
     for (size_t i = 0; i < vs.size(); ++i)
     {
