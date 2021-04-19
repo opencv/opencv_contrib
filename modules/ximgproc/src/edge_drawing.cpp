@@ -12,6 +12,86 @@ namespace cv
 namespace ximgproc
 {
 
+struct ComputeGradientBody : ParallelLoopBody
+{
+void operator() (const Range& range) const CV_OVERRIDE;
+
+Mat_<uchar> src;
+mutable Mat_<ushort> gradImage;
+mutable Mat_<uchar> dirImage;
+int gradThresh;
+int op;
+bool SumFlag;
+int* grads;
+bool PFmode;
+};
+
+void ComputeGradientBody::operator() (const Range& range) const
+{
+    const int last_col = src.cols - 1;
+    int gx = 0;
+    int gy = 0;
+    int sum;
+
+    for (int y = range.start; y < range.end; ++y)
+    {
+        const uchar* srcPrevRow = src[y - 1];
+        const uchar* srcCurRow = src[y];
+        const uchar* srcNextRow = src[y + 1];
+
+        ushort* gradRow = gradImage[y];
+        uchar* dirRow = dirImage[y];
+
+        for (int x = 1; x < last_col; ++x)
+        {
+            int com1 = srcNextRow[x + 1] - srcPrevRow[x - 1];
+            int com2 = srcPrevRow[x + 1] - srcNextRow[x - 1];
+
+            switch (op)
+            {
+            case EdgeDrawing::PREWITT:
+                gx = abs(com1 + com2 + srcCurRow[x + 1] - srcCurRow[x - 1]);
+                gy = abs(com1 - com2 + srcNextRow[x] - srcPrevRow[x]);
+                break;
+            case EdgeDrawing::SOBEL:
+                gx = abs(com1 + com2 + 2 * (srcCurRow[x + 1] - srcCurRow[x - 1]));
+                gy = abs(com1 - com2 + 2 * (srcNextRow[x] - srcPrevRow[x]));
+                break;
+            case EdgeDrawing::SCHARR:
+                gx = abs(3 * (com1 + com2) + 10 * (srcCurRow[x + 1] - srcCurRow[x - 1]));
+                gy = abs(3 * (com1 - com2) + 10 * (srcNextRow[x] - srcPrevRow[x]));
+                break;
+            case EdgeDrawing::LSD:
+                // com1 and com2 differs from previous operators, because LSD has 2x2 kernel
+                com1 = srcNextRow[x + 1] - srcCurRow[x];
+                com2 = srcCurRow[x + 1] - srcNextRow[x];
+
+                gx = abs(com1 + com2);
+                gy = abs(com1 - com2);
+                break;
+            }
+
+            if (SumFlag)
+                sum = gx + gy;
+            else
+                sum = (int)sqrt((double)gx * gx + gy * gy);
+
+            gradRow[x] = (ushort)sum;
+
+            if (PFmode)
+                grads[sum]++;
+
+            if (sum >= gradThresh)
+            {
+                if (gx >= gy)
+                    dirRow[x] = EDGE_VERTICAL;
+                else
+                    dirRow[x] = EDGE_HORIZONTAL;
+            }
+        }
+    }
+}
+
 class EdgeDrawingImpl : public EdgeDrawing
 {
 public:
@@ -23,6 +103,7 @@ public:
     };
 
     EdgeDrawingImpl();
+    ~EdgeDrawingImpl();
     void detectEdges(InputArray src) CV_OVERRIDE;
     void getEdgeImage(OutputArray dst) CV_OVERRIDE;
     void getGradientImage(OutputArray dst) CV_OVERRIDE;
@@ -47,6 +128,7 @@ protected:
 
     double divForTestSegment;
     double* dH;
+    int* grads;
     int np;
 
 private:
@@ -64,9 +146,9 @@ private:
 
     Mat edgeImage;
     Mat gradImage;
-
+    Mat dirImage;
     uchar *dirImg;    // pointer to direction image data
-    short *gradImg;   // pointer to gradient image data
+    ushort *gradImg;   // pointer to gradient image data
 
     int op;           // edge detection operator
     int gradThresh;   // gradient threshold
@@ -251,6 +333,16 @@ void EdgeDrawingImpl::write(cv::FileStorage& fs) const
 EdgeDrawingImpl::EdgeDrawingImpl()
 {
     params = EdgeDrawing::Params();
+    nfa = new NFALUT(1, 1/2, 1, 1);
+    dH = new double[MAX_GRAD_VALUE];
+    grads = new int[MAX_GRAD_VALUE];
+}
+
+EdgeDrawingImpl::~EdgeDrawingImpl()
+{
+    delete nfa;
+    delete[] dH;
+    delete[] grads;
 }
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
@@ -258,13 +350,6 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
-
-    if (params.PFmode)
-    {
-        op = PREWITT;
-        gradThresh = 11;
-        anchorThresh = 3;
-    }
 
     // Check parameters for sanity
     if (op < 0 || op > 3)
@@ -289,7 +374,8 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
     width = srcImage.cols;
 
     edgeImage = Mat(height, width, CV_8UC1, Scalar(0)); // initialize edge Image
-    gradImage = Mat(height, width, CV_16SC1); // gradImage contains short values
+    gradImage = Mat(height, width, CV_16UC1); // gradImage contains short values
+    dirImage = Mat(height, width, CV_8UC1);
 
     if (params.Sigma < 1.0)
         smoothImage = srcImage;
@@ -300,11 +386,15 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
 
     // Assign Pointers from Mat's data
     smoothImg = smoothImage.data;
-    gradImg = (short*)gradImage.data;
+    gradImg = (ushort*)gradImage.data;
     edgeImg = edgeImage.data;
+    dirImg = dirImage.data;
 
-    Mat _dirImg = Mat(height, width, CV_8UC1);
-    dirImg = _dirImg.data;
+    if (params.PFmode)
+    {
+        memset(dH, 0, sizeof(double) * MAX_GRAD_VALUE);
+        memset(grads, 0, sizeof(int) * MAX_GRAD_VALUE);
+    }
 
     ComputeGradient();                    // COMPUTE GRADIENT & EDGE DIRECTION MAPS
     ComputeAnchorPoints();                // COMPUTE ANCHORS
@@ -312,6 +402,15 @@ void EdgeDrawingImpl::detectEdges(InputArray src)
 
     if (params.PFmode)
     {
+        // Compute probability function H
+        int size = (width - 2) * (height - 2);
+
+        for (int i = MAX_GRAD_VALUE - 1; i > 0; i--)
+            grads[i - 1] += grads[i];
+
+        for (int i = 0; i < MAX_GRAD_VALUE; i++)
+            dH[i] = (double)grads[i] / ((double)size);
+
         divForTestSegment = 2.25; // Some magic number :-)
         memset(edgeImg, 0, width * height); // clear edge image
         np = 0;
@@ -335,13 +434,11 @@ void EdgeDrawingImpl::getEdgeImage(OutputArray _dst)
         edgeImage.copyTo(_dst);
 }
 
-
 void EdgeDrawingImpl::getGradientImage(OutputArray _dst)
 {
     if (!gradImage.empty())
-        convertScaleAbs(gradImage, _dst);
+        gradImage.copyTo(_dst);
 }
-
 
 std::vector<std::vector<Point> > EdgeDrawingImpl::getSegments()
 {
@@ -350,90 +447,27 @@ std::vector<std::vector<Point> > EdgeDrawingImpl::getSegments()
 
 void EdgeDrawingImpl::ComputeGradient()
 {
-#define MAX_GRAD_VALUE 128*256
-    dH = new double[MAX_GRAD_VALUE];
-    memset(dH, 0, sizeof(double) * MAX_GRAD_VALUE);
-
-    int* grads = new int[MAX_GRAD_VALUE];
-    memset(grads, 0, sizeof(int) * MAX_GRAD_VALUE);
-
-    // Initialize gradient image for row = 0, row = height-1, column=0, column=width-1
     for (int j = 0; j < width; j++)
     {
-        gradImg[j] = gradImg[(height - 1) * width + j] = (short)gradThresh - 1;
+        gradImg[j] = gradImg[(height - 1) * width + j] = (ushort)gradThresh - 1;
     }
 
     for (int i = 1; i < height - 1; i++)
     {
-        gradImg[i * width] = gradImg[(i + 1) * width - 1] = (short)gradThresh - 1;
+        gradImg[i * width] = gradImg[(i + 1) * width - 1] = (ushort)gradThresh - 1;
     }
 
-    for (int i = 1; i < height - 1; i++)
-    {
-        for (int j = 1; j < width - 1; j++)
-        {
-            int com1 = smoothImg[(i + 1) * width + j + 1] - smoothImg[(i - 1) * width + j - 1];
-            int com2 = smoothImg[(i - 1) * width + j + 1] - smoothImg[(i + 1) * width + j - 1];
+    ComputeGradientBody body;
+    body.src = smoothImage;
+    body.gradImage = gradImage;
+    body.dirImage = dirImage;
+    body.gradThresh = gradThresh;
+    body.SumFlag = params.SumFlag;
+    body.op = op;
+    body.grads = grads;
+    body.PFmode = params.PFmode;
 
-            int gx(0);
-            int gy(0);
-
-            switch (op)
-            {
-            case PREWITT:
-                gx = abs(com1 + com2 + (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
-                gy = abs(com1 - com2 + (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
-                break;
-            case SOBEL:
-                gx = abs(com1 + com2 + 2 * (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
-                gy = abs(com1 - com2 + 2 * (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
-                break;
-            case SCHARR:
-                gx = abs(3 * (com1 + com2) + 10 * (smoothImg[i * width + j + 1] - smoothImg[i * width + j - 1]));
-                gy = abs(3 * (com1 - com2) + 10 * (smoothImg[(i + 1) * width + j] - smoothImg[(i - 1) * width + j]));
-                break;
-            case LSD:
-                // com1 and com2 differs from previous operators, because LSD has 2x2 kernel
-                com1 = smoothImg[(i + 1) * width + j + 1] - smoothImg[i * width + j];
-                com2 = smoothImg[i * width + j + 1] - smoothImg[(i + 1) * width + j];
-
-                gx = abs(com1 + com2);
-                gy = abs(com1 - com2);
-                break;
-            }
-
-            int sum;
-
-            if (params.SumFlag)
-                sum = gx + gy;
-            else
-                sum = (int)sqrt((double)gx * gx + gy * gy);
-
-            int index = i * width + j;
-            gradImg[index] = (short)sum;
-
-            grads[(int)sum]++;
-
-            if (sum >= gradThresh)
-            {
-                if (gx >= gy)
-                    dirImg[index] = EDGE_VERTICAL;
-                else
-                    dirImg[index] = EDGE_HORIZONTAL;
-            }
-        }
-    }
-
-    // Compute probability function H
-    int size = (width - 2) * (height - 2);
-
-    for (int i = MAX_GRAD_VALUE - 1; i > 0; i--)
-        grads[i - 1] += grads[i];
-
-    for (int i = 0; i < MAX_GRAD_VALUE; i++)
-        dH[i] = (double)grads[i] / ((double)size);
-
-#undef MAX_GRAD_VALUE
+    parallel_for_(Range(1, smoothImage.rows - 1), body);
 }
 
 void EdgeDrawingImpl::ComputeAnchorPoints()
@@ -526,7 +560,6 @@ void EdgeDrawingImpl::JoinAnchorPointsUsingSortedAnchors()
             stack[top].c = j;
             stack[top].dir = UP;
             stack[top].parent = 0;
-
         }
         else
         {
@@ -1273,12 +1306,12 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
 
 #define PRECISON_ANGLE 22.5
     precision = (PRECISON_ANGLE / 180) * CV_PI;
-    double prob = 0.125;
 #undef PRECISON_ANGLE
 
-    if (params.NFAValidation)
+    if (nfa->LUTSize == 1 && params.NFAValidation)
     {
         int lutSize = (width + height) / 8;
+        double prob = 1.0 / 8;  // probability of alignment
         nfa = new NFALUT(lutSize, prob, width, height);
         ValidateLineSegments();
     }
@@ -2787,7 +2820,6 @@ void EdgeDrawingImpl::GenerateCandidateCircles()
 
 void EdgeDrawingImpl::DetectArcs()
 {
-
     double maxLineLengthThreshold = MAX(width, height) / 5;
 
     double MIN_ANGLE = CV_PI / 30;  // 6 degrees
@@ -3155,8 +3187,6 @@ void EdgeDrawingImpl::DetectArcs()
 void EdgeDrawingImpl::ValidateCircles(bool validate)
 {
     precision = CV_PI / 16;  // Alignment precision
-    double prob = 1.0 / 8;  // probability of alignment
-
     double max = width;
     if (height > max)
         max = height;
@@ -3167,8 +3197,12 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
     double* px = new double[8 * (width + height)];
     double* py = new double[8 * (width + height)];
 
-    int lutSize = (width + height) / 8;
-    nfa = new NFALUT(lutSize, prob, width, height); // create look up table
+    if (nfa->LUTSize == 1 && params.NFAValidation)
+    {
+        int lutSize = (width + height) / 8;
+        double prob = 1.0 / 8;  // probability of alignment
+        nfa = new NFALUT(lutSize, prob, width, height); // create look up table
+    }
 
     // Validate circles & ellipses
     bool validateAgain;
@@ -3412,7 +3446,6 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
 
     delete[] px;
     delete[] py;
-    delete nfa;
 }
 
 void EdgeDrawingImpl::JoinCircles()
