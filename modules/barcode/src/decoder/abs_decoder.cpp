@@ -73,7 +73,7 @@ patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, ui
         // If we don't even have one pixel per unit of bar width, assume this is too small
         // to reliably match, so fail:
         // and use constexpr functions
-        return std::numeric_limits<uint>::max();// max
+        return WHITE;// max
     }
     // We're going to fake floating-point math in integers. We just need to use more bits.
     // Scale up patternLength so that intermediate values below like scaledCounter will have
@@ -89,7 +89,7 @@ patternMatchVariance(const Counter &counter, const std::vector<int> &pattern, ui
         uint variance = std::abs(cnt - scaledPattern);
         if (variance > maxIndividualVariance)
         {
-            return std::numeric_limits<uint>::max();
+            return WHITE;
         }
         totalVariance += variance;
     }

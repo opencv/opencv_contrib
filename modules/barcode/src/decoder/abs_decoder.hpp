@@ -12,9 +12,9 @@ namespace cv {
 namespace barcode {
 using std::string;
 using std::vector;
-constexpr static int BLACK = std::numeric_limits<uchar>::min();
+constexpr static uchar BLACK = std::numeric_limits<uchar>::min();
 // WHITE elemental area is 0xff
-constexpr static int WHITE = std::numeric_limits<uchar>::max();
+constexpr static uchar WHITE = std::numeric_limits<uchar>::max();
 
 
 struct Result
