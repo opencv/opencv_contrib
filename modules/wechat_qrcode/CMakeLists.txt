@@ -6,6 +6,8 @@ if(CMAKE_VERSION VERSION_GREATER "3.11")
   find_package(Iconv QUIET)
   if(Iconv_FOUND)
     ocv_target_link_libraries(${the_module} Iconv::Iconv)
+  else()
+    ocv_target_compile_definitions(${the_module} PRIVATE "NO_ICONV=1")
   endif()
 endif()
 
