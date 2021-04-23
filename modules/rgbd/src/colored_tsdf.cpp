@@ -10,6 +10,7 @@
 #include "opencl_kernels_rgbd.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
+#define USE_INTRINSICS 0
 
 namespace cv {
 
@@ -506,9 +507,15 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     float ty = ptVox.y - iptVox[1];
     float tz = ptVox.z - iptVox[2];
 
+    /*
     res=Point3f(interpolateColor(tx, ty, tz, r),
                 interpolateColor(tx, ty, tz, g),
                 interpolateColor(tx, ty, tz, b));
+    */
+    res = Point3f(((float)volData[coordBase].r + interpolateColor(tx, ty, tz, r) ) / 2,
+                  ((float)volData[coordBase].g + interpolateColor(tx, ty, tz, g)) / 2,
+                  ((float)volData[coordBase].b + interpolateColor(tx, ty, tz, b)) / 2);
+
 #else
     res=Point3f(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
 #endif
