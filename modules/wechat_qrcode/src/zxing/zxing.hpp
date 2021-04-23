@@ -27,7 +27,7 @@
 #define USE_ONED_WRITER 1
 #endif
 
-#if defined(__ANDROID_API__) || defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
+#if defined(__ANDROID_API__) || defined(_MSC_VER)
 
 #ifndef NO_ICONV
 #define NO_ICONV
