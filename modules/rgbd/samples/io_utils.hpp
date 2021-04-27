@@ -67,7 +67,7 @@ static std::vector<long double> readDepthTime(const std::string& fileList)
 
         std::istringstream iss(s);
         std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-        float time = std::stold(results[0].erase(0, 5));
+        long double time = std::stold(results[0].erase(0, 5));
         v.push_back(time);
     }
 
