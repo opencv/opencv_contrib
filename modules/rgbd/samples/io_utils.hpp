@@ -452,6 +452,7 @@ struct QSource
         Affine3f getCurrQ()
         {
             std::istringstream iss(qFileList[frameIdx]);
+            frameIdx++;
             std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
             float tx, ty, tz, qx, qy, qz, qw;
             tx = std::stof(results[1]);

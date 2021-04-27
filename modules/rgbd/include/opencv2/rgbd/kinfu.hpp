@@ -267,6 +267,16 @@ public:
     @return true if succeeded to align new frame with current scene, false if opposite
     */
     CV_WRAP virtual bool update(InputArray depth) = 0;
+    
+    /** @brief Process next depth frame
+
+      Integrates depth into voxel space with respect to its ICP-calculated pose.
+      Input image is converted to CV_32F internally if has another type.
+
+    @param depth one-channel image which size and depth scale is described in algorithm's parameters
+    @return true if succeeded to align new frame with current scene, false if opposite
+    */
+    CV_WRAP virtual bool update(InputArray depth, Affine3f _pose) = 0;
 };
 
 //! @}

@@ -180,21 +180,22 @@ int main(int argc, char **argv)
         if(depthWriter)
             depthWriter->append(frame);
 
-        if (haveQS)
-        {
-            std::cout << " ========================================== " << std::endl;
+        //if (haveQS)
+        //{
+            //std::cout << " ========================================== " << std::endl;
 
-            Affine3f T = qs->getCurrQ();
-            std::cout << std::endl;
-            std::cout << "_T: " << std::endl;
-            std::cout << T.matrix << std::endl;
+            //Affine3f T = qs->getCurrQ();
+            //std::cout << std::endl;
+            //std::cout << "_T: " << std::endl;
+            //std::cout << T.matrix << std::endl;
             
-            T = qs->getQ();
-            std::cout << std::endl;
-            std::cout << "T: " << std::endl;
-            std::cout << T.matrix << std::endl;
+            //T = qs->getQ();
+            //std::cout << std::endl;
+            //std::cout << "T: " << std::endl;
+            //std::cout << T.matrix << std::endl;
             
-        }
+        //}
+        Affine3f pose = qs->getCurrQ();
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
@@ -234,7 +235,8 @@ int main(int argc, char **argv)
             {
                 imshow("depth", cvt8);
 
-                if(!kf->update(frame))
+                //if(!kf->update(frame))
+                if(!kf->update(frame, pose))
                 {
                     kf->reset();
                     std::cout << "reset" << std::endl;
