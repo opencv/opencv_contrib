@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 
     int64 prevTime = getTickCount();
 
-    kf->reset( qs->getCurrQ() );
+    kf->reset( qs->getCurrQ(ds->getTime()) );
 
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
@@ -195,7 +195,9 @@ int main(int argc, char **argv)
             //std::cout << T.matrix << std::endl;
             
         //}
-        Affine3f pose = qs->getCurrQ();
+        //std::cout << ds->getTime() << std::endl;
+        Affine3f pose = qs->getCurrQ(ds->getTime());
+
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {

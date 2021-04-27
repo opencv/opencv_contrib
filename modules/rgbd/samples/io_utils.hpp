@@ -49,6 +49,30 @@ static std::vector<std::string> readDepth(const std::string& fileList)
     return v;
 }
 
+static std::vector<long double> readDepthTime(const std::string& fileList)
+{
+    std::vector<long double> v;
+
+    std::fstream file(fileList);
+    if (!file.is_open())
+        throw std::runtime_error("Failed to read depth list");
+
+    while (!file.eof())
+    {
+        std::string s, imgPath;
+        std::getline(file, s);
+        if (s.empty() || s[0] == '#')
+            continue;
+
+        std::istringstream iss(s);
+        std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+        float time = std::stold(results[0].erase(0, 5));
+        v.push_back(time);
+    }
+
+    return v;
+}
+
 struct DepthWriter
 {
     DepthWriter(std::string fileList) : file(fileList, std::ios::out), count(0), dir()
@@ -141,6 +165,8 @@ struct DepthSource
     DepthSource(String fileListName, int cam)
         : depthFileList(fileListName.empty() ? std::vector<std::string>()
                                              : readDepth(fileListName)),
+          depthTimeList(fileListName.empty() ? std::vector<long double>()
+                                             : readDepthTime(fileListName)),
           frameIdx(0),
           undistortMap1(),
           undistortMap2()
@@ -369,7 +395,14 @@ struct DepthSource
         }
     }
 
+    long double getTime()
+    {
+        return(depthTimeList[frameIdx]);
+    }
+
     std::vector<std::string> depthFileList;
+    std::vector<long double> depthTimeList;
+
     size_t frameIdx;
     VideoCapture vc;
     UMat undistortMap1, undistortMap2;
@@ -407,12 +440,13 @@ struct QSource
         : qFileList(fileListName.empty() ? std::vector<std::string>()
                                                 : readQ(fileListName)),
             frameIdx(1),
+            prevFrameIdx(0),
             undistortMap1(),
             undistortMap2()
         {
         
         }
-        
+        /*
         Affine3f getQ()
         {
             std::istringstream iss1(qFileList[frameIdx - 1]);
@@ -448,7 +482,7 @@ struct QSource
 
             return T;
         }
-
+        */
         Affine3f getCurrQ()
         {
             std::istringstream iss(qFileList[frameIdx]);
@@ -476,12 +510,48 @@ struct QSource
             return T;
         }
 
+        Affine3f getCurrQ(long double time)
+        {
+            long double curr_time = 0;
+            size_t idx = prevFrameIdx;
+            while (time > curr_time)
+            {
+                idx++;
+                std::istringstream iss(qFileList[idx]);
+                std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+                curr_time = std::stold(results[0].erase(0,5));
+            }
+            prevFrameIdx = idx;
+            std::istringstream iss(qFileList[idx]);
+            std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 
-       bool empty() { return qFileList.empty(); }
+            float tx, ty, tz, qx, qy, qz, qw;
+            tx = std::stof(results[1]);
+            ty = std::stof(results[2]);
+            tz = std::stof(results[3]);
+            qx = std::stof(results[4]);
+            qy = std::stof(results[5]);
+            qz = std::stof(results[6]);
+            qw = std::stof(results[7]);
 
-       std::vector<std::string> qFileList;
-       size_t frameIdx;
-       UMat undistortMap1, undistortMap2;
+            cv::Quatf q(qw, qx, qy, qz);
+            Matx33f R = q.toRotMat3x3();
+            Vec3f t(tx, ty, tz);
+
+            Affine3f T(R, t);
+
+            //for (std::string str : results)
+            //    std::cout << str << " " ;
+            //std::cout << std::endl;
+
+            return T;
+        }
+
+        bool empty() { return qFileList.empty(); }
+
+        std::vector<std::string> qFileList;
+        size_t frameIdx, prevFrameIdx;
+        UMat undistortMap1, undistortMap2;
 };
 
 

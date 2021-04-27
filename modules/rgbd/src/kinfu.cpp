@@ -364,21 +364,11 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth, Affine3f _pose)
     }
     else
     {
-        //Affine3f affine;
-        //bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
-        //if(!success)
-        //    return false;
-
-        //pose = (Affine3f(pose) * affine).matrix;
         pose = _pose.matrix;
-        //float rnorm = (float)cv::norm(affine.rvec());
-        //float tnorm = (float)cv::norm(affine.translation());
-        // We do not integrate volume if camera does not move
-        //if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
-        //{
-            // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr);
-        //}
+
+        // use depth instead of distance
+        volume->integrate(depth, params.depthFactor, pose, params.intr);
+
         MatType& points  = pyrPoints [0];
         MatType& normals = pyrNormals[0];
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
