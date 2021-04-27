@@ -432,11 +432,8 @@ static std::vector<std::string> readQ(const std::string& fileList)
 struct QSource
 {
    public:
-        QSource(int cam) : QSource("", cam) {}
 
-        QSource(String fileListName) : QSource(fileListName, -1) {}
-
-        QSource(String fileListName, int cam)
+        QSource(String fileListName)
         : qFileList(fileListName.empty() ? std::vector<std::string>()
                                                 : readQ(fileListName)),
             frameIdx(1),
