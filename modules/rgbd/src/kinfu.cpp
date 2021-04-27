@@ -137,15 +137,15 @@ public:
     void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
 
     void reset() CV_OVERRIDE;
-    void reset(Affine3f _pose) CV_OVERRIDE;
+    void reset(Matx44f _pose) CV_OVERRIDE;
 
     const Affine3f getPose() const CV_OVERRIDE;
 
     bool update(InputArray depth) CV_OVERRIDE;
-    bool update(InputArray depth, Affine3f _pose) CV_OVERRIDE;
+    bool update(InputArray depth, Matx44f _pose) CV_OVERRIDE;
 
     bool updateT(const MatType& depth);
-    bool updateT(const MatType& depth, Affine3f _pose);
+    bool updateT(const MatType& depth, Matx44f _pose);
 
 private:
     Params params;
@@ -180,10 +180,10 @@ void KinFuImpl<MatType >::reset()
 }
 
 template< typename MatType >
-void KinFuImpl<MatType >::reset(Affine3f _pose)
+void KinFuImpl<MatType >::reset(Matx44f _pose)
 {
     frameCounter = 0;
-    pose = _pose.matrix;
+    pose = _pose;
     volume->reset();
 }
 
@@ -295,7 +295,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
 }
 
 template<>
-bool KinFuImpl<Mat>::update(InputArray _depth, Affine3f _pose)
+bool KinFuImpl<Mat>::update(InputArray _depth, Matx44f _pose)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
@@ -313,7 +313,7 @@ bool KinFuImpl<Mat>::update(InputArray _depth, Affine3f _pose)
 
 
 template<>
-bool KinFuImpl<UMat>::update(InputArray _depth, Affine3f _pose)
+bool KinFuImpl<UMat>::update(InputArray _depth, Matx44f _pose)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
@@ -331,7 +331,7 @@ bool KinFuImpl<UMat>::update(InputArray _depth, Affine3f _pose)
 
 
 template< typename MatType >
-bool KinFuImpl<MatType>::updateT(const MatType& _depth, Affine3f _pose)
+bool KinFuImpl<MatType>::updateT(const MatType& _depth, Matx44f _pose)
 {
     CV_TRACE_FUNCTION();
 
@@ -359,7 +359,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth, Affine3f _pose)
     }
     else
     {
-        pose = _pose.matrix;
+        pose = _pose;
 
         // use depth instead of distance
         volume->integrate(depth, params.depthFactor, pose, params.intr);

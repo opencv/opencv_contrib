@@ -175,16 +175,16 @@ int main(int argc, char **argv)
     int64 prevTime = getTickCount();
 
     if (haveQS)
-        kf->reset( qs->getCurrQ(ds->getTime()) );
+        kf->reset( qs->getCurrQ(ds->getTime()).matrix );
 
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
         if(depthWriter)
             depthWriter->append(frame);
 
-        Affine3f pose;
+        Matx44f pose;
         if (haveQS)
-            pose = qs->getCurrQ(ds->getTime());
+            pose = qs->getCurrQ(ds->getTime()).matrix;
 
 #ifdef HAVE_OPENCV_VIZ
         if(pause)

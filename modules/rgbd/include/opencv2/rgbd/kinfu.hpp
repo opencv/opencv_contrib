@@ -254,7 +254,7 @@ public:
 
     Clears current model and resets a pose.
     */
-    CV_WRAP virtual void reset(Affine3f _pose) = 0;
+    CV_WRAP virtual void reset(Matx44f _pose) = 0;
     /** @brief Get current pose in voxel space */
     virtual const Affine3f getPose() const = 0;
 
@@ -277,7 +277,7 @@ public:
     @param _pose is pose of cam
     @return true if succeeded to align new frame with current scene, false if opposite
     */
-    CV_WRAP virtual bool update(InputArray depth, Affine3f _pose) = 0;
+    CV_WRAP virtual bool update(InputArray depth, Matx44f _pose) = 0;
 };
 
 //! @}
