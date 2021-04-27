@@ -13,6 +13,7 @@
 #include <opencv2/rgbd/kinfu.hpp>
 #include <opencv2/rgbd/large_kinfu.hpp>
 #include <opencv2/rgbd/colored_kinfu.hpp>
+#include <opencv2/core/quaternion.hpp>
 
 namespace cv
 {
@@ -373,6 +374,113 @@ struct DepthSource
     VideoCapture vc;
     UMat undistortMap1, undistortMap2;
     Type sourceType;
+};
+
+static std::vector<std::string> readQ(const std::string& fileList)
+{
+    std::vector<std::string> v;
+
+    std::fstream file(fileList);
+    if (!file.is_open())
+        throw std::runtime_error("Failed to read depth list");
+
+    while (!file.eof())
+    {
+        std::string s;
+        std::getline(file, s);
+        if (s.empty() || s[0] == '#')
+            continue;
+        v.push_back(s);
+    }
+
+    return v;
+}
+
+struct QSource
+{
+   public:
+        QSource(int cam) : QSource("", cam) {}
+
+        QSource(String fileListName) : QSource(fileListName, -1) {}
+
+        QSource(String fileListName, int cam)
+        : qFileList(fileListName.empty() ? std::vector<std::string>()
+                                                : readQ(fileListName)),
+            frameIdx(1),
+            undistortMap1(),
+            undistortMap2()
+        {
+        
+        }
+        
+        Affine3f getQ()
+        {
+            std::istringstream iss1(qFileList[frameIdx - 1]);
+            std::istringstream iss2(qFileList[frameIdx]);
+            frameIdx++;
+
+            std::vector<std::string> results1(std::istream_iterator<std::string>{iss1}, std::istream_iterator<std::string>());
+            std::vector<std::string> results2(std::istream_iterator<std::string>{iss2}, std::istream_iterator<std::string>());
+
+            float tx1, ty1, tz1, qx1, qy1, qz1, qw1;
+            float tx2, ty2, tz2, qx2, qy2, qz2, qw2;
+
+            tx1 = std::stof(results1[1]); tx2 = std::stof(results2[1]);
+            ty1 = std::stof(results1[2]); ty2 = std::stof(results2[2]);
+            tz1 = std::stof(results1[3]); tz2 = std::stof(results2[3]);
+            qx1 = std::stof(results1[4]); qx2 = std::stof(results2[4]);
+            qy1 = std::stof(results1[5]); qy2 = std::stof(results2[5]);
+            qz1 = std::stof(results1[6]); qz2 = std::stof(results2[6]);
+            qw1 = std::stof(results1[7]); qw2 = std::stof(results2[7]);
+
+            cv::Quatf q1(qw1, qx1, qy1, qz1);
+            Matx33f R1 = q1.toRotMat3x3();
+            Vec3f t1(tx1, ty1, tz1);
+
+            cv::Quatf q2(qw2, qx2, qy2, qz2);
+            Matx33f R2 = q2.toRotMat3x3();
+            Vec3f t2(tx2, ty2, tz2);
+
+            Affine3f T(R1 * R2, t1 - t2);
+
+            std::cout << tx1 << " " << ty1 << " " << tz1 << " " << qx1 << " " << qy1 << " " << qz1 << " " << qw1 << std::endl;
+            std::cout << tx2 << " " << ty2 << " " << tz2 << " " << qx2 << " " << qy2 << " " << qz2 << " " << qw2 << std::endl;
+
+            return T;
+        }
+
+        Affine3f getCurrQ()
+        {
+            std::istringstream iss(qFileList[frameIdx]);
+            std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
+            float tx, ty, tz, qx, qy, qz, qw;
+            tx = std::stof(results[1]);
+            ty = std::stof(results[2]);
+            tz = std::stof(results[3]);
+            qx = std::stof(results[4]);
+            qy = std::stof(results[5]);
+            qz = std::stof(results[6]);
+            qw = std::stof(results[7]);
+
+            cv::Quatf q(qw, qx, qy, qz);
+            Matx33f R = q.toRotMat3x3();
+            Vec3f t(tx, ty, tz);
+
+            Affine3f T(R, t);
+
+            //for (std::string str : results)
+            //    std::cout << str << " " ;
+            //std::cout << std::endl;
+            
+            return T;
+        }
+
+
+       bool empty() { return qFileList.empty(); }
+
+       std::vector<std::string> qFileList;
+       size_t frameIdx;
+       UMat undistortMap1, undistortMap2;
 };
 
 

@@ -250,6 +250,11 @@ public:
     */
     CV_WRAP virtual void reset() = 0;
 
+    /** @brief Resets the algorithm
+
+    Clears current model and resets a pose.
+    */
+    CV_WRAP virtual void reset(Affine3f _pose) = 0;
     /** @brief Get current pose in voxel space */
     virtual const Affine3f getPose() const = 0;
 

@@ -137,6 +137,7 @@ public:
     void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
 
     void reset() CV_OVERRIDE;
+    void reset(Affine3f _pose) CV_OVERRIDE;
 
     const Affine3f getPose() const CV_OVERRIDE;
 
@@ -173,6 +174,14 @@ void KinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity().matrix;
+    volume->reset();
+}
+
+template< typename MatType >
+void KinFuImpl<MatType >::reset(Affine3f _pose)
+{
+    frameCounter = 0;
+    pose = _pose.matrix;
     volume->reset();
 }
 
@@ -264,7 +273,11 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
             return false;
 
         pose = (Affine3f(pose) * affine).matrix;
-
+        std::cout << std::endl;
+        std::cout << "affine: " << std::endl;
+        std::cout << affine.matrix << std::endl;
+        std::cout << "pose: " << std::endl;
+        std::cout << pose << std::endl;
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move

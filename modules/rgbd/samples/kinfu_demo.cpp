@@ -53,6 +53,7 @@ static const char* keys =
 {
     "{help h usage ? | | print this message   }"
     "{depth  | | Path to depth.txt file listing a set of depth images }"
+    "{gt     | | Path to groundtruth.txt file listing a set of depth images }"
     "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
@@ -123,6 +124,14 @@ int main(int argc, char **argv)
     Ptr<DepthWriter> depthWriter;
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
+    
+    Ptr<QSource> qs;
+    bool haveQS = false;
+    if (parser.has("gt"))
+    {
+        qs = makePtr<QSource>(parser.get<String>("gt"));
+        haveQS = true;
+    }
 
     Ptr<Params> params;
     Ptr<KinFu> kf;
@@ -164,11 +173,28 @@ int main(int argc, char **argv)
 
     int64 prevTime = getTickCount();
 
+    kf->reset( qs->getCurrQ() );
+
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
         if(depthWriter)
             depthWriter->append(frame);
 
+        if (haveQS)
+        {
+            std::cout << " ========================================== " << std::endl;
+
+            Affine3f T = qs->getCurrQ();
+            std::cout << std::endl;
+            std::cout << "_T: " << std::endl;
+            std::cout << T.matrix << std::endl;
+            
+            T = qs->getQ();
+            std::cout << std::endl;
+            std::cout << "T: " << std::endl;
+            std::cout << T.matrix << std::endl;
+            
+        }
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
