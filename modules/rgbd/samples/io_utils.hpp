@@ -442,7 +442,6 @@ struct QSource
             undistortMap1(),
             undistortMap2()
         {
-        
         }
 
         Affine3f getCurrQ()
