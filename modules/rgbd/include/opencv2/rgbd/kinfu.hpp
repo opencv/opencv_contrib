@@ -267,7 +267,7 @@ public:
     @return true if succeeded to align new frame with current scene, false if opposite
     */
     CV_WRAP virtual bool update(InputArray depth) = 0;
-    
+
     /** @brief Process next depth frame
 
       Integrates depth into voxel space with respect to its ICP-calculated pose.

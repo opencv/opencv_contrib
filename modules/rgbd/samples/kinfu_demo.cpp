@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <iterator>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
     Ptr<DepthWriter> depthWriter;
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
-    
+
     Ptr<QSource> qs;
     bool haveQS = false;
     if (parser.has("gt"))
@@ -172,7 +173,7 @@ int main(int argc, char **argv)
     UMat normals;
 
     int64 prevTime = getTickCount();
-    
+
     if (haveQS)
         kf->reset( qs->getCurrQ(ds->getTime()) );
 
@@ -180,9 +181,9 @@ int main(int argc, char **argv)
     {
         if(depthWriter)
             depthWriter->append(frame);
-        
+
         Affine3f pose;
-        if (haveQS) 
+        if (haveQS)
             pose = qs->getCurrQ(ds->getTime());
 
 #ifdef HAVE_OPENCV_VIZ
