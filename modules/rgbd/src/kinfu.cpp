@@ -275,11 +275,6 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
             return false;
 
         pose = (Affine3f(pose) * affine).matrix;
-        std::cout << std::endl;
-        std::cout << "affine: " << std::endl;
-        std::cout << affine.matrix << std::endl;
-        std::cout << "pose: " << std::endl;
-        std::cout << pose << std::endl;
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move

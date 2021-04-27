@@ -172,31 +172,18 @@ int main(int argc, char **argv)
     UMat normals;
 
     int64 prevTime = getTickCount();
-
-    kf->reset( qs->getCurrQ(ds->getTime()) );
+    
+    if (haveQS)
+        kf->reset( qs->getCurrQ(ds->getTime()) );
 
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
         if(depthWriter)
             depthWriter->append(frame);
-
-        //if (haveQS)
-        //{
-            //std::cout << " ========================================== " << std::endl;
-
-            //Affine3f T = qs->getCurrQ();
-            //std::cout << std::endl;
-            //std::cout << "_T: " << std::endl;
-            //std::cout << T.matrix << std::endl;
-            
-            //T = qs->getQ();
-            //std::cout << std::endl;
-            //std::cout << "T: " << std::endl;
-            //std::cout << T.matrix << std::endl;
-            
-        //}
-        //std::cout << ds->getTime() << std::endl;
-        Affine3f pose = qs->getCurrQ(ds->getTime());
+        
+        Affine3f pose;
+        if (haveQS) 
+            pose = qs->getCurrQ(ds->getTime());
 
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
@@ -237,8 +224,12 @@ int main(int argc, char **argv)
             {
                 imshow("depth", cvt8);
 
-                //if(!kf->update(frame))
-                if(!kf->update(frame, pose))
+                bool isCorr;
+                if (haveQS)
+                    isCorr = !kf->update(frame, pose);
+                else
+                    isCorr = !kf->update(frame, pose);
+                if(isCorr)
                 {
                     kf->reset();
                     std::cout << "reset" << std::endl;
