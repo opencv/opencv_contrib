@@ -16,6 +16,8 @@
 #include <opencv2/rgbd/colored_kinfu.hpp>
 #include <opencv2/core/quaternion.hpp>
 
+#define CUT_LETTER 5
+
 namespace cv
 {
 namespace io_utils
@@ -67,7 +69,7 @@ static std::vector<long double> readDepthTime(const std::string& fileList)
 
         std::istringstream iss(s);
         std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-        long double time = std::stold(results[0].erase(0, 5));
+        long double time = std::stold(results[0].erase(0, CUT_LETTER));
         v.push_back(time);
     }
 
@@ -472,12 +474,12 @@ struct QSource
             size_t idx = prevFrameIdx;
             while (time > curr_time)
             {
-                idx++;
                 std::istringstream iss(qFileList[idx]);
                 std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-                curr_time = std::stold(results[0].erase(0,5));
+                curr_time = std::stold(results[0].erase(0, CUT_LETTER));
+                idx++;
             }
-            prevFrameIdx = idx;
+            prevFrameIdx = idx-1;
             std::istringstream iss(qFileList[idx]);
             std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 
