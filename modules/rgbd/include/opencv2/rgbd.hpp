@@ -9,14 +9,7 @@
 #ifndef __OPENCV_RGBD_HPP__
 #define __OPENCV_RGBD_HPP__
 
-#include "opencv2/rgbd/linemod.hpp"
-#include "opencv2/rgbd/depth.hpp"
-#include "opencv2/rgbd/kinfu.hpp"
 #include "opencv2/rgbd/dynafu.hpp"
-#include "opencv2/rgbd/large_kinfu.hpp"
-#include "opencv2/rgbd/detail/pose_graph.hpp"
-#include "opencv2/rgbd/colored_kinfu.hpp"
-
 
 /** @defgroup rgbd RGB-Depth Processing
 */
