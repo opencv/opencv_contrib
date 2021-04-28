@@ -494,11 +494,17 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
 #if USE_INTERPOLATION_IN_GETNORMAL
     // TODO: create better interpolation or remove this simple version
     float r[8], g[8], b[8];
+    float rr = 0.f, gg = 0.f, bb = 0.f;
     for (int i = 0; i < 8; i++)
     {
         r[i] = (float) volData[neighbourCoords[i] + coordBase].r;
         g[i] = (float) volData[neighbourCoords[i] + coordBase].g;
         b[i] = (float) volData[neighbourCoords[i] + coordBase].b;
+        
+        rr += (float) volData[neighbourCoords[i] + coordBase].r;
+        gg += (float) volData[neighbourCoords[i] + coordBase].g;
+        bb += (float) volData[neighbourCoords[i] + coordBase].b;
+    
     }
 
     Point3f ptVox = p * voxelSizeInv;
@@ -512,10 +518,15 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
                 interpolateColor(tx, ty, tz, g),
                 interpolateColor(tx, ty, tz, b));
     */
+    res=Point3f( ((float)volData[coordBase].r + rr) / 9,
+                 ((float)volData[coordBase].g + gg) / 9,
+                 ((float)volData[coordBase].b + bb) / 9);
+    
+    /*
     res = Point3f(((float)volData[coordBase].r + interpolateColor(tx, ty, tz, r) ) / 2,
                   ((float)volData[coordBase].g + interpolateColor(tx, ty, tz, g)) / 2,
                   ((float)volData[coordBase].b + interpolateColor(tx, ty, tz, b)) / 2);
-
+    */
 #else
     res=Point3f(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
 #endif
