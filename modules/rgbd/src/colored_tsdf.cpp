@@ -87,7 +87,7 @@ public:
 #if USE_INTRINSICS
     float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
-    v_float32x4 interpolateColor(v_float32x4 curr, v_float32x4 neighbour, v_float32x4 t) const;
+    v_float32x4 interpolateColor(const v_float32x4 curr, const v_float32x4 neighbour, const v_float32x4 t) const;
     v_float32x4 getColorVoxel(const v_float32x4& p) const;
 #endif
 
@@ -379,7 +379,7 @@ inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 #endif
 
 #if USE_INTRINSICS
-inline v_float32x4 ColoredTSDFVolumeCPU::interpolateColor(v_float32x4 curr, v_float32x4 neighbour, v_float32x4 t) const
+inline v_float32x4 ColoredTSDFVolumeCPU::interpolateColor(const v_float32x4 curr, const v_float32x4 neighbour, const v_float32x4 t) const
 {
     v_float32x4 norm = v_sqrt(v_setall_f32(v_reduce_sum(t * t)));
     return curr + (neighbour - curr) * norm;
