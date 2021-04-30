@@ -10,7 +10,6 @@
 #include "opencl_kernels_rgbd.hpp"
 
 #define USE_INTERPOLATION_IN_GETNORMAL 1
-#define USE_INTRINSICS 0
 
 namespace cv {
 
@@ -82,13 +81,13 @@ public:
 
     float interpolateVoxel(const cv::Point3f& p) const;
     Point3f getNormalVoxel(const cv::Point3f& p) const;
-    float interpolateColor(float tx, float ty, float tz, float vx[8]) const;
-    Point3f _interpolateColor(Point3f curr, Point3f neighbour, Point3f t) const;
+    Point3f interpolateColor(Point3f curr, Point3f neighbour, Point3f t) const;
     Point3f getColorVoxel(const cv::Point3f& p) const;
 
 #if USE_INTRINSICS
     float interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
+    v_float32x4 interpolateColor(v_float32x4 curr, v_float32x4 neighbour, v_float32x4 t) const;
     v_float32x4 getColorVoxel(const v_float32x4& p) const;
 #endif
 
@@ -380,44 +379,16 @@ inline Point3f ColoredTSDFVolumeCPU::getNormalVoxel(const Point3f& p) const
 #endif
 
 #if USE_INTRINSICS
-inline float ColoredTSDFVolumeCPU::interpolateColor(float tx, float ty, float tz, float vx[8]) const
+inline v_float32x4 ColoredTSDFVolumeCPU::interpolateColor(v_float32x4 curr, v_float32x4 neighbour, v_float32x4 t) const
 {
-    v_float32x4 v0246, v1357;
-    v_load_deinterleave(vx, v0246, v1357);
-
-    v_float32x4 vxx = v0246 + v_setall_f32(tz) * (v1357 - v0246);
-
-    v_float32x4 v00_10 = vxx;
-    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
-
-    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty) * (v01_11 - v00_10);
-    float v0 = v0_1.get0();
-    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
-    float v1 = v0_1.get0();
-
-    return v0 + tx * (v1 - v0);
+    v_float32x4 norm = v_sqrt(v_setall_f32(v_reduce_sum(t * t)));
+    return curr + (neighbour - curr) * norm;
 }
 #else
-inline float ColoredTSDFVolumeCPU::interpolateColor(float tx, float ty, float tz, float vx[8]) const
-{
-    float v00 = vx[0] + tz * (vx[1] - vx[0]);
-    float v01 = vx[2] + tz * (vx[3] - vx[2]);
-    float v10 = vx[4] + tz * (vx[5] - vx[4]);
-    float v11 = vx[6] + tz * (vx[7] - vx[6]);
-
-    float v0 = v00 + ty * (v01 - v00);
-    float v1 = v10 + ty * (v11 - v10);
-
-    return v0 + tx * (v1 - v0);
-}
-inline Point3f ColoredTSDFVolumeCPU::_interpolateColor(Point3f curr, Point3f neighbour, Point3f t) const
+inline Point3f ColoredTSDFVolumeCPU::interpolateColor(Point3f curr, Point3f neighbour, Point3f t) const
 {
     float norm = cv::norm(t);
-    curr.x = curr.x + (neighbour.x - curr.x) * norm;
-    curr.y = curr.y + (neighbour.y - curr.y) * norm;
-    curr.z = curr.z + (neighbour.z - curr.z) * norm;
-
-    return curr;
+    return curr + (neighbour - curr) * norm;
 }
 #endif
 
@@ -451,34 +422,23 @@ inline v_float32x4 ColoredTSDFVolumeCPU::getColorVoxel(const v_float32x4& p) con
 
     int coordBase = ix * xdim + iy * ydim + iz * zdim;
     float CV_DECL_ALIGNED(16) rgb[4];
+    v_float32x4 res((float)volData[coordBase].r, (float)volData[coordBase].g, (float)volData[coordBase].b, 0.f);
 
 #if USE_INTERPOLATION_IN_GETNORMAL
-    float r[8], g[8], b[8];
-    for (int i = 0; i < 8; i++)
-    {
-        r[i] = (float)volData[neighbourCoords[i] + coordBase].r;
-        g[i] = (float)volData[neighbourCoords[i] + coordBase].g;
-        b[i] = (float)volData[neighbourCoords[i] + coordBase].b;
-    }
-
     v_float32x4 vsi(voxelSizeInv, voxelSizeInv, voxelSizeInv, voxelSizeInv);
     v_float32x4 ptVox = p * vsi;
     v_int32x4 iptVox = v_floor(ptVox);
     v_float32x4 t = ptVox - v_cvt_f32(iptVox);
-    float tx = t.get0(); t = v_rotate_right<1>(t);
-    float ty = t.get0(); t = v_rotate_right<1>(t);
-    float tz = t.get0();
-    rgb[0] = interpolateColor(tx, ty, tz, r);
-    rgb[1] = interpolateColor(tx, ty, tz, g);
-    rgb[2] = interpolateColor(tx, ty, tz, b);
-    rgb[3] = 0.f;
-#else
-    rgb[0] = volData[coordBase].r;
-    rgb[1] = volData[coordBase].g;
-    rgb[2] = volData[coordBase].b;
-    rgb[3] = 0.f;
+
+    for (int i = 0; i < 8; i++)
+    {
+        v_float32x4 neighbour(volData[neighbourCoords[i] + coordBase].r,
+            volData[neighbourCoords[i] + coordBase].g,
+            volData[neighbourCoords[i] + coordBase].b, 0.f);
+        res = interpolateColor(res, neighbour, t);
+    }
+
 #endif
-    v_float32x4 res = v_load_aligned(rgb);
     return res;
 }
 #else
@@ -499,62 +459,22 @@ inline Point3f ColoredTSDFVolumeCPU::getColorVoxel(const Point3f& p) const
     int iz = cvFloor(p.z);
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
-    Point3f res;
+    Point3f res(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
 
 #if USE_INTERPOLATION_IN_GETNORMAL
-    // TODO: create better interpolation or remove this simple version
-    
     res = Point3f(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
-    
     Point3f ptVox = p * voxelSizeInv;
     Point3f iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
     Point3f t = ptVox - iptVox;
+
     for (int i = 0; i < 8; i++)
     {
         Point3f neighbour(volData[neighbourCoords[i] + coordBase].r,
                           volData[neighbourCoords[i] + coordBase].g,
                           volData[neighbourCoords[i] + coordBase].b);
-        res = _interpolateColor(res, neighbour, t);
+        res = interpolateColor(res, neighbour, t);
     }
 
-    /*
-    float r[8], g[8], b[8];
-    float rr = 0.f, gg = 0.f, bb = 0.f;
-    for (int i = 0; i < 8; i++)
-    {
-        r[i] = (float) volData[neighbourCoords[i] + coordBase].r;
-        g[i] = (float) volData[neighbourCoords[i] + coordBase].g;
-        b[i] = (float) volData[neighbourCoords[i] + coordBase].b;
-        
-        rr += (float) volData[neighbourCoords[i] + coordBase].r;
-        gg += (float) volData[neighbourCoords[i] + coordBase].g;
-        bb += (float) volData[neighbourCoords[i] + coordBase].b;
-    
-    }
-
-    Point3f ptVox = p * voxelSizeInv;
-    Vec3i iptVox(cvFloor(ptVox.x), cvFloor(ptVox.y), cvFloor(ptVox.z));
-    float tx = ptVox.x - iptVox[0];
-    float ty = ptVox.y - iptVox[1];
-    float tz = ptVox.z - iptVox[2];
-    */
-    /*
-    res=Point3f(interpolateColor(tx, ty, tz, r),
-                interpolateColor(tx, ty, tz, g),
-                interpolateColor(tx, ty, tz, b));
-    */
-    /*
-    res=Point3f( ((float)volData[coordBase].r + rr) / 9,
-                 ((float)volData[coordBase].g + gg) / 9,
-                 ((float)volData[coordBase].b + bb) / 9);
-    */
-    /*
-    res = Point3f(((float)volData[coordBase].r + interpolateColor(tx, ty, tz, r) ) / 2,
-                  ((float)volData[coordBase].g + interpolateColor(tx, ty, tz, g)) / 2,
-                  ((float)volData[coordBase].b + interpolateColor(tx, ty, tz, b)) / 2);
-    */
-#else
-    res=Point3f(volData[coordBase].r, volData[coordBase].g, volData[coordBase].b);
 #endif
     colorFix(res);
     return res;
