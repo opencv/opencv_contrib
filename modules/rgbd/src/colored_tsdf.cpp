@@ -421,7 +421,6 @@ inline v_float32x4 ColoredTSDFVolumeCPU::getColorVoxel(const v_float32x4& p) con
     int iz = ip.get0();
 
     int coordBase = ix * xdim + iy * ydim + iz * zdim;
-    float CV_DECL_ALIGNED(16) rgb[4];
     v_float32x4 res((float)volData[coordBase].r, (float)volData[coordBase].g, (float)volData[coordBase].b, 0.f);
 
 #if USE_INTERPOLATION_IN_GETNORMAL
