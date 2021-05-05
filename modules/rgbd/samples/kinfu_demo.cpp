@@ -229,7 +229,7 @@ int main(int argc, char **argv)
                 if (haveQS)
                     isCorr = !kf->update(frame, pose);
                 else
-                    isCorr = !kf->update(frame, pose);
+                    isCorr = !kf->update(frame);
                 if(isCorr)
                 {
                     kf->reset();
