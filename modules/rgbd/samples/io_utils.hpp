@@ -16,12 +16,25 @@
 #include <opencv2/rgbd/colored_kinfu.hpp>
 #include <opencv2/core/quaternion.hpp>
 
-#define CUT_LETTER 5
-
 namespace cv
 {
 namespace io_utils
 {
+
+struct _Time
+{
+    long int _int;
+    long double _fract;
+};
+
+bool operator>(const _Time& a1, const _Time& a2)
+{
+    return (a1._int > a2._int) || (a1._int == a2._int && a1._fract > a2._fract);
+}
+bool operator<(const _Time& a1, const _Time& a2)
+{
+    return (a1._int < a2._int) || (a1._int == a2._int && a1._fract < a2._fract);
+}
 
 static std::vector<std::string> readDepth(const std::string& fileList)
 {
@@ -52,14 +65,15 @@ static std::vector<std::string> readDepth(const std::string& fileList)
     return v;
 }
 
-static std::vector<long double> readDepthTime(const std::string& fileList)
+static std::vector<_Time> readDepthTime(const std::string& fileList)
 {
-    std::vector<long double> v;
+    std::vector<_Time> v;
 
     std::fstream file(fileList);
     if (!file.is_open())
         throw std::runtime_error("Failed to read depth list");
 
+    
     while (!file.eof())
     {
         std::string s, imgPath;
@@ -69,10 +83,13 @@ static std::vector<long double> readDepthTime(const std::string& fileList)
 
         std::istringstream iss(s);
         std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-        long double time = std::stold(results[0].erase(0, CUT_LETTER));
-        v.push_back(time);
-    }
-
+        std::string str_i = results[0], str_f = results[0];
+        int dot = results[0].find(".");
+        _Time _time;
+        _time._int = std::stoi(str_i.erase(dot));
+        _time._fract = std::stold(str_f.erase(0, dot));
+        v.push_back(_time);
+    };
     return v;
 }
 
@@ -168,7 +185,7 @@ struct DepthSource
     DepthSource(String fileListName, int cam)
         : depthFileList(fileListName.empty() ? std::vector<std::string>()
                                              : readDepth(fileListName)),
-          depthTimeList(fileListName.empty() ? std::vector<long double>()
+          depthTimeList(fileListName.empty() ? std::vector<_Time>()
                                              : readDepthTime(fileListName)),
           frameIdx(0),
           undistortMap1(),
@@ -398,13 +415,13 @@ struct DepthSource
         }
     }
 
-    long double getTime()
+    _Time getTime()
     {
         return(depthTimeList[frameIdx]);
     }
 
     std::vector<std::string> depthFileList;
-    std::vector<long double> depthTimeList;
+    std::vector<_Time> depthTimeList;
 
     size_t frameIdx;
     VideoCapture vc;
@@ -468,18 +485,25 @@ struct QSource
             return T;
         }
 
-        Affine3f getCurrQ(long double time)
+        Affine3f getCurrQ(_Time time)
         {
-            long double curr_time = 0;
-            size_t idx = prevFrameIdx;
+            _Time curr_time;
+            curr_time._int = 0;
+            curr_time._fract = 0;
+            std::string str_i, str_f;
+            size_t dot, idx = prevFrameIdx;
             while (time > curr_time)
             {
                 std::istringstream iss(qFileList[idx]);
                 std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
-                curr_time = std::stold(results[0].erase(0, CUT_LETTER));
+                str_i = results[0], str_f = results[0];
+                 dot = results[0].find(".");
+                curr_time._int = std::stoi(str_i.erase(dot));
+                curr_time._fract = std::stold(str_f.erase(0, dot));
                 idx++;
             }
-            prevFrameIdx = idx-1;
+            idx-=2;
+            prevFrameIdx = idx;
             std::istringstream iss(qFileList[idx]);
             std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
 
