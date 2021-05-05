@@ -73,7 +73,6 @@ static std::vector<_Time> readDepthTime(const std::string& fileList)
     if (!file.is_open())
         throw std::runtime_error("Failed to read depth list");
 
-    
     while (!file.eof())
     {
         std::string s, imgPath;
