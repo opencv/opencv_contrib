@@ -31,10 +31,6 @@ static bool operator>(const _Time& a1, const _Time& a2)
 {
     return (a1._int > a2._int) || (a1._int == a2._int && a1._fract > a2._fract);
 }
-static bool operator<(const _Time& a1, const _Time& a2)
-{
-    return (a1._int < a2._int) || (a1._int == a2._int && a1._fract < a2._fract);
-}
 
 static std::vector<std::string> readDepth(const std::string& fileList)
 {
