@@ -27,11 +27,11 @@ struct _Time
     long double _fract;
 };
 
-bool operator>(const _Time& a1, const _Time& a2)
+static bool operator>(const _Time& a1, const _Time& a2)
 {
     return (a1._int > a2._int) || (a1._int == a2._int && a1._fract > a2._fract);
 }
-bool operator<(const _Time& a1, const _Time& a2)
+static bool operator<(const _Time& a1, const _Time& a2)
 {
     return (a1._int < a2._int) || (a1._int == a2._int && a1._fract < a2._fract);
 }
@@ -83,7 +83,7 @@ static std::vector<_Time> readDepthTime(const std::string& fileList)
         std::istringstream iss(s);
         std::vector<std::string> results(std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>());
         std::string str_i = results[0], str_f = results[0];
-        int dot = results[0].find(".");
+        size_t dot = results[0].find(".");
         _Time _time;
         _time._int = std::stoi(str_i.erase(dot));
         _time._fract = std::stold(str_f.erase(0, dot));
