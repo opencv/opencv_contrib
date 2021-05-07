@@ -306,9 +306,28 @@ struct DepthSource
         if (vc.isOpened())
         {
             updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
-            updateVolumeParams(params.volumeParams.resolution, params.volumeParams.voxelSize,
-                               params.volumeParams.tsdfTruncDist, params.volumeParams.pose,
+            auto& volParams = params.volumeParams;
+            Vec3i volResolution(volParams.resolutionX,
+                                volParams.resolutionY,
+                                volParams.resolutionZ);
+            Affine3f volPose(Matx44f(volParams.pose00, volParams.pose01, volParams.pose02, volParams.pose03,
+                                     volParams.pose10, volParams.pose11, volParams.pose12, volParams.pose13,
+                                     volParams.pose20, volParams.pose21, volParams.pose22, volParams.pose23));
+            updateVolumeParams(volResolution, volParams.voxelSize, volParams.tsdfTruncDist, volPose,
                                params.truncateThreshold);
+            volParams.pose00 = volPose.matrix(0, 0);
+            volParams.pose01 = volPose.matrix(0, 1);
+            volParams.pose02 = volPose.matrix(0, 2);
+            volParams.pose03 = volPose.matrix(0, 3);
+            volParams.pose10 = volPose.matrix(1, 0);
+            volParams.pose11 = volPose.matrix(1, 1);
+            volParams.pose12 = volPose.matrix(1, 2);
+            volParams.pose13 = volPose.matrix(1, 3);
+            volParams.pose20 = volPose.matrix(2, 0);
+            volParams.pose21 = volPose.matrix(2, 1);
+            volParams.pose22 = volPose.matrix(2, 2);
+            volParams.pose23 = volPose.matrix(2, 3);
+
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
 
             if (sourceType == Type::DEPTH_KINECT2)
