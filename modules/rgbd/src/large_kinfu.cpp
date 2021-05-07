@@ -5,12 +5,7 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this
 // module's directory
 
-#include "fast_icp.hpp"
-#include "hash_tsdf.hpp"
-#include "kinfu_frame.hpp"
 #include "precomp.hpp"
-#include "submap.hpp"
-#include "tsdf.hpp"
 
 namespace cv
 {
@@ -147,7 +142,6 @@ LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
     submapMgr = cv::makePtr<SubmapManager<MatType>>(params.volumeParams);
     reset();
     submapMgr->createNewSubmap(true);
-
 }
 
 template<typename MatType>

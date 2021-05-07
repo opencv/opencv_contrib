@@ -5,7 +5,6 @@
 #ifndef __OPENCV_DYNAFU_TSDF_H__
 #define __OPENCV_DYNAFU_TSDF_H__
 
-#include "kinfu_frame.hpp"
 #include "warpfield.hpp"
 
 namespace cv {
