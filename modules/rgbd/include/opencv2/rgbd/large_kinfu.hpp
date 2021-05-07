@@ -84,7 +84,7 @@ struct CV_EXPORTS_W Params
 
     /** @brief Volume parameters
     */
-    kinfu::VolumeParams volumeParams;
+    VolumeParams volumeParams;
 };
 
 /** @brief Large Scale Dense Depth Fusion implementation

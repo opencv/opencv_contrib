@@ -18,7 +18,6 @@ namespace kinfu {
 
 struct CV_EXPORTS_W Params
 {
-
     CV_WRAP Params(){}
 
     /**
@@ -83,7 +82,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW Size frameSize;
 
     /** @brief rgb frame size in pixels */
-    CV_PROP_RW kinfu::VolumeType volumeType;
+    CV_PROP_RW VolumeType volumeType;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
