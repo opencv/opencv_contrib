@@ -332,9 +332,9 @@ void FacemarkLBFImpl::training(void* parameters){
         CV_Error(Error::StsBadArg, "Training data is not provided. Consider to add using addTrainingSample() function!");
     }
 
-    if (params.cascade_face.empty() || (params.model_filename.empty() && params.save_model))
+    if (params.model_filename.empty() && params.save_model)
     {
-        CV_Error(Error::StsBadArg, "The parameter cascade_face and model_filename should be set!");
+        CV_Error(Error::StsBadArg, "The parameter model_filename should be set!");
     }
 
     // flip the image and swap the landmark position
