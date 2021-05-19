@@ -21,7 +21,7 @@ static bool readCameraParameters(std::string filename, cv::Mat& camMatrix, cv::M
         return false;
     fs["camera_matrix"] >> camMatrix;
     fs["distortion_coefficients"] >> distCoeffs;
-    return (camMatrix.size() == cv::Size(3, 3)) && (distCoeffs.size() == cv::Size(1,5));
+    return (camMatrix.size().width == 3) && (distCoeffs.size().width == 5);
 }
 
 void createBoard()
