@@ -26,4 +26,6 @@
 #include "opencv2/3d.hpp"
 #include "opencv2/rgbd.hpp"
 
+#include "utils.hpp"
+
 #endif
