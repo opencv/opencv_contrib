@@ -151,6 +151,13 @@ int main(int argc, char** argv)
         if (depthWriter)
             depthWriter->append(frame);
 
+        Vec3i volResolution(volParams.resolutionX,
+                            volParams.resolutionY,
+                            volParams.resolutionZ);
+        Affine3f volPose(Matx44f(volParams.pose00, volParams.pose01, volParams.pose02, volParams.pose03,
+                                 volParams.pose10, volParams.pose11, volParams.pose12, volParams.pose13,
+                                 volParams.pose20, volParams.pose21, volParams.pose22, volParams.pose23));
+
 #ifdef HAVE_OPENCV_VIZ
         if (pause)
         {
@@ -164,12 +171,6 @@ int main(int argc, char** argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
-                Vec3i volResolution(volParams.resolutionX,
-                                    volParams.resolutionY,
-                                    volParams.resolutionZ);
-                Affine3f volPose(Matx44f(volParams.pose00, volParams.pose01, volParams.pose02, volParams.pose03,
-                                         volParams.pose10, volParams.pose11, volParams.pose12, volParams.pose13,
-                                         volParams.pose20, volParams.pose21, volParams.pose22, volParams.pose23));
                 Vec3d volSize = volParams.voxelSize * Vec3d(volResolution);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), volPose);
                 PauseCallbackArgs pca(*largeKinfu);
@@ -219,8 +220,8 @@ int main(int argc, char** argv)
                     }
 
                     // window.showWidget("worldAxes", viz::WCoordinateSystem());
-                    Vec3d volSize = volParams.voxelSize * volParams.resolution;
-                    window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), volParams.pose);
+                    Vec3d volSize = volParams.voxelSize * volResolution;
+                    window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), volPose);
                     window.setViewerPose(largeKinfu->getPose());
                     window.spinOnce(1, true);
                 }

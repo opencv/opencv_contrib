@@ -49,8 +49,22 @@ Ptr<Params> Params::defaultParams()
     {
         float volumeSize                   = 3.0f;
         p.volumeParams.type                = VolumeType::TSDF;
-        p.volumeParams.resolution          = Vec3i::all(512);
-        p.volumeParams.pose                = Affine3f().translate(Vec3f(-volumeSize / 2.f, -volumeSize / 2.f, 0.5f));
+        p.volumeParams.resolutionX         = 512;
+        p.volumeParams.resolutionY         = 512;
+        p.volumeParams.resolutionZ         = 512;
+        Affine3f newPose = Affine3f().translate(Vec3f(-volumeSize / 2.f, -volumeSize / 2.f, 0.5f));
+        p.volumeParams.pose00              = newPose.matrix(0, 0);
+        p.volumeParams.pose01              = newPose.matrix(0, 1);
+        p.volumeParams.pose02              = newPose.matrix(0, 2);
+        p.volumeParams.pose03              = newPose.matrix(0, 3);
+        p.volumeParams.pose10              = newPose.matrix(1, 0);
+        p.volumeParams.pose11              = newPose.matrix(1, 1);
+        p.volumeParams.pose12              = newPose.matrix(1, 2);
+        p.volumeParams.pose13              = newPose.matrix(1, 3);
+        p.volumeParams.pose20              = newPose.matrix(2, 0);
+        p.volumeParams.pose21              = newPose.matrix(2, 1);
+        p.volumeParams.pose22              = newPose.matrix(2, 2);
+        p.volumeParams.pose23              = newPose.matrix(2, 3);
         p.volumeParams.voxelSize           = volumeSize / 512.f;            // meters
         p.volumeParams.tsdfTruncDist       = 7 * p.volumeParams.voxelSize;  // about 0.04f in meters
         p.volumeParams.maxWeight           = 64;                            // frames
@@ -76,7 +90,9 @@ Ptr<Params> Params::coarseParams()
     //! Make the volume coarse
     {
         float volumeSize                  = 3.f;
-        p->volumeParams.resolution        = Vec3i::all(128);  // number of voxels
+        p->volumeParams.resolutionX       = 128;  // number of voxels
+        p->volumeParams.resolutionY       = 128;
+        p->volumeParams.resolutionZ       = 128;
         p->volumeParams.voxelSize         = volumeSize / 128.f;
         p->volumeParams.tsdfTruncDist     = 2 * p->volumeParams.voxelSize;  // 0.04f in meters
         p->volumeParams.raycastStepFactor = 0.75f;                          // in voxel sizes
