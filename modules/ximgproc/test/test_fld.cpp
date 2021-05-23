@@ -40,8 +40,12 @@ class ximgproc_FLD: public FLDBase
 class ximgproc_ED: public FLDBase
 {
     public:
-        ximgproc_ED() { }
+        ximgproc_ED()
+        {
+            detector = createEdgeDrawing();
+        }
     protected:
+        Ptr<EdgeDrawing> detector;
 
 };
 
@@ -214,11 +218,9 @@ TEST_F(ximgproc_ED, whiteNoise)
     for (int i = 0; i < EPOCHS; ++i)
     {
         GenerateWhiteNoise(test_image);
-        Ptr<EdgeDrawing> detector = createEdgeDrawing();
         detector->detectEdges(test_image);
         detector->detectLines(lines);
-
-        if(40u >= lines.size()) ++passedtests;
+        if(2u >= lines.size()) ++passedtests;
     }
     ASSERT_EQ(EPOCHS, passedtests);
 }
@@ -228,10 +230,8 @@ TEST_F(ximgproc_ED, constColor)
     for (int i = 0; i < EPOCHS; ++i)
     {
         GenerateConstColor(test_image);
-        Ptr<EdgeDrawing> detector = createEdgeDrawing();
         detector->detectEdges(test_image);
-        detector->detectLines(lines);
-        if(0u == lines.size()) ++passedtests;
+        if(0u == detector->getSegments().size()) ++passedtests;
     }
     ASSERT_EQ(EPOCHS, passedtests);
 }
@@ -242,7 +242,6 @@ TEST_F(ximgproc_ED, lines)
     {
         const unsigned int numOfLines = 1;
         GenerateLines(test_image, numOfLines);
-        Ptr<EdgeDrawing> detector = createEdgeDrawing();
         detector->detectEdges(test_image);
         detector->detectLines(lines);
         if(numOfLines * 2 == lines.size()) ++passedtests;  // * 2 because of Gibbs effect
@@ -256,7 +255,6 @@ TEST_F(ximgproc_ED, mergeLines)
     {
         const unsigned int numOfLines = 1;
         GenerateBrokenLines(test_image, numOfLines);
-        Ptr<EdgeDrawing> detector = createEdgeDrawing();
         detector->detectEdges(test_image);
         detector->detectLines(lines);
         if(numOfLines * 2 == lines.size()) ++passedtests;  // * 2 because of Gibbs effect
@@ -269,13 +267,32 @@ TEST_F(ximgproc_ED, rotatedRect)
     for (int i = 0; i < EPOCHS; ++i)
     {
         GenerateRotatedRect(test_image);
-        Ptr<EdgeDrawing> detector = createEdgeDrawing();
         detector->detectEdges(test_image);
         detector->detectLines(lines);
 
-        if(2u <= lines.size())  ++passedtests;
+        if(6u <= lines.size())  ++passedtests;
     }
     ASSERT_EQ(EPOCHS, passedtests);
 }
 
+TEST_F(ximgproc_ED, ManySmallCircles)
+{
+    string picture_name = "cv/imgproc/beads.jpg";
+
+    string filename = cvtest::TS::ptr()->get_data_path() + picture_name;
+    test_image = imread(filename, IMREAD_GRAYSCALE);
+    EXPECT_FALSE(test_image.empty()) << "Invalid test image: " << filename;
+
+    vector<Vec6d> ellipses;
+    detector->detectEdges(test_image);
+    detector->detectLines(lines);
+    detector->detectEllipses(ellipses);
+
+    size_t segments_size = 6458;
+    size_t lines_size = 6264;
+    size_t ellipses_size = 2449;
+    EXPECT_EQ(detector->getSegments().size(), segments_size);
+    EXPECT_EQ(lines.size(), lines_size);
+    EXPECT_EQ(ellipses.size(), ellipses_size);
+}
 }} // namespace
