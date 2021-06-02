@@ -143,24 +143,26 @@ public:
 private:
     Params params;
 
-    cv::Ptr<ICP> icp;
+    cv::Ptr<FastICPOdometry> icp;
     cv::Ptr<Volume> volume;
 
     int frameCounter;
     Matx44f pose;
-    std::vector<MatType> pyrPoints;
-    std::vector<MatType> pyrNormals;
+    cv::Ptr<OdometryFrame> prevFrame;
 };
 
 
 template< typename MatType >
 KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
-    params(_params),
-    icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    pyrPoints(), pyrNormals()
+    params(_params)
 {
     volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
                         params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
+
+    icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
+                                  params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
+                                  params.icpIterations, params.depthFactor, params.truncateThreshold);
+
     reset();
 }
 
@@ -236,26 +238,19 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
+    cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(noArray(), depth, noArray(), noArray(), frameCounter);
 
-    std::vector<MatType> newPoints, newNormals;
-    makeFrameFromDepth(depth, newPoints, newNormals, params.intr,
-                       params.pyramidLevels,
-                       params.depthFactor,
-                       params.bilateral_sigma_depth,
-                       params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size,
-                       params.truncateThreshold);
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_DEPTH);
+
     if(frameCounter == 0)
     {
         // use depth instead of distance
         volume->integrate(depth, params.depthFactor, pose, params.intr);
-        pyrPoints  = newPoints;
-        pyrNormals = newNormals;
     }
     else
     {
         Affine3f affine;
-        bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
+        bool success = icp->compute(newFrame, prevFrame, affine.matrix);
         if(!success)
             return false;
 
@@ -269,13 +264,18 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
             // use depth instead of distance
             volume->integrate(depth, params.depthFactor, pose, params.intr);
         }
-        MatType& points  = pyrPoints [0];
-        MatType& normals = pyrNormals[0];
-        volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
-                                  params.pyramidLevels);
-    }
 
+        MatType points, normals;
+        newFrame->getPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
+        newFrame->getPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
+        volume->raycast(pose, params.intr, params.frameSize, points, normals);
+        newFrame->setDepth(noArray());
+        newFrame->setPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
+        newFrame->setPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
+        icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_PTS);
+    }
+    
+    prevFrame = newFrame;
     frameCounter++;
     return true;
 }
@@ -285,8 +285,10 @@ template< typename MatType >
 void KinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
-
-    renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
+    MatType pts, nrm;
+    prevFrame->getPyramidAt(pts, OdometryFrame::PYR_CLOUD, 0);
+    prevFrame->getPyramidAt(nrm, OdometryFrame::PYR_NORM,  0);
+    detail::renderPointsNormals(pts, nrm, image, params.lightPose);
 }
 
 
@@ -298,7 +300,7 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
     Affine3f cameraPose(_cameraPose);
     MatType points, normals;
     volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals);
-    renderPointsNormals(points, normals, image, params.lightPose);
+    detail::renderPointsNormals(points, normals, image, params.lightPose);
 }
 
 

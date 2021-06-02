@@ -141,9 +141,9 @@ class LargeKinfuImpl : public LargeKinfu
    private:
     Params params;
 
-    cv::Ptr<ICP> icp;
+    cv::Ptr<FastICPOdometry> icp;
     //! TODO: Submap manager and Pose graph optimizer
-    cv::Ptr<SubmapManager<MatType>> submapMgr;
+    cv::Ptr<detail::SubmapManager<MatType>> submapMgr;
 
     int frameCounter;
     Affine3f pose;
@@ -153,9 +153,11 @@ template<typename MatType>
 LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
     : params(_params)
 {
-    icp = makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh);
+    icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
+                                  params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
+                                  params.icpIterations, params.depthFactor, params.truncateThreshold);
 
-    submapMgr = cv::makePtr<SubmapManager<MatType>>(params.volumeParams);
+    submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);
     reset();
     submapMgr->createNewSubmap(true);
 }
@@ -231,31 +233,28 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    std::vector<MatType> newPoints, newNormals;
-    makeFrameFromDepth(depth, newPoints, newNormals, params.intr, params.pyramidLevels, params.depthFactor,
-                       params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-                       params.truncateThreshold);
+    cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(noArray(), depth, noArray(), noArray(), frameCounter);
+
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_DEPTH);
 
     CV_LOG_INFO(NULL, "Current frameID: " << frameCounter);
     for (const auto& it : submapMgr->activeSubmaps)
     {
         int currTrackingId = it.first;
         auto submapData = it.second;
-        Ptr<Submap<MatType>> currTrackingSubmap = submapMgr->getSubmap(currTrackingId);
+        Ptr<detail::Submap<MatType>> currTrackingSubmap = submapMgr->getSubmap(currTrackingId);
         Affine3f affine;
         CV_LOG_INFO(NULL, "Current tracking ID: " << currTrackingId);
 
         if(frameCounter == 0) //! Only one current tracking map
         {
             currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
-            currTrackingSubmap->pyrPoints = newPoints;
-            currTrackingSubmap->pyrNormals = newNormals;
+            currTrackingSubmap->frame = newFrame;
             continue;
         }
 
         //1. Track
-        bool trackingSuccess =
-            icp->estimateTransform(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
+        bool trackingSuccess = icp->compute(newFrame, currTrackingSubmap->frame, affine.matrix);
         if (trackingSuccess)
             currTrackingSubmap->composeCameraPose(affine);
         else
@@ -265,7 +264,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         }
 
         //2. Integrate
-        if(submapData.type == SubmapManager<MatType>::Type::NEW || submapData.type == SubmapManager<MatType>::Type::CURRENT)
+        if(submapData.type == detail::SubmapManager<MatType>::Type::NEW || submapData.type == detail::SubmapManager<MatType>::Type::CURRENT)
         {
             float rnorm = (float)cv::norm(affine.rvec());
             float tnorm = (float)cv::norm(affine.translation());
@@ -275,16 +274,16 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         }
 
         //3. Raycast
-        currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize, currTrackingSubmap->pyrPoints[0], currTrackingSubmap->pyrNormals[0]);
+        currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize);
 
-        currTrackingSubmap->updatePyrPointsNormals(params.pyramidLevels);
+        icp->prepareFrameCache(currTrackingSubmap->frame, OdometryFrame::CACHE_PTS);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
 
     }
     //4. Update map
-    bool isMapUpdated = submapMgr->updateMap(frameCounter, newPoints, newNormals);
+    bool isMapUpdated = submapMgr->updateMap(frameCounter, newFrame);
 
     if(isMapUpdated)
     {
@@ -314,7 +313,10 @@ void LargeKinfuImpl<MatType>::render(OutputArray image) const
     CV_TRACE_FUNCTION();
     auto currSubmap = submapMgr->getCurrentSubmap();
     //! TODO: Can render be dependent on current submap
-    renderPointsNormals(currSubmap->pyrPoints[0], currSubmap->pyrNormals[0], image, params.lightPose);
+    MatType pts, nrm;
+    currSubmap->frame->getPyramidAt(pts, OdometryFrame::PYR_CLOUD, 0);
+    currSubmap->frame->getPyramidAt(nrm, OdometryFrame::PYR_NORM,  0);
+    detail::renderPointsNormals(pts, nrm, image, params.lightPose);
 }
 
 
@@ -327,7 +329,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
     auto currSubmap = submapMgr->getCurrentSubmap();
     MatType points, normals;
     currSubmap->raycast(cameraPose, params.intr, params.frameSize, points, normals);
-    renderPointsNormals(points, normals, image, params.lightPose);
+    detail::renderPointsNormals(points, normals, image, params.lightPose);
 }
 
 

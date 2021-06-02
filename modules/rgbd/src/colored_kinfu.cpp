@@ -155,25 +155,26 @@ public:
 private:
     Params params;
 
-    cv::Ptr<ICP> icp;
+    cv::Ptr<FastICPOdometry> icp;
     cv::Ptr<Volume> volume;
 
     int frameCounter;
     Matx44f pose;
-    std::vector<MatType> pyrPoints;
-    std::vector<MatType> pyrNormals;
-    std::vector<MatType> pyrColors;
+    cv::Ptr<OdometryFrame> prevFrame;
 };
 
 
 template< typename MatType >
 ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
-    params(_params),
-    icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    pyrPoints(), pyrNormals(), pyrColors()
+    params(_params)
 {
     volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
                         params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
+
+    icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
+                                  params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
+                                  params.icpIterations, params.depthFactor, params.truncateThreshold, Mat(params.rgb_intr));
+
     reset();
 }
 
@@ -247,8 +248,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 {
     CV_TRACE_FUNCTION();
 
-    MatType depth;
-    MatType rgb;
+    MatType depth, rgb;
 
     if(_depth.type() != DEPTH_TYPE)
         _depth.convertTo(depth, DEPTH_TYPE);
@@ -257,42 +257,28 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
     if (_rgb.type() != COLOR_TYPE)
     {
-        cv::Mat rgb_tmp, rgbchannel[3], z;
-        std::vector<Mat> channels;
+        MatType rgb_tmp;
+        std::vector<MatType> channels;
         _rgb.convertTo(rgb_tmp, COLOR_TYPE);
-        cv::split(rgb_tmp, rgbchannel);
-        z = cv::Mat::zeros(rgbchannel[0].size(), CV_32F);
-        channels.push_back(rgbchannel[0]); channels.push_back(rgbchannel[1]);
-        channels.push_back(rgbchannel[2]); channels.push_back(z);
+        cv::split(rgb_tmp, channels);
+        channels.push_back(MatType::zeros(channels[0].size(), CV_32F));
         merge(channels, rgb);
     }
     else
         rgb = _rgb;
 
-
-    std::vector<MatType> newPoints, newNormals, newColors;
-    makeColoredFrameFromDepth(depth, rgb,
-                       newPoints, newNormals, newColors,
-                       params.intr, params.rgb_intr,
-                       params.pyramidLevels,
-                       params.depthFactor,
-                       params.bilateral_sigma_depth,
-                       params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size,
-                       params.truncateThreshold);
+    cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(rgb, depth, noArray(), noArray(), frameCounter);
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_RGB);
 
     if(frameCounter == 0)
     {
         // use depth instead of distance
         volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
-        pyrPoints  = newPoints;
-        pyrNormals = newNormals;
-        pyrColors  = newColors;
     }
     else
     {
         Affine3f affine;
-        bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
+        bool success = icp->compute(newFrame, prevFrame, affine.matrix);
         if(!success)
             return false;
 
@@ -306,14 +292,18 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
             // use depth instead of distance
             volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
         }
-        MatType& points  = pyrPoints [0];
-        MatType& normals = pyrNormals[0];
-        MatType& colors  = pyrColors [0];
+        MatType points, normals, colors;
+        newFrame->getPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
+        newFrame->getPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
+        newFrame->getPyramidAt(colors,  OdometryFrame::PYR_IMAGE, 0);
         volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
-        buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
-                                  params.pyramidLevels);
+        newFrame->setDepth(noArray());
+        newFrame->setPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
+        newFrame->setPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
+        icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_PTS);
     }
 
+    prevFrame = newFrame;
     frameCounter++;
     return true;
 }
@@ -323,8 +313,11 @@ template< typename MatType >
 void ColoredKinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
-
-    renderPointsNormalsColors(pyrPoints[0], pyrNormals[0], pyrColors[0],image, params.lightPose);
+    MatType pts, nrm, rgb;
+    prevFrame->getPyramidAt(pts, OdometryFrame::PYR_CLOUD, 0);
+    prevFrame->getPyramidAt(nrm, OdometryFrame::PYR_NORM, 0);
+    prevFrame->getPyramidAt(rgb, OdometryFrame::PYR_IMAGE, 0);
+    detail::renderPointsNormalsColors(pts, nrm, rgb, image, params.lightPose);
 }
 
 template< typename MatType >
@@ -335,7 +328,7 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
     Affine3f cameraPose(_cameraPose);
     MatType points, normals, colors;
     volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
-    renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
+    detail::renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
 }
 
 
