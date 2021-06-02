@@ -18,9 +18,9 @@ public:
                float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose,
-                           cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) = 0;
+                           cv::Matx33f intrMatrix, Ptr<WarpField> wf) = 0;
 
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+    virtual void raycast(cv::Affine3f cameraPose, cv::Matx33f intrMatrix, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const = 0;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals,
