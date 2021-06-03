@@ -38,7 +38,7 @@ n - \f$ i^{th} \f$ normal in the old cloud of normals
 \f$ ppd(...) \f$ - is the distance \f$ \rightarrow \f$ its formula is the dot product of (difference between p and q) and (n):
 \f[ dot(T_{p2q}(p)-q, n) = dot((R \cdot  p + t) - q, n) = [(R \cdot  p + t)- q]^{T}  \cdot n \f]
 \f$ T_{p2q}(p) \f$ - rigid transform of p point, which brings it closer to the corresponding q point.
-\f[ T_{p2q}(p) = (R \cdot  p + t) \f] 
+\f[ T_{p2q}(p) = (R \cdot  p + t) \f]
 Where R - rotation, t - translation.
 
 We use the Gauss-Newton method for the minimization of function.
