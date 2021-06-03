@@ -8,6 +8,50 @@
 #include "fast_icp.hpp"
 #include "opencl_kernels_rgbd.hpp"
 
+/*
+@defgroup RGB-Depth Processing
+The Iterative closest point (ICP) function minimizes the PointToPoint Distance (PPD) between the corresponding points in two clouds of points and normals.
+The main equetion, which it needs to minimize:
+E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0
+
+
+Let's watch what is ppd(p, q, n)
+Firstly, we have two clouds of points, old (the existing points and normals in 3-D model) and new (new points and normals, what we want to integrate to the exising model)
+p - i^{th} point in the new cloud of points
+q - i^{th} point in the old cloud of points
+n - i^{th} normal in the old cloud of normals
+
+ppd(...) - is the distance \rightarrow its formula is the dot product of (difference between p and q) and (n):
+dot(T_{p2q}(p)-q, n) = dot((R \cdot  p + t) - q, n) = [(R \cdot  p + t)- q]^{T}  \cdot n
+T_{p2q}(p) - rigid transform of p point, which brings it closer to the corresponding q point.
+T_{p2q}(p) = (R \cdot  p + t), where R - rotation, t - translation.
+
+We use the Gauss-Newton method for the minimization of function.
+In the beginning, we will perform some mathematical operations:
+E = \sum \left \| [(R \cdot  p + t)- q]^{T}  \cdot n \right \|_{2}
+
+R is rotation and its formula is complicated:
+R = R_{z}(\gamma)R_{y}(\beta )R_{x}(\alpha)=
+\begin{bmatrix}
+cos(\gamma) & -sin(\gamma) & 0 \\
+sin(\gamma) & cos(\gamma) & 0\\
+0 & 0 & 1
+\end{bmatrix}
+\begin{bmatrix}
+cos(\beta) & 0 & sin(\beta)\\
+0 & 1 & 0\\
+-sin(\beta) & 0 & cos(\beta)
+\end{bmatrix}
+\begin{bmatrix}
+1 & 0 & 0\\
+0 & cos(\alpha) & -sin(\alpha)\\
+0 & sin(\alpha) & cos(\alpha)
+\end{bmatrix}
+But we have Infinitesimal rotations, and in that case we have another formula.
+
+
+*/
+
 using namespace std;
 
 namespace cv {
