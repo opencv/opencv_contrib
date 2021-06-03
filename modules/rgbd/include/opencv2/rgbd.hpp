@@ -20,6 +20,7 @@
 
 /** @defgroup rgbd RGB-Depth Processing
 The Iterative closest point (ICP) function minimizes the PointToPoint Distance (PPD) between the corresponding points in two clouds of points and normals.
+
 The main equetion, which it needs to minimize:
 \f[ E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0 \f]
 
@@ -37,7 +38,8 @@ n - \f$ i^{th} \f$ normal in the old cloud of normals
 \f$ ppd(...) \f$ - is the distance \f$ \rightarrow \f$ its formula is the dot product of (difference between p and q) and (n):
 \f[ dot(T_{p2q}(p)-q, n) = dot((R \cdot  p + t) - q, n) = [(R \cdot  p + t)- q]^{T}  \cdot n \f]
 \f$ T_{p2q}(p) \f$ - rigid transform of p point, which brings it closer to the corresponding q point.
-\f[ T_{p2q}(p) = (R \cdot  p + t) \f$, where R - rotation, t - translation.
+\f[ T_{p2q}(p) = (R \cdot  p + t) \f] 
+Where R - rotation, t - translation.
 
 We use the Gauss-Newton method for the minimization of function.
 In the beginning, we will perform some mathematical operations:
@@ -61,7 +63,8 @@ cos(\beta) & 0 & sin(\beta)\\
 0 & sin(\alpha) & cos(\alpha)
 \end{bmatrix} \f]
 But we have Infinitesimal rotations, and in that case we have another formula.
-\f[ R = I + Ad\theta \f$, where I - unit matrix, A - member of the three-dimensional special orthogonal group SO(3)
+\f[ R = I + Ad\theta \f]
+Where I - unit matrix, A - member of the three-dimensional special orthogonal group SO(3)
 In this way:
 \f[ R = I + \begin{bmatrix}
 0  & -\gamma  & \beta \\
