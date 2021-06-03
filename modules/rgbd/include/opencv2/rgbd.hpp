@@ -21,7 +21,7 @@
 /** @defgroup rgbd RGB-Depth Processing
 The Iterative closest point (ICP) function minimizes the PointToPoint Distance (PPD) between the corresponding points in two clouds of points and normals.
 The main equetion, which it needs to minimize:
-E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0
+\f[E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0 \f]
 
 
 Let's watch what is ppd(p, q, n)
