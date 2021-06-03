@@ -8,8 +8,7 @@
 #include "fast_icp.hpp"
 #include "opencl_kernels_rgbd.hpp"
 
-/*
-@defgroup RGB-Depth Processing
+/** @defgroup RGB-Depth Processing
 The Iterative closest point (ICP) function minimizes the PointToPoint Distance (PPD) between the corresponding points in two clouds of points and normals.
 The main equetion, which it needs to minimize:
 E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0
@@ -100,17 +99,17 @@ We introduced G(p) function for simplification
 
 \sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [f(x, p)] = \sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p]
 \sum G(p)^{T} \cdot [n \cdot n^{T}] \cdot [G(p) \cdot X] = \sum G(p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p]
-let a new value: 
+let a new value:
 C = G(p)^{T} \cdot n
 C^{T} = (G(p)^{T} \cdot n)^{T} = n^{T} \cdot G(p)
 
 Let's make a replacement:
 \sum C \cdot C^{T} \cdot X = \sum C \cdot n^{T} \cdot [- \triangle p]
-\sum C \cdot C^{T} \cdot 
+\sum C \cdot C^{T} \cdot
 \begin{bmatrix}
 \triangle R_{shift}\\
 \triangle t
-\end{bmatrix} 
+\end{bmatrix}
 = \sum C \cdot n^{T} \cdot [- \triangle p]
 
 We solve this equation and as result, we have diff Rigid transform
