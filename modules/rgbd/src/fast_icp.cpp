@@ -48,7 +48,72 @@ cos(\beta) & 0 & sin(\beta)\\
 0 & sin(\alpha) & cos(\alpha)
 \end{bmatrix}
 But we have Infinitesimal rotations, and in that case we have another formula.
+R = I + Ad\theta, where I - unit matrix, A - member of the three-dimensional special orthogonal group SO(3)
+In this way:
+R = I + \begin{bmatrix}
+0  & -\gamma  & \beta \\
+\gamma & 0 & -\alpha \\
+-\beta  & \alpha  & 0
+\end{bmatrix}
+=
+I + skew(\begin{bmatrix}
+\alpha \\
+\beta \\
+\gamma \\
+\end{bmatrix})
+=
+I + skew(R_{shift})
 
+Returns to the mathematical operations:
+E = \sum \left \| [(I + skew(R_{shift})) \cdot  p + t- q]^{T}  \cdot n \right \|_{2}
+E = \sum \left \| [I \cdot  p + skew(R_{shift}) \cdot  p + t- q]^{T}  \cdot n \right \|_{2}
+E = \sum \left \| [skew(R_{shift}) \cdot  p + t + p- q]^{T}  \cdot n \right \|_{2}
+let a new function:
+f(x, p) = skew(R_{shift}) \cdot  p + t
+E = \sum \left \| [f(x, p) + p- q]^{T}  \cdot n \right \|_{2}
+
+Let's find out differential of E:
+\frac{\partial E}{\partial x_{i}} = \sum [2 \cdot (f(x, p) + p - q)^{T} \cdot n] \cdot [f{}'(x, p)^{T} \cdot n] = 0
+\sum [2 \cdot n^{T} \cdot (f(x, p) + p - q)] \cdot [n^{T} \cdot f{}'(x, p)] = 0
+Let new variable: \triangle p = p - q
+\sum [2 \cdot n^{T} \cdot (f(x, p) + \triangle p)] \cdot [n^{T} \cdot f{}'(x, p)] = 0
+\sum [(f(x, p) + \triangle p)^{T} \cdot (n \cdot n^{T})] \cdot f{}'(x, p) = 0
+\sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [f(x, p) + \triangle p] = 0
+
+Let's find out differential of f(x):
+d(f(x)) = d(skew(R_{shift}) \cdot  p + t) = d(skew(R_{shift})) \cdot  p  + skew(R_{shift}) \cdot  d(p))+ d(t)
+d(f(x)) = skew(\triangle R_{shift}) \cdot  p + \triangle t
+let's remember: cross(a, b) = skew(a) \cdot b = skew(b)^{T} \cdot a
+d(f(x)) = cross(\triangle R_{shift}, p) + \triangle t
+d(f(x)) = skew(p)^{T} \cdot \triangle R_{shift} + \triangle t
+d(f(x)) =
+\begin{bmatrix}
+ skew(p)^{T} & | & I
+\end{bmatrix}
+\cdot
+\begin{bmatrix}
+\triangle R_{shift}\\
+\triangle t
+\end{bmatrix}
+= G(p) \cdot X
+We introduced G(p) function for simplification
+
+\sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [f(x, p)] = \sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p]
+\sum G(p)^{T} \cdot [n \cdot n^{T}] \cdot [G(p) \cdot X] = \sum G(p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p]
+let a new value: 
+C = G(p)^{T} \cdot n
+C^{T} = (G(p)^{T} \cdot n)^{T} = n^{T} \cdot G(p)
+
+Let's make a replacement:
+\sum C \cdot C^{T} \cdot X = \sum C \cdot n^{T} \cdot [- \triangle p]
+\sum C \cdot C^{T} \cdot 
+\begin{bmatrix}
+\triangle R_{shift}\\
+\triangle t
+\end{bmatrix} 
+= \sum C \cdot n^{T} \cdot [- \triangle p]
+
+We solve this equation and as result, we have diff Rigid transform
 
 */
 
