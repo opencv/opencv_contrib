@@ -1,6 +1,16 @@
 set(the_description "WeChat QR code Detector")
 ocv_define_module(wechat_qrcode opencv_core opencv_imgproc opencv_dnn WRAP java objc python js)
 
+# iconv support isn't automatic on some systems
+if(CMAKE_VERSION VERSION_GREATER "3.11")
+  find_package(Iconv QUIET)
+  if(Iconv_FOUND)
+    ocv_target_link_libraries(${the_module} Iconv::Iconv)
+  else()
+    ocv_target_compile_definitions(${the_module} PRIVATE "NO_ICONV=1")
+  endif()
+endif()
+
 # need to change
 set(wechat_qrcode_commit_hash "a8b69ccc738421293254aec5ddb38bd523503252")
 set(hash_detect_caffemodel "238e2b2d6f3c18d6c3a30de0c31e23cf")

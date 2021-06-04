@@ -94,7 +94,7 @@ CV_EXPORTS bool isRLMorphologyPossible(InputArray rlStructuringElement);
 * @param   size   image size (to be used if an "on" boundary should be used in erosion, using the default
 *                  means that the size is computed from the extension of the input)
 */
-CV_EXPORTS void createRLEImage(std::vector<cv::Point3i>& runs, OutputArray res, Size size = Size(0, 0));
+CV_EXPORTS void createRLEImage(const std::vector<cv::Point3i>& runs, OutputArray res, Size size = Size(0, 0));
 
 /**
 * @brief   Applies a morphological operation to a run-length encoded binary image.
