@@ -173,7 +173,7 @@ ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
 
     icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
                                   params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-                                  params.icpIterations, params.depthFactor, params.truncateThreshold, Mat(params.rgb_intr));
+                                  params.icpIterations, params.depthFactor, params.truncateThreshold);
 
     reset();
 }
@@ -268,12 +268,18 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         rgb = _rgb;
 
     cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(rgb, depth, noArray(), noArray(), frameCounter);
-    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_RGB);
+    //TODO: fix it
+    // This workaround is needed because we want to keep color image in newFrame
+    // FastICP doesn't use color info and doesn't prepare its pyramids
+    newFrame->setPyramidLevels(params.icpIterations.size());
+
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     if(frameCounter == 0)
     {
         // use depth instead of distance
         volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+        newFrame->setPyramidAt(rgb, OdometryFrame::PYR_IMAGE, 0);
     }
     else
     {
@@ -297,10 +303,14 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         newFrame->getPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
         newFrame->getPyramidAt(colors,  OdometryFrame::PYR_IMAGE, 0);
         volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
+        //TODO: fix it
+        // This workaround relates to specific process of pyramid building
         newFrame->setDepth(noArray());
+
         newFrame->setPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
         newFrame->setPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
-        icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_PTS);
+        newFrame->setPyramidAt(colors,  OdometryFrame::PYR_IMAGE, 0);
+        icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
     }
 
     prevFrame = newFrame;
