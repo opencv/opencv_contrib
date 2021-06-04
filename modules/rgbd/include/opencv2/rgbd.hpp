@@ -117,7 +117,7 @@ We introduced \f$ G(p) \f$ function for simplification
 
 \f[ \sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [f(x, p)] = \sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p] \f]
 \f[ \sum G(p)^{T} \cdot [n \cdot n^{T}] \cdot [G(p) \cdot X] = \sum G(p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p] \f]
-let a new value:
+Let a new value:
 \f[ C = G(p)^{T} \cdot n \f]
 \f[ C^{T} = (G(p)^{T} \cdot n)^{T} = n^{T} \cdot G(p) \f]
 
