@@ -240,7 +240,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
 
     cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(noArray(), depth, noArray(), noArray(), frameCounter);
 
-    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_DEPTH);
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     if(frameCounter == 0)
     {
@@ -269,10 +269,13 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         newFrame->getPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
         newFrame->getPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
+        //TODO: fix it
+        // This workaround relates to specific process of pyramid building
         newFrame->setDepth(noArray());
+        
         newFrame->setPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
         newFrame->setPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
-        icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_PTS);
+        icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
     }
     
     prevFrame = newFrame;

@@ -314,7 +314,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
     cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(noArray(), depth, noArray(), noArray(), frameCounter);
 
-    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_DEPTH);
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     if(frameCounter == 0)
     {
@@ -336,7 +336,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         Ptr<OdometryFrame> estdFrame = OdometryFrame::create(noArray(), estdDepth, noArray(), noArray(), -1);
         icp->setDepthFactor(1.f);
-        icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_DEPTH);
+        icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
         icp->setDepthFactor(params.depthFactor);
 
         frame = estdFrame;
@@ -355,7 +355,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
             estdFrame = OdometryFrame::create(noArray(), estdDepth, noArray(), noArray(), -1);
             icp->setDepthFactor(1.f);
-            icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_DEPTH);
+            icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
             icp->setDepthFactor(params.depthFactor);
 
             T estdPts, estdNrm, newPts, newNrm;

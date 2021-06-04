@@ -235,7 +235,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
     cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(noArray(), depth, noArray(), noArray(), frameCounter);
 
-    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_DEPTH);
+    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     CV_LOG_INFO(NULL, "Current frameID: " << frameCounter);
     for (const auto& it : submapMgr->activeSubmaps)
@@ -276,7 +276,8 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         //3. Raycast
         currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize);
 
-        icp->prepareFrameCache(currTrackingSubmap->frame, OdometryFrame::CACHE_PTS);
+        currTrackingSubmap->frame->setDepth(noArray());
+        icp->prepareFrameCache(currTrackingSubmap->frame, OdometryFrame::CACHE_SRC);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
