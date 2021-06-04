@@ -284,9 +284,11 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
     {
         Affine3f affine;
-        bool success = icp->compute(newFrame, prevFrame, affine.matrix);
+        Matx44d mrt;
+        bool success = icp->compute(newFrame, prevFrame, mrt);
         if(!success)
             return false;
+        affine.matrix = mrt;
 
         pose = (Affine3f(pose) * affine).matrix;
 

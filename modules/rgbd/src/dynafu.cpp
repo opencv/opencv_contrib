@@ -342,9 +342,11 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         frame = estdFrame;
 
         Affine3f affine;
-        bool success = icp->compute(newFrame, frame, affine.matrix);
+        Matx44d mrt;
+        bool success = icp->compute(newFrame, frame, mrt);
         if(!success)
             return false;
+        affine.matrix = mrt;
 
         pose = pose * affine;
 

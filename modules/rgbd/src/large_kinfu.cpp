@@ -254,9 +254,13 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         }
 
         //1. Track
-        bool trackingSuccess = icp->compute(newFrame, currTrackingSubmap->frame, affine.matrix);
+        Matx44d mrt;
+        bool trackingSuccess = icp->compute(newFrame, currTrackingSubmap->frame, mrt);
         if (trackingSuccess)
+        {
+            affine.matrix = mrt;
             currTrackingSubmap->composeCameraPose(affine);
+        }
         else
         {
             CV_LOG_INFO(NULL, "Tracking failed");
