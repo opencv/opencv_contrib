@@ -19,6 +19,11 @@
 
 
 /** @defgroup rgbd RGB-Depth Processing
+
+@ref kinfu_icp
+*/
+
+/*
 The Iterative closest point (ICP) function minimizes the PointToPlane Distance (PPD) between the corresponding points in two clouds of points and normals.
 Specifically, it is the distance from the point P to the plane with the normal N in which the point Q located
 
