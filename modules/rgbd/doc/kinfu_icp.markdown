@@ -1,14 +1,14 @@
-# ICP algorithm in Kinect Fusion {#kinfu_icp} 
+# ICP algorithm in Kinect Fusion {#kinfu_icp}
 
 The Iterative closest point (ICP) function minimizes the PointToPlane Distance (PPD) between the corresponding points in two clouds of points and normals.
-Specifically, it is the distance from the point P to the plane with the normal N in which the point Q located
+Specifically, it is the distance from the point ***P*** to the plane with the normal ***N*** in which the point ***Q*** located
 
 The main equetion, which it needs to minimize:
 
 <img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|ppd(p_{i},q_{i},n_{i})\right\|_{2}\rightarrow0">
 
 
-Let's watch what is <img src="https://render.githubusercontent.com/render/math?math=ppd(p,q,n)">
+Let's watch what is ***ppd(p,q,n)***
 
 Firstly, we have two clouds of points, old (the existing points and normals in 3-D model) and new (new points and normals, what we want to integrate to the exising model)
 
@@ -18,20 +18,20 @@ Firstly, we have two clouds of points, old (the existing points and normals in 3
 
 ***n*** - i'th normal in the old cloud of normals
 
-<img src="https://render.githubusercontent.com/render/math?math=ppd(...)">- is the distance ergo its formula is the dot product of (difference between ***p*** and ***q***) and (***n***):
+***ppd(...)***- is the distance ergo its formula is the dot product of (difference between ***p*** and ***q***) and (***n***):
 
 <img src="https://render.githubusercontent.com/render/math?math=dot(T_{p2q}(p)-q, n)=dot((R\cdot p+t)-q,n)=[(R\cdot p+t)-q]^{T}\cdot n">
 
-<img src="https://render.githubusercontent.com/render/math?math=T_{p2q}(p)"> - rigid transform of *p* point, which brings it closer to the corresponding *q* point.
+***T(p)*** - rigid transform of ***p*** point, which brings it closer to the corresponding ***q*** point.
 
-<img src="https://render.githubusercontent.com/render/math?math=T_{p2q}(p) = (R \cdot  p + t)">
+<img src="https://render.githubusercontent.com/render/math?math=T_{p2q}(p) = (R \cdot  p %2B t)">
 
-Where ***R*** - rotation,***t*** - translation.
+Where ***R*** - rotation, ***t*** - translation.
 
 We use the Gauss-Newton method for the minimization of function.
 In the beginning, we will perform some mathematical operations:
 
-<img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|[(R\cdot p+t)-q]^{T}\cdot n\right\|_{2}">
+<img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|[(R\cdot p %2B t)-q]^{T}\cdot n\right\|_{2}">
 
 ***R*** is rotation and its formula is complicated:
 
@@ -76,7 +76,7 @@ Let new variable: <img src="https://render.githubusercontent.com/render/math?mat
 
 <img src="https://render.githubusercontent.com/render/math?math=\sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [f(x, p) %2B \triangle p] = 0">
 
-Let's find out differential of <img src="https://render.githubusercontent.com/render/math?math=f(x)">:
+Let's find out differential of ***f(x)***:
 
 <img src="https://render.githubusercontent.com/render/math?math=d(f(x)) = d(skew(R_{shift}) \cdot  p %2B t) = d(skew(R_{shift})) \cdot  p %2B skew(R_{shift}) \cdot  d(p)) %2B d(t)">
 
@@ -90,7 +90,7 @@ Let's remember: <img src="https://render.githubusercontent.com/render/math?math=
 
 <img src="https://render.githubusercontent.com/render/math?math=d(f(x))=\begin{bmatrix} skew(p)^{T} %26 | %26 I m\end{bmatrix} \cdot \begin{bmatrix} \triangle R_{shift}\\ \triangle t \end{bmatrix} = G(p) \cdot X">
 
-We introduced <img src="https://render.githubusercontent.com/render/math?math=G(p)"> function for simplification
+We introduced ***G(p)*** function for simplification
 
 <img src="https://render.githubusercontent.com/render/math?math=\sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [f(x, p)] = \sum f{}'(x, p)^{T} \cdot [n \cdot n^{T}] \cdot [- \triangle p]">
 
@@ -109,4 +109,3 @@ Let's make a replacement:
 <img src="https://render.githubusercontent.com/render/math?math=\sum C\cdot C^{T}\cdot \begin{bmatrix} \triangle R_{shift}\\ \triangle t \end{bmatrix} = \sum C \cdot n^{T} \cdot [- \triangle p]">
 
 We solve this equation and as result, we have diff Rigid transform
-
