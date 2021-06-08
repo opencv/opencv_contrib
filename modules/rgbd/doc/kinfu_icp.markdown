@@ -2,7 +2,7 @@ The Iterative closest point (ICP) function minimizes the PointToPlane Distance (
 Specifically, it is the distance from the point P to the plane with the normal N in which the point Q located
 
 The main equetion, which it needs to minimize:
-![equation]( E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0 )
+<img src="https://render.githubusercontent.com/render/math?math= E = \sum \left \| ppd(p_{i}, q_{i}, n_{i}) \right \|_{2} \rightarrow 0 ">
 
 
 Let's watch what is \f$ ppd(p, q, n) \f$
