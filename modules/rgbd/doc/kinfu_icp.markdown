@@ -44,7 +44,7 @@ But we have Infinitesimal rotations, and in that case we have another formula.
 Where ***I*** - unit matrix, ***A*** - member of the three-dimensional special orthogonal group ***so(3)***
 In this way:
 
-<img src="https://render.githubusercontent.com/render/math?math=R = I %2B \begin{bmatrix}0 %26 -\gamma  %26 \beta \\ \gamma %26 0 %26 -\alpha \\ -\beta  %26 \alpha  %26 0 \end{bmatrix} = I %2B skew(\begin{bmatrix} \alpha \\ \beta \\ \gamma \\ \end{bmatrix}) = I %2B skew(R_{shift}) ">
+<img src="https://render.githubusercontent.com/render/math?math=R = I %2B \begin{bmatrix}0 %26 -\gamma  %26 \beta \\ \gamma %26 0 %26 -\alpha \\ -\beta  %26 \alpha  %26 0 \end{bmatrix} = I %2B skew(\begin{bmatrix} \alpha %26 \beta %26 \gamma \end{bmatrix}^{T}) = I %2B skew(R_{shift}) ">
 
 
 
@@ -88,7 +88,7 @@ Let's remember: <img src="https://render.githubusercontent.com/render/math?math=
 
 <img src="https://render.githubusercontent.com/render/math?math=d(f(x)) = skew(p)^{T} \cdot \triangle R_{shift} %2B \triangle t">
 
-<img src="https://render.githubusercontent.com/render/math?math=d(f(x))=\begin{bmatrix} skew(p)^{T} %26 | %26 I m\end{bmatrix} \cdot \begin{bmatrix} \triangle R_{shift} %26 \triangle t \end{bmatrix}^{T} = G(p) \cdot X">
+<img src="https://render.githubusercontent.com/render/math?math=d(f(x))=\begin{bmatrix} skew(p)^{T} %26  I m\end{bmatrix} \cdot \begin{bmatrix} \triangle R_{shift} %26 \triangle t \end{bmatrix}^{T} = G(p) \cdot X">
 
 We introduced ***G(p)*** function for simplification
 
