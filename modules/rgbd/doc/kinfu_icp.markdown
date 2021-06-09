@@ -35,7 +35,7 @@ In the beginning, we will perform some mathematical operations:
 
 ***R*** is rotation and its formula is complicated:
 
-<img src="https://render.githubusercontent.com/render/math?math=R=R_{z}(\gamma)R_{y}(\beta)R_{x}(\alpha)=(\begin{bmatrix}cos(\gamma)%26-sin(\gamma)%26 0\\sin(\gamma)%26cos(\gamma)%26 0 \\ 0 %26 0 %26 1 \end{bmatrix} \begin{bmatrix}cos(\beta) %26 0 %26 sin(\beta) \\ 0 %26 1 %26 0 \\ -sin(\beta) %26 0 %26 cos(\beta) \end{bmatrix} \begin{bmatrix}1 %26 0 %26 0\\0 %26cos(\alpha) %26 -sin(\alpha)\\0 %26 sin(\alpha) %26 cos(\alpha)\end{bmatrix}">
+<img src="https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+R+%3D+R_%7Bz%7D%28%5Cgamma%29R_%7By%7D%28%5Cbeta+%29R_%7Bx%7D%28%5Calpha%29%3D%0A%5Cbegin%7Bbmatrix%7D%0Acos%28%5Cgamma%29+%26+-sin%28%5Cgamma%29+%26+0+%5C%5C%0Asin%28%5Cgamma%29+%26+cos%28%5Cgamma%29+%26+0%5C%5C%0A0+%26+0+%26+1%0A%5Cend%7Bbmatrix%7D%0A%5Cbegin%7Bbmatrix%7D%0Acos%28%5Cbeta%29+%26+0+%26+sin%28%5Cbeta%29%5C%5C%0A0+%26+1+%26+0%5C%5C%0A-sin%28%5Cbeta%29+%26+0+%26+cos%28%5Cbeta%29%0A%5Cend%7Bbmatrix%7D%0A%5Cbegin%7Bbmatrix%7D%0A1+%26+0+%26+0%5C%5C%0A0+%26+cos%28%5Calpha%29+%26+-sin%28%5Calpha%29%5C%5C%0A0+%26+sin%28%5Calpha%29+%26+cos%28%5Calpha%29%0A%5Cend%7Bbmatrix%7D%0A">
 
 But we have Infinitesimal rotations, and in that case we have another formula.
 
@@ -88,7 +88,7 @@ Let's remember: <img src="https://render.githubusercontent.com/render/math?math=
 
 <img src="https://render.githubusercontent.com/render/math?math=d(f(x)) = skew(p)^{T} \cdot \triangle R_{shift} %2B \triangle t">
 
-<img src="https://render.githubusercontent.com/render/math?math=d(f(x))=\begin{bmatrix} skew(p)^{T} %26 | %26 I m\end{bmatrix} \cdot \begin{bmatrix} \triangle R_{shift}\\ \triangle t \end{bmatrix} = G(p) \cdot X">
+<img src="https://render.githubusercontent.com/render/math?math=d(f(x))=\begin{bmatrix} skew(p)^{T} %26 | %26 I m\end{bmatrix} \cdot \begin{bmatrix} \triangle R_{shift} %26 \triangle t \end{bmatrix}^{T} = G(p) \cdot X">
 
 We introduced ***G(p)*** function for simplification
 
