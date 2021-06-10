@@ -1,9 +1,9 @@
 # ICP algorithm in Kinect Fusion {#kinfu_icp}
 
 The Iterative closest point (ICP) function minimizes the PointToPlane Distance (PPD) between the corresponding points in two clouds of points and normals.
-Specifically, it is the distance from the point ***P*** to the plane with the normal ***N*** in which the point ***Q*** located
+Specifically, it is the distance from the point ***P*** to the plane with the normal ***N*** in which the point ***Q*** located (Two points ***P*** and ***Q*** are considered correspondent if given current camera pose they are projected in the same pixel)
 
-The main equetion, which it needs to minimize:
+The main equation, which needs to be minimized:
 
 <img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|ppd(p_{i},q_{i},n_{i})\right\|_{2}\rightarrow0">
 
@@ -16,11 +16,11 @@ Firstly, we have two clouds of points, old (the existing points and normals in 3
 
 ***q*** - i'th point in the old cloud of points
 
-***n*** - i'th normal in the old cloud of normals
+***n*** - i'th normal in the point Q in the old point cloud
 
-***ppd(...)***- is the distance ergo its formula is the dot product of (difference between ***p*** and ***q***) and (***n***):
+***ppd(...)*** - is the point-to-plane distance ergo its formula is the dot product of (difference between ***p*** and ***q***) and (***n***):
 
-<img src="https://render.githubusercontent.com/render/math?math=dot(T_{p2q}(p)-q, n)=dot((R\cdot p+t)-q,n)=[(R\cdot p+t)-q]^{T}\cdot n">
+<img src="https://render.githubusercontent.com/render/math?math=dot(T_{p2q}(p)-q, n)=dot((R\cdot p %2b t)-q,n)=[(R\cdot p %2b t)-q]^{T}\cdot n">
 
 ***T(p)*** - rigid transform of ***p*** point, which brings it closer to the corresponding ***q*** point.
 
@@ -29,7 +29,17 @@ Firstly, we have two clouds of points, old (the existing points and normals in 3
 Where ***R*** - rotation, ***t*** - translation.
 
 We use the Gauss-Newton method for the minimization of function.
-In the beginning, we will perform some mathematical operations:
+
+It's better to add something like this:
+In Gauss-Newton method we do sequential steps by changing ***R*** and ***t*** in the direction of the function E decrease, i.e. in the direction of its gradient:
+
+1. At each step we approximate the function ***E*** linearly as its current value plus Jacobian matrix multiplied by ***delta x*** which is concatenated ***delta R*** and ***delta t*** vectors.
+2. We find ***delta R*** and ***delta t*** by solving the equation ***E_approx(delta_x) = 0***
+3. We apply ***delta R*** and ***delta t*** to current Rt transform and proceed to next iteration
+
+To linearize ***E***, let's approximate it in infinitesimal neighborhood.
+
+Here's a formula we're going to minimize by changing ***R*** and ***t***:
 
 <img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|[(R\cdot p %2B t)-q]^{T}\cdot n\right\|_{2}">
 
@@ -62,7 +72,7 @@ Let a new function:
 
 <img src="https://render.githubusercontent.com/render/math?math=E = \sum \left \| [f(x, p) %2B p- q]^{T}  \cdot n \right \|_{2}">
 
-Let's find out differential of ***E***:
+Let's find out differential of ***E*** (***E*** is minimal when its differential is zero):
 
 <img src="https://render.githubusercontent.com/render/math?math=\frac{\partial E}{\partial x_{i}} = \sum [2 \cdot (f(x, p) %2B p - q)^{T} \cdot n] \cdot [f{}'(x, p)^{T} \cdot n] = 0">
 
