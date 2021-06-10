@@ -32,10 +32,10 @@ private:
     int m_iHeight;
     int m_iWidth;
 
-    unsigned short m_iNowIdx;
+    unsigned int m_iNowIdx;
     bool m_bInit;
-    std::vector<unsigned short> m_vcIndex;
-    std::vector<unsigned short> m_vcCount;
+    std::vector<unsigned int> m_vcIndex;
+    std::vector<unsigned int> m_vcCount;
     std::vector<int> m_vcMinPnt;
     std::vector<int> m_vcMaxPnt;
     std::vector<int> m_vcQueue;
