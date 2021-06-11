@@ -13,6 +13,7 @@
 #include "opencv2/rgbd/kinfu.hpp"
 #include "opencv2/rgbd/colored_kinfu.hpp"
 #include "opencv2/rgbd/large_kinfu.hpp"
+#include "opencv2/rgbd/linemod.hpp"
 
 /** @defgroup rgbd RGB-Depth Processing
 */
