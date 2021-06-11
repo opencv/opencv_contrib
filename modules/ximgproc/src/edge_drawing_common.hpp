@@ -37,6 +37,7 @@
 // Ellipse thresholds
 #define CANDIDATE_ELLIPSE_RATIO  0.50  // 50% -- If 50% of the ellipse is detected, it may be candidate for validation
 #define ELLIPSE_ERROR            1.50  // Used for ellipses. (used to be 1.65 for what reason?)
+#define MAX_GRAD_VALUE 128*256
 
 using namespace std;
 using namespace cv;
@@ -64,7 +65,7 @@ private:
 
 NFALUT::NFALUT(int size, double _prob, int _w, int _h)
 {
-    LUTSize = size;
+    LUTSize = size > 60 ? 60 : size;
     LUT = new int[LUTSize];
     w = _w;
     h = _h;

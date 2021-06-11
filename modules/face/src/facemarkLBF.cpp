@@ -332,9 +332,9 @@ void FacemarkLBFImpl::training(void* parameters){
         CV_Error(Error::StsBadArg, "Training data is not provided. Consider to add using addTrainingSample() function!");
     }
 
-    if (params.cascade_face.empty() || (params.model_filename.empty() && params.save_model))
+    if (params.model_filename.empty() && params.save_model)
     {
-        CV_Error(Error::StsBadArg, "The parameter cascade_face and model_filename should be set!");
+        CV_Error(Error::StsBadArg, "The parameter model_filename should be set!");
     }
 
     // flip the image and swap the landmark position
@@ -535,13 +535,14 @@ Rect FacemarkLBFImpl::getBBox(Mat &img, const Mat_<double> shape) {
 void FacemarkLBFImpl::prepareTrainingData(Mat img, std::vector<Point2f> facePoints,
     std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes)
 {
+    Mat shape;
+    Mat _shape = Mat(facePoints).reshape(1);
+    Rect box = getBBox(img, _shape);
+
     if(img.channels()>1){
         cvtColor(img,img,COLOR_BGR2GRAY);
     }
 
-    Mat shape;
-    Mat _shape = Mat(facePoints).reshape(1);
-    Rect box = getBBox(img, _shape);
     if(box.x != -1){
         _shape.convertTo(shape, CV_64FC1);
         Mat sx = shape.col(0);
