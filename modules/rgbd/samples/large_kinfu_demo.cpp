@@ -154,9 +154,7 @@ int main(int argc, char** argv)
         Vec3i volResolution(volParams.resolutionX,
                             volParams.resolutionY,
                             volParams.resolutionZ);
-        Affine3f volPose(Matx44f(volParams.pose00, volParams.pose01, volParams.pose02, volParams.pose03,
-                                 volParams.pose10, volParams.pose11, volParams.pose12, volParams.pose13,
-                                 volParams.pose20, volParams.pose21, volParams.pose22, volParams.pose23));
+        Affine3f volPose(Matx44f(volParams.pose));
 
 #ifdef HAVE_OPENCV_VIZ
         if (pause)
