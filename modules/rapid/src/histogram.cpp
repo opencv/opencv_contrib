@@ -85,7 +85,94 @@ static void findCorrespondenciesOLS(const cv::Mat_<float>& scores, cv::Mat_<int>
     }
 }
 
-struct OLSTrackerImpl : public OLSTracker
+static float computeEdgeWeight(const cv::Vec2s& curCandiPoint, const cv::Vec2s& preCandiPoint)
+{
+    float spatial_dist = (float)cv::norm(curCandiPoint - preCandiPoint, cv::NORM_L2SQR);
+    return std::exp(-spatial_dist/1000.0f);
+}
+
+static void findCorrespondenciesGOS(Mat& bundleGrad, Mat_<float>& fgScores, Mat_<float>& bgScores,
+                             const Mat_<Vec2s>& imgLocations, Mat_<int>& cols)
+{
+    // combine scores
+    Mat_<float> scores;
+    exp((fgScores + bgScores)/10.0f, scores);
+
+    Mat_<int> fromLocations(scores.size());
+    fromLocations = 0;
+
+    // source node
+    bool hasCandidate = false;
+    for(int j=0; j<bundleGrad.cols; j++)
+    {
+        if(bundleGrad.at<uchar>(0, j))
+        {
+            hasCandidate = true;
+            fromLocations(0, j) = j;
+        }
+    }
+    // fall back to using center as candidate
+    if(!hasCandidate)
+    {
+        fromLocations(0, bundleGrad.cols/2) = bundleGrad.cols/2;
+    }
+
+    int index_max_location = 0; // index in preceding line for backtracking
+
+    // the other layers
+    for(int i=1; i<bundleGrad.rows; i++)
+    {
+        hasCandidate = false;
+        for(int j=0; j<bundleGrad.cols; j++)
+        {
+            if(bundleGrad.at<uchar>(i, j))
+                hasCandidate = true;
+        }
+        if(!hasCandidate)
+        {
+            bundleGrad.at<uchar>(i, bundleGrad.cols/2) = 255;
+        }
+
+        for(int j=0; j<bundleGrad.cols; j++)
+        {
+            // search for max combined score
+            float max_energy = -INFINITY;
+            int location = bundleGrad.cols/2;
+
+            if(bundleGrad.at<uchar>(i, j))
+            {
+                for(int k=0; k<bundleGrad.cols; k++)
+                {
+                    if(bundleGrad.at<uchar>(i - 1, k))
+                    {
+                        float edge_weight = computeEdgeWeight(imgLocations(i, j), imgLocations(i - 1, k));
+                        float energy = scores(i, j) + scores(i-1, k) + edge_weight;
+                        if(max_energy < energy)
+                        {
+                            max_energy = energy;
+                            location = k;
+                        }
+                    }
+                }
+
+                scores(i, j)  = max_energy;  // update the score
+                fromLocations(i, j) = location;
+                index_max_location = j;
+            }
+        }
+    }
+
+    cols.resize(scores.rows);
+
+    // backtrack along best path
+    for (int i = bundleGrad.rows - 1; i >= 0; i--)
+    {
+        cols(i) = index_max_location;
+        index_max_location = fromLocations(i, index_max_location);
+    }
+}
+
+struct HistTrackerImpl : public OLSTracker
 {
     Mat vtx;
     Mat tris;
@@ -95,15 +182,18 @@ struct OLSTrackerImpl : public OLSTracker
     double tau;
     uchar sobelThresh;
 
-    OLSTrackerImpl(InputArray _pts3d, InputArray _tris, int histBins, uchar _sobelThesh)
+    bool useGOS;
+
+    HistTrackerImpl(InputArray _pts3d, InputArray _tris, int histBins, uchar _sobelThesh, bool _useGOS)
     {
         CV_Assert(_tris.getMat().checkVector(3, CV_32S) > 0);
         CV_Assert(_pts3d.getMat().checkVector(3, CV_32F) > 0);
         vtx = _pts3d.getMat();
         tris = _tris.getMat();
 
-        tau = 1.0; // currently does not work as intended. effectively disable
+        tau = 0.7; // this is 1 - tau compared to OLS paper
         sobelThresh = _sobelThesh;
+        useGOS = _useGOS;
 
         bgHist.create(histBins, histBins);
     }
@@ -129,10 +219,40 @@ struct OLSTrackerImpl : public OLSTracker
 
                     double s = bhattacharyyaCoeff(fgHist, hist);
                     // handle object clutter as in eq. (5)
-                    if((1.0 - s) > tau)
+                    if(s > tau)
                         s = 1.0 - bhattacharyyaCoeff(bgHist, hist);
                     scores(i, j) = float(s);
                     start = j;
+                }
+            }
+        }
+    }
+
+    void computeBackgroundScores(const Mat& bundleHSV, const Mat& bundleGrad, Mat_<float>& scores)
+    {
+        scores.resize(bundleHSV.rows);
+        scores = 0;
+
+        Mat_<float> hist(fgHist.size());
+
+        for (int i = 0; i < bundleHSV.rows; i++)
+        {
+            int end = bundleHSV.cols - 1;
+            for (int j = bundleHSV.cols - 1; j >= 0; j--)
+            {
+                if (bundleGrad.at<uchar>(i, j))
+                {
+                    // compute the histogram between last candidate point to current candidate point
+                    hist = 0;
+                    calcHueSatHist(bundleHSV({i, i + 1}, {j, end}), hist);
+                    hist /= std::max(sum(hist), 1.0f);
+
+                    double s = 1 - bhattacharyyaCoeff(fgHist, hist);
+                    if (s <= tau)
+                        s = bhattacharyyaCoeff(bgHist, hist);
+
+                    scores(i, j) = float(s);
+                    end = j;
                 }
             }
         }
@@ -189,7 +309,17 @@ struct OLSTrackerImpl : public OLSTracker
 
             Mat_<float> scores(lineBundle.size());
             computeAppearanceScores(bundleHSV, bundleGrad, scores);
-            findCorrespondenciesOLS(scores, cols);
+
+            if(useGOS)
+            {
+                Mat_<float> bgScores(scores.size());
+                computeBackgroundScores(bundleHSV, bundleGrad, bgScores);
+                findCorrespondenciesGOS(bundleGrad, scores, bgScores, imgLoc, cols);
+            }
+            else
+            {
+                findCorrespondenciesOLS(scores, cols);
+            }
 
             convertCorrespondencies(cols, imgLoc, pts2d, pts3d, cols > -1);
 
@@ -224,7 +354,12 @@ struct OLSTrackerImpl : public OLSTracker
 
 Ptr<OLSTracker> OLSTracker::create(InputArray pts3d, InputArray tris, int histBins, uchar sobelThesh)
 {
-    return makePtr<OLSTrackerImpl>(pts3d, tris, histBins, sobelThesh);
+    return makePtr<HistTrackerImpl>(pts3d, tris, histBins, sobelThesh, false);
+}
+
+Ptr<OLSTracker> GOSTracker::create(InputArray pts3d, InputArray tris, int histBins, uchar sobelThesh)
+{
+    return makePtr<HistTrackerImpl>(pts3d, tris, histBins, sobelThesh, true);
 }
 
 } // namespace rapid
