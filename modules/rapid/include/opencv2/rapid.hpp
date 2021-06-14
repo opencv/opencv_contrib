@@ -149,6 +149,14 @@ class CV_EXPORTS_W OLSTracker : public Tracker
 public:
     CV_WRAP static Ptr<OLSTracker> create(InputArray pts3d, InputArray tris, int histBins = 8, uchar sobelThesh = 10);
 };
+
+/** implements "Global optimal searching for textureless 3D object tracking" @cite wang2015global
+ */
+class CV_EXPORTS_W GOSTracker : public Tracker
+{
+public:
+    CV_WRAP static Ptr<OLSTracker> create(InputArray pts3d, InputArray tris, int histBins = 4, uchar sobelThesh = 10);
+};
 //! @}
 } /* namespace rapid */
 } /* namespace cv */
