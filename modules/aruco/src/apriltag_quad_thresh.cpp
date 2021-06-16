@@ -394,7 +394,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
     double params01[4], params12[4], params23[4], params30[4];
 
     // disallow quads where the angle is less than a critical value.
-    double max_dot = cos(td->aprilTagCriticalRad); //25*M_PI/180);
+    double max_dot = std::cos(td->aprilTagCriticalRad); //25*M_PI/180);
 
     for (int m0 = 0; m0 < nmaxima - 3; m0++) {
         int i0 = maxima[m0];
