@@ -3,5 +3,10 @@
         "*" : [ "\"aruco.hpp\"" ],
         "CharucoBoard" : [ "\"aruco/charuco.hpp\"" ],
         "Dictionary" : [ "\"aruco/dictionary.hpp\"" ]
+    },
+    "func_arg_fix" : {
+        "Board" : {
+            "(void)setIds:(Mat*)ids" : { "setIds" : {"name" : "setIdsMat"} }
+        }
     }
 }
