@@ -48,7 +48,7 @@ Ptr<Params> Params::defaultParams()
     //! Volume parameters
     {
         float volumeSize                   = 3.0f;
-        p.volumeParams.type                = VolumeType::TSDF;
+        p.volumeParams.type                = VolumeParams::VolumeType::TSDF;
         p.volumeParams.resolutionX         = 512;
         p.volumeParams.resolutionY         = 512;
         p.volumeParams.resolutionZ         = 512;
@@ -96,7 +96,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     else
         p = defaultParams();
 
-    p->volumeParams.type                = VolumeType::HASHTSDF;
+    p->volumeParams.type                = VolumeParams::VolumeType::HASHTSDF;
     p->volumeParams.depthTruncThreshold = Odometry::DEFAULT_MAX_DEPTH();
     p->volumeParams.unitResolution      = 16;
     return p;

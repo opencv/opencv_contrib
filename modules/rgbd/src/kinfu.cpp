@@ -25,7 +25,7 @@ Ptr<Params> Params::defaultParams()
 
     p.frameSize = Size(640, 480);
 
-    p.volumeType = VolumeType::TSDF;
+    p.volumeType = VolumeParams::VolumeType::TSDF;
 
     float fx, fy, cx, cy;
     fx = fy = 525.f;
@@ -98,7 +98,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeType::HASHTSDF;
+    p->volumeType = VolumeParams::VolumeType::HASHTSDF;
     p->truncateThreshold = Odometry::DEFAULT_MAX_DEPTH();
     return p;
 }
@@ -110,7 +110,7 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeType::COLOREDTSDF;
+    p->volumeType = VolumeParams::VolumeType::COLOREDTSDF;
 
     return p;
 }
