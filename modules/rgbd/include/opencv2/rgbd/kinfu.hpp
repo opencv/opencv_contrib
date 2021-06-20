@@ -81,8 +81,8 @@ struct CV_EXPORTS_W Params
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
 
-    /** @brief rgb frame size in pixels */
-    CV_PROP_RW VolumeParams::VolumeType volumeType;
+    /** @brief Volume type */
+    VolumeParams::VolumeType volumeType;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
