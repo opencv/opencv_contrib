@@ -9,7 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
-#include <opencv2/rgbd/volume.hpp>
+#include <opencv2/3d.hpp>
 
 namespace cv {
 namespace kinfu {
