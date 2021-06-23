@@ -275,12 +275,12 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         //TODO: fix it
         // This workaround relates to specific process of pyramid building
         newFrame->setDepth(noArray());
-        
+
         newFrame->setPyramidAt(points,  OdometryFrame::PYR_CLOUD, 0);
         newFrame->setPyramidAt(normals, OdometryFrame::PYR_NORM,  0);
         icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
     }
-    
+
     prevFrame = newFrame;
     frameCounter++;
     return true;
