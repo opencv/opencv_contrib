@@ -168,8 +168,9 @@ template< typename MatType >
 ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     params(_params)
 {
-    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
-                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
+    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose, params.raycast_step_factor,
+                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold,
+                        params.volumeDims[0], params.volumeDims[1], params.volumeDims[2]);
 
     icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
                                   params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
