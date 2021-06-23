@@ -335,8 +335,10 @@ struct DepthSource
         if (vc.isOpened())
         {
             updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
+            Affine3f volumePose(params.volumePose);
             updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
+                               params.tsdf_trunc_dist, volumePose, params.truncateThreshold);
+            params.volumePose = volumePose.matrix;
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
 
             if (sourceType == Type::DEPTH_KINECT2)
@@ -357,8 +359,10 @@ struct DepthSource
         if (vc.isOpened())
         {
             updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
+            Affine3f volumePose(params.volumePose);
             updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, params.volumePose, params.truncateThreshold);
+                               params.tsdf_trunc_dist, volumePose, params.truncateThreshold);
+            params.volumePose = volumePose.matrix;
             updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
 
             if (sourceType == Type::DEPTH_KINECT2)
@@ -594,8 +598,10 @@ struct RGBSource
         if (vc.isOpened())
         {
             updateIntrinsics(params.rgb_intr, params.rgb_frameSize);
+            Affine3f volumePose(params.volumePose);
             updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, params.volumePose);
+                               params.tsdf_trunc_dist, volumePose);
+            params.volumePose = volumePose.matrix;
             updateICPParams(params.icpDistThresh);
 
             if (sourceType == Type::RGB_KINECT2)

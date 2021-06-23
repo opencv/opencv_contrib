@@ -195,7 +195,7 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
     float fovY = params.frameSize.height/params.intr(1, 1);
 
     Vec3f t;
-    t = params.volumePose.translation();
+    t = Affine3f(params.volumePose).translation();
 
     double nearZ = t[2];
     double farZ = params.volumeDims[2] * params.voxelSize + nearZ;
@@ -455,7 +455,7 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         ptype v = vertices.at<ptype>(i);
 
         // transform vertex to RGB space
-        Point3f pVoxel = (params.volumePose.inv() * Point3f(v[0], v[1], v[2])) / params.voxelSize;
+        Point3f pVoxel = (Affine3f(params.volumePose).inv() * Point3f(v[0], v[1], v[2])) / params.voxelSize;
         Point3f pGlobal = Point3f(pVoxel.x / params.volumeDims[0],
                                   pVoxel.y / params.volumeDims[1],
                                   pVoxel.z / params.volumeDims[2]);
@@ -463,7 +463,7 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
 
         // transform normals to RGB space
         ptype n = normals.at<ptype>(i);
-        Point3f nGlobal = params.volumePose.rotation().inv() * Point3f(n[0], n[1], n[2]);
+        Point3f nGlobal = Affine3f(params.volumePose).rotation().inv() * Point3f(n[0], n[1], n[2]);
         nGlobal.x = (nGlobal.x + 1)/2;
         nGlobal.y = (nGlobal.y + 1)/2;
         nGlobal.z = (nGlobal.z + 1)/2;
@@ -473,14 +473,14 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
 
         if(!warp)
         {
-            Point3f p(invCamPose * params.volumePose * (pVoxel*params.voxelSize));
+            Point3f p(invCamPose * Affine3f(params.volumePose) * (pVoxel*params.voxelSize));
             warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
         }
         else
         {
             int numNeighbours = 0;
             const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
-            Point3f p = (invCamPose * params.volumePose) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
+            Point3f p = (invCamPose * Affine3f(params.volumePose)) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
             warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
         }
     }

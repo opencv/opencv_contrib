@@ -190,7 +190,7 @@ int main(int argc, char **argv)
                 Vec3d volSize = df->getParams().voxelSize*Vec3d(df->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                      volSize),
-                                  df->getParams().volumePose);
+                                  Affine3f(df->getParams().volumePose));
                 PauseCallbackArgs pca(*df);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
                     Vec3d volSize = df->getParams().voxelSize*df->getParams().volumeDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                          volSize),
-                                      df->getParams().volumePose);
+                                      Affine3f(df->getParams().volumePose));
                     window.setViewerPose(df->getPose());
                     window.spinOnce(1, true);
                 }

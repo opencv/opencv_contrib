@@ -18,7 +18,10 @@ namespace kinfu {
 
 struct CV_EXPORTS_W Params
 {
-    CV_WRAP Params(){}
+    CV_WRAP Params()
+    {
+        setInitialVolumePose(Matx44f::eye());
+    }
 
     /**
      * @brief Constructor for Params
@@ -123,7 +126,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW float tsdf_min_camera_movement;
 
     /** @brief initial volume pose in meters */
-    Affine3f volumePose;
+    CV_PROP_RW Matx44f volumePose;
 
     /** @brief distance to truncate in meters
 

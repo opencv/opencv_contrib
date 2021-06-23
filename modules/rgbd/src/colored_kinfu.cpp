@@ -18,7 +18,7 @@ void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 
 void Params::setInitialVolumePose(Matx44f homogen_tf)
 {
-    Params::volumePose.matrix = homogen_tf;
+    volumePose = homogen_tf;
 }
 
 Ptr<Params> Params::defaultParams()
@@ -69,7 +69,7 @@ Ptr<Params> Params::defaultParams()
     p.voxelSize = volSize/512.f; //meters
 
     // default pose of volume cube
-    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
+    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f)).matrix;
     p.tsdf_trunc_dist = 7 * p.voxelSize; // about 0.04f in meters
     p.tsdf_max_weight = 64;   //frames
 
