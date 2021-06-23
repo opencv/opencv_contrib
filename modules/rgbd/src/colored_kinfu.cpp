@@ -329,7 +329,7 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image) const
     prevFrame->getPyramidAt(pts, OdometryFrame::PYR_CLOUD, 0);
     prevFrame->getPyramidAt(nrm, OdometryFrame::PYR_NORM, 0);
     prevFrame->getPyramidAt(rgb, OdometryFrame::PYR_IMAGE, 0);
-    detail::renderPointsNormalsColors(pts, nrm, rgb, image, params.lightPose);
+    detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }
 
 template< typename MatType >
@@ -340,7 +340,7 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
     Affine3f cameraPose(_cameraPose);
     MatType points, normals, colors;
     volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
-    detail::renderPointsNormalsColors(points, normals, colors, image, params.lightPose);
+    detail::renderPointsNormalsColors(points, normals, colors, image);
 }
 
 
