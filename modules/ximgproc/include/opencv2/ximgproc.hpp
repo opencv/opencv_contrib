@@ -60,6 +60,7 @@
 #include "ximgproc/run_length_morphology.hpp"
 #include "ximgproc/edgepreserving_filter.hpp"
 #include "ximgproc/color_match.hpp"
+#include "ximgproc/letterbox_resize.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing
@@ -207,6 +208,22 @@ CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = 
  @param niters The number of iterations
 */
 CV_EXPORTS_W void anisotropicDiffusion(InputArray src, OutputArray dst, float alpha, float K, int niters );
+
+
+/** @brief Performs letterbox resize of an image 
+
+The function resizes the input image by maintaining its aspect ratio. It then pads the image using the specified
+padding method to change it to the specified output size.  
+
+@param src               Source image
+@param dst               Destination image
+@param dSize             Size of the destination image
+@param interpolation     Interpolation method, see cv::InterpolationFlags
+@param borderType        Border type, see cv::BorderTypes
+@param value             Border value if borderType == BORDER_CONSTANT 
+*/
+
+CV_EXPORTS_W void letterboxResize(InputArray _src, OutputArray _dst, Size dSize, int interpolation, int borderType, Scalar value);
 
 //! @}
 
