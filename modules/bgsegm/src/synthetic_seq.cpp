@@ -206,7 +206,7 @@ void SyntheticSequenceGenerator::getNextFrame(OutputArray _frame, OutputArray _g
 
     _gtMask.create(sz, CV_8U);
     Mat gtMask = _gtMask.getMat();
-    gtMask = 0;
+    gtMask.setTo(cv::Scalar::all(0));
     gtMask(Rect(Point2i(pos), objSz)) = 255;
 
     pos += dir * objspeed;

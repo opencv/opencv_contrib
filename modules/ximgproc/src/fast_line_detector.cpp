@@ -513,8 +513,8 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
     {
         Canny(src, canny, canny_th1, canny_th2, canny_aperture_size);
     }
-    canny.colRange(0,6).rowRange(0,6) = 0;
-    canny.colRange(src.cols-5,src.cols).rowRange(src.rows-5,src.rows) = 0;
+    canny.colRange(0,6).rowRange(0,6).setTo(cv::Scalar::all(0));
+    canny.colRange(src.cols-5,src.cols).rowRange(src.rows-5,src.rows).setTo(cv::Scalar::all(0));
 
     SEGMENT seg, seg1, seg2;
 

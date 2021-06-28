@@ -146,10 +146,10 @@ namespace cv
                     {
                         // Prepare space for new centroid values.
                         Mat tmpCentroids(clusters.size(), clusters.type());
-                        tmpCentroids = 0;
+                        tmpCentroids.setTo(cv::Scalar::all(0));
 
                         // Clear weights for new iteration.
-                        clusters(Rect(WEIGHT_IDX, 0, 1, clusters.rows)) = 0;
+                        clusters(Rect(WEIGHT_IDX, 0, 1, clusters.rows)).setTo(cv::Scalar::all(0));
 
                         // Compute affiliation of points and sum new coordinates for centroids.
                         for (int iSample = 0; iSample < samples.rows; iSample++)
