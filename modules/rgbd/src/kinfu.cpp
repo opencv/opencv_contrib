@@ -239,7 +239,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(noArray(), depth, noArray(), noArray(), frameCounter);
+    cv::Ptr<OdometryFrame> newFrame = icp->makeOdometryFrame(noArray(), depth, noArray());
 
     icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 

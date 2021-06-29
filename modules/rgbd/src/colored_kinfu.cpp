@@ -268,7 +268,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
         rgb = _rgb;
 
-    cv::Ptr<OdometryFrame> newFrame = OdometryFrame::create(rgb, depth, noArray(), noArray(), frameCounter);
+    cv::Ptr<OdometryFrame> newFrame = icp->makeOdometryFrame(rgb, depth, noArray());
     //TODO: fix it
     // This workaround is needed because we want to keep color image in newFrame
     // FastICP doesn't use color info and doesn't prepare its pyramids
