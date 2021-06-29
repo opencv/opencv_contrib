@@ -346,6 +346,7 @@ TEST( KinectFusion, highDense )
 TEST(KinectFusion, DISABLED_highDense)
 #endif
 {
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
     flyTest(true, false);
 }
 
