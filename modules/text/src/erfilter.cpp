@@ -4030,8 +4030,8 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
       mser_regions[1].push_back(cser);
     }
 
-    mask(cser.rect) = 0;
-    mtmp(cser.rect) = 0;
+    mask(cser.rect).setTo(cv::Scalar::all(0));
+    mtmp(cser.rect).setTo(cv::Scalar::all(0));
   }
 }
 
