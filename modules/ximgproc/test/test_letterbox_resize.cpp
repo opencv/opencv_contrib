@@ -7,7 +7,9 @@ namespace opencv_test { namespace {
 
 TEST(ximgproc_letterboxResize, regression)
 {
-    string img_path = string(cvtest::TS::ptr()->get_data_path()) + "fruits.jpg";
+
+    string folder = string(cvtest::TS::ptr()->get_data_path()) + "cv/shared/";
+    string img_path = folder + "fruits.png";
 
     Mat original = imread(img_path, IMREAD_COLOR);
 
