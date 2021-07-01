@@ -276,9 +276,9 @@ public:
         //Different with PHash, this part reverse the row size and col size,
         //because cv::Mat is row major but not column major
         projections_.create(numOfAngelLine_, D, CV_8U);
-        projections_ = 0;
+        projections_.setTo(cv::Scalar::all(0));
         pixPerLine_.create(1, numOfAngelLine_, CV_32S);
-        pixPerLine_ = 0;
+        pixPerLine_.setTo(cv::Scalar::all(0));
         int const xOff = createOffSet(input.cols);
         int const yOff = createOffSet(input.rows);
 
