@@ -1,53 +1,59 @@
-# ICP algorithm in Kinect Fusion {#kinfu_icp}
+# ICP point-to-plane odometry algorithm {#kinfu_icp}
 
-The Iterative closest point (ICP) function minimizes the PointToPlane Distance (PPD) between the corresponding points in two clouds of points and normals.
-Specifically, it is the distance from the point ***P*** to the plane with the normal ***N*** in which the point ***Q*** located (Two points ***P*** and ***Q*** are considered correspondent if given current camera pose they are projected in the same pixel)
+This article describes an ICP algorithm used in depth fusion pipelines such as KinectFusion.
 
-The main equation, which needs to be minimized:
+The goal of ICP is to align two point clouds, the old one (the existing points and normals in 3D model) and new one (new points and normals, what we want to integrate to the exising model). ICP returns rotation+translation transform between these two point clouds.
 
-<img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|ppd(p_{i},q_{i},n_{i})\right\|_{2}\rightarrow0">
+The Iterative Closest Point (ICP) minimizes the objective function which is the Point to Plane Distance (PPD) between the corresponding points in two point clouds:
 
+<img src="https://render.githubusercontent.com/render/math?math=E=\sum_{i}\left\|ppd(p_{i}, q_{i}, n_{i})\right\|_{2}\rightarrow0">
 
-Let's watch what is ***ppd(p,q,n)***
+### What is ppd(p, q, n)?
 
-Firstly, we have two clouds of points, old (the existing points and normals in 3-D model) and new (new points and normals, what we want to integrate to the exising model)
+Specifically, for each corresponding points ***P*** and ***Q***, it is the distance from the point ***P*** to the plane determined by the point ***Q*** and the normal ***N*** located in the point ***Q***.
+Two points ***P*** and ***Q*** are considered correspondent if given current camera pose they are projected in the same pixel.
 
-***p*** - i'th point in the new cloud of points
+***p*** - i'th point in the new point cloud
 
-***q*** - i'th point in the old cloud of points
+***q*** - i'th point in the old point cloud
 
-***n*** - i'th normal in the point Q in the old point cloud
+***n*** - normal in the point ***q*** in the old point cloud
 
-***ppd(...)*** - is the point-to-plane distance ergo its formula is the dot product of (difference between ***p*** and ***q***) and (***n***):
+Therefore, ***ppd(...)*** can be expressed as the dot product of (difference between ***p*** and ***q***) and (***n***):
 
 <img src="https://render.githubusercontent.com/render/math?math=dot(T_{p2q}(p)-q, n)=dot((R\cdot p %2b t)-q,n)=[(R\cdot p %2b t)-q]^{T}\cdot n">
 
-***T(p)*** - rigid transform of ***p*** point, which brings it closer to the corresponding ***q*** point.
+***T(p)*** is a rigid transform of point ***p***:
 
 <img src="https://render.githubusercontent.com/render/math?math=T_{p2q}(p) = (R \cdot  p %2B t)">
 
-Where ***R*** - rotation, ***t*** - translation.
+where ***R*** - rotation, ***t*** - translation.
 
-We use the Gauss-Newton method for the minimization of function.
+***T*** is the transform we search by ICP, its purpose is to bring each point ***p*** closer to the corresponding point ***q*** in terms of point to plane distance.
 
-It's better to add something like this:
+### How to minimize objective function?
+
+We use the Gauss-Newton method for the function minimization.
+
 In Gauss-Newton method we do sequential steps by changing ***R*** and ***t*** in the direction of the function E decrease, i.e. in the direction of its gradient:
 
-1. At each step we approximate the function ***E*** linearly as its current value plus Jacobian matrix multiplied by ***delta x*** which is concatenated ***delta R*** and ***delta t*** vectors.
-2. We find ***delta R*** and ***delta t*** by solving the equation ***E_approx(delta_x) = 0***
-3. We apply ***delta R*** and ***delta t*** to current Rt transform and proceed to next iteration
+1. At each step we approximate the function ***E*** linearly as its current value plus Jacobian matrix multiplied by <img src="https://render.githubusercontent.com/render/math?math=\Delta x"> which is concatenated <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=\Delta t"> vectors.
+2. We find <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=\Delta t"> by solving the equation <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=E_{approx}(\Delta x) = 0">
+3. We apply <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=\Delta t"> to current Rt transform and proceed to next iteration
 
-To linearize ***E***, let's approximate it in infinitesimal neighborhood.
+### How to linearize E?
+
+Let's approximate it in infinitesimal neighborhood.
 
 Here's a formula we're going to minimize by changing ***R*** and ***t***:
 
 <img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|[(R\cdot p %2B t)-q]^{T}\cdot n\right\|_{2}">
 
-***R*** is rotation and its formula is complicated:
+While the point to plane distance is linear in both ***R*** and ***t***,  the rotation space is not linear by itself. You can see this in how ***R*** is generated from its rotation angles:
 
 <img src="https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+R+%3D+R_%7Bz%7D%28%5Cgamma%29R_%7By%7D%28%5Cbeta+%29R_%7Bx%7D%28%5Calpha%29%3D%0A%5Cbegin%7Bbmatrix%7D%0Acos%28%5Cgamma%29+%26+-sin%28%5Cgamma%29+%26+0+%5C%5C%0Asin%28%5Cgamma%29+%26+cos%28%5Cgamma%29+%26+0%5C%5C%0A0+%26+0+%26+1%0A%5Cend%7Bbmatrix%7D%0A%5Cbegin%7Bbmatrix%7D%0Acos%28%5Cbeta%29+%26+0+%26+sin%28%5Cbeta%29%5C%5C%0A0+%26+1+%26+0%5C%5C%0A-sin%28%5Cbeta%29+%26+0+%26+cos%28%5Cbeta%29%0A%5Cend%7Bbmatrix%7D%0A%5Cbegin%7Bbmatrix%7D%0A1+%26+0+%26+0%5C%5C%0A0+%26+cos%28%5Calpha%29+%26+-sin%28%5Calpha%29%5C%5C%0A0+%26+sin%28%5Calpha%29+%26+cos%28%5Calpha%29%0A%5Cend%7Bbmatrix%7D%0A">
 
-But we have Infinitesimal rotations, and in that case we have another formula.
+But since we have infinitesimal rotations, all sine and cosine can be replaced by their limits when the angles approach to zero.
 
 <img src="https://render.githubusercontent.com/render/math?math=R=I %2B Ad\theta">
 
