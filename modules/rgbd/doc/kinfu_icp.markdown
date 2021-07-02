@@ -53,18 +53,17 @@ While the point to plane distance is linear in both ***R*** and ***t***,  the ro
 
 <img src="https://render.githubusercontent.com/render/math?math=%5Cdisplaystyle+R+%3D+R_%7Bz%7D%28%5Cgamma%29R_%7By%7D%28%5Cbeta+%29R_%7Bx%7D%28%5Calpha%29%3D%0A%5Cbegin%7Bbmatrix%7D%0Acos%28%5Cgamma%29+%26+-sin%28%5Cgamma%29+%26+0+%5C%5C%0Asin%28%5Cgamma%29+%26+cos%28%5Cgamma%29+%26+0%5C%5C%0A0+%26+0+%26+1%0A%5Cend%7Bbmatrix%7D%0A%5Cbegin%7Bbmatrix%7D%0Acos%28%5Cbeta%29+%26+0+%26+sin%28%5Cbeta%29%5C%5C%0A0+%26+1+%26+0%5C%5C%0A-sin%28%5Cbeta%29+%26+0+%26+cos%28%5Cbeta%29%0A%5Cend%7Bbmatrix%7D%0A%5Cbegin%7Bbmatrix%7D%0A1+%26+0+%26+0%5C%5C%0A0+%26+cos%28%5Calpha%29+%26+-sin%28%5Calpha%29%5C%5C%0A0+%26+sin%28%5Calpha%29+%26+cos%28%5Calpha%29%0A%5Cend%7Bbmatrix%7D%0A">
 
-But since we have infinitesimal rotations, all sine and cosine can be replaced by their limits when the angles approach to zero.
+But since we have infinitesimal rotations, ***R*** can be approximated in the following form:
 
 <img src="https://render.githubusercontent.com/render/math?math=R=I %2B Ad\theta">
 
-Where ***I*** - unit matrix, ***A*** - member of the three-dimensional special orthogonal group ***so(3)***
-In this way:
+where ***I*** - unit matrix, ***A*** - member of the three-dimensional special orthogonal group ***so(3)***.
+
+By approaching all sin(t) and cos(t) terms to their limits where <img src="https://render.githubusercontent.com/render/math?math=t \rightarrow 0"> we get the following representation:
 
 <img src="https://render.githubusercontent.com/render/math?math=R = I %2B \begin{bmatrix}0 %26 -\gamma  %26 \beta \\ \gamma %26 0 %26 -\alpha \\ -\beta  %26 \alpha  %26 0 \end{bmatrix} = I %2B skew(\begin{bmatrix} \alpha %26 \beta %26 \gamma \end{bmatrix}^{T}) = I %2B skew(R_{shift}) ">
 
-
-
-Returns to the mathematical operations:
+Substituting the approximation of ***R*** back into ***E*** expression, we get:
 
 <img src="https://render.githubusercontent.com/render/math?math=E=\sum\left\|[(I %2B skew(R_{shift})) \cdot  p %2B t - q]^{T}  \cdot n \right \|_{2} ">
 
@@ -72,7 +71,7 @@ Returns to the mathematical operations:
 
 <img src="https://render.githubusercontent.com/render/math?math=E = \sum \left \| [skew(R_{shift}) \cdot  p %2B t %2B p- q]^{T}  \cdot n \right \|_{2} ">
 
-Let a new function:
+Let's introduce a function f which approximates transform shift:
 
 <img src="https://render.githubusercontent.com/render/math?math=f(x, p) = skew(R_{shift}) \cdot  p %2B t">
 
