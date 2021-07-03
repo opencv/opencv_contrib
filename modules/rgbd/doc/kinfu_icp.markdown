@@ -135,6 +135,6 @@ By solving this equation we get rigid transform shift for each Gauss-Newton iter
 We generate rotation and translation matrix from the shift and then multiply the current pose matrix by the one we've got.
 
 While the translational part of the shift contributes to the resulting matrix as-is, the rotational part is generated a bit trickier.
-The rotation shift is converted from ***so(3)*** to ***SO(3)*** by exponentiation. 
+The rotation shift is converted from ***so(3)*** to ***SO(3)*** by exponentiation.
 In fact, the 3-by-1 rshift vector represents rotation axis multiplied by the rotation angle. We use Rodrigues transform to get rotation matrix from that.
 For more details, see [wiki page](https://en.wikipedia.org/wiki/3D_rotation_group).
