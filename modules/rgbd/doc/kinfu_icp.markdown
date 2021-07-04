@@ -37,9 +37,9 @@ We use the Gauss-Newton method for the function minimization.
 
 In Gauss-Newton method we do sequential steps by changing ***R*** and ***t*** in the direction of the function E decrease, i.e. in the direction of its gradient:
 
-1. At each step we approximate the function ***E*** linearly as its current value plus Jacobian matrix multiplied by <img src="https://render.githubusercontent.com/render/math?math=\Delta x"> which is concatenated <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=\Delta t"> vectors.
-2. We find <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=\Delta t"> by solving the equation <img src="https://render.githubusercontent.com/render/math?math=E_{approx}(\Delta x) = 0">
-3. We apply <img src="https://render.githubusercontent.com/render/math?math=\Delta R"> and <img src="https://render.githubusercontent.com/render/math?math=\Delta t"> to current Rt transform and proceed to next iteration
+1. At each step we approximate the function ***E*** linearly as its current value plus Jacobian matrix multiplied by ***delta x*** which is concatenated ***delta R*** and ***delta t*** vectors.
+2. We find ***delta R*** and ***delta t*** by solving the equation ***E_approx(delta_x) = 0***
+3. We apply ***delta R*** and ***delta t*** to current Rt transform and proceed to next iteration
 
 ### How to linearize E?
 
@@ -59,7 +59,7 @@ But since we have infinitesimal rotations, ***R*** can be approximated in the fo
 
 where ***I*** - unit matrix, ***A*** - member of the three-dimensional special orthogonal group ***so(3)***.
 
-By approaching all sin(t) and cos(t) terms to their limits where <img src="https://render.githubusercontent.com/render/math?math=t \rightarrow 0"> we get the following representation:
+By approaching all sin(t) and cos(t) terms to their limits where ***t --> 0*** we get the following representation:
 
 <img src="https://render.githubusercontent.com/render/math?math=R = I %2B \begin{bmatrix}0 %26 -\gamma  %26 \beta \\ \gamma %26 0 %26 -\alpha \\ -\beta  %26 \alpha  %26 0 \end{bmatrix} = I %2B skew(\begin{bmatrix} \alpha %26 \beta %26 \gamma \end{bmatrix}^{T}) = I %2B skew(R_{shift}) ">
 
