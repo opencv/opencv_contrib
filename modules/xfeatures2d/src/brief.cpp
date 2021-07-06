@@ -85,6 +85,11 @@ Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes, bool 
     return makePtr<BriefDescriptorExtractorImpl>(bytes, use_orientation );
 }
 
+String BriefDescriptorExtractor::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".BRIEF");
+}
+
 inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool use_orientation, Matx21f R)
 {
     static const int HALF_KERNEL = BriefDescriptorExtractorImpl::KERNEL_SIZE / 2;
@@ -225,7 +230,8 @@ void BriefDescriptorExtractorImpl::read( const FileNode& fn)
 
 void BriefDescriptorExtractorImpl::write( FileStorage& fs) const
 {
-    fs << "descriptorSize" << bytes_;
+  fs << "name" << getDefaultName();
+  fs << "descriptorSize" << bytes_;
 }
 
 void BriefDescriptorExtractorImpl::compute(InputArray image,

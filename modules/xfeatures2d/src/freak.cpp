@@ -67,6 +67,9 @@ public:
 
     virtual ~FREAK_Impl();
 
+    void read( const FileNode& fn);
+    void write( FileStorage& fs) const;
+
     /** returns the descriptor length in bytes */
     virtual int descriptorSize() const CV_OVERRIDE;
 
@@ -815,6 +818,33 @@ FREAK_Impl::~FREAK_Impl()
 {
 }
 
+void FREAK_Impl::read( const FileNode& fn)
+{
+  fn["orientationNormalized"] >> orientationNormalized;
+  fn["scaleNormalized"] >> scaleNormalized;
+  fn["patternScale"] >> patternScale;
+  fn["nOctaves"] >> nOctaves;
+  fn["extAll"] >> extAll;
+  fn["patternScale0"] >> patternScale0;
+  fn["nOctaves0"] >> nOctaves0;
+  fn["selectedPairs0"] >> selectedPairs0;
+}
+void FREAK_Impl::write( FileStorage& fs) const
+{
+  if(fs.isOpened())
+  {
+    fs << "name" << getDefaultName();
+    fs << "orientationNormalized" << orientationNormalized;
+    fs << "scaleNormalized" << scaleNormalized;
+    fs << "patternScale" << patternScale;
+    fs << "nOctaves" << nOctaves;
+    fs << "extAll" << extAll;
+    fs << "patternScale0" << nOctaves0;
+    fs << "nOctaves0" << selectedPairs0;
+    fs << "selectedPairs0" << selectedPairs0;
+  }
+}
+
 int FREAK_Impl::descriptorSize() const
 {
     return FREAK::NB_PAIRS / 8; // descriptor length in bytes
@@ -838,6 +868,11 @@ Ptr<FREAK> FREAK::create(bool orientationNormalized,
 {
     return makePtr<FREAK_Impl>(orientationNormalized, scaleNormalized,
                                patternScale, nOctaves, selectedPairs);
+}
+
+String FREAK::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".FREAK");
 }
 
 }

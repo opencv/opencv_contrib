@@ -348,6 +348,11 @@ Ptr<HarrisLaplaceFeatureDetector> HarrisLaplaceFeatureDetector::create(
     return makePtr<HarrisLaplaceFeatureDetector_Impl>(numOctaves, corn_thresh, DOG_thresh, maxCorners, num_layers);
 }
 
+CV_WRAP String HarrisLaplaceFeatureDetector::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".HARRIS-LAPLACE");
+}
+
 HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl(
     int _numOctaves,
     float _corn_thresh,
@@ -366,11 +371,11 @@ HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl(
 
 void HarrisLaplaceFeatureDetector_Impl::read (const FileNode& fn)
 {
-    numOctaves = fn["numOctaves"];
-    corn_thresh = fn["corn_thresh"];
-    DOG_thresh = fn["DOG_thresh"];
-    maxCorners = fn["maxCorners"];
-    num_layers = fn["num_layers"];
+    fn["numOctaves"] >> numOctaves;
+    fn["corn_thresh"] >> corn_thresh;
+    fn["DOG_thresh"] >> DOG_thresh;
+    fn["maxCorners"] >> maxCorners;
+    fn["num_layers"] >> num_layers;
 }
 
 void HarrisLaplaceFeatureDetector_Impl::write (FileStorage& fs) const

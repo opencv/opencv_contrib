@@ -82,6 +82,11 @@ Ptr<StarDetector> StarDetector::create(int _maxSize,
                                      _suppressNonmaxSize);
 }
 
+String StarDetector::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".STAR");
+}
+
 
 template <typename inMatType, typename outMatType> static void
 computeIntegralImages( const Mat& matI, Mat& matS, Mat& matT, Mat& _FT,

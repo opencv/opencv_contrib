@@ -84,6 +84,9 @@ public:
     // destructor
     virtual ~VGG_Impl() CV_OVERRIDE;
 
+    virtual void read( const FileNode& fn ) CV_OVERRIDE;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
+
     // returns the descriptor length in bytes
     virtual int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
 
@@ -527,6 +530,29 @@ VGG_Impl::VGG_Impl( int _desc, float _isigma, bool _img_normalize,
 // destructor
 VGG_Impl::~VGG_Impl()
 {
+}
+
+void VGG_Impl::read (const FileNode& fn)
+{
+    fn["isigma"] >> m_isigma;
+    fn["scale_factor"] >> m_scale_factor;
+    fn["img_normalize"] >> m_img_normalize;
+    fn["use_scale_orientation"] >> m_use_scale_orientation;
+    fn["dsc_normalize"] >> m_dsc_normalize;
+}
+
+void VGG_Impl::write (FileStorage& fs) const
+{
+    fs << "isigma" << m_isigma;
+    fs << "scale_factor" << m_scale_factor;
+    fs << "img_normalize" << m_img_normalize;
+    fs << "use_scale_orientation" << m_use_scale_orientation;
+    fs << "dsc_normalize" << m_dsc_normalize;
+}
+
+String VGG::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".VGG");
 }
 
 #endif

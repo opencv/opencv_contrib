@@ -103,6 +103,9 @@ public:
 
     virtual ~DAISY_Impl() CV_OVERRIDE;
 
+    void read( const FileNode& fn);
+    void write( FileStorage& fs) const;
+
     /** returns the descriptor length in bytes */
     virtual int descriptorSize() const CV_OVERRIDE {
         // +1 is for center pixel
@@ -1611,10 +1614,40 @@ DAISY_Impl::~DAISY_Impl()
     release_auxiliary();
 }
 
+void DAISY_Impl::read( const FileNode& fn)
+{
+  fn["radius"] >> m_rad;
+  fn["q_radius"] >> m_rad_q_no;
+  fn["q_theta"] >> m_th_q_no;
+  fn["q_hist"] >> m_hist_th_q_no;
+  fn["norm_type"] >> m_nrm_type;
+  fn["enable_interpolation"] >> m_enable_interpolation;
+  fn["use_orientation"] >> m_use_orientation;
+}
+void DAISY_Impl::write( FileStorage& fs) const
+{
+  if(fs.isOpened())
+  {
+    fs << "name" << getDefaultName();
+    fs << "radius" << m_rad;
+    fs << "q_radius" << m_rad_q_no;
+    fs << "q_theta" << m_th_q_no;
+    fs << "q_hist" << m_hist_th_q_no;
+    fs << "norm_type" << m_nrm_type;
+    fs << "enable_interpolation" << m_enable_interpolation;
+    fs << "use_orientation" << m_use_orientation;
+  }
+}
+
 Ptr<DAISY> DAISY::create( float radius, int q_radius, int q_theta, int q_hist,
              DAISY::NormalizationType norm, InputArray H, bool interpolation, bool use_orientation)
 {
     return makePtr<DAISY_Impl>(radius, q_radius, q_theta, q_hist, norm, H, interpolation, use_orientation);
+}
+
+String DAISY::getDefaultName() const
+{
+  return (Feature2D::getDefaultName() + ".DAISY");
 }
 
 

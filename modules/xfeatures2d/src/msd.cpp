@@ -135,6 +135,35 @@ namespace cv
             {
             }
 
+            void read( const FileNode& fn)
+            {
+              fn["patch_radius"] >> m_patch_radius;
+              fn["search_area_radius"] >> m_search_area_radius;
+              fn["nms_radius"] >> m_nms_radius;
+              fn["nms_scale_radius"] >> m_nms_scale_radius;
+              fn["th_saliency"] >> m_th_saliency;
+              fn["kNN"] >> m_kNN;
+              fn["scale_factor"] >> m_scale_factor;
+              fn["n_scales"] >> m_n_scales;
+              fn["compute_orientation"] >> m_compute_orientation;
+            }
+            void write( FileStorage& fs) const
+            {
+              if(fs.isOpened())
+              {
+                fs << "name" << getDefaultName();
+                fs << "patch_radius" << m_patch_radius;
+                fs << "search_area_radius" << m_search_area_radius;
+                fs << "nms_radius" << m_nms_radius;
+                fs << "nms_scale_radius" << m_nms_scale_radius;
+                fs << "th_saliency" << m_th_saliency;
+                fs << "kNN" << m_kNN;
+                fs << "scale_factor" << m_scale_factor;
+                fs << "n_scales" << m_n_scales;
+                fs << "compute_orientation" << m_compute_orientation;
+              }
+            }
+
             void detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask) CV_OVERRIDE
             {
                 m_mask = _mask.getMat();
@@ -711,6 +740,11 @@ namespace cv
             return makePtr<MSDDetector_Impl>(m_patch_radius, m_search_area_radius,
                     m_nms_radius, m_nms_scale_radius, m_th_saliency, m_kNN, m_scale_factor,
                     m_n_scales, m_compute_orientation);
+        }
+
+        String MSDDetector::getDefaultName() const
+        {
+            return (Feature2D::getDefaultName() + ".MSD");
         }
 
     }

@@ -91,6 +91,10 @@ namespace cv
         {
             return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size, sigma);
         }
+        String LATCH::getDefaultName() const
+        {
+            return (Feature2D::getDefaultName() + ".LATCH");
+        }
         void CalcuateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size);
 
 
@@ -486,7 +490,8 @@ namespace cv
 
         void LATCHDescriptorExtractorImpl::write(FileStorage& fs) const
         {
-            fs << "descriptorSize" << bytes_;
+          fs << "name" << getDefaultName();
+          fs << "descriptorSize" << bytes_;
         }
 
         void LATCHDescriptorExtractorImpl::compute(InputArray _image,

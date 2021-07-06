@@ -399,5 +399,11 @@ Ptr<BEBLID> BEBLID::create(float scale_factor, int n_bits)
 {
     return makePtr<BEBLID_Impl>(scale_factor, n_bits);
 }
+
+String BEBLID::getDefaultName() const
+{
+  return (Feature2D::getDefaultName() + ".BEBLID");
+}
+
 } // END NAMESPACE XFEATURES2D
 } // END NAMESPACE CV

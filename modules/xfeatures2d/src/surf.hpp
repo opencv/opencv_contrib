@@ -23,6 +23,25 @@ public:
                                int nOctaves = 4, int nOctaveLayers = 2,
                                bool extended = true, bool upright = false);
 
+    void read( const FileNode& fn)
+    {
+      fn["extended"] >> extended;
+      fn["upright"] >> upright;
+      fn["nOctaves"] >> nOctaves;
+      fn["nOctaveLayers"] >> nOctaveLayers;
+    }
+    void write( FileStorage& fs) const
+    {
+      if(fs.isOpened())
+      {
+        fs << "name" << getDefaultName();
+        fs << "extended" << extended;
+        fs << "upright" << upright;
+        fs << "nOctaves" << nOctaves;
+        fs << "nOctaveLayers" << nOctaveLayers;
+      }
+    }
+
     //! returns the descriptor size in float's (64 or 128)
     CV_WRAP int descriptorSize() const CV_OVERRIDE;
 
