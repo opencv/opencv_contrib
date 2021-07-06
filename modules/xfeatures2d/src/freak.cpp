@@ -67,6 +67,21 @@ public:
 
     virtual ~FREAK_Impl();
 
+    void read( const FileNode& fn) CV_OVERRIDE;
+    void write( FileStorage& fs) const CV_OVERRIDE;
+
+    void setOrientationNormalized(bool _orientationNormalized) CV_OVERRIDE {orientationNormalized = _orientationNormalized;}
+    bool getOrientationNormalized() const CV_OVERRIDE { return orientationNormalized; }
+
+    void setScaleNormalized(bool _scaleNormalized) CV_OVERRIDE {scaleNormalized = _scaleNormalized;}
+    bool getScaleNormalized() const CV_OVERRIDE { return scaleNormalized; }
+
+    void setPatternScale(double _patternScale) CV_OVERRIDE {patternScale = _patternScale;}
+    double getPatternScale() const CV_OVERRIDE { return patternScale; }
+
+    void setNOctaves(int _nOctaves) CV_OVERRIDE {nOctaves = _nOctaves;}
+    int getNOctaves() const CV_OVERRIDE { return nOctaves; }
+
     /** returns the descriptor length in bytes */
     virtual int descriptorSize() const CV_OVERRIDE;
 
@@ -815,6 +830,30 @@ FREAK_Impl::~FREAK_Impl()
 {
 }
 
+void FREAK_Impl::read( const FileNode& fn)
+{
+  // if node is empty, keep previous value
+  if (!fn["orientationNormalized"].empty())
+    fn["orientationNormalized"] >> orientationNormalized;
+  if (!fn["scaleNormalized"].empty())
+    fn["scaleNormalized"] >> scaleNormalized;
+  if (!fn["patternScale"].empty())
+    fn["patternScale"] >> patternScale;
+  if (!fn["nOctaves"].empty())
+    fn["nOctaves"] >> nOctaves;
+}
+void FREAK_Impl::write( FileStorage& fs) const
+{
+  if(fs.isOpened())
+  {
+    fs << "name" << getDefaultName();
+    fs << "orientationNormalized" << orientationNormalized;
+    fs << "scaleNormalized" << scaleNormalized;
+    fs << "patternScale" << patternScale;
+    fs << "nOctaves" << nOctaves;
+  }
+}
+
 int FREAK_Impl::descriptorSize() const
 {
     return FREAK::NB_PAIRS / 8; // descriptor length in bytes
@@ -838,6 +877,11 @@ Ptr<FREAK> FREAK::create(bool orientationNormalized,
 {
     return makePtr<FREAK_Impl>(orientationNormalized, scaleNormalized,
                                patternScale, nOctaves, selectedPairs);
+}
+
+String FREAK::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".FREAK");
 }
 
 }

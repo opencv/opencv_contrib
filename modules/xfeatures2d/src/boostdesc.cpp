@@ -81,26 +81,29 @@ public:
                              float scale_factor = 6.25f );
 
     // destructor
-    virtual ~BoostDesc_Impl() CV_OVERRIDE;
+    ~BoostDesc_Impl() CV_OVERRIDE;
+
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
 
     // returns the descriptor length in bytes
-    virtual int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
+    int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
 
     // returns the descriptor type
-    virtual int descriptorType() const CV_OVERRIDE { return m_descriptor_type; }
+    int descriptorType() const CV_OVERRIDE { return m_descriptor_type; }
 
     // returns the default norm type
-    virtual int defaultNorm()    const CV_OVERRIDE { return m_descriptor_norm; }
+    int defaultNorm()    const CV_OVERRIDE { return m_descriptor_norm; }
 
     // compute descriptors given keypoints
-    virtual void compute( InputArray image, vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE;
+    void compute( InputArray image, vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE;
 
     // getter / setter
-    virtual void setUseScaleOrientation(const bool use_scale_orientation) CV_OVERRIDE { m_use_scale_orientation = use_scale_orientation; }
-    virtual bool getUseScaleOrientation() const CV_OVERRIDE { return m_use_scale_orientation; }
+    void setUseScaleOrientation(const bool use_scale_orientation) CV_OVERRIDE { m_use_scale_orientation = use_scale_orientation; }
+    bool getUseScaleOrientation() const CV_OVERRIDE { return m_use_scale_orientation; }
 
-    virtual void setScaleFactor(const float scale_factor) CV_OVERRIDE { m_scale_factor = scale_factor; }
-    virtual float getScaleFactor() const CV_OVERRIDE { return m_scale_factor; }
+    void setScaleFactor(const float scale_factor) CV_OVERRIDE { m_scale_factor = scale_factor; }
+    float getScaleFactor() const CV_OVERRIDE { return m_scale_factor; }
 
 protected:
 
@@ -731,6 +734,28 @@ BoostDesc_Impl::~BoostDesc_Impl()
 {
 }
 
+void BoostDesc_Impl::read (const FileNode& fn)
+{
+    // if node is empty, keep previous value
+    if (!fn["desc_type"].empty())
+        fn["desc_type"] >> m_desc_type;
+    if (!fn["scale_factor"].empty())
+        fn["scale_factor"] >> m_scale_factor;
+    if (!fn["use_scale_orientation"].empty())
+        fn["use_scale_orientation"] >> m_use_scale_orientation;
+}
+
+void BoostDesc_Impl::write (FileStorage& fs) const
+{
+    if(fs.isOpened())
+    {
+        fs << "name" << getDefaultName();
+        fs << "desc_type" << m_desc_type;
+        fs << "scale_factor" << m_scale_factor;
+        fs << "use_scale_orientation" << m_use_scale_orientation;
+    }
+}
+
 #endif  // OPENCV_XFEATURES2D_HAS_BOOST_DATA
 
 Ptr<BoostDesc> BoostDesc::create( int desc, bool use_scale_orientation, float scale_factor )
@@ -741,6 +766,11 @@ Ptr<BoostDesc> BoostDesc::create( int desc, bool use_scale_orientation, float sc
     CV_UNUSED(desc); CV_UNUSED(use_scale_orientation); CV_UNUSED(scale_factor);
     CV_Error(Error::StsNotImplemented, "The OpenCV xfeatures2d binaries is built without downloaded Boost decriptor features: https://github.com/opencv/opencv_contrib/issues/1301");
 #endif
+}
+
+String BoostDesc::getDefaultName() const
+{
+  return (Feature2D::getDefaultName() + ".BOOST");
 }
 
 

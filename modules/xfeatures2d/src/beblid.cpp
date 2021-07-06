@@ -58,6 +58,9 @@ public:
     // returns the default norm type
     int defaultNorm() const CV_OVERRIDE { return cv::NORM_HAMMING;  }
 
+    void setScaleFactor(float scale_factor) CV_OVERRIDE { scale_factor_ = scale_factor; }
+    float getScaleFactor() const { return scale_factor_;}
+
     // compute descriptors given keypoints
     void compute(InputArray image, vector<KeyPoint> &keypoints, OutputArray descriptors) CV_OVERRIDE;
 
@@ -347,7 +350,7 @@ void BEBLID_Impl<WeakLearnerT>::compute(InputArray _image, vector<KeyPoint> &key
 // constructor
 template <class WeakLearnerT>
 BEBLID_Impl<WeakLearnerT>::BEBLID_Impl(float scale_factor, const std::vector<WeakLearnerT>& wl_params)
-    :  wl_params_(wl_params), scale_factor_(scale_factor),patch_size_(32, 32)
+    :  wl_params_(wl_params), scale_factor_(scale_factor), patch_size_(32, 32)
 {
 }
 
@@ -466,5 +469,16 @@ Ptr<BEBLID> BEBLID::create(float scale_factor, int n_bits)
         CV_Error(Error::StsBadArg, "n_bits should be either BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS");
     }
 }
+
+String BEBLID::getDefaultName() const
+{
+  return (Feature2D::getDefaultName() + ".BEBLID");
+}
+
+String TEBLID::getDefaultName() const
+{
+  return (Feature2D::getDefaultName() + ".TEBLID");
+}
+
 } // END NAMESPACE XFEATURES2D
 } // END NAMESPACE CV
