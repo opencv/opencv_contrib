@@ -365,12 +365,6 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses,
 
       tAvg *= 1.0 / wSum;
       qAvg *= 1.0 / wSum;
-      // normalize quantonion
-      const double qNorm = cv::norm(qAvg);
-      if (qNorm > EPS)
-      {
-        qAvg *= 1.0 / qNorm;
-      }
 
       curPoses[0]->updatePoseQuat(qAvg, tAvg);
       curPoses[0]->numVotes=curCluster->numVotes;
@@ -402,13 +396,6 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses,
 
       tAvg *= 1.0 / curSize;
       qAvg *= 1.0 / curSize;
-
-      // normalize quantonion
-      const double qNorm = cv::norm(qAvg);
-      if (qNorm > EPS)
-      {
-        qAvg *= 1.0 / qNorm;
-      }
 
       curPoses[0]->updatePoseQuat(qAvg, tAvg);
       curPoses[0]->numVotes=curCluster->numVotes;
