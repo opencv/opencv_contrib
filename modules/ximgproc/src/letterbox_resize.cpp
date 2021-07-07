@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -45,12 +45,12 @@ namespace cv{
     // Function implementation
     void letterboxResize(InputArray _src, OutputArray _dst, Size dSize, int interpolation, int borderType, Scalar value)
     {
- 
+
       double scale       = 0;
-      int    dWidth       = 0;
-      int    dHeight      = 0;
-      int    sWidth       = 0;
-      int    sHeight      = 0;
+      int    dWidth      = 0;
+      int    dHeight     = 0;
+      int    sWidth      = 0;
+      int    sHeight     = 0;
       int    newWidth    = 0;
       int    newHeight   = 0;
       int    deltaWidth  = 0;
@@ -61,12 +61,12 @@ namespace cv{
       int    right       = 0;
 
       CV_Assert( !dSize.empty() );
-      dWidth = dSize.width;
+      dWidth  = dSize.width;
       dHeight = dSize.height;
 
       Size ssize = _src.size();
       CV_Assert( !ssize.empty() );
-      sWidth = ssize.width;
+      sWidth  = ssize.width;
       sHeight = ssize.height;
 
       // Calculate scale as minimum of width/matWidth and height/matHeight
@@ -77,7 +77,7 @@ namespace cv{
       }
 
       // Calculate new width and height using scale
-      newWidth = (int) (scale * sWidth);
+      newWidth  = (int) (scale * sWidth);
       newHeight = (int) (scale * sHeight);
 
       Size rsize = Size(newWidth, newHeight);
@@ -85,21 +85,21 @@ namespace cv{
       // Resize image to newWidth and newHeight
       Mat src = _src.getMat();
 
-      cv::resize( src, src, rsize, 0, 0, interpolation ); 
+      cv::resize( src, src, rsize, 0, 0, interpolation );
 
       // Calculate border sizes
-      deltaWidth = dWidth - newWidth;
+      deltaWidth  = dWidth - newWidth;
       deltaHeight = dHeight - newHeight;
 
-      top = floor(deltaHeight / 2);
+      top    = floor(deltaHeight / 2);
       bottom = deltaHeight - top;
 
-      left = floor(deltaWidth / 2);
+      left  = floor(deltaWidth / 2);
       right = deltaWidth - left;
 
       _dst.create(dSize, src.type());
       Mat dst = _dst.getMat();
-      
+
       cv::copyMakeBorder( src, dst, top, bottom, left, right, borderType, value );
 
     }

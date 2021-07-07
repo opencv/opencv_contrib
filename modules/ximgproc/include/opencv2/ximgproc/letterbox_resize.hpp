@@ -3,12 +3,12 @@
 
 #include <opencv2/core.hpp>
 
-namespace cv 
-{ 
-  namespace ximgproc 
+namespace cv
+{
+  namespace ximgproc
   {
 
-    void letterboxResize(InputArray _src, OutputArray _dst, Size dsize, int interpolation, int paddingMethod, int blueChannelValue, int greenChannelValue, int redChannelValue);  
+    void letterboxResize(InputArray _src, OutputArray _dst, Size dsize, int interpolation, int paddingMethod, int blueChannelValue, int greenChannelValue, int redChannelValue);
 
   }
 }

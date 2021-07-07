@@ -210,17 +210,17 @@ CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = 
 CV_EXPORTS_W void anisotropicDiffusion(InputArray src, OutputArray dst, float alpha, float K, int niters );
 
 
-/** @brief Performs letterbox resize of an image 
+/** @brief Performs letterbox resize of an image
 
 The function resizes the input image by maintaining its aspect ratio. It then pads the image using the specified
-padding method to change it to the specified output size.  
+padding method to change it to the specified output size.
 
-@param src               Source image
-@param dst               Destination image
+@param _src              Source image
+@param _dst              Destination image
 @param dSize             Size of the destination image
 @param interpolation     Interpolation method, see cv::InterpolationFlags
 @param borderType        Border type, see cv::BorderTypes
-@param value             Border value if borderType == BORDER_CONSTANT 
+@param value             Border value if borderType == BORDER_CONSTANT
 */
 
 CV_EXPORTS_W void letterboxResize(InputArray _src, OutputArray _dst, Size dSize, int interpolation, int borderType, Scalar value);
