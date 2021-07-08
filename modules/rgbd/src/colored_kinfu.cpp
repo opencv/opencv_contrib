@@ -27,7 +27,7 @@ Ptr<Params> Params::defaultParams()
 
     p.frameSize = Size(640, 480);
 
-    p.volumeType = VolumeParams::VolumeType::TSDF;
+    p.volumeKind = VolumeParams::VolumeKind::TSDF;
 
     float fx, fy, cx, cy;
     fx = fy = 525.f;
@@ -110,7 +110,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeParams::VolumeType::HASHTSDF;
+    p->volumeKind = VolumeParams::VolumeKind::HASHTSDF;
     p->truncateThreshold = Odometry::DEFAULT_MAX_DEPTH();
     return p;
 }
@@ -122,7 +122,7 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeType = VolumeParams::VolumeType::COLOREDTSDF;
+    p->volumeKind = VolumeParams::VolumeKind::COLOREDTSDF;
 
     return p;
 }
@@ -168,7 +168,7 @@ template< typename MatType >
 ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     params(_params)
 {
-    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose, params.raycast_step_factor,
+    volume = makeVolume(params.volumeKind, params.voxelSize, params.volumePose, params.raycast_step_factor,
                         params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold,
                         params.volumeDims[0], params.volumeDims[1], params.volumeDims[2]);
 
