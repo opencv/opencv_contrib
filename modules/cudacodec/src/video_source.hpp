@@ -56,6 +56,7 @@ public:
     virtual ~VideoSource() {}
 
     virtual FormatInfo format() const = 0;
+    virtual void updateFormat(const int codedWidth, const int codedHeight) = 0;
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual bool isStarted() const = 0;
@@ -76,6 +77,7 @@ public:
     RawVideoSourceWrapper(const Ptr<RawVideoSource>& source);
 
     FormatInfo format() const CV_OVERRIDE;
+    void updateFormat(const int codedWidth, const int codedHeight) CV_OVERRIDE;
     void start() CV_OVERRIDE;
     void stop() CV_OVERRIDE;
     bool isStarted() const CV_OVERRIDE;

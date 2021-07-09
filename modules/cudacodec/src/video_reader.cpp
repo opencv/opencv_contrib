@@ -148,6 +148,7 @@ namespace
 
             bool isProgressive = displayInfo.progressive_frame != 0;
             const int num_fields = isProgressive ? 1 : 2 + displayInfo.repeat_first_field;
+            videoSource_->updateFormat(videoDecoder_->targetWidth(), videoDecoder_->targetHeight());
 
             for (int active_field = 0; active_field < num_fields; ++active_field)
             {
