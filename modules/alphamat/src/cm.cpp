@@ -90,9 +90,9 @@ void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float ep
     Mat ptDotN(20, 1, DataType<float>::type), imd(20, 1, DataType<float>::type);
     Mat Cones(20, 1, DataType<float>::type), Cinv(20, 1, DataType<float>::type);
     float alpha, beta, lagrangeMult;
-    Cones = 1;
+    Cones.setTo(cv::Scalar::all(1));
 
-    C = 0;
+    C.setTo(cv::Scalar::all(0));
     rhs = 1;
 
     int i, ind = 0;

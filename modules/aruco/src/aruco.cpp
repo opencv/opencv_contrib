@@ -1497,6 +1497,13 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
 
 /**
  */
+void Board::setIds(InputArray ids_) {
+    CV_Assert(objPoints.size() == ids_.total());
+    ids_.copyTo(this->ids);
+}
+
+/**
+ */
 Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength, float markerSeparation,
                             const Ptr<Dictionary> &dictionary, int firstMarker) {
 
