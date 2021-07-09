@@ -158,6 +158,7 @@ namespace
                 videoProcParams.second_field      = active_field;
                 videoProcParams.top_field_first   = displayInfo.top_field_first;
                 videoProcParams.unpaired_field    = (num_fields == 1);
+                videoProcParams.output_stream = StreamAccessor::getStream(stream);
 
                 frames_.push_back(std::make_pair(displayInfo, videoProcParams));
             }
