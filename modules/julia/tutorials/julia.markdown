@@ -20,6 +20,18 @@ The OpenCV bindings for Julia are created automatically using Python scripts at 
 
 The generation process and the method by which the binding works are similar to the Python bindings. The only major difference is that CxxWrap.jl does not support optional arguments. As a consequence, it's necessary to define the optional arguments in Julia code which adds a lot of additional complexity.
 
+How To Install The Bindings
+-----------------------
+The easiest and recommended way to install the bindings is using Julia's inbuilt package manager. OpenCV is available as a registered package for Julia and is supported on all major platforms and architectures. The following steps checked for correctness on Julia v1.6.1
+
+TO install start the Julia REPL. Hit `]` and then type `add OpenCV`.
+
+```bash
+$ julia
+...
+julia> ]
+pkg> add OpenCV
+```
 
 How To Build The Bindings
 -----------------------
@@ -130,8 +142,9 @@ Note: The sample might take some time to load.
 Contributors
 ------------
 
-Below is the list of contributors of OpenCV.js bindings and tutorials.
+Below is the list of contributors of OpenCV.jl bindings and tutorials.
 
 -  Archit Rungta  (Author of the initial version and GSoC student, Indian Institute of Technology, Kharagpur)
 -  Sayan Sinha  (GSoC mentor, Indian Institute of Technology, Kharagpur)
+-  Mosè Giordano  (GSoC Phase 2 mentor)
 -  Vadim Pisarevsky  (GSoC mentor)
