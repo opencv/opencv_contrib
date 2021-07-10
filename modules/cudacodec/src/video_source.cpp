@@ -65,6 +65,11 @@ cv::cudacodec::FormatInfo cv::cudacodec::detail::RawVideoSourceWrapper::format()
     return source_->format();
 }
 
+void cv::cudacodec::detail::RawVideoSourceWrapper::updateFormat(const int codedWidth, const int codedHeight)
+{
+    source_->updateFormat(codedWidth,codedHeight);
+}
+
 void cv::cudacodec::detail::RawVideoSourceWrapper::start()
 {
     stop_ = false;
