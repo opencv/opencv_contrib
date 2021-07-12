@@ -135,19 +135,29 @@ namespace cv
             {
             }
 
-            void read( const FileNode& fn)
+            void read( const FileNode& fn) CV_OVERRIDE
             {
-              fn["patch_radius"] >> m_patch_radius;
-              fn["search_area_radius"] >> m_search_area_radius;
-              fn["nms_radius"] >> m_nms_radius;
-              fn["nms_scale_radius"] >> m_nms_scale_radius;
-              fn["th_saliency"] >> m_th_saliency;
-              fn["kNN"] >> m_kNN;
-              fn["scale_factor"] >> m_scale_factor;
-              fn["n_scales"] >> m_n_scales;
-              fn["compute_orientation"] >> m_compute_orientation;
+              // if node is empty, keep previous value
+              if (!fn["patch_radius"].empty())
+                fn["patch_radius"] >> m_patch_radius;
+              if (!fn["search_area_radius"].empty())
+                fn["search_area_radius"] >> m_search_area_radius;
+              if (!fn["nms_radius"].empty())
+                fn["nms_radius"] >> m_nms_radius;
+              if (!fn["nms_scale_radius"].empty())
+                fn["nms_scale_radius"] >> m_nms_scale_radius;
+              if (!fn["th_saliency"].empty())
+                fn["th_saliency"] >> m_th_saliency;
+              if (!fn["kNN"].empty())
+                fn["kNN"] >> m_kNN;
+              if (!fn["scale_factor"].empty())
+                fn["scale_factor"] >> m_scale_factor;
+              if (!fn["n_scales"].empty())
+                fn["n_scales"] >> m_n_scales;
+              if (!fn["compute_orientation"].empty())
+                fn["compute_orientation"] >> m_compute_orientation;
             }
-            void write( FileStorage& fs) const
+            void write( FileStorage& fs) const CV_OVERRIDE
             {
               if(fs.isOpened())
               {

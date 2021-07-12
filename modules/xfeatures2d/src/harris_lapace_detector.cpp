@@ -325,8 +325,8 @@ public:
         int maxCorners=5000,
         int num_layers=4
     );
-    virtual void read( const FileNode& fn ) CV_OVERRIDE;
-    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
 
 protected:
     void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() ) CV_OVERRIDE;
@@ -371,20 +371,29 @@ HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl(
 
 void HarrisLaplaceFeatureDetector_Impl::read (const FileNode& fn)
 {
-    fn["numOctaves"] >> numOctaves;
-    fn["corn_thresh"] >> corn_thresh;
-    fn["DOG_thresh"] >> DOG_thresh;
-    fn["maxCorners"] >> maxCorners;
-    fn["num_layers"] >> num_layers;
+    // if node is empty, keep previous value
+    if (!fn["numOctaves"].empty())
+        fn["numOctaves"] >> numOctaves;
+    if (!fn["corn_thresh"].empty())
+        fn["corn_thresh"] >> corn_thresh;
+    if (!fn["corn_thresh"].empty())
+        fn["DOG_thresh"] >> DOG_thresh;
+    if (!fn["maxCorners"].empty())
+        fn["maxCorners"] >> maxCorners;
+    if (!fn["num_layers"].empty())
+        fn["num_layers"] >> num_layers;
 }
 
 void HarrisLaplaceFeatureDetector_Impl::write (FileStorage& fs) const
 {
-    fs << "numOctaves" << numOctaves;
-    fs << "corn_thresh" << corn_thresh;
-    fs << "DOG_thresh" << DOG_thresh;
-    fs << "maxCorners" << maxCorners;
-    fs << "num_layers" << num_layers;
+    if ( fs.isOpened() )
+    {
+        fs << "numOctaves" << numOctaves;
+        fs << "corn_thresh" << corn_thresh;
+        fs << "DOG_thresh" << DOG_thresh;
+        fs << "maxCorners" << maxCorners;
+        fs << "num_layers" << num_layers;
+    }
 }
 
 /*

@@ -60,6 +60,9 @@ public:
                          int _lineThresholdBinarized=8,
                          int _suppressNonmaxSize=5);
 
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
+
     void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() ) CV_OVERRIDE;
 
 protected:
@@ -80,6 +83,33 @@ Ptr<StarDetector> StarDetector::create(int _maxSize,
                                      _lineThresholdProjected,
                                      _lineThresholdBinarized,
                                      _suppressNonmaxSize);
+}
+
+void StarDetectorImpl::read( const FileNode& fn)
+{
+  // if node is empty, keep previous value
+  if (!fn["maxSize"].empty())
+    fn["maxSize"] >> maxSize;
+  if (!fn["responseThreshold"].empty())
+      fn["responseThreshold"] >> responseThreshold;
+  if (!fn["lineThresholdProjected"].empty())
+      fn["lineThresholdProjected"] >> lineThresholdProjected;
+  if (!fn["lineThresholdBinarized"].empty())
+      fn["lineThresholdBinarized"] >> lineThresholdBinarized;
+  if (!fn["suppressNonmaxSize"].empty())
+      fn["suppressNonmaxSize"] >> suppressNonmaxSize;
+}
+void StarDetectorImpl::write( FileStorage& fs) const
+{
+  if(fs.isOpened())
+  {
+    fs << "name" << getDefaultName();
+    fs << "maxSize" << maxSize;
+    fs << "responseThreshold" << responseThreshold;
+    fs << "lineThresholdProjected" << lineThresholdProjected;
+    fs << "lineThresholdBinarized" << lineThresholdBinarized;
+    fs << "suppressNonmaxSize" << suppressNonmaxSize;
+  }
 }
 
 String StarDetector::getDefaultName() const

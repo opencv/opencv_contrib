@@ -67,8 +67,8 @@ public:
 
     virtual ~FREAK_Impl();
 
-    void read( const FileNode& fn);
-    void write( FileStorage& fs) const;
+    void read( const FileNode& fn) CV_OVERRIDE;
+    void write( FileStorage& fs) const CV_OVERRIDE;
 
     /** returns the descriptor length in bytes */
     virtual int descriptorSize() const CV_OVERRIDE;
@@ -820,14 +820,23 @@ FREAK_Impl::~FREAK_Impl()
 
 void FREAK_Impl::read( const FileNode& fn)
 {
-  fn["orientationNormalized"] >> orientationNormalized;
-  fn["scaleNormalized"] >> scaleNormalized;
-  fn["patternScale"] >> patternScale;
-  fn["nOctaves"] >> nOctaves;
-  fn["extAll"] >> extAll;
-  fn["patternScale0"] >> patternScale0;
-  fn["nOctaves0"] >> nOctaves0;
-  fn["selectedPairs0"] >> selectedPairs0;
+  // if node is empty, keep previous value
+  if (!fn["orientationNormalized"].empty())
+    fn["orientationNormalized"] >> orientationNormalized;
+  if (!fn["scaleNormalized"].empty())
+    fn["scaleNormalized"] >> scaleNormalized;
+  if (!fn["patternScale"].empty())
+    fn["patternScale"] >> patternScale;
+  if (!fn["nOctaves"].empty())
+    fn["nOctaves"] >> nOctaves;
+  if (!fn["extAll"].empty())
+    fn["extAll"] >> extAll;
+  if (!fn["patternScale0"].empty())
+    fn["patternScale0"] >> patternScale0;
+  if (!fn["nOctaves0"].empty())
+    fn["nOctaves0"] >> nOctaves0;
+  if (!fn["selectedPairs0"].empty())
+    fn["selectedPairs0"] >> selectedPairs0;
 }
 void FREAK_Impl::write( FileStorage& fs) const
 {

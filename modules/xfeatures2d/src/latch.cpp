@@ -458,40 +458,56 @@ namespace cv
 
         void LATCHDescriptorExtractorImpl::read(const FileNode& fn)
         {
-            int dSize = fn["descriptorSize"];
-            switch (dSize)
+            // if node is empty, keep previous value
+            if (!fn["descriptorSize"].empty())
             {
-            case 1:
-                test_fn_ = pixelTests1;
-                break;
-            case 2:
-                test_fn_ = pixelTests2;
-                break;
-            case 4:
-                test_fn_ = pixelTests4;
-                break;
-            case 8:
-                test_fn_ = pixelTests8;
-                break;
-            case 16:
-                test_fn_ = pixelTests16;
-                break;
-            case 32:
-                test_fn_ = pixelTests32;
-                break;
-            case 64:
-                test_fn_ = pixelTests64;
-                break;
-            default:
-                CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
+                int dSize = fn["descriptorSize"];
+                switch (dSize)
+                {
+                case 1:
+                    test_fn_ = pixelTests1;
+                    break;
+                case 2:
+                    test_fn_ = pixelTests2;
+                    break;
+                case 4:
+                    test_fn_ = pixelTests4;
+                    break;
+                case 8:
+                    test_fn_ = pixelTests8;
+                    break;
+                case 16:
+                    test_fn_ = pixelTests16;
+                    break;
+                case 32:
+                    test_fn_ = pixelTests32;
+                    break;
+                case 64:
+                    test_fn_ = pixelTests64;
+                    break;
+                default:
+                    CV_Error(Error::StsBadArg, "descriptorSize must be 1,2, 4, 8, 16, 32, or 64");
+                }
+                bytes_ = dSize;
             }
-            bytes_ = dSize;
+            if (!fn["rotationInvariance"].empty())
+              fn["rotationInvariance"] >> rotationInvariance_;
+            if (!fn["half_ssd_size"].empty())
+              fn["half_ssd_size"] >> half_ssd_size_;
+            if (!fn["sigma"].empty())
+              fn["sigma"] >> sigma_;
         }
 
         void LATCHDescriptorExtractorImpl::write(FileStorage& fs) const
         {
-          fs << "name" << getDefaultName();
-          fs << "descriptorSize" << bytes_;
+          if ( fs.isOpened() )
+          {
+              fs << "name" << getDefaultName();
+              fs << "rotationInvariance" << rotationInvariance_;
+              fs << "half_ssd_size" << half_ssd_size_;
+              fs << "sigma" << sigma_;
+
+          }
         }
 
         void LATCHDescriptorExtractorImpl::compute(InputArray _image,

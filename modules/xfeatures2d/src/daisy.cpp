@@ -103,8 +103,8 @@ public:
 
     virtual ~DAISY_Impl() CV_OVERRIDE;
 
-    void read( const FileNode& fn);
-    void write( FileStorage& fs) const;
+    void read( const FileNode& fn) CV_OVERRIDE;
+    void write( FileStorage& fs) const CV_OVERRIDE;
 
     /** returns the descriptor length in bytes */
     virtual int descriptorSize() const CV_OVERRIDE {

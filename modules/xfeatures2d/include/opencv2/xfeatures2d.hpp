@@ -227,6 +227,7 @@ public:
      BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS.
     */
     CV_WRAP static Ptr<BEBLID> create(float scale_factor, int n_bits = BEBLID::SIZE_512_BITS);
+
     CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 

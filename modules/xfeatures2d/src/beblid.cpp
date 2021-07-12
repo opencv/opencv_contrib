@@ -42,6 +42,9 @@ public:
     // destructor
     ~BEBLID_Impl() CV_OVERRIDE = default;
 
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
+
     // returns the descriptor length in bytes
     int descriptorSize() const CV_OVERRIDE { return int(wl_params_.size() / 8); }
 
@@ -57,6 +60,7 @@ public:
 private:
     std::vector<ABWLParams> wl_params_;
     float scale_factor_;
+    int n_bits_;
     cv::Size patch_size_;
 
     void computeBEBLID(const cv::Mat &integralImg,
@@ -238,6 +242,35 @@ static inline float computeABWLResponse(const ABWLParams &wlImageParams,
     return average1 - average2;
 }
 
+void BEBLID_Impl::read( const FileNode& fn )
+{
+  // if node is empty, keep previous value
+  if (!fn["scale_factor"].empty())
+    fn["scale_factor"] >> scale_factor_;
+  if (!fn["n_bits"].empty())
+  {
+    fn["n_bits"] >> n_bits_;
+    #include "beblid.p512.hpp"
+    #include "beblid.p256.hpp"
+    if (n_bits_ == SIZE_512_BITS)
+        wl_params_.assign(wl_params_512, wl_params_512 + sizeof(wl_params_512) / sizeof(wl_params_512[0]));
+    else if(n_bits_ == SIZE_256_BITS)
+        wl_params_.assign(wl_params_256, wl_params_256 + sizeof(wl_params_256) / sizeof(wl_params_256[0]));
+    else
+        CV_Error(Error::StsBadArg, "n_wls should be either SIZE_512_BITS or SIZE_256_BITS");
+  }
+}
+void BEBLID_Impl::write( FileStorage& fs ) const
+{
+
+  if(fs.isOpened())
+  {
+    fs << "name" << getDefaultName();
+    fs << "scale_factor" << scale_factor_;
+    fs << "n_bits_" << n_bits_;
+  }
+}
+
 // descriptor computation using keypoints
 void BEBLID_Impl::compute(InputArray _image, vector<KeyPoint> &keypoints, OutputArray _descriptors)
 {
@@ -286,7 +319,7 @@ void BEBLID_Impl::compute(InputArray _image, vector<KeyPoint> &keypoints, Output
 
 // constructor
 BEBLID_Impl::BEBLID_Impl(float scale_factor, int n_bits)
-    : scale_factor_(scale_factor), patch_size_(32, 32)
+    : scale_factor_(scale_factor), n_bits_(n_bits), patch_size_(32, 32)
 {
     #include "beblid.p512.hpp"
     #include "beblid.p256.hpp"

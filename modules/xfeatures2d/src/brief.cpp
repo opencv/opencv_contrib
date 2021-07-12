@@ -63,14 +63,14 @@ public:
     // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
     BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false );
 
-    virtual void read( const FileNode& ) CV_OVERRIDE;
-    virtual void write( FileStorage& ) const CV_OVERRIDE;
+    void read( const FileNode& ) CV_OVERRIDE;
+    void write( FileStorage& ) const CV_OVERRIDE;
 
-    virtual int descriptorSize() const CV_OVERRIDE;
-    virtual int descriptorType() const CV_OVERRIDE;
-    virtual int defaultNorm() const CV_OVERRIDE;
+    int descriptorSize() const CV_OVERRIDE;
+    int descriptorType() const CV_OVERRIDE;
+    int defaultNorm() const CV_OVERRIDE;
 
-    virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
+    void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
 
 protected:
     typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation );
@@ -210,28 +210,38 @@ int BriefDescriptorExtractorImpl::defaultNorm() const
 
 void BriefDescriptorExtractorImpl::read( const FileNode& fn)
 {
-    int dSize = fn["descriptorSize"];
-    switch (dSize)
+    // if node is empty, keep previous value
+    if (!fn["descriptorSize"].empty())
     {
-        case 16:
-            test_fn_ = pixelTests16;
-            break;
-        case 32:
-            test_fn_ = pixelTests32;
-            break;
-        case 64:
-            test_fn_ = pixelTests64;
-            break;
-        default:
-            CV_Error(Error::StsBadArg, "descriptorSize must be 16, 32, or 64");
+        int dSize = fn["descriptorSize"];
+        switch (dSize)
+        {
+            case 16:
+                test_fn_ = pixelTests16;
+                break;
+            case 32:
+                test_fn_ = pixelTests32;
+                break;
+            case 64:
+                test_fn_ = pixelTests64;
+                break;
+            default:
+                CV_Error(Error::StsBadArg, "descriptorSize must be 16, 32, or 64");
+        }
+        bytes_ = dSize;
     }
-    bytes_ = dSize;
+    if (!fn["use_orientation_"].empty())
+        fn["use_orientation_"] >> use_orientation_;
 }
 
 void BriefDescriptorExtractorImpl::write( FileStorage& fs) const
 {
-  fs << "name" << getDefaultName();
-  fs << "descriptorSize" << bytes_;
+    if ( fs.isOpened() )
+    {
+        fs << "name" << getDefaultName();
+        fs << "descriptorSize" << bytes_;
+        fs << "use_orientation" << use_orientation_;
+    }
 }
 
 void BriefDescriptorExtractorImpl::compute(InputArray image,

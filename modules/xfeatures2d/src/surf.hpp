@@ -25,16 +25,24 @@ public:
 
     void read( const FileNode& fn)
     {
-      fn["extended"] >> extended;
-      fn["upright"] >> upright;
-      fn["nOctaves"] >> nOctaves;
-      fn["nOctaveLayers"] >> nOctaveLayers;
+      // if node is empty, keep previous value
+      if (!fn["hessianThreshold"].empty())
+        fn["hessianThreshold"] >> hessianThreshold;
+      if (!fn["extended"].empty())
+        fn["extended"] >> extended;
+      if (!fn["upright"].empty())
+        fn["upright"] >> upright;
+      if (!fn["nOctaves"].empty())
+        fn["nOctaves"] >> nOctaves;
+      if (!fn["nOctaveLayers"].empty())
+        fn["nOctaveLayers"] >> nOctaveLayers;
     }
     void write( FileStorage& fs) const
     {
       if(fs.isOpened())
       {
         fs << "name" << getDefaultName();
+        fs << "hessianThreshold" << hessianThreshold;
         fs << "extended" << extended;
         fs << "upright" << upright;
         fs << "nOctaves" << nOctaves;
