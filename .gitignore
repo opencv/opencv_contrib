@@ -10,3 +10,5 @@ tags
 tegra/
 *.i
 .download*
+modules/deltille/.vscode/c_cpp_properties.json
+modules/deltille/.vscode/settings.json
