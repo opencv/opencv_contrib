@@ -154,7 +154,7 @@ endif()
 #include_directories(${OCV_TARGET_INCLUDE_DIRS_${the_module}})
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/src/libmv_light" "${CMAKE_CURRENT_BINARY_DIR}/src/libmv")
 
-ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS})
+ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS} opencv_imgcodecs)
 
 
 ### CREATE OPENCV SFM TESTS ###
