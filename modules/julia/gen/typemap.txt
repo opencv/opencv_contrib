@@ -50,3 +50,4 @@ Point2d:Point{Float64}
 SolvePnPMethod:SolvePnPMethod
 CirclesGridFinderParameters:CirclesGridFinderParameters
 HandEyeCalibrationMethod:HandEyeCalibrationMethod
+long long:Int64

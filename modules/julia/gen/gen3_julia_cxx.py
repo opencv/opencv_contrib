@@ -103,26 +103,33 @@ class ClassInfo(ClassInfo):
         return stra
 
 class FuncVariant(FuncVariant):
+    
+    def promote_type(self, tp):
+        if tp=='int':
+            return 'long long'
+        elif tp =='float':
+            return 'double'
+        return tp
 
 
     def get_argument_full(self, classname='', isalgo = False):
         arglist = self.inlist + self.optlist
 
-        argnamelist = [arg.name+"::"+(handle_jl_arg(arg.tp) if handle_jl_arg(arg.tp) not in pass_by_val_types else handle_jl_arg(arg.tp)[:-1]) for arg in arglist]
+        argnamelist = [arg.name+"::"+(handle_jl_arg(self.promote_type(arg.tp)) if handle_jl_arg(arg.tp) not in pass_by_val_types else handle_jl_arg(self.promote_type(arg.tp[:-1]))) for arg in arglist]
         argstr = ", ".join(argnamelist)
         return argstr
 
     def get_argument_opt(self, ns=''):
         # [print(arg.default_value,":",handle_def_arg(arg.default_value, handle_jl_arg(arg.tp))) for arg in self.optlist]
         try:
-            str2 =  ", ".join(["%s::%s = %s(%s)" % (arg.name, handle_jl_arg(arg.tp), handle_jl_arg(arg.tp) if (arg.tp == 'int' or arg.tp=='float' or arg.tp=='double') else '', handle_def_arg(arg.default_value, handle_jl_arg(arg.tp), ns)) for arg in self.optlist])
+            str2 =  ", ".join(["%s::%s = %s(%s)" % (arg.name, handle_jl_arg(self.promote_type(arg.tp)), handle_jl_arg(self.promote_type(arg.tp)) if (arg.tp == 'int' or arg.tp=='float' or arg.tp=='double') else '', handle_def_arg(arg.default_value, handle_jl_arg(self.promote_type(arg.tp)), ns)) for arg in self.optlist])
             return str2
         except KeyError:
             return ''
 
     def get_argument_def(self, classname, isalgo):
         arglist = self.inlist
-        argnamelist = [arg.name+"::"+(handle_jl_arg(arg.tp) if handle_jl_arg(arg.tp) not in pass_by_val_types else handle_jl_arg(arg.tp)[:-1]) for arg in arglist]
+        argnamelist = [arg.name+"::"+(handle_jl_arg(self.promote_type(arg.tp)) if handle_jl_arg(self.promote_type(arg.tp)) not in pass_by_val_types else handle_jl_arg(self.promote_type(arg.tp[:-1]))) for arg in arglist]
         argstr = ", ".join(argnamelist)
         return argstr
 

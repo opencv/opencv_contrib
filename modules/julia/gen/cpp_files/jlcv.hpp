@@ -104,7 +104,7 @@ struct force_enum<T, false>{
 };
 template<typename T>
 struct force_enum<T, true>{
-  using Type = int;
+  using Type = int64_t;
 };
 
 template<typename T>
