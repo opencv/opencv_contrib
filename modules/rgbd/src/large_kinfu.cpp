@@ -97,7 +97,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
         p = defaultParams();
 
     p->volumeParams.kind                = VolumeParams::VolumeKind::HASHTSDF;
-    p->volumeParams.depthTruncThreshold = Odometry::DEFAULT_MAX_DEPTH();
+    p->volumeParams.depthTruncThreshold = 4.f;
     p->volumeParams.unitResolution      = 16;
     return p;
 }

@@ -111,7 +111,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     else
         p = defaultParams();
     p->volumeKind = VolumeParams::VolumeKind::HASHTSDF;
-    p->truncateThreshold = Odometry::DEFAULT_MAX_DEPTH();
+    p->truncateThreshold = 4.f;
     return p;
 }
 
