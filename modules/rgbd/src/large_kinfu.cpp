@@ -146,6 +146,10 @@ LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
                                   params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
                                   params.icpIterations, params.depthFactor, params.truncateThreshold);
 
+    // TODO: make these tunable algorithm parameters
+    icp->setMaxRotation(30.f);
+    icp->setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
+
     submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);
     reset();
     submapMgr->createNewSubmap(true);
