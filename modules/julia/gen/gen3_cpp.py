@@ -130,8 +130,8 @@ class FuncVariant(FuncVariant):
         if len(self.outlist)==0:
             return outstr+";"
         elif len(self.outlist)==1:
-            return outstr+"return %s;" % ( ('(int)' if self.outlist[0].tp in enums else ('' if self.promote_type(self.outlist[0].tp)==self.outlist[0].tp else '(%s)'%self.promote_type(self.outlist[0].tp))) + self.outlist[0].name)
-        return outstr+"return make_tuple(%s);" %  ",".join(["move(%s)" %  (('(int)' if x.tp in enums else  ('' if self.promote_type(x.tp)==x.tp else '(%s)'%self.promote_type(x.tp))) +x.name) for x in self.outlist])
+            return outstr+"return %s;" % ( ('(int64_t)' if self.outlist[0].tp in enums else ('' if self.promote_type(self.outlist[0].tp)==self.outlist[0].tp else '(%s)'%self.promote_type(self.outlist[0].tp))) + self.outlist[0].name)
+        return outstr+"return make_tuple(%s);" %  ",".join(["move(%s)" %  (('(int64_t)' if x.tp in enums else  ('' if self.promote_type(x.tp)==x.tp else '(%s)'%self.promote_type(x.tp))) +x.name) for x in self.outlist])
 
     def promote_type(self, tp):
         if tp=='int':
@@ -154,7 +154,7 @@ class FuncVariant(FuncVariant):
                 print("PATHWAY NOT TESTED")
                 argnamelist.append(arg.tp[:-1] +"& "+arg.name)
             elif arg.tp in enums:
-                argnamelist.append("int& " + arg.name)
+                argnamelist.append("int64_t& " + arg.name)
             else:
                 if arg.tp=='bool':
                     # Bool pass-by-reference is broken
@@ -284,13 +284,13 @@ struct SuperType<%s>
             # cpp_code.write('\n    mod.add_bits<{0}>("{1}", jlcxx::julia_type("CppEnum"));'.format(e2[0], e2[1]))
             enums.append(e2[0])
             enums.append(e2[1])
-            enums.append(e2[0].replace("cv::", ""))
+            enums.append(e2[0].replace("cv::", "").replace("::", '_'))
 
 
         for tp in ns.register_types:
             cpp_code.write('   mod.add_type<%s>("%s");\n' %(tp, normalize_class_name(tp)))
 
-
+    # print(enums)
     for name, ns in namespaces.items():
 
         nsname = name.replace("::", "_")

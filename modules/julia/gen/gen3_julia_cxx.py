@@ -177,7 +177,7 @@ def gen(srcfiles):
         nsname = name
         for e1,e2 in ns.enums.items():
             # jl_code.write('\n   const {0} = Int32'.format(e2[0]))
-            jl_code.write('\n   const {0} = Int32 \n'.format(e2[1]))
+            jl_code.write('\n   const {0} = Int64 \n'.format(e2[0].replace("cv::", "").replace("::", "_")))
 
         # Do not duplicate functions. This should prevent overwriting of Mat function by UMat functions
         function_signatures = []

@@ -73,6 +73,7 @@ typedef flann::SearchParams flann_SearchParams;
 #include <opencv2/dnn.hpp>
 typedef cv::dnn::DictValue LayerId;
 typedef cv::dnn::Backend dnn_Backend;
+typedef cv::dnn::Target dnn_Target;
 #endif
 
 #ifdef HAVE_OPENCV_CALIB3D
