@@ -224,7 +224,7 @@ bool SinusoidalPatternProfilometry_Impl::generate( OutputArrayOfArrays pattern )
         for( int j = 0; j < pattern_[i].cols; ++j )
         {
             rowValues.at<uchar>(0, j) = saturate_cast<uchar>(
-                    meanAmpl + sinAmpl * sin(2 * CV_PI * frequency * j + i * params.shiftValue));
+                    meanAmpl + sinAmpl * std::sin(2 * CV_PI * frequency * j + i * params.shiftValue));
         }
 
         for( int j = 0; j < pattern_[i].rows; ++j )
@@ -662,8 +662,8 @@ void SinusoidalPatternProfilometry_Impl::computePsPhaseMap( InputArrayOfArrays p
                     i2 = pattern_[1].at<float>(i, j);
                     i3 = pattern_[2].at<float>(i, j);
                 }
-                float num = (1- cos(params.shiftValue)) * (i3 - i2);
-                float den = sin(params.shiftValue) * (2 * i1 - i2 - i3);
+                float num = (1- std::cos(params.shiftValue)) * (i3 - i2);
+                float den = std::sin(params.shiftValue) * (2 * i1 - i2 - i3);
                 wrappedPhaseMap_.at<float>(i,j) = atan2(num, den);
             }
             else
@@ -700,11 +700,11 @@ void SinusoidalPatternProfilometry_Impl::computeFapsPhaseMap( InputArray a,
         {
             if( shadowMask_.at<uchar>(i, j ) != 0 )
             {
-                float num = (1 - cos(theta2_.at<float>(i, j))) * a_.at<float>(i, j) +
-                            (1 - cos(theta1_.at<float>(i, j))) * b_.at<float>(i, j);
+                float num = (1 - std::cos(theta2_.at<float>(i, j))) * a_.at<float>(i, j) +
+                            (1 - std::cos(theta1_.at<float>(i, j))) * b_.at<float>(i, j);
 
-                float den = sin(theta1_.at<float>(i, j)) * b_.at<float>(i, j) -
-                            sin(theta2_.at<float>(i, j)) * a_.at<float>(i, j);
+                float den = std::sin(theta1_.at<float>(i, j)) * b_.at<float>(i, j) -
+                            std::sin(theta2_.at<float>(i, j)) * a_.at<float>(i, j);
 
                 wrappedPhaseMap_.at<float>(i, j) = atan2(num, den);
             }

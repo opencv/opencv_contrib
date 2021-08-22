@@ -9,7 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
-#include <opencv2/rgbd/volume.hpp>
+#include <opencv2/3d.hpp>
 
 namespace cv {
 namespace kinfu {
@@ -18,8 +18,10 @@ namespace kinfu {
 
 struct CV_EXPORTS_W Params
 {
-
-    CV_WRAP Params(){}
+    CV_WRAP Params()
+    {
+        setInitialVolumePose(Matx44f::eye());
+    }
 
     /**
      * @brief Constructor for Params
@@ -82,8 +84,8 @@ struct CV_EXPORTS_W Params
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
 
-    /** @brief rgb frame size in pixels */
-    CV_PROP_RW kinfu::VolumeType volumeType;
+    /** @brief Volume kind */
+    int volumeKind;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
@@ -124,7 +126,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW float tsdf_min_camera_movement;
 
     /** @brief initial volume pose in meters */
-    Affine3f volumePose;
+    CV_PROP_RW Matx44f volumePose;
 
     /** @brief distance to truncate in meters
 

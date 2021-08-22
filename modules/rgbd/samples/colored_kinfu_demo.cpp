@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/rgbd/colored_kinfu.hpp>
 
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
                 Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                      volSize),
-                                  kf->getParams().volumePose);
+                                  Affine3f(kf->getParams().volumePose));
                 PauseCallbackArgs pca(*kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
                     Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                          volSize),
-                                      kf->getParams().volumePose);
+                                      Affine3f(kf->getParams().volumePose));
                     window.setViewerPose(kf->getPose());
                     window.spinOnce(1, true);
                 }
