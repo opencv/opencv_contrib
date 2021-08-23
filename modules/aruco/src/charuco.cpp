@@ -315,7 +315,7 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
 
         for (int i = begin; i < end; i++) {
             vector<Point2f> in;
-            in.push_back(filteredChessboardImgPoints[i]);
+            in.push_back(filteredChessboardImgPoints[i] - Point2f(0.5, 0.5)); // adjust sub-pixel coordinates for cornerSubPix
             Size winSize = filteredWinSizes[i];
             if (winSize.height == -1 || winSize.width == -1)
                 winSize = Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize);
@@ -325,7 +325,7 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
                                       params->cornerRefinementMaxIterations,
                                       params->cornerRefinementMinAccuracy));
 
-            filteredChessboardImgPoints[i] = in[0];
+            filteredChessboardImgPoints[i] = in[0] + Point2f(0.5, 0.5);
         }
     });
 
