@@ -6,6 +6,7 @@
 // module's directory
 
 #include "precomp.hpp"
+#include "loop_closure_detection.hpp"
 
 namespace cv
 {
@@ -234,7 +235,7 @@ bool LargeKinfuImpl<UMat>::update(InputArray _depth, InputArray _img)
 
 
 template<typename MatType>
-bool LargeKinfuImpl<MatType>::updateT(const MatType& depth, const Mat& img)
+bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth, const Mat& _img)
 {
     CV_TRACE_FUNCTION();
 

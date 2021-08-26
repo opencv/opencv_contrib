@@ -51,7 +51,7 @@ public:
 
     bool deleteKeyFrameByID(int keyFrameID);
 
-    int getSize();
+    size_t getSize();
 
     bool empty();
 
