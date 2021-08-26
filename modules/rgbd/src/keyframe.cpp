@@ -121,7 +121,7 @@ Ptr<KeyFrame> KeyFrameDatabase::getKeyFrameByID(int keyFrameID)
     }
 }
 
-int KeyFrameDatabase::getSize()
+size_t KeyFrameDatabase::getSize()
 {
     return DataBase.size();
 }
@@ -150,7 +150,7 @@ double KeyFrameDatabase::score(InputArray feature1, InputArray feature2)
 std::vector<int> KeyFrameDatabase::getCandidateKF(const Mat& currentFeature, const int currentSubmapID, const double& similarityLow, double& bestSimilarity, int& bestId )
 {
     std::vector<int> cadidateKFs;
-    float similarity;
+    double similarity;
 
     bestSimilarity = 0;
 

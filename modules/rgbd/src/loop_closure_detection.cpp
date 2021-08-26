@@ -34,7 +34,7 @@ bool LoopClosureDetectionImpl::loopCheck(int& tarSubmapID)
     //Calculate the similarity with all pictures in the database.
 
     // If the KFDataBase is too small, then skip.
-    if(KFDataBase->getSize() < minDatabaseSize )
+    if(int(KFDataBase->getSize()) < minDatabaseSize )
         return false;
 
     double maxScore = 0;
@@ -200,7 +200,7 @@ void LoopClosureDetectionImpl::reset()
     KFDataBase->reset();
 }
 
-void LoopClosureDetectionImpl::processFrame(InputArray img, Mat& DNNfeature, std::vector<KeyPoint>& currentKeypoints, Mat& ORBFeature)
+void LoopClosureDetectionImpl::processFrame(InputArray img, Mat& DNNfeature, std::vector<KeyPoint>& Keypoints, Mat& ORBFeature)
 {
     std::vector<Mat> outMats;
 
@@ -217,8 +217,8 @@ void LoopClosureDetectionImpl::processFrame(InputArray img, Mat& DNNfeature, std
 
     // ORB process
 #ifdef HAVE_OPENCV_FEATURES2D
-    ORBdetector->detect(img, currentKeypoints);
-    ORBdescriptor->compute(img,currentKeypoints,outORB);
+    ORBdetector->detect(img, Keypoints);
+    ORBdescriptor->compute(img, Keypoints, outORB);
     ORBFeature = outORB.clone();
 #endif
 
