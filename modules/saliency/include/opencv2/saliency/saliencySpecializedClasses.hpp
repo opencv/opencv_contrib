@@ -455,7 +455,7 @@ private:
   inline static float LoG( float x, float y, float delta )
   {
     float d = - ( x * x + y * y ) / ( 2 * delta * delta );
-    return -1.0f / ( (float) ( CV_PI ) * pow( delta, 4 ) ) * ( 1 + d ) * exp( d );
+    return -1.0f / ( (float) ( CV_PI ) * (delta*delta*delta*delta) ) * ( 1 + d ) * exp( d );
   }  // Laplacian of Gaussian
 
 // Read matrix from binary file
