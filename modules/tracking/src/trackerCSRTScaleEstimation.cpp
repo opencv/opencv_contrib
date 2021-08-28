@@ -91,10 +91,10 @@ DSST::DSST(const Mat &image,
 
     scale_sigma = static_cast<float>(sqrt(scales_count) * sigma_factor);
 
-    min_scale_factor = pow(scale_step,
-            cvCeil(log(max(5.0 / template_size.width, 5.0 / template_size.height)) / log(scale_step)));
-    max_scale_factor = powf(scale_step,
-            static_cast<float>(cvFloor(log(min((float)image.rows / (float)bounding_box.width,
+    min_scale_factor = static_cast<float>(pow(scale_step,
+            cvCeil(log(max(5.0 / template_size.width, 5.0 / template_size.height)) / log(scale_step))));
+    max_scale_factor = static_cast<float>(pow(scale_step,
+            cvFloor(log(min((float)image.rows / (float)bounding_box.width,
             (float)image.cols / (float)bounding_box.height)) / log(scale_step))));
     ys = Mat(1, scales_count, CV_32FC1);
     float ss, sf;
