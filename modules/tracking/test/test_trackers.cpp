@@ -145,7 +145,8 @@ float TrackerTest::calcDistance( Rect a, Rect b )
 {
   Point2f p_a( (float)(a.x + a.width / 2), (float)(a.y + a.height / 2) );
   Point2f p_b( (float)(b.x + b.width / 2), (float)(b.y + b.height / 2) );
-  return sqrt( pow( p_a.x - p_b.x, 2 ) + pow( p_a.y - p_b.y, 2 ) );
+  Point2f diff = p_a - p_b;
+  return sqrt(diff.dot(diff));
 }
 
 float TrackerTest::calcOverlap( Rect a, Rect b )
