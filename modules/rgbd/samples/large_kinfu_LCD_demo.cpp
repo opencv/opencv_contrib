@@ -181,7 +181,7 @@ int main(int argc, char** argv)
     const auto& volParams = largeKinfu->getParams().volumeParams;
 
     if (!modelBin.empty())
-        LargeKinfu->setModelForLCD(modelBin, modelTxt, inputSize, backend, target);
+        largeKinfu->setModelForLCD(modelBin, modelTxt, inputSize, backend, target);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
