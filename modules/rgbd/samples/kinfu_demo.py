@@ -16,7 +16,6 @@ def kinfu_demo():
     args = parser.parse_args()
     print("Args: ", args)
     depth_list = get_depth_list(args.input)
-
     params = cv2.kinfu_Params.defaultParams()
     kf = cv2.kinfu_KinFu.create(params)
 
