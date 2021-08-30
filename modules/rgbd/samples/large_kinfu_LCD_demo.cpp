@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     bool coarse = false;
     bool idle   = false;
     std::string recordPath, modelBin, modelTxt;
-    int backend = 0, target = 0, width, height;
+    int backend = 0, target = 0, width = 640, height = 480;
 
     CommandLineParser parser(argc, argv, keys);
     parser.about(message);
