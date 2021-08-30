@@ -74,6 +74,8 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
     format_.nBitDepthMinus8 = vidfmt.bit_depth_luma_minus8;
     format_.width = vidfmt.coded_width;
     format_.height = vidfmt.coded_height;
+    format_.displayArea = Rect(Point(vidfmt.display_area.left, vidfmt.display_area.top), Point(vidfmt.display_area.right, vidfmt.display_area.bottom));
+    format_.valid = true;
 }
 
 cv::cudacodec::detail::CuvidVideoSource::~CuvidVideoSource()
@@ -84,6 +86,13 @@ cv::cudacodec::detail::CuvidVideoSource::~CuvidVideoSource()
 FormatInfo cv::cudacodec::detail::CuvidVideoSource::format() const
 {
     return format_;
+}
+
+void cv::cudacodec::detail::CuvidVideoSource::updateFormat(const int codedWidth, const int codedHeight)
+{
+    format_.width = codedWidth;
+    format_.height = codedHeight;
+    format_.valid = true;
 }
 
 void cv::cudacodec::detail::CuvidVideoSource::start()

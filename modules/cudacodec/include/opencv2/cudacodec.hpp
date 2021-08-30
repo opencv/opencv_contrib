@@ -282,9 +282,11 @@ struct FormatInfo
 {
     Codec codec;
     ChromaFormat chromaFormat;
-    int nBitDepthMinus8;
-    int width;
-    int height;
+    int nBitDepthMinus8 = -1;
+    int width = 0;//!< Width of the decoded frame returned by nextFrame(frame)
+    int height = 0;//!< Height of the decoded frame returned by nextFrame(frame)
+    Rect displayArea;//!< ROI inside the decoded frame returned by nextFrame(frame), containing the useable video frame.
+    bool valid = false;
 };
 
 /** @brief Video reader interface.
@@ -329,6 +331,10 @@ public:
     /** @brief Returns information about video file format.
     */
     virtual FormatInfo format() const = 0;
+
+    /** @brief Updates the coded width and height inside format.
+    */
+    virtual void updateFormat(const int codedWidth, const int codedHeight) = 0;
 };
 
 /** @brief Creates video reader.

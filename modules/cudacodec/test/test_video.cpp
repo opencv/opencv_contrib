@@ -63,11 +63,14 @@ CUDA_TEST_P(Video, Reader)
 
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
-
+    cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
     for (int i = 0; i < 100; i++)
     {
         ASSERT_TRUE(reader->nextFrame(frame));
+        if(!fmt.valid)
+            fmt = reader->format();
+        ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
         ASSERT_FALSE(frame.empty());
     }
 }

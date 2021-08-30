@@ -40,6 +40,17 @@ function julia_to_cpp(var::Array{Vec{T, N}, 1}) where {T, N}
     return ret
 end
 
+function julia_to_cpp(var::Array{T}) where {T}
+    if size(var, 1) == 0
+        return CxxWrap.StdVector{T}()
+    end
+    ret = CxxWrap.StdVector{typeof(julia_to_cpp(var[1]))}()
+    for x in var
+        push!(ret, julia_to_cpp(x))
+    end
+    return ret
+end
+
 function cpp_to_julia(var::CxxWrap.StdVector{T}) where {T <: CxxScalar}
     ret = Array{Scalar, 1}()
     for x in var
@@ -50,6 +61,17 @@ end
 
 function cpp_to_julia(var::CxxWrap.StdVector{CxxVec{T, N}}) where {T, N}
     ret = Array{Vec{T, N}, 1}()
+    for x in var
+        push!(ret, cpp_to_julia(x))
+    end
+    return ret
+end
+
+function cpp_to_julia(var::CxxWrap.StdVector{T}) where {T}
+    if size(var, 1) == 0
+        return Array{T}()
+    end
+    ret = Array{typeof(cpp_to_julia(var[1])), 1}()
     for x in var
         push!(ret, cpp_to_julia(x))
     end
