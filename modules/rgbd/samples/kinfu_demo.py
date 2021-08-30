@@ -18,7 +18,7 @@ def kinfu_demo():
         "-i", "--input", help="Required. Path to folder with a input image file", required=True, type=str)
     parser.add_argument(
         "-t", "--large_kinfu", help="Required. Name of KinFu type", required=False, type=str)
-    
+
     args = parser.parse_args()
     print("Args: ", args)
 
