@@ -5,12 +5,8 @@ import sys
 from argparse import ArgumentParser
 
 def get_depth_list(folder):
-    if sys.platform.find('linux')+1:
-        f = open(folder + '/depth.txt', 'r')
-        rgb = [folder + '/' + s.replace('/', '/') for s in f.read().split() if '.png' in s]
-    else:
-        f = open(folder + '\\depth.txt', 'r')
-        rgb = [folder + '\\' + s.replace('/', '\\') for s in f.read().split() if '.png' in s]
+    f = open(folder + '/depth.txt', 'r')
+    rgb = [folder + '/' + s for s in f.read().split() if s.endswith('.png')]
     return rgb
 
 def kinfu_demo():
@@ -19,11 +15,13 @@ def kinfu_demo():
         "-i", "--input", help="Required. Path to folder with a input image file", required=True, type=str)
     parser.add_argument(
         "-t", "--large_kinfu", help="Required. Name of KinFu type", required=False, type=str)
-
+    parser.add_argument(
+        "-ocl", "--use_opencl", help="Required. Flag of OpenCL use", required=False, type=int, default=1)
+    
     args = parser.parse_args()
     print("Args: ", args)
-
-    depth_list = get_depth_list(args.input)
+    
+    cv.ocl.setUseOpenCL(args.use_opencl)
 
     if (args.large_kinfu == None or args.large_kinfu == "0"):
         params = cv.kinfu_Params.defaultParams()
@@ -34,13 +32,14 @@ def kinfu_demo():
     else:
         raise ValueError("Incorrect kinfu type name")
 
+    depth_list = get_depth_list(args.input)
     for path in depth_list:
 
         image = cv.imread(path, cv.IMREAD_ANYDEPTH)
         (height, width) = image.shape
 
         cv.imshow('input', image)
-        cv.waitKey(1)
+        cv.pollKey(1)
 
 
         size = height, width, 4
@@ -55,6 +54,5 @@ def kinfu_demo():
 
 if __name__ == '__main__':
     print(__doc__)
-    cv.setUseOptimized(True)
     kinfu_demo()
     cv.destroyAllWindows()
