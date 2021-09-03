@@ -39,8 +39,7 @@ def kinfu_demo():
         (height, width) = image.shape
 
         cv.imshow('input', image)
-        cv.pollKey(1)
-
+        cv.pollKey()
 
         size = height, width, 4
         cvt8 = np.zeros(size, dtype=np.uint8)
