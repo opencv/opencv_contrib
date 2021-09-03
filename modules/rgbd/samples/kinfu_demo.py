@@ -1,5 +1,6 @@
-import cv2
 import numpy as np
+import cv2 as cv
+import sys
 
 from argparse import ArgumentParser
 
@@ -25,36 +26,35 @@ def kinfu_demo():
     depth_list = get_depth_list(args.input)
 
     if (args.large_kinfu == None or args.large_kinfu == "0"):
-        params = cv2.kinfu_Params.defaultParams()
-        kf = cv2.kinfu_KinFu.create(params)
+        params = cv.kinfu_Params.defaultParams()
+        kf = cv.kinfu_KinFu.create(params)
     elif (args.large_kinfu == "1"):
-        params = cv2.kinfu_Params.hashTSDFParams(False)
-        kf = cv2.kinfu_KinFu.create(params)
+        params = cv.kinfu_Params.hashTSDFParams(False)
+        kf = cv.kinfu_KinFu.create(params)
     else:
         raise ValueError("Incorrect kinfu type name")
 
     for path in depth_list:
 
-        image = cv2.imread(path, cv2.IMREAD_ANYDEPTH)
+        image = cv.imread(path, cv.IMREAD_ANYDEPTH)
         (height, width) = image.shape
 
-        cv2.imshow('input', image)
-        cv2.waitKey(1)
+        cv.imshow('input', image)
+        cv.waitKey(1)
 
 
         size = height, width, 4
         cvt8 = np.zeros(size, dtype=np.uint8)
 
-        #flag = kf.update(image)
         if not kf.update(image):
             kf.reset()
         else:
             kf.render(cvt8)
-            cv2.imshow('render', cvt8)
+            cv.imshow('render', cvt8)
 
 
 if __name__ == '__main__':
     print(__doc__)
-    cv2.setUseOptimized(True)
+    cv.setUseOptimized(True)
     kinfu_demo()
-    cv2.destroyAllWindows()
+    cv.destroyAllWindows()
