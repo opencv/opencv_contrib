@@ -56,5 +56,4 @@ def kinfu_demo():
 if __name__ == '__main__':
     print(__doc__)
     kinfu_demo()
-    cv.waitKey(0)
     cv.destroyAllWindows()
