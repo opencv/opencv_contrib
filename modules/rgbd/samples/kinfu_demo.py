@@ -17,10 +17,10 @@ def kinfu_demo():
         "-t", "--large_kinfu", help="Required. Name of KinFu type", required=False, type=str)
     parser.add_argument(
         "-ocl", "--use_opencl", help="Required. Flag of OpenCL use", required=False, type=int, default=1)
-    
+
     args = parser.parse_args()
     print("Args: ", args)
-    
+
     cv.ocl.setUseOpenCL(args.use_opencl)
 
     if (args.large_kinfu == None or args.large_kinfu == "0"):
