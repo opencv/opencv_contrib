@@ -30,5 +30,10 @@ class aruco_test(NewOpenCVTests):
         with self.assertRaises(cv.error):
             board.setIds(np.array([0]))
 
+    def test_drawCharucoDiamond(self):
+        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        img = cv.aruco.drawCharucoDiamond(aruco_dict, np.array([0, 1, 2, 3]), 100, 80)
+        self.assertTrue(img is not None)
+
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
