@@ -854,7 +854,7 @@ public:
 
         Mat tmp(depthRTT->getHeight(), depthRTT->getWidth(), CV_16U);
         PixelBox pb(depthRTT->getWidth(), depthRTT->getHeight(), 1, PF_DEPTH, tmp.ptr());
-        depthRTT->update(false);
+        depthRTT->update();
         depthRTT->copyContentsToMemory(pb, pb);
 
         // convert to NDC
@@ -871,7 +871,7 @@ public:
 
     void update()
     {
-        rWin->update(false);
+        rWin->update();
     }
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
