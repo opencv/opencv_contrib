@@ -167,7 +167,6 @@ class FuncVariant(FuncVariant):
 
     def get_def_outtypes(self):
         outstr = ""
-        
         for arg in self.deflist:
             outstr = outstr + "%s %s;"%(arg.tp if arg.tp not in pass_by_val_types else arg.tp[:-1], arg.name)
         for arg in self.inlist+self.optlist:
@@ -219,7 +218,6 @@ class FuncVariant(FuncVariant):
                 else:
                     # print("ss")
                     arglist.append("%s_down" %(x.name))
-    
         return 'mod.method("%s", [](%s) { %s return jlcxx::create<%s>(%s);});' % (self.get_wrapper_name(), self.get_argument(False), self.get_def_outtypes(), name, " ,".join(arglist))
 
     def get_complete_code(self, classname, isalgo=False):

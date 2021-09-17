@@ -103,7 +103,7 @@ class ClassInfo(ClassInfo):
         return stra
 
 class FuncVariant(FuncVariant):
-    
+
     def promote_type(self, tp):
         if tp=='int':
             return 'long long'
