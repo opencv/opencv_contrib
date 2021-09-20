@@ -145,11 +145,6 @@ int main(int argc, char** argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
         rgbWriter = makePtr<RGBWriter>(recordPath);
     }
-    if (!dbowPath.empty())
-    {
-        DBOWTrainer dbow(10, 5);
-        dbow.load(dbowPath);
-    }
 
     Ptr<large_kinfu::Params> params;
     Ptr<LargeKinfu> largeKinfu;
@@ -165,6 +160,9 @@ int main(int argc, char** argv)
         largeKinfu = LargeKinfu::create(params);
 
     const auto& volParams = largeKinfu->getParams().volumeParams;
+
+    if (!dbowPath.empty())
+        largeKinfu->setDBOW(dbowPath);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -229,7 +227,7 @@ int main(int argc, char** argv)
                 imshow("depth", cvt8);
                 imshow("RGB", rgb_frame);
 
-                if (!largeKinfu->update(frame))
+                if (!largeKinfu->update(frame, rgb_frame))
                 {
                     largeKinfu->reset();
                     std::cout << "reset\n";
