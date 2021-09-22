@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 
     Ptr<DepthSource> ds;
     Ptr<RGBSource> rgb;
-    
+
     if (parser.has("depth"))
         ds = makePtr<DepthSource>(parser.get<String>("depth"));
     else

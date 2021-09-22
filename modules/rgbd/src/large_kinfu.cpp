@@ -139,7 +139,7 @@ class LargeKinfuImpl : public LargeKinfu
 
     int frameCounter;
     Affine3f pose;
-    
+
     Ptr<LoopClosureDetection> lcd;
 };
 
