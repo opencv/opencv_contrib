@@ -140,7 +140,7 @@ PERF_TEST_P(FileName, VideoWriter, VIDEO_SRC)
             ASSERT_FALSE(frame.empty());
 
             if (!writer.isOpened())
-                writer.open(outputFile, CV_FOURCC('X', 'V', 'I', 'D'), FPS, frame.size());
+                writer.open(outputFile, VideoWriter::fourcc('X', 'V', 'I', 'D'), FPS, frame.size());
 
             startTimer(); next();
             writer.write(frame);
