@@ -130,7 +130,7 @@ class LargeKinfuImpl : public LargeKinfu
    private:
     Params params;
 
-    cv::Ptr<FastICPOdometry> icp;
+    Odometry icp;
     //! TODO: Submap manager and Pose graph optimizer
     cv::Ptr<detail::SubmapManager<MatType>> submapMgr;
 
@@ -142,13 +142,18 @@ template<typename MatType>
 LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
     : params(_params)
 {
-    icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
-                                  params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-                                  params.icpIterations, params.depthFactor, params.truncateThreshold);
+    OdometrySettings ods;
+    ods.setCameraMatrix(Mat(params.intr));
+    ods.setMaxRotation(30.f);
+    ods.setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
+    icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
+    //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
+    //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
+    //                              params.icpIterations, params.depthFactor, params.truncateThreshold);
 
     // TODO: make these tunable algorithm parameters
-    icp->setMaxRotation(30.f);
-    icp->setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
+    //icp->setMaxRotation(30.f);
+    //icp->setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
 
     submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);
     reset();
@@ -226,9 +231,9 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    cv::Ptr<OdometryFrame> newFrame = icp->makeOdometryFrame(noArray(), depth, noArray());
-
-    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
+    OdometryFrame newFrame = icp.createOdometryFrame();
+    newFrame.setDepth(depth);
+    //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     CV_LOG_INFO(NULL, "Current frameID: " << frameCounter);
     for (const auto& it : submapMgr->activeSubmaps)
@@ -248,10 +253,12 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
         //1. Track
         Matx44d mrt;
-        bool trackingSuccess = icp->compute(newFrame, currTrackingSubmap->frame, mrt);
+        Mat Rt;
+        icp.prepareFrames(currTrackingSubmap->frame, newFrame);
+        bool trackingSuccess = icp.compute(newFrame, currTrackingSubmap->frame, Rt);
         if (trackingSuccess)
         {
-            affine.matrix = mrt;
+            affine = Affine3f(Rt);
             currTrackingSubmap->composeCameraPose(affine);
         }
         else
@@ -273,8 +280,8 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         //3. Raycast
         currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize);
 
-        currTrackingSubmap->frame->setDepth(noArray());
-        icp->prepareFrameCache(currTrackingSubmap->frame, OdometryFrame::CACHE_SRC);
+        currTrackingSubmap->frame.setDepth(noArray());
+        //icp.prepareFrameCache(currTrackingSubmap->frame, OdometryFramePyramidType::CACHE_SRC);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
@@ -312,8 +319,8 @@ void LargeKinfuImpl<MatType>::render(OutputArray image) const
     auto currSubmap = submapMgr->getCurrentSubmap();
     //! TODO: Can render be dependent on current submap
     MatType pts, nrm;
-    currSubmap->frame->getPyramidAt(pts, OdometryFrame::PYR_CLOUD, 0);
-    currSubmap->frame->getPyramidAt(nrm, OdometryFrame::PYR_NORM,  0);
+    currSubmap->frame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+    currSubmap->frame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM,  0);
     detail::renderPointsNormals(pts, nrm, image, params.lightPose);
 }
 
