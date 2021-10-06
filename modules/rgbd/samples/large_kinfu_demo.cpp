@@ -7,7 +7,7 @@
 
 #include <fstream>
 #include <iostream>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/rgbd/large_kinfu.hpp>
@@ -132,6 +132,8 @@ int main(int argc, char** argv)
     if (!idle)
         largeKinfu = LargeKinfu::create(params);
 
+    const auto& volParams = largeKinfu->getParams().volumeParams;
+
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
     window.setViewerPose(Affine3f::Identity());
@@ -149,6 +151,11 @@ int main(int argc, char** argv)
         if (depthWriter)
             depthWriter->append(frame);
 
+        Vec3i volResolution(volParams.resolutionX,
+                            volParams.resolutionY,
+                            volParams.resolutionZ);
+        Affine3f volPose(Matx44f(volParams.pose));
+
 #ifdef HAVE_OPENCV_VIZ
         if (pause)
         {
@@ -162,10 +169,8 @@ int main(int argc, char** argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
-                Vec3d volSize = largeKinfu->getParams().volumeParams.voxelSize *
-                                Vec3d(largeKinfu->getParams().volumeParams.resolution);
-                window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize),
-                                  largeKinfu->getParams().volumeParams.pose);
+                Vec3d volSize = volParams.voxelSize * Vec3d(volResolution);
+                window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), volPose);
                 PauseCallbackArgs pca(*largeKinfu);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text",
@@ -213,10 +218,8 @@ int main(int argc, char** argv)
                     }
 
                     // window.showWidget("worldAxes", viz::WCoordinateSystem());
-                    Vec3d volSize = largeKinfu->getParams().volumeParams.voxelSize *
-                                    largeKinfu->getParams().volumeParams.resolution;
-                    window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize),
-                                      largeKinfu->getParams().volumeParams.pose);
+                    Vec3d volSize = volParams.voxelSize * volResolution;
+                    window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), volPose);
                     window.setViewerPose(largeKinfu->getPose());
                     window.spinOnce(1, true);
                 }

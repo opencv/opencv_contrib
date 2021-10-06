@@ -11,14 +11,14 @@
 
 #include <opencv2/ts.hpp>
 #include <opencv2/rgbd.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
 #endif
 
 namespace opencv_test {
-using namespace cv::rgbd;
+
 }
 
 #endif

@@ -8,7 +8,7 @@
 #ifndef __OPENCV_RGBD_LARGEKINFU_HPP__
 #define __OPENCV_RGBD_LARGEKINFU_HPP__
 
-#include <opencv2/rgbd/volume.hpp>
+#include <opencv2/3d.hpp>
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
@@ -84,7 +84,7 @@ struct CV_EXPORTS_W Params
 
     /** @brief Volume parameters
     */
-    kinfu::VolumeParams volumeParams;
+    VolumeParams volumeParams;
 };
 
 /** @brief Large Scale Dense Depth Fusion implementation

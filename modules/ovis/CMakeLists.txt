@@ -19,7 +19,7 @@ endif()
 include_directories(${OGRE_INCLUDE_DIRS})
 link_directories(${OGRE_LIBRARY_DIRS})
 
-ocv_add_module(ovis opencv_core opencv_imgproc opencv_calib3d WRAP python)
+ocv_add_module(ovis opencv_core opencv_imgproc opencv_3d WRAP python)
 ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_create_module()

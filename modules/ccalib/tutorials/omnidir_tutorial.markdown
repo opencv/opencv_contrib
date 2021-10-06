@@ -17,7 +17,7 @@ This tutorial will introduce the following parts of omnidirectional camera calib
 -    calibrate a stereo pair of cameras.
 -    rectify images so that large distoration is removed.
 -    reconstruct 3D from two stereo images, with large filed of view.
--    comparison with fisheye model in opencv/calib3d/
+-    comparison with fisheye model in opencv/calib/
 
 Single Camera Calibration
 ---------------------

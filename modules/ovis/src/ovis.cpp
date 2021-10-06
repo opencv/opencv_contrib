@@ -9,7 +9,7 @@
 #include <OgreRectangle2D.h>
 #include <OgreCompositorManager.h>
 
-#include <opencv2/calib3d.hpp>
+#include <opencv2/3d.hpp>
 #include <opencv2/core/utils/configuration.private.hpp>
 
 

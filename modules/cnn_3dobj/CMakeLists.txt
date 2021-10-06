@@ -39,7 +39,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 include_directories(${Caffe_INCLUDE_DIR})
 set(the_description "CNN for 3D object recognition and pose estimation including a completed Sphere View on 3D objects")
-ocv_define_module(cnn_3dobj opencv_core opencv_imgproc ${Caffe_LIBS} ${Glog_LIBS} ${Protobuf_LIBS} OPTIONAL opencv_features2d opencv_viz opencv_calib3d WRAP python)
+ocv_define_module(cnn_3dobj opencv_core opencv_imgproc ${Caffe_LIBS} ${Glog_LIBS} ${Protobuf_LIBS} OPTIONAL opencv_features2d opencv_viz opencv_3d WRAP python)
 ocv_add_testdata(testdata/cv contrib/cnn_3dobj)
 
 if(TARGET opencv_test_cnn_3dobj)

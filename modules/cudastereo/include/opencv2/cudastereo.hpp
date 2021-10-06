@@ -48,7 +48,8 @@
 #endif
 
 #include "opencv2/core/cuda.hpp"
-#include "opencv2/calib3d.hpp"
+#include "opencv2/3d.hpp"
+#include "opencv2/stereo.hpp"
 
 /**
   @addtogroup cuda

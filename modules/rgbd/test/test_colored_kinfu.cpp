@@ -451,9 +451,10 @@ TEST(ColoredKinectFusion, DISABLED_lowDense)
 #ifdef OPENCV_ENABLE_NONFREE
 TEST(ColoredKinectFusion, highDense)
 #else
-TEST(KinectFusion, DISABLED_highDense)
+TEST(ColoredKinectFusion, DISABLED_highDense)
 #endif
 {
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
     flyTest(true, false);
 }
 
@@ -469,9 +470,10 @@ TEST(ColoredKinectFusion, DISABLED_color_lowDense)
 #ifdef OPENCV_ENABLE_NONFREE
 TEST(ColoredKinectFusion, color_highDense)
 #else
-TEST(KinectFusion, DISABLED_color_highDense)
+TEST(ColoredKinectFusion, DISABLED_color_highDense)
 #endif
 {
+    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
     flyTest(true, true);
 }
 
