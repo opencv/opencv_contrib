@@ -177,7 +177,7 @@ ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     ods.setMaxRotation(30.f);
     ods.setMaxTranslation(params.voxelSize * (float)params.volumeDims[0] * 0.5f);
     icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
-    //prevFrame = icp.createOdometryFrame();
+    //prevFrame = icp.createOdometryFrame(OdometryFrameStoreType::MAT);
 
     //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
     //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
@@ -279,21 +279,24 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
         rgb = _rgb;
 
-    OdometryFrame newFrame = icp.createOdometryFrame();
+    OdometryFrame newFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
+
     newFrame.setImage(rgb);
     newFrame.setDepth(depth);
 
     //TODO: fix it
     // This workaround is needed because we want to keep color image in newFrame
     // FastICP doesn't use color info and doesn't prepare its pyramids
-    newFrame.setPyramidLevels(params.icpIterations.size());
-
+    //newFrame.setPyramidLevels(params.icpIterations.size());
     //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     if(frameCounter == 0)
     {
+        icp.prepareFrames(newFrame, newFrame);
+
         // use depth instead of distance
         volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+        newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
         newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
     }
     else
@@ -301,11 +304,14 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         Affine3f affine;
         Matx44d mrt;
         Mat Rt;
-        icp.prepareFrames(prevFrame, newFrame);
+        //icp.prepareFrames(prevFrame, newFrame);
+        //bool success = icp.compute(prevFrame, newFrame, Rt);
+        icp.prepareFrames(newFrame, prevFrame);
         bool success = icp.compute(newFrame, prevFrame, Rt);
+        std::cout << success << "\n" << Rt << std::endl;
         if (!success)
             return false;
-        affine = Affine3f(Rt);
+        affine = Affine3f(Matx44f(Rt));
 
         pose = (Affine3f(pose) * affine).matrix;
 
@@ -316,18 +322,22 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         {
             // use depth instead of distance
             volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+            newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
+            newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
         }
         MatType points, normals, colors;
         newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         newFrame.getPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
+        //newFrame.getImage(colors);
         volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
         //TODO: fix it
         // This workaround relates to specific process of pyramid building
-        newFrame.setDepth(noArray());
+        //newFrame.setDepth(noArray());
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
+        //newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
         newFrame.setPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
     }
 
@@ -345,6 +355,8 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image) const
     prevFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     prevFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
     prevFrame.getPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
+    //std::cout << pts << std::endl;
+    //std::cout << rgb << std::endl;
     detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }
 
