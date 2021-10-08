@@ -373,6 +373,49 @@ converting the pixels to RGB for visualization.
  */
 CV_EXPORTS_W void drawColorDisp(InputArray src_disp, OutputArray dst_disp, int ndisp, Stream& stream = Stream::Null());
 
+/////////////////////////////////////////
+// NvidiaHWStereoBM
+
+
+/** @brief Class computing stereo correspondence using NVidia OpticalFlow SDK and hardware accelerated block matching.
+ * The implementation mimics `cv::StereoMatcher` for compatibility with other implementation, but ignores most of
+ * algorithm options for now. Minimal hardware requirements: Turing+ GPU. For more details see
+ * @ref https://developer.nvidia.com/opticalflow-sdk for hardware specific details.
+ */
+class CV_EXPORTS_W NvidiaHWStereoBM : public cv::StereoMatcher
+{
+public:
+
+    /** @brief Calculate stereo disparity map
+     * @param left Left rectified image. Applicable input types: 8UC1, 8UC3, 8UC4. Four channel image is expected in ABGR format.
+     * @param right Right rectified image. Applicable input types: 8UC1, 8UC3, 8UC4. Four channel image is expected in ABGR format.
+     * @param disparity 16-bit output disparity in 11.5 fixed point layout.
+     * @param inputStream CUDA stream for preprocessing steps.
+     * @param outputStream CUDA stream for postprocessing steps.
+     */
+    CV_WRAP virtual void compute(InputArray left, InputArray right, OutputArray disparity, Stream inputStream, Stream outputStream) = 0;
+
+    /** @overload */
+    CV_WRAP virtual void compute(InputArray left, InputArray right, OutputArray disparity) = 0;
+
+};
+
+
+/** @brief Hardware optical flow engine quality and speed preset
+ */
+enum StereoQualityPreset
+{
+    PRESET_SLOW = 5,                   /**< Slow perf level results in lowest performance and best quality */
+    PRESET_MEDIUM = 10,                /**< Medium perf level results in low performance and medium quality */
+    PRESET_FAST = 20                   /**< Fast perf level results in high performance and low quality */
+};
+
+/** @brief Creates NvidiaHWStereoBM object.
+ * @param preset Hardware optical flow engine quality preset.
+ * @param gridSize Matching cell size. Supported values: 1, 2, 4.
+ */
+CV_EXPORTS_W Ptr<cuda::NvidiaHWStereoBM> createNvidiaHWStereoBM(StereoQualityPreset preset, int gridSize);
+
 //! @}
 
 }} // namespace cv { namespace cuda {

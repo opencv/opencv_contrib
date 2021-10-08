@@ -81,6 +81,60 @@ CUDA_TEST_P(StereoBM, Regression)
 
 INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoBM, ALL_DEVICES);
 
+
+PARAM_TEST_CASE(NvidiaHWStereo, cv::cuda::DeviceInfo, cv::cuda::StereoQualityPreset, int, bool)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::cuda::StereoQualityPreset preset;
+    int gridSize;
+    bool color;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        cv::cuda::setDevice(devInfo.deviceID());
+        preset = GET_PARAM(1);
+        gridSize = GET_PARAM(2);
+        color = GET_PARAM(3);
+    }
+};
+
+
+// Smoke test to ensure that block matching reports something, but not empty image
+// Real output is hardware and preset dependent
+CUDA_TEST_P(NvidiaHWStereo, Regression)
+{
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", color ? cv::IMREAD_COLOR : cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", color ? cv::IMREAD_COLOR : cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+    ASSERT_EQ(left_image.cols, right_image.cols);
+    ASSERT_EQ(left_image.rows, right_image.rows);
+
+    cv::Ptr<cv::cuda::NvidiaHWStereoBM> bm = cv::cuda::createNvidiaHWStereoBM(preset, gridSize);
+
+    cv::cuda::GpuMat disp;
+    bm->compute(loadMat(left_image), loadMat(right_image), disp);
+
+    cv::Mat cpu_disp;
+    disp.download(cpu_disp);
+    EXPECT_EQ(cpu_disp.cols, ceil(1.f * left_image.cols / gridSize));
+    EXPECT_EQ(cpu_disp.rows, ceil(1.f * left_image.rows / gridSize));
+    EXPECT_GT(countNonZero(cpu_disp), 0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Stereo, NvidiaHWStereo, Combine(
+                                ALL_DEVICES,
+                                Values(
+                                    cv::cuda::StereoQualityPreset::PRESET_FAST,
+                                    cv::cuda::StereoQualityPreset::PRESET_MEDIUM,
+                                    cv::cuda::StereoQualityPreset::PRESET_SLOW),
+                                Values(1, 2, 4),
+                                Values(true, false)
+                            )
+                       );
+
 //////////////////////////////////////////////////////////////////////////
 // StereoBeliefPropagation
 
