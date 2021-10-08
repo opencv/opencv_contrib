@@ -48,6 +48,7 @@ cv::Ptr<cv::cuda::NvidiaOpticalFlow_2_0> cv::cuda::NvidiaOpticalFlow_2_0::create
 
 #else
 
+
 #include "nvOpticalFlowCommon.h"
 #include "nvOpticalFlowCuda.h"
 
