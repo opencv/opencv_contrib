@@ -59,7 +59,6 @@ References:
 
 #include "../precomp.hpp"
 
-#include "opencv2/core/core_c.h"    // <- because CV_REDUCE_SUM was undeclared without it
 #include "pct_clusterizer.hpp"
 
 namespace cv
@@ -333,7 +332,7 @@ namespace cv
                     clusters.create(1, points.cols, CV_32FC1);
 
                     // Sum all points.
-                    reduce(points, clusters, 0, CV_REDUCE_SUM, CV_32FC1);
+                    reduce(points, clusters, 0, REDUCE_SUM, CV_32FC1);
 
                     // Sum all weights, all points have the same weight -> sum is the point count
                     clusters.at<float>(0, WEIGHT_IDX) = static_cast<float>(points.rows);
