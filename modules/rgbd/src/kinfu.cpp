@@ -248,12 +248,12 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    OdometryFrame newFrame = icp.createOdometryFrame();
+    OdometryFrame newFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
     newFrame.setDepth(depth);
-    //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     if(frameCounter == 0)
     {
+        icp.prepareFrames(newFrame, newFrame);
         // use depth instead of distance
         volume->integrate(depth, params.depthFactor, pose, params.intr);
     }
@@ -263,11 +263,10 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         Matx44d mrt;
         Mat Rt;
         icp.prepareFrames(prevFrame, newFrame);
-        bool success = icp.compute(newFrame, prevFrame, Rt);
+        bool success = icp.compute(prevFrame, newFrame, Rt);
         if(!success)
             return false;
-        affine = Affine3f(Rt);
-
+        affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
 
         float rnorm = (float)cv::norm(affine.rvec());
@@ -285,7 +284,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
         //TODO: fix it
         // This workaround relates to specific process of pyramid building
-        newFrame.setDepth(noArray());
+        //newFrame.setDepth(noArray());
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);

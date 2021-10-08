@@ -176,6 +176,8 @@ ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     ods.setCameraMatrix(Mat(params.intr));
     ods.setMaxRotation(30.f);
     ods.setMaxTranslation(params.voxelSize * (float)params.volumeDims[0] * 0.5f);
+    ods.setIterCounts(params.icpIterations);
+
     icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
     //prevFrame = icp.createOdometryFrame(OdometryFrameStoreType::MAT);
 
@@ -304,17 +306,20 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         Affine3f affine;
         Matx44d mrt;
         Mat Rt;
-        //icp.prepareFrames(prevFrame, newFrame);
-        //bool success = icp.compute(prevFrame, newFrame, Rt);
-        icp.prepareFrames(newFrame, prevFrame);
-        bool success = icp.compute(newFrame, prevFrame, Rt);
-        std::cout << success << "\n" << Rt << std::endl;
+        icp.prepareFrames(prevFrame, newFrame);
+        bool success = icp.compute(prevFrame, newFrame, Rt);
+        //icp.prepareFrames(newFrame, prevFrame);
+        //bool success = icp.compute(newFrame, prevFrame, Rt);
+        //std::cout << success << "\n" << Rt << std::endl;
         if (!success)
             return false;
-        affine = Affine3f(Matx44f(Rt));
-
+        affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
-
+        //pose = affine.matrix;
+        
+        std::cout << frameCounter << std::endl;
+        std::cout << "affine: " << affine.rvec() << " " << affine.translation() << std::endl;
+        std::cout << "pose:   " << Affine3f(pose).rvec() << " " << Affine3f(pose).translation() << std::endl;
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
@@ -337,8 +342,9 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
-        //newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
         newFrame.setPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
+        //icp.prepareFrames(newFrame, newFrame);
+
     }
 
     prevFrame = newFrame;
@@ -355,8 +361,7 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image) const
     prevFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     prevFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
     prevFrame.getPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
-    //std::cout << pts << std::endl;
-    //std::cout << rgb << std::endl;
+
     detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }
 
