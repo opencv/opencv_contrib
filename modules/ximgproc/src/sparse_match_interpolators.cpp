@@ -1031,7 +1031,7 @@ public:
     {
         if (m_validSize >= m_size)
         {
-            CV_Error(CV_StsOutOfRange, " m_validSize >= m_size this problem can be resolved my decreasig k parameter");
+            CV_Error(Error::StsOutOfRange, " m_validSize >= m_size this problem can be resolved my decreasig k parameter");
         }
         m_index[m_validSize] = index;
         m_weight[m_validSize] = weight;
