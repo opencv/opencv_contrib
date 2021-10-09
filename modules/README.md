@@ -22,7 +22,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **datasets**: Datasets Reader -- Code for reading existing computer vision databases and samples of using the readers to train, test and run using that dataset's data.
 
-- **dnn_objdetect**: Object Detection using CNNs -- Implements compact CNN Model for object detection. Trained using Caffe but uses opencv_dnn modeule.
+- **dnn_objdetect**: Object Detection using CNNs -- Implements compact CNN Model for object detection. Trained using Caffe but uses opencv_dnn module.
 
 - **dnns_easily_fooled**: Subvert DNNs -- This code can use the activations in a network to fool the networks into recognizing something else.
 
@@ -30,11 +30,15 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **face**: Face Recognition -- Face recognition techniques: Eigen, Fisher and Local Binary Pattern Histograms LBPH methods.
 
-- **fuzzy**: Fuzzy Logic in Vision -- Fuzzy logic image transform and inverse; Fuzzy image processing.
-
 - **freetype**: Drawing text using freetype and harfbuzz.
 
+- **fuzzy**: Fuzzy Logic in Vision -- Fuzzy logic image transform and inverse; Fuzzy image processing.
+
 - **hdf**: Hierarchical Data Storage -- This module contains I/O routines for Hierarchical Data Format: https://en.m.wikipedia.org/wiki/Hierarchical_Data_Format meant to store large amounts of data.
+
+- **hsf**: Hierarchical Feature Selection for Efficient Image Segmentation -- This module contains an efficient algorithm to segment an image.
+
+- **img_hash**: This module contains algorithms to extract hash of an image allowing to efficiently estimate similarity between images.
 
 - **line_descriptor**: Line Segment Extract and Match -- Methods of extracting, describing and matching line segments using binary descriptors.
 
@@ -43,6 +47,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 - **optflow**: Optical Flow -- Algorithms for running and evaluating deepflow, simpleflow, sparsetodenseflow and motion templates (silhouette flow).
 
 - **ovis**: OGRE 3D Visualiser -- allows you to render 3D data using the OGRE 3D engine.
+
+- **phase_unwrapping**: Quality-guided phase unwrapping.
 
 - **plot**: Plotting -- The plot module allows you to easily plot data in 1D or 2D.
 
@@ -60,9 +66,9 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **surface_matching**: Point Pair Features -- Implements 3d object detection and localization using multimodal point pair features.
 
-- **text**: Visual Text Matching -- In a visual scene, detect text, segment words and recognise the text.
+- **text**: Scene Text Detection and Recognition -- This module contains algorithms to perform text detection, words segmentation and text recognition in a visual scene.
 
-- **tracking**: Vision Based Object Tracking -- Use and/or evaluate one of 5 different visual object tracking techniques.
+- **tracking**: Vision Based Object Tracking -- Use and/or evaluate different visual object tracking techniques.
 
 - **xfeatures2d**: Features2D extra -- Extra 2D Features Framework containing experimental and non-free 2D feature detector/descriptor algorithms. SURF, BRIEF, Censure, Freak, LUCID, Daisy, Self-similar.
 
