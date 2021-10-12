@@ -160,6 +160,7 @@ private:
 
     int frameCounter;
     Matx44f pose;
+    OdometryFrame renderFrame;
     OdometryFrame prevFrame;
 };
 
@@ -306,10 +307,9 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         Affine3f affine;
         Matx44d mrt;
         Mat Rt;
-        icp.prepareFrames(prevFrame, newFrame);
-        bool success = icp.compute(prevFrame, newFrame, Rt);
-        //icp.prepareFrames(newFrame, prevFrame);
-        //bool success = icp.compute(newFrame, prevFrame, Rt);
+        icp.prepareFrames(newFrame, prevFrame);
+        bool success = icp.compute(newFrame, prevFrame, Rt);
+
         //std::cout << success << "\n" << Rt << std::endl;
         if (!success)
             return false;
@@ -317,9 +317,9 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         pose = (Affine3f(pose) * affine).matrix;
         //pose = affine.matrix;
         
-        std::cout << frameCounter << std::endl;
-        std::cout << "affine: " << affine.rvec() << " " << affine.translation() << std::endl;
-        std::cout << "pose:   " << Affine3f(pose).rvec() << " " << Affine3f(pose).translation() << std::endl;
+        //std::cout << frameCounter << std::endl;
+        //std::cout << "affine: " << affine.rvec() << " " << affine.translation() << std::endl;
+        //std::cout << "pose:   " << Affine3f(pose).rvec() << " " << Affine3f(pose).translation() << std::endl;
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
@@ -347,7 +347,12 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
     }
 
-    prevFrame = newFrame;
+    renderFrame = newFrame;
+
+    prevFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
+    newFrame.setImage(rgb);
+    prevFrame.setDepth(depth);
+
     frameCounter++;
     return true;
 }
@@ -358,9 +363,9 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
     MatType pts, nrm, rgb;
-    prevFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
-    prevFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
-    prevFrame.getPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
+    renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+    renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
+    renderFrame.getPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
 
     detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }

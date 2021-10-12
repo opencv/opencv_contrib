@@ -265,9 +265,6 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         Matx44d mrt;
         Mat Rt;
         icp.prepareFrames(newFrame, prevFrame);
-        //for (int i = 0; i < newFrame.getPyramidLevels(OdometryFramePyramidType::PYR_CLOUD); i++)
-        //    newFrame.setPyramidAt(newPoints[i], OdometryFramePyramidType::PYR_CLOUD, i);
-
         bool success = icp.compute(newFrame, prevFrame, Rt);
         if(!success)
             return false;
