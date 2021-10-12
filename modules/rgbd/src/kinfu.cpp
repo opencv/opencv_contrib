@@ -264,17 +264,17 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         Affine3f affine;
         Matx44d mrt;
         Mat Rt;
-        icp.prepareFrames(prevFrame, newFrame);
+        icp.prepareFrames(newFrame, prevFrame);
         //for (int i = 0; i < newFrame.getPyramidLevels(OdometryFramePyramidType::PYR_CLOUD); i++)
         //    newFrame.setPyramidAt(newPoints[i], OdometryFramePyramidType::PYR_CLOUD, i);
 
-        bool success = icp.compute(prevFrame, newFrame, Rt);
+        bool success = icp.compute(newFrame, prevFrame, Rt);
         if(!success)
             return false;
         affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
         //std::cout << affine.matrix << std::endl;
-        std::cout << frameCounter << "  " << affine.rvec() << " " << affine.translation() << std::endl;
+        //std::cout << frameCounter << "  " << affine.rvec() << " " << affine.translation() << std::endl;
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
