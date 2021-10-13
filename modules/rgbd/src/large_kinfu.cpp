@@ -233,7 +233,6 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
     OdometryFrame newFrame = icp.createOdometryFrame();
     newFrame.setDepth(depth);
-    //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     CV_LOG_INFO(NULL, "Current frameID: " << frameCounter);
     for (const auto& it : submapMgr->activeSubmaps)
@@ -246,19 +245,24 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
         if(frameCounter == 0) //! Only one current tracking map
         {
+            icp.prepareFrames(newFrame, newFrame);
             currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
             currTrackingSubmap->frame = newFrame;
+            currTrackingSubmap->renderFrame = newFrame;
             continue;
         }
 
         //1. Track
         Matx44d mrt;
         Mat Rt;
-        icp.prepareFrames(currTrackingSubmap->frame, newFrame);
+        icp.prepareFrames(newFrame, currTrackingSubmap->frame);
         bool trackingSuccess = icp.compute(newFrame, currTrackingSubmap->frame, Rt);
+        //icp.prepareFrames(currTrackingSubmap->frame, newFrame);
+        //bool trackingSuccess = icp.compute(currTrackingSubmap->frame, newFrame, Rt);
         if (trackingSuccess)
         {
-            affine = Affine3f(Rt);
+            //affine = Affine3f(Rt);
+            affine.matrix = Matx44f(Rt);
             currTrackingSubmap->composeCameraPose(affine);
         }
         else
@@ -280,7 +284,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         //3. Raycast
         currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize);
 
-        currTrackingSubmap->frame.setDepth(noArray());
+        //currTrackingSubmap->frame.setDepth(noArray());
         //icp.prepareFrameCache(currTrackingSubmap->frame, OdometryFramePyramidType::CACHE_SRC);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
@@ -306,6 +310,11 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
     }
     CV_LOG_INFO(NULL, "Number of submaps: " << submapMgr->submapList.size());
+    
+    //auto currSubmap = submapMgr->getCurrentSubmap();
+    //currSubmap->renderFrame = newFrame;
+    //currSubmap->frame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
+    //currSubmap->frame.setDepth(depth);
 
     frameCounter++;
     return true;
@@ -319,8 +328,8 @@ void LargeKinfuImpl<MatType>::render(OutputArray image) const
     auto currSubmap = submapMgr->getCurrentSubmap();
     //! TODO: Can render be dependent on current submap
     MatType pts, nrm;
-    currSubmap->frame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
-    currSubmap->frame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM,  0);
+    currSubmap->renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+    currSubmap->renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM,  0);
     detail::renderPointsNormals(pts, nrm, image, params.lightPose);
 }
 
