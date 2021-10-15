@@ -55,7 +55,7 @@ namespace cv { namespace cuda { namespace device
 {
     namespace stereobm
     {
-        void stereoBM_CUDA(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int ndisp, int winsz, const PtrStepSz<unsigned int>& minSSD_buf, cudaStream_t & stream);
+        void stereoBM_CUDA(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int ndisp, int winsz, int uniquenessRatio, const PtrStepSz<unsigned int>& minSSD_buf, cudaStream_t & stream);
         void prefilter_xsobel(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap /*= 31*/, cudaStream_t & stream);
         void prefilter_norm(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap, int winsize, cudaStream_t & stream);
         void postfilter_textureness(const PtrStepSzb& input, int winsz, float avgTexturenessThreshold, const PtrStepSzb& disp, cudaStream_t & stream);
@@ -102,8 +102,8 @@ namespace
         int getTextureThreshold() const { return static_cast<int>(avergeTexThreshold_); }
         void setTextureThreshold(int textureThreshold) { avergeTexThreshold_ = static_cast<float>(textureThreshold); }
 
-        int getUniquenessRatio() const { return 0; }
-        void setUniquenessRatio(int /*uniquenessRatio*/) {}
+        int getUniquenessRatio() const { return uniquenessRatio_; }
+        void setUniquenessRatio(int uniquenessRatio) { uniquenessRatio_ = uniquenessRatio; }
 
         int getSmallerBlockSize() const { return 0; }
         void setSmallerBlockSize(int /*blockSize*/){}
@@ -121,12 +121,13 @@ namespace
         int preFilterCap_;
         float avergeTexThreshold_;
         int preFilterSize_;
+        int uniquenessRatio_;
 
         GpuMat minSSD_, leBuf_, riBuf_;
     };
 
     StereoBMImpl::StereoBMImpl(int numDisparities, int blockSize)
-        : preset_(-1), ndisp_(numDisparities), winSize_(blockSize), preFilterCap_(31), avergeTexThreshold_(3), preFilterSize_(9)
+        : preset_(-1), ndisp_(numDisparities), winSize_(blockSize), preFilterCap_(31), avergeTexThreshold_(3), preFilterSize_(9), uniquenessRatio_(0)
     {
     }
 
@@ -183,7 +184,7 @@ namespace
             ri_for_bm = riBuf_;
         }
 
-        stereoBM_CUDA(le_for_bm, ri_for_bm, disparity, ndisp_, winSize_, minSSD_, stream);
+        stereoBM_CUDA(le_for_bm, ri_for_bm, disparity, ndisp_, winSize_, uniquenessRatio_, minSSD_, stream);
 
         if (avergeTexThreshold_ > 0)
             postfilter_textureness(le_for_bm, winSize_, avergeTexThreshold_, disparity, stream);
