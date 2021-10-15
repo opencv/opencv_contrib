@@ -131,6 +131,8 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
     format_.codec = FourccToCodec(codec);
     format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
     format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
+    format_.displayArea = Rect(0, 0, format_.width, format_.height);
+    format_.valid = false;
     FourccToChromaFormat(pixelFormat, format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
@@ -143,6 +145,13 @@ cv::cudacodec::detail::FFmpegVideoSource::~FFmpegVideoSource()
 FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
 {
     return format_;
+}
+
+void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const int codedWidth, const int codedHeight)
+{
+    format_.width = codedWidth;
+    format_.height = codedHeight;
+    format_.valid = true;
 }
 
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)

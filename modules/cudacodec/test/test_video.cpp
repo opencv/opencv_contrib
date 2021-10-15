@@ -57,17 +57,20 @@ CUDA_TEST_P(Video, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
 
-    // CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
-    if (GET_PARAM(1) == "gpu/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
+    // CUDA demuxer has to fall back to ffmpeg to process "cv/video/768x576.avi"
+    if (GET_PARAM(1) == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
         throw SkipTestException("FFmpeg backend not found");
 
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
-
+    cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
     for (int i = 0; i < 100; i++)
     {
         ASSERT_TRUE(reader->nextFrame(frame));
+        if(!fmt.valid)
+            fmt = reader->format();
+        ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
         ASSERT_FALSE(frame.empty());
     }
 }
@@ -122,7 +125,7 @@ CUDA_TEST_P(Video, Writer)
 
 #endif // _WIN32, HAVE_NVCUVENC
 
-#define VIDEO_SRC "gpu/video/768x576.avi", "gpu/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+#define VIDEO_SRC "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,

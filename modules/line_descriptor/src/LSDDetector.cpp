@@ -119,10 +119,6 @@ void LSDDetector::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keyline
 void LSDDetector::detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
                           const std::vector<Mat>& masks ) const
 {
-#if 1
-    CV_UNUSED(images); CV_UNUSED(keylines); CV_UNUSED(scale); CV_UNUSED(numOctaves); CV_UNUSED(masks);
-    CV_Error(Error::StsNotImplemented, "Implementation has been disabled due to createLineSegmentDetector() removal");
-#else
   /* detect lines from each image */
   for ( size_t counter = 0; counter < images.size(); counter++ )
   {
@@ -132,16 +128,11 @@ void LSDDetector::detect( const std::vector<Mat>& images, std::vector<std::vecto
     else
       detectImpl( images[counter], keylines[counter], numOctaves, scale, masks[counter] );
   }
-#endif
 }
 
 /* implementation of line detection */
 void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, int numOctaves, int scale, const Mat& mask ) const
 {
-#if 1
-    CV_UNUSED(imageSrc); CV_UNUSED(keylines); CV_UNUSED(numOctaves); CV_UNUSED(scale); CV_UNUSED(mask);
-    CV_Error(Error::StsNotImplemented, "Implementation has been disabled due to createLineSegmentDetector() removal");
-#else
   cv::Mat image;
   if( imageSrc.channels() != 1 )
     cvtColor( imageSrc, image, COLOR_BGR2GRAY );
@@ -179,7 +170,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
   int class_counter = -1;
   for ( int octaveIdx = 0; octaveIdx < (int) lines_lsd.size(); octaveIdx++ )
   {
-    float octaveScale = pow( (float)scale, octaveIdx );
+    float octaveScale = std::pow((float)scale, (float)octaveIdx);
     for ( int k = 0; k < (int) lines_lsd[octaveIdx].size(); k++ )
     {
       KeyLine kl;
@@ -227,8 +218,8 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
       }
     }
   }
-#endif
 }
+
 }
 }
 

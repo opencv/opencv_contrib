@@ -122,11 +122,23 @@ class ClassInfo(ClassInfo):
 class FuncVariant(FuncVariant):
 
     def get_return(self):
+        outstr = ""
+        for arg in self.inlist+self.optlist:
+            if arg.tp not in pass_by_val_types and arg.tp not in enums and self.promote_type(arg.tp)!=arg.tp:
+                outstr = outstr + "%s=%s_down;\n"%(arg.name, arg.name)
+
         if len(self.outlist)==0:
-            return ";"
+            return outstr+";"
         elif len(self.outlist)==1:
-            return "return %s;" % ( ('(int)' if self.outlist[0].tp in enums else '') + self.outlist[0].name)
-        return "return make_tuple(%s);" %  ",".join(["move(%s)" %  (('(int)' if x.tp in enums else '') +x.name) for x in self.outlist])
+            return outstr+"return %s;" % ( ('(int64_t)' if self.outlist[0].tp in enums else ('' if self.promote_type(self.outlist[0].tp)==self.outlist[0].tp else '(%s)'%self.promote_type(self.outlist[0].tp))) + self.outlist[0].name)
+        return outstr+"return make_tuple(%s);" %  ",".join(["move(%s)" %  (('(int64_t)' if x.tp in enums else  ('' if self.promote_type(x.tp)==x.tp else '(%s)'%self.promote_type(x.tp))) +x.name) for x in self.outlist])
+
+    def promote_type(self, tp):
+        if tp=='int':
+            return 'long long'
+        elif tp =='float':
+            return 'double'
+        return tp
 
     def get_argument(self, isalgo):
         args = self.inlist + self.optlist
@@ -142,13 +154,13 @@ class FuncVariant(FuncVariant):
                 print("PATHWAY NOT TESTED")
                 argnamelist.append(arg.tp[:-1] +"& "+arg.name)
             elif arg.tp in enums:
-                argnamelist.append("int& " + arg.name)
+                argnamelist.append("int64_t& " + arg.name)
             else:
                 if arg.tp=='bool':
                     # Bool pass-by-reference is broken
                     argnamelist.append(arg.tp+" " +arg.name)
                 else:
-                    argnamelist.append(arg.tp + "& "+arg.name)
+                    argnamelist.append(self.promote_type(arg.tp) + "& "+arg.name)
         # argnamelist = [(arg.tp if arg.tp not in pass_by_val_types else arg.tp[:-1]) +"& "+arg.name for arg in args]
         argstr = ", ".join(argnamelist)
         return argstr
@@ -157,6 +169,10 @@ class FuncVariant(FuncVariant):
         outstr = ""
         for arg in self.deflist:
             outstr = outstr + "%s %s;"%(arg.tp if arg.tp not in pass_by_val_types else arg.tp[:-1], arg.name)
+        for arg in self.inlist+self.optlist:
+            if arg.tp not in pass_by_val_types and arg.tp not in enums and self.promote_type(arg.tp)!=arg.tp:
+                outstr = outstr + "%s %s_down=(%s)%s;"%(arg.tp if arg.tp not in pass_by_val_types else arg.tp[:-1], arg.name, arg.tp, arg.name)
+
         return outstr
 
     def get_retval(self, isalgo):
@@ -171,7 +187,15 @@ class FuncVariant(FuncVariant):
             elif x.tp in enums:
                 arlist.append("(%s)%s" %(x.tp, x.name))
             else:
-                arlist.append(x.name)
+                if self.promote_type(x.tp) == x.tp:
+                    arlist.append(x.name)
+                else:
+                    if len([y for y in self.inlist+self.optlist if y.name==x.name])>0:
+                    # print("ss")
+                        arlist.append("%s_down" %(x.name))
+                    else:
+                        arlist.append(x.name)
+
         argstr = ", ".join(arlist)
         if self.classname and not self.isstatic:
             stra = stra + "cobj%s%s(%s); " %("->" if isalgo else ".",self.name.split('::')[-1], argstr)
@@ -189,8 +213,11 @@ class FuncVariant(FuncVariant):
             elif x.tp in enums:
                 arglist.append("(%s)%s" %(x.tp, x.name))
             else:
-                arglist.append(x.name)
-
+                if self.promote_type(x.tp) == x.tp:
+                    arglist.append(x.name)
+                else:
+                    # print("ss")
+                    arglist.append("%s_down" %(x.name))
         return 'mod.method("%s", [](%s) { %s return jlcxx::create<%s>(%s);});' % (self.get_wrapper_name(), self.get_argument(False), self.get_def_outtypes(), name, " ,".join(arglist))
 
     def get_complete_code(self, classname, isalgo=False):
@@ -255,13 +282,13 @@ struct SuperType<%s>
             # cpp_code.write('\n    mod.add_bits<{0}>("{1}", jlcxx::julia_type("CppEnum"));'.format(e2[0], e2[1]))
             enums.append(e2[0])
             enums.append(e2[1])
-            enums.append(e2[0].replace("cv::", ""))
+            enums.append(e2[0].replace("cv::", "").replace("::", '_'))
 
 
         for tp in ns.register_types:
             cpp_code.write('   mod.add_type<%s>("%s");\n' %(tp, normalize_class_name(tp)))
 
-
+    # print(enums)
     for name, ns in namespaces.items():
 
         nsname = name.replace("::", "_")

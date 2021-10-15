@@ -2,7 +2,21 @@ OpenCV Julia Bindings
 ============================
 This module contains some limited functionality that allows OpenCV functions be used from Julia. Upon installation the binding files are automatically registered with Julia's package manager like any normal package.
 
-This module requires Julia 1.4 and the CxxWrap.jl 0.10.
+This module requires Julia 1.4 and the CxxWrap.jl 0.10 when built from source. To use the compiled binary distributions Julia 1.6 is recommended.
+
+Using Prebuilt Binaries
+---
+The easiest way to use OpenCV from Julia bindings is to use the version registered with Julia's package manager. This is also the only tested way to use Julia bindings on Windows. To do that simply start the Julia REPL. Hit `]` and then type `add OpenCV`.
+
+```bash
+$ julia
+...
+julia> ]
+pkg> add OpenCV
+```
+
+---
+The following steps walk over a source build of the Julia bindings.
 
 CxxWrap Installation
 ----
@@ -30,6 +44,8 @@ Note, you need a valid Python installation to build the Julia Bindings.
 Install
 -------
 By default the Julia package is installed in `CMAKE_BINARY_DIR`, you can change this by setting the `JULIA_PKG_INSTALL_PATH` cmake variable. The package is automatically registered with the Julia package manager.
+
+---
 
 Run
 ---

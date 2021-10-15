@@ -58,6 +58,9 @@ public:
 
     FormatInfo format() const CV_OVERRIDE;
 
+    void updateFormat(const int codedWidth, const int codedHeight);
+
+
 private:
     FormatInfo format_;
     VideoCapture cap;

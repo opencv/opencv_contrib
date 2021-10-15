@@ -148,6 +148,7 @@ namespace
 
             bool isProgressive = displayInfo.progressive_frame != 0;
             const int num_fields = isProgressive ? 1 : 2 + displayInfo.repeat_first_field;
+            videoSource_->updateFormat(videoDecoder_->targetWidth(), videoDecoder_->targetHeight());
 
             for (int active_field = 0; active_field < num_fields; ++active_field)
             {
@@ -158,6 +159,7 @@ namespace
                 videoProcParams.second_field      = active_field;
                 videoProcParams.top_field_first   = displayInfo.top_field_first;
                 videoProcParams.unpaired_field    = (num_fields == 1);
+                videoProcParams.output_stream = StreamAccessor::getStream(stream);
 
                 frames_.push_back(std::make_pair(displayInfo, videoProcParams));
             }

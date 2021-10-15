@@ -292,7 +292,8 @@ TEST_F(ximgproc_ED, ManySmallCircles)
     size_t lines_size = 6264;
     size_t ellipses_size = 2449;
     EXPECT_EQ(detector->getSegments().size(), segments_size);
-    EXPECT_EQ(lines.size(), lines_size);
+    EXPECT_GE(lines.size(), lines_size);
+    EXPECT_LE(lines.size(), lines_size + 2);
     EXPECT_EQ(ellipses.size(), ellipses_size);
 }
 }} // namespace

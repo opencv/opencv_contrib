@@ -114,6 +114,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
         newFormat.width = format->coded_width;
         newFormat.height = format->coded_height;
+        newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
         newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
 
         try

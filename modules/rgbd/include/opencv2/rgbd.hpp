@@ -16,6 +16,8 @@
 #include "opencv2/rgbd/linemod.hpp"
 
 /** @defgroup rgbd RGB-Depth Processing
+
+@ref kinfu_icp
 */
 
 #endif

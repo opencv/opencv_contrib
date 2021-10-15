@@ -303,7 +303,7 @@ namespace cv
                 p_res.y = j + xr + 0.5f;
             } else
             {
-                float effectiveScaleFactor = std::pow(m_scale_factor, scale);
+                float effectiveScaleFactor = std::pow(m_scale_factor, (float)scale);
                 p_res.x = (i + xc + 0.5f) * effectiveScaleFactor;
                 p_res.y = (j + xr + 0.5f) * effectiveScaleFactor;
 
@@ -691,7 +691,7 @@ namespace cv
                                     continue;
                             }
                             kp_temp.response = saliency[r][j * cW + i];
-                            kp_temp.size = (m_patch_radius * 2.0f + 1) * std::pow(m_scale_factor, r);
+                            kp_temp.size = (m_patch_radius * 2.0f + 1) * std::pow(m_scale_factor, (float)r);
                             kp_temp.octave = r;
                             if (m_compute_orientation)
                                 kp_temp.angle = computeOrientation(m_scaleSpace[r], i, j, orientPoints);

@@ -122,9 +122,13 @@ void ft::FT02D_FL_process(InputArray matrix, const int radius, OutputArray outpu
     int output_height = matrix.rows();
     int output_width = matrix.cols();
 
-    uchar *img_r = new uchar[output_height * output_width];
-    uchar *img_g = new uchar[output_height * output_width];
-    uchar *img_b = new uchar[output_height * output_width];
+    Mat compR(output_height, output_width, CV_8UC1);
+    Mat compG(output_height, output_width, CV_8UC1);
+    Mat compB(output_height, output_width, CV_8UC1);
+
+    uchar *img_r = compR.ptr();
+    uchar *img_g = compG.ptr();
+    uchar *img_b = compB.ptr();
 
     for (int y = 0; y < output_height; y++)
     {
@@ -157,10 +161,6 @@ void ft::FT02D_FL_process(InputArray matrix, const int radius, OutputArray outpu
             pos_iFT++;
         }
     }
-
-    Mat compR(output_height, output_width, CV_8UC1, img_r);
-    Mat compG(output_height, output_width, CV_8UC1, img_g);
-    Mat compB(output_height, output_width, CV_8UC1, img_b);
 
     std::vector<Mat> oComp;
 
@@ -250,9 +250,13 @@ void ft::FT02D_FL_process_float(InputArray matrix, const int radius, OutputArray
     int output_height = matrix.rows();
     int output_width = matrix.cols();
 
-    float *img_r = new float[output_height * output_width];
-    float *img_g = new float[output_height * output_width];
-    float *img_b = new float[output_height * output_width];
+    Mat compR(output_height, output_width, CV_32FC1);
+    Mat compG(output_height, output_width, CV_32FC1);
+    Mat compB(output_height, output_width, CV_32FC1);
+
+    float *img_r = compR.ptr<float>();
+    float *img_g = compG.ptr<float>();
+    float *img_b = compB.ptr<float>();
 
     for (int y = 0; y < output_height; y++)
     {
@@ -285,10 +289,6 @@ void ft::FT02D_FL_process_float(InputArray matrix, const int radius, OutputArray
             pos_iFT++;
         }
     }
-
-    Mat compR(output_height, output_width, CV_32FC1, img_r);
-    Mat compG(output_height, output_width, CV_32FC1, img_g);
-    Mat compB(output_height, output_width, CV_32FC1, img_b);
 
     std::vector<Mat> oComp;
 

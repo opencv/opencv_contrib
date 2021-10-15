@@ -8,7 +8,7 @@ adaptiveThreshConstant: 7
 minMarkerPerimeterRate: 0.03
 maxMarkerPerimeterRate: 4.0
 polygonalApproxAccuracyRate: 0.05
-minCornerDistance: 10.0
+minCornerDistanceRate: 0.05
 minDistanceToBorder: 3
 minMarkerDistance: 10.0
 minMarkerDistanceRate: 0.05

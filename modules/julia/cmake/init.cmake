@@ -14,9 +14,5 @@ if(WITH_JULIA AND NOT DEFINED Julia_FOUND)
     ocv_module_disable(julia)
   endif()
 
-  # publish vars for status() dumper
-  set(Julia_FOUND "${Julia_FOUND}" PARENT_SCOPE)
-  set(Julia_EXECUTABLE "${Julia_EXECUTABLE}" PARENT_SCOPE)
-  set(HAVE_JULIA "YES" CACHE STRING ADVANCED)
-
+  set(HAVE_JULIA ON)
 endif()

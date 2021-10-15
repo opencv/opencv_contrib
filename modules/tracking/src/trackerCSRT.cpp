@@ -511,7 +511,7 @@ void TrackerCSRTImpl::init(InputArray image_, const Rect& boundingBox)
             sqrt(original_target_size.width * original_target_size.height)));
     template_size.width = template_size.height =
         (template_size.width + template_size.height) / 2.0f;
-    rescale_ratio = sqrt(pow(params.template_size,2) / (template_size.width * template_size.height));
+    rescale_ratio = sqrt((params.template_size * params.template_size) / (template_size.width * template_size.height));
     if(rescale_ratio > 1)  {
         rescale_ratio = 1;
     }
