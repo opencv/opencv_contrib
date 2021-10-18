@@ -205,7 +205,6 @@ namespace cv { namespace cuda { namespace device
         {
             extern __shared__ unsigned int col_ssd_cache[];
             uint line_ssds[3 + N_DISPARITIES]; // 1 - local minima + 2 - tail of previous batch for accurate uniquenessRatio check
-            uint line_disps[3 + N_DISPARITIES];
             uint* batch_ssds = line_ssds + 3;
 
             uint line_ssd_tails[3*ROWSperTHREAD];
@@ -312,14 +311,6 @@ namespace cv { namespace cuda { namespace device
                             line_ssds[1] = line_ssd_tails[3*0 + 1];
                             line_ssds[2] = line_ssd_tails[3*0 + 2];
 
-                            for(int i = 0; i < N_DISPARITIES; i++)
-                            {
-                                line_disps[i+3] = d + i;
-                            }
-                            line_disps[0] = disparImage[0];
-                            line_disps[1] = d - 2;
-                            line_disps[2] = d - 1;
-
                             float thresh = thresh_scale * ::min(line_ssds[0], mssd);
                             int dtest = disparImage[0];
 
@@ -331,14 +322,17 @@ namespace cv { namespace cuda { namespace device
 
                             if(uniqueness_approved[0])
                             {
-                                for (int ld = 0; ld < N_DISPARITIES + 3; ld++)
+                                for (int ld = 1; ld < N_DISPARITIES + 3; ld++)
                                 {
-                                    if (((line_disps[ld] < dtest-1) || (line_disps[ld] > dtest+1)) && (line_ssds[ld] <= thresh))
+                                    if ((d+ld-3 < dtest-1 || d+ld-3 > dtest+1) && (line_ssds[ld] <= thresh))
                                     {
-                                        printf("[%d, %d, %d] Dropped uniqueness at %d, %d\n", blockIdx.x, blockIdx.y, threadIdx.x, d, ld);
                                         uniqueness_approved[0] = 0;
                                         break;
                                     }
+                                }
+                                if ((disparImage[0] < dtest-1 || disparImage[0] > dtest+1) && (line_ssds[0] <= thresh))
+                                {
+                                    uniqueness_approved[0] = 0;
                                 }
                             }
 
@@ -416,19 +410,9 @@ namespace cv { namespace cuda { namespace device
                         {
                             if (uniquenessRatio > 0)
                             {
-                                // restore
                                 line_ssds[0] = minSSDImage[row * cminSSD_step];
                                 line_ssds[1] = line_ssd_tails[3*row + 1];
                                 line_ssds[2] = line_ssd_tails[3*row + 2];
-
-
-                                for(int i = 0; i < N_DISPARITIES; i++)
-                                {
-                                    line_disps[i+3] = d + i;
-                                }
-                                line_disps[0] = disparImage[disp.step * row];
-                                line_disps[1] = d - 2;
-                                line_disps[2] = d - 1;
 
                                 float thresh = thresh_scale * ::min(line_ssds[0], mssd);
                                 int dtest = disparImage[disp.step * row];
@@ -441,13 +425,17 @@ namespace cv { namespace cuda { namespace device
 
                                 if(uniqueness_approved[row])
                                 {
-                                    for (int ld = 0; ld < N_DISPARITIES + 3; ld++)
+                                    for (int ld = 1; ld < N_DISPARITIES + 3; ld++)
                                     {
-                                        if (((line_disps[ld] < dtest-1) || (line_disps[ld] > dtest+1)) && (line_ssds[ld] <= thresh))
+                                        if (((d+ld-3 < dtest-1) || (d+ld-3 > dtest+1)) && (line_ssds[ld] <= thresh))
                                         {
                                             uniqueness_approved[row] = 0;
                                             break;
                                         }
+                                    }
+                                    if ((disparImage[disp.step * row] < dtest-1 || disparImage[disp.step * row] > dtest+1) && (line_ssds[0] <= thresh))
+                                    {
+                                        uniqueness_approved[row] = 0;
                                     }
                                 }
 
