@@ -204,8 +204,8 @@ namespace cv { namespace cuda { namespace device
         __global__ void stereoKernel(unsigned char *left, unsigned char *right, size_t img_step, PtrStepb disp, int maxdisp, int uniquenessRatio)
         {
             extern __shared__ unsigned int col_ssd_cache[];
-            uint line_ssds[3 + N_DISPARITIES]; // 1 - local minima + 2 - tail of previous batch for accurate uniquenessRatio check
-            uint* batch_ssds = line_ssds + 3;
+            uint line_ssds[2 + N_DISPARITIES]; // +2 - tail of previous batch for accurate uniquenessRatio check
+            uint* batch_ssds = line_ssds + 2;
 
             uint line_ssd_tails[3*ROWSperTHREAD];
             uchar uniqueness_approved[ROWSperTHREAD];
@@ -307,36 +307,35 @@ namespace cv { namespace cuda { namespace device
                     {
                         if (uniquenessRatio > 0)
                         {
-                            line_ssds[0] = minSSDImage[0];
-                            line_ssds[1] = line_ssd_tails[3*0 + 1];
-                            line_ssds[2] = line_ssd_tails[3*0 + 2];
+                            line_ssds[0] = line_ssd_tails[3*0 + 1];
+                            line_ssds[1] = line_ssd_tails[3*0 + 2];
 
-                            float thresh = thresh_scale * ::min(line_ssds[0], mssd);
+                            float thresh = thresh_scale * ::min(minSSDImage[0], mssd);
                             int dtest = disparImage[0];
 
-                            if(mssd < line_ssds[0])
+                            if(mssd < minSSDImage[0])
                             {
                                 uniqueness_approved[0] = 1;
                                 dtest = d + bestIdx;
-                            }
-
-                            if(uniqueness_approved[0])
-                            {
-                                for (int ld = 1; ld < N_DISPARITIES + 3; ld++)
-                                {
-                                    if ((d+ld-3 < dtest-1 || d+ld-3 > dtest+1) && (line_ssds[ld] <= thresh))
-                                    {
-                                        uniqueness_approved[0] = 0;
-                                        break;
-                                    }
-                                }
-                                if ((disparImage[0] < dtest-1 || disparImage[0] > dtest+1) && (line_ssds[0] <= thresh))
+                                if ((disparImage[0] < dtest-1 || disparImage[0] > dtest+1) && (minSSDImage[0] <= thresh))
                                 {
                                     uniqueness_approved[0] = 0;
                                 }
                             }
 
-                            line_ssd_tails[3*0 + 0] = ::min(line_ssds[0], mssd);
+                            if(uniqueness_approved[0])
+                            {
+                                for (int ld = 0; ld < N_DISPARITIES + 2; ld++)
+                                {
+                                    if ((d+ld-2 < dtest-1 || d+ld-2 > dtest+1) && (line_ssds[ld] <= thresh))
+                                    {
+                                        uniqueness_approved[0] = 0;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            line_ssd_tails[3*0 + 0] = ::min(minSSDImage[0], mssd);
                             line_ssd_tails[3*0 + 1] = batch_ssds[6];
                             line_ssd_tails[3*0 + 2] = batch_ssds[7];
                         }
@@ -410,36 +409,35 @@ namespace cv { namespace cuda { namespace device
                         {
                             if (uniquenessRatio > 0)
                             {
-                                line_ssds[0] = minSSDImage[row * cminSSD_step];
-                                line_ssds[1] = line_ssd_tails[3*row + 1];
-                                line_ssds[2] = line_ssd_tails[3*row + 2];
+                                line_ssds[0] = line_ssd_tails[3*row + 1];
+                                line_ssds[1] = line_ssd_tails[3*row + 2];
 
-                                float thresh = thresh_scale * ::min(line_ssds[0], mssd);
+                                float thresh = thresh_scale * ::min(minSSDImage[row * cminSSD_step], mssd);
                                 int dtest = disparImage[disp.step * row];
 
-                                if(mssd < line_ssds[0])
+                                if(mssd < minSSDImage[row * cminSSD_step])
                                 {
                                     uniqueness_approved[row] = 1;
                                     dtest = d + bestIdx;
-                                }
-
-                                if(uniqueness_approved[row])
-                                {
-                                    for (int ld = 1; ld < N_DISPARITIES + 3; ld++)
-                                    {
-                                        if (((d+ld-3 < dtest-1) || (d+ld-3 > dtest+1)) && (line_ssds[ld] <= thresh))
-                                        {
-                                            uniqueness_approved[row] = 0;
-                                            break;
-                                        }
-                                    }
-                                    if ((disparImage[disp.step * row] < dtest-1 || disparImage[disp.step * row] > dtest+1) && (line_ssds[0] <= thresh))
+                                    if ((disparImage[disp.step * row] < dtest-1 || disparImage[disp.step * row] > dtest+1) && (minSSDImage[row * cminSSD_step] <= thresh))
                                     {
                                         uniqueness_approved[row] = 0;
                                     }
                                 }
 
-                                line_ssd_tails[3*row + 0] = ::min(line_ssds[0], mssd);
+                                if(uniqueness_approved[row])
+                                {
+                                    for (int ld = 0; ld < N_DISPARITIES + 2; ld++)
+                                    {
+                                        if (((d+ld-2 < dtest-1) || (d+ld-2 > dtest+1)) && (line_ssds[ld] <= thresh))
+                                        {
+                                            uniqueness_approved[row] = 0;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                line_ssd_tails[3*row + 0] = ::min(minSSDImage[row * cminSSD_step], mssd);
                                 line_ssd_tails[3*row + 1] = batch_ssds[6];
                                 line_ssd_tails[3*row + 2] = batch_ssds[7];
                             }
