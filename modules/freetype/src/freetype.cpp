@@ -238,16 +238,14 @@ void FreeType2Impl::putTextOutline(
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
 
-    unsigned int textLen;
-    hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
-    FT_Vector currentPos = {0,0};
+    hb_buffer_guess_segment_properties (hb_buffer);
+    hb_shape (mHb_font, hb_buffer, NULL, 0);
 
+    unsigned int textLen = 0;
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
-
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     PathUserData *userData = new PathUserData( _img );
     userData->mColor     = _color;
@@ -256,6 +254,7 @@ void FreeType2Impl::putTextOutline(
     userData->mLine_type = _line_type;
 
     // Initilize currentPosition ( in FreeType coordinates)
+    FT_Vector currentPos = {0,0};
     currentPos.x = _org.x * 64;
     currentPos.y = _org.y * 64;
 
@@ -305,14 +304,14 @@ void FreeType2Impl::putTextBitmapMono(
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
 
-    unsigned int textLen;
-    hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
+    hb_buffer_guess_segment_properties (hb_buffer);
+    hb_shape (mHb_font, hb_buffer, NULL, 0);
+
+    unsigned int textLen = 0;
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
-
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     _org.y += _fontHeight;
     if( _bottomLeftOrigin == true ){
@@ -372,6 +371,7 @@ void FreeType2Impl::putTextBitmapBlend(
    int _fontHeight, Scalar _color,
    int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
+
     CV_Assert( _thickness < 0 );
     CV_Assert( _line_type == 16 );
 
@@ -379,14 +379,14 @@ void FreeType2Impl::putTextBitmapBlend(
     hb_buffer_t *hb_buffer = hb_buffer_create ();
     CV_Assert( hb_buffer != NULL );
 
-    unsigned int textLen;
-    hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
+    hb_buffer_guess_segment_properties (hb_buffer);
+    hb_shape (mHb_font, hb_buffer, NULL, 0);
+
+    unsigned int textLen = 0;
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
-
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     _org.y += _fontHeight;
     if( _bottomLeftOrigin == true ){
@@ -461,13 +461,14 @@ Size FreeType2Impl::getTextSize(
     CV_Assert( hb_buffer != NULL );
     FT_Vector currentPos = {0,0};
 
-    unsigned int textLen;
-    hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
+    hb_buffer_guess_segment_properties (hb_buffer);
+    hb_shape (mHb_font, hb_buffer, NULL, 0);
+
+    unsigned int textLen = 0;
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
     CV_Assert( info != NULL );
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
 
     // Initilize BoundaryBox ( in OpenCV coordinates )
     int xMin = INT_MAX, yMin = INT_MAX;
