@@ -314,14 +314,10 @@ private:
 
     NV_OF_CUDA_API_FUNCTION_LIST* GetAPI()
     {
-        std::lock_guard<std::mutex> lock(m_lock);
         return  m_ofAPI.get();
     }
 
     NvOFHandle GetHandle() { return m_hOF; }
-
-protected:
-    std::mutex m_lock;
 
 public:
     NvidiaOpticalFlowImpl(cv::Size imageSize, NV_OF_PERF_LEVEL perfPreset, bool bEnableTemporalHints,
@@ -767,14 +763,10 @@ private:
 
     NV_OF_CUDA_API_FUNCTION_LIST* GetAPI()
     {
-        std::lock_guard<std::mutex> lock(m_lock);
         return  m_ofAPI.get();
     }
 
     NvOFHandle GetHandle() { return m_hOF; }
-
-protected:
-    std::mutex m_lock;
 
 public:
     NvidiaOpticalFlowImpl_2(cv::Size imageSize, NV_OF_PERF_LEVEL perfPreset,
