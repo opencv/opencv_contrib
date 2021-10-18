@@ -140,6 +140,7 @@ CUDA_TEST_P(StereoBM, Uniqueness_Regression)
 
     cv::Mat disp_cpu;
     disp.download(disp_cpu);
+    cv::imwrite("disp_inq15.png", disp_cpu);
 
     EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
 }

@@ -204,7 +204,12 @@ namespace cv { namespace cuda { namespace device
         __global__ void stereoKernel(unsigned char *left, unsigned char *right, size_t img_step, PtrStepb disp, int maxdisp, int uniquenessRatio)
         {
             extern __shared__ unsigned int col_ssd_cache[];
-            uint line_ssds[256*ROWSperTHREAD];
+            uint line_ssds[3 + N_DISPARITIES]; // 1 - local minima + 2 - tail of previous batch for accurate uniquenessRatio check
+            uint line_disps[3 + N_DISPARITIES];
+            uint* batch_ssds = line_ssds + 3;
+
+            uint line_ssd_tails[3*ROWSperTHREAD];
+            uchar uniqueness_approved[ROWSperTHREAD];
 
             volatile unsigned int *col_ssd = col_ssd_cache + BLOCK_W + threadIdx.x;
             volatile unsigned int *col_ssd_extra = threadIdx.x < (2 * RADIUS) ? col_ssd + BLOCK_W : 0;  //#define N_DIRTY_PIXELS (2 * RADIUS)
@@ -217,6 +222,7 @@ namespace cv { namespace cuda { namespace device
 
             unsigned int* minSSDImage = cminSSDImage + X + Y * cminSSD_step;
             unsigned char* disparImage = disp.data + X + Y * disp.step;
+            float thresh_scale;
             //if (X < cwidth)
             //{
             //    unsigned int *minSSDImage_end = minSSDImage + min(ROWSperTHREAD, cheight - Y) * minssd_step;
@@ -227,10 +233,24 @@ namespace cv { namespace cuda { namespace device
             int y_tex;
             int x_tex = X - RADIUS;
 
-            float uniqueness_thresh = 1.0 + uniquenessRatio / 100.0f;
-
             if (x_tex >= cwidth)
                 return;
+
+
+            if (uniquenessRatio > 0)
+            {
+                batch_ssds[6] = 0xFFFFFFFF;
+                batch_ssds[7] = 0xFFFFFFFF;
+                thresh_scale = (1.0 + uniquenessRatio / 100.0f);
+                for(int i = 0; i < ROWSperTHREAD; i++)
+                {
+                    uniqueness_approved[i] = 1;
+                }
+                for(int i = 0; i < 3*ROWSperTHREAD; i++)
+                {
+                    line_ssd_tails[i] = 0xFFFFFFFF;
+                }
+            }
 
             for(int d = STEREO_MIND; d < maxdisp; d += STEREO_DISP_STEP)
             {
@@ -246,8 +266,6 @@ namespace cv { namespace cuda { namespace device
 
                 if (Y < cheight - RADIUS)
                 {
-                    uint* batch_ssds = line_ssds + d - STEREO_MIND;
-
                     //See above:  #define COL_SSD_SIZE (BLOCK_W + 2 * RADIUS)
                     batch_ssds[0] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 0 * (BLOCK_W + 2 * RADIUS), X);
                     __syncthreads();
@@ -266,7 +284,8 @@ namespace cv { namespace cuda { namespace device
                     batch_ssds[7] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 7 * (BLOCK_W + 2 * RADIUS), X);
                     __syncthreads();
 
-                    int mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])), ::min(::min(batch_ssds[2], batch_ssds[3]), ::min(batch_ssds[6], batch_ssds[7])));
+                    int mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])),
+                                     ::min(::min(batch_ssds[2], batch_ssds[3]), ::min(batch_ssds[6], batch_ssds[7])));
 
                     int bestIdx = 0;
                     for (int i = 0; i < N_DISPARITIES; i++)
@@ -278,8 +297,8 @@ namespace cv { namespace cuda { namespace device
                     // For threads that do not satisfy the if condition below("X < cwidth - RADIUS"), previously
                     // computed "minSSD" value is not used at all.
                     //
-                    // However, since the "CalcSSDVector" function has "__syncthreads" call in its body, those threads
-                    // must also call "CalcSSDVector" to avoid deadlock. (#13850)
+                    // However, since the batch_ssds computation has "__syncthreads" call in its body, those threads
+                    // must also call "CalcSSD" to avoid deadlock. (#13850)
                     //
                     // From CUDA 9, using "__syncwarp" with proper mask value instead of using "__syncthreads"
                     // could be an option, but the shared memory access pattern does not allow this option,
@@ -287,6 +306,47 @@ namespace cv { namespace cuda { namespace device
 
                     if (X < cwidth - RADIUS)
                     {
+                        if (uniquenessRatio > 0)
+                        {
+                            line_ssds[0] = minSSDImage[0];
+                            line_ssds[1] = line_ssd_tails[3*0 + 1];
+                            line_ssds[2] = line_ssd_tails[3*0 + 2];
+
+                            for(int i = 0; i < N_DISPARITIES; i++)
+                            {
+                                line_disps[i+3] = d + i;
+                            }
+                            line_disps[0] = disparImage[0];
+                            line_disps[1] = d - 2;
+                            line_disps[2] = d - 1;
+
+                            float thresh = thresh_scale * ::min(line_ssds[0], mssd);
+                            int dtest = disparImage[0];
+
+                            if(mssd < line_ssds[0])
+                            {
+                                uniqueness_approved[0] = 1;
+                                dtest = d + bestIdx;
+                            }
+
+                            if(uniqueness_approved[0])
+                            {
+                                for (int ld = 0; ld < N_DISPARITIES + 3; ld++)
+                                {
+                                    if (((line_disps[ld] < dtest-1) || (line_disps[ld] > dtest+1)) && (line_ssds[ld] <= thresh))
+                                    {
+                                        printf("[%d, %d, %d] Dropped uniqueness at %d, %d\n", blockIdx.x, blockIdx.y, threadIdx.x, d, ld);
+                                        uniqueness_approved[0] = 0;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            line_ssd_tails[3*0 + 0] = ::min(line_ssds[0], mssd);
+                            line_ssd_tails[3*0 + 1] = batch_ssds[6];
+                            line_ssd_tails[3*0 + 2] = batch_ssds[7];
+                        }
+
                         if (mssd < minSSDImage[0])
                         {
                             disparImage[0] = (unsigned char)(d + bestIdx);
@@ -314,8 +374,6 @@ namespace cv { namespace cuda { namespace device
 
                     if (row < cheight - RADIUS - Y)
                     {
-                        uint* batch_ssds = line_ssds + row * 256 + d - STEREO_MIND;
-
                         //See above:  #define COL_SSD_SIZE (BLOCK_W + 2 * RADIUS)
                         batch_ssds[0] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 0 * (BLOCK_W + 2 * RADIUS), X);
                         __syncthreads();
@@ -334,7 +392,8 @@ namespace cv { namespace cuda { namespace device
                         batch_ssds[7] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 7 * (BLOCK_W + 2 * RADIUS), X);
                         __syncthreads();
 
-                        int mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])), ::min(::min(batch_ssds[2], batch_ssds[3]), ::min(batch_ssds[6], batch_ssds[7])));
+                        int mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])),
+                                         ::min(::min(batch_ssds[2], batch_ssds[3]), ::min(batch_ssds[6], batch_ssds[7])));
 
                         int bestIdx = 0;
                         for (int i = 0; i < N_DISPARITIES; i++)
@@ -355,6 +414,48 @@ namespace cv { namespace cuda { namespace device
 
                         if (X < cwidth - RADIUS)
                         {
+                            if (uniquenessRatio > 0)
+                            {
+                                // restore
+                                line_ssds[0] = minSSDImage[row * cminSSD_step];
+                                line_ssds[1] = line_ssd_tails[3*row + 1];
+                                line_ssds[2] = line_ssd_tails[3*row + 2];
+
+
+                                for(int i = 0; i < N_DISPARITIES; i++)
+                                {
+                                    line_disps[i+3] = d + i;
+                                }
+                                line_disps[0] = disparImage[disp.step * row];
+                                line_disps[1] = d - 2;
+                                line_disps[2] = d - 1;
+
+                                float thresh = thresh_scale * ::min(line_ssds[0], mssd);
+                                int dtest = disparImage[disp.step * row];
+
+                                if(mssd < line_ssds[0])
+                                {
+                                    uniqueness_approved[row] = 1;
+                                    dtest = d + bestIdx;
+                                }
+
+                                if(uniqueness_approved[row])
+                                {
+                                    for (int ld = 0; ld < N_DISPARITIES + 3; ld++)
+                                    {
+                                        if (((line_disps[ld] < dtest-1) || (line_disps[ld] > dtest+1)) && (line_ssds[ld] <= thresh))
+                                        {
+                                            uniqueness_approved[row] = 0;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                line_ssd_tails[3*row + 0] = ::min(line_ssds[0], mssd);
+                                line_ssd_tails[3*row + 1] = batch_ssds[6];
+                                line_ssd_tails[3*row + 2] = batch_ssds[7];
+                            }
+
                             int idx = row * cminSSD_step;
                             if (mssd < minSSDImage[idx])
                             {
@@ -371,25 +472,10 @@ namespace cv { namespace cuda { namespace device
 
             if (uniquenessRatio > 0)
             {
-                for (int row  = 0; row < end_row; row++)
+                for (int row = 0; row < ROWSperTHREAD; row++)
                 {
-                    uint suboptimal_ssd =  minSSDImage[row * cminSSD_step];
-                    uint suboptimal_d = disparImage[disp.step * row];
-                    float thresh = (1.0 + uniquenessRatio / 100.0f) * suboptimal_ssd;
-
-                    int d = 0;
-                    uint * batch_ssds = line_ssds + row*256;
-                    for (; d < maxdisp - STEREO_MIND; d++)
-                    {
-                        if( (d < suboptimal_d-1 || d > suboptimal_d+1) && (batch_ssds[d] <= thresh) )
-                        {
-                            break;
-                        }
-                    }
-                    if( d < maxdisp )
-                    {
-                        disparImage[disp.step * row] = 0;
-                    }
+                    // drop disparity for pixel where uniqueness requirement was not satisfied (zero value)
+                    disparImage[disp.step * row] = disparImage[disp.step * row] * uniqueness_approved[row];
                 }
             }
         }
