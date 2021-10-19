@@ -117,6 +117,11 @@ ocv_add_module(sfm
 
 add_definitions(/DGLOG_NO_ABBREVIATED_SEVERITIES)  # avoid ERROR macro conflict in glog (ceres dependency)
 
+if(WIN32)
+  # Avoid error due to min/max being already defined as a macro
+  add_definitions(-DNOMINMAX)
+endif(WIN32)
+
 ocv_warnings_disable(CMAKE_CXX_FLAGS
   -Wundef
   -Wshadow
