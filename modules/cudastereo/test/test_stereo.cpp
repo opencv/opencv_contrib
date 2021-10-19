@@ -122,6 +122,26 @@ CUDA_TEST_P(StereoBM, PrefilterNormRegression)
     EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
 }
 
+CUDA_TEST_P(StereoBM, Streams)
+{
+    cv::cuda::Stream stream;
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat disp_gold   = readImage("stereobm/aloe-disp.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+    ASSERT_FALSE(disp_gold.empty());
+
+    cv::Ptr<cv::cuda::StereoBM> bm = cv::cuda::createStereoBM(128, 19);
+    cv::cuda::GpuMat disp;
+
+    bm->compute(loadMat(left_image), loadMat(right_image), disp, stream);
+    stream.waitForCompletion();
+
+    EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
+}
+
 CUDA_TEST_P(StereoBM, Uniqueness_Regression)
 {
     cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);

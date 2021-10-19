@@ -407,19 +407,21 @@ namespace cv { namespace cuda { namespace device
 
                         if (X < cwidth - RADIUS)
                         {
+                            int ssd_idx = row * cminSSD_step;
+                            int disp_idx = row * disp.step;
                             if (uniquenessRatio > 0)
                             {
                                 line_ssds[0] = line_ssd_tails[3*row + 1];
                                 line_ssds[1] = line_ssd_tails[3*row + 2];
 
-                                float thresh = thresh_scale * ::min(minSSDImage[row * cminSSD_step], mssd);
-                                int dtest = disparImage[disp.step * row];
+                                float thresh = thresh_scale * ::min(minSSDImage[ssd_idx], mssd);
+                                int dtest = disparImage[disp_idx];
 
-                                if(mssd < minSSDImage[row * cminSSD_step])
+                                if(mssd < minSSDImage[ssd_idx])
                                 {
                                     uniqueness_approved[row] = 1;
                                     dtest = d + bestIdx;
-                                    if ((disparImage[disp.step * row] < dtest-1 || disparImage[disp.step * row] > dtest+1) && (minSSDImage[row * cminSSD_step] <= thresh))
+                                    if ((disparImage[disp_idx] < dtest-1 || disparImage[disp_idx] > dtest+1) && (minSSDImage[ssd_idx] <= thresh))
                                     {
                                         uniqueness_approved[row] = 0;
                                     }
@@ -437,16 +439,16 @@ namespace cv { namespace cuda { namespace device
                                     }
                                 }
 
-                                line_ssd_tails[3*row + 0] = ::min(minSSDImage[row * cminSSD_step], mssd);
+                                line_ssd_tails[3*row + 0] = ::min(minSSDImage[ssd_idx], mssd);
                                 line_ssd_tails[3*row + 1] = batch_ssds[6];
                                 line_ssd_tails[3*row + 2] = batch_ssds[7];
                             }
 
-                            int idx = row * cminSSD_step;
-                            if (mssd < minSSDImage[idx])
+
+                            if (mssd < minSSDImage[ssd_idx])
                             {
-                                disparImage[disp.step * row] = (unsigned char)(d + bestIdx);
-                                minSSDImage[idx] = mssd;
+                                disparImage[disp_idx] = (unsigned char)(d + bestIdx);
+                                minSSDImage[ssd_idx] = mssd;
                             }
                         }
                     }
@@ -512,15 +514,15 @@ namespace cv { namespace cuda { namespace device
             //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferL1) );
             //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferShared) );
 
-            cudaSafeCall( cudaMemset2D(disp.data, disp.step, 0, disp.cols, disp.rows) );
-            cudaSafeCall( cudaMemset2D(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows) );
+            cudaSafeCall( cudaMemset2DAsync(disp.data, disp.step, 0, disp.cols, disp.rows, stream) );
+            cudaSafeCall( cudaMemset2DAsync(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows, stream) );
 
-            cudaSafeCall( cudaMemcpyToSymbol( cwidth, &left.cols, sizeof(left.cols) ) );
-            cudaSafeCall( cudaMemcpyToSymbol( cheight, &left.rows, sizeof(left.rows) ) );
-            cudaSafeCall( cudaMemcpyToSymbol( cminSSDImage, &minSSD_buf.data, sizeof(minSSD_buf.data) ) );
+            cudaSafeCall( cudaMemcpyToSymbolAsync( cwidth, &left.cols, sizeof(left.cols) , 0, cudaMemcpyHostToDevice, stream) );
+            cudaSafeCall( cudaMemcpyToSymbolAsync( cheight, &left.rows, sizeof(left.rows), 0, cudaMemcpyHostToDevice, stream ) );
+            cudaSafeCall( cudaMemcpyToSymbolAsync( cminSSDImage, &minSSD_buf.data, sizeof(minSSD_buf.data) , 0, cudaMemcpyHostToDevice, stream ) );
 
             size_t minssd_step = minSSD_buf.step/minSSD_buf.elemSize();
-            cudaSafeCall( cudaMemcpyToSymbol( cminSSD_step,  &minssd_step, sizeof(minssd_step) ) );
+            cudaSafeCall( cudaMemcpyToSymbolAsync( cminSSD_step,  &minssd_step, sizeof(minssd_step) , 0, cudaMemcpyHostToDevice, stream ) );
 
             callers[winsz2](left, right, disp, maxdisp, uniquenessRatio, stream);
         }
