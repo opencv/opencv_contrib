@@ -15,12 +15,6 @@ using zxing::BitArray;
 using zxing::ErrorHandler;
 using zxing::Ref;
 
-#if __WORDSIZE == 64
-// typedef long int int64_t;
-#else
-typedef long long int int64_t;
-#endif
-
 BitArray::BitArray(int size_) : size(size_), bits(size_), nextSets(size_), nextUnSets(size_) {}
 
 void BitArray::setUnchar(int i, unsigned char newBits) { bits[i] = newBits; }
