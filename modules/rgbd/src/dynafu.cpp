@@ -173,7 +173,7 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
 #endif
     OdometrySettings ods;
     ods.setCameraMatrix(Mat(params.intr));
-    icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
     //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
     //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,

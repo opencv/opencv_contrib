@@ -179,16 +179,7 @@ ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
     ods.setMaxTranslation(params.voxelSize * (float)params.volumeDims[0] * 0.5f);
     ods.setIterCounts(params.icpIterations);
 
-    icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
-    //prevFrame = icp.createOdometryFrame(OdometryFrameStoreType::MAT);
-
-    //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
-    //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-    //                              params.icpIterations, params.depthFactor, params.truncateThreshold);
-
-    // TODO: make these tunable algorithm parameters
-    //icp->setMaxRotation(30.f);
-    //icp->setMaxTranslation(params.voxelSize * (float)params.volumeDims[0] * 0.5f);
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
     reset();
 }
@@ -310,16 +301,11 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         icp.prepareFrames(newFrame, prevFrame);
         bool success = icp.compute(newFrame, prevFrame, Rt);
 
-        //std::cout << success << "\n" << Rt << std::endl;
         if (!success)
             return false;
         affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
-        //pose = affine.matrix;
-        
-        //std::cout << frameCounter << std::endl;
-        //std::cout << "affine: " << affine.rvec() << " " << affine.translation() << std::endl;
-        //std::cout << "pose:   " << Affine3f(pose).rvec() << " " << Affine3f(pose).translation() << std::endl;
+
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
@@ -334,17 +320,12 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         newFrame.getPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
-        //newFrame.getImage(colors);
+
         volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
-        //TODO: fix it
-        // This workaround relates to specific process of pyramid building
-        //newFrame.setDepth(noArray());
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         newFrame.setPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
-        //icp.prepareFrames(newFrame, newFrame);
-
     }
 
     renderFrame = newFrame;

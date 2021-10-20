@@ -165,16 +165,8 @@ KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     ods.setMaxRotation(30.f);
     ods.setMaxTranslation(params.voxelSize * params.volumeDims[0] * 0.5f);
     ods.setCameraMatrix(Mat(params.intr));
-    icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
-    //icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::COMMON);
-    //prevFrame = icp.createOdometryFrame();
-    //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
-    //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-    //                              params.icpIterations, params.depthFactor, params.truncateThreshold);
-
-    // TODO: make these tunable algorithm parameters
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
     
-
     reset();
 }
 
@@ -270,8 +262,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
             return false;
         affine.matrix = Matx44f(Rt);
         pose = (Affine3f(pose) * affine).matrix;
-        //std::cout << affine.matrix << std::endl;
-        //std::cout << frameCounter << "  " << affine.rvec() << " " << affine.translation() << std::endl;
+
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
@@ -285,18 +276,13 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        //TODO: fix it
-        // This workaround relates to specific process of pyramid building
-        //newFrame.setDepth(noArray());
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
     }
     
     renderFrame = newFrame;
-
-    prevFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
-    prevFrame.setDepth(depth);
+    prevFrame = newFrame;
 
     frameCounter++;
     return true;

@@ -146,14 +146,7 @@ LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
     ods.setCameraMatrix(Mat(params.intr));
     ods.setMaxRotation(30.f);
     ods.setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
-    icp = Odometry(OdometryType::ICP, ods, OdometryAlgoType::FAST);
-    //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
-    //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-    //                              params.icpIterations, params.depthFactor, params.truncateThreshold);
-
-    // TODO: make these tunable algorithm parameters
-    //icp->setMaxRotation(30.f);
-    //icp->setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
     submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);
     reset();
@@ -257,11 +250,9 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         Mat Rt;
         icp.prepareFrames(newFrame, currTrackingSubmap->frame);
         bool trackingSuccess = icp.compute(newFrame, currTrackingSubmap->frame, Rt);
-        //icp.prepareFrames(currTrackingSubmap->frame, newFrame);
-        //bool trackingSuccess = icp.compute(currTrackingSubmap->frame, newFrame, Rt);
+
         if (trackingSuccess)
         {
-            //affine = Affine3f(Rt);
             affine.matrix = Matx44f(Rt);
             currTrackingSubmap->composeCameraPose(affine);
         }
@@ -283,9 +274,6 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
         //3. Raycast
         currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize);
-
-        //currTrackingSubmap->frame.setDepth(noArray());
-        //icp.prepareFrameCache(currTrackingSubmap->frame, OdometryFramePyramidType::CACHE_SRC);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
@@ -310,11 +298,6 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
     }
     CV_LOG_INFO(NULL, "Number of submaps: " << submapMgr->submapList.size());
-    
-    //auto currSubmap = submapMgr->getCurrentSubmap();
-    //currSubmap->renderFrame = newFrame;
-    //currSubmap->frame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
-    //currSubmap->frame.setDepth(depth);
 
     frameCounter++;
     return true;
