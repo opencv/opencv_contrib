@@ -278,12 +278,6 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     newFrame.setImage(rgb);
     newFrame.setDepth(depth);
 
-    //TODO: fix it
-    // This workaround is needed because we want to keep color image in newFrame
-    // FastICP doesn't use color info and doesn't prepare its pyramids
-    //newFrame.setPyramidLevels(params.icpIterations.size());
-    //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
-
     if(frameCounter == 0)
     {
         icp.prepareFrames(newFrame, newFrame);
