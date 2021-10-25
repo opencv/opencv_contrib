@@ -43,6 +43,7 @@
 #if !defined CUDA_DISABLER
 
 #include "opencv2/core/cuda/common.hpp"
+#include <limits.h>
 
 namespace cv { namespace cuda { namespace device
 {
@@ -209,25 +210,18 @@ namespace cv { namespace cuda { namespace device
 
             uint line_ssd_tails[3*ROWSperTHREAD];
             uchar uniqueness_approved[ROWSperTHREAD];
+            uchar local_disparity[ROWSperTHREAD] = {0};
 
             volatile unsigned int *col_ssd = col_ssd_cache + BLOCK_W + threadIdx.x;
-            volatile unsigned int *col_ssd_extra = threadIdx.x < (2 * RADIUS) ? col_ssd + BLOCK_W : 0;  //#define N_DIRTY_PIXELS (2 * RADIUS)
+            volatile unsigned int *col_ssd_extra = threadIdx.x < (2 * RADIUS) ? col_ssd + BLOCK_W : 0;
 
-            //#define X (blockIdx.x * BLOCK_W + threadIdx.x + STEREO_MAXD)
-            int X = (blockIdx.x * BLOCK_W + threadIdx.x + maxdisp + RADIUS);
-            //#define Y (__mul24(blockIdx.y, ROWSperTHREAD) + RADIUS)
-            #define Y (blockIdx.y * ROWSperTHREAD + RADIUS)
-            //int Y = blockIdx.y * ROWSperTHREAD + RADIUS;
+            const int X = (blockIdx.x * BLOCK_W + threadIdx.x + maxdisp + RADIUS);
+            const int Y = (blockIdx.y * ROWSperTHREAD + RADIUS);
 
             unsigned int* minSSDImage = cminSSDImage + X + Y * cminSSD_step;
             unsigned char* disparImage = disp.data + X + Y * disp.step;
             float thresh_scale;
-            //if (X < cwidth)
-            //{
-            //    unsigned int *minSSDImage_end = minSSDImage + min(ROWSperTHREAD, cheight - Y) * minssd_step;
-            //    for(uint *ptr = minSSDImage; ptr != minSSDImage_end; ptr += minssd_step )
-            //        *ptr = 0xFFFFFFFF;
-            //}
+
             int end_row = ::min(ROWSperTHREAD, cheight - Y - RADIUS);
             int y_tex;
             int x_tex = X - RADIUS;
@@ -235,19 +229,19 @@ namespace cv { namespace cuda { namespace device
             if (x_tex >= cwidth)
                 return;
 
+            for(int i = 0; i < 3*ROWSperTHREAD; i++)
+            {
+                line_ssd_tails[i] = UINT_MAX;
+            }
 
             if (uniquenessRatio > 0)
             {
-                batch_ssds[6] = 0xFFFFFFFF;
-                batch_ssds[7] = 0xFFFFFFFF;
+                batch_ssds[6] = UINT_MAX;
+                batch_ssds[7] = UINT_MAX;
                 thresh_scale = (1.0 + uniquenessRatio / 100.0f);
                 for(int i = 0; i < ROWSperTHREAD; i++)
                 {
                     uniqueness_approved[i] = 1;
-                }
-                for(int i = 0; i < 3*ROWSperTHREAD; i++)
-                {
-                    line_ssd_tails[i] = 0xFFFFFFFF;
                 }
             }
 
@@ -261,7 +255,7 @@ namespace cv { namespace cuda { namespace device
                     if (x_tex + BLOCK_W < cwidth)
                         InitColSSD<RADIUS>(x_tex + BLOCK_W, y_tex, img_step, left, right, d, col_ssd_extra);
 
-                __syncthreads(); //before CalcSSDVector function
+                __syncthreads(); //before CalcSSD function
 
                 if (Y < cheight - RADIUS)
                 {
@@ -281,9 +275,8 @@ namespace cv { namespace cuda { namespace device
                     batch_ssds[6] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 6 * (BLOCK_W + 2 * RADIUS), X);
                     __syncthreads();
                     batch_ssds[7] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 7 * (BLOCK_W + 2 * RADIUS), X);
-                    __syncthreads();
 
-                    int mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])),
+                    uint mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])),
                                      ::min(::min(batch_ssds[2], batch_ssds[3]), ::min(batch_ssds[6], batch_ssds[7])));
 
                     int bestIdx = 0;
@@ -305,19 +298,22 @@ namespace cv { namespace cuda { namespace device
 
                     if (X < cwidth - RADIUS)
                     {
+                        unsigned int last_opt = line_ssd_tails[3*0 + 0];
+                        unsigned int opt = ::min(last_opt, mssd);
+
                         if (uniquenessRatio > 0)
                         {
                             line_ssds[0] = line_ssd_tails[3*0 + 1];
                             line_ssds[1] = line_ssd_tails[3*0 + 2];
 
-                            float thresh = thresh_scale * ::min(minSSDImage[0], mssd);
-                            int dtest = disparImage[0];
+                            float thresh = thresh_scale * opt;
+                            int dtest = local_disparity[0];
 
-                            if(mssd < minSSDImage[0])
+                            if(mssd < last_opt)
                             {
                                 uniqueness_approved[0] = 1;
                                 dtest = d + bestIdx;
-                                if ((disparImage[0] < dtest-1 || disparImage[0] > dtest+1) && (minSSDImage[0] <= thresh))
+                                if ((local_disparity[0] < dtest-1 || local_disparity[0] > dtest+1) && (last_opt <= thresh))
                                 {
                                     uniqueness_approved[0] = 0;
                                 }
@@ -325,9 +321,11 @@ namespace cv { namespace cuda { namespace device
 
                             if(uniqueness_approved[0])
                             {
-                                for (int ld = 0; ld < N_DISPARITIES + 2; ld++)
+                                // the trial to decompose the code on 2 loops without ld vs dtest makes
+                                // uniqueness check dramatically slow. at least on gf 1080
+                                for (int ld = d-2; ld < d + N_DISPARITIES; ld++)
                                 {
-                                    if ((d+ld-2 < dtest-1 || d+ld-2 > dtest+1) && (line_ssds[ld] <= thresh))
+                                    if ((ld < dtest-1 || ld > dtest+1) && (line_ssds[ld-d+2] <= thresh))
                                     {
                                         uniqueness_approved[0] = 0;
                                         break;
@@ -335,15 +333,15 @@ namespace cv { namespace cuda { namespace device
                                 }
                             }
 
-                            line_ssd_tails[3*0 + 0] = ::min(minSSDImage[0], mssd);
+
                             line_ssd_tails[3*0 + 1] = batch_ssds[6];
                             line_ssd_tails[3*0 + 2] = batch_ssds[7];
                         }
 
-                        if (mssd < minSSDImage[0])
+                        line_ssd_tails[3*0 + 0] = opt;
+                        if (mssd < last_opt)
                         {
-                            disparImage[0] = (unsigned char)(d + bestIdx);
-                            minSSDImage[0] = mssd;
+                            local_disparity[0] = (unsigned char)(d + bestIdx);
                         }
                     }
                 }
@@ -383,9 +381,8 @@ namespace cv { namespace cuda { namespace device
                         batch_ssds[6] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 6 * (BLOCK_W + 2 * RADIUS), X);
                         __syncthreads();
                         batch_ssds[7] = CalcSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd + 7 * (BLOCK_W + 2 * RADIUS), X);
-                        __syncthreads();
 
-                        int mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])),
+                        uint mssd = ::min(::min(::min(batch_ssds[0], batch_ssds[1]), ::min(batch_ssds[4], batch_ssds[5])),
                                          ::min(::min(batch_ssds[2], batch_ssds[3]), ::min(batch_ssds[6], batch_ssds[7])));
 
                         int bestIdx = 0;
@@ -407,21 +404,21 @@ namespace cv { namespace cuda { namespace device
 
                         if (X < cwidth - RADIUS)
                         {
-                            int ssd_idx = row * cminSSD_step;
-                            int disp_idx = row * disp.step;
+                            unsigned int last_opt = line_ssd_tails[3*row + 0];
+                            unsigned int opt = ::min(last_opt, mssd);
                             if (uniquenessRatio > 0)
                             {
                                 line_ssds[0] = line_ssd_tails[3*row + 1];
                                 line_ssds[1] = line_ssd_tails[3*row + 2];
 
-                                float thresh = thresh_scale * ::min(minSSDImage[ssd_idx], mssd);
-                                int dtest = disparImage[disp_idx];
+                                float thresh = thresh_scale * opt;
+                                int dtest = local_disparity[row];
 
-                                if(mssd < minSSDImage[ssd_idx])
+                                if(mssd < last_opt)
                                 {
                                     uniqueness_approved[row] = 1;
                                     dtest = d + bestIdx;
-                                    if ((disparImage[disp_idx] < dtest-1 || disparImage[disp_idx] > dtest+1) && (minSSDImage[ssd_idx] <= thresh))
+                                    if ((local_disparity[row] < dtest-1 || local_disparity[row] > dtest+1) && (last_opt <= thresh))
                                     {
                                         uniqueness_approved[row] = 0;
                                     }
@@ -439,16 +436,15 @@ namespace cv { namespace cuda { namespace device
                                     }
                                 }
 
-                                line_ssd_tails[3*row + 0] = ::min(minSSDImage[ssd_idx], mssd);
                                 line_ssd_tails[3*row + 1] = batch_ssds[6];
                                 line_ssd_tails[3*row + 2] = batch_ssds[7];
                             }
 
+                            line_ssd_tails[3*row + 0] = opt;
 
-                            if (mssd < minSSDImage[ssd_idx])
+                            if (mssd < last_opt)
                             {
-                                disparImage[disp_idx] = (unsigned char)(d + bestIdx);
-                                minSSDImage[ssd_idx] = mssd;
+                                local_disparity[row] = (unsigned char)(d + bestIdx);
                             }
                         }
                     }
@@ -458,12 +454,24 @@ namespace cv { namespace cuda { namespace device
 
             } // for d loop
 
+            for (int row = 0; row < end_row; row++)
+            {
+                minSSDImage[row * cminSSD_step] = line_ssd_tails[3*row + 0];
+            }
+
             if (uniquenessRatio > 0)
             {
-                for (int row = 0; row < ROWSperTHREAD; row++)
+                for (int row = 0; row < end_row; row++)
                 {
                     // drop disparity for pixel where uniqueness requirement was not satisfied (zero value)
-                    disparImage[disp.step * row] = disparImage[disp.step * row] * uniqueness_approved[row];
+                    disparImage[disp.step * row] = local_disparity[row] * uniqueness_approved[row];
+                }
+            }
+            else
+            {
+                for (int row = 0; row < end_row; row++)
+                {
+                    disparImage[disp.step * row] = local_disparity[row];
                 }
             }
         }
@@ -513,9 +521,6 @@ namespace cv { namespace cuda { namespace device
 
             //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferL1) );
             //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferShared) );
-
-            cudaSafeCall( cudaMemset2DAsync(disp.data, disp.step, 0, disp.cols, disp.rows, stream) );
-            cudaSafeCall( cudaMemset2DAsync(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows, stream) );
 
             cudaSafeCall( cudaMemcpyToSymbolAsync( cwidth, &left.cols, sizeof(left.cols) , 0, cudaMemcpyHostToDevice, stream) );
             cudaSafeCall( cudaMemcpyToSymbolAsync( cheight, &left.rows, sizeof(left.rows), 0, cudaMemcpyHostToDevice, stream ) );
