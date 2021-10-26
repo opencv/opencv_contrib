@@ -3,7 +3,7 @@
 # of this distribution and at http://opencv.org/license.html.
 
 import numpy as np
-import cv2 as cv 
+import cv2 as cv
 
 if __name__ == "__main__":
 	src = cv.imread("peilin_plane.png", cv.IMREAD_GRAYSCALE)
@@ -11,3 +11,4 @@ if __name__ == "__main__":
 	cv.imshow("src image", src)
 	cv.imshow("hough space", hough)
 	cv.waitKey()
+	

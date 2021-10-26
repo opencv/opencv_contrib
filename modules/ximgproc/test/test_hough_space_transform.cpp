@@ -72,4 +72,4 @@ TEST(HoughSpaceTransformTest, accuracy_by_row_sum)
     ASSERT_LT(sum_row.at<int>(0), 26000);
 }
 
-} } 
+} }

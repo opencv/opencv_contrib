@@ -33,4 +33,4 @@ namespace opencv_test {
             SANITY_CHECK_NOTHING();
         }
     }
-} 
+}

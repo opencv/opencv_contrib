@@ -11,7 +11,7 @@ namespace cv {namespace ximgproc {
                              double start_angle,
                              double end_angle,
                              bool crop,
-                             bool norm) 
+                             bool norm)
     {
         CV_Assert(src.type() == CV_8U);
         CV_Assert(src.dims() == 2);
@@ -30,7 +30,7 @@ namespace cv {namespace ximgproc {
             _srcMat.copyTo(_masked_src, _mask);
         }
         else {
-            _masked_src = std::move(_srcMat);
+            _masked_src = _srcMat;
         }
 
         double _t;
