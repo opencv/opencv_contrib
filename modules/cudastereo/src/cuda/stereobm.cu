@@ -522,12 +522,15 @@ namespace cv { namespace cuda { namespace device
             //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferL1) );
             //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferShared) );
 
-            cudaSafeCall( cudaMemcpyToSymbolAsync( cwidth, &left.cols, sizeof(left.cols) , 0, cudaMemcpyHostToDevice, stream) );
-            cudaSafeCall( cudaMemcpyToSymbolAsync( cheight, &left.rows, sizeof(left.rows), 0, cudaMemcpyHostToDevice, stream ) );
-            cudaSafeCall( cudaMemcpyToSymbolAsync( cminSSDImage, &minSSD_buf.data, sizeof(minSSD_buf.data) , 0, cudaMemcpyHostToDevice, stream ) );
+            cudaSafeCall( cudaMemset2D(disp.data, disp.step, 0, disp.cols, disp.rows) );
+            cudaSafeCall( cudaMemset2D(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows) );
+
+            cudaSafeCall( cudaMemcpyToSymbol( cwidth, &left.cols, sizeof(left.cols) ) );
+            cudaSafeCall( cudaMemcpyToSymbol( cheight, &left.rows, sizeof(left.rows) ) );
+            cudaSafeCall( cudaMemcpyToSymbol( cminSSDImage, &minSSD_buf.data, sizeof(minSSD_buf.data) ) );
 
             size_t minssd_step = minSSD_buf.step/minSSD_buf.elemSize();
-            cudaSafeCall( cudaMemcpyToSymbolAsync( cminSSD_step,  &minssd_step, sizeof(minssd_step) , 0, cudaMemcpyHostToDevice, stream ) );
+            cudaSafeCall( cudaMemcpyToSymbol( cminSSD_step,  &minssd_step, sizeof(minssd_step) ) );
 
             callers[winsz2](left, right, disp, maxdisp, uniquenessRatio, stream);
         }
