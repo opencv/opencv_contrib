@@ -11,4 +11,3 @@ if __name__ == "__main__":
 	cv.imshow("src image", src)
 	cv.imshow("hough space", hough)
 	cv.waitKey()
-	
