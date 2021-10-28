@@ -273,7 +273,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
         rgb = _rgb;
 
-    OdometryFrame newFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
+    OdometryFrame newFrame = icp.createOdometryFrame();
 
     newFrame.setImage(rgb);
     newFrame.setDepth(depth);
@@ -324,7 +324,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
     renderFrame = newFrame;
 
-    prevFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
+    prevFrame = icp.createOdometryFrame();
     newFrame.setImage(rgb);
     prevFrame.setDepth(depth);
 

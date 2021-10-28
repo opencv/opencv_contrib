@@ -242,7 +242,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    OdometryFrame newFrame = icp.createOdometryFrame(OdometryFrameStoreType::UMAT);
+    OdometryFrame newFrame = icp.createOdometryFrame();
     newFrame.setDepth(depth);
 
     if(frameCounter == 0)
