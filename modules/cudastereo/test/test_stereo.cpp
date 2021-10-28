@@ -41,7 +41,6 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <iostream>
 
 #ifdef HAVE_CUDA
 
