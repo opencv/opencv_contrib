@@ -334,7 +334,7 @@ void featureIndexing(Mat &F, float **&wMap, int &nF, float sigmaI, int weightTyp
         //do K-means
         Mat labels;
         Mat centers;
-        kmeans(samples, nF, labels, TermCriteria(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 0, 10000), KmeansAttempts, KMEANS_PP_CENTERS, centers );
+        kmeans(samples, nF, labels, TermCriteria(TermCriteria::MAX_ITER| TermCriteria::EPS, 0, 10000), KmeansAttempts, KMEANS_PP_CENTERS, centers );
 
         //make connection (i,j,k) <-> index
         top = 0;

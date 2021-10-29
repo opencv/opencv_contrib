@@ -605,7 +605,6 @@ CUDA_TEST_P(NvidiaOpticalFlow_2_0, Regression)
     ASSERT_FALSE(golden.empty());
 
     EXPECT_MAT_SIMILAR(golden, upsampledFlow, 1e-10);
-    d_nvof->collectGarbage();
 }
 
 CUDA_TEST_P(NvidiaOpticalFlow_2_0, OpticalFlowNan)
@@ -640,7 +639,6 @@ CUDA_TEST_P(NvidiaOpticalFlow_2_0, OpticalFlowNan)
 
     EXPECT_TRUE(cv::checkRange(flowx));
     EXPECT_TRUE(cv::checkRange(flowy));
-    d_nvof->collectGarbage();
 };
 
 INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, NvidiaOpticalFlow_2_0, ALL_DEVICES);

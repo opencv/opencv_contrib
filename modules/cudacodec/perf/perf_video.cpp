@@ -41,18 +41,17 @@
 //M*/
 
 #include "perf_precomp.hpp"
-#include "opencv2/highgui/highgui_c.h"
-#include "opencv2/videoio/videoio_c.h"
+#include "opencv2/videoio.hpp"
 
 namespace opencv_test { namespace {
 
 #if defined(HAVE_NVCUVID)
 
 #if defined(HAVE_FFMPEG_WRAPPER) // should this be set in preprocessor or in cvconfig.h
-#define VIDEO_SRC Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi")
+#define VIDEO_SRC Values("cv/video/768x576.avi", "cv/video/1920x1080.avi")
 #else
-// CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
-#define VIDEO_SRC Values( "gpu/video/1920x1080.avi")
+// CUDA demuxer has to fall back to ffmpeg to process "cv/video/768x576.avi"
+#define VIDEO_SRC Values( "cv/video/1920x1080.avi")
 #endif
 
 DEF_PARAM_TEST_1(FileName, string);
@@ -141,7 +140,7 @@ PERF_TEST_P(FileName, VideoWriter, VIDEO_SRC)
             ASSERT_FALSE(frame.empty());
 
             if (!writer.isOpened())
-                writer.open(outputFile, CV_FOURCC('X', 'V', 'I', 'D'), FPS, frame.size());
+                writer.open(outputFile, VideoWriter::fourcc('X', 'V', 'I', 'D'), FPS, frame.size());
 
             startTimer(); next();
             writer.write(frame);

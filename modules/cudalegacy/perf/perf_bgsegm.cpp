@@ -56,7 +56,7 @@ namespace opencv_test { namespace {
 DEF_PARAM_TEST_1(Video, string);
 
 PERF_TEST_P(Video, FGDStatModel,
-            Values(string("gpu/video/768x576.avi")))
+            Values(string("cv/video/768x576.avi")))
 {
     const int numIters = 10;
 
@@ -126,7 +126,7 @@ PERF_TEST_P(Video, FGDStatModel,
 DEF_PARAM_TEST(Video_Cn_MaxFeatures, string, MatCn, int);
 
 PERF_TEST_P(Video_Cn_MaxFeatures, GMG,
-            Combine(Values(string("gpu/video/768x576.avi")),
+            Combine(Values(string("cv/video/768x576.avi")),
                     CUDA_CHANNELS_1_3_4,
                     Values(20, 40, 60)))
 {

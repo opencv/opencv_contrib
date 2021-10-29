@@ -40,7 +40,7 @@ function julia_to_cpp(var::Array{Vec{T, N}, 1}) where {T, N}
     return ret
 end
 
-function julia_to_cpp(var::Array{T}) where {T}
+function julia_to_cpp(var::Array{T, 1}) where {T}
     if size(var, 1) == 0
         return CxxWrap.StdVector{T}()
     end
@@ -69,7 +69,7 @@ end
 
 function cpp_to_julia(var::CxxWrap.StdVector{T}) where {T}
     if size(var, 1) == 0
-        return Array{T}()
+        return Array{T, 1}()
     end
     ret = Array{typeof(cpp_to_julia(var[1])), 1}()
     for x in var

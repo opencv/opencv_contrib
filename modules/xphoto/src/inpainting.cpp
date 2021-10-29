@@ -59,16 +59,9 @@
 #include <tuple>
 
 #include "opencv2/xphoto.hpp"
-
 #include "opencv2/imgproc.hpp"
-#include "opencv2/imgproc/imgproc_c.h"
-
 #include "opencv2/core.hpp"
-#include "opencv2/core/core_c.h"
-
 #include "opencv2/core/types.hpp"
-#include "opencv2/core/types_c.h"
-
 #include "photomontage.hpp"
 #include "annf.hpp"
 #include "advanced_types.hpp"
@@ -305,7 +298,7 @@ namespace xphoto
                 shiftMapInpaint <Tp, cn>(src, mask, dst);
                 break;
             default:
-                CV_Error_( CV_StsNotImplemented,
+                CV_Error_( Error::StsNotImplemented,
                     ("Unsupported algorithm type (=%d)", algorithmType) );
                 break;
         }
@@ -401,7 +394,7 @@ namespace xphoto
                 inpaint <double, 4>( src, mask, dst, algorithmType );
                 break;
             default:
-                CV_Error_( CV_StsNotImplemented,
+                CV_Error_( Error::StsNotImplemented,
                     ("Unsupported source image format (=%d)",
                     src.type()) );
         }

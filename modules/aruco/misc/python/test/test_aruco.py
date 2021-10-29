@@ -13,22 +13,27 @@ class aruco_test(NewOpenCVTests):
 
     def test_idsAccessibility(self):
 
-        ids = np.array([[elem] for elem in range(17)])
-        rev_ids = np.array(list(reversed(ids)))
+        ids = np.arange(17)
+        rev_ids = ids[::-1]
 
         aruco_dict  = cv.aruco.Dictionary_get(cv.aruco.DICT_5X5_250)
         board = cv.aruco.CharucoBoard_create(7, 5, 1, 0.5, aruco_dict)
 
-        self.assertTrue(np.equal(board.ids, ids).all())
+        np.testing.assert_array_equal(board.ids.squeeze(), ids)
 
         board.ids = rev_ids
-        self.assertTrue(np.equal(board.ids, rev_ids).all())
+        np.testing.assert_array_equal(board.ids.squeeze(), rev_ids)
 
         board.setIds(ids)
-        self.assertTrue(np.equal(board.ids, ids).all())
+        np.testing.assert_array_equal(board.ids.squeeze(), ids)
 
         with self.assertRaises(cv.error):
             board.setIds(np.array([0]))
+
+    def test_drawCharucoDiamond(self):
+        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        img = cv.aruco.drawCharucoDiamond(aruco_dict, np.array([0, 1, 2, 3]), 100, 80)
+        self.assertTrue(img is not None)
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
