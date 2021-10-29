@@ -138,7 +138,29 @@ class CV_EXPORTS_W LargeKinfu
 
     virtual const Affine3f getPose() const = 0;
 
-    CV_WRAP virtual bool update(InputArray depth) = 0;
+    CV_WRAP virtual bool update(InputArray depth, InputArray img=noArray()) = 0;
+
+    CV_WRAP virtual void setDBOW(const String& dbowPath, double simThreshold=3.0) = 0;
+};
+
+/** @brief Loop Closing Detection implementation
+
+  This class implements a Loop Closing Detection of 3d reconstruction algorithm for
+  larger environments using Spatially hashed TSDF volume "Submaps".
+  @see DBOWTrainer for more information.
+*/
+class CV_EXPORTS_W LoopClosureDetection {
+public:
+    // Load DBoW from the given path and set similarity threshold.
+    CV_WRAP static Ptr<LoopClosureDetection> create(const String& dbowPath, double simThreshold=3.0);
+
+    virtual ~LoopClosureDetection() = default;
+
+    // Add frame and check if a loop exist, set tarSubmapID is so.
+    CV_WRAP virtual bool addFrame(InputArray img, const int frameID, const int submapID, CV_OUT int& tarSubmapID) = 0;
+
+    // Stop run loop closing detection.
+    CV_WRAP virtual void reset() = 0;
 };
 
 }  // namespace large_kinfu
