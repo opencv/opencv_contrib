@@ -138,7 +138,37 @@ class CV_EXPORTS_W LargeKinfu
 
     virtual const Affine3f getPose() const = 0;
 
-    CV_WRAP virtual bool update(InputArray depth) = 0;
+    CV_WRAP virtual bool update(InputArray depth, InputArray img = noArray()) = 0;
+
+    // Set parameters for the loop closure detection function.
+    CV_WRAP virtual void setModelForLCD(const String& modelBin, const String& modelTxt, const Size& input_size, int backendId = 0, int targetId = 0) = 0;
+};
+
+
+/** @brief Loop Closing Detection implementation
+
+  This class implements a Loop Closing Detection of 3d reconstruction algorithm for
+  larger environments using Spatially hashed TSDF volume "Submaps".
+
+  It takes a sequence RGB images and processes each image by HF-Net.
+  According to the similarity of features extracted by HF-Net, determine whether there is a LOOP.
+  Original HF-Net was provided by: https://github.com/ethz-asl/hfnet.
+  Pre-trained model can be found at: https://1drv.ms/u/s!ApQBoiZSe8Evgolqw23hI8D7lP9mKw?e=JKwPHe.
+
+*/
+class CV_EXPORTS_W LoopClosureDetection {
+public:
+
+    CV_WRAP static Ptr<LoopClosureDetection> create(const String& modelBin, const String& modelTxt, const Size& input_size, int backendId = 0, int targetId = 0);
+
+    virtual ~LoopClosureDetection() = default;
+
+    // Adding Frame.
+    // If there is loop, function will return TURE, and the tarSubmapID will be set as the target submap ID, otherwise return False.
+    CV_WRAP virtual bool addFrame(InputArray img, const int frameID, const int submapID, CV_OUT int& tarSubmapID) = 0;
+
+    // Stop run loop closing detection.
+    CV_WRAP virtual void reset() = 0;
 };
 
 }  // namespace large_kinfu

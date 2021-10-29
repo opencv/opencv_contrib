@@ -6,6 +6,7 @@
 // module's directory
 
 #include "precomp.hpp"
+#include "loop_closure_detection.hpp"
 
 namespace cv
 {
@@ -123,9 +124,11 @@ class LargeKinfuImpl : public LargeKinfu
 
     const Affine3f getPose() const CV_OVERRIDE;
 
-    bool update(InputArray depth) CV_OVERRIDE;
+    bool update(InputArray depth, InputArray img = noArray()) CV_OVERRIDE;
 
-    bool updateT(const MatType& depth);
+    void setModelForLCD(const String& modelBin, const String& modelTxt, const Size& input_size, int backendId = 0, int targetId = 0) CV_OVERRIDE;
+
+    bool updateT(const MatType& depth, const Mat& img);
 
    private:
     Params params;
@@ -136,6 +139,8 @@ class LargeKinfuImpl : public LargeKinfu
 
     int frameCounter;
     Affine3f pose;
+
+    Ptr<LoopClosureDetection> lcd;
 };
 
 template<typename MatType>
@@ -161,6 +166,11 @@ void LargeKinfuImpl<MatType>::reset()
     frameCounter = 0;
     pose         = Affine3f::Identity();
     submapMgr->reset();
+
+    if( lcd )
+    {
+        lcd->reset();
+    }
 }
 
 template<typename MatType>
@@ -181,42 +191,51 @@ const Affine3f LargeKinfuImpl<MatType>::getPose() const
 }
 
 template<>
-bool LargeKinfuImpl<Mat>::update(InputArray _depth)
+bool LargeKinfuImpl<Mat>::update(InputArray _depth, InputArray _img)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     Mat depth;
-    if (_depth.isUMat())
+    Mat img;
+    if(_depth.isUMat())
     {
         _depth.copyTo(depth);
-        return updateT(depth);
+        _img.copyTo(img);
+        return updateT(depth, img);
     }
     else
     {
-        return updateT(_depth.getMat());
+        return updateT(_depth.getMat(), _img.getMat());
     }
 }
 
+
 template<>
-bool LargeKinfuImpl<UMat>::update(InputArray _depth)
+bool LargeKinfuImpl<UMat>::update(InputArray _depth, InputArray _img)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     UMat depth;
-    if (!_depth.isUMat())
+    Mat img;
+
+    if(!_depth.isUMat())
     {
         _depth.copyTo(depth);
-        return updateT(depth);
     }
     else
-    {
-        return updateT(_depth.getUMat());
-    }
+        depth = _depth.getUMat();
+
+    if(!_img.isUMat())
+        _img.copyTo(img);
+    else
+        img = _img.getMat();
+
+    return updateT(depth, img);
 }
 
 
 template<typename MatType>
-bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
+bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth, const Mat& _img)
 {
     CV_TRACE_FUNCTION();
 
@@ -225,6 +244,15 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         _depth.convertTo(depth, DEPTH_TYPE);
     else
         depth = _depth;
+
+    Mat grayImg;
+    if(!_img.empty())
+    {
+        if(_img.channels() == 3)
+            cvtColor(_img, grayImg, COLOR_BGR2GRAY);
+        else
+            grayImg = _img;
+    }
 
     cv::Ptr<OdometryFrame> newFrame = icp->makeOdometryFrame(noArray(), depth, noArray());
 
@@ -282,6 +310,30 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     }
     //4. Update map
     bool isMapUpdated = submapMgr->updateMap(frameCounter, newFrame);
+
+    //5. Loop Closure Detection
+    // Before Optimize the PoseGraph, run loop closure first.
+    if(!grayImg.empty() && lcd)
+    {
+        int currentSubmapId = submapMgr->getCurrentSubmap()->id;
+
+        if(currentSubmapId != -1)
+        {
+            int tarSubmapID = -1;
+
+            bool ifLoop = lcd->addFrame(grayImg, frameCounter, currentSubmapId, tarSubmapID);
+
+            if(ifLoop && tarSubmapID != -1 && currentSubmapId != tarSubmapID)
+            {
+                // Adding Loop Edge for optimize. If the Edge is duplicate, then skip.
+                if(submapMgr->addEdgeToCurrentSubmap(currentSubmapId, tarSubmapID))
+                    std::cout<<"LCD: Find a NEW LOOP! from Submap :"<<currentSubmapId<<" to Submap:"<<tarSubmapID<<std::endl;
+            }else
+            {
+                CV_LOG_INFO(NULL, "LCD: No Loop.");
+            }
+        }
+    }
 
     if(isMapUpdated)
     {
@@ -350,6 +402,14 @@ void LargeKinfuImpl<MatType>::getNormals(InputArray points, OutputArray normals)
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
     currSubmap->volume->fetchNormals(points, normals);
+}
+
+template<typename MatType>
+void LargeKinfuImpl<MatType>::setModelForLCD(const String& modelBin, const String& modelTxt, const Size& input_size, int backendId, int targetId)
+{
+    CV_Assert(!modelBin.empty());
+
+    lcd = makePtr<LoopClosureDetectionImpl>(modelBin, modelTxt, input_size, backendId, targetId);
 }
 
 // importing class
