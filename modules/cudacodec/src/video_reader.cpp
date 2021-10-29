@@ -48,7 +48,7 @@ using namespace cv::cudacodec;
 
 #ifndef HAVE_NVCUVID
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&) { throw_no_cuda(); return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const String = "", const bool = false) { throw_no_cuda(); return Ptr<VideoReader>(); }
 Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&) { throw_no_cuda(); return Ptr<VideoReader>(); }
 
 #else // HAVE_NVCUVID
@@ -69,10 +69,12 @@ namespace
 
         FormatInfo format() const CV_OVERRIDE;
 
+        void writeToFile(const std::string filename, const bool autoDetectExt = false) CV_OVERRIDE;
+
     private:
         Ptr<VideoSource> videoSource_;
 
-        Ptr<FrameQueue> frameQueue_;
+        Ptr<FrameQueue> frameQueue_ = 0;
         Ptr<VideoDecoder> videoDecoder_;
         Ptr<VideoParser> videoParser_;
 
@@ -97,11 +99,9 @@ namespace
         CUcontext ctx;
         cuSafeCall( cuCtxGetCurrent(&ctx) );
         cuSafeCall( cuvidCtxLockCreate(&lock_, ctx) );
-
-        frameQueue_.reset(new FrameQueue);
-        videoDecoder_.reset(new VideoDecoder(videoSource_->format(), ctx, lock_));
+        frameQueue_.reset(new FrameQueue());
+        videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, ctx, lock_));
         videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_));
-
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
     }
@@ -148,7 +148,7 @@ namespace
 
             bool isProgressive = displayInfo.progressive_frame != 0;
             const int num_fields = isProgressive ? 1 : 2 + displayInfo.repeat_first_field;
-            videoSource_->updateFormat(videoDecoder_->targetWidth(), videoDecoder_->targetHeight());
+            videoSource_->updateFormat(videoDecoder_->format());
 
             for (int active_field = 0; active_field < num_fields; ++active_field)
             {
@@ -192,9 +192,14 @@ namespace
 
         return true;
     }
+
+    void VideoReaderImpl::writeToFile(const std::string filename, const bool autoDetectExt)
+    {
+        return videoSource_->writeToFile(filename, autoDetectExt);
+    }
 }
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename)
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const String filenameToWrite, const bool autoDetectExt)
 {
     CV_Assert( !filename.empty() );
 
@@ -203,7 +208,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename)
     try
     {
         // prefer ffmpeg to cuvidGetSourceVideoFormat() which doesn't always return the corrct raw pixel format
-        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename));
+        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename, filenameToWrite, autoDetectExt));
         videoSource.reset(new RawVideoSourceWrapper(source));
     }
     catch (...)

@@ -41,11 +41,16 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include "opencv2/cudaarithm.hpp"
 namespace opencv_test {
     namespace {
 
 #if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
 PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
+{
+};
+
+PARAM_TEST_CASE(VideoReadWrite, cv::cuda::DeviceInfo, std::string)
 {
 };
 
@@ -73,6 +78,47 @@ CUDA_TEST_P(Video, Reader)
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
         ASSERT_FALSE(frame.empty());
     }
+}
+
+CUDA_TEST_P(VideoReadWrite, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+
+    // RTSP streaming is only supported by the FFmpeg back end
+    if (!videoio_registry::hasBackend(CAP_FFMPEG))
+        throw SkipTestException("FFmpeg backend not found");
+
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    const string fileNameOut = tempfile("test_container_stream");
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, fileNameOut);
+        cv::cuda::GpuMat frame;
+        for (int i = 0; i < 100; i++)
+        {
+            reader->writeToFile(fileNameOut.c_str());
+            ASSERT_TRUE(reader->nextFrame(frame));
+            ASSERT_FALSE(frame.empty());
+        }
+    }
+
+    std::cout << "Checking written video stream: " << fileNameOut << std::endl;
+
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> readerReference = cv::cudacodec::createVideoReader(inputFile);
+        cv::Ptr<cv::cudacodec::VideoReader> readerActual = cv::cudacodec::createVideoReader(fileNameOut);
+        cv::cuda::GpuMat reference, actual;
+        cv::Mat referenceHost, actualHost;
+        for (int i = 0; i < 100; i++)
+        {
+            ASSERT_TRUE(readerReference->nextFrame(reference));
+            ASSERT_TRUE(readerActual->nextFrame(actual));
+            actual.download(actualHost);
+            reference.download(referenceHost);
+            ASSERT_TRUE(cvtest::norm(actualHost, referenceHost, NORM_INF) == 0);
+        }
+    }
+
+    ASSERT_EQ(0, remove(fileNameOut.c_str()));
 }
 #endif // HAVE_NVCUVID
 
@@ -125,11 +171,17 @@ CUDA_TEST_P(Video, Writer)
 
 #endif // _WIN32, HAVE_NVCUVENC
 
-#define VIDEO_SRC "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+#define VIDEO_SRC_R "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
-    testing::Values(VIDEO_SRC)));
+    testing::Values(VIDEO_SRC_R)));
+
+#define VIDEO_SRC_RW "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265"
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, VideoReadWrite, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(VIDEO_SRC_RW)));
 
 #endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace

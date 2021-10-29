@@ -65,9 +65,14 @@ cv::cudacodec::FormatInfo cv::cudacodec::detail::RawVideoSourceWrapper::format()
     return source_->format();
 }
 
-void cv::cudacodec::detail::RawVideoSourceWrapper::updateFormat(const int codedWidth, const int codedHeight)
+void cv::cudacodec::detail::RawVideoSourceWrapper::updateFormat(const FormatInfo& videoFormat)
 {
-    source_->updateFormat(codedWidth,codedHeight);
+    source_->updateFormat(videoFormat);
+}
+
+void cv::cudacodec::detail::RawVideoSourceWrapper::writeToFile(const std::string filename, const bool autoDetectExt)
+{
+    source_->writeToFile(filename, autoDetectExt);
 }
 
 void cv::cudacodec::detail::RawVideoSourceWrapper::start()

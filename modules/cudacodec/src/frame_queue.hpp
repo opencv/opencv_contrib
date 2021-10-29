@@ -51,9 +51,8 @@ namespace cv { namespace cudacodec { namespace detail {
 class FrameQueue
 {
 public:
-    static const int MaximumSize = 20; // MAX_FRM_CNT;
-
-    FrameQueue();
+    ~FrameQueue();
+    void init(const int _maxSz);
 
     void endDecode() { endOfDecode_ = true; }
     bool isEndOfDecode() const { return endOfDecode_ != 0;}
@@ -80,13 +79,12 @@ private:
     bool isInUse(int pictureIndex) const { return isFrameInUse_[pictureIndex] != 0; }
 
     Mutex mtx_;
-
-    volatile int isFrameInUse_[MaximumSize];
-    volatile int endOfDecode_;
-
-    int framesInQueue_;
-    int readPosition_;
-    CUVIDPARSERDISPINFO displayQueue_[MaximumSize];
+    volatile int* isFrameInUse_ = 0;
+    volatile int endOfDecode_ = 0;
+    int framesInQueue_ = 0;
+    int readPosition_ = 0;
+    std::vector< CUVIDPARSERDISPINFO> displayQueue_;
+    int maxSz = 0;
 };
 
 }}}

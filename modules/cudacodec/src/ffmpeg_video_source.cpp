@@ -75,6 +75,7 @@ Codec FourccToCodec(int codec)
     case CV_FOURCC_MACRO('M', 'P', 'G', '1'): return MPEG1;
     case CV_FOURCC_MACRO('M', 'P', 'G', '2'): return MPEG2;
     case CV_FOURCC_MACRO('X', 'V', 'I', 'D'): // fallthru
+    case CV_FOURCC_MACRO('m', 'p', '4', 'v'): // fallthru
     case CV_FOURCC_MACRO('D', 'I', 'V', 'X'): return MPEG4;
     case CV_FOURCC_MACRO('W', 'V', 'C', '1'): return VC1;
     case CV_FOURCC_MACRO('H', '2', '6', '4'): // fallthru
@@ -112,7 +113,18 @@ void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int
     }
 }
 
-cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
+static
+std::string CodecToFileExtension(const Codec codec){
+    switch (codec) {
+    case(Codec::H264): return ".h264";
+    case(Codec::HEVC): return ".h265";
+    case(Codec::VP8): return ".vp8";
+    case(Codec::VP9): return ".vp9";
+    default: return "";
+    }
+}
+
+cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname, const String& filenameToWrite, const bool autoDetectExt)
 {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
@@ -125,6 +137,9 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
         CV_Error(Error::StsUnsupportedFormat, "Fetching of RAW video streams is not supported");
     CV_Assert(cap.get(CAP_PROP_FORMAT) == -1);
 
+    if (!filenameToWrite.empty())
+        writeToFile(filenameToWrite, autoDetectExt);
+
     int codec = (int)cap.get(CAP_PROP_FOURCC);
     int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
 
@@ -133,6 +148,7 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
     format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
     format_.displayArea = Rect(0, 0, format_.width, format_.height);
     format_.valid = false;
+    format_.fps = cap.get(CAP_PROP_FPS);
     FourccToChromaFormat(pixelFormat, format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
@@ -147,18 +163,59 @@ FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
     return format_;
 }
 
-void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const int codedWidth, const int codedHeight)
+void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& videoFormat)
 {
-    format_.width = codedWidth;
-    format_.height = codedHeight;
+    format_ = videoFormat;
     format_.valid = true;
+}
+
+void cv::cudacodec::detail::FFmpegVideoSource::writeToFile(const std::string _filename, const bool _autoDetectExt) {
+    std::lock_guard<std::mutex> lck(mtx);
+    fileName = _filename;
+    if(fileName.empty()){
+        if (file.is_open())
+            file.close();
+        restartRtspFileWrite = false;
+        return;
+    }
+    autoDetectExt = _autoDetectExt;
+    restartRtspFileWrite = true;
 }
 
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
 {
+    std::lock_guard<std::mutex> lck(mtx);
     cap >> rawFrame;
     *data = rawFrame.data;
     *size = rawFrame.total();
+
+    // always grab param sets if available in case writeToFile is called after construction
+    const int paramSetLen = cap.get(CAP_PROP_LF_PARAM_SET_LEN);
+    if (paramSetLen) {
+        parameterSets = Mat(1, paramSetLen, CV_8UC1);
+        memcpy(parameterSets.data, *data, paramSetLen);
+    }
+
+    if (restartRtspFileWrite && cap.get(CAP_PROP_LF_KEY_FRAME)) {
+        if (file.is_open())
+            file.close();
+        if (autoDetectExt)
+            fileName += CodecToFileExtension(format_.codec);
+        file.open(fileName, std::ios::binary);
+        if (!file.is_open())
+            return false;
+        restartRtspFileWrite = false;
+        if (!paramSetLen && !parameterSets.empty())
+            writeParameterSets = true;
+    }
+
+    if (file.is_open()) {
+        if (writeParameterSets) {
+            writeParameterSets = false;
+            file.write((char*)parameterSets.data, parameterSets.total());
+        }
+        file.write((char*)*data, *size);
+    }
     return *size != 0;
 }
 

@@ -231,7 +231,7 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
 want to work with raw video stream.
 @param frameSize Size of the input video frames.
 @param fps Framerate of the created video stream.
-@param params Encoder parameters. See cudacodec::EncoderParams .
+@param params Encoder parameters. See cudacodec::EncoderParams.
 @param format Surface format of input frames ( SF_UYVY , SF_YUY2 , SF_YV12 , SF_NV12 ,
 SF_IYUV , SF_BGR or SF_GRAY). BGR or gray frames will be converted to YV12 format before
 encoding, frames with other formats will be used as is.
@@ -265,7 +265,7 @@ enum Codec
     Uncompressed_UYVY   = (('U'<<24)|('Y'<<16)|('V'<<8)|('Y'))    //!< UYVY (4:2:2)
 };
 
-/** @brief Chroma formats supported by cudacodec::VideoReader .
+/** @brief Chroma formats supported by cudacodec::VideoReader.
  */
 enum ChromaFormat
 {
@@ -276,6 +276,18 @@ enum ChromaFormat
     NumFormats
 };
 
+/** @brief Deinterlacing mode used by decoder.
+* @param Weave Weave both fields (no deinterlacing). For progressive content and for content that doesn't need deinterlacing.
+* Bob Drop one field.
+* @param Adaptive Adaptive deinterlacing needs more video memory than other deinterlacing modes.
+* */
+enum DeinterlaceMode
+{
+    Weave = 0,
+    Bob = 1,
+    Adaptive = 2
+};
+
 /** @brief Struct providing information about video file format. :
  */
 struct FormatInfo
@@ -283,10 +295,17 @@ struct FormatInfo
     Codec codec;
     ChromaFormat chromaFormat;
     int nBitDepthMinus8 = -1;
-    int width = 0;//!< Width of the decoded frame returned by nextFrame(frame)
-    int height = 0;//!< Height of the decoded frame returned by nextFrame(frame)
+    int ulWidth = 0;//!< Coded sequence width in pixels.
+    int ulHeight = 0;//!< Coded sequence height in pixels.
+    int width = 0;//!< Width of the decoded frame returned by nextFrame(frame).
+    int height = 0;//!< Height of the decoded frame returned by nextFrame(frame).
+    int ulMaxWidth = 0;
+    int ulMaxHeight = 0;
     Rect displayArea;//!< ROI inside the decoded frame returned by nextFrame(frame), containing the useable video frame.
     bool valid = false;
+    double fps = 0;
+    int ulNumDecodeSurfaces = 0;//!< Maximum number of internal decode surfaces.
+    DeinterlaceMode deinterlaceMode;
 };
 
 /** @brief Video reader interface.
@@ -310,6 +329,23 @@ public:
     /** @brief Returns information about video file format.
     */
     virtual FormatInfo format() const = 0;
+
+    /** @brief Signals VideoReader to start writing the raw bitstream to the given file from the next key frame.
+
+    @param filename Full path to the output file.  Each call to this with a new filename, filenameNew will wait for
+    the next key frame, stop writing to filename and start writing to filenameNew.  If VideoReader is already writing
+    to a file and filenameNew is empty, writing to filename will stop imidiately.
+    @param autoDetectExt Automatically detect and append the codec extension to filename before writing.
+
+    The function is intended to be used when streaming from an RTSP source where it is either
+    a) desirable to store the original streamed data, or
+    b) the overhead of re-encoding the decoded frame is undesirable.
+
+    @note This should only be used when streaming from rtsp and is not guaranteed to work when reading from a
+    file, especially from container formats avi, mp4 etc.  If the filename provided is invalid, cannot be opened
+    or written to, the first call to nextFrame() after calling this function will return false.
+     */
+    CV_WRAP virtual void writeToFile(const std::string filename, const bool autoDetectExt = false) = 0;
 };
 
 /** @brief Interface for video demultiplexing. :
@@ -334,16 +370,35 @@ public:
 
     /** @brief Updates the coded width and height inside format.
     */
-    virtual void updateFormat(const int codedWidth, const int codedHeight) = 0;
+    virtual void updateFormat(const FormatInfo& videoFormat) = 0;
+
+    /** @brief Signals RawVideoSource to start writing the raw bitstream to the given file from the next key frame.
+
+    @param filename Full path to the output file.  Each call to this with a new filename, filenameNew will wait for
+    the next key frame, stop writing to filename and start writing to filenameNew.  If VideoReader is already writing
+    to a file and filenameNew is empty, writing to filename will stop imidiately.
+    @param autoDetectExt Automatically detect and append the codec extension to filename before writing.
+
+    The function is intended to be used when streaming from an RTSP source where it is either
+    a) desirable to store the original streamed data, or
+    b) the overhead of re-encoding the decoded frame is undesirable.
+
+    @note This should only be used when streaming from rtsp and is not guaranteed to work when reading from a
+    file, especially from container formats avi, mp4 etc.  If the filename provided is invalid, cannot be opened
+    or written to, the first call to nextFrame() after calling this function will return false.
+     */
+    virtual void writeToFile(const std::string filename, const bool autoDetectExt = false) = 0;
 };
 
 /** @brief Creates video reader.
 
 @param filename Name of the input video file.
+@param filenameToWrite Full path to the raw output file.  If empty the raw encoded video data will not be written.
+@param autoDetectExt Automatically detect and append the codec extension to filename.
 
 FFMPEG is used to read videos. User can implement own demultiplexing with cudacodec::RawVideoSource
  */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const String filenameToWrite = "", const bool autoDetectExt = false);
 /** @overload
 @param source RAW video source implemented by user.
 */

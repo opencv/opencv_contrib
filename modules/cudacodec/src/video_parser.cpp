@@ -52,7 +52,7 @@ cv::cudacodec::detail::VideoParser::VideoParser(VideoDecoder* videoDecoder, Fram
     std::memset(&params, 0, sizeof(CUVIDPARSERPARAMS));
 
     params.CodecType              = videoDecoder->codec();
-    params.ulMaxNumDecodeSurfaces = videoDecoder->maxDecodeSurfaces();
+    params.ulMaxNumDecodeSurfaces = 1;
     params.ulMaxDisplayDelay      = 1; // this flag is needed so the parser will push frames out to the decoder as quickly as it can
     params.pUserData              = this;
     params.pfnSequenceCallback    = HandleVideoSequence;    // Called before decoding frames and/or whenever there is a format change
@@ -80,7 +80,7 @@ bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* dat
         return false;
     }
 
-    const int maxUnparsedPackets = 20;
+    constexpr int maxUnparsedPackets = 20;
 
     ++unparsedPackets_;
     if (unparsedPackets_ > maxUnparsedPackets)
@@ -106,17 +106,39 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         format->coded_width   != thiz->videoDecoder_->frameWidth()  ||
         format->coded_height  != thiz->videoDecoder_->frameHeight() ||
         format->chroma_format != thiz->videoDecoder_->chromaFormat()||
-        format->bit_depth_luma_minus8 != thiz->videoDecoder_->nBitDepthMinus8())
+        format->bit_depth_luma_minus8 != thiz->videoDecoder_->nBitDepthMinus8() ||
+        format->min_num_decode_surfaces != thiz->videoDecoder_->maxDecodeSurfaces())
     {
         FormatInfo newFormat;
-
         newFormat.codec = static_cast<Codec>(format->codec);
         newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
+        newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
+        newFormat.ulWidth = format->coded_width;
+        newFormat.ulHeight = format->coded_height;
         newFormat.width = format->coded_width;
         newFormat.height = format->coded_height;
         newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
-        newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
-
+        newFormat.fps = format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator);
+        newFormat.ulNumDecodeSurfaces = format->min_num_decode_surfaces;
+        if (format->progressive_sequence)
+            newFormat.deinterlaceMode = Weave;
+        else
+            newFormat.deinterlaceMode = Adaptive;
+        int maxW = 0, maxH = 0;
+        // AV1 has max width/height of sequence in sequence header
+        if (format->codec == cudaVideoCodec_AV1 && format->seqhdr_data_length > 0)
+        {
+            CUVIDEOFORMATEX* vidFormatEx = (CUVIDEOFORMATEX*)format;
+            maxW = vidFormatEx->av1.max_width;
+            maxH = vidFormatEx->av1.max_height;
+        }
+        if (maxW < (int)format->coded_width)
+            maxW = format->coded_width;
+        if (maxH < (int)format->coded_height)
+            maxH = format->coded_height;
+        newFormat.ulMaxWidth = maxW;
+        newFormat.ulMaxHeight = maxH;
+        thiz->frameQueue_->init(newFormat.ulNumDecodeSurfaces);
         try
         {
             thiz->videoDecoder_->release();
@@ -129,7 +151,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         }
     }
 
-    return true;
+    return thiz->videoDecoder_->maxDecodeSurfaces();
 }
 
 int CUDAAPI cv::cudacodec::detail::VideoParser::HandlePictureDecode(void* userData, CUVIDPICPARAMS* picParams)
