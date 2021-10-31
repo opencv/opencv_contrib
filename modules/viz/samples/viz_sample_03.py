@@ -2,7 +2,7 @@ import numpy as np
 import cv2 as cv
 
 def load_bunny():
-    with open(cv.samples.findFile("viz/bunny.ply"), 'r') as f:
+    with open(cv.samples.findFile("../viz/data/bunny.ply"), 'r') as f:
         s = f.read()
     ligne = s.split('\n')
     if len(ligne) == 5753:
@@ -13,28 +13,28 @@ def load_bunny():
             d = ligne[idx].split(' ')
             pts3d[0,idx-12,:] = (float(d[0]), float(d[1]), float(d[2]))
     pts3d = 5 * pts3d
-    return cv.viz_PyWCloud(pts3d)
+    return cv.viz_WCloud(pts3d)
 
 myWindow = cv.viz_Viz3d("Coordinate Frame")
-axe = cv.viz_PyWCoordinateSystem()
+axe = cv.viz_WCoordinateSystem()
 myWindow.showWidget("axe",axe)
 
 cam_pos =  (3.0, 3.0, 3.0)
 cam_focal_point = (3.0,3.0,2.0)
 cam_y_dir = (-1.0,0.0,0.0)
-cam_pose = cv.viz.makeCameraPosePy(cam_pos, cam_focal_point, cam_y_dir)
+cam_pose = cv.viz.makeCameraPose(cam_pos, cam_focal_point, cam_y_dir)
 print("OK")
-transform = cv.viz.makeTransformToGlobalPy((0.0,-1.0,0.0), (-1.0,0.0,0.0), (0.0,0.0,-1.0), cam_pos)
+transform = cv.viz.makeTransformToGlobal((0.0,-1.0,0.0), (-1.0,0.0,0.0), (0.0,0.0,-1.0), cam_pos)
 pw_bunny = load_bunny()
-cloud_pose = cv.viz_PyAffine3()
+cloud_pose = cv.viz_Affine3d()
 cloud_pose = cloud_pose.translate((0, 0, 3))
 cloud_pose_global = transform.product(cloud_pose)
 
-cpw = cv.viz_PyWCameraPosition(0.5)
-cpw_frustum = cv.viz_PyWCameraPosition(0.3)
+cpw = cv.viz_WCameraPosition(0.5)
+cpw_frustum = cv.viz_WCameraPosition(0.3)
 myWindow.showWidget("CPW", cpw);
 myWindow.showWidget("CPW_FRUSTUM", cpw_frustum)
-myWindow.setViewerPosePy(cam_pose)
+myWindow.setViewerPose(cam_pose)
 myWindow.showWidget("bunny", pw_bunny, cloud_pose_global)
 #myWindow.setWidgetPosePy("bunny")
 myWindow.spin();
