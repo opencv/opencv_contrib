@@ -114,7 +114,7 @@ namespace cv {
 			int neighbourLocBuffer[neighbourCount]; // neighbour locations
 			std::vector<int*> offsetVec;            // vector of offsets
 
-			std::atomic<int> clusterIndex, locationIndex, clusterID;    // atomic indices
+			std::atomic<int> clusterIndex, clusterID;    // atomic indices
 
 			cv::Mat src, labelsMat;	// mats
 
@@ -139,7 +139,7 @@ namespace cv {
 					: ss(scanSegment) {}
 				virtual ~PP1() {}
 
-				virtual void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -157,7 +157,7 @@ namespace cv {
 					: ss(scanSegment), ctv(countVec) {}
 				virtual ~PP2() {}
 
-				virtual void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -176,7 +176,7 @@ namespace cv {
 					: ss(scanSegment) {}
 				virtual ~PP3() {}
 
-				virtual void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -194,7 +194,7 @@ namespace cv {
 					: ss(scanSegment), ctv(countVec) {}
 				virtual ~PP4() {}
 
-				virtual void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -210,8 +210,8 @@ namespace cv {
 			void OP2(std::pair<int, int> const& p);
 			void OP3(int v);
 			void OP4(std::pair<int, int> const& p);
-			void expandCluster(int* labelsBuffer, int* neighbourLocBuffer, int* clusterBuffer, int* offsetBuffer, const cv::Point& point, int adjTolerance, std::atomic<int>* clusterIndex, std::atomic<int>* locationIndex, std::atomic<int>* clusterID);
-			void calculateCluster(int* labelsBuffer, int* neighbourLocBuffer, int* offsetBuffer, int* offsetEnd, int pointIndex, int adjTolerance, int currentClusterID);
+			void expandCluster(int* offsetBuffer, const cv::Point& point);
+			void calculateCluster(int* offsetBuffer, int* offsetEnd, int pointIndex, int currentClusterID);
 			static int allocWSNodes(std::vector<WSNode>& storage);
 			static void watershedEx(const cv::Mat& src, cv::Mat& dst);
 		};
@@ -415,7 +415,6 @@ namespace cv {
 
 			clusterCount = 0;
 			clusterIndex.store(0);
-			locationIndex.store(0);
 			clusterID.store(1);
 
 			smallClusters = indexSize / smallClustersDiv;
@@ -441,8 +440,8 @@ namespace cv {
 				for (int i = 1; i < clusterIndexSize; i += 2) {
 					int count = clusterBuffer[i];
 					if (count >= smallClusters) {
-						int clusterID = clusterBuffer[i - 1];
-						countVec.push_back(std::make_pair(clusterID, count));
+						int currentID = clusterBuffer[i - 1];
+						countVec.push_back(std::make_pair(currentID, count));
 					}
 				}
 
@@ -485,7 +484,7 @@ namespace cv {
 			cv::Rect seedRect = seedRects[v];
 			for (int y = seedRect.y; y < seedRect.y + seedRect.height; y++) {
 				for (int x = seedRect.x; x < seedRect.x + seedRect.width; x++) {
-					expandCluster(labelsBuffer, neighbourLocBuffer, clusterBuffer, offsetVec[v], cv::Point(x, y), (int)adjTolerance, &clusterIndex, &locationIndex, &clusterID);
+					expandCluster(offsetVec[v], cv::Point(x, y));
 				}
 			}
 		}
@@ -529,15 +528,15 @@ namespace cv {
 		}
 
 		// expand clusters from a point
-		void ScanSegmentImpl::expandCluster(int* labelsBuffer, int* neighbourLocBuffer, int* clusterBuffer, int* offsetBuffer, const cv::Point& point, int adjTolerance, std::atomic<int>* clusterIndex, std::atomic<int>* locationIndex, std::atomic<int>* clusterID)
+		void ScanSegmentImpl::expandCluster(int* offsetBuffer, const cv::Point& point)
 		{
 			int pointIndex = (point.y * width) + point.x;
 			if (labelsBuffer[pointIndex] == UNCLASSIFIED) {
 				int offsetStart = 0;
 				int offsetEnd = 0;
-				int currentClusterID = clusterID->fetch_add(1);
+				int currentClusterID = clusterID.fetch_add(1);
 
-				calculateCluster(labelsBuffer, neighbourLocBuffer, offsetBuffer, &offsetEnd, pointIndex, adjTolerance, currentClusterID);
+				calculateCluster(offsetBuffer, &offsetEnd, pointIndex, currentClusterID);
 
 				if (offsetStart == offsetEnd) {
 					labelsBuffer[pointIndex] = UNKNOWN;
@@ -549,7 +548,7 @@ namespace cv {
 					while (offsetStart < offsetEnd) {
 						int intoffset2 = *(offsetBuffer + offsetStart);
 						offsetStart++;
-						calculateCluster(labelsBuffer, neighbourLocBuffer, offsetBuffer, &offsetEnd, intoffset2, adjTolerance, currentClusterID);
+						calculateCluster(offsetBuffer, &offsetEnd, intoffset2, currentClusterID);
 					}
 
 					// add origin point
@@ -557,14 +556,14 @@ namespace cv {
 					offsetEnd++;
 
 					// store to buffer
-					int currentClusterIndex = clusterIndex->fetch_add(2);
+					int currentClusterIndex = clusterIndex.fetch_add(2);
 					clusterBuffer[currentClusterIndex] = currentClusterID;
 					clusterBuffer[currentClusterIndex + 1] = offsetEnd;
 				}
 			}
 		}
 
-		void ScanSegmentImpl::calculateCluster(int* labelsBuffer, int* neighbourLocBuffer, int* offsetBuffer, int* offsetEnd, int pointIndex, int adjTolerance, int currentClusterID)
+		void ScanSegmentImpl::calculateCluster(int* offsetBuffer, int* offsetEnd, int pointIndex, int currentClusterID)
 		{
 			for (int i = 0; i < neighbourCount; i++) {
 				if (*offsetEnd < clusterSize) {
@@ -574,7 +573,7 @@ namespace cv {
 						int diff2 = (int)labBuffer[pointIndex][1] - (int)labBuffer[intoffset2][1];
 						int diff3 = (int)labBuffer[pointIndex][2] - (int)labBuffer[intoffset2][2];
 
-						if ((diff1 * diff1) + (diff2 * diff2) + (diff3 * diff3) <= adjTolerance) {
+						if ((diff1 * diff1) + (diff2 * diff2) + (diff3 * diff3) <= (int)adjTolerance) {
 							labelsBuffer[intoffset2] = currentClusterID;
 							offsetBuffer[*offsetEnd] = intoffset2;
 							(*offsetEnd)++;
@@ -673,7 +672,7 @@ namespace cv {
     assert(0 <= diff && diff <= 255);  \
         }
 
-			CV_Assert(src.type() == CV_8UC3 || src.type() == CV_8UC1 && dst.type() == CV_32SC1);
+			CV_Assert(src.type() == CV_8UC3 && dst.type() == CV_32SC1);
 			CV_Assert(src.size() == dst.size());
 
 			// Current pixel in input image
