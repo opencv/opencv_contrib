@@ -744,6 +744,7 @@ namespace cv {
 			mask = dst.ptr<int>();
 
 			// recursively fill the basins
+			int diff = 0, temp = 0;
 			for (;;)
 			{
 				int mofs, iofs;
@@ -781,7 +782,6 @@ namespace cv {
 				// Calculate pointer to current pixel in input and marker image
 				m = mask + mofs;
 				ptr = img + iofs;
-				int diff, temp;
 				// Check surrounding pixels for labels to determine label for current pixel
 				if (left) {//the left point can be visited
 					t = m[-1];
