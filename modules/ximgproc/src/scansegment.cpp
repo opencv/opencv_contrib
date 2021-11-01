@@ -139,7 +139,7 @@ namespace cv {
 					: ss(scanSegment) {}
 				virtual ~PP1() {}
 
-				void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const CV_OVERRIDE
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -157,7 +157,7 @@ namespace cv {
 					: ss(scanSegment), ctv(countVec) {}
 				virtual ~PP2() {}
 
-				void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const CV_OVERRIDE
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -176,7 +176,7 @@ namespace cv {
 					: ss(scanSegment) {}
 				virtual ~PP3() {}
 
-				void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const CV_OVERRIDE
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
@@ -194,7 +194,7 @@ namespace cv {
 					: ss(scanSegment), ctv(countVec) {}
 				virtual ~PP4() {}
 
-				void operator()(const cv::Range& range) const
+				void operator()(const cv::Range& range) const CV_OVERRIDE
 				{
 					for (int v = range.start; v < range.end; v++)
 					{
