@@ -506,9 +506,7 @@ namespace cv {
 
 		void ScanSegmentImpl::OP3(int v)
 		{
-			cv::Rect seedRect = seedRects[v];
 			cv::Rect seedRectExt = seedRectsExt[v];
-
 			cv::Mat seedLabels = labelsMat(seedRectExt).clone();
 			watershedEx(src(seedRectExt), seedLabels);
 			seedLabels(offsetRects[v]).copyTo(labelsMat(seedRects[v]));
