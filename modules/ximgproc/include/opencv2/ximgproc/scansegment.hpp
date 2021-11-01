@@ -51,6 +51,7 @@
 }
 */
 
+
 #ifndef __OPENCV_SCANSEGMENT_HPP__
 #define __OPENCV_SCANSEGMENT_HPP__
 #ifdef __cplusplus
