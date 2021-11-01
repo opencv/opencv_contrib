@@ -54,7 +54,8 @@
 #include "precomp.hpp"
 
 #include <numeric>
-#include <algorithm>
+#include <atomic>
+#include <thread>
 
 namespace cv {
 	namespace ximgproc {
@@ -446,7 +447,7 @@ namespace cv {
 				}
 
 				// sort descending
-				std::sort(countVec.begin(), countVec.end(), [](auto& left, auto& right) {
+				std::sort(countVec.begin(), countVec.end(), [](std::pair<int, int>& left, std::pair<int, int>& right) {
 					return left.second > right.second;
 					});
 
