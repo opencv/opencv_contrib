@@ -39,7 +39,7 @@
 //
 //
 
- /*
+/*
  * BibTeX reference
 @article{loke2021accelerated,
   title={Accelerated superpixel image segmentation with a parallelized DBSCAN algorithm},
@@ -49,7 +49,7 @@
   year={2021},
   publisher={Springer}
 }
-  */
+*/
 
 #include "precomp.hpp"
 
