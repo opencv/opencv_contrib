@@ -56,8 +56,6 @@
 #ifdef __cplusplus
 
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/ximgproc.hpp>
 
 namespace cv
 {
