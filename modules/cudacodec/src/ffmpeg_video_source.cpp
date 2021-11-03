@@ -116,6 +116,7 @@ void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int
 static
 std::string CodecToFileExtension(const Codec codec){
     switch (codec) {
+    case(Codec::MPEG4): return ".m4v";
     case(Codec::H264): return ".h264";
     case(Codec::HEVC): return ".h265";
     case(Codec::VP8): return ".vp8";
@@ -182,6 +183,22 @@ void cv::cudacodec::detail::FFmpegVideoSource::writeToFile(const std::string _fi
     restartRtspFileWrite = true;
 }
 
+int StartCodeLen(unsigned char* data, const int sz) {
+    if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
+        return 3;
+    else if (sz >=4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
+        return 4;
+    else
+        return 0;
+}
+
+bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, unsigned char* data, const int szData) {
+    const int paramSetStartCodeLen = StartCodeLen(parameterSets, szParameterSets);
+    const int packetStartCodeLen = StartCodeLen(data, szData);
+    // weak test to see if the parameter set has already been included in the RTP stream
+    return paramSetStartCodeLen != 0 && packetStartCodeLen != 0 && parameterSets[paramSetStartCodeLen] == data[packetStartCodeLen];
+}
+
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
 {
     std::lock_guard<std::mutex> lck(mtx);
@@ -189,14 +206,28 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
     *data = rawFrame.data;
     *size = rawFrame.total();
 
-    // always grab param sets if available in case writeToFile is called after construction
-    const int paramSetLen = cap.get(CAP_PROP_LF_PARAM_SET_LEN);
-    if (paramSetLen) {
-        parameterSets = Mat(1, paramSetLen, CV_8UC1);
-        memcpy(parameterSets.data, *data, paramSetLen);
+    // always grab parameter sets if available to allow writeToFile to be called after construction
+    int paramSetsLen = cap.get(CAP_PROP_LRF_EXTRA_DATA_LEN);
+    if (paramSetsLen) {
+        // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
+        // DESCRIPE RTSP message, required for playback in media players such as vlc.
+        int rtspParamSetZeroBytePadding = 0;
+        if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
+            if (StartCodeLen(*data,*size) == 3)
+                rtspParamSetZeroBytePadding = 1;
+        }
+        parameterSets = Mat::zeros(1, paramSetsLen + rtspParamSetZeroBytePadding, CV_8UC1);
+        memcpy(parameterSets.data + rtspParamSetZeroBytePadding, *data, paramSetsLen);
+        if ((format_.codec == Codec::H264 || format_.codec == Codec::HEVC)
+            && ParamSetsExist(parameterSets.data, paramSetsLen, &(*data)[paramSetsLen], *size)) {
+            *data = &rawFrame.data[paramSetsLen];
+            *size = rawFrame.total() - paramSetsLen;
+        }
     }
 
-    if (restartRtspFileWrite && cap.get(CAP_PROP_LF_KEY_FRAME)) {
+    int rtpParamSetZeroBytePadding = 0;
+    if (restartRtspFileWrite && cap.get(CAP_PROP_LRF_HAS_KEY_FRAME)) {
+        restartRtspFileWrite = false;
         if (file.is_open())
             file.close();
         if (autoDetectExt)
@@ -204,9 +235,17 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
         file.open(fileName, std::ios::binary);
         if (!file.is_open())
             return false;
-        restartRtspFileWrite = false;
-        if (!paramSetLen && !parameterSets.empty())
+        if (!parameterSets.empty()){
             writeParameterSets = true;
+            if ((format_.codec == Codec::H264 || format_.codec == Codec::HEVC)
+                && ParamSetsExist(parameterSets.data, parameterSets.total(), *data, *size)) {
+                writeParameterSets = false;
+                // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in the RTP stream in front of parameter sets,
+                // required for playback in media players such as vlc
+                if (StartCodeLen(*data, *size) == 3)
+                    rtpParamSetZeroBytePadding = 1;
+            }
+        }
     }
 
     if (file.is_open()) {
@@ -214,7 +253,12 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
             writeParameterSets = false;
             file.write((char*)parameterSets.data, parameterSets.total());
         }
+        else if (rtpParamSetZeroBytePadding) {
+            const char tmp = 0x00;
+            file.write(&tmp, 1);
+        }
         file.write((char*)*data, *size);
+
     }
     return *size != 0;
 }

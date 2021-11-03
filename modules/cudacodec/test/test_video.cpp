@@ -171,7 +171,7 @@ CUDA_TEST_P(Video, Writer)
 
 #endif // _WIN32, HAVE_NVCUVENC
 
-#define VIDEO_SRC_R "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+#define VIDEO_SRC_R "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
