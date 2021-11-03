@@ -62,6 +62,9 @@ namespace cv
 {
 	namespace ximgproc
 	{
+		//! @addtogroup ximgproc_superpixel
+		//! @{
+
 /** @brief Class implementing the F-DBSCAN (Accelerated superpixel image segmentation with a parallelized DBSCAN algorithm) superpixels
 algorithm by Loke SC, et al.
 The algorithm uses a parallelised DBSCAN cluster search that is resistant to noise, competitive in segmentation quality, and faster than
@@ -121,6 +124,8 @@ when the number of processing threads is fixed, and requires the source image to
 		algorithm, which are: num_superpixels, threads, and merge_small.
 		*/
 		CV_EXPORTS_W cv::Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int threads = -1, bool merge_small = true);
+
+		//! @}
 	}
 }
 #endif
