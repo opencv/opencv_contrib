@@ -166,7 +166,7 @@ KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     ods.setMaxTranslation(params.voxelSize * params.volumeDims[0] * 0.5f);
     ods.setCameraMatrix(Mat(params.intr));
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
-    
+
     reset();
 }
 
@@ -280,7 +280,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
     }
-    
+
     renderFrame = newFrame;
     prevFrame = newFrame;
 
