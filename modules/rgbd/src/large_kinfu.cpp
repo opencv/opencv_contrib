@@ -238,7 +238,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
         if(frameCounter == 0) //! Only one current tracking map
         {
-            icp.prepareFrames(newFrame, newFrame);
+            icp.prepareFrame(newFrame);
             currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
             currTrackingSubmap->frame = newFrame;
             currTrackingSubmap->renderFrame = newFrame;

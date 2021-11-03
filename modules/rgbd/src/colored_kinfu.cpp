@@ -280,7 +280,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
     if(frameCounter == 0)
     {
-        icp.prepareFrames(newFrame, newFrame);
+        icp.prepareFrame(newFrame);
 
         // use depth instead of distance
         volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
@@ -323,10 +323,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     }
 
     renderFrame = newFrame;
-
-    prevFrame = icp.createOdometryFrame();
-    newFrame.setImage(rgb);
-    prevFrame.setDepth(depth);
+    prevFrame = newFrame;
 
     frameCounter++;
     return true;

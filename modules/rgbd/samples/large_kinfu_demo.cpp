@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
-    cv::setUseOptimized(false);
+    cv::setUseOptimized(true);
 
     if (!idle)
         largeKinfu = LargeKinfu::create(params);

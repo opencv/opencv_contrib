@@ -204,12 +204,10 @@ int main(int argc, char **argv)
             UMat cvt8;
             float depthFactor = params->depthFactor;
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
-            //convertScaleAbs(frame, cvt8, 16. / depthFactor);
             if(!idle)
             {
                 imshow("depth", cvt8);
                 if(!kf->update(frame))
-                //if(!kf->update(cvt8))
                 {
                     kf->reset();
                     std::cout << "reset" << std::endl;

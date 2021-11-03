@@ -247,7 +247,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
 
     if(frameCounter == 0)
     {
-        icp.prepareFrames(newFrame, newFrame);
+        icp.prepareFrame(newFrame);
         // use depth instead of distance
         volume->integrate(depth, params.depthFactor, pose, params.intr);
     }
