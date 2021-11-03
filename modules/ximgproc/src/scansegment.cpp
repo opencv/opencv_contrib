@@ -447,7 +447,7 @@ namespace cv {
 				}
 
 				// sort descending
-				std::sort(countVec.begin(), countVec.end(), [](std::pair<int, int>& left, std::pair<int, int>& right) {
+				std::sort(countVec.begin(), countVec.end(), [](const std::pair<int, int>& left, const std::pair<int, int>& right) {
 					return left.second > right.second;
 					});
 
