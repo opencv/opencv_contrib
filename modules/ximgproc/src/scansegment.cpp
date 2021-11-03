@@ -59,6 +59,8 @@
 
 namespace cv {
 	namespace ximgproc {
+		//! @addtogroup ximgproc_superpixel
+		//! @{
 
 		class ScanSegmentImpl : public ScanSegment
 		{
@@ -923,5 +925,7 @@ namespace cv {
 				}
 			}
 		}
+
+		//! @}
 	} // namespace ximgproc
 } // namespace cv
