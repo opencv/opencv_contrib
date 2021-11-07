@@ -26,7 +26,7 @@ namespace cv { namespace ximgproc {
 * The output size will be num_of_integral x src_diagonal_length.
 * If crop is selected, the input image will be crop into square then circle,
 * and output size will be num_of_integral x min_edge.
-* 
+*
 */
 CV_EXPORTS_W void RadonTransform(InputArray src,
                                       OutputArray dst,
