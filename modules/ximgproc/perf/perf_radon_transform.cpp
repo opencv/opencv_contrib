@@ -13,7 +13,7 @@ namespace opencv_test {
         PERF_TEST_P(RadonTransformPerfTest, perf,
             testing::Combine(
                 testing::Values(TYPICAL_MAT_SIZES),
-                testing::Values(CV_8U)
+                testing::Values(CV_8UC1, CV_32FC1, CV_64FC1)
             )
         )
         {
