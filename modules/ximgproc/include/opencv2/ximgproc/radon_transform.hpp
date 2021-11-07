@@ -20,12 +20,13 @@ namespace cv { namespace ximgproc {
 * @param   norm        Normalize the output Mat to grayscale and convert type to CV_8U
 *
 * This function calculates the Radon Transform of a given image in any range.
-* Input image is required to be type CV_8U. A square image is recommended.
-* If crop is selected, the input image must be square.
-* The output is a Mat of size num_of_integral x src.cols
-* i.e. [(end_angle - start_angle) / theta] x src.cols
-* with type CV_32SC1 by default.
-*
+* See https://engineering.purdue.edu/~malcolm/pct/CTI_Ch03.pdf for detail.
+* If the input type is CV_8U, the output will be CV_32S.
+* If the input type is CV_32F or CV_64F, the output will be CV_64F
+* The output size will be num_of_integral x src_diagonal_length.
+* If crop is selected, the input image will be crop into square then circle,
+* and output size will be num_of_integral x min_edge.
+* 
 */
 CV_EXPORTS_W void RadonTransform(InputArray src,
                                       OutputArray dst,
