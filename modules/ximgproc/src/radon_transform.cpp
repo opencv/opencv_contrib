@@ -5,7 +5,7 @@
 #include "precomp.hpp"
 
 namespace cv {namespace ximgproc {
-    void HoughSpaceTransform(InputArray src,
+    void RadonTransform(InputArray src,
                              OutputArray dst,
                              double theta,
                              double start_angle,

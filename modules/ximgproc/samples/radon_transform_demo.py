@@ -7,7 +7,7 @@ import cv2 as cv
 
 if __name__ == "__main__":
 	src = cv.imread("peilin_plane.png", cv.IMREAD_GRAYSCALE)
-	hough = cv.ximgproc.HoughSpaceTransform(src)
+	radon = cv.ximgproc.RadonTransform(src)
 	cv.imshow("src image", src)
-	cv.imshow("hough space", hough)
+	cv.imshow("Radon transform", radon)
 	cv.waitKey()

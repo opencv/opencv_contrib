@@ -3,14 +3,14 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/ximgproc/hough_space_transform.hpp>
+#include <opencv2/ximgproc/radon_transform.hpp>
 
 int main() {
 	cv::Mat src = cv::imread("peilin_plane.png", cv::IMREAD_GRAYSCALE);
-	cv::Mat hough;
-	cv::ximgproc::HoughSpaceTransform(src, hough, 1, 0, 180, false, true);
+	cv::Mat radon;
+	cv::ximgproc::RadonTransform(src, radon, 1, 0, 180, false, true);
 	cv::imshow("src image", src);
-	cv::imshow("hough space", hough);
+	cv::imshow("Radon transform", radon);
 	cv::waitKey();
 	return 0;
 }
