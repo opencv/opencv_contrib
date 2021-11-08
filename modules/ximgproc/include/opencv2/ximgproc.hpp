@@ -60,7 +60,6 @@
 #include "ximgproc/run_length_morphology.hpp"
 #include "ximgproc/edgepreserving_filter.hpp"
 #include "ximgproc/color_match.hpp"
-#include "ximgproc/hough_space_transform.hpp"
 #include "ximgproc/radon_transform.hpp"
 
 
