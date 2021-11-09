@@ -6,8 +6,8 @@ import numpy as np
 import cv2 as cv
 
 if __name__ == "__main__":
-	src = cv.imread("peilin_plane.png", cv.IMREAD_GRAYSCALE)
-	radon = cv.ximgproc.RadonTransform(src)
-	cv.imshow("src image", src)
-	cv.imshow("Radon transform", radon)
-	cv.waitKey()
+    src = cv.imread("peilin_plane.png", cv.IMREAD_GRAYSCALE)
+    radon = cv.ximgproc.RadonTransform(src)
+    cv.imshow("src image", src)
+    cv.imshow("Radon transform", radon)
+    cv.waitKey()

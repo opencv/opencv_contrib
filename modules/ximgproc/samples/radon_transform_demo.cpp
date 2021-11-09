@@ -5,12 +5,14 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/ximgproc/radon_transform.hpp>
 
+using namespace cv;
+
 int main() {
-	cv::Mat src = cv::imread("peilin_plane.png", cv::IMREAD_GRAYSCALE);
-	cv::Mat radon;
-	cv::ximgproc::RadonTransform(src, radon, 1, 0, 180, false, true);
-	cv::imshow("src image", src);
-	cv::imshow("Radon transform", radon);
-	cv::waitKey();
-	return 0;
+    Mat src = imread("peilin_plane.png", IMREAD_GRAYSCALE);
+    Mat radon;
+    ximgproc::RadonTransform(src, radon, 1, 0, 180, false, true);
+    imshow("src image", src);
+    imshow("Radon transform", radon);
+    waitKey();
+    return 0;
 }

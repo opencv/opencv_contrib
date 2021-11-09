@@ -13,13 +13,13 @@ TEST(RadonTransformTest, output_size)
     Mat radon;
     cv::ximgproc::RadonTransform(src, radon);
 
-    ASSERT_EQ(radon.rows, 363);
-    ASSERT_EQ(radon.cols, 180);
+    EXPECT_EQ(363, radon.rows);
+    EXPECT_EQ(180, radon.cols);
 
     cv::ximgproc::RadonTransform(src, radon, 1, 0, 180, true);
 
-    ASSERT_EQ(radon.rows, 256);
-    ASSERT_EQ(radon.cols, 180);
+    EXPECT_EQ(256, radon.rows);
+    EXPECT_EQ(180, radon.cols);
 }
 
 TEST(RadonTransformTest, output_type)
@@ -30,18 +30,18 @@ TEST(RadonTransformTest, output_type)
     cv::ximgproc::RadonTransform(src_int, radon);
     cv::ximgproc::RadonTransform(src_int, radon_norm, 1, 0, 180, false, true);
 
-    ASSERT_EQ(radon.type(), CV_32SC1);
-    ASSERT_EQ(radon_norm.type(), CV_8U);
+    EXPECT_EQ(CV_32SC1, radon.type());
+    EXPECT_EQ(CV_8U, radon_norm.type());
 
     Mat src_float(Size(256, 256), CV_32FC1, Scalar(0));
     Mat src_double(Size(256, 256), CV_32FC1, Scalar(0));
     cv::ximgproc::RadonTransform(src_float, radon);
     cv::ximgproc::RadonTransform(src_float, radon_norm, 1, 0, 180, false, true);
-    ASSERT_EQ(radon.type(), CV_64FC1);
-    ASSERT_EQ(radon_norm.type(), CV_8U);
+    EXPECT_EQ(CV_64FC1, radon.type());
+    EXPECT_EQ(CV_8U, radon_norm.type());
     cv::ximgproc::RadonTransform(src_double, radon);
-    ASSERT_EQ(radon.type(), CV_64FC1);
-    ASSERT_EQ(radon_norm.type(), CV_8U);
+    EXPECT_EQ(CV_64FC1, radon.type());
+    EXPECT_EQ(CV_8U, radon_norm.type());
 }
 
 TEST(RadonTransformTest, accuracy_by_pixel)
@@ -51,10 +51,12 @@ TEST(RadonTransformTest, accuracy_by_pixel)
     Mat radon;
     cv::ximgproc::RadonTransform(src, radon);
 
-    ASSERT_EQ(radon.at<int>(0, 0), 0);
+    ASSERT_EQ(CV_32SC1, radon.type());
 
-    ASSERT_GT(radon.at<int>(128, 128), 18000);
-    ASSERT_LT(radon.at<int>(128, 128), 19000);
+    EXPECT_EQ(0, radon.at<int>(0, 0));
+
+    EXPECT_LT(18000, radon.at<int>(128, 128));
+    EXPECT_GT(19000, radon.at<int>(128, 128));
 }
 
 TEST(RadonTransformTest, accuracy_uchar)
@@ -63,7 +65,7 @@ TEST(RadonTransformTest, accuracy_uchar)
     cv::Mat radon;
     ximgproc::RadonTransform(src, radon, 45, 0, 180, false, false);
 
-    ASSERT_EQ(sum(radon.col(0))[0], 100);
+    EXPECT_EQ(100, sum(radon.col(0))[0]);
 }
 
 TEST(RadonTransformTest, accuracy_float)
@@ -72,8 +74,8 @@ TEST(RadonTransformTest, accuracy_float)
     cv::Mat radon;
     ximgproc::RadonTransform(src, radon, 45, 0, 180, false, false);
 
-    ASSERT_GT(sum(radon.col(0))[0], 109);
-    ASSERT_LT(sum(radon.col(0))[0], 111);
+    EXPECT_LT(109, sum(radon.col(0))[0]);
+    EXPECT_GT(111, sum(radon.col(0))[0]);
 }
 
 } }
