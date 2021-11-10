@@ -59,6 +59,11 @@ private:
     float horzLength, vertLength;           // length of each segment
     int effectivethreads;                   // effective number of concurrent threads
     int smallClusters;                      // clusters below this pixel count are considered small for merging
+
+    cv::AutoBuffer<cv::Rect> _seedRects;    // autobuffer of seed rectangles
+    cv::AutoBuffer<cv::Rect> _seedRectsExt; // autobuffer of extended seed rectangles
+    cv::AutoBuffer<cv::Rect> _offsetRects;  // autobuffer of offset rectangles
+    cv::AutoBuffer<cv::Point> _neighbourLoc;// autobuffer of neighbour locations
     cv::Rect* seedRects;					// array of seed rectangles
     cv::Rect* seedRectsExt;					// array of extended seed rectangles
     cv::Rect* offsetRects;					// array of offset rectangles
@@ -67,6 +72,10 @@ private:
     std::vector<int> indexNeighbourVec;		// indices for parallel processing
     std::vector<std::pair<int, int>> indexProcessVec;
 
+    cv::AutoBuffer<int> _labelsBuffer;		// label autobuffer
+    cv::AutoBuffer<int> _clusterBuffer;     // cluster autobuffer
+    cv::AutoBuffer<uchar*> _pixelBuffer;    // pixel autobuffer
+    std::vector<cv::AutoBuffer<int>> _offsetVec; // vector of offset autobuffers
     int* labelsBuffer;						// label buffer
     int* clusterBuffer;                     // cluster buffer
     cv::Vec3b* labBuffer;					// lab buffer
@@ -209,9 +218,12 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
     smallClusters = 0;
 
     // get array of seed rects
-    seedRects = static_cast<cv::Rect*>(malloc(horzDiv * vertDiv * sizeof(cv::Rect)));
-    seedRectsExt = static_cast<cv::Rect*>(malloc(horzDiv * vertDiv * sizeof(cv::Rect)));
-    offsetRects = static_cast<cv::Rect*>(malloc(horzDiv * vertDiv * sizeof(cv::Rect)));
+    _seedRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
+    _seedRectsExt = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
+    _offsetRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
+    seedRects = _seedRects.data();
+    seedRectsExt = _seedRectsExt.data();
+    offsetRects = _offsetRects.data();
     for (int y = 0; y < vertDiv; y++) {
         for (int x = 0; x < horzDiv; x++) {
             int xStart = (int)((float)x * horzLength);
@@ -261,17 +273,23 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
 
     // create buffers and initialise
     std::vector<cv::Point> tempLoc{ cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1), cv::Point(-1, 0), cv::Point(1, 0), cv::Point(-1, 1), cv::Point(0, 1), cv::Point(1, 1) };
-    neighbourLoc = static_cast<cv::Point*>(malloc(8 * sizeof(cv::Point)));
+    _neighbourLoc = cv::AutoBuffer<cv::Point>(8);
+    neighbourLoc = _neighbourLoc.data();
     memcpy(neighbourLoc, tempLoc.data(), 8 * sizeof(cv::Point));
 
-    labelsBuffer = static_cast<int*>(malloc(indexSize * sizeof(int)));
-    clusterBuffer = static_cast<int*>(malloc(indexSize * sizeof(int)));
-    pixelBuffer = static_cast<uchar*>(malloc(indexSize));
+    _labelsBuffer = cv::AutoBuffer<int>(indexSize);
+    _clusterBuffer = cv::AutoBuffer<int>(indexSize);
+    _pixelBuffer = cv::AutoBuffer<BYTE>(indexSize);
+    _offsetVec = std::vector<cv::AutoBuffer<int>>(effectivethreads);
+    labelsBuffer = _labelsBuffer.data();
+    clusterBuffer = _clusterBuffer.data();
+    pixelBuffer = _pixelBuffer.data();
     offsetVec = std::vector<int*>(effectivethreads);
     int offsetSize = (clusterSize + 1) * sizeof(int);
     bool offsetAllocated = true;
     for (int i = 0; i < effectivethreads; i++) {
-        offsetVec[i] = static_cast<int*>(malloc(offsetSize));
+        _offsetVec[i] = cv::AutoBuffer<int>(offsetSize);
+        offsetVec[i] = _offsetVec[i].data();
         if (offsetVec[i] == NULL) {
             offsetAllocated = false;
         }
@@ -304,32 +322,6 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
 ScanSegmentImpl::~ScanSegmentImpl()
 {
     // clean up
-    if (neighbourLoc != NULL) {
-        free(neighbourLoc);
-    }
-    if (seedRects != NULL) {
-        free(seedRects);
-    }
-    if (seedRectsExt != NULL) {
-        free(seedRectsExt);
-    }
-    if (offsetRects != NULL) {
-        free(offsetRects);
-    }
-    if (labelsBuffer != NULL) {
-        free(labelsBuffer);
-    }
-    if (clusterBuffer != NULL) {
-        free(clusterBuffer);
-    }
-    if (pixelBuffer != NULL) {
-        free(pixelBuffer);
-    }
-    for (int i = 0; i < effectivethreads; i++) {
-        if (offsetVec[i] != NULL) {
-            free(offsetVec[i]);
-        }
-    }
     if (!src.empty()) {
         src.release();
     }
