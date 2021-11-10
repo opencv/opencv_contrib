@@ -74,7 +74,7 @@ private:
 
     cv::AutoBuffer<int> _labelsBuffer;		// label autobuffer
     cv::AutoBuffer<int> _clusterBuffer;     // cluster autobuffer
-    cv::AutoBuffer<uchar*> _pixelBuffer;    // pixel autobuffer
+    cv::AutoBuffer<uchar> _pixelBuffer;    // pixel autobuffer
     std::vector<cv::AutoBuffer<int>> _offsetVec; // vector of offset autobuffers
     int* labelsBuffer;						// label buffer
     int* clusterBuffer;                     // cluster buffer
