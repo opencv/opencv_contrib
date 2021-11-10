@@ -67,7 +67,7 @@ public:
 @param num_superpixels Desired number of superpixels. Note that the actual number may be smaller
 due to restrictions (depending on the image size). Use getNumberOfSuperpixels() to
 get the actual number.
-@param threads Number of processing threads for parallelisation. Default -1 uses the maximum number 
+@param slices Number of processing threads for parallelisation. Setting -1 uses the maximum number 
 of threads. In practice, four threads is enough for smaller images and eight threads for larger ones.
 @param merge_small merge small segments to give the desired number of superpixels. Processing is 
 much faster without merging, but many small segments will be left in the image.
@@ -75,7 +75,7 @@ The function initializes a ScanSegment object for the input image. It stores the
 the image: image_width and image_height. It also sets the parameters of the F-DBSCAN superpixel 
 algorithm, which are: num_superpixels, threads, and merge_small.
 */
-CV_EXPORTS_W cv::Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int threads = -1, bool merge_small = true);
+CV_EXPORTS_W cv::Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int slices = 8, bool merge_small = true);
 }
 }
 #endif
