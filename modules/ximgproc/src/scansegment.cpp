@@ -279,7 +279,7 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
 
     _labelsBuffer = cv::AutoBuffer<int>(indexSize);
     _clusterBuffer = cv::AutoBuffer<int>(indexSize);
-    _pixelBuffer = cv::AutoBuffer<BYTE>(indexSize);
+    _pixelBuffer = cv::AutoBuffer<uchar>(indexSize);
     _offsetVec = std::vector<cv::AutoBuffer<int>>(effectivethreads);
     labelsBuffer = _labelsBuffer.data();
     clusterBuffer = _clusterBuffer.data();
