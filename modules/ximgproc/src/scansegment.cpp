@@ -28,7 +28,7 @@ class ScanSegmentImpl : public ScanSegment
 
 public:
 
-	ScanSegmentImpl(int image_width, int image_height, int num_superpixels, int threads, bool merge_small);
+	ScanSegmentImpl(int image_width, int image_height, int num_superpixels, int slices, bool merge_small);
 
 	virtual ~ScanSegmentImpl();
 
@@ -176,17 +176,17 @@ private:
 	static void watershedEx(const cv::Mat& src, cv::Mat& dst);
 };
 
-CV_EXPORTS Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int threads, bool merge_small)
+CV_EXPORTS Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int slices, bool merge_small)
 {
-	return makePtr<ScanSegmentImpl>(image_width, image_height, num_superpixels, threads, merge_small);
+	return makePtr<ScanSegmentImpl>(image_width, image_height, num_superpixels, slices, merge_small);
 }
 
-ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_superpixels, int threads, bool merge_small)
+ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_superpixels, int slices, bool merge_small)
 {
 	// set the number of process threads
 	processthreads = std::thread::hardware_concurrency();
-	if (threads > 0) {
-		processthreads = MIN(processthreads, threads);
+	if (slices > 0) {
+		processthreads = MIN(processthreads, slices);
 	}
 
 	width = image_width;
