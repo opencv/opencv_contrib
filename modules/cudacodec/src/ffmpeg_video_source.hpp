@@ -67,12 +67,12 @@ public:
 private:
     FormatInfo format_;
     VideoCapture cap;
-    Mat rawFrame, parameterSets;
+    Mat rawFrame, parameterSets, dataWithHeader;
     std::string fileName;
     std::ofstream file;
     bool autoDetectExt = false;
     bool restartRtspFileWrite = false;
-    bool writeParameterSets = false;
+    int iFrame = 0;
     std::mutex mtx;
 };
 

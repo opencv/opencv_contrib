@@ -205,28 +205,41 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
     cap >> rawFrame;
     *data = rawFrame.data;
     *size = rawFrame.total();
-
-    // always grab parameter sets if available to allow writeToFile to be called after construction
-    int paramSetsLen = cap.get(CAP_PROP_LRF_EXTRA_DATA_LEN);
-    if (paramSetsLen) {
-        // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
-        // DESCRIPE RTSP message, required for playback in media players such as vlc.
-        int rtspParamSetZeroBytePadding = 0;
-        if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
-            if (StartCodeLen(*data,*size) == 3)
-                rtspParamSetZeroBytePadding = 1;
-        }
-        parameterSets = Mat::zeros(1, paramSetsLen + rtspParamSetZeroBytePadding, CV_8UC1);
-        memcpy(parameterSets.data + rtspParamSetZeroBytePadding, *data, paramSetsLen);
-        if ((format_.codec == Codec::H264 || format_.codec == Codec::HEVC)
-            && ParamSetsExist(parameterSets.data, paramSetsLen, &(*data)[paramSetsLen], *size)) {
-            *data = &rawFrame.data[paramSetsLen];
-            *size = rawFrame.total() - paramSetsLen;
+    int rtpParamSetZeroBytePadding = 0, rtspParamSetZeroBytePadding = 0;
+    bool writeParameterSets = false;
+    const bool startRtspFileWrite = restartRtspFileWrite && cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
+    if (iFrame++ == 0 || startRtspFileWrite) {
+        Mat tmpExtraData;
+        cap.retrieve(tmpExtraData, 1);
+        if (tmpExtraData.total()) {
+            if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
+                // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
+                // DESCRIPE RTSP message, required for playback in media players such as vlc.
+                if (StartCodeLen(tmpExtraData.data, tmpExtraData.total()) == 3)
+                    rtspParamSetZeroBytePadding = 1;
+                if (ParamSetsExist(tmpExtraData.data, tmpExtraData.total(), *data, *size)) {
+                    // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in the RTP stream in front of parameter sets,
+                    // required for playback in media players such as vlc.
+                    if (StartCodeLen(*data, *size) == 3)
+                        rtpParamSetZeroBytePadding = 1;
+                }
+                else {
+                    parameterSets = tmpExtraData.clone();
+                    writeParameterSets = true;
+                }
+            }
+            else if (format_.codec == Codec::MPEG4) {
+                const size_t newSz = tmpExtraData.total() + *size  - 3;
+                dataWithHeader = Mat(1, newSz, CV_8UC1);
+                memcpy(dataWithHeader.data, tmpExtraData.data, tmpExtraData.total());
+                memcpy(dataWithHeader.data + tmpExtraData.total(), (*data) + 3, *size - 3);
+                *data = dataWithHeader.data;
+                *size = newSz;
+            }
         }
     }
 
-    int rtpParamSetZeroBytePadding = 0;
-    if (restartRtspFileWrite && cap.get(CAP_PROP_LRF_HAS_KEY_FRAME)) {
+    if (startRtspFileWrite) {
         restartRtspFileWrite = false;
         if (file.is_open())
             file.close();
@@ -235,22 +248,15 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
         file.open(fileName, std::ios::binary);
         if (!file.is_open())
             return false;
-        if (!parameterSets.empty()){
-            writeParameterSets = true;
-            if ((format_.codec == Codec::H264 || format_.codec == Codec::HEVC)
-                && ParamSetsExist(parameterSets.data, parameterSets.total(), *data, *size)) {
-                writeParameterSets = false;
-                // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in the RTP stream in front of parameter sets,
-                // required for playback in media players such as vlc
-                if (StartCodeLen(*data, *size) == 3)
-                    rtpParamSetZeroBytePadding = 1;
-            }
-        }
     }
 
     if (file.is_open()) {
         if (writeParameterSets) {
             writeParameterSets = false;
+            if (rtspParamSetZeroBytePadding) {
+                const char tmp = 0x00;
+                file.write(&tmp, 1);
+            }
             file.write((char*)parameterSets.data, parameterSets.total());
         }
         else if (rtpParamSetZeroBytePadding) {
@@ -258,8 +264,8 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
             file.write(&tmp, 1);
         }
         file.write((char*)*data, *size);
-
     }
+
     return *size != 0;
 }
 
