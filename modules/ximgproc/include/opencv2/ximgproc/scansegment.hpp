@@ -10,7 +10,6 @@
 
 #ifndef __OPENCV_SCANSEGMENT_HPP__
 #define __OPENCV_SCANSEGMENT_HPP__
-#ifdef __cplusplus
 
 #include <opencv2/core.hpp>
 
@@ -79,5 +78,4 @@ algorithm, which are: num_superpixels, threads, and merge_small.
 CV_EXPORTS_W cv::Ptr<ScanSegment> createScanSegment(int image_width, int image_height, int num_superpixels, int threads = -1, bool merge_small = true);
 }
 }
-#endif
 #endif
