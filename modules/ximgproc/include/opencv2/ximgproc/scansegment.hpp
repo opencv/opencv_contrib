@@ -8,8 +8,8 @@
 //
 //
 
-#ifndef __OPENCV_SCANSEGMENT_HPP__
-#define __OPENCV_SCANSEGMENT_HPP__
+#ifndef __OPENCV_XIMGPROC_SCANSEGMENT_HPP__
+#define __OPENCV_XIMGPROC_SCANSEGMENT_HPP__
 
 #include <opencv2/core.hpp>
 
