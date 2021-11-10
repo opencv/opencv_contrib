@@ -8,18 +8,6 @@
 //
 //
 
- /*
- * BibTeX reference
-@article{loke2021accelerated,
-  title={Accelerated superpixel image segmentation with a parallelized DBSCAN algorithm},
-  author={Loke, Seng Cheong and MacDonald, Bruce A and Parsons, Matthew and W{\"u}nsche, Burkhard Claus},
-  journal={Journal of Real-Time Image Processing},
-  pages={1--16},
-  year={2021},
-  publisher={Springer}
-}
-*/
-
 #ifndef __OPENCV_SCANSEGMENT_HPP__
 #define __OPENCV_SCANSEGMENT_HPP__
 #ifdef __cplusplus
