@@ -492,7 +492,7 @@ void ScanSegmentImpl::expandCluster(int* offsetBuffer, const cv::Point& point)
     if (labelsBuffer[pointIndex] == UNCLASSIFIED) {
         int offsetStart = 0;
         int offsetEnd = 0;
-        int currentClusterID = clusterID->fetch_add(1);
+        int currentClusterID = clusterID.fetch_add(1);
 
         calculateCluster(offsetBuffer, &offsetEnd, pointIndex, currentClusterID);
 
@@ -514,7 +514,7 @@ void ScanSegmentImpl::expandCluster(int* offsetBuffer, const cv::Point& point)
             offsetEnd++;
 
             // store to buffer
-            int currentClusterIndex = clusterIndex->fetch_add(2);
+            int currentClusterIndex = clusterIndex.fetch_add(2);
             clusterBuffer[currentClusterIndex] = currentClusterID;
             clusterBuffer[currentClusterIndex + 1] = offsetEnd;
         }
