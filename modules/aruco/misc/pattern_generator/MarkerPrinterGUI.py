@@ -155,7 +155,7 @@ class MarkerPrinterGUI:
         tk.Button(self.charucoMarkerUIFrame2, text = "Preview", command = self.OnPreviewCharucoMarker).grid(row=1, column=0, sticky = tk.NSEW)
         tk.Button(self.charucoMarkerUIFrame2, text = "Save", command = self.OnSaveCharucoMarker).grid(row=1, column=1, sticky = tk.NSEW)
 
-        tk.Label(self.charucoMarkerUIFrame2, text="Save opetions:").grid(row=0, column=2, sticky = tk.NSEW)
+        tk.Label(self.charucoMarkerUIFrame2, text="Save options:").grid(row=0, column=2, sticky = tk.NSEW)
         tk.Label(self.charucoMarkerUIFrame2, text="(set 0 as disable)").grid(row=1, column=2, sticky = tk.NSEW)
         tk.Label(self.charucoMarkerUIFrame2, text="subSizeX").grid(row=0, column=3, sticky = tk.NSEW)
         tk.Label(self.charucoMarkerUIFrame2, text="subSizeY").grid(row=0, column=4, sticky = tk.NSEW)
@@ -279,7 +279,7 @@ class MarkerPrinterGUI:
         tk.Button(self.arucoGridMarkerUIFrame2, text = "Preview", command = self.OnPreviewArucoGridMarker).grid(row=1, column=0, sticky = tk.NSEW)
         tk.Button(self.arucoGridMarkerUIFrame2, text = "Save", command = self.OnSaveArucoGridMarker).grid(row=1, column=1, sticky = tk.NSEW)
 
-        tk.Label(self.arucoGridMarkerUIFrame2, text="Save opetions:").grid(row=0, column=2, sticky = tk.NSEW)
+        tk.Label(self.arucoGridMarkerUIFrame2, text="Save options:").grid(row=0, column=2, sticky = tk.NSEW)
         tk.Label(self.arucoGridMarkerUIFrame2, text="(set 0 as disable)").grid(row=1, column=2, sticky = tk.NSEW)
         tk.Label(self.arucoGridMarkerUIFrame2, text="subSizeX").grid(row=0, column=3, sticky = tk.NSEW)
         tk.Label(self.arucoGridMarkerUIFrame2, text="subSizeY").grid(row=0, column=4, sticky = tk.NSEW)
@@ -386,7 +386,7 @@ class MarkerPrinterGUI:
         tk.Button(self.arucoMarkerUIFrame2, text = "Preview", command = self.OnPreviewArucoMarker).grid(row=0, column=0, sticky = tk.NSEW)
         tk.Button(self.arucoMarkerUIFrame2, text = "Save", command = self.OnSaveArucoMarker).grid(row=0, column=1, sticky = tk.NSEW)
 
-        tk.Label(self.arucoMarkerUIFrame2, text="Save opetions:").grid(row=0, column=2, sticky = tk.NSEW)
+        tk.Label(self.arucoMarkerUIFrame2, text="Save options:").grid(row=0, column=2, sticky = tk.NSEW)
         tk.Label(self.arucoMarkerUIFrame2, text="(set 0 as disable)").grid(row=1, column=2, sticky = tk.NSEW)
         tk.Label(self.arucoMarkerUIFrame2, text="pageBorderX (Unit: Meter)").grid(row=0, column=3, sticky = tk.NSEW)
         tk.Label(self.arucoMarkerUIFrame2, text="pageBorderY (Unit: Meter)").grid(row=0, column=4, sticky = tk.NSEW)
@@ -477,7 +477,7 @@ class MarkerPrinterGUI:
         tk.Button(self.chessMarkerUIFrame2, text = "Preview", command = self.OnPreviewChessMarker).grid(row=1, column=0, sticky = tk.NSEW)
         tk.Button(self.chessMarkerUIFrame2, text = "Save", command = self.OnSaveChessMarker).grid(row=1, column=1, sticky = tk.NSEW)
 
-        tk.Label(self.chessMarkerUIFrame2, text="Save opetions:").grid(row=0, column=2, sticky = tk.NSEW)
+        tk.Label(self.chessMarkerUIFrame2, text="Save options:").grid(row=0, column=2, sticky = tk.NSEW)
         tk.Label(self.chessMarkerUIFrame2, text="(set 0 as disable)").grid(row=1, column=2, sticky = tk.NSEW)
         tk.Label(self.chessMarkerUIFrame2, text="subSizeX").grid(row=0, column=3, sticky = tk.NSEW)
         tk.Label(self.chessMarkerUIFrame2, text="subSizeY").grid(row=0, column=4, sticky = tk.NSEW)
