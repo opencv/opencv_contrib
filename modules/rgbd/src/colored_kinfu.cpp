@@ -284,6 +284,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
         // use depth instead of distance
         volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+        // TODO: try to move setPyramidLevel from kinfu to volume
         newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
         newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
     }
