@@ -210,31 +210,34 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
     const bool startRtspFileWrite = restartRtspFileWrite && cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
     if (iFrame++ == 0 || startRtspFileWrite) {
         Mat tmpExtraData;
-        cap.retrieve(tmpExtraData, 1);
-        if (tmpExtraData.total()) {
-            if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
-                // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
-                // DESCRIPE RTSP message, required for playback in media players such as vlc.
-                if (StartCodeLen(tmpExtraData.data, tmpExtraData.total()) == 3)
-                    rtspParamSetZeroBytePadding = 1;
-                if (ParamSetsExist(tmpExtraData.data, tmpExtraData.total(), *data, *size)) {
-                    // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in the RTP stream in front of parameter sets,
-                    // required for playback in media players such as vlc.
-                    if (StartCodeLen(*data, *size) == 3)
-                        rtpParamSetZeroBytePadding = 1;
+        const int codecExtradataIndex = (int)cap.get(CAP_PROP_CODEC_EXTRADATA_INDEX);
+        if (codecExtradataIndex) {
+            cap.retrieve(tmpExtraData, codecExtradataIndex);
+            if (tmpExtraData.total()) {
+                if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
+                    // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
+                    // DESCRIPE RTSP message, required for playback in media players such as vlc.
+                    if (StartCodeLen(tmpExtraData.data, tmpExtraData.total()) == 3)
+                        rtspParamSetZeroBytePadding = 1;
+                    if (ParamSetsExist(tmpExtraData.data, tmpExtraData.total(), *data, *size)) {
+                        // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in the RTP stream in front of parameter sets,
+                        // required for playback in media players such as vlc.
+                        if (StartCodeLen(*data, *size) == 3)
+                            rtpParamSetZeroBytePadding = 1;
+                    }
+                    else {
+                        parameterSets = tmpExtraData.clone();
+                        writeParameterSets = true;
+                    }
                 }
-                else {
-                    parameterSets = tmpExtraData.clone();
-                    writeParameterSets = true;
+                else if (format_.codec == Codec::MPEG4) {
+                    const size_t newSz = tmpExtraData.total() + *size - 3;
+                    dataWithHeader = Mat(1, newSz, CV_8UC1);
+                    memcpy(dataWithHeader.data, tmpExtraData.data, tmpExtraData.total());
+                    memcpy(dataWithHeader.data + tmpExtraData.total(), (*data) + 3, *size - 3);
+                    *data = dataWithHeader.data;
+                    *size = newSz;
                 }
-            }
-            else if (format_.codec == Codec::MPEG4) {
-                const size_t newSz = tmpExtraData.total() + *size  - 3;
-                dataWithHeader = Mat(1, newSz, CV_8UC1);
-                memcpy(dataWithHeader.data, tmpExtraData.data, tmpExtraData.total());
-                memcpy(dataWithHeader.data + tmpExtraData.total(), (*data) + 3, *size - 3);
-                *data = dataWithHeader.data;
-                *size = newSz;
             }
         }
     }
