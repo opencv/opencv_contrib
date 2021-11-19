@@ -195,7 +195,7 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
     // set the number of process threads
     processthreads = std::thread::hardware_concurrency();
     if (slices > 0) {
-        processthreads = MIN(processthreads, slices);
+        processthreads = slices;
     }
 
     width = image_width;
