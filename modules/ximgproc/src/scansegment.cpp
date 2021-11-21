@@ -99,81 +99,7 @@ private:
         WSQueue() { first = last = 0; }
         int first, last;
     };
-
-    class PP1 : public cv::ParallelLoopBody
-    {
-    public:
-        PP1(ScanSegmentImpl* const scanSegment)
-            : ss(scanSegment) {}
-        virtual ~PP1() {}
-
-        void operator()(const cv::Range& range) const CV_OVERRIDE
-        {
-            for (int v = range.start; v < range.end; v++)
-            {
-                ss->OP1(v);
-            }
-        }
-    private:
-        ScanSegmentImpl* const ss;
-    };
-
-    class PP2 : public cv::ParallelLoopBody
-    {
-    public:
-        PP2(ScanSegmentImpl* const scanSegment, std::vector<std::pair<int, int>>* const countVec)
-            : ss(scanSegment), ctv(countVec) {}
-        virtual ~PP2() {}
-
-        void operator()(const cv::Range& range) const CV_OVERRIDE
-        {
-            for (int v = range.start; v < range.end; v++)
-            {
-                ss->OP2((*ctv)[v]);
-            }
-        }
-    private:
-        ScanSegmentImpl* const ss;
-        std::vector<std::pair<int, int>>* ctv;
-    };
-
-    class PP3 : public cv::ParallelLoopBody
-    {
-    public:
-        PP3(ScanSegmentImpl* const scanSegment)
-            : ss(scanSegment) {}
-        virtual ~PP3() {}
-
-        void operator()(const cv::Range& range) const CV_OVERRIDE
-        {
-            for (int v = range.start; v < range.end; v++)
-            {
-                ss->OP3(v);
-            }
-        }
-    private:
-        ScanSegmentImpl* const ss;
-    };
-
-    class PP4 : public cv::ParallelLoopBody
-    {
-    public:
-        PP4(ScanSegmentImpl* const scanSegment, std::vector<std::pair<int, int>>* const countVec)
-            : ss(scanSegment), ctv(countVec) {}
-        virtual ~PP4() {}
-
-        void operator()(const cv::Range& range) const CV_OVERRIDE
-        {
-            for (int v = range.start; v < range.end; v++)
-            {
-                ss->OP4((*ctv)[v]);
-            }
-        }
-    private:
-        ScanSegmentImpl* const ss;
-        std::vector<std::pair<int, int>>* ctv;
-    };
-
+    
     void OP1(int v);
     void OP2(std::pair<int, int> const& p);
     void OP3(int v);
@@ -381,7 +307,11 @@ void ScanSegmentImpl::iterate(InputArray img)
 
     // start at the center of the rect, then run through the remainder
     labBuffer = reinterpret_cast<cv::Vec3b*>(src.data);
-    cv::parallel_for_(cv::Range(0, (int)indexNeighbourVec.size()), PP1(reinterpret_cast<ScanSegmentImpl*>(this)));
+    cv::parallel_for_(Range(0, (int)indexNeighbourVec.size()), [&](const Range& range) {
+        for (int i = range.start; i < range.end; i++) {
+            OP1(i);
+        }
+    });
 
     if (merge) {
         // get cutoff size for clusters
@@ -412,16 +342,28 @@ void ScanSegmentImpl::iterate(InputArray img)
             clusterBuffer[countVec[i].first] = i + 1;
         }
 
-        cv::parallel_for_(cv::Range(0, (int)indexProcessVec.size()), PP2(reinterpret_cast<ScanSegmentImpl*>(this), &indexProcessVec));
+        parallel_for_(Range(0, (int)indexProcessVec.size()), [&](const Range& range) {
+            for (int i = range.start; i < range.end; i++) {
+                OP2(indexProcessVec[i]);
+            }
+        });
 
         // make copy of labels buffer
         memcpy(labelsMat.data, labelsBuffer, indexSize * sizeof(int));
 
         // run watershed
-        cv::parallel_for_(cv::Range(0, (int)indexNeighbourVec.size()), PP3(reinterpret_cast<ScanSegmentImpl*>(this)));
+        cv::parallel_for_(Range(0, (int)indexNeighbourVec.size()), [&](const Range& range) {
+            for (int i = range.start; i < range.end; i++) {
+                OP3(i);
+            }
+            });
 
         // copy back to labels mat
-        cv::parallel_for_(cv::Range(0, (int)indexProcessVec.size()), PP4(reinterpret_cast<ScanSegmentImpl*>(this), &indexProcessVec));
+        parallel_for_(Range(0, (int)indexProcessVec.size()), [&](const Range& range) {
+            for (int i = range.start; i < range.end; i++) {
+                OP4(indexProcessVec[i]);
+            }
+            });
     }
     else {
         memcpy(labelsMat.data, labelsBuffer, indexSize * sizeof(int));
