@@ -12,14 +12,13 @@
 
 #include <numeric>
 #include <atomic>
-#include <thread>
 
 namespace cv {
 namespace ximgproc {
 //! @addtogroup ximgproc_superpixel
 //! @{
 
-class ScanSegmentImpl : public ScanSegment
+class ScanSegmentImpl CV_FINAL : public ScanSegment
 {
 #define UNKNOWN 0
 #define BORDER -1
@@ -193,7 +192,7 @@ CV_EXPORTS Ptr<ScanSegment> createScanSegment(int image_width, int image_height,
 ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_superpixels, int slices, bool merge_small)
 {
     // set the number of process threads
-    processthreads = std::thread::hardware_concurrency();
+    processthreads = cv::getNumThreads();
     if (slices > 0) {
         processthreads = slices;
     }
@@ -584,42 +583,42 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
 // Create a new node with offsets mofs and iofs in queue idx
 #define ws_push(idx,mofs,iofs)          \
 {                                       \
-if (!free_node)                    \
-free_node = allocWSNodes(storage); \
-node = free_node;                   \
-free_node = storage[free_node].next; \
-storage[node].next = 0;             \
-storage[node].mask_ofs = mofs;      \
-storage[node].img_ofs = iofs;       \
-if (q[idx].last)                   \
-storage[q[idx].last].next = node; \
-else                                \
-q[idx].first = node;            \
-q[idx].last = node;                 \
+    if (!free_node)                    \
+        free_node = allocWSNodes(storage); \
+    node = free_node;                   \
+    free_node = storage[free_node].next; \
+    storage[node].next = 0;             \
+    storage[node].mask_ofs = mofs;      \
+    storage[node].img_ofs = iofs;       \
+    if (q[idx].last)                   \
+        storage[q[idx].last].next = node; \
+    else                                \
+        q[idx].first = node;            \
+    q[idx].last = node;                 \
 }
 
 // Get next node from queue idx
 #define ws_pop(idx,mofs,iofs)           \
 {                                       \
-node = q[idx].first;                \
-q[idx].first = storage[node].next;  \
-if (!storage[node].next)           \
-q[idx].last = 0;                \
-storage[node].next = free_node;     \
-free_node = node;                   \
-mofs = storage[node].mask_ofs;      \
-iofs = storage[node].img_ofs;       \
+    node = q[idx].first;                \
+    q[idx].first = storage[node].next;  \
+    if (!storage[node].next)           \
+        q[idx].last = 0;                \
+    storage[node].next = free_node;     \
+    free_node = node;                   \
+    mofs = storage[node].mask_ofs;      \
+    iofs = storage[node].img_ofs;       \
 }
 
 // Get highest absolute channel difference in diff
 #define c_diff(ptr1,ptr2,diff)           \
 {                                        \
-db = std::abs((ptr1)[0] - (ptr2)[0]); \
-dg = std::abs((ptr1)[1] - (ptr2)[1]); \
-dr = std::abs((ptr1)[2] - (ptr2)[2]); \
-diff = ws_max(db, dg);                \
-diff = ws_max(diff, dr);              \
-assert(0 <= diff && diff <= 255);  \
+    db = std::abs((ptr1)[0] - (ptr2)[0]); \
+    dg = std::abs((ptr1)[1] - (ptr2)[1]); \
+    dr = std::abs((ptr1)[2] - (ptr2)[2]); \
+    diff = ws_max(db, dg);                \
+    diff = ws_max(diff, dr);              \
+    CV_Assert(0 <= diff && diff <= 255);  \
 }
 
     CV_Assert(src.type() == CV_8UC3 && dst.type() == CV_32SC1);
@@ -675,7 +674,7 @@ assert(0 <= diff && diff <= 255);  \
                 }
 
                 // Add to according queue
-                assert(0 <= idx && idx <= 255);
+                CV_Assert(0 <= idx && idx <= 255);
                 ws_push(idx, i * mstep + j, i * istep + j * channel);
                 m[0] = IN_QUEUE;//initial unvisited
             }
@@ -786,7 +785,7 @@ assert(0 <= diff && diff <= 255);  \
             }
         }
         // Set label to current pixel in marker image
-        assert(lab != 0);//lab must be labeled with a nonzero number
+        CV_Assert(lab != 0);//lab must be labeled with a nonzero number
         m[0] = lab;
 
         // Add adjacent, unlabeled pixels to corresponding queue
