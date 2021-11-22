@@ -62,11 +62,10 @@ private:
     cv::AutoBuffer<cv::Rect> _seedRects;    // autobuffer of seed rectangles
     cv::AutoBuffer<cv::Rect> _seedRectsExt; // autobuffer of extended seed rectangles
     cv::AutoBuffer<cv::Rect> _offsetRects;  // autobuffer of offset rectangles
-    cv::AutoBuffer<cv::Point> _neighbourLoc;// autobuffer of neighbour locations
     cv::Rect* seedRects;					// array of seed rectangles
     cv::Rect* seedRectsExt;					// array of extended seed rectangles
     cv::Rect* offsetRects;					// array of offset rectangles
-    cv::Point* neighbourLoc;				// neighbour locations
+    cv::Point neighbourLoc[8] = { cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1), cv::Point(-1, 0), cv::Point(1, 0), cv::Point(-1, 1), cv::Point(0, 1), cv::Point(1, 1) };				// neighbour locations
 
     std::vector<int> indexNeighbourVec;		// indices for parallel processing
     std::vector<std::pair<int, int>> indexProcessVec;
@@ -197,11 +196,6 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
     indexProcessVec[processthreads - 1] = std::make_pair(processCurrent, indexSize);
 
     // create buffers and initialise
-    std::vector<cv::Point> tempLoc{ cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1), cv::Point(-1, 0), cv::Point(1, 0), cv::Point(-1, 1), cv::Point(0, 1), cv::Point(1, 1) };
-    _neighbourLoc = cv::AutoBuffer<cv::Point>(8);
-    neighbourLoc = _neighbourLoc.data();
-    memcpy(neighbourLoc, tempLoc.data(), 8 * sizeof(cv::Point));
-
     _labelsBuffer = cv::AutoBuffer<int>(indexSize);
     _clusterBuffer = cv::AutoBuffer<int>(indexSize);
     _pixelBuffer = cv::AutoBuffer<uchar>(indexSize);
