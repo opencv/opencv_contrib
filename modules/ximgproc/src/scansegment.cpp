@@ -98,7 +98,7 @@ private:
         WSQueue() { first = last = 0; }
         int first, last;
     };
-    
+
     void OP1(int v);
     void OP2(std::pair<int, int> const& p);
     void OP3(int v);
