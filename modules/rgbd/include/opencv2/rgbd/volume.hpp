@@ -39,6 +39,10 @@ class CV_EXPORTS_W Volume
                          OutputArray points, OutputArray normals, OutputArray colors) const    = 0;
     virtual void fetchNormals(InputArray points, OutputArray _normals) const                   = 0;
     virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const             = 0;
+    virtual void fetchPointsNormalsColors(OutputArray, OutputArray, OutputArray) const
+    {
+        CV_Error(cv::Error::StsBadFunc, "This volume doesn't support vertex colors");
+    }
     virtual void reset()                                                                       = 0;
 
    public:
