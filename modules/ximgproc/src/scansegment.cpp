@@ -211,9 +211,6 @@ ScanSegmentImpl::~ScanSegmentImpl()
 
 void ScanSegmentImpl::iterate(InputArray img)
 {
-    // ensure setup successfully completed
-    CV_Assert(setupComplete);
-
     if (img.isMat())
     {
         // get Mat
@@ -331,7 +328,7 @@ void ScanSegmentImpl::OP1(int v)
     cv::Rect seedRect = seedRects.data()[v];
     for (int y = seedRect.y; y < seedRect.y + seedRect.height; y++) {
         for (int x = seedRect.x; x < seedRect.x + seedRect.width; x++) {
-            expandCluster(offsetVec.data()[v], cv::Point(x, y));
+            expandCluster(offsetVec[v].data(), cv::Point(x, y));
         }
     }
 }
