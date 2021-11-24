@@ -50,7 +50,6 @@ private:
     bool merge;                             // merge small superpixels
     int indexSize;                          // size of label mat vector
     int clusterSize;                        // max size of clusters
-    bool setupComplete;                     // is setup complete
     int clusterCount;                       // number of superpixels from the most recent iterate
     float adjTolerance;						// adjusted colour tolerance
 
@@ -59,27 +58,20 @@ private:
     int effectivethreads;                   // effective number of concurrent threads
     int smallClusters;                      // clusters below this pixel count are considered small for merging
 
-    cv::AutoBuffer<cv::Rect> _seedRects;    // autobuffer of seed rectangles
-    cv::AutoBuffer<cv::Rect> _seedRectsExt; // autobuffer of extended seed rectangles
-    cv::AutoBuffer<cv::Rect> _offsetRects;  // autobuffer of offset rectangles
-    cv::Rect* seedRects;					// array of seed rectangles
-    cv::Rect* seedRectsExt;					// array of extended seed rectangles
-    cv::Rect* offsetRects;					// array of offset rectangles
+    cv::AutoBuffer<cv::Rect> seedRects;    // autobuffer of seed rectangles
+    cv::AutoBuffer<cv::Rect> seedRectsExt; // autobuffer of extended seed rectangles
+    cv::AutoBuffer<cv::Rect> offsetRects;  // autobuffer of offset rectangles
     cv::Point neighbourLoc[8] = { cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1), cv::Point(-1, 0), cv::Point(1, 0), cv::Point(-1, 1), cv::Point(0, 1), cv::Point(1, 1) };				// neighbour locations
 
     std::vector<int> indexNeighbourVec;		// indices for parallel processing
     std::vector<std::pair<int, int>> indexProcessVec;
 
-    cv::AutoBuffer<int> _labelsBuffer;		// label autobuffer
-    cv::AutoBuffer<int> _clusterBuffer;     // cluster autobuffer
-    cv::AutoBuffer<uchar> _pixelBuffer;    // pixel autobuffer
-    std::vector<cv::AutoBuffer<int>> _offsetVec; // vector of offset autobuffers
-    int* labelsBuffer;						// label buffer
-    int* clusterBuffer;                     // cluster buffer
+    cv::AutoBuffer<int> labelsBuffer;		// label autobuffer
+    cv::AutoBuffer<int> clusterBuffer;     // cluster autobuffer
+    cv::AutoBuffer<uchar> pixelBuffer;      // pixel autobuffer
+    std::vector<cv::AutoBuffer<int>> offsetVec; // vector of offset autobuffers
     cv::Vec3b* labBuffer;					// lab buffer
-    uchar* pixelBuffer;                     // pixel buffer
     int neighbourLocBuffer[neighbourCount]; // neighbour locations
-    std::vector<int*> offsetVec;            // vector of offsets
 
     std::atomic<int> clusterIndex, clusterID;    // atomic indices
 
@@ -142,12 +134,9 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
     smallClusters = 0;
 
     // get array of seed rects
-    _seedRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
-    _seedRectsExt = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
-    _offsetRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
-    seedRects = _seedRects.data();
-    seedRectsExt = _seedRectsExt.data();
-    offsetRects = _offsetRects.data();
+    seedRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
+    seedRectsExt = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
+    offsetRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
     for (int y = 0; y < vertDiv; y++) {
         for (int x = 0; x < horzDiv; x++) {
             int xStart = (int)((float)x * horzLength);
@@ -171,9 +160,9 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
                 bnd_b += 1;
             }
 
-            seedRects[(y * horzDiv) + x] = seedRect;
-            seedRectsExt[(y * horzDiv) + x] = cv::Rect(bnd_l, bnd_t, bnd_r - bnd_l + 1, bnd_b - bnd_t + 1);
-            offsetRects[(y * horzDiv) + x] = cv::Rect(seedRect.x - bnd_l, seedRect.y - bnd_t, seedRect.width, seedRect.height);
+            seedRects.data()[(y * horzDiv) + x] = seedRect;
+            seedRectsExt.data()[(y * horzDiv) + x] = cv::Rect(bnd_l, bnd_t, bnd_r - bnd_l + 1, bnd_b - bnd_t + 1);
+            offsetRects.data()[(y * horzDiv) + x] = cv::Rect(seedRect.x - bnd_l, seedRect.y - bnd_t, seedRect.width, seedRect.height);
         }
     }
 
@@ -196,45 +185,16 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
     indexProcessVec[processthreads - 1] = std::make_pair(processCurrent, indexSize);
 
     // create buffers and initialise
-    _labelsBuffer = cv::AutoBuffer<int>(indexSize);
-    _clusterBuffer = cv::AutoBuffer<int>(indexSize);
-    _pixelBuffer = cv::AutoBuffer<uchar>(indexSize);
-    _offsetVec = std::vector<cv::AutoBuffer<int>>(effectivethreads);
-    labelsBuffer = _labelsBuffer.data();
-    clusterBuffer = _clusterBuffer.data();
-    pixelBuffer = _pixelBuffer.data();
-    offsetVec = std::vector<int*>(effectivethreads);
+    labelsBuffer = cv::AutoBuffer<int>(indexSize);
+    clusterBuffer = cv::AutoBuffer<int>(indexSize);
+    pixelBuffer = cv::AutoBuffer<uchar>(indexSize);
+    offsetVec = std::vector<cv::AutoBuffer<int>>(effectivethreads);
     int offsetSize = (clusterSize + 1) * sizeof(int);
-    bool offsetAllocated = true;
     for (int i = 0; i < effectivethreads; i++) {
-        _offsetVec[i] = cv::AutoBuffer<int>(offsetSize);
-        offsetVec[i] = _offsetVec[i].data();
-        if (offsetVec[i] == NULL) {
-            offsetAllocated = false;
-        }
+        offsetVec[i] = cv::AutoBuffer<int>(offsetSize);
     }
     for (int i = 0; i < neighbourCount; i++) {
         neighbourLocBuffer[i] = (neighbourLoc[i].y * width) + neighbourLoc[i].x;
-    }
-
-    if (labelsBuffer != NULL && clusterBuffer != NULL && pixelBuffer != NULL && offsetAllocated) {
-        setupComplete = true;
-    }
-    else {
-        setupComplete = false;
-
-        if (labelsBuffer == NULL) {
-            CV_Error(Error::StsInternal, "Cannot initialise labels buffer");
-        }
-        if (clusterBuffer == NULL) {
-            CV_Error(Error::StsInternal, "Cannot initialise cluster buffer");
-        }
-        if (pixelBuffer == NULL) {
-            CV_Error(Error::StsInternal, "Cannot initialise pixel buffer");
-        }
-        if (!offsetAllocated) {
-            CV_Error(Error::StsInternal, "Cannot initialise offset buffers");
-        }
     }
 }
 
@@ -294,7 +254,7 @@ void ScanSegmentImpl::iterate(InputArray img)
     labelsMat.setTo(NONE);
 
     // set labels buffer to UNCLASSIFIED
-    std::fill(labelsBuffer, labelsBuffer + indexSize, UNCLASSIFIED);
+    std::fill(labelsBuffer.data(), labelsBuffer.data() + indexSize, UNCLASSIFIED);
 
     // apply light blur
     cv::medianBlur(src, src, 3);
@@ -305,7 +265,7 @@ void ScanSegmentImpl::iterate(InputArray img)
         for (int i = range.start; i < range.end; i++) {
             OP1(i);
         }
-    });
+        });
 
     if (merge) {
         // get cutoff size for clusters
@@ -313,9 +273,9 @@ void ScanSegmentImpl::iterate(InputArray img)
         int clusterIndexSize = clusterIndex.load();
         countVec.reserve(clusterIndexSize / 2);
         for (int i = 1; i < clusterIndexSize; i += 2) {
-            int count = clusterBuffer[i];
+            int count = clusterBuffer.data()[i];
             if (count >= smallClusters) {
-                int currentID = clusterBuffer[i - 1];
+                int currentID = clusterBuffer.data()[i - 1];
                 countVec.push_back(std::make_pair(currentID, count));
             }
         }
@@ -330,20 +290,20 @@ void ScanSegmentImpl::iterate(InputArray img)
         clusterCount = (int)std::count_if(countVec.begin(), countVec.end(), [&cutoff](std::pair<int, int> p) {return p.second > cutoff; });
 
         // change labels to 1 -> clusterCount, 0 = UNKNOWN, reuse clusterbuffer
-        std::fill_n(clusterBuffer, indexSize, UNKNOWN);
+        std::fill_n(clusterBuffer.data(), indexSize, UNKNOWN);
         int countLimit = cutoff == -1 ? (int)countVec.size() : clusterCount;
         for (int i = 0; i < countLimit; i++) {
-            clusterBuffer[countVec[i].first] = i + 1;
+            clusterBuffer.data()[countVec[i].first] = i + 1;
         }
 
         parallel_for_(Range(0, (int)indexProcessVec.size()), [&](const Range& range) {
             for (int i = range.start; i < range.end; i++) {
                 OP2(indexProcessVec[i]);
             }
-        });
+            });
 
         // make copy of labels buffer
-        memcpy(labelsMat.data, labelsBuffer, indexSize * sizeof(int));
+        memcpy(labelsMat.data, labelsBuffer.data(), indexSize * sizeof(int));
 
         // run watershed
         cv::parallel_for_(Range(0, (int)indexNeighbourVec.size()), [&](const Range& range) {
@@ -360,7 +320,7 @@ void ScanSegmentImpl::iterate(InputArray img)
             });
     }
     else {
-        memcpy(labelsMat.data, labelsBuffer, indexSize * sizeof(int));
+        memcpy(labelsMat.data, labelsBuffer.data(), indexSize * sizeof(int));
     }
 
     src.release();
@@ -368,10 +328,10 @@ void ScanSegmentImpl::iterate(InputArray img)
 
 void ScanSegmentImpl::OP1(int v)
 {
-    cv::Rect seedRect = seedRects[v];
+    cv::Rect seedRect = seedRects.data()[v];
     for (int y = seedRect.y; y < seedRect.y + seedRect.height; y++) {
         for (int x = seedRect.x; x < seedRect.x + seedRect.width; x++) {
-            expandCluster(offsetVec[v], cv::Point(x, y));
+            expandCluster(offsetVec.data()[v], cv::Point(x, y));
         }
     }
 }
@@ -380,22 +340,22 @@ void ScanSegmentImpl::OP2(std::pair<int, int> const& p)
 {
     std::pair<int, int>& q = const_cast<std::pair<int, int>&>(p);
     for (int i = q.first; i < q.second; i++) {
-        labelsBuffer[i] = clusterBuffer[labelsBuffer[i]];
-        if (labelsBuffer[i] == UNKNOWN) {
-            pixelBuffer[i] = 255;
+        labelsBuffer.data()[i] = clusterBuffer.data()[labelsBuffer.data()[i]];
+        if (labelsBuffer.data()[i] == UNKNOWN) {
+            pixelBuffer.data()[i] = 255;
         }
         else {
-            pixelBuffer[i] = 0;
+            pixelBuffer.data()[i] = 0;
         }
     }
 }
 
 void ScanSegmentImpl::OP3(int v)
 {
-    cv::Rect seedRectExt = seedRectsExt[v];
+    cv::Rect seedRectExt = seedRectsExt.data()[v];
     cv::Mat seedLabels = labelsMat(seedRectExt).clone();
     watershedEx(src(seedRectExt), seedLabels);
-    seedLabels(offsetRects[v]).copyTo(labelsMat(seedRects[v]));
+    seedLabels(offsetRects.data()[v]).copyTo(labelsMat(seedRects.data()[v]));
     seedLabels.release();
 }
 
@@ -403,8 +363,8 @@ void ScanSegmentImpl::OP4(std::pair<int, int> const& p)
 {
     std::pair<int, int>& q = const_cast<std::pair<int, int>&>(p);
     for (int i = q.first; i < q.second; i++) {
-        if (pixelBuffer[i] == 0) {
-            ((int*)labelsMat.data)[i] = labelsBuffer[i] - 1;
+        if (pixelBuffer.data()[i] == 0) {
+            ((int*)labelsMat.data)[i] = labelsBuffer.data()[i] - 1;
         }
         else {
             ((int*)labelsMat.data)[i] -= 1;
@@ -416,7 +376,7 @@ void ScanSegmentImpl::OP4(std::pair<int, int> const& p)
 void ScanSegmentImpl::expandCluster(int* offsetBuffer, const cv::Point& point)
 {
     int pointIndex = (point.y * width) + point.x;
-    if (labelsBuffer[pointIndex] == UNCLASSIFIED) {
+    if (labelsBuffer.data()[pointIndex] == UNCLASSIFIED) {
         int offsetStart = 0;
         int offsetEnd = 0;
         int currentClusterID = clusterID.fetch_add(1);
@@ -424,11 +384,11 @@ void ScanSegmentImpl::expandCluster(int* offsetBuffer, const cv::Point& point)
         calculateCluster(offsetBuffer, &offsetEnd, pointIndex, currentClusterID);
 
         if (offsetStart == offsetEnd) {
-            labelsBuffer[pointIndex] = UNKNOWN;
+            labelsBuffer.data()[pointIndex] = UNKNOWN;
         }
         else {
             // set cluster id and get core point index
-            labelsBuffer[pointIndex] = currentClusterID;
+            labelsBuffer.data()[pointIndex] = currentClusterID;
 
             while (offsetStart < offsetEnd) {
                 int intoffset2 = *(offsetBuffer + offsetStart);
@@ -442,8 +402,8 @@ void ScanSegmentImpl::expandCluster(int* offsetBuffer, const cv::Point& point)
 
             // store to buffer
             int currentClusterIndex = clusterIndex.fetch_add(2);
-            clusterBuffer[currentClusterIndex] = currentClusterID;
-            clusterBuffer[currentClusterIndex + 1] = offsetEnd;
+            clusterBuffer.data()[currentClusterIndex] = currentClusterID;
+            clusterBuffer.data()[currentClusterIndex + 1] = offsetEnd;
         }
     }
 }
@@ -453,13 +413,13 @@ void ScanSegmentImpl::calculateCluster(int* offsetBuffer, int* offsetEnd, int po
     for (int i = 0; i < neighbourCount; i++) {
         if (*offsetEnd < clusterSize) {
             int intoffset2 = pointIndex + neighbourLocBuffer[i];
-            if (intoffset2 >= 0 && intoffset2 < indexSize && labelsBuffer[intoffset2] == UNCLASSIFIED) {
+            if (intoffset2 >= 0 && intoffset2 < indexSize && labelsBuffer.data()[intoffset2] == UNCLASSIFIED) {
                 int diff1 = (int)labBuffer[pointIndex][0] - (int)labBuffer[intoffset2][0];
                 int diff2 = (int)labBuffer[pointIndex][1] - (int)labBuffer[intoffset2][1];
                 int diff3 = (int)labBuffer[pointIndex][2] - (int)labBuffer[intoffset2][2];
 
                 if ((diff1 * diff1) + (diff2 * diff2) + (diff3 * diff3) <= (int)adjTolerance) {
-                    labelsBuffer[intoffset2] = currentClusterID;
+                    labelsBuffer.data()[intoffset2] = currentClusterID;
                     offsetBuffer[*offsetEnd] = intoffset2;
                     (*offsetEnd)++;
                 }
@@ -516,9 +476,9 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
 // MIN(a,b) = a - MAX(a-b,0)
 #define ws_min(a,b) ((a) - subs_tab[(a)-(b)+NQ])
 
-// Create a new node with offsets mofs and iofs in queue idx
+    // Create a new node with offsets mofs and iofs in queue idx
 #define ws_push(idx,mofs,iofs)          \
-{                                       \
+        {                                       \
     if (!free_node)                    \
         free_node = allocWSNodes(storage); \
     node = free_node;                   \
@@ -531,11 +491,11 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
     else                                \
         q[idx].first = node;            \
     q[idx].last = node;                 \
-}
+        }
 
-// Get next node from queue idx
+    // Get next node from queue idx
 #define ws_pop(idx,mofs,iofs)           \
-{                                       \
+        {                                       \
     node = q[idx].first;                \
     q[idx].first = storage[node].next;  \
     if (!storage[node].next)           \
@@ -544,7 +504,7 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
     free_node = node;                   \
     mofs = storage[node].mask_ofs;      \
     iofs = storage[node].img_ofs;       \
-}
+        }
 
 // Get highest absolute channel difference in diff
 #define c_diff(ptr1,ptr2,diff)           \
