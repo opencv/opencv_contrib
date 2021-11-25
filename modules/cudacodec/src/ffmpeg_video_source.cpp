@@ -205,14 +205,14 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
     cap >> rawFrame;
     *data = rawFrame.data;
     *size = rawFrame.total();
+
     int rtpParamSetZeroBytePadding = 0, rtspParamSetZeroBytePadding = 0;
     bool writeParameterSets = false;
     const bool startRtspFileWrite = restartRtspFileWrite && cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
     if (iFrame++ == 0 || startRtspFileWrite) {
         Mat tmpExtraData;
         const int codecExtradataIndex = (int)cap.get(CAP_PROP_CODEC_EXTRADATA_INDEX);
-        cap.retrieve(tmpExtraData, codecExtradataIndex);
-        if (tmpExtraData.total()) {
+        if (cap.retrieve(tmpExtraData, codecExtradataIndex) && tmpExtraData.total()) {
             if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
                 // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
                 // DESCRIPE RTSP message, required for playback in media players such as vlc.
