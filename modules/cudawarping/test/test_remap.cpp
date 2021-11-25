@@ -41,6 +41,8 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include "opencv2/core/matx.hpp"
+#include "nppdefs.h"
 
 #ifdef HAVE_CUDA
 
@@ -177,6 +179,30 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, Remap, testing::Combine(
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_CONSTANT), BorderType(cv::BORDER_REFLECT), BorderType(cv::BORDER_WRAP)),
     WHOLE_SUBMAT));
 
+
+class RemapOutOfScope : public  Remap {};
+CUDA_TEST_P(RemapOutOfScope, Regression_18224)
+{
+    cv::Mat src = randomMat(size, type);
+    cv::cuda::GpuMat dst = createMat(xmap.size(), type, useRoi);
+    randu(xmap, NPP_MAX_32S, NPP_MAXABS_32F);
+    randu(ymap, NPP_MAX_32S, NPP_MAXABS_32F);
+
+    cv::cuda::remap(loadMat(src, useRoi), dst, loadMat(xmap, useRoi), loadMat(ymap, useRoi), interpolation, borderType, 0.);
+
+    cv::Mat dst_gold;
+    remapGold(src, xmap, ymap, dst_gold, interpolation, borderType, 0.);
+
+    EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-3 : 1.0);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping, RemapOutOfScope, testing::Combine(
+        ALL_DEVICES,
+        DIFFERENT_SIZES,
+        testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+        testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR)),
+        testing::Values(BorderType(cv::BORDER_CONSTANT)),
+        WHOLE_SUBMAT));
 
 }} // namespace
 #endif // HAVE_CUDA
