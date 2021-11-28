@@ -15,8 +15,11 @@
 
 namespace cv {
 namespace ximgproc {
-//! @addtogroup ximgproc_superpixel
-//! @{
+
+ScanSegment::~ScanSegment()
+{
+    // nothing
+}
 
 class ScanSegmentImpl CV_FINAL : public ScanSegment
 {
@@ -44,38 +47,38 @@ private:
     static const int smallClustersDiv = 10000;  // divide total pixels by this to give smallClusters
     const float tolerance100 = 10.0f;       // colour tolerance for image size of 100x100px
 
-    int processthreads;						// concurrent threads for parallel processing
+    int processthreads;                     // concurrent threads for parallel processing
     int width, height;                      // image size
     int superpixels;                        // number of superpixels
     bool merge;                             // merge small superpixels
     int indexSize;                          // size of label mat vector
     int clusterSize;                        // max size of clusters
     int clusterCount;                       // number of superpixels from the most recent iterate
-    float adjTolerance;						// adjusted colour tolerance
+    float adjTolerance;                     // adjusted colour tolerance
 
     int horzDiv, vertDiv;                   // number of horizontal and vertical segments
     float horzLength, vertLength;           // length of each segment
     int effectivethreads;                   // effective number of concurrent threads
     int smallClusters;                      // clusters below this pixel count are considered small for merging
 
-    cv::AutoBuffer<cv::Rect> seedRects;    // autobuffer of seed rectangles
-    cv::AutoBuffer<cv::Rect> seedRectsExt; // autobuffer of extended seed rectangles
-    cv::AutoBuffer<cv::Rect> offsetRects;  // autobuffer of offset rectangles
-    cv::Point neighbourLoc[8] = { cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1), cv::Point(-1, 0), cv::Point(1, 0), cv::Point(-1, 1), cv::Point(0, 1), cv::Point(1, 1) };				// neighbour locations
+    cv::AutoBuffer<cv::Rect> seedRects;     // autobuffer of seed rectangles
+    cv::AutoBuffer<cv::Rect> seedRectsExt;  // autobuffer of extended seed rectangles
+    cv::AutoBuffer<cv::Rect> offsetRects;   // autobuffer of offset rectangles
+    cv::Point neighbourLoc[8] = { cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1), cv::Point(-1, 0), cv::Point(1, 0), cv::Point(-1, 1), cv::Point(0, 1), cv::Point(1, 1) };                // neighbour locations
 
-    std::vector<int> indexNeighbourVec;		// indices for parallel processing
+    std::vector<int> indexNeighbourVec;     // indices for parallel processing
     std::vector<std::pair<int, int>> indexProcessVec;
 
-    cv::AutoBuffer<int> labelsBuffer;		// label autobuffer
-    cv::AutoBuffer<int> clusterBuffer;     // cluster autobuffer
+    cv::AutoBuffer<int> labelsBuffer;       // label autobuffer
+    cv::AutoBuffer<int> clusterBuffer;      // cluster autobuffer
     cv::AutoBuffer<uchar> pixelBuffer;      // pixel autobuffer
     std::vector<cv::AutoBuffer<int>> offsetVec; // vector of offset autobuffers
-    cv::Vec3b* labBuffer;					// lab buffer
+    cv::Vec3b* labBuffer;                   // lab buffer
     int neighbourLocBuffer[neighbourCount]; // neighbour locations
 
-    std::atomic<int> clusterIndex, clusterID;    // atomic indices
+    std::atomic<int> clusterIndex, clusterID;  // atomic indices
 
-    cv::Mat src, labelsMat;	// mats
+    cv::Mat src, labelsMat;                 // mats
 
     struct WSNode
     {
@@ -109,22 +112,19 @@ CV_EXPORTS Ptr<ScanSegment> createScanSegment(int image_width, int image_height,
 ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_superpixels, int slices, bool merge_small)
 {
     // set the number of process threads
-    processthreads = cv::getNumThreads();
-    if (slices > 0) {
-        processthreads = slices;
-    }
+    processthreads = (slices > 0) ? slices : cv::getNumThreads();
 
     width = image_width;
     height = image_height;
     superpixels = num_superpixels;
     merge = merge_small;
     indexSize = height * width;
-    clusterSize = (int)(1.1f * (float)(width * height) / (float)superpixels);
+    clusterSize = cvRound(1.1f * (float)(width * height) / (float)superpixels);
     clusterCount = 0;
     labelsMat = cv::Mat(height, width, CV_32SC1);
 
     // divide bounds area into uniformly distributed rectangular segments
-    int shortCount = (int)floorf(sqrtf((float)processthreads));
+    int shortCount = cvFloor(sqrtf((float)processthreads));
     int longCount = processthreads / shortCount;
     horzDiv = width > height ? longCount : shortCount;
     vertDiv = width > height ? shortCount : longCount;
@@ -139,8 +139,8 @@ ScanSegmentImpl::ScanSegmentImpl(int image_width, int image_height, int num_supe
     offsetRects = cv::AutoBuffer<cv::Rect>(horzDiv * vertDiv);
     for (int y = 0; y < vertDiv; y++) {
         for (int x = 0; x < horzDiv; x++) {
-            int xStart = (int)((float)x * horzLength);
-            int yStart = (int)((float)y * vertLength);
+            int xStart = cvFloor((float)x * horzLength);
+            int yStart = cvFloor((float)y * vertLength);
             cv::Rect seedRect = cv::Rect(xStart, yStart, (int)(x == horzDiv - 1 ? width - xStart : horzLength), (int)(y == vertDiv - 1 ? height - yStart : vertLength));
 
             int bnd_l = seedRect.x;
@@ -262,7 +262,7 @@ void ScanSegmentImpl::iterate(InputArray img)
         for (int i = range.start; i < range.end; i++) {
             OP1(i);
         }
-        });
+    });
 
     if (merge) {
         // get cutoff size for clusters
@@ -280,7 +280,7 @@ void ScanSegmentImpl::iterate(InputArray img)
         // sort descending
         std::sort(countVec.begin(), countVec.end(), [](const std::pair<int, int>& left, const std::pair<int, int>& right) {
             return left.second > right.second;
-            });
+        });
 
         int countSize = (int)countVec.size();
         int cutoff = MAX(smallClusters, countVec[MIN(countSize - 1, superpixels - 1)].second);
@@ -297,7 +297,7 @@ void ScanSegmentImpl::iterate(InputArray img)
             for (int i = range.start; i < range.end; i++) {
                 OP2(indexProcessVec[i]);
             }
-            });
+        });
 
         // make copy of labels buffer
         memcpy(labelsMat.data, labelsBuffer.data(), indexSize * sizeof(int));
@@ -307,16 +307,17 @@ void ScanSegmentImpl::iterate(InputArray img)
             for (int i = range.start; i < range.end; i++) {
                 OP3(i);
             }
-            });
+        });
 
         // copy back to labels mat
         parallel_for_(Range(0, (int)indexProcessVec.size()), [&](const Range& range) {
             for (int i = range.start; i < range.end; i++) {
                 OP4(indexProcessVec[i]);
             }
-            });
+        });
     }
-    else {
+    else
+    {
         memcpy(labelsMat.data, labelsBuffer.data(), indexSize * sizeof(int));
     }
 
@@ -475,8 +476,8 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
 
     // Create a new node with offsets mofs and iofs in queue idx
 #define ws_push(idx,mofs,iofs)          \
-        {                                       \
-    if (!free_node)                    \
+{                                       \
+    if (!free_node)                     \
         free_node = allocWSNodes(storage); \
     node = free_node;                   \
     free_node = storage[free_node].next; \
@@ -488,11 +489,11 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
     else                                \
         q[idx].first = node;            \
     q[idx].last = node;                 \
-        }
+}
 
     // Get next node from queue idx
 #define ws_pop(idx,mofs,iofs)           \
-        {                                       \
+{                                       \
     node = q[idx].first;                \
     q[idx].first = storage[node].next;  \
     if (!storage[node].next)           \
@@ -501,7 +502,7 @@ void ScanSegmentImpl::watershedEx(const cv::Mat& src, cv::Mat& dst)
     free_node = node;                   \
     mofs = storage[node].mask_ofs;      \
     iofs = storage[node].img_ofs;       \
-        }
+}
 
 // Get highest absolute channel difference in diff
 #define c_diff(ptr1,ptr2,diff)           \
@@ -767,6 +768,5 @@ void ScanSegmentImpl::getLabelContourMask(OutputArray image, bool thick_line)
     }
 }
 
-//! @}
 } // namespace ximgproc
 } // namespace cv
