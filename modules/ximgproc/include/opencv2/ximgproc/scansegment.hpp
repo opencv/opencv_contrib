@@ -12,7 +12,7 @@
 namespace cv { namespace ximgproc {
 
 /** @brief Class implementing the F-DBSCAN (Accelerated superpixel image segmentation with a parallelized DBSCAN algorithm) superpixels
-algorithm by Loke SC, et al.
+algorithm by Loke SC, et al. @cite loke2021accelerated for original paper.
 
 The algorithm uses a parallelised DBSCAN cluster search that is resistant to noise, competitive in segmentation quality, and faster than
 existing superpixel segmentation methods. When tested on the Berkeley Segmentation Dataset, the average processing speed is 175 frames/s
