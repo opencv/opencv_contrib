@@ -336,8 +336,7 @@ void ScanSegmentImpl::OP1(int v)
 
 void ScanSegmentImpl::OP2(std::pair<int, int> const& p)
 {
-    std::pair<int, int>& q = const_cast<std::pair<int, int>&>(p);
-    for (int i = q.first; i < q.second; i++) {
+    for (int i = p.first; i < p.second; i++) {
         labelsBuffer.data()[i] = clusterBuffer.data()[labelsBuffer.data()[i]];
         if (labelsBuffer.data()[i] == UNKNOWN) {
             pixelBuffer.data()[i] = 255;
@@ -359,8 +358,7 @@ void ScanSegmentImpl::OP3(int v)
 
 void ScanSegmentImpl::OP4(std::pair<int, int> const& p)
 {
-    std::pair<int, int>& q = const_cast<std::pair<int, int>&>(p);
-    for (int i = q.first; i < q.second; i++) {
+    for (int i = p.first; i < p.second; i++) {
         if (pixelBuffer.data()[i] == 0) {
             ((int*)labelsMat.data)[i] = labelsBuffer.data()[i] - 1;
         }
