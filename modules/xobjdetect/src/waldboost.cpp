@@ -73,14 +73,14 @@ static void compute_min_step(const Mat &data_pos, const Mat &data_neg, size_t n_
 
     Mat reduced_pos, reduced_neg;
 
-    reduce(data_pos, reduced_pos, 1, CV_REDUCE_MIN);
-    reduce(data_neg, reduced_neg, 1, CV_REDUCE_MIN);
+    reduce(data_pos, reduced_pos, 1, REDUCE_MIN);
+    reduce(data_neg, reduced_neg, 1, REDUCE_MIN);
     min(reduced_pos, reduced_neg, data_min);
     data_min -= 0.01;
 
     Mat data_max;
-    reduce(data_pos, reduced_pos, 1, CV_REDUCE_MAX);
-    reduce(data_neg, reduced_neg, 1, CV_REDUCE_MAX);
+    reduce(data_pos, reduced_pos, 1, REDUCE_MAX);
+    reduce(data_neg, reduced_neg, 1, REDUCE_MAX);
     max(reduced_pos, reduced_neg, data_max);
     data_max += 0.01;
 

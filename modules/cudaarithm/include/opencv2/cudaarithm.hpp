@@ -662,11 +662,11 @@ CV_EXPORTS_W void countNonZero(InputArray src, OutputArray dst, Stream& stream =
 @param dim Dimension index along which the matrix is reduced. 0 means that the matrix is reduced
 to a single row. 1 means that the matrix is reduced to a single column.
 @param reduceOp Reduction operation that could be one of the following:
--   **CV_REDUCE_SUM** The output is the sum of all rows/columns of the matrix.
--   **CV_REDUCE_AVG** The output is the mean vector of all rows/columns of the matrix.
--   **CV_REDUCE_MAX** The output is the maximum (column/row-wise) of all rows/columns of the
+-   **REDUCE_SUM** The output is the sum of all rows/columns of the matrix.
+-   **REDUCE_AVG** The output is the mean vector of all rows/columns of the matrix.
+-   **REDUCE_MAX** The output is the maximum (column/row-wise) of all rows/columns of the
 matrix.
--   **CV_REDUCE_MIN** The output is the minimum (column/row-wise) of all rows/columns of the
+-   **REDUCE_MIN** The output is the minimum (column/row-wise) of all rows/columns of the
 matrix.
 @param dtype When it is negative, the destination vector will have the same type as the source
 matrix. Otherwise, its type will be CV_MAKE_TYPE(CV_MAT_DEPTH(dtype), mtx.channels()) .
@@ -675,7 +675,7 @@ matrix. Otherwise, its type will be CV_MAKE_TYPE(CV_MAT_DEPTH(dtype), mtx.channe
 The function reduce reduces the matrix to a vector by treating the matrix rows/columns as a set of
 1D vectors and performing the specified operation on the vectors until a single row/column is
 obtained. For example, the function can be used to compute horizontal and vertical projections of a
-raster image. In case of CV_REDUCE_SUM and CV_REDUCE_AVG , the output may have a larger element
+raster image. In case of REDUCE_SUM and REDUCE_AVG , the output may have a larger element
 bit-depth to preserve accuracy. And multi-channel arrays are also supported in these two reduction
 modes.
 
