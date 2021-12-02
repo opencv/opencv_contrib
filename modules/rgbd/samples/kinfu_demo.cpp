@@ -207,7 +207,6 @@ int main(int argc, char **argv)
             if(!idle)
             {
                 imshow("depth", cvt8);
-
                 if(!kf->update(frame))
                 {
                     kf->reset();

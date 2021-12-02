@@ -112,13 +112,13 @@ public:
 private:
     Params params;
 
-    cv::Ptr<FastICPOdometry> icp;
+    Odometry icp;
     cv::Ptr<NonRigidICP> dynafuICP;
     cv::Ptr<TSDFVolume> volume;
 
     int frameCounter;
     Affine3f pose;
-    cv::Ptr<OdometryFrame> frame;
+    OdometryFrame frame;
 
     WarpField warpfield;
 
@@ -171,10 +171,13 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, fbo_color);
 
 #endif
+    OdometrySettings ods;
+    ods.setCameraMatrix(Mat(params.intr));
+    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
-    icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
-                                  params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-                                  params.icpIterations, params.depthFactor, params.truncateThreshold);
+    //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
+    //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
+    //                              params.icpIterations, params.depthFactor, params.truncateThreshold);
 
     reset();
 }
@@ -312,9 +315,10 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     else
         depth = _depth;
 
-    cv::Ptr<OdometryFrame> newFrame = icp->makeOdometryFrame(noArray(), depth, noArray());
+    OdometryFrame newFrame = icp.createOdometryFrame();
+    newFrame.setDepth(depth);
 
-    icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
+    //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
     if(frameCounter == 0)
     {
@@ -334,19 +338,22 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         renderSurface(_depthRender, _vertRender, _normRender, false);
         _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
-        Ptr<OdometryFrame> estdFrame = icp->makeOdometryFrame(noArray(), estdDepth, noArray());
-        icp->setDepthFactor(1.f);
-        icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
-        icp->setDepthFactor(params.depthFactor);
+        OdometryFrame estdFrame = icp.createOdometryFrame();
+        estdFrame.setDepth(estdDepth);
+        //icp->setDepthFactor(1.f);
+        //icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
+        //icp->setDepthFactor(params.depthFactor);
 
         frame = estdFrame;
 
         Affine3f affine;
         Matx44d mrt;
-        bool success = icp->compute(newFrame, frame, mrt);
-        if(!success)
+        Mat Rt;
+        icp.prepareFrames(frame, newFrame);
+        bool success = icp.compute(newFrame, frame, Rt);
+        if (!success)
             return false;
-        affine.matrix = mrt;
+        affine = Affine3f(Rt);
 
         pose = pose * affine;
 
@@ -355,16 +362,18 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             renderSurface(_depthRender, _vertRender, _normRender);
             _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
-            estdFrame = OdometryFrame::create(noArray(), estdDepth, noArray(), noArray(), -1);
-            icp->setDepthFactor(1.f);
-            icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
-            icp->setDepthFactor(params.depthFactor);
+            estdFrame = icp.createOdometryFrame();
+            estdFrame.getDepth(estdDepth);
+            //estdFrame = OdometryFrame::create(noArray(), estdDepth, noArray(), noArray(), -1);
+            //icp->setDepthFactor(1.f);
+            //icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
+            //icp->setDepthFactor(params.depthFactor);
 
             T estdPts, estdNrm, newPts, newNrm;
-            estdFrame->getPyramidAt(estdPts, OdometryFrame::PYR_CLOUD, 0);
-            estdFrame->getPyramidAt(estdNrm, OdometryFrame::PYR_NORM,  0);
-            newFrame->getPyramidAt(newPts, OdometryFrame::PYR_CLOUD, 0);
-            newFrame->getPyramidAt(newNrm, OdometryFrame::PYR_NORM,  0);
+            estdFrame.getPyramidAt(estdPts, OdometryFramePyramidType::PYR_CLOUD, 0);
+            estdFrame.getPyramidAt(estdNrm, OdometryFramePyramidType::PYR_NORM,  0);
+            newFrame.getPyramidAt(newPts, OdometryFramePyramidType::PYR_CLOUD, 0);
+            newFrame.getPyramidAt(newNrm, OdometryFramePyramidType::PYR_NORM,  0);
             success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, estdPts, estdNrm, newPts, newNrm);
             if(!success)
                 return false;
@@ -397,8 +406,8 @@ void DynaFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
         T pts, nrm;
-        frame->getPyramidAt(pts, OdometryFrame::PYR_CLOUD, 0);
-        frame->getPyramidAt(nrm, OdometryFrame::PYR_NORM, 0);
+        frame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+        frame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
 
         detail::renderPointsNormals(pts, nrm, image, params.lightPose);
     }

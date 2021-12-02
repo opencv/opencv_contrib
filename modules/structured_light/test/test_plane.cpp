@@ -189,6 +189,10 @@ class CV_PlaneTest : public cvtest::BaseTest
     {
       return std::abs(float(p_j.dot(n_) + d_));
     }
+    float distance(const Vec4f& p_j) const
+    {
+      return std::abs(float(Vec3f(p_j[0],p_j[1],p_j[2]).dot(n_) + d_));
+    }
   };
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
