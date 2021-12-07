@@ -40,7 +40,6 @@ class ColoredTSDFVolume : public Volume
     ColoredTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
     virtual ~ColoredTSDFVolume() = default;
-
    public:
 
     Point3i volResolution;

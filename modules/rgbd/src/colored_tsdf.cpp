@@ -74,7 +74,12 @@ public:
         { CV_Error(Error::StsNotImplemented, "Not implemented"); };
 
     virtual void fetchNormals(InputArray points, OutputArray _normals) const override;
-    virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const override;
+    void fetchPointsNormalsColors(OutputArray points, OutputArray normals, OutputArray colors) const override;
+
+    void fetchPointsNormals(OutputArray points, OutputArray normals) const override
+    {
+        fetchPointsNormalsColors(points, normals, noArray());
+    }
 
     virtual void reset() override;
     virtual RGBTsdfVoxel at(const Vec3i& volumeIdx) const;
@@ -837,17 +842,20 @@ struct ColorFetchPointsNormalsInvoker : ParallelLoopBody
     ColorFetchPointsNormalsInvoker(const ColoredTSDFVolumeCPU& _volume,
                               std::vector<std::vector<ptype>>& _pVecs,
                               std::vector<std::vector<ptype>>& _nVecs,
-                              bool _needNormals) :
+                              std::vector<std::vector<ptype>>& _cVecs,
+                              bool _needNormals, bool _needColors) :
         ParallelLoopBody(),
         vol(_volume),
         pVecs(_pVecs),
         nVecs(_nVecs),
-        needNormals(_needNormals)
+        cVecs(_cVecs),
+        needNormals(_needNormals),
+        needColors(_needColors)
     {
         volDataStart = vol.volume.ptr<RGBTsdfVoxel>();
     }
 
-    inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals,
+    inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals, std::vector<ptype>& colors,
                       int x, int y, int z, Point3f V, float v0, int axis) const
     {
         // 0 for x, 1 for y, 2 for z
@@ -897,6 +905,8 @@ struct ColorFetchPointsNormalsInvoker : ParallelLoopBody
                         if(needNormals)
                             normals.push_back(toPtype(vol.pose.rotation() *
                                                       vol.getNormalVoxel(p*vol.voxelSizeInv)));
+                        if(needColors)
+                            colors.push_back(toPtype(vol.getColorVoxel(p*vol.voxelSizeInv)));
                     }
                 }
             }
@@ -905,7 +915,7 @@ struct ColorFetchPointsNormalsInvoker : ParallelLoopBody
 
     virtual void operator() (const Range& range) const override
     {
-        std::vector<ptype> points, normals;
+        std::vector<ptype> points, normals, colors;
         for(int x = range.start; x < range.end; x++)
         {
             const RGBTsdfVoxel* volDataX = volDataStart + x*vol.volDims[0];
@@ -920,9 +930,9 @@ struct ColorFetchPointsNormalsInvoker : ParallelLoopBody
                     {
                         Point3f V(Point3f((float)x + 0.5f, (float)y + 0.5f, (float)z + 0.5f)*vol.voxelSize);
 
-                        coord(points, normals, x, y, z, V, v0, 0);
-                        coord(points, normals, x, y, z, V, v0, 1);
-                        coord(points, normals, x, y, z, V, v0, 2);
+                        coord(points, normals, colors, x, y, z, V, v0, 0);
+                        coord(points, normals, colors, x, y, z, V, v0, 1);
+                        coord(points, normals, colors, x, y, z, V, v0, 2);
 
                     } // if voxel is not empty
                 }
@@ -932,32 +942,36 @@ struct ColorFetchPointsNormalsInvoker : ParallelLoopBody
         AutoLock al(mutex);
         pVecs.push_back(points);
         nVecs.push_back(normals);
+        cVecs.push_back(colors);
     }
 
     const ColoredTSDFVolumeCPU& vol;
     std::vector<std::vector<ptype>>& pVecs;
     std::vector<std::vector<ptype>>& nVecs;
+    std::vector<std::vector<ptype>>& cVecs;
     const RGBTsdfVoxel* volDataStart;
     bool needNormals;
+    bool needColors;
     mutable Mutex mutex;
 };
 
-void ColoredTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
+void ColoredTSDFVolumeCPU::fetchPointsNormalsColors(OutputArray _points, OutputArray _normals, OutputArray _colors) const
 {
     CV_TRACE_FUNCTION();
 
     if(_points.needed())
     {
-        std::vector<std::vector<ptype>> pVecs, nVecs;
-        ColorFetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
+        std::vector<std::vector<ptype>> pVecs, nVecs, cVecs;
+        ColorFetchPointsNormalsInvoker fi(*this, pVecs, nVecs, cVecs, _normals.needed(), _colors.needed());
         Range range(0, volResolution.x);
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
-        std::vector<ptype> points, normals;
+        std::vector<ptype> points, normals, colors;
         for(size_t i = 0; i < pVecs.size(); i++)
         {
             points.insert(points.end(), pVecs[i].begin(), pVecs[i].end());
             normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
+            colors.insert(colors.end(), cVecs[i].begin(), cVecs[i].end());
         }
 
         _points.create((int)points.size(), 1, POINT_TYPE);
@@ -969,6 +983,13 @@ void ColoredTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _
             _normals.create((int)normals.size(), 1, POINT_TYPE);
             if(!normals.empty())
                 Mat((int)normals.size(), 1, POINT_TYPE, &normals[0]).copyTo(_normals.getMat());
+        }
+
+        if(_colors.needed())
+        {
+            _colors.create((int)colors.size(), 1, COLOR_TYPE);
+            if(!colors.empty())
+                Mat((int)colors.size(), 1, COLOR_TYPE, &colors[0]).copyTo(_colors.getMat());
         }
     }
 }

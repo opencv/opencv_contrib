@@ -144,7 +144,7 @@ public:
     void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
-    virtual void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
+    virtual void getCloud(OutputArray points, OutputArray normals, OutputArray colors) const CV_OVERRIDE;
     void getPoints(OutputArray points) const CV_OVERRIDE;
     void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
 
@@ -344,9 +344,9 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
 
 
 template< typename MatType >
-void ColoredKinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
+void ColoredKinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n, OutputArray c) const
 {
-    volume->fetchPointsNormals(p, n);
+    volume->fetchPointsNormalsColors(p, n, c);
 }
 
 

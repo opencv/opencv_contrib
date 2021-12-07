@@ -223,15 +223,16 @@ public:
 
     CV_WRAP virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
 
-    /** @brief Gets points and normals of current 3d mesh
+    /** @brief Gets points, normals and colors of current 3d mesh
 
       The order of normals corresponds to order of points.
       The order of points is undefined.
 
         @param points vector of points which are 4-float vectors
         @param normals vector of normals which are 4-float vectors
+        @param colors vector of colors which are 4-float vectors
      */
-    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals) const = 0;
+    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals, OutputArray colors = noArray()) const = 0;
 
     /** @brief Gets points of current 3d mesh
 
