@@ -355,7 +355,7 @@ public:
 
     /** @brief Returns previously grabbed video data.
 
-    @param [out] image The returned data which depends on the provided idx.  If there is no new data since the last call to grab() the image will be empty.
+    @param [out] frame The returned data which depends on the provided idx.  If there is no new data since the last call to grab() the image will be empty.
     @param idx Determins the returned data inside image. The returned data can be the:
     Decoded frame, idx = get(PROP_DECODED_FRAME_IDX).
     Extra data if available, idx = get(PROP_EXTRA_DATA_INDEX).
@@ -430,6 +430,7 @@ CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const bo
 
 /** @overload
 @param source RAW video source implemented by user.
+@param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
 */
 CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode = false);
 
