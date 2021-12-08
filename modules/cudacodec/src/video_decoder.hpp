@@ -98,7 +98,6 @@ public:
     }
 
 private:
-    //Codec codec_ = NumCodecs;
     CUcontext ctx_ = 0;
     CUvideoctxlock lock_;
     CUvideodecoder        decoder_ = 0;

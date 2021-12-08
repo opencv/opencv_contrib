@@ -308,6 +308,17 @@ struct FormatInfo
     DeinterlaceMode deinterlaceMode;
 };
 
+/** @brief cv::cudacodec::VideoReader generic properties identifier.
+*/
+enum class VideoReaderProps {
+    PROP_DECODED_FRAME_IDX = 0, //!< Index for retrieving the decoded frame using retrieve().
+    PROP_EXTRA_DATA_INDEX = 1, //!< Index for retrieving the extra data associated with a video source using retrieve().
+    PROP_RAW_PACKAGES_BASE_INDEX = 2, //!< Base index for retrieving raw encoded data using retrieve().
+    PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB = 3, //!< Number of raw packages recieved since the last call to grab().
+    PROP_RAW_MODE = 4, //!< Status of raw mode.
+    PROP_LRF_HAS_KEY_FRAME = 5 //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
+};
+
 /** @brief Video reader interface.
 
 @note
@@ -330,22 +341,47 @@ public:
     */
     virtual FormatInfo format() const = 0;
 
-    /** @brief Signals VideoReader to start writing the raw bitstream to the given file from the next key frame.
+    /** @brief Grabs the next frame from the video source.
 
-    @param filename Full path to the output file.  Each call to this with a new filename, filenameNew will wait for
-    the next key frame, stop writing to filename and start writing to filenameNew.  If VideoReader is already writing
-    to a file and filenameNew is empty, writing to filename will stop imidiately.
-    @param autoDetectExt Automatically detect and append the codec extension to filename before writing.
+    @return `true` (non-zero) in the case of success.
 
-    The function is intended to be used when streaming from an RTSP source where it is either
-    a) desirable to store the original streamed data, or
-    b) the overhead of re-encoding the decoded frame is undesirable.
+    The method/function grabs the next frame from video file or camera and returns true (non-zero) in
+    the case of success.
 
-    @note This should only be used when streaming from rtsp and is not guaranteed to work when reading from a
-    file, especially from container formats avi, mp4 etc.  If the filename provided is invalid, cannot be opened
-    or written to, the first call to nextFrame() after calling this function will return false.
+    The primary use of the function is for reading both the encoded and decoded video data when rawMode is enabled.  With rawMode enabled
+    retrieve() can be called following grab() to retrieve all the data associated with the current video source since the last call to grab() or the creation of the VideoReader.
      */
-    CV_WRAP virtual void writeToFile(const std::string filename, const bool autoDetectExt = false) = 0;
+    CV_WRAP virtual bool grab(Stream& stream = Stream::Null()) = 0;
+
+    /** @brief Returns previously grabbed video data.
+
+    @param [out] image The returned data which depends on the provided idx.  If there is no new data since the last call to grab() the image will be empty.
+    @param idx Determins the returned data inside image. The returned data can be the:
+    Decoded frame, idx = get(PROP_DECODED_FRAME_IDX).
+    Extra data if available, idx = get(PROP_EXTRA_DATA_INDEX).
+    Raw encoded data package.  To retrieve package i,  idx = get(PROP_RAW_PACKAGES_BASE_INDEX) + i with i < get(PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB)
+    @return `false` if no frames has been grabbed
+
+    The method returns data associated with the current video source since the last call to grab() or the creation of the VideoReader. If no data is present
+    the method returns false and the function returns an empty image.
+     */
+    CV_WRAP virtual bool retrieve(CV_OUT OutputArray frame, const size_t idx = static_cast<size_t>(VideoReaderProps::PROP_DECODED_FRAME_IDX)) const = 0;
+
+    /** @brief Sets a property in the VideoReader.
+
+    @param property Property identifier from cv::cudacodec::VideoReaderProps (eg. cv::cudacodec::PROP_DECODED_FRAME_IDX, cv::cudacodec::PROP_EXTRA_DATA_INDEX, ...)
+    @param propertyVal Value of the property.
+    @return `true` if the property has been set.
+     */
+    CV_WRAP virtual bool set(const VideoReaderProps property, const double propertyVal) = 0;
+
+    /** @brief Returns the specified VideoReader property
+
+    @param property Property identifier from cv::cudacodec::VideoReaderProps (eg. cv::cudacodec::PROP_DECODED_FRAME_IDX, cv::cudacodec::PROP_EXTRA_DATA_INDEX, ...)
+    @param propertyVal Optional value for the property.
+    @return Value for the specified property. Value -1 is returned when querying a property that is not supported.
+    */
+    CV_WRAP virtual int get(const VideoReaderProps property, const int propertyVal = -1) const = 0;
 };
 
 /** @brief Interface for video demultiplexing. :
@@ -364,6 +400,10 @@ public:
      */
     virtual bool getNextPacket(unsigned char** data, size_t* size) = 0;
 
+    /** @brief Returns true if the last packet contained a key frame.
+     */
+    virtual bool lastPacketContainsKeyFrame() const { return false; }
+
     /** @brief Returns information about video file format.
     */
     virtual FormatInfo format() const = 0;
@@ -372,37 +412,26 @@ public:
     */
     virtual void updateFormat(const FormatInfo& videoFormat) = 0;
 
-    /** @brief Signals RawVideoSource to start writing the raw bitstream to the given file from the next key frame.
+    /** @brief Returns any extra data associated with the video source.
 
-    @param filename Full path to the output file.  Each call to this with a new filename, filenameNew will wait for
-    the next key frame, stop writing to filename and start writing to filenameNew.  If VideoReader is already writing
-    to a file and filenameNew is empty, writing to filename will stop imidiately.
-    @param autoDetectExt Automatically detect and append the codec extension to filename before writing.
-
-    The function is intended to be used when streaming from an RTSP source where it is either
-    a) desirable to store the original streamed data, or
-    b) the overhead of re-encoding the decoded frame is undesirable.
-
-    @note This should only be used when streaming from rtsp and is not guaranteed to work when reading from a
-    file, especially from container formats avi, mp4 etc.  If the filename provided is invalid, cannot be opened
-    or written to, the first call to nextFrame() after calling this function will return false.
+    @param extraData 1D cv::Mat containing the extra data if it exists.
      */
-    virtual void writeToFile(const std::string filename, const bool autoDetectExt = false) = 0;
+    virtual void getExtraData(cv::Mat& extraData) const = 0;
 };
 
 /** @brief Creates video reader.
 
 @param filename Name of the input video file.
-@param filenameToWrite Full path to the raw output file.  If empty the raw encoded video data will not be written.
-@param autoDetectExt Automatically detect and append the codec extension to filename.
+@param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
 
 FFMPEG is used to read videos. User can implement own demultiplexing with cudacodec::RawVideoSource
  */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const String filenameToWrite = "", const bool autoDetectExt = false);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const bool rawMode = false);
+
 /** @overload
 @param source RAW video source implemented by user.
 */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode = false);
 
 //! @}
 

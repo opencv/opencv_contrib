@@ -120,7 +120,7 @@ int CUDAAPI cv::cudacodec::detail::CuvidVideoSource::HandleVideoData(void* userD
 {
     CuvidVideoSource* thiz = static_cast<CuvidVideoSource*>(userData);
 
-    return thiz->parseVideoData(packet->payload, packet->payload_size, (packet->flags & CUVID_PKT_ENDOFSTREAM) != 0);
+    return thiz->parseVideoData(packet->payload, packet->payload_size, thiz->RawModeEnabled(), false, (packet->flags & CUVID_PKT_ENDOFSTREAM) != 0);
 }
 
 #endif // HAVE_NVCUVID

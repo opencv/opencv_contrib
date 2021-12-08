@@ -43,8 +43,19 @@
 
 #ifndef __FRAME_QUEUE_HPP__
 #define __FRAME_QUEUE_HPP__
+#include <queue>
 
 #include "opencv2/core/utility.hpp"
+
+class RawPacket {
+public:
+    RawPacket(const unsigned char* _data, const size_t _size = 0, const bool _containsKeyFrame = false);
+    unsigned char* Data() const { return *data; }
+    size_t size;
+    bool containsKeyFrame;
+private:
+    cv::Ptr<unsigned char*> data = 0;
+};
 
 namespace cv { namespace cudacodec { namespace detail {
 
@@ -63,7 +74,7 @@ public:
     // available, the method returns false.
     bool waitUntilFrameAvailable(int pictureIndex);
 
-    void enqueue(const CUVIDPARSERDISPINFO* picParams);
+    void enqueue(const CUVIDPARSERDISPINFO* picParams, const std::vector<RawPacket> rawPackets);
 
     // Deque the next frame.
     // Parameters:
@@ -71,7 +82,7 @@ public:
     // Returns:
     //      true, if a new frame was returned,
     //      false, if the queue was empty and no new frame could be returned.
-    bool dequeue(CUVIDPARSERDISPINFO& displayInfo);
+    bool dequeue(CUVIDPARSERDISPINFO& displayInfo, std::vector<RawPacket>& rawPackets);
 
     void releaseFrame(const CUVIDPARSERDISPINFO& picParams) { isFrameInUse_[picParams.picture_index] = false; }
 
@@ -85,6 +96,7 @@ private:
     int readPosition_ = 0;
     std::vector< CUVIDPARSERDISPINFO> displayQueue_;
     int maxSz = 0;
+    std::queue<RawPacket> rawPacketQueue;
 };
 
 }}}

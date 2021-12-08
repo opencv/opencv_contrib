@@ -62,7 +62,7 @@ cv::cudacodec::detail::VideoParser::VideoParser(VideoDecoder* videoDecoder, Fram
     cuSafeCall( cuvidCreateVideoParser(&parser_, &params) );
 }
 
-bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* data, size_t size, bool endOfStream)
+bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* data, size_t size, const bool rawMode, const bool containsKeyFrame, bool endOfStream)
 {
     CUVIDSOURCEDATAPACKET packet;
     std::memset(&packet, 0, sizeof(CUVIDSOURCEDATAPACKET));
@@ -72,6 +72,9 @@ bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* dat
 
     packet.payload_size = static_cast<unsigned long>(size);
     packet.payload = data;
+
+    if (rawMode)
+        currentFramePackets.push_back(RawPacket(data, size, containsKeyFrame));
 
     if (cuvidParseVideoData(parser_, &packet) != CUDA_SUCCESS)
     {
@@ -180,8 +183,8 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandlePictureDisplay(void* userD
 
     thiz->unparsedPackets_ = 0;
 
-    thiz->frameQueue_->enqueue(picParams);
-
+    thiz->frameQueue_->enqueue(picParams, thiz->currentFramePackets);
+    thiz->currentFramePackets.clear();
     return true;
 }
 

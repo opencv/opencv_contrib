@@ -45,6 +45,11 @@
 
 #ifdef HAVE_NVCUVID
 
+RawPacket::RawPacket(const unsigned char* _data, const size_t _size, const bool _containsKeyFrame) : size(_size), containsKeyFrame(_containsKeyFrame) {
+    data = cv::makePtr<unsigned char*>(new unsigned char[size]);
+    memcpy(*data, _data, size);
+};
+
 cv::cudacodec::detail::FrameQueue::~FrameQueue() {
     if (isFrameInUse_)
         delete[] isFrameInUse_;
@@ -72,7 +77,7 @@ bool cv::cudacodec::detail::FrameQueue::waitUntilFrameAvailable(int pictureIndex
     return true;
 }
 
-void cv::cudacodec::detail::FrameQueue::enqueue(const CUVIDPARSERDISPINFO* picParams)
+void cv::cudacodec::detail::FrameQueue::enqueue(const CUVIDPARSERDISPINFO* picParams, const std::vector<RawPacket> rawPackets)
 {
     // Mark the frame as 'in-use' so we don't re-use it for decoding until it is no longer needed
     // for display
@@ -88,8 +93,10 @@ void cv::cudacodec::detail::FrameQueue::enqueue(const CUVIDPARSERDISPINFO* picPa
 
             if (framesInQueue_ < maxSz)
             {
-                int writePosition = (readPosition_ + framesInQueue_) % maxSz;
+                const int writePosition = (readPosition_ + framesInQueue_) % maxSz;
                 displayQueue_.at(writePosition) = *picParams;
+                for (const auto& rawPacket : rawPackets)
+                    rawPacketQueue.push(rawPacket);
                 framesInQueue_++;
                 isFramePlaced = true;
             }
@@ -103,7 +110,7 @@ void cv::cudacodec::detail::FrameQueue::enqueue(const CUVIDPARSERDISPINFO* picPa
     } while (!isEndOfDecode());
 }
 
-bool cv::cudacodec::detail::FrameQueue::dequeue(CUVIDPARSERDISPINFO& displayInfo)
+bool cv::cudacodec::detail::FrameQueue::dequeue(CUVIDPARSERDISPINFO& displayInfo, std::vector<RawPacket>& rawPackets)
 {
     AutoLock autoLock(mtx_);
 
@@ -111,6 +118,10 @@ bool cv::cudacodec::detail::FrameQueue::dequeue(CUVIDPARSERDISPINFO& displayInfo
     {
         int entry = readPosition_;
         displayInfo = displayQueue_.at(entry);
+        while (!rawPacketQueue.empty()) {
+            rawPackets.push_back(rawPacketQueue.front());
+            rawPacketQueue.pop();
+        }
         readPosition_ = (entry + 1) % maxSz;
         framesInQueue_--;
         return true;

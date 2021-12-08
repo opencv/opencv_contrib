@@ -44,8 +44,6 @@
 #ifndef __FFMPEG_VIDEO_SOURCE_HPP__
 #define __FFMPEG_VIDEO_SOURCE_HPP__
 
-#include <fstream>
-
 #include "opencv2/cudacodec.hpp"
 
 namespace cv { namespace cudacodec { namespace detail {
@@ -53,27 +51,24 @@ namespace cv { namespace cudacodec { namespace detail {
 class FFmpegVideoSource : public RawVideoSource
 {
 public:
-    FFmpegVideoSource(const String& fname, const String& filenameToWrite, const bool autoDetectExt = false);
+    FFmpegVideoSource(const String& fname);
     ~FFmpegVideoSource();
 
     bool getNextPacket(unsigned char** data, size_t* size) CV_OVERRIDE;
+
+    bool lastPacketContainsKeyFrame() const;
 
     FormatInfo format() const CV_OVERRIDE;
 
     void updateFormat(const FormatInfo& videoFormat) CV_OVERRIDE;
 
-    void writeToFile(const std::string filename, const bool autoDetectExt = false) CV_OVERRIDE;
+    void getExtraData(cv::Mat& _extraData) const CV_OVERRIDE { _extraData = extraData; }
 
 private:
     FormatInfo format_;
     VideoCapture cap;
-    Mat rawFrame, parameterSets, dataWithHeader;
-    std::string fileName;
-    std::ofstream file;
-    bool autoDetectExt = false;
-    bool restartRtspFileWrite = false;
+    Mat rawFrame, extraData, dataWithHeader;
     int iFrame = 0;
-    std::mutex mtx;
 };
 
 }}}

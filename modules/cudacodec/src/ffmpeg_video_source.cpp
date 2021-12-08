@@ -113,19 +113,23 @@ void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int
     }
 }
 
-static
-std::string CodecToFileExtension(const Codec codec){
-    switch (codec) {
-    case(Codec::MPEG4): return ".m4v";
-    case(Codec::H264): return ".h264";
-    case(Codec::HEVC): return ".h265";
-    case(Codec::VP8): return ".vp8";
-    case(Codec::VP9): return ".vp9";
-    default: return "";
-    }
+int StartCodeLen(unsigned char* data, const int sz) {
+    if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
+        return 3;
+    else if (sz >= 4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
+        return 4;
+    else
+        return 0;
 }
 
-cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname, const String& filenameToWrite, const bool autoDetectExt)
+bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, unsigned char* data, const int szData) {
+    const int paramSetStartCodeLen = StartCodeLen(parameterSets, szParameterSets);
+    const int packetStartCodeLen = StartCodeLen(data, szData);
+    // weak test to see if the parameter set has already been included in the RTP stream
+    return paramSetStartCodeLen != 0 && packetStartCodeLen != 0 && parameterSets[paramSetStartCodeLen] == data[packetStartCodeLen];
+}
+
+cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
 {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
@@ -138,8 +142,10 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname,
         CV_Error(Error::StsUnsupportedFormat, "Fetching of RAW video streams is not supported");
     CV_Assert(cap.get(CAP_PROP_FORMAT) == -1);
 
-    if (!filenameToWrite.empty())
-        writeToFile(filenameToWrite, autoDetectExt);
+    const int codecExtradataIndex = static_cast<int>(cap.get(CAP_PROP_CODEC_EXTRADATA_INDEX));
+    Mat tmpExtraData;
+    if (cap.retrieve(tmpExtraData, codecExtradataIndex) && tmpExtraData.total())
+        extraData = tmpExtraData.clone();
 
     int codec = (int)cap.get(CAP_PROP_FOURCC);
     int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
@@ -170,104 +176,31 @@ void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& vi
     format_.valid = true;
 }
 
-void cv::cudacodec::detail::FFmpegVideoSource::writeToFile(const std::string _filename, const bool _autoDetectExt) {
-    std::lock_guard<std::mutex> lck(mtx);
-    fileName = _filename;
-    if(fileName.empty()){
-        if (file.is_open())
-            file.close();
-        restartRtspFileWrite = false;
-        return;
-    }
-    autoDetectExt = _autoDetectExt;
-    restartRtspFileWrite = true;
-}
-
-int StartCodeLen(unsigned char* data, const int sz) {
-    if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
-        return 3;
-    else if (sz >=4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
-        return 4;
-    else
-        return 0;
-}
-
-bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, unsigned char* data, const int szData) {
-    const int paramSetStartCodeLen = StartCodeLen(parameterSets, szParameterSets);
-    const int packetStartCodeLen = StartCodeLen(data, szData);
-    // weak test to see if the parameter set has already been included in the RTP stream
-    return paramSetStartCodeLen != 0 && packetStartCodeLen != 0 && parameterSets[paramSetStartCodeLen] == data[packetStartCodeLen];
-}
-
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
 {
-    std::lock_guard<std::mutex> lck(mtx);
     cap >> rawFrame;
     *data = rawFrame.data;
     *size = rawFrame.total();
-
-    int rtpParamSetZeroBytePadding = 0, rtspParamSetZeroBytePadding = 0;
-    bool writeParameterSets = false;
-    const bool startRtspFileWrite = restartRtspFileWrite && cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
-    if (iFrame++ == 0 || startRtspFileWrite) {
-        Mat tmpExtraData;
-        const int codecExtradataIndex = (int)cap.get(CAP_PROP_CODEC_EXTRADATA_INDEX);
-        if (cap.retrieve(tmpExtraData, codecExtradataIndex) && tmpExtraData.total()) {
-            if (format_.codec == Codec::H264 || format_.codec == Codec::HEVC) {
-                // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in front of parameter sets transmitted in response to
-                // DESCRIPE RTSP message, required for playback in media players such as vlc.
-                if (StartCodeLen(tmpExtraData.data, tmpExtraData.total()) == 3)
-                    rtspParamSetZeroBytePadding = 1;
-                if (ParamSetsExist(tmpExtraData.data, tmpExtraData.total(), *data, *size)) {
-                    // ensure zero_byte (Annex B of the ITU-T H.264[5]) is present in the RTP stream in front of parameter sets,
-                    // required for playback in media players such as vlc.
-                    if (StartCodeLen(*data, *size) == 3)
-                        rtpParamSetZeroBytePadding = 1;
-                }
-                else {
-                    parameterSets = tmpExtraData.clone();
-                    writeParameterSets = true;
-                }
-            }
-            else if (format_.codec == Codec::MPEG4) {
-                const size_t newSz = tmpExtraData.total() + *size - 3;
-                dataWithHeader = Mat(1, newSz, CV_8UC1);
-                memcpy(dataWithHeader.data, tmpExtraData.data, tmpExtraData.total());
-                memcpy(dataWithHeader.data + tmpExtraData.total(), (*data) + 3, *size - 3);
-                *data = dataWithHeader.data;
-                *size = newSz;
-            }
+    if (iFrame++ == 0 && extraData.total()) {
+        if (format_.codec == Codec::MPEG4 ||
+            ((format_.codec == Codec::H264 || format_.codec == Codec::HEVC) && !ParamSetsExist(extraData.data, extraData.total(), *data, *size)))
+        {
+            const size_t nBytesToTrimFromData = format_.codec == Codec::MPEG4 ? 3 : 0;
+            const size_t newSz = extraData.total() + *size - nBytesToTrimFromData;
+            dataWithHeader = Mat(1, newSz, CV_8UC1);
+            memcpy(dataWithHeader.data, extraData.data, extraData.total());
+            memcpy(dataWithHeader.data + extraData.total(), (*data) + nBytesToTrimFromData, *size - nBytesToTrimFromData);
+            *data = dataWithHeader.data;
+            *size = newSz;
         }
-    }
-
-    if (startRtspFileWrite) {
-        restartRtspFileWrite = false;
-        if (file.is_open())
-            file.close();
-        if (autoDetectExt)
-            fileName += CodecToFileExtension(format_.codec);
-        file.open(fileName, std::ios::binary);
-        if (!file.is_open())
-            return false;
-    }
-
-    if (file.is_open()) {
-        if (writeParameterSets) {
-            writeParameterSets = false;
-            if (rtspParamSetZeroBytePadding) {
-                const char tmp = 0x00;
-                file.write(&tmp, 1);
-            }
-            file.write((char*)parameterSets.data, parameterSets.total());
-        }
-        else if (rtpParamSetZeroBytePadding) {
-            const char tmp = 0x00;
-            file.write(&tmp, 1);
-        }
-        file.write((char*)*data, *size);
     }
 
     return *size != 0;
+}
+
+bool cv::cudacodec::detail::FFmpegVideoSource::lastPacketContainsKeyFrame() const
+{
+    return cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
 }
 
 #endif // HAVE_CUDA
