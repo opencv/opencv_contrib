@@ -59,7 +59,7 @@ public:
         cuvidDestroyVideoParser(parser_);
     }
 
-    bool parseVideoData(const unsigned char* data, size_t size, bool endOfStream);
+    bool parseVideoData(const unsigned char* data, size_t size, const bool rawMode, const bool containsKeyFrame, bool endOfStream);
 
     bool hasError() const { return hasError_; }
 
@@ -68,6 +68,7 @@ private:
     FrameQueue* frameQueue_;
     CUvideoparser parser_;
     int unparsedPackets_;
+    std::vector<RawPacket> currentFramePackets;
     volatile bool hasError_;
 
     // Called when the decoder encounters a video format change (or initial sequence header)

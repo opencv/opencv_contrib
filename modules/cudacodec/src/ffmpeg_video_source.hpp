@@ -56,15 +56,19 @@ public:
 
     bool getNextPacket(unsigned char** data, size_t* size) CV_OVERRIDE;
 
+    bool lastPacketContainsKeyFrame() const;
+
     FormatInfo format() const CV_OVERRIDE;
 
-    void updateFormat(const int codedWidth, const int codedHeight);
+    void updateFormat(const FormatInfo& videoFormat) CV_OVERRIDE;
 
+    void getExtraData(cv::Mat& _extraData) const CV_OVERRIDE { _extraData = extraData; }
 
 private:
     FormatInfo format_;
     VideoCapture cap;
-    Mat rawFrame;
+    Mat rawFrame, extraData, dataWithHeader;
+    int iFrame = 0;
 };
 
 }}}
