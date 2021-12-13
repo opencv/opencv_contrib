@@ -109,6 +109,7 @@ public:
     void getGradientImage(OutputArray dst) CV_OVERRIDE;
 
     vector<vector<Point> > getSegments() CV_OVERRIDE;
+    vector<int> getSegmentIndicesOfLines() const CV_OVERRIDE;
     void detectLines(OutputArray lines) CV_OVERRIDE;
     void detectEllipses(OutputArray ellipses) CV_OVERRIDE;
 
@@ -120,6 +121,7 @@ protected:
     int height;       // height of source image
     uchar *srcImg;
     vector<vector<Point> > segmentPoints;
+    vector<int> segmentIndicesOfLines;
     Mat smoothImage;
     uchar *edgeImg;   // pointer to edge image data
     uchar *smoothImg; // pointer to smoothed image data
@@ -438,6 +440,11 @@ void EdgeDrawingImpl::getGradientImage(OutputArray _dst)
 std::vector<std::vector<Point> > EdgeDrawingImpl::getSegments()
 {
     return segmentPoints;
+}
+
+std::vector<int> EdgeDrawingImpl::getSegmentIndicesOfLines() const
+{
+    return segmentIndicesOfLines;
 }
 
 void EdgeDrawingImpl::ComputeGradient()
@@ -1312,12 +1319,15 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     for (int i = 1; i <= size - linesNo; i++)
         lines.pop_back();
 
+    segmentIndicesOfLines.clear();
     for (int i = 0; i < linesNo; i++)
     {
         Vec4f line((float)lines[i].sx, (float)lines[i].sy, (float)lines[i].ex, (float)lines[i].ey);
         linePoints.push_back(line);
+        segmentIndicesOfLines.push_back(lines[i].segmentNo);
     }
     Mat(linePoints).copyTo(_lines);
+
     delete[] x;
     delete[] y;
 }
