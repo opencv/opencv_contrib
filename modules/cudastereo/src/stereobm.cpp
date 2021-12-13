@@ -57,6 +57,7 @@ namespace cv { namespace cuda { namespace device
     {
         void stereoBM_CUDA(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int ndisp, int winsz, const PtrStepSz<unsigned int>& minSSD_buf, cudaStream_t & stream);
         void prefilter_xsobel(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap /*= 31*/, cudaStream_t & stream);
+        void prefilter_norm(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap, int winsize, cudaStream_t & stream);
         void postfilter_textureness(const PtrStepSzb& input, int winsz, float avgTexturenessThreshold, const PtrStepSzb& disp, cudaStream_t & stream);
     }
 }}}
@@ -92,8 +93,8 @@ namespace
         int getPreFilterType() const { return preset_; }
         void setPreFilterType(int preFilterType) { preset_ = preFilterType; }
 
-        int getPreFilterSize() const { return 0; }
-        void setPreFilterSize(int /*preFilterSize*/) {}
+        int getPreFilterSize() const { return preFilterSize_; }
+        void setPreFilterSize(int preFilterSize) { preFilterSize_ = preFilterSize; }
 
         int getPreFilterCap() const { return preFilterCap_; }
         void setPreFilterCap(int preFilterCap) { preFilterCap_ = preFilterCap; }
@@ -119,12 +120,13 @@ namespace
         int winSize_;
         int preFilterCap_;
         float avergeTexThreshold_;
+        int preFilterSize_;
 
         GpuMat minSSD_, leBuf_, riBuf_;
     };
 
     StereoBMImpl::StereoBMImpl(int numDisparities, int blockSize)
-        : preset_(0), ndisp_(numDisparities), winSize_(blockSize), preFilterCap_(31), avergeTexThreshold_(3)
+        : preset_(-1), ndisp_(numDisparities), winSize_(blockSize), preFilterCap_(31), avergeTexThreshold_(3), preFilterSize_(9)
     {
     }
 
@@ -165,6 +167,17 @@ namespace
 
             prefilter_xsobel( left, leBuf_, preFilterCap_, stream);
             prefilter_xsobel(right, riBuf_, preFilterCap_, stream);
+
+            le_for_bm = leBuf_;
+            ri_for_bm = riBuf_;
+        }
+        else if(preset_ == cv::StereoBM::PREFILTER_NORMALIZED_RESPONSE)
+        {
+            cuda::ensureSizeIsEnough(left.size(), left.type(), leBuf_);
+            cuda::ensureSizeIsEnough(right.size(), right.type(), riBuf_);
+
+            prefilter_norm( left, leBuf_, preFilterCap_, preFilterSize_, stream);
+            prefilter_norm(right, riBuf_, preFilterCap_, preFilterSize_, stream);
 
             le_for_bm = leBuf_;
             ri_for_bm = riBuf_;
