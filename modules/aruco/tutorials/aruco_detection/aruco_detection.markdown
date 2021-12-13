@@ -267,6 +267,13 @@ The aruco module provides a function to estimate the poses of all the detected m
 
 @code{.cpp}
 cv::Mat cameraMatrix, distCoeffs;
+// To work with examples from the tutorial, you can use these camera parameters:
+// Size imgSize = inputImage.size();
+// cameraMatrix = Mat::eye(3, 3, CV_64FC1);
+// cameraMatrix.at<double>(0, 0) = cameraMatrix.at<double>(1, 1) = 650;
+// cameraMatrix.at<double>(0, 2) = imgSize.width / 2;
+// cameraMatrix.at<double>(1, 2) = imgSize.height / 2;
+// distCoeffs = Mat(5, 1, CV_64FC1, Scalar::all(0));
 ...
 std::vector<cv::Vec3d> rvecs, tvecs;
 cv::aruco::estimatePoseSingleMarkers(markerCorners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);

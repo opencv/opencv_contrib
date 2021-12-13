@@ -9,4 +9,4 @@ WeChat QR code detector is a high-performance and lightweight QR code detect and
 
 3. More robust finder pattern detection. Besides traditional horizontal line searching, we propose an area size based finder pattern detection method. we calculate the area size of black and white block to locate the finder pattern by the pre-computed connected cells.
 
-4. Massive engineering optimization. Based on [zing-cpp](https://github.com/glassechidna/zxing-cpp), we conduct massive engineering optimization to boost the decoding success rate, such as trying more binarization methods, supporting N:1:3:1:1 finder pattern detection, finding more alignment pattern, clustering similar size finder pattern, and etc.
+4. Massive engineering optimization. Based on [zxing-cpp](https://github.com/glassechidna/zxing-cpp), we conduct massive engineering optimization to boost the decoding success rate, such as trying more binarization methods, supporting N:1:3:1:1 finder pattern detection, finding more alignment pattern, clustering similar size finder pattern, and etc.
