@@ -403,23 +403,25 @@ namespace cv { namespace cuda { namespace device
             callers[winsz2](left, right, disp, maxdisp, stream);
         }
 
+        __device__ inline int clamp(int x, int a, int b)
+        {
+            return ::max(a, ::min(b, x));
+        }
+
         //////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////// Sobel Prefiler ///////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        texture<unsigned char, 2, cudaReadModeElementType> texForSobel;
-
-        __global__ void prefilter_kernel(PtrStepSzb output, int prefilterCap)
+        __global__ void prefilter_kernel_xsobel(PtrStepSzb input, PtrStepSzb output, int prefilterCap)
         {
             int x = blockDim.x * blockIdx.x + threadIdx.x;
             int y = blockDim.y * blockIdx.y + threadIdx.y;
 
             if (x < output.cols && y < output.rows)
             {
-                int conv = (int)tex2D(texForSobel, x - 1, y - 1) * (-1) + (int)tex2D(texForSobel, x + 1, y - 1) * (1) +
-                           (int)tex2D(texForSobel, x - 1, y    ) * (-2) + (int)tex2D(texForSobel, x + 1, y    ) * (2) +
-                           (int)tex2D(texForSobel, x - 1, y + 1) * (-1) + (int)tex2D(texForSobel, x + 1, y + 1) * (1);
-
+                int conv = input.ptr(::max(0,y-1))[::max(0,x-1)] * (-1) + input.ptr(::max(0, y-1))[::min(x+1, input.cols-1)] * (1) +
+                           input.ptr(y  )[::max(0,x-1)] * (-2) + input.ptr(y  )[::min(x+1, input.cols-1)] * (2) +
+                           input.ptr(::min(y+1, input.rows-1))[::max(0,x-1)] * (-1) + input.ptr(::min(y+1, input.rows-1))[::min(x+1,input.cols-1)] * (1);
 
                 conv = ::min(::min(::max(-prefilterCap, conv), prefilterCap) + prefilterCap, 255);
                 output.ptr(y)[x] = conv & 0xFF;
@@ -428,22 +430,65 @@ namespace cv { namespace cuda { namespace device
 
         void prefilter_xsobel(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap, cudaStream_t & stream)
         {
-            cudaChannelFormatDesc desc = cudaCreateChannelDesc<unsigned char>();
-            cudaSafeCall( cudaBindTexture2D( 0, texForSobel, input.data, desc, input.cols, input.rows, input.step ) );
-
             dim3 threads(16, 16, 1);
             dim3 grid(1, 1, 1);
 
             grid.x = divUp(input.cols, threads.x);
             grid.y = divUp(input.rows, threads.y);
 
-            prefilter_kernel<<<grid, threads, 0, stream>>>(output, prefilterCap);
+            prefilter_kernel_xsobel<<<grid, threads, 0, stream>>>(input, output, prefilterCap);
             cudaSafeCall( cudaGetLastError() );
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
+        }
 
-            cudaSafeCall( cudaUnbindTexture (texForSobel ) );
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////  Norm Prefiler ///////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+
+        __global__ void prefilter_kernel_norm(PtrStepSzb input, PtrStepSzb output, int prefilterCap, int scale_g, int scale_s, int winsize)
+        {
+            // prefilterCap in range 1..63, checked in StereoBMImpl::compute
+            int x = blockDim.x * blockIdx.x + threadIdx.x;
+            int y = blockDim.y * blockIdx.y + threadIdx.y;
+            int cols = input.cols;
+            int rows = input.rows;
+            int WSZ2 = winsize / 2;
+
+            if(x < cols && y < rows)
+            {
+                int cov1 =                               input.ptr(::max(y-1, 0))[x] * 1 +
+                    input.ptr(y)[::min(x+1, cols-1)] * 1 + input.ptr(y  )[x] * 4 + input.ptr(y)[::min(x+1, cols-1)] * 1 +
+                                                         input.ptr(::min(y+1, rows-1))[x] * 1;
+
+                int cov2 = 0;
+                for(int i = -WSZ2; i < WSZ2+1; i++)
+                    for(int j = -WSZ2; j < WSZ2+1; j++)
+                        cov2 += input.ptr(clamp(y+i, 0, rows-1))[clamp(x+j, 0, cols-1)];
+
+                int res = (cov1*scale_g - cov2*scale_s)>>10;
+                res = clamp(res, -prefilterCap, prefilterCap) + prefilterCap;
+                output.ptr(y)[x] = res;
+            }
+        }
+
+        void prefilter_norm(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap, int winsize, cudaStream_t & stream)
+        {
+            dim3 threads(16, 16, 1);
+            dim3 grid(1, 1, 1);
+
+            grid.x = divUp(input.cols, threads.x);
+            grid.y = divUp(input.rows, threads.y);
+
+            int scale_g = winsize*winsize/8, scale_s = (1024 + scale_g)/(scale_g*2);
+            scale_g *= scale_s;
+
+            prefilter_kernel_norm<<<grid, threads, 0, stream>>>(input, output, prefilterCap, scale_g, scale_s, winsize);
+            cudaSafeCall( cudaGetLastError() );
+
+            if (stream == 0)
+                cudaSafeCall( cudaDeviceSynchronize() );
         }
 
 
