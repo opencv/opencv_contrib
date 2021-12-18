@@ -1,6 +1,8 @@
 Aruco module FAQ {#tutorial_aruco_faq}
 ==============================
 
+@prev_tutorial{tutorial_aruco_calibration}
+
 This is a compilation of questions that can be useful for those that want to use the aruco module.
 
 - I only want to label some objects, what should I use?

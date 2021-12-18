@@ -150,8 +150,8 @@ enum CornerRefineMethod{
 struct CV_EXPORTS_W DetectorParameters {
 
     DetectorParameters();
-
     CV_WRAP static Ptr<DetectorParameters> create();
+    CV_WRAP static bool readDetectorParameters(const FileNode& fn, Ptr<DetectorParameters>& params);
 
     CV_PROP_RW int adaptiveThreshWinSizeMin;
     CV_PROP_RW int adaptiveThreshWinSizeMax;

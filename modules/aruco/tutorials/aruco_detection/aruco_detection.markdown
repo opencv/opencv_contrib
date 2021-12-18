@@ -1,6 +1,8 @@
 Detection of ArUco Markers {#tutorial_aruco_detection}
 ==============================
 
+@next_tutorial{tutorial_aruco_board_detection}
+
 Pose estimation is of great importance in many computer vision applications: robot navigation,
 augmented reality, and many more. This process is based on finding correspondences between points in
 the real environment and their 2d image projection. This is usually a difficult step, and thus it is
@@ -102,12 +104,14 @@ The generated image is:
 
 ![Generated marker](images/marker23.png)
 
-A full working example is included in the `create_marker.cpp` inside the module samples folder.
+A full working example is included in the `create_marker.cpp` inside the `modules/aruco/samples/`.
 
-Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like
+Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like:
 @code{.cpp}
 "marker23.png" -d=10 -id=23
 @endcode
+Parameters for `create_marker.cpp`:
+@snippet samples/create_marker.cpp aruco_create_markers_keys
 
 Marker Detection
 ------
@@ -231,13 +235,14 @@ while (inputVideo.grab()) {
 Note that some of the optional parameters have been omitted, like the detection parameter object and the
 output vector of rejected candidates.
 
-A full working example is included in the `detect_markers.cpp` inside the module samples folder.
+A full working example is included in the `detect_markers.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like
 @code{.cpp}
--c="_path_/calib.txt" -d=10
+-v=/path_to_aruco_tutorials/aruco_detection/images/singlemarkersoriginal.jpg -d=10
 @endcode
-
+Parameters for `detect_markers.cpp`:
+@snippet samples/detect_markers.cpp aruco_detect_markers_keys
 
 
 Pose Estimation
@@ -267,7 +272,9 @@ The aruco module provides a function to estimate the poses of all the detected m
 
 @code{.cpp}
 cv::Mat cameraMatrix, distCoeffs;
-...
+// You can read camera parameters from tutorial_camera_params.yml
+readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is located in detect_markers.cpp
+
 std::vector<cv::Vec3d> rvecs, tvecs;
 cv::aruco::estimatePoseSingleMarkers(markerCorners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
 @endcode
@@ -308,8 +315,8 @@ cv::VideoCapture inputVideo;
 inputVideo.open(0);
 
 cv::Mat cameraMatrix, distCoeffs;
-// camera parameters are read from somewhere
-readCameraParameters(cameraMatrix, distCoeffs);
+// You can read camera parameters from tutorial_camera_params.yml
+readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is located in detect_markers.cpp
 
 cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
@@ -346,12 +353,17 @@ Sample video:
 <iframe width="420" height="315" src="https://www.youtube.com/embed/IsXWrcB_Hvs" frameborder="0" allowfullscreen></iframe>
 @endhtmlonly
 
-A full working example is included in the `detect_markers.cpp` inside the module samples folder.
+A full working example is included in the `detect_markers.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like
 @code{.cpp}
-    -c="_path_/calib.txt" -d=10
+-v=/path_to_aruco_tutorials/aruco_detection/images/singlemarkersoriginal.jpg -d=10
+-c=/path_to_aruco_samples/tutorial_camera_params.yml
 @endcode
+Parameters for `detect_markers.cpp`:
+@snippet samples/detect_markers.cpp aruco_detect_markers_keys
+@note To work with examples from the tutorial, you can use camera parameters from `tutorial_camera_params.yml`.
+An example of use in `detect.cpp`.
 
 
 
