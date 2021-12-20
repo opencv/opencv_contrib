@@ -94,6 +94,16 @@ class CV_EXPORTS_W Dictionary {
             const Ptr<Dictionary> &baseDictionary, int randomSeed=0);
 
     /**
+     * @brief Read a new dictionary from FileNode. Format:
+     * nmarkers: 35
+     * markersize: 6
+     * marker_0: "101011111011111001001001101100000000"
+     * ...
+     * marker_34: "011111010000111011111110110101100101"
+     */
+    CV_WRAP static bool readDictionary(const cv::FileNode& fn, cv::Ptr<cv::aruco::Dictionary> &dictionary);
+
+    /**
      * @see getPredefinedDictionary
      */
     CV_WRAP static Ptr<Dictionary> get(int dict);
