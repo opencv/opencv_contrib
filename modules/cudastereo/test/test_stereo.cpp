@@ -115,10 +115,6 @@ CUDA_TEST_P(StereoBM, PrefilterNormRegression)
     bm->setPreFilterSize(9);
     bm->compute(loadMat(left_image), loadMat(right_image), disp);
 
-    cv::Mat disp_cpu;
-    disp.download(disp_cpu);
-    cv::imwrite("aloe-disp-prefilter-norm.png", disp_cpu);
-
     EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
 }
 
@@ -157,10 +153,6 @@ CUDA_TEST_P(StereoBM, Uniqueness_Regression)
 
     bm->setUniquenessRatio(15);
     bm->compute(loadMat(left_image), loadMat(right_image), disp);
-
-    cv::Mat disp_cpu;
-    disp.download(disp_cpu);
-    cv::imwrite("disp_inq15.png", disp_cpu);
 
     EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
 }

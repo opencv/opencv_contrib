@@ -76,9 +76,8 @@ namespace cv { namespace cuda { namespace device
             {
                 for(int i = 1; i <= RADIUS; i++)
                     cache += col_ssd[i];
-
-                col_ssd_cache[0] = cache;
             }
+            col_ssd_cache[0] = cache;
 
             __syncthreads();
 
