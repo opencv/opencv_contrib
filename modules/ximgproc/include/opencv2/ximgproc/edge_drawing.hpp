@@ -67,7 +67,13 @@ public:
     CV_WRAP virtual void getEdgeImage(OutputArray dst) = 0;
     CV_WRAP virtual void getGradientImage(OutputArray dst) = 0;
 
+    /** @brief Returns std::vector<std::vector<Point>> of detected edge segments, see detectEdges()
+     */
     CV_WRAP virtual std::vector<std::vector<Point> > getSegments() = 0;
+
+    /** @brief Returns for each line found in detectLines() its edge segment index in getSegments()
+     */
+    CV_WRAP virtual std::vector<int> getSegmentIndicesOfLines() const = 0;
 
     /** @brief Detects lines.
 
