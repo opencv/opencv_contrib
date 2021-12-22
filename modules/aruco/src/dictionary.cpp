@@ -84,6 +84,36 @@ Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize,
     return generateCustomDictionary(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
+template<typename T>
+static inline bool readParameter(const FileNode& node, T& parameter)
+{
+    if (!node.empty()) {
+        node >> parameter;
+        return true;
+    }
+    return false;
+}
+
+bool Dictionary::readDictionary(const cv::FileNode& fn, cv::Ptr<cv::aruco::Dictionary> &dictionary)
+{
+    int nMarkers = 0, markerSize = 0;
+    if(fn.empty() || !readParameter(fn["nmarkers"], nMarkers) || !readParameter(fn["markersize"], markerSize))
+        return false;
+    cv::Mat bytes(0, 0, CV_8UC1), marker(markerSize, markerSize, CV_8UC1);
+    std::string markerString;
+    for (int i = 0; i < nMarkers; i++) {
+        std::ostringstream ostr;
+        ostr << i;
+        if (!readParameter(fn["marker_" + ostr.str()], markerString))
+            return false;
+
+        for (int j = 0; j < (int) markerString.size(); j++)
+            marker.at<unsigned char>(j) = (markerString[j] == '0') ? 0 : 1;
+        bytes.push_back(cv::aruco::Dictionary::getByteListFromBits(marker));
+    }
+    dictionary = cv::makePtr<cv::aruco::Dictionary>(bytes, markerSize);
+    return true;
+}
 
 /**
  */
