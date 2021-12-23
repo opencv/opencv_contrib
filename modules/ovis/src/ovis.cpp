@@ -168,12 +168,10 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
     return *mo->getParentSceneNode();
 }
 
+/// BGR to RGB 0..1
 static ColourValue convertColor(const Scalar& val)
 {
-    // BGR 0..255 (uchar) to RGB 0..1
-    ColourValue ret = ColourValue(val[2], val[1], val[0]) / 255;
-    ret.saturate();
-    return ret;
+    return ColourValue(val[2], val[1], val[0]).saturateCopy();
 }
 
 class WindowSceneImpl;
@@ -614,9 +612,8 @@ public:
                            const Scalar& specularColour) CV_OVERRIDE
     {
         Light* light = sceneMgr->createLight(name);
-        // convert to BGR
-        light->setDiffuseColour(ColourValue(diffuseColour[2], diffuseColour[1], diffuseColour[0]));
-        light->setSpecularColour(ColourValue(specularColour[2], specularColour[1], specularColour[0]));
+        light->setDiffuseColour(convertColor(diffuseColour));
+        light->setSpecularColour(convertColor(specularColour));
 
         Quaternion q;
         Vector3 t;
