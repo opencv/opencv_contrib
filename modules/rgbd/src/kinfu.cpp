@@ -19,6 +19,7 @@ void Params::setInitialVolumePose(Matx44f homogen_tf)
     Params::volumePose = homogen_tf;
 }
 
+/*
 Ptr<Params> Params::defaultParams()
 {
     Params p;
@@ -114,7 +115,7 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
 
     return p;
 }
-
+*/
 // MatType should be Mat or UMat
 template< typename MatType>
 class KinFuImpl : public KinFu
@@ -144,7 +145,7 @@ private:
     Params params;
 
     Odometry icp;
-    cv::Ptr<Volume> volume;
+    Volume volume;
 
     int frameCounter;
     Matx44f pose;
@@ -175,7 +176,7 @@ void KinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity().matrix;
-    volume->reset();
+    volume.reset();
 }
 
 template< typename MatType >
@@ -249,7 +250,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     {
         icp.prepareFrame(newFrame);
         // use depth instead of distance
-        volume->integrate(depth, params.depthFactor, pose, params.intr);
+        volume.integrate(depth, params.depthFactor, pose, params.intr);
     }
     else
     {
@@ -269,13 +270,13 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr);
+            volume.integrate(depth, params.depthFactor, pose, params.intr);
         }
 
         MatType points, normals;
         newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
-        volume->raycast(pose, params.intr, params.frameSize, points, normals);
+        volume.raycast(pose, params.intr, params.frameSize, points, normals);
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
@@ -307,7 +308,7 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
 
     Affine3f cameraPose(_cameraPose);
     MatType points, normals;
-    volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals);
+    volume.raycast(_cameraPose, params.intr, params.frameSize, points, normals);
     detail::renderPointsNormals(points, normals, image, params.lightPose);
 }
 
@@ -315,21 +316,21 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
 template< typename MatType >
 void KinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
-    volume->fetchPointsNormals(p, n);
+    volume.fetchPointsNormals(p, n);
 }
 
 
 template< typename MatType >
 void KinFuImpl<MatType>::getPoints(OutputArray points) const
 {
-    volume->fetchPointsNormals(points, noArray());
+    volume.fetchPointsNormals(points, noArray());
 }
 
 
 template< typename MatType >
 void KinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
-    volume->fetchNormals(points, normals);
+    volume.fetchNormals(points, normals);
 }
 
 // importing class

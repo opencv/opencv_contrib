@@ -84,7 +84,7 @@ struct CV_EXPORTS_W Params
 
     /** @brief Volume parameters
     */
-    VolumeParams volumeParams;
+    VolumeSettings volumeSettings;
 };
 
 /** @brief Large Scale Dense Depth Fusion implementation

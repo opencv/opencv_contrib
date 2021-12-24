@@ -388,11 +388,18 @@ static const bool display = false;
 
 void flyTest(bool hiDense, bool test_colors)
 {
-    Ptr<colored_kinfu::Params> params;
-    params = colored_kinfu::Params::coloredTSDFParams(!hiDense);
-    Ptr<Scene> scene = Scene::create(false, params->frameSize, params->intr, params->depthFactor);
+    VolumeSettings vs(VolumeType::ColorTSDF);
 
-    Ptr<colored_kinfu::ColoredKinFu> kf = colored_kinfu::ColoredKinFu::create(params);
+    Size frameSize(vs.getWidth(), vs.getHeight());
+    Matx33f intr;
+    vs.getCameraIntrinsics(intr);
+    bool onlySemisphere = false;
+    float depthFactor = vs.getDepthFactor();
+    Vec3f lightPose = Vec3f::all(0.f);
+    Ptr<Scene> scene = Scene::create(false, frameSize, intr, depthFactor);
+
+
+    Ptr<colored_kinfu::ColoredKinFu> kf = colored_kinfu::ColoredKinFu::create();
 
     std::vector<Affine3f> poses = scene->getPoses();
     Affine3f startPoseGT = poses[0], startPoseKF;
@@ -415,7 +422,7 @@ void flyTest(bool hiDense, bool test_colors)
 
         if (display)
         {
-            imshow("depth", depth * (1.f / params->depthFactor / 4.f));
+            imshow("depth", depth * (1.f / vs.getDepthFactor() / 4.f));
             imshow("rgb", rgb * (1.f / 255.f));
             Mat rendered;
             kf->render(rendered);

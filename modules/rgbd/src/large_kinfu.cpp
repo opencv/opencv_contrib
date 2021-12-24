@@ -13,6 +13,7 @@ namespace large_kinfu
 {
 using namespace kinfu;
 
+/*
 Ptr<Params> Params::defaultParams()
 {
     Params p;
@@ -101,6 +102,9 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     p->volumeParams.unitResolution      = 16;
     return p;
 }
+
+*/
+
 
 // MatType should be Mat or UMat
 template<typename MatType>
@@ -334,21 +338,21 @@ template<typename MatType>
 void LargeKinfuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
-    currSubmap->volume->fetchPointsNormals(p, n);
+    currSubmap->volume.fetchPointsNormals(p, n);
 }
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getPoints(OutputArray points) const
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
-    currSubmap->volume->fetchPointsNormals(points, noArray());
+    currSubmap->volume.fetchPointsNormals(points, noArray());
 }
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
-    currSubmap->volume->fetchNormals(points, normals);
+    currSubmap->volume.fetchNormals(points, normals);
 }
 
 // importing class

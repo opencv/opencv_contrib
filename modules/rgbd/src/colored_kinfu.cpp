@@ -11,16 +11,7 @@ namespace cv {
 namespace colored_kinfu {
 using namespace kinfu;
 
-void Params::setInitialVolumePose(Matx33f R, Vec3f t)
-{
-    setInitialVolumePose(Affine3f(R,t).matrix);
-}
-
-void Params::setInitialVolumePose(Matx44f homogen_tf)
-{
-    volumePose = homogen_tf;
-}
-
+/*
 Ptr<Params> Params::defaultParams()
 {
     Params p;
@@ -85,7 +76,8 @@ Ptr<Params> Params::defaultParams()
 
     return makePtr<Params>(p);
 }
-
+*/
+/*
 Ptr<Params> Params::coarseParams()
 {
     Ptr<Params> p = defaultParams();
@@ -126,16 +118,14 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
 
     return p;
 }
-
+*/
 // MatType should be Mat or UMat
 template< typename MatType>
 class ColoredKinFuImpl : public ColoredKinFu
 {
 public:
-    ColoredKinFuImpl(const Params& _params);
+    ColoredKinFuImpl();
     virtual ~ColoredKinFuImpl();
-
-    const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
@@ -153,31 +143,40 @@ public:
     bool updateT(const MatType& depth, const MatType& rgb);
 
 private:
-    Params params;
 
+    OdometrySettings odometrySettings;
     Odometry icp;
-    cv::Ptr<Volume> volume;
+
+    VolumeSettings volumeSettings;
+    Volume volume;
 
     int frameCounter;
     Matx44f pose;
     OdometryFrame renderFrame;
     OdometryFrame prevFrame;
+
+    std::vector<int> icpIterations = { 5, 3, 2 };
+    float tsdf_min_camera_movement = 0.f; //meters, disabled
 };
 
 
 template< typename MatType >
-ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
-    params(_params)
+ColoredKinFuImpl<MatType>::ColoredKinFuImpl()
 {
-    volume = makeVolume(params.volumeKind, params.voxelSize, params.volumePose, params.raycast_step_factor,
-                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold,
-                        params.volumeDims[0], params.volumeDims[1], params.volumeDims[2]);
+    volumeSettings = VolumeSettings(VolumeType::ColorTSDF);
+    volume = Volume(VolumeType::ColorTSDF, volumeSettings);
+
+    Matx44f intr;
+    volumeSettings.getCameraIntrinsics(intr);
+    const float voxelSize = volumeSettings.getVoxelSize();
+    const Vec4i volumeDims;
+    volumeSettings.getVolumeDimentions(volumeDims);
 
     OdometrySettings ods;
-    ods.setCameraMatrix(Mat(params.intr));
+    ods.setCameraMatrix(intr);
     ods.setMaxRotation(30.f);
-    ods.setMaxTranslation(params.voxelSize * (float)params.volumeDims[0] * 0.5f);
-    ods.setIterCounts(params.icpIterations);
+    ods.setMaxTranslation(voxelSize * (float)volumeDims[0] * 0.5f);
+    ods.setIterCounts(icpIterations);
 
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
@@ -189,18 +188,13 @@ void ColoredKinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity().matrix;
-    volume->reset();
+    volume.reset();
 }
 
 template< typename MatType >
 ColoredKinFuImpl<MatType>::~ColoredKinFuImpl()
 { }
 
-template< typename MatType >
-const Params& ColoredKinFuImpl<MatType>::getParams() const
-{
-    return params;
-}
 
 template< typename MatType >
 const Affine3f ColoredKinFuImpl<MatType>::getPose() const
@@ -212,7 +206,8 @@ const Affine3f ColoredKinFuImpl<MatType>::getPose() const
 template<>
 bool ColoredKinFuImpl<Mat>::update(InputArray _depth, InputArray _rgb)
 {
-    CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
+    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
     Mat rgb;
@@ -232,7 +227,8 @@ bool ColoredKinFuImpl<Mat>::update(InputArray _depth, InputArray _rgb)
 template<>
 bool ColoredKinFuImpl<UMat>::update(InputArray _depth, InputArray _rgb)
 {
-    CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
+    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
     UMat rgb;
@@ -283,9 +279,9 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         icp.prepareFrame(newFrame);
 
         // use depth instead of distance
-        volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+        volume.integrate(depth, rgb, pose);
         // TODO: try to move setPyramidLevel from kinfu to volume
-        newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
+        newFrame.setPyramidLevel(icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
         newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
     }
     else
@@ -304,11 +300,11 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
-        if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
+        if((rnorm + tnorm)/2 >= tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
-            newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
+            volume.integrate(depth, rgb, pose);
+            newFrame.setPyramidLevel(icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
             newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
         }
         MatType points, normals, colors;
@@ -316,7 +312,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         newFrame.getPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
 
-        volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
+        volume.raycast(pose, volumeSettings.getHeight(), volumeSettings.getWidth(), points, normals, colors);
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
@@ -348,9 +344,8 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
 {
     CV_TRACE_FUNCTION();
 
-    Affine3f cameraPose(_cameraPose);
     MatType points, normals, colors;
-    volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
+    volume.raycast(_cameraPose, volumeSettings.getHeight(), volumeSettings.getWidth(), points, normals, colors);
     detail::renderPointsNormalsColors(points, normals, colors, image);
 }
 
@@ -358,36 +353,34 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
-    volume->fetchPointsNormals(p, n);
+    volume.fetchPointsNormals(p, n);
 }
 
 
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getPoints(OutputArray points) const
 {
-    volume->fetchPointsNormals(points, noArray());
+    volume.fetchPointsNormals(points, noArray());
 }
 
 
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
-    volume->fetchNormals(points, normals);
+    volume.fetchNormals(points, normals);
 }
 
 // importing class
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-Ptr<ColoredKinFu> ColoredKinFu::create(const Ptr<Params>& params)
+Ptr<ColoredKinFu> ColoredKinFu::create()
 {
-    CV_Assert((int)params->icpIterations.size() == params->pyramidLevels);
-    CV_Assert(params->intr(0,1) == 0 && params->intr(1,0) == 0 && params->intr(2,0) == 0 && params->intr(2,1) == 0 && params->intr(2,2) == 1);
-    return makePtr< ColoredKinFuImpl<Mat> >(*params);
+    return makePtr< ColoredKinFuImpl<Mat> >();
 }
 
 #else
-Ptr<ColoredKinFu> ColoredKinFu::create(const Ptr<Params>& /* params */)
+Ptr<ColoredKinFu> ColoredKinFu::create()
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "
