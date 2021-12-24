@@ -297,6 +297,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
     }
     catch (...)
     {
+        if (params.size()) throw;
         videoSource.reset(new CuvidVideoSource(filename));
     }
 

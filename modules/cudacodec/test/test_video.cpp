@@ -236,13 +236,36 @@ CUDA_TEST_P(VideoReadRaw, Reader)
 
 CUDA_TEST_P(CheckParams, Reader)
 {
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+        const double msActual = reader->get(cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC);
+        ASSERT_EQ(msActual, 0);
+    }
+
     {
         constexpr int msReference = 3333;
-        std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {
             cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC, msReference });
         const double msActual = reader->get(cv::VideoCaptureProperties::CAP_PROP_OPEN_TIMEOUT_MSEC);
         ASSERT_EQ(msActual, msReference);
+    }
+
+    {
+        std::vector<bool> exceptionsThrown = { false,true };
+        std::vector<int> capPropFormats = { -1,0 };
+        for (int i = 0; i < capPropFormats.size(); i++) {
+            bool exceptionThrown = false;
+            try {
+                cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {
+                    cv::VideoCaptureProperties::CAP_PROP_FORMAT, capPropFormats.at(i) });
+            }
+            catch (cv::Exception ex) {
+                if (ex.code == Error::StsUnsupportedFormat)
+                    exceptionThrown = true;
+            }
+            ASSERT_EQ(exceptionThrown, exceptionsThrown.at(i));
+        }
     }
 }
 #endif // HAVE_NVCUVID
