@@ -373,7 +373,7 @@ public:
     @param propertyVal Value of the property.
     @return `true` if the property has been set.
      */
-    CV_WRAP virtual bool set(const VideoReaderProps property, const double propertyVal) = 0;
+    CV_WRAP virtual bool set(const VideoReaderProps propertyId, const double propertyVal) = 0;
 
     /** @brief Returns the specified VideoReader property
 
@@ -381,7 +381,16 @@ public:
     @param propertyVal Optional value for the property.
     @return Value for the specified property. Value -1 is returned when querying a property that is not supported.
     */
-    CV_WRAP virtual int get(const VideoReaderProps property, const int propertyVal = -1) const = 0;
+    CV_WRAP virtual int get(const VideoReaderProps propertyId, const int propertyVal = -1) const = 0;
+
+    /** @brief Returns the specified property used by the VideoSource.
+
+    @param propId Property identifier from cv::VideoCaptureProperties (eg. cv::CAP_PROP_POS_MSEC, cv::CAP_PROP_POS_FRAMES, ...)
+    or one from @ref videoio_flags_others
+    @return Value for the specified property. Value 0 is returned when querying a property that is
+    not supported.
+     */
+    CV_WRAP virtual double get(const int propertyId) const = 0;
 };
 
 /** @brief Interface for video demultiplexing. :
@@ -417,6 +426,15 @@ public:
     @param extraData 1D cv::Mat containing the extra data if it exists.
      */
     virtual void getExtraData(cv::Mat& extraData) const = 0;
+
+    /** @brief Returns the specified property used by the VideoSource.
+
+    @param propId Property identifier from cv::VideoCaptureProperties (eg. cv::CAP_PROP_POS_MSEC, cv::CAP_PROP_POS_FRAMES, ...)
+    or one from @ref videoio_flags_others
+    @return Value for the specified property. Value 0 is returned when querying a property that is
+    not supported.
+     */
+    virtual double get(const int propId) const = 0;
 };
 
 /** @brief Creates video reader.
@@ -426,7 +444,7 @@ public:
 
 FFMPEG is used to read videos. User can implement own demultiplexing with cudacodec::RawVideoSource
  */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const bool rawMode = false);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const std::vector<int>& params = {}, const bool rawMode = false);
 
 /** @overload
 @param source RAW video source implemented by user.

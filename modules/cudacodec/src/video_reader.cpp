@@ -73,9 +73,11 @@ namespace
 
         bool retrieve(OutputArray frame, const size_t idx) const CV_OVERRIDE;
 
-        bool set(const VideoReaderProps property, const double propertyVal) CV_OVERRIDE;
+        bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
 
-        int get(const VideoReaderProps property, const int propertyVal) const CV_OVERRIDE;
+        int get(const VideoReaderProps propertyId, const int propertyVal) const CV_OVERRIDE;
+
+        double get(const int propertyId) const CV_OVERRIDE;
 
     private:
         bool internalGrab(GpuMat& frame, Stream& stream);
@@ -136,8 +138,8 @@ namespace
     };
 
     bool VideoReaderImpl::internalGrab(GpuMat& frame, Stream& stream) {
-        if (videoSource_->hasError() || videoParser_->hasError())
-            CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
+        if (videoParser_->hasError())
+            CV_Error(Error::StsError, "Parsing/Decoding video source failed, check GPU memory is available and GPU supports hardware decoding.");
 
         if (frames_.empty())
         {
@@ -148,8 +150,8 @@ namespace
                 if (frameQueue_->dequeue(displayInfo, rawPackets))
                     break;
 
-                if (videoSource_->hasError() || videoParser_->hasError())
-                    CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
+                if (videoParser_->hasError())
+                    CV_Error(Error::StsError, "Parsing/Decoding video source failed, check GPU memory is available and GPU supports hardware decoding.");
 
                 if (frameQueue_->isEndOfDecode())
                     return false;
@@ -231,8 +233,8 @@ namespace
         return !frame.empty();
     }
 
-    bool VideoReaderImpl::set(const VideoReaderProps property, const double propertyVal) {
-        switch (property) {
+    bool VideoReaderImpl::set(const VideoReaderProps propertyId, const double propertyVal) {
+        switch (propertyId) {
         case VideoReaderProps::PROP_RAW_MODE :
             videoSource_->SetRawMode(static_cast<bool>(propertyVal));
             break;
@@ -240,8 +242,8 @@ namespace
         return true;
     }
 
-    int VideoReaderImpl::get(const VideoReaderProps property, const int propertyVal) const {
-        switch (property)
+    int VideoReaderImpl::get(const VideoReaderProps propertyId, const int propertyVal) const {
+        switch (propertyId)
         {
         case VideoReaderProps::PROP_DECODED_FRAME_IDX:
             return decodedFrameIdx;
@@ -269,6 +271,10 @@ namespace
         return -1;
     }
 
+    double VideoReaderImpl::get(const int propertyId) const {
+        return videoSource_->get(propertyId);
+    }
+
     bool VideoReaderImpl::nextFrame(GpuMat& frame, Stream& stream)
     {
         if (!internalGrab(frame, stream))
@@ -277,7 +283,7 @@ namespace
     }
 }
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const bool rawMode)
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const std::vector<int>& params, const bool rawMode)
 {
     CV_Assert(!filename.empty());
 
@@ -286,7 +292,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
     try
     {
         // prefer ffmpeg to cuvidGetSourceVideoFormat() which doesn't always return the corrct raw pixel format
-        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename));
+        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename, params));
         videoSource.reset(new RawVideoSourceWrapper(source, rawMode));
     }
     catch (...)

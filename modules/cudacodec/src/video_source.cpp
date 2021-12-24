@@ -71,6 +71,11 @@ void cv::cudacodec::detail::RawVideoSourceWrapper::updateFormat(const FormatInfo
     source_->updateFormat(videoFormat);
 }
 
+double cv::cudacodec::detail::RawVideoSourceWrapper::get(const int propId) const
+{
+    return source_->get(propId);
+}
+
 void cv::cudacodec::detail::RawVideoSourceWrapper::start()
 {
     stop_ = false;
