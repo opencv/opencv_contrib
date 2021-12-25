@@ -64,7 +64,7 @@ public:
 
     void getExtraData(cv::Mat& _extraData) const CV_OVERRIDE { _extraData = extraData; }
 
-    double get(const int propId) const;
+    bool get(const int propertyId, double& propertyVal) const;
 
 private:
     FormatInfo format_;

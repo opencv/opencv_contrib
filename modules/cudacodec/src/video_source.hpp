@@ -57,7 +57,7 @@ public:
 
     virtual FormatInfo format() const = 0;
     virtual void updateFormat(const FormatInfo& videoFormat) = 0;
-    virtual double get(const int propId) const { return 0; }
+    virtual bool get(const int propertyId, double& propertyVal) const { return false; }
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual bool isStarted() const = 0;
@@ -90,7 +90,7 @@ public:
 
     FormatInfo format() const CV_OVERRIDE;
     void updateFormat(const FormatInfo& videoFormat) CV_OVERRIDE;
-    double get(const int propId) const CV_OVERRIDE;
+    bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
     void start() CV_OVERRIDE;
     void stop() CV_OVERRIDE;
     bool isStarted() const CV_OVERRIDE;

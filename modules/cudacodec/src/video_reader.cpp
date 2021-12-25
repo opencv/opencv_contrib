@@ -48,7 +48,7 @@ using namespace cv::cudacodec;
 
 #ifndef HAVE_NVCUVID
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const bool) { throw_no_cuda(); return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const bool) { throw_no_cuda(); return Ptr<VideoReader>(); }
 Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const bool) { throw_no_cuda(); return Ptr<VideoReader>(); }
 
 #else // HAVE_NVCUVID
@@ -75,9 +75,9 @@ namespace
 
         bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
 
-        int get(const VideoReaderProps propertyId, const int propertyVal) const CV_OVERRIDE;
+        bool get(const VideoReaderProps propertyId, double& propertyValOut, const int propertyVal) const CV_OVERRIDE;
 
-        double get(const int propertyId) const CV_OVERRIDE;
+        bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
 
     private:
         bool internalGrab(GpuMat& frame, Stream& stream);
@@ -242,37 +242,45 @@ namespace
         return true;
     }
 
-    int VideoReaderImpl::get(const VideoReaderProps propertyId, const int propertyVal) const {
+    bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyValOut, const int propertyVal) const {
         switch (propertyId)
         {
         case VideoReaderProps::PROP_DECODED_FRAME_IDX:
-            return decodedFrameIdx;
+            propertyValOut =  decodedFrameIdx;
+            return true;
         case VideoReaderProps::PROP_EXTRA_DATA_INDEX:
-            return extraDataIdx;
+            propertyValOut = extraDataIdx;
+            return true;
         case VideoReaderProps::PROP_RAW_PACKAGES_BASE_INDEX:
-            if (videoSource_->RawModeEnabled())
-                return rawPacketsBaseIdx;
+            if (videoSource_->RawModeEnabled()) {
+                propertyValOut = rawPacketsBaseIdx;
+                return true;
+            }
             else
                 break;
         case VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB:
-            return rawPackets.size();
+            propertyValOut = rawPackets.size();
+            return true;
         case::VideoReaderProps::PROP_RAW_MODE:
-            return videoSource_->RawModeEnabled();
+            propertyValOut = videoSource_->RawModeEnabled();
+            return true;
         case::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
             const int iPacket = propertyVal - rawPacketsBaseIdx;
-            if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size())
-                return rawPackets.at(iPacket).containsKeyFrame;
+            if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
+                propertyValOut = rawPackets.at(iPacket).containsKeyFrame;
+                return true;
+            }
             else
                 break;
         }
         default:
             break;
         }
-        return -1;
+        return false;
     }
 
-    double VideoReaderImpl::get(const int propertyId) const {
-        return videoSource_->get(propertyId);
+    bool VideoReaderImpl::get(const int propertyId, double& propertyVal) const {
+        return videoSource_->get(propertyId, propertyVal);
     }
 
     bool VideoReaderImpl::nextFrame(GpuMat& frame, Stream& stream)

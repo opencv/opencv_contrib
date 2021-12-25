@@ -178,14 +178,16 @@ void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& vi
     format_.valid = true;
 }
 
-double cv::cudacodec::detail::FFmpegVideoSource::get(const int propId) const
+bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double& propertyVal) const
 {
-    if (videoCaptureParams.size() % 2 != 0) return 0;
+    CV_Assert(videoCaptureParams.size() % 2 == 0);
     for (std::size_t i = 0; i < videoCaptureParams.size(); i += 2) {
-        if (videoCaptureParams.at(i) == propId)
-            return videoCaptureParams.at(i + 1);
+        if (videoCaptureParams.at(i) == propertyId) {
+            propertyVal = videoCaptureParams.at(i + 1);
+            return true;
+        }
     }
-    return 0;
+    return false;
 }
 
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
