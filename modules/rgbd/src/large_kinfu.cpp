@@ -146,10 +146,17 @@ template<typename MatType>
 LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
     : params(_params)
 {
+    VolumeSettings vs = VolumeSettings(VolumeType::HashTSDF);
+
+    Matx33f intr;
+    vs.getCameraIntrinsics(intr);
+    Vec4i res;
+    vs.getVolumeResolution(res);
+
     OdometrySettings ods;
-    ods.setCameraMatrix(Mat(params.intr));
+    ods.setCameraMatrix(intr);
     ods.setMaxRotation(30.f);
-    ods.setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
+    ods.setMaxTranslation(vs.getVoxelSize() * res[0] * 0.5f);
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
     submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);

@@ -194,11 +194,10 @@ struct CV_EXPORTS_W Params
 class CV_EXPORTS_W KinFu
 {
 public:
-    CV_WRAP static Ptr<KinFu> create(const Ptr<Params>& _params);
+    CV_WRAP static Ptr<KinFu> create();
     virtual ~KinFu();
 
     /** @brief Get current parameters */
-    virtual const Params& getParams() const = 0;
 
     /** @brief Renders a volume into an image
 
