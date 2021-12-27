@@ -287,8 +287,8 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         // TODO: Convert constraints to posegraph
         Ptr<detail::PoseGraph> poseGraph = submapMgr->MapToPoseGraph();
         CV_LOG_INFO(NULL, "Created posegraph");
-        int iters = poseGraph->optimize();
-        if (iters < 0)
+        LevMarq::Report r = poseGraph->optimize();
+        if (!r.found)
         {
             CV_LOG_INFO(NULL, "Failed to perform pose graph optimization");
             return false;
