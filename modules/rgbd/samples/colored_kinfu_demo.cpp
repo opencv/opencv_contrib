@@ -128,15 +128,16 @@ int main(int argc, char **argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
         rgbWriter = makePtr<RGBWriter>(recordPath);
     }
-    Ptr<colored_kinfu::Params> params;
-    Ptr<ColoredKinFu> kf;
+    //Ptr<colored_kinfu::Params> params;
+    VolumeSettings vs(VolumeType::ColorTSDF);
+    Ptr<ColoredKinFu> kf = ColoredKinFu::create();
 
-    params = colored_kinfu::Params::coloredTSDFParams(coarse);
+    //params = colored_kinfu::Params::coloredTSDFParams(coarse);
 
     // These params can be different for each depth sensor
-    ds->updateParams(*params);
+    //ds->updateParams(*params);
 
-    rgbs->updateParams(*params);
+    //rgbs->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(false);
@@ -149,8 +150,8 @@ int main(int argc, char **argv)
     //params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
     //params->tsdf_max_weight = 16;
 
-    if(!idle)
-        kf = ColoredKinFu::create(params);
+    //if(!idle)
+    //    kf = ColoredKinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -202,7 +203,7 @@ int main(int argc, char **argv)
 #endif
         {
             UMat cvt8;
-            float depthFactor = params->depthFactor;
+            float depthFactor = vs.getDepthFactor();
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             if(!idle)
             {
