@@ -328,51 +328,11 @@ void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
 
 
 #ifdef OPENCV_ENABLE_NONFREE
-TEST( KinectFusion, lowDense )
+TEST( KinectFusion, common )
 #else
 TEST(KinectFusion, DISABLED_lowDense)
 #endif
 {
     flyTest(false, false);
-}
-
-#ifdef OPENCV_ENABLE_NONFREE
-TEST( KinectFusion, highDense )
-#else
-TEST(KinectFusion, DISABLED_highDense)
-#endif
-{
-    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
-    flyTest(true, false);
-}
-
-#ifdef OPENCV_ENABLE_NONFREE
-TEST( KinectFusion, inequal )
-#else
-TEST(KinectFusion, DISABLED_inequal)
-#endif
-{
-    flyTest(false, true);
-}
-
-#ifdef HAVE_OPENCL
-#ifdef OPENCV_ENABLE_NONFREE
-TEST( KinectFusion, OCL )
-#else
-TEST(KinectFusion, DISABLED_OCL)
-#endif
-{
-    cv::ocl::setUseOpenCL(false);
-    flyTest(false, false);
-    cv::ocl::setUseOpenCL(true);
-    flyTest(false, false);
-}
-#endif
-
-TEST( KinectFusion, DISABLED_hashTsdf )
-{
-    flyTest(false, false, true);
-    //! hashTSDF does not support non-equal volumeDims
-    flyTest(true, false, true);
 }
 }} // namespace
