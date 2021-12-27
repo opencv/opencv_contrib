@@ -702,9 +702,8 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
  * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
  */
 static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out) {
-    out.create((int)vec.size(), 1, CV_32FC2);
-
     if(out.isMatVector()) {
+        out.create((int)vec.size(), 1, NULL);
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             Mat &m = out.getMatRef(i);
@@ -712,6 +711,7 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
         }
     }
     else if(out.isUMatVector()) {
+        out.create((int)vec.size(), 1, NULL);
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             UMat &m = out.getUMatRef(i);
@@ -719,10 +719,11 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
         }
     }
     else if(out.kind() == _OutputArray::STD_VECTOR_VECTOR){
+        out.create((int)vec.size(), 1, out.type());
         for (unsigned int i = 0; i < vec.size(); i++) {
-            out.create(4, 1, CV_32FC2, i);
+            out.create(4, 1, out.type(), i);
             Mat m = out.getMat(i);
-            Mat(Mat(vec[i]).t()).copyTo(m);
+            Mat(Mat(vec[i]).t()).convertTo(m, out.type());
         }
     }
     else {

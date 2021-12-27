@@ -644,4 +644,96 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
     }
 }
 
+PARAM_TEST_CASE(ParamArUcoTypeTest, int)
+{
+    Ptr<aruco::Dictionary> dictionary;
+    Ptr<aruco::DetectorParameters> detectorParams;
+    vector< int > ids;
+    vector< vector< Point2f > > corners, rejected;
+    const int markerId = 1;
+    const int markerSize = 32;
+    const int imgSize = 100;
+    Mat img;
+    const int startCoord = imgSize/2-markerSize/2;
+    Mat marker;
+    const Point2f res[4] = {Point2f(startCoord, startCoord),
+                            Point2f(startCoord + markerSize - 1, startCoord),
+                            Point2f(startCoord + markerSize - 1, startCoord + markerSize - 1),
+                            Point2f(startCoord, startCoord + markerSize - 1)};
+
+    virtual void SetUp() override
+    {
+        cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_50);
+        detectorParams = aruco::DetectorParameters::create();
+        img = Mat(imgSize, imgSize, CV_8UC1, Scalar(255));
+        marker = img(cv::Rect(startCoord, startCoord, markerSize, markerSize));
+    }
+};
+
+struct ArUcoMatTypeTest : public ParamArUcoTypeTest {};
+
+INSTANTIATE_TEST_CASE_P(/**/, ArUcoMatTypeTest, testing::Values(CV_32FC2, CV_64FC2, CV_32SC2, CV_16SC2, CV_8SC2));
+
+TEST_P(ArUcoMatTypeTest, test_ArUco_mat_type_test)
+{
+}
+
+TEST(CV_ArUco_Types, check_type1)
+{
+    Ptr<aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_50);
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    vector< int > ids;
+    vector< vector< Point2f > > corners, rejected;
+    const int markerId = 1;
+    const int markerSize = 32;
+    const int imgSize = 100;
+    Mat img(imgSize, imgSize, CV_8UC1, Scalar(255));
+    const int startCoord = imgSize/2-markerSize/2;
+    Mat marker = img(cv::Rect(startCoord, startCoord, markerSize, markerSize));
+    const Point2f res[] = {Point2f(startCoord, startCoord),
+                           Point2f(startCoord + markerSize - 1, startCoord),
+                           Point2f(startCoord + markerSize - 1, startCoord + markerSize - 1),
+                           Point2f(startCoord, startCoord + markerSize - 1)};
+
+    // drawMarker
+    aruco::drawMarker(dictionary, markerId, markerSize, marker);
+
+    // detectMarker
+    aruco::detectMarkers(img, dictionary, corners, ids, detectorParams, rejected);
+    ASSERT_EQ(1ull, ids.size());
+
+    // check corners
+    for (size_t i = 0; i < corners[0].size(); i++)
+        EXPECT_EQ(static_cast<Point2f>(corners[0][i]), res[i]);
+}
+
+TEST(CV_ArUco_Types, check_type2)
+{
+    Ptr<aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_50);
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    vector< int > ids;
+    vector<Mat> corners, rejected;
+    const int markerId = 1;
+    const int markerSize = 32;
+    const int imgSize = 100;
+    Mat img(imgSize, imgSize, CV_8UC1, Scalar(255));
+    const int startCoord = imgSize/2-markerSize/2;
+    Mat marker = img(cv::Rect(startCoord, startCoord, markerSize, markerSize));
+    const Point2f res[] = {Point2f(startCoord, startCoord),
+                           Point2f(startCoord + markerSize - 1, startCoord),
+                           Point2f(startCoord + markerSize - 1, startCoord + markerSize - 1),
+                           Point2f(startCoord, startCoord + markerSize - 1)};
+
+    // drawMarker
+    aruco::drawMarker(dictionary, markerId, markerSize, marker);
+
+    // detectMarker
+    aruco::detectMarkers(img, dictionary, corners, ids, detectorParams, rejected);
+    ASSERT_EQ(1ull, ids.size());
+
+    // check corners
+    //for (size_t i = 0; i < corners[0].size(); i++)
+    //    EXPECT_EQ(static_cast<Point2f>(corners[0][i]), res[i]);
+}
+
 }} // namespace
