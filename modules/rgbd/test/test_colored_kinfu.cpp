@@ -388,7 +388,6 @@ static const bool display = false;
 
 void flyTest(bool hiDense, bool test_colors)
 {
-/*
     VolumeSettings vs(VolumeType::ColorTSDF);
 
     Size frameSize(vs.getWidth(), vs.getHeight());
@@ -398,7 +397,6 @@ void flyTest(bool hiDense, bool test_colors)
     float depthFactor = vs.getDepthFactor();
     Vec3f lightPose = Vec3f::all(0.f);
     Ptr<Scene> scene = Scene::create(false, frameSize, intr, depthFactor);
-
 
     Ptr<colored_kinfu::ColoredKinFu> kf = colored_kinfu::ColoredKinFu::create();
 
@@ -444,46 +442,17 @@ void flyTest(bool hiDense, bool test_colors)
     ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
     double poseThreshold = hiDense ? 0.1 : 0.2;
     ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
-*/
+
 }
 
 
 #ifdef OPENCV_ENABLE_NONFREE
-TEST(ColoredKinectFusion, lowDense)
+TEST(ColoredKinectFusion, common)
 #else
 TEST(ColoredKinectFusion, DISABLED_lowDense)
 #endif
 {
     flyTest(false, false);
-}
-
-#ifdef OPENCV_ENABLE_NONFREE
-TEST(ColoredKinectFusion, highDense)
-#else
-TEST(ColoredKinectFusion, DISABLED_highDense)
-#endif
-{
-    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
-    flyTest(true, false);
-}
-
-#ifdef OPENCV_ENABLE_NONFREE
-TEST(ColoredKinectFusion, color_lowDense)
-#else
-TEST(ColoredKinectFusion, DISABLED_color_lowDense)
-#endif
-{
-    flyTest(false, true);
-}
-
-#ifdef OPENCV_ENABLE_NONFREE
-TEST(ColoredKinectFusion, color_highDense)
-#else
-TEST(ColoredKinectFusion, DISABLED_color_highDense)
-#endif
-{
-    applyTestTag(CV_TEST_TAG_LONG, CV_TEST_TAG_DEBUG_VERYLONG);
-    flyTest(true, true);
 }
 
 }

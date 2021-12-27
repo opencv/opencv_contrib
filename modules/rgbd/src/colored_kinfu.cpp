@@ -166,7 +166,7 @@ ColoredKinFuImpl<MatType>::ColoredKinFuImpl()
     volumeSettings = VolumeSettings(VolumeType::ColorTSDF);
     volume = Volume(VolumeType::ColorTSDF, volumeSettings);
 
-    Matx44f intr;
+    Matx33f intr;
     volumeSettings.getCameraIntrinsics(intr);
     const float voxelSize = volumeSettings.getVoxelSize();
     const Vec4i volumeDims;
