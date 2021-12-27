@@ -124,9 +124,10 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<Params> params;
-    Ptr<KinFu> kf;
-
+    //Ptr<Params> params;
+    Ptr<KinFu> kf = kinfu::KinFu::create();;
+    VolumeSettings vs;
+    /*
     if(coarse)
         params = Params::coarseParams();
     else
@@ -137,7 +138,7 @@ int main(int argc, char **argv)
 
     // These params can be different for each depth sensor
     ds->updateParams(*params);
-
+    */
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(true);
 
@@ -149,8 +150,8 @@ int main(int argc, char **argv)
     //params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
     //params->tsdf_max_weight = 16;
 
-    if(!idle)
-        kf = KinFu::create(params);
+    //if(!idle)
+    //    kf = KinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -202,7 +203,7 @@ int main(int argc, char **argv)
 #endif
         {
             UMat cvt8;
-            float depthFactor = params->depthFactor;
+            float depthFactor = vs.getDepthFactor();
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             if(!idle)
             {

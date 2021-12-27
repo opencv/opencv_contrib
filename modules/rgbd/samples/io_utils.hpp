@@ -301,83 +301,6 @@ struct DepthSource
         }
     }
 
-    void updateParams(large_kinfu::Params& params)
-    {
-        if (vc.isOpened())
-        {
-            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
-            auto& volParams = params.volumeParams;
-            Vec3i volResolution(volParams.resolutionX,
-                                volParams.resolutionY,
-                                volParams.resolutionZ);
-            Affine3f volPose(Matx44f(volParams.pose));
-            updateVolumeParams(volResolution, volParams.voxelSize, volParams.tsdfTruncDist, volPose,
-                               params.truncateThreshold);
-            volParams.pose = Mat(volPose.matrix);
-
-            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
-
-            if (sourceType == Type::DEPTH_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::depth_k1;
-                distCoeffs(1) = Kinect2Params::depth_k2;
-                distCoeffs(4) = Kinect2Params::depth_k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
-        }
-    }
-
-    void updateParams(kinfu::Params& params)
-    {
-        if (vc.isOpened())
-        {
-            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
-            Affine3f volumePose(params.volumePose);
-            updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, volumePose, params.truncateThreshold);
-            params.volumePose = volumePose.matrix;
-            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
-
-            if (sourceType == Type::DEPTH_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::depth_k1;
-                distCoeffs(1) = Kinect2Params::depth_k2;
-                distCoeffs(4) = Kinect2Params::depth_k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
-        }
-    }
-
-    void updateParams(colored_kinfu::Params& params)
-    {
-        if (vc.isOpened())
-        {
-            updateIntrinsics(params.intr, params.frameSize, params.depthFactor);
-            Affine3f volumePose(params.volumePose);
-            updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, volumePose, params.truncateThreshold);
-            params.volumePose = volumePose.matrix;
-            updateICPParams(params.icpDistThresh, params.bilateral_sigma_depth);
-
-            if (sourceType == Type::DEPTH_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::depth_k1;
-                distCoeffs(1) = Kinect2Params::depth_k2;
-                distCoeffs(4) = Kinect2Params::depth_k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
-        }
-    }
-
     std::vector<std::string> depthFileList;
     size_t frameIdx;
     VideoCapture vc;
@@ -591,30 +514,6 @@ struct RGBSource
     void updateICPParams(float&)
     {
         // TODO: do this settings for rgb image icp
-    }
-
-    void updateParams(colored_kinfu::Params& params)
-    {
-        if (vc.isOpened())
-        {
-            updateIntrinsics(params.rgb_intr, params.rgb_frameSize);
-            Affine3f volumePose(params.volumePose);
-            updateVolumeParams(params.volumeDims, params.voxelSize,
-                               params.tsdf_trunc_dist, volumePose);
-            params.volumePose = volumePose.matrix;
-            updateICPParams(params.icpDistThresh);
-
-            if (sourceType == Type::RGB_KINECT2)
-            {
-                Matx<float, 1, 5> distCoeffs;
-                distCoeffs(0) = Kinect2Params::rgb_k1;
-                distCoeffs(1) = Kinect2Params::rgb_k2;
-                distCoeffs(4) = Kinect2Params::rgb_k3;
-
-                initUndistortRectifyMap(params.intr, distCoeffs, cv::noArray(), params.intr,
-                                        params.frameSize, CV_16SC2, undistortMap1, undistortMap2);
-            }
-        }
     }
 
     std::vector<std::string> rgbFileList;
