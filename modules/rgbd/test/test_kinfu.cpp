@@ -278,8 +278,7 @@ static const bool display = false;
 
 void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
 {
-/*
-    VolumeSettings vs(VolumeType::ColorTSDF);
+    VolumeSettings vs(VolumeType::TSDF);
 
     Size frameSize(vs.getWidth(), vs.getHeight());
     Matx33f intr;
@@ -294,7 +293,8 @@ void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
     std::vector<Affine3f> poses = scene->getPoses();
     Affine3f startPoseGT = poses[0], startPoseKF;
     Affine3f pose, kfPose;
-    for(size_t i = 0; i < poses.size(); i++)
+
+    for (size_t i = 0; i < poses.size(); i++)
     {
         pose = poses[i];
 
@@ -303,26 +303,27 @@ void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
         ASSERT_TRUE(kf->update(depth));
 
         kfPose = kf->getPose();
-        if(i == 0)
+        if (i == 0)
             startPoseKF = kfPose;
 
-        pose = (  startPoseGT.inv() * pose  )*startPoseKF;
-
-        if(display)
+        pose = (startPoseGT.inv() * pose) * startPoseKF;
+    
+        if (display)
         {
-            imshow("depth", depth*(1.f/vs.getDepthFactor()/4.f));
+            imshow("depth", depth * (1.f / vs.getDepthFactor() / 4.f));
             Mat rendered;
             kf->render(rendered);
             imshow("render", rendered);
             waitKey(10);
         }
+    
+
+        double rvecThreshold = hiDense ? 0.01 : 0.02;
+        ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
+        double poseThreshold = hiDense ? 0.1 : 0.2;
+        ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
     }
 
-    double rvecThreshold = hiDense ? 0.01 : 0.02;
-    ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
-    double poseThreshold = hiDense ? 0.1 : 0.2;
-    ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
-*/
 }
 
 

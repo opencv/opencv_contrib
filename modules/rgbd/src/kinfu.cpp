@@ -162,12 +162,17 @@ KinFuImpl<MatType>::KinFuImpl()
     volumeSettings = VolumeSettings(VolumeType::TSDF);
     volume = Volume(VolumeType::TSDF, volumeSettings);
 
-    float maxTranslation = 3 / 128 * 128 * 0.5;
+    Matx33f intr;
+    volumeSettings.getCameraIntrinsics(intr);
+    const Vec4i volumeDims;
+    volumeSettings.getVolumeDimentions(volumeDims);
+    const float voxelSize = volumeSettings.getVoxelSize();
 
-    OdometrySettings ods;
-    ods.setMaxRotation(30.f);
-    ods.setMaxTranslation(maxTranslation);
-    icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
+    odometrySettings = OdometrySettings();
+    odometrySettings.setMaxRotation(30.f);
+    odometrySettings.setMaxTranslation(voxelSize * (float)volumeDims[0] * 0.5f);
+    odometrySettings.setCameraMatrix(intr);
+    icp = Odometry(OdometryType::DEPTH, odometrySettings, OdometryAlgoType::FAST);
 
     reset();
 }
