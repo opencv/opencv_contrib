@@ -119,20 +119,22 @@ int main(int argc, char** argv)
     if (!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<large_kinfu::Params> params;
-    Ptr<LargeKinfu> largeKinfu;
+    //Ptr<large_kinfu::Params> params;
+    VolumeSettings vs = VolumeSettings(VolumeType::HashTSDF);
 
-    params = large_kinfu::Params::hashTSDFParams(coarse);
+    Ptr<LargeKinfu> largeKinfu = LargeKinfu::create();
+
+    //params = large_kinfu::Params::hashTSDFParams(coarse);
 
     // These params can be different for each depth sensor
-    ds->updateParams(*params);
+//    ds->updateParams(*params);
 
     cv::setUseOptimized(true);
 
-    if (!idle)
-        largeKinfu = LargeKinfu::create(params);
+//    if (!idle)
+//        largeKinfu = LargeKinfu::create(params);
 
-    const auto& volParams = largeKinfu->getParams().volumeParams;
+    //const auto& volParams = largeKinfu->getParams().volumeParams;
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -151,10 +153,12 @@ int main(int argc, char** argv)
         if (depthWriter)
             depthWriter->append(frame);
 
-        Vec3i volResolution(volParams.resolutionX,
-                            volParams.resolutionY,
-                            volParams.resolutionZ);
-        Affine3f volPose(Matx44f(volParams.pose));
+
+        Vec3i volResolution;
+        vs.getVolumeResolution(volResolution);
+        Matx44f pose;
+        vs.getVolumePose(pose);
+        Affine3f volPose(pose);
 
 #ifdef HAVE_OPENCV_VIZ
         if (pause)
@@ -190,7 +194,7 @@ int main(int argc, char** argv)
 #endif
         {
             UMat cvt8;
-            float depthFactor = params->depthFactor;
+            float depthFactor = vs.getDepthFactor();
             convertScaleAbs(frame, cvt8, 0.25 * 256. / depthFactor);
             if (!idle)
             {

@@ -151,7 +151,7 @@ LargeKinfuImpl<MatType>::LargeKinfuImpl()
 
     Matx33f intr;
     volumeSettings.getCameraIntrinsics(intr);
-    Vec4i res;
+    Vec3i res;
     volumeSettings.getVolumeResolution(res);
 
     ods = OdometrySettings();
