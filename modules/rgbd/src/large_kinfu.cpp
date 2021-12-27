@@ -111,10 +111,8 @@ template<typename MatType>
 class LargeKinfuImpl : public LargeKinfu
 {
    public:
-    LargeKinfuImpl(const Params& _params);
+    LargeKinfuImpl();
     virtual ~LargeKinfuImpl();
-
-    const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
@@ -132,7 +130,8 @@ class LargeKinfuImpl : public LargeKinfu
     bool updateT(const MatType& depth);
 
    private:
-    Params params;
+    VolumeSettings volumeSettings;
+    OdometrySettings ods;
 
     Odometry icp;
     //! TODO: Submap manager and Pose graph optimizer
@@ -140,26 +139,28 @@ class LargeKinfuImpl : public LargeKinfu
 
     int frameCounter;
     Affine3f pose;
+
+    float tsdf_min_camera_movement = 0.f; //meters, disabled
+    Vec3f lightPose = Vec3f::all(0.f);
 };
 
 template<typename MatType>
-LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
-    : params(_params)
+LargeKinfuImpl<MatType>::LargeKinfuImpl()
 {
-    VolumeSettings vs = VolumeSettings(VolumeType::HashTSDF);
+    volumeSettings = VolumeSettings(VolumeType::HashTSDF);
 
     Matx33f intr;
-    vs.getCameraIntrinsics(intr);
+    volumeSettings.getCameraIntrinsics(intr);
     Vec4i res;
-    vs.getVolumeResolution(res);
+    volumeSettings.getVolumeResolution(res);
 
-    OdometrySettings ods;
+    ods = OdometrySettings();
     ods.setCameraMatrix(intr);
     ods.setMaxRotation(30.f);
-    ods.setMaxTranslation(vs.getVoxelSize() * res[0] * 0.5f);
+    ods.setMaxTranslation(volumeSettings.getVoxelSize() * res[0] * 0.5f);
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
-    submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);
+    submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(volumeSettings);
     reset();
     submapMgr->createNewSubmap(true);
 }
@@ -178,12 +179,6 @@ LargeKinfuImpl<MatType>::~LargeKinfuImpl()
 }
 
 template<typename MatType>
-const Params& LargeKinfuImpl<MatType>::getParams() const
-{
-    return params;
-}
-
-template<typename MatType>
 const Affine3f LargeKinfuImpl<MatType>::getPose() const
 {
     return pose;
@@ -192,7 +187,8 @@ const Affine3f LargeKinfuImpl<MatType>::getPose() const
 template<>
 bool LargeKinfuImpl<Mat>::update(InputArray _depth)
 {
-    CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
+    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
     if (_depth.isUMat())
@@ -209,7 +205,8 @@ bool LargeKinfuImpl<Mat>::update(InputArray _depth)
 template<>
 bool LargeKinfuImpl<UMat>::update(InputArray _depth)
 {
-    CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
+    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
     if (!_depth.isUMat())
@@ -228,6 +225,11 @@ template<typename MatType>
 bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 {
     CV_TRACE_FUNCTION();
+
+    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    
+    Matx33f intr;
+    volumeSettings.getCameraIntrinsics(intr);
 
     MatType depth;
     if (_depth.type() != DEPTH_TYPE)
@@ -250,7 +252,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         if(frameCounter == 0) //! Only one current tracking map
         {
             icp.prepareFrame(newFrame);
-            currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+            currTrackingSubmap->integrate(depth, volumeSettings.getDepthFactor(), intr, frameCounter);
             currTrackingSubmap->frame = newFrame;
             currTrackingSubmap->renderFrame = newFrame;
             continue;
@@ -279,12 +281,12 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
             float rnorm = (float)cv::norm(affine.rvec());
             float tnorm = (float)cv::norm(affine.translation());
             // We do not integrate volume if camera does not move
-            if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
-                currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+            if ((rnorm + tnorm) / 2 >= tsdf_min_camera_movement)
+                currTrackingSubmap->integrate(depth, volumeSettings.getDepthFactor(), intr, frameCounter);
         }
 
         //3. Raycast
-        currTrackingSubmap->raycast(this->icp, currTrackingSubmap->cameraPose, params.intr, params.frameSize);
+        currTrackingSubmap->raycast(this->icp, currTrackingSubmap->cameraPose, intr, frameSize);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
@@ -324,7 +326,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image) const
     MatType pts, nrm;
     currSubmap->renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     currSubmap->renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM,  0);
-    detail::renderPointsNormals(pts, nrm, image, params.lightPose);
+    detail::renderPointsNormals(pts, nrm, image, lightPose);
 }
 
 
@@ -333,11 +335,14 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
 {
     CV_TRACE_FUNCTION();
 
+    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
     Affine3f cameraPose(_cameraPose);
     auto currSubmap = submapMgr->getCurrentSubmap();
+    Matx33f intr;
+    volumeSettings.getCameraIntrinsics(intr);
     MatType points, normals;
-    currSubmap->raycast(this->icp, cameraPose, params.intr, params.frameSize, points, normals);
-    detail::renderPointsNormals(points, normals, image, params.lightPose);
+    currSubmap->raycast(this->icp, cameraPose, intr, frameSize, points, normals);
+    detail::renderPointsNormals(points, normals, image, lightPose);
 }
 
 
@@ -366,16 +371,13 @@ void LargeKinfuImpl<MatType>::getNormals(InputArray points, OutputArray normals)
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-Ptr<LargeKinfu> LargeKinfu::create(const Ptr<Params>& params)
+Ptr<LargeKinfu> LargeKinfu::create()
 {
-    CV_Assert((int)params->icpIterations.size() == params->pyramidLevels);
-    CV_Assert(params->intr(0, 1) == 0 && params->intr(1, 0) == 0 && params->intr(2, 0) == 0 && params->intr(2, 1) == 0 &&
-              params->intr(2, 2) == 1);
 #ifdef HAVE_OPENCL
     if (cv::ocl::useOpenCL())
-        return makePtr<LargeKinfuImpl<UMat>>(*params);
+        return makePtr<LargeKinfuImpl<UMat>>();
 #endif
-    return makePtr<LargeKinfuImpl<Mat>>(*params);
+    return makePtr<LargeKinfuImpl<Mat>>();
 }
 
 #else

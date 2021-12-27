@@ -120,10 +120,8 @@ struct CV_EXPORTS_W Params
 class CV_EXPORTS_W LargeKinfu
 {
    public:
-    CV_WRAP static Ptr<LargeKinfu> create(const Ptr<Params>& _params);
+    CV_WRAP static Ptr<LargeKinfu> create();
     virtual ~LargeKinfu() = default;
-
-    virtual const Params& getParams() const = 0;
 
     CV_WRAP virtual void render(OutputArray image) const = 0;
     CV_WRAP virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
