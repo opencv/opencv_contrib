@@ -75,7 +75,7 @@ namespace
 
         bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
 
-        bool get(const VideoReaderProps propertyId, double& propertyValOut, const int propertyVal) const CV_OVERRIDE;
+        bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
 
         bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
 
@@ -242,32 +242,32 @@ namespace
         return true;
     }
 
-    bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyValOut, const int propertyVal) const {
+    bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyVal) const {
         switch (propertyId)
         {
         case VideoReaderProps::PROP_DECODED_FRAME_IDX:
-            propertyValOut =  decodedFrameIdx;
+            propertyVal =  decodedFrameIdx;
             return true;
         case VideoReaderProps::PROP_EXTRA_DATA_INDEX:
-            propertyValOut = extraDataIdx;
+            propertyVal = extraDataIdx;
             return true;
         case VideoReaderProps::PROP_RAW_PACKAGES_BASE_INDEX:
             if (videoSource_->RawModeEnabled()) {
-                propertyValOut = rawPacketsBaseIdx;
+                propertyVal = rawPacketsBaseIdx;
                 return true;
             }
             else
                 break;
         case VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB:
-            propertyValOut = rawPackets.size();
+            propertyVal = rawPackets.size();
             return true;
         case::VideoReaderProps::PROP_RAW_MODE:
-            propertyValOut = videoSource_->RawModeEnabled();
+            propertyVal = videoSource_->RawModeEnabled();
             return true;
         case::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
             const int iPacket = propertyVal - rawPacketsBaseIdx;
             if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
-                propertyValOut = rawPackets.at(iPacket).containsKeyFrame;
+                propertyVal = rawPackets.at(iPacket).containsKeyFrame;
                 return true;
             }
             else

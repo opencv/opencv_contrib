@@ -162,8 +162,8 @@ CUDA_TEST_P(CheckKeyFrame, Reader)
         ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB,N));
         for (int i = rawIdxBase; i < N + rawIdxBase; i++) {
             nPackages++;
-            double containsKeyFrame = -1;
-            ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME, containsKeyFrame, i));
+            double containsKeyFrame = i;
+            ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME, containsKeyFrame));
             ASSERT_TRUE(nPackages == 1 && containsKeyFrame || nPackages == 2 && !containsKeyFrame) << "nPackage: " << i;
             if (nPackages >= maxNPackagesToCheck)
                 break;
