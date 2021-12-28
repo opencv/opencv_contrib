@@ -113,6 +113,7 @@ void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int
     }
 }
 
+static
 int StartCodeLen(unsigned char* data, const int sz) {
     if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
         return 3;
@@ -129,12 +130,13 @@ bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, uns
     return paramSetStartCodeLen != 0 && packetStartCodeLen != 0 && parameterSets[paramSetStartCodeLen] == data[packetStartCodeLen];
 }
 
-cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
+cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname, const std::vector<int>& _videoCaptureParams)
+    : videoCaptureParams(_videoCaptureParams)
 {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
 
-    cap.open(fname, CAP_FFMPEG);
+    cap.open(fname, CAP_FFMPEG, videoCaptureParams);
     if (!cap.isOpened())
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
 
@@ -174,6 +176,18 @@ void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& vi
 {
     format_ = videoFormat;
     format_.valid = true;
+}
+
+bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double& propertyVal) const
+{
+    CV_Assert(videoCaptureParams.size() % 2 == 0);
+    for (std::size_t i = 0; i < videoCaptureParams.size(); i += 2) {
+        if (videoCaptureParams.at(i) == propertyId) {
+            propertyVal = videoCaptureParams.at(i + 1);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
