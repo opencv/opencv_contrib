@@ -18,37 +18,6 @@ using namespace cv::kinfu;
 using namespace cv::colored_kinfu;
 using namespace cv::io_utils;
 
-#ifdef HAVE_OPENCV_VIZ
-#include <opencv2/viz.hpp>
-#endif
-
-#ifdef HAVE_OPENCV_VIZ
-const std::string vizWindowName = "cloud";
-
-struct PauseCallbackArgs
-{
-    PauseCallbackArgs(ColoredKinFu& _kf) : kf(_kf)
-    { }
-
-    ColoredKinFu& kf;
-};
-
-void pauseCallback(const viz::MouseEvent& me, void* args);
-void pauseCallback(const viz::MouseEvent& me, void* args)
-{
-    if(me.type == viz::MouseEvent::Type::MouseMove       ||
-       me.type == viz::MouseEvent::Type::MouseScrollDown ||
-       me.type == viz::MouseEvent::Type::MouseScrollUp)
-    {
-        PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
-        viz::Viz3d window(vizWindowName);
-        UMat rendered;
-        pca.kf.render(rendered, window.getViewerPose().matrix);
-        imshow("render", rendered);
-        waitKey(1);
-    }
-}
-#endif
 
 static const char* keys =
 {
@@ -128,36 +97,11 @@ int main(int argc, char **argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
         rgbWriter = makePtr<RGBWriter>(recordPath);
     }
-    //Ptr<colored_kinfu::Params> params;
     VolumeSettings vs(VolumeType::ColorTSDF);
     Ptr<ColoredKinFu> kf = ColoredKinFu::create();
 
-    //params = colored_kinfu::Params::coloredTSDFParams(coarse);
-
-    // These params can be different for each depth sensor
-    //ds->updateParams(*params);
-
-    //rgbs->updateParams(*params);
-
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(false);
-
-    // Scene-specific params should be tuned for each scene individually
-    //float cubeSize = 1.f;
-    //params->voxelSize = cubeSize/params->volumeDims[0]; //meters
-    //params->tsdf_trunc_dist = 0.01f; //meters
-    //params->icpDistThresh = 0.01f; //meters
-    //params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
-    //params->tsdf_max_weight = 16;
-
-    //if(!idle)
-    //    kf = ColoredKinFu::create(params);
-
-#ifdef HAVE_OPENCV_VIZ
-    cv::viz::Viz3d window(vizWindowName);
-    window.setViewerPose(Affine3f::Identity());
-    bool pause = false;
-#endif
 
     UMat rendered;
     UMat points;
@@ -170,37 +114,6 @@ int main(int argc, char **argv)
         if(depthWriter)
             depthWriter->append(frame);
         UMat rgb_frame = rgbs->getRGB();
-#ifdef HAVE_OPENCV_VIZ
-        if(pause)
-        {
-            // doesn't happen in idle mode
-            kf->getCloud(points, normals);
-            if(!points.empty() && !normals.empty())
-            {
-                viz::WCloud cloudWidget(points, viz::Color::white());
-                viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                window.showWidget("cloud", cloudWidget);
-                window.showWidget("normals", cloudNormals);
-
-                Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
-                window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     volSize),
-                                  Affine3f(kf->getParams().volumePose));
-                PauseCallbackArgs pca(*kf);
-                window.registerMouseCallback(pauseCallback, (void*)&pca);
-                window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
-                                                                "Close the window or press Q to resume"), Point()));
-                window.spin();
-                window.removeWidget("text");
-                window.removeWidget("cloud");
-                window.removeWidget("normals");
-                window.registerMouseCallback(0);
-            }
-
-            pause = false;
-        }
-        else
-#endif
         {
             UMat cvt8;
             float depthFactor = vs.getDepthFactor();
@@ -212,31 +125,7 @@ int main(int argc, char **argv)
                 if(!kf->update(frame, rgb_frame))
                 {
                     kf->reset();
-                }
-#ifdef HAVE_OPENCV_VIZ
-                else
-                {
-                    if(coarse)
-                    {
-                        kf->getCloud(points, normals);
-                        if(!points.empty() && !normals.empty())
-                        {
-                            viz::WCloud cloudWidget(points, viz::Color::white());
-                            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                            window.showWidget("cloud", cloudWidget);
-                            window.showWidget("normals", cloudNormals);
-                        }
-                    }
-
-                    //window.showWidget("worldAxes", viz::WCoordinateSystem());
-                    Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
-                    window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                         volSize),
-                                      Affine3f(kf->getParams().volumePose));
-                    window.setViewerPose(kf->getPose());
-                    window.spinOnce(1, true);
-                }
-#endif
+                
 
                 kf->render(rendered);
             }
@@ -263,11 +152,6 @@ int main(int argc, char **argv)
             break;
         case 'q':
             return 0;
-#ifdef HAVE_OPENCV_VIZ
-        case 'p':
-            if(!idle)
-                pause = true;
-#endif
         default:
             break;
         }
