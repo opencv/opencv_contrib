@@ -703,7 +703,7 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
  */
 static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out) {
     if(out.isMatVector()) {
-        out.create((int)vec.size(), 1, NULL);
+        out.create((int)vec.size(), 1, 0);
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             Mat &m = out.getMatRef(i);
@@ -711,7 +711,7 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
         }
     }
     else if(out.isUMatVector()) {
-        out.create((int)vec.size(), 1, NULL);
+        out.create((int)vec.size(), 1, 0);
         for (unsigned int i = 0; i < vec.size(); i++) {
             out.create(4, 1, CV_32FC2, i);
             UMat &m = out.getUMatRef(i);
@@ -1161,27 +1161,26 @@ static void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std:
 
 /**
   */
-void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
-                   OutputArray _ids, const Ptr<DetectorParameters> &_params,
+void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, std::vector<std::vector<Point2f> >& corners,
+                   std::vector<int>& ids, const Ptr<DetectorParameters> &_params,
                    OutputArrayOfArrays _rejectedImgPoints, InputArrayOfArrays camMatrix, InputArrayOfArrays distCoeff) {
 
     CV_Assert(!_image.empty());
+    corners.clear();
 
     Mat grey;
     _convertToGrey(_image.getMat(), grey);
 
     /// STEP 1: Detect marker candidates
-    vector< vector< Point2f > > candidates;
     vector< vector< Point > > contours;
-    vector< int > ids;
 
     vector< vector< vector< Point2f > > > candidatesSet;
     vector< vector< vector< Point > > > contoursSet;
     /// STEP 1.a Detect marker candidates :: using AprilTag
     if(_params->cornerRefinementMethod == CORNER_REFINE_APRILTAG){
-        _apriltag(grey, _params, candidates, contours);
+        _apriltag(grey, _params, corners, contours);
 
-        candidatesSet.push_back(candidates);
+        candidatesSet.push_back(corners);
         contoursSet.push_back(contours);
     }
 
@@ -1190,12 +1189,8 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
         _detectCandidates(grey, candidatesSet, contoursSet, _params);
 
     /// STEP 2: Check candidate codification (identify markers)
-    _identifyCandidates(grey, candidatesSet, contoursSet, _dictionary, candidates, contours, ids, _params,
+    _identifyCandidates(grey, candidatesSet, contoursSet, _dictionary, corners, contours, ids, _params,
                         _rejectedImgPoints);
-
-    // copy to output arrays
-    _copyVector2Output(candidates, _corners);
-    Mat(ids).copyTo(_ids);
 
     /// STEP 3: Corner refinement :: use corner subpix
     if( _params->cornerRefinementMethod == CORNER_REFINE_SUBPIX ) {
@@ -1212,20 +1207,17 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
         //}
 
         // this is the parallel call for the previous commented loop (result is equivalent)
-        parallel_for_(Range(0, _corners.cols()),
-                      MarkerSubpixelParallel(&grey, _corners, _params));
+        parallel_for_(Range(0, corners.size()),
+                      MarkerSubpixelParallel(&grey, corners, _params));
     }
 
     /// STEP 3, Optional : Corner refinement :: use contour container
     if( _params->cornerRefinementMethod == CORNER_REFINE_CONTOUR){
 
-        if(! _ids.empty()){
+        if(! ids.empty()){
 
             // do corner refinement using the contours for each detected markers
-            parallel_for_(Range(0, _corners.cols()), MarkerContourParallel(contours, candidates, camMatrix.getMat(), distCoeff.getMat()));
-
-            // copy the corners to the output array
-            _copyVector2Output(candidates, _corners);
+            parallel_for_(Range(0, corners.size()), MarkerContourParallel(contours, corners, camMatrix.getMat(), distCoeff.getMat()));
         }
     }
 }
