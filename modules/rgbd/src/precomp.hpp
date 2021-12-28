@@ -24,7 +24,6 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/3d.hpp"
-#include "opencv2/3d/detail/pose_graph.hpp"
 #include "opencv2/3d/detail/kinfu_frame.hpp"
 #include "opencv2/3d/detail/submap.hpp"
 #include "opencv2/rgbd.hpp"
