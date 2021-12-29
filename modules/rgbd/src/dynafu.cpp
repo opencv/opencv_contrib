@@ -177,10 +177,6 @@ DynaFuImpl<T>::DynaFuImpl() :
     Vec3i volumeDims;
     settings.getVolumeDimentions(volumeDims);
 
-    Matx44f _pose;
-    settings.getVolumePose(_pose);
-    const Affine3f pose = Affine3f(_pose);
-
     ods = OdometrySettings();
     ods.setCameraMatrix(intr);
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);

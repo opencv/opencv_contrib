@@ -23,7 +23,6 @@ static const char* keys =
     "{help h usage ? | | print this message   }"
     "{depth  | | Path to depth.txt file listing a set of depth images }"
     "{camera |0| Index of depth camera to be used as a depth source }"
-    "{useHashTSDF | | Use the newer hashtable based TSDFVolume (relatively fast) and for larger reconstructions}"
     "{idle   | | Do not run KinFu, just display depth frames }"
     "{record | | Write depth frames to specified file list"
         " (the same format as for the 'depth' key) }"
@@ -38,7 +37,6 @@ static const std::string message =
 int main(int argc, char **argv)
 {
     bool idle = false;
-    bool useHashTSDF = false;
     std::string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
@@ -59,10 +57,6 @@ int main(int argc, char **argv)
     if(parser.has("record"))
     {
         recordPath = parser.get<String>("record");
-    }
-    if(parser.has("useHashTSDF"))
-    {
-        useHashTSDF = true;
     }
     if(parser.has("idle"))
     {

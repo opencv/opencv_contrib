@@ -194,7 +194,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         }
 
         //3. Raycast
-        currTrackingSubmap->raycast(this->icp, currTrackingSubmap->cameraPose, intr, frameSize);
+        currTrackingSubmap->raycast(this->icp, currTrackingSubmap->cameraPose, frameSize);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
@@ -249,7 +249,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
     Matx33f intr;
     volumeSettings.getCameraIntrinsics(intr);
     MatType points, normals;
-    currSubmap->raycast(this->icp, cameraPose, intr, frameSize, points, normals);
+    currSubmap->raycast(this->icp, cameraPose, frameSize, points, normals);
     detail::renderPointsNormals(points, normals, image, lightPose);
 }
 
