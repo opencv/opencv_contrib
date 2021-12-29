@@ -246,7 +246,7 @@ Ptr<KinFu> KinFu::create()
 }
 
 #else
-Ptr<KinFu> KinFu::create(const Ptr<Params>& /* params */)
+Ptr<KinFu> KinFu::create()
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "

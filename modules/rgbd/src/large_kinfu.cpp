@@ -289,7 +289,7 @@ Ptr<LargeKinfu> LargeKinfu::create()
 }
 
 #else
-Ptr<LargeKinfu> LargeKinfu::create(const Ptr<Params>& /* params */)
+Ptr<LargeKinfu> LargeKinfu::create()
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "
