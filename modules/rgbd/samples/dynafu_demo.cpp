@@ -182,15 +182,22 @@ int main(int argc, char **argv)
             // doesn't happen in idle mode
             df->getCloud(points, normals);
 
+            Matx44f _pose;
+            settings.getVolumePose(_pose);
+            const Affine3f pose = Affine3f(_pose);
+
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
 
-                Vec3d volSize = df->getParams().voxelSize*Vec3d(df->getParams().volumeDims);
+                Vec3i volDims;
+                vs.getVolumeDimentions(volDims);
+
+                Vec3d volSize = vs.getVoxelSize() * volDims;
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                      volSize),
-                                  Affine3f(df->getParams().volumePose));
+                                  Affine3f(pose));
                 PauseCallbackArgs pca(*df);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
@@ -222,6 +229,10 @@ int main(int argc, char **argv)
 #ifdef HAVE_OPENCV_VIZ
                 else
                 {
+                    Matx44f _pose;
+                    settings.getVolumePose(_pose);
+                    const Affine3f pose = Affine3f(_pose);
+
                     Mat meshCloud, meshEdges, meshPoly;
                     df->marchCubes(meshCloud, meshEdges);
                     for(int i = 0; i < meshEdges.size().height; i += 3)
@@ -255,10 +266,13 @@ int main(int argc, char **argv)
                     }
 
                     //window.showWidget("worldAxes", viz::WCoordinateSystem());
-                    Vec3d volSize = df->getParams().voxelSize*df->getParams().volumeDims;
+                    Vec3i volDims;
+                    vs.getVolumeDimentions(volDims);
+
+                    Vec3d volSize = vs.getVoxelSize() * volDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                          volSize),
-                                      Affine3f(df->getParams().volumePose));
+                                      Affine3f(pose));
                     window.setViewerPose(df->getPose());
                     window.spinOnce(1, true);
                 }
