@@ -393,9 +393,7 @@ void flyTest(bool hiDense, bool test_colors)
     Size frameSize(vs.getWidth(), vs.getHeight());
     Matx33f intr;
     vs.getCameraIntrinsics(intr);
-    bool onlySemisphere = false;
     float depthFactor = vs.getDepthFactor();
-    Vec3f lightPose = Vec3f::all(0.f);
     Ptr<Scene> scene = Scene::create(false, frameSize, intr, depthFactor);
 
     Ptr<colored_kinfu::ColoredKinFu> kf = colored_kinfu::ColoredKinFu::create();

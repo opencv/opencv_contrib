@@ -23,8 +23,6 @@ static const char* keys =
     "{help h usage ? | | print this message   }"
     "{depth  | | Path to depth.txt file listing a set of depth images }"
     "{camera |0| Index of depth camera to be used as a depth source }"
-    "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
-        " in coarse mode points and normals are displayed }"
     "{useHashTSDF | | Use the newer hashtable based TSDFVolume (relatively fast) and for larger reconstructions}"
     "{idle   | | Do not run KinFu, just display depth frames }"
     "{record | | Write depth frames to specified file list"
@@ -39,7 +37,6 @@ static const std::string message =
 
 int main(int argc, char **argv)
 {
-    bool coarse = false;
     bool idle = false;
     bool useHashTSDF = false;
     std::string recordPath;
@@ -58,10 +55,6 @@ int main(int argc, char **argv)
     {
         parser.printMessage();
         return 0;
-    }
-    if(parser.has("coarse"))
-    {
-        coarse = true;
     }
     if(parser.has("record"))
     {
@@ -93,7 +86,7 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<KinFu> kf = kinfu::KinFu::create();;
+    Ptr<KinFu> kf = kinfu::KinFu::create();
     VolumeSettings vs;
   
     // Enables OpenCL explicitly (by default can be switched-off)

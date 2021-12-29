@@ -160,7 +160,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         if(frameCounter == 0) //! Only one current tracking map
         {
             icp.prepareFrame(newFrame);
-            currTrackingSubmap->integrate(depth, volumeSettings.getDepthFactor(), intr, frameCounter);
+            currTrackingSubmap->integrate(depth, frameCounter);
             currTrackingSubmap->frame = newFrame;
             currTrackingSubmap->renderFrame = newFrame;
             continue;
@@ -190,7 +190,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
             float tnorm = (float)cv::norm(affine.translation());
             // We do not integrate volume if camera does not move
             if ((rnorm + tnorm) / 2 >= tsdf_min_camera_movement)
-                currTrackingSubmap->integrate(depth, volumeSettings.getDepthFactor(), intr, frameCounter);
+                currTrackingSubmap->integrate(depth, frameCounter);
         }
 
         //3. Raycast

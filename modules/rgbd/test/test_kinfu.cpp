@@ -276,16 +276,14 @@ Ptr<Scene> Scene::create(int nScene, Size sz, Matx33f _intr, float _depthFactor)
 
 static const bool display = false;
 
-void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
+void flyTest(bool hiDense)
 {
     VolumeSettings vs(VolumeType::TSDF);
 
     Size frameSize(vs.getWidth(), vs.getHeight());
     Matx33f intr;
     vs.getCameraIntrinsics(intr);
-    bool onlySemisphere = false;
     float depthFactor = vs.getDepthFactor();
-    Vec3f lightPose = Vec3f::all(0.f);
     Ptr<Scene> scene = Scene::create(false, frameSize, intr, depthFactor);
 
     Ptr<kinfu::KinFu> kf = kinfu::KinFu::create();
@@ -333,6 +331,6 @@ TEST( KinectFusion, common )
 TEST(KinectFusion, DISABLED_lowDense)
 #endif
 {
-    flyTest(false, false);
+    flyTest(false);
 }
 }} // namespace
