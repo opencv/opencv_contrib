@@ -84,10 +84,8 @@ template< typename T >
 class DynaFuImpl : public DynaFu
 {
 public:
-    DynaFuImpl(const Params& _params);
+    DynaFuImpl();
     virtual ~DynaFuImpl();
-
-    const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
@@ -110,7 +108,8 @@ public:
     void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp=true) CV_OVERRIDE;
 
 private:
-    Params params;
+    OdometrySettings ods;
+    VolumeSettings settings;
 
     Odometry icp;
     cv::Ptr<NonRigidICP> dynafuICP;
@@ -121,6 +120,9 @@ private:
     OdometryFrame frame;
 
     WarpField warpfield;
+
+    float tsdf_min_camera_movement = 0.f; //meters, disabled
+    Vec3f lightPose = Vec3f::all(0.f);
 
 #ifdef HAVE_OPENGL
     ogl::Arrays arr;
@@ -141,20 +143,19 @@ std::vector<Point3f> DynaFuImpl<T>::getNodesPos() const
 }
 
 template< typename T >
-DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
-    params(_params),
-    dynafuICP(makeNonRigidICP(params.intr, volume, 2)),
-    volume(makeTSDFVolume(params.volumeDims, params.voxelSize, params.volumePose,
-                          params.tsdf_trunc_dist, params.tsdf_max_weight,
-                          params.raycast_step_factor)),
+DynaFuImpl<T>::DynaFuImpl() :
     warpfield()
 {
+    settings = VolumeSettings();
+
 #ifdef HAVE_OPENGL
+    Size frameSize(settings.getWidth(), settings.getHeight());
+
     // Bind framebuffer for off-screen rendering
     unsigned int fbo_depth;
     glGenRenderbuffersEXT(1, &fbo_depth);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo_depth);
-    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, params.frameSize.width, params.frameSize.height);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, frameSize.width, frameSize.height);
 
     unsigned int fbo;
     glGenFramebuffersEXT(1, &fbo);
@@ -166,18 +167,29 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     unsigned int fbo_color;
     glGenRenderbuffersEXT(1, &fbo_color);
     glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo_color);
-    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGB, params.frameSize.width, params.frameSize.height);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGB, frameSize.width, frameSize.height);
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, fbo_color);
 
 #endif
-    OdometrySettings ods;
-    ods.setCameraMatrix(Mat(params.intr));
+    Matx33f intr;
+    settings.getCameraIntrinsics(intr);
+    Vec3i volumeDims;
+    settings.getVolumeDimentions(volumeDims);
+
+    Matx44f _pose;
+    settings.getVolumePose(_pose);
+    const Affine3f pose = Affine3f(_pose);
+
+    ods = OdometrySettings();
+    ods.setCameraMatrix(intr);
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
-    //icp = FastICPOdometry::create(Mat(params.intr), params.icpDistThresh, params.icpAngleThresh,
-    //                              params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
-    //                              params.icpIterations, params.depthFactor, params.truncateThreshold);
+    volume = makeTSDFVolume(volumeDims, settings.getVoxelSize(), pose,
+            settings.getTruncatedDistance(), settings.getMaxWeight(),
+            settings.getRaycastStepFactor());
+
+    dynafuICP = makeNonRigidICP(intr, volume, 2);
 
     reset();
 }
@@ -186,7 +198,18 @@ template< typename T >
 void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
 {
 #ifdef HAVE_OPENGL
-    glViewport(0, 0, params.frameSize.width, params.frameSize.height);
+
+
+    Size frameSize(settings.getWidth(), settings.getHeight());
+    Matx33f intr;
+    settings.getCameraIntrinsics(intr);
+    Matx44f _pose;
+    settings.getVolumePose(_pose);
+    const Affine3f pose = Affine3f(_pose);
+    Vec3i volumeDims;
+    settings.getVolumeDimentions(volumeDims);
+
+    glViewport(0, 0, frameSize.width, frameSize.height);
 
     glEnable(GL_DEPTH_TEST);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -194,14 +217,14 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    float fovX = params.frameSize.width/params.intr(0, 0);
-    float fovY = params.frameSize.height/params.intr(1, 1);
+    float fovX = frameSize.width/intr(0, 0);
+    float fovY = frameSize.height/intr(1, 1);
 
     Vec3f t;
-    t = Affine3f(params.volumePose).translation();
+    t = Affine3f(pose).translation();
 
     double nearZ = t[2];
-    double farZ = params.volumeDims[2] * params.voxelSize + nearZ;
+    double farZ = volumeDims[2] * settings.getVoxelSize() + nearZ;
 
     // Define viewing volume
     glFrustum(-nearZ*fovX/2, nearZ*fovX/2, -nearZ*fovY/2, nearZ*fovY/2, nearZ, farZ);
@@ -212,10 +235,10 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
 
     ogl::render(arr, idx, ogl::TRIANGLES);
 
-    Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F);
-    Mat shadeData(params.frameSize.height, params.frameSize.width, CV_32FC3);
-    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, depthData.ptr());
-    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_FLOAT, shadeData.ptr());
+    Mat depthData(frameSize.height, frameSize.width, CV_32F);
+    Mat shadeData(frameSize.height, frameSize.width, CV_32FC3);
+    glReadPixels(0, 0, frameSize.width, frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, depthData.ptr());
+    glReadPixels(0, 0, frameSize.width, frameSize.height, GL_RGB, GL_FLOAT, shadeData.ptr());
 
     // linearise depth
     for(auto it = depthData.begin<float>(); it != depthData.end<float>(); ++it)
@@ -254,12 +277,6 @@ DynaFuImpl<T>::~DynaFuImpl()
 { }
 
 template< typename T >
-const Params& DynaFuImpl<T>::getParams() const
-{
-    return params;
-}
-
-template< typename T >
 const Affine3f DynaFuImpl<T>::getPose() const
 {
     return pose;
@@ -269,7 +286,8 @@ const Affine3f DynaFuImpl<T>::getPose() const
 template<>
 bool DynaFuImpl<Mat>::update(InputArray _depth)
 {
-    CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
+    Size frameSize(settings.getWidth(), settings.getHeight());
+    CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
     if(_depth.isUMat())
@@ -289,7 +307,8 @@ bool DynaFuImpl<UMat>::update(InputArray _depth)
 {
     CV_TRACE_FUNCTION();
 
-    CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
+    Size frameSize(settings.getWidth(), settings.getHeight());
+    CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
     if(!_depth.isUMat())
@@ -318,12 +337,13 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     OdometryFrame newFrame = icp.createOdometryFrame();
     newFrame.setDepth(depth);
 
-    //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
+    Matx33f intr;
+    settings.getCameraIntrinsics(intr);
 
     if(frameCounter == 0)
     {
         // use depth instead of distance
-        volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
+        volume->integrate(depth, settings.getDepthFactor(), pose, intr, makePtr<WarpField>(warpfield));
 
         frame = newFrame;
         warpfield.setAllRT(Affine3f::Identity());
@@ -340,9 +360,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         OdometryFrame estdFrame = icp.createOdometryFrame();
         estdFrame.setDepth(estdDepth);
-        //icp->setDepthFactor(1.f);
-        //icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
-        //icp->setDepthFactor(params.depthFactor);
 
         frame = estdFrame;
 
@@ -364,10 +381,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
             estdFrame = icp.createOdometryFrame();
             estdFrame.getDepth(estdDepth);
-            //estdFrame = OdometryFrame::create(noArray(), estdDepth, noArray(), noArray(), -1);
-            //icp->setDepthFactor(1.f);
-            //icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
-            //icp->setDepthFactor(params.depthFactor);
 
             T estdPts, estdNrm, newPts, newNrm;
             estdFrame.getPyramidAt(estdPts, OdometryFramePyramidType::PYR_CLOUD, 0);
@@ -382,10 +395,10 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
-        if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
+        if((rnorm + tnorm)/2 >= tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
+            volume->integrate(depth, settings.getDepthFactor(), pose, intr, makePtr<WarpField>(warpfield));
         }
     }
 
@@ -399,7 +412,10 @@ void DynaFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     CV_TRACE_FUNCTION();
 
+    Size frameSize(settings.getWidth(), settings.getHeight());
     Affine3f cameraPose(_cameraPose);
+    Matx33f intr;
+    settings.getCameraIntrinsics(intr);
 
     const Affine3f id = Affine3f::Identity();
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
@@ -409,13 +425,13 @@ void DynaFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
         frame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
         frame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
 
-        detail::renderPointsNormals(pts, nrm, image, params.lightPose);
+        detail::renderPointsNormals(pts, nrm, image, lightPose);
     }
     else
     {
         T points, normals;
-        volume->raycast(cameraPose, params.intr, params.frameSize, points, normals);
-        detail::renderPointsNormals(points, normals, image, params.lightPose);
+        volume->raycast(cameraPose, intr, frameSize, points, normals);
+        detail::renderPointsNormals(points, normals, image, lightPose);
     }
 }
 
@@ -450,6 +466,14 @@ template<typename T>
 void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp)
 {
 #ifdef HAVE_OPENGL
+    Matx33f intr;
+    settings.getCameraIntrinsics(intr);
+    Matx44f _pose;
+    settings.getVolumePose(_pose);
+    const Affine3f pose = Affine3f(_pose);
+    Vec3i volumeDims;
+    settings.getVolumeDimentions(volumeDims);
+
     Mat _vertices, vertices, normals, meshIdx;
     volume->marchCubes(_vertices, noArray());
     if(_vertices.empty()) return;
@@ -464,15 +488,15 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         ptype v = vertices.at<ptype>(i);
 
         // transform vertex to RGB space
-        Point3f pVoxel = (Affine3f(params.volumePose).inv() * Point3f(v[0], v[1], v[2])) / params.voxelSize;
-        Point3f pGlobal = Point3f(pVoxel.x / params.volumeDims[0],
-                                  pVoxel.y / params.volumeDims[1],
-                                  pVoxel.z / params.volumeDims[2]);
+        Point3f pVoxel = (Affine3f(pose).inv() * Point3f(v[0], v[1], v[2])) / settings.getVoxelSize();
+        Point3f pGlobal = Point3f(pVoxel.x / volumeDims[0],
+                                  pVoxel.y / volumeDims[1],
+                                  pVoxel.z / volumeDims[2]);
         vertices.at<ptype>(i) = ptype(pGlobal.x, pGlobal.y, pGlobal.z, 1.f);
 
         // transform normals to RGB space
         ptype n = normals.at<ptype>(i);
-        Point3f nGlobal = Affine3f(params.volumePose).rotation().inv() * Point3f(n[0], n[1], n[2]);
+        Point3f nGlobal = Affine3f(pose).rotation().inv() * Point3f(n[0], n[1], n[2]);
         nGlobal.x = (nGlobal.x + 1)/2;
         nGlobal.y = (nGlobal.y + 1)/2;
         nGlobal.z = (nGlobal.z + 1)/2;
@@ -482,14 +506,14 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
 
         if(!warp)
         {
-            Point3f p(invCamPose * Affine3f(params.volumePose) * (pVoxel*params.voxelSize));
+            Point3f p(invCamPose * Affine3f(pose) * (pVoxel * settings.getVoxelSize()));
             warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
         }
         else
         {
             int numNeighbours = 0;
             const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
-            Point3f p = (invCamPose * Affine3f(params.volumePose)) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
+            Point3f p = (invCamPose * Affine3f(pose)) * warpfield.applyWarp(pVoxel * settings.getVoxelSize(), neighbours, numNeighbours);
             warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
         }
     }
@@ -519,13 +543,13 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-Ptr<DynaFu> DynaFu::create(const Ptr<Params>& params)
+Ptr<DynaFu> DynaFu::create()
 {
-    return makePtr< DynaFuImpl<Mat> >(*params);
+    return makePtr< DynaFuImpl<Mat> >();
 }
 
 #else
-Ptr<DynaFu> DynaFu::create(const Ptr<Params>& /*params*/)
+Ptr<DynaFu> DynaFu::create()
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "

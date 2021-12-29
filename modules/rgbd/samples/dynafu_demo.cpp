@@ -120,16 +120,16 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<kinfu::Params> params;
+    //Ptr<kinfu::Params> params;
     Ptr<DynaFu> df;
 
-    if(coarse)
-        params = kinfu::Params::coarseParams();
-    else
-        params = kinfu::Params::defaultParams();
+    //if(coarse)
+    //    params = kinfu::Params::coarseParams();
+    //else
+    //    params = kinfu::Params::defaultParams();
 
     // These params can be different for each depth sensor
-    ds->updateParams(*params);
+    //ds->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(false);
@@ -141,8 +141,8 @@ int main(int argc, char **argv)
     namedWindow("OpenGL Window", WINDOW_OPENGL);
     resizeWindow("OpenGL Window", 1, 1);
     if(!idle)
-        df = DynaFu::create(params);
-
+        df = DynaFu::create();
+    VolumeSettings vs;
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
     window.setViewerPose(Affine3f::Identity());
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 #endif
         {
             UMat cvt8;
-            float depthFactor = params->depthFactor;
+            float depthFactor = vs.getDepthFactor();
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             if(!idle)
             {

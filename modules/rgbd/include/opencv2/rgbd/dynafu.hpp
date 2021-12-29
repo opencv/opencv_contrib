@@ -40,17 +40,11 @@ namespace dynafu {
 */
 
 
-/** Backwards compatibility for old versions */
-using Params = kinfu::Params;
-
 class CV_EXPORTS_W DynaFu
 {
 public:
-    CV_WRAP static Ptr<DynaFu> create(const Ptr<kinfu::Params>& _params);
+    CV_WRAP static Ptr<DynaFu> create();
     virtual ~DynaFu();
-
-    /** @brief Get current parameters */
-    virtual const kinfu::Params& getParams() const = 0;
 
     /** @brief Renders a volume into an image
 
