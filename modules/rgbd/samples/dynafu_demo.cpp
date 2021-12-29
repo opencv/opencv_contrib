@@ -183,7 +183,7 @@ int main(int argc, char **argv)
             df->getCloud(points, normals);
 
             Matx44f _pose;
-            settings.getVolumePose(_pose);
+            vs.getVolumePose(_pose);
             const Affine3f pose = Affine3f(_pose);
 
             if(!points.empty() && !normals.empty())
@@ -230,7 +230,7 @@ int main(int argc, char **argv)
                 else
                 {
                     Matx44f _pose;
-                    settings.getVolumePose(_pose);
+                    vs.getVolumePose(_pose);
                     const Affine3f pose = Affine3f(_pose);
 
                     Mat meshCloud, meshEdges, meshPoly;
