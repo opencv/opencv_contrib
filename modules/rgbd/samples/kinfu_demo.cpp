@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 
     Ptr<KinFu> kf = kinfu::KinFu::create();
     VolumeSettings vs;
-  
+
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(true);
 

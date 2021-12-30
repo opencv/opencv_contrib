@@ -135,7 +135,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     CV_TRACE_FUNCTION();
 
     Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
-    
+
     Matx33f intr;
     volumeSettings.getCameraIntrinsics(intr);
 

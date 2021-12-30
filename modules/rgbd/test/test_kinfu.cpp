@@ -305,7 +305,7 @@ void flyTest(bool hiDense)
             startPoseKF = kfPose;
 
         pose = (startPoseGT.inv() * pose) * startPoseKF;
-    
+
         if (display)
         {
             imshow("depth", depth * (1.f / vs.getDepthFactor() / 4.f));
@@ -314,7 +314,6 @@ void flyTest(bool hiDense)
             imshow("render", rendered);
             waitKey(10);
         }
-    
 
         double rvecThreshold = hiDense ? 0.01 : 0.02;
         ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
