@@ -537,7 +537,7 @@ public:
 	}
 
 	~EDArcs() {
-		delete arcs;
+		delete[] arcs;
 	}
 };
 
@@ -552,8 +552,8 @@ struct BufferManager {
 	}
 
 	~BufferManager() {
-		delete x;
-		delete y;
+		delete[] x;
+		delete[] y;
 	}
 
 	double *getX() { return &x[index]; }

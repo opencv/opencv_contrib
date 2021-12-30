@@ -79,6 +79,84 @@ CUDA_TEST_P(StereoBM, Regression)
     EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
 }
 
+CUDA_TEST_P(StereoBM, PrefilterXSobelRegression)
+{
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat disp_gold   = readImage("stereobm/aloe-disp-prefilter-xsobel.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+    ASSERT_FALSE(disp_gold.empty());
+
+    cv::Ptr<cv::StereoBM> bm = cv::cuda::createStereoBM(128, 19);
+    cv::cuda::GpuMat disp;
+
+    bm->setPreFilterType(cv::StereoBM::PREFILTER_XSOBEL);
+    bm->compute(loadMat(left_image), loadMat(right_image), disp);
+
+    EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
+}
+
+CUDA_TEST_P(StereoBM, PrefilterNormRegression)
+{
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat disp_gold   = readImage("stereobm/aloe-disp-prefilter-norm.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+    ASSERT_FALSE(disp_gold.empty());
+
+    cv::Ptr<cv::StereoBM> bm = cv::cuda::createStereoBM(128, 19);
+    cv::cuda::GpuMat disp;
+
+    bm->setPreFilterType(cv::StereoBM::PREFILTER_NORMALIZED_RESPONSE);
+    bm->setPreFilterSize(9);
+    bm->compute(loadMat(left_image), loadMat(right_image), disp);
+
+    EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
+}
+
+CUDA_TEST_P(StereoBM, Streams)
+{
+    cv::cuda::Stream stream;
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat disp_gold   = readImage("stereobm/aloe-disp.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+    ASSERT_FALSE(disp_gold.empty());
+
+    cv::Ptr<cv::cuda::StereoBM> bm = cv::cuda::createStereoBM(128, 19);
+    cv::cuda::GpuMat disp;
+
+    bm->compute(loadMat(left_image), loadMat(right_image), disp, stream);
+    stream.waitForCompletion();
+
+    EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
+}
+
+CUDA_TEST_P(StereoBM, Uniqueness_Regression)
+{
+    cv::Mat left_image  = readImage("stereobm/aloe-L.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat right_image = readImage("stereobm/aloe-R.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat disp_gold   = readImage("stereobm/aloe-disp-uniqueness15.png", cv::IMREAD_GRAYSCALE);
+
+    ASSERT_FALSE(left_image.empty());
+    ASSERT_FALSE(right_image.empty());
+    ASSERT_FALSE(disp_gold.empty());
+
+    cv::Ptr<cv::StereoBM> bm = cv::cuda::createStereoBM(128, 19);
+    cv::cuda::GpuMat disp;
+
+    bm->setUniquenessRatio(15);
+    bm->compute(loadMat(left_image), loadMat(right_image), disp);
+
+    EXPECT_MAT_NEAR(disp_gold, disp, 0.0);
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_Stereo, StereoBM, ALL_DEVICES);
 
 //////////////////////////////////////////////////////////////////////////

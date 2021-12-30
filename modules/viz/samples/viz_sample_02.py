@@ -3,15 +3,15 @@ import cv2 as cv
 
 my_window = cv.viz_Viz3d("Coordinate Frame")
 
-axe = cv.viz_PyWCoordinateSystem()
-axis = cv.viz_PyWLine((-1.0,-1.0,-1.0), (1.0,1.0,1.0), cv.viz_PyColor().green())
+axe = cv.viz_WCoordinateSystem()
+axis = cv.viz_WLine((-1.0,-1.0,-1.0), (1.0,1.0,1.0), cv.viz_Color().green())
 axis.setRenderingProperty(cv.viz.LINE_WIDTH, 4.0);
 my_window.showWidget("axe",axis)
-plan = cv.viz_PyWPlane((-1.0,-1.0,-1.0), (1.0,.0,.0), (-.0,.0,-1.0))
+plan = cv.viz_WPlane((-1.0,-1.0,-1.0), (1.0,.0,.0), (-.0,.0,-1.0))
 #my_window.showWidget("plan", plan)
-cube = cv.viz_PyWCube((0.5,0.5,0.0), (0.0,0.0,-0.5), True, cv.viz_PyColor().blue())
+cube = cv.viz_WCube((0.5,0.5,0.0), (0.0,0.0,-0.5), True, cv.viz_Color().blue())
 
-#my_window.showWidget("Cube Widget",cube)
+my_window.showWidget("Cube Widget",cube)
 pi = np.arccos(-1)
 print("First event loop is over")
 my_window.spin()
@@ -27,7 +27,8 @@ while not my_window.wasStopped():
     rot_vec[0, 2] += np.pi * 0.01
     translation_phase += pi * 0.01
     translation = np.sin(translation_phase)
-    pose = cv.viz_PyAffine3(rot_vec, (translation, translation, translation))
-    my_window.setWidgetPosePy("Cube Widget", pose)
-    my_window.spinOnce(1, True)
+    pose = cv.viz_Affine3d(rot_vec, (translation, translation, translation))
+    my_window.setWidgetPose("Cube Widget",pose)
+    my_window.spinOnce(1, True);
+
 print("Last event loop is over")

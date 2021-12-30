@@ -55,7 +55,7 @@ public:
     ~CuvidVideoSource();
 
     FormatInfo format() const CV_OVERRIDE;
-    void updateFormat(const int codedWidth, const int codedHeight);
+    void updateFormat(const FormatInfo& videoFormat) CV_OVERRIDE;
     void start() CV_OVERRIDE;
     void stop() CV_OVERRIDE;
     bool isStarted() const CV_OVERRIDE;

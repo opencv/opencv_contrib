@@ -43,6 +43,7 @@
 #if !defined CUDA_DISABLER
 
 #include "opencv2/core/cuda/common.hpp"
+#include <limits.h>
 
 namespace cv { namespace cuda { namespace device
 {
@@ -60,18 +61,13 @@ namespace cv { namespace cuda { namespace device
         #define STEREO_MIND 0                    // The minimum d range to check
         #define STEREO_DISP_STEP N_DISPARITIES   // the d step, must be <= 1 to avoid aliasing
 
-        __constant__ unsigned int* cminSSDImage;
-        __constant__ size_t cminSSD_step;
-        __constant__ int cwidth;
-        __constant__ int cheight;
-
         __device__ __forceinline__ int SQ(int a)
         {
             return a * a;
         }
 
         template<int RADIUS>
-        __device__ unsigned int CalcSSD(volatile unsigned int *col_ssd_cache, volatile unsigned int *col_ssd, const int X)
+        __device__ unsigned int CalcSSD(volatile unsigned int *col_ssd_cache, volatile unsigned int *col_ssd, const int X, int cwidth)
         {
             unsigned int cache = 0;
             unsigned int cache2 = 0;
@@ -80,9 +76,8 @@ namespace cv { namespace cuda { namespace device
             {
                 for(int i = 1; i <= RADIUS; i++)
                     cache += col_ssd[i];
-
-                col_ssd_cache[0] = cache;
             }
+            col_ssd_cache[0] = cache;
 
             __syncthreads();
 
@@ -99,26 +94,24 @@ namespace cv { namespace cuda { namespace device
         }
 
         template<int RADIUS>
-        __device__ uint2 MinSSD(volatile unsigned int *col_ssd_cache, volatile unsigned int *col_ssd, const int X)
+        __device__ uint2 MinSSD(volatile unsigned int *col_ssd_cache, volatile unsigned int *col_ssd, const int X, int cwidth, unsigned int* ssd)
         {
-            unsigned int ssd[N_DISPARITIES];
-
             //See above:  #define COL_SSD_SIZE (BLOCK_W + 2 * RADIUS)
-            ssd[0] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 0 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[0] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 0 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[1] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 1 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[1] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 1 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[2] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 2 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[2] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 2 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[3] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 3 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[3] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 3 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[4] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 4 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[4] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 4 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[5] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 5 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[5] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 5 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[6] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 6 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[6] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 6 * (BLOCK_W + 2 * RADIUS), X, cwidth);
             __syncthreads();
-            ssd[7] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 7 * (BLOCK_W + 2 * RADIUS), X);
+            ssd[7] = CalcSSD<RADIUS>(col_ssd_cache, col_ssd + 7 * (BLOCK_W + 2 * RADIUS), X, cwidth);
 
             int mssd = ::min(::min(::min(ssd[0], ssd[1]), ::min(ssd[4], ssd[5])), ::min(::min(ssd[2], ssd[3]), ::min(ssd[6], ssd[7])));
 
@@ -235,32 +228,52 @@ namespace cv { namespace cuda { namespace device
         }
 
         template<int RADIUS>
-        __global__ void stereoKernel(unsigned char *left, unsigned char *right, size_t img_step, PtrStepb disp, int maxdisp)
+        __global__ void stereoKernel(unsigned char *left, unsigned char *right, size_t img_step, PtrStepb disp, int maxdisp,
+                                     int uniquenessRatio, unsigned int* cminSSDImage, size_t cminSSD_step, int cwidth, int cheight)
         {
             extern __shared__ unsigned int col_ssd_cache[];
-            volatile unsigned int *col_ssd = col_ssd_cache + BLOCK_W + threadIdx.x;
-            volatile unsigned int *col_ssd_extra = threadIdx.x < (2 * RADIUS) ? col_ssd + BLOCK_W : 0;  //#define N_DIRTY_PIXELS (2 * RADIUS)
+            uint line_ssds[2 + N_DISPARITIES]; // +2 - tail of previous batch for accurate uniquenessRatio check
+            uint* batch_ssds = line_ssds + 2;
 
-            //#define X (blockIdx.x * BLOCK_W + threadIdx.x + STEREO_MAXD)
-            int X = (blockIdx.x * BLOCK_W + threadIdx.x + maxdisp + RADIUS);
-            //#define Y (__mul24(blockIdx.y, ROWSperTHREAD) + RADIUS)
-            #define Y (blockIdx.y * ROWSperTHREAD + RADIUS)
-            //int Y = blockIdx.y * ROWSperTHREAD + RADIUS;
+            uint line_ssd_tails[3*ROWSperTHREAD];
+            uchar uniqueness_approved[ROWSperTHREAD];
+            uchar local_disparity[ROWSperTHREAD];
+
+            volatile unsigned int *col_ssd = col_ssd_cache + BLOCK_W + threadIdx.x;
+            volatile unsigned int *col_ssd_extra = threadIdx.x < (2 * RADIUS) ? col_ssd + BLOCK_W : 0;
+
+            const int X = (blockIdx.x * BLOCK_W + threadIdx.x + maxdisp + RADIUS);
+            const int Y = (blockIdx.y * ROWSperTHREAD + RADIUS);
 
             unsigned int* minSSDImage = cminSSDImage + X + Y * cminSSD_step;
             unsigned char* disparImage = disp.data + X + Y * disp.step;
-            //if (X < cwidth)
-            //{
-            //    unsigned int *minSSDImage_end = minSSDImage + min(ROWSperTHREAD, cheight - Y) * minssd_step;
-            //    for(uint *ptr = minSSDImage; ptr != minSSDImage_end; ptr += minssd_step )
-            //        *ptr = 0xFFFFFFFF;
-            //}
+            float thresh_scale;
+
             int end_row = ::min(ROWSperTHREAD, cheight - Y - RADIUS);
             int y_tex;
             int x_tex = X - RADIUS;
 
             if (x_tex >= cwidth)
                 return;
+
+            for(int i = 0; i < ROWSperTHREAD; i++)
+                local_disparity[i] = 0;
+
+            for(int i = 0; i < 3*ROWSperTHREAD; i++)
+            {
+                line_ssd_tails[i] = UINT_MAX;
+            }
+
+            if (uniquenessRatio > 0)
+            {
+                batch_ssds[6] = UINT_MAX;
+                batch_ssds[7] = UINT_MAX;
+                thresh_scale = (1.0 + uniquenessRatio / 100.0f);
+                for(int i = 0; i < ROWSperTHREAD; i++)
+                {
+                    uniqueness_approved[i] = 1;
+                }
+            }
 
             for(int d = STEREO_MIND; d < maxdisp; d += STEREO_DISP_STEP)
             {
@@ -276,10 +289,10 @@ namespace cv { namespace cuda { namespace device
 
                 if (Y < cheight - RADIUS)
                 {
-                    uint2 minSSD = MinSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd, X);
+                    uint2 batch_opt = MinSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd, X, cwidth, batch_ssds);
 
                     // For threads that do not satisfy the if condition below("X < cwidth - RADIUS"), previously
-                    // computed "minSSD" value, which is the result of "MinSSD" function call, is not used at all.
+                    // computed "batch_opt" value, which is the result of "MinSSD" function call, is not used at all.
                     //
                     // However, since the "MinSSD" function has "__syncthreads" call in its body, those threads
                     // must also call "MinSSD" to avoid deadlock. (#13850)
@@ -290,10 +303,50 @@ namespace cv { namespace cuda { namespace device
 
                     if (X < cwidth - RADIUS)
                     {
-                        if (minSSD.x < minSSDImage[0])
+                        unsigned int last_opt = line_ssd_tails[3*0 + 0];
+                        unsigned int opt = ::min(last_opt, batch_opt.x);
+
+                        if (uniquenessRatio > 0)
                         {
-                            disparImage[0] = (unsigned char)(d + minSSD.y);
-                            minSSDImage[0] = minSSD.x;
+                            line_ssds[0] = line_ssd_tails[3*0 + 1];
+                            line_ssds[1] = line_ssd_tails[3*0 + 2];
+
+                            float thresh = thresh_scale * opt;
+                            int dtest = local_disparity[0];
+
+                            if(batch_opt.x < last_opt)
+                            {
+                                uniqueness_approved[0] = 1;
+                                dtest = d + batch_opt.y;
+                                if ((local_disparity[0] < dtest-1 || local_disparity[0] > dtest+1) && (last_opt <= thresh))
+                                {
+                                    uniqueness_approved[0] = 0;
+                                }
+                            }
+
+                            if(uniqueness_approved[0])
+                            {
+                                // the trial to decompose the code on 2 loops without ld vs dtest makes
+                                // uniqueness check dramatically slow. at least on gf 1080
+                                for (int ld = d-2; ld < d + N_DISPARITIES; ld++)
+                                {
+                                    if ((ld < dtest-1 || ld > dtest+1) && (line_ssds[ld-d+2] <= thresh))
+                                    {
+                                        uniqueness_approved[0] = 0;
+                                        break;
+                                    }
+                                }
+                            }
+
+
+                            line_ssd_tails[3*0 + 1] = batch_ssds[6];
+                            line_ssd_tails[3*0 + 2] = batch_ssds[7];
+                        }
+
+                        line_ssd_tails[3*0 + 0] = opt;
+                        if (batch_opt.x < last_opt)
+                        {
+                            local_disparity[0] = (unsigned char)(d + batch_opt.y);
                         }
                     }
                 }
@@ -313,14 +366,13 @@ namespace cv { namespace cuda { namespace device
 
                     y_tex += 1;
 
-                    __syncthreads(); //before MinSSD function
+                    __syncthreads();
 
                     if (row < cheight - RADIUS - Y)
                     {
-                        uint2 minSSD = MinSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd, X);
-
+                        uint2 batch_opt = MinSSD<RADIUS>(col_ssd_cache + threadIdx.x, col_ssd, X, cwidth, batch_ssds);
                         // For threads that do not satisfy the if condition below("X < cwidth - RADIUS"), previously
-                        // computed "minSSD" value, which is the result of "MinSSD" function call, is not used at all.
+                        // computed "batch_opt" value, which is the result of "MinSSD" function call, is not used at all.
                         //
                         // However, since the "MinSSD" function has "__syncthreads" call in its body, those threads
                         // must also call "MinSSD" to avoid deadlock. (#13850)
@@ -331,11 +383,47 @@ namespace cv { namespace cuda { namespace device
 
                         if (X < cwidth - RADIUS)
                         {
-                            int idx = row * cminSSD_step;
-                            if (minSSD.x < minSSDImage[idx])
+                            unsigned int last_opt = line_ssd_tails[3*row + 0];
+                            unsigned int opt = ::min(last_opt, batch_opt.x);
+                            if (uniquenessRatio > 0)
                             {
-                                disparImage[disp.step * row] = (unsigned char)(d + minSSD.y);
-                                minSSDImage[idx] = minSSD.x;
+                                line_ssds[0] = line_ssd_tails[3*row + 1];
+                                line_ssds[1] = line_ssd_tails[3*row + 2];
+
+                                float thresh = thresh_scale * opt;
+                                int dtest = local_disparity[row];
+
+                                if(batch_opt.x < last_opt)
+                                {
+                                    uniqueness_approved[row] = 1;
+                                    dtest = d + batch_opt.y;
+                                    if ((local_disparity[row] < dtest-1 || local_disparity[row] > dtest+1) && (last_opt <= thresh))
+                                    {
+                                        uniqueness_approved[row] = 0;
+                                    }
+                                }
+
+                                if(uniqueness_approved[row])
+                                {
+                                    for (int ld = 0; ld < N_DISPARITIES + 2; ld++)
+                                    {
+                                        if (((d+ld-2 < dtest-1) || (d+ld-2 > dtest+1)) && (line_ssds[ld] <= thresh))
+                                        {
+                                            uniqueness_approved[row] = 0;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                line_ssd_tails[3*row + 1] = batch_ssds[6];
+                                line_ssd_tails[3*row + 2] = batch_ssds[7];
+                            }
+
+                            line_ssd_tails[3*row + 0] = opt;
+
+                            if (batch_opt.x < last_opt)
+                            {
+                                local_disparity[row] = (unsigned char)(d + batch_opt.y);
                             }
                         }
                     }
@@ -344,10 +432,32 @@ namespace cv { namespace cuda { namespace device
                 __syncthreads(); // before initializing shared memory at the beginning of next loop
 
             } // for d loop
+
+            for (int row = 0; row < end_row; row++)
+            {
+                minSSDImage[row * cminSSD_step] = line_ssd_tails[3*row + 0];
+            }
+
+            if (uniquenessRatio > 0)
+            {
+                for (int row = 0; row < end_row; row++)
+                {
+                    // drop disparity for pixel where uniqueness requirement was not satisfied (zero value)
+                    disparImage[disp.step * row] = local_disparity[row] * uniqueness_approved[row];
+                }
+            }
+            else
+            {
+                for (int row = 0; row < end_row; row++)
+                {
+                    disparImage[disp.step * row] = local_disparity[row];
+                }
+            }
         }
 
-
-        template<int RADIUS> void kernel_caller(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int maxdisp, cudaStream_t & stream)
+        template<int RADIUS> void kernel_caller(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp,
+                                                int maxdisp, int uniquenessRatio, unsigned int* missd_buffer,
+                                                size_t minssd_step, int cwidth, int cheight, cudaStream_t & stream)
         {
             dim3 grid(1,1,1);
             dim3 threads(BLOCK_W, 1, 1);
@@ -358,14 +468,17 @@ namespace cv { namespace cuda { namespace device
             //See above:  #define COL_SSD_SIZE (BLOCK_W + 2 * RADIUS)
             size_t smem_size = (BLOCK_W + N_DISPARITIES * (BLOCK_W + 2 * RADIUS)) * sizeof(unsigned int);
 
-            stereoKernel<RADIUS><<<grid, threads, smem_size, stream>>>(left.data, right.data, left.step, disp, maxdisp);
+            stereoKernel<RADIUS><<<grid, threads, smem_size, stream>>>(left.data, right.data, left.step, disp, maxdisp, uniquenessRatio,
+                                                                       missd_buffer, minssd_step, cwidth, cheight);
             cudaSafeCall( cudaGetLastError() );
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
         };
 
-        typedef void (*kernel_caller_t)(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int maxdisp, cudaStream_t & stream);
+        typedef void (*kernel_caller_t)(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp,
+                                        int maxdisp, int uniquenessRatio, unsigned int* missd_buffer,
+                                        size_t minssd_step, int cwidth, int cheight, cudaStream_t & stream);
 
         const static kernel_caller_t callers[] =
         {
@@ -380,46 +493,40 @@ namespace cv { namespace cuda { namespace device
         };
         const int calles_num = sizeof(callers)/sizeof(callers[0]);
 
-        void stereoBM_CUDA(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int maxdisp, int winsz, const PtrStepSz<unsigned int>& minSSD_buf, cudaStream_t& stream)
+        void stereoBM_CUDA(const PtrStepSzb& left, const PtrStepSzb& right, const PtrStepSzb& disp, int maxdisp,
+                           int winsz, int uniquenessRatio, const PtrStepSz<unsigned int>& minSSD_buf, cudaStream_t& stream)
         {
             int winsz2 = winsz >> 1;
 
             if (winsz2 == 0 || winsz2 >= calles_num)
                 CV_Error(cv::Error::StsBadArg, "Unsupported window size");
 
-            //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferL1) );
-            //cudaSafeCall( cudaFuncSetCacheConfig(&stereoKernel, cudaFuncCachePreferShared) );
-
-            cudaSafeCall( cudaMemset2D(disp.data, disp.step, 0, disp.cols, disp.rows) );
-            cudaSafeCall( cudaMemset2D(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows) );
-
-            cudaSafeCall( cudaMemcpyToSymbol( cwidth, &left.cols, sizeof(left.cols) ) );
-            cudaSafeCall( cudaMemcpyToSymbol( cheight, &left.rows, sizeof(left.rows) ) );
-            cudaSafeCall( cudaMemcpyToSymbol( cminSSDImage, &minSSD_buf.data, sizeof(minSSD_buf.data) ) );
+            cudaSafeCall( cudaMemset2DAsync(disp.data, disp.step, 0, disp.cols, disp.rows, stream) );
+            cudaSafeCall( cudaMemset2DAsync(minSSD_buf.data, minSSD_buf.step, 0xFF, minSSD_buf.cols * minSSD_buf.elemSize(), disp.rows, stream) );
 
             size_t minssd_step = minSSD_buf.step/minSSD_buf.elemSize();
-            cudaSafeCall( cudaMemcpyToSymbol( cminSSD_step,  &minssd_step, sizeof(minssd_step) ) );
+            callers[winsz2](left, right, disp, maxdisp, uniquenessRatio, minSSD_buf.data, minssd_step, left.cols, left.rows, stream);
+        }
 
-            callers[winsz2](left, right, disp, maxdisp, stream);
+        __device__ inline int clamp(int x, int a, int b)
+        {
+            return ::max(a, ::min(b, x));
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         /////////////////////////////////////// Sobel Prefiler ///////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        texture<unsigned char, 2, cudaReadModeElementType> texForSobel;
-
-        __global__ void prefilter_kernel(PtrStepSzb output, int prefilterCap)
+        __global__ void prefilter_kernel_xsobel(PtrStepSzb input, PtrStepSzb output, int prefilterCap)
         {
             int x = blockDim.x * blockIdx.x + threadIdx.x;
             int y = blockDim.y * blockIdx.y + threadIdx.y;
 
             if (x < output.cols && y < output.rows)
             {
-                int conv = (int)tex2D(texForSobel, x - 1, y - 1) * (-1) + (int)tex2D(texForSobel, x + 1, y - 1) * (1) +
-                           (int)tex2D(texForSobel, x - 1, y    ) * (-2) + (int)tex2D(texForSobel, x + 1, y    ) * (2) +
-                           (int)tex2D(texForSobel, x - 1, y + 1) * (-1) + (int)tex2D(texForSobel, x + 1, y + 1) * (1);
-
+                int conv = input.ptr(::max(0,y-1))[::max(0,x-1)] * (-1) + input.ptr(::max(0, y-1))[::min(x+1, input.cols-1)] * (1) +
+                           input.ptr(y  )[::max(0,x-1)] * (-2) + input.ptr(y  )[::min(x+1, input.cols-1)] * (2) +
+                           input.ptr(::min(y+1, input.rows-1))[::max(0,x-1)] * (-1) + input.ptr(::min(y+1, input.rows-1))[::min(x+1,input.cols-1)] * (1);
 
                 conv = ::min(::min(::max(-prefilterCap, conv), prefilterCap) + prefilterCap, 255);
                 output.ptr(y)[x] = conv & 0xFF;
@@ -428,22 +535,65 @@ namespace cv { namespace cuda { namespace device
 
         void prefilter_xsobel(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap, cudaStream_t & stream)
         {
-            cudaChannelFormatDesc desc = cudaCreateChannelDesc<unsigned char>();
-            cudaSafeCall( cudaBindTexture2D( 0, texForSobel, input.data, desc, input.cols, input.rows, input.step ) );
-
             dim3 threads(16, 16, 1);
             dim3 grid(1, 1, 1);
 
             grid.x = divUp(input.cols, threads.x);
             grid.y = divUp(input.rows, threads.y);
 
-            prefilter_kernel<<<grid, threads, 0, stream>>>(output, prefilterCap);
+            prefilter_kernel_xsobel<<<grid, threads, 0, stream>>>(input, output, prefilterCap);
             cudaSafeCall( cudaGetLastError() );
 
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
+        }
 
-            cudaSafeCall( cudaUnbindTexture (texForSobel ) );
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////  Norm Prefiler ///////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+
+        __global__ void prefilter_kernel_norm(PtrStepSzb input, PtrStepSzb output, int prefilterCap, int scale_g, int scale_s, int winsize)
+        {
+            // prefilterCap in range 1..63, checked in StereoBMImpl::compute
+            int x = blockDim.x * blockIdx.x + threadIdx.x;
+            int y = blockDim.y * blockIdx.y + threadIdx.y;
+            int cols = input.cols;
+            int rows = input.rows;
+            int WSZ2 = winsize / 2;
+
+            if(x < cols && y < rows)
+            {
+                int cov1 =                               input.ptr(::max(y-1, 0))[x] * 1 +
+                    input.ptr(y)[::min(x+1, cols-1)] * 1 + input.ptr(y  )[x] * 4 + input.ptr(y)[::min(x+1, cols-1)] * 1 +
+                                                         input.ptr(::min(y+1, rows-1))[x] * 1;
+
+                int cov2 = 0;
+                for(int i = -WSZ2; i < WSZ2+1; i++)
+                    for(int j = -WSZ2; j < WSZ2+1; j++)
+                        cov2 += input.ptr(clamp(y+i, 0, rows-1))[clamp(x+j, 0, cols-1)];
+
+                int res = (cov1*scale_g - cov2*scale_s)>>10;
+                res = clamp(res, -prefilterCap, prefilterCap) + prefilterCap;
+                output.ptr(y)[x] = res;
+            }
+        }
+
+        void prefilter_norm(const PtrStepSzb& input, const PtrStepSzb& output, int prefilterCap, int winsize, cudaStream_t & stream)
+        {
+            dim3 threads(16, 16, 1);
+            dim3 grid(1, 1, 1);
+
+            grid.x = divUp(input.cols, threads.x);
+            grid.y = divUp(input.rows, threads.y);
+
+            int scale_g = winsize*winsize/8, scale_s = (1024 + scale_g)/(scale_g*2);
+            scale_g *= scale_s;
+
+            prefilter_kernel_norm<<<grid, threads, 0, stream>>>(input, output, prefilterCap, scale_g, scale_s, winsize);
+            cudaSafeCall( cudaGetLastError() );
+
+            if (stream == 0)
+                cudaSafeCall( cudaDeviceSynchronize() );
         }
 
 

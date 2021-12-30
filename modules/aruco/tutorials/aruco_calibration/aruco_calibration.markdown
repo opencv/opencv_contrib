@@ -1,6 +1,9 @@
 Calibration with ArUco and ChArUco {#tutorial_aruco_calibration}
 ==============================
 
+@prev_tutorial{tutorial_charuco_diamond_detection}
+@next_tutorial{tutorial_aruco_faq}
+
 The ArUco module can also be used to calibrate a camera. Camera calibration consists in obtaining the
 camera intrinsic parameters and distortion coefficients. This parameters remain fixed unless the camera
 optic is modified, thus camera calibration only need to be done once.
@@ -59,14 +62,16 @@ in each of the viewpoints.
 Finally, the ```calibrationFlags``` parameter determines some of the options for the calibration. Its format is equivalent to the flags parameter in the OpenCV
 ```calibrateCamera()``` function.
 
-A full working example is included in the ```calibrate_camera_charuco.cpp``` inside the module samples folder.
+A full working example is included in the `calibrate_camera_charuco.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    _output path_" -dp="_path_/detector_params.yml" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
+    "output_path/camera_calib.txt" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
+    -v="path_aruco/tutorials/aruco_calibration/images/img_%02d.jpg
+    -c=path_aruco/samples/tutorial_camera_params.yml
 @endcode
 
-
+The camera calibration parameters from `samples/tutorial_camera_charuco.yml` were obtained by `aruco_calibration/images/img_00.jpg-img_03.jpg`.
 
 Calibration with ArUco Boards
 ------
@@ -104,7 +109,7 @@ In this case, and contrary to the ```calibrateCameraCharuco()``` function, the d
 The rest of parameters are the same than in ```calibrateCameraCharuco()```, except the board layout object which does not need to be a ```CharucoBoard``` object, it can be
 any ```Board``` object.
 
-A full working example is included in the ```calibrate_camera.cpp``` inside the module samples folder.
+A full working example is included in the `calibrate_camera.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}

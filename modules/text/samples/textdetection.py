@@ -17,29 +17,29 @@ if (len(sys.argv) < 2):
 
 pathname = os.path.dirname(sys.argv[0])
 
-
 img      = cv.imread(str(sys.argv[1]))
 # for visualization
 vis      = img.copy()
 
 
 # Extract channels to be processed individually
-channels = cv.text.computeNMChannels(img)
+channels = list(cv.text.computeNMChannels(img))
 # Append negative channels to detect ER- (bright regions over dark background)
 cn = len(channels)-1
 for c in range(0,cn):
-  channels.append((255-channels[c]))
+  channels.append(255-channels[c])
 
 # Apply the default cascade classifier to each independent channel (could be done in parallel)
+
+erc1 = cv.text.loadClassifierNM1('trained_classifierNM1.xml')
+er1 = cv.text.createERFilterNM1(erc1,16,0.00015,0.13,0.2,True,0.1)
+
+erc2 = cv.text.loadClassifierNM2('trained_classifierNM2.xml')
+er2 = cv.text.createERFilterNM2(erc2,0.5)
+
 print("Extracting Class Specific Extremal Regions from "+str(len(channels))+" channels ...")
 print("    (...) this may take a while (...)")
 for channel in channels:
-
-  erc1 = cv.text.loadClassifierNM1(pathname+'/trained_classifierNM1.xml')
-  er1 = cv.text.createERFilterNM1(erc1,16,0.00015,0.13,0.2,True,0.1)
-
-  erc2 = cv.text.loadClassifierNM2(pathname+'/trained_classifierNM2.xml')
-  er2 = cv.text.createERFilterNM2(erc2,0.5)
 
   regions = cv.text.detectRegions(channel,er1,er2)
 
@@ -47,11 +47,9 @@ for channel in channels:
   #rects = cv.text.erGrouping(img,channel,[x.tolist() for x in regions], cv.text.ERGROUPING_ORIENTATION_ANY,'../../GSoC2014/opencv_contrib/modules/text/samples/trained_classifier_erGrouping.xml',0.5)
 
   #Visualization
-  for r in range(0,np.shape(rects)[0]):
-    rect = rects[r]
+  for rect in rects:
     cv.rectangle(vis, (rect[0],rect[1]), (rect[0]+rect[2],rect[1]+rect[3]), (0, 0, 0), 2)
     cv.rectangle(vis, (rect[0],rect[1]), (rect[0]+rect[2],rect[1]+rect[3]), (255, 255, 255), 1)
-
 
 #Visualization
 cv.imshow("Text detection result", vis)

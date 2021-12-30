@@ -47,13 +47,13 @@
 
 void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
 {
-    if (videoFormat.nBitDepthMinus8 > 0 || videoFormat.chromaFormat != YUV420)
-        CV_Error(Error::StsUnsupportedFormat, "NV12 output requires 8 bit YUV420");
+    if (videoFormat.nBitDepthMinus8 > 0 || videoFormat.chromaFormat == YUV444)
+        CV_Error(Error::StsUnsupportedFormat, "NV12 output currently supported for 8 bit YUV420, YUV422 and Monochrome inputs.");
 
-    cudaVideoCodec _codec = static_cast<cudaVideoCodec>(videoFormat.codec);
-    cudaVideoChromaFormat _chromaFormat = static_cast<cudaVideoChromaFormat>(videoFormat.chromaFormat);
-
-    cudaVideoCreateFlags videoCreateFlags = (_codec == cudaVideoCodec_JPEG || _codec == cudaVideoCodec_MPEG2) ?
+    videoFormat_ = videoFormat;
+    const cudaVideoCodec _codec = static_cast<cudaVideoCodec>(videoFormat.codec);
+    const cudaVideoChromaFormat _chromaFormat = static_cast<cudaVideoChromaFormat>(videoFormat.chromaFormat);
+    const cudaVideoCreateFlags videoCreateFlags = (_codec == cudaVideoCodec_JPEG || _codec == cudaVideoCodec_MPEG2) ?
                                             cudaVideoCreate_PreferCUDA :
                                             cudaVideoCreate_PreferCUVID;
 
@@ -101,35 +101,29 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     if (!decodeCaps.bIsSupported)
         CV_Error(Error::StsUnsupportedFormat, "Video source is not supported by hardware video decoder");
 
-    CV_Assert(videoFormat.width >= decodeCaps.nMinWidth &&
-        videoFormat.height >= decodeCaps.nMinHeight &&
-        videoFormat.width <= decodeCaps.nMaxWidth &&
-        videoFormat.height <= decodeCaps.nMaxHeight);
+    CV_Assert(videoFormat.ulWidth >= decodeCaps.nMinWidth &&
+        videoFormat.ulHeight >= decodeCaps.nMinHeight &&
+        videoFormat.ulWidth <= decodeCaps.nMaxWidth &&
+        videoFormat.ulHeight <= decodeCaps.nMaxHeight);
 
     CV_Assert((videoFormat.width >> 4)* (videoFormat.height >> 4) <= decodeCaps.nMaxMBCount);
 #endif
-
-    // Fill the decoder-create-info struct from the given video-format struct.
-    std::memset(&createInfo_, 0, sizeof(CUVIDDECODECREATEINFO));
-
     // Create video decoder
+    CUVIDDECODECREATEINFO createInfo_ = {};
     createInfo_.CodecType           = _codec;
-    createInfo_.ulWidth             = videoFormat.width;
-    createInfo_.ulHeight            = videoFormat.height;
-    createInfo_.ulNumDecodeSurfaces = FrameQueue::MaximumSize;
+    createInfo_.ulWidth             = videoFormat.ulWidth;
+    createInfo_.ulHeight            = videoFormat.ulHeight;
+    createInfo_.ulNumDecodeSurfaces = videoFormat.ulNumDecodeSurfaces;
     createInfo_.ChromaFormat    = _chromaFormat;
     createInfo_.OutputFormat    = cudaVideoSurfaceFormat_NV12;
-    createInfo_.DeinterlaceMode = cudaVideoDeinterlaceMode_Adaptive;
-
-    // No scaling
-    static const int MAX_FRAME_COUNT = 2;
-
-    createInfo_.ulTargetWidth       = createInfo_.ulWidth;
-    createInfo_.ulTargetHeight      = createInfo_.ulHeight;
-    createInfo_.ulNumOutputSurfaces = MAX_FRAME_COUNT;  // We won't simultaneously map more than 8 surfaces
+    createInfo_.DeinterlaceMode = static_cast<cudaVideoDeinterlaceMode>(videoFormat.deinterlaceMode);
+    createInfo_.ulTargetWidth       = videoFormat.width;
+    createInfo_.ulTargetHeight      = videoFormat.height;
+    createInfo_.ulMaxWidth          = videoFormat.ulMaxWidth;
+    createInfo_.ulMaxHeight         = videoFormat.ulMaxHeight;
+    createInfo_.ulNumOutputSurfaces = 2;
     createInfo_.ulCreationFlags     = videoCreateFlags;
     createInfo_.vidLock = lock_;
-
     cuSafeCall(cuCtxPushCurrent(ctx_));
     cuSafeCall(cuvidCreateDecoder(&decoder_, &createInfo_));
     cuSafeCall(cuCtxPopCurrent(NULL));
