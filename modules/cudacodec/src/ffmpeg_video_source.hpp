@@ -51,7 +51,7 @@ namespace cv { namespace cudacodec { namespace detail {
 class FFmpegVideoSource : public RawVideoSource
 {
 public:
-    FFmpegVideoSource(const String& fname);
+    FFmpegVideoSource(const String& fname, const std::vector<int>& params);
     ~FFmpegVideoSource();
 
     bool getNextPacket(unsigned char** data, size_t* size) CV_OVERRIDE;
@@ -64,11 +64,14 @@ public:
 
     void getExtraData(cv::Mat& _extraData) const CV_OVERRIDE { _extraData = extraData; }
 
+    bool get(const int propertyId, double& propertyVal) const;
+
 private:
     FormatInfo format_;
     VideoCapture cap;
     Mat rawFrame, extraData, dataWithHeader;
     int iFrame = 0;
+    std::vector<int> videoCaptureParams;
 };
 
 }}}

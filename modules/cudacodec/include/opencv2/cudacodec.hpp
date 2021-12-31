@@ -316,7 +316,10 @@ enum class VideoReaderProps {
     PROP_RAW_PACKAGES_BASE_INDEX = 2, //!< Base index for retrieving raw encoded data using retrieve().
     PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB = 3, //!< Number of raw packages recieved since the last call to grab().
     PROP_RAW_MODE = 4, //!< Status of raw mode.
-    PROP_LRF_HAS_KEY_FRAME = 5 //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
+    PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
+#ifndef CV_DOXYGEN
+    PROP_NOT_SUPPORTED
+#endif
 };
 
 /** @brief Video reader interface.
@@ -369,19 +372,33 @@ public:
 
     /** @brief Sets a property in the VideoReader.
 
-    @param property Property identifier from cv::cudacodec::VideoReaderProps (eg. cv::cudacodec::PROP_DECODED_FRAME_IDX, cv::cudacodec::PROP_EXTRA_DATA_INDEX, ...)
+    @param propertyId Property identifier from cv::cudacodec::VideoReaderProps (eg. cv::cudacodec::VideoReaderProps::PROP_DECODED_FRAME_IDX,
+    cv::cudacodec::VideoReaderProps::PROP_EXTRA_DATA_INDEX, ...).
     @param propertyVal Value of the property.
     @return `true` if the property has been set.
      */
-    CV_WRAP virtual bool set(const VideoReaderProps property, const double propertyVal) = 0;
+    CV_WRAP virtual bool set(const VideoReaderProps propertyId, const double propertyVal) = 0;
 
     /** @brief Returns the specified VideoReader property
 
-    @param property Property identifier from cv::cudacodec::VideoReaderProps (eg. cv::cudacodec::PROP_DECODED_FRAME_IDX, cv::cudacodec::PROP_EXTRA_DATA_INDEX, ...)
-    @param propertyVal Optional value for the property.
-    @return Value for the specified property. Value -1 is returned when querying a property that is not supported.
+    @param propertyId Property identifier from cv::cudacodec::VideoReaderProps (eg. cv::cudacodec::VideoReaderProps::PROP_DECODED_FRAME_IDX,
+    cv::cudacodec::VideoReaderProps::PROP_EXTRA_DATA_INDEX, ...).
+    @param propertyVal
+    In - Optional value required for querying specific propertyId's, e.g. the index of the raw package to be checked for a key frame (cv::cudacodec::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME).
+    Out - Value of the property.
+    @return `true` unless the property is not supported.
     */
-    CV_WRAP virtual int get(const VideoReaderProps property, const int propertyVal = -1) const = 0;
+    CV_WRAP virtual bool get(const VideoReaderProps propertyId, CV_IN_OUT double& propertyVal) const = 0;
+
+    /** @brief Retrieves the specified property used by the VideoSource.
+
+    @param propertyId Property identifier from cv::VideoCaptureProperties (eg. cv::CAP_PROP_POS_MSEC, cv::CAP_PROP_POS_FRAMES, ...)
+    or one from @ref videoio_flags_others.
+    @param propertyVal Value for the specified property.
+
+    @return `true` unless the property is unset set or not supported.
+     */
+    CV_WRAP virtual bool get(const int propertyId, CV_OUT double& propertyVal) const = 0;
 };
 
 /** @brief Interface for video demultiplexing. :
@@ -417,16 +434,30 @@ public:
     @param extraData 1D cv::Mat containing the extra data if it exists.
      */
     virtual void getExtraData(cv::Mat& extraData) const = 0;
+
+    /** @brief Retrieves the specified property used by the VideoSource.
+
+    @param propertyId Property identifier from cv::VideoCaptureProperties (eg. cv::CAP_PROP_POS_MSEC, cv::CAP_PROP_POS_FRAMES, ...)
+    or one from @ref videoio_flags_others.
+    @param propertyVal Value for the specified property.
+
+    @return `true` unless the property is unset set or not supported.
+     */
+    virtual bool get(const int propertyId, double& propertyVal) const = 0;
 };
 
 /** @brief Creates video reader.
 
 @param filename Name of the input video file.
+@param params Pass through parameters for VideoCapure.  VideoCapture with the FFMpeg back end (CAP_FFMPEG) is used to parse the video input.
+The `params` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
+    See cv::VideoCaptureProperties
+e.g. when streaming from an RTSP source CAP_PROP_OPEN_TIMEOUT_MSEC may need to be set.
 @param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
 
 FFMPEG is used to read videos. User can implement own demultiplexing with cudacodec::RawVideoSource
  */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const bool rawMode = false);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const std::vector<int>& params = {}, const bool rawMode = false);
 
 /** @overload
 @param source RAW video source implemented by user.
