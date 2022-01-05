@@ -100,7 +100,7 @@ CUDA_TEST_P(AsyncEvent, WrapEvent)
 
 CUDA_TEST_P(AsyncEvent, WithFlags)
 {
-    cv::cuda::Event cudaEvent = cv::cuda::Event(cv::cuda::Event::CreateFlags::BLOCKING_SYNC | Event::CreateFlags::DISABLE_TIMING);
+    cv::cuda::Event cudaEvent = cv::cuda::Event(cv::cuda::Event::CreateFlags::BLOCKING_SYNC);
     deviceWork(this);
     cudaEvent.record(stream);
     cudaEvent.waitForCompletion();
@@ -124,7 +124,6 @@ CUDA_TEST_P(AsyncEvent, Timing)
         cv::Mat dst_gold;
         src.createMatHeader().convertTo(dst_gold, CV_32S);
         ASSERT_MAT_NEAR(dst_gold, dst, 0);
-        double elTimeMs = -1;
         bool failed = false;
         try {
             const double elTimeMs = Event::elapsedTime(startEvent, stopEvent);
