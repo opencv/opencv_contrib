@@ -58,7 +58,7 @@ LargeKinfuImpl<MatType>::LargeKinfuImpl()
     volumeSettings = VolumeSettings(VolumeType::HashTSDF);
 
     Matx33f intr;
-    volumeSettings.getCameraIntrinsics(intr);
+    volumeSettings.getCameraIntegrateIntrinsics(intr);
     Vec3i res;
     volumeSettings.getVolumeResolution(res);
 
@@ -137,7 +137,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
 
     Matx33f intr;
-    volumeSettings.getCameraIntrinsics(intr);
+    volumeSettings.getCameraIntegrateIntrinsics(intr);
 
     MatType depth;
     if (_depth.type() != DEPTH_TYPE)
@@ -247,7 +247,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
     Affine3f cameraPose(_cameraPose);
     auto currSubmap = submapMgr->getCurrentSubmap();
     Matx33f intr;
-    volumeSettings.getCameraIntrinsics(intr);
+    volumeSettings.getCameraIntegrateIntrinsics(intr);
     MatType points, normals;
     currSubmap->raycast(this->icp, cameraPose, frameSize, points, normals);
     detail::renderPointsNormals(points, normals, image, lightPose);

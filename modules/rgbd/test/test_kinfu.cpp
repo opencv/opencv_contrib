@@ -282,7 +282,7 @@ void flyTest(bool hiDense)
 
     Size frameSize(vs.getWidth(), vs.getHeight());
     Matx33f intr;
-    vs.getCameraIntrinsics(intr);
+    vs.getCameraIntegrateIntrinsics(intr);
     float depthFactor = vs.getDepthFactor();
     Ptr<Scene> scene = Scene::create(false, frameSize, intr, depthFactor);
 

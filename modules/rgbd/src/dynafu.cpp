@@ -173,7 +173,7 @@ DynaFuImpl<T>::DynaFuImpl() :
 
 #endif
     Matx33f intr;
-    settings.getCameraIntrinsics(intr);
+    settings.getCameraIntegrateIntrinsics(intr);
     Vec3i volumeDims;
     settings.getVolumeDimentions(volumeDims);
 
@@ -334,7 +334,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     newFrame.setDepth(depth);
 
     Matx33f intr;
-    settings.getCameraIntrinsics(intr);
+    settings.getCameraIntegrateIntrinsics(intr);
 
     if(frameCounter == 0)
     {
@@ -411,7 +411,7 @@ void DynaFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
     Size frameSize(settings.getWidth(), settings.getHeight());
     Affine3f cameraPose(_cameraPose);
     Matx33f intr;
-    settings.getCameraIntrinsics(intr);
+    settings.getCameraIntegrateIntrinsics(intr);
 
     const Affine3f id = Affine3f::Identity();
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||

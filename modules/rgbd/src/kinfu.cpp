@@ -57,7 +57,7 @@ KinFuImpl<MatType>::KinFuImpl()
     volume = Volume(VolumeType::TSDF, volumeSettings);
 
     Matx33f intr;
-    volumeSettings.getCameraIntrinsics(intr);
+    volumeSettings.getCameraIntegrateIntrinsics(intr);
     const Vec4i volumeDims;
     volumeSettings.getVolumeDimentions(volumeDims);
     const float voxelSize = volumeSettings.getVoxelSize();
