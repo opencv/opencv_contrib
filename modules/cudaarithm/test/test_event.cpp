@@ -111,7 +111,7 @@ CUDA_TEST_P(AsyncEvent, WithFlags)
 
 CUDA_TEST_P(AsyncEvent, Timing)
 {
-    const std::vector<unsigned> eventFlags = { cv::cuda::Event::CreateFlags::BLOCKING_SYNC , cv::cuda::Event::CreateFlags::BLOCKING_SYNC | Event::CreateFlags::DISABLE_TIMING };
+    const std::vector<cv::cuda::Event::CreateFlags> eventFlags = { cv::cuda::Event::CreateFlags::BLOCKING_SYNC , cv::cuda::Event::CreateFlags::BLOCKING_SYNC | Event::CreateFlags::DISABLE_TIMING };
     const std::vector<bool> shouldFail = { false, true };
     for (size_t i = 0; i < eventFlags.size(); i++) {
         const auto& flags = eventFlags.at(i);
