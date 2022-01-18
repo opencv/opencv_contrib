@@ -44,6 +44,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include "apriltag_quad_thresh.hpp"
 #include "zarray.hpp"
 
+#include <cmath>
+
 //#define APRIL_DEBUG
 #ifdef APRIL_DEBUG
 #include "opencv2/imgcodecs.hpp"
@@ -146,6 +148,12 @@ bool DetectorParameters::readDetectorParameters(const FileNode& fn, Ptr<Detector
     checkRead |= readParameter(fn["maxErroneousBitsInBorderRate"], params->maxErroneousBitsInBorderRate);
     checkRead |= readParameter(fn["minOtsuStdDev"], params->minOtsuStdDev);
     checkRead |= readParameter(fn["errorCorrectionRate"], params->errorCorrectionRate);
+    // new aruco functionality
+    checkRead |= readParameter(fn["useAruco3Detection"], params->useAruco3Detection);
+    checkRead |= readParameter(fn["minSideLengthCanonicalImg"], params->minSideLengthCanonicalImg);
+    checkRead |= readParameter(fn["minMarkerLengthRatioOriginalImg"], params->minMarkerLengthRatioOriginalImg);
+    checkRead |= readParameter(fn["cameraMotionSpeed"], params->cameraMotionSpeed);
+    checkRead |= readParameter(fn["useGlobalThreshold"], params->useGlobalThreshold);
     return checkRead;
 }
 
@@ -429,7 +437,6 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
         else { // first time get threshold with otsu
             otsu_treshold = cv::threshold(grey, thresh, 0, 255, cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
             params->foundGlobalThreshold = true;
-
         }
         // get lines
         const int el_size = 3;
@@ -464,6 +471,7 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
         });
     }
     // join candidates
+    // TODO: add simple copying in next PR
     for(int i = 0; i < nScales; i++) {
         for(unsigned int j = 0; j < candidatesArrays[i].size(); j++) {
             candidates.push_back(candidatesArrays[i][j]);
@@ -477,24 +485,19 @@ static float _detectInitialCandidates(const Mat &grey, vector< vector< Point2f >
 /**
  * @brief Detect square candidates in the input image
  */
-static float _detectCandidates(InputArray _image, vector< vector< vector< Point2f > > >& candidatesSetOut,
+static float _detectCandidates(InputArray _grayImage, vector< vector< vector< Point2f > > >& candidatesSetOut,
                               vector< vector< vector< Point > > >& contoursSetOut, const Ptr<DetectorParameters> &_params) {
 
-    Mat grey = _image.getMat();
-    CV_Assert(grey.total() != 0);
+    Mat grey = _grayImage.getMat();
 
-    /// 1. CONVERT TO GRAY
-    //Mat grey;
-    //_convertToGrey(image, grey);
-
+    /// 1. DETECT FIRST SET OF CANDIDATES
     vector< vector< Point2f > > candidates;
     vector< vector< Point > > contours;
-    /// 2. DETECT FIRST SET OF CANDIDATES
     float new_otsu_global_thresh = _detectInitialCandidates(grey, candidates, contours, _params);
-    /// 3. SORT CORNERS
+    /// 2. SORT CORNERS
     _reorderCandidatesCorners(candidates);
 
-    /// 4. FILTER OUT NEAR CANDIDATE PAIRS
+    /// 3. FILTER OUT NEAR CANDIDATE PAIRS
     // save the outter/inner border (i.e. potential candidates)
     _filterTooCloseCandidates(candidates, candidatesSetOut, contours, contoursSetOut,
                               _params->minMarkerDistanceRate, _params->detectInvertedMarker);
@@ -608,10 +611,9 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
 static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
                                   const vector<Point2f>& _corners, int& idx,
                                   const Ptr<DetectorParameters>& params, int& rotation,
-                                  const float& scale = 1.f)
+                                  const float scale = 1.f)
 {
     CV_Assert(_corners.size() == 4);
-    CV_Assert(_image.getMat().total() != 0);
     CV_Assert(params->markerBorderBits > 0);
 
     uint8_t typ=1;
@@ -652,7 +654,7 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
     Mat onlyBits =
         candidateBits.rowRange(params->markerBorderBits,
                                candidateBits.rows - params->markerBorderBits)
-            .colRange(params->markerBorderBits, candidateBits.rows - params->markerBorderBits);
+            .colRange(params->markerBorderBits, candidateBits.cols - params->markerBorderBits);
 
     // try to indentify the marker
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
@@ -664,7 +666,7 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
 /**
  * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
  */
-static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out, const double& scale = 1.0) {
+static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out, const double scale = 1.0) {
     out.create((int)vec.size(), 1, CV_32FC2);
 
     vector<Point2f> vec_scaled(4);
@@ -714,14 +716,14 @@ static void correctCornerPosition( vector< Point2f >& _candidate, int rotate){
 static size_t _findOptPyrImageForCanonicalImg(
         const std::vector<cv::Size>& img_pyr_sizes,
         const cv::Size& resized_seg_image,
-        const int& cur_perimeter,
-        const int& min_perimeter) {
+        const int cur_perimeter,
+        const int min_perimeter) {
 
     size_t h = 0;
     double dist = std::numeric_limits<double>::max();
     for (size_t i = 0; i < img_pyr_sizes.size(); ++i) {
-        const double factor = (double)resized_seg_image.width / img_pyr_sizes[i].width;
-        const double perimeter_scaled = cur_perimeter * factor;
+        const double scale = img_pyr_sizes[i].width / (double)resized_seg_image.width;
+        const double perimeter_scaled = cur_perimeter * scale;
         // instead of std::abs() favor the larger pyramid level by checking if the distance is postive
         // will slow down the algorithm but find more corners in the end
         const double new_dist = perimeter_scaled - min_perimeter;
@@ -736,6 +738,7 @@ static size_t _findOptPyrImageForCanonicalImg(
 /**
  * @brief Identify square candidates according to a marker dictionary
  */
+
 static void _identifyCandidates(InputArray _image,
                                 const std::vector<cv::Mat>& _image_pyr,
                                 const std::vector<cv::Size>& _image_pyr_sizes,
@@ -748,19 +751,13 @@ static void _identifyCandidates(InputArray _image,
     int ncandidates = (int)_candidatesSet[0].size();
     vector< vector< Point2f > > accepted;
     vector< vector< Point2f > > rejected;
-
     vector< vector< Point > > contours;
-
-    CV_Assert(_image.getMat().total() != 0);
-
-    Mat grey;
-    _convertToGrey(_image.getMat(), grey);
 
     vector< int > idsTmp(ncandidates, -1);
     vector< int > rotated(ncandidates, 0);
     vector< uint8_t > validCandidates(ncandidates, 0);
 
-    const int min_perimeter = params->minSideLengthCanonicalImg * params->minSideLengthCanonicalImg;
+    const int min_perimeter = params->minSideLengthCanonicalImg * 4;
 
     //// Analyze each of the candidates
     parallel_for_(Range(0, ncandidates), [&](const Range &range) {
@@ -775,8 +772,8 @@ static void _identifyCandidates(InputArray _image,
 
             // implements equation (4)
             if (params->useAruco3Detection) {
-                const int perimeter_in_seg_img = (int)contourS[i].size();
-                const size_t n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_in_seg_img, min_perimeter);
+                const int perimeter_scaled_img = (int)contourS[i].size();
+                const size_t n = _findOptPyrImageForCanonicalImg(_image_pyr_sizes, _image.size(), perimeter_scaled_img, min_perimeter);
                 const Mat& pyr_img = _image_pyr[n];
                 const float scale = (float)_image_pyr_sizes[n].width / _image.cols();
                 validCandidates[i] = _identifyOneCandidate(_dictionary, pyr_img, candidates[i], currId, params, rotated[i], scale);
@@ -1149,57 +1146,30 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
     }
 
     /// Step 0: equation (2) from paper [1]
-    const int tau_i_dot = _params->minSideLengthCanonicalImg +
-            (int)((float)std::max(grey.cols, grey.rows) * _params->minMarkerLengthRatioOriginalImg);
-
-    //// Step 0.1: resize image with equation (1) from paper [1]
-    float fxfy = (float)_params->minSideLengthCanonicalImg / tau_i_dot;
-    if (!_params->useAruco3Detection) {
-        fxfy = 1.f;
-    }
-    const cv::Size seg_img_size = cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows));
-
-    const int image_area = seg_img_size.width * seg_img_size.height;
+    const float fxfy = (!_params->useAruco3Detection ? 1.f : _params->minSideLengthCanonicalImg /
+        (_params->minSideLengthCanonicalImg + std::max(grey.cols, grey.rows)*_params->minMarkerLengthRatioOriginalImg));
 
     /// Step 1: create image pyramid. Section 3.4. in [1]
     std::vector<cv::Mat> grey_pyramid;
-    int closest_pyr_image_idx = 0;
+    int closest_pyr_image_idx = 0, num_levels = 0;
+    const float scale_pyr = 2.f;
+    //// Step 1.1: resize image with equation (1) from paper [1]
     if (_params->useAruco3Detection) {
+        const float img_area = static_cast<float>(grey.rows*grey.cols);
+        const float min_area_marker = static_cast<float>(_params->minSideLengthCanonicalImg*_params->minSideLengthCanonicalImg);
         // find max level
-        int num_levels = 0;
-        int pyr_factor = 2;
-        const int min_size_2 = _params->minSideLengthCanonicalImg * _params->minSideLengthCanonicalImg;
+        num_levels = static_cast<int>(log2(img_area / min_area_marker)/scale_pyr);
         // the closest pyramid image to the downsampled segmentation image
         // will later be used as start index for corner upsampling
-        int min_dist = std::numeric_limits<int>::max();
-        while (true && min_size_2 < image_area) {
-            const int resized_img_area = (grey.cols / pyr_factor) * (grey.rows / pyr_factor);
-            if (resized_img_area - min_size_2 > 0) {
-                ++num_levels;
-                pyr_factor *= 2;
-                const int resized_diff = static_cast<int>(std::abs(resized_img_area - image_area));
-                if (resized_diff < min_dist) {
-                    closest_pyr_image_idx = num_levels;
-                    min_dist = resized_diff;
-                }
-            }
-            else
-                break;
-        }
-        if (num_levels > 0) {
-            --num_levels;
-        }
-        cv::buildPyramid(grey, grey_pyramid, num_levels);
+        const float scale_img_area = img_area * fxfy * fxfy;
+        closest_pyr_image_idx = cvRound(log2(img_area / scale_img_area)/scale_pyr);
+    }
+    cv::buildPyramid(grey, grey_pyramid, num_levels);
 
-        // resize to segmentation image
-        // in this reduces size the contours will be detected
-        if (grey.size() != seg_img_size) {
-            cv::resize(grey, grey, seg_img_size);
-        }
-    }
-    else {
-        grey_pyramid.push_back(grey);
-    }
+    // resize to segmentation image
+    // in this reduces size the contours will be detected
+    if (fxfy != 1.f)
+        cv::resize(grey, grey, cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows)));
 
     // save pyramid sizes
     std::vector<cv::Size> img_pyr_sizes(grey_pyramid.size());
@@ -1215,9 +1185,9 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
     vector< vector< vector< Point2f > > > candidatesSet;
     vector< vector< vector< Point > > > contoursSet;
 
-	/// STEP 2.a Detect marker candidates :: using AprilTag
+    /// STEP 2.a Detect marker candidates :: using AprilTag
     bool no_cand_found_in_first_iter = false;
-    for (int i=0; i < 2; ++i) {
+    for (int i = 0; i < 2; ++i) {
         // if a global threshold was found in the last iteration,
         // but no candidates in this frame
         if (i >= 1 && _params->foundGlobalThreshold && no_cand_found_in_first_iter) {
@@ -1236,8 +1206,7 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
         }
         /// STEP 1.b Detect marker candidates :: traditional way
         else
-            otsu_global_tresh_video =  _detectCandidates(grey, candidatesSet, contoursSet, _params);
-
+            otsu_global_tresh_video = _detectCandidates(grey, candidatesSet, contoursSet, _params);
 
         /// STEP 2: Check candidate codification (identify markers)
         _identifyCandidates(grey, grey_pyramid, img_pyr_sizes, candidatesSet, contoursSet, _dictionary,
@@ -1273,7 +1242,6 @@ float detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Outpu
         if (_params->useAruco3Detection) {
             // if Aruco3 feature is selected we use
             const float scale_init = (float)grey_pyramid[closest_pyr_image_idx].cols / grey.cols;
-            const float scale_pyr  = (float)grey_pyramid[0].cols / grey_pyramid[1].cols;
 
             // Do subpixel estimation. In Aruco3 start on the lowest pyramid level and
             // upsample the corners

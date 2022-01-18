@@ -28,5 +28,3 @@ minSideLengthCanonicalImg: 32 # 16, 32, 64 --> tau_c from the paper
 minMarkerLengthRatioOriginalImg: 0.02 # range [0,0.2] --> tau_i from the paper
 cameraMotionSpeed: 0.1 # range [0,1) --> tau_s from the paper
 useGlobalThreshold: 0
-
-

@@ -150,6 +150,7 @@ enum CornerRefineMethod{
  *   Romero-Ramirez et al: Speeded up detection of squared fiducial markers (2018) is, that the binary
  *   code of a marker can be reliably detected if the canonical image (that is used to extract the binary code)
  *   has a size of minSideLengthCanonicalImg (in practice tau_c=16-32 pixels).
+ *   Link to article: https://www.researchgate.net/publication/325787310_Speeded_Up_Detection_of_Squared_Fiducial_Markers
  *   In addition, very small markers are barely useful for pose estimation and thus a we can define a minimum marker size that we
  *   still want to be able to detect (e.g. 50x50 pixel).
  *   To decouple this from the initial image size they propose to resize the input image

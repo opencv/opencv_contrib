@@ -68,58 +68,6 @@ const char* keys  =
 }
 //! [aruco_detect_markers_keys]
 
-/**
- */
-static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
-    FileStorage fs(filename, FileStorage::READ);
-    if(!fs.isOpened())
-        return false;
-    fs["camera_matrix"] >> camMatrix;
-    fs["distortion_coefficients"] >> distCoeffs;
-    return true;
-}
-
-
-
-/**
- */
-static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameters> &params) {
-    FileStorage fs(filename, FileStorage::READ);
-    if(!fs.isOpened())
-        return false;
-    fs["adaptiveThreshWinSizeMin"] >> params->adaptiveThreshWinSizeMin;
-    fs["adaptiveThreshWinSizeMax"] >> params->adaptiveThreshWinSizeMax;
-    fs["adaptiveThreshWinSizeStep"] >> params->adaptiveThreshWinSizeStep;
-    fs["adaptiveThreshConstant"] >> params->adaptiveThreshConstant;
-    fs["minMarkerPerimeterRate"] >> params->minMarkerPerimeterRate;
-    fs["maxMarkerPerimeterRate"] >> params->maxMarkerPerimeterRate;
-    fs["polygonalApproxAccuracyRate"] >> params->polygonalApproxAccuracyRate;
-    fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
-    fs["minDistanceToBorder"] >> params->minDistanceToBorder;
-    fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
-    fs["cornerRefinementMethod"] >> params->cornerRefinementMethod;
-    fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
-    fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
-    fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
-    fs["markerBorderBits"] >> params->markerBorderBits;
-    fs["perspectiveRemovePixelPerCell"] >> params->perspectiveRemovePixelPerCell;
-    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params->perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params->maxErroneousBitsInBorderRate;
-    fs["minOtsuStdDev"] >> params->minOtsuStdDev;
-    fs["errorCorrectionRate"] >> params->errorCorrectionRate;
-    // new aruco functionality
-    fs["useAruco3Detection"] >> params->useAruco3Detection;
-    fs["minSideLengthCanonicalImg"] >> params->minSideLengthCanonicalImg;
-    fs["minMarkerLengthRatioOriginalImg"] >> params->minMarkerLengthRatioOriginalImg;
-    fs["cameraMotionSpeed"] >> params->cameraMotionSpeed;
-    fs["useGlobalThreshold"] >> params->useGlobalThreshold;
-    return true;
-}
-
-
-
-/**
- */
 int main(int argc, char *argv[]) {
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
