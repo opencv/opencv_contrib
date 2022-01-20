@@ -318,7 +318,7 @@ icvGetTodoBlocks(Mat& sampled_img, Mat& sampling_mask, std::vector< std::tuple< 
         Mat error_mask_2d = sampling_mask(Range(yblock_counter*block_size - top_border, std::min(img_height, (yblock_counter*block_size + block_size + bottom_border))), Range(xblock_counter*block_size - left_border, std::min(img_width, (xblock_counter*block_size + block_size + right_border))));
 
         // determine normalized and weighted standard deviation
-        if (block_size > block_size_min)
+        if (block_size > block_size_min && xblock_counter < sigma_n_array.cols && yblock_counter < sigma_n_array.rows)
         {
             double sigma_n = icvStandardDeviation(distorted_block_2d, error_mask_2d);
             sigma_n_array.at<double>( yblock_counter, xblock_counter) = sigma_n;
