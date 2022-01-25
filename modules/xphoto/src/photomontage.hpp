@@ -132,6 +132,12 @@ template <typename Tp> void Photomontage <Tp>::
 setWeights(GCGraph <TWeight> &graph, const int idx1, const int idx2,
     const int l1, const int l2, const int lx)
 {
+    if ((size_t)idx1 >= pointSeq.size() || (size_t)idx2 >= pointSeq.size()
+        || (size_t)l1 >= pointSeq[idx1].size() || (size_t)l1 >= pointSeq[idx2].size()
+        || (size_t)l2 >= pointSeq[idx1].size() || (size_t)l2 >= pointSeq[idx2].size()
+        || (size_t)lx >= pointSeq[idx1].size() || (size_t)lx >= pointSeq[idx2].size())
+        return;
+
     if (l1 == l2)
     {
         /** Link from A to B **/
