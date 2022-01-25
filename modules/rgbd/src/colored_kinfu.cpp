@@ -63,7 +63,7 @@ ColoredKinFuImpl<MatType>::ColoredKinFuImpl()
     volumeSettings.getCameraIntegrateIntrinsics(intr);
     const float voxelSize = volumeSettings.getVoxelSize();
     const Vec4i volumeDims;
-    volumeSettings.getVolumeDimentions(volumeDims);
+    volumeSettings.getVolumeDimensions(volumeDims);
 
     OdometrySettings ods;
     ods.setCameraMatrix(intr);
@@ -99,7 +99,7 @@ const Affine3f ColoredKinFuImpl<MatType>::getPose() const
 template<>
 bool ColoredKinFuImpl<Mat>::update(InputArray _depth, InputArray _rgb)
 {
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
@@ -120,7 +120,7 @@ bool ColoredKinFuImpl<Mat>::update(InputArray _depth, InputArray _rgb)
 template<>
 bool ColoredKinFuImpl<UMat>::update(InputArray _depth, InputArray _rgb)
 {
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
@@ -205,7 +205,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         newFrame.getPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
 
-        volume.raycast(pose, volumeSettings.getHeight(), volumeSettings.getWidth(), points, normals, colors);
+        volume.raycast(pose, volumeSettings.getIntegrateHeight(), volumeSettings.getIntegrateWidth(), points, normals, colors);
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
@@ -238,7 +238,7 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
     CV_TRACE_FUNCTION();
 
     MatType points, normals, colors;
-    volume.raycast(_cameraPose, volumeSettings.getHeight(), volumeSettings.getWidth(), points, normals, colors);
+    volume.raycast(_cameraPose, volumeSettings.getRaycastHeight(), volumeSettings.getRaycastWidth(), points, normals, colors);
     detail::renderPointsNormalsColors(points, normals, colors, image);
 }
 

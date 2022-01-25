@@ -280,7 +280,7 @@ void flyTest(bool hiDense)
 {
     VolumeSettings vs(VolumeType::TSDF);
 
-    Size frameSize(vs.getWidth(), vs.getHeight());
+    Size frameSize(vs.getRaycastWidth(), vs.getRaycastHeight());
     Matx33f intr;
     vs.getCameraIntegrateIntrinsics(intr);
     float depthFactor = vs.getDepthFactor();

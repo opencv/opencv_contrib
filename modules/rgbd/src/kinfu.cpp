@@ -59,7 +59,7 @@ KinFuImpl<MatType>::KinFuImpl()
     Matx33f intr;
     volumeSettings.getCameraIntegrateIntrinsics(intr);
     const Vec4i volumeDims;
-    volumeSettings.getVolumeDimentions(volumeDims);
+    volumeSettings.getVolumeDimensions(volumeDims);
     const float voxelSize = volumeSettings.getVoxelSize();
 
     odometrySettings = OdometrySettings();
@@ -93,7 +93,7 @@ const Affine3f KinFuImpl<MatType>::getPose() const
 template<>
 bool KinFuImpl<Mat>::update(InputArray _depth)
 {
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
@@ -112,7 +112,7 @@ bool KinFuImpl<Mat>::update(InputArray _depth)
 template<>
 bool KinFuImpl<UMat>::update(InputArray _depth)
 {
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
@@ -142,7 +142,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     OdometryFrame newFrame = icp.createOdometryFrame();
     newFrame.setDepth(depth);
 
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
 
     if(frameCounter == 0)
     {
@@ -206,7 +206,7 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
 
     Affine3f cameraPose(_cameraPose);
     MatType points, normals;
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getRaycastWidth(), volumeSettings.getRaycastHeight());
     volume.raycast(_cameraPose, frameSize.height, frameSize.width, points, normals);
     detail::renderPointsNormals(points, normals, image, lightPose);
 }

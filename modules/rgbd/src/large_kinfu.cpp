@@ -95,7 +95,7 @@ const Affine3f LargeKinfuImpl<MatType>::getPose() const
 template<>
 bool LargeKinfuImpl<Mat>::update(InputArray _depth)
 {
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
@@ -113,7 +113,7 @@ bool LargeKinfuImpl<Mat>::update(InputArray _depth)
 template<>
 bool LargeKinfuImpl<UMat>::update(InputArray _depth)
 {
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
@@ -134,7 +134,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 {
     CV_TRACE_FUNCTION();
 
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight());
 
     Matx33f intr;
     volumeSettings.getCameraIntegrateIntrinsics(intr);
@@ -243,7 +243,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
 {
     CV_TRACE_FUNCTION();
 
-    Size frameSize(volumeSettings.getWidth(), volumeSettings.getHeight());
+    Size frameSize(volumeSettings.getRaycastWidth(), volumeSettings.getRaycastHeight());
     Affine3f cameraPose(_cameraPose);
     auto currSubmap = submapMgr->getCurrentSubmap();
     Matx33f intr;

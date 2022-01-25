@@ -175,14 +175,14 @@ DynaFuImpl<T>::DynaFuImpl() :
     Matx33f intr;
     settings.getCameraIntegrateIntrinsics(intr);
     Vec3i volumeDims;
-    settings.getVolumeDimentions(volumeDims);
+    settings.getVolumeDimensions(volumeDims);
 
     ods = OdometrySettings();
     ods.setCameraMatrix(intr);
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
     volume = makeTSDFVolume(volumeDims, settings.getVoxelSize(), pose,
-            settings.getTruncatedDistance(), settings.getMaxWeight(),
+            settings.getMaxDepth(), settings.getMaxWeight(),
             settings.getRaycastStepFactor());
 
     dynafuICP = makeNonRigidICP(intr, volume, 2);
@@ -282,7 +282,7 @@ const Affine3f DynaFuImpl<T>::getPose() const
 template<>
 bool DynaFuImpl<Mat>::update(InputArray _depth)
 {
-    Size frameSize(settings.getWidth(), settings.getHeight());
+    Size frameSize(settings.getIntegrateWidth(), settings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     Mat depth;
@@ -303,7 +303,7 @@ bool DynaFuImpl<UMat>::update(InputArray _depth)
 {
     CV_TRACE_FUNCTION();
 
-    Size frameSize(settings.getWidth(), settings.getHeight());
+    Size frameSize(settings.getIntegrateWidth(), settings.getIntegrateHeight());
     CV_Assert(!_depth.empty() && _depth.size() == frameSize);
 
     UMat depth;
@@ -408,7 +408,7 @@ void DynaFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     CV_TRACE_FUNCTION();
 
-    Size frameSize(settings.getWidth(), settings.getHeight());
+    Size frameSize(settings.getRaycastWidth(), settings.getRaycastHeight());
     Affine3f cameraPose(_cameraPose);
     Matx33f intr;
     settings.getCameraIntegrateIntrinsics(intr);
