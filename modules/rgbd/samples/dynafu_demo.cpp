@@ -192,7 +192,7 @@ int main(int argc, char **argv)
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
 
                 Vec3i volDims;
-                vs.getVolumeDimentions(volDims);
+                vs.getVolumeDimensions(volDims);
 
                 Vec3d volSize = vs.getVoxelSize() * volDims;
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
@@ -267,7 +267,7 @@ int main(int argc, char **argv)
 
                     //window.showWidget("worldAxes", viz::WCoordinateSystem());
                     Vec3i volDims;
-                    vs.getVolumeDimentions(volDims);
+                    vs.getVolumeDimensions(volDims);
 
                     Vec3d volSize = vs.getVoxelSize() * volDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
