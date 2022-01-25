@@ -443,14 +443,21 @@ public:
 
         _createTexture(name, image.getMat());
 
-        bgplane->setDefaultUVs();
-
-        Pass* rpass = bgplane->getMaterial()->getBestTechnique()->getPasses()[0];
-        rpass->getTextureUnitStates()[0]->setTextureName(name);
-        rpass->getTextureUnitStates()[0]->setTextureAddressingMode(TAM_CLAMP);
-
         // ensure bgplane is visible
         bgplane->setVisible(true);
+        bgplane->setDefaultUVs();
+
+        Pass* rpass = bgplane->getMaterial()->getTechnique(0)->getPasses()[0];
+        auto tus = rpass->getTextureUnitStates()[0];
+
+        if(tus->getTextureName() != name)
+        {
+            RTShader::ShaderGenerator::getSingleton().invalidateMaterial(
+                RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, *bgplane->getMaterial());
+
+            tus->setTextureName(name);
+            tus->setTextureAddressingMode(TAM_CLAMP);
+        }
     }
 
     void setCompositors(const std::vector<String>& names) CV_OVERRIDE
