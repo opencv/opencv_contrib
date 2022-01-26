@@ -112,6 +112,7 @@ public:
     void detectLines(OutputArray lines) CV_OVERRIDE;
     void detectEllipses(OutputArray ellipses) CV_OVERRIDE;
 
+    virtual String getDefaultName() const CV_OVERRIDE;
     virtual void read(const FileNode& fn) CV_OVERRIDE;
     virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
@@ -315,6 +316,11 @@ void EdgeDrawing::Params::write(cv::FileStorage& fs) const
     fs << "MaxErrorThreshold" << MaxErrorThreshold;
 }
 
+String EdgeDrawingImpl::getDefaultName() const
+{
+    return String("EdgeDrawing");
+}
+
 void EdgeDrawingImpl::read(const cv::FileNode& fn)
 {
     params.read(fn);
@@ -343,6 +349,7 @@ EdgeDrawingImpl::~EdgeDrawingImpl()
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
 {
+    CV_Assert(!src.empty() && src.type() == CV_8UC1);
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
