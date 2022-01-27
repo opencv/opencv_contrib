@@ -11,6 +11,22 @@ namespace cv {
 namespace colored_kinfu {
 using namespace kinfu;
 
+static VolumeSettings paramsToSettings(const Params& params)
+{
+    VolumeSettings vs(VolumeType::TSDF);
+    vs.setVoxelSize(params.voxelSize);
+    vs.setVolumePose(params.volumePose);
+    vs.setRaycastStepFactor(params.raycast_step_factor);
+    vs.setTsdfTruncateDistance(params.tsdf_trunc_dist);
+    vs.setMaxWeight(params.tsdf_max_weight);
+    vs.setMaxDepth(params.truncateThreshold);
+    vs.setCameraIntegrateIntrinsics(params.intr);
+    vs.setDepthFactor(params.depthFactor);
+    vs.setVolumeResolution(params.volumeDims);
+
+    return vs;
+}
+
 void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 {
     setInitialVolumePose(Affine3f(R,t).matrix);
@@ -154,9 +170,10 @@ public:
 
 private:
     Params params;
+    VolumeSettings settings;
 
     Odometry icp;
-    cv::Ptr<Volume> volume;
+    Volume volume;
 
     int frameCounter;
     Matx44f pose;
@@ -167,12 +184,10 @@ private:
 
 template< typename MatType >
 ColoredKinFuImpl<MatType>::ColoredKinFuImpl(const Params &_params) :
-    params(_params)
+    params(_params),
+    settings(paramsToSettings(params)),
+    volume(VolumeType::ColorTSDF, settings)
 {
-    volume = makeVolume(params.volumeKind, params.voxelSize, params.volumePose, params.raycast_step_factor,
-                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold,
-                        params.volumeDims[0], params.volumeDims[1], params.volumeDims[2]);
-
     OdometrySettings ods;
     ods.setCameraMatrix(Mat(params.intr));
     ods.setMaxRotation(30.f);
@@ -189,7 +204,7 @@ void ColoredKinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity().matrix;
-    volume->reset();
+    volume.reset();
 }
 
 template< typename MatType >
@@ -283,7 +298,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         icp.prepareFrame(newFrame);
 
         // use depth instead of distance
-        volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+        volume.integrate(depth, rgb, pose);
         // TODO: try to move setPyramidLevel from kinfu to volume
         newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
         newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
@@ -307,7 +322,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume->integrate(depth, rgb, params.depthFactor, pose, params.intr, params.rgb_intr);
+            volume.integrate(depth, rgb, pose);
             newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
             newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
         }
@@ -316,7 +331,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         newFrame.getPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
 
-        volume->raycast(pose, params.intr, params.frameSize, points, normals, colors);
+        volume.raycast(pose, points, normals, colors);
 
         newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
@@ -350,7 +365,7 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
 
     Affine3f cameraPose(_cameraPose);
     MatType points, normals, colors;
-    volume->raycast(_cameraPose, params.intr, params.frameSize, points, normals, colors);
+    volume.raycast(_cameraPose, points, normals, colors);
     detail::renderPointsNormalsColors(points, normals, colors, image);
 }
 
@@ -358,21 +373,21 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image, const Matx44f& _camera
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
-    volume->fetchPointsNormals(p, n);
+    volume.fetchPointsNormals(p, n);
 }
 
 
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getPoints(OutputArray points) const
 {
-    volume->fetchPointsNormals(points, noArray());
+    volume.fetchPointsNormals(points, noArray());
 }
 
 
 template< typename MatType >
 void ColoredKinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
-    volume->fetchNormals(points, normals);
+    volume.fetchNormals(points, normals);
 }
 
 // importing class

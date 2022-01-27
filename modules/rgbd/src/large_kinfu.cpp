@@ -13,6 +13,100 @@ namespace large_kinfu
 {
 using namespace kinfu;
 
+static VolumeSettings paramsToSettings(const Params& params)
+{
+    VolumeSettings vs(VolumeType::HashTSDF);
+    vs.setMaxDepth(params.truncateThreshold);
+    vs.setCameraIntegrateIntrinsics(params.intr);
+    vs.setCameraRaycastIntrinsics(params.intr);
+    vs.setDepthFactor(params.depthFactor);
+
+    vs.setVoxelSize(params.volumeParams.voxelSize);
+    //vs.setVolumePose(params.volumeParams.pose);
+    vs.setRaycastStepFactor(params.volumeParams.raycastStepFactor);
+    vs.setTsdfTruncateDistance(params.volumeParams.tsdfTruncDist);
+    vs.setMaxWeight(params.volumeParams.maxWeight);
+    vs.setVolumeResolution(Vec3i(params.volumeParams.unitResolution,
+        params.volumeParams.unitResolution, params.volumeParams.unitResolution));
+
+    return vs;
+}
+
+Ptr<VolumeParams> VolumeParams::defaultParams(int _volumeKind)
+{
+    VolumeParams params;
+    params.kind = _volumeKind;
+    params.maxWeight = 64;
+    params.raycastStepFactor = 0.25f;
+    params.unitResolution = 0;  // unitResolution not used for TSDF
+    float volumeSize = 3.0f;
+    Matx44f pose = Affine3f().translate(Vec3f(-volumeSize / 2.f, -volumeSize / 2.f, 0.5f)).matrix;
+    params.pose = Mat(pose);
+
+    if (params.kind == VolumeKind::TSDF)
+    {
+        params.resolutionX = 512;
+        params.resolutionY = 512;
+        params.resolutionZ = 512;
+        params.voxelSize = volumeSize / 512.f;
+        params.depthTruncThreshold = 0.f;  // depthTruncThreshold not required for TSDF
+        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        return makePtr<VolumeParams>(params);
+    }
+    else if (params.kind == VolumeKind::HASHTSDF)
+    {
+        params.unitResolution = 16;
+        params.voxelSize = volumeSize / 512.f;
+        params.depthTruncThreshold = 4.f;
+        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        return makePtr<VolumeParams>(params);
+    }
+    else if (params.kind == VolumeKind::COLOREDTSDF)
+    {
+        params.resolutionX = 512;
+        params.resolutionY = 512;
+        params.resolutionZ = 512;
+        params.voxelSize = volumeSize / 512.f;
+        params.depthTruncThreshold = 0.f;  // depthTruncThreshold not required for TSDF
+        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        return makePtr<VolumeParams>(params);
+    }
+    CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
+}
+
+Ptr<VolumeParams> VolumeParams::coarseParams(int _volumeKind)
+{
+    Ptr<VolumeParams> params = defaultParams(_volumeKind);
+
+    params->raycastStepFactor = 0.75f;
+    float volumeSize = 3.0f;
+    if (params->kind == VolumeKind::TSDF)
+    {
+        params->resolutionX = 128;
+        params->resolutionY = 128;
+        params->resolutionZ = 128;
+        params->voxelSize = volumeSize / 128.f;
+        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        return params;
+    }
+    else if (params->kind == VolumeKind::HASHTSDF)
+    {
+        params->voxelSize = volumeSize / 128.f;
+        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        return params;
+    }
+    else if (params->kind == VolumeKind::COLOREDTSDF)
+    {
+        params->resolutionX = 128;
+        params->resolutionY = 128;
+        params->resolutionZ = 128;
+        params->voxelSize = volumeSize / 128.f;
+        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        return params;
+    }
+    CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
+}
+
 Ptr<Params> Params::defaultParams()
 {
     Params p;
@@ -129,6 +223,7 @@ class LargeKinfuImpl : public LargeKinfu
 
    private:
     Params params;
+    VolumeSettings settings;
 
     Odometry icp;
     //! TODO: Submap manager and Pose graph optimizer
@@ -140,7 +235,8 @@ class LargeKinfuImpl : public LargeKinfu
 
 template<typename MatType>
 LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
-    : params(_params)
+    : params(_params),
+    settings(paramsToSettings(params))
 {
     OdometrySettings ods;
     ods.setCameraMatrix(Mat(params.intr));
@@ -148,7 +244,7 @@ LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
     ods.setMaxTranslation(params.volumeParams.voxelSize * params.volumeParams.resolutionX * 0.5f);
     icp = Odometry(OdometryType::DEPTH, ods, OdometryAlgoType::FAST);
 
-    submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(params.volumeParams);
+    submapMgr = cv::makePtr<detail::SubmapManager<MatType>>(settings);
     reset();
     submapMgr->createNewSubmap(true);
 }
@@ -239,7 +335,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         if(frameCounter == 0) //! Only one current tracking map
         {
             icp.prepareFrame(newFrame);
-            currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+            currTrackingSubmap->integrate(depth, frameCounter);
             currTrackingSubmap->frame = newFrame;
             currTrackingSubmap->renderFrame = newFrame;
             continue;
@@ -269,11 +365,11 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
             float tnorm = (float)cv::norm(affine.translation());
             // We do not integrate volume if camera does not move
             if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
-                currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+                currTrackingSubmap->integrate(depth, frameCounter);
         }
 
         //3. Raycast
-        currTrackingSubmap->raycast(this->icp, currTrackingSubmap->cameraPose, params.intr, params.frameSize);
+        currTrackingSubmap->raycast(this->icp, currTrackingSubmap->cameraPose, params.frameSize);
 
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks());
         CV_LOG_INFO(NULL, "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter));
@@ -325,7 +421,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
     Affine3f cameraPose(_cameraPose);
     auto currSubmap = submapMgr->getCurrentSubmap();
     MatType points, normals;
-    currSubmap->raycast(this->icp, cameraPose, params.intr, params.frameSize, points, normals);
+    currSubmap->raycast(this->icp, cameraPose, params.frameSize, points, normals);
     detail::renderPointsNormals(points, normals, image, params.lightPose);
 }
 
@@ -334,21 +430,21 @@ template<typename MatType>
 void LargeKinfuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
-    currSubmap->volume->fetchPointsNormals(p, n);
+    currSubmap->volume.fetchPointsNormals(p, n);
 }
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getPoints(OutputArray points) const
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
-    currSubmap->volume->fetchPointsNormals(points, noArray());
+    currSubmap->volume.fetchPointsNormals(points, noArray());
 }
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
     auto currSubmap = submapMgr->getCurrentSubmap();
-    currSubmap->volume->fetchNormals(points, normals);
+    currSubmap->volume.fetchNormals(points, normals);
 }
 
 // importing class
