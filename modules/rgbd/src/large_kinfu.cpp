@@ -13,25 +13,6 @@ namespace large_kinfu
 {
 using namespace kinfu;
 
-static VolumeSettings paramsToSettings(const Params& params)
-{
-    VolumeSettings vs(VolumeType::HashTSDF);
-    vs.setMaxDepth(params.truncateThreshold);
-    vs.setCameraIntegrateIntrinsics(params.intr);
-    vs.setCameraRaycastIntrinsics(params.intr);
-    vs.setDepthFactor(params.depthFactor);
-
-    vs.setVoxelSize(params.volumeParams.voxelSize);
-    //vs.setVolumePose(params.volumeParams.pose);
-    vs.setRaycastStepFactor(params.volumeParams.raycastStepFactor);
-    vs.setTsdfTruncateDistance(params.volumeParams.tsdfTruncDist);
-    vs.setMaxWeight(params.volumeParams.maxWeight);
-    vs.setVolumeResolution(Vec3i(params.volumeParams.unitResolution,
-        params.volumeParams.unitResolution, params.volumeParams.unitResolution));
-
-    return vs;
-}
-
 Ptr<VolumeParams> VolumeParams::defaultParams(int _volumeKind)
 {
     VolumeParams params;
@@ -204,6 +185,7 @@ class LargeKinfuImpl : public LargeKinfu
     LargeKinfuImpl(const Params& _params);
     virtual ~LargeKinfuImpl();
 
+    static VolumeSettings paramsToSettings(const Params& params);
     const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
@@ -232,6 +214,26 @@ class LargeKinfuImpl : public LargeKinfu
     int frameCounter;
     Affine3f pose;
 };
+
+template<typename MatType>
+VolumeSettings LargeKinfuImpl<MatType>::paramsToSettings(const Params& params)
+{
+    VolumeSettings vs(VolumeType::HashTSDF);
+    vs.setMaxDepth(params.truncateThreshold);
+    vs.setCameraIntegrateIntrinsics(params.intr);
+    vs.setCameraRaycastIntrinsics(params.intr);
+    vs.setDepthFactor(params.depthFactor);
+
+    vs.setVoxelSize(params.volumeParams.voxelSize);
+    vs.setVolumePose(params.volumeParams.pose);
+    vs.setRaycastStepFactor(params.volumeParams.raycastStepFactor);
+    vs.setTsdfTruncateDistance(params.volumeParams.tsdfTruncDist);
+    vs.setMaxWeight(params.volumeParams.maxWeight);
+    vs.setVolumeResolution(Vec3i(params.volumeParams.unitResolution,
+        params.volumeParams.unitResolution, params.volumeParams.unitResolution));
+
+    return vs;
+}
 
 template<typename MatType>
 LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)

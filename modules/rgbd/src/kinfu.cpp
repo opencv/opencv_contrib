@@ -9,22 +9,6 @@
 namespace cv {
 namespace kinfu {
 
-static VolumeSettings paramsToSettings(const Params& params)
-{
-    VolumeSettings vs(VolumeType::TSDF);
-    vs.setVoxelSize(params.voxelSize);
-    vs.setVolumePose(params.volumePose);
-    vs.setRaycastStepFactor(params.raycast_step_factor);
-    vs.setTsdfTruncateDistance(params.tsdf_trunc_dist);
-    vs.setMaxWeight(params.tsdf_max_weight);
-    vs.setMaxDepth(params.truncateThreshold);
-    vs.setCameraIntegrateIntrinsics(params.intr);
-    vs.setDepthFactor(params.depthFactor);
-    vs.setVolumeResolution(params.volumeDims);
-
-    return vs;
-}
-
 void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 {
     setInitialVolumePose(Affine3f(R,t).matrix);
@@ -139,6 +123,7 @@ public:
     KinFuImpl(const Params& _params);
     virtual ~KinFuImpl();
 
+    static VolumeSettings paramsToSettings(const Params& params);
     const Params& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
@@ -169,6 +154,22 @@ private:
     OdometryFrame renderFrame;
 };
 
+template< typename MatType >
+VolumeSettings KinFuImpl<MatType>::paramsToSettings(const Params& params)
+{
+    VolumeSettings vs(VolumeType::TSDF);
+    vs.setVoxelSize(params.voxelSize);
+    vs.setVolumePose(params.volumePose);
+    vs.setRaycastStepFactor(params.raycast_step_factor);
+    vs.setTsdfTruncateDistance(params.tsdf_trunc_dist);
+    vs.setMaxWeight(params.tsdf_max_weight);
+    vs.setMaxDepth(params.truncateThreshold);
+    vs.setCameraIntegrateIntrinsics(params.intr);
+    vs.setDepthFactor(params.depthFactor);
+    vs.setVolumeResolution(params.volumeDims);
+
+    return vs;
+}
 
 template< typename MatType >
 KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
