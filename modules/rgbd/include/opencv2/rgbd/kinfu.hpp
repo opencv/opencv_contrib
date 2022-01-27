@@ -71,16 +71,6 @@ struct CV_EXPORTS_W VolumeParams
         Describes the percentage of voxel length that is skipped per march
     */
     CV_PROP_RW float raycastStepFactor;
-
-    /** @brief Default set of parameters that provide higher quality reconstruction
-        at the cost of slow performance.
-    */
-    CV_WRAP static Ptr<VolumeParams> defaultParams(int _volumeType);
-
-    /** @brief Coarse set of parameters that provides relatively higher performance
-        at the cost of reconstrution quality.
-    */
-    CV_WRAP static Ptr<VolumeParams> coarseParams(int _volumeType);
 };
 
 
