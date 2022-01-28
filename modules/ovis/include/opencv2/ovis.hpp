@@ -88,7 +88,7 @@ public:
     virtual ~WindowScene();
 
     /**
-     * set window background to custom image
+     * set window background to custom image/ color
      * @param image
      */
     CV_WRAP virtual void setBackground(InputArray image) = 0;
@@ -101,8 +101,8 @@ public:
      *
      * this way you can add distortion or SSAO effects.
      * The effects themselves must be defined inside Ogre .compositor scripts.
-     * @see addResourceLocation
      * @param names compositor names that will be applied in order of appearance
+     * @see addResourceLocation
      */
     CV_WRAP virtual void setCompositors(const std::vector<String>& names) = 0;
 
@@ -110,12 +110,12 @@ public:
      * place an entity of a mesh in the scene
      *
      * the mesh needs to be created beforehand. Either programmatically
-     * by e.g. @ref createPointCloudMesh or by placing an Ogre .mesh file in a resource location.
-     * @see addResourceLocation
+     * by e.g. @ref createPointCloudMesh or by placing the respective file in a resource location.
      * @param name entity name
      * @param meshname mesh name
-     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
+     * @see addResourceLocation
      */
     CV_WRAP virtual void createEntity(const String& name, const String& meshname,
                                       InputArray tvec = noArray(), InputArray rot = noArray()) = 0;
@@ -131,12 +131,13 @@ public:
      * @param name entity name
      * @param prop @ref EntityProperty
      * @param value the value
+     * @param subEntityIdx index of the sub-entity (default: all)
      */
-    CV_WRAP virtual void setEntityProperty(const String& name, int prop, const Scalar& value) = 0;
-
-    /// @overload
     CV_WRAP virtual void setEntityProperty(const String& name, int prop, const String& value,
                                            int subEntityIdx = -1) = 0;
+
+    /// @overload
+    CV_WRAP virtual void setEntityProperty(const String& name, int prop, const Scalar& value) = 0;
 
     /**
      * get the property of an entity
@@ -153,8 +154,8 @@ public:
      * @param K intrinsic matrix
      * @param imsize image size
      * @param zFar far plane in camera coordinates
-     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param color line color
      * @return the extents of the Frustum at far plane, where the top left corner denotes the principal
      * point offset
@@ -167,8 +168,8 @@ public:
     /**
      * creates a point light in the scene
      * @param name entity name
-     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param diffuseColor
      * @param specularColor
      */
@@ -180,8 +181,8 @@ public:
     /**
      * update entity pose by transformation in the parent coordinate space. (pre-rotation)
      * @param name entity name
-     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      */
     CV_WRAP virtual void updateEntityPose(const String& name, InputArray tvec = noArray(),
                                           InputArray rot = noArray()) = 0;
@@ -189,8 +190,8 @@ public:
     /**
      * set entity pose in the world coordinate space.
      * @param name enitity name
-     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param invert use the inverse of the given pose
      */
     CV_WRAP virtual void setEntityPose(const String& name, InputArray tvec = noArray(),
@@ -263,8 +264,8 @@ public:
 
     /**
      * Sets the current camera pose
-     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param invert use the inverse of the given pose
      */
     CV_WRAP virtual void setCameraPose(InputArray tvec = noArray(), InputArray rot = noArray(),
