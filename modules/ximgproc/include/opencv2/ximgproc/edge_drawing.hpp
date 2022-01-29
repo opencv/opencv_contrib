@@ -37,7 +37,7 @@ public:
         CV_PROP_RW bool PFmode;
         /** @brief indicates the operator used for gradient calculation.
 
-		one of the flags cv::ximgproc::EdgeDrawing::GradientOperator. Default value is PREWITT
+        one of the flags cv::ximgproc::EdgeDrawing::GradientOperator. Default value is PREWITT
         */
         CV_PROP_RW int EdgeDetectionOperator;
         //! threshold value of gradiential difference between pixels. Used to create gradient image. Default value is 20
@@ -48,8 +48,8 @@ public:
         CV_PROP_RW int ScanInterval;
         /** @brief minimun connected pixels length processed to create an edge segment.
 
-		in gradient image, minimum connected pixels length processed to create an edge segment. pixels having upper value than GradientThresholdValue
-		will be processed. Default value is 10
+        in gradient image, minimum connected pixels length processed to create an edge segment. pixels having upper value than GradientThresholdValue
+        will be processed. Default value is 10
         */
         CV_PROP_RW int MinPathLength;
         //! sigma value for internal GaussianBlur() function. Default value is 1.0
@@ -59,11 +59,11 @@ public:
         CV_PROP_RW bool NFAValidation;
         //! minimun line length to detect.
         CV_PROP_RW int MinLineLength;
-		//! Default value is 6.0
+        //! Default value is 6.0
         CV_PROP_RW double MaxDistanceBetweenTwoLines;
-		//! Default value is 1.0
+        //! Default value is 1.0
         CV_PROP_RW double LineFitErrorThreshold;
-		//! Default value is 1.3
+        //! Default value is 1.3
         CV_PROP_RW double MaxErrorThreshold;
 
         void read(const FileNode& fn);
@@ -88,7 +88,7 @@ public:
     */
     CV_WRAP virtual void getGradientImage(OutputArray dst) = 0;
 
-    /** @brief returns Edge Segments prepared by detectEdges() function.
+    /** @brief Returns std::vector<std::vector<Point>> of detected edge segments, see detectEdges()
     */
     CV_WRAP virtual std::vector<std::vector<Point> > getSegments() = 0;
 
@@ -111,7 +111,7 @@ public:
     /** @brief sets parameters.
 
     this function is meant to be used for parameter setting in other languages than c++ like python.
-	@param parameters
+    @param parameters
     */
     CV_WRAP void setParams(const EdgeDrawing::Params& parameters);
     virtual ~EdgeDrawing() { }
