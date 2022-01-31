@@ -163,17 +163,7 @@ enum CornerRefineMethod{
  *   Latter is the binarized image in which contours are searched.
  *   So all contours with a size smaller than minSideLengthCanonicalImg*minSideLengthCanonicalImg will omitted from the search.
  * - minMarkerLengthRatioOriginalImg:  range [0,1], eq (2) from paper
- * - cameraMotionSpeed: is in the range [0,1]. This parameter (tau_s in the paper) implements the feature proposed
- *   in Section 3.7. and is particularly useful for video sequences.
- *   The parameter tau_i has a direct influence on the processing speed. Instead of setting a fixed value for it,
- *   it can be adjusted at the end of each frame using
- *   tau_i = (1-tau_s)*P(v_s)/4 (eq. 6 in paper).
- *   Where P(v_s) is the perimeter of the smallest marker that was detected in the last frame.
- * - useGlobalThreshold: if we process a video, the assumption is, that the illumination conditions remains
- *   constant and global instead of adaptive thresholding can be applied, speeding up the binarization step.
- * - foundGlobalThreshold: internal variable. It is used to cache the variable to the next detector call.
- * - otsuGlobalThreshold: internal variable. It is used to cache the global otsu threshold to the next detector call.
- * - foundMarkerInLastFrames: internal variable. It is used to cache if markers were found in the last frame.
+ *   The parameter tau_i has a direct influence on the processing speed.
  */
 struct CV_EXPORTS_W DetectorParameters {
 
@@ -222,13 +212,6 @@ struct CV_EXPORTS_W DetectorParameters {
     CV_PROP_RW bool useAruco3Detection;
     CV_PROP_RW int minSideLengthCanonicalImg;
     CV_PROP_RW float minMarkerLengthRatioOriginalImg;
-
-    // New Aruco functionality especially for video
-    CV_PROP_RW float cameraMotionSpeed;
-    CV_PROP_RW bool useGlobalThreshold;
-    CV_PROP_RW bool foundGlobalThreshold;
-    CV_PROP_RW float otsuGlobalThreshold;
-    CV_PROP_RW int foundMarkerInLastFrames;
 };
 
 
@@ -256,13 +239,12 @@ struct CV_EXPORTS_W DetectorParameters {
  * are searched. For each detected marker, it returns the 2D position of its corner in the image
  * and its corresponding identifier.
  * Note that this function does not perform pose estimation.
- * The function returns an estimate of the parameter minMarkerLengthRatioOriginalImg if useAruco3Detection=1. If not it returns 0.0.
- * @sa estimatePoseSingleMarkers, estimatePoseBoard
+ * @sa estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
-CV_EXPORTS_W float detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
-                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
-                                 OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
+CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
+                                OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
+                                OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
 
 
 

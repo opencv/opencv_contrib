@@ -155,16 +155,22 @@ public:
 static inline double getMaxDistance(map<int, vector<Point2f> > &golds, const vector<int>& ids,
                                                const vector<vector<Point2f> >& corners)
 {
-    double distance = 0.;
+    std::map<int, double> mapDist;
+    for (const auto& el : golds)
+        mapDist[el.first] = std::numeric_limits<double>::max();
     for (size_t i = 0; i < ids.size(); i++)
     {
         int id = ids[i];
         const auto gold_corners = golds.find(id);
-        if (gold_corners != golds.end())
-        for (int c = 0; c < 4; c++)
-            distance = std::max(distance, cv::norm(gold_corners->second[c] - corners[i][c]));
+        if (gold_corners != golds.end()) {
+            double distance = 0.;
+            for (int c = 0; c < 4; c++)
+                distance = std::max(distance, cv::norm(gold_corners->second[c] - corners[i][c]));
+            mapDist[id] = distance;
+        }
     }
-    return distance;
+    return std::max_element(std::begin(mapDist), std::end(mapDist),
+           [](const pair<int, double>& p1, const pair<int, double>& p2){return p1.second < p2.second;})->second;
 }
 
 PERF_TEST_P(EstimateAruco, ArucoFirst, ESTIMATE_PARAMS)
@@ -190,7 +196,7 @@ PERF_TEST_P(EstimateAruco, ArucoFirst, ESTIMATE_PARAMS)
     // detect markers
     vector<vector<Point2f> > corners;
     vector<int> ids;
-    TEST_CYCLE_N(10)
+    TEST_CYCLE()
     {
         aruco::detectMarkers(image_map.first, dictionary, corners, ids, detectorParams);
     }
@@ -223,7 +229,7 @@ PERF_TEST_P(EstimateAruco, ArucoSecond, ESTIMATE_PARAMS)
     // detect markers
     vector<vector<Point2f> > corners;
     vector<int> ids;
-    TEST_CYCLE_N(10)
+    TEST_CYCLE()
     {
         aruco::detectMarkers(image_map.first, dictionary, corners, ids, detectorParams);
     }
@@ -278,7 +284,7 @@ PERF_TEST_P(EstimateLargeAruco, ArucoFHD, ESTIMATE_FHD_PARAMS)
     // detect markers
     vector<vector<Point2f> > corners;
     vector<int> ids;
-    TEST_CYCLE_N(10)
+    TEST_CYCLE()
     {
         aruco::detectMarkers(image_map.first, dictionary, corners, ids, detectorParams);
     }

@@ -185,13 +185,8 @@ void CV_ArucoBoardPose::run(int run_with) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
-    double max_dist = 0.4;
-    // aruco3 detection is a bit worse from large distances it seems
-    if (run_with == checkWithParameter::USE_ARUCO3) {
-        max_dist = 0.2;
-    }
     // for different perspectives
-    for(double distance = 0.2; distance <= max_dist; distance += 0.2) {
+    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = 0; yaw < 360; yaw += 100) {
             for(int pitch = 30; pitch <= 90; pitch += 50) {
                 for(unsigned int i = 0; i < gridboard->ids.size(); i++)
@@ -210,6 +205,8 @@ void CV_ArucoBoardPose::run(int run_with) {
                 params->minDistanceToBorder = 3;
                 if (run_with == checkWithParameter::USE_ARUCO3) {
                     params->useAruco3Detection = true;
+                    params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+                    params->minSideLengthCanonicalImg = 16;
                 }
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);

@@ -319,7 +319,6 @@ void CV_ArucoDetectionPerspective::run(int tryWith) {
 
                 // check results
                 if(ids.size() != 1 || (ids.size() == 1 && ids[0] != currentId)) {
-                    aruco::detectMarkers(img, dictionary, corners, ids, params);
                     if(ids.size() != 1)
                         ts->printf(cvtest::TS::LOG, "Incorrect number of detected markers");
                     else

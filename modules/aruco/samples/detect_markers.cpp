@@ -63,8 +63,7 @@ const char* keys  =
         "{dp       |       | File of marker detector parameters }"
         "{r        |       | show rejected candidates too }"
         "{refine   |       | Corner refinement: CORNER_REFINE_NONE=0, CORNER_REFINE_SUBPIX=1,"
-        "CORNER_REFINE_CONTOUR=2, CORNER_REFINE_APRILTAG=3}"
-        "{ar3vid   |       | Adapt the paramater tau_i if aruco3 functionality is used. }";
+        "CORNER_REFINE_CONTOUR=2, CORNER_REFINE_APRILTAG=3}";
 }
 //! [aruco_detect_markers_keys]
 
@@ -80,7 +79,6 @@ int main(int argc, char *argv[]) {
     bool showRejected = parser.has("r");
     bool estimatePose = parser.has("c");
     float markerLength = parser.get<float>("l");
-    bool useAruco3DynamicUpdates = parser.has("ar3vid");
 
     Ptr<aruco::DetectorParameters> detectorParams;
     if(parser.has("dp")) {
@@ -141,7 +139,7 @@ int main(int argc, char *argv[]) {
     int waitTime;
     if(!video.empty()) {
         inputVideo.open(video);
-        waitTime = 1;
+        waitTime = 0;
     } else {
         inputVideo.open(camId);
         waitTime = 10;
@@ -150,8 +148,6 @@ int main(int argc, char *argv[]) {
     double totalTime = 0;
     int totalIterations = 0;
 
-    float new_marker_length_ratio = 0.0;
-    size_t total_nr_detected_corners = 0;
     while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -163,16 +159,7 @@ int main(int argc, char *argv[]) {
         vector< Vec3d > rvecs, tvecs;
 
         // detect markers and estimate pose
-        if (useAruco3DynamicUpdates) {
-            // if new aruco3 features are used, we can also set the new min
-            // marker length ratio dymamically from the last frame
-            detectorParams->minMarkerLengthRatioOriginalImg = new_marker_length_ratio;
-            if(totalIterations % 30 == 0) {
-                cout<<"Current tau_i= "<<new_marker_length_ratio<<"\n";
-            }
-        }
-        new_marker_length_ratio = aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
-        total_nr_detected_corners += ids.size();
+        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
         if(estimatePose && ids.size() > 0)
             aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
                                              tvecs);
