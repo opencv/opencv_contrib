@@ -793,4 +793,35 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
     EXPECT_EQ(counterGoldCornersIds, counterRes); // check the number of ArUco markers
 }
 
+TEST(Charuco, issue_14014)
+{
+    string imgPath = cvtest::findDataFile("aruco/recover.png");
+    Mat img = imread(imgPath);
+
+    Ptr<aruco::Dictionary> dict = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(cv::aruco::DICT_7X7_250));
+    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(8, 5, 0.03455f, 0.02164f, dict);
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+    detectorParams->cornerRefinementMinAccuracy = 0.01;
+
+    vector<Mat> corners, rejectedPoints;
+    vector<int> ids;
+
+    aruco::detectMarkers(img, dict, corners, ids, detectorParams, rejectedPoints);
+
+    ASSERT_EQ(corners.size(), 19ull);
+    EXPECT_EQ(Size(4, 1), corners[0].size()); // check dimension of detected corners
+
+    ASSERT_EQ(rejectedPoints.size(), 21ull);
+    EXPECT_EQ(Size(4, 1), rejectedPoints[0].size()); // check dimension of detected corners
+
+    aruco::refineDetectedMarkers(img, board, corners, ids, rejectedPoints);
+
+    ASSERT_EQ(corners.size(), 20ull);
+    EXPECT_EQ(Size(4, 1), corners[0].size()); // check dimension of rejected corners after successfully refine
+
+    ASSERT_EQ(rejectedPoints.size(), 20ull);
+    EXPECT_EQ(Size(4, 1), rejectedPoints[0].size()); // check dimension of rejected corners after successfully refine
+}
+
 }} // namespace
