@@ -281,7 +281,7 @@ namespace
         Size wholeSize;
         src.locateROI(wholeSize, ofs);
 
-        GpuMat srcWhole(wholeSize, src.type(), src.datastart);
+        GpuMat srcWhole(wholeSize, src.type(), src.datastart, src.step);
 
         func_(srcWhole, ofs.x, ofs.y, dst, kernel_.ptr<float>(),
               kernel_.cols, kernel_.rows, anchor_.x, anchor_.y,
