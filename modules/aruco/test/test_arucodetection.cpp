@@ -246,6 +246,13 @@ static Mat projectMarker(Ptr<aruco::Dictionary> &dictionary, int id, Mat cameraM
     return img;
 }
 
+enum class ArucoAlgParams
+{
+    USE_DEFAULT = 0,
+    USE_APRILTAG=1,             /// Detect marker candidates :: using AprilTag
+    DETECT_INVERTED_MARKER,     /// Check if there is a white marker
+    USE_ARUCO3                  /// Check if aruco3 should be used
+};
 
 
 /**
@@ -253,23 +260,15 @@ static Mat projectMarker(Ptr<aruco::Dictionary> &dictionary, int id, Mat cameraM
  */
 class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
     public:
-    CV_ArucoDetectionPerspective();
-
-    enum checkWithParameter{
-        USE_APRILTAG=1,             /// Detect marker candidates :: using AprilTag
-        DETECT_INVERTED_MARKER,     /// Check if there is a white marker
-        USE_ARUCO3                  /// Check if aruco3 should be used
-    };
+    CV_ArucoDetectionPerspective(ArucoAlgParams arucoAlgParam) : arucoAlgParams(arucoAlgParam) {}
 
     protected:
     void run(int);
+    ArucoAlgParams arucoAlgParams;
 };
 
 
-CV_ArucoDetectionPerspective::CV_ArucoDetectionPerspective() {}
-
-
-void CV_ArucoDetectionPerspective::run(int tryWith) {
+void CV_ArucoDetectionPerspective::run(int) {
 
     int iter = 0;
     int szEnclosed = 0;
@@ -298,16 +297,16 @@ void CV_ArucoDetectionPerspective::run(int tryWith) {
                     projectMarker(dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                       distance, imgSize, markerBorder, groundTruthCorners, szEnclosed);
                 // marker :: Inverted
-                if(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith){
+                if(ArucoAlgParams::DETECT_INVERTED_MARKER == arucoAlgParams){
                     img = ~img;
                     params->detectInvertedMarker = true;
                 }
 
-                if(CV_ArucoDetectionPerspective::USE_APRILTAG == tryWith){
+                if(ArucoAlgParams::USE_APRILTAG == arucoAlgParams){
                     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
                 }
 
-                if (CV_ArucoDetectionPerspective::USE_ARUCO3 == tryWith) {
+                if (ArucoAlgParams::USE_ARUCO3 == arucoAlgParams) {
                     params->useAruco3Detection = true;
                     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
                 }
@@ -337,7 +336,7 @@ void CV_ArucoDetectionPerspective::run(int tryWith) {
             }
         }
         // change the state :: to detect an enclosed inverted marker
-        if( CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith && distance == 0.1 ){
+        if(ArucoAlgParams::DETECT_INVERTED_MARKER == arucoAlgParams && distance == 0.1){
             distance -= 0.1;
             szEnclosed++;
         }
@@ -532,18 +531,18 @@ typedef CV_ArucoDetectionPerspective CV_InvertedArucoDetectionPerspective;
 typedef CV_ArucoDetectionPerspective CV_Aruco3DetectionPerspective;
 
 TEST(CV_InvertedArucoDetectionPerspective, algorithmic) {
-    CV_InvertedArucoDetectionPerspective test;
-    test.safe_run(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER);
+    CV_InvertedArucoDetectionPerspective test(ArucoAlgParams::DETECT_INVERTED_MARKER);
+    test.safe_run();
 }
 
 TEST(CV_AprilTagDetectionPerspective, algorithmic) {
-    CV_AprilTagDetectionPerspective test;
-    test.safe_run(CV_ArucoDetectionPerspective::USE_APRILTAG);
+    CV_AprilTagDetectionPerspective test(ArucoAlgParams::USE_APRILTAG);
+    test.safe_run();
 }
 
 TEST(CV_Aruco3DetectionPerspective, algorithmic) {
-    CV_Aruco3DetectionPerspective test;
-    test.safe_run(CV_ArucoDetectionPerspective::USE_ARUCO3);
+    CV_Aruco3DetectionPerspective test(ArucoAlgParams::USE_ARUCO3);
+    test.safe_run();
 }
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {
@@ -552,7 +551,7 @@ TEST(CV_ArucoDetectionSimple, algorithmic) {
 }
 
 TEST(CV_ArucoDetectionPerspective, algorithmic) {
-    CV_ArucoDetectionPerspective test;
+    CV_ArucoDetectionPerspective test(ArucoAlgParams::USE_DEFAULT);
     test.safe_run();
 }
 

@@ -704,7 +704,8 @@ static void _identifyCandidates(InputArray grey,
                                 vector< vector< Point2f > >& _accepted, vector< vector<Point> >& _contours, vector< int >& ids,
                                 const Ptr<DetectorParameters> &params,
                                 OutputArrayOfArrays _rejected = noArray()) {
-
+    CV_DbgAssert(grey.getMat().total() != 0);
+    CV_DbgAssert(grey.getMat().type() == CV_8UC1);
     int ncandidates = (int)_candidatesSet[0].size();
     vector< vector< Point2f > > accepted;
     vector< vector< Point2f > > rejected;
