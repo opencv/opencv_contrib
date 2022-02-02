@@ -387,6 +387,49 @@ INSTANTIATE_TEST_CASE_P(CUDA, GpuMat_ConvertTo, testing::Combine(
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
+// locateROI
+
+PARAM_TEST_CASE(GpuMat_LocateROI, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::Size size;
+    int depth;
+    bool useRoi;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        size = GET_PARAM(1);
+        depth = GET_PARAM(2);
+        useRoi = GET_PARAM(3);
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(GpuMat_LocateROI, locateROI)
+{
+    Point ofsGold;
+    Size wholeSizeGold;
+    GpuMat src = createMat(size, depth, wholeSizeGold, ofsGold, useRoi);
+
+    Point ofs;
+    Size wholeSize;
+    src.locateROI(wholeSize, ofs);
+    ASSERT_TRUE(ofs == ofsGold && wholeSize == wholeSizeGold);
+
+    GpuMat srcPtr(src.size(), src.type(), src.data, src.step);
+    src.locateROI(wholeSize, ofs);
+    ASSERT_TRUE(ofs == ofsGold && wholeSize == wholeSizeGold);
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA, GpuMat_LocateROI, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    ALL_DEPTH,
+    WHOLE_SUBMAT));
+
+////////////////////////////////////////////////////////////////////////////////
 // ensureSizeIsEnough
 
 struct EnsureSizeIsEnough : testing::TestWithParam<cv::cuda::DeviceInfo>
