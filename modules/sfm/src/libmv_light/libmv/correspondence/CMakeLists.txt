@@ -8,7 +8,7 @@ FILE(GLOB CORRESPONDENCE_HDRS *.h)
 
 ADD_LIBRARY(correspondence STATIC ${CORRESPONDENCE_SRC} ${CORRESPONDENCE_HDRS})
 
-TARGET_LINK_LIBRARIES(correspondence LINK_PRIVATE ${GLOG_LIBRARIES} multiview)
+ocv_target_link_libraries(correspondence LINK_PRIVATE ${GLOG_LIBRARIES} multiview opencv_imgcodecs)
 IF(TARGET Eigen3::Eigen)
   TARGET_LINK_LIBRARIES(correspondence LINK_PUBLIC Eigen3::Eigen)
 ENDIF()
