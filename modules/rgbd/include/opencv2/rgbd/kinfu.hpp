@@ -18,17 +18,10 @@ namespace kinfu {
 
 struct CV_EXPORTS_W VolumeParams
 {
-    enum VolumeKind
-    {
-        TSDF = 0,
-        HASHTSDF = 1,
-        COLOREDTSDF = 2
-    };
-
     /** @brief Kind of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
-    CV_PROP_RW VolumeKind kind = VolumeKind::TSDF;
+    CV_PROP_RW VolumeType kind = VolumeType::TSDF;
 
     /** @brief Resolution of voxel space
         Number of voxels in each dimension.
@@ -147,7 +140,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW Size frameSize;
 
     /** @brief Volume kind */
-    int volumeKind;
+    VolumeType volumeKind;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;

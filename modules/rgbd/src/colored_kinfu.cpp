@@ -27,7 +27,7 @@ Ptr<Params> Params::defaultParams()
 
     p.frameSize = Size(640, 480);
 
-    p.volumeKind = VolumeParams::VolumeKind::TSDF;
+    p.volumeKind = VolumeType::TSDF;
 
     float fx, fy, cx, cy;
     fx = fy = 525.f;
@@ -110,7 +110,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeKind = VolumeParams::VolumeKind::HASHTSDF;
+    p->volumeKind = VolumeType::HashTSDF;
     p->truncateThreshold = 4.f;
     return p;
 }
@@ -122,7 +122,7 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
         p = coarseParams();
     else
         p = defaultParams();
-    p->volumeKind = VolumeParams::VolumeKind::COLOREDTSDF;
+    p->volumeKind = VolumeType::ColorTSDF;
 
     return p;
 }

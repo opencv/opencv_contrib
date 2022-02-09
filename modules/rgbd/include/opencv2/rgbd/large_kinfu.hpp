@@ -19,17 +19,10 @@ namespace large_kinfu
 {
 struct CV_EXPORTS_W VolumeParams
 {
-    enum VolumeKind
-    {
-        TSDF = 0,
-        HASHTSDF = 1,
-        COLOREDTSDF = 2
-    };
-
     /** @brief Kind of Volume
             Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
-    CV_PROP_RW VolumeKind kind = VolumeKind::TSDF;
+    CV_PROP_RW VolumeType kind = VolumeType::TSDF;
 
     /** @brief Resolution of voxel space
         Number of voxels in each dimension.
@@ -79,12 +72,12 @@ struct CV_EXPORTS_W VolumeParams
     /** @brief Default set of parameters that provide higher quality reconstruction
         at the cost of slow performance.
     */
-    CV_WRAP static Ptr<VolumeParams> defaultParams(VolumeKind volumeType);
+    CV_WRAP static Ptr<VolumeParams> defaultParams(VolumeType volumeType);
 
     /** @brief Coarse set of parameters that provides relatively higher performance
         at the cost of reconstrution quality.
     */
-    CV_WRAP static Ptr<VolumeParams> coarseParams(VolumeKind volumeType);
+    CV_WRAP static Ptr<VolumeParams> coarseParams(VolumeType volumeType);
 };
 struct CV_EXPORTS_W Params
 {

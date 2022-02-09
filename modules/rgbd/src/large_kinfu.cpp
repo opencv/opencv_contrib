@@ -13,7 +13,7 @@ namespace large_kinfu
 {
 using namespace kinfu;
 
-Ptr<VolumeParams> VolumeParams::defaultParams(VolumeKind _volumeKind)
+Ptr<VolumeParams> VolumeParams::defaultParams(VolumeType _volumeKind)
 {
     VolumeParams params;
     params.kind = _volumeKind;
@@ -24,7 +24,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeKind _volumeKind)
     Matx44f pose = Affine3f().translate(Vec3f(-volumeSize / 2.f, -volumeSize / 2.f, 0.5f)).matrix;
     params.pose = Mat(pose);
 
-    if (params.kind == VolumeKind::TSDF)
+    if (params.kind == VolumeType::TSDF)
     {
         params.resolutionX = 512;
         params.resolutionY = 512;
@@ -34,7 +34,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeKind _volumeKind)
         params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
         return makePtr<VolumeParams>(params);
     }
-    else if (params.kind == VolumeKind::HASHTSDF)
+    else if (params.kind == VolumeType::HashTSDF)
     {
         params.unitResolution = 16;
         params.voxelSize = volumeSize / 512.f;
@@ -42,7 +42,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeKind _volumeKind)
         params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
         return makePtr<VolumeParams>(params);
     }
-    else if (params.kind == VolumeKind::COLOREDTSDF)
+    else if (params.kind == VolumeType::ColorTSDF)
     {
         params.resolutionX = 512;
         params.resolutionY = 512;
@@ -55,13 +55,13 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeKind _volumeKind)
     CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
-Ptr<VolumeParams> VolumeParams::coarseParams(VolumeKind _volumeKind)
+Ptr<VolumeParams> VolumeParams::coarseParams(VolumeType _volumeKind)
 {
     Ptr<VolumeParams> params = defaultParams(_volumeKind);
 
     params->raycastStepFactor = 0.75f;
     float volumeSize = 3.0f;
-    if (params->kind == VolumeKind::TSDF)
+    if (params->kind == VolumeType::TSDF)
     {
         params->resolutionX = 128;
         params->resolutionY = 128;
@@ -70,13 +70,13 @@ Ptr<VolumeParams> VolumeParams::coarseParams(VolumeKind _volumeKind)
         params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
         return params;
     }
-    else if (params->kind == VolumeKind::HASHTSDF)
+    else if (params->kind == VolumeType::HashTSDF)
     {
         params->voxelSize = volumeSize / 128.f;
         params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
         return params;
     }
-    else if (params->kind == VolumeKind::COLOREDTSDF)
+    else if (params->kind == VolumeType::ColorTSDF)
     {
         params->resolutionX = 128;
         params->resolutionY = 128;
@@ -123,7 +123,7 @@ Ptr<Params> Params::defaultParams()
     //! Volume parameters
     {
         float volumeSize                   = 3.0f;
-        p.volumeParams.kind                = VolumeParams::VolumeKind::TSDF;
+        p.volumeParams.kind                = VolumeType::TSDF;
         p.volumeParams.resolutionX         = 512;
         p.volumeParams.resolutionY         = 512;
         p.volumeParams.resolutionZ         = 512;
@@ -171,7 +171,7 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     else
         p = defaultParams();
 
-    p->volumeParams.kind                = VolumeParams::VolumeKind::HASHTSDF;
+    p->volumeParams.kind                = VolumeType::HashTSDF;
     p->volumeParams.depthTruncThreshold = 4.f;
     p->volumeParams.unitResolution      = 16;
     return p;
