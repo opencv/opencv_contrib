@@ -29,7 +29,7 @@ struct CV_EXPORTS_W VolumeParams
     /** @brief Kind of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
-    CV_PROP_RW int kind;
+    CV_PROP_RW VolumeKind kind;
 
     /** @brief Resolution of voxel space
         Number of voxels in each dimension.
@@ -76,12 +76,12 @@ struct CV_EXPORTS_W VolumeParams
     /** @brief Default set of parameters that provide higher quality reconstruction
         at the cost of slow performance.
     */
-    CV_WRAP static Ptr<VolumeParams> defaultParams(int _volumeType);
+    CV_WRAP static Ptr<VolumeParams> defaultParams(VolumeKind volumeType);
 
     /** @brief Coarse set of parameters that provides relatively higher performance
         at the cost of reconstrution quality.
     */
-    CV_WRAP static Ptr<VolumeParams> coarseParams(int _volumeType);
+    CV_WRAP static Ptr<VolumeParams> coarseParams(VolumeKind volumeType);
 };
 struct CV_EXPORTS_W Params
 {

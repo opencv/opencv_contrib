@@ -28,7 +28,7 @@ struct CV_EXPORTS_W VolumeParams
     /** @brief Kind of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
-    CV_PROP_RW int kind;
+    CV_PROP_RW VolumeKind kind;
 
     /** @brief Resolution of voxel space
         Number of voxels in each dimension.
@@ -43,7 +43,7 @@ struct CV_EXPORTS_W VolumeParams
         Number of voxels in each dimension for volumeUnit
         Applicable only for hashTSDF.
     */
-    CV_PROP_RW int unitResolution = { 0 };
+    CV_PROP_RW int unitResolution = 0;
 
     /** @brief Initial pose of the volume in meters, should be 4x4 float or double matrix */
     CV_PROP_RW Mat pose;

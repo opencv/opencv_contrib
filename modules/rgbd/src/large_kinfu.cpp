@@ -13,7 +13,7 @@ namespace large_kinfu
 {
 using namespace kinfu;
 
-Ptr<VolumeParams> VolumeParams::defaultParams(int _volumeKind)
+Ptr<VolumeParams> VolumeParams::defaultParams(VolumeKind _volumeKind)
 {
     VolumeParams params;
     params.kind = _volumeKind;
@@ -55,7 +55,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(int _volumeKind)
     CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
 }
 
-Ptr<VolumeParams> VolumeParams::coarseParams(int _volumeKind)
+Ptr<VolumeParams> VolumeParams::coarseParams(VolumeKind _volumeKind)
 {
     Ptr<VolumeParams> params = defaultParams(_volumeKind);
 
@@ -229,8 +229,7 @@ VolumeSettings LargeKinfuImpl<MatType>::paramsToSettings(const Params& params)
     vs.setRaycastStepFactor(params.volumeParams.raycastStepFactor);
     vs.setTsdfTruncateDistance(params.volumeParams.tsdfTruncDist);
     vs.setMaxWeight(params.volumeParams.maxWeight);
-    vs.setVolumeResolution(Vec3i(params.volumeParams.unitResolution,
-        params.volumeParams.unitResolution, params.volumeParams.unitResolution));
+    vs.setVolumeResolution(Vec3i(params.volumeParams.unitResolution, params.volumeParams.unitResolution, params.volumeParams.unitResolution));
 
     return vs;
 }
