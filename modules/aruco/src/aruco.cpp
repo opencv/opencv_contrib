@@ -1443,7 +1443,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
     _convertToGrey(_image, grey);
 
     // vector of final detected marker corners and ids
-    vector< Mat > finalAcceptedCorners;
+    vector<vector<Point2f> > finalAcceptedCorners;
     vector< int > finalAcceptedIds;
     // fill with the current markers
     finalAcceptedCorners.resize(_detectedCorners.total());
@@ -1554,38 +1554,18 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
 
     // parse output
     if(finalAcceptedIds.size() != _detectedIds.total()) {
-        _detectedCorners.clear();
-        _detectedIds.clear();
-
         // parse output
         Mat(finalAcceptedIds).copyTo(_detectedIds);
-
-        _detectedCorners.create((int)finalAcceptedCorners.size(), 1, CV_32FC2);
-        for(unsigned int i = 0; i < finalAcceptedCorners.size(); i++) {
-            _detectedCorners.create(4, 1, CV_32FC2, i, true);
-            for(int j = 0; j < 4; j++) {
-                _detectedCorners.getMat(i).ptr< Point2f >()[j] =
-                    finalAcceptedCorners[i].ptr< Point2f >()[j];
-            }
-        }
+        _copyVector2Output(finalAcceptedCorners, _detectedCorners);
 
         // recalculate _rejectedCorners based on alreadyIdentified
-        vector< Mat > finalRejected;
+        vector<vector<Point2f> > finalRejected;
         for(unsigned int i = 0; i < alreadyIdentified.size(); i++) {
             if(!alreadyIdentified[i]) {
                 finalRejected.push_back(_rejectedCorners.getMat(i).clone());
             }
         }
-
-        _rejectedCorners.clear();
-        _rejectedCorners.create((int)finalRejected.size(), 1, CV_32FC2);
-        for(unsigned int i = 0; i < finalRejected.size(); i++) {
-            _rejectedCorners.create(4, 1, CV_32FC2, i, true);
-            for(int j = 0; j < 4; j++) {
-                _rejectedCorners.getMat(i).ptr< Point2f >()[j] =
-                    finalRejected[i].ptr< Point2f >()[j];
-            }
-        }
+        _copyVector2Output(finalRejected, _rejectedCorners);
 
         if(_recoveredIdxs.needed()) {
             Mat(recoveredIdxs).copyTo(_recoveredIdxs);
