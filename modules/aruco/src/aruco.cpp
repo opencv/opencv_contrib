@@ -1713,16 +1713,14 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
     }
 
     // calculate Board objPoints
-    float maxY = (float)markersY * markerLength + (markersY - 1) * markerSeparation;
     for(int y = 0; y < markersY; y++) {
         for(int x = 0; x < markersX; x++) {
-            vector< Point3f > corners;
-            corners.resize(4);
+            vector<Point3f> corners(4);
             corners[0] = Point3f(x * (markerLength + markerSeparation),
-                                 maxY - y * (markerLength + markerSeparation), 0);
+                                 y * (markerLength + markerSeparation), 0);
             corners[1] = corners[0] + Point3f(markerLength, 0, 0);
-            corners[2] = corners[0] + Point3f(markerLength, -markerLength, 0);
-            corners[3] = corners[0] + Point3f(0, -markerLength, 0);
+            corners[2] = corners[0] + Point3f(markerLength, markerLength, 0);
+            corners[3] = corners[0] + Point3f(0, markerLength, 0);
             res->objPoints.push_back(corners);
         }
     }
@@ -1851,7 +1849,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
             // move top left to 0, 0
             pf -= Point2f(minX, minY);
             pf.x = pf.x / sizeX * float(out.cols);
-            pf.y = (1.0f - pf.y / sizeY) * float(out.rows);
+            pf.y = pf.y / sizeY * float(out.rows);
             outCorners[j] = pf;
         }
 

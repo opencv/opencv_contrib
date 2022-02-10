@@ -48,41 +48,23 @@ static double deg2rad(double deg) { return deg * CV_PI / 180.; }
  */
 static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) {
 
-    rvec = Mat(3, 1, CV_64FC1);
-    tvec = Mat(3, 1, CV_64FC1);
+    rvec = Mat::zeros(3, 1, CV_64FC1);
+    tvec = Mat::zeros(3, 1, CV_64FC1);
 
-    // Rvec
-    // first put the Z axis aiming to -X (like the camera axis system)
-    Mat rotZ(3, 1, CV_64FC1);
-    rotZ.ptr< double >(0)[0] = 0;
-    rotZ.ptr< double >(0)[1] = 0;
-    rotZ.ptr< double >(0)[2] = -0.5 * CV_PI;
-
-    Mat rotX(3, 1, CV_64FC1);
-    rotX.ptr< double >(0)[0] = 0.5 * CV_PI;
-    rotX.ptr< double >(0)[1] = 0;
-    rotX.ptr< double >(0)[2] = 0;
-
-    Mat camRvec, camTvec;
-    composeRT(rotZ, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotX, Mat(3, 1, CV_64FC1, Scalar::all(0)),
-              camRvec, camTvec);
-
-    // now pitch and yaw angles
+    // rotate camera in pitch axis
     Mat rotPitch(3, 1, CV_64FC1);
-    rotPitch.ptr< double >(0)[0] = 0;
-    rotPitch.ptr< double >(0)[1] = pitch;
+    rotPitch.ptr< double >(0)[0] = pitch;
+    rotPitch.ptr< double >(0)[1] = 0;
     rotPitch.ptr< double >(0)[2] = 0;
 
+    // rotate camera in yaw axis
     Mat rotYaw(3, 1, CV_64FC1);
-    rotYaw.ptr< double >(0)[0] = yaw;
-    rotYaw.ptr< double >(0)[1] = 0;
+    rotYaw.ptr< double >(0)[0] = 0;
+    rotYaw.ptr< double >(0)[1] = yaw;
     rotYaw.ptr< double >(0)[2] = 0;
 
-    composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
-              Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
-
     // compose both rotations
-    composeRT(camRvec, Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec,
+    composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
               Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
 
     // Tvec, just move in z (camera) direction the specific distance
@@ -94,20 +76,25 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
 /**
  * @brief Project a synthetic marker
  */
-static void projectMarker(Mat &img, Ptr<aruco::Dictionary> &dictionary, int id,
-                          vector< Point3f > markerObjPoints, Mat cameraMatrix, Mat rvec, Mat tvec,
+static void projectMarker(Mat &img, Ptr<aruco::Board> &board, int markerIndex, Mat cameraMatrix, Mat rvec, Mat tvec,
                           int markerBorder) {
-
-
     // canonical image
     Mat markerImg;
     const int markerSizePixels = 100;
-    aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
+    aruco::drawMarker(board->dictionary, board->ids[markerIndex], markerSizePixels, markerImg, markerBorder);
 
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector< Point2f > corners;
-    projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
+
+    // get max coordinate of board
+    Point3f maxCoord = board->objPoints.back()[2];
+    vector<Point3f> objPoints(board->objPoints[markerIndex]);
+    // move the marker to the origin
+    for (size_t i = 0; i < objPoints.size(); i++)
+        objPoints[i] -= maxCoord / 2.0;
+
+    projectPoints(objPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
     // get perspective transform
     vector< Point2f > originalCorners;
@@ -143,9 +130,8 @@ static Mat projectBoard(Ptr<aruco::GridBoard> &board, Mat cameraMatrix, double y
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
     Mat img = Mat(imageSize, CV_8UC1, Scalar::all(255));
-    for(unsigned int m = 0; m < board->ids.size(); m++) {
-        projectMarker(img, board->dictionary, board->ids[m], board->objPoints[m], cameraMatrix, rvec,
-                      tvec, markerBorder);
+    for(unsigned int index = 0; index < board->ids.size(); index++) {
+        projectMarker(img, board.staticCast<aruco::Board>(), index, cameraMatrix, rvec, tvec, markerBorder);
     }
 
     return img;
@@ -169,7 +155,6 @@ CV_ArucoBoardPose::CV_ArucoBoardPose() {}
 
 
 void CV_ArucoBoardPose::run(int) {
-
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
@@ -183,18 +168,15 @@ void CV_ArucoBoardPose::run(int) {
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
-        for(int yaw = 0; yaw < 360; yaw += 100) {
-            for(int pitch = 30; pitch <= 90; pitch += 50) {
+        for(int yaw = -60; yaw <= 60; yaw += 30) {
+            for(int pitch = -0; pitch <= 0; pitch += 30) {
                 for(unsigned int i = 0; i < gridboard->ids.size(); i++)
                     gridboard->ids[i] = (iter + int(i)) % 250;
                 int markerBorder = iter % 2 + 1;
                 iter++;
-
                 // create synthetic image
-                Mat img = projectBoard(gridboard, cameraMatrix, deg2rad(pitch), deg2rad(yaw), distance,
+                Mat img = projectBoard(gridboard, cameraMatrix, deg2rad(yaw), deg2rad(pitch), distance,
                                        imgSize, markerBorder);
-
-
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
@@ -278,15 +260,15 @@ void CV_ArucoRefine::run(int) {
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
-        for(int yaw = 0; yaw < 360; yaw += 100) {
-            for(int pitch = 30; pitch <= 90; pitch += 50) {
+        for(int yaw = -60; yaw < 60; yaw += 30) {
+            for(int pitch = -60; pitch <= 60; pitch += 30) {
                 for(unsigned int i = 0; i < gridboard->ids.size(); i++)
                     gridboard->ids[i] = (iter + int(i)) % 250;
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
                 // create synthetic image
-                Mat img = projectBoard(gridboard, cameraMatrix, deg2rad(pitch), deg2rad(yaw), distance,
+                Mat img = projectBoard(gridboard, cameraMatrix, deg2rad(yaw), deg2rad(pitch), distance,
                                        imgSize, markerBorder);
 
 
