@@ -1660,6 +1660,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
+    Point3f rightBottomBorder = Point3f(0.f, 0.f, 0.f);
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
@@ -1669,7 +1670,11 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
         CV_Assert(corners_mat.total() == 4);
 
         for (int j = 0; j < 4; j++) {
-            corners.push_back(corners_mat.at<Point3f>(j));
+            const Point3f& corner = corners_mat.at<Point3f>(j);
+            corners.push_back(corner);
+            rightBottomBorder.x = std::max(rightBottomBorder.x, corner.x);
+            rightBottomBorder.y = std::max(rightBottomBorder.y, corner.y);
+            rightBottomBorder.z = std::max(rightBottomBorder.z, corner.z);
         }
         obj_points_vector.push_back(corners);
     }
@@ -1678,6 +1683,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     ids.copyTo(res->ids);
     res->objPoints = obj_points_vector;
     res->dictionary = cv::makePtr<Dictionary>(dictionary);
+    res->rightBottomBorder = rightBottomBorder;
     return res;
 }
 
@@ -1724,7 +1730,8 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
             res->objPoints.push_back(corners);
         }
     }
-
+    res->rightBottomBorder = Point3f(markersX * markerLength + markerSeparation * (markersX - 1),
+                                     markersY * markerLength + markerSeparation * (markersY - 1), 0.f);
     return res;
 }
 

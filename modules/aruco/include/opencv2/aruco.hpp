@@ -303,6 +303,8 @@ class CV_EXPORTS_W Board {
     /// vector of the identifiers of the markers in the board (same size than objPoints)
     /// The identifiers refers to the board dictionary
     CV_PROP_RW std::vector< int > ids;
+
+    CV_PROP Point3f rightBottomBorder;
 };
 
 
