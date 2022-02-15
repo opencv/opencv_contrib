@@ -31,7 +31,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeType _volumeKind)
         params.resolutionZ = 512;
         params.voxelSize = volumeSize / 512.f;
         params.depthTruncThreshold = 0.f;  // depthTruncThreshold not required for TSDF
-        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        params.tsdfTruncDist = 7 * params.voxelSize;  // About 0.04f in meters
         return makePtr<VolumeParams>(params);
     }
     else if (params.kind == VolumeType::HashTSDF)
@@ -39,7 +39,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeType _volumeKind)
         params.unitResolution = 16;
         params.voxelSize = volumeSize / 512.f;
         params.depthTruncThreshold = 4.f;
-        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        params.tsdfTruncDist = 7 * params.voxelSize;  // About 0.04f in meters
         return makePtr<VolumeParams>(params);
     }
     else if (params.kind == VolumeType::ColorTSDF)
@@ -49,7 +49,7 @@ Ptr<VolumeParams> VolumeParams::defaultParams(VolumeType _volumeKind)
         params.resolutionZ = 512;
         params.voxelSize = volumeSize / 512.f;
         params.depthTruncThreshold = 0.f;  // depthTruncThreshold not required for TSDF
-        params.tsdfTruncDist = 7 * params.voxelSize;  //! About 0.04f in meters
+        params.tsdfTruncDist = 7 * params.voxelSize;  // About 0.04f in meters
         return makePtr<VolumeParams>(params);
     }
     CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
@@ -67,13 +67,13 @@ Ptr<VolumeParams> VolumeParams::coarseParams(VolumeType _volumeKind)
         params->resolutionY = 128;
         params->resolutionZ = 128;
         params->voxelSize = volumeSize / 128.f;
-        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        params->tsdfTruncDist = 2 * params->voxelSize;  // About 0.04f in meters
         return params;
     }
     else if (params->kind == VolumeType::HashTSDF)
     {
         params->voxelSize = volumeSize / 128.f;
-        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        params->tsdfTruncDist = 2 * params->voxelSize;  // About 0.04f in meters
         return params;
     }
     else if (params->kind == VolumeType::ColorTSDF)
@@ -82,7 +82,7 @@ Ptr<VolumeParams> VolumeParams::coarseParams(VolumeType _volumeKind)
         params->resolutionY = 128;
         params->resolutionZ = 128;
         params->voxelSize = volumeSize / 128.f;
-        params->tsdfTruncDist = 2 * params->voxelSize;  //! About 0.04f in meters
+        params->tsdfTruncDist = 2 * params->voxelSize;  // About 0.04f in meters
         return params;
     }
     CV_Error(Error::StsBadArg, "Invalid VolumeType does not have parameters");
@@ -92,7 +92,7 @@ Ptr<Params> Params::defaultParams()
 {
     Params p;
 
-    //! Frame parameters
+    // Frame parameters
     {
         p.frameSize = Size(640, 480);
 
@@ -112,7 +112,7 @@ Ptr<Params> Params::defaultParams()
         p.bilateral_kernel_size   = 7;      // pixels
         p.truncateThreshold       = 0.f;    // meters
     }
-    //! ICP parameters
+    // ICP parameters
     {
         p.icpAngleThresh = (float)(30. * CV_PI / 180.);  // radians
         p.icpDistThresh  = 0.1f;                         // meters
@@ -120,7 +120,7 @@ Ptr<Params> Params::defaultParams()
         p.icpIterations = { 10, 5, 4 };
         p.pyramidLevels = (int)p.icpIterations.size();
     }
-    //! Volume parameters
+    // Volume parameters
     {
         float volumeSize                   = 3.0f;
         p.volumeParams.kind                = VolumeType::TSDF;
@@ -135,7 +135,7 @@ Ptr<Params> Params::defaultParams()
         p.volumeParams.raycastStepFactor   = 0.25f;                         // in voxel sizes
         p.volumeParams.depthTruncThreshold = p.truncateThreshold;
     }
-    //! Unused parameters
+    // Unused parameters
     p.tsdf_min_camera_movement = 0.f;              // meters, disabled
     p.lightPose                = Vec3f::all(0.f);  // meters
 
@@ -146,12 +146,12 @@ Ptr<Params> Params::coarseParams()
 {
     Ptr<Params> p = defaultParams();
 
-    //! Reduce ICP iterations and pyramid levels
+    // Reduce ICP iterations and pyramid levels
     {
         p->icpIterations = { 5, 3, 2 };
         p->pyramidLevels = (int)p->icpIterations.size();
     }
-    //! Make the volume coarse
+    // Make the volume coarse
     {
         float volumeSize                  = 3.f;
         p->volumeParams.resolutionX       = 128;  // number of voxels
@@ -208,7 +208,7 @@ class LargeKinfuImpl : public LargeKinfu
     VolumeSettings settings;
 
     Odometry icp;
-    //! TODO: Submap manager and Pose graph optimizer
+    // TODO: Submap manager and Pose graph optimizer
     cv::Ptr<detail::SubmapManager<MatType>> submapMgr;
 
     int frameCounter;
@@ -333,7 +333,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         Affine3f affine;
         CV_LOG_INFO(NULL, "Current tracking ID: " << currTrackingId);
 
-        if(frameCounter == 0) //! Only one current tracking map
+        if(frameCounter == 0) // Only one current tracking map
         {
             icp.prepareFrame(newFrame);
             currTrackingSubmap->integrate(depth, frameCounter);
@@ -406,7 +406,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
     auto currSubmap = submapMgr->getCurrentSubmap();
-    //! TODO: Can render be dependent on current submap
+    // TODO: Can render be dependent on current submap
     MatType pts, nrm;
     currSubmap->renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     currSubmap->renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM,  0);

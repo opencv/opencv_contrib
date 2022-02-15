@@ -20,11 +20,13 @@ namespace large_kinfu
 struct CV_EXPORTS_W VolumeParams
 {
     /** @brief Kind of Volume
-            Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
+
+        Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
     */
     CV_PROP_RW VolumeType kind = VolumeType::TSDF;
 
     /** @brief Resolution of voxel space
+
         Number of voxels in each dimension.
         Applicable only for TSDF Volume.
         HashTSDF volume only supports equal resolution in all three dimensions
@@ -34,6 +36,7 @@ struct CV_EXPORTS_W VolumeParams
     CV_PROP_RW int resolutionZ = 128;
 
     /** @brief Resolution of volumeUnit in voxel space
+
         Number of voxels in each dimension for volumeUnit
         Applicable only for hashTSDF.
     */
@@ -49,50 +52,54 @@ struct CV_EXPORTS_W VolumeParams
     CV_PROP_RW float voxelSize = volumSize / 512.f;
 
     /** @brief TSDF truncation distance
+
         Distances greater than value from surface will be truncated to 1.0
     */
     CV_PROP_RW float tsdfTruncDist = 7.f * voxelSize;
 
     /** @brief Max number of frames to integrate per voxel
+
         Represents the max number of frames over which a running average
         of the TSDF is calculated for a voxel
     */
     CV_PROP_RW int maxWeight = 64;
 
     /** @brief Threshold for depth truncation in meters
+
         Truncates the depth greater than threshold to 0
     */
     CV_PROP_RW float depthTruncThreshold = 0.f;
 
     /** @brief Length of single raycast step
+
         Describes the percentage of voxel length that is skipped per march
     */
     CV_PROP_RW float raycastStepFactor = 0.25f;
 
-    /** @brief Default set of parameters that provide higher quality reconstruction
-        at the cost of slow performance.
-    */
+    /** @brief Default set of parameters that provide higher quality reconstruction at the cost of slow performance.*/
     CV_WRAP static Ptr<VolumeParams> defaultParams(VolumeType volumeType);
 
-    /** @brief Coarse set of parameters that provides relatively higher performance
-        at the cost of reconstrution quality.
-    */
+    /** @brief Coarse set of parameters that provides relatively higher performance at the cost of reconstrution quality.*/
     CV_WRAP static Ptr<VolumeParams> coarseParams(VolumeType volumeType);
 };
+
 struct CV_EXPORTS_W Params
 {
     /** @brief Default parameters
+
         A set of parameters which provides better model quality, can be very slow.
      */
     CV_WRAP static Ptr<Params> defaultParams();
 
     /** @brief Coarse parameters
+
         A set of parameters which provides better speed, can fail to match frames
         in case of rapid sensor motion.
     */
     CV_WRAP static Ptr<Params> coarseParams();
 
     /** @brief HashTSDF parameters
+
         A set of parameters suitable for use with HashTSDFVolume
     */
     CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
@@ -107,6 +114,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW Matx33f rgb_intr;
 
     /** @brief pre-scale per 1 meter for input values
+
         Typical values are:
              * 5000 per 1 meter for the 16-bit PNG files of TUM database
              * 1000 per 1 meter for Kinect 2 device
@@ -125,6 +133,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW int pyramidLevels;
 
     /** @brief Minimal camera movement in meters
+
         Integrate new depth frame only if camera movement exceeds this value.
     */
     CV_PROP_RW float tsdf_min_camera_movement;
@@ -140,6 +149,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW std::vector<int> icpIterations;
 
     /** @brief Threshold for depth truncation in meters
+
         All depth values beyond this threshold will be set to zero
     */
     CV_PROP_RW float truncateThreshold;
