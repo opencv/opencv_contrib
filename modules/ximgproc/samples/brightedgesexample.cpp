@@ -51,16 +51,21 @@
 using namespace cv;
 using namespace ximgproc;
 using namespace std;
-
+// Default values for sliders and contrast
+int edgeThresh = 1;
+int contrast_slider = 2;
+int canny_slider = 50;
 static void help()
 {
     printf("\nThis sample demonstrates BrightEdge detection\n"
         "Call:\n"
-        "    /.edge [image_name -- Default is ../data/ml.png]\n\n");
+        "    brightedges [image_name -- Default is ../data/ml.png] | [-video -- for webcam]\n\n");
 }
 const char* keys =
 {
-    "{help h||}{@image |../data/ml.png|input image name}"
+    "{help h||}"
+    "{video v| |video capture}"
+    "{@image |../data/ml.png|input image name}"
 };
 int main(int argc, const char** argv)
 {
@@ -70,37 +75,62 @@ int main(int argc, const char** argv)
         help();
         return 0;
     }
-    string filename = parser.get<string>(0);
-    Mat image = imread(filename, IMREAD_COLOR);
-    if (image.empty())
+    if (parser.has("video"))
     {
-        printf("Cannot read image file: %s\n", filename.c_str());
-        help();
-        return -1;
+        namedWindow("Brightedges", 1);
+        createTrackbar("Contrast", "Brightedges", &contrast_slider, 25);
+        namedWindow("Canny", 1);
+        createTrackbar("Threshold", "Canny", &canny_slider, 255);
+        VideoCapture cap(0); // open the default camera
+        if (!cap.isOpened())  // check if we succeeded
+            return -1;
+        Mat edges;
+        for (;;)
+        {
+            Mat frame;
+            cap.read(frame); // get a new frame from camera
+            Mat edge;
+            BrightEdges(frame, edge, -contrast_slider); // Apply brighedges with noise reduction
+            Mat notedge;
+            if (contrast_slider == 0) {
+                threshold(edge, notedge, 155, 255, THRESH_BINARY);
+            }
+            else {
+                bitwise_not(edge, notedge); // make comparable with Canny
+            }
+            imshow("Brightedges", notedge);
+            imshow("frame", frame);
+            Canny(frame, edges, canny_slider, 255);
+            imshow("Canny", edges);
+            if (waitKey(30) >= 0) break;
+        }
+        // the camera will be deinitialized automatically in VideoCapture destructor
+        return 0;
     }
-    // Create a window
-    // //  " original ";
-    namedWindow("Original");
-    imshow("Original", image);
-    //  " absdiff ";
-    Mat edge;
-    BrightEdges(image, edge, 0); //  No contrast
-    namedWindow("Absolute Difference");
-    imshow("Absolute Difference", edge);
-    // " default contrast 1 ";
-    BrightEdges(image, edge);
-    namedWindow("Default contrast");
-    imshow("Default contrast", edge);// Default contrast 1
-    // " Contrast 5  \n";
-    BrightEdges(image, edge, 5);
-    namedWindow("Contrast 5");
-    imshow("Contrast 5", edge);
-    // " Contrast 10  \n";
-    BrightEdges(image, edge, 10);
-    namedWindow("Contrast 10");
-    imshow("Contrast 10", edge);
-    //  "wait key ";
-    waitKey(0);
-    //  "end  ";
-    return 0;
+    else {
+        string filename = parser.get<string>(0);
+        Mat image = imread(filename, IMREAD_COLOR);
+        if (image.empty())
+        {
+            printf("Cannot read image file: %s\n", filename.c_str());
+            help();
+            return -1;
+        }
+        // Create a window
+        // " original ";
+        imshow("Original", image);
+        //  " absdiff ";
+        Mat edge;
+        BrightEdges(image, edge, 0); //  No contrast
+        imshow("Absolute Difference", edge);
+        // " default contrast 1 ";
+        BrightEdges(image, edge);
+        imshow("Default contrast", edge); // Default contrast 1
+        BrightEdges(image, edge, -1);  // Reduce noise by specifying negative contrast
+        imshow("Reduce noise", edge);
+        //  "wait key ";
+        waitKey(0);
+        //  "end  ";
+        return 0;
+    }
 }
