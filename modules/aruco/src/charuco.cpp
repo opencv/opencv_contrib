@@ -163,7 +163,8 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
             res->chessboardCorners.push_back(corner);
         }
     }
-
+    res->rightBottomBorder = Point3f(squaresX * squareLength,
+                                     squaresY * squareLength, 0.f);
     res->_getNearestMarkerCorners();
 
     return res;

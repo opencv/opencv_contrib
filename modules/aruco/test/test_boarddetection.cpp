@@ -38,106 +38,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
+#include "test_aruco_utils.hpp"
 
 namespace opencv_test { namespace {
-
-static double deg2rad(double deg) { return deg * CV_PI / 180.; }
-
-/**
- * @brief Get rvec and tvec from yaw, pitch and distance
- */
-static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) {
-
-    rvec = Mat::zeros(3, 1, CV_64FC1);
-    tvec = Mat::zeros(3, 1, CV_64FC1);
-
-    // rotate camera in pitch axis
-    Mat rotPitch(3, 1, CV_64FC1);
-    rotPitch.ptr< double >(0)[0] = pitch;
-    rotPitch.ptr< double >(0)[1] = 0;
-    rotPitch.ptr< double >(0)[2] = 0;
-
-    // rotate camera in yaw axis
-    Mat rotYaw(3, 1, CV_64FC1);
-    rotYaw.ptr< double >(0)[0] = 0;
-    rotYaw.ptr< double >(0)[1] = yaw;
-    rotYaw.ptr< double >(0)[2] = 0;
-
-    // compose both rotations
-    composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
-              Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
-
-    // Tvec, just move in z (camera) direction the specific distance
-    tvec.ptr< double >(0)[0] = 0.;
-    tvec.ptr< double >(0)[1] = 0.;
-    tvec.ptr< double >(0)[2] = distance;
-}
-
-/**
- * @brief Project a synthetic marker
- */
-static void projectMarker(Mat &img, Ptr<aruco::Board> &board, int markerIndex, Mat cameraMatrix, Mat rvec, Mat tvec,
-                          int markerBorder) {
-    // canonical image
-    Mat markerImg;
-    const int markerSizePixels = 100;
-    aruco::drawMarker(board->dictionary, board->ids[markerIndex], markerSizePixels, markerImg, markerBorder);
-
-    // projected corners
-    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-    vector< Point2f > corners;
-
-    // get max coordinate of board
-    Point3f maxCoord = board->objPoints.back()[2];
-    vector<Point3f> objPoints(board->objPoints[markerIndex]);
-    // move the marker to the origin
-    for (size_t i = 0; i < objPoints.size(); i++)
-        objPoints[i] -= maxCoord / 2.0;
-
-    projectPoints(objPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
-
-    // get perspective transform
-    vector< Point2f > originalCorners;
-    originalCorners.push_back(Point2f(0, 0));
-    originalCorners.push_back(Point2f((float)markerSizePixels, 0));
-    originalCorners.push_back(Point2f((float)markerSizePixels, (float)markerSizePixels));
-    originalCorners.push_back(Point2f(0, (float)markerSizePixels));
-    Mat transformation = getPerspectiveTransform(originalCorners, corners);
-
-    // apply transformation
-    Mat aux;
-    const char borderValue = 127;
-    warpPerspective(markerImg, aux, transformation, img.size(), INTER_NEAREST, BORDER_CONSTANT,
-                    Scalar::all(borderValue));
-
-    // copy only not-border pixels
-    for(int y = 0; y < aux.rows; y++) {
-        for(int x = 0; x < aux.cols; x++) {
-            if(aux.at< unsigned char >(y, x) == borderValue) continue;
-            img.at< unsigned char >(y, x) = aux.at< unsigned char >(y, x);
-        }
-    }
-}
-
-
-/**
- * @brief Get a synthetic image of GridBoard in perspective
- */
-static Mat projectBoard(Ptr<aruco::GridBoard> &board, Mat cameraMatrix, double yaw, double pitch,
-                        double distance, Size imageSize, int markerBorder) {
-
-    Mat rvec, tvec;
-    getSyntheticRT(yaw, pitch, distance, rvec, tvec);
-
-    Mat img = Mat(imageSize, CV_8UC1, Scalar::all(255));
-    for(unsigned int index = 0; index < board->ids.size(); index++) {
-        projectMarker(img, board.staticCast<aruco::Board>(), index, cameraMatrix, rvec, tvec, markerBorder);
-    }
-
-    return img;
-}
-
-
 
 /**
  * @brief Check pose estimation of aruco board
@@ -169,7 +72,7 @@ void CV_ArucoBoardPose::run(int) {
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
         for(int yaw = -60; yaw <= 60; yaw += 30) {
-            for(int pitch = -0; pitch <= 0; pitch += 30) {
+            for(int pitch = -60; pitch <= 60; pitch += 30) {
                 for(unsigned int i = 0; i < gridboard->ids.size(); i++)
                     gridboard->ids[i] = (iter + int(i)) % 250;
                 int markerBorder = iter % 2 + 1;
@@ -270,8 +173,6 @@ void CV_ArucoRefine::run(int) {
                 // create synthetic image
                 Mat img = projectBoard(gridboard, cameraMatrix, deg2rad(yaw), deg2rad(pitch), distance,
                                        imgSize, markerBorder);
-
-
                 // detect markers
                 vector< vector< Point2f > > corners, rejected;
                 vector< int > ids;
