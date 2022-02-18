@@ -16,6 +16,61 @@ namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
 
+struct CV_EXPORTS_W VolumeParams
+{
+    /** @brief Kind of Volume
+        Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
+    */
+    CV_PROP_RW VolumeType kind = VolumeType::TSDF;
+
+    /** @brief Resolution of voxel space
+        Number of voxels in each dimension.
+        Applicable only for TSDF Volume.
+        HashTSDF volume only supports equal resolution in all three dimensions
+    */
+    CV_PROP_RW int resolutionX = 128;
+    CV_PROP_RW int resolutionY = 128;
+    CV_PROP_RW int resolutionZ = 128;
+
+    /** @brief Resolution of volumeUnit in voxel space
+        Number of voxels in each dimension for volumeUnit
+        Applicable only for hashTSDF.
+    */
+    CV_PROP_RW int unitResolution = 0;
+
+    /** @brief Size of volume in meters */
+    CV_PROP_RW float volumSize = 3.f;
+
+    /** @brief Initial pose of the volume in meters, should be 4x4 float or double matrix */
+    CV_PROP_RW Matx44f pose = Affine3f().translate(Vec3f(-volumSize / 2.f, -volumSize / 2.f, 0.5f)).matrix;
+
+    /** @brief Length of voxels in meters */
+    CV_PROP_RW float voxelSize = volumSize / 512.f;
+
+    /** @brief TSDF truncation distance
+        Distances greater than value from surface will be truncated to 1.0
+    */
+    CV_PROP_RW float tsdfTruncDist = 7.f * voxelSize;
+
+    /** @brief Max number of frames to integrate per voxel
+        Represents the max number of frames over which a running average
+        of the TSDF is calculated for a voxel
+    */
+    CV_PROP_RW int maxWeight = 64;
+
+    /** @brief Threshold for depth truncation in meters
+        Truncates the depth greater than threshold to 0
+    */
+    CV_PROP_RW float depthTruncThreshold = 0.f;
+
+    /** @brief Length of single raycast step
+        Describes the percentage of voxel length that is skipped per march
+    */
+    CV_PROP_RW float raycastStepFactor = 0.25f;
+};
+
+
+
 struct CV_EXPORTS_W Params
 {
     CV_WRAP Params()
@@ -85,7 +140,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW Size frameSize;
 
     /** @brief Volume kind */
-    int volumeKind;
+    VolumeType volumeKind;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
