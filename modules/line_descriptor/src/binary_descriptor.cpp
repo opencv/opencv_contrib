@@ -2467,6 +2467,11 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
           offsetInLineArray = pLineSID[numOfLines];         // line was not accepted, the offset is set back
         }
       }
+      // Avoid array out of range
+      if(numOfLines >= lines.sId.size()) {
+        lines.sId.push_back(offsetInLineArray);
+        pLineSID = &lines.sId.front();
+      }
       //Extract line segments from the remaining pixel; Current chain has been shortened already.
     }
   }         //end for(unsigned int edgeID=0; edgeID<edges.numOfEdges; edgeID++)

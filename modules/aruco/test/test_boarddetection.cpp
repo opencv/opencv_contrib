@@ -151,21 +151,32 @@ static Mat projectBoard(Ptr<aruco::GridBoard> &board, Mat cameraMatrix, double y
     return img;
 }
 
-
+enum class ArucoAlgParams
+{
+    USE_DEFAULT = 0,
+    USE_ARUCO3 = 1
+};
 
 /**
  * @brief Check pose estimation of aruco board
  */
 class CV_ArucoBoardPose : public cvtest::BaseTest {
     public:
-    CV_ArucoBoardPose();
+    CV_ArucoBoardPose(ArucoAlgParams arucoAlgParams)
+    {
+        params = aruco::DetectorParameters::create();
+        params->minDistanceToBorder = 3;
+        if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3) {
+            params->useAruco3Detection = true;
+            params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+            params->minSideLengthCanonicalImg = 16;
+        }
+    }
 
     protected:
+    Ptr<aruco::DetectorParameters> params;
     void run(int);
 };
-
-
-CV_ArucoBoardPose::CV_ArucoBoardPose() {}
 
 
 void CV_ArucoBoardPose::run(int) {
@@ -197,8 +208,6 @@ void CV_ArucoBoardPose::run(int) {
 
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-                params->minDistanceToBorder = 3;
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -253,14 +262,19 @@ void CV_ArucoBoardPose::run(int) {
  */
 class CV_ArucoRefine : public cvtest::BaseTest {
     public:
-    CV_ArucoRefine();
+    CV_ArucoRefine(ArucoAlgParams arucoAlgParams)
+    {
+        params = aruco::DetectorParameters::create();
+        params->minDistanceToBorder = 3;
+        params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+        if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3)
+            params->useAruco3Detection = true;
+    }
 
     protected:
+    Ptr<aruco::DetectorParameters> params;
     void run(int);
 };
-
-
-CV_ArucoRefine::CV_ArucoRefine() {}
 
 
 void CV_ArucoRefine::run(int) {
@@ -293,9 +307,6 @@ void CV_ArucoRefine::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners, rejected;
                 vector< int > ids;
-                Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-                params->minDistanceToBorder = 3;
-                params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
 
@@ -326,12 +337,25 @@ void CV_ArucoRefine::run(int) {
 
 
 TEST(CV_ArucoBoardPose, accuracy) {
-    CV_ArucoBoardPose test;
+    CV_ArucoBoardPose test(ArucoAlgParams::USE_DEFAULT);
     test.safe_run();
 }
 
+typedef CV_ArucoBoardPose CV_Aruco3BoardPose;
+TEST(CV_Aruco3BoardPose, accuracy) {
+    CV_Aruco3BoardPose test(ArucoAlgParams::USE_ARUCO3);
+    test.safe_run();
+}
+
+typedef CV_ArucoRefine CV_Aruco3Refine;
+
 TEST(CV_ArucoRefine, accuracy) {
-    CV_ArucoRefine test;
+    CV_ArucoRefine test(ArucoAlgParams::USE_DEFAULT);
+    test.safe_run();
+}
+
+TEST(CV_Aruco3Refine, accuracy) {
+    CV_Aruco3Refine test(ArucoAlgParams::USE_ARUCO3);
     test.safe_run();
 }
 

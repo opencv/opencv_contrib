@@ -2,7 +2,7 @@
 
 This repository is intended for the development of so-called "extra" modules,
 contributed functionality. New modules quite often do not have stable API,
-and they are not well-tested. Thus, they shouldn't be released as a part of
+and they are not well-tested. Thus, they shouldn't be released as a part of the
 official OpenCV distribution, since the library maintains binary compatibility,
 and tries to provide decent performance and stability.
 
@@ -33,7 +33,7 @@ $ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -DBUILD_opencv_lega
 
 If you also want to build the samples from the "samples" folder of each module, also include the "-DBUILD_EXAMPLES=ON" option.
 
-If you prefer using the gui version of cmake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
+If you prefer using the GUI version of CMake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
 
 1. Start cmake-gui.
 
@@ -55,6 +55,6 @@ If you prefer using the gui version of cmake (cmake-gui), then, you can add `ope
 
 In order to keep a clean overview containing all contributed modules, the following files need to be created/adapted:
 
-1. Update the README.md file under the modules folder. Here, you add your model with a single line description.
+1. Update the README.md file under the modules folder. Here, you add your model with a single-line description.
 
-2. Add a README.md inside your own module folder. This README explains which functionality (separate functions) is available, links to the corresponding samples and explains in somewhat more detail what the module is expected to do. If any extra requirements are needed to build the module without problems, add them here also.
+2. Add a README.md inside your own module folder. This README explains which functionality (separate functions) is available, links to the corresponding samples, and explains in somewhat more detail what the module is expected to do. If any extra requirements are needed to build the module without problems, add them here also.

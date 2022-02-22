@@ -731,6 +731,50 @@ type.
 CV_EXPORTS_W void blendLinear(InputArray img1, InputArray img2, InputArray weights1, InputArray weights2,
                             OutputArray result, Stream& stream = Stream::Null());
 
+/////////////////// Connected Components Labeling /////////////////////
+
+//! Connected Components Algorithm
+enum ConnectedComponentsAlgorithmsTypes {
+    CCL_DEFAULT = -1, //!< BKE @cite Allegretti2019 algorithm for 8-way connectivity.
+    CCL_BKE = 0,  //!< BKE @cite Allegretti2019 algorithm for 8-way connectivity.
+};
+
+
+/** @brief Computes the Connected Components Labeled image of a binary image.
+
+The function takes as input a binary image and performs Connected Components Labeling. The output
+is an image where each Connected Component is assigned a unique label (integer value).
+ltype specifies the output label image type, an important consideration based on the total
+number of labels or alternatively the total number of pixels in the source image.
+ccltype specifies the connected components labeling algorithm to use, currently
+BKE @cite Allegretti2019 is supported, see the #ConnectedComponentsAlgorithmsTypes
+for details. Note that labels in the output are not required to be sequential.
+
+@param image The 8-bit single-channel image to be labeled.
+@param labels Destination labeled image.
+@param connectivity Connectivity to use for the labeling procedure. 8 for 8-way connectivity is supported.
+@param ltype Output image label type. Currently CV_32S is supported.
+@param ccltype Connected components algorithm type (see the #ConnectedComponentsAlgorithmsTypes).
+
+@note A sample program demonstrating Connected Components Labeling in CUDA can be found at\n
+opencv_contrib_source_code/modules/cudaimgproc/samples/connected_components.cpp
+
+*/
+CV_EXPORTS_AS(connectedComponentsWithAlgorithm) void connectedComponents(InputArray image, OutputArray labels,
+    int connectivity, int ltype, cv::cuda::ConnectedComponentsAlgorithmsTypes ccltype);
+
+
+/** @overload
+
+@param image The 8-bit single-channel image to be labeled.
+@param labels Destination labeled image.
+@param connectivity Connectivity to use for the labeling procedure. 8 for 8-way connectivity is supported.
+@param ltype Output image label type. Currently CV_32S is supported.
+*/
+CV_EXPORTS_W void connectedComponents(InputArray image, OutputArray labels,
+    int connectivity = 8, int ltype = CV_32S);
+
+
 //! @}
 
 }} // namespace cv { namespace cuda {
