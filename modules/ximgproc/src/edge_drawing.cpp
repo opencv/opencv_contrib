@@ -1280,15 +1280,11 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     }
 
     min_line_len = params.MinLineLength;
+    if (min_line_len < 9) // If no initial value given, compute it
+        min_line_len = ComputeMinLineLength();
     line_error = params.LineFitErrorThreshold;
     max_distance_between_two_lines = params.MaxDistanceBetweenTwoLines;
     max_error = params.MaxErrorThreshold;
-
-    if (min_line_len == -1) // If no initial value given, compute it
-        min_line_len = ComputeMinLineLength();
-
-    if (min_line_len < 9) // avoids small line segments in the result. Might be deleted!
-        min_line_len = 9;
 
     // Temporary buffers used during line fitting
     double* x = new double[(width + height) * 8];
@@ -2427,6 +2423,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     }
 
     min_line_len = 6;
+    line_error = params.LineFitErrorThreshold;
     Circles.clear();
     Ellipses.clear();
     lines.clear();
