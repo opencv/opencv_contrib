@@ -84,10 +84,10 @@ template< typename T >
 class DynaFuImpl : public DynaFu
 {
 public:
-    DynaFuImpl(const Params& _params);
+    DynaFuImpl(const Params1& _params);
     virtual ~DynaFuImpl();
 
-    const Params& getParams() const CV_OVERRIDE;
+    const Params1& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
@@ -110,7 +110,7 @@ public:
     void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp=true) CV_OVERRIDE;
 
 private:
-    Params params;
+    Params1 params;
 
     Odometry icp;
     cv::Ptr<NonRigidICP> dynafuICP;
@@ -141,7 +141,7 @@ std::vector<Point3f> DynaFuImpl<T>::getNodesPos() const
 }
 
 template< typename T >
-DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
+DynaFuImpl<T>::DynaFuImpl(const Params1&_params) :
     params(_params),
     dynafuICP(makeNonRigidICP(params.intr, volume, 2)),
     volume(makeTSDFVolume(params.volumeDims, params.voxelSize, params.volumePose,
@@ -254,7 +254,7 @@ DynaFuImpl<T>::~DynaFuImpl()
 { }
 
 template< typename T >
-const Params& DynaFuImpl<T>::getParams() const
+const Params1& DynaFuImpl<T>::getParams() const
 {
     return params;
 }
@@ -519,13 +519,13 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-Ptr<DynaFu> DynaFu::create(const Ptr<Params>& params)
+Ptr<DynaFu> DynaFu::create(const Ptr<Params1>& params)
 {
     return makePtr< DynaFuImpl<Mat> >(*params);
 }
 
 #else
-Ptr<DynaFu> DynaFu::create(const Ptr<Params>& /*params*/)
+Ptr<DynaFu> DynaFu::create(const Ptr<Params1>& /*params*/)
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "

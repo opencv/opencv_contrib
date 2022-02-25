@@ -124,16 +124,16 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<Params> params;
-    Ptr<KinFu> kf;
+    Ptr<Params1> params;
+    Ptr<KinFu1> kf;
 
     if(coarse)
-        params = Params::coarseParams();
+        params = Params1::coarseParams();
     else
-        params = Params::defaultParams();
+        params = Params1::defaultParams();
 
     if(useHashTSDF)
-        params = Params::hashTSDFParams(coarse);
+        params = Params1::hashTSDFParams(coarse);
 
     // These params can be different for each depth sensor
     ds->updateParams(*params);
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
     //params->tsdf_max_weight = 16;
 
     if(!idle)
-        kf = KinFu::create(params);
+        kf = KinFu1::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);

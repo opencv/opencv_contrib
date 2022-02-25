@@ -278,14 +278,14 @@ static const bool display = false;
 
 void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
 {
-    Ptr<kinfu::Params> params;
+    Ptr<kinfu::Params1> params;
     if(hiDense)
-        params = kinfu::Params::defaultParams();
+        params = kinfu::Params1::defaultParams();
     else
-        params = kinfu::Params::coarseParams();
+        params = kinfu::Params1::coarseParams();
 
     if(hashTsdf)
-        params = kinfu::Params::hashTSDFParams(!hiDense);
+        params = kinfu::Params1::hashTSDFParams(!hiDense);
 
     if(inequal)
     {
@@ -295,7 +295,7 @@ void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
 
     Ptr<Scene> scene = Scene::create(hiDense, params->frameSize, params->intr, params->depthFactor);
 
-    Ptr<kinfu::KinFu> kf = kinfu::KinFu::create(params);
+    Ptr<kinfu::KinFu1> kf = kinfu::KinFu1::create(params);
 
     std::vector<Affine3f> poses = scene->getPoses();
     Affine3f startPoseGT = poses[0], startPoseKF;

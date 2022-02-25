@@ -16,7 +16,7 @@ namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
 
-struct CV_EXPORTS_W VolumeParams
+struct CV_EXPORTS_W VolumeParams1
 {
     /** @brief Kind of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
@@ -71,9 +71,9 @@ struct CV_EXPORTS_W VolumeParams
 
 
 
-struct CV_EXPORTS_W Params
+struct CV_EXPORTS_W Params1
 {
-    CV_WRAP Params()
+    CV_WRAP Params1()
     {
         setInitialVolumePose(Matx44f::eye());
     }
@@ -84,7 +84,7 @@ struct CV_EXPORTS_W Params
      * @param volumeInitialPoseRot rotation matrix
      * @param volumeInitialPoseTransl translation vector
      */
-    CV_WRAP Params(Matx33f volumeInitialPoseRot, Vec3f volumeInitialPoseTransl)
+    CV_WRAP Params1(Matx33f volumeInitialPoseRot, Vec3f volumeInitialPoseTransl)
     {
       setInitialVolumePose(volumeInitialPoseRot,volumeInitialPoseTransl);
     }
@@ -94,7 +94,7 @@ struct CV_EXPORTS_W Params
      * Sets the initial pose of the TSDF volume.
      * @param volumeInitialPose 4 by 4 Homogeneous Transform matrix to set the intial pose of TSDF volume
      */
-    CV_WRAP Params(Matx44f volumeInitialPose)
+    CV_WRAP Params1(Matx44f volumeInitialPose)
     {
       setInitialVolumePose(volumeInitialPose);
     }
@@ -118,23 +118,23 @@ struct CV_EXPORTS_W Params
      * @brief Default parameters
      * A set of parameters which provides better model quality, can be very slow.
      */
-    CV_WRAP static Ptr<Params> defaultParams();
+    CV_WRAP static Ptr<Params1> defaultParams();
 
     /** @brief Coarse parameters
     A set of parameters which provides better speed, can fail to match frames
     in case of rapid sensor motion.
     */
-    CV_WRAP static Ptr<Params> coarseParams();
+    CV_WRAP static Ptr<Params1> coarseParams();
 
     /** @brief HashTSDF parameters
       A set of parameters suitable for use with HashTSDFVolume
     */
-    CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
+    CV_WRAP static Ptr<Params1> hashTSDFParams(bool isCoarse);
 
     /** @brief ColoredTSDF parameters
       A set of parameters suitable for use with ColoredTSDFVolume
     */
-    CV_WRAP static Ptr<Params> coloredTSDFParams(bool isCoarse);
+    CV_WRAP static Ptr<Params1> coloredTSDFParams(bool isCoarse);
 
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
@@ -246,14 +246,14 @@ struct CV_EXPORTS_W Params
 
   That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
 */
-class CV_EXPORTS_W KinFu
+class CV_EXPORTS_W KinFu1
 {
 public:
-    CV_WRAP static Ptr<KinFu> create(const Ptr<Params>& _params);
-    virtual ~KinFu();
+    CV_WRAP static Ptr<KinFu1> create(const Ptr<Params1>& _params);
+    virtual ~KinFu1();
 
     /** @brief Get current parameters */
-    virtual const Params& getParams() const = 0;
+    virtual const Params1& getParams() const = 0;
 
     /** @brief Renders a volume into an image
 

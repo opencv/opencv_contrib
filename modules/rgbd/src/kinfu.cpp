@@ -9,19 +9,19 @@
 namespace cv {
 namespace kinfu {
 
-void Params::setInitialVolumePose(Matx33f R, Vec3f t)
+void Params1::setInitialVolumePose(Matx33f R, Vec3f t)
 {
     setInitialVolumePose(Affine3f(R,t).matrix);
 }
 
-void Params::setInitialVolumePose(Matx44f homogen_tf)
+void Params1::setInitialVolumePose(Matx44f homogen_tf)
 {
-    Params::volumePose = homogen_tf;
+    Params1::volumePose = homogen_tf;
 }
 
-Ptr<Params> Params::defaultParams()
+Ptr<Params1> Params1::defaultParams()
 {
-    Params p;
+    Params1 p;
 
     p.frameSize = Size(640, 480);
 
@@ -72,12 +72,12 @@ Ptr<Params> Params::defaultParams()
     // depth truncation is not used by default but can be useful in some scenes
     p.truncateThreshold = 0.f; //meters
 
-    return makePtr<Params>(p);
+    return makePtr<Params1>(p);
 }
 
-Ptr<Params> Params::coarseParams()
+Ptr<Params1> Params1::coarseParams()
 {
-    Ptr<Params> p = defaultParams();
+    Ptr<Params1> p = defaultParams();
 
     p->icpIterations = {5, 3, 2};
     p->pyramidLevels = (int)p->icpIterations.size();
@@ -91,9 +91,9 @@ Ptr<Params> Params::coarseParams()
 
     return p;
 }
-Ptr<Params> Params::hashTSDFParams(bool isCoarse)
+Ptr<Params1> Params1::hashTSDFParams(bool isCoarse)
 {
-    Ptr<Params> p;
+    Ptr<Params1> p;
     if(isCoarse)
         p = coarseParams();
     else
@@ -103,9 +103,9 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     return p;
 }
 
-Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
+Ptr<Params1> Params1::coloredTSDFParams(bool isCoarse)
 {
-    Ptr<Params> p;
+    Ptr<Params1> p;
     if (isCoarse)
         p = coarseParams();
     else
@@ -117,14 +117,14 @@ Ptr<Params> Params::coloredTSDFParams(bool isCoarse)
 
 // MatType should be Mat or UMat
 template< typename MatType>
-class KinFuImpl : public KinFu
+class KinFuImpl : public KinFu1
 {
 public:
-    KinFuImpl(const Params& _params);
+    KinFuImpl(const Params1& _params);
     virtual ~KinFuImpl();
 
-    static VolumeSettings paramsToSettings(const Params& params);
-    const Params& getParams() const CV_OVERRIDE;
+    static VolumeSettings paramsToSettings(const Params1& params);
+    const Params1& getParams() const CV_OVERRIDE;
 
     void render(OutputArray image) const CV_OVERRIDE;
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
@@ -142,7 +142,7 @@ public:
     bool updateT(const MatType& depth);
 
 private:
-    Params params;
+    Params1 params;
     VolumeSettings settings;
 
     Odometry icp;
@@ -155,7 +155,7 @@ private:
 };
 
 template< typename MatType >
-VolumeSettings KinFuImpl<MatType>::paramsToSettings(const Params& params)
+VolumeSettings KinFuImpl<MatType>::paramsToSettings(const Params1& params)
 {
     VolumeSettings vs(VolumeType::TSDF);
     vs.setVoxelSize(params.voxelSize);
@@ -172,7 +172,7 @@ VolumeSettings KinFuImpl<MatType>::paramsToSettings(const Params& params)
 }
 
 template< typename MatType >
-KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
+KinFuImpl<MatType>::KinFuImpl(const Params1&_params) :
     params(_params),
     settings(paramsToSettings(params)),
     volume(VolumeType::TSDF, settings)
@@ -199,7 +199,7 @@ KinFuImpl<MatType>::~KinFuImpl()
 { }
 
 template< typename MatType >
-const Params& KinFuImpl<MatType>::getParams() const
+const Params1& KinFuImpl<MatType>::getParams() const
 {
     return params;
 }
@@ -352,7 +352,7 @@ void KinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) cons
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
+Ptr<KinFu1> KinFu1::create(const Ptr<Params1>& params)
 {
     CV_Assert((int)params->icpIterations.size() == params->pyramidLevels);
     CV_Assert(params->intr(0,1) == 0 && params->intr(1,0) == 0 && params->intr(2,0) == 0 && params->intr(2,1) == 0 && params->intr(2,2) == 1);
@@ -364,7 +364,7 @@ Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
 }
 
 #else
-Ptr<KinFu> KinFu::create(const Ptr<Params>& /* params */)
+Ptr<KinFu> KinFu1::create(const Ptr<Params1>& /* params */)
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "
@@ -372,7 +372,7 @@ Ptr<KinFu> KinFu::create(const Ptr<Params>& /* params */)
 }
 #endif
 
-KinFu::~KinFu() {}
+KinFu1::~KinFu1() {}
 
 } // namespace kinfu
 } // namespace cv

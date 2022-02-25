@@ -120,13 +120,13 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<kinfu::Params> params;
+    Ptr<kinfu::Params1> params;
     Ptr<DynaFu> df;
 
     if(coarse)
-        params = kinfu::Params::coarseParams();
+        params = kinfu::Params1::coarseParams();
     else
-        params = kinfu::Params::defaultParams();
+        params = kinfu::Params1::defaultParams();
 
     // These params can be different for each depth sensor
     ds->updateParams(*params);
