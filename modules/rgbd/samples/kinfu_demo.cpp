@@ -26,10 +26,10 @@ const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
 {
-    PauseCallbackArgs(KinFu& _kf) : kf(_kf)
+    PauseCallbackArgs(KinFu1& _kf) : kf(_kf)
     { }
 
-    KinFu& kf;
+    KinFu1& kf;
 };
 
 void pauseCallback(const viz::MouseEvent& me, void* args);
