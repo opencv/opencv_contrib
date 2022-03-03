@@ -1787,9 +1787,18 @@ void drawDetectedMarkers(InputOutputArray _image, InputArrayOfArrays _corners,
 /**
  */
 void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs, InputArray _rvec,
-              InputArray _tvec, float length)
+              InputArray _tvec, float length, int thickness)
 {
-    drawFrameAxes(_image, _cameraMatrix, _distCoeffs, _rvec, _tvec, length, 3);
+    vector<Point3f> axis;
+    axis.push_back(Point3f(0.f, 0.f, 0.f));
+    axis.push_back(Point3f(length, 0.f, 0.f));
+    axis.push_back(Point3f(0.f, length, 0.f));
+    axis.push_back(Point3f(0.f, 0.f, -length));
+    vector<Point2f> axis_to_img;
+    projectPoints(axis, _rvec, _tvec, _cameraMatrix, _distCoeffs, axis_to_img);
+    line(_image, Point2i(axis_to_img[0]), Point2i(axis_to_img[1]), Scalar(255,0,0), thickness);
+    line(_image, Point2i(axis_to_img[0]), Point2i(axis_to_img[2]), Scalar(0,255,0), thickness);
+    line(_image, Point2i(axis_to_img[0]), Point2i(axis_to_img[3]), Scalar(0,0,255), thickness);
 }
 
 /**

@@ -743,14 +743,13 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                           InputArray _markerIds, float squareMarkerLengthRate,
                           OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
-                          InputArray _cameraMatrix, InputArray _distCoeffs) {
+                          InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dict) {
 
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
 
     const float minRepDistanceRate = 1.302455f;
 
     // create Charuco board layout for diamond (3x3 layout)
-    Ptr<Dictionary> dict = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0));
     Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dict);
 
 

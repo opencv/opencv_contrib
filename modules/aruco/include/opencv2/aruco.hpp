@@ -502,7 +502,7 @@ CV_EXPORTS_W void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays
  * @deprecated use cv::drawFrameAxes
  */
 CV_EXPORTS_W void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                           InputArray rvec, InputArray tvec, float length);
+                           InputArray rvec, InputArray tvec, float length, int thickness=3);
 
 
 
