@@ -156,7 +156,7 @@ CUDA_TEST_P(HoughLinesProbabilistic, Accuracy)
     Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(rho, theta, minLineLength, maxLineGap);
 
     cv::cuda::GpuMat d_lines;
-    hough->detect(loadMat(src, false), d_lines);
+    hough->detect(loadMat(src, useRoi), d_lines);
 
     std::vector<cv::Vec4i> linesSegment;
     std::vector<cv::Vec2f> lines;
