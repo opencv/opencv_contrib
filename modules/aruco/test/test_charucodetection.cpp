@@ -713,7 +713,7 @@ TEST(Charuco, testBoardSubpixelCoords)
     std::vector<int> ids;
     std::vector<std::vector<cv::Point2f>> corners, rejected;
 
-    cv::aruco::detectMarkers(gray, dict, corners, ids, params, rejected, K);
+    cv::aruco::detectMarkers(gray, dict, corners, ids, params, rejected);
 
     ASSERT_EQ(ids.size(), size_t(8));
 

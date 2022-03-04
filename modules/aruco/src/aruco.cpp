@@ -797,6 +797,7 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
  * @param nContours, contour-container
  */
 static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
+    CV_Assert(nContours.size() >= 2);
 	float minX, minY, maxX, maxY;
 	minX = maxX = nContours[0].x;
 	minY = maxY = nContours[0].y;
@@ -847,21 +848,6 @@ static Point2f _getCrossPoint(Point3f nLine1, Point3f nLine2){
 	return Vec2f(A.solve(B).val);
 }
 
-static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
-    // trivial extrinsics
-    Matx31f Rvec(0,0,0);
-    Matx31f Tvec(0,0,0);
-
-    // calculate 3d points and then reproject, so opencv makes the distortion internally
-    vector<cv::Point3f> cornersPoints3d;
-    for (unsigned int i = 0; i < in.size(); i++){
-        float x= (in[i].x - float(camMatrix.at<double>(0, 2))) / float(camMatrix.at<double>(0, 0));
-        float y= (in[i].y - float(camMatrix.at<double>(1, 2))) / float(camMatrix.at<double>(1, 1));
-        cornersPoints3d.push_back(Point3f(x,y,1));
-    }
-    cv::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
-}
-
 /**
  * Refine Corners using the contour vector :: Called from function detectMarkers
  * @param nContours, contour-container
@@ -869,13 +855,8 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
  * @param camMatrix, cameraMatrix input 3x3 floating-point camera matrix
  * @param distCoeff, distCoeffs vector of distortion coefficient
  */
-static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
+static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners){
 	vector<Point2f> contour2f(nContours.begin(), nContours.end());
-
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
-	}
-
 	/* 5 groups :: to group the edges
 	 * 4 - classified by its corner
 	 * extra group - (temporary) if contours do not begin with a corner
@@ -893,10 +874,10 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 		}
 		cntPts[group].push_back(contour2f[i]);
 	}
-
+    for (int i = 0; i < 4; i++)
+        CV_Assert(cornerIndex[i] != -1);
 	// saves extra group into corresponding
 	if( !cntPts[4].empty() ){
-            CV_CheckLT(group, 4, "FIXIT: avoiding infinite loop: implementation should be revised: https://github.com/opencv/opencv_contrib/issues/2738");
 		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
 			cntPts[group].push_back(cntPts[4].at(i));
 		cntPts[4].clear();
@@ -929,11 +910,8 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 		else
 			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
 	}
-
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		_distortPoints(nCorners, camMatrix, distCoeff);
-	}
 }
+
 
 #ifdef APRIL_DEBUG
 static void _darken(const Mat &im){
@@ -1093,7 +1071,7 @@ static inline void findCornerInPyrImage(const float scale_init, const int closes
   */
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
-                   OutputArrayOfArrays _rejectedImgPoints, InputArrayOfArrays camMatrix, InputArrayOfArrays distCoeff) {
+                   OutputArrayOfArrays _rejectedImgPoints) {
 
     CV_Assert(!_image.empty());
     CV_Assert(_params->markerBorderBits > 0);
@@ -1205,8 +1183,7 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
             // do corner refinement using the contours for each detected markers
             parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
                 for (int i = range.start; i < range.end; i++) {
-                    _refineCandidateLines(contours[i], candidates[i], camMatrix.getMat(),
-                                          distCoeff.getMat());
+                    _refineCandidateLines(contours[i], candidates[i]);
                 }
             });
 

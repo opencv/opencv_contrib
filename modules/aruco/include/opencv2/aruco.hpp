@@ -230,21 +230,19 @@ struct CV_EXPORTS_W DetectorParameters {
  * @param parameters marker detection parameters
  * @param rejectedImgPoints contains the imgPoints of those squares whose inner code has not a
  * correct codification. Useful for debugging purposes.
- * @param cameraMatrix optional input 3x3 floating-point camera matrix
- * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
- * @param distCoeff optional vector of distortion coefficients
- * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  *
  * Performs marker detection in the input image. Only markers included in the specific dictionary
  * are searched. For each detected marker, it returns the 2D position of its corner in the image
  * and its corresponding identifier.
  * Note that this function does not perform pose estimation.
- * @sa estimatePoseSingleMarkers,  estimatePoseBoard
+ * @note The function does not correct lens distortion or takes it into account. It's recommended to undistort
+ * input image with corresponging camera model, if camera parameters are known
+ * @sa undistort, estimatePoseSingleMarkers,  estimatePoseBoard
  *
  */
 CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
-                                OutputArrayOfArrays rejectedImgPoints = noArray(), InputArray cameraMatrix= noArray(), InputArray distCoeff= noArray());
+                                OutputArrayOfArrays rejectedImgPoints = noArray());
 
 
 
