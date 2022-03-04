@@ -114,6 +114,68 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HoughLines, testing::Combine(
     WHOLE_SUBMAT));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
+// HoughLines Probabilistic
+PARAM_TEST_CASE(HoughLinesProbabilistic, cv::cuda::DeviceInfo, cv::Size, UseRoi)
+{
+    static void generateLines(cv::Mat& img)
+    {
+        img.setTo(cv::Scalar::all(0));
+
+        cv::line(img, cv::Point(10, 0), cv::Point(10, 20), cv::Scalar::all(255));
+        cv::line(img, cv::Point(20, 50), cv::Point(40, 50), cv::Scalar::all(255));
+    }
+
+    static void drawLines(cv::Mat& dst, const std::vector<cv::Vec4i>& linesSegment)
+    {
+        dst.setTo(cv::Scalar::all(0));
+
+        for (size_t i = 0; i < linesSegment.size(); ++i)
+        {
+            Vec4i l = linesSegment[i];
+            cv::line(dst, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar::all(255));
+        }
+
+    }
+};
+
+CUDA_TEST_P(HoughLinesProbabilistic, Accuracy)
+{
+    const cv::cuda::DeviceInfo devInfo = GET_PARAM(0);
+    cv::cuda::setDevice(devInfo.deviceID());
+    const cv::Size size = GET_PARAM(1);
+    const bool useRoi = GET_PARAM(2);
+
+    const float rho = 1.0f;
+    const float theta = (float) (1.0 * CV_PI / 180.0);
+    const int minLineLength = 15;
+    const int maxLineGap = 8;
+
+    cv::Mat src(size, CV_8UC1);
+    generateLines(src);
+
+    Ptr<cv::cuda::HoughSegmentDetector> hough = cv::cuda::createHoughSegmentDetector(rho, theta, minLineLength, maxLineGap);
+
+    cv::cuda::GpuMat d_lines;
+    hough->detect(loadMat(src, useRoi), d_lines);
+
+    std::vector<cv::Vec4i> linesSegment;
+    std::vector<cv::Vec2f> lines;
+    d_lines.download(linesSegment);
+
+    cv::Mat dst(size, CV_8UC1);
+    drawLines(dst, linesSegment);
+
+    ASSERT_MAT_NEAR(src, dst, 0.0);
+
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, HoughLinesProbabilistic, testing::Combine(
+    ALL_DEVICES,
+    DIFFERENT_SIZES,
+    WHOLE_SUBMAT));
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // HoughCircles
 
 PARAM_TEST_CASE(HoughCircles, cv::cuda::DeviceInfo, cv::Size, UseRoi)
