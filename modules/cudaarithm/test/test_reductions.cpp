@@ -967,17 +967,19 @@ INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Normalize, testing::Combine(
 ////////////////////////////////////////////////////////////////////////////////
 // MeanStdDev
 
-PARAM_TEST_CASE(MeanStdDev, cv::cuda::DeviceInfo, cv::Size, UseRoi)
+PARAM_TEST_CASE(MeanStdDev, cv::cuda::DeviceInfo, cv::Size, UseRoi, MatDepth)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
     bool useRoi;
+    int MatDepth;
 
     virtual void SetUp()
     {
         devInfo = GET_PARAM(0);
         size = GET_PARAM(1);
         useRoi = GET_PARAM(2);
+        MatDepth = GET_PARAM(3);
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
@@ -985,7 +987,7 @@ PARAM_TEST_CASE(MeanStdDev, cv::cuda::DeviceInfo, cv::Size, UseRoi)
 
 CUDA_TEST_P(MeanStdDev, Accuracy)
 {
-    cv::Mat src = randomMat(size, CV_8UC1);
+    cv::Mat src = randomMat(size, MatDepth);
 
     if (!supportFeature(devInfo, cv::cuda::FEATURE_SET_COMPUTE_13))
     {
@@ -1015,9 +1017,42 @@ CUDA_TEST_P(MeanStdDev, Accuracy)
     }
 }
 
+CUDA_TEST_P(MeanStdDev, MaskedAccuracy)
+{
+    cv::Mat src = randomMat(size, MatDepth);
+    cv::Mat mask = randomMat(size, CV_8UC1, 0, 2);
+
+    if (!supportFeature(devInfo, cv::cuda::FEATURE_SET_COMPUTE_13))
+    {
+        try
+        {
+            cv::Scalar mean;
+            cv::Scalar stddev;
+            cv::cuda::meanStdDev(loadMat(src, useRoi), mean, stddev);
+        }
+        catch (const cv::Exception& e)
+        {
+            ASSERT_EQ(cv::Error::StsNotImplemented, e.code);
+        }
+    }
+    else
+    {
+        cv::Scalar mean;
+        cv::Scalar stddev;
+        cv::cuda::meanStdDev(loadMat(src, useRoi), mean, stddev, loadMat(mask));
+
+        cv::Scalar mean_gold;
+        cv::Scalar stddev_gold;
+        cv::meanStdDev(src, mean_gold, stddev_gold, mask);
+
+        EXPECT_SCALAR_NEAR(mean_gold, mean, 1e-5);
+        EXPECT_SCALAR_NEAR(stddev_gold, stddev, 1e-5);
+    }
+}
+
 CUDA_TEST_P(MeanStdDev, Async)
 {
-    cv::Mat src = randomMat(size, CV_8UC1);
+    cv::Mat src = randomMat(size, MatDepth);
 
     cv::cuda::Stream stream;
 
@@ -1037,10 +1072,35 @@ CUDA_TEST_P(MeanStdDev, Async)
     EXPECT_SCALAR_NEAR(stddev_gold, cv::Scalar(vals[1]), 1e-5);
 }
 
+CUDA_TEST_P(MeanStdDev, MaskedAsync)
+{
+    cv::Mat src = randomMat(size, MatDepth);
+    cv::Mat mask = randomMat(size, CV_8UC1, 0, 2);
+
+    cv::cuda::Stream stream;
+
+    cv::cuda::HostMem dst;
+    cv::cuda::meanStdDev(loadMat(src, useRoi), dst, loadMat(mask), stream);
+
+    stream.waitForCompletion();
+
+    double vals[2];
+    dst.createMatHeader().copyTo(cv::Mat(1, 2, CV_64FC1, &vals[0]));
+
+    cv::Scalar mean_gold;
+    cv::Scalar stddev_gold;
+    cv::meanStdDev(src, mean_gold, stddev_gold, mask);
+
+    EXPECT_SCALAR_NEAR(mean_gold, cv::Scalar(vals[0]), 1e-5);
+    EXPECT_SCALAR_NEAR(stddev_gold, cv::Scalar(vals[1]), 1e-5);
+}
+
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, MeanStdDev, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    WHOLE_SUBMAT));
+    WHOLE_SUBMAT,
+    testing::Values(MatDepth(CV_8U), MatDepth(CV_32F))
+));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Integral
