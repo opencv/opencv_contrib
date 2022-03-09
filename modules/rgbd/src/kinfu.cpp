@@ -9,6 +9,7 @@
 namespace cv {
 namespace kinfu {
 
+
 void Params1::setInitialVolumePose(Matx33f R, Vec3f t)
 {
     setInitialVolumePose(Affine3f(R,t).matrix);

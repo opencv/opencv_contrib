@@ -12,9 +12,85 @@
 #include <opencv2/3d.hpp>
 
 namespace cv {
-namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
+
+
+class KinFu
+{
+public:
+    KinFu();
+    ~KinFu();
+
+    void render(OutputArray image) const;
+
+    /** @brief Renders a volume into an image
+
+        Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
+        Light pose is fixed in KinFu params.
+
+        @param image resulting image
+        @param cameraPose pose of camera to render from. If empty then render from current pose
+        which is a last frame camera pose.
+    */
+
+    void render(OutputArray image, const Matx44f& cameraPose) const;
+
+    /** @brief Gets points and normals of current 3d mesh
+
+        The order of normals corresponds to order of points.
+        The order of points is undefined.
+
+        @param points vector of points which are 4-float vectors
+        @param normals vector of normals which are 4-float vectors
+        */
+
+    void getCloud(OutputArray points, OutputArray normals) const;
+
+    /** @brief Gets points of current 3d mesh
+
+        The order of points is undefined.
+
+        @param points vector of points which are 4-float vectors
+        */
+
+    void getPoints(OutputArray points) const;
+
+    /** @brief Calculates normals for given points
+        @param points input vector of points which are 4-float vectors
+        @param normals output vector of corresponding normals which are 4-float vectors
+        */
+
+    void getNormals(InputArray points, OutputArray normals) const;
+
+    /** @brief Resets the algorithm
+
+    Clears current model and resets a pose.
+    */
+
+    void reset();
+
+    /** @brief Get current pose in voxel space */
+
+    const Affine3f getPose() const;
+
+    /** @brief Process next depth frame
+
+        Integrates depth into voxel space with respect to its ICP-calculated pose.
+        Input image is converted to CV_32F internally if has another type.
+
+    @param depth one-channel image which size and depth scale is described in algorithm's parameters
+    @return true if succeeded to align new frame with current scene, false if opposite
+    */
+
+    bool update(InputArray depth);
+
+    class Impl;
+private:
+    Ptr<Impl> impl;
+};
+
+namespace kinfu {
 
 struct CV_EXPORTS_W VolumeParams1
 {
