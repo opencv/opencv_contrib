@@ -15,7 +15,13 @@ KinFu::Impl::Impl()
 	this->odometrySettings = OdometrySettings();
 	this->volumeSettings = VolumeSettings(VolumeType::TSDF);
 
-	this->odometry = Odometry(OdometryType::DEPTH, this->odometrySettings, OdometryAlgoType::COMMON);
+	this->odometrySettings.setMaxRotation(30.f);
+	float voxelSize = volumeSettings.getVoxelSize();
+	Vec3i res;
+	volumeSettings.getVolumeResolution(res);
+	this->odometrySettings.setMaxTranslation(voxelSize * res[0] * 0.5f);
+
+	this->odometry = Odometry(OdometryType::DEPTH, this->odometrySettings, OdometryAlgoType::FAST);
 	this->volume = Volume(VolumeType::TSDF, this->volumeSettings);
 }
 
@@ -23,12 +29,7 @@ KinFu::Impl::Impl()
 KinFu_Common::KinFu_Common()
 	: Impl()
 {
-	this->frameCounter = 0;
-//	this->odometrySettings = OdometrySettings();
-//	this->volumeSettings = VolumeSettings(VolumeType::TSDF);
-
-//	this->odometry = Odometry(OdometryType::DEPTH, this->odometrySettings, OdometryAlgoType::COMMON);
-//	this->volume = Volume(VolumeType::TSDF, this->volumeSettings);
+	reset();
 }
 
 KinFu_Common::~KinFu_Common()
@@ -42,7 +43,8 @@ OdometryFrame KinFu_Common::createOdometryFrame() const
 
 bool KinFu_Common::update(InputArray _depth)
 {
-	CV_Assert(!_depth.empty() && _depth.size() == Size(volumeSettings.getIntegrateHeight(), volumeSettings.getIntegrateWidth()));
+	CV_Assert(!_depth.empty());
+	CV_Assert(_depth.size() == Size(volumeSettings.getIntegrateWidth(), volumeSettings.getIntegrateHeight()));
 	return kinfuCommonUpdate(odometry, volume, _depth, prevFrame, renderFrame, pose, frameCounter);
 }
 
@@ -58,7 +60,9 @@ void KinFu_Common::render(OutputArray image, const Matx44f& cameraPose) const
 
 void KinFu_Common::reset()
 {
-
+	frameCounter = 0;
+	pose = Affine3f::Identity().matrix;
+	volume.reset();
 }
 
 void KinFu_Common::getCloud(OutputArray points, OutputArray normals) const

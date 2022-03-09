@@ -344,7 +344,7 @@ namespace opencv_test {
         }
 
 #ifdef OPENCV_ENABLE_NONFREE
-        TEST(KinectFusion, inequal)
+        TEST(NewKinectFusion, inequal)
 #else
         TEST(NewKinectFusion, DISABLED_inequal)
 #endif
@@ -354,7 +354,7 @@ namespace opencv_test {
 
 #ifdef HAVE_OPENCL
 #ifdef OPENCV_ENABLE_NONFREE
-        TEST(KinectFusion, OCL)
+        TEST(NewKinectFusion, OCL)
 #else
         TEST(NewKinectFusion, DISABLED_OCL)
 #endif

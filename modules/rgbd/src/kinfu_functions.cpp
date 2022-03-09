@@ -13,7 +13,6 @@ template< typename MatType >
 bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, MatType _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter)
 {
     CV_TRACE_FUNCTION();
-
     MatType depth;
     //Mat depth = _depth.getMat();
     if (_depth.type() != DEPTH_TYPE)
@@ -91,7 +90,6 @@ void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& renderFrame, 
 
 bool kinfuCommonUpdate(Odometry& odometry, Volume& volume, InputArray _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter)
 {
-
     if (_depth.isUMat())
     {
         return kinfuCommonUpdateT(odometry, volume, _depth.getUMat(), prevFrame, renderFrame, pose, frameCounter);
