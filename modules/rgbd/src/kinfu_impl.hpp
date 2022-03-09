@@ -59,7 +59,7 @@ private:
 
 KinFu::KinFu()
 {
-
+    this->impl = makePtr<KinFu_Common>();
 }
 
 KinFu::~KinFu(){}

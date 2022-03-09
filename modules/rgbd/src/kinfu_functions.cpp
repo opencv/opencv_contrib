@@ -69,13 +69,23 @@ bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, MatType _depth, Odom
 }
 
 template< typename MatType >
-void kinfuCommonRenderT(const OdometryFrame& renderFrame, MatType image, const Vec3f& lightPose)
+void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& renderFrame, MatType image, const Vec3f& lightPose)
 {
     CV_TRACE_FUNCTION();
     MatType pts, nrm;
     renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
     detail::renderPointsNormals(pts, nrm, image, lightPose);
+}
+
+template< typename MatType >
+void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& renderFrame, MatType image, const Matx44f& _cameraPose, const Vec3f& lightPose)
+{
+    CV_TRACE_FUNCTION();
+    Affine3f cameraPose(_cameraPose);
+    MatType points, normals;
+    volume.raycast(_cameraPose, points, normals);
+    detail::renderPointsNormals(points, normals, image, lightPose);
 }
 
 
@@ -92,12 +102,20 @@ bool kinfuCommonUpdate(Odometry& odometry, Volume& volume, InputArray _depth, Od
     }
 }
 
-void kinfuCommonRender(const OdometryFrame& renderFrame, OutputArray image, const Vec3f& lightPose)
+void kinfuCommonRender(const Volume& volume, const OdometryFrame& renderFrame, OutputArray image, const Vec3f& lightPose)
 {
     if (image.isUMat())
-        kinfuCommonRenderT(renderFrame, image.getUMat(), lightPose);
+        kinfuCommonRenderT(volume, renderFrame, image.getUMat(), lightPose);
     else
-        kinfuCommonRenderT(renderFrame, image.getMat(), lightPose);
+        kinfuCommonRenderT(volume, renderFrame, image.getMat(), lightPose);
+}
+
+void kinfuCommonRender(const Volume& volume, const OdometryFrame& renderFrame, OutputArray image, const Matx44f& cameraPose, const Vec3f& lightPose)
+{
+    if (image.isUMat())
+        kinfuCommonRenderT(volume, renderFrame, image.getUMat(), cameraPose, lightPose);
+    else
+        kinfuCommonRenderT(volume, renderFrame, image.getMat(), cameraPose, lightPose);
 }
 
 

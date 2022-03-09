@@ -48,12 +48,12 @@ bool KinFu_Common::update(InputArray _depth)
 
 void KinFu_Common::render(OutputArray image) const
 {
-	kinfuCommonRender(renderFrame, image, lightPose);
+	kinfuCommonRender(volume, renderFrame, image, lightPose);
 }
 
 void KinFu_Common::render(OutputArray image, const Matx44f& cameraPose) const
 {
-
+	kinfuCommonRender(volume, renderFrame, image, cameraPose, lightPose);
 }
 
 void KinFu_Common::reset()
@@ -78,7 +78,7 @@ void KinFu_Common::getNormals(InputArray points, OutputArray normals) const
 
 const Affine3f KinFu_Common::getPose() const
 {
-	return Affine3f(Vec3f(0, 0, 0), Vec3f(0, 0, 0));
+	return Affine3f(this->pose);
 }
 
 } // namespace cv

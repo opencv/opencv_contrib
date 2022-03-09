@@ -16,7 +16,7 @@ namespace cv {
 //! @{
 
 
-class KinFu
+class CV_EXPORTS_W KinFu
 {
 public:
     KinFu();
