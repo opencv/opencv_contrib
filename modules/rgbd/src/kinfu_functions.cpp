@@ -9,18 +9,17 @@
 
 namespace cv {
 
-//template< typename MatType >
-
-bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, InputArray _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter)
+template< typename MatType >
+bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, MatType _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter)
 {
     CV_TRACE_FUNCTION();
 
-    //MatType depth;
-    Mat depth = _depth.getMat();
-    //if (_depth.type() != DEPTH_TYPE)
-    //    _depth.convertTo(depth, DEPTH_TYPE);
-    //else
-    //    depth = _depth;
+    MatType depth;
+    //Mat depth = _depth.getMat();
+    if (_depth.type() != DEPTH_TYPE)
+        _depth.convertTo(depth, DEPTH_TYPE);
+    else
+        depth = _depth;
 
     OdometryFrame newFrame = odometry.createOdometryFrame();
     newFrame.setDepth(depth);
@@ -52,8 +51,8 @@ bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, InputArray _depth, O
             volume.integrate(depth, pose);
         }
 
-        //MatType points, normals;
-        Mat points, normals;
+        MatType points, normals;
+        //Mat points, normals;
         newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
         newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM, 0);
         volume.raycast(pose, points, normals);
@@ -67,6 +66,38 @@ bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, InputArray _depth, O
 
     frameCounter++;
     return true;
+}
+
+template< typename MatType >
+void kinfuCommonRenderT(const OdometryFrame& renderFrame, MatType image, const Vec3f& lightPose)
+{
+    CV_TRACE_FUNCTION();
+    MatType pts, nrm;
+    renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
+    renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
+    detail::renderPointsNormals(pts, nrm, image, lightPose);
+}
+
+
+bool kinfuCommonUpdate(Odometry& odometry, Volume& volume, InputArray _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter)
+{
+
+    if (_depth.isUMat())
+    {
+        return kinfuCommonUpdateT(odometry, volume, _depth.getUMat(), prevFrame, renderFrame, pose, frameCounter);
+    }
+    else
+    {
+        return kinfuCommonUpdateT(odometry, volume, _depth.getMat(), prevFrame, renderFrame, pose, frameCounter);
+    }
+}
+
+void kinfuCommonRender(const OdometryFrame& renderFrame, OutputArray image, const Vec3f& lightPose)
+{
+    if (image.isUMat())
+        kinfuCommonRenderT(renderFrame, image.getUMat(), lightPose);
+    else
+        kinfuCommonRenderT(renderFrame, image.getMat(), lightPose);
 }
 
 

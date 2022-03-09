@@ -19,13 +19,6 @@ KinFu::Impl::Impl()
 	this->volume = Volume(VolumeType::TSDF, this->volumeSettings);
 }
 
-KinFu::KinFu()
-{
-}
-
-KinFu::~KinFu()
-{
-}
 
 KinFu_Common::KinFu_Common()
 	: Impl()
@@ -49,24 +42,13 @@ OdometryFrame KinFu_Common::createOdometryFrame() const
 
 bool KinFu_Common::update(InputArray _depth)
 {
-
 	CV_Assert(!_depth.empty() && _depth.size() == Size(volumeSettings.getIntegrateHeight(), volumeSettings.getIntegrateWidth()));
-
-	if (_depth.isUMat())
-	{
-		return kinfuCommonUpdateT(odometry, volume, _depth.getUMat(), prevFrame, renderFrame, pose, frameCounter);
-	}
-	else
-	{
-		//return kinfuCommonUpdateT(odometry, volume, _depth.getMat(), prevFrame, renderFrame, pose, frameCounter);
-	}
-
-	return true;
+	return kinfuCommonUpdate(odometry, volume, _depth, prevFrame, renderFrame, pose, frameCounter);
 }
 
 void KinFu_Common::render(OutputArray image) const
 {
-
+	kinfuCommonRender(renderFrame, image, lightPose);
 }
 
 void KinFu_Common::render(OutputArray image, const Matx44f& cameraPose) const

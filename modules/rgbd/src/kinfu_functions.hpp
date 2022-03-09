@@ -12,7 +12,9 @@
 
 namespace cv {
 
-bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, InputArray _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter);
+bool kinfuCommonUpdate(Odometry& odometry, Volume& volume, InputArray _depth, OdometryFrame& prevFrame, OdometryFrame& renderFrame, Matx44f& pose, int& frameCounter);
+
+void kinfuCommonRender(const OdometryFrame& renderFrame, OutputArray image, const Vec3f& lightPose);
 
 } // namespace cv
 

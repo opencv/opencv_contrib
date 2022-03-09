@@ -49,11 +49,29 @@ public:
     virtual void getNormals(InputArray points, OutputArray normals) const override;
     virtual const Affine3f getPose() const override;
 private:
+    Vec3f lightPose = Vec3f::all(0.f);
     int frameCounter;
     Matx44f pose;
     OdometryFrame prevFrame;
     OdometryFrame renderFrame;
 };
+
+
+KinFu::KinFu()
+{
+
+}
+
+KinFu::~KinFu(){}
+
+bool KinFu::update(InputArray depth) { return this->impl->update(depth); }
+void KinFu::render(OutputArray image) const { this->impl->render(image); }
+void KinFu::render(OutputArray image, const Matx44f& cameraPose) const { this->impl->render(image, cameraPose); }
+void KinFu::reset() { this->impl->reset(); }
+void KinFu::getCloud(OutputArray points, OutputArray normals) const { this->impl->getCloud(points, normals); }
+void KinFu::getPoints(OutputArray points) const { this->impl->getPoints(points); }
+void KinFu::getNormals(InputArray points, OutputArray normals) const { this->impl->getNormals(points, normals); }
+const Affine3f KinFu::getPose() const { return this->impl->getPose(); }
 
 } // namespace cv
 
