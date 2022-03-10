@@ -39,7 +39,6 @@ class KinFu_Common : public KinFu::Impl
 public:
     KinFu_Common();
     ~KinFu_Common();
-    virtual OdometryFrame createOdometryFrame() const override;
     virtual bool update(InputArray depth) override;
     virtual void render(OutputArray image) const override;
     virtual void render(OutputArray image, const Matx44f& cameraPose) const override;

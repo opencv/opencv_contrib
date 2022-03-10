@@ -36,11 +36,6 @@ KinFu_Common::~KinFu_Common()
 {
 }
 
-OdometryFrame KinFu_Common::createOdometryFrame() const
-{
-	return OdometryFrame();
-}
-
 bool KinFu_Common::update(InputArray _depth)
 {
 	CV_Assert(!_depth.empty());
@@ -67,17 +62,17 @@ void KinFu_Common::reset()
 
 void KinFu_Common::getCloud(OutputArray points, OutputArray normals) const
 {
-
+	volume.fetchPointsNormals(points, normals);
 }
 
 void KinFu_Common::getPoints(OutputArray points) const
 {
-
+	volume.fetchPointsNormals(points, noArray());
 }
 
 void KinFu_Common::getNormals(InputArray points, OutputArray normals) const
 {
-
+	volume.fetchNormals(points, normals);
 }
 
 const Affine3f KinFu_Common::getPose() const
