@@ -17,7 +17,6 @@ class KinFu::Impl
 public:
     Impl();
     virtual ~Impl() {};
-    virtual OdometryFrame createOdometryFrame() const = 0;
     virtual bool update(InputArray depth) = 0;
     virtual void render(OutputArray image) const = 0;
     virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;

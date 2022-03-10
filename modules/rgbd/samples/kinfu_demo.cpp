@@ -125,7 +125,8 @@ int main(int argc, char **argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
 
     Ptr<Params1> params;
-    Ptr<KinFu1> kf;
+    //Ptr<KinFu1> kf;
+    KinFu kf = KinFu();
 
     if(coarse)
         params = Params1::coarseParams();
@@ -149,8 +150,8 @@ int main(int argc, char **argv)
     //params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
     //params->tsdf_max_weight = 16;
 
-    if(!idle)
-        kf = KinFu1::create(params);
+    //if(!idle)
+    //    kf = KinFu1::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -207,9 +208,9 @@ int main(int argc, char **argv)
             if(!idle)
             {
                 imshow("depth", cvt8);
-                if(!kf->update(frame))
+                if(!kf.update(frame))
                 {
-                    kf->reset();
+                    kf.reset();
                     std::cout << "reset" << std::endl;
                 }
 #ifdef HAVE_OPENCV_VIZ
@@ -237,7 +238,7 @@ int main(int argc, char **argv)
                 }
 #endif
 
-                kf->render(rendered);
+                kf.render(rendered);
             }
             else
             {
@@ -258,7 +259,7 @@ int main(int argc, char **argv)
         {
         case 'r':
             if(!idle)
-                kf->reset();
+                kf.reset();
             break;
         case 'q':
             return 0;
