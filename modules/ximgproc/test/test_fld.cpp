@@ -285,8 +285,8 @@ TEST_F(ximgproc_ED, ManySmallCircles)
 
     vector<Vec6d> ellipses;
     detector->detectEdges(test_image);
-    detector->detectLines(lines);
     detector->detectEllipses(ellipses);
+    detector->detectLines(lines);
 
     size_t segments_size = 6458;
     size_t lines_size = 6264;

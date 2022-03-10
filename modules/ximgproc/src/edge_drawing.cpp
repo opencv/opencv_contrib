@@ -1294,6 +1294,7 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     double* x = new double[(width + height) * 8];
     double* y = new double[(width + height) * 8];
 
+    lines.clear();
     linesNo = 0;
 
     // Use the whole segment
@@ -2427,6 +2428,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     }
 
     min_line_len = 6;
+    line_error = params.LineFitErrorThreshold;
     Circles.clear();
     Ellipses.clear();
     lines.clear();
