@@ -125,7 +125,11 @@ int main(int argc, char **argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
 
     Ptr<Params1> params;
-    KinFu kf = KinFu(!coarse);
+    KinFu kf;
+    if (useHashTSDF)
+        kf = KinFu(VolumeType::HashTSDF, !coarse);
+    else
+        kf = KinFu(VolumeType::TSDF, !coarse);
 
     if(coarse)
         params = Params1::coarseParams();

@@ -4,8 +4,8 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-#ifndef __OPENCV_KINFU_IMPL_HPP__
-#define __OPENCV_KINFU_IMPL_HPP__
+#ifndef __OPENCV_RGBD_KINFU_IMPL_HPP__
+#define __OPENCV_RGBD_KINFU_IMPL_HPP__
 
 #include "precomp.hpp"
 #include "kinfu_functions.hpp"
@@ -15,9 +15,9 @@ namespace cv {
 class KinFu::Impl
 {
 public:
-    Impl(bool isHighDense);
+    Impl(VolumeType vt, bool isHighDense);
     virtual ~Impl() {};
-    virtual VolumeSettings getVolumeSettings() const;
+    virtual VolumeSettings getVolumeSettings() const = 0;
     virtual bool update(InputArray depth) = 0;
     virtual void render(OutputArray image) const = 0;
     virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
@@ -37,7 +37,7 @@ public:
 class KinFu_Common : public KinFu::Impl
 {
 public:
-    KinFu_Common(bool isHighDense);
+    KinFu_Common(VolumeType vt, bool isHighDense);
     ~KinFu_Common();
     virtual VolumeSettings getVolumeSettings() const override;
     virtual bool update(InputArray depth) override;
@@ -57,9 +57,9 @@ private:
 };
 
 
-KinFu::KinFu(bool isHighDense)
+KinFu::KinFu(VolumeType vt, bool isHighDense)
 {
-    this->impl = makePtr<KinFu_Common>(isHighDense);
+    this->impl = makePtr<KinFu_Common>(vt, isHighDense);
 }
 
 KinFu::~KinFu(){}

@@ -19,7 +19,7 @@ namespace cv {
 class CV_EXPORTS_W KinFu
 {
 public:
-    KinFu(bool isHighDense = false);
+    KinFu(VolumeType vt = VolumeType::TSDF, bool isHighDense = false);
     ~KinFu();
 
     VolumeSettings getVolumeSettings() const;
@@ -324,81 +324,6 @@ struct CV_EXPORTS_W Params1
 
   That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
 */
-class CV_EXPORTS_W KinFu1
-{
-public:
-    CV_WRAP static Ptr<KinFu1> create(const Ptr<Params1>& _params);
-    virtual ~KinFu1();
-
-    /** @brief Get current parameters */
-    virtual const Params1& getParams() const = 0;
-
-    /** @brief Renders a volume into an image
-
-      Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
-      Light pose is fixed in KinFu params.
-
-        @param image resulting image
-    */
-
-    CV_WRAP virtual void render(OutputArray image) const = 0;
-
-    /** @brief Renders a volume into an image
-
-      Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
-      Light pose is fixed in KinFu params.
-
-        @param image resulting image
-        @param cameraPose pose of camera to render from. If empty then render from current pose
-        which is a last frame camera pose.
-    */
-
-    CV_WRAP virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
-
-    /** @brief Gets points and normals of current 3d mesh
-
-      The order of normals corresponds to order of points.
-      The order of points is undefined.
-
-        @param points vector of points which are 4-float vectors
-        @param normals vector of normals which are 4-float vectors
-     */
-    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals) const = 0;
-
-    /** @brief Gets points of current 3d mesh
-
-     The order of points is undefined.
-
-        @param points vector of points which are 4-float vectors
-     */
-    CV_WRAP virtual void getPoints(OutputArray points) const = 0;
-
-    /** @brief Calculates normals for given points
-        @param points input vector of points which are 4-float vectors
-        @param normals output vector of corresponding normals which are 4-float vectors
-     */
-    CV_WRAP virtual  void getNormals(InputArray points, OutputArray normals) const = 0;
-
-    /** @brief Resets the algorithm
-
-    Clears current model and resets a pose.
-    */
-    CV_WRAP virtual void reset() = 0;
-
-    /** @brief Get current pose in voxel space */
-    virtual const Affine3f getPose() const = 0;
-
-    /** @brief Process next depth frame
-
-      Integrates depth into voxel space with respect to its ICP-calculated pose.
-      Input image is converted to CV_32F internally if has another type.
-
-    @param depth one-channel image which size and depth scale is described in algorithm's parameters
-    @return true if succeeded to align new frame with current scene, false if opposite
-    */
-    CV_WRAP virtual bool update(InputArray depth) = 0;
-};
-
 //! @}
 }
 }

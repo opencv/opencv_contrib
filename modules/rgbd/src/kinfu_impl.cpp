@@ -10,7 +10,7 @@
 
 namespace cv {
 
-KinFu::Impl::Impl(bool isHighDense)
+KinFu::Impl::Impl(VolumeType vt, bool isHighDense)
 {
 	odometrySettings = OdometrySettings();
 	odometrySettings.setMaxRotation(30.f);
@@ -19,7 +19,7 @@ KinFu::Impl::Impl(bool isHighDense)
 	volumeSettings.getVolumeResolution(res);
 	odometrySettings.setMaxTranslation(voxelSize * res[0] * 0.5f);
 
-	volumeSettings = VolumeSettings(VolumeType::TSDF);
+	volumeSettings = VolumeSettings(vt);
 	if (isHighDense)
 	{
 		float volSize = 3.f;
@@ -29,12 +29,12 @@ KinFu::Impl::Impl(bool isHighDense)
 	}
 
 	odometry = Odometry(OdometryType::DEPTH, this->odometrySettings, OdometryAlgoType::FAST);
-	volume = Volume(VolumeType::TSDF, this->volumeSettings);
+	volume = Volume(vt, this->volumeSettings);
 }
 
 
-KinFu_Common::KinFu_Common(bool isHighDense)
-	: Impl(isHighDense)
+KinFu_Common::KinFu_Common(VolumeType vt, bool isHighDense)
+	: Impl(vt, isHighDense)
 {
 	reset();
 }
