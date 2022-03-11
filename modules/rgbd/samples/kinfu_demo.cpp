@@ -166,7 +166,7 @@ int main(int argc, char **argv)
         if(pause)
         {
             // doesn't happen in idle mode
-            kf->getCloud(points, normals);
+            kf.getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -174,10 +174,13 @@ int main(int argc, char **argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
-                Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
-                window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     volSize),
-                                  Affine3f(kf->getParams().volumePose));
+                VolumeSettings vs = kf.getVolumeSettings();
+                Vec3d volumeDims;
+                vs.getVolumeDimensions(volumeDims);
+                Matx44f pose;
+                vs.getVolumePose(pose);
+                Vec3d volSize = vs.getVoxelSize() * volumeDims;
+                window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), Affine3f(pose));
                 PauseCallbackArgs pca(*kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
