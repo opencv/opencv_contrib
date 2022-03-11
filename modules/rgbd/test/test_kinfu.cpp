@@ -279,13 +279,12 @@ namespace {
 
     void flyTest(VolumeType vt, bool hiDense)
     {
-            
         Ptr<kinfu::Params1> params;
         if (hiDense)
             params = kinfu::Params1::defaultParams();
         else
             params = kinfu::Params1::coarseParams();
-            
+
         Ptr<Scene> scene = Scene::create(hiDense, params->frameSize, params->intr, params->depthFactor);
 
         KinFu kf = KinFu(vt, hiDense);
