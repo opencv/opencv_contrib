@@ -68,7 +68,7 @@ bool kinfuCommonUpdateT(Odometry& odometry, Volume& volume, MatType _depth, Odom
 }
 
 template< typename MatType >
-void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& renderFrame, MatType& image, const Vec3f& lightPose)
+void kinfuCommonRenderT(const Volume& /*volume*/, const OdometryFrame& renderFrame, MatType& image, const Vec3f& lightPose)
 {
     CV_TRACE_FUNCTION();
     MatType pts, nrm;
@@ -78,7 +78,7 @@ void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& renderFrame, 
 }
 
 template< typename MatType >
-void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& renderFrame, MatType& image, const Matx44f& _cameraPose, const Vec3f& lightPose)
+void kinfuCommonRenderT(const Volume& volume, const OdometryFrame& /*renderFrame*/, MatType& image, const Matx44f& _cameraPose, const Vec3f& lightPose)
 {
     CV_TRACE_FUNCTION();
     Affine3f cameraPose(_cameraPose);
