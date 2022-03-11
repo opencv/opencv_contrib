@@ -363,7 +363,7 @@ namespace {
     }
 #endif
 
-
+/*
 #ifdef OPENCV_ENABLE_NONFREE
     TEST(KinectFusion, HashTSDF)
 #else
@@ -372,6 +372,6 @@ namespace {
     {
         flyTest(VolumeType::HashTSDF, false);
     }
-
+*/
 }
 } // namespace

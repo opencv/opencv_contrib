@@ -10,17 +10,17 @@
 
 namespace cv {
 
-KinFu::Impl::Impl(VolumeType vt, bool isHighDense)
+KinFu::Impl::Impl(VolumeType vt, bool isHighDense) :
+	volumeSettings(vt),
+	odometrySettings()
 {
-	odometrySettings = OdometrySettings();
 	odometrySettings.setMaxRotation(30.f);
 	float voxelSize = volumeSettings.getVoxelSize();
 	Vec3i res;
 	volumeSettings.getVolumeResolution(res);
 	odometrySettings.setMaxTranslation(voxelSize * res[0] * 0.5f);
 
-	volumeSettings = VolumeSettings(vt);
-	if (isHighDense)
+	if (isHighDense && vt == VolumeType::TSDF)
 	{
 		float volSize = 3.f;
 		volumeSettings.setVolumeResolution(Vec3i::all(512));
