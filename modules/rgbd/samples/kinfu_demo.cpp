@@ -181,7 +181,7 @@ int main(int argc, char **argv)
                 vs.getVolumePose(pose);
                 Vec3d volSize = vs.getVoxelSize() * volumeDims;
                 window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), Affine3f(pose));
-                PauseCallbackArgs pca(*kf);
+                PauseCallbackArgs pca(kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
                                                                 "Close the window or press Q to resume"), Point()));
