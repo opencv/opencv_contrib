@@ -41,7 +41,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-
 namespace cv {
 namespace aruco {
 
@@ -743,14 +742,14 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                           InputArray _markerIds, float squareMarkerLengthRate,
                           OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
-                          InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dict) {
+                          InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dictionary) {
 
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
 
     const float minRepDistanceRate = 1.302455f;
 
     // create Charuco board layout for diamond (3x3 layout)
-    Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dict);
+    Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dictionary);
 
 
     vector< vector< Point2f > > diamondCorners;
@@ -842,10 +841,10 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                 // reorder corners
                 vector< Point2f > currentMarkerCornersReorder;
                 currentMarkerCornersReorder.resize(4);
-                currentMarkerCornersReorder[0] = currentMarkerCorners[2];
-                currentMarkerCornersReorder[1] = currentMarkerCorners[3];
-                currentMarkerCornersReorder[2] = currentMarkerCorners[1];
-                currentMarkerCornersReorder[3] = currentMarkerCorners[0];
+                currentMarkerCornersReorder[0] = currentMarkerCorners[0];
+                currentMarkerCornersReorder[1] = currentMarkerCorners[1];
+                currentMarkerCornersReorder[2] = currentMarkerCorners[3];
+                currentMarkerCornersReorder[3] = currentMarkerCorners[2];
 
                 diamondCorners.push_back(currentMarkerCornersReorder);
                 diamondIds.push_back(markerId);

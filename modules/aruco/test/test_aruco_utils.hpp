@@ -5,6 +5,27 @@
 namespace opencv_test {
 namespace {
 
+static inline vector<Point2f> getAxis(InputArray _cameraMatrix, InputArray _distCoeffs, InputArray _rvec,
+                                      InputArray _tvec, float length, const float offset = 0.f)
+{
+    vector<Point3f> axis;
+    axis.push_back(Point3f(offset, offset, 0.f));
+    axis.push_back(Point3f(length+offset, offset, 0.f));
+    axis.push_back(Point3f(offset, length+offset, 0.f));
+    axis.push_back(Point3f(offset, offset, length));
+    vector<Point2f> axis_to_img;
+    projectPoints(axis, _rvec, _tvec, _cameraMatrix, _distCoeffs, axis_to_img);
+    return axis_to_img;
+}
+
+static inline vector<Point2f> getMarkerById(int id, const vector<vector<Point2f> >& corners, const vector<int>& ids)
+{
+    for (size_t i = 0ull; i < ids.size(); i++)
+        if (ids[i] == id)
+            return corners[i];
+    return vector<Point2f>();
+}
+
 static inline double deg2rad(double deg) { return deg * CV_PI / 180.; }
 
 /**

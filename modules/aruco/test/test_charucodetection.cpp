@@ -266,11 +266,7 @@ void CV_CharucoPoseEstimation::run(int) {
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
-                if(ids.size() == 0) {
-                    ts->printf(cvtest::TS::LOG, "Marker detection failed");
-                    ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
-                    return;
-                }
+                ASSERT_EQ(ids.size(), board->ids.size());
 
                 // interpolate charuco corners
                 vector< Point2f > charucoCorners;
@@ -291,7 +287,17 @@ void CV_CharucoPoseEstimation::run(int) {
                                                 distCoeffs, rvec, tvec);
 
 
-                // check result
+                // check axes
+                const float offset = (board->getSquareLength() - board->getMarkerLength()) / 2.f;
+                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, board->getSquareLength(), offset);
+                vector<Point2f> topLeft = getMarkerById(board->ids[0], corners, ids);
+                ASSERT_NEAR(topLeft[0].x, axes[1].x, 3.f);
+                ASSERT_NEAR(topLeft[0].y, axes[1].y, 3.f);
+                vector<Point2f> bottomLeft = getMarkerById(board->ids[2], corners, ids);
+                ASSERT_NEAR(bottomLeft[0].x, axes[2].x, 3.f);
+                ASSERT_NEAR(bottomLeft[0].y, axes[2].y, 3.f);
+
+                // check estimate result
                 vector< Point2f > projectedCharucoCorners;
 
                 projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
@@ -416,10 +422,10 @@ void CV_CharucoDiamondDetection::run(int) {
                               projectedDiamondCorners);
 
                 vector< Point2f > projectedDiamondCornersReorder(4);
-                projectedDiamondCornersReorder[0] = projectedDiamondCorners[2];
-                projectedDiamondCornersReorder[1] = projectedDiamondCorners[3];
-                projectedDiamondCornersReorder[2] = projectedDiamondCorners[1];
-                projectedDiamondCornersReorder[3] = projectedDiamondCorners[0];
+                projectedDiamondCornersReorder[0] = projectedDiamondCorners[0];
+                projectedDiamondCornersReorder[1] = projectedDiamondCorners[1];
+                projectedDiamondCornersReorder[2] = projectedDiamondCorners[3];
+                projectedDiamondCornersReorder[3] = projectedDiamondCorners[2];
 
 
                 for(unsigned int i = 0; i < 4; i++) {
@@ -441,10 +447,10 @@ void CV_CharucoDiamondDetection::run(int) {
                 // check result
                 vector< Point2f > projectedDiamondCornersPose;
                 vector< Vec3f > diamondObjPoints(4);
-                diamondObjPoints[0] = Vec3f(-squareLength / 2.f, squareLength / 2.f, 0);
-                diamondObjPoints[1] = Vec3f(squareLength / 2.f, squareLength / 2.f, 0);
-                diamondObjPoints[2] = Vec3f(squareLength / 2.f, -squareLength / 2.f, 0);
-                diamondObjPoints[3] = Vec3f(-squareLength / 2.f, -squareLength / 2.f, 0);
+                diamondObjPoints[0] = Vec3f(0.f, 0.f, 0);
+                diamondObjPoints[1] = Vec3f(squareLength, 0.f, 0);
+                diamondObjPoints[2] = Vec3f(squareLength, squareLength, 0);
+                diamondObjPoints[3] = Vec3f(0.f, squareLength, 0);
                 projectPoints(diamondObjPoints, estimatedRvec[0], estimatedTvec[0], cameraMatrix,
                               distCoeffs, projectedDiamondCornersPose);
 

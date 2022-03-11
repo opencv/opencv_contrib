@@ -250,8 +250,9 @@ CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &diction
  * The marker corrdinate system is centered on the middle of the marker, with the Z axis
  * perpendicular to the marker plane.
  * The coordinates of the four corners of the marker in its own coordinate system are:
- * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
- * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
+ * (0, 0, 0), (markerLength, 0, 0),
+ * (markerLength, markerLength, 0), (0, markerLength, 0)
+ * @sa use cv::drawFrameAxes to get world coordinate system axis for object points
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
@@ -412,6 +413,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * Input markers that are not included in the board layout are ignored.
  * The function returns the number of markers from the input employed for the board pose estimation.
  * Note that returning a 0 means the pose has not been estimated.
+ * @sa use cv::drawFrameAxes to get world coordinate system axis for object points
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
@@ -476,33 +478,11 @@ CV_EXPORTS_W void refineDetectedMarkers(
  * Given an array of detected marker corners and its corresponding ids, this functions draws
  * the markers in the image. The marker borders are painted and the markers identifiers if provided.
  * Useful for debugging purposes.
+ *
  */
 CV_EXPORTS_W void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays corners,
                                       InputArray ids = noArray(),
                                       Scalar borderColor = Scalar(0, 255, 0));
-
-
-
-/**
- * @brief Draw coordinate system axis from pose estimation
- *
- * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
- * altered.
- * @param cameraMatrix input 3x3 floating-point camera matrix
- * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
- * @param distCoeffs vector of distortion coefficients
- * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
- * @param rvec rotation vector of the coordinate system that will be drawn. (@sa Rodrigues).
- * @param tvec translation vector of the coordinate system that will be drawn.
- * @param length length of the painted axis in the same unit than tvec (usually in meters)
- *
- * Given the pose estimation of a marker or board, this function draws the axis of the world
- * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
- *
- * @deprecated use cv::drawFrameAxes
- */
-CV_EXPORTS_W void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                           InputArray rvec, InputArray tvec, float length, int thickness=3);
 
 
 

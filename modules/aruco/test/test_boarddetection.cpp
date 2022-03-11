@@ -70,9 +70,9 @@ void CV_ArucoBoardPose::run(int) {
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
     // for different perspectives
-    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
-        for(int yaw = -60; yaw <= 60; yaw += 30) {
-            for(int pitch = -60; pitch <= 60; pitch += 30) {
+    for(double distance = 0.2; distance <= 0.4; distance += 0.15) {
+        for(int yaw = -55; yaw <= 50; yaw += 25) {
+            for(int pitch = -55; pitch <= 50; pitch += 25) {
                 for(unsigned int i = 0; i < gridboard->ids.size(); i++)
                     gridboard->ids[i] = (iter + int(i)) % 250;
                 int markerBorder = iter % 2 + 1;
@@ -87,17 +87,25 @@ void CV_ArucoBoardPose::run(int) {
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
-                if(ids.size() == 0) {
-                    ts->printf(cvtest::TS::LOG, "Marker detection failed in Board test");
-                    ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
-                    return;
-                }
+                ASSERT_EQ(ids.size(), gridboard->ids.size());
 
                 // estimate pose
                 Mat rvec, tvec;
                 aruco::estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
-                // check result
+                // check axes
+                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->rightBottomBorder.x);
+                vector<Point2f> topLeft = getMarkerById(gridboard->ids[0], corners, ids);
+                ASSERT_NEAR(topLeft[0].x, axes[0].x, 2.f);
+                ASSERT_NEAR(topLeft[0].y, axes[0].y, 2.f);
+                vector<Point2f> topRight = getMarkerById(gridboard->ids[2], corners, ids);
+                ASSERT_NEAR(topRight[1].x, axes[1].x, 2.f);
+                ASSERT_NEAR(topRight[1].y, axes[1].y, 2.f);
+                vector<Point2f> bottomLeft = getMarkerById(gridboard->ids[6], corners, ids);
+                ASSERT_NEAR(bottomLeft[3].x, axes[2].x, 2.f);
+                ASSERT_NEAR(bottomLeft[3].y, axes[2].y, 2.f);
+
+                // check estimate result
                 for(unsigned int i = 0; i < ids.size(); i++) {
                     int foundIdx = -1;
                     for(unsigned int j = 0; j < gridboard->ids.size(); j++) {

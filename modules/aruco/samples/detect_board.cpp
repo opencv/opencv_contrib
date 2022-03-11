@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Ptr<aruco::DetectorParameters> detectorParams;
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = aruco::DetectorParameters::readDetectorParameters(fs.root(), detectorParams);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         if(markersOfBoardDetected > 0)
-            aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
+            cv::drawFrameAxes(imageCopy, camMatrix, distCoeffs, rvec, tvec, axisLength);
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
