@@ -15,8 +15,9 @@ namespace cv {
 class KinFu::Impl
 {
 public:
-    Impl();
+    Impl(bool isHighDense);
     virtual ~Impl() {};
+    virtual VolumeSettings getVolumeSettings() const;
     virtual bool update(InputArray depth) = 0;
     virtual void render(OutputArray image) const = 0;
     virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
@@ -36,8 +37,9 @@ public:
 class KinFu_Common : public KinFu::Impl
 {
 public:
-    KinFu_Common();
+    KinFu_Common(bool isHighDense);
     ~KinFu_Common();
+    virtual VolumeSettings getVolumeSettings() const override;
     virtual bool update(InputArray depth) override;
     virtual void render(OutputArray image) const override;
     virtual void render(OutputArray image, const Matx44f& cameraPose) const override;
@@ -55,13 +57,14 @@ private:
 };
 
 
-KinFu::KinFu()
+KinFu::KinFu(bool isHighDense)
 {
-    this->impl = makePtr<KinFu_Common>();
+    this->impl = makePtr<KinFu_Common>(isHighDense);
 }
 
 KinFu::~KinFu(){}
 
+VolumeSettings KinFu::getVolumeSettings() const { return this->impl->getVolumeSettings(); }
 bool KinFu::update(InputArray depth) { return this->impl->update(depth); }
 void KinFu::render(OutputArray image) const { this->impl->render(image); }
 void KinFu::render(OutputArray image, const Matx44f& cameraPose) const { this->impl->render(image, cameraPose); }

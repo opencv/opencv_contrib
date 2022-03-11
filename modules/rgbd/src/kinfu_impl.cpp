@@ -10,30 +10,42 @@
 
 namespace cv {
 
-KinFu::Impl::Impl()
+KinFu::Impl::Impl(bool isHighDense)
 {
-	this->odometrySettings = OdometrySettings();
-	this->volumeSettings = VolumeSettings(VolumeType::TSDF);
-
-	this->odometrySettings.setMaxRotation(30.f);
+	odometrySettings = OdometrySettings();
+	odometrySettings.setMaxRotation(30.f);
 	float voxelSize = volumeSettings.getVoxelSize();
 	Vec3i res;
 	volumeSettings.getVolumeResolution(res);
-	this->odometrySettings.setMaxTranslation(voxelSize * res[0] * 0.5f);
+	odometrySettings.setMaxTranslation(voxelSize * res[0] * 0.5f);
 
-	this->odometry = Odometry(OdometryType::DEPTH, this->odometrySettings, OdometryAlgoType::FAST);
-	this->volume = Volume(VolumeType::TSDF, this->volumeSettings);
+	volumeSettings = VolumeSettings(VolumeType::TSDF);
+	if (isHighDense)
+	{
+		float volSize = 3.f;
+		volumeSettings.setVolumeResolution(Vec3i::all(512));
+		volumeSettings.setVoxelSize(volSize / 512.f);
+		volumeSettings.setTsdfTruncateDistance(3.f * volSize / 512.f);
+	}
+
+	odometry = Odometry(OdometryType::DEPTH, this->odometrySettings, OdometryAlgoType::FAST);
+	volume = Volume(VolumeType::TSDF, this->volumeSettings);
 }
 
 
-KinFu_Common::KinFu_Common()
-	: Impl()
+KinFu_Common::KinFu_Common(bool isHighDense)
+	: Impl(isHighDense)
 {
 	reset();
 }
 
 KinFu_Common::~KinFu_Common()
 {
+}
+
+VolumeSettings KinFu_Common::getVolumeSettings() const
+{
+	return this->volumeSettings;
 }
 
 bool KinFu_Common::update(InputArray _depth)

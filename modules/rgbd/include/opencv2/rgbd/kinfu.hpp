@@ -19,8 +19,10 @@ namespace cv {
 class CV_EXPORTS_W KinFu
 {
 public:
-    KinFu();
+    KinFu(bool isHighDense = false);
     ~KinFu();
+
+    VolumeSettings getVolumeSettings() const;
 
     void render(OutputArray image) const;
 
