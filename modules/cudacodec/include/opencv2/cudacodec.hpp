@@ -290,22 +290,25 @@ enum DeinterlaceMode
 
 /** @brief Struct providing information about video file format. :
  */
-struct FormatInfo
+struct CV_EXPORTS_W_SIMPLE FormatInfo
 {
-    Codec codec;
-    ChromaFormat chromaFormat;
-    int nBitDepthMinus8 = -1;
-    int ulWidth = 0;//!< Coded sequence width in pixels.
-    int ulHeight = 0;//!< Coded sequence height in pixels.
-    int width = 0;//!< Width of the decoded frame returned by nextFrame(frame).
-    int height = 0;//!< Height of the decoded frame returned by nextFrame(frame).
-    int ulMaxWidth = 0;
-    int ulMaxHeight = 0;
-    Rect displayArea;//!< ROI inside the decoded frame returned by nextFrame(frame), containing the useable video frame.
-    bool valid = false;
-    double fps = 0;
-    int ulNumDecodeSurfaces = 0;//!< Maximum number of internal decode surfaces.
-    DeinterlaceMode deinterlaceMode;
+    CV_WRAP FormatInfo() : nBitDepthMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
+        fps(0), ulNumDecodeSurfaces(0) {};
+
+    CV_PROP_RW Codec codec;
+    CV_PROP_RW ChromaFormat chromaFormat;
+    CV_PROP_RW int nBitDepthMinus8;
+    CV_PROP_RW int ulWidth;//!< Coded sequence width in pixels.
+    CV_PROP_RW int ulHeight;//!< Coded sequence height in pixels.
+    CV_PROP_RW int width;//!< Width of the decoded frame returned by nextFrame(frame).
+    CV_PROP_RW int height;//!< Height of the decoded frame returned by nextFrame(frame).
+    int ulMaxWidth;
+    int ulMaxHeight;
+    CV_PROP_RW Rect displayArea;//!< ROI inside the decoded frame returned by nextFrame(frame), containing the useable video frame.
+    CV_PROP_RW bool valid;
+    CV_PROP_RW double fps;
+    CV_PROP_RW int ulNumDecodeSurfaces;//!< Maximum number of internal decode surfaces.
+    CV_PROP_RW DeinterlaceMode deinterlaceMode;
 };
 
 /** @brief cv::cudacodec::VideoReader generic properties identifier.
@@ -342,7 +345,7 @@ public:
 
     /** @brief Returns information about video file format.
     */
-    virtual FormatInfo format() const = 0;
+    CV_WRAP virtual FormatInfo format() const = 0;
 
     /** @brief Grabs the next frame from the video source.
 
