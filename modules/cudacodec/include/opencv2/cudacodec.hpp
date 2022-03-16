@@ -317,6 +317,18 @@ enum class VideoReaderProps {
     PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB = 3, //!< Number of raw packages recieved since the last call to grab().
     PROP_RAW_MODE = 4, //!< Status of raw mode.
     PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
+    PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
+#ifndef CV_DOXYGEN
+    PROP_NOT_SUPPORTED
+#endif
+};
+
+/** @brief ColorFormat for the frame returned by the decoder.
+*/
+enum class ColorFormat {
+    BGRA = 1,
+    BGR = 2,
+    GRAY = 3,
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -378,6 +390,8 @@ public:
     @return `true` if the property has been set.
      */
     CV_WRAP virtual bool set(const VideoReaderProps propertyId, const double propertyVal) = 0;
+
+    CV_WRAP virtual void set(const ColorFormat _colorFormat) = 0;
 
     /** @brief Returns the specified VideoReader property
 
