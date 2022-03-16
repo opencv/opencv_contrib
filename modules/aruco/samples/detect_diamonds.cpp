@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     bool autoScale = parser.has("as");
     float autoScaleFactor = autoScale ? parser.get<float>("as") : 1.f;
 
-    Ptr<aruco::DetectorParameters> detectorParams;
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = aruco::DetectorParameters::readDetectorParameters(fs.root(), detectorParams);
@@ -219,8 +219,8 @@ int main(int argc, char *argv[]) {
 
             if(estimatePose) {
                 for(unsigned int i = 0; i < diamondIds.size(); i++)
-                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-                                    squareLength * 0.5f);
+                    cv::drawFrameAxes(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
+                                      squareLength * 1.1f);
             }
         }
 

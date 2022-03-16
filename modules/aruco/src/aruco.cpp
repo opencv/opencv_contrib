@@ -785,11 +785,11 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
 
     _objPoints.create(4, 1, CV_32FC3);
     Mat objPoints = _objPoints.getMat();
-    // set coordinate system in the middle of the marker, with Z pointing out
-    objPoints.ptr< Vec3f >(0)[0] = Vec3f(-markerLength / 2.f, markerLength / 2.f, 0);
-    objPoints.ptr< Vec3f >(0)[1] = Vec3f(markerLength / 2.f, markerLength / 2.f, 0);
-    objPoints.ptr< Vec3f >(0)[2] = Vec3f(markerLength / 2.f, -markerLength / 2.f, 0);
-    objPoints.ptr< Vec3f >(0)[3] = Vec3f(-markerLength / 2.f, -markerLength / 2.f, 0);
+    // set coordinate system in the top-left corner of the marker, with Z pointing out
+    objPoints.ptr< Vec3f >(0)[0] = Vec3f(0.f, 0.f, 0);
+    objPoints.ptr< Vec3f >(0)[1] = Vec3f(markerLength, 0.f, 0);
+    objPoints.ptr< Vec3f >(0)[2] = Vec3f(markerLength, markerLength, 0);
+    objPoints.ptr< Vec3f >(0)[3] = Vec3f(0.f, markerLength, 0);
 }
 
 /**
@@ -1594,6 +1594,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
+    Point3f rightBottomBorder = Point3f(0.f, 0.f, 0.f);
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
@@ -1603,7 +1604,11 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
         CV_Assert(corners_mat.total() == 4);
 
         for (int j = 0; j < 4; j++) {
-            corners.push_back(corners_mat.at<Point3f>(j));
+            const Point3f& corner = corners_mat.at<Point3f>(j);
+            corners.push_back(corner);
+            rightBottomBorder.x = std::max(rightBottomBorder.x, corner.x);
+            rightBottomBorder.y = std::max(rightBottomBorder.y, corner.y);
+            rightBottomBorder.z = std::max(rightBottomBorder.z, corner.z);
         }
         obj_points_vector.push_back(corners);
     }
@@ -1612,6 +1617,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     ids.copyTo(res->ids);
     res->objPoints = obj_points_vector;
     res->dictionary = cv::makePtr<Dictionary>(dictionary);
+    res->rightBottomBorder = rightBottomBorder;
     return res;
 }
 
@@ -1647,20 +1653,19 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
     }
 
     // calculate Board objPoints
-    float maxY = (float)markersY * markerLength + (markersY - 1) * markerSeparation;
     for(int y = 0; y < markersY; y++) {
         for(int x = 0; x < markersX; x++) {
-            vector< Point3f > corners;
-            corners.resize(4);
+            vector<Point3f> corners(4);
             corners[0] = Point3f(x * (markerLength + markerSeparation),
-                                 maxY - y * (markerLength + markerSeparation), 0);
+                                 y * (markerLength + markerSeparation), 0);
             corners[1] = corners[0] + Point3f(markerLength, 0, 0);
-            corners[2] = corners[0] + Point3f(markerLength, -markerLength, 0);
-            corners[3] = corners[0] + Point3f(0, -markerLength, 0);
+            corners[2] = corners[0] + Point3f(markerLength, markerLength, 0);
+            corners[3] = corners[0] + Point3f(0, markerLength, 0);
             res->objPoints.push_back(corners);
         }
     }
-
+    res->rightBottomBorder = Point3f(markersX * markerLength + markerSeparation * (markersX - 1),
+                                     markersY * markerLength + markerSeparation * (markersY - 1), 0.f);
     return res;
 }
 
@@ -1711,15 +1716,6 @@ void drawDetectedMarkers(InputOutputArray _image, InputArrayOfArrays _corners,
     }
 }
 
-
-
-/**
- */
-void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs, InputArray _rvec,
-              InputArray _tvec, float length)
-{
-    drawFrameAxes(_image, _cameraMatrix, _distCoeffs, _rvec, _tvec, length, 3);
-}
 
 /**
  */
@@ -1785,7 +1781,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
             // move top left to 0, 0
             pf -= Point2f(minX, minY);
             pf.x = pf.x / sizeX * float(out.cols);
-            pf.y = (1.0f - pf.y / sizeY) * float(out.rows);
+            pf.y = pf.y / sizeY * float(out.rows);
             outCorners[j] = pf;
         }
 

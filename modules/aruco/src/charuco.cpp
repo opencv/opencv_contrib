@@ -41,7 +41,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-
 namespace cv {
 namespace aruco {
 
@@ -106,7 +105,7 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
 
             double startX, startY;
             startX = squareSizePixels * double(x);
-            startY = double(chessboardZoneImg.rows) - squareSizePixels * double(y + 1);
+            startY = squareSizePixels * double(y);
 
             Mat squareZone = chessboardZoneImg.rowRange(int(startY), int(startY + squareSizePixels))
                                  .colRange(int(startX), int(startX + squareSizePixels));
@@ -135,18 +134,17 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
     float diffSquareMarkerLength = (squareLength - markerLength) / 2;
 
     // calculate Board objPoints
-    for(int y = squaresY - 1; y >= 0; y--) {
+    for(int y = 0; y < squaresY; y++) {
         for(int x = 0; x < squaresX; x++) {
 
             if(y % 2 == x % 2) continue; // black corner, no marker here
 
-            vector< Point3f > corners;
-            corners.resize(4);
+            vector<Point3f> corners(4);
             corners[0] = Point3f(x * squareLength + diffSquareMarkerLength,
-                                 y * squareLength + diffSquareMarkerLength + markerLength, 0);
+                                 y * squareLength + diffSquareMarkerLength, 0);
             corners[1] = corners[0] + Point3f(markerLength, 0, 0);
-            corners[2] = corners[0] + Point3f(markerLength, -markerLength, 0);
-            corners[3] = corners[0] + Point3f(0, -markerLength, 0);
+            corners[2] = corners[0] + Point3f(markerLength, markerLength, 0);
+            corners[3] = corners[0] + Point3f(0, markerLength, 0);
             res->objPoints.push_back(corners);
             // first ids in dictionary
             int nextId = (int)res->ids.size();
@@ -164,7 +162,8 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
             res->chessboardCorners.push_back(corner);
         }
     }
-
+    res->rightBottomBorder = Point3f(squaresX * squareLength,
+                                     squaresY * squareLength, 0.f);
     res->_getNearestMarkerCorners();
 
     return res;
@@ -701,15 +700,14 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                           InputArray _markerIds, float squareMarkerLengthRate,
                           OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
-                          InputArray _cameraMatrix, InputArray _distCoeffs) {
+                          InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dictionary) {
 
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
 
     const float minRepDistanceRate = 1.302455f;
 
     // create Charuco board layout for diamond (3x3 layout)
-    Ptr<Dictionary> dict = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0));
-    Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dict);
+    Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dictionary);
 
 
     vector< vector< Point2f > > diamondCorners;
@@ -801,10 +799,10 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
                 // reorder corners
                 vector< Point2f > currentMarkerCornersReorder;
                 currentMarkerCornersReorder.resize(4);
-                currentMarkerCornersReorder[0] = currentMarkerCorners[2];
-                currentMarkerCornersReorder[1] = currentMarkerCorners[3];
-                currentMarkerCornersReorder[2] = currentMarkerCorners[1];
-                currentMarkerCornersReorder[3] = currentMarkerCorners[0];
+                currentMarkerCornersReorder[0] = currentMarkerCorners[0];
+                currentMarkerCornersReorder[1] = currentMarkerCorners[1];
+                currentMarkerCornersReorder[2] = currentMarkerCorners[3];
+                currentMarkerCornersReorder[3] = currentMarkerCorners[2];
 
                 diamondCorners.push_back(currentMarkerCornersReorder);
                 diamondIds.push_back(markerId);

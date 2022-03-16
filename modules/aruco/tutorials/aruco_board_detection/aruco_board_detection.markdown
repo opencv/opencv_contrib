@@ -83,13 +83,14 @@ The parameters of estimatePoseBoard are:
  markers provided in ```markerCorners``` and ```markerIds``` should be used, since only the markers whose ids are
 listed in the ```Board::ids``` structure are considered.
 
-The ```drawAxis()``` function can be used to check the obtained pose. For instance:
+The ```drawFrameAxes()``` function can be used to check the obtained pose. For instance:
 
-![Board with axis](images/gbmarkersaxis.png)
+![Board with axis](images/gbmarkersaxis.jpg)
 
 And this is another example with the board partially occluded:
 
 ![Board with occlusions](images/gbocclusion.png)
+@note The center and direction of the axes has been changed
 
 As it can be observed, although some markers have not been detected, the Board pose can still be estimated from the rest of markers.
 
@@ -111,7 +112,7 @@ with all the markers in the same plane and in a grid layout, as in the following
 Concretely, the coordinate system in a Grid Board is positioned in the board plane, centered in the bottom left
 corner of the board and with the Z pointing out, like in the following image (X:red, Y:green, Z:blue):
 
-![Board with axis](images/gbaxis.png)
+![Board with axis](images/gbaxis.jpg)
 
 A ```GridBoard``` object can be defined using the following parameters:
 
@@ -197,7 +198,7 @@ Finally, a full example of board detection:
 
             // if at least one board marker detected
             if(valid > 0)
-                cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+                cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }
 
         cv::imshow("out", imageCopy);

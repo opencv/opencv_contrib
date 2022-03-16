@@ -72,7 +72,7 @@ static inline void detectCharucoBoardWithCalibrationPose()
                     //! [pose]
                     // if charuco pose is valid
                     if (valid)
-                        cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1f);
+                        cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1f);
                 }
             }
             cv::imshow("out", imageCopy);

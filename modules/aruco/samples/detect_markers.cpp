@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     bool estimatePose = parser.has("c");
     float markerLength = parser.get<float>("l");
 
-    Ptr<aruco::DetectorParameters> detectorParams;
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = aruco::DetectorParameters::readDetectorParameters(fs.root(), detectorParams);
@@ -179,8 +179,7 @@ int main(int argc, char *argv[]) {
 
             if(estimatePose) {
                 for(unsigned int i = 0; i < ids.size(); i++)
-                    aruco::drawAxis(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-                                    markerLength * 0.5f);
+                    cv::drawFrameAxes(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
             }
         }
 
