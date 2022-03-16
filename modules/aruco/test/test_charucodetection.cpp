@@ -38,96 +38,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
+#include "test_aruco_utils.hpp"
 
 namespace opencv_test { namespace {
-
-static double deg2rad(double deg) { return deg * CV_PI / 180.; }
-
-/**
- * @brief Get rvec and tvec from yaw, pitch and distance
- */
-static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec, Mat &tvec) {
-
-    rvec = Mat(3, 1, CV_64FC1);
-    tvec = Mat(3, 1, CV_64FC1);
-
-    // Rvec
-    // first put the Z axis aiming to -X (like the camera axis system)
-    Mat rotZ(3, 1, CV_64FC1);
-    rotZ.ptr< double >(0)[0] = 0;
-    rotZ.ptr< double >(0)[1] = 0;
-    rotZ.ptr< double >(0)[2] = -0.5 * CV_PI;
-
-    Mat rotX(3, 1, CV_64FC1);
-    rotX.ptr< double >(0)[0] = 0.5 * CV_PI;
-    rotX.ptr< double >(0)[1] = 0;
-    rotX.ptr< double >(0)[2] = 0;
-
-    Mat camRvec, camTvec;
-    composeRT(rotZ, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotX, Mat(3, 1, CV_64FC1, Scalar::all(0)),
-              camRvec, camTvec);
-
-    // now pitch and yaw angles
-    Mat rotPitch(3, 1, CV_64FC1);
-    rotPitch.ptr< double >(0)[0] = 0;
-    rotPitch.ptr< double >(0)[1] = pitch;
-    rotPitch.ptr< double >(0)[2] = 0;
-
-    Mat rotYaw(3, 1, CV_64FC1);
-    rotYaw.ptr< double >(0)[0] = yaw;
-    rotYaw.ptr< double >(0)[1] = 0;
-    rotYaw.ptr< double >(0)[2] = 0;
-
-    composeRT(rotPitch, Mat(3, 1, CV_64FC1, Scalar::all(0)), rotYaw,
-              Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
-
-    // compose both rotations
-    composeRT(camRvec, Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec,
-              Mat(3, 1, CV_64FC1, Scalar::all(0)), rvec, tvec);
-
-    // Tvec, just move in z (camera) direction the specific distance
-    tvec.ptr< double >(0)[0] = 0.;
-    tvec.ptr< double >(0)[1] = 0.;
-    tvec.ptr< double >(0)[2] = distance;
-}
-
-/**
- * @brief Project a synthetic marker
- */
-static void projectMarker(Mat &img, Ptr<aruco::Dictionary> dictionary, int id,
-                          vector< Point3f > markerObjPoints, Mat cameraMatrix, Mat rvec, Mat tvec,
-                          int markerBorder) {
-
-
-    Mat markerImg;
-    const int markerSizePixels = 100;
-    aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
-
-    Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-    vector< Point2f > corners;
-    projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
-
-    vector< Point2f > originalCorners;
-    originalCorners.push_back(Point2f(0, 0));
-    originalCorners.push_back(Point2f((float)markerSizePixels, 0));
-    originalCorners.push_back(Point2f((float)markerSizePixels, (float)markerSizePixels));
-    originalCorners.push_back(Point2f(0, (float)markerSizePixels));
-
-    Mat transformation = getPerspectiveTransform(originalCorners, corners);
-
-    Mat aux;
-    const char borderValue = 127;
-    warpPerspective(markerImg, aux, transformation, img.size(), INTER_NEAREST, BORDER_CONSTANT,
-                    Scalar::all(borderValue));
-
-    // copy only not-border pixels
-    for(int y = 0; y < aux.rows; y++) {
-        for(int x = 0; x < aux.cols; x++) {
-            if(aux.at< unsigned char >(y, x) == borderValue) continue;
-            img.at< unsigned char >(y, x) = aux.at< unsigned char >(y, x);
-        }
-    }
-}
 
 /**
  * @brief Get a synthetic image of Chessboard in perspective
@@ -145,7 +58,7 @@ static Mat projectChessboard(int squaresX, int squaresY, float squareSize, Size 
             float startX = float(x) * squareSize;
 
             vector< Point3f > squareCorners;
-            squareCorners.push_back(Point3f(startX, startY, 0));
+            squareCorners.push_back(Point3f(startX, startY, 0) - Point3f(squaresX*squareSize/2.f, squaresY*squareSize/2.f, 0.f));
             squareCorners.push_back(squareCorners[0] + Point3f(squareSize, 0, 0));
             squareCorners.push_back(squareCorners[0] + Point3f(squareSize, squareSize, 0));
             squareCorners.push_back(squareCorners[0] + Point3f(0, squareSize, 0));
@@ -180,8 +93,8 @@ static Mat projectCharucoBoard(Ptr<aruco::CharucoBoard> &board, Mat cameraMatrix
 
     // project markers
     Mat img = Mat(imageSize, CV_8UC1, Scalar::all(255));
-    for(unsigned int m = 0; m < board->ids.size(); m++) {
-        projectMarker(img, board->dictionary, board->ids[m], board->objPoints[m], cameraMatrix, rvec,
+    for(unsigned int indexMarker = 0; indexMarker < board->ids.size(); indexMarker++) {
+        projectMarker(img, board.staticCast<aruco::Board>(), indexMarker, cameraMatrix, rvec,
                       tvec, markerBorder);
     }
 
@@ -222,7 +135,7 @@ void CV_CharucoDetection::run(int) {
     Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, dictionary);
 
-    cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
+    cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 600;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
 
@@ -230,15 +143,15 @@ void CV_CharucoDetection::run(int) {
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
-        for(int yaw = 0; yaw < 360; yaw += 100) {
-            for(int pitch = 30; pitch <= 90; pitch += 50) {
+        for(int yaw = -55; yaw <= 50; yaw += 25) {
+            for(int pitch = -55; pitch <= 50; pitch += 25) {
 
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
                 // create synthetic image
                 Mat rvec, tvec;
-                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
+                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
                 // detect markers
@@ -269,7 +182,13 @@ void CV_CharucoDetection::run(int) {
 
                 // check results
                 vector< Point2f > projectedCharucoCorners;
-                projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+
+                // copy chessboardCorners
+                vector<Point3f> copyChessboardCorners = board->chessboardCorners;
+                // move copyChessboardCorners points
+                for (size_t i = 0; i < copyChessboardCorners.size(); i++)
+                    copyChessboardCorners[i] -= board->rightBottomBorder / 2.f;
+                projectPoints(copyChessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
                 for(unsigned int i = 0; i < charucoIds.size(); i++) {
@@ -327,16 +246,16 @@ void CV_CharucoPoseEstimation::run(int) {
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     // for different perspectives
-    for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
-        for(int yaw = 0; yaw < 360; yaw += 100) {
-            for(int pitch = 30; pitch <= 90; pitch += 50) {
+    for(double distance = 0.2; distance <= 0.3; distance += 0.1) {
+        for(int yaw = -55; yaw <= 50; yaw += 25) {
+            for(int pitch = -55; pitch <= 50; pitch += 25) {
 
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
                 // get synthetic image
                 Mat rvec, tvec;
-                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
+                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
                 // detect markers
@@ -347,11 +266,7 @@ void CV_CharucoPoseEstimation::run(int) {
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
-                if(ids.size() == 0) {
-                    ts->printf(cvtest::TS::LOG, "Marker detection failed");
-                    ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
-                    return;
-                }
+                ASSERT_EQ(ids.size(), board->ids.size());
 
                 // interpolate charuco corners
                 vector< Point2f > charucoCorners;
@@ -372,8 +287,19 @@ void CV_CharucoPoseEstimation::run(int) {
                                                 distCoeffs, rvec, tvec);
 
 
-                // check result
+                // check axes
+                const float offset = (board->getSquareLength() - board->getMarkerLength()) / 2.f;
+                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, board->getSquareLength(), offset);
+                vector<Point2f> topLeft = getMarkerById(board->ids[0], corners, ids);
+                ASSERT_NEAR(topLeft[0].x, axes[1].x, 3.f);
+                ASSERT_NEAR(topLeft[0].y, axes[1].y, 3.f);
+                vector<Point2f> bottomLeft = getMarkerById(board->ids[2], corners, ids);
+                ASSERT_NEAR(bottomLeft[0].x, axes[2].x, 3.f);
+                ASSERT_NEAR(bottomLeft[0].y, axes[2].y, 3.f);
+
+                // check estimate result
                 vector< Point2f > projectedCharucoCorners;
+
                 projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
@@ -434,9 +360,9 @@ void CV_CharucoDiamondDetection::run(int) {
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     // for different perspectives
-    for(double distance = 0.3; distance <= 0.3; distance += 0.2) {
-        for(int yaw = 0; yaw < 360; yaw += 100) {
-            for(int pitch = 30; pitch <= 90; pitch += 30) {
+    for(double distance = 0.2; distance <= 0.3; distance += 0.1) {
+        for(int yaw = -50; yaw <= 50; yaw += 25) {
+            for(int pitch = -50; pitch <= 50; pitch += 25) {
 
                 int markerBorder = iter % 2 + 1;
                 for(int i = 0; i < 4; i++)
@@ -445,7 +371,7 @@ void CV_CharucoDiamondDetection::run(int) {
 
                 // get synthetic image
                 Mat rvec, tvec;
-                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(pitch), deg2rad(yaw),
+                Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
                 // detect markers
@@ -485,14 +411,21 @@ void CV_CharucoDiamondDetection::run(int) {
 
 
                 vector< Point2f > projectedDiamondCorners;
-                projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+
+                // copy chessboardCorners
+                vector<Point3f> copyChessboardCorners = board->chessboardCorners;
+                // move copyChessboardCorners points
+                for (size_t i = 0; i < copyChessboardCorners.size(); i++)
+                    copyChessboardCorners[i] -= board->rightBottomBorder / 2.f;
+
+                projectPoints(copyChessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedDiamondCorners);
 
                 vector< Point2f > projectedDiamondCornersReorder(4);
-                projectedDiamondCornersReorder[0] = projectedDiamondCorners[2];
-                projectedDiamondCornersReorder[1] = projectedDiamondCorners[3];
-                projectedDiamondCornersReorder[2] = projectedDiamondCorners[1];
-                projectedDiamondCornersReorder[3] = projectedDiamondCorners[0];
+                projectedDiamondCornersReorder[0] = projectedDiamondCorners[0];
+                projectedDiamondCornersReorder[1] = projectedDiamondCorners[1];
+                projectedDiamondCornersReorder[2] = projectedDiamondCorners[3];
+                projectedDiamondCornersReorder[3] = projectedDiamondCorners[2];
 
 
                 for(unsigned int i = 0; i < 4; i++) {
@@ -514,10 +447,10 @@ void CV_CharucoDiamondDetection::run(int) {
                 // check result
                 vector< Point2f > projectedDiamondCornersPose;
                 vector< Vec3f > diamondObjPoints(4);
-                diamondObjPoints[0] = Vec3f(-squareLength / 2.f, squareLength / 2.f, 0);
-                diamondObjPoints[1] = Vec3f(squareLength / 2.f, squareLength / 2.f, 0);
-                diamondObjPoints[2] = Vec3f(squareLength / 2.f, -squareLength / 2.f, 0);
-                diamondObjPoints[3] = Vec3f(-squareLength / 2.f, -squareLength / 2.f, 0);
+                diamondObjPoints[0] = Vec3f(0.f, 0.f, 0);
+                diamondObjPoints[1] = Vec3f(squareLength, 0.f, 0);
+                diamondObjPoints[2] = Vec3f(squareLength, squareLength, 0);
+                diamondObjPoints[3] = Vec3f(0.f, squareLength, 0);
                 projectPoints(diamondObjPoints, estimatedRvec[0], estimatedTvec[0], cameraMatrix,
                               distCoeffs, projectedDiamondCornersPose);
 

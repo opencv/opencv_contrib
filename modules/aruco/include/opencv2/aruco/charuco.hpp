@@ -181,6 +181,7 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  * This function estimates a Charuco board pose from some detected corners.
  * The function checks if the input corners are enough and valid to perform pose estimation.
  * If pose estimation is valid, returns true, else returns false.
+ * @sa use cv::drawFrameAxes to get world coordinate system axis for object points
  */
 CV_EXPORTS_W bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
                                            const Ptr<CharucoBoard> &board, InputArray cameraMatrix,
@@ -275,6 +276,7 @@ CV_EXPORTS_W double calibrateCameraCharuco(
  * diamond.
  * @param cameraMatrix Optional camera calibration matrix.
  * @param distCoeffs Optional camera distortion coefficients.
+ * @param dictionary dictionary of markers indicating the type of markers.
  *
  * This function detects Diamond markers from the previous detected ArUco markers. The diamonds
  * are returned in the diamondCorners and diamondIds parameters. If camera calibration parameters
@@ -285,7 +287,8 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
                                        InputArray markerIds, float squareMarkerLengthRate,
                                        OutputArrayOfArrays diamondCorners, OutputArray diamondIds,
                                        InputArray cameraMatrix = noArray(),
-                                       InputArray distCoeffs = noArray());
+                                       InputArray distCoeffs = noArray(),
+                                       Ptr<Dictionary> dictionary = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0)));
 
 
 
