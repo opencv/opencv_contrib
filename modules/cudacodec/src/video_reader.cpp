@@ -53,7 +53,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, co
 
 #else // HAVE_NVCUVID
 
-void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& _outFrame, int width, int height, cudaStream_t stream);
+void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream);
 
 void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat,
     cudaStream_t stream)
