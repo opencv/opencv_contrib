@@ -7,6 +7,7 @@
 
 #include <unordered_map>
 #include <limits>
+#include <stack>
 
 using namespace std;
 
@@ -92,14 +93,33 @@ static
 void DFSUtil(int v, std::vector<bool> & visited, std::vector< std::vector<int> >& adj, int label, std::vector<int> &component_id)
 {
     // Mark the current node as visited and label it as belonging to the current component
-    visited[v] = true;
-    component_id[v] = label;
     // Recur for all the vertices
     // adjacent to this vertex
+
+    visited[v] = true;
+    component_id[v] = label;
+
     for (size_t i = 0; i < adj[v].size(); i++) {
         int neighbour = adj[v][i];
         if (!visited[neighbour]) {
             DFSUtil(neighbour, visited, adj, label, component_id);
+
+    stack<int> s;
+    s.push(v);
+    while(!s.empty()){
+        v = s.top();
+        s.pop();
+        if(!visited[v])
+        {
+            visited[v] = true;
+            component_id[v] = label;
+            for (size_t i = 0; i < adj[v].size(); i++) {
+                int neighbour = adj[v][i];
+                if(!visited[neighbour])
+                {
+                    s.push(neighbour);
+                }
+            }
         }
     }
 }
