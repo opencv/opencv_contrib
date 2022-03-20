@@ -8,13 +8,13 @@ ocv_add_module(cvv opencv_core opencv_imgproc opencv_features2d WRAP python)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wshadow -Wmissing-declarations)
 
-# Qt5
+# Qt
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-foreach(dt5_dep Core Gui Widgets)
-  add_definitions(${Qt5${dt5_dep}_DEFINITIONS})
-  include_directories(${Qt5${dt5_dep}_INCLUDE_DIRS})
-  list(APPEND CVV_LIBRARIES ${Qt5${dt5_dep}_LIBRARIES})
+foreach(dt_dep Core Gui Widgets)
+  add_definitions(${Qt${QT_VERSION_MAJOR}${dt_dep}_DEFINITIONS})
+  include_directories(${Qt${QT_VERSION_MAJOR}${dt_dep}_INCLUDE_DIRS})
+  list(APPEND CVV_LIBRARIES ${Qt${QT_VERSION_MAJOR}${dt_dep}_LIBRARIES})
 endforeach()
 
 ocv_glob_module_sources()
