@@ -49,9 +49,10 @@ namespace cv { namespace cudacodec { namespace detail {
 class VideoDecoder
 {
 public:
-    VideoDecoder(const Codec& codec, CUcontext ctx, CUvideoctxlock lock) : ctx_(ctx), lock_(lock), decoder_(0)
+    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, CUcontext ctx, CUvideoctxlock lock) : ctx_(ctx), lock_(lock), decoder_(0)
     {
         videoFormat_.codec = codec;
+        videoFormat_.ulNumDecodeSurfaces = minNumDecodeSurfaces;
     }
 
     ~VideoDecoder()
@@ -64,7 +65,7 @@ public:
 
     // Get the code-type currently used.
     cudaVideoCodec codec() const { return static_cast<cudaVideoCodec>(videoFormat_.codec); }
-    unsigned long maxDecodeSurfaces() const { return videoFormat_.ulNumDecodeSurfaces; }
+    int nDecodeSurfaces() const { return videoFormat_.ulNumDecodeSurfaces; }
 
     unsigned long frameWidth() const { return videoFormat_.ulWidth; }
     unsigned long frameHeight() const { return videoFormat_.ulHeight; }
