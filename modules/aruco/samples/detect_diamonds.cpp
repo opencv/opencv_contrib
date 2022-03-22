@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = aruco::DetectorParameters::readDetectorParameters(fs.root(), detectorParams);
+        bool readOk = detectorParams->readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -114,14 +114,14 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::Dictionary> dictionary;
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
         dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = aruco::Dictionary::readDictionary(fs.root(), dictionary);
+        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             cerr << "Invalid dictionary file" << endl;
             return 0;
