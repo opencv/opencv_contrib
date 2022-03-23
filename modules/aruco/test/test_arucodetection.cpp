@@ -675,4 +675,46 @@ TEST(CV_ArucoDetectMarkers, regression_3192)
     }
 }
 
+TEST(CV_ArucoDetectMarkers, regression_2492)
+{
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_5X5_50);
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    detectorParams->minMarkerDistanceRate = 0.026;
+    vector< int > markerIds;
+    vector<vector<Point2f> > markerCorners;
+    string imgPath = cvtest::findDataFile("aruco/regression_2492.png");
+    Mat image = imread(imgPath);
+    const size_t N = 8ull;
+    const int goldCorners[N][8] = { {179,139, 179,95, 223,95, 223,139}, {99,139, 99,95, 143,95, 143,139},
+                                    {19,139, 19,95, 63,95, 63,139},     {256,140, 256,93, 303,93, 303,140},
+                                    {256,62, 259,21, 300,23, 297,64},   {99,21, 143,17, 147,60, 103,64},
+                                    {69,61, 28,61, 14,21, 58,17},       {174,62, 182,13, 230,19, 223,68} };
+    const int goldCornersIds[N] = {13, 13, 13, 13, 1, 15, 14, 4};
+    map<int, vector<const int*> > mapGoldCorners;
+    for (size_t i = 0; i < N; i++)
+        mapGoldCorners[goldCornersIds[i]].push_back(goldCorners[i]);
+
+    aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams);
+
+    ASSERT_EQ(N, markerIds.size());
+    for (size_t i = 0; i < N; i++)
+    {
+        int arucoId = markerIds[i];
+        ASSERT_EQ(4ull, markerCorners[i].size());
+        ASSERT_TRUE(mapGoldCorners.find(arucoId) != mapGoldCorners.end());
+        float totalDist = 8.f;
+        for (size_t k = 0ull; k < mapGoldCorners[arucoId].size(); k++)
+        {
+            float dist = 0.f;
+            for (int j = 0; j < 4; j++) // total distance up to 4 points
+            {
+                dist += abs(mapGoldCorners[arucoId][k][j * 2] - markerCorners[i][j].x);
+                dist += abs(mapGoldCorners[arucoId][k][j * 2 + 1] - markerCorners[i][j].y);
+            }
+            totalDist = min(totalDist, dist);
+        }
+        EXPECT_LT(totalDist, 8.f);
+    }
+}
+
 }} // namespace
