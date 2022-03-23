@@ -94,15 +94,19 @@ class CV_EXPORTS_W Dictionary {
             const Ptr<Dictionary> &baseDictionary, int randomSeed=0);
 
     /**
-     * @brief Read a new dictionary from FileNode. Format:
-     * nmarkers: 35
-     * markersize: 6
-     * marker_0: "101011111011111001001001101100000000"
-     * ...
+     * @brief Read a new dictionary from FileNode. Format:\n
+     * nmarkers: 35\n
+     * markersize: 6\n
+     * maxCorrectionBits: 5\n
+     * marker_0: "101011111011111001001001101100000000"\n
+     * ...\n
      * marker_34: "011111010000111011111110110101100101"
      */
     CV_WRAP bool readDictionary(const cv::FileNode& fn);
 
+    /**
+     * @brief Write a dictionary to FileStorage. Format is the same as in readDictionary().
+     */
     CV_WRAP void writeDictionary(Ptr<FileStorage>& fs);
     /**
      * @see getPredefinedDictionary
