@@ -644,4 +644,35 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
     }
 }
 
+TEST(CV_ArucoDetectMarkers, regression_3192)
+{
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_4X4_50);
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    vector< int > markerIds;
+    vector<vector<Point2f> > markerCorners;
+    string imgPath = cvtest::findDataFile("aruco/regression_3192.png");
+    Mat image = imread(imgPath);
+    const size_t N = 2ull;
+    const int goldCorners[N][8] = { {345,120, 520,120, 520,295, 345,295}, {101,114, 270,112, 276,287, 101,287} };
+    const int goldCornersIds[N] = { 6, 4 };
+    map<int, const int*> mapGoldCorners;
+    for (size_t i = 0; i < N; i++)
+        mapGoldCorners[goldCornersIds[i]] = goldCorners[i];
+
+    aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams);
+
+    ASSERT_EQ(N, markerIds.size());
+    for (size_t i = 0; i < N; i++)
+    {
+        int arucoId = markerIds[i];
+        ASSERT_EQ(4ull, markerCorners[i].size());
+        ASSERT_TRUE(mapGoldCorners.find(arucoId) != mapGoldCorners.end());
+        for (int j = 0; j < 4; j++)
+        {
+            EXPECT_NEAR(static_cast<float>(mapGoldCorners[arucoId][j * 2]), markerCorners[i][j].x, 1.f);
+            EXPECT_NEAR(static_cast<float>(mapGoldCorners[arucoId][j * 2 + 1]), markerCorners[i][j].y, 1.f);
+        }
+    }
+}
+
 }} // namespace
