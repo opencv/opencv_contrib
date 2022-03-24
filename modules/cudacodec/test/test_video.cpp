@@ -183,17 +183,27 @@ CUDA_TEST_P(Video, Reader)
     if (GET_PARAM(1) == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
         throw SkipTestException("FFmpeg backend not found");
 
+    const std::vector<std::pair< cudacodec::ColorFormat, int>> formatsToChannels = {
+        {cudacodec::ColorFormat::GRAY,1},
+        {cudacodec::ColorFormat::BGR,3},
+        {cudacodec::ColorFormat::BGRA,4},
+    };
+
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
     cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
     for (int i = 0; i < 100; i++)
     {
+        // request a different colour format for each frame
+        const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
+        reader->set(formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
         ASSERT_FALSE(frame.empty());
+        ASSERT_TRUE(frame.channels() == formatToChannels.second);
     }
 }
 
