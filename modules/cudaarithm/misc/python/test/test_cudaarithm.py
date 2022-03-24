@@ -154,6 +154,9 @@ class cudaarithm_test(NewOpenCVTests):
         cv.cuda.max(cuMat1, cuMat2, cuMatDst)
         self.assertTrue(np.allclose(cuMatDst.download(),cv.max(npMat1, npMat2)))
 
+        self.assertTrue(cv.cuda.minMax(cuMat1),cv.minMaxLoc(npMat1)[:2])
+        self.assertTrue(cv.cuda.minMaxLoc(cuMat1),cv.minMaxLoc(npMat1))
+
     def test_convolution(self):
         npMat = (np.random.random((128, 128)) * 255).astype(np.float32)
         npDims = np.array(npMat.shape)

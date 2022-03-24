@@ -620,7 +620,7 @@ The function does not work with CV_64F images on GPUs with the compute capabilit
 
 @sa minMaxLoc
  */
-CV_EXPORTS_W void minMax(InputArray src, double* minVal, double* maxVal, InputArray mask = noArray());
+CV_EXPORTS_W void minMax(InputArray src, CV_OUT double* minVal, CV_OUT double* maxVal, InputArray mask = noArray());
 /** @overload */
 CV_EXPORTS_W void findMinMax(InputArray src, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null());
 
@@ -637,7 +637,7 @@ The function does not work with CV_64F images on GPU with the compute capability
 
 @sa minMaxLoc
  */
-CV_EXPORTS_W void minMaxLoc(InputArray src, double* minVal, double* maxVal, Point* minLoc, Point* maxLoc,
+CV_EXPORTS_W void minMaxLoc(InputArray src, CV_OUT double* minVal, CV_OUT double* maxVal, CV_OUT Point* minLoc, CV_OUT Point* maxLoc,
                           InputArray mask = noArray());
 /** @overload */
 CV_EXPORTS_W void findMinMaxLoc(InputArray src, OutputArray minMaxVals, OutputArray loc,
