@@ -110,7 +110,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         format->coded_height  != thiz->videoDecoder_->frameHeight() ||
         format->chroma_format != thiz->videoDecoder_->chromaFormat()||
         format->bit_depth_luma_minus8 != thiz->videoDecoder_->nBitDepthMinus8() ||
-        format->min_num_decode_surfaces != thiz->videoDecoder_->maxDecodeSurfaces())
+        format->min_num_decode_surfaces != thiz->videoDecoder_->nDecodeSurfaces())
     {
         FormatInfo newFormat;
         newFormat.codec = static_cast<Codec>(format->codec);
@@ -122,7 +122,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         newFormat.height = format->coded_height;
         newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
         newFormat.fps = format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator);
-        newFormat.ulNumDecodeSurfaces = format->min_num_decode_surfaces;
+        newFormat.ulNumDecodeSurfaces = max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces));
         if (format->progressive_sequence)
             newFormat.deinterlaceMode = Weave;
         else
@@ -154,7 +154,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         }
     }
 
-    return thiz->videoDecoder_->maxDecodeSurfaces();
+    return thiz->videoDecoder_->nDecodeSurfaces();
 }
 
 int CUDAAPI cv::cudacodec::detail::VideoParser::HandlePictureDecode(void* userData, CUVIDPICPARAMS* picParams)
