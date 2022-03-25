@@ -295,11 +295,11 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                                       double minMarkerDistanceRate, bool detectInvertedMarker) {
 
     CV_Assert(minMarkerDistanceRate >= 0);
-
     vector<int> candGroup;
     candGroup.resize(candidatesIn.size(), -1);
     vector< vector<unsigned int> > groupedCandidates;
     for(unsigned int i = 0; i < candidatesIn.size(); i++) {
+        bool isSingleContour = true;
         for(unsigned int j = i + 1; j < candidatesIn.size(); j++) {
 
             int minimumPerimeter = min((int)contoursIn[i].size(), (int)contoursIn[j].size() );
@@ -320,7 +320,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                 // if mean square distance is too low, remove the smaller one of the two markers
                 double minMarkerDistancePixels = double(minimumPerimeter) * minMarkerDistanceRate;
                 if(distSq < minMarkerDistancePixels * minMarkerDistancePixels) {
-
+                    isSingleContour = false;
                     // i and j are not related to a group
                     if(candGroup[i]<0 && candGroup[j]<0){
                         // mark candidates with their corresponding group number
@@ -350,6 +350,14 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                     }
                 }
             }
+        }
+        if (isSingleContour && candGroup[i] < 0)
+        {
+            candGroup[i] = (int)groupedCandidates.size();
+            vector<unsigned int> grouped;
+            grouped.push_back(i);
+            grouped.push_back(i); // step "save possible candidates" require minimum 2 elements
+            groupedCandidates.push_back(grouped);
         }
     }
 

@@ -789,7 +789,8 @@ TEST(Charuco, issue_14014)
     ASSERT_EQ(corners.size(), 19ull);
     EXPECT_EQ(Size(4, 1), corners[0].size()); // check dimension of detected corners
 
-    ASSERT_EQ(rejectedPoints.size(), 21ull);
+    size_t numRejPoints = rejectedPoints.size();
+    ASSERT_EQ(rejectedPoints.size(), 26ull); // optional check to track regressions
     EXPECT_EQ(Size(4, 1), rejectedPoints[0].size()); // check dimension of detected corners
 
     aruco::refineDetectedMarkers(img, board, corners, ids, rejectedPoints);
@@ -797,7 +798,7 @@ TEST(Charuco, issue_14014)
     ASSERT_EQ(corners.size(), 20ull);
     EXPECT_EQ(Size(4, 1), corners[0].size()); // check dimension of rejected corners after successfully refine
 
-    ASSERT_EQ(rejectedPoints.size(), 20ull);
+    ASSERT_EQ(rejectedPoints.size() + 1, numRejPoints);
     EXPECT_EQ(Size(4, 1), rejectedPoints[0].size()); // check dimension of rejected corners after successfully refine
 }
 
