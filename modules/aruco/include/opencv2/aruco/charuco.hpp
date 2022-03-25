@@ -288,7 +288,7 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
                                        OutputArrayOfArrays diamondCorners, OutputArray diamondIds,
                                        InputArray cameraMatrix = noArray(),
                                        InputArray distCoeffs = noArray(),
-                                       Ptr<Dictionary> dictionary = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0)));
+                                       Ptr<Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::PREDEFINED_DICTIONARY_NAME::DICT_4X4_50));
 
 
 
