@@ -271,7 +271,7 @@ CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &diction
  * the camera individually. So for each marker, one rotation and translation vector is returned.
  * The returned transformation is the one that transforms points from each marker coordinate system
  * to the camera coordinate system.
- * The marker corrdinate system is centered on the middle of the marker, with the Z axis
+ * The marker coordinate system is centered on the middle of the marker, with the Z axis
  * perpendicular to the marker plane.
  * The coordinates of the four corners of the marker in its own coordinate system are:
  * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
