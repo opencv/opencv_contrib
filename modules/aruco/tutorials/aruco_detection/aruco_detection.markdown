@@ -299,7 +299,7 @@ inputImage.copyTo(outputImage);
 for (int i = 0; i < rvecs.size(); ++i) {
     auto rvec = rvecs[i];
     auto tvec = tvecs[i];
-    cv::aruco::drawAxis(outputImage, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+    cv::drawFrameAxes(outputImage, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
 }
 @endcode
 
@@ -337,7 +337,7 @@ while (inputVideo.grab()) {
         cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
         // draw axis for each marker
         for(int i=0; i<ids.size(); i++)
-            cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
+            cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
     }
 
     cv::imshow("out", imageCopy);

@@ -231,7 +231,7 @@ function.
 - The function returns true if the pose was correctly estimated and false otherwise. The main reason of failing is that there are
 not enough corners for pose estimation or they are in the same line.
 
-The axis can be drawn using ```drawAxis()``` to check the pose is correctly estimated. The result would be: (X:red, Y:green, Z:blue)
+The axis can be drawn using ```drawFrameAxes()``` to check the pose is correctly estimated. The result would be: (X:red, Y:green, Z:blue)
 
 ![Charuco Board Axis](images/chaxis.jpg)
 
