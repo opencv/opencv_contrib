@@ -320,6 +320,18 @@ enum class VideoReaderProps {
     PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB = 3, //!< Number of raw packages recieved since the last call to grab().
     PROP_RAW_MODE = 4, //!< Status of raw mode.
     PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
+    PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
+#ifndef CV_DOXYGEN
+    PROP_NOT_SUPPORTED
+#endif
+};
+
+/** @brief ColorFormat for the frame returned by the decoder.
+*/
+enum class ColorFormat {
+    BGRA = 1,
+    BGR = 2,
+    GRAY = 3,
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -381,6 +393,8 @@ public:
     @return `true` if the property has been set.
      */
     CV_WRAP virtual bool set(const VideoReaderProps propertyId, const double propertyVal) = 0;
+
+    CV_WRAP virtual void set(const ColorFormat _colorFormat) = 0;
 
     /** @brief Returns the specified VideoReader property
 
@@ -457,16 +471,24 @@ The `params` parameter allows to specify extra parameters encoded as pairs `(par
     See cv::VideoCaptureProperties
 e.g. when streaming from an RTSP source CAP_PROP_OPEN_TIMEOUT_MSEC may need to be set.
 @param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
+@param minNumDecodeSurfaces Minimum number of internal decode surfaces used by the hardware decoder.  NVDEC will automatically determine the minimum number of
+surfaces it requires for correct functionality and optimal video memory usage but not necessarily for best performance, which depends on the design of the
+overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
+but it cannot go below the number determined by NVDEC.
 
 FFMPEG is used to read videos. User can implement own demultiplexing with cudacodec::RawVideoSource
  */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const std::vector<int>& params = {}, const bool rawMode = false);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const std::vector<int>& params = {}, const bool rawMode = false, const int minNumDecodeSurfaces = 0);
 
 /** @overload
 @param source RAW video source implemented by user.
 @param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
+@param minNumDecodeSurfaces Minimum number of internal decode surfaces used by the hardware decoder.  NVDEC will automatically determine the minimum number of
+surfaces it requires for correct functionality and optimal video memory usage but not necessarily for best performance, which depends on the design of the
+overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
+but it cannot go below the number determined by NVDEC.
 */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode = false);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode = false, const int minNumDecodeSurfaces = 0);
 
 //! @}
 

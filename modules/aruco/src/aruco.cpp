@@ -295,11 +295,11 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                                       double minMarkerDistanceRate, bool detectInvertedMarker) {
 
     CV_Assert(minMarkerDistanceRate >= 0);
-
     vector<int> candGroup;
     candGroup.resize(candidatesIn.size(), -1);
     vector< vector<unsigned int> > groupedCandidates;
     for(unsigned int i = 0; i < candidatesIn.size(); i++) {
+        bool isSingleContour = true;
         for(unsigned int j = i + 1; j < candidatesIn.size(); j++) {
 
             int minimumPerimeter = min((int)contoursIn[i].size(), (int)contoursIn[j].size() );
@@ -320,7 +320,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                 // if mean square distance is too low, remove the smaller one of the two markers
                 double minMarkerDistancePixels = double(minimumPerimeter) * minMarkerDistanceRate;
                 if(distSq < minMarkerDistancePixels * minMarkerDistancePixels) {
-
+                    isSingleContour = false;
                     // i and j are not related to a group
                     if(candGroup[i]<0 && candGroup[j]<0){
                         // mark candidates with their corresponding group number
@@ -350,6 +350,14 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                     }
                 }
             }
+        }
+        if (isSingleContour && candGroup[i] < 0)
+        {
+            candGroup[i] = (int)groupedCandidates.size();
+            vector<unsigned int> grouped;
+            grouped.push_back(i);
+            grouped.push_back(i); // step "save possible candidates" require minimum 2 elements
+            groupedCandidates.push_back(grouped);
         }
     }
 
@@ -785,11 +793,11 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
 
     _objPoints.create(4, 1, CV_32FC3);
     Mat objPoints = _objPoints.getMat();
-    // set coordinate system in the middle of the marker, with Z pointing out
-    objPoints.ptr< Vec3f >(0)[0] = Vec3f(-markerLength / 2.f, markerLength / 2.f, 0);
-    objPoints.ptr< Vec3f >(0)[1] = Vec3f(markerLength / 2.f, markerLength / 2.f, 0);
-    objPoints.ptr< Vec3f >(0)[2] = Vec3f(markerLength / 2.f, -markerLength / 2.f, 0);
-    objPoints.ptr< Vec3f >(0)[3] = Vec3f(-markerLength / 2.f, -markerLength / 2.f, 0);
+    // set coordinate system in the top-left corner of the marker, with Z pointing out
+    objPoints.ptr< Vec3f >(0)[0] = Vec3f(0.f, 0.f, 0);
+    objPoints.ptr< Vec3f >(0)[1] = Vec3f(markerLength, 0.f, 0);
+    objPoints.ptr< Vec3f >(0)[2] = Vec3f(markerLength, markerLength, 0);
+    objPoints.ptr< Vec3f >(0)[3] = Vec3f(0.f, markerLength, 0);
 }
 
 /**
@@ -797,6 +805,7 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
  * @param nContours, contour-container
  */
 static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
+    CV_Assert(nContours.size() >= 2);
 	float minX, minY, maxX, maxY;
 	minX = maxX = nContours[0].x;
 	minY = maxY = nContours[0].y;
@@ -847,21 +856,6 @@ static Point2f _getCrossPoint(Point3f nLine1, Point3f nLine2){
 	return Vec2f(A.solve(B).val);
 }
 
-static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
-    // trivial extrinsics
-    Matx31f Rvec(0,0,0);
-    Matx31f Tvec(0,0,0);
-
-    // calculate 3d points and then reproject, so opencv makes the distortion internally
-    vector<cv::Point3f> cornersPoints3d;
-    for (unsigned int i = 0; i < in.size(); i++){
-        float x= (in[i].x - float(camMatrix.at<double>(0, 2))) / float(camMatrix.at<double>(0, 0));
-        float y= (in[i].y - float(camMatrix.at<double>(1, 2))) / float(camMatrix.at<double>(1, 1));
-        cornersPoints3d.push_back(Point3f(x,y,1));
-    }
-    cv::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
-}
-
 /**
  * Refine Corners using the contour vector :: Called from function detectMarkers
  * @param nContours, contour-container
@@ -869,13 +863,8 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
  * @param camMatrix, cameraMatrix input 3x3 floating-point camera matrix
  * @param distCoeff, distCoeffs vector of distortion coefficient
  */
-static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
+static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners){
 	vector<Point2f> contour2f(nContours.begin(), nContours.end());
-
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
-	}
-
 	/* 5 groups :: to group the edges
 	 * 4 - classified by its corner
 	 * extra group - (temporary) if contours do not begin with a corner
@@ -893,10 +882,10 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 		}
 		cntPts[group].push_back(contour2f[i]);
 	}
-
+    for (int i = 0; i < 4; i++)
+        CV_Assert(cornerIndex[i] != -1);
 	// saves extra group into corresponding
 	if( !cntPts[4].empty() ){
-            CV_CheckLT(group, 4, "FIXIT: avoiding infinite loop: implementation should be revised: https://github.com/opencv/opencv_contrib/issues/2738");
 		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
 			cntPts[group].push_back(cntPts[4].at(i));
 		cntPts[4].clear();
@@ -928,10 +917,6 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
 		else
 			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
-	}
-
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		_distortPoints(nCorners, camMatrix, distCoeff);
 	}
 }
 
@@ -1093,7 +1078,7 @@ static inline void findCornerInPyrImage(const float scale_init, const int closes
   */
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
-                   OutputArrayOfArrays _rejectedImgPoints, InputArrayOfArrays camMatrix, InputArrayOfArrays distCoeff) {
+                   OutputArrayOfArrays _rejectedImgPoints) {
 
     CV_Assert(!_image.empty());
     CV_Assert(_params->markerBorderBits > 0);
@@ -1205,8 +1190,7 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
             // do corner refinement using the contours for each detected markers
             parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
                 for (int i = range.start; i < range.end; i++) {
-                    _refineCandidateLines(contours[i], candidates[i], camMatrix.getMat(),
-                                          distCoeff.getMat());
+                    _refineCandidateLines(contours[i], candidates[i]);
                 }
             });
 
@@ -1617,6 +1601,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
+    Point3f rightBottomBorder = Point3f(0.f, 0.f, 0.f);
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
@@ -1626,7 +1611,11 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
         CV_Assert(corners_mat.total() == 4);
 
         for (int j = 0; j < 4; j++) {
-            corners.push_back(corners_mat.at<Point3f>(j));
+            const Point3f& corner = corners_mat.at<Point3f>(j);
+            corners.push_back(corner);
+            rightBottomBorder.x = std::max(rightBottomBorder.x, corner.x);
+            rightBottomBorder.y = std::max(rightBottomBorder.y, corner.y);
+            rightBottomBorder.z = std::max(rightBottomBorder.z, corner.z);
         }
         obj_points_vector.push_back(corners);
     }
@@ -1635,6 +1624,7 @@ Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &di
     ids.copyTo(res->ids);
     res->objPoints = obj_points_vector;
     res->dictionary = cv::makePtr<Dictionary>(dictionary);
+    res->rightBottomBorder = rightBottomBorder;
     return res;
 }
 
@@ -1670,20 +1660,19 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
     }
 
     // calculate Board objPoints
-    float maxY = (float)markersY * markerLength + (markersY - 1) * markerSeparation;
     for(int y = 0; y < markersY; y++) {
         for(int x = 0; x < markersX; x++) {
-            vector< Point3f > corners;
-            corners.resize(4);
+            vector<Point3f> corners(4);
             corners[0] = Point3f(x * (markerLength + markerSeparation),
-                                 maxY - y * (markerLength + markerSeparation), 0);
+                                 y * (markerLength + markerSeparation), 0);
             corners[1] = corners[0] + Point3f(markerLength, 0, 0);
-            corners[2] = corners[0] + Point3f(markerLength, -markerLength, 0);
-            corners[3] = corners[0] + Point3f(0, -markerLength, 0);
+            corners[2] = corners[0] + Point3f(markerLength, markerLength, 0);
+            corners[3] = corners[0] + Point3f(0, markerLength, 0);
             res->objPoints.push_back(corners);
         }
     }
-
+    res->rightBottomBorder = Point3f(markersX * markerLength + markerSeparation * (markersX - 1),
+                                     markersY * markerLength + markerSeparation * (markersY - 1), 0.f);
     return res;
 }
 
@@ -1734,15 +1723,6 @@ void drawDetectedMarkers(InputOutputArray _image, InputArrayOfArrays _corners,
     }
 }
 
-
-
-/**
- */
-void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs, InputArray _rvec,
-              InputArray _tvec, float length)
-{
-    drawFrameAxes(_image, _cameraMatrix, _distCoeffs, _rvec, _tvec, length, 3);
-}
 
 /**
  */
@@ -1808,7 +1788,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
             // move top left to 0, 0
             pf -= Point2f(minX, minY);
             pf.x = pf.x / sizeX * float(out.cols);
-            pf.y = (1.0f - pf.y / sizeY) * float(out.rows);
+            pf.y = pf.y / sizeY * float(out.rows);
             outCorners[j] = pf;
         }
 
