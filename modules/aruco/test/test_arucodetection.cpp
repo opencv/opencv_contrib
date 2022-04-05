@@ -717,4 +717,93 @@ TEST(CV_ArucoDetectMarkers, regression_2492)
     }
 }
 
+TEST(CV_ArucoDetectMarkers, number_of_threads_does_not_change_results)
+{
+    struct NumThreadsSetter {
+        NumThreadsSetter(const int num_threads)
+        : original_num_threads_(cv::getNumThreads()) {
+            cv::setNumThreads(num_threads);
+        }
+
+        ~NumThreadsSetter() {
+            cv::setNumThreads(original_num_threads_);
+        }
+     private:
+        int original_num_threads_;
+    };
+    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
+    // We are not testing against different dictionaries
+    // As we are interested mostly in small images, smaller
+    // markers is better -> 4x4
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+
+    // Height of the test image can be chosen quite freely
+    // We aim to test against small images as in those the
+    // number of threads has most effect
+    const int height_img = 20;
+    // Just to get nice white boarder
+    const int shift = height_img > 10 ? 5 : 1;
+    const int height_marker = height_img-2*shift;
+
+    // Create a test image
+    cv::Mat img_marker;
+    cv::aruco::drawMarker(dictionary, 23, height_marker, img_marker, 1);
+
+    // Copy to bigger image to get a white border
+    cv::Mat img(height_img, height_img, CV_8UC1);
+    img.setTo(255);
+    img_marker.copyTo(img(cv::Rect(shift, shift, height_marker, height_marker)));
+
+    // Number of threads to be tested. OpenCV uses C++03 so no list-initialization
+    std::vector<int> num_threads_to_test;
+    num_threads_to_test.push_back(1);
+    num_threads_to_test.push_back(2);
+    num_threads_to_test.push_back(8);
+    num_threads_to_test.push_back(16);
+    num_threads_to_test.push_back(32);
+    num_threads_to_test.push_back(height_img-1);
+    num_threads_to_test.push_back(height_img);
+    num_threads_to_test.push_back(height_img+1);
+
+    std::vector<cv::aruco::CornerRefineMethod> methods_to_test;
+    methods_to_test.push_back(cv::aruco::CORNER_REFINE_NONE);
+    methods_to_test.push_back(cv::aruco::CORNER_REFINE_SUBPIX);
+    methods_to_test.push_back(cv::aruco::CORNER_REFINE_CONTOUR);
+    methods_to_test.push_back(cv::aruco::CORNER_REFINE_APRILTAG);
+
+    for (size_t i_method = 0; i_method < methods_to_test.size(); ++i_method) {
+        params->cornerRefinementMethod = methods_to_test[i_method];
+
+        std::vector<std::vector<cv::Point2f>> original_corners;
+        std::vector<int> original_ids;
+        for (size_t i_num_threads = 0; i_num_threads < num_threads_to_test.size(); ++i_num_threads) {
+            NumThreadsSetter thread_num_setter(num_threads_to_test[i_num_threads]);
+
+            std::vector<std::vector<cv::Point2f>> corners;
+            std::vector<int> ids;
+            cv::aruco::detectMarkers(img, dictionary, corners, ids, params);
+
+            // If we don't find any markers, the test is broken
+            ASSERT_GE(ids.size(), 1);
+
+            if (original_corners.empty()) {
+                original_corners = corners;
+                original_ids = ids;
+            } else {
+                // Make sure we got the same result as the first time
+                ASSERT_EQ(corners.size(), original_corners.size());
+                ASSERT_EQ(ids.size(), original_ids.size());
+                ASSERT_EQ(ids.size(), corners.size());
+                for (size_t i = 0; i < corners.size(); ++i) {
+                    EXPECT_EQ(ids[i], original_ids[i]);
+                    for (size_t j = 0; j < corners[i].size(); ++j) {
+                        EXPECT_NEAR(corners[i][j].x, original_corners[i][j].x, 0.1f);
+                        EXPECT_NEAR(corners[i][j].y, original_corners[i][j].y, 0.1f);
+                    }
+                }
+            }
+        }
+    }
+}
+
 }} // namespace
