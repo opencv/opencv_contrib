@@ -611,7 +611,7 @@ TEST(Charuco, testCharucoCornersCollinear_false)
 }
 
 // test that ChArUco board detection is subpixel accurate
-TEST(Charuco, DISABLED_testBoardSubpixelCoords)  // FIXIT: https://github.com/opencv/opencv_contrib/pull/3213
+TEST(Charuco, testBoardSubpixelCoords)
 {
     cv::Size res{500, 500};
     cv::Mat K = (cv::Mat_<double>(3,3) <<
@@ -619,26 +619,27 @@ TEST(Charuco, DISABLED_testBoardSubpixelCoords)  // FIXIT: https://github.com/op
         0, 0.5*res.height, 0.5*res.height,
         0, 0, 1);
 
-    // load board image with corners at round values
-    cv::String testImagePath = cvtest::TS::ptr()->get_data_path() + "aruco/" + "trivial_board_detection.png";
-    Mat img = imread(testImagePath);
+    // set expected_corners values
     cv::Mat expected_corners = (cv::Mat_<float>(9,2) <<
-        200, 300,
-        250, 300,
-        300, 300,
+        200, 200,
+        250, 200,
+        300, 200,
         200, 250,
         250, 250,
         300, 250,
-        200, 200,
-        250, 200,
-        300, 200
+        200, 300,
+        250, 300,
+        300, 300
     );
 
     cv::Mat gray;
-    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
 
     auto dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
     auto board = cv::aruco::CharucoBoard::create(4, 4, 1.f, .8f, dict);
+
+    // generate ChArUco board
+    board->draw(Size(res.width, res.height), gray, 150);
+    cv::GaussianBlur(gray, gray, Size(5, 5), 1.0);
 
     auto params = cv::aruco::DetectorParameters::create();
     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
@@ -652,18 +653,16 @@ TEST(Charuco, DISABLED_testBoardSubpixelCoords)  // FIXIT: https://github.com/op
 
     cv::Mat c_ids, c_corners;
     cv::aruco::interpolateCornersCharuco(corners, ids, gray, board, c_corners, c_ids, K);
-    cv::Mat corners_reshaped = c_corners.reshape(1);
 
     ASSERT_EQ(c_corners.rows, expected_corners.rows);
-    EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-3);
+    EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-1);
 
     c_ids = cv::Mat();
     c_corners = cv::Mat();
     cv::aruco::interpolateCornersCharuco(corners, ids, gray, board, c_corners, c_ids);
-    corners_reshaped = c_corners.reshape(1);
 
     ASSERT_EQ(c_corners.rows, expected_corners.rows);
-    EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-3);
+    EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-1);
 }
 
 TEST(CV_ArucoTutorial, can_find_choriginal)
