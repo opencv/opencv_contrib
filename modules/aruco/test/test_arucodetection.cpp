@@ -777,8 +777,8 @@ TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
         cv::aruco::detectMarkers(img, dictionary, original_corners, original_ids, params);
     }
 
-    ASSERT_EQ(original_ids.size(), 1);
-    ASSERT_EQ(original_corners.size(), 1);
+    ASSERT_EQ(original_ids.size(), 1ull);
+    ASSERT_EQ(original_corners.size(), 1ull);
 
     int num_threads_to_test[] = { 2, 8, 16, 32, height_img-1, height_img, height_img+1};
 
@@ -790,7 +790,7 @@ TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
         cv::aruco::detectMarkers(img, dictionary, corners, ids, params);
 
         // If we don't find any markers, the test is broken
-        ASSERT_EQ(ids.size(), 1);
+        ASSERT_EQ(ids.size(), 1ull);
 
         // Make sure we got the same result as the first time
         ASSERT_EQ(corners.size(), original_corners.size());
