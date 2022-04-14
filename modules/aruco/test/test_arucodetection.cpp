@@ -759,7 +759,7 @@ TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
 
     params->cornerRefinementMethod = GetParam();
 
-    std::vector<std::vector<cv::Point2f>> original_corners;
+    std::vector<std::vector<cv::Point2f> > original_corners;
     std::vector<int> original_ids;
     {
         NumThreadsSetter thread_num_setter(1);
@@ -774,7 +774,7 @@ TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
     for (size_t i_num_threads = 0; i_num_threads < sizeof(num_threads_to_test)/sizeof(int); ++i_num_threads) {
         NumThreadsSetter thread_num_setter(num_threads_to_test[i_num_threads]);
 
-        std::vector<std::vector<cv::Point2f>> corners;
+        std::vector<std::vector<cv::Point2f> > corners;
         std::vector<int> ids;
         cv::aruco::detectMarkers(img, dictionary, corners, ids, params);
 
