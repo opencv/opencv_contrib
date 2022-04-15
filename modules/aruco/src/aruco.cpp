@@ -117,36 +117,35 @@ static inline bool readParameter(const FileNode& node, T& parameter)
 /**
   * @brief Read a new set of DetectorParameters from FileStorage.
   */
-bool DetectorParameters::readDetectorParameters(const FileNode& fn, Ptr<DetectorParameters>& params)
+bool DetectorParameters::readDetectorParameters(const FileNode& fn)
 {
     if(fn.empty())
         return true;
-    params = DetectorParameters::create();
     bool checkRead = false;
-    checkRead |= readParameter(fn["adaptiveThreshWinSizeMin"], params->adaptiveThreshWinSizeMin);
-    checkRead |= readParameter(fn["adaptiveThreshWinSizeMax"], params->adaptiveThreshWinSizeMax);
-    checkRead |= readParameter(fn["adaptiveThreshWinSizeStep"], params->adaptiveThreshWinSizeStep);
-    checkRead |= readParameter(fn["adaptiveThreshConstant"], params->adaptiveThreshConstant);
-    checkRead |= readParameter(fn["minMarkerPerimeterRate"], params->minMarkerPerimeterRate);
-    checkRead |= readParameter(fn["maxMarkerPerimeterRate"], params->maxMarkerPerimeterRate);
-    checkRead |= readParameter(fn["polygonalApproxAccuracyRate"], params->polygonalApproxAccuracyRate);
-    checkRead |= readParameter(fn["minCornerDistanceRate"], params->minCornerDistanceRate);
-    checkRead |= readParameter(fn["minDistanceToBorder"], params->minDistanceToBorder);
-    checkRead |= readParameter(fn["minMarkerDistanceRate"], params->minMarkerDistanceRate);
-    checkRead |= readParameter(fn["cornerRefinementMethod"], params->cornerRefinementMethod);
-    checkRead |= readParameter(fn["cornerRefinementWinSize"], params->cornerRefinementWinSize);
-    checkRead |= readParameter(fn["cornerRefinementMaxIterations"], params->cornerRefinementMaxIterations);
-    checkRead |= readParameter(fn["cornerRefinementMinAccuracy"], params->cornerRefinementMinAccuracy);
-    checkRead |= readParameter(fn["markerBorderBits"], params->markerBorderBits);
-    checkRead |= readParameter(fn["perspectiveRemovePixelPerCell"], params->perspectiveRemovePixelPerCell);
-    checkRead |= readParameter(fn["perspectiveRemoveIgnoredMarginPerCell"], params->perspectiveRemoveIgnoredMarginPerCell);
-    checkRead |= readParameter(fn["maxErroneousBitsInBorderRate"], params->maxErroneousBitsInBorderRate);
-    checkRead |= readParameter(fn["minOtsuStdDev"], params->minOtsuStdDev);
-    checkRead |= readParameter(fn["errorCorrectionRate"], params->errorCorrectionRate);
+    checkRead |= readParameter(fn["adaptiveThreshWinSizeMin"], this->adaptiveThreshWinSizeMin);
+    checkRead |= readParameter(fn["adaptiveThreshWinSizeMax"], this->adaptiveThreshWinSizeMax);
+    checkRead |= readParameter(fn["adaptiveThreshWinSizeStep"], this->adaptiveThreshWinSizeStep);
+    checkRead |= readParameter(fn["adaptiveThreshConstant"], this->adaptiveThreshConstant);
+    checkRead |= readParameter(fn["minMarkerPerimeterRate"], this->minMarkerPerimeterRate);
+    checkRead |= readParameter(fn["maxMarkerPerimeterRate"], this->maxMarkerPerimeterRate);
+    checkRead |= readParameter(fn["polygonalApproxAccuracyRate"], this->polygonalApproxAccuracyRate);
+    checkRead |= readParameter(fn["minCornerDistanceRate"], this->minCornerDistanceRate);
+    checkRead |= readParameter(fn["minDistanceToBorder"], this->minDistanceToBorder);
+    checkRead |= readParameter(fn["minMarkerDistanceRate"], this->minMarkerDistanceRate);
+    checkRead |= readParameter(fn["cornerRefinementMethod"], this->cornerRefinementMethod);
+    checkRead |= readParameter(fn["cornerRefinementWinSize"], this->cornerRefinementWinSize);
+    checkRead |= readParameter(fn["cornerRefinementMaxIterations"], this->cornerRefinementMaxIterations);
+    checkRead |= readParameter(fn["cornerRefinementMinAccuracy"], this->cornerRefinementMinAccuracy);
+    checkRead |= readParameter(fn["markerBorderBits"], this->markerBorderBits);
+    checkRead |= readParameter(fn["perspectiveRemovePixelPerCell"], this->perspectiveRemovePixelPerCell);
+    checkRead |= readParameter(fn["perspectiveRemoveIgnoredMarginPerCell"], this->perspectiveRemoveIgnoredMarginPerCell);
+    checkRead |= readParameter(fn["maxErroneousBitsInBorderRate"], this->maxErroneousBitsInBorderRate);
+    checkRead |= readParameter(fn["minOtsuStdDev"], this->minOtsuStdDev);
+    checkRead |= readParameter(fn["errorCorrectionRate"], this->errorCorrectionRate);
     // new aruco 3 functionality
-    checkRead |= readParameter(fn["useAruco3Detection"], params->useAruco3Detection);
-    checkRead |= readParameter(fn["minSideLengthCanonicalImg"], params->minSideLengthCanonicalImg);
-    checkRead |= readParameter(fn["minMarkerLengthRatioOriginalImg"], params->minMarkerLengthRatioOriginalImg);
+    checkRead |= readParameter(fn["useAruco3Detection"], this->useAruco3Detection);
+    checkRead |= readParameter(fn["minSideLengthCanonicalImg"], this->minSideLengthCanonicalImg);
+    checkRead |= readParameter(fn["minMarkerLengthRatioOriginalImg"], this->minMarkerLengthRatioOriginalImg);
     return checkRead;
 }
 

@@ -96,14 +96,14 @@ int main(int argc, char *argv[]) {
     imageSize.height =
         markersY * (markerLength + markerSeparation) - markerSeparation + 2 * margins;
 
-    Ptr<aruco::Dictionary> dictionary;
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
         dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = aruco::Dictionary::readDictionary(fs.root(), dictionary);
+        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
         if(!readOk)
         {
             std::cerr << "Invalid dictionary file" << std::endl;
