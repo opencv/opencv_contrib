@@ -64,6 +64,26 @@ class aruco_test(NewOpenCVTests):
             if os.path.exists(filename):
                 os.remove(filename)
 
+    def test_identify(self):
+        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        expected_idx = 9
+        expected_rotation = 2
+        bit_marker = np.array([[0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 1, 1], [0, 0, 1, 1]], dtype=np.uint8)
+
+        check, idx, rotation = aruco_dict.identify(bit_marker, 0)
+
+        self.assertTrue(check, True)
+        self.assertEqual(idx, expected_idx)
+        self.assertEqual(rotation, expected_rotation)
+
+    def test_getDistanceToId(self):
+        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        idx = 7
+        rotation = 3
+        bit_marker = np.array([[0, 1, 0, 1], [0, 1, 1, 1], [1, 1, 0, 0], [0, 1, 0, 0]], dtype=np.uint8)
+        dist = aruco_dict.getDistanceToId(bit_marker, idx)
+
+        self.assertEqual(dist, 0)
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
