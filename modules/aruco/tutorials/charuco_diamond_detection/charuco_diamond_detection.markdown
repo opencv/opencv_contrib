@@ -151,16 +151,16 @@ i.e. using the ```estimatePoseSingleMarkers()``` function. For instance:
 
     // draw axis
     for(unsigned int i=0; i<rvecs.size(); i++)
-        cv::aruco::drawAxis(inputImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], axisLength);
+        cv::drawFrameAxes(inputImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], axisLength);
 @endcode
 
 The function will obtain the rotation and translation vector for each of the diamond marker and store them
 in ```rvecs``` and ```tvecs```. Note that the diamond corners are a chessboard square corners and thus, the square length
 has to be provided for pose estimation, and not the marker length. Camera calibration parameters are also required.
 
-Finally, an axis can be drawn to check the estimated pose is correct using ```drawAxis()```:
+Finally, an axis can be drawn to check the estimated pose is correct using ```drawFrameAxes()```:
 
-![Detected diamond axis](images/diamondsaxis.png)
+![Detected diamond axis](images/diamondsaxis.jpg)
 
 The coordinate system of the diamond pose will be in the center of the marker with the Z axis pointing out,
 as in a simple ArUco marker pose estimation.

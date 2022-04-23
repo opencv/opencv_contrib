@@ -1523,7 +1523,7 @@ out = Mat::zeros(h, w, CV_8UC3);
     zarray_t *quads = _zarray_create(sizeof(struct sQuad));
 
     //int chunksize = 1 + sz / (APRILTAG_TASKS_PER_THREAD_TARGET * numberOfThreads);
-    int chunksize = h / (10 * getNumThreads());
+    int chunksize = std::max(1, h / (10 * getNumThreads()));
     int sz = _zarray_size(clusters);
 
     // TODO PARALLELIZE

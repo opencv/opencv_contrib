@@ -65,7 +65,7 @@ namespace cv { namespace cuda { namespace device
 
     namespace hough_segments
     {
-        int houghLinesProbabilistic_gpu(PtrStepSzb mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int* counterPtr, cudaStream_t stream);
+        int houghLinesProbabilistic_gpu(GpuMat &mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int* counterPtr, cudaStream_t stream);
     }
 }}}
 

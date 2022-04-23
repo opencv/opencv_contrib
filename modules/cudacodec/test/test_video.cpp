@@ -66,6 +66,10 @@ PARAM_TEST_CASE(CheckKeyFrame, cv::cuda::DeviceInfo, std::string)
 {
 };
 
+PARAM_TEST_CASE(CheckDecodeSurfaces, cv::cuda::DeviceInfo, std::string)
+{
+};
+
 struct CheckParams : testing::TestWithParam<cv::cuda::DeviceInfo>
 {
     cv::cuda::DeviceInfo devInfo;
@@ -179,17 +183,27 @@ CUDA_TEST_P(Video, Reader)
     if (GET_PARAM(1) == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
         throw SkipTestException("FFmpeg backend not found");
 
+    const std::vector<std::pair< cudacodec::ColorFormat, int>> formatsToChannels = {
+        {cudacodec::ColorFormat::GRAY,1},
+        {cudacodec::ColorFormat::BGR,3},
+        {cudacodec::ColorFormat::BGRA,4},
+    };
+
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
     cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
     for (int i = 0; i < 100; i++)
     {
+        // request a different colour format for each frame
+        const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
+        reader->set(formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
         ASSERT_FALSE(frame.empty());
+        ASSERT_TRUE(frame.channels() == formatToChannels.second);
     }
 }
 
@@ -281,12 +295,53 @@ CUDA_TEST_P(CheckParams, Reader)
                 cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {
                     cv::VideoCaptureProperties::CAP_PROP_FORMAT, capPropFormats.at(i) });
             }
-            catch (cv::Exception ex) {
+            catch (cv::Exception &ex) {
                 if (ex.code == Error::StsUnsupportedFormat)
                     exceptionThrown = true;
             }
             ASSERT_EQ(exceptionThrown, exceptionsThrown.at(i));
         }
+    }
+}
+
+CUDA_TEST_P(CheckDecodeSurfaces, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    int ulNumDecodeSurfaces = 0;
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+        cv::cudacodec::FormatInfo fmt = reader->format();
+        if (!fmt.valid) {
+            reader->grab();
+            fmt = reader->format();
+            ASSERT_TRUE(fmt.valid);
+        }
+        ulNumDecodeSurfaces = fmt.ulNumDecodeSurfaces;
+    }
+
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, false, ulNumDecodeSurfaces - 1);
+        cv::cudacodec::FormatInfo fmt = reader->format();
+        if (!fmt.valid) {
+            reader->grab();
+            fmt = reader->format();
+            ASSERT_TRUE(fmt.valid);
+        }
+        ASSERT_TRUE(fmt.ulNumDecodeSurfaces == ulNumDecodeSurfaces);
+        for (int i = 0; i < 100; i++) ASSERT_TRUE(reader->grab());
+    }
+
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, false, ulNumDecodeSurfaces + 1);
+        cv::cudacodec::FormatInfo fmt = reader->format();
+        if (!fmt.valid) {
+            reader->grab();
+            fmt = reader->format();
+            ASSERT_TRUE(fmt.valid);
+        }
+        ASSERT_TRUE(fmt.ulNumDecodeSurfaces == ulNumDecodeSurfaces + 1);
+        for (int i = 0; i < 100; i++) ASSERT_TRUE(reader->grab());
     }
 }
 #endif // HAVE_NVCUVID
@@ -371,6 +426,10 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckKeyFrame, testing::Combine(
     testing::Values(VIDEO_SRC_R)));
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckParams, ALL_DEVICES);
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckDecodeSurfaces, testing::Combine(
+    ALL_DEVICES,
+    testing::Values("highgui/video/big_buck_bunny.mp4")));
 
 #endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace

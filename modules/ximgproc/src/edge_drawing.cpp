@@ -231,7 +231,7 @@ private:
     static void DeallocateMatrix(double** m, int noRows);
     static void AperB_T(double** A_, double** B_, double** _res, int _righA, int _colA, int _righB, int _colB);
     static void AperB(double** A_, double** B_, double** _res, int _righA, int _colA, int _righB, int _colB);
-    static void jacobi(double** a, int n, double d[], double** v, int nrot);
+    static void jacobi(double** a, int n, double d[], double** v);
     static void ROTATE(double** a, int i, int j, int k, int l, double tau, double s);
     static double computeEllipsePerimeter(EllipseEquation* eq);
     static double ComputeEllipseError(EllipseEquation* eq, double* px, double* py, int noPoints);
@@ -1301,6 +1301,7 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     double* x = new double[(width + height) * 8];
     double* y = new double[(width + height) * 8];
 
+    lines.clear();
     linesNo = 0;
 
     // Use the whole segment
@@ -2437,6 +2438,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     }
 
     min_line_len = 6;
+    line_error = params.LineFitErrorThreshold;
     Circles.clear();
     Ellipses.clear();
     lines.clear();
@@ -5348,7 +5350,6 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
     double** V = AllocateMatrix(7, 7);
     double** sol = AllocateMatrix(7, 7);
     double tx, ty;
-    int nrot = 0;
 
     memset(d, 0, sizeof(double) * 7);
 
@@ -5392,7 +5393,7 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
     AperB_T(Const, invL, temp, 6, 6, 6, 6);
     AperB(invL, temp, C, 6, 6, 6, 6);
 
-    jacobi(C, 6, d, V, nrot);
+    jacobi(C, 6, d, V);
 
     A_TperB(invL, V, sol, 6, 6, 6, 6);
 
@@ -5642,7 +5643,7 @@ void EdgeDrawingImpl::AperB(double** A_, double** B_, double** _res, int _righA,
         }
 }
 
-void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v, int nrot)
+void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v)
 {
     int j, iq, ip, i;
     double tresh, theta, tau, t, sm, s, h, g, c;
@@ -5663,7 +5664,6 @@ void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v, int nrot
         b[ip] = d[ip] = a[ip][ip];
         z[ip] = 0.0;
     }
-    nrot = 0;
     for (i = 1; i <= 50; i++)
     {
         sm = 0.0;
@@ -5727,7 +5727,6 @@ void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v, int nrot
                     {
                         ROTATE(v, j, ip, j, iq, tau, s);
                     }
-                    ++nrot;
                 }
             }
         }

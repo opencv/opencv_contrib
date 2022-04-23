@@ -48,12 +48,33 @@ using namespace cv::cudacodec;
 
 #ifndef HAVE_NVCUVID
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const bool) { throw_no_cuda(); return Ptr<VideoReader>(); }
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const bool) { throw_no_cuda(); return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const bool, const int) { throw_no_cuda(); return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const bool, const int) { throw_no_cuda(); return Ptr<VideoReader>(); }
 
 #else // HAVE_NVCUVID
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& _outFrame, int width, int height, cudaStream_t stream);
+void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream);
+
+void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat,
+    cudaStream_t stream)
+{
+    if (colorFormat == ColorFormat::BGRA) {
+        nv12ToBgra(decodedFrame, outFrame, width, height, stream);
+    }
+    else if (colorFormat == ColorFormat::BGR) {
+        outFrame.create(height, width, CV_8UC3);
+        Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
+        NppiSize oSizeROI = { width,height };
+        NppStreamContext nppStreamCtx;
+        nppSafeCall(nppGetStreamContext(&nppStreamCtx));
+        nppStreamCtx.hStream = stream;
+        nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+    }
+    else if (colorFormat == ColorFormat::GRAY) {
+        outFrame.create(height, width, CV_8UC1);
+        cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, stream);
+    }
+}
 
 using namespace cv::cudacodec::detail;
 
@@ -62,7 +83,7 @@ namespace
     class VideoReaderImpl : public VideoReader
     {
     public:
-        explicit VideoReaderImpl(const Ptr<VideoSource>& source);
+        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces);
         ~VideoReaderImpl();
 
         bool nextFrame(GpuMat& frame, Stream& stream) CV_OVERRIDE;
@@ -74,6 +95,8 @@ namespace
         bool retrieve(OutputArray frame, const size_t idx) const CV_OVERRIDE;
 
         bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
+
+        void VideoReaderImpl::set(const ColorFormat _colorFormat) CV_OVERRIDE;
 
         bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
 
@@ -96,6 +119,7 @@ namespace
         static const int decodedFrameIdx = 0;
         static const int extraDataIdx = 1;
         static const int rawPacketsBaseIdx = 2;
+        ColorFormat colorFormat = ColorFormat::BGRA;
     };
 
     FormatInfo VideoReaderImpl::format() const
@@ -103,7 +127,7 @@ namespace
         return videoSource_->format();
     }
 
-    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source) :
+    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces) :
         videoSource_(source),
         lock_(0)
     {
@@ -115,7 +139,7 @@ namespace
         cuSafeCall( cuCtxGetCurrent(&ctx) );
         cuSafeCall( cuvidCtxLockCreate(&lock_, ctx) );
         frameQueue_.reset(new FrameQueue());
-        videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, ctx, lock_));
+        videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, minNumDecodeSurfaces, ctx, lock_));
         videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_));
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
@@ -193,7 +217,7 @@ namespace
 
             // perform post processing on the CUDA surface (performs colors space conversion and post processing)
             // comment this out if we include the line of code seen above
-            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), StreamAccessor::getStream(stream));
+            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), colorFormat, StreamAccessor::getStream(stream));
 
             // unmap video frame
             // unmapFrame() synchronizes with the VideoDecode API (ensures the frame has finished decoding)
@@ -237,9 +261,12 @@ namespace
         switch (propertyId) {
         case VideoReaderProps::PROP_RAW_MODE :
             videoSource_->SetRawMode(static_cast<bool>(propertyVal));
-            break;
         }
         return true;
+    }
+
+    void VideoReaderImpl::set(const ColorFormat _colorFormat) {
+        colorFormat = _colorFormat;
     }
 
     bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyVal) const {
@@ -291,7 +318,7 @@ namespace
     }
 }
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const std::vector<int>& params, const bool rawMode)
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const std::vector<int>& params, const bool rawMode, const int minNumDecodeSurfaces)
 {
     CV_Assert(!filename.empty());
 
@@ -309,13 +336,13 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
         videoSource.reset(new CuvidVideoSource(filename));
     }
 
-    return makePtr<VideoReaderImpl>(videoSource);
+    return makePtr<VideoReaderImpl>(videoSource, minNumDecodeSurfaces);
 }
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode)
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode, const int minNumDecodeSurfaces)
 {
     Ptr<VideoSource> videoSource(new RawVideoSourceWrapper(source, rawMode));
-    return makePtr<VideoReaderImpl>(videoSource);
+    return makePtr<VideoReaderImpl>(videoSource, minNumDecodeSurfaces);
 }
 
 #endif // HAVE_NVCUVID
