@@ -18,7 +18,7 @@ using zxing::Result;
 using zxing::UnicomBlock;
 namespace cv {
 namespace wechat_qrcode {
-int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result) {
+int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result, vector<Point2f>& points){
     int width = src.cols;
     int height = src.rows;
     if (width <= 20 || height <= 20)
@@ -46,6 +46,10 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result) {
         int ret = TryDecode(source, zx_result);
         if (!ret) {
             result = zx_result->getText()->getText();
+            auto result_points = zx_result->getResultPoints();
+            for(int i=0; i < result_points->size(); i++){
+                points.emplace_back(result_points[i]->getX(), result_points[i]->getY());
+            }
             return ret;
         }
         // try different binarizers
