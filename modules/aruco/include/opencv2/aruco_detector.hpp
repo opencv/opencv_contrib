@@ -13,6 +13,9 @@ namespace cv {
 namespace aruco {
 using namespace std;
 
+//! @addtogroup aruco
+//! @{
+
 /**
  * @brief Parameters for the detectMarker process:
  * - adaptiveThreshWinSizeMin: minimum window size for adaptive thresholding before finding
@@ -151,7 +154,7 @@ enum CornerRefineMethod{
 
 class Board;
 
-class ArucoDetector
+class CV_EXPORTS_W ArucoDetector
 {
 public:
 Ptr<Dictionary> dictionary;
@@ -160,18 +163,21 @@ Ptr<DetectorParameters> params;
 ArucoDetector(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params):
               dictionary(_dictionary), params(_params) {}
 
-void detectMarkers(InputArray _image, OutputArrayOfArrays _corners, OutputArray _ids,
-                   OutputArrayOfArrays _rejectedImgPoints);
+CV_WRAP static Ptr<ArucoDetector> create(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params);
 
-void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
-                           InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
-                           InputOutputArrayOfArrays _rejectedCorners, InputArray _cameraMatrix,
-                           InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
-                           bool checkAllOrders, OutputArray _recoveredIdxs);
+CV_WRAP void detectMarkers(InputArray _image, CV_OUT vector<vector<Point2f> > &_corners, CV_OUT vector<int> &_ids,
+                           CV_OUT vector<vector<Point2f> > &_rejectedImgPoints);
+
+CV_WRAP void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
+                                   InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
+                                   InputOutputArrayOfArrays _rejectedCorners, InputArray _cameraMatrix,
+                                   InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
+                                   bool checkAllOrders, OutputArray _recoveredIdxs);
 private:
 
 };
 
+//! @}
 }
 }
 

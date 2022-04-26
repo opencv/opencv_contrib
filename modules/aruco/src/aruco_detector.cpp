@@ -10,9 +10,46 @@
 #include "apriltag_quad_thresh.hpp"
 #include "zarray.hpp"
 
-
 namespace cv {
 namespace aruco {
+
+/**
+  *
+  */
+DetectorParameters::DetectorParameters()
+    : adaptiveThreshWinSizeMin(3),
+      adaptiveThreshWinSizeMax(23),
+      adaptiveThreshWinSizeStep(10),
+      adaptiveThreshConstant(7),
+      minMarkerPerimeterRate(0.03),
+      maxMarkerPerimeterRate(4.),
+      polygonalApproxAccuracyRate(0.03),
+      minCornerDistanceRate(0.05),
+      minDistanceToBorder(3),
+      minMarkerDistanceRate(0.05),
+      cornerRefinementMethod(CORNER_REFINE_NONE),
+      cornerRefinementWinSize(5),
+      cornerRefinementMaxIterations(30),
+      cornerRefinementMinAccuracy(0.1),
+      markerBorderBits(1),
+      perspectiveRemovePixelPerCell(4),
+      perspectiveRemoveIgnoredMarginPerCell(0.13),
+      maxErroneousBitsInBorderRate(0.35),
+      minOtsuStdDev(5.0),
+      errorCorrectionRate(0.6),
+      aprilTagQuadDecimate(0.0),
+      aprilTagQuadSigma(0.0),
+      aprilTagMinClusterPixels(5),
+      aprilTagMaxNmaxima(10),
+      aprilTagCriticalRad( (float)(10* CV_PI /180) ),
+      aprilTagMaxLineFitMse(10.0),
+      aprilTagMinWhiteBlackDiff(5),
+      aprilTagDeglitch(0),
+      detectInvertedMarker(false),
+      useAruco3Detection(false),
+      minSideLengthCanonicalImg(32),
+      minMarkerLengthRatioOriginalImg(0.0)
+{}
 
 /**
   * @brief Convert input image to gray if it is a 3-channels image
@@ -181,7 +218,6 @@ static void _threshold(InputArray _in, OutputArray _out, int winSize, double con
     adaptiveThreshold(_in, _out, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, winSize, constant);
 }
 
-
 /**
   * @brief Given a tresholded image, find the contours, calculate their polygonal approximation
   * and take those that accomplish some conditions
@@ -253,7 +289,6 @@ static void _findMarkerContours(InputArray _in, vector< vector< Point2f > > &can
         contoursOut.push_back(contours[i]);
     }
 }
-
 
 /**
   * @brief Assure order of candidate corners is clockwise direction
@@ -463,7 +498,6 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
     }
 }
 
-
 /**
  * @brief Detect square candidates in the input image
  */
@@ -485,7 +519,6 @@ static void _detectCandidates(InputArray _grayImage, vector< vector< vector< Poi
     _filterTooCloseCandidates(candidates, candidatesSetOut, contours, contoursSetOut,
                               _params->minMarkerDistanceRate, _params->detectInvertedMarker);
 }
-
 
 /**
   * @brief Given an input image and candidate corners, extract the bits of the candidate, including
@@ -552,11 +585,8 @@ static Mat _extractBits(InputArray _image, InputArray _corners, int markerSize,
             if(nZ > square.total() / 2) bits.at< unsigned char >(y, x) = 1;
         }
     }
-
     return bits;
 }
-
-
 
 /**
   * @brief Return number of erroneous bits in border, i.e. number of white bits in border.
@@ -710,19 +740,17 @@ static size_t _findOptPyrImageForCanonicalImg(
 /**
  * @brief Identify square candidates according to a marker dictionary
  */
-
 static void _identifyCandidates(InputArray grey,
                                 const std::vector<cv::Mat>& image_pyr,
                                 vector< vector< vector< Point2f > > >& _candidatesSet,
                                 vector< vector< vector<Point> > >& _contoursSet, const Ptr<Dictionary> &_dictionary,
                                 vector< vector< Point2f > >& _accepted, vector< vector<Point> >& _contours, vector< int >& ids,
                                 const Ptr<DetectorParameters> &params,
-                                OutputArrayOfArrays _rejected = noArray()) {
+                                vector<vector<Point2f> > &_rejected) {
     CV_DbgAssert(grey.getMat().total() != 0);
     CV_DbgAssert(grey.getMat().type() == CV_8UC1);
     int ncandidates = (int)_candidatesSet[0].size();
     vector< vector< Point2f > > accepted;
-    vector< vector< Point2f > > rejected;
     vector< vector< Point > > contours;
 
     vector< int > idsTmp(ncandidates, -1);
@@ -775,7 +803,7 @@ static void _identifyCandidates(InputArray grey,
             contours.push_back(_contoursSet[set][i]);
 
         } else {
-            rejected.push_back(_candidatesSet[0][i]);
+            _rejected.push_back(_candidatesSet[0][i]);
         }
     }
 
@@ -783,10 +811,6 @@ static void _identifyCandidates(InputArray grey,
     _accepted = accepted;
 
     _contours= contours;
-
-    if(_rejected.needed()) {
-        _copyVector2Output(rejected, _rejected);
-    }
 }
 
 /**
@@ -919,9 +943,12 @@ static void _darken(const Mat &im){
 }
 #endif
 
+Ptr<ArucoDetector> ArucoDetector::create(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params) {
+    return makePtr<ArucoDetector>(_dictionary, _params);
+}
 
-void ArucoDetector::detectMarkers(InputArray _image, OutputArrayOfArrays _corners, OutputArray _ids,
-                                  OutputArrayOfArrays _rejectedImgPoints)
+void ArucoDetector::detectMarkers(InputArray _image, CV_OUT vector<vector<Point2f> > &_corners, vector<int> &_ids,
+                                  CV_OUT vector<vector<Point2f> > &_rejectedImgPoints)
 {
     CV_Assert(!_image.empty());
     CV_Assert(params->markerBorderBits > 0);
@@ -945,6 +972,8 @@ void ArucoDetector::detectMarkers(InputArray _image, OutputArrayOfArrays _corner
     else {
         // always turn on corner refinement in case of Aruco3, due to upsampling
         params->cornerRefinementMethod = CORNER_REFINE_SUBPIX;
+        // only CORNER_REFINE_SUBPIX implement correctly for useAruco3Detection
+        // TODO: update other CORNER_REFINE methods
     }
 
     /// Step 0: equation (2) from paper [1]
@@ -974,18 +1003,16 @@ void ArucoDetector::detectMarkers(InputArray _image, OutputArrayOfArrays _corner
         cv::resize(grey, grey, cv::Size(cvRound(fxfy * grey.cols), cvRound(fxfy * grey.rows)));
 
     /// STEP 2: Detect marker candidates
-    vector< vector< Point2f > > candidates;
     vector< vector< Point > > contours;
-    vector< int > ids;
 
     vector< vector< vector< Point2f > > > candidatesSet;
     vector< vector< vector< Point > > > contoursSet;
 
     /// STEP 2.a Detect marker candidates :: using AprilTag
     if(params->cornerRefinementMethod == CORNER_REFINE_APRILTAG){
-        _apriltag(grey, params, candidates, contours);
+        _apriltag(grey, params, _corners, contours);
 
-        candidatesSet.push_back(candidates);
+        candidatesSet.push_back(_corners);
         contoursSet.push_back(contours);
     }
     /// STEP 2.b Detect marker candidates :: traditional way
@@ -994,28 +1021,25 @@ void ArucoDetector::detectMarkers(InputArray _image, OutputArrayOfArrays _corner
 
     /// STEP 2: Check candidate codification (identify markers)
     _identifyCandidates(grey, grey_pyramid, candidatesSet, contoursSet, dictionary,
-                        candidates, contours, ids, params, _rejectedImgPoints);
-
-    // copy to output arrays
-    _copyVector2Output(candidates, _corners);
-    Mat(ids).copyTo(_ids);
+                        _corners, contours, _ids, params, _rejectedImgPoints);
 
     /// STEP 3: Corner refinement :: use corner subpix
     if( params->cornerRefinementMethod == CORNER_REFINE_SUBPIX ) {
         CV_Assert(params->cornerRefinementWinSize > 0 && params->cornerRefinementMaxIterations > 0 &&
                   params->cornerRefinementMinAccuracy > 0);
         // Do subpixel estimation. In Aruco3 start on the lowest pyramid level and upscale the corners
-        parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
+        parallel_for_(Range(0, (int)_corners.size()), [&](const Range& range) {
             const int begin = range.start;
             const int end = range.end;
 
             for (int i = begin; i < end; i++) {
                 if (params->useAruco3Detection) {
                     const float scale_init = (float) grey_pyramid[closest_pyr_image_idx].cols / grey.cols;
-                    findCornerInPyrImage(scale_init, closest_pyr_image_idx, grey_pyramid, _corners.getMat(i), params);
+                    findCornerInPyrImage(scale_init, closest_pyr_image_idx, grey_pyramid,
+                                         Mat(4, 1, CV_32FC2, _corners[i].data()), params);
                 }
                 else
-                cornerSubPix(grey, _corners.getMat(i),
+                cornerSubPix(grey, _corners[i],
                              Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize),
                              Size(-1, -1),
                              TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
@@ -1027,24 +1051,23 @@ void ArucoDetector::detectMarkers(InputArray _image, OutputArrayOfArrays _corner
 
     /// STEP 3, Optional : Corner refinement :: use contour container
     if( params->cornerRefinementMethod == CORNER_REFINE_CONTOUR){
-
         if(! _ids.empty()){
-
             // do corner refinement using the contours for each detected markers
-            parallel_for_(Range(0, _corners.cols()), [&](const Range& range) {
+            parallel_for_(Range(0, (int)_corners.size()), [&](const Range& range) {
                 for (int i = range.start; i < range.end; i++) {
-                    _refineCandidateLines(contours[i], candidates[i]);
+                    _refineCandidateLines(contours[i], _corners[i]);
                 }
             });
-
-            // copy the corners to the output array
-            _copyVector2Output(candidates, _corners);
         }
     }
-    if (params->cornerRefinementMethod != CORNER_REFINE_APRILTAG &&
-        params->cornerRefinementMethod != CORNER_REFINE_SUBPIX) {
+    if (params->cornerRefinementMethod != CORNER_REFINE_SUBPIX && fxfy != 1.f) {
+        // only CORNER_REFINE_SUBPIX implement correctly for useAruco3Detection
+        // TODO: update other CORNER_REFINE methods
+
         // scale to orignal size, this however will lead to inaccurate detections!
-        _copyVector2Output(candidates, _corners, 1.f/fxfy);
+        for (auto &vecPoints : _corners)
+            for (auto &point : vecPoints)
+                point *= 1.f/fxfy;
     }
 }
 
@@ -1056,7 +1079,6 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
                                       InputArray _distCoeffs,
                                       vector< vector< Point2f > >& _undetectedMarkersProjectedCorners,
                                       OutputArray _undetectedMarkersIds) {
-
     // first estimate board pose with the current avaible markers
     Mat rvec, tvec;
     int boardDetectedMarkers;
@@ -1101,8 +1123,6 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
                                       InputOutputArray _detectedIds,
                                       vector< vector< Point2f > >& _undetectedMarkersProjectedCorners,
                                       OutputArray _undetectedMarkersIds) {
-
-
     // check board points are in the same plane, if not, global homography cannot be applied
     CV_Assert(_board->objPoints.size() > 0);
     CV_Assert(_board->objPoints[0].size() > 0);
@@ -1164,7 +1184,6 @@ void ArucoDetector::refineDetectedMarkers(const _InputArray &_image, const Ptr<B
                                           const _InputArray &_cameraMatrix, const _InputArray &_distCoeffs,
                                           float minRepDistance, float errorCorrectionRate, bool checkAllOrders,
                                           const _OutputArray &_recoveredIdxs) {
-
     CV_Assert(minRepDistance > 0);
 
     if(_detectedIds.total() == 0 || _rejectedCorners.total() == 0) return;
@@ -1324,5 +1343,5 @@ void ArucoDetector::refineDetectedMarkers(const _InputArray &_image, const Ptr<B
     }
 }
 
-}
+    }
 }

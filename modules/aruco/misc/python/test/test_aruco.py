@@ -85,5 +85,28 @@ class aruco_test(NewOpenCVTests):
 
         self.assertEqual(dist, 0)
 
+    def test_aruco_detector(self):
+        aruco_params = cv.aruco.DetectorParameters_create()
+        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_250)
+        aruco_detector = cv.aruco.ArucoDetector_create(aruco_dict, aruco_params)
+        id = 2
+        marker_size = 100
+        offset = 10
+        img_marker = cv.aruco.drawMarker(aruco_dict, id, marker_size, aruco_params.markerBorderBits)
+        img_marker = np.pad(img_marker, pad_width=offset, mode='constant', constant_values=255)
+        gold_corners = np.array([[offset, offset],[marker_size+offset-1.0,offset],
+                                 [marker_size+offset-1.0,marker_size+offset-1.0],
+                                 [offset, marker_size+offset-1.0]], dtype=np.float32)
+        expected_corners, expected_ids, expected_rejected = cv.aruco.detectMarkers(img_marker, aruco_dict,
+                                                                                   parameters=aruco_params)
+
+        corners, ids, rejected = aruco_detector.detectMarkers(img_marker)
+
+        self.assertEqual(len(ids), 1)
+        self.assertEqual(ids[0], id)
+        for i in range(0, len(ids)):
+            np.testing.assert_array_equal(corners[i], expected_corners[i][0])
+            np.testing.assert_array_equal(corners[i], gold_corners)
+
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()

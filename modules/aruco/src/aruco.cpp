@@ -41,53 +41,12 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "apriltag_quad_thresh.hpp"
 #include "zarray.hpp"
 
 namespace cv {
 namespace aruco {
 
 using namespace std;
-
-
-/**
-  *
-  */
-DetectorParameters::DetectorParameters()
-    : adaptiveThreshWinSizeMin(3),
-      adaptiveThreshWinSizeMax(23),
-      adaptiveThreshWinSizeStep(10),
-      adaptiveThreshConstant(7),
-      minMarkerPerimeterRate(0.03),
-      maxMarkerPerimeterRate(4.),
-      polygonalApproxAccuracyRate(0.03),
-      minCornerDistanceRate(0.05),
-      minDistanceToBorder(3),
-      minMarkerDistanceRate(0.05),
-      cornerRefinementMethod(CORNER_REFINE_NONE),
-      cornerRefinementWinSize(5),
-      cornerRefinementMaxIterations(30),
-      cornerRefinementMinAccuracy(0.1),
-      markerBorderBits(1),
-      perspectiveRemovePixelPerCell(4),
-      perspectiveRemoveIgnoredMarginPerCell(0.13),
-      maxErroneousBitsInBorderRate(0.35),
-      minOtsuStdDev(5.0),
-      errorCorrectionRate(0.6),
-      aprilTagQuadDecimate(0.0),
-      aprilTagQuadSigma(0.0),
-      aprilTagMinClusterPixels(5),
-      aprilTagMaxNmaxima(10),
-      aprilTagCriticalRad( (float)(10* CV_PI /180) ),
-      aprilTagMaxLineFitMse(10.0),
-      aprilTagMinWhiteBlackDiff(5),
-      aprilTagDeglitch(0),
-      detectInvertedMarker(false),
-      useAruco3Detection(false),
-      minSideLengthCanonicalImg(32),
-      minMarkerLengthRatioOriginalImg(0.0)
-{}
-
 
 /**
   * @brief Create a new set of DetectorParameters with default values.
@@ -159,12 +118,54 @@ static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoi
 }
 
 /**
+ * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
+ */
+static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfArrays out, const float scale = 1.f) {
+    out.create((int)vec.size(), 1, CV_32FC2);
+
+    if(out.isMatVector()) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(4, 1, CV_32FC2, i);
+            Mat &m = out.getMatRef(i);
+            Mat(Mat(vec[i]).t()*scale).copyTo(m);
+        }
+    }
+    else if(out.isUMatVector()) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(4, 1, CV_32FC2, i);
+            UMat &m = out.getUMatRef(i);
+            Mat(Mat(vec[i]).t()*scale).copyTo(m);
+        }
+    }
+    else if(out.kind() == _OutputArray::STD_VECTOR_VECTOR){
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(4, 1, CV_32FC2, i);
+            Mat m = out.getMat(i);
+            Mat(Mat(vec[i]).t()*scale).copyTo(m);
+        }
+    }
+    else {
+        CV_Error(cv::Error::StsNotImplemented,
+                 "Only Mat vector, UMat vector, and vector<vector> OutputArrays are currently supported.");
+    }
+}
+
+/**
   */
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
                    OutputArrayOfArrays _rejectedImgPoints) {
     ArucoDetector detector(_dictionary, _params);
-    detector.detectMarkers(_image, _corners, _ids, _rejectedImgPoints);
+    vector<vector<Point2f>> corners;
+    vector<vector<Point2f>> rejectedImgPoints;
+    vector<int> ids;
+
+    detector.detectMarkers(_image, corners, ids, rejectedImgPoints);
+
+    _copyVector2Output(corners, _corners);
+    if (_rejectedImgPoints.needed())
+        _copyVector2Output(rejectedImgPoints, _rejectedImgPoints);
+    Mat(ids).copyTo(_ids);
 }
 
 /**
@@ -243,8 +244,10 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
                            bool checkAllOrders, OutputArray _recoveredIdxs,
                            const Ptr<DetectorParameters> &_params){
     ArucoDetector detector(_board->dictionary, _params);
+    //vector<vector<Point2f>> detectedCorners;
     detector.refineDetectedMarkers(_image, _board, _detectedCorners, _detectedIds, _rejectedCorners, _cameraMatrix,
                                    _distCoeffs, minRepDistance, errorCorrectionRate, checkAllOrders, _recoveredIdxs);
+    //_copyVector2Output(detectedCorners, _detectedCorners);
 }
 
 
