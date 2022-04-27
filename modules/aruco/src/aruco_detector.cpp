@@ -4,6 +4,7 @@
 
 #include "precomp.hpp"
 #include <opencv2/aruco_detector.hpp>
+#include <opencv2/aruco/charuco.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -1290,6 +1291,17 @@ void ArucoDetector::refineDetectedMarkers(InputArray image, const Ptr<Board> &bo
         }
         rejectedCorners = finalRejected;
     }
+}
+
+int ArucoDetector::detectCharucoCorners(InputArray image, const Ptr<CharucoBoard> &board,
+                                        CV_OUT vector<vector<Point2f> >& arucoCorners, CV_OUT vector<int>& arucoIds,
+                                        CV_OUT vector<vector<Point2f> >& charucoCorners, CV_OUT vector<int>& charucoIds,
+                                        InputArray cameraMatrix, InputArray distCoeffs, int minMarkers) {
+    vector<vector<Point2f> > rejectedPoints;
+    detectMarkers(image, arucoCorners, arucoIds, rejectedPoints);
+
+    return interpolateCornersCharuco(arucoCorners, arucoIds, image, board, charucoCorners, charucoIds,
+                                     cameraMatrix, distCoeffs, minMarkers);
 }
 
 }

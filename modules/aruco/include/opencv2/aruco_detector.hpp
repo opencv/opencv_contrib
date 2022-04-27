@@ -13,6 +13,8 @@ namespace cv {
 namespace aruco {
 using namespace std;
 
+class CharucoBoard;
+
 //! @addtogroup aruco
 //! @{
 
@@ -191,8 +193,8 @@ ArucoDetector(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> 
 
 CV_WRAP static Ptr<ArucoDetector> create(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params);
 
-CV_WRAP void detectMarkers(InputArray _image, CV_OUT vector<vector<Point2f> > &_corners, CV_OUT vector<int> &_ids,
-                           CV_OUT vector<vector<Point2f> > &_rejectedImgPoints);
+CV_WRAP void detectMarkers(InputArray image, CV_OUT vector<vector<Point2f> > &corners, CV_OUT vector<int> &ids,
+                           CV_OUT vector<vector<Point2f> > &rejectedImgPoints);
 
 CV_WRAP void refineDetectedMarkers(InputArray image, const Ptr<Board> &board,
                                    CV_IN_OUT vector<vector<Point2f> >& detectedCorners,
@@ -200,6 +202,12 @@ CV_WRAP void refineDetectedMarkers(InputArray image, const Ptr<Board> &board,
                                    CV_IN_OUT vector<vector<Point2f> >& rejectedCorners,
                                    CV_OUT vector<int>& recoveredIdxs,
                                    InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray());
+
+CV_EXPORTS_W int detectCharucoCorners(InputArray image, const Ptr<CharucoBoard> &board,
+                                      CV_OUT vector<vector<Point2f> >& arucoCorners, CV_OUT vector<int>& arucoIds,
+                                      CV_OUT vector<vector<Point2f> >& charucoCorners, CV_OUT vector<int>& charucoIds,
+                                      InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
+                                      int minMarkers = 2);
 
 private:
 
