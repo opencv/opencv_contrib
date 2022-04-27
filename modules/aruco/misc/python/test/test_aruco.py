@@ -116,20 +116,23 @@ class aruco_test(NewOpenCVTests):
         board = cv.aruco.GridBoard_create(board_size[0], board_size[1], 5.0, 1.0, aruco_dict)
         board_image = board.draw((board_size[0]*50, board_size[1]*50), marginSize=10)
 
-        #corners, ids, rejected = aruco_detector.detectMarkers(board_image)
-        corners, ids, rejected = cv.aruco.detectMarkers(board_image, aruco_dict)
-        self.assertEqual(len(ids), board_size[0]*board_size[1])
+        corners, ids, rejected = aruco_detector.detectMarkers(board_image)
+        #corners, ids, rejected = cv.aruco.detectMarkers(board_image, aruco_dict)
+        self.assertEqual(board_size[0]*board_size[1], len(ids))
 
-        part_corners, part_ids, part_rejected = corners[:-1], ids[:-1], list(rejected)+list(corners[-1])
+        part_corners, part_ids, part_rejected = corners[:-1], ids[:-1], list(rejected)
+        part_rejected.append(corners[-1])
 
-        refine_corners, refine_ids, refine_rejected, recovered_ids = \
-            aruco_detector.refineDetectedMarkers(board_image, board, part_corners, part_ids, part_rejected)
+        refine_corners, refine_ids, refine_rejected, recovered_ids = aruco_detector.refineDetectedMarkers(board_image, board, part_corners, part_ids, part_rejected)
+        #refine_corners, refine_ids, refine_rejected, recovered_ids = cv.aruco.refineDetectedMarkers(board_image, board, part_corners, part_ids, part_rejected)
 
-        self.assertEqual(len(refine_ids), board_size[0] * board_size[1])
-        self.assertEqual(len(recovered_ids), 1)
-        #self.assertEqual(recovered_ids[0], ids[-1])
-        self.assertEqual(refine_ids[-1], ids[-1])
-        np.testing.assert_array_equal(refine_corners, corners)
+        self.assertEqual(board_size[0] * board_size[1], len(refine_ids))
+        self.assertEqual(1, len(recovered_ids))
+
+        #self.assertEqual(ids[-1], recovered_ids[0])
+        self.assertEqual(ids[-1], refine_ids[-1])
+        self.assertEqual((4, 2), refine_corners[0].shape)
+        np.testing.assert_array_equal(corners, refine_corners)
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
