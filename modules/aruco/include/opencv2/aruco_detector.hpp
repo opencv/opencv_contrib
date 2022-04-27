@@ -145,6 +145,30 @@ struct CV_EXPORTS_W DetectorParameters {
     CV_PROP_RW float minMarkerLengthRatioOriginalImg;
 };
 
+struct CV_EXPORTS_W RefineParameters {
+
+    RefineParameters() {
+        minRepDistance = 10.f;
+        errorCorrectionRate = 3.f;
+        checkAllOrders = true;
+    }
+
+    RefineParameters(float _minRepDistance, float _errorCorrectionRate, bool _checkAllOrders):
+    minRepDistance(_minRepDistance), errorCorrectionRate(_errorCorrectionRate), checkAllOrders(_checkAllOrders) {}
+
+    CV_WRAP static Ptr<RefineParameters> create() {
+        return makePtr<RefineParameters>();
+    }
+
+    CV_WRAP static Ptr<RefineParameters> create(float _minRepDistance, float _errorCorrectionRate, bool _checkAllOrders) {
+        return makePtr<RefineParameters>(_minRepDistance, _errorCorrectionRate, _checkAllOrders);
+    }
+
+    CV_PROP_RW float minRepDistance;
+    CV_PROP_RW float errorCorrectionRate;
+    CV_PROP_RW bool checkAllOrders;
+};
+
 enum CornerRefineMethod{
     CORNER_REFINE_NONE,     ///< Tag and corners detection based on the ArUco approach
     CORNER_REFINE_SUBPIX,   ///< ArUco approach and refine the corners locations using corner subpixel accuracy
@@ -159,20 +183,24 @@ class CV_EXPORTS_W ArucoDetector
 public:
 Ptr<Dictionary> dictionary;
 Ptr<DetectorParameters> params;
+Ptr<RefineParameters> refineParams;
 
-ArucoDetector(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params):
-              dictionary(_dictionary), params(_params) {}
+ArucoDetector(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params,
+              const Ptr<RefineParameters> &_refineParams = RefineParameters::create()):
+              dictionary(_dictionary), params(_params), refineParams(_refineParams) {}
 
 CV_WRAP static Ptr<ArucoDetector> create(const Ptr<Dictionary> &_dictionary, const Ptr<DetectorParameters> &_params);
 
 CV_WRAP void detectMarkers(InputArray _image, CV_OUT vector<vector<Point2f> > &_corners, CV_OUT vector<int> &_ids,
                            CV_OUT vector<vector<Point2f> > &_rejectedImgPoints);
 
-CV_WRAP void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
-                                   InputOutputArrayOfArrays _detectedCorners, InputOutputArray _detectedIds,
-                                   InputOutputArrayOfArrays _rejectedCorners, InputArray _cameraMatrix,
-                                   InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
-                                   bool checkAllOrders, OutputArray _recoveredIdxs);
+CV_WRAP void refineDetectedMarkers(InputArray image, const Ptr<Board> &board,
+                                   CV_IN_OUT vector<vector<Point2f> >& detectedCorners,
+                                   CV_IN_OUT vector<int>& detectedIds,
+                                   CV_IN_OUT vector<vector<Point2f> >& rejectedCorners,
+                                   CV_OUT vector<int>& recoveredIdxs,
+                                   InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray());
+
 private:
 
 };

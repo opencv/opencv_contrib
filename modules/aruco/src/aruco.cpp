@@ -150,6 +150,43 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
     }
 }
 
+static vector<vector<Point2f>> getVectors(InputArrayOfArrays& in)
+{
+    vector<vector<Point2f>> v;
+    if (in.isMatVector() || in.kind())
+    {
+        for (size_t i = 0; i < in.total(); i++)
+        {
+            Mat m = in.getMat(i);
+            vector<Point2f> tmp;
+            m.copyTo(tmp);
+            v.push_back(tmp);
+        }
+    }
+    else if (in.isUMatVector())
+    {
+        for (size_t i = 0; i < in.total(); i++) {
+            UMat m = in.getUMat(i);
+            vector<Point2f> tmp;
+            m.copyTo(tmp);
+            v.push_back(tmp);
+        }
+    }
+    else if (in.kind() == _InputArray::STD_VECTOR_MAT) {
+        for (size_t i = 0; i < in.total(); i++) {
+            Mat m = in.getMat(i).reshape(2);
+            vector<Point2f> tmp;
+            m.copyTo(tmp);
+            v.push_back(tmp);
+        }
+    }
+    else {
+        CV_Error(cv::Error::StsNotImplemented,
+                 "Only Mat vector, UMat vector, and vector<vector> InputArrays are currently supported.");
+    }
+    return v;
+}
+
 /**
   */
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
@@ -243,11 +280,24 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
                            InputArray _distCoeffs, float minRepDistance, float errorCorrectionRate,
                            bool checkAllOrders, OutputArray _recoveredIdxs,
                            const Ptr<DetectorParameters> &_params){
-    ArucoDetector detector(_board->dictionary, _params);
-    //vector<vector<Point2f>> detectedCorners;
-    detector.refineDetectedMarkers(_image, _board, _detectedCorners, _detectedIds, _rejectedCorners, _cameraMatrix,
-                                   _distCoeffs, minRepDistance, errorCorrectionRate, checkAllOrders, _recoveredIdxs);
-    //_copyVector2Output(detectedCorners, _detectedCorners);
+    Ptr<RefineParameters> refineParams = RefineParameters::create(minRepDistance, errorCorrectionRate, checkAllOrders);
+    ArucoDetector detector(_board->dictionary, _params, refineParams);
+
+    vector<vector<Point2f> > detectedCorners = move(getVectors(_detectedCorners));
+    vector<vector<Point2f> > rejectedCorners = move(getVectors(_rejectedCorners));
+
+    vector<int> detectedIds;
+    _detectedIds.copyTo(detectedIds);
+
+    vector<int> recoveredIdxs;
+    detector.refineDetectedMarkers(_image, _board, detectedCorners, detectedIds, rejectedCorners,
+                                   recoveredIdxs, _cameraMatrix, _distCoeffs);
+
+    _copyVector2Output(detectedCorners, _detectedCorners);
+    Mat(detectedIds).copyTo(_detectedIds);
+    _copyVector2Output(rejectedCorners, _rejectedCorners);
+    if (_recoveredIdxs.needed())
+        Mat(recoveredIdxs).copyTo(_recoveredIdxs);
 }
 
 
