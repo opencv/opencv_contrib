@@ -1,48 +1,15 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
 
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-*/
+#include <opencv2/imgproc.hpp>
+#include "opencv2/core/hal/hal.hpp"
 
 #include "precomp.hpp"
-#include "opencv2/aruco/dictionary.hpp"
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
+#include "aruco_utils.hpp"
 #include "predefined_dictionaries.hpp"
-#include "predefined_dictionaries_apriltag.hpp"
-#include "opencv2/core/hal/hal.hpp"
+#include "apriltag/predefined_dictionaries_apriltag.hpp"
+#include <opencv2/aruco/dictionary.hpp>
 
 namespace cv {
 namespace aruco {
@@ -50,8 +17,6 @@ namespace aruco {
 using namespace std;
 
 
-/**
-  */
 Dictionary::Dictionary(const Ptr<Dictionary> &_dictionary) {
     markerSize = _dictionary->markerSize;
     maxCorrectionBits = _dictionary->maxCorrectionBits;
@@ -59,8 +24,6 @@ Dictionary::Dictionary(const Ptr<Dictionary> &_dictionary) {
 }
 
 
-/**
-  */
 Dictionary::Dictionary(const Mat &_bytesList, int _markerSize, int _maxcorr) {
     markerSize = _markerSize;
     maxCorrectionBits = _maxcorr;
@@ -68,53 +31,39 @@ Dictionary::Dictionary(const Mat &_bytesList, int _markerSize, int _maxcorr) {
 }
 
 
-/**
- */
 Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize, int randomSeed) {
     const Ptr<Dictionary> baseDictionary = makePtr<Dictionary>();
     return create(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
 
-/**
- */
 Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize,
                                    const Ptr<Dictionary> &baseDictionary, int randomSeed) {
-
     return generateCustomDictionary(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
-template<typename T>
-static inline bool readParameter(const FileNode& node, T& parameter)
-{
-    if (!node.empty()) {
-        node >> parameter;
-        return true;
-    }
-    return false;
-}
 
-bool Dictionary::readDictionary(const cv::FileNode& fn)
-{
+bool Dictionary::readDictionary(const cv::FileNode& fn) {
     int nMarkers = 0, _markerSize = 0;
-    if (fn.empty() || !readParameter(fn["nmarkers"], nMarkers) || !readParameter(fn["markersize"], _markerSize))
+    if (fn.empty() || !readParameter("nmarkers", nMarkers, fn) || !readParameter("markersize", _markerSize, fn))
         return false;
     Mat bytes(0, 0, CV_8UC1), marker(_markerSize, _markerSize, CV_8UC1);
     std::string markerString;
     for (int i = 0; i < nMarkers; i++) {
         std::ostringstream ostr;
         ostr << i;
-        if (!readParameter(fn["marker_" + ostr.str()], markerString))
+        if (!readParameter("marker_" + ostr.str(), markerString, fn))
             return false;
         for (int j = 0; j < (int) markerString.size(); j++)
             marker.at<unsigned char>(j) = (markerString[j] == '0') ? 0 : 1;
         bytes.push_back(Dictionary::getByteListFromBits(marker));
     }
     int _maxCorrectionBits = 0;
-    readParameter(fn["maxCorrectionBits"], _maxCorrectionBits);
+    readParameter("maxCorrectionBits", _maxCorrectionBits, fn);
     *this = Dictionary(bytes, _markerSize, _maxCorrectionBits);
     return true;
 }
+
 
 void Dictionary::writeDictionary(Ptr<FileStorage>& fs) {
     *fs << "nmarkers" << bytesList.rows;
@@ -133,18 +82,13 @@ void Dictionary::writeDictionary(Ptr<FileStorage>& fs) {
     }
 }
 
-/**
- */
+
 Ptr<Dictionary> Dictionary::get(int dict) {
     return getPredefinedDictionary(dict);
 }
 
 
-/**
- */
-bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
-                          double maxCorrectionRate) const {
-
+bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const {
     CV_Assert(onlyBits.rows == markerSize && onlyBits.cols == markerSize);
 
     int maxCorrectionRecalculed = int(double(maxCorrectionBits) * maxCorrectionRate);
@@ -182,8 +126,6 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
 }
 
 
-/**
-  */
 int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) const {
 
     CV_Assert(id >= 0 && id < bytesList.rows);
@@ -207,12 +149,7 @@ int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) cons
 }
 
 
-
-/**
- * @brief Draw a canonical marker image
- */
 void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
-
     CV_Assert(sidePixels >= (markerSize + 2*borderBits));
     CV_Assert(id < bytesList.rows);
     CV_Assert(borderBits > 0);
@@ -234,11 +171,6 @@ void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int border
 }
 
 
-
-
-/**
-  * @brief Transform matrix of bits to list of bytes in the 4 rotations
-  */
 Mat Dictionary::getByteListFromBits(const Mat &bits) {
     // integer ceil
     int nbytes = (bits.cols * bits.rows + 8 - 1) / 8;
@@ -277,10 +209,6 @@ Mat Dictionary::getByteListFromBits(const Mat &bits) {
 }
 
 
-
-/**
-  * @brief Transform list of bytes to matrix of bits
-  */
 Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
     CV_Assert(byteList.total() > 0 &&
               byteList.total() >= (unsigned int)markerSize * markerSize / 8 &&
@@ -315,9 +243,7 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
 }
 
 
-
-Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name)
-{
+Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
     // DictionaryData constructors calls
     //    moved out of globals so construted on first use, which allows lazy-loading of opencv dll
     static const Dictionary DICT_ARUCO_DATA = Dictionary(Mat(1024, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_ARUCO_BYTES), 5, 0);
@@ -438,8 +364,7 @@ static int _getSelfDistance(const Mat &marker) {
     return minHamming;
 }
 
-/**
- */
+
 Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize,
                                          const Ptr<Dictionary> &baseDictionary, int randomSeed) {
     RNG rng((uint64)(randomSeed));
@@ -530,8 +455,6 @@ Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize,
 }
 
 
-/**
- */
 Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize, int randomSeed) {
     Ptr<Dictionary> baseDictionary = makePtr<Dictionary>();
     return generateCustomDictionary(nMarkers, markerSize, baseDictionary, randomSeed);

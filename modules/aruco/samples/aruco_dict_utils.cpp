@@ -1,5 +1,5 @@
 #include <opencv2/core/hal/hal.hpp>
-#include <opencv2/aruco.hpp>
+#include <opencv2/aruco_detector.hpp>
 #include <iostream>
 
 using namespace cv;

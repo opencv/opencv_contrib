@@ -55,6 +55,8 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
     public:
     CV_ArucoBoardPose(ArucoAlgParams arucoAlgParams)
     {
+        Ptr<aruco::DetectorParameters> params;
+        Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
         params = aruco::DetectorParameters::create();
         params->minDistanceToBorder = 3;
         if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3) {
@@ -63,10 +65,11 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
             params->minSideLengthCanonicalImg = 16;
             params->errorCorrectionRate = 0.8;
         }
+        detector = aruco::ArucoDetector(dictionary, params);
     }
 
     protected:
-    Ptr<aruco::DetectorParameters> params;
+    aruco::ArucoDetector detector;
     void run(int);
 };
 
@@ -75,8 +78,7 @@ void CV_ArucoBoardPose::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, dictionary);
+    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.dictionary);
     Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
@@ -96,8 +98,8 @@ void CV_ArucoBoardPose::run(int) {
                                        imgSize, markerBorder);
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                params->markerBorderBits = markerBorder;
-                aruco::detectMarkers(img, dictionary, corners, ids, params);
+                detector.params->markerBorderBits = markerBorder;
+                detector.detectMarkers(img, corners, ids);
 
                 ASSERT_EQ(ids.size(), gridboard->ids.size());
 
@@ -160,15 +162,18 @@ class CV_ArucoRefine : public cvtest::BaseTest {
     public:
     CV_ArucoRefine(ArucoAlgParams arucoAlgParams)
     {
-        params = aruco::DetectorParameters::create();
+        Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+        Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
         params->minDistanceToBorder = 3;
         params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
         if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3)
             params->useAruco3Detection = true;
+        Ptr<aruco::RefineParameters> refineParams = makePtr<aruco::RefineParameters>(10, 3., true);
+        detector = aruco::ArucoDetector(dictionary, params, refineParams);
     }
 
     protected:
-    Ptr<aruco::DetectorParameters> params;
+    aruco::ArucoDetector detector;
     void run(int);
 };
 
@@ -178,8 +183,7 @@ void CV_ArucoRefine::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, dictionary);
+    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.dictionary);
     Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
@@ -201,8 +205,8 @@ void CV_ArucoRefine::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners, rejected;
                 vector< int > ids;
-                params->markerBorderBits = markerBorder;
-                aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
+                detector.params->markerBorderBits = markerBorder;
+                detector.detectMarkers(img, corners, ids, rejected);
 
                 // remove a marker from detection
                 int markersBeforeDelete = (int)ids.size();
@@ -213,8 +217,8 @@ void CV_ArucoRefine::run(int) {
                 ids.erase(ids.begin(), ids.begin() + 1);
 
                 // try to refind the erased marker
-                aruco::refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
-                                             distCoeffs, 10, 3., true, noArray(), params);
+                detector.refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
+                                             distCoeffs, noArray());
 
                 // check result
                 if((int)ids.size() < markersBeforeDelete) {

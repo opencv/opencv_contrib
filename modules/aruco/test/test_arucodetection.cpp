@@ -57,8 +57,7 @@ CV_ArucoDetectionSimple::CV_ArucoDetectionSimple() {}
 
 
 void CV_ArucoDetectionSimple::run(int) {
-
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
     // 20 images
     for(int i = 0; i < 20; i++) {
@@ -74,7 +73,7 @@ void CV_ArucoDetectionSimple::run(int) {
             for(int x = 0; x < 2; x++) {
                 Mat marker;
                 int id = i * 4 + y * 2 + x;
-                aruco::drawMarker(dictionary, id, markerSidePixels, marker);
+                aruco::drawMarker(detector.dictionary, id, markerSidePixels, marker);
                 Point2f firstCorner =
                     Point2f(markerSidePixels / 2.f + x * (1.5f * markerSidePixels),
                             markerSidePixels / 2.f + y * (1.5f * markerSidePixels));
@@ -95,9 +94,8 @@ void CV_ArucoDetectionSimple::run(int) {
         // detect markers
         vector< vector< Point2f > > corners;
         vector< int > ids;
-        Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
 
-        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        detector.detectMarkers(img, corners, ids);
 
         // check detection results
         for(unsigned int m = 0; m < groundTruthIds.size(); m++) {
@@ -277,7 +275,9 @@ void CV_ArucoDetectionPerspective::run(int) {
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+    params->minDistanceToBorder = 1;
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
 
     // detect from different positions
     for(double distance = 0.1; distance < 0.7; distance += 0.2) {
@@ -288,13 +288,11 @@ void CV_ArucoDetectionPerspective::run(int) {
                 iter++;
                 vector< Point2f > groundTruthCorners;
 
-                Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-                params->minDistanceToBorder = 1;
                 params->markerBorderBits = markerBorder;
 
                 /// create synthetic image
                 Mat img=
-                    projectMarker(dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
+                    projectMarker(detector.dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                       distance, imgSize, markerBorder, groundTruthCorners, szEnclosed);
                 // marker :: Inverted
                 if(ArucoAlgParams::DETECT_INVERTED_MARKER == arucoAlgParams){
@@ -314,7 +312,7 @@ void CV_ArucoDetectionPerspective::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                aruco::detectMarkers(img, dictionary, corners, ids, params);
+                detector.detectMarkers(img, corners, ids);
 
                 // check results
                 if(ids.size() != 1 || (ids.size() == 1 && ids[0] != currentId)) {
@@ -360,8 +358,8 @@ CV_ArucoDetectionMarkerSize::CV_ArucoDetectionMarkerSize() {}
 
 
 void CV_ArucoDetectionMarkerSize::run(int) {
-
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     int markerSide = 20;
     int imageSize = 200;
 
@@ -372,17 +370,16 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 
         // create synthetic image
         Mat img = Mat(imageSize, imageSize, CV_8UC1, Scalar::all(255));
-        aruco::drawMarker(dictionary, id, markerSide, marker);
+        aruco::drawMarker(detector.dictionary, id, markerSide, marker);
         Mat aux = img.colRange(30, 30 + markerSide).rowRange(50, 50 + markerSide);
         marker.copyTo(aux);
 
         vector< vector< Point2f > > corners;
         vector< int > ids;
-        Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
 
         // set a invalid minMarkerPerimeterRate
         params->minMarkerPerimeterRate = min(4., (4. * markerSide) / float(imageSize) + 0.1);
-        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        detector.detectMarkers(img, corners, ids);
         if(corners.size() != 0) {
             ts->printf(cvtest::TS::LOG, "Error in DetectorParameters::minMarkerPerimeterRate");
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -391,7 +388,7 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 
         // set an valid minMarkerPerimeterRate
         params->minMarkerPerimeterRate = max(0., (4. * markerSide) / float(imageSize) - 0.1);
-        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        detector.detectMarkers(img, corners, ids);
         if(corners.size() != 1 || (corners.size() == 1 && ids[0] != id)) {
             ts->printf(cvtest::TS::LOG, "Error in DetectorParameters::minMarkerPerimeterRate");
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -400,7 +397,7 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 
         // set a invalid maxMarkerPerimeterRate
         params->maxMarkerPerimeterRate = min(4., (4. * markerSide) / float(imageSize) - 0.1);
-        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        detector.detectMarkers(img, corners, ids);
         if(corners.size() != 0) {
             ts->printf(cvtest::TS::LOG, "Error in DetectorParameters::maxMarkerPerimeterRate");
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -409,7 +406,7 @@ void CV_ArucoDetectionMarkerSize::run(int) {
 
         // set an valid maxMarkerPerimeterRate
         params->maxMarkerPerimeterRate = max(0., (4. * markerSide) / float(imageSize) + 0.1);
-        aruco::detectMarkers(img, dictionary, corners, ids, params);
+        detector.detectMarkers(img, corners, ids);
         if(corners.size() != 1 || (corners.size() == 1 && ids[0] != id)) {
             ts->printf(cvtest::TS::LOG, "Error in DetectorParameters::maxMarkerPerimeterRate");
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -436,30 +433,32 @@ CV_ArucoBitCorrection::CV_ArucoBitCorrection() {}
 
 void CV_ArucoBitCorrection::run(int) {
 
-    Ptr<aruco::Dictionary> _dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-    aruco::Dictionary &dictionary = *_dictionary;
-    aruco::Dictionary dictionary2 = *_dictionary;
+    Ptr<aruco::Dictionary> _dictionary1 = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    Ptr<aruco::Dictionary> _dictionary2 = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary &dictionary1 = *_dictionary1;
+    aruco::Dictionary &dictionary2 = *_dictionary2;
+    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+    aruco::ArucoDetector detector1(_dictionary1, params);
     int markerSide = 50;
     int imageSize = 150;
-    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
 
     // 10 markers
     for(int l = 0; l < 10; l++) {
         Mat marker;
         int id = 10 + l * 20;
 
-        Mat currentCodeBytes = dictionary.bytesList.rowRange(id, id + 1);
+        Mat currentCodeBytes = dictionary1.bytesList.rowRange(id, id + 1);
 
         // 5 valid cases
         for(int i = 0; i < 5; i++) {
             // how many bit errors (the error is low enough so it can be corrected)
             params->errorCorrectionRate = 0.2 + i * 0.1;
             int errors =
-                (int)std::floor(dictionary.maxCorrectionBits * params->errorCorrectionRate - 1.);
+                (int)std::floor(dictionary1.maxCorrectionBits * params->errorCorrectionRate - 1.);
 
             // create erroneous marker in currentCodeBits
             Mat currentCodeBits =
-                aruco::Dictionary::getBitsFromByteList(currentCodeBytes, dictionary.markerSize);
+                aruco::Dictionary::getBitsFromByteList(currentCodeBytes, dictionary1.markerSize);
             for(int e = 0; e < errors; e++) {
                 currentCodeBits.ptr< unsigned char >()[2 * e] =
                     !currentCodeBits.ptr< unsigned char >()[2 * e];
@@ -476,7 +475,7 @@ void CV_ArucoBitCorrection::run(int) {
             // try to detect using original dictionary
             vector< vector< Point2f > > corners;
             vector< int > ids;
-            aruco::detectMarkers(img, _dictionary, corners, ids, params);
+            detector1.detectMarkers(img, corners, ids);
             if(corners.size() != 1 || (corners.size() == 1 && ids[0] != id)) {
                 ts->printf(cvtest::TS::LOG, "Error in bit correction");
                 ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -489,11 +488,11 @@ void CV_ArucoBitCorrection::run(int) {
             // how many bit errors (the error is too high to be corrected)
             params->errorCorrectionRate = 0.2 + i * 0.1;
             int errors =
-                (int)std::floor(dictionary.maxCorrectionBits * params->errorCorrectionRate + 1.);
+                (int)std::floor(dictionary1.maxCorrectionBits * params->errorCorrectionRate + 1.);
 
             // create erroneous marker in currentCodeBits
             Mat currentCodeBits =
-                aruco::Dictionary::getBitsFromByteList(currentCodeBytes, dictionary.markerSize);
+                aruco::Dictionary::getBitsFromByteList(currentCodeBytes, dictionary1.markerSize);
             for(int e = 0; e < errors; e++) {
                 currentCodeBits.ptr< unsigned char >()[2 * e] =
                     !currentCodeBits.ptr< unsigned char >()[2 * e];
@@ -502,9 +501,9 @@ void CV_ArucoBitCorrection::run(int) {
             // dictionary3 is only composed by the modified marker (in its original form)
             Ptr<aruco::Dictionary> _dictionary3 = makePtr<aruco::Dictionary>(
                     dictionary2.bytesList.rowRange(id, id + 1).clone(),
-                    dictionary.markerSize,
-                    dictionary.maxCorrectionBits);
-
+                    dictionary1.markerSize,
+                    dictionary1.maxCorrectionBits);
+            aruco::ArucoDetector detector3(_dictionary3, params);
             // add erroneous marker to dictionary2 in order to create the erroneous marker image
             Mat currentCodeBytesError = aruco::Dictionary::getByteListFromBits(currentCodeBits);
             currentCodeBytesError.copyTo(dictionary2.bytesList.rowRange(id, id + 1));
@@ -516,7 +515,7 @@ void CV_ArucoBitCorrection::run(int) {
             // try to detect using dictionary3, it should fail
             vector< vector< Point2f > > corners;
             vector< int > ids;
-            aruco::detectMarkers(img, _dictionary3, corners, ids, params);
+            detector3.detectMarkers(img, corners, ids);
             if(corners.size() != 0) {
                 ts->printf(cvtest::TS::LOG, "Error in DetectorParameters::errorCorrectionRate");
                 ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -569,8 +568,7 @@ TEST(CV_ArucoTutorial, can_find_singlemarkersoriginal)
 {
     string img_path = cvtest::findDataFile("singlemarkersoriginal.jpg", false);
     Mat image = imread(img_path);
-    Ptr<aruco::Dictionary> dictionary =  aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
 
     vector< int > ids;
     vector< vector< Point2f > > corners, rejected;
@@ -584,7 +582,7 @@ TEST(CV_ArucoTutorial, can_find_singlemarkersoriginal)
     for (size_t i = 0; i < N; i++)
         mapGoldCorners[goldCornersIds[i]] = goldCorners[i];
 
-    aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+    detector.detectMarkers(image, corners, ids, rejected);
 
     ASSERT_EQ(N, ids.size());
     for (size_t i = 0; i < N; i++)
@@ -609,8 +607,9 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
 
     FileStorage fs(dictPath, FileStorage::READ);
     dictionary->aruco::Dictionary::readDictionary(fs.root()); // set marker from tutorial_dict.yml
-
     Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+
+    aruco::ArucoDetector detector(dictionary, detectorParams);
 
     vector< int > ids;
     vector< vector< Point2f > > corners, rejected;
@@ -638,7 +637,7 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
     for (int i = 0; i < static_cast<int>(N); i++)
         mapGoldCorners[i] = goldCorners[i];
 
-    aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+    detector.detectMarkers(image, corners, ids, rejected);
 
 
     ASSERT_EQ(N, ids.size());
@@ -657,8 +656,7 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
 
 TEST(CV_ArucoDetectMarkers, regression_3192)
 {
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_4X4_50);
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_4X4_50));
     vector< int > markerIds;
     vector<vector<Point2f> > markerCorners;
     string imgPath = cvtest::findDataFile("aruco/regression_3192.png");
@@ -670,7 +668,7 @@ TEST(CV_ArucoDetectMarkers, regression_3192)
     for (size_t i = 0; i < N; i++)
         mapGoldCorners[goldCornersIds[i]] = goldCorners[i];
 
-    aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams);
+    detector.detectMarkers(image, markerCorners, markerIds);
 
     ASSERT_EQ(N, markerIds.size());
     for (size_t i = 0; i < N; i++)
@@ -688,9 +686,8 @@ TEST(CV_ArucoDetectMarkers, regression_3192)
 
 TEST(CV_ArucoDetectMarkers, regression_2492)
 {
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_5X5_50);
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
-    detectorParams->minMarkerDistanceRate = 0.026;
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_5X5_50));
+    detector.params->minMarkerDistanceRate = 0.026;
     vector< int > markerIds;
     vector<vector<Point2f> > markerCorners;
     string imgPath = cvtest::findDataFile("aruco/regression_2492.png");
@@ -705,7 +702,7 @@ TEST(CV_ArucoDetectMarkers, regression_2492)
     for (size_t i = 0; i < N; i++)
         mapGoldCorners[goldCornersIds[i]].push_back(goldCorners[i]);
 
-    aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams);
+    detector.detectMarkers(image, markerCorners, markerIds);
 
     ASSERT_EQ(N, markerIds.size());
     for (size_t i = 0; i < N; i++)
@@ -746,11 +743,10 @@ struct ArucoThreading: public testing::TestWithParam<cv::aruco::CornerRefineMeth
 
 TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
 {
-    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
     // We are not testing against different dictionaries
     // As we are interested mostly in small images, smaller
     // markers is better -> 4x4
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_4X4_50));
 
     // Height of the test image can be chosen quite freely
     // We aim to test against small images as in those the
@@ -762,19 +758,19 @@ TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
 
     // Create a test image
     cv::Mat img_marker;
-    cv::aruco::drawMarker(dictionary, 23, height_marker, img_marker, 1);
+    cv::aruco::drawMarker(detector.dictionary, 23, height_marker, img_marker, 1);
 
     // Copy to bigger image to get a white border
     cv::Mat img(height_img, height_img, CV_8UC1, cv::Scalar(255));
     img_marker.copyTo(img(cv::Rect(shift, shift, height_marker, height_marker)));
 
-    params->cornerRefinementMethod = GetParam();
+    detector.params->cornerRefinementMethod = GetParam();
 
     std::vector<std::vector<cv::Point2f> > original_corners;
     std::vector<int> original_ids;
     {
         NumThreadsSetter thread_num_setter(1);
-        cv::aruco::detectMarkers(img, dictionary, original_corners, original_ids, params);
+        detector.detectMarkers(img, original_corners, original_ids);
     }
 
     ASSERT_EQ(original_ids.size(), 1ull);
@@ -787,7 +783,7 @@ TEST_P(ArucoThreading, number_of_threads_does_not_change_results)
 
         std::vector<std::vector<cv::Point2f> > corners;
         std::vector<int> ids;
-        cv::aruco::detectMarkers(img, dictionary, corners, ids, params);
+        detector.detectMarkers(img, corners, ids);
 
         // If we don't find any markers, the test is broken
         ASSERT_EQ(ids.size(), 1ull);

@@ -38,7 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/aruco.hpp>
+#include <opencv2/aruco_detector.hpp>
+#include <opencv2/aruco/aruco_calib_pose.hpp>
 #include <iostream>
 #include "aruco_samples_utility.hpp"
 
@@ -134,7 +135,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
-
+    aruco::ArucoDetector detector(dictionary, detectorParams);
     VideoCapture inputVideo;
     int waitTime;
     if(!video.empty()) {
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]) {
         vector< Vec3d > rvecs, tvecs;
 
         // detect markers and estimate pose
-        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        detector.detectMarkers(image, corners, ids, rejected);
         if(estimatePose && ids.size() > 0)
             aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
                                              tvecs);
