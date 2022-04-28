@@ -255,7 +255,7 @@ BarcodeDetector::detectAndDecode(InputArray img, vector<std::string> &decoded_in
         return false;
     }
     vector<Point2f> points;
-    bool ok = this->detect(img, points);
+    bool ok = this->detect(inarr, points);
     if (!ok)
     {
         points_.release();

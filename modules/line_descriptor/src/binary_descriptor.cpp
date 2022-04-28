@@ -42,8 +42,6 @@
 #include "precomp.hpp"
 
 #ifdef _MSC_VER
-    #pragma warning(disable:4702)  // unreachable code
-
     #if (_MSC_VER <= 1700)
         /* This function rounds x to the nearest integer, but rounds halfway cases away from zero. */
         static inline double round(double x)
@@ -692,7 +690,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
 int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
 {
-#if 0
+
   /* final number of extracted lines */
   unsigned int numOfFinalLine = 0;
 
@@ -1025,10 +1023,6 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
 
   delete[] scale;
   return 1;
-#else
-    CV_UNUSED(image); CV_UNUSED(keyLines);
-    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
-#endif
 }
 
 int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
@@ -2243,7 +2237,7 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
 
 int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines )
 {
-#if 0
+
   //first, call EdgeDrawing function to extract edges
   EdgeChains edges;
   if( ( EdgeDrawing( image, edges ) ) != 1 )
@@ -2473,6 +2467,11 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
           offsetInLineArray = pLineSID[numOfLines];         // line was not accepted, the offset is set back
         }
       }
+      // Avoid array out of range
+      if(numOfLines >= lines.sId.size()) {
+        lines.sId.push_back(offsetInLineArray);
+        pLineSID = &lines.sId.front();
+      }
       //Extract line segments from the remaining pixel; Current chain has been shortened already.
     }
   }         //end for(unsigned int edgeID=0; edgeID<edges.numOfEdges; edgeID++)
@@ -2481,10 +2480,6 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
   lines.numOfLines = numOfLines;
 
   return 1;
-#else
-    CV_UNUSED(image); CV_UNUSED(lines);
-    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
-#endif
 }
 
 double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCors, unsigned int *yCors, unsigned int offsetS,
@@ -2651,14 +2646,88 @@ double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCo
 bool BinaryDescriptor::EDLineDetector::LineValidation_( unsigned int *xCors, unsigned int *yCors, unsigned int offsetS, unsigned int offsetE,
                                                         std::vector<double> &lineEquation, float &direction )
 {
-    CV_UNUSED(xCors); CV_UNUSED(yCors); CV_UNUSED(offsetS); CV_UNUSED(offsetE);
-    CV_UNUSED(lineEquation); CV_UNUSED(direction);
-    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
+  if( bValidate_ )
+  {
+    int n = offsetE - offsetS;
+    /*first compute the direction of line, make sure that the dark side always be the
+     *left side of a line.*/
+    int meanGradientX = 0, meanGradientY = 0;
+    short *pdxImg = dxImg_.ptr<short>();
+    short *pdyImg = dyImg_.ptr<short>();
+    double dx, dy;
+    std::vector<double> pointDirection;
+    int index;
+    for ( int i = 0; i < n; i++ )
+    {
+      index = yCors[offsetS] * imageWidth + xCors[offsetS];
+      offsetS++;
+      meanGradientX += pdxImg[index];
+      meanGradientY += pdyImg[index];
+      dx = (double) pdxImg[index];
+      dy = (double) pdyImg[index];
+      pointDirection.push_back( atan2( -dx, dy ) );
+    }
+    dx = fabs( lineEquation[1] );
+    dy = fabs( lineEquation[0] );
+    if( meanGradientX == 0 && meanGradientY == 0 )
+    {         //not possible, if happens, it must be a wrong line,
+      return false;
+    }
+    if( meanGradientX > 0 && meanGradientY >= 0 )
+    {         //first quadrant, and positive direction of X axis.
+      direction = (float) atan2( -dy, dx );         //line direction is in fourth quadrant
+    }
+    if( meanGradientX <= 0 && meanGradientY > 0 )
+    {         //second quadrant, and positive direction of Y axis.
+      direction = (float) atan2( dy, dx );          //line direction is in first quadrant
+    }
+    if( meanGradientX < 0 && meanGradientY <= 0 )
+    {         //third quadrant, and negative direction of X axis.
+      direction = (float) atan2( dy, -dx );         //line direction is in second quadrant
+    }
+    if( meanGradientX >= 0 && meanGradientY < 0 )
+    {         //fourth quadrant, and negative direction of Y axis.
+      direction = (float) atan2( -dy, -dx );          //line direction is in third quadrant
+    }
+    /*then check whether the line is on the border of the image. We don't keep the border line.*/
+    if( fabs( direction ) < 0.15 || M_PI - fabs( direction ) < 0.15 )
+    {         //Horizontal line
+      if( fabs( lineEquation[2] ) < 10 || fabs( imageHeight - fabs( lineEquation[2] ) ) < 10 )
+      {         //upper border or lower border
+        return false;
+      }
+    }
+    if( fabs( fabs( direction ) - M_PI * 0.5 ) < 0.15 )
+    {         //Vertical line
+      if( fabs( lineEquation[2] ) < 10 || fabs( imageWidth - fabs( lineEquation[2] ) ) < 10 )
+      {         //left border or right border
+        return false;
+      }
+    }
+    //count the aligned points on the line which have the same direction as the line.
+    double disDirection;
+    int k = 0;
+    for ( int i = 0; i < n; i++ )
+    {
+      disDirection = fabs( direction - pointDirection[i] );
+      if( fabs( 2 * M_PI - disDirection ) < 0.392699 || disDirection < 0.392699 )
+      {         //same direction, pi/8 = 0.392699081698724
+        k++;
+      }
+    }
+    //now compute NFA(Number of False Alarms)
+    double ret = nfa( n, k, 0.125, logNT_ );
+
+    return ( ret > 0 );  //0 corresponds to 1 mean false alarm
+  }
+  else
+  {
+    return true;
+  }
 }
 
 int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image )
 {
-#if 0
   if( ( EDline( image, lines_/*, smoothed*/) ) != 1 )
   {
     return -1;
@@ -2680,10 +2749,6 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image )
     lineSalience_[i] = (float) salience;
   }
   return 1;
-#else
-    CV_UNUSED(image);
-    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
-#endif
 }
 
 }

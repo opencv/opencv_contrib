@@ -39,6 +39,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/aruco.hpp>
+#include <iostream>
+#include "aruco_samples_utility.hpp"
 
 using namespace cv;
 
@@ -54,10 +56,12 @@ const char* keys  =
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
         "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
         "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
+        "{cd       |       | Input file with custom dictionary }"
         "{m        |       | Margins size (in pixels). Default is marker separation (-s) }"
         "{bb       | 1     | Number of bits in marker borders }"
         "{si       | false | show generated image }";
 }
+
 
 int main(int argc, char *argv[]) {
     CommandLineParser parser(argc, argv, keys);
@@ -72,7 +76,6 @@ int main(int argc, char *argv[]) {
     int markersY = parser.get<int>("h");
     int markerLength = parser.get<int>("l");
     int markerSeparation = parser.get<int>("s");
-    int dictionaryId = parser.get<int>("d");
     int margins = markerSeparation;
     if(parser.has("m")) {
         margins = parser.get<int>("m");
@@ -93,8 +96,24 @@ int main(int argc, char *argv[]) {
     imageSize.height =
         markersY * (markerLength + markerSeparation) - markerSeparation + 2 * margins;
 
-    Ptr<aruco::Dictionary> dictionary =
-        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    if (parser.has("d")) {
+        int dictionaryId = parser.get<int>("d");
+        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    }
+    else if (parser.has("cd")) {
+        FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
+        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        if(!readOk)
+        {
+            std::cerr << "Invalid dictionary file" << std::endl;
+            return 0;
+        }
+    }
+    else {
+        std::cerr << "Dictionary not specified" << std::endl;
+        return 0;
+    }
 
     Ptr<aruco::GridBoard> board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
                                                       float(markerSeparation), dictionary);

@@ -127,12 +127,12 @@ void OR_mnistImp::loadDataset(const string &path)
     test.push_back(vector< Ptr<Object> >());
     validation.push_back(vector< Ptr<Object> >());
 
-    string trainImagesFile(path + "train-images.idx3-ubyte");
-    string trainLabelsFile(path + "train-labels.idx1-ubyte");
+    string trainImagesFile(path + "train-images-idx3-ubyte");
+    string trainLabelsFile(path + "train-labels-idx1-ubyte");
     loadDatasetPart(trainImagesFile, trainLabelsFile, 60000, train.back());
 
-    string testImagesFile(path + "t10k-images.idx3-ubyte");
-    string testLabelsFile(path + "t10k-labels.idx1-ubyte");
+    string testImagesFile(path + "t10k-images-idx3-ubyte");
+    string testLabelsFile(path + "t10k-labels-idx1-ubyte");
     loadDatasetPart(testImagesFile, testLabelsFile, 10000, test.back());
 }
 

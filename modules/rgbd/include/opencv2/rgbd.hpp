@@ -19,6 +19,8 @@
 
 
 /** @defgroup rgbd RGB-Depth Processing
+
+@ref kinfu_icp
 */
 
 #endif

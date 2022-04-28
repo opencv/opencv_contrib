@@ -3,9 +3,9 @@ Line Features Tutorial {#tutorial_line_descriptor_main}
 
 In this tutorial it will be shown how to:
 
--   use the *BinaryDescriptor* interface to extract lines and store them in *KeyLine* objects
--   use the same interface to compute descriptors for every extracted line
--   use the *BynaryDescriptorMatcher* to determine matches among descriptors obtained from different
+-   Use the *BinaryDescriptor* interface to extract the lines and store them in *KeyLine* objects
+-   Use the same interface to compute descriptors for every extracted line
+-   Use the *BynaryDescriptorMatcher* to determine matches among descriptors obtained from different
     images
 
 Lines extraction and descriptors computation
@@ -18,7 +18,7 @@ displayed using random colors for octave 0.
 
 @includelineno line_descriptor/samples/lsd_lines_extraction.cpp
 
-This is the result obtained for famous cameraman image:
+This is the result obtained from the famous cameraman image:
 
 ![alternate text](pics/lines_cameraman_edl.png)
 
@@ -54,7 +54,7 @@ choosing the one at closest distance:
 @includelineno line_descriptor/samples/matching.cpp
 
 Sometimes, we could be interested in searching for the closest *k* descriptors, given an input one.
-This requires to modify slightly previous code:
+This requires modifying previous code slightly:
 
 @code{.cpp}
 // prepare a structure to host matches
@@ -66,7 +66,7 @@ bdm->knnMatch( descr1, descr2, matches, 6 );
 
 In the above example, the closest 6 descriptors are returned for every query. In some cases, we
 could have a search radius and look for all descriptors distant at the most *r* from input query.
-Previous code must me modified:
+Previous code must be modified like:
 
 @code{.cpp}
 // prepare a structure to host matches
@@ -76,7 +76,7 @@ std::vector<std::vector<DMatch> > matches;
 bdm->radiusMatch( queries, matches, 30 );
 @endcode
 
-Here's an example om matching among descriptors extratced from original cameraman image and its
+Here's an example of matching among descriptors extracted from original cameraman image and its
 downsampled (and blurred) version:
 
 ![alternate text](pics/matching2.png)
@@ -84,15 +84,15 @@ downsampled (and blurred) version:
 Querying internal database
 --------------------------
 
-The *BynaryDescriptorMatcher* class, owns an internal database that can be populated with
-descriptors extracted from different images and queried using one of the modalities described in
+The *BynaryDescriptorMatcher* class owns an internal database that can be populated with
+descriptors extracted from different images and queried using one of the modalities described in the
 previous section. Population of internal dataset can be done using the *add* function; such function
-doesn't directly add new data to database, but it just stores it them locally. The real update
-happens when function *train* is invoked or when any querying function is executed, since each of
+doesn't directly add new data to the database, but it just stores it them locally. The real update
+happens when the function *train* is invoked or when any querying function is executed, since each of
 them invokes *train* before querying. When queried, internal database not only returns required
-descriptors, but, for every returned match, it is able to tell which image matched descriptor was
+descriptors, but for every returned match, it is able to tell which image matched descriptor was
 extracted from. An example of internal dataset usage is described in the following code; after
 adding locally new descriptors, a radius search is invoked. This provokes local data to be
-transferred to dataset, which, in turn, is then queried.
+transferred to dataset which in turn, is then queried.
 
 @includelineno line_descriptor/samples/radius_matching.cpp

@@ -620,7 +620,7 @@ The function does not work with CV_64F images on GPUs with the compute capabilit
 
 @sa minMaxLoc
  */
-CV_EXPORTS_W void minMax(InputArray src, double* minVal, double* maxVal, InputArray mask = noArray());
+CV_EXPORTS_W void minMax(InputArray src, CV_OUT double* minVal, CV_OUT double* maxVal, InputArray mask = noArray());
 /** @overload */
 CV_EXPORTS_W void findMinMax(InputArray src, OutputArray dst, InputArray mask = noArray(), Stream& stream = Stream::Null());
 
@@ -637,7 +637,7 @@ The function does not work with CV_64F images on GPU with the compute capability
 
 @sa minMaxLoc
  */
-CV_EXPORTS_W void minMaxLoc(InputArray src, double* minVal, double* maxVal, Point* minLoc, Point* maxLoc,
+CV_EXPORTS_W void minMaxLoc(InputArray src, CV_OUT double* minVal, CV_OUT double* maxVal, CV_OUT Point* minLoc, CV_OUT Point* maxLoc,
                           InputArray mask = noArray());
 /** @overload */
 CV_EXPORTS_W void findMinMaxLoc(InputArray src, OutputArray minMaxVals, OutputArray loc,
@@ -662,11 +662,11 @@ CV_EXPORTS_W void countNonZero(InputArray src, OutputArray dst, Stream& stream =
 @param dim Dimension index along which the matrix is reduced. 0 means that the matrix is reduced
 to a single row. 1 means that the matrix is reduced to a single column.
 @param reduceOp Reduction operation that could be one of the following:
--   **CV_REDUCE_SUM** The output is the sum of all rows/columns of the matrix.
--   **CV_REDUCE_AVG** The output is the mean vector of all rows/columns of the matrix.
--   **CV_REDUCE_MAX** The output is the maximum (column/row-wise) of all rows/columns of the
+-   **REDUCE_SUM** The output is the sum of all rows/columns of the matrix.
+-   **REDUCE_AVG** The output is the mean vector of all rows/columns of the matrix.
+-   **REDUCE_MAX** The output is the maximum (column/row-wise) of all rows/columns of the
 matrix.
--   **CV_REDUCE_MIN** The output is the minimum (column/row-wise) of all rows/columns of the
+-   **REDUCE_MIN** The output is the minimum (column/row-wise) of all rows/columns of the
 matrix.
 @param dtype When it is negative, the destination vector will have the same type as the source
 matrix. Otherwise, its type will be CV_MAKE_TYPE(CV_MAT_DEPTH(dtype), mtx.channels()) .
@@ -675,7 +675,7 @@ matrix. Otherwise, its type will be CV_MAKE_TYPE(CV_MAT_DEPTH(dtype), mtx.channe
 The function reduce reduces the matrix to a vector by treating the matrix rows/columns as a set of
 1D vectors and performing the specified operation on the vectors until a single row/column is
 obtained. For example, the function can be used to compute horizontal and vertical projections of a
-raster image. In case of CV_REDUCE_SUM and CV_REDUCE_AVG , the output may have a larger element
+raster image. In case of REDUCE_SUM and REDUCE_AVG , the output may have a larger element
 bit-depth to preserve accuracy. And multi-channel arrays are also supported in these two reduction
 modes.
 
@@ -685,21 +685,39 @@ CV_EXPORTS_W void reduce(InputArray mtx, OutputArray vec, int dim, int reduceOp,
 
 /** @brief Computes a mean value and a standard deviation of matrix elements.
 
-@param mtx Source matrix. CV_8UC1 matrices are supported for now.
-@param mean Mean value.
-@param stddev Standard deviation value.
+@param src Source matrix. CV_8UC1 and CV_32FC1 matrices are supported for now.
+@param dst Target GpuMat with size 1x2 and type CV_64FC1. The first value is mean, the second - stddev.
+@param mask Operation mask.
+@param stream Stream for the asynchronous version.
 
 @sa meanStdDev
  */
-CV_EXPORTS_W void meanStdDev(InputArray mtx, Scalar& mean, Scalar& stddev);
-/** @overload */
+CV_EXPORTS_W void meanStdDev(InputArray src, OutputArray dst, InputArray mask, Stream& stream = Stream::Null());
+/** @overload
+@param mtx Source matrix. CV_8UC1 and CV_32FC1 matrices are supported for now.
+@param dst Target GpuMat with size 1x2 and type CV_64FC1. The first value is mean, the second - stddev.
+@param stream Stream for the asynchronous version.
+ */
 CV_EXPORTS_W void meanStdDev(InputArray mtx, OutputArray dst, Stream& stream = Stream::Null());
+/** @overload
+@param src Source matrix. CV_8UC1 and CV_32FC1 matrices are supported for now.
+@param mean Mean value.
+@param stddev Standard deviation value.
+@param mask Operation mask.
+ */
+CV_EXPORTS_W void meanStdDev(InputArray src, CV_OUT Scalar& mean, CV_OUT Scalar& stddev, InputArray mask);
+/** @overload
+@param mtx Source matrix. CV_8UC1 and CV_32FC1 matrices are supported for now.
+@param mean Mean value.
+@param stddev Standard deviation value.
+ */
+CV_EXPORTS_W void meanStdDev(InputArray mtx, CV_OUT Scalar& mean, CV_OUT Scalar& stddev);
 
 /** @brief Computes a standard deviation of integral images.
 
 @param src Source image. Only the CV_32SC1 type is supported.
 @param sqr Squared source image. Only the CV_32FC1 type is supported.
-@param dst Destination image with the same type and size as src .
+@param dst Destination image with the same type and size as src.
 @param rect Rectangular window.
 @param stream Stream for the asynchronous version.
  */

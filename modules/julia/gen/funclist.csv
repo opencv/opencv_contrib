@@ -315,6 +315,7 @@ cv.dnn.Model.setInputScale
 cv.dnn.Model.setInputCrop
 cv.dnn.Model.setInputSwapRB
 cv.dnn.Model.setInputParams
+cv.dnn.Model.setPreferableTarget
 cv.dnn.Model.predict
 cv.dnn.ClassificationModel.ClassificationModel
 cv.dnn.ClassificationModel.classify

@@ -109,9 +109,11 @@ public:
     void getGradientImage(OutputArray dst) CV_OVERRIDE;
 
     vector<vector<Point> > getSegments() CV_OVERRIDE;
+    vector<int> getSegmentIndicesOfLines() const CV_OVERRIDE;
     void detectLines(OutputArray lines) CV_OVERRIDE;
     void detectEllipses(OutputArray ellipses) CV_OVERRIDE;
 
+    virtual String getDefaultName() const CV_OVERRIDE;
     virtual void read(const FileNode& fn) CV_OVERRIDE;
     virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
@@ -120,6 +122,7 @@ protected:
     int height;       // height of source image
     uchar *srcImg;
     vector<vector<Point> > segmentPoints;
+    vector<int> segmentIndicesOfLines;
     Mat smoothImage;
     uchar *edgeImg;   // pointer to edge image data
     uchar *smoothImg; // pointer to smoothed image data
@@ -228,7 +231,7 @@ private:
     static void DeallocateMatrix(double** m, int noRows);
     static void AperB_T(double** A_, double** B_, double** _res, int _righA, int _colA, int _righB, int _colB);
     static void AperB(double** A_, double** B_, double** _res, int _righA, int _colA, int _righB, int _colB);
-    static void jacobi(double** a, int n, double d[], double** v, int nrot);
+    static void jacobi(double** a, int n, double d[], double** v);
     static void ROTATE(double** a, int i, int j, int k, int l, double tau, double s);
     static double computeEllipsePerimeter(EllipseEquation* eq);
     static double ComputeEllipseError(EllipseEquation* eq, double* px, double* py, int noPoints);
@@ -315,6 +318,11 @@ void EdgeDrawing::Params::write(cv::FileStorage& fs) const
     fs << "MaxErrorThreshold" << MaxErrorThreshold;
 }
 
+String EdgeDrawingImpl::getDefaultName() const
+{
+    return String("EdgeDrawing");
+}
+
 void EdgeDrawingImpl::read(const cv::FileNode& fn)
 {
     params.read(fn);
@@ -343,6 +351,7 @@ EdgeDrawingImpl::~EdgeDrawingImpl()
 
 void EdgeDrawingImpl::detectEdges(InputArray src)
 {
+    CV_Assert(!src.empty() && src.type() == CV_8UC1);
     gradThresh = params.GradientThresholdValue;
     anchorThresh = params.AnchorThresholdValue;
     op = params.EdgeDetectionOperator;
@@ -438,6 +447,11 @@ void EdgeDrawingImpl::getGradientImage(OutputArray _dst)
 std::vector<std::vector<Point> > EdgeDrawingImpl::getSegments()
 {
     return segmentPoints;
+}
+
+std::vector<int> EdgeDrawingImpl::getSegmentIndicesOfLines() const
+{
+    return segmentIndicesOfLines;
 }
 
 void EdgeDrawingImpl::ComputeGradient()
@@ -1287,6 +1301,7 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     double* x = new double[(width + height) * 8];
     double* y = new double[(width + height) * 8];
 
+    lines.clear();
     linesNo = 0;
 
     // Use the whole segment
@@ -1312,12 +1327,15 @@ void EdgeDrawingImpl::detectLines(OutputArray _lines)
     for (int i = 1; i <= size - linesNo; i++)
         lines.pop_back();
 
+    segmentIndicesOfLines.clear();
     for (int i = 0; i < linesNo; i++)
     {
         Vec4f line((float)lines[i].sx, (float)lines[i].sy, (float)lines[i].ex, (float)lines[i].ey);
         linePoints.push_back(line);
+        segmentIndicesOfLines.push_back(lines[i].segmentNo);
     }
     Mat(linePoints).copyTo(_lines);
+
     delete[] x;
     delete[] y;
 }
@@ -2420,6 +2438,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     }
 
     min_line_len = 6;
+    line_error = params.LineFitErrorThreshold;
     Circles.clear();
     Ellipses.clear();
     lines.clear();
@@ -5331,7 +5350,6 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
     double** V = AllocateMatrix(7, 7);
     double** sol = AllocateMatrix(7, 7);
     double tx, ty;
-    int nrot = 0;
 
     memset(d, 0, sizeof(double) * 7);
 
@@ -5375,7 +5393,7 @@ bool EdgeDrawingImpl::EllipseFit(double* x, double* y, int noPoints, EllipseEqua
     AperB_T(Const, invL, temp, 6, 6, 6, 6);
     AperB(invL, temp, C, 6, 6, 6, 6);
 
-    jacobi(C, 6, d, V, nrot);
+    jacobi(C, 6, d, V);
 
     A_TperB(invL, V, sol, 6, 6, 6, 6);
 
@@ -5625,7 +5643,7 @@ void EdgeDrawingImpl::AperB(double** A_, double** B_, double** _res, int _righA,
         }
 }
 
-void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v, int nrot)
+void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v)
 {
     int j, iq, ip, i;
     double tresh, theta, tau, t, sm, s, h, g, c;
@@ -5646,7 +5664,6 @@ void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v, int nrot
         b[ip] = d[ip] = a[ip][ip];
         z[ip] = 0.0;
     }
-    nrot = 0;
     for (i = 1; i <= 50; i++)
     {
         sm = 0.0;
@@ -5710,7 +5727,6 @@ void EdgeDrawingImpl::jacobi(double** a, int n, double d[], double** v, int nrot
                     {
                         ROTATE(v, j, ip, j, iq, tau, s);
                     }
-                    ++nrot;
                 }
             }
         }

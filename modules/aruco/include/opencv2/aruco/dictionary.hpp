@@ -94,6 +94,21 @@ class CV_EXPORTS_W Dictionary {
             const Ptr<Dictionary> &baseDictionary, int randomSeed=0);
 
     /**
+     * @brief Read a new dictionary from FileNode. Format:\n
+     * nmarkers: 35\n
+     * markersize: 6\n
+     * maxCorrectionBits: 5\n
+     * marker_0: "101011111011111001001001101100000000"\n
+     * ...\n
+     * marker_34: "011111010000111011111110110101100101"
+     */
+    CV_WRAP bool readDictionary(const cv::FileNode& fn);
+
+    /**
+     * @brief Write a dictionary to FileStorage. Format is the same as in readDictionary().
+     */
+    CV_WRAP void writeDictionary(Ptr<FileStorage>& fs);
+    /**
      * @see getPredefinedDictionary
      */
     CV_WRAP static Ptr<Dictionary> get(int dict);
@@ -102,13 +117,13 @@ class CV_EXPORTS_W Dictionary {
      * @brief Given a matrix of bits. Returns whether if marker is identified or not.
      * It returns by reference the correct id (if any) and the correct rotation
      */
-    bool identify(const Mat &onlyBits, int &idx, int &rotation, double maxCorrectionRate) const;
+    CV_WRAP bool identify(const Mat &onlyBits, CV_OUT int &idx, CV_OUT int &rotation, double maxCorrectionRate) const;
 
     /**
       * @brief Returns the distance of the input bits to the specific id. If allRotations is true,
       * the four posible bits rotation are considered
       */
-    int getDistanceToId(InputArray bits, int id, bool allRotations = true) const;
+    CV_WRAP int getDistanceToId(InputArray bits, int id, bool allRotations = true) const;
 
 
     /**
@@ -139,23 +154,23 @@ class CV_EXPORTS_W Dictionary {
                           distance
  */
 enum PREDEFINED_DICTIONARY_NAME {
-    DICT_4X4_50 = 0,
-    DICT_4X4_100,
-    DICT_4X4_250,
-    DICT_4X4_1000,
-    DICT_5X5_50,
-    DICT_5X5_100,
-    DICT_5X5_250,
-    DICT_5X5_1000,
-    DICT_6X6_50,
-    DICT_6X6_100,
-    DICT_6X6_250,
-    DICT_6X6_1000,
-    DICT_7X7_50,
-    DICT_7X7_100,
-    DICT_7X7_250,
-    DICT_7X7_1000,
-    DICT_ARUCO_ORIGINAL,
+    DICT_4X4_50 = 0,        ///< 4x4 bits, minimum hamming distance between any two codes = 4, 50 codes
+    DICT_4X4_100,           ///< 4x4 bits, minimum hamming distance between any two codes = 3, 100 codes
+    DICT_4X4_250,           ///< 4x4 bits, minimum hamming distance between any two codes = 3, 250 codes
+    DICT_4X4_1000,          ///< 4x4 bits, minimum hamming distance between any two codes = 2, 1000 codes
+    DICT_5X5_50,            ///< 5x5 bits, minimum hamming distance between any two codes = 8, 50 codes
+    DICT_5X5_100,           ///< 5x5 bits, minimum hamming distance between any two codes = 7, 100 codes
+    DICT_5X5_250,           ///< 5x5 bits, minimum hamming distance between any two codes = 6, 250 codes
+    DICT_5X5_1000,          ///< 5x5 bits, minimum hamming distance between any two codes = 5, 1000 codes
+    DICT_6X6_50,            ///< 6x6 bits, minimum hamming distance between any two codes = 13, 50 codes
+    DICT_6X6_100,           ///< 6x6 bits, minimum hamming distance between any two codes = 12, 100 codes
+    DICT_6X6_250,           ///< 6x6 bits, minimum hamming distance between any two codes = 11, 250 codes
+    DICT_6X6_1000,          ///< 6x6 bits, minimum hamming distance between any two codes = 9, 1000 codes
+    DICT_7X7_50,            ///< 7x7 bits, minimum hamming distance between any two codes = 19, 50 codes
+    DICT_7X7_100,           ///< 7x7 bits, minimum hamming distance between any two codes = 18, 100 codes
+    DICT_7X7_250,           ///< 7x7 bits, minimum hamming distance between any two codes = 17, 250 codes
+    DICT_7X7_1000,          ///< 7x7 bits, minimum hamming distance between any two codes = 14, 1000 codes
+    DICT_ARUCO_ORIGINAL,    ///< 6x6 bits, minimum hamming distance between any two codes = 3, 1024 codes
     DICT_APRILTAG_16h5,     ///< 4x4 bits, minimum hamming distance between any two codes = 5, 30 codes
     DICT_APRILTAG_25h9,     ///< 5x5 bits, minimum hamming distance between any two codes = 9, 35 codes
     DICT_APRILTAG_36h10,    ///< 6x6 bits, minimum hamming distance between any two codes = 10, 2320 codes

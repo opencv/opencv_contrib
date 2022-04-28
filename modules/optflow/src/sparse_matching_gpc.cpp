@@ -42,7 +42,6 @@
 
 #include "precomp.hpp"
 #undef CV_FORCE_SIMD128_CPP  // mixed HAL SIMD/SSE code
-#include "opencv2/core/core_c.h"
 #include "opencv2/core/private.hpp"
 #include "opencv2/flann/miniflann.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -450,7 +449,7 @@ void getTrainingSamples( const Mat &from, const Mat &to, const Mat &gt, GPCSampl
       getTriplet( mag[k], gt, fromChInt, toChInt, samples, index, getWHTPatchDescriptor );
   }
   else
-    CV_Error( CV_StsBadArg, "Unknown descriptor type" );
+    CV_Error( Error::StsBadArg, "Unknown descriptor type" );
 }
 
 /* Sample random number from Cauchy distribution. */
@@ -511,7 +510,7 @@ void GPCDetails::getAllDescriptorsForImage( const Mat *imgCh, std::vector< GPCPa
   else if ( type == GPC_DESCRIPTOR_WHT )
     getAllWHTDescriptorsForImage( imgCh, descr, mp );
   else
-    CV_Error( CV_StsBadArg, "Unknown descriptor type" );
+    CV_Error( Error::StsBadArg, "Unknown descriptor type" );
 }
 
 void GPCDetails::getCoordinatesFromIndex( size_t index, Size sz, int &x, int &y )
@@ -638,7 +637,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
 void GPCTree::train( GPCTrainingSamples &samples, const GPCTrainingParams _params )
 {
   if ( _params.descriptorType != samples.type() )
-    CV_Error( CV_StsBadArg, "Descriptor type mismatch! Check that samples are collected with the same descriptor type." );
+    CV_Error( Error::StsBadArg, "Descriptor type mismatch! Check that samples are collected with the same descriptor type." );
   nodes.clear();
   nodes.reserve( samples.size() * 2 - 1 ); // set upper bound for the possible number of nodes so all subsequent resize() will be no-op
   params = _params;
@@ -649,7 +648,7 @@ void GPCTree::train( GPCTrainingSamples &samples, const GPCTrainingParams _param
 void GPCTree::write( FileStorage &fs ) const
 {
   if ( nodes.empty() )
-    CV_Error( CV_StsBadArg, "Tree have not been trained" );
+    CV_Error( Error::StsBadArg, "Tree have not been trained" );
   fs << "nodes" << nodes;
   fs << "dtype" << (int)params.descriptorType;
 }

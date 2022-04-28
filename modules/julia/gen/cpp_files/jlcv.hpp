@@ -73,6 +73,7 @@ typedef flann::SearchParams flann_SearchParams;
 #include <opencv2/dnn.hpp>
 typedef cv::dnn::DictValue LayerId;
 typedef cv::dnn::Backend dnn_Backend;
+typedef cv::dnn::Target dnn_Target;
 #endif
 
 #ifdef HAVE_OPENCV_CALIB3D
@@ -104,7 +105,7 @@ struct force_enum<T, false>{
 };
 template<typename T>
 struct force_enum<T, true>{
-  using Type = int;
+  using Type = int64_t;
 };
 
 template<typename T>

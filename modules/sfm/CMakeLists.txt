@@ -29,6 +29,8 @@ if(NOT DEFINED GFLAGS_INCLUDE_DIRS AND DEFINED GFLAGS_INCLUDE_DIR)
 endif()
 if(NOT GFLAGS_LIBRARIES AND TARGET gflags::gflags)
   set(GFLAGS_LIBRARIES gflags::gflags)
+elseif(NOT GFLAGS_LIBRARIES AND TARGET gflags)
+  set(GFLAGS_LIBRARIES gflags)
 endif()
 if(NOT DEFINED GLOG_INCLUDE_DIRS AND DEFINED GLOG_INCLUDE_DIR)
   set(GLOG_INCLUDE_DIRS "${GLOG_INCLUDE_DIR}")
@@ -116,6 +118,11 @@ ocv_add_module(sfm
 )
 
 add_definitions(/DGLOG_NO_ABBREVIATED_SEVERITIES)  # avoid ERROR macro conflict in glog (ceres dependency)
+
+if(WIN32)
+  # Avoid error due to min/max being already defined as a macro
+  add_definitions(-DNOMINMAX)
+endif(WIN32)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS
   -Wundef

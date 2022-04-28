@@ -1083,9 +1083,9 @@ namespace color_cvt_detail
             else
                 Z = Z * Z * Z;
 
-            float B = 0.052891f * X - 0.204043f * Y + 1.151152f * Z;
-            float G = -0.921235f * X + 1.875991f * Y + 0.045244f * Z;
-            float R = 3.079933f * X - 1.537150f * Y - 0.542782f * Z;
+            float B = __saturatef(0.052891f * X - 0.204043f * Y + 1.151152f * Z); //need __saturatef values to (0.0, 1.0)
+            float G = __saturatef(-0.921235f * X + 1.875991f * Y + 0.045244f * Z);
+            float R = __saturatef(3.079933f * X - 1.537150f * Y - 0.542782f * Z);
 
             if (srgb)
             {

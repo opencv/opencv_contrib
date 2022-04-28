@@ -1,6 +1,9 @@
 Detection of ArUco Boards {#tutorial_aruco_board_detection}
 ==============================
 
+@prev_tutorial{tutorial_aruco_detection}
+@next_tutorial{tutorial_charuco_detection}
+
 An ArUco Board is a set of markers that acts like a single marker in the sense that it provides a
 single pose for the camera.
 
@@ -55,7 +58,8 @@ The aruco module provides a specific function, ```estimatePoseBoard()```, to per
     cv::Mat inputImage;
     // camera parameters are read from somewhere
     cv::Mat cameraMatrix, distCoeffs;
-    readCameraParameters(cameraMatrix, distCoeffs);
+    // You can read camera parameters from tutorial_camera_params.yml
+    readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is located in detect_board.cpp
     // assume we have a function to create the board object
     cv::Ptr<cv::aruco::Board> board = cv::aruco::Board::create();
     ...
@@ -79,13 +83,14 @@ The parameters of estimatePoseBoard are:
  markers provided in ```markerCorners``` and ```markerIds``` should be used, since only the markers whose ids are
 listed in the ```Board::ids``` structure are considered.
 
-The ```drawAxis()``` function can be used to check the obtained pose. For instance:
+The ```drawFrameAxes()``` function can be used to check the obtained pose. For instance:
 
-![Board with axis](images/gbmarkersaxis.png)
+![Board with axis](images/gbmarkersaxis.jpg)
 
 And this is another example with the board partially occluded:
 
 ![Board with occlusions](images/gbocclusion.png)
+@note The center and direction of the axes has been changed
 
 As it can be observed, although some markers have not been detected, the Board pose can still be estimated from the rest of markers.
 
@@ -107,7 +112,7 @@ with all the markers in the same plane and in a grid layout, as in the following
 Concretely, the coordinate system in a Grid Board is positioned in the board plane, centered in the bottom left
 corner of the board and with the Z pointing out, like in the following image (X:red, Y:green, Z:blue):
 
-![Board with axis](images/gbaxis.png)
+![Board with axis](images/gbaxis.jpg)
 
 A ```GridBoard``` object can be defined using the following parameters:
 
@@ -153,11 +158,11 @@ The output image will be something like this:
 
 ![](images/board.jpg)
 
-A full working example of board creation is included in the ```create_board.cpp``` inside the module samples folder.
+A full working example of board creation is included in the `create_board.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    "_output path_/aboard.png" -w=5 -h=7 -l=100 -s=10 -d=10
+    "_output_path_/aboard.png" -w=5 -h=7 -l=100 -s=10 -d=10
 @endcode
 
 Finally, a full example of board detection:
@@ -167,10 +172,12 @@ Finally, a full example of board detection:
     inputVideo.open(0);
 
     cv::Mat cameraMatrix, distCoeffs;
-    // camera parameters are read from somewhere
-    readCameraParameters(cameraMatrix, distCoeffs);
+    // You can read camera parameters from tutorial_camera_params.yml
+    readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is located in detect_board.cpp
 
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    // To use tutorial sample, you need read custome dictionaty from tutorial_dict.yml
+    readDictionary(filename, dictionary); // This function is located in detect_board.cpp
     cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
 
     while (inputVideo.grab()) {
@@ -191,7 +198,7 @@ Finally, a full example of board detection:
 
             // if at least one board marker detected
             if(valid > 0)
-                cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+                cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }
 
         cv::imshow("out", imageCopy);
@@ -207,14 +214,20 @@ Sample video:
 <iframe width="420" height="315" src="https://www.youtube.com/embed/Q1HlJEjW_j0" frameborder="0" allowfullscreen></iframe>
 @endhtmlonly
 
-A full working example is included in the ```detect_board.cpp``` inside the module samples folder.
+A full working example is included in the `detect_board.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    -c="_path_"/calib.txt" "_path_/aboard.png" -w=5 -h=7 -l=100 -s=10 -d=10
+    -w=5 -h=7 -l=100 -s=10
+    -v=/path_to_aruco_tutorials/aruco_board_detection/images/gboriginal.png
+    -c=/path_to_aruco_samples/tutorial_camera_params.yml
+    -cd=/path_to_aruco_samples/tutorial_dict.yml
 @endcode
-
-
+Parameters for `detect_board.cpp`:
+@snippet samples/detect_board.cpp aruco_detect_board_keys
+@note To work with examples from the tutorial, you can use camera parameters from `tutorial_camera_params.yml` and
+you need use custom dictionary from `tutorial_dict.yml`.
+An example of usage in `detect_board.cpp`.
 
 Refine marker detection
 -----

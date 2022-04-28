@@ -1,6 +1,9 @@
 Detection of Diamond Markers {#tutorial_charuco_diamond_detection}
 ==============================
 
+@prev_tutorial{tutorial_charuco_detection}
+@next_tutorial{tutorial_aruco_calibration}
+
 A ChArUco diamond marker (or simply diamond marker) is a chessboard composed by 3x3 squares and 4 ArUco markers inside the white squares.
 It is similar to a ChArUco board in appearance, however they are conceptually different.
 
@@ -58,7 +61,7 @@ The image produced will be:
 
 ![Diamond marker](images/diamondmarker.png)
 
-A full working example is included in the ```create_diamond.cpp``` inside the module samples folder.
+A full working example is included in the `create_diamond.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
@@ -118,11 +121,13 @@ The result is the same that the one produced by ```drawDetectedMarkers()```, but
 
 ![Detected diamond markers](images/detecteddiamonds.png)
 
-A full working example is included in the ```detect_diamonds.cpp``` inside the module samples folder.
+A full working example is included in the `detect_diamonds.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    -c="_path_/calib.txt" -dp="_path_/detector_params.yml" -sl=0.04 -ml=0.02 -d=10
+    -dp="path_aruco/samples/detector_params.yml" -sl=0.04 -ml=0.012 -refine=3
+    -v="path_aruco/tutorials/charuco_diamond_detection/images/diamondmarkers.png"
+    -cd="path_aruco/samples/tutorial_dict.yml
 @endcode
 
 ChArUco Diamond Pose Estimation
@@ -146,16 +151,16 @@ i.e. using the ```estimatePoseSingleMarkers()``` function. For instance:
 
     // draw axis
     for(unsigned int i=0; i<rvecs.size(); i++)
-        cv::aruco::drawAxis(inputImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], axisLength);
+        cv::drawFrameAxes(inputImage, camMatrix, distCoeffs, rvecs[i], tvecs[i], axisLength);
 @endcode
 
 The function will obtain the rotation and translation vector for each of the diamond marker and store them
 in ```rvecs``` and ```tvecs```. Note that the diamond corners are a chessboard square corners and thus, the square length
 has to be provided for pose estimation, and not the marker length. Camera calibration parameters are also required.
 
-Finally, an axis can be drawn to check the estimated pose is correct using ```drawAxis()```:
+Finally, an axis can be drawn to check the estimated pose is correct using ```drawFrameAxes()```:
 
-![Detected diamond axis](images/diamondsaxis.png)
+![Detected diamond axis](images/diamondsaxis.jpg)
 
 The coordinate system of the diamond pose will be in the center of the marker with the Z axis pointing out,
 as in a simple ArUco marker pose estimation.
@@ -166,9 +171,12 @@ Sample video:
 <iframe width="420" height="315" src="https://www.youtube.com/embed/OqKpBnglH7k" frameborder="0" allowfullscreen></iframe>
 @endhtmlonly
 
-A full working example is included in the ```detect_diamonds.cpp``` inside the module samples folder.
+A full working example is included in the `detect_diamonds.cpp` inside the `modules/aruco/samples/`.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    -c="_output path_/calib.txt" -dp="_path_/detector_params.yml" -sl=0.04 -ml=0.02 -d=10
+    -dp="path_aruco/samples/detector_params.yml" -sl=0.04 -ml=0.012 -refine=3
+    -v="path_aruco/tutorials/charuco_diamond_detection/images/diamondmarkers.png"
+    -cd="path_aruco/samples/tutorial_dict.yml
+    -c="path_aruco/samples/tutorial_camera_params.yml"
 @endcode

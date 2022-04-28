@@ -87,6 +87,45 @@ PERF_TEST_P(ImagePair, StereoBM,
     }
 }
 
+PERF_TEST_P(ImagePair, StereoBMwithUniqueness,
+            Values(pair_string("gpu/perf/aloe.png", "gpu/perf/aloeR.png")))
+{
+    declare.time(300.0);
+
+    const cv::Mat imgLeft = readImage(GET_PARAM(0), cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(imgLeft.empty());
+
+    const cv::Mat imgRight = readImage(GET_PARAM(1), cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(imgRight.empty());
+
+    const int ndisp = 256;
+
+    if (PERF_RUN_CUDA())
+    {
+        cv::Ptr<cv::StereoBM> d_bm = cv::cuda::createStereoBM(ndisp);
+        d_bm->setUniquenessRatio(10);
+
+        const cv::cuda::GpuMat d_imgLeft(imgLeft);
+        const cv::cuda::GpuMat d_imgRight(imgRight);
+        cv::cuda::GpuMat dst;
+
+        TEST_CYCLE() d_bm->compute(d_imgLeft, d_imgRight, dst);
+
+        CUDA_SANITY_CHECK(dst);
+    }
+    else
+    {
+        cv::Ptr<cv::StereoBM> bm = cv::StereoBM::create(ndisp);
+        bm->setUniquenessRatio(10);
+
+        cv::Mat dst;
+
+        TEST_CYCLE() bm->compute(imgLeft, imgRight, dst);
+
+        CPU_SANITY_CHECK(dst);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////
 // StereoBeliefPropagation
 

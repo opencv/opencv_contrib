@@ -1,4 +1,4 @@
-if(NOT HAVE_JULIA MATCHES "YES")
+if(NOT HAVE_JULIA)
     message(STATUS "Julia not found. Not compiling Julia Bindings. ${HAVE_JULIA}")
     ocv_module_disable(julia)
 elseif(NOT PYTHON_DEFAULT_EXECUTABLE)

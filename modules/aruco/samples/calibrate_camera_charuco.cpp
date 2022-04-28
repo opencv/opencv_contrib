@@ -43,7 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <vector>
 #include <iostream>
-#include <ctime>
+#include "aruco_samples_utility.hpp"
 
 using namespace std;
 using namespace cv;
@@ -63,6 +63,7 @@ const char* keys  =
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
         "DICT_6X6_50=8, DICT_6X6_100=9, DICT_6X6_250=10, DICT_6X6_1000=11, DICT_7X7_50=12,"
         "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
+        "{cd       |       | Input file with custom dictionary }"
         "{@outfile |<none> | Output file with calibrated camera parameters }"
         "{v        |       | Input from video file, if ommited, input comes from camera }"
         "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
@@ -74,80 +75,7 @@ const char* keys  =
         "{sc       | false | Show detected chessboard corners after calibration }";
 }
 
-/**
- */
-static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameters> &params) {
-    FileStorage fs(filename, FileStorage::READ);
-    if(!fs.isOpened())
-        return false;
-    fs["adaptiveThreshWinSizeMin"] >> params->adaptiveThreshWinSizeMin;
-    fs["adaptiveThreshWinSizeMax"] >> params->adaptiveThreshWinSizeMax;
-    fs["adaptiveThreshWinSizeStep"] >> params->adaptiveThreshWinSizeStep;
-    fs["adaptiveThreshConstant"] >> params->adaptiveThreshConstant;
-    fs["minMarkerPerimeterRate"] >> params->minMarkerPerimeterRate;
-    fs["maxMarkerPerimeterRate"] >> params->maxMarkerPerimeterRate;
-    fs["polygonalApproxAccuracyRate"] >> params->polygonalApproxAccuracyRate;
-    fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
-    fs["minDistanceToBorder"] >> params->minDistanceToBorder;
-    fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
-    fs["cornerRefinementMethod"] >> params->cornerRefinementMethod;
-    fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
-    fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
-    fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
-    fs["markerBorderBits"] >> params->markerBorderBits;
-    fs["perspectiveRemovePixelPerCell"] >> params->perspectiveRemovePixelPerCell;
-    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params->perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params->maxErroneousBitsInBorderRate;
-    fs["minOtsuStdDev"] >> params->minOtsuStdDev;
-    fs["errorCorrectionRate"] >> params->errorCorrectionRate;
-    return true;
-}
 
-
-
-/**
- */
-static bool saveCameraParams(const string &filename, Size imageSize, float aspectRatio, int flags,
-                             const Mat &cameraMatrix, const Mat &distCoeffs, double totalAvgErr) {
-    FileStorage fs(filename, FileStorage::WRITE);
-    if(!fs.isOpened())
-        return false;
-
-    time_t tt;
-    time(&tt);
-    struct tm *t2 = localtime(&tt);
-    char buf[1024];
-    strftime(buf, sizeof(buf) - 1, "%c", t2);
-
-    fs << "calibration_time" << buf;
-
-    fs << "image_width" << imageSize.width;
-    fs << "image_height" << imageSize.height;
-
-    if(flags & CALIB_FIX_ASPECT_RATIO) fs << "aspectRatio" << aspectRatio;
-
-    if(flags != 0) {
-        sprintf(buf, "flags: %s%s%s%s",
-                flags & CALIB_USE_INTRINSIC_GUESS ? "+use_intrinsic_guess" : "",
-                flags & CALIB_FIX_ASPECT_RATIO ? "+fix_aspectRatio" : "",
-                flags & CALIB_FIX_PRINCIPAL_POINT ? "+fix_principal_point" : "",
-                flags & CALIB_ZERO_TANGENT_DIST ? "+zero_tangent_dist" : "");
-    }
-
-    fs << "flags" << flags;
-
-    fs << "camera_matrix" << cameraMatrix;
-    fs << "distortion_coefficients" << distCoeffs;
-
-    fs << "avg_reprojection_error" << totalAvgErr;
-
-    return true;
-}
-
-
-
-/**
- */
 int main(int argc, char *argv[]) {
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
@@ -161,7 +89,6 @@ int main(int argc, char *argv[]) {
     int squaresY = parser.get<int>("h");
     float squareLength = parser.get<float>("sl");
     float markerLength = parser.get<float>("ml");
-    int dictionaryId = parser.get<int>("d");
     string outputFile = parser.get<string>(0);
 
     bool showChessboardCorners = parser.get<bool>("sc");
@@ -177,7 +104,8 @@ int main(int argc, char *argv[]) {
 
     Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
-        bool readOk = readDetectorParameters(parser.get<string>("dp"), detectorParams);
+        FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
+        bool readOk = detectorParams->readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -207,8 +135,23 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
-    Ptr<aruco::Dictionary> dictionary =
-        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    if (parser.has("d")) {
+        int dictionaryId = parser.get<int>("d");
+        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    }
+    else if (parser.has("cd")) {
+        FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
+        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        if(!readOk) {
+            cerr << "Invalid dictionary file" << endl;
+            return 0;
+        }
+    }
+    else {
+        cerr << "Dictionary not specified" << endl;
+        return 0;
+    }
 
     // create charuco board object
     Ptr<aruco::CharucoBoard> charucoboard =

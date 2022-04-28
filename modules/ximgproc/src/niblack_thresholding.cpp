@@ -91,7 +91,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
             thresh = mean + static_cast<float>(k) * sqrtVarianceMeanSum;
             break;
         default:
-            CV_Error(CV_StsBadArg, "Unknown binarization method");
+            CV_Error( Error::StsBadArg, "Unknown binarization method" );
             break;
         }
         thresh.convertTo(thresh, src.depth());
@@ -124,7 +124,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
         src.copyTo(dst, mask);
         break;
     default:
-        CV_Error( CV_StsBadArg, "Unknown threshold type" );
+        CV_Error( Error::StsBadArg, "Unknown threshold type" );
         break;
     }
 }

@@ -168,12 +168,10 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
     return *mo->getParentSceneNode();
 }
 
+/// BGR to RGB 0..1
 static ColourValue convertColor(const Scalar& val)
 {
-    // BGR 0..255 (uchar) to RGB 0..1
-    ColourValue ret = ColourValue(val[2], val[1], val[0]) / 255;
-    ret.saturate();
-    return ret;
+    return ColourValue(val[2], val[1], val[0]).saturateCopy();
 }
 
 class WindowSceneImpl;
@@ -445,14 +443,21 @@ public:
 
         _createTexture(name, image.getMat());
 
-        bgplane->setDefaultUVs();
-
-        Pass* rpass = bgplane->getMaterial()->getBestTechnique()->getPasses()[0];
-        rpass->getTextureUnitStates()[0]->setTextureName(name);
-        rpass->getTextureUnitStates()[0]->setTextureAddressingMode(TAM_CLAMP);
-
         // ensure bgplane is visible
         bgplane->setVisible(true);
+        bgplane->setDefaultUVs();
+
+        Pass* rpass = bgplane->getMaterial()->getTechnique(0)->getPasses()[0];
+        auto tus = rpass->getTextureUnitStates()[0];
+
+        if(tus->getTextureName() != name)
+        {
+            RTShader::ShaderGenerator::getSingleton().invalidateMaterial(
+                RTShader::ShaderGenerator::DEFAULT_SCHEME_NAME, *bgplane->getMaterial());
+
+            tus->setTextureName(name);
+            tus->setTextureAddressingMode(TAM_CLAMP);
+        }
     }
 
     void setCompositors(const std::vector<String>& names) CV_OVERRIDE
@@ -614,9 +619,8 @@ public:
                            const Scalar& specularColour) CV_OVERRIDE
     {
         Light* light = sceneMgr->createLight(name);
-        // convert to BGR
-        light->setDiffuseColour(ColourValue(diffuseColour[2], diffuseColour[1], diffuseColour[0]));
-        light->setSpecularColour(ColourValue(specularColour[2], specularColour[1], specularColour[0]));
+        light->setDiffuseColour(convertColor(diffuseColour));
+        light->setSpecularColour(convertColor(specularColour));
 
         Quaternion q;
         Vector3 t;
@@ -854,7 +858,7 @@ public:
 
         Mat tmp(depthRTT->getHeight(), depthRTT->getWidth(), CV_16U);
         PixelBox pb(depthRTT->getWidth(), depthRTT->getHeight(), 1, PF_DEPTH, tmp.ptr());
-        depthRTT->update(false);
+        depthRTT->update();
         depthRTT->copyContentsToMemory(pb, pb);
 
         // convert to NDC
@@ -871,7 +875,7 @@ public:
 
     void update()
     {
-        rWin->update(false);
+        rWin->update();
     }
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE

@@ -4,27 +4,14 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <string>
+#include "aruco_samples_utility.hpp"
 
 namespace {
 const char* about = "A tutorial code on charuco board creation and detection of charuco board with and without camera caliberation";
 const char* keys = "{c        |       | Put value of c=1 to create charuco board;\nc=2 to detect charuco board without camera calibration;\nc=3 to detect charuco board with camera calibration and Pose Estimation}";
 }
 
-void createBoard();
-void detectCharucoBoardWithCalibrationPose();
-void detectCharucoBoardWithoutCalibration();
-
-static bool readCameraParameters(std::string filename, cv::Mat& camMatrix, cv::Mat& distCoeffs)
-{
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
-    if (!fs.isOpened())
-        return false;
-    fs["camera_matrix"] >> camMatrix;
-    fs["distortion_coefficients"] >> distCoeffs;
-    return (camMatrix.size() == cv::Size(3,3)) ;
-}
-
-void createBoard()
+static inline void createBoard()
 {
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     //! [createBoard]
@@ -36,7 +23,7 @@ void createBoard()
 }
 
 //! [detwcp]
-void detectCharucoBoardWithCalibrationPose()
+static inline void detectCharucoBoardWithCalibrationPose()
 {
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
@@ -81,12 +68,11 @@ void detectCharucoBoardWithCalibrationPose()
                     //! [detcor]
                     cv::Vec3d rvec, tvec;
                     //! [pose]
-                    // cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
-                    //! [pose]
                     bool valid = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
+                    //! [pose]
                     // if charuco pose is valid
                     if (valid)
-                        cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1f);
+                        cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1f);
                 }
             }
             cv::imshow("out", imageCopy);
@@ -99,7 +85,7 @@ void detectCharucoBoardWithCalibrationPose()
 //! [detwcp]
 
 //! [detwc]
-void detectCharucoBoardWithoutCalibration()
+static inline void detectCharucoBoardWithoutCalibration()
 {
     cv::VideoCapture inputVideo;
     inputVideo.open(0);

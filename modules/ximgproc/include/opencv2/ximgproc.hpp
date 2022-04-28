@@ -43,6 +43,7 @@
 #include "ximgproc/structured_edge_detection.hpp"
 #include "ximgproc/edgeboxes.hpp"
 #include "ximgproc/edge_drawing.hpp"
+#include "ximgproc/scansegment.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
@@ -61,6 +62,7 @@
 #include "ximgproc/edgepreserving_filter.hpp"
 #include "ximgproc/color_match.hpp"
 #include "ximgproc/letterbox_resize.hpp"
+#include "ximgproc/radon_transform.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing

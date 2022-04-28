@@ -56,39 +56,51 @@ public:
     virtual ~VideoSource() {}
 
     virtual FormatInfo format() const = 0;
+    virtual void updateFormat(const FormatInfo& videoFormat) = 0;
+    virtual bool get(const int propertyId, double& propertyVal) const { return false; }
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual bool isStarted() const = 0;
     virtual bool hasError() const = 0;
-
     void setVideoParser(detail::VideoParser* videoParser) { videoParser_ = videoParser; }
-
+    void setExtraData(const cv::Mat _extraData) {
+        AutoLock autoLock(mtx_);
+        extraData = _extraData.clone();
+    }
+    void getExtraData(cv::Mat& _extraData) {
+        AutoLock autoLock(mtx_);
+        _extraData = extraData.clone();
+    }
+    void SetRawMode(const bool enabled) { rawMode_ = enabled; }
+    bool RawModeEnabled() const { return rawMode_; }
 protected:
-    bool parseVideoData(const uchar* data, size_t size, bool endOfStream = false);
-
+    bool parseVideoData(const uchar* data, size_t size, const bool rawMode, const bool containsKeyFrame,  bool endOfStream = false);
+    bool extraDataQueried = false;
 private:
-    detail::VideoParser* videoParser_;
+    detail::VideoParser* videoParser_ = 0;
+    cv::Mat extraData;
+    bool rawMode_ = false;
+    Mutex mtx_;
 };
 
 class RawVideoSourceWrapper : public VideoSource
 {
 public:
-    RawVideoSourceWrapper(const Ptr<RawVideoSource>& source);
+    RawVideoSourceWrapper(const Ptr<RawVideoSource>& source, const bool rawMode);
 
     FormatInfo format() const CV_OVERRIDE;
+    void updateFormat(const FormatInfo& videoFormat) CV_OVERRIDE;
+    bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
     void start() CV_OVERRIDE;
     void stop() CV_OVERRIDE;
     bool isStarted() const CV_OVERRIDE;
     bool hasError() const CV_OVERRIDE;
-
 private:
-    Ptr<RawVideoSource> source_;
-
-    Ptr<Thread> thread_;
+    static void readLoop(void* userData);
+    Ptr<RawVideoSource> source_ = 0;
+    Ptr<Thread> thread_ = 0;
     volatile bool stop_;
     volatile bool hasError_;
-
-    static void readLoop(void* userData);
 };
 
 }}}

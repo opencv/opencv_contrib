@@ -84,6 +84,54 @@ Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize,
     return generateCustomDictionary(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
+template<typename T>
+static inline bool readParameter(const FileNode& node, T& parameter)
+{
+    if (!node.empty()) {
+        node >> parameter;
+        return true;
+    }
+    return false;
+}
+
+bool Dictionary::readDictionary(const cv::FileNode& fn)
+{
+    int nMarkers = 0, _markerSize = 0;
+    if (fn.empty() || !readParameter(fn["nmarkers"], nMarkers) || !readParameter(fn["markersize"], _markerSize))
+        return false;
+    Mat bytes(0, 0, CV_8UC1), marker(_markerSize, _markerSize, CV_8UC1);
+    std::string markerString;
+    for (int i = 0; i < nMarkers; i++) {
+        std::ostringstream ostr;
+        ostr << i;
+        if (!readParameter(fn["marker_" + ostr.str()], markerString))
+            return false;
+        for (int j = 0; j < (int) markerString.size(); j++)
+            marker.at<unsigned char>(j) = (markerString[j] == '0') ? 0 : 1;
+        bytes.push_back(Dictionary::getByteListFromBits(marker));
+    }
+    int _maxCorrectionBits = 0;
+    readParameter(fn["maxCorrectionBits"], _maxCorrectionBits);
+    *this = Dictionary(bytes, _markerSize, _maxCorrectionBits);
+    return true;
+}
+
+void Dictionary::writeDictionary(Ptr<FileStorage>& fs) {
+    *fs << "nmarkers" << bytesList.rows;
+    *fs << "markersize" << markerSize;
+    *fs << "maxCorrectionBits" << maxCorrectionBits;
+    for (int i = 0; i < bytesList.rows; i++) {
+        Mat row = bytesList.row(i);;
+        Mat bitMarker = getBitsFromByteList(row, markerSize);
+        std::ostringstream ostr;
+        ostr << i;
+        string markerName = "marker_" + ostr.str();
+        string marker;
+        for (int j = 0; j < markerSize * markerSize; j++)
+            marker.push_back(bitMarker.at<uint8_t>(j) + '0');
+        *fs << markerName << marker;
+    }
+}
 
 /**
  */

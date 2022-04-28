@@ -52,7 +52,7 @@ namespace opencv_test { namespace {
 DEF_PARAM_TEST(Video_Cn_LearningRate, string, MatCn, double);
 
 PERF_TEST_P(Video_Cn_LearningRate, MOG,
-            Combine(Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi"),
+            Combine(Values("cv/video/768x576.avi", "cv/video/1920x1080.avi"),
                     CUDA_CHANNELS_1_3_4,
                     Values(0.0, 0.01)))
 {
@@ -157,7 +157,7 @@ PERF_TEST_P(Video_Cn_LearningRate, MOG,
 DEF_PARAM_TEST(Video_Cn, string, int);
 
 PERF_TEST_P(Video_Cn, DISABLED_MOG2,
-            Combine(Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi"),
+            Combine(Values("cv/video/768x576.avi", "cv/video/1920x1080.avi"),
                     CUDA_CHANNELS_1_3_4))
 {
     const int numIters = 10;
@@ -312,7 +312,7 @@ PERF_TEST_P(Video_Cn, DISABLED_MOG2,
 #ifdef HAVE_VIDEO_INPUT
 
 PERF_TEST_P(Video_Cn, MOG2GetBackgroundImage,
-            Combine(Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi"),
+            Combine(Values("cv/video/768x576.avi", "cv/video/1920x1080.avi"),
                     CUDA_CHANNELS_1_3_4))
 {
     const string inputFile = perf::TestBase::getDataPath(GET_PARAM(0));

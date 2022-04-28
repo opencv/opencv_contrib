@@ -170,7 +170,7 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
   int class_counter = -1;
   for ( int octaveIdx = 0; octaveIdx < (int) lines_lsd.size(); octaveIdx++ )
   {
-    float octaveScale = pow( (float)scale, octaveIdx );
+    float octaveScale = std::pow((float)scale, (float)octaveIdx);
     for ( int k = 0; k < (int) lines_lsd[octaveIdx].size(); k++ )
     {
       KeyLine kl;

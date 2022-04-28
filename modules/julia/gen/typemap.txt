@@ -29,7 +29,7 @@ Mat:InputArray
 KeyPoint:KeyPoint
 Moments:Moments
 RNG*:NONCONVERT4
-int:Int32
+int:Int64
 vector<float>:Array{Float32, 1}
 vector<Rect>:Array{Rect{Int32}, 1}
 Scalar:Scalar
@@ -42,7 +42,7 @@ vector<string>:Array{String, 1}
 vector<Point2f>:Array{Point{Float32}, 1}
 Size:Size{Int32}
 vector<MatShape>:Array{Array{Int32, 1}, 1}
-float:Float32
+float:Float64
 Ptr<float>:Ptr{Float32}
 vector<Vec6f>:Array{Vec{Float32, 6}, 1}
 Ptr<FeatureDetector>:Ptr{Feature2D}
@@ -50,3 +50,4 @@ Point2d:Point{Float64}
 SolvePnPMethod:SolvePnPMethod
 CirclesGridFinderParameters:CirclesGridFinderParameters
 HandEyeCalibrationMethod:HandEyeCalibrationMethod
+long long:Int64

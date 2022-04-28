@@ -19,10 +19,16 @@ class cudacodec_test(NewOpenCVTests):
         vid_path = os.environ['OPENCV_TEST_DATA_PATH'] + '/cv/video/1920x1080.avi'
         try:
             reader = cv.cudacodec.createVideoReader(vid_path)
+            format_info = reader.format()
             ret, gpu_mat = reader.nextFrame()
             self.assertTrue(ret)
             self.assertTrue('GpuMat' in str(type(gpu_mat)), msg=type(gpu_mat))
             #TODO: print(cv.utils.dumpInputArray(gpu_mat)) # - no support for GpuMat
+
+            if(not format_info.valid):
+              format_info = reader.format()
+            sz = gpu_mat.size()
+            self.assertTrue(sz[0] == format_info.width and sz[1] == format_info.height)
 
             # not checking output, therefore sepearate tests for different signatures is unecessary
             ret, _gpu_mat2 = reader.nextFrame(gpu_mat)

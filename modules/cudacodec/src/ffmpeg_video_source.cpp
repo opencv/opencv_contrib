@@ -75,6 +75,7 @@ Codec FourccToCodec(int codec)
     case CV_FOURCC_MACRO('M', 'P', 'G', '1'): return MPEG1;
     case CV_FOURCC_MACRO('M', 'P', 'G', '2'): return MPEG2;
     case CV_FOURCC_MACRO('X', 'V', 'I', 'D'): // fallthru
+    case CV_FOURCC_MACRO('m', 'p', '4', 'v'): // fallthru
     case CV_FOURCC_MACRO('D', 'I', 'V', 'X'): return MPEG4;
     case CV_FOURCC_MACRO('W', 'V', 'C', '1'): return VC1;
     case CV_FOURCC_MACRO('H', '2', '6', '4'): // fallthru
@@ -112,12 +113,30 @@ void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int
     }
 }
 
-cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
+static
+int StartCodeLen(unsigned char* data, const int sz) {
+    if (sz >= 3 && data[0] == 0 && data[1] == 0 && data[2] == 1)
+        return 3;
+    else if (sz >= 4 && data[0] == 0 && data[1] == 0 && data[2] == 0 && data[3] == 1)
+        return 4;
+    else
+        return 0;
+}
+
+bool ParamSetsExist(unsigned char* parameterSets, const int szParameterSets, unsigned char* data, const int szData) {
+    const int paramSetStartCodeLen = StartCodeLen(parameterSets, szParameterSets);
+    const int packetStartCodeLen = StartCodeLen(data, szData);
+    // weak test to see if the parameter set has already been included in the RTP stream
+    return paramSetStartCodeLen != 0 && packetStartCodeLen != 0 && parameterSets[paramSetStartCodeLen] == data[packetStartCodeLen];
+}
+
+cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname, const std::vector<int>& _videoCaptureParams)
+    : videoCaptureParams(_videoCaptureParams)
 {
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
 
-    cap.open(fname, CAP_FFMPEG);
+    cap.open(fname, CAP_FFMPEG, videoCaptureParams);
     if (!cap.isOpened())
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
 
@@ -125,12 +144,20 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
         CV_Error(Error::StsUnsupportedFormat, "Fetching of RAW video streams is not supported");
     CV_Assert(cap.get(CAP_PROP_FORMAT) == -1);
 
+    const int codecExtradataIndex = static_cast<int>(cap.get(CAP_PROP_CODEC_EXTRADATA_INDEX));
+    Mat tmpExtraData;
+    if (cap.retrieve(tmpExtraData, codecExtradataIndex) && tmpExtraData.total())
+        extraData = tmpExtraData.clone();
+
     int codec = (int)cap.get(CAP_PROP_FOURCC);
     int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
 
     format_.codec = FourccToCodec(codec);
     format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
     format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
+    format_.displayArea = Rect(0, 0, format_.width, format_.height);
+    format_.valid = false;
+    format_.fps = cap.get(CAP_PROP_FPS);
     FourccToChromaFormat(pixelFormat, format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
@@ -145,12 +172,49 @@ FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
     return format_;
 }
 
+void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& videoFormat)
+{
+    format_ = videoFormat;
+    format_.valid = true;
+}
+
+bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double& propertyVal) const
+{
+    CV_Assert(videoCaptureParams.size() % 2 == 0);
+    for (std::size_t i = 0; i < videoCaptureParams.size(); i += 2) {
+        if (videoCaptureParams.at(i) == propertyId) {
+            propertyVal = videoCaptureParams.at(i + 1);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
 {
     cap >> rawFrame;
     *data = rawFrame.data;
     *size = rawFrame.total();
+    if (iFrame++ == 0 && extraData.total()) {
+        if (format_.codec == Codec::MPEG4 ||
+            ((format_.codec == Codec::H264 || format_.codec == Codec::HEVC) && !ParamSetsExist(extraData.data, extraData.total(), *data, *size)))
+        {
+            const size_t nBytesToTrimFromData = format_.codec == Codec::MPEG4 ? 3 : 0;
+            const size_t newSz = extraData.total() + *size - nBytesToTrimFromData;
+            dataWithHeader = Mat(1, newSz, CV_8UC1);
+            memcpy(dataWithHeader.data, extraData.data, extraData.total());
+            memcpy(dataWithHeader.data + extraData.total(), (*data) + nBytesToTrimFromData, *size - nBytesToTrimFromData);
+            *data = dataWithHeader.data;
+            *size = newSz;
+        }
+    }
+
     return *size != 0;
+}
+
+bool cv::cudacodec::detail::FFmpegVideoSource::lastPacketContainsKeyFrame() const
+{
+    return cap.get(CAP_PROP_LRF_HAS_KEY_FRAME);
 }
 
 #endif // HAVE_CUDA
