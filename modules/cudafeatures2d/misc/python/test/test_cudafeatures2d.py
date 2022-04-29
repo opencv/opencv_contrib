@@ -27,6 +27,18 @@ class cudafeatures2d_test(NewOpenCVTests):
         _kps = fast.detectAsync(cuMat1)
 
         orb = cv.cuda_ORB.create()
+
+        orb.setMaxFeatures(500)
+        orb.setScaleFactor(1.2)
+        orb.setNLevels(8)
+        orb.setEdgeThreshold(31)
+        orb.setFirstLevel(0)
+        orb.setWTA_K(2)
+        orb.setScoreType(cv.ORB_HARRIS_SCORE)
+        orb.setPatchSize(31)
+        orb.setFastThreshold(20)
+        orb.setBlurForDescriptor(True)
+
         _kps1, descs1 = orb.detectAndComputeAsync(cuMat1, None)
         _kps2, descs2 = orb.detectAndComputeAsync(cuMat2, None)
 

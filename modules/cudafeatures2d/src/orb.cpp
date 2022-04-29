@@ -373,13 +373,13 @@ namespace
         virtual void setFirstLevel(int firstLevel) { firstLevel_ = firstLevel; }
         virtual int getFirstLevel() const { return firstLevel_; }
 
-        virtual void setWTA_K(int wta_k) { WTA_K_ = wta_k; }
+        virtual void setWTA_K(int wta_k) { CV_Assert( wta_k == 2 || wta_k == 3 || wta_k == 4 ); WTA_K_ = wta_k; }
         virtual int getWTA_K() const { return WTA_K_; }
 
         virtual void setScoreType(int scoreType) { scoreType_ = scoreType; }
         virtual int getScoreType() const { return scoreType_; }
 
-        virtual void setPatchSize(int patchSize) { patchSize_ = patchSize; }
+        virtual void setPatchSize(int patchSize) { CV_Assert( patchSize >= 2 ); patchSize_ = patchSize; }
         virtual int getPatchSize() const { return patchSize_; }
 
         virtual void setFastThreshold(int fastThreshold) { fastThreshold_ = fastThreshold; }
