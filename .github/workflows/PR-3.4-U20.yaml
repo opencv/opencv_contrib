@@ -212,3 +212,4 @@ jobs:
         path: /opencv-contrib-build/java_test/testResults/junit-noframes.html
     - name: Pylint
       run: cd /opencv-contrib-build && cmake --build . --config release --target check_pylint -- -j4
+
