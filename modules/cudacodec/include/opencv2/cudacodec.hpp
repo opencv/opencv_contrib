@@ -484,7 +484,7 @@ struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
     CV_WRAP VideoReaderInitParams() : udpSource(false), liveSource(false), minNumDecodeSurfaces(0), rawMode(0) {};
     CV_PROP_RW bool udpSource;
     CV_PROP_RW bool liveSource;
-    CV_PROP_RW bool minNumDecodeSurfaces;
+    CV_PROP_RW int minNumDecodeSurfaces;
     CV_PROP_RW bool rawMode;
 };
 
