@@ -55,18 +55,26 @@ cv::cudacodec::detail::FrameQueue::~FrameQueue() {
         delete[] isFrameInUse_;
 }
 
-void cv::cudacodec::detail::FrameQueue::init(const int _maxSz) {
+void cv::cudacodec::detail::FrameQueue::init(const int _maxSz, const bool force) {
     AutoLock autoLock(mtx_);
+    if (isFrameInUse_) {
+        if (force)
+            delete[] isFrameInUse_;
+        else
+            return;
+    }
     maxSz = _maxSz;
     displayQueue_ = std::vector<CUVIDPARSERDISPINFO>(maxSz, CUVIDPARSERDISPINFO());
     isFrameInUse_ = new volatile int[maxSz];
     std::memset((void*)isFrameInUse_, 0, sizeof(*isFrameInUse_) * maxSz);
 }
 
-bool cv::cudacodec::detail::FrameQueue::waitUntilFrameAvailable(int pictureIndex)
+bool cv::cudacodec::detail::FrameQueue::waitUntilFrameAvailable(int pictureIndex, const bool force)
 {
     while (isInUse(pictureIndex))
     {
+        if (force && dequeueUntil(pictureIndex))
+            break;
         // Decoder is getting too far ahead from display
         Thread::sleep(1);
 
@@ -110,6 +118,20 @@ void cv::cudacodec::detail::FrameQueue::enqueue(const CUVIDPARSERDISPINFO* picPa
     } while (!isEndOfDecode());
 }
 
+bool cv::cudacodec::detail::FrameQueue::dequeueUntil(const int pictureIndex) {
+    AutoLock autoLock(mtx_);
+    if (isFrameInUse_[pictureIndex] != 1)
+        return false;
+    for (int i = 0; i < framesInQueue_; i++) {
+        const bool found = displayQueue_.at(readPosition_).picture_index == pictureIndex;
+        isFrameInUse_[displayQueue_.at(readPosition_).picture_index] = 0;
+        framesInQueue_--;
+        readPosition_ = (readPosition_ + 1) % maxSz;
+        if (found) return true;
+    }
+    return false;
+}
+
 bool cv::cudacodec::detail::FrameQueue::dequeue(CUVIDPARSERDISPINFO& displayInfo, std::vector<RawPacket>& rawPackets)
 {
     AutoLock autoLock(mtx_);
@@ -124,6 +146,7 @@ bool cv::cudacodec::detail::FrameQueue::dequeue(CUVIDPARSERDISPINFO& displayInfo
         }
         readPosition_ = (entry + 1) % maxSz;
         framesInQueue_--;
+        isFrameInUse_[displayInfo.picture_index] = 2;
         return true;
     }
 

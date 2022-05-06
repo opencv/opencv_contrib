@@ -321,6 +321,8 @@ enum class VideoReaderProps {
     PROP_RAW_MODE = 4, //!< Status of raw mode.
     PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
     PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
+    PROP_UDP_SOURCE = 7, //!< Status of VideoReaderInitParams::udpSource initialization.
+    PROP_LIVE_SOURCE = 8, //!< Status of VideoReaderInitParams::liveSource initialization.
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -468,32 +470,42 @@ public:
     virtual bool get(const int propertyId, double& propertyVal) const = 0;
 };
 
+/** @brief VideoReader initialization parameters
+@param udpSource Remove validation which can cause VideoReader() to throw exceptions when reading from a UDP source.
+@param liveCapture Prevent delay and eventual disconnection from a live capture source when the rate frames are consumed is less than the rate they are captured.
+Use with caution, frames will be dropped when nextFrame()/grab() are called at a slower rate than the source fps.
+@param minNumDecodeSurfaces Minimum number of internal decode surfaces used by the hardware decoder.  NVDEC will automatically determine the minimum number of
+surfaces it requires for correct functionality and optimal video memory usage but not necessarily for best performance, which depends on the design of the
+overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
+but it cannot go below the number determined by NVDEC.
+@param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
+*/
+struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
+    CV_WRAP VideoReaderInitParams() : udpSource(false), liveSource(false), minNumDecodeSurfaces(0), rawMode(0) {};
+    CV_PROP_RW bool udpSource;
+    CV_PROP_RW bool liveSource;
+    CV_PROP_RW bool minNumDecodeSurfaces;
+    CV_PROP_RW bool rawMode;
+};
+
 /** @brief Creates video reader.
 
 @param filename Name of the input video file.
-@param params Pass through parameters for VideoCapure.  VideoCapture with the FFMpeg back end (CAP_FFMPEG) is used to parse the video input.
-The `params` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
+@param sourceParams Pass through parameters for VideoCapure.  VideoCapture with the FFMpeg back end (CAP_FFMPEG) is used to parse the video input.
+The `sourceParams` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
     See cv::VideoCaptureProperties
 e.g. when streaming from an RTSP source CAP_PROP_OPEN_TIMEOUT_MSEC may need to be set.
-@param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
-@param minNumDecodeSurfaces Minimum number of internal decode surfaces used by the hardware decoder.  NVDEC will automatically determine the minimum number of
-surfaces it requires for correct functionality and optimal video memory usage but not necessarily for best performance, which depends on the design of the
-overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
-but it cannot go below the number determined by NVDEC.
+@param params Initializaton parameters. See cv::cudacodec::VideoReaderInitParams.
 
 FFMPEG is used to read videos. User can implement own demultiplexing with cudacodec::RawVideoSource
  */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const std::vector<int>& params = {}, const bool rawMode = false, const int minNumDecodeSurfaces = 0);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const String& filename, const std::vector<int>& sourceParams = {}, const VideoReaderInitParams params = VideoReaderInitParams());
 
 /** @overload
 @param source RAW video source implemented by user.
-@param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
-@param minNumDecodeSurfaces Minimum number of internal decode surfaces used by the hardware decoder.  NVDEC will automatically determine the minimum number of
-surfaces it requires for correct functionality and optimal video memory usage but not necessarily for best performance, which depends on the design of the
-overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
-but it cannot go below the number determined by NVDEC.
+@param params Initializaton parameters. See cv::cudacodec::VideoReaderInitParams.
 */
-CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode = false, const int minNumDecodeSurfaces = 0);
+CV_EXPORTS_W Ptr<VideoReader> createVideoReader(const Ptr<RawVideoSource>& source, const VideoReaderInitParams params = VideoReaderInitParams());
 
 //! @}
 

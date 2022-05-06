@@ -48,8 +48,8 @@ using namespace cv::cudacodec;
 
 #ifndef HAVE_NVCUVID
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const bool, const int) { throw_no_cuda(); return Ptr<VideoReader>(); }
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const bool, const int) { throw_no_cuda(); return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String&, const std::vector<int>&, const VideoReaderInitParams) { throw_no_cuda(); return Ptr<VideoReader>(); }
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, const VideoReaderInitParams) { throw_no_cuda(); return Ptr<VideoReader>(); }
 
 #else // HAVE_NVCUVID
 
@@ -86,7 +86,7 @@ namespace
     class VideoReaderImpl : public VideoReader
     {
     public:
-        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces);
+        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool liveSource = false , const bool udpSource = false);
         ~VideoReaderImpl();
 
         bool nextFrame(GpuMat& frame, Stream& stream) CV_OVERRIDE;
@@ -130,7 +130,7 @@ namespace
         return videoSource_->format();
     }
 
-    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces) :
+    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool liveSource, const bool udpSource) :
         videoSource_(source),
         lock_(0)
     {
@@ -143,7 +143,7 @@ namespace
         cuSafeCall( cuvidCtxLockCreate(&lock_, ctx) );
         frameQueue_.reset(new FrameQueue());
         videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, minNumDecodeSurfaces, ctx, lock_));
-        videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_));
+        videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_, liveSource, udpSource));
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
     }
@@ -291,10 +291,10 @@ namespace
         case VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB:
             propertyVal = rawPackets.size();
             return true;
-        case::VideoReaderProps::PROP_RAW_MODE:
+        case VideoReaderProps::PROP_RAW_MODE:
             propertyVal = videoSource_->RawModeEnabled();
             return true;
-        case::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
+        case VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
             const int iPacket = propertyVal - rawPacketsBaseIdx;
             if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
                 propertyVal = rawPackets.at(iPacket).containsKeyFrame;
@@ -302,6 +302,14 @@ namespace
             }
             else
                 break;
+        }
+        case VideoReaderProps::PROP_LIVE_SOURCE: {
+            propertyVal = videoParser_->liveStream();
+            return true;
+        }
+        case VideoReaderProps::PROP_UDP_SOURCE: {
+            propertyVal = videoParser_->udpSource();
+            return true;
         }
         default:
             break;
@@ -321,7 +329,7 @@ namespace
     }
 }
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const std::vector<int>& params, const bool rawMode, const int minNumDecodeSurfaces)
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const std::vector<int>& sourceParams, const VideoReaderInitParams params)
 {
     CV_Assert(!filename.empty());
 
@@ -330,22 +338,22 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
     try
     {
         // prefer ffmpeg to cuvidGetSourceVideoFormat() which doesn't always return the corrct raw pixel format
-        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename, params));
-        videoSource.reset(new RawVideoSourceWrapper(source, rawMode));
+        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename, sourceParams));
+        videoSource.reset(new RawVideoSourceWrapper(source, params.rawMode));
     }
     catch (...)
     {
-        if (params.size()) throw;
+        if (sourceParams.size()) throw;
         videoSource.reset(new CuvidVideoSource(filename));
     }
 
-    return makePtr<VideoReaderImpl>(videoSource, minNumDecodeSurfaces);
+    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.liveSource, params.udpSource);
 }
 
-Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>& source, const bool rawMode, const int minNumDecodeSurfaces)
+Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>& source, const VideoReaderInitParams params)
 {
-    Ptr<VideoSource> videoSource(new RawVideoSourceWrapper(source, rawMode));
-    return makePtr<VideoReaderImpl>(videoSource, minNumDecodeSurfaces);
+    Ptr<VideoSource> videoSource(new RawVideoSourceWrapper(source, params.rawMode));
+    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces);
 }
 
 #endif // HAVE_NVCUVID

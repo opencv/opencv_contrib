@@ -64,7 +64,10 @@ static const char* GetVideoChromaFormatString(cudaVideoChromaFormat eChromaForma
 
 void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
 {
-    videoFormat_ = videoFormat;
+    {
+        AutoLock autoLock(mtx_);
+        videoFormat_ = videoFormat;
+    }
     const cudaVideoCodec _codec = static_cast<cudaVideoCodec>(videoFormat.codec);
     const cudaVideoChromaFormat _chromaFormat = static_cast<cudaVideoChromaFormat>(videoFormat.chromaFormat);
     if (videoFormat.nBitDepthMinus8 > 0) {
@@ -120,9 +123,10 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     cuSafeCall(cuCtxPushCurrent(ctx_));
     cuSafeCall(cuvidGetDecoderCaps(&decodeCaps));
     cuSafeCall(cuCtxPopCurrent(NULL));
-    if (!(decodeCaps.bIsSupported && (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_NV12))))
+    if (!(decodeCaps.bIsSupported && (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_NV12)))){
         CV_Error(Error::StsUnsupportedFormat, "Video source is not supported by hardware video decoder");
-
+        CV_LOG_ERROR(NULL, "Video source is not supported by hardware video decoder.");
+    }
     CV_Assert(videoFormat.ulWidth >= decodeCaps.nMinWidth &&
         videoFormat.ulHeight >= decodeCaps.nMinHeight &&
         videoFormat.ulWidth <= decodeCaps.nMaxWidth &&

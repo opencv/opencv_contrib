@@ -63,7 +63,7 @@ class FrameQueue
 {
 public:
     ~FrameQueue();
-    void init(const int _maxSz);
+    void init(const int _maxSz, const bool force = false);
 
     void endDecode() { endOfDecode_ = true; }
     bool isEndOfDecode() const { return endOfDecode_ != 0;}
@@ -72,7 +72,9 @@ public:
     // If the requested frame is available the method returns true.
     // If decoding was interrupted before the requested frame becomes
     // available, the method returns false.
-    bool waitUntilFrameAvailable(int pictureIndex);
+    // If force == true, spin is disabled and n > 0 frames are discarded
+    // to ensure a frame is available.
+    bool waitUntilFrameAvailable(int pictureIndex, const bool force = false);
 
     void enqueue(const CUVIDPARSERDISPINFO* picParams, const std::vector<RawPacket> rawPackets);
 
@@ -84,8 +86,16 @@ public:
     //      false, if the queue was empty and no new frame could be returned.
     bool dequeue(CUVIDPARSERDISPINFO& displayInfo, std::vector<RawPacket>& rawPackets);
 
-    void releaseFrame(const CUVIDPARSERDISPINFO& picParams) { isFrameInUse_[picParams.picture_index] = false; }
+    // Deque all frames up to and including the frame with index pictureIndex - must only
+    // be called in the same thread as enqueue.
+    // Parameters:
+    //      pictureIndex - Display index of the frame.
+    // Returns:
+    //      true, if successful,
+    //      false, if no frames are dequed.
+    bool dequeueUntil(const int pictureIndex);
 
+    void releaseFrame(const CUVIDPARSERDISPINFO& picParams) { isFrameInUse_[picParams.picture_index] = 0; }
 private:
     bool isInUse(int pictureIndex) const { return isFrameInUse_[pictureIndex] != 0; }
 
