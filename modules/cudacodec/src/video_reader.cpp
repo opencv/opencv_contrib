@@ -74,6 +74,9 @@ void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int 
         outFrame.create(height, width, CV_8UC1);
         cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, stream);
     }
+    else if (colorFormat == ColorFormat::YUV) {
+        decodedFrame.copyTo(outFrame);
+    }
 }
 
 using namespace cv::cudacodec::detail;
