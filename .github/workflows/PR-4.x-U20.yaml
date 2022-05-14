@@ -1,7 +1,9 @@
 name: PR:4.x U20
 
-# TODO: enable pipeline after 4.x update
-on: workflow_dispatch
+on:
+  pull_request:
+    branches:
+      - 4.x
 
 env:
   EXTRA_CMAKE_OPTIONS: '-DBUILD_DOCS=ON -DPYTHON_DEFAULT_EXECUTABLE=/usr/bin/python3 -DBUILD_EXAMPLES=ON -DOPENCV_ENABLE_NONFREE=ON -DENABLE_CCACHE=OFF'
@@ -82,6 +84,8 @@ jobs:
         ninja
     - name: Accuracy:aruco
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_aruco --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:barcode
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_barcode --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:bgsegm
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_bgsegm --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:bioinspired
@@ -92,6 +96,8 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_core --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:dnn
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_dnn --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:dnn_superres
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_dnn_superres --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:face
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_face --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:features2d
@@ -100,6 +106,8 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_flann --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:fuzzy
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_fuzzy --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:gapi
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_gapi --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:hdf
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_hdf --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:highgui
@@ -110,8 +118,12 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_imgcodecs --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:imgproc
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_imgproc --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:intensity_transform
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_intensity_transform --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:line_descriptor
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_line_descriptor --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:mcc
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_mcc --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:ml
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_ml --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:objdetect
@@ -122,10 +134,16 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_phase_unwrapping --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:photo
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_photo --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:quality
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_quality --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:rapid
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_rapid --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:reg
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_reg --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:rgbd
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_rgbd --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:saliency
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_saliency --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:sfm
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_sfm --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:shape
@@ -148,12 +166,16 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_videoio --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:videostab
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_videostab --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Accuracy:wechat_qrcode
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_wechat_qrcode --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:xfeatures2d
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_xfeatures2d --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:ximgproc
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_ximgproc --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Accuracy:xphoto
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_xphoto --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Performance:aruco
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_aruco --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:bioinspired
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_bioinspired --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:calib3d
@@ -162,8 +184,12 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_core --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:dnn
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_dnn --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Performance:dnn_superres
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_dnn_superres --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:features2d
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_features2d --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Performance:gapi
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_gapi --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:imgcodecs
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_imgcodecs --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:imgproc
@@ -178,6 +204,8 @@ jobs:
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_photo --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:reg
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_reg --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
+    - name: Performance:rgbd
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_rgbd --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:stereo
       run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_stereo --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1 --gtest_filter=${{ env.GTEST_FILTER_STRING }}
     - name: Performance:stitching
