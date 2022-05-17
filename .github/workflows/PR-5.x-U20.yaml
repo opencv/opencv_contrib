@@ -1,0 +1,245 @@
+name: PR:5.x U20
+
+on:
+  pull_request:
+    branches:
+      - 5.x
+
+env:
+  EXTRA_CMAKE_OPTIONS: '-DBUILD_DOCS=ON -DPYTHON_DEFAULT_EXECUTABLE=/usr/bin/python3 -DBUILD_EXAMPLES=ON -DOPENCV_ENABLE_NONFREE=ON -DENABLE_CCACHE=OFF'
+  OPENCV_TEST_DATA_PATH: '/opencv_extra/testdata'
+  OPENCV_CONTRIB_DOCKER_WORKDIR: '/__w/opencv_contrib/opencv_contrib'
+  PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+  PR_AUTHOR_FORK: ${{ github.event.pull_request.head.repo.full_name }}
+  SOURCE_BRANCH_NAME: ${{ github.head_ref }}
+  TARGET_BRANCH_NAME: ${{ github.base_ref }}
+  ANT_HOME: '/usr/share/ant'
+  PYTHONPATH: /opencv-contrib-build/python_loader:$PYTHONPATH
+
+jobs:
+  BuildAndTest:
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: quay.io/asenyaev/opencv-ubuntu:20.04
+    steps:
+    - name: PR info
+      run: |
+        echo "PR Author: ${{ env.PR_AUTHOR }}"
+        echo "Source branch name: ${{ env.SOURCE_BRANCH_NAME }}"
+        echo "Target branch name: ${{ env.TARGET_BRANCH_NAME }}"
+    - name: Clean
+      run: find . -mindepth 1 -delete
+    - name: Fetch opencv_contrib
+      uses: actions/checkout@v3
+      with:
+        repository: opencv/opencv_contrib
+        ref: ${{ env.TARGET_BRANCH_NAME }}
+        fetch-depth: 0
+    - name: Merge opencv_contrib with ${{ env.SOURCE_BRANCH_NAME }} branch
+      run: |
+        cd ${{ env.OPENCV_CONTRIB_DOCKER_WORKDIR }}
+        git config --global --add safe.directory ${{ env.OPENCV_CONTRIB_DOCKER_WORKDIR }}
+        git config user.email "opencv.ci"
+        git config user.name "opencv.ci"
+        git pull -v "https://github.com/${{ env.PR_AUTHOR_FORK }}" "${{ env.SOURCE_BRANCH_NAME }}"
+    - name: Clone opencv
+      run: git clone --single-branch --branch ${{ env.TARGET_BRANCH_NAME }} https://github.com/opencv/opencv.git /opencv
+    - name: Merge opencv with ${{ env.SOURCE_BRANCH_NAME }} branch
+      run: |
+        OPENCV_FORK=$(git ls-remote --heads "https://github.com/${{ env.PR_AUTHOR }}/opencv" "${{ env.SOURCE_BRANCH_NAME }}") || true
+        if [[ ! -z "$OPENCV_FORK" ]]; then
+          echo "Merge opencv with ${{ env.SOURCE_BRANCH_NAME }} branch"
+          cd /opencv
+          git config user.email "opencv.ci"
+          git config user.name "opencv.ci"
+          git pull -v "https://github.com/${{ env.PR_AUTHOR }}/opencv" "${{ env.SOURCE_BRANCH_NAME }}"
+        else
+          echo "No merge since ${{ env.PR_AUTHOR }}/opencv does not have branch ${{ env.SOURCE_BRANCH_NAME }}"
+        fi
+    - name: Clone opencv_extra
+      run: git clone --single-branch --branch ${{ env.TARGET_BRANCH_NAME }} https://github.com/opencv/opencv_extra.git /opencv_extra
+    - name: Merge opencv_extra with ${{ env.SOURCE_BRANCH_NAME }} branch
+      run: |
+        OPENCV_EXTRA_FORK=$(git ls-remote --heads "https://github.com/${{ env.PR_AUTHOR }}/opencv_extra" "${{ env.SOURCE_BRANCH_NAME }}") || true
+        if [[ ! -z "$OPENCV_EXTRA_FORK" ]]; then
+          echo "Merge opencv_extra with ${{ env.SOURCE_BRANCH_NAME }} branch"
+          cd /opencv_extra
+          git config user.email "opencv.ci"
+          git config user.name "opencv.ci"
+          git pull -v "https://github.com/${{ env.PR_AUTHOR }}/opencv_extra" "${{ env.SOURCE_BRANCH_NAME }}"
+        else
+          echo "No merge since ${{ env.PR_AUTHOR }}/opencv_extra does not have branch ${{ env.SOURCE_BRANCH_NAME }}"
+        fi
+    - name: Configure OpenCV
+      run: |
+        cd /opencv-contrib-build
+        cmake -G Ninja ${{ env.EXTRA_CMAKE_OPTIONS }} -DOPENCV_EXTRA_MODULES_PATH=${{ env.OPENCV_CONTRIB_DOCKER_WORKDIR }}/modules /opencv
+    - name: Build OpenCV
+      run: |
+        cd /opencv-contrib-build
+        ninja
+    - name: Accuracy:3d
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_3d
+    - name: Accuracy:aruco
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_aruco
+    - name: Accuracy:barcode
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_barcode
+    - name: Accuracy:bgsegm
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_bgsegm
+    - name: Accuracy:bioinspired
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_bioinspired
+    - name: Accuracy:calib
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_calib
+    - name: Accuracy:core
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_core
+    - name: Accuracy:dnn
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_dnn
+    - name: Accuracy:dnn_superres
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_dnn_superres
+    - name: Accuracy:face
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_face
+    - name: Accuracy:features2d
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_features2d
+    - name: Accuracy:flann
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_flann
+    - name: Accuracy:fuzzy
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_fuzzy
+    - name: Accuracy:gapi
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_gapi
+    - name: Accuracy:hdf
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_hdf
+    - name: Accuracy:highgui
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_highgui
+    - name: Accuracy:img_hash
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_img_hash
+    - name: Accuracy:imgcodecs
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_imgcodecs
+    - name: Accuracy:imgproc
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_imgproc
+    - name: Accuracy:intensity_transform
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_intensity_transform
+    - name: Accuracy:line_descriptor
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_line_descriptor
+    - name: Accuracy:mcc
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_mcc
+    - name: Accuracy:ml
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_ml
+    - name: Accuracy:objdetect
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_objdetect
+    - name: Accuracy:optflow
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_optflow
+    - name: Accuracy:phase_unwrapping
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_phase_unwrapping
+    - name: Accuracy:photo
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_photo
+    - name: Accuracy:quality
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_quality
+    - name: Accuracy:rapid
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_rapid
+    - name: Accuracy:reg
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_reg
+    - name: Accuracy:rgbd
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_rgbd
+    - name: Accuracy:saliency
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_saliency
+    - name: Accuracy:sfm
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_sfm
+    - name: Accuracy:shape
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_shape
+    - name: Accuracy:stereo
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_stereo
+    - name: Accuracy:stitching
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_stitching
+    - name: Accuracy:structured_light
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_structured_light
+    - name: Accuracy:superres
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_superres
+    - name: Accuracy:text
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_text
+    - name: Accuracy:tracking
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_tracking
+    - name: Accuracy:video
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_video
+    - name: Accuracy:videoio
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_videoio
+    - name: Accuracy:videostab
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_videostab
+    - name: Accuracy:wechat_qrcode
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_wechat_qrcode
+    - name: Accuracy:xfeatures2d
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_xfeatures2d
+    - name: Accuracy:ximgproc
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_ximgproc
+    - name: Accuracy:xphoto
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_xphoto
+    - name: Accuracy:xstereo
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_test_xstereo
+    - name: Performance:3d
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_3d --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:aruco
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_aruco --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:bioinspired
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_bioinspired --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:calib
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_calib --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:core
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_core --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:dnn
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_dnn --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:dnn_superres
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_dnn_superres --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:features2d
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_features2d --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:gapi
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_gapi --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:imgcodecs
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_imgcodecs --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:imgproc
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_imgproc --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:line_descriptor
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_line_descriptor --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:objdetect
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_objdetect --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:optflow
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_optflow --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:photo
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_photo --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:reg
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_reg --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:stereo
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_stereo --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:stitching
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_stitching --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:superres
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_superres --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:tracking
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_tracking --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:video
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_video --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:videoio
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_videoio --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:xfeatures2d
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_xfeatures2d --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:ximgproc
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_ximgproc --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:xphoto
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_xphoto --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Performance:xstereo
+      run: cd /opencv-contrib-build && xvfb-run -a bin/opencv_perf_xstereo --perf_impl=plain --perf_min_samples=1 --perf_force_samples=1 --perf_verify_sanity --skip_unstable=1
+    - name: Python3
+      run: |
+        cd /opencv/modules/python/test
+        python3 ./test.py --repo ../../../ -v
+    - name: Java
+      run: cd /opencv-contrib-build && xvfb-run -a python3 /opencv/modules/ts/misc/run.py . -a -t java
+    - name: Save Unit Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: junit-html
+        path: /opencv-contrib-build/java_test/testResults/junit-noframes.html
+    - name: Pylint
+      run: cd /opencv-contrib-build && cmake --build . --config release --target check_pylint -- -j4
