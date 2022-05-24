@@ -500,7 +500,7 @@ void EuclideanBundleCommonIntrinsics(
       constant_translation.push_back(5);
 
 #if CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1
-      constant_translation_parameterization =
+      constant_translation_manifold =
         new ceres::SubsetManifold(6, constant_translation);
 #else
       constant_translation_parameterization =
