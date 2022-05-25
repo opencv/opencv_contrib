@@ -96,7 +96,7 @@ namespace
 
         bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
 
-        void VideoReaderImpl::set(const ColorFormat _colorFormat) CV_OVERRIDE;
+        void set(const ColorFormat _colorFormat) CV_OVERRIDE;
 
         bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
 
