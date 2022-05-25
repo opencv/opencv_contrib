@@ -486,7 +486,7 @@ void EuclideanBundleCommonIntrinsics(
     PackCamerasRotationAndTranslation(tracks, *reconstruction);
 
   // Parameterization used to restrict camera motion for modal solvers.
-#if CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
   ceres::SubsetManifold *constant_translation_manifold = NULL;
 #else
   ceres::SubsetParameterization *constant_translation_parameterization = NULL;
@@ -499,7 +499,7 @@ void EuclideanBundleCommonIntrinsics(
       constant_translation.push_back(4);
       constant_translation.push_back(5);
 
-#if CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
       constant_translation_manifold =
         new ceres::SubsetManifold(6, constant_translation);
 #else
