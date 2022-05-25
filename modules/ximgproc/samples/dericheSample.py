@@ -28,7 +28,6 @@ class Filtrage:
         self.module = np.sqrt(dx2+dy2)
         cv.normalize(src=self.module,dst=self.module,norm_type=cv.NORM_MINMAX)
     def SlideBarDeriche(self):
-        cv.destroyWindow(self.filename)
         cv.namedWindow(self.filename)
         AddSlider("alpha",self.filename,1,400,self.alpha,self.UpdateAlpha)
         AddSlider("omega",self.filename,1,1000,self.omega,self.UpdateOmega)
