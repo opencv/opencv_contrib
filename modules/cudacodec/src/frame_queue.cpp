@@ -69,11 +69,11 @@ void cv::cudacodec::detail::FrameQueue::init(const int _maxSz, const bool force)
     std::memset((void*)isFrameInUse_, 0, sizeof(*isFrameInUse_) * maxSz);
 }
 
-bool cv::cudacodec::detail::FrameQueue::waitUntilFrameAvailable(int pictureIndex, const bool force)
+bool cv::cudacodec::detail::FrameQueue::waitUntilFrameAvailable(int pictureIndex, const bool allowFrameDrop)
 {
     while (isInUse(pictureIndex))
     {
-        if (force && dequeueUntil(pictureIndex))
+        if (allowFrameDrop && dequeueUntil(pictureIndex))
             break;
         // Decoder is getting too far ahead from display
         Thread::sleep(1);

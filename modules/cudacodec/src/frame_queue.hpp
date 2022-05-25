@@ -72,9 +72,9 @@ public:
     // If the requested frame is available the method returns true.
     // If decoding was interrupted before the requested frame becomes
     // available, the method returns false.
-    // If force == true, spin is disabled and n > 0 frames are discarded
+    // If allowFrameDrop == true, spin is disabled and n > 0 frames are discarded
     // to ensure a frame is available.
-    bool waitUntilFrameAvailable(int pictureIndex, const bool force = false);
+    bool waitUntilFrameAvailable(int pictureIndex, const bool allowFrameDrop = false);
 
     void enqueue(const CUVIDPARSERDISPINFO* picParams, const std::vector<RawPacket> rawPackets);
 
