@@ -45,8 +45,8 @@
 
 #ifdef HAVE_NVCUVID
 
-cv::cudacodec::detail::VideoParser::VideoParser(VideoDecoder* videoDecoder, FrameQueue* frameQueue, const bool liveSource, const bool udpSource) :
-    videoDecoder_(videoDecoder), frameQueue_(frameQueue), liveSource_(liveSource)
+cv::cudacodec::detail::VideoParser::VideoParser(VideoDecoder* videoDecoder, FrameQueue* frameQueue, const bool allowFrameDrop, const bool udpSource) :
+    videoDecoder_(videoDecoder), frameQueue_(frameQueue), allowFrameDrop_(allowFrameDrop)
 {
     if (udpSource) maxUnparsedPackets_ = 0;
     CUVIDPARSERPARAMS params;
@@ -124,7 +124,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         newFormat.height = format->coded_height;
         newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
         newFormat.fps = format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator);
-        newFormat.ulNumDecodeSurfaces = min(!thiz->liveSource_ ? max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
+        newFormat.ulNumDecodeSurfaces = min(!thiz->allowFrameDrop_ ? max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
             format->min_num_decode_surfaces * 2, 32);
         if (format->progressive_sequence)
             newFormat.deinterlaceMode = Weave;
@@ -167,7 +167,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandlePictureDecode(void* userDa
 
     thiz->unparsedPackets_ = 0;
 
-    bool isFrameAvailable = thiz->frameQueue_->waitUntilFrameAvailable(picParams->CurrPicIdx, thiz->liveSource_);
+    bool isFrameAvailable = thiz->frameQueue_->waitUntilFrameAvailable(picParams->CurrPicIdx, thiz->allowFrameDrop_);
     if (!isFrameAvailable)
         return false;
 

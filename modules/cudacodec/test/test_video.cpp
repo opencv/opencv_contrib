@@ -360,12 +360,12 @@ CUDA_TEST_P(CheckInitParams, Reader)
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::cudacodec::VideoReaderInitParams params;
     params.udpSource = GET_PARAM(2);
-    params.liveSource = GET_PARAM(3);
+    params.allowFrameDrop = GET_PARAM(3);
     params.rawMode = GET_PARAM(4);
-    double udpSource = 0, liveSource = 0, rawMode = 0;
+    double udpSource = 0, allowFrameDrop = 0, rawMode = 0;
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_UDP_SOURCE, udpSource) && static_cast<bool>(udpSource) == params.udpSource);
-    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_LIVE_SOURCE, liveSource) && static_cast<bool>(liveSource) == params.liveSource);
+    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_ALLOW_FRAME_DROP, allowFrameDrop) && static_cast<bool>(allowFrameDrop) == params.allowFrameDrop);
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_MODE, rawMode) && static_cast<bool>(rawMode) == params.rawMode);
 }
 

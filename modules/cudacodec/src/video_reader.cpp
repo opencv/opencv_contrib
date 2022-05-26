@@ -86,7 +86,7 @@ namespace
     class VideoReaderImpl : public VideoReader
     {
     public:
-        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool liveSource = false , const bool udpSource = false);
+        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop = false , const bool udpSource = false);
         ~VideoReaderImpl();
 
         bool nextFrame(GpuMat& frame, Stream& stream) CV_OVERRIDE;
@@ -130,7 +130,7 @@ namespace
         return videoSource_->format();
     }
 
-    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool liveSource, const bool udpSource) :
+    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop, const bool udpSource) :
         videoSource_(source),
         lock_(0)
     {
@@ -143,7 +143,7 @@ namespace
         cuSafeCall( cuvidCtxLockCreate(&lock_, ctx) );
         frameQueue_.reset(new FrameQueue());
         videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, minNumDecodeSurfaces, ctx, lock_));
-        videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_, liveSource, udpSource));
+        videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_, allowFrameDrop, udpSource));
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
     }
@@ -303,8 +303,8 @@ namespace
             else
                 break;
         }
-        case VideoReaderProps::PROP_LIVE_SOURCE: {
-            propertyVal = videoParser_->liveStream();
+        case VideoReaderProps::PROP_ALLOW_FRAME_DROP: {
+            propertyVal = videoParser_->allowFrameDrops();
             return true;
         }
         case VideoReaderProps::PROP_UDP_SOURCE: {
@@ -347,7 +347,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
         videoSource.reset(new CuvidVideoSource(filename));
     }
 
-    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.liveSource, params.udpSource);
+    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.allowFrameDrop, params.udpSource);
 }
 
 Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>& source, const VideoReaderInitParams params)

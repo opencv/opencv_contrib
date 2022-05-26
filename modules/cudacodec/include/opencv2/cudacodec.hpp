@@ -322,7 +322,7 @@ enum class VideoReaderProps {
     PROP_LRF_HAS_KEY_FRAME = 5, //!< FFmpeg source only - Indicates whether the Last Raw Frame (LRF), output from VideoReader::retrieve() when VideoReader is initialized in raw mode, contains encoded data for a key frame.
     PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
     PROP_UDP_SOURCE = 7, //!< Status of VideoReaderInitParams::udpSource initialization.
-    PROP_LIVE_SOURCE = 8, //!< Status of VideoReaderInitParams::liveSource initialization.
+    PROP_ALLOW_FRAME_DROP = 8, //!< Status of VideoReaderInitParams::allowFrameDrop initialization.
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -472,8 +472,9 @@ public:
 
 /** @brief VideoReader initialization parameters
 @param udpSource Remove validation which can cause VideoReader() to throw exceptions when reading from a UDP source.
-@param liveCapture Prevent delay and eventual disconnection from a live capture source when the rate frames are consumed is less than the rate they are captured.
-Use with caution, frames will be dropped when nextFrame()/grab() are called at a slower rate than the source fps.
+@param allowFrameDrop Allow frames to be dropped when ingesting from a live capture source to prevent delay and eventual disconnection
+when calls to nextFrame()/grab() cannot keep up with the source's fps.  Only use if delay and disconnection are a problem, i.e. not when decoding from
+video files where setting this flag will cause frames to be unnecessarily discarded.
 @param minNumDecodeSurfaces Minimum number of internal decode surfaces used by the hardware decoder.  NVDEC will automatically determine the minimum number of
 surfaces it requires for correct functionality and optimal video memory usage but not necessarily for best performance, which depends on the design of the
 overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
@@ -481,9 +482,9 @@ but it cannot go below the number determined by NVDEC.
 @param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
 */
 struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
-    CV_WRAP VideoReaderInitParams() : udpSource(false), liveSource(false), minNumDecodeSurfaces(0), rawMode(0) {};
+    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0) {};
     CV_PROP_RW bool udpSource;
-    CV_PROP_RW bool liveSource;
+    CV_PROP_RW bool allowFrameDrop;
     CV_PROP_RW int minNumDecodeSurfaces;
     CV_PROP_RW bool rawMode;
 };
