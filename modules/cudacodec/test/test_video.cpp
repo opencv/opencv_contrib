@@ -187,6 +187,7 @@ CUDA_TEST_P(Video, Reader)
         {cudacodec::ColorFormat::GRAY,1},
         {cudacodec::ColorFormat::BGR,3},
         {cudacodec::ColorFormat::BGRA,4},
+        {cudacodec::ColorFormat::YUV,1}
     };
 
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
@@ -201,7 +202,8 @@ CUDA_TEST_P(Video, Reader)
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
-        ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
+        const int height = formatToChannels.first == cudacodec::ColorFormat::YUV ? 1.5 * fmt.height : fmt.height;
+        ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
         ASSERT_TRUE(frame.channels() == formatToChannels.second);
     }

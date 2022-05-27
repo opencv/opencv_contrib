@@ -56,10 +56,10 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, co
 void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream);
 
 void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat,
-    cudaStream_t stream)
+    Stream stream)
 {
     if (colorFormat == ColorFormat::BGRA) {
-        nv12ToBgra(decodedFrame, outFrame, width, height, stream);
+        nv12ToBgra(decodedFrame, outFrame, width, height, StreamAccessor::getStream(stream));
     }
     else if (colorFormat == ColorFormat::BGR) {
         outFrame.create(height, width, CV_8UC3);
@@ -67,12 +67,15 @@ void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int 
         NppiSize oSizeROI = { width,height };
         NppStreamContext nppStreamCtx;
         nppSafeCall(nppGetStreamContext(&nppStreamCtx));
-        nppStreamCtx.hStream = stream;
+        nppStreamCtx.hStream = StreamAccessor::getStream(stream);
         nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
     }
     else if (colorFormat == ColorFormat::GRAY) {
         outFrame.create(height, width, CV_8UC1);
-        cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, stream);
+        cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, StreamAccessor::getStream(stream));
+    }
+    else if (colorFormat == ColorFormat::YUV) {
+        decodedFrame.copyTo(outFrame, stream);
     }
 }
 
@@ -217,7 +220,7 @@ namespace
 
             // perform post processing on the CUDA surface (performs colors space conversion and post processing)
             // comment this out if we include the line of code seen above
-            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), colorFormat, StreamAccessor::getStream(stream));
+            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), colorFormat, stream);
 
             // unmap video frame
             // unmapFrame() synchronizes with the VideoDecode API (ensures the frame has finished decoding)

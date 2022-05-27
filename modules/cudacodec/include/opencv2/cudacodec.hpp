@@ -326,12 +326,13 @@ enum class VideoReaderProps {
 #endif
 };
 
-/** @brief ColorFormat for the frame returned by the decoder.
+/** @brief ColorFormat for the frame returned by nextFrame()/retrieve().
 */
 enum class ColorFormat {
     BGRA = 1,
     BGR = 2,
     GRAY = 3,
+    YUV = 4,
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -394,7 +395,11 @@ public:
      */
     CV_WRAP virtual bool set(const VideoReaderProps propertyId, const double propertyVal) = 0;
 
-    CV_WRAP virtual void set(const ColorFormat _colorFormat) = 0;
+    /** @brief Set the desired ColorFormat for the frame returned by nextFrame()/retrieve().
+
+    @param colorFormat Value of the ColorFormat.
+     */
+    CV_WRAP virtual void set(const ColorFormat colorFormat) = 0;
 
     /** @brief Returns the specified VideoReader property
 
