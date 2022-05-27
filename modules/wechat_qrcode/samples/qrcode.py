@@ -37,7 +37,7 @@ else:
     cap = cv2.VideoCapture(camIdx)
     while True:
         res, img = cap.read()
-        if img.empty():
+        if img is None:
             break
         res, points = detector.detectAndDecode(img)
         for t in res:

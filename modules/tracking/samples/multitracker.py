@@ -10,7 +10,7 @@ print('Select 3 tracking targets')
 
 cv.namedWindow("tracking")
 camera = cv.VideoCapture(sys.argv[1])
-tracker = cv.MultiTracker_create()
+tracker = cv.legacy.MultiTracker_create()
 init_once = False
 
 ok, image=camera.read()
@@ -25,17 +25,17 @@ bbox3 = cv.selectROI('tracking', image)
 while camera.isOpened():
     ok, image=camera.read()
     if not ok:
-        print 'no image to read'
+        print('no image to read')
         break
 
     if not init_once:
-        ok = tracker.add(cv.TrackerMIL_create(), image, bbox1)
-        ok = tracker.add(cv.TrackerMIL_create(), image, bbox2)
-        ok = tracker.add(cv.TrackerMIL_create(), image, bbox3)
+        ok = tracker.add(cv.legacy.TrackerMIL_create(), image, bbox1)
+        ok = tracker.add(cv.legacy.TrackerMIL_create(), image, bbox2)
+        ok = tracker.add(cv.legacy.TrackerMIL_create(), image, bbox3)
         init_once = True
 
     ok, boxes = tracker.update(image)
-    print ok, boxes
+    print(ok, boxes)
 
     for newbox in boxes:
         p1 = (int(newbox[0]), int(newbox[1]))
