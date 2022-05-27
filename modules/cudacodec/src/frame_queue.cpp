@@ -55,14 +55,10 @@ cv::cudacodec::detail::FrameQueue::~FrameQueue() {
         delete[] isFrameInUse_;
 }
 
-void cv::cudacodec::detail::FrameQueue::init(const int _maxSz, const bool force) {
+void cv::cudacodec::detail::FrameQueue::init(const int _maxSz) {
     AutoLock autoLock(mtx_);
-    if (isFrameInUse_) {
-        if (force)
-            delete[] isFrameInUse_;
-        else
-            return;
-    }
+    if (isFrameInUse_)
+        return;
     maxSz = _maxSz;
     displayQueue_ = std::vector<CUVIDPARSERDISPINFO>(maxSz, CUVIDPARSERDISPINFO());
     isFrameInUse_ = new volatile int[maxSz];

@@ -63,7 +63,7 @@ class FrameQueue
 {
 public:
     ~FrameQueue();
-    void init(const int _maxSz, const bool force = false);
+    void init(const int _maxSz);
 
     void endDecode() { endOfDecode_ = true; }
     bool isEndOfDecode() const { return endOfDecode_ != 0;}
