@@ -548,7 +548,7 @@ void EuclideanBundleCommonIntrinsics(
       }
 
       if (bundle_constraints & BUNDLE_NO_TRANSLATION) {
-#if CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
         problem.SetParameterization(current_camera_R_t,
                                     constant_translation_manifold);
 #else
@@ -601,7 +601,7 @@ void EuclideanBundleCommonIntrinsics(
     // Always set K3 constant, it's not used at the moment.
     constant_intrinsics.push_back(OFFSET_K3);
 
-#if CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
     ceres::SubsetManifold *subset_manifold =
       new ceres::SubsetManifold(OFFSET_MAX, constant_intrinsics);
 
