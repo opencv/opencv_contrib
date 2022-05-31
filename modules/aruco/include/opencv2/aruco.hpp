@@ -40,6 +40,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_ARUCO_HPP__
 
 #include <opencv2/core.hpp>
+#include <opencv2/calib3d.hpp>
 #include <vector>
 #include "opencv2/aruco/dictionary.hpp"
 
@@ -219,7 +220,42 @@ struct CV_EXPORTS_W DetectorParameters {
 CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
                                 OutputArrayOfArrays rejectedImgPoints = noArray());
+/** @brief
+ * rvec/tvec define the right handed coordinate system of the marker.
+ * PatternPos defines center this system and axes direction.
+ * Axis X (red color)   - first coordinate
+ * Axis Y (green color) - second coordinate
+ * Axis Z (blue color)  - third coordinate
+ */
+enum PatternPos {
+    /** @brief The marker coordinate system is centered on the middle of the marker.
+        * The coordinates of the four corners of the marker in its own coordinate system are:
+        * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
+        * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
+        * These pattern points define this coordinate system:
+        */
+    CCW_center,
+    /** @brief The marker coordinate system is centered on the top-left corner of the marker.
+        * The coordinates of the four corners of the marker in its own coordinate system are:
+        * (0, 0, 0), (markerLength, 0, 0),
+        * (markerLength, markerLength, 0), (0, markerLength, 0)
+        * These pattern points define this coordinate system:
+        */
+    CW_top_left_corner
+};
 
+struct CV_EXPORTS_W EstimateParameters {
+    CV_PROP_RW PatternPos pattern;
+    CV_PROP_RW bool useExtrinsicGuess;
+    CV_PROP_RW SolvePnPMethod solvePnPMethod;
+
+    EstimateParameters(): pattern(CCW_center), useExtrinsicGuess(false),
+                          solvePnPMethod(SOLVEPNP_ITERATIVE) {}
+
+    CV_WRAP static Ptr<EstimateParameters> create() {
+        return makePtr<EstimateParameters>();
+    }
+};
 
 
 /**
@@ -240,21 +276,24 @@ CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &diction
  * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
  * @param _objPoints array of object points of all the marker corners
+ * @param estimateParameters set the origin of coordinate system and the coordinates of the four corners of the marker
+ * (default EstimateParameters::CW_top_left_corner)
  *
  * This function receives the detected markers and returns their pose estimation respect to
  * the camera individually. So for each marker, one rotation and translation vector is returned.
  * The returned transformation is the one that transforms points from each marker coordinate system
  * to the camera coordinate system.
- * The marker corrdinate system is centered on the middle of the marker, with the Z axis
+ * The marker coordinate system is centered on the middle of the marker (by default), with the Z axis
  * perpendicular to the marker plane.
  * The coordinates of the four corners of the marker in its own coordinate system are:
- * (0, 0, 0), (markerLength, 0, 0),
- * (markerLength, markerLength, 0), (0, markerLength, 0)
+ * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
+ * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
  * @sa use cv::drawFrameAxes to get world coordinate system axis for object points
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
-                                            OutputArray rvecs, OutputArray tvecs, OutputArray _objPoints = noArray());
+                                            OutputArray rvecs, OutputArray tvecs, OutputArray _objPoints = noArray(),
+                                            Ptr<EstimateParameters> estimateParameters = EstimateParameters::create());
 
 
 
