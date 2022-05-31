@@ -810,7 +810,8 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
 
 
 /**
-  * @brief Return object points for the system centered in a top left corner of single marker, given the marker length
+  * @brief Return object points for the system centered in a middle (by default) or in a top left corner of single
+  * marker, given the marker length
   */
 static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints,
                                          EstimateParameters estimateParameters) {

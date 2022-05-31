@@ -226,24 +226,38 @@ CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &diction
  * Axis X (red color)   - first coordinate
  * Axis Y (green color) - second coordinate
  * Axis Z (blue color)  - third coordinate
+ * @sa estimatePoseSingleMarkers(), @ref tutorial_aruco_detection
  */
 enum PatternPos {
     /** @brief The marker coordinate system is centered on the middle of the marker.
-        * The coordinates of the four corners of the marker in its own coordinate system are:
+        * The coordinates of the four corners (CCW order) of the marker in its own coordinate system are:
         * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
-        * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
+        * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0).
+        *
         * These pattern points define this coordinate system:
+        * ![Image with axes drawn](images/singlemarkersaxes.jpg)
         */
     CCW_center,
     /** @brief The marker coordinate system is centered on the top-left corner of the marker.
-        * The coordinates of the four corners of the marker in its own coordinate system are:
+        * The coordinates of the four corners (CW order) of the marker in its own coordinate system are:
         * (0, 0, 0), (markerLength, 0, 0),
-        * (markerLength, markerLength, 0), (0, markerLength, 0)
+        * (markerLength, markerLength, 0), (0, markerLength, 0).
+        *
         * These pattern points define this coordinate system:
+        * ![Image with axes drawn](images/singlemarkersaxes2.jpg)
         */
     CW_top_left_corner
 };
 
+/** @brief
+ * Pose estimation parameters
+ * @param pattern Defines center this system and axes direction.
+ * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses the provided
+ * rvec and tvec values as initial approximations of the rotation and translation vectors, respectively, and further
+ * optimizes them.
+ * @param solvePnPMethod Method for solving a PnP problem: see @ref calib3d_solvePnP_flags.
+ * @sa PatternPos, solvePnP(), @ref tutorial_aruco_detection
+ */
 struct CV_EXPORTS_W EstimateParameters {
     CV_PROP_RW PatternPos pattern;
     CV_PROP_RW bool useExtrinsicGuess;
@@ -289,6 +303,8 @@ struct CV_EXPORTS_W EstimateParameters {
  * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
  * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0)
  * @sa use cv::drawFrameAxes to get world coordinate system axis for object points
+ * @sa PatternPos
+ * @sa @ref tutorial_aruco_detection
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
