@@ -100,7 +100,7 @@ public:
 
     void reset() CV_OVERRIDE;
 
-    const Affine3f getPose() const CV_OVERRIDE;
+    Affine3f getPose() const CV_OVERRIDE;
 
     bool update(InputArray depth) CV_OVERRIDE;
 
@@ -257,7 +257,7 @@ const Params& DynaFuImpl<T>::getParams() const
 }
 
 template< typename T >
-const Affine3f DynaFuImpl<T>::getPose() const
+Affine3f DynaFuImpl<T>::getPose() const
 {
     return pose;
 }

@@ -251,7 +251,7 @@ public:
     /** @brief Outputs a string showing the used parameters setup
     @return a string which contains formated parameters information
      */
-    CV_WRAP virtual const String printSetup()=0;
+    CV_WRAP virtual String printSetup()=0;
 
     /** @brief Write xml/yml formated parameters information
     @param fs the filename of the xml file that will be open and writen with formatted parameters
@@ -389,9 +389,9 @@ public:
     CV_WRAP virtual void getMagnoRAW(OutputArray retinaOutput_magno)=0;
 
     /** @overload */
-    CV_WRAP virtual const Mat getMagnoRAW() const=0;
+    CV_WRAP virtual Mat getMagnoRAW() const=0;
     /** @overload */
-    CV_WRAP virtual const Mat getParvoRAW() const=0;
+    CV_WRAP virtual Mat getParvoRAW() const=0;
 
     /** @brief Activate color saturation as the final step of the color demultiplexing process -\> this
     saturation is a sigmoide function applied to each channel of the demultiplexed image.

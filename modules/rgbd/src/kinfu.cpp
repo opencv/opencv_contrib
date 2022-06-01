@@ -138,7 +138,7 @@ public:
 
     void reset() CV_OVERRIDE;
 
-    const Affine3f getPose() const CV_OVERRIDE;
+    Affine3f getPose() const CV_OVERRIDE;
 
     bool update(InputArray depth) CV_OVERRIDE;
 
@@ -187,7 +187,7 @@ const Params& KinFuImpl<MatType>::getParams() const
 }
 
 template< typename MatType >
-const Affine3f KinFuImpl<MatType>::getPose() const
+Affine3f KinFuImpl<MatType>::getPose() const
 {
     return pose;
 }

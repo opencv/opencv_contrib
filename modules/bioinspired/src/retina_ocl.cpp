@@ -203,7 +203,7 @@ void RetinaOCLImpl::setup(cv::bioinspired::RetinaParameters newConfiguration)
     setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency, _retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);
 }
 
-const String RetinaOCLImpl::printSetup()
+String RetinaOCLImpl::printSetup()
 {
     std::stringstream outmessage;
 
@@ -448,8 +448,8 @@ void RetinaOCLImpl::getMagnoRAW(OutputArray retinaOutput_magno)
 
 // unimplemented interfaces:
 void RetinaOCLImpl::applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
-const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; }
-const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; }
+Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; }
+Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; }
 
 ///////////////////////////////////////
 ///////// BasicRetinaFilter ///////////
