@@ -810,19 +810,31 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
 
 
 /**
-  * @brief Return object points for the system centered in a single marker, given the marker length
+  * @brief Return object points for the system centered in a middle (by default) or in a top left corner of single
+  * marker, given the marker length
   */
-static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints) {
+static void _getSingleMarkerObjectPoints(float markerLength, OutputArray _objPoints,
+                                         EstimateParameters estimateParameters) {
 
     CV_Assert(markerLength > 0);
 
     _objPoints.create(4, 1, CV_32FC3);
     Mat objPoints = _objPoints.getMat();
     // set coordinate system in the top-left corner of the marker, with Z pointing out
-    objPoints.ptr< Vec3f >(0)[0] = Vec3f(0.f, 0.f, 0);
-    objPoints.ptr< Vec3f >(0)[1] = Vec3f(markerLength, 0.f, 0);
-    objPoints.ptr< Vec3f >(0)[2] = Vec3f(markerLength, markerLength, 0);
-    objPoints.ptr< Vec3f >(0)[3] = Vec3f(0.f, markerLength, 0);
+    if (estimateParameters.pattern == CW_top_left_corner) {
+        objPoints.ptr<Vec3f>(0)[0] = Vec3f(0.f, 0.f, 0);
+        objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength, 0.f, 0);
+        objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength, markerLength, 0);
+        objPoints.ptr<Vec3f>(0)[3] = Vec3f(0.f, markerLength, 0);
+    }
+    else if (estimateParameters.pattern == CCW_center) {
+        objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+        objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
+        objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+        objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+    }
+    else
+        CV_Error(Error::StsBadArg, "Unknown estimateParameters pattern");
 }
 
 
@@ -1221,17 +1233,17 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
     public:
     SinglePoseEstimationParallel(Mat& _markerObjPoints, InputArrayOfArrays _corners,
                                  InputArray _cameraMatrix, InputArray _distCoeffs,
-                                 Mat& _rvecs, Mat& _tvecs)
+                                 Mat& _rvecs, Mat& _tvecs, EstimateParameters _estimateParameters)
         : markerObjPoints(_markerObjPoints), corners(_corners), cameraMatrix(_cameraMatrix),
-          distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs) {}
+          distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs), estimateParameters(_estimateParameters) {}
 
     void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 
         for(int i = begin; i < end; i++) {
-            solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs,
-                    rvecs.at<Vec3d>(i), tvecs.at<Vec3d>(i));
+            solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs, rvecs.at<Vec3d>(i),
+                     tvecs.at<Vec3d>(i), estimateParameters.useExtrinsicGuess, estimateParameters.solvePnPMethod);
         }
     }
 
@@ -1242,21 +1254,20 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
     InputArrayOfArrays corners;
     InputArray cameraMatrix, distCoeffs;
     Mat& rvecs, tvecs;
+    EstimateParameters estimateParameters;
 };
 
 
 
-
-/**
-  */
 void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
-                               OutputArray _rvecs, OutputArray _tvecs, OutputArray _objPoints) {
+                               OutputArray _rvecs, OutputArray _tvecs, OutputArray _objPoints,
+                               Ptr<EstimateParameters> estimateParameters) {
 
     CV_Assert(markerLength > 0);
 
     Mat markerObjPoints;
-    _getSingleMarkerObjectPoints(markerLength, markerObjPoints);
+    _getSingleMarkerObjectPoints(markerLength, markerObjPoints, *estimateParameters);
     int nMarkers = (int)_corners.total();
     _rvecs.create(nMarkers, 1, CV_64FC3);
     _tvecs.create(nMarkers, 1, CV_64FC3);
@@ -1272,7 +1283,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, nMarkers),
                   SinglePoseEstimationParallel(markerObjPoints, _corners, _cameraMatrix,
-                                               _distCoeffs, rvecs, tvecs));
+                                               _distCoeffs, rvecs, tvecs, *estimateParameters));
     if(_objPoints.needed()){
         markerObjPoints.convertTo(_objPoints, -1);
     }

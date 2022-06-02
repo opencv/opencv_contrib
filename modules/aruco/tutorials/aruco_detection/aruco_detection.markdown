@@ -286,8 +286,9 @@ translation vectors of the estimated poses will be in the same unit
 - The output parameters `rvecs` and `tvecs` are the rotation and translation vectors respectively, for each of the markers
 in `markerCorners`.
 
-The marker coordinate system that is assumed by this function is placed at the center of the marker
-with the Z axis pointing out, as in the following image. Axis-color correspondences are X: red, Y: green, Z: blue. Note the axis directions of the rotated markers in this image.
+The marker coordinate system that is assumed by this function is placed in the center (by default) or
+in the top left corner of the marker with the Z axis pointing out, as in the following image.
+Axis-color correspondences are X: red, Y: green, Z: blue. Note the axis directions of the rotated markers in this image.
 
 ![Image with axes drawn](images/singlemarkersaxes.jpg)
 
