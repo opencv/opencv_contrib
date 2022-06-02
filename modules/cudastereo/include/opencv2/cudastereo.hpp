@@ -355,7 +355,10 @@ disparity map.
 
 @sa reprojectImageTo3D
  */
-CV_EXPORTS_W void reprojectImageTo3D(InputArray disp, OutputArray xyzw, InputArray Q, int dst_cn = 4, Stream& stream = Stream::Null());
+CV_EXPORTS void reprojectImageTo3D(InputArray disp, OutputArray xyzw, InputArray Q, int dst_cn = 4, Stream& stream = Stream::Null());
+CV_EXPORTS_W inline void reprojectImageTo3D(GpuMat disp, CV_OUT GpuMat& xyzw, Mat Q, int dst_cn = 4, Stream& stream = Stream::Null()) {
+    reprojectImageTo3D((InputArray)disp, (OutputArray)xyzw, (InputArray)Q, dst_cn, stream);
+}
 
 /** @brief Colors a disparity image.
 

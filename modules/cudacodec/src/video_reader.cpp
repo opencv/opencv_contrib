@@ -102,6 +102,7 @@ namespace
         void set(const ColorFormat _colorFormat) CV_OVERRIDE;
 
         bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
+        bool getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const CV_OVERRIDE;
 
         bool get(const int propertyId, double& propertyVal) const CV_OVERRIDE;
 
@@ -246,13 +247,13 @@ namespace
         }
         else if (idx == extraDataIdx) {
             if (!frame.isMat())
-                CV_Error(Error::StsUnsupportedFormat, "Extra data  is stored on the host and must be retrueved using a cv::Mat");
+                CV_Error(Error::StsUnsupportedFormat, "Extra data  is stored on the host and must be retrieved using a cv::Mat");
             videoSource_->getExtraData(frame.getMatRef());
         }
         else{
             if (idx >= rawPacketsBaseIdx && idx < rawPacketsBaseIdx + rawPackets.size()) {
                 if (!frame.isMat())
-                    CV_Error(Error::StsUnsupportedFormat, "Raw data is stored on the host and must retrievd using a cv::Mat");
+                    CV_Error(Error::StsUnsupportedFormat, "Raw data is stored on the host and must be retrieved using a cv::Mat");
                 Mat tmp(1, rawPackets.at(idx - rawPacketsBaseIdx).size, CV_8UC1, rawPackets.at(idx - rawPacketsBaseIdx).Data(), rawPackets.at(idx - rawPacketsBaseIdx).size);
                 frame.getMatRef() = tmp;
             }
@@ -264,8 +265,9 @@ namespace
         switch (propertyId) {
         case VideoReaderProps::PROP_RAW_MODE :
             videoSource_->SetRawMode(static_cast<bool>(propertyVal));
+            return true;
         }
-        return true;
+        return false;
     }
 
     void VideoReaderImpl::set(const ColorFormat _colorFormat) {
@@ -303,18 +305,26 @@ namespace
             else
                 break;
         }
-        case VideoReaderProps::PROP_ALLOW_FRAME_DROP: {
+        case VideoReaderProps::PROP_ALLOW_FRAME_DROP:
             propertyVal = videoParser_->allowFrameDrops();
             return true;
-        }
-        case VideoReaderProps::PROP_UDP_SOURCE: {
+        case VideoReaderProps::PROP_UDP_SOURCE:
             propertyVal = videoParser_->udpSource();
             return true;
-        }
+        case VideoReaderProps::PROP_COLOR_FORMAT:
+            propertyVal = static_cast<double>(colorFormat);
+            return true;
         default:
             break;
         }
         return false;
+    }
+
+    bool VideoReaderImpl::getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const {
+        double propertyValInOut = propertyValIn;
+        const bool ret = get(propertyId, propertyValInOut);
+        propertyValOut = propertyValInOut;
+        return ret;
     }
 
     bool VideoReaderImpl::get(const int propertyId, double& propertyVal) const {
