@@ -161,7 +161,7 @@ public:
     /** @brief parameters setup display method
     @return a string which contains formatted parameters information
     */
-    CV_WRAP virtual const String printSetup()=0;
+    CV_WRAP virtual String printSetup()=0;
 
     /** @brief write xml/yml formated parameters information
     @param fs : the filename of the xml file that will be open and writen with formatted parameters information

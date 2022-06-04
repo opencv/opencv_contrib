@@ -95,7 +95,7 @@ public:
     CV_WRAP virtual void reset() = 0;
 
     /** @brief Get current pose in voxel space */
-    virtual const Affine3f getPose() const = 0;
+    virtual Affine3f getPose() const = 0;
 
     /** @brief Process next depth frame
 

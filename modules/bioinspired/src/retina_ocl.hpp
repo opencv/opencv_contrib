@@ -643,7 +643,7 @@ public:
 
     RetinaParameters getParameters() CV_OVERRIDE;
 
-    const String printSetup() CV_OVERRIDE;
+    String printSetup() CV_OVERRIDE;
     virtual void write(String fs) const CV_OVERRIDE;
     virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
@@ -663,8 +663,8 @@ public:
     void applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) CV_OVERRIDE;
     void getParvoRAW(OutputArray /*retinaOutput_parvo*/) CV_OVERRIDE;
     void getMagnoRAW(OutputArray /*retinaOutput_magno*/) CV_OVERRIDE;
-    const Mat getMagnoRAW() const CV_OVERRIDE;
-    const Mat getParvoRAW() const CV_OVERRIDE;
+    Mat getMagnoRAW() const CV_OVERRIDE;
+    Mat getParvoRAW() const CV_OVERRIDE;
 
 protected:
     RetinaParameters _retinaParameters;

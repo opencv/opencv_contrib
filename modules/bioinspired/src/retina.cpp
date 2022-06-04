@@ -148,7 +148,7 @@ public:
      * parameters setup display method
      * @return a string which contains formatted parameters information
      */
-    const String printSetup() CV_OVERRIDE;
+    String printSetup() CV_OVERRIDE;
 
     /**
      * write xml/yml formated parameters information
@@ -233,8 +233,8 @@ public:
     void getMagnoRAW(OutputArray retinaOutput_magno) CV_OVERRIDE;
 
     // original API level data accessors : get buffers addresses from a Mat header, similar to getParvoRAW and getMagnoRAW...
-    const Mat getMagnoRAW() const CV_OVERRIDE;
-    const Mat getParvoRAW() const CV_OVERRIDE;
+    Mat getMagnoRAW() const CV_OVERRIDE;
+    Mat getParvoRAW() const CV_OVERRIDE;
 
     /**
      * activate color saturation as the final step of the color demultiplexing process
@@ -445,7 +445,7 @@ void RetinaImpl::setup(RetinaParameters newConfiguration)
 
 }
 
-const String RetinaImpl::printSetup()
+String RetinaImpl::printSetup()
 {
     std::stringstream outmessage;
 
@@ -692,14 +692,14 @@ void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy)
 }
 
 // original API level data accessors : get buffers addresses...
-const Mat RetinaImpl::getMagnoRAW() const {
+Mat RetinaImpl::getMagnoRAW() const {
     CV_Assert(!_wasOCLRunCalled);
     // create a cv::Mat header for the valarray
     return Mat((int)_retinaFilter->getMovingContours().size(),1, CV_32F, (void*)get_data(_retinaFilter->getMovingContours()));
 
 }
 
-const Mat RetinaImpl::getParvoRAW() const {
+Mat RetinaImpl::getParvoRAW() const {
     CV_Assert(!_wasOCLRunCalled);
     if (_retinaFilter->getColorMode()) // check if color mode is enabled
     {

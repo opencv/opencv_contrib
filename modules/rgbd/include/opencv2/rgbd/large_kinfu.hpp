@@ -136,7 +136,7 @@ class CV_EXPORTS_W LargeKinfu
 
     CV_WRAP virtual void reset() = 0;
 
-    virtual const Affine3f getPose() const = 0;
+    virtual Affine3f getPose() const = 0;
 
     CV_WRAP virtual bool update(InputArray depth) = 0;
 };
