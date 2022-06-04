@@ -201,6 +201,8 @@ CUDA_TEST_P(Video, Reader)
         // request a different colour format for each frame
         const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
         reader->set(formatToChannels.first);
+        double colorFormat;
+        ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormat) && static_cast<cudacodec::ColorFormat>(colorFormat) == formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
