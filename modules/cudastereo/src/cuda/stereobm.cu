@@ -281,7 +281,7 @@ namespace cv { namespace cuda { namespace device
 
                 InitColSSD<RADIUS>(x_tex, y_tex, img_step, left, right, d, col_ssd);
 
-                if (col_ssd_extra > 0)
+                if (col_ssd_extra != nullptr)
                     if (x_tex + BLOCK_W < cwidth)
                         InitColSSD<RADIUS>(x_tex + BLOCK_W, y_tex, img_step, left, right, d, col_ssd_extra);
 
