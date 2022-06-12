@@ -34,6 +34,10 @@ INSTANTIATE_TEST_CASE_P(BEBLID, DescriptorRotationInvariance, Values(
     make_tuple(IMAGE_TSUKUBA, SIFT::create(), BEBLID::create(6.75), 0.98f)
 ));
 
+INSTANTIATE_TEST_CASE_P(BAD, DescriptorRotationInvariance, Values(
+        make_tuple(IMAGE_TSUKUBA, SIFT::create(), BAD::create(6.75), 0.98f)
+));
+
 INSTANTIATE_TEST_CASE_P(DAISY, DescriptorRotationInvariance, Values(
     make_tuple(IMAGE_TSUKUBA,
                BRISK::create(),

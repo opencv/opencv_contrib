@@ -28,7 +28,8 @@ namespace xfeatures2d
 // Struct containing the 6 parameters that define an Average Box weak-learner
 struct ABWLParams
 {
-    int x1, y1, x2, y2, boxRadius, th;
+    int x1, y1, x2, y2, boxRadius;
+    float th;
 };
 
 // BEBLID implementation
@@ -63,6 +64,42 @@ private:
                        const std::vector<cv::KeyPoint> &keypoints,
                        cv::Mat &descriptors);
 }; // END BEBLID_Impl CLASS
+
+
+// BAD implementation
+class BAD_Impl CV_FINAL: public BAD
+{
+public:
+
+    // constructor
+    explicit BAD_Impl(float scale_factor, int n_bits = BAD::SIZE_256_BITS) : impl(scale_factor, n_bits){}
+
+    // destructor
+    ~BAD_Impl() CV_OVERRIDE = default;
+
+    // returns the descriptor length in bytes
+    int descriptorSize() const CV_OVERRIDE { return impl.descriptorSize(); }
+
+    // returns the descriptor type
+    int descriptorType() const CV_OVERRIDE { return impl.descriptorType(); }
+
+    // returns the default norm type
+    int defaultNorm() const CV_OVERRIDE { return impl.defaultNorm();  }
+
+    // compute descriptors given keypoints
+    void compute(InputArray image, vector<KeyPoint> &keypoints, OutputArray descriptors) CV_OVERRIDE
+    {
+        impl.compute(image, keypoints, descriptors);
+    }
+
+private:
+    BEBLID_Impl impl;
+}; // END BAD_Impl CLASS
+
+Ptr<BAD> BAD::create(float scale_factor, int n_bits)
+{
+    return makePtr<BAD_Impl>(scale_factor, n_bits);
+}
 
 /**
  * @brief Function that determines if a keypoint is close to the image border.
@@ -288,14 +325,32 @@ void BEBLID_Impl::compute(InputArray _image, vector<KeyPoint> &keypoints, Output
 BEBLID_Impl::BEBLID_Impl(float scale_factor, int n_bits)
     : scale_factor_(scale_factor), patch_size_(32, 32)
 {
-    #include "beblid.p512.hpp"
-    #include "beblid.p256.hpp"
-    if (n_bits == SIZE_512_BITS)
+    if (n_bits == BEBLID::SIZE_512_BITS)
+    {
+        #include "beblid.p512.hpp"
         wl_params_.assign(wl_params_512, wl_params_512 + sizeof(wl_params_512) / sizeof(wl_params_512[0]));
-    else if(n_bits == SIZE_256_BITS)
+    }
+    else if(n_bits == BEBLID::SIZE_256_BITS)
+    {
+        #include "beblid.p256.hpp"
         wl_params_.assign(wl_params_256, wl_params_256 + sizeof(wl_params_256) / sizeof(wl_params_256[0]));
+    }
+    else if (n_bits == BAD::SIZE_512_BITS)
+    {
+        #include "bad.p512.hpp"
+        wl_params_.assign(bad_params_512, bad_params_512 + sizeof(bad_params_512) / sizeof(bad_params_512[0]));
+    }
+    else if(n_bits == BAD::SIZE_256_BITS)
+    {
+        #include "bad.p256.hpp"
+        wl_params_.assign(bad_params_256, bad_params_256 + sizeof(bad_params_256) / sizeof(bad_params_256[0]));
+    }
     else
-        CV_Error(Error::StsBadArg, "n_wls should be either SIZE_512_BITS or SIZE_256_BITS");
+    {
+        CV_Error(Error::StsBadArg, "n_bits should be either BAD::SIZE_512_BITS, BAD::SIZE_256_BITS, "
+                                   "BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS");
+    }
+
 }
 
 // Internal function that implements the core of BEBLID descriptor

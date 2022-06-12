@@ -192,6 +192,13 @@ TEST(Features2d_DescriptorExtractor_BEBLID, regression )
     test.safe_run();
 }
 
+TEST(Features2d_DescriptorExtractor_BAD, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test("descriptor-bad", 1,
+                                             BAD::create(6.75));
+    test.safe_run();
+}
+
 #ifdef OPENCV_XFEATURES2D_HAS_VGG_DATA
 TEST( Features2d_DescriptorExtractor_VGG, regression )
 {
