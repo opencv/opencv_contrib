@@ -14,3 +14,9 @@ jobs:
 
   W10:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-W10.yaml@main
+
+  macOS-ARM64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-macOS-ARM64.yaml@main
+
+  macOS-X64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-macOS-x86_64.yaml@main
