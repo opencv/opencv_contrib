@@ -208,7 +208,7 @@ class ZoomableImage : public QWidget
 	 */
 	QPixmap visibleImage() const
 	{
-		return QPixmap::grabWidget(view_->viewport());
+		return view_->viewport()->grab();
 	}
 
 	/**

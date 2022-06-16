@@ -205,7 +205,7 @@ ZoomableImage::ZoomableImage(const cv::Mat &mat, QWidget *parent)
 	view_->setFocusPolicy(Qt::NoFocus);
 	auto layout = util::make_unique<QHBoxLayout>();
 	layout->addWidget(view.release());
-	layout->setMargin(0);
+	layout->setContentsMargins(QMargins());
 	setLayout(layout.release());
 	setMat(mat_);
 	// rightklick
@@ -398,7 +398,7 @@ QPointF ZoomableImage::mapImagePointToParent(QPointF point) const
 
 void ZoomableImage::mouseMoveEvent(QMouseEvent * event)
 {
-	QPointF imgPos=view_->mapToScene(view_->mapFromGlobal(event->globalPos()));
+	QPointF imgPos=view_->mapToScene(view_->mapFromGlobal(event->globalPosition().toPoint()));
 	bool inImage=(imgPos.x()>=0)
 			&&(imgPos.y()>=0)
 			&&(imgPos.x()<=imageWidth())
