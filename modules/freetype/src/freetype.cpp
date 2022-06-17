@@ -66,7 +66,7 @@ class CV_EXPORTS_W FreeType2Impl CV_FINAL : public FreeType2
 public:
     FreeType2Impl();
     ~FreeType2Impl();
-    void loadFontData(String fontFileName, int id) CV_OVERRIDE;
+    void loadFontData(String fontFileName, long idx) CV_OVERRIDE;
     void setSplitNumber( int num ) CV_OVERRIDE;
     void putText(
         InputOutputArray img, const String& text, Point org,
@@ -158,7 +158,8 @@ FreeType2Impl::FreeType2Impl()
 
 FreeType2Impl::~FreeType2Impl()
 {
-    if( mIsFaceAvailable  == true ){
+    if( mIsFaceAvailable  == true )
+    {
         hb_font_destroy (mHb_font);
         CV_Assert(!FT_Done_Face(mFace));
         mIsFaceAvailable = false;
@@ -166,14 +167,24 @@ FreeType2Impl::~FreeType2Impl()
     CV_Assert(!FT_Done_FreeType(mLibrary));
 }
 
-void FreeType2Impl::loadFontData(String fontFileName, int idx)
+void FreeType2Impl::loadFontData(String fontFileName, long idx)
 {
-    if( mIsFaceAvailable  == true ){
+    CV_Assert( idx >= 0 );
+    if( mIsFaceAvailable  == true )
+    {
         hb_font_destroy (mHb_font);
         CV_Assert(!FT_Done_Face(mFace));
     }
-    CV_Assert(!FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) ) );
+
+    mIsFaceAvailable = false;
+    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) ) );
+
     mHb_font = hb_ft_font_create (mFace, NULL);
+    if ( mHb_font == NULL )
+    {
+        CV_Assert(!FT_Done_Face(mFace));
+        return;
+    }
     CV_Assert( mHb_font != NULL );
     mIsFaceAvailable = true;
 }
@@ -189,16 +200,15 @@ void FreeType2Impl::putText(
     int _thickness, int _line_type, bool _bottomLeftOrigin
 )
 {
-    CV_Assert( mIsFaceAvailable == true );
-    CV_Assert( ( _img.empty()    == false ) &&
-               ( _img.isMat()    == true  ) &&
-               ( _img.depth()    == CV_8U ) &&
-               ( _img.dims()     == 2     ) &&
-               ( _img.channels() == 3     ) );
-    CV_Assert( ( _line_type == CV_AA) ||
-               ( _line_type == 4 ) ||
-               ( _line_type == 8 ) );
-    CV_Assert( _fontHeight >= 0 );
+    CV_Assert  ( mIsFaceAvailable == true );
+    CV_Assert  ( _img.empty()    == false );
+    CV_Assert  ( _img.isMat()    == true  );
+    CV_Assert  ( _img.dims()     == 2     );
+    CV_Assert  ( _img.type()     == CV_8UC3 );
+    CV_Assert( ( _line_type == LINE_AA) ||
+               ( _line_type == LINE_4 ) ||
+               ( _line_type == LINE_8 ) );
+    CV_Assert  ( _fontHeight >= 0 );
 
     if ( _text.empty() )
     {
@@ -209,7 +219,7 @@ void FreeType2Impl::putText(
          return;
     }
 
-    if( _line_type == CV_AA && _img.depth() != CV_8U ){
+    if( _line_type == LINE_AA && _img.depth() != CV_8U ){
         _line_type = 8;
     }
 
@@ -217,7 +227,7 @@ void FreeType2Impl::putText(
 
     if( _thickness < 0 ) // CV_FILLED
     {
-        if ( _line_type == CV_AA ) {
+        if ( _line_type == LINE_AA ) {
             putTextBitmapBlend( _img, _text, _org, _fontHeight, _color,
                 _thickness, _line_type, _bottomLeftOrigin );
         }else{
@@ -298,7 +308,7 @@ void FreeType2Impl::putTextBitmapMono(
    int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
     CV_Assert( _thickness < 0 );
-    CV_Assert( _line_type == 4 || _line_type == 8);
+    CV_Assert( _line_type == LINE_4 || _line_type == LINE_8);
 
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();

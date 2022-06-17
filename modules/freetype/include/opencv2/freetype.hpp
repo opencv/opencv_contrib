@@ -79,10 +79,10 @@ public:
 The function loadFontData loads font data.
 
 @param fontFileName FontFile Name
-@param id face_index to select a font faces in a single file.
+@param idx face_index to select a font faces in a single file.
 */
 
-    CV_WRAP virtual void loadFontData(String fontFileName, int id) = 0;
+    CV_WRAP virtual void loadFontData(String fontFileName, long idx) = 0;
 
 /** @brief Set Split Number from Bezier-curve to line
 
