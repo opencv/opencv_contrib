@@ -1227,6 +1227,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                Ptr<EstimateParameters> estimateParameters) {
 
     CV_Assert(markerLength > 0);
+    CV_Assert(estimateParameters);
 
     Mat markerObjPoints;
     _getSingleMarkerObjectPoints(markerLength, markerObjPoints, *estimateParameters);
@@ -1243,7 +1244,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
         for (int i = begin; i < end; i++) {
             solvePnP(markerObjPoints, _corners.getMat(i), _cameraMatrix, _distCoeffs, rvecs.at<Vec3d>(i),
-                     tvecs.at<Vec3d>(i), estimateParameters->solvePnPMethod);
+                     tvecs.at<Vec3d>(i), estimateParameters->useExtrinsicGuess, estimateParameters->solvePnPMethod);
         }
     });
 
