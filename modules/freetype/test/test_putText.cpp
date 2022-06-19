@@ -7,7 +7,16 @@
 
 namespace opencv_test { namespace {
 
-typedef tuple < string, int, string > DrawingParams;
+struct DrawingParams
+{
+    string title;
+    int mattype;
+    string fontname;
+};
+
+::std::ostream& operator<<(::std::ostream& os, const DrawingParams& prm) {
+      return os << prm.title;
+}
 
 const DrawingParams drawing_list[] =
 {
@@ -24,9 +33,9 @@ typedef testing::TestWithParam<DrawingParams> BoundaryTest;
 TEST_P(BoundaryTest, default)
 {
     const DrawingParams params = GetParam();
-    const string title    = get<0>(params);
-    const int mattype     = get<1>(params);
-    const string fontname = get<2>(params);
+    const string title    = params.title;
+    const int mattype     = params.mattype;
+    const string fontname = params.fontname;
 
     const string root = cvtest::TS::ptr()->get_data_path();
     const string fontdata = root + fontname;
@@ -106,9 +115,9 @@ typedef testing::TestWithParam<DrawingParams> Ligaturetest;
 TEST_P(Ligaturetest, regression2827)
 {
     const DrawingParams params = GetParam();
-    const string title    = get<0>(params);
-    const int mattype     = get<1>(params);
-    const string fontname = get<2>(params);
+    const string title    = params.title;
+    const int mattype     = params.mattype;
+    const string fontname = params.fontname;
 
     const string root = cvtest::TS::ptr()->get_data_path();
     const string fontdata = root + fontname;

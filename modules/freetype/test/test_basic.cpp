@@ -7,7 +7,16 @@
 
 namespace opencv_test { namespace {
 
-typedef tuple<string, int, bool> MattypeParams;
+struct MattypeParams
+{
+    string title;
+    int mattype;
+    bool expect_success;
+};
+
+::std::ostream& operator<<(::std::ostream& os, const MattypeParams& prm) {
+      return os << prm.title;
+}
 
 const MattypeParams mattype_list[] =
 {
@@ -196,9 +205,9 @@ TEST_P(MatType_Test, default)
     const string fontdata = root + "freetype/mplus/Mplus1-Regular.ttf";
 
     const MattypeParams params = static_cast<MattypeParams>(GetParam());
-    const string title        = get<0>(params);
-    const int mattype         = get<1>(params);
-    const bool expect_success = get<2>(params);
+    const string title        = params.title;
+    const int mattype         = params.mattype;
+    const bool expect_success = params.expect_success;
 
     cv::Ptr<cv::freetype::FreeType2> ft2;
     EXPECT_NO_THROW( ft2 = cv::freetype::createFreeType2() );
