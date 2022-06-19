@@ -99,7 +99,7 @@ If you want to draw small glyph, small is better.
 
 The function putText renders the specified text string in the image. Symbols that cannot be rendered using the specified font are replaced by "Tofu" or non-drawn.
 
-@param img Image. (Only 8UC3 image is supported.)
+@param img Image. (Only 8UC1/8UC3/8UC4 2D mat is supported.)
 @param text Text string to be drawn.
 @param org Bottom-left/Top-left corner of the text string in the image.
 @param fontHeight Drawing font size by pixel unit.
@@ -123,7 +123,7 @@ That is, the following code renders some text, the tight box surrounding it, and
     String text = "Funny text inside the box";
     int fontHeight = 60;
     int thickness = -1;
-    int linestyle = 8;
+    int linestyle = LINE_8;
 
     Mat img(600, 800, CV_8UC3, Scalar::all(0));
 

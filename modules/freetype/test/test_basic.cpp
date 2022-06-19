@@ -3,10 +3,32 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-#define OUTPUT_FILE
-// #undef OUTPUT_FILE
+// #define OUTPUT_FILE
 
 namespace opencv_test { namespace {
+
+typedef tuple<string, int, bool> MattypeParams;
+
+const MattypeParams mattype_list[] =
+{
+    { "CV_8UC1",  CV_8UC1,  true},  { "CV_8UC2",  CV_8UC2,  false},
+    { "CV_8UC3",  CV_8UC3,  true},  { "CV_8UC4",  CV_8UC4,  true},
+
+    { "CV_8SC1",  CV_8SC1,  false}, { "CV_8SC2",  CV_8SC2,  false},
+    { "CV_8SC3",  CV_8SC3,  false}, { "CV_8SC4",  CV_8SC4,  false},
+    { "CV_16UC1", CV_16UC1, false}, { "CV_16UC2", CV_16UC2, false},
+    { "CV_16UC3", CV_16UC3, false}, { "CV_16UC4", CV_16UC4, false},
+    { "CV_16SC1", CV_16SC1, false}, { "CV_16SC2", CV_16SC2, false},
+    { "CV_16SC3", CV_16SC3, false}, { "CV_16SC4", CV_16SC4, false},
+    { "CV_32SC1", CV_32SC1, false}, { "CV_32SC2", CV_32SC2, false},
+    { "CV_32SC3", CV_32SC3, false}, { "CV_32SC4", CV_32SC4, false},
+    { "CV_32FC1", CV_32FC1, false}, { "CV_32FC2", CV_32FC2, false},
+    { "CV_32FC3", CV_32FC3, false}, { "CV_32FC4", CV_32FC4, false},
+    { "CV_64FC1", CV_64FC1, false}, { "CV_64FC2", CV_64FC2, false},
+    { "CV_64FC3", CV_64FC3, false}, { "CV_64FC4", CV_64FC4, false},
+    { "CV_16FC1", CV_16FC1, false}, { "CV_16FC2", CV_16FC2, false},
+    { "CV_16FC3", CV_16FC3, false}, { "CV_16FC4", CV_16FC4, false},
+};
 
 /******************
  * Basically usage
@@ -146,7 +168,7 @@ INSTANTIATE_TEST_CASE_P(Freetype_setSplitNumber, ctol_range,
  * putText()::common
  *******************/
 
-TEST(Freetype_putText_common, invalid_img )
+TEST(Freetype_putText, invalid_img )
 {
     const string root = cvtest::TS::ptr()->get_data_path();
     const string fontdata = root + "freetype/mplus/Mplus1-Regular.ttf";
@@ -166,27 +188,17 @@ TEST(Freetype_putText_common, invalid_img )
     }
 }
 
-class mattype_params{
-public:
-    string title;
-    int type;
-    bool success;
-};
-::std::ostream& operator<<(::std::ostream& os, const mattype_params& prm) {
-      return os << "title=" << prm.title << " expect=" << (prm.success?"SUCCESS":"FAILED");
-}
+typedef testing::TestWithParam<MattypeParams> MatType_Test;
 
-typedef testing::TestWithParam<mattype_params> MatType;
-
-TEST_P(MatType, dest_color_type)
+TEST_P(MatType_Test, default)
 {
     const string root = cvtest::TS::ptr()->get_data_path();
     const string fontdata = root + "freetype/mplus/Mplus1-Regular.ttf";
 
-    const mattype_params testParam = static_cast<mattype_params>(GetParam());
-    const string title = testParam.title;
-    const int mattype = testParam.type;
-    const bool expect_success = testParam.success;
+    const MattypeParams params = static_cast<MattypeParams>(GetParam());
+    const string title        = get<0>(params);
+    const int mattype         = get<1>(params);
+    const bool expect_success = get<2>(params);
 
     cv::Ptr<cv::freetype::FreeType2> ft2;
     EXPECT_NO_THROW( ft2 = cv::freetype::createFreeType2() );
@@ -195,48 +207,36 @@ TEST_P(MatType, dest_color_type)
     Mat dst(600,600, mattype, Scalar::all(255) );
 
     Scalar col(128,64,255,192);
-    if ( expect_success == true )
+
+    if ( expect_success == false )
     {
-        EXPECT_NO_THROW( ft2->putText(dst, title,                Point( 0,  50), 50, col, -1, LINE_AA, true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_4  FILL(mono)", Point(40, 100), 50, col, -1, LINE_4,  true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_8  FILL(mono)", Point(40, 150), 50, col, -1, LINE_8,  true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA FILL(blend)",Point(40, 200), 50, col, -1, LINE_AA, true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_4  OUTLINE(1)", Point(40, 250), 50, col,  1, LINE_4,  true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_8  OUTLINE(1)", Point(40, 300), 50, col,  1, LINE_8,  true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA OUTLINE(1)", Point(40, 350), 50, col,  1, LINE_AA, true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_4  OUTLINE(5)", Point(40, 400), 50, col,  5, LINE_4,  true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_8  OUTLINE(5)", Point(40, 450), 50, col,  5, LINE_8,  true ) );
-        EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA OUTLINE(5)", Point(40, 500), 50, col,  5, LINE_AA, true ) );
-        putText(dst, "LINE_4 putText(th=1)" , Point( 40,550), FONT_HERSHEY_SIMPLEX, 0.5, col, 1, LINE_4);
-        putText(dst, "LINE_8 putText(th=1)" , Point( 40,565), FONT_HERSHEY_SIMPLEX, 0.5, col, 1, LINE_8);
-        putText(dst, "LINE_AA putText(th=1)", Point( 40,580), FONT_HERSHEY_SIMPLEX, 0.5, col, 1, LINE_AA);
-        putText(dst, "LINE_4 putText(th=2)" , Point( 240,550),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_4);
-        putText(dst, "LINE_8 putText(th=2)" , Point( 240,565),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_8);
-        putText(dst, "LINE_AA putText(th=2)", Point( 240,580),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_AA);
-
-#ifdef OUTPUT_FILE
-        imwrite( cv::format("%s.png", title.c_str()), dst );
-#endif /* IMAGE_OUTPUT */
-
-    }else{
         EXPECT_THROW( ft2->putText(dst, title, Point( 0,  50), 50, col, -1, LINE_AA, true ), cv::Exception );
+        return;
     }
 
+    EXPECT_NO_THROW( ft2->putText(dst, title,                Point( 0,  50), 50, col, -1, LINE_AA, true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_4  FILL(mono)", Point(40, 100), 50, col, -1, LINE_4,  true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_8  FILL(mono)", Point(40, 150), 50, col, -1, LINE_8,  true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA FILL(blend)",Point(40, 200), 50, col, -1, LINE_AA, true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_4  OUTLINE(1)", Point(40, 250), 50, col,  1, LINE_4,  true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_8  OUTLINE(1)", Point(40, 300), 50, col,  1, LINE_8,  true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA OUTLINE(1)", Point(40, 350), 50, col,  1, LINE_AA, true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_4  OUTLINE(5)", Point(40, 400), 50, col,  5, LINE_4,  true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_8  OUTLINE(5)", Point(40, 450), 50, col,  5, LINE_8,  true ) );
+    EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA OUTLINE(5)", Point(40, 500), 50, col,  5, LINE_AA, true ) );
+    putText(dst, "LINE_4 putText(th=1)" , Point( 40,550), FONT_HERSHEY_SIMPLEX, 0.5, col, 1, LINE_4);
+    putText(dst, "LINE_8 putText(th=1)" , Point( 40,565), FONT_HERSHEY_SIMPLEX, 0.5, col, 1, LINE_8);
+    putText(dst, "LINE_AA putText(th=1)", Point( 40,580), FONT_HERSHEY_SIMPLEX, 0.5, col, 1, LINE_AA);
+    putText(dst, "LINE_4 putText(th=2)" , Point( 240,550),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_4);
+    putText(dst, "LINE_8 putText(th=2)" , Point( 240,565),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_8);
+    putText(dst, "LINE_AA putText(th=2)", Point( 240,580),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_AA);
+
+#ifdef OUTPUT_FILE
+    imwrite( cv::format("%s.png", title.c_str()), dst );
+#endif /* IMAGE_OUTPUT */
 }
 
-const mattype_params mattype_list[] =
-{
-    { "CV_8UC1",  CV_8UC1,  false}, { "CV_8UC2",  CV_8UC2,  false}, { "CV_8UC3",  CV_8UC3,  true},  { "CV_8UC4",  CV_8UC4,  false},
-    { "CV_8SC1",  CV_8SC1,  false}, { "CV_8SC2",  CV_8SC2,  false}, { "CV_8SC3",  CV_8SC3,  false}, { "CV_8SC4",  CV_8SC4,  false},
-    { "CV_16UC1", CV_16UC1, false}, { "CV_16UC2", CV_16UC2, false}, { "CV_16UC3", CV_16UC3, false}, { "CV_16UC4", CV_16UC4, false},
-    { "CV_16SC1", CV_16SC1, false}, { "CV_16SC2", CV_16SC2, false}, { "CV_16SC3", CV_16SC3, false}, { "CV_16SC4", CV_16SC4, false},
-    { "CV_32SC1", CV_32SC1, false}, { "CV_32SC2", CV_32SC2, false}, { "CV_32SC3", CV_32SC3, false}, { "CV_32SC4", CV_32SC4, false},
-    { "CV_32FC1", CV_32FC1, false}, { "CV_32FC2", CV_32FC2, false}, { "CV_32FC3", CV_32FC3, false}, { "CV_32FC4", CV_32FC4, false},
-    { "CV_64FC1", CV_64FC1, false}, { "CV_64FC2", CV_64FC2, false}, { "CV_64FC3", CV_64FC3, false}, { "CV_64FC4", CV_64FC4, false},
-    { "CV_16FC1", CV_16FC1, false}, { "CV_16FC2", CV_16FC2, false}, { "CV_16FC3", CV_16FC3, false}, { "CV_16FC4", CV_16FC4, false},
-};
-
-INSTANTIATE_TEST_CASE_P(Freetype_putText_common, MatType,
+INSTANTIATE_TEST_CASE_P(Freetype_putText, MatType_Test,
                         testing::ValuesIn(mattype_list));
 
 }} // namespace
