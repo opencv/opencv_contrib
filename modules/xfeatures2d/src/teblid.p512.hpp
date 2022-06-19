@@ -10,9 +10,9 @@
 
 // ABWLParams: x1, y1, x2, y2, boxRadius, th
 
-// Pre-trained parameters of BAD-512 trained in Liberty data set. 10K triplets are sampled per iteration. Each triplet
+// Pre-trained parameters of TEBLID-512 trained in Liberty data set. 10K triplets are sampled per iteration. Each triplet
 // contains an anchor patch, a positive and a negative, selected as the hardest among 256 random negatives.
-static const ABWLParams bad_params_512[] = {
+static const ABWLParamsFloatTh teblid_wl_params_512[] = {
     {17, 18, 12, 15, 2, 14.45}, {13, 14, 5, 7, 5, 4.15}, {21, 16, 16, 14, 1, 7.75},
     {27, 11, 18, 20, 3, 9.65}, {17, 13, 16, 19, 2, 2.25}, {18, 24, 18, 16, 5, 0.15},
     {12, 11, 10, 25, 6, 0.45}, {14, 17, 14, 13, 1, -0.95}, {7, 4, 4, 15, 4, 3.65},

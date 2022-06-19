@@ -192,10 +192,10 @@ TEST(Features2d_DescriptorExtractor_BEBLID, regression )
     test.safe_run();
 }
 
-TEST(Features2d_DescriptorExtractor_BAD, regression )
+TEST(Features2d_DescriptorExtractor_TEBLID, regression )
 {
-    CV_DescriptorExtractorTest<Hamming> test("descriptor-bad", 1,
-                                             BAD::create(6.75));
+    CV_DescriptorExtractorTest<Hamming> test("descriptor-teblid", 1,
+                                             TEBLID::create(6.75));
     test.safe_run();
 }
 

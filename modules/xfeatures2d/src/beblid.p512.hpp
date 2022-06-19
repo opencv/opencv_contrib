@@ -12,7 +12,7 @@
 
 // Pre-trained parameters of BEBLID-512 trained in Liberty data set with
 // a million of patch pairs, 20% positives and 80% negatives
-static const ABWLParams wl_params_512[] = {
+static const ABWLParams beblid_wl_params_512[] = {
     {24, 18, 15, 17, 6, 13}, {19, 14, 13, 17, 2, 18}, {23, 19, 12, 15, 6, 19},
     {24, 14, 16, 16, 6, 11}, {16, 15, 12, 16, 1, 12}, {16, 15, 7, 10, 4, 10},
     {17, 12, 8, 17, 3, 16}, {24, 12, 11, 17, 7, 19}, {19, 17, 14, 11, 3, 13},

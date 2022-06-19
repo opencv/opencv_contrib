@@ -5,14 +5,14 @@
 
 namespace opencv_test { namespace {
 
-typedef perf::TestBaseWithParam<std::string> bad;
+typedef perf::TestBaseWithParam<std::string> teblid;
 
-#define BAD_IMAGES \
+#define TEBLID_IMAGES \
     "cv/detectors_descriptors_evaluation/images_datasets/leuven/img1.png",\
     "stitching/a3.png"
 
 #ifdef OPENCV_ENABLE_NONFREE
-PERF_TEST_P(bad, extract, testing::Values(BAD_IMAGES))
+PERF_TEST_P(teblid, extract, testing::Values(TEBLID_IMAGES))
 {
     string filename = getDataPath(GetParam());
     Mat frame = imread(filename, IMREAD_GRAYSCALE);
@@ -25,7 +25,7 @@ PERF_TEST_P(bad, extract, testing::Values(BAD_IMAGES))
     vector<KeyPoint> points;
     detector->detect(frame, points, mask);
 
-    Ptr<BAD> descriptor = BAD::create(6.25f);
+    Ptr<TEBLID> descriptor = TEBLID::create(6.25f);
     cv::Mat descriptors;
     TEST_CYCLE() descriptor->compute(frame, points, descriptors);
 
