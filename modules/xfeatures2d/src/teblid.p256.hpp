@@ -12,7 +12,7 @@
 
 // Pre-trained parameters of TEBLID-256 trained in Liberty data set. 10K triplets are sampled per iteration. Each triplet
 // contains an anchor patch, a positive and a negative, selected as the hardest among 256 random negatives.
-static const ABWLParamsFloatTh teblid_wl_params_256[] = {
+static const std::vector<ABWLParamsFloatTh> teblid_wl_params_256 = {
     {25, 14, 13, 15, 6, 21.65}, {16, 15, 14, 11, 1, 5.65}, {14, 14, 7, 8, 6, 4.95},
     {10, 9, 6, 20, 6, 2.45}, {13, 26, 13, 19, 5, 2.25}, {19, 14, 19, 5, 4, 0.85},
     {16, 19, 15, 13, 2, 3.35}, {26, 26, 21, 12, 5, 1.75}, {18, 23, 15, 20, 2, 4.55},

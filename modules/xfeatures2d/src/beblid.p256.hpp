@@ -12,7 +12,7 @@
 
 // Pre-trained parameters of BEBLID-256 trained in Liberty data set with
 // a million of patch pairs, 20% positives and 80% negatives
-static const ABWLParams beblid_wl_params_256[] = {
+static const std::vector<ABWLParams> beblid_wl_params_256 = {
     {26, 20, 14, 16, 5, 16}, {17, 17, 15, 15, 2, 7}, {18, 16, 8, 13, 3, 18},
     {19, 15, 13, 14, 3, 17}, {16, 16, 5, 15, 4, 10}, {25, 10, 16, 16, 6, 11},
     {16, 15, 12, 15, 1, 12}, {18, 17, 14, 17, 1, 13}, {15, 14, 5, 21, 5, 6}, {14, 14, 11, 7, 4, 2},

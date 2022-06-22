@@ -44,7 +44,7 @@ class BEBLID_Impl CV_FINAL: public BEBLID
 public:
 
     // constructor
-    explicit BEBLID_Impl(float scale_factor, int n_bits = SIZE_512_BITS);
+    explicit BEBLID_Impl(float scale_factor, const std::vector<WeakLearnerT>& wl_params);
 
     // destructor
     ~BEBLID_Impl() CV_OVERRIDE = default;
@@ -78,7 +78,8 @@ class TEBLID_Impl CV_FINAL: public TEBLID
 public:
 
     // constructor
-    explicit TEBLID_Impl(float scale_factor, int n_bits = TEBLID::SIZE_256_BITS) : impl(scale_factor, n_bits){}
+    explicit TEBLID_Impl(float scale_factor, const std::vector<ABWLParamsFloatTh>& wl_params) :
+        impl(scale_factor, wl_params){}
 
     // destructor
     ~TEBLID_Impl() CV_OVERRIDE = default;
@@ -104,7 +105,20 @@ private:
 
 Ptr<TEBLID> TEBLID::create(float scale_factor, int n_bits)
 {
-    return makePtr<TEBLID_Impl>(scale_factor, n_bits);
+    if (n_bits == TEBLID::SIZE_512_BITS)
+    {
+        #include "teblid.p512.hpp"
+        return makePtr<TEBLID_Impl>(scale_factor, teblid_wl_params_512);
+    }
+    else if(n_bits == TEBLID::SIZE_256_BITS)
+    {
+        #include "teblid.p256.hpp"
+        return makePtr<TEBLID_Impl>(scale_factor, teblid_wl_params_256);
+    }
+    else
+    {
+        CV_Error(Error::StsBadArg, "n_bits should be either TEBLID::SIZE_512_BITS or TEBLID::SIZE_256_BITS");
+    }
 }
 
 /**
@@ -332,42 +346,9 @@ void BEBLID_Impl<WeakLearnerT>::compute(InputArray _image, vector<KeyPoint> &key
 
 // constructor
 template <class WeakLearnerT>
-BEBLID_Impl<WeakLearnerT>::BEBLID_Impl(float scale_factor, int n_bits)
-    : scale_factor_(scale_factor), patch_size_(32, 32)
+BEBLID_Impl<WeakLearnerT>::BEBLID_Impl(float scale_factor, const std::vector<WeakLearnerT>& wl_params)
+    :  wl_params_(wl_params), scale_factor_(scale_factor),patch_size_(32, 32)
 {
-    WeakLearnerT * begin_ptr, * end_ptr;
-    if (n_bits == BEBLID::SIZE_512_BITS)
-    {
-        #include "beblid.p512.hpp"
-        begin_ptr = (WeakLearnerT *) std::begin(beblid_wl_params_512);
-        end_ptr = (WeakLearnerT *) std::end(beblid_wl_params_512);
-    }
-    else if(n_bits == BEBLID::SIZE_256_BITS)
-    {
-        #include "beblid.p256.hpp"
-        begin_ptr = (WeakLearnerT *) std::begin(beblid_wl_params_256);
-        end_ptr = (WeakLearnerT *) std::end(beblid_wl_params_256);
-    }
-    else if (n_bits == TEBLID::SIZE_512_BITS)
-    {
-        #include "teblid.p512.hpp"
-
-        begin_ptr = (WeakLearnerT *) std::begin(teblid_wl_params_512);
-        end_ptr = (WeakLearnerT *) std::end(teblid_wl_params_512);
-    }
-    else if(n_bits == TEBLID::SIZE_256_BITS)
-    {
-        #include "teblid.p256.hpp"
-
-        begin_ptr = (WeakLearnerT *) std::begin(teblid_wl_params_256);
-        end_ptr = (WeakLearnerT *) std::end(teblid_wl_params_256);
-    }
-    else
-    {
-        CV_Error(Error::StsBadArg, "n_bits should be either TEBLID::SIZE_512_BITS, TEBLID::SIZE_256_BITS, "
-                                   "BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS");
-    }
-    wl_params_.assign(begin_ptr, end_ptr);
 }
 
 // Internal function that implements the core of BEBLID descriptor
@@ -470,7 +451,20 @@ void BEBLID_Impl<WeakLearnerT>::computeBoxDiffsDescriptor(const cv::Mat &integra
 
 Ptr<BEBLID> BEBLID::create(float scale_factor, int n_bits)
 {
-    return makePtr<BEBLID_Impl<ABWLParams>>(scale_factor, n_bits);
+    if (n_bits == BEBLID::SIZE_512_BITS)
+    {
+        #include "beblid.p512.hpp"
+        return makePtr<BEBLID_Impl<ABWLParams>>(scale_factor, beblid_wl_params_512);
+    }
+    else if(n_bits == BEBLID::SIZE_256_BITS)
+    {
+        #include "beblid.p256.hpp"
+        return makePtr<BEBLID_Impl<ABWLParams>>(scale_factor, beblid_wl_params_256);
+    }
+    else
+    {
+        CV_Error(Error::StsBadArg, "n_bits should be either BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS");
+    }
 }
 } // END NAMESPACE XFEATURES2D
 } // END NAMESPACE CV
