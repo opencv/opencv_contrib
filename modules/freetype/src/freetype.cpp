@@ -66,7 +66,7 @@ class CV_EXPORTS_W FreeType2Impl CV_FINAL : public FreeType2
 public:
     FreeType2Impl();
     ~FreeType2Impl();
-    void loadFontData(String fontFileName, int32_t idx) CV_OVERRIDE;
+    void loadFontData(String fontFileName, int idx) CV_OVERRIDE;
     void setSplitNumber( int num ) CV_OVERRIDE;
     void putText(
         InputOutputArray img, const String& text, Point org,
@@ -178,7 +178,7 @@ FreeType2Impl::~FreeType2Impl()
     CV_Assert(!FT_Done_FreeType(mLibrary));
 }
 
-void FreeType2Impl::loadFontData(String fontFileName, int32_t idx)
+void FreeType2Impl::loadFontData(String fontFileName, int idx)
 {
     CV_Assert( idx >= 0 );
     if( mIsFaceAvailable  == true )
@@ -188,7 +188,7 @@ void FreeType2Impl::loadFontData(String fontFileName, int32_t idx)
     }
 
     mIsFaceAvailable = false;
-    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) ) );
+    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), static_cast<FT_Long>(idx), &(mFace) ) );
 
     mHb_font = hb_ft_font_create (mFace, NULL);
     if ( mHb_font == NULL )

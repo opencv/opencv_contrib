@@ -3,8 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-// #define OUTPUT_FILE
-
 namespace opencv_test { namespace {
 
 struct DrawingParams
@@ -86,9 +84,10 @@ TEST_P(BoundaryTest, default)
         EXPECT_NO_THROW( ft2->putText(dst, text, textOrg, textHeight, col, -1, LINE_AA,  true ) );
     }
 
-#ifdef OUTPUT_FILE
-    imwrite( cv::format("%s-boundary.png", title.c_str()), dst );
-#endif /* IMAGE_OUTPUT */
+    if (cvtest::debugLevel > 0 )
+    {
+        imwrite( cv::format("%s-boundary.png", title.c_str()), dst );
+    }
 }
 
 INSTANTIATE_TEST_CASE_P(Freetype_putText, BoundaryTest,
@@ -111,8 +110,8 @@ static Mat clipRoiAs8UC1( Mat &dst, Rect roi_rect )
     return roi;
 }
 
-typedef testing::TestWithParam<DrawingParams> Ligaturetest;
-TEST_P(Ligaturetest, regression2827)
+typedef testing::TestWithParam<DrawingParams> LigatureTest;
+TEST_P(LigatureTest, regression2627)
 {
     const DrawingParams params = GetParam();
     const string title    = params.title;
@@ -190,12 +189,13 @@ TEST_P(Ligaturetest, regression2827)
         ty += skip_y;
     }
 
-#ifdef OUTPUT_FILE
-    imwrite( cv::format("%s-contrib2627.png", title.c_str()), dst );
-#endif /* IMAGE_OUTPUT */
+    if (cvtest::debugLevel > 0 )
+    {
+        imwrite( cv::format("%s-contrib2627.png", title.c_str()), dst );
+    }
 }
 
-INSTANTIATE_TEST_CASE_P(Freetype_putText, Ligaturetest,
+INSTANTIATE_TEST_CASE_P(Freetype_putText, LigatureTest,
                         testing::ValuesIn(drawing_list));
 
 }} // namespace

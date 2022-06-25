@@ -3,8 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-// #define OUTPUT_FILE
-
 namespace opencv_test { namespace {
 
 struct MattypeParams
@@ -107,7 +105,7 @@ TEST(Freetype_loadFontData, call_multiple)
     EXPECT_NO_THROW( ft2->putText(dst, "call_mutilple", Point( 0,  50), 50, col, -1, LINE_AA, true ) );
 }
 
-typedef testing::TestWithParam<long> idx_range;
+typedef testing::TestWithParam<int> idx_range;
 
 TEST_P(idx_range, failed )
 {
@@ -119,7 +117,7 @@ TEST_P(idx_range, failed )
     EXPECT_THROW( ft2->loadFontData( fontdata, GetParam() ), cv::Exception );
 }
 
-const long idx_failed_list[] =
+const int idx_failed_list[] =
 {
     INT_MIN,
     INT_MIN + 1,
@@ -137,7 +135,7 @@ INSTANTIATE_TEST_CASE_P(Freetype_loadFontData, idx_range,
  * setSplitNumber()
  *****************/
 
-typedef testing::TestWithParam<long> ctol_range;
+typedef testing::TestWithParam<int> ctol_range;
 
 TEST_P(ctol_range, success)
 {
@@ -157,7 +155,7 @@ TEST_P(ctol_range, success)
     EXPECT_NO_THROW( ft2->putText(dst, "LINE_AA:oOpPqQ", Point( 40, 150), 50, col, 1, LINE_AA, true ) );
 }
 
-const long ctol_list[] =
+const int ctol_list[] =
 {
     1,
     8,
@@ -240,9 +238,10 @@ TEST_P(MatType_Test, default)
     putText(dst, "LINE_8 putText(th=2)" , Point( 240,565),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_8);
     putText(dst, "LINE_AA putText(th=2)", Point( 240,580),FONT_HERSHEY_SIMPLEX, 0.5, col, 2, LINE_AA);
 
-#ifdef OUTPUT_FILE
-    imwrite( cv::format("%s.png", title.c_str()), dst );
-#endif /* IMAGE_OUTPUT */
+    if (cvtest::debugLevel > 0 )
+    {
+        imwrite( cv::format("%s-MatType.png", title.c_str()), dst );
+    }
 }
 
 INSTANTIATE_TEST_CASE_P(Freetype_putText, MatType_Test,
