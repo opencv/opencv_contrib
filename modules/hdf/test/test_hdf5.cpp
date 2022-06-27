@@ -7,6 +7,8 @@
  * @author Fangjun Kuang <csukuangfj dot at gmail dot com>
  * @date December 2017
  */
+#include <cstdio>
+
 #include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
@@ -15,7 +17,7 @@ struct HDF5_Test : public testing::Test
 {
     virtual void SetUp()
     {
-        m_filename = "test.h5";
+        m_filename = std::tmpnam(nullptr) + "_test.h5";
 
         // 0 1 2
         // 3 4 5
