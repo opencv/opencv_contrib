@@ -224,6 +224,49 @@ public:
     CV_WRAP static Ptr<BEBLID> create(float scale_factor, int n_bits = BEBLID::SIZE_512_BITS);
 };
 
+/** @brief Class implementing TEBLID (Triplet-based Efficient Binary Local Image Descriptor),
+ * described in @cite Suarez2021TEBLID.
+
+TEBLID stands for Triplet-based Efficient Binary Local Image Descriptor, although originally it was called BAD
+\cite Suarez2021TEBLID. It is an improvement over BEBLID \cite Suarez2020BEBLID, that uses triplet loss,
+hard negative mining, and anchor swap to improve the image matching results.
+It is able to describe keypoints from any detector just by changing the scale_factor parameter.
+TEBLID is as efficient as ORB, BEBLID or BRISK, but the triplet-based training objective selected more
+discriminative features that explain the accuracy gain. It is also more compact than BEBLID,
+when running the [AKAZE example](https://github.com/opencv/opencv/blob/4.x/samples/cpp/tutorial_code/features2D/AKAZE_match.cpp)
+with 10000 keypoints detected by ORB, BEBLID obtains 561 inliers (75%) with 512 bits, whereas
+TEBLID obtains 621 (75.2%) with 256 bits. ORB obtains only 493 inliers (63%).
+
+If you find this code useful, please add a reference to the following paper:
+<BLOCKQUOTE> Iago Suárez, José M. Buenaposada, and Luis Baumela.
+Revisiting Binary Local Image Description for Resource Limited Devices.
+IEEE Robotics and Automation Letters, vol. 6, no. 4, pp. 8317-8324, Oct. 2021. </BLOCKQUOTE>
+
+The descriptor was trained in Liberty split of the UBC datasets \cite winder2007learning .
+*/
+class CV_EXPORTS_W TEBLID : public Feature2D
+{
+public:
+    /**
+     * @brief  Descriptor number of bits, each bit is a box average difference.
+     * The user can choose between 256 or 512 bits.
+     */
+    enum TeblidSize
+    {
+        SIZE_256_BITS = 102, SIZE_512_BITS = 103,
+    };
+    /** @brief Creates the TEBLID descriptor.
+    @param scale_factor Adjust the sampling window around detected keypoints:
+    - <b> 1.00f </b> should be the scale for ORB keypoints
+    - <b> 6.75f </b> should be the scale for SIFT detected keypoints
+    - <b> 6.25f </b> is default and fits for KAZE, SURF detected keypoints
+    - <b> 5.00f </b> should be the scale for AKAZE, MSD, AGAST, FAST, BRISK keypoints
+    @param n_bits Determine the number of bits in the descriptor. Should be either
+     TEBLID::SIZE_256_BITS or TEBLID::SIZE_512_BITS.
+    */
+    CV_WRAP static Ptr<TEBLID> create(float scale_factor, int n_bits = TEBLID::SIZE_256_BITS);
+};
+
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
 
 @param radius radius of the descriptor at the initial scale
