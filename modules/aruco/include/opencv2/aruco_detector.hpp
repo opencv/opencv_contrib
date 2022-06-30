@@ -9,10 +9,12 @@
 /**
  * @defgroup aruco ArUco Marker Detection
  * This module is dedicated to square fiducial markers (also known as Augmented Reality Markers)
- * These markers are useful for easy, fast and robust camera pose estimation.ç
+ * These markers are useful for easy, fast and robust camera pose estimation.
  *
- * The main functionalities are:
+ * The main functionality of ArucoDetector class is:
  * - Detection of markers in an image
+ *
+ * There are even more functionalities implemented in charuco.hpp and aruco_calib_pose.hpp:
  * - Pose estimation from a single marker or from a board/set of markers
  * - Detection of ChArUco board for high subpixel accuracy
  * - Camera calibration from both, ArUco boards and ChArUco boards.
@@ -48,6 +50,9 @@ enum CornerRefineMethod{
     CORNER_REFINE_APRILTAG, ///< Tag and corners detection based on the AprilTag 2 approach @cite wang2016iros
 };
 
+/**
+ * @brief struct DetectorParameters is used by ArucoDetector
+ */
 struct CV_EXPORTS_W DetectorParameters {
     DetectorParameters() {
         adaptiveThreshWinSizeMin = 3;
@@ -84,8 +89,7 @@ struct CV_EXPORTS_W DetectorParameters {
         minMarkerLengthRatioOriginalImg = 0.0;
     };
 
-    /**
-      * @brief Create a new set of DetectorParameters with default values.
+    /** @brief Create a new set of DetectorParameters with default values.
       */
     CV_WRAP static Ptr<DetectorParameters> create() {
         Ptr<DetectorParameters> params = makePtr<DetectorParameters>();
@@ -114,12 +118,14 @@ struct CV_EXPORTS_W DetectorParameters {
     /// constant for adaptive thresholding before finding contours (default 7)
     CV_PROP_RW double adaptiveThreshConstant;
 
-    /// determine minimum perimeter for marker contour to be detected. This is defined as a rate respect to the
-    /// maximum dimension of the input image (default 0.03).
+    /** @brief determine minimum perimeter for marker contour to be detected. This is defined as a rate respect to the
+     * maximum dimension of the input image (default 0.03).
+     */
     CV_PROP_RW double minMarkerPerimeterRate;
 
-    /// determine maximum perimeter for marker contour to be detected. This is defined as a rate respect to
-    /// the maximum dimension of the input image (default 4.0).
+    /** @brief determine maximum perimeter for marker contour to be detected. This is defined as a rate respect to
+     * the maximum dimension of the input image (default 4.0).
+     */
     CV_PROP_RW double maxMarkerPerimeterRate;
 
     /// minimum accuracy during the polygonal approximation process to determine which contours are squares. (default 0.03)
@@ -131,15 +137,17 @@ struct CV_EXPORTS_W DetectorParameters {
     /// minimum distance of any corner to the image border for detected markers (in pixels) (default 3)
     CV_PROP_RW int minDistanceToBorder;
 
-    /// minimum mean distance beetween two marker corners to be considered imilar, so that the
-    /// smaller one is removed. The rate is relative to the smaller perimeter of the two markers (default 0.05).
+    /** @brief minimum mean distance beetween two marker corners to be considered imilar, so that the
+      * smaller one is removed. The rate is relative to the smaller perimeter of the two markers (default 0.05).
+      */
     CV_PROP_RW double minMarkerDistanceRate;
 
-    /// corner refinement method (default CORNER_REFINE_NONE).
-    /// 0:CORNER_REFINE_NONE, no refinement.
-    /// 1: CORNER_REFINE_SUBPIX, do subpixel refinement.
-    /// 2: CORNER_REFINE_CONTOUR use contour-Points,
-    /// 3: CORNER_REFINE_APRILTAG  use the AprilTag2 approach).
+    /** @brief default CORNER_REFINE_NONE.
+      * 0:CORNER_REFINE_NONE, no refinement.
+      * 1: CORNER_REFINE_SUBPIX, do subpixel refinement.
+      * 2: CORNER_REFINE_CONTOUR use contour-Points,
+      * 3: CORNER_REFINE_APRILTAG  use the AprilTag2 approach).
+      */
     CV_PROP_RW int cornerRefinementMethod;
 
     /// window size for the corner refinement process (in pixels) (default 5).
@@ -157,25 +165,29 @@ struct CV_EXPORTS_W DetectorParameters {
     /// number of bits (per dimension) for each cell of the marker when removing the perspective (default 4).
     CV_PROP_RW int perspectiveRemovePixelPerCell;
 
-    /// width of the margin of pixels on each cell not considered for the
-    /// determination of the cell bit. Represents the rate respect to the total size of the cell, i.e.
-    /// perspectiveRemovePixelPerCell (default 0.13)
+    /** @brief width of the margin of pixels on each cell not considered for the
+      * determination of the cell bit. Represents the rate respect to the total size of the cell, i.e.
+      * perspectiveRemovePixelPerCell (default 0.13)
+      */
     CV_PROP_RW double perspectiveRemoveIgnoredMarginPerCell;
 
-    /// maximum number of accepted erroneous bits in the border (i.e. number of allowed
-    /// white bits in the border). Represented as a rate respect to the total number of bits per marker (default 0.35).
+    /** @brief  maximum number of accepted erroneous bits in the border (i.e. number of allowed
+      * white bits in the border). Represented as a rate respect to the total number of bits per marker (default 0.35).
+      */
     CV_PROP_RW double maxErroneousBitsInBorderRate;
 
-    /// minimun standard deviation in pixels values during the decodification step to apply Otsu
-    /// thresholding (otherwise, all the bits are set to 0 or 1 depending on mean higher than 128 or not) (default 5.0)
+    /** @brief minimun standard deviation in pixels values during the decodification step to apply Otsu
+      * thresholding (otherwise, all the bits are set to 0 or 1 depending on mean higher than 128 or not) (default 5.0)
+      */
     CV_PROP_RW double minOtsuStdDev;
 
     /// error correction rate respect to the maximun error correction capability for each dictionary (default 0.6).
     CV_PROP_RW double errorCorrectionRate;
 
-    // April :: User-configurable parameters.
-    /// detection of quads can be done on a lower-resolution image, improving speed at a cost of
-    /// pose accuracy and a slight decrease in detection rate. Decoding the binary payload is still
+    /** @brief April :: User-configurable parameters.
+      * detection of quads can be done on a lower-resolution image, improving speed at a cost of
+      * pose accuracy and a slight decrease in detection rate. Decoding the binary payload is still
+      */
     CV_PROP_RW float aprilTagQuadDecimate;
 
     /// what Gaussian blur should be applied to the segmented image (used for quad detection?)
@@ -188,28 +200,32 @@ struct CV_EXPORTS_W DetectorParameters {
     /// how many corner candidates to consider when segmenting a group of pixels into a quad (default 10).
     CV_PROP_RW int aprilTagMaxNmaxima;
 
-    /// reject quads where pairs of edges have angles that are close to straight or close to 180 degrees.
-    /// Zero means that no quads are rejected. (In radians) (default 10*PI/180)
+    /** @brief reject quads where pairs of edges have angles that are close to straight or close to 180 degrees.
+      * Zero means that no quads are rejected. (In radians) (default 10*PI/180)
+      */
     CV_PROP_RW float aprilTagCriticalRad;
 
     /// when fitting lines to the contours, what is the maximum mean squared error
     CV_PROP_RW float aprilTagMaxLineFitMse;
 
-    /// when we build our model of black & white pixels, we add an extra check that the
-    /// white model must be (overall) brighter than the black model.  How much brighter? (in pixel values, [0,255]).
-    /// (default 5)
+    /** @brief when we build our model of black & white pixels, we add an extra check that the
+      * white model must be (overall) brighter than the black model.  How much brighter? (in pixel values, [0,255]).
+      * (default 5)
+      */
     CV_PROP_RW int aprilTagMinWhiteBlackDiff;
 
     /// should the thresholded image be deglitched? Only useful for very noisy images (default 0).
     CV_PROP_RW int aprilTagDeglitch;
 
-    /// to check if there is a white marker. In order to generate a "white" marker just invert a
-    /// normal marker by using a tilde, ~markerImage. (default false)
+    /** @brief to check if there is a white marker. In order to generate a "white" marker just invert a
+      * normal marker by using a tilde, ~markerImage. (default false)
+      */
     CV_PROP_RW bool detectInvertedMarker;
 
-    /// new Aruco functionality proposed in the paper:
-    /// Romero-Ramirez et al: Speeded up detection of squared fiducial markers (2018)
-    /// https://www.researchgate.net/publication/325787310_Speeded_Up_Detection_of_Squared_Fiducial_Markers
+    /** @brief new Aruco functionality proposed in the paper:
+      * Romero-Ramirez et al: Speeded up detection of squared fiducial markers (2018)
+      * https://www.researchgate.net/publication/325787310_Speeded_Up_Detection_of_Squared_Fiducial_Markers
+      */
 
     /// to enable the new and faster Aruco detection strategy.
     CV_PROP_RW bool useAruco3Detection;
@@ -224,6 +240,9 @@ private:
     bool readWrite(const Ptr<FileNode>& readNode = nullptr, const Ptr<FileStorage>& writeStorage = nullptr);
 };
 
+/**
+ * @brief struct RefineParameters is used by ArucoDetector
+ */
 struct CV_EXPORTS_W RefineParameters {
     RefineParameters() {
         minRepDistance = 10.f;
@@ -245,37 +264,53 @@ struct CV_EXPORTS_W RefineParameters {
       */
     CV_WRAP bool readRefineParameters(const FileNode& fn);
 
-    /**
-      * @brief Write a set of RefineParameters to FileStorage
+    /** @brief Write a set of RefineParameters to FileStorage
       */
     CV_WRAP bool writeRefineParameters(const Ptr<FileStorage>& fs);
 
-    /// minRepDistance minimum distance between the corners of the rejected candidate and the reprojected marker in
-    /// order to consider it as a correspondence.
+    /** @brief minRepDistance minimum distance between the corners of the rejected candidate and the reprojected marker in
+      * order to consider it as a correspondence.
+      */
     CV_PROP_RW float minRepDistance;
-    /// minRepDistance rate of allowed erroneous bits respect to the error correction
-    /// capability of the used dictionary. -1 ignores the error correction step.
+    /** @brief minRepDistance rate of allowed erroneous bits respect to the error correction
+      * capability of the used dictionary. -1 ignores the error correction step.
+      */
     CV_PROP_RW float errorCorrectionRate;
-    /// checkAllOrders consider the four posible corner orders in the rejectedCorners array.
-    // * If it set to false, only the provided corner order is considered (default true).
+    /** @brief checkAllOrders consider the four posible corner orders in the rejectedCorners array.
+      * If it set to false, only the provided corner order is considered (default true).
+      */
     CV_PROP_RW bool checkAllOrders;
 private:
     bool readWrite(const Ptr<FileNode>& readNode = nullptr, const Ptr<FileStorage>& writeStorage = nullptr);
 };
 
+/**
+ * @brief
+ * The main functionality of ArucoDetector class is detection of markers in an image with detectMarkers() method.
+ * After detecting some markers in the image, you can try to find undetected markers from this dictionary with
+ * refineDetectedMarkers() method.
+ * @see DetectorParameters, RefineParameters
+ */
 class CV_EXPORTS_W ArucoDetector : public Algorithm
 {
 public:
     /// dictionary indicates the type of markers that will be searched
     CV_PROP_RW Ptr<Dictionary> dictionary;
 
-    /// marker detection parameters
+    /// marker detection parameters, check DetectorParameters docs to see available settings
     CV_PROP_RW Ptr<DetectorParameters> params;
 
     /// marker refine parameters
     CV_PROP_RW Ptr<RefineParameters> refineParams;
 
-    ArucoDetector(const Ptr<Dictionary> &_dictionary = getPredefinedDictionary(DICT_4X4_50), const Ptr<DetectorParameters> &_params = DetectorParameters::create(),
+    /**
+     * @brief Basic ArucoDetector constructor
+     * @param _dictionary indicates the type of markers that will be searched
+     * @param _params marker detection parameters
+     * @param _refineParams marker refine detection parameters
+     */
+    ArucoDetector(const Ptr<Dictionary> &_dictionary = getPredefinedDictionary(DICT_4X4_50),
+                  const Ptr<DetectorParameters> &_params = DetectorParameters::create(),
                   const Ptr<RefineParameters> &_refineParams = RefineParameters::create()):
                   dictionary(_dictionary), params(_params), refineParams(_refineParams) {}
 
@@ -303,7 +338,6 @@ public:
      * @note The function does not correct lens distortion or takes it into account. It's recommended to undistort
      * input image with corresponging camera model, if camera parameters are known
      * @sa undistort, estimatePoseSingleMarkers,  estimatePoseBoard
-     *
      */
     CV_WRAP void detectMarkers(InputArray image, OutputArrayOfArrays corners, OutputArray ids,
                                OutputArrayOfArrays rejectedImgPoints = noArray());

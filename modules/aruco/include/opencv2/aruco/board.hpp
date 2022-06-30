@@ -56,14 +56,14 @@ class CV_EXPORTS_W Board {
     ///
     /// Markers are placed in a certain order - row by row, left to right in every row.
     /// For M markers, the size is Mx4.
-    CV_PROP std::vector< std::vector< Point3f > > objPoints;
+    CV_PROP std::vector<std::vector<Point3f> > objPoints;
 
     /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
     /// vector of the identifiers of the markers in the board (same size than objPoints)
     /// The identifiers refers to the board dictionary
-    CV_PROP_RW std::vector< int > ids;
+    CV_PROP_RW std::vector<int> ids;
 
     /// coordinate of the bottom right corner of the board, is set when calling the function create()
     CV_PROP Point3f rightBottomBorder;
@@ -153,11 +153,11 @@ class CV_EXPORTS_W GridBoard : public Board {
 class CV_EXPORTS_W CharucoBoard : public Board {
     public:
     // vector of chessboard 3D corners precalculated
-    CV_PROP std::vector< Point3f > chessboardCorners;
+    CV_PROP std::vector<Point3f> chessboardCorners;
 
     // for each charuco corner, nearest marker id and nearest marker corner id of each marker
-    CV_PROP std::vector< std::vector< int > > nearestMarkerIdx;
-    CV_PROP std::vector< std::vector< int > > nearestMarkerCorners;
+    CV_PROP std::vector<std::vector<int> > nearestMarkerIdx;
+    CV_PROP std::vector<std::vector<int> > nearestMarkerCorners;
 
     /**
      * @brief Draw a ChArUco board

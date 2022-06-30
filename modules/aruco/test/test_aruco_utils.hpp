@@ -69,7 +69,7 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
 
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-    vector< Point2f > corners;
+    vector<Point2f> corners;
 
     // get max coordinate of board
     Point3f maxCoord = board->rightBottomBorder;
@@ -82,7 +82,7 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     projectPoints(objPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
     // get perspective transform
-    vector< Point2f > originalCorners;
+    vector<Point2f> originalCorners;
     originalCorners.push_back(Point2f(0, 0));
     originalCorners.push_back(Point2f((float)markerSizePixels, 0));
     originalCorners.push_back(Point2f((float)markerSizePixels, (float)markerSizePixels));
