@@ -6,7 +6,7 @@ set(the_description "SFM algorithms")
 
 find_package(Ceres QUIET)
 
-if(NOT (Gflags_FOUND)  # Ceres find gflags on the own, so separate search isn't necessary
+if(NOT Gflags_FOUND)  # Ceres find gflags on the own, so separate search isn't necessary
   find_package(Gflags QUIET)
 endif()
 if(NOT (Glog_FOUND OR glog_FOUND)  # Ceres find glog on the own, so separate search isn't necessary
