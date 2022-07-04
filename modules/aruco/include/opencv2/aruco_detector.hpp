@@ -280,8 +280,6 @@ struct CV_EXPORTS_W RefineParameters {
       * If it set to false, only the provided corner order is considered (default true).
       */
     CV_PROP_RW bool checkAllOrders;
-private:
-    bool readWrite(const Ptr<FileNode>& readNode = nullptr, const Ptr<FileStorage>& writeStorage = nullptr);
 };
 
 /**

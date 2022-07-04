@@ -211,7 +211,10 @@ class CV_EXPORTS_W CharucoBoard : public Board {
  * @return bool value, 1 (true) if detected corners form a line, 0 (false) if they do not.
       solvePnP, calibration functions will fail if the corners are collinear (true).
  *
- * The number of ids in charucoIDs should be <= the number of chessboard corners in the board.  This functions checks whether the charuco corners are on a straight line (returns true, if so), or not (false).  Axis parallel, as well as diagonal and other straight lines detected.  Degenerate cases: for number of charucoIDs <= 2, the function returns true.
+ * The number of ids in charucoIDs should be <= the number of chessboard corners in the board.
+ * This functions checks whether the charuco corners are on a straight line (returns true, if so), or not (false).
+ * Axis parallel, as well as diagonal and other straight lines detected.  Degenerate cases:
+ * for number of charucoIDs <= 2,the function returns true.
  */
 CV_EXPORTS_W bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &board, InputArray charucoIds);
 

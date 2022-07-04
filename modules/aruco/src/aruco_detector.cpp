@@ -67,13 +67,14 @@ bool DetectorParameters::writeDetectorParameters(const Ptr<FileStorage>& fs)
     return readWrite(nullptr, fs);
 }
 
-bool RefineParameters::readWrite(const Ptr<FileNode>& readNode, const Ptr<FileStorage>& writeStorage) {
+static inline bool readWrite(RefineParameters& refineParameters, const Ptr<FileNode>& readNode,
+                             const Ptr<FileStorage>& writeStorage = nullptr) {
     CV_Assert(!readNode.empty() || !writeStorage.empty());
     bool check = false;
 
-    check |= readWriteParameter("minRepDistance", this->minRepDistance, readNode, writeStorage);
-    check |= readWriteParameter("errorCorrectionRate", this->errorCorrectionRate, readNode, writeStorage);
-    check |= readWriteParameter("checkAllOrders", this->checkAllOrders, readNode, writeStorage);
+    check |= readWriteParameter("minRepDistance", refineParameters.minRepDistance, readNode, writeStorage);
+    check |= readWriteParameter("errorCorrectionRate", refineParameters.errorCorrectionRate, readNode, writeStorage);
+    check |= readWriteParameter("checkAllOrders", refineParameters.checkAllOrders, readNode, writeStorage);
     return check;
 }
 
@@ -81,13 +82,13 @@ bool RefineParameters::readRefineParameters(const FileNode &fn) {
     if(fn.empty())
         return false;
     Ptr<FileNode> pfn = makePtr<FileNode>(fn);
-    return readWrite(pfn);
+    return readWrite(*this, pfn);
 }
 
 bool RefineParameters::writeRefineParameters(const Ptr<FileStorage> &fs) {
     if(fs.empty())
         return false;
-    return readWrite(nullptr, fs);
+    return readWrite(*this, nullptr, fs);
 }
 
 /**
