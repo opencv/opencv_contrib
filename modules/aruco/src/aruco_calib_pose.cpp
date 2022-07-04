@@ -47,13 +47,13 @@ static Mat _getSingleMarkerObjectPoints(float markerLength, const EstimateParame
     CV_Assert(markerLength > 0);
     Mat objPoints(4, 1, CV_32FC3);
     // set coordinate system in the top-left corner of the marker, with Z pointing out
-    if (estimateParameters.pattern == CW_top_left_corner) {
+    if (estimateParameters.pattern == CW_TOP_LEFT_CORNER) {
         objPoints.ptr<Vec3f>(0)[0] = Vec3f(0.f, 0.f, 0);
         objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength, 0.f, 0);
         objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength, markerLength, 0);
         objPoints.ptr<Vec3f>(0)[3] = Vec3f(0.f, markerLength, 0);
     }
-    else if (estimateParameters.pattern == CCW_center) {
+    else if (estimateParameters.pattern == CCW_CENTER) {
         objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
         objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
         objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
@@ -67,7 +67,7 @@ static Mat _getSingleMarkerObjectPoints(float markerLength, const EstimateParame
 void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
                                OutputArray _rvecs, OutputArray _tvecs, OutputArray _objPoints,
-                               Ptr<EstimateParameters> estimateParameters) {
+                               const Ptr<EstimateParameters>& estimateParameters) {
     CV_Assert(markerLength > 0);
 
     Mat markerObjPoints = _getSingleMarkerObjectPoints(markerLength, *estimateParameters);
@@ -178,7 +178,7 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
                             OutputArray _stdDeviationsIntrinsics,
                             OutputArray _stdDeviationsExtrinsics,
                             OutputArray _perViewErrors,
-                            int flags, TermCriteria criteria) {
+                            int flags, const TermCriteria& criteria) {
     // for each frame, get properly processed imagePoints and objectPoints for the calibrateCamera
     // function
     vector<Mat> processedObjectPoints, processedImagePoints;
@@ -212,7 +212,7 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
 
 double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputArray _counter, const Ptr<Board> &board,
                             Size imageSize, InputOutputArray _cameraMatrix, InputOutputArray _distCoeffs,
-                            OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags, TermCriteria criteria) {
+                            OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs, int flags, const TermCriteria& criteria) {
     return calibrateCameraAruco(_corners, _ids, _counter, board, imageSize, _cameraMatrix, _distCoeffs,
                                 _rvecs, _tvecs, noArray(), noArray(), noArray(), flags, criteria);
 }
@@ -224,7 +224,7 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
                               OutputArray _stdDeviationsIntrinsics,
                               OutputArray _stdDeviationsExtrinsics,
                               OutputArray _perViewErrors,
-                              int flags, TermCriteria criteria) {
+                              int flags, const TermCriteria& criteria) {
     CV_Assert(_charucoIds.total() > 0 && (_charucoIds.total() == _charucoCorners.total()));
 
     // Join object points of charuco corners in a single vector for calibrateCamera() function
@@ -248,7 +248,7 @@ double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfAr
 double calibrateCameraCharuco(InputArrayOfArrays _charucoCorners, InputArrayOfArrays _charucoIds,
                               const Ptr<CharucoBoard> &_board, Size imageSize, InputOutputArray _cameraMatrix,
                               InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs, OutputArrayOfArrays _tvecs,
-                              int flags, TermCriteria criteria) {
+                              int flags, const TermCriteria& criteria) {
 return calibrateCameraCharuco(_charucoCorners, _charucoIds, _board, imageSize, _cameraMatrix, _distCoeffs, _rvecs,
                               _tvecs, noArray(), noArray(), noArray(), flags, criteria);
 }

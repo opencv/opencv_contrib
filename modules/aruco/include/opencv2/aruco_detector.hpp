@@ -285,8 +285,7 @@ private:
 };
 
 /**
- * @brief
- * The main functionality of ArucoDetector class is detection of markers in an image with detectMarkers() method.
+ * @brief The main functionality of ArucoDetector class is detection of markers in an image with detectMarkers() method.
  * After detecting some markers in the image, you can try to find undetected markers from this dictionary with
  * refineDetectedMarkers() method.
  * @see DetectorParameters, RefineParameters
@@ -382,8 +381,8 @@ public:
     }
 
     /** @brief simplified API for language bindings
-    * @overload
-    */
+     * @overload
+     */
     CV_WRAP void write(const String& fileName) const {
         FileStorage fs(fileName, FileStorage::WRITE);
         write(fs);

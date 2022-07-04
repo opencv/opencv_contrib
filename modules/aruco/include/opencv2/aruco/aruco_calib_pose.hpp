@@ -12,8 +12,7 @@ namespace aruco {
 //! @addtogroup aruco
 //! @{
 
-/** @brief
- * rvec/tvec define the right handed coordinate system of the marker.
+/** @brief rvec/tvec define the right handed coordinate system of the marker.
  * PatternPos defines center this system and axes direction.
  * Axis X (red color) - first coordinate, axis Y (green color) - second coordinate,
  * axis Z (blue color) - third coordinate.
@@ -21,30 +20,29 @@ namespace aruco {
  */
 enum PatternPos {
     /** @brief The marker coordinate system is centered on the middle of the marker.
-        * The coordinates of the four corners (CCW order) of the marker in its own coordinate system are:
-        * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
-        * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0).
-        *
-        * These pattern points define this coordinate system:
-        * ![Image with axes drawn](images/singlemarkersaxes.jpg)
-        */
-    CCW_center,
+     * The coordinates of the four corners (CCW order) of the marker in its own coordinate system are:
+     * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
+     * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0).
+     *
+     * These pattern points define this coordinate system:
+     * ![Image with axes drawn](images/singlemarkersaxes.jpg)
+     */
+    CCW_CENTER,
     /** @brief The marker coordinate system is centered on the top-left corner of the marker.
-        * The coordinates of the four corners (CW order) of the marker in its own coordinate system are:
-        * (0, 0, 0), (markerLength, 0, 0),
-        * (markerLength, markerLength, 0), (0, markerLength, 0).
-        *
-        * These pattern points define this coordinate system:
-        * ![Image with axes drawn](images/singlemarkersaxes2.jpg)
-        *
-        * These pattern dots are convenient to use with a chessboard/ChArUco board.
-        */
-    CW_top_left_corner
+     * The coordinates of the four corners (CW order) of the marker in its own coordinate system are:
+     * (0, 0, 0), (markerLength, 0, 0),
+     * (markerLength, markerLength, 0), (0, markerLength, 0).
+     *
+     * These pattern points define this coordinate system:
+     * ![Image with axes drawn](images/singlemarkersaxes2.jpg)
+     *
+     * These pattern dots are convenient to use with a chessboard/ChArUco board.
+     */
+    CW_TOP_LEFT_CORNER
 };
 
-/** @brief
- * Pose estimation parameters
- * @param pattern Defines center this system and axes direction (default PatternPos::CCW_center).
+/** @brief Pose estimation parameters
+ * @param pattern Defines center this system and axes direction (default PatternPos::CCW_CENTER).
  * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses the provided
  * rvec and tvec values as initial approximations of the rotation and translation vectors, respectively, and further
  * optimizes them (default false).
@@ -56,7 +54,7 @@ struct CV_EXPORTS_W EstimateParameters {
     CV_PROP_RW bool useExtrinsicGuess;
     CV_PROP_RW SolvePnPMethod solvePnPMethod;
 
-    EstimateParameters(): pattern(CCW_center), useExtrinsicGuess(false),
+    EstimateParameters(): pattern(CCW_CENTER), useExtrinsicGuess(false),
                           solvePnPMethod(SOLVEPNP_ITERATIVE) {}
 
     CV_WRAP static Ptr<EstimateParameters> create() {
@@ -82,9 +80,9 @@ struct CV_EXPORTS_W EstimateParameters {
  * Each element in rvecs corresponds to the specific marker in imgPoints.
  * @param tvecs array of output translation vectors (e.g. std::vector<cv::Vec3d>).
  * Each element in tvecs corresponds to the specific marker in imgPoints.
- * @param _objPoints array of object points of all the marker corners
+ * @param objPoints array of object points of all the marker corners
  * @param estimateParameters set the origin of coordinate system and the coordinates of the four corners of the marker
- * (default estimateParameters.pattern = PatternPos::CCW_center, estimateParameters.useExtrinsicGuess = false,
+ * (default estimateParameters.pattern = PatternPos::CCW_CENTER, estimateParameters.useExtrinsicGuess = false,
  * estimateParameters.solvePnPMethod = SOLVEPNP_ITERATIVE).
  *
  * This function receives the detected markers and returns their pose estimation respect to
@@ -103,8 +101,8 @@ struct CV_EXPORTS_W EstimateParameters {
  */
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
-                                            OutputArray rvecs, OutputArray tvecs, OutputArray _objPoints = noArray(),
-                                            Ptr<EstimateParameters> estimateParameters = EstimateParameters::create());
+                                            OutputArray rvecs, OutputArray tvecs, OutputArray objPoints = noArray(),
+                                            const Ptr<EstimateParameters>& estimateParameters = EstimateParameters::create());
 
 /**
  * @brief Pose estimation for a board of markers
@@ -193,16 +191,18 @@ double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArr
                             Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
                             OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs, OutputArray stdDeviationsIntrinsics,
                             OutputArray stdDeviationsExtrinsics, OutputArray perViewErrors, int flags = 0,
-                            TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
+                            const TermCriteria& criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
-/** @brief It's the same function as #calibrateCameraAruco but without calibration error estimation.
+/**
+ * @brief It's the same function as #calibrateCameraAruco but without calibration error estimation.
+ * @overload
  */
 CV_EXPORTS_W double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArray counter,
                                          const Ptr<Board> &board, Size imageSize, InputOutputArray cameraMatrix,
                                          InputOutputArray distCoeffs, OutputArrayOfArrays rvecs = noArray(),
                                          OutputArrayOfArrays tvecs = noArray(), int flags = 0,
-                                         TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS,
-                                                                              30, DBL_EPSILON));
+                                         const TermCriteria& criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS,
+                                                                                     30, DBL_EPSILON));
 
 /**
  * @brief Pose estimation for a ChArUco board given some of their corners
@@ -267,17 +267,18 @@ double calibrateCameraCharuco(InputArrayOfArrays charucoCorners, InputArrayOfArr
                               const Ptr<CharucoBoard> &board, Size imageSize, InputOutputArray cameraMatrix,
                               InputOutputArray distCoeffs, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
                               OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
-                              OutputArray perViewErrors, int flags = 0, TermCriteria criteria = TermCriteria(
+                              OutputArray perViewErrors, int flags = 0, const TermCriteria& criteria = TermCriteria(
                               TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
-/** @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
-*/
+/**
+ * @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
+ */
 CV_EXPORTS_W double calibrateCameraCharuco(InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds,
                                            const Ptr<CharucoBoard> &board, Size imageSize,
                                            InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
                                            OutputArrayOfArrays rvecs = noArray(),
                                            OutputArrayOfArrays tvecs = noArray(), int flags = 0,
-                                           TermCriteria criteria=TermCriteria(TermCriteria::COUNT +
+                                           const TermCriteria& criteria=TermCriteria(TermCriteria::COUNT +
                                                                  TermCriteria::EPS, 30, DBL_EPSILON));
 //! @}
 
