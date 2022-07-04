@@ -441,7 +441,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 }
 
                 Ptr<aruco::EstimateParameters> estimateParameters = aruco::EstimateParameters::create();
-                estimateParameters->pattern = aruco::CW_TOP_LEFT_CORNER;
+                estimateParameters->pattern = aruco::ARUCO_CW_TOP_LEFT_CORNER;
                 // estimate diamond pose
                 vector< Vec3d > estimatedRvec, estimatedTvec;
                 aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, cameraMatrix, distCoeffs, estimatedRvec,

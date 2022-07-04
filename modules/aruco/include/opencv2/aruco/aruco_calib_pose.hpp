@@ -27,7 +27,7 @@ enum PatternPos {
      * These pattern points define this coordinate system:
      * ![Image with axes drawn](images/singlemarkersaxes.jpg)
      */
-    CCW_CENTER,
+    ARUCO_CCW_CENTER,
     /** @brief The marker coordinate system is centered on the top-left corner of the marker.
      * The coordinates of the four corners (CW order) of the marker in its own coordinate system are:
      * (0, 0, 0), (markerLength, 0, 0),
@@ -38,11 +38,11 @@ enum PatternPos {
      *
      * These pattern dots are convenient to use with a chessboard/ChArUco board.
      */
-    CW_TOP_LEFT_CORNER
+    ARUCO_CW_TOP_LEFT_CORNER
 };
 
 /** @brief Pose estimation parameters
- * @param pattern Defines center this system and axes direction (default PatternPos::CCW_CENTER).
+ * @param pattern Defines center this system and axes direction (default PatternPos::ARUCO_CCW_CENTER).
  * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses the provided
  * rvec and tvec values as initial approximations of the rotation and translation vectors, respectively, and further
  * optimizes them (default false).
@@ -54,7 +54,7 @@ struct CV_EXPORTS_W EstimateParameters {
     CV_PROP_RW bool useExtrinsicGuess;
     CV_PROP_RW SolvePnPMethod solvePnPMethod;
 
-    EstimateParameters(): pattern(CCW_CENTER), useExtrinsicGuess(false),
+    EstimateParameters(): pattern(ARUCO_CCW_CENTER), useExtrinsicGuess(false),
                           solvePnPMethod(SOLVEPNP_ITERATIVE) {}
 
     CV_WRAP static Ptr<EstimateParameters> create() {
@@ -82,7 +82,7 @@ struct CV_EXPORTS_W EstimateParameters {
  * Each element in tvecs corresponds to the specific marker in imgPoints.
  * @param objPoints array of object points of all the marker corners
  * @param estimateParameters set the origin of coordinate system and the coordinates of the four corners of the marker
- * (default estimateParameters.pattern = PatternPos::CCW_CENTER, estimateParameters.useExtrinsicGuess = false,
+ * (default estimateParameters.pattern = PatternPos::ARUCO_CCW_CENTER, estimateParameters.useExtrinsicGuess = false,
  * estimateParameters.solvePnPMethod = SOLVEPNP_ITERATIVE).
  *
  * This function receives the detected markers and returns their pose estimation respect to

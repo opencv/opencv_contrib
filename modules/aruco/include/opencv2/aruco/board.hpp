@@ -25,44 +25,40 @@ class Dictionary;
  * - The identifier of all the markers in the board.
  */
 class CV_EXPORTS_W Board {
-    public:
-   /**
-    * @brief Provide way to create Board by passing necessary data. Specially needed in Python.
-    *
-    * @param objPoints array of object points of all the marker corners in the board
-    * @param dictionary the dictionary of markers employed for this board
-    * @param ids vector of the identifiers of the markers in the board
-    *
-    */
+public:
+    /** @brief Provide way to create Board by passing necessary data. Specially needed in Python.
+     * @param objPoints array of object points of all the marker corners in the board
+     * @param dictionary the dictionary of markers employed for this board
+     * @param ids vector of the identifiers of the markers in the board
+     */
     CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids);
 
-   /**
-    * @brief Set ids vector
-    *
-    * @param ids vector of the identifiers of the markers in the board (should be the same size
-    * as objPoints)
-    *
-    * Recommended way to set ids vector, which will fail if the size of ids does not match size
-    * of objPoints.
-    */
+    /** @brief Set ids vector
+     * @param ids vector of the identifiers of the markers in the board (should be the same size
+     * as objPoints)
+     *
+     * Recommended way to set ids vector, which will fail if the size of ids does not match size
+     * of objPoints.
+     */
     CV_WRAP void setIds(InputArray ids);
 
-    /// array of object points of all the marker corners in the board
-    /// each marker include its 4 corners in this order:
-    ///-   objPoints[i][0] - left-top point of i-th marker
-    ///-   objPoints[i][1] - right-top point of i-th marker
-    ///-   objPoints[i][2] - right-bottom point of i-th marker
-    ///-   objPoints[i][3] - left-bottom point of i-th marker
-    ///
-    /// Markers are placed in a certain order - row by row, left to right in every row.
-    /// For M markers, the size is Mx4.
+    /** @brief array of object points of all the marker corners in the board each marker include its 4 corners in this order:
+     * -   objPoints[i][0] - left-top point of i-th marker
+     * -   objPoints[i][1] - right-top point of i-th marker
+     * -   objPoints[i][2] - right-bottom point of i-th marker
+     * -   objPoints[i][3] - left-bottom point of i-th marker
+     *
+     * Markers are placed in a certain order - row by row, left to right in every row.
+     * For M markers, the size is Mx4.
+     */
     CV_PROP std::vector<std::vector<Point3f> > objPoints;
 
     /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
-    /// vector of the identifiers of the markers in the board (same size than objPoints)
-    /// The identifiers refers to the board dictionary
+    /** @brief vector of the identifiers of the markers in the board (same size than objPoints)
+     * The identifiers refers to the board dictionary
+     */
     CV_PROP_RW std::vector<int> ids;
 
     /// coordinate of the bottom right corner of the board, is set when calling the function create()
@@ -173,9 +169,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
     CV_WRAP void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
 
 
-    /**
-     * @brief Create a CharucoBoard object
-     *
+    /** @brief Create a CharucoBoard object
      * @param squaresX number of chessboard squares in X direction
      * @param squaresY number of chessboard squares in Y direction
      * @param squareLength chessboard square side length (normally in meters)
