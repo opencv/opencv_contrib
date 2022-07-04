@@ -88,7 +88,7 @@ In this case the margin is 10.
 
 The output image will be something like this:
 
-![](images/charucoboard.jpg)
+![](images/charucoboard.png)
 
 A full working example is included in the `create_board_charuco.cpp` inside the `modules/aruco/samples/`.
 
