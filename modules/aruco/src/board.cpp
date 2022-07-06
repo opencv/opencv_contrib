@@ -200,6 +200,15 @@ float GridBoard::getMarkerSeparation() {
     return gridImpl->markerSeparation;
 }
 
+struct CharucoBoard::CharucoImpl : GridBoard::GridImpl {
+    // size of chessboard squares side (normally in meters)
+    float squareLength;
+
+    // marker side length (normally in meters)
+    float markerLength;
+};
+
+CharucoBoard::CharucoBoard(): charucoImpl(makePtr<CharucoImpl>()) {}
 
 void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderBits) {
     CV_Assert(!outSize.empty());
@@ -212,8 +221,8 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
         out.colRange(marginSize, out.cols - marginSize).rowRange(marginSize, out.rows - marginSize);
 
     double totalLengthX, totalLengthY;
-    totalLengthX = _squareLength * _squaresX;
-    totalLengthY = _squareLength * _squaresY;
+    totalLengthX = charucoImpl->squareLength * charucoImpl->sizeX;
+    totalLengthY = charucoImpl->squareLength * charucoImpl->sizeY;
 
     // proportional transformation
     double xReduction = totalLengthX / double(noMarginsImg.cols);
@@ -233,12 +242,12 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
 
     // determine the margins to draw only the markers
     // take the minimum just to be sure
-    double squareSizePixels = min(double(chessboardZoneImg.cols) / double(_squaresX),
-                                  double(chessboardZoneImg.rows) / double(_squaresY));
+    double squareSizePixels = min(double(chessboardZoneImg.cols) / double(charucoImpl->sizeX),
+                                  double(chessboardZoneImg.rows) / double(charucoImpl->sizeY));
 
-    double diffSquareMarkerLength = (_squareLength - _markerLength) / 2;
+    double diffSquareMarkerLength = (charucoImpl->squareLength - charucoImpl->markerLength) / 2;
     int diffSquareMarkerLengthPixels =
-        int(diffSquareMarkerLength * squareSizePixels / _squareLength);
+        int(diffSquareMarkerLength * squareSizePixels / charucoImpl->squareLength);
 
     // draw markers
     Mat markersImg;
@@ -246,8 +255,8 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
     markersImg.copyTo(chessboardZoneImg);
 
     // now draw black squares
-    for(int y = 0; y < _squaresY; y++) {
-        for(int x = 0; x < _squaresX; x++) {
+    for(int y = 0; y < charucoImpl->sizeY; y++) {
+        for(int x = 0; x < charucoImpl->sizeX; x++) {
 
             if(y % 2 != x % 2) continue; // white corner, dont do anything
 
@@ -263,15 +272,67 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
     }
 }
 
+/**
+  * Fill nearestMarkerIdx and nearestMarkerCorners arrays
+  */
+static inline void _getNearestMarkerCorners(CharucoBoard &board, float squareLength) {
+    board.nearestMarkerIdx.resize(board.chessboardCorners.size());
+    board.nearestMarkerCorners.resize(board.chessboardCorners.size());
+
+    unsigned int nMarkers = (unsigned int)board.ids.size();
+    unsigned int nCharucoCorners = (unsigned int)board.chessboardCorners.size();
+    for(unsigned int i = 0; i < nCharucoCorners; i++) {
+        double minDist = -1; // distance of closest markers
+        Point3f charucoCorner = board.chessboardCorners[i];
+        for(unsigned int j = 0; j < nMarkers; j++) {
+            // calculate distance from marker center to charuco corner
+            Point3f center = Point3f(0, 0, 0);
+            for(unsigned int k = 0; k < 4; k++)
+                center += board.objPoints[j][k];
+            center /= 4.;
+            double sqDistance;
+            Point3f distVector = charucoCorner - center;
+            sqDistance = distVector.x * distVector.x + distVector.y * distVector.y;
+            if(j == 0 || fabs(sqDistance - minDist) < cv::pow(0.01 * squareLength, 2)) {
+                // if same minimum distance (or first iteration), add to nearestMarkerIdx vector
+                board.nearestMarkerIdx[i].push_back(j);
+                minDist = sqDistance;
+            } else if(sqDistance < minDist) {
+                // if finding a closest marker to the charuco corner
+                board.nearestMarkerIdx[i].clear(); // remove any previous added marker
+                board.nearestMarkerIdx[i].push_back(j); // add the new closest marker index
+                minDist = sqDistance;
+            }
+        }
+        // for each of the closest markers, search the marker corner index closer
+        // to the charuco corner
+        for(unsigned int j = 0; j < board.nearestMarkerIdx[i].size(); j++) {
+            board.nearestMarkerCorners[i].resize(board.nearestMarkerIdx[i].size());
+            double minDistCorner = -1;
+            for(unsigned int k = 0; k < 4; k++) {
+                double sqDistance;
+                Point3f distVector = charucoCorner - board.objPoints[board.nearestMarkerIdx[i][j]][k];
+                sqDistance = distVector.x * distVector.x + distVector.y * distVector.y;
+                if(k == 0 || sqDistance < minDistCorner) {
+                    // if this corner is closer to the charuco corner, assing its index
+                    // to nearestMarkerCorners
+                    minDistCorner = sqDistance;
+                    board.nearestMarkerCorners[i][j] = k;
+                }
+            }
+        }
+    }
+}
+
 Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareLength,
                                   float markerLength, const Ptr<Dictionary> &dictionary) {
     CV_Assert(squaresX > 1 && squaresY > 1 && markerLength > 0 && squareLength > markerLength);
     Ptr<CharucoBoard> res = makePtr<CharucoBoard>();
 
-    res->_squaresX = squaresX;
-    res->_squaresY = squaresY;
-    res->_squareLength = squareLength;
-    res->_markerLength = markerLength;
+    res->charucoImpl->sizeX = squaresX;
+    res->charucoImpl->sizeY = squaresY;
+    res->charucoImpl->squareLength = squareLength;
+    res->charucoImpl->markerLength = markerLength;
     res->dictionary = dictionary;
 
     float diffSquareMarkerLength = (squareLength - markerLength) / 2;
@@ -306,62 +367,15 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
     }
     res->rightBottomBorder = Point3f(squaresX * squareLength,
                                      squaresY * squareLength, 0.f);
-    res->_getNearestMarkerCorners();
-
+    _getNearestMarkerCorners(*res, res->charucoImpl->squareLength);
     return res;
 }
 
-/**
-  * Fill nearestMarkerIdx and nearestMarkerCorners arrays
-  */
-void CharucoBoard::_getNearestMarkerCorners() {
-    nearestMarkerIdx.resize(chessboardCorners.size());
-    nearestMarkerCorners.resize(chessboardCorners.size());
+Size CharucoBoard::getChessboardSize() const { return Size(charucoImpl->sizeX, charucoImpl->sizeY); }
 
-    unsigned int nMarkers = (unsigned int)ids.size();
-    unsigned int nCharucoCorners = (unsigned int)chessboardCorners.size();
-    for(unsigned int i = 0; i < nCharucoCorners; i++) {
-        double minDist = -1; // distance of closest markers
-        Point3f charucoCorner = chessboardCorners[i];
-        for(unsigned int j = 0; j < nMarkers; j++) {
-            // calculate distance from marker center to charuco corner
-            Point3f center = Point3f(0, 0, 0);
-            for(unsigned int k = 0; k < 4; k++)
-                center += objPoints[j][k];
-            center /= 4.;
-            double sqDistance;
-            Point3f distVector = charucoCorner - center;
-            sqDistance = distVector.x * distVector.x + distVector.y * distVector.y;
-            if(j == 0 || fabs(sqDistance - minDist) < cv::pow(0.01 * _squareLength, 2)) {
-                // if same minimum distance (or first iteration), add to nearestMarkerIdx vector
-                nearestMarkerIdx[i].push_back(j);
-                minDist = sqDistance;
-            } else if(sqDistance < minDist) {
-                // if finding a closest marker to the charuco corner
-                nearestMarkerIdx[i].clear(); // remove any previous added marker
-                nearestMarkerIdx[i].push_back(j); // add the new closest marker index
-                minDist = sqDistance;
-            }
-        }
-        // for each of the closest markers, search the marker corner index closer
-        // to the charuco corner
-        for(unsigned int j = 0; j < nearestMarkerIdx[i].size(); j++) {
-            nearestMarkerCorners[i].resize(nearestMarkerIdx[i].size());
-            double minDistCorner = -1;
-            for(unsigned int k = 0; k < 4; k++) {
-                double sqDistance;
-                Point3f distVector = charucoCorner - objPoints[nearestMarkerIdx[i][j]][k];
-                sqDistance = distVector.x * distVector.x + distVector.y * distVector.y;
-                if(k == 0 || sqDistance < minDistCorner) {
-                    // if this corner is closer to the charuco corner, assing its index
-                    // to nearestMarkerCorners
-                    minDistCorner = sqDistance;
-                    nearestMarkerCorners[i][j] = k;
-                }
-            }
-        }
-    }
-}
+float CharucoBoard::getSquareLength() const { return charucoImpl->squareLength; }
+
+float CharucoBoard::getMarkerLength() const { return charucoImpl->markerLength; }
 
 bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _charucoIds) {
     unsigned int nCharucoCorners = (unsigned int)_charucoIds.getMat().total();

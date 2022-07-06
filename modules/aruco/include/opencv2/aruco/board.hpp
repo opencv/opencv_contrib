@@ -129,6 +129,7 @@ public:
 protected:
     struct GridImpl;
     Ptr<GridImpl> gridImpl;
+    friend class CharucoBoard;
 };
 
 /**
@@ -141,6 +142,8 @@ protected:
  */
 class CV_EXPORTS_W CharucoBoard : public Board {
 public:
+    CharucoBoard();
+
     // vector of chessboard 3D corners precalculated
     CV_PROP std::vector<Point3f> chessboardCorners;
 
@@ -148,8 +151,7 @@ public:
     CV_PROP std::vector<std::vector<int> > nearestMarkerIdx;
     CV_PROP std::vector<std::vector<int> > nearestMarkerCorners;
 
-    /**
-     * @brief Draw a ChArUco board
+    /** @brief Draw a ChArUco board
      *
      * @param outSize size of the output image in pixels.
      * @param img output image with the board. The size of this image will be outSize
@@ -177,21 +179,13 @@ public:
     CV_WRAP static Ptr<CharucoBoard> create(int squaresX, int squaresY, float squareLength,
                                             float markerLength, const Ptr<Dictionary> &dictionary);
 
-    CV_WRAP Size getChessboardSize() const { return Size(_squaresX, _squaresY); }
-    CV_WRAP float getSquareLength() const { return _squareLength; }
-    CV_WRAP float getMarkerLength() const { return _markerLength; }
+    CV_WRAP Size getChessboardSize() const;
+    CV_WRAP float getSquareLength() const;
+    CV_WRAP float getMarkerLength() const;
 
-    private:
-    void _getNearestMarkerCorners();
-
-    // number of markers in X and Y directions
-    int _squaresX, _squaresY;
-
-    // size of chessboard squares side (normally in meters)
-    float _squareLength;
-
-    // marker side length (normally in meters)
-    float _markerLength;
+protected:
+    struct CharucoImpl;
+    Ptr<CharucoImpl> charucoImpl;
 };
 
 /**
