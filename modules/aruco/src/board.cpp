@@ -10,8 +10,7 @@ namespace cv {
 namespace aruco {
 using namespace std;
 
-/**
- * @brief Implementation of drawPlanarBoard that accepts a raw Board pointer.
+/** @brief Implementation of drawPlanarBoard that accepts a raw Board pointer.
  */
 static void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int marginSize, int borderBits) {
     CV_Assert(!outSize.empty());
@@ -99,6 +98,20 @@ void drawPlanarBoard(const Ptr<Board> &_board, Size outSize, OutputArray _img, i
     _drawPlanarBoardImpl(_board, outSize, _img, marginSize, borderBits);
 }
 
+struct GridBoard::GridImpl {
+    GridImpl(){};
+    // number of markers in X and Y directions
+    int sizeX = 3, sizeY = 3;
+
+    // marker side length (normally in meters)
+    float markerLength = 1.f;
+
+    // separation between markers in the grid
+    float markerSeparation = .5f;
+};
+
+GridBoard::GridBoard(): gridImpl(makePtr<GridImpl>()) {}
+
 Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
     CV_Assert(objPoints.total() == ids.total());
     CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
@@ -139,10 +152,10 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
                                  const Ptr<Dictionary> &dictionary, int firstMarker) {
     CV_Assert(markersX > 0 && markersY > 0 && markerLength > 0 && markerSeparation > 0);
     Ptr<GridBoard> res = makePtr<GridBoard>();
-    res->_markersX = markersX;
-    res->_markersY = markersY;
-    res->_markerLength = markerLength;
-    res->_markerSeparation = markerSeparation;
+    res->gridImpl->sizeX = markersX;
+    res->gridImpl->sizeY = markersY;
+    res->gridImpl->markerLength = markerLength;
+    res->gridImpl->markerSeparation = markerSeparation;
     res->dictionary = dictionary;
 
     size_t totalMarkers = (size_t) markersX * markersY;
@@ -174,6 +187,19 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
 void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderBits) {
     _drawPlanarBoardImpl((Board*)this, outSize, _img, marginSize, borderBits);
 }
+
+Size GridBoard::getGridSize() const {
+    return Size(gridImpl->sizeX, gridImpl->sizeY);
+}
+
+float GridBoard::getMarkerLength() {
+    return gridImpl->markerLength;
+}
+
+float GridBoard::getMarkerSeparation() {
+    return gridImpl->markerSeparation;
+}
+
 
 void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderBits) {
     CV_Assert(!outSize.empty());

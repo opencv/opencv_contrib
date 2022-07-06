@@ -193,9 +193,8 @@ double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArr
                             OutputArray stdDeviationsExtrinsics, OutputArray perViewErrors, int flags = 0,
                             const TermCriteria& criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
-/**
+/** @overload
  * @brief It's the same function as #calibrateCameraAruco but without calibration error estimation.
- * @overload
  */
 CV_EXPORTS_W double calibrateCameraAruco(InputArrayOfArrays corners, InputArray ids, InputArray counter,
                                          const Ptr<Board> &board, Size imageSize, InputOutputArray cameraMatrix,

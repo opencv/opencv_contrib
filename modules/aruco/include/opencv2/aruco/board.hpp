@@ -90,7 +90,8 @@ CV_EXPORTS_W void drawPlanarBoard(const Ptr<Board> &board, Size outSize, OutputA
  */
 
 class CV_EXPORTS_W GridBoard : public Board {
-    public:
+public:
+    CV_EXPORTS_W GridBoard();
     /**
      * @brief Draw a GridBoard
      *
@@ -121,21 +122,13 @@ class CV_EXPORTS_W GridBoard : public Board {
     CV_WRAP static Ptr<GridBoard> create(int markersX, int markersY, float markerLength, float markerSeparation,
                                          const Ptr<Dictionary> &dictionary, int firstMarker = 0);
 
-    CV_WRAP Size getGridSize() const { return Size(_markersX, _markersY); }
+    CV_WRAP Size getGridSize() const;
+    CV_WRAP float getMarkerLength();
+    CV_WRAP float getMarkerSeparation();
 
-    CV_WRAP float getMarkerLength() const { return _markerLength; }
-
-    CV_WRAP float getMarkerSeparation() const { return _markerSeparation; }
-
-    private:
-    // number of markers in X and Y directions
-    int _markersX, _markersY;
-
-    // marker side length (normally in meters)
-    float _markerLength;
-
-    // separation between markers in the grid
-    float _markerSeparation;
+protected:
+    struct GridImpl;
+    Ptr<GridImpl> gridImpl;
 };
 
 /**
@@ -147,7 +140,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  * This class also allows the easy creation and drawing of ChArUco boards.
  */
 class CV_EXPORTS_W CharucoBoard : public Board {
-    public:
+public:
     // vector of chessboard 3D corners precalculated
     CV_PROP std::vector<Point3f> chessboardCorners;
 
@@ -185,9 +178,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
                                             float markerLength, const Ptr<Dictionary> &dictionary);
 
     CV_WRAP Size getChessboardSize() const { return Size(_squaresX, _squaresY); }
-
     CV_WRAP float getSquareLength() const { return _squareLength; }
-
     CV_WRAP float getMarkerLength() const { return _markerLength; }
 
     private:
