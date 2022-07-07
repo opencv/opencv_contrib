@@ -125,8 +125,8 @@ public:
                                          const Ptr<Dictionary> &dictionary, int firstMarker = 0);
 
     CV_WRAP Size getGridSize() const;
-    CV_WRAP float getMarkerLength();
-    CV_WRAP float getMarkerSeparation();
+    CV_WRAP float getMarkerLength() const;
+    CV_WRAP float getMarkerSeparation() const;
 
 protected:
     struct GridImpl;

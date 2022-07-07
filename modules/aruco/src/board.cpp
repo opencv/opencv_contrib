@@ -194,11 +194,11 @@ Size GridBoard::getGridSize() const {
     return Size(gridImpl->sizeX, gridImpl->sizeY);
 }
 
-float GridBoard::getMarkerLength() {
+float GridBoard::getMarkerLength() const {
     return gridImpl->markerLength;
 }
 
-float GridBoard::getMarkerSeparation() {
+float GridBoard::getMarkerSeparation() const {
     return gridImpl->markerSeparation;
 }
 
