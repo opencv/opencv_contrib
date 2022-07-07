@@ -26,6 +26,8 @@ class Dictionary;
  */
 class CV_EXPORTS_W Board {
 public:
+    CV_WRAP Board();
+
     /** @brief Provide way to create Board by passing necessary data. Specially needed in Python.
      * @param objPoints array of object points of all the marker corners in the board
      * @param dictionary the dictionary of markers employed for this board
@@ -91,7 +93,7 @@ CV_EXPORTS_W void drawPlanarBoard(const Ptr<Board> &board, Size outSize, OutputA
 
 class CV_EXPORTS_W GridBoard : public Board {
 public:
-    CV_EXPORTS_W GridBoard();
+    CV_WRAP GridBoard();
     /**
      * @brief Draw a GridBoard
      *
@@ -142,7 +144,7 @@ protected:
  */
 class CV_EXPORTS_W CharucoBoard : public Board {
 public:
-    CharucoBoard();
+    CV_WRAP CharucoBoard();
 
     // vector of chessboard 3D corners precalculated
     CV_PROP std::vector<Point3f> chessboardCorners;

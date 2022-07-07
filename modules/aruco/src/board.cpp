@@ -112,6 +112,8 @@ struct GridBoard::GridImpl {
 
 GridBoard::GridBoard(): gridImpl(makePtr<GridImpl>()) {}
 
+Board::Board(): dictionary(makePtr<Dictionary>(getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME::DICT_4X4_50))) {}
+
 Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
     CV_Assert(objPoints.total() == ids.total());
     CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
