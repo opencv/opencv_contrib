@@ -3,6 +3,10 @@ set(the_description "Contributed/Experimental Algorithms for Salient 2D Features
 if(HAVE_CUDA)
   ocv_warnings_disable(CMAKE_CXX_FLAGS -Wundef)
 endif()
+if(ARM AND CV_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.0)
+  # suppress warnings from GCC only on 7.1 and later
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-psabi)
+endif()
 ocv_define_module(xfeatures2d opencv_core opencv_imgproc opencv_features2d opencv_calib3d OPTIONAL opencv_shape opencv_ml opencv_cudaarithm WRAP python java)
 
 if(NOT OPENCV_SKIP_FEATURES2D_DOWNLOADING)
