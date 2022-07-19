@@ -203,17 +203,19 @@ public:
      * @param markerLength marker side length (same unit than squareLength)
      * @param dictionary dictionary of markers indicating the type of markers.
      * The first markers in the dictionary are used to fill the white chessboard squares.
+     * @param legacy legacy chessboard pattern (pre 4.6.0). Pattern generation was changed to be consistent across OpenCV, leading to incompatible even row patterns. Legacy switch enables old behavior to support pre-existing targets, see https://github.com/opencv/opencv_contrib/issues/3291).
      * @return the output CharucoBoard object
      *
      * This functions creates a CharucoBoard object given the number of squares in each direction
      * and the size of the markers and chessboard squares.
      */
     CV_WRAP static Ptr<CharucoBoard> create(int squaresX, int squaresY, float squareLength,
-                                            float markerLength, const Ptr<Dictionary> &dictionary);
+                                            float markerLength, const Ptr<Dictionary> &dictionary, bool legacy = true);
 
     CV_WRAP Size getChessboardSize() const;
     CV_WRAP float getSquareLength() const;
     CV_WRAP float getMarkerLength() const;
+    CV_WRAP bool getLegacyFlag() const;
 
 protected:
     struct CharucoImpl;

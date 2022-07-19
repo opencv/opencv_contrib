@@ -250,6 +250,9 @@ struct CharucoBoard::CharucoImpl : GridBoard::GridImpl {
 
     // marker side length (normally in meters)
     float markerLength;
+
+    // legacy chessboard pattern (pre 4.6.0)
+    bool legacy;
 };
 
 CharucoBoard::CharucoBoard(): charucoImpl(makePtr<CharucoImpl>()) {}
@@ -302,7 +305,11 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
     for(int y = 0; y < charucoImpl->sizeY; y++) {
         for(int x = 0; x < charucoImpl->sizeX; x++) {
 
-            if(y % 2 != x % 2) continue; // white corner, dont do anything
+            if(charucoImpl->legacy) {
+                if((y + ((charucoImpl->sizeY + 1) % 2)) % 2 != x % 2) continue; // white corner, dont do anything
+            } else {
+                if(y % 2 != x % 2) continue; // white corner, dont do anything
+            }
 
             double startX, startY;
             startX = squareSizePixels * double(x);
@@ -369,7 +376,7 @@ static inline void _getNearestMarkerCorners(CharucoBoard &board, float squareLen
 }
 
 Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareLength,
-                                  float markerLength, const Ptr<Dictionary> &dictionary) {
+                                  float markerLength, const Ptr<Dictionary> &dictionary, bool legacy) {
     CV_Assert(squaresX > 1 && squaresY > 1 && markerLength > 0 && squareLength > markerLength);
     Ptr<CharucoBoard> res = makePtr<CharucoBoard>();
 
@@ -377,6 +384,7 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
     res->charucoImpl->sizeY = squaresY;
     res->charucoImpl->squareLength = squareLength;
     res->charucoImpl->markerLength = markerLength;
+    res->charucoImpl->legacy = legacy;
     res->setDictionary(dictionary);
     std::vector<std::vector<Point3f> > objPoints;
 
@@ -385,7 +393,11 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
     for(int y = 0; y < squaresY; y++) {
         for(int x = 0; x < squaresX; x++) {
 
-            if(y % 2 == x % 2) continue; // black corner, no marker here
+            if(legacy) {
+                if((y + ((squaresY + 1) % 2)) % 2 == x % 2) continue; // black corner, no marker here
+            } else {
+                if(y % 2 == x % 2) continue; // black corner, no marker here
+            }
 
             vector<Point3f> corners(4);
             corners[0] = Point3f(x * squareLength + diffSquareMarkerLength,
@@ -422,6 +434,8 @@ Size CharucoBoard::getChessboardSize() const { return Size(charucoImpl->sizeX, c
 float CharucoBoard::getSquareLength() const { return charucoImpl->squareLength; }
 
 float CharucoBoard::getMarkerLength() const { return charucoImpl->markerLength; }
+
+bool CharucoBoard::getLegacyFlag() const { return charucoImpl->legacy; }
 
 bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _charucoIds) {
     unsigned int nCharucoCorners = (unsigned int)_charucoIds.getMat().total();
