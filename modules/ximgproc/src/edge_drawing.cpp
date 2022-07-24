@@ -5603,8 +5603,8 @@ int EdgeDrawingImpl::inverse(double** TB, double** InvB, int N)
 void EdgeDrawingImpl::DeallocateMatrix(double** m, int noRows)
 {
     for (int i = 0; i < noRows; i++)
-        delete m[i];
-    delete m;
+        delete[] m[i];
+    delete[] m;
 }
 
 void EdgeDrawingImpl::AperB_T(double** A_, double** B_, double** _res, int _righA, int _colA, int _righB, int _colB)
