@@ -235,9 +235,6 @@ struct CV_EXPORTS_W DetectorParameters {
 
     /// range [0,1], eq (2) from paper. The parameter tau_i has a direct influence on the processing speed.
     CV_PROP_RW float minMarkerLengthRatioOriginalImg;
-
-private:
-    bool readWrite(const Ptr<FileNode>& readNode = nullptr, const Ptr<FileStorage>& writeStorage = nullptr);
 };
 
 /**

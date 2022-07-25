@@ -15,40 +15,41 @@ namespace aruco {
 
 using namespace std;
 
-bool DetectorParameters::readWrite(const Ptr<FileNode>& readNode, const Ptr<FileStorage>& writeStorage) {
+static inline bool readWrite(DetectorParameters &params, const Ptr<FileNode>& readNode = nullptr,
+                             const Ptr<FileStorage>& writeStorage = nullptr) {
     CV_Assert(!readNode.empty() || !writeStorage.empty());
     bool check = false;
 
-    check |= readWriteParameter("adaptiveThreshWinSizeMin", this->adaptiveThreshWinSizeMin, readNode, writeStorage);
-    check |= readWriteParameter("adaptiveThreshWinSizeMax", this->adaptiveThreshWinSizeMax, readNode, writeStorage);
-    check |= readWriteParameter("adaptiveThreshWinSizeStep", this->adaptiveThreshWinSizeStep, readNode, writeStorage);
-    check |= readWriteParameter("adaptiveThreshConstant", this->adaptiveThreshConstant, readNode, writeStorage);
-    check |= readWriteParameter("minMarkerPerimeterRate", this->minMarkerPerimeterRate, readNode, writeStorage);
-    check |= readWriteParameter("maxMarkerPerimeterRate", this->maxMarkerPerimeterRate, readNode, writeStorage);
-    check |= readWriteParameter("polygonalApproxAccuracyRate", this->polygonalApproxAccuracyRate,
+    check |= readWriteParameter("adaptiveThreshWinSizeMin", params.adaptiveThreshWinSizeMin, readNode, writeStorage);
+    check |= readWriteParameter("adaptiveThreshWinSizeMax", params.adaptiveThreshWinSizeMax, readNode, writeStorage);
+    check |= readWriteParameter("adaptiveThreshWinSizeStep", params.adaptiveThreshWinSizeStep, readNode, writeStorage);
+    check |= readWriteParameter("adaptiveThreshConstant", params.adaptiveThreshConstant, readNode, writeStorage);
+    check |= readWriteParameter("minMarkerPerimeterRate", params.minMarkerPerimeterRate, readNode, writeStorage);
+    check |= readWriteParameter("maxMarkerPerimeterRate", params.maxMarkerPerimeterRate, readNode, writeStorage);
+    check |= readWriteParameter("polygonalApproxAccuracyRate", params.polygonalApproxAccuracyRate,
                                 readNode, writeStorage);
-    check |= readWriteParameter("minCornerDistanceRate", this->minCornerDistanceRate, readNode, writeStorage);
-    check |= readWriteParameter("minDistanceToBorder", this->minDistanceToBorder, readNode, writeStorage);
-    check |= readWriteParameter("minMarkerDistanceRate", this->minMarkerDistanceRate, readNode, writeStorage);
-    check |= readWriteParameter("cornerRefinementMethod", this->cornerRefinementMethod, readNode, writeStorage);
-    check |= readWriteParameter("cornerRefinementWinSize", this->cornerRefinementWinSize, readNode, writeStorage);
-    check |= readWriteParameter("cornerRefinementMaxIterations", this->cornerRefinementMaxIterations,
+    check |= readWriteParameter("minCornerDistanceRate", params.minCornerDistanceRate, readNode, writeStorage);
+    check |= readWriteParameter("minDistanceToBorder", params.minDistanceToBorder, readNode, writeStorage);
+    check |= readWriteParameter("minMarkerDistanceRate", params.minMarkerDistanceRate, readNode, writeStorage);
+    check |= readWriteParameter("cornerRefinementMethod", params.cornerRefinementMethod, readNode, writeStorage);
+    check |= readWriteParameter("cornerRefinementWinSize", params.cornerRefinementWinSize, readNode, writeStorage);
+    check |= readWriteParameter("cornerRefinementMaxIterations", params.cornerRefinementMaxIterations,
                                 readNode, writeStorage);
-    check |= readWriteParameter("cornerRefinementMinAccuracy", this->cornerRefinementMinAccuracy,
+    check |= readWriteParameter("cornerRefinementMinAccuracy", params.cornerRefinementMinAccuracy,
                                 readNode, writeStorage);
-    check |= readWriteParameter("markerBorderBits", this->markerBorderBits, readNode, writeStorage);
-    check |= readWriteParameter("perspectiveRemovePixelPerCell", this->perspectiveRemovePixelPerCell,
+    check |= readWriteParameter("markerBorderBits", params.markerBorderBits, readNode, writeStorage);
+    check |= readWriteParameter("perspectiveRemovePixelPerCell", params.perspectiveRemovePixelPerCell,
                                 readNode, writeStorage);
-    check |= readWriteParameter("perspectiveRemoveIgnoredMarginPerCell", this->perspectiveRemoveIgnoredMarginPerCell,
+    check |= readWriteParameter("perspectiveRemoveIgnoredMarginPerCell", params.perspectiveRemoveIgnoredMarginPerCell,
                                 readNode, writeStorage);
-    check |= readWriteParameter("maxErroneousBitsInBorderRate", this->maxErroneousBitsInBorderRate,
+    check |= readWriteParameter("maxErroneousBitsInBorderRate", params.maxErroneousBitsInBorderRate,
                                 readNode, writeStorage);
-    check |= readWriteParameter("minOtsuStdDev", this->minOtsuStdDev, readNode, writeStorage);
-    check |= readWriteParameter("errorCorrectionRate", this->errorCorrectionRate, readNode, writeStorage);
+    check |= readWriteParameter("minOtsuStdDev", params.minOtsuStdDev, readNode, writeStorage);
+    check |= readWriteParameter("errorCorrectionRate", params.errorCorrectionRate, readNode, writeStorage);
     // new aruco 3 functionality
-    check |= readWriteParameter("useAruco3Detection", this->useAruco3Detection, readNode, writeStorage);
-    check |= readWriteParameter("minSideLengthCanonicalImg", this->minSideLengthCanonicalImg, readNode, writeStorage);
-    check |= readWriteParameter("minMarkerLengthRatioOriginalImg", this->minMarkerLengthRatioOriginalImg,
+    check |= readWriteParameter("useAruco3Detection", params.useAruco3Detection, readNode, writeStorage);
+    check |= readWriteParameter("minSideLengthCanonicalImg", params.minSideLengthCanonicalImg, readNode, writeStorage);
+    check |= readWriteParameter("minMarkerLengthRatioOriginalImg", params.minMarkerLengthRatioOriginalImg,
                                 readNode, writeStorage);
     return check;
 }
@@ -57,14 +58,14 @@ bool DetectorParameters::readDetectorParameters(const FileNode& fn) {
     if(fn.empty())
         return false;
     Ptr<FileNode> pfn = makePtr<FileNode>(fn);
-    return readWrite(pfn);
+    return readWrite(*this, pfn);
 }
 
 bool DetectorParameters::writeDetectorParameters(const Ptr<FileStorage>& fs)
 {
     if (fs.empty() && !fs->isOpened())
         return false;
-    return readWrite(nullptr, fs);
+    return readWrite(*this, nullptr, fs);
 }
 
 static inline bool readWrite(RefineParameters& refineParameters, const Ptr<FileNode>& readNode,
