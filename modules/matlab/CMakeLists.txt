@@ -120,7 +120,7 @@ execute_process(COMMAND git log -1 --pretty=%H OUTPUT_VARIABLE GIT_COMMIT ERROR_
 string(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 
 # set the path to the C++ header and doc parser, and template engine
-set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2)
+set(HDR_PARSER_PATH ${OpenCV_SOURCE_DIR}/modules/python/src2)
 
 # set mex compiler options
 prepend("-I" MEX_INCLUDE_DIRS ${CMAKE_BINARY_DIR})
