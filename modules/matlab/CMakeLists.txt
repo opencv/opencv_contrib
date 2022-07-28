@@ -234,7 +234,7 @@ add_custom_command(
     COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
             --hdrparser  ${HDR_PARSER_PATH}
-            --moduleroot ${CMAKE_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
+            --moduleroot ${OpenCV_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
             --modules    ${opencv_modules}
             --extra      ${opencv_extra_hdrs}
             --outdir     ${CMAKE_CURRENT_BINARY_DIR}
