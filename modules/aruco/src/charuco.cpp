@@ -31,7 +31,7 @@ static int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
         int totalMarkers = 0; // nomber of closest marker detected
         // look for closest markers
         for(unsigned int m = 0; m < _board->nearestMarkerIdx[currentCharucoId].size(); m++) {
-            int markerId = _board->ids[_board->nearestMarkerIdx[currentCharucoId][m]];
+            int markerId = _board->getIds()[_board->nearestMarkerIdx[currentCharucoId][m]];
             bool found = false;
             for(unsigned int k = 0; k < _allArucoIds.getMat().total(); k++) {
                 if(_allArucoIds.getMat().at< int >(k) == markerId) {
@@ -141,7 +141,7 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
         // calculate the distance to each of the closest corner of each closest marker
         for(unsigned int j = 0; j < board->nearestMarkerIdx[i].size(); j++) {
             // find marker
-            int markerId = board->ids[board->nearestMarkerIdx[i][j]];
+            int markerId = board->getIds()[board->nearestMarkerIdx[i][j]];
             int markerIdx = -1;
             for(unsigned int k = 0; k < markerIds.getMat().total(); k++) {
                 if(markerIds.getMat().at< int >(k) == markerId) {
@@ -237,16 +237,18 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
 
     vector< bool > validTransform(nMarkers, false);
 
+    const auto& ids = _board->getIds();
     for(unsigned int i = 0; i < nMarkers; i++) {
-        vector< Point2f > markerObjPoints2D;
-        int markerId = _markerIds.getMat().at< int >(i);
-        vector< int >::const_iterator it = find(_board->ids.begin(), _board->ids.end(), markerId);
-        if(it == _board->ids.end()) continue;
-        int boardIdx = (int)std::distance<std::vector<int>::const_iterator>(_board->ids.begin(), it);
+        vector<Point2f> markerObjPoints2D;
+        int markerId = _markerIds.getMat().at<int>(i);
+
+        auto it = find(ids.begin(), ids.end(), markerId);
+        if(it == ids.end()) continue;
+        auto boardIdx = it - ids.begin();
         markerObjPoints2D.resize(4);
         for(unsigned int j = 0; j < 4; j++)
             markerObjPoints2D[j] =
-                Point2f(_board->objPoints[boardIdx][j].x, _board->objPoints[boardIdx][j].y);
+                Point2f(_board->getObjPoints()[boardIdx][j].x, _board->getObjPoints()[boardIdx][j].y);
 
         transformations[i] = getPerspectiveTransform(markerObjPoints2D, _markerCorners.getMat(i));
 
@@ -265,7 +267,7 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
 
         vector< Point2f > interpolatedPositions;
         for(unsigned int j = 0; j < _board->nearestMarkerIdx[i].size(); j++) {
-            int markerId = _board->ids[_board->nearestMarkerIdx[i][j]];
+            int markerId = _board->getIds()[_board->nearestMarkerIdx[i][j]];
             int markerIdx = -1;
             for(unsigned int k = 0; k < _markerIds.getMat().total(); k++) {
                 if(_markerIds.getMat().at< int >(k) == markerId) {
@@ -417,12 +419,11 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
             }
         }
         if(candidates.size() < 3) break; // we need at least 3 free markers
-
         // modify charuco layout id to make sure all the ids are different than current id
         for(int k = 1; k < 4; k++)
-            _charucoDiamondLayout->ids[k] = currentId + 1 + k;
+            _charucoDiamondLayout->changeId(k, currentId + 1 + k);
         // current id is assigned to [0], so it is the marker on the top
-        _charucoDiamondLayout->ids[0] = currentId;
+        _charucoDiamondLayout->changeId(0, currentId);
 
         // try to find the rest of markers in the diamond
         vector< int > acceptedIdxs;
@@ -496,7 +497,7 @@ void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int square
 
     // assign the charuco marker ids
     for(int i = 0; i < 4; i++)
-        board->ids[i] = ids[i];
+        board->changeId(i, ids[i]);
 
     Size outSize(3 * squareLength + 2 * marginSize, 3 * squareLength + 2 * marginSize);
     board->draw(outSize, _img, marginSize, borderBits);

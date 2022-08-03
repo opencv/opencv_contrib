@@ -50,7 +50,7 @@ static inline void detectCharucoBoardWithCalibrationPose()
             //! [midcornerdet]
             std::vector<int> markerIds;
             std::vector<std::vector<cv::Point2f> > markerCorners;
-            cv::aruco::detectMarkers(image, board->dictionary, markerCorners, markerIds, params);
+            cv::aruco::detectMarkers(image, board->getDictionary(), markerCorners, markerIds, params);
             //! [midcornerdet]
             // if at least one marker detected
             if (markerIds.size() > 0) {
@@ -100,7 +100,7 @@ static inline void detectCharucoBoardWithoutCalibration()
         image.copyTo(imageCopy);
         std::vector<int> markerIds;
         std::vector<std::vector<cv::Point2f> > markerCorners;
-        cv::aruco::detectMarkers(image, board->dictionary, markerCorners, markerIds, params);
+        cv::aruco::detectMarkers(image, board->getDictionary(), markerCorners, markerIds, params);
         //or
         //cv::aruco::detectMarkers(image, dictionary, markerCorners, markerIds, params);
         // if at least one marker detected

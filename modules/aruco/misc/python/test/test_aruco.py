@@ -19,13 +19,13 @@ class aruco_test(NewOpenCVTests):
         aruco_dict  = cv.aruco.Dictionary_get(cv.aruco.DICT_5X5_250)
         board = cv.aruco.CharucoBoard_create(7, 5, 1, 0.5, aruco_dict)
 
-        np.testing.assert_array_equal(board.ids.squeeze(), ids)
+        np.testing.assert_array_equal(board.getIds().squeeze(), ids)
 
-        board.ids = rev_ids
-        np.testing.assert_array_equal(board.ids.squeeze(), rev_ids)
+        board.setIds(rev_ids)
+        np.testing.assert_array_equal(board.getIds().squeeze(), rev_ids)
 
         board.setIds(ids)
-        np.testing.assert_array_equal(board.ids.squeeze(), ids)
+        np.testing.assert_array_equal(board.getIds().squeeze(), ids)
 
         with self.assertRaises(cv.error):
             board.setIds(np.array([0]))

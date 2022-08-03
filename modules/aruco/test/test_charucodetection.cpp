@@ -93,7 +93,7 @@ static Mat projectCharucoBoard(Ptr<aruco::CharucoBoard> &board, Mat cameraMatrix
 
     // project markers
     Mat img = Mat(imageSize, CV_8UC1, Scalar::all(255));
-    for(unsigned int indexMarker = 0; indexMarker < board->ids.size(); indexMarker++) {
+    for(unsigned int indexMarker = 0; indexMarker < board->getIds().size(); indexMarker++) {
         projectMarker(img, board.staticCast<aruco::Board>(), indexMarker, cameraMatrix, rvec,
                       tvec, markerBorder);
     }
@@ -137,9 +137,9 @@ void CV_CharucoDetection::run(int) {
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, detector.dictionary);
 
-    cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 600;
-    cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
-    cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
+    cameraMatrix.at<double>(0, 0) = cameraMatrix.at<double>(1, 1) = 600;
+    cameraMatrix.at<double>(0, 2) = imgSize.width / 2;
+    cameraMatrix.at<double>(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
 
@@ -157,8 +157,8 @@ void CV_CharucoDetection::run(int) {
                                               distance, imgSize, markerBorder, rvec, tvec);
 
                 // detect markers
-                vector< vector< Point2f > > corners;
-                vector< int > ids;
+                vector<vector<Point2f> > corners;
+                vector<int> ids;
 
                 detector.params->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids);
@@ -170,8 +170,8 @@ void CV_CharucoDetection::run(int) {
                 }
 
                 // interpolate charuco corners
-                vector< Point2f > charucoCorners;
-                vector< int > charucoIds;
+                vector<Point2f> charucoCorners;
+                vector<int> charucoIds;
 
                 if(iter % 2 == 0) {
                     aruco::interpolateCornersCharuco(corners, ids, img, board, charucoCorners,
@@ -188,7 +188,7 @@ void CV_CharucoDetection::run(int) {
                 vector<Point3f> copyChessboardCorners = board->chessboardCorners;
                 // move copyChessboardCorners points
                 for (size_t i = 0; i < copyChessboardCorners.size(); i++)
-                    copyChessboardCorners[i] -= board->rightBottomBorder / 2.f;
+                    copyChessboardCorners[i] -= board->getRightBottomBorder() / 2.f;
                 projectPoints(copyChessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
@@ -267,7 +267,7 @@ void CV_CharucoPoseEstimation::run(int) {
                 detector.params->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids);
 
-                ASSERT_EQ(ids.size(), board->ids.size());
+                ASSERT_EQ(ids.size(), board->getIds().size());
 
                 // interpolate charuco corners
                 vector< Point2f > charucoCorners;
@@ -291,10 +291,10 @@ void CV_CharucoPoseEstimation::run(int) {
                 // check axes
                 const float offset = (board->getSquareLength() - board->getMarkerLength()) / 2.f;
                 vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, board->getSquareLength(), offset);
-                vector<Point2f> topLeft = getMarkerById(board->ids[0], corners, ids);
+                vector<Point2f> topLeft = getMarkerById(board->getIds()[0], corners, ids);
                 ASSERT_NEAR(topLeft[0].x, axes[1].x, 3.f);
                 ASSERT_NEAR(topLeft[0].y, axes[1].y, 3.f);
-                vector<Point2f> bottomLeft = getMarkerById(board->ids[2], corners, ids);
+                vector<Point2f> bottomLeft = getMarkerById(board->getIds()[2], corners, ids);
                 ASSERT_NEAR(bottomLeft[0].x, axes[2].x, 3.f);
                 ASSERT_NEAR(bottomLeft[0].y, axes[2].y, 3.f);
 
@@ -368,8 +368,10 @@ void CV_CharucoDiamondDetection::run(int) {
             for(int pitch = -50; pitch <= 50; pitch += 25) {
 
                 int markerBorder = iter % 2 + 1;
+                vector<int> idsTmp;
                 for(int i = 0; i < 4; i++)
-                    board->ids[i] = 4 * iter + i;
+                    idsTmp.push_back(4 * iter + i);
+                board->setIds(idsTmp);
                 iter++;
 
                 // get synthetic image
@@ -388,12 +390,11 @@ void CV_CharucoDiamondDetection::run(int) {
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                     return;
                 }
-
                 // detect diamonds
                 vector< vector< Point2f > > diamondCorners;
                 vector< Vec4i > diamondIds;
-                aruco::detectCharucoDiamond(img, corners, ids, squareLength / markerLength,
-                                            diamondCorners, diamondIds, cameraMatrix, distCoeffs);
+                aruco::detectCharucoDiamond(img, corners, ids, squareLength / markerLength, diamondCorners, diamondIds,
+                                            cameraMatrix, distCoeffs, detector.dictionary);
 
                 // check results
                 if(diamondIds.size() != 1) {
@@ -403,7 +404,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 }
 
                 for(int i = 0; i < 4; i++) {
-                    if(diamondIds[0][i] != board->ids[i]) {
+                    if(diamondIds[0][i] != board->getIds()[i]) {
                         ts->printf(cvtest::TS::LOG, "Incorrect diamond ids");
                         ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                         return;
@@ -417,7 +418,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 vector<Point3f> copyChessboardCorners = board->chessboardCorners;
                 // move copyChessboardCorners points
                 for (size_t i = 0; i < copyChessboardCorners.size(); i++)
-                    copyChessboardCorners[i] -= board->rightBottomBorder / 2.f;
+                    copyChessboardCorners[i] -= board->getRightBottomBorder() / 2.f;
 
                 projectPoints(copyChessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedDiamondCorners);

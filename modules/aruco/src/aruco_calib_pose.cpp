@@ -10,7 +10,7 @@ using namespace std;
 
 void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners, InputArray detectedIds,
                                   OutputArray objPoints, OutputArray imgPoints) {
-    CV_Assert(board->ids.size() == board->objPoints.size());
+    CV_Assert(board->getIds().size() == board->getObjPoints().size());
     CV_Assert(detectedIds.total() == detectedCorners.total());
 
     size_t nDetectedMarkers = detectedIds.total();
@@ -24,10 +24,10 @@ void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays de
     // look for detected markers that belong to the board and get their information
     for(unsigned int i = 0; i < nDetectedMarkers; i++) {
         int currentId = detectedIds.getMat().ptr< int >(0)[i];
-        for(unsigned int j = 0; j < board->ids.size(); j++) {
-            if(currentId == board->ids[j]) {
+        for(unsigned int j = 0; j < board->getIds().size(); j++) {
+            if(currentId == board->getIds()[j]) {
                 for(int p = 0; p < 4; p++) {
-                    objPnts.push_back(board->objPoints[j][p]);
+                    objPnts.push_back(board->getObjPoints()[j][p]);
                     imgPnts.push_back(detectedCorners.getMat(i).ptr< Point2f >(0)[p]);
                 }
             }

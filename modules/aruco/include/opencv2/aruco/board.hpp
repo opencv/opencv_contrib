@@ -44,6 +44,36 @@ public:
      */
     CV_WRAP void setIds(InputArray ids);
 
+    /** @brief change id for ids[index]
+     * @param index - element index in ids
+     * @param newId - new value for ids[index], should be less than Dictionary size
+     */
+    CV_WRAP void changeId(int index, int newId);
+    /** @brief return ids
+     */
+    CV_WRAP const std::vector<int>& getIds() const;
+
+    /** @brief set dictionary
+     */
+    CV_WRAP void setDictionary(const Ptr<Dictionary> &dictionary);
+
+    /** @brief return dictionary
+     */
+    CV_WRAP Ptr<Dictionary> getDictionary() const;
+
+    /** @brief set objPoints
+     */
+    CV_WRAP void setObjPoints(const std::vector<std::vector<Point3f> > &objPoints);
+
+    /** @brief get objPoints
+     */
+    CV_WRAP const std::vector<std::vector<Point3f> >& getObjPoints() const;
+
+    /** @brief get rightBottomBorder
+     */
+    CV_WRAP const Point3f& getRightBottomBorder() const;
+
+protected:
     /** @brief array of object points of all the marker corners in the board each marker include its 4 corners in this order:
      * -   objPoints[i][0] - left-top point of i-th marker
      * -   objPoints[i][1] - right-top point of i-th marker
@@ -58,13 +88,13 @@ public:
     /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
+    /// coordinate of the bottom right corner of the board, is set when calling the function create()
+    CV_PROP Point3f rightBottomBorder;
+
     /** @brief vector of the identifiers of the markers in the board (same size than objPoints)
      * The identifiers refers to the board dictionary
      */
     CV_PROP_RW std::vector<int> ids;
-
-    /// coordinate of the bottom right corner of the board, is set when calling the function create()
-    CV_PROP Point3f rightBottomBorder;
 };
 
 /**
@@ -196,7 +226,7 @@ protected:
  * @param board layout of ChArUco board.
  * @param charucoIds list of identifiers for each corner in charucoCorners per frame.
  * @return bool value, 1 (true) if detected corners form a line, 0 (false) if they do not.
-      solvePnP, calibration functions will fail if the corners are collinear (true).
+ * solvePnP, calibration functions will fail if the corners are collinear (true).
  *
  * The number of ids in charucoIDs should be <= the number of chessboard corners in the board.
  * This functions checks whether the charuco corners are on a straight line (returns true, if so), or not (false).

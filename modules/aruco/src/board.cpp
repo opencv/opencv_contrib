@@ -22,17 +22,17 @@ static void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, 
     out.adjustROI(-marginSize, -marginSize, -marginSize, -marginSize);
 
     // calculate max and min values in XY plane
-    CV_Assert(_board->objPoints.size() > 0);
+    CV_Assert(_board->getObjPoints().size() > 0);
     float minX, maxX, minY, maxY;
-    minX = maxX = _board->objPoints[0][0].x;
-    minY = maxY = _board->objPoints[0][0].y;
+    minX = maxX = _board->getObjPoints()[0][0].x;
+    minY = maxY = _board->getObjPoints()[0][0].y;
 
-    for(unsigned int i = 0; i < _board->objPoints.size(); i++) {
+    for(unsigned int i = 0; i < _board->getObjPoints().size(); i++) {
         for(int j = 0; j < 4; j++) {
-            minX = min(minX, _board->objPoints[i][j].x);
-            maxX = max(maxX, _board->objPoints[i][j].x);
-            minY = min(minY, _board->objPoints[i][j].y);
-            maxY = max(maxY, _board->objPoints[i][j].y);
+            minX = min(minX, _board->getObjPoints()[i][j].x);
+            maxX = max(maxX, _board->getObjPoints()[i][j].x);
+            minY = min(minY, _board->getObjPoints()[i][j].y);
+            maxY = max(maxY, _board->getObjPoints()[i][j].y);
         }
     }
 
@@ -55,14 +55,14 @@ static void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, 
     }
 
     // now paint each marker
-    Dictionary &dictionary = *(_board->dictionary);
+    Dictionary &dictionary = *(_board->getDictionary());
     Mat marker;
     Point2f outCorners[3];
     Point2f inCorners[3];
-    for(unsigned int m = 0; m < _board->objPoints.size(); m++) {
+    for(unsigned int m = 0; m < _board->getObjPoints().size(); m++) {
         // transform corners to markerZone coordinates
         for(int j = 0; j < 3; j++) {
-            Point2f pf = Point2f(_board->objPoints[m][j].x, _board->objPoints[m][j].y);
+            Point2f pf = Point2f(_board->getObjPoints()[m][j].x, _board->getObjPoints()[m][j].y);
             // move top left to 0, 0
             pf -= Point2f(minX, minY);
             pf.x = pf.x / sizeX * float(out.cols);
@@ -73,7 +73,7 @@ static void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, 
         // get marker
         Size dst_sz(outCorners[2] - outCorners[0]); // assuming CCW order
         dst_sz.width = dst_sz.height = std::min(dst_sz.width, dst_sz.height); //marker should be square
-        dictionary.drawMarker(_board->ids[m], dst_sz.width, marker, borderBits);
+        dictionary.drawMarker(_board->getIds()[m], dst_sz.width, marker, borderBits);
 
         if((outCorners[0].y == outCorners[1].y) && (outCorners[1].x == outCorners[2].x)) {
             // marker is aligned to image axes
@@ -150,6 +150,46 @@ void Board::setIds(InputArray ids_) {
     ids_.copyTo(this->ids);
 }
 
+Ptr<Dictionary> Board::getDictionary() const {
+    return this->dictionary;
+}
+
+void Board::setDictionary(const Ptr<Dictionary> &_dictionary) {
+    this->dictionary = _dictionary;
+}
+
+const std::vector<std::vector<Point3f> >& Board::getObjPoints() const {
+    return this->objPoints;
+}
+
+void Board::setObjPoints(const vector<std::vector<Point3f>> &_objPoints) {
+    CV_Assert(!_objPoints.empty());
+    this->objPoints = _objPoints;
+    rightBottomBorder = _objPoints.front().front();
+    for (size_t i = 0; i < this->objPoints.size(); i++) {
+        for (int j = 0; j < 4; j++) {
+            const Point3f &corner = this->objPoints[i][j];
+            rightBottomBorder.x = std::max(rightBottomBorder.x, corner.x);
+            rightBottomBorder.y = std::max(rightBottomBorder.y, corner.y);
+            rightBottomBorder.z = std::max(rightBottomBorder.z, corner.z);
+        }
+    }
+}
+
+const Point3f& Board::getRightBottomBorder() const {
+    return this->rightBottomBorder;
+}
+
+const std::vector<int>& Board::getIds() const {
+    return this->ids;
+}
+
+void Board::changeId(int index, int newId) {
+    CV_Assert(index >= 0 && index < (int)ids.size());
+    CV_Assert(newId >= 0 && newId < dictionary->bytesList.rows);
+    this->ids[index] = newId;
+}
+
 Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength, float markerSeparation,
                                  const Ptr<Dictionary> &dictionary, int firstMarker) {
     CV_Assert(markersX > 0 && markersY > 0 && markerLength > 0 && markerSeparation > 0);
@@ -158,11 +198,12 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
     res->gridImpl->sizeY = markersY;
     res->gridImpl->markerLength = markerLength;
     res->gridImpl->markerSeparation = markerSeparation;
-    res->dictionary = dictionary;
+    res->setDictionary(dictionary);
 
     size_t totalMarkers = (size_t) markersX * markersY;
     res->ids.resize(totalMarkers);
-    res->objPoints.reserve(totalMarkers);
+    std::vector<std::vector<Point3f> > objPoints;
+    objPoints.reserve(totalMarkers);
 
     // fill ids with first identifiers
     for (unsigned int i = 0; i < totalMarkers; i++) {
@@ -178,9 +219,10 @@ Ptr<GridBoard> GridBoard::create(int markersX, int markersY, float markerLength,
             corners[1] = corners[0] + Point3f(markerLength, 0, 0);
             corners[2] = corners[0] + Point3f(markerLength, markerLength, 0);
             corners[3] = corners[0] + Point3f(0, markerLength, 0);
-            res->objPoints.push_back(corners);
+            objPoints.push_back(corners);
         }
     }
+    res->setObjPoints(objPoints);
     res->rightBottomBorder = Point3f(markersX * markerLength + markerSeparation * (markersX - 1),
                                      markersY * markerLength + markerSeparation * (markersY - 1), 0.f);
     return res;
@@ -281,7 +323,7 @@ static inline void _getNearestMarkerCorners(CharucoBoard &board, float squareLen
     board.nearestMarkerIdx.resize(board.chessboardCorners.size());
     board.nearestMarkerCorners.resize(board.chessboardCorners.size());
 
-    unsigned int nMarkers = (unsigned int)board.ids.size();
+    unsigned int nMarkers = (unsigned int)board.getIds().size();
     unsigned int nCharucoCorners = (unsigned int)board.chessboardCorners.size();
     for(unsigned int i = 0; i < nCharucoCorners; i++) {
         double minDist = -1; // distance of closest markers
@@ -290,7 +332,7 @@ static inline void _getNearestMarkerCorners(CharucoBoard &board, float squareLen
             // calculate distance from marker center to charuco corner
             Point3f center = Point3f(0, 0, 0);
             for(unsigned int k = 0; k < 4; k++)
-                center += board.objPoints[j][k];
+                center += board.getObjPoints()[j][k];
             center /= 4.;
             double sqDistance;
             Point3f distVector = charucoCorner - center;
@@ -313,7 +355,7 @@ static inline void _getNearestMarkerCorners(CharucoBoard &board, float squareLen
             double minDistCorner = -1;
             for(unsigned int k = 0; k < 4; k++) {
                 double sqDistance;
-                Point3f distVector = charucoCorner - board.objPoints[board.nearestMarkerIdx[i][j]][k];
+                Point3f distVector = charucoCorner - board.getObjPoints()[board.nearestMarkerIdx[i][j]][k];
                 sqDistance = distVector.x * distVector.x + distVector.y * distVector.y;
                 if(k == 0 || sqDistance < minDistCorner) {
                     // if this corner is closer to the charuco corner, assing its index
@@ -335,7 +377,8 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
     res->charucoImpl->sizeY = squaresY;
     res->charucoImpl->squareLength = squareLength;
     res->charucoImpl->markerLength = markerLength;
-    res->dictionary = dictionary;
+    res->setDictionary(dictionary);
+    std::vector<std::vector<Point3f> > objPoints;
 
     float diffSquareMarkerLength = (squareLength - markerLength) / 2;
     // calculate Board objPoints
@@ -350,12 +393,13 @@ Ptr<CharucoBoard> CharucoBoard::create(int squaresX, int squaresY, float squareL
             corners[1] = corners[0] + Point3f(markerLength, 0, 0);
             corners[2] = corners[0] + Point3f(markerLength, markerLength, 0);
             corners[3] = corners[0] + Point3f(0, markerLength, 0);
-            res->objPoints.push_back(corners);
+            objPoints.push_back(corners);
             // first ids in dictionary
             int nextId = (int)res->ids.size();
             res->ids.push_back(nextId);
         }
     }
+    res->setObjPoints(objPoints);
 
     // now fill chessboardCorners
     for(int y = 0; y < squaresY - 1; y++) {

@@ -965,10 +965,10 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
     // search undetected markers and project them using the previous pose
     vector<vector<Point2f> > undetectedCorners;
     vector<int> undetectedIds;
-    for(unsigned int i = 0; i < _board->ids.size(); i++) {
+    for(unsigned int i = 0; i < _board->getIds().size(); i++) {
         int foundIdx = -1;
         for(unsigned int j = 0; j < _detectedIds.total(); j++) {
-            if(_board->ids[i] == _detectedIds.getMat().ptr< int >()[j]) {
+            if(_board->getIds()[i] == _detectedIds.getMat().ptr< int >()[j]) {
                 foundIdx = j;
                 break;
             }
@@ -977,8 +977,8 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
         // not detected
         if(foundIdx == -1) {
             undetectedCorners.push_back(vector<Point2f >());
-            undetectedIds.push_back(_board->ids[i]);
-            projectPoints(_board->objPoints[i], rvec, tvec, _cameraMatrix, _distCoeffs,
+            undetectedIds.push_back(_board->getIds()[i]);
+            projectPoints(_board->getObjPoints()[i], rvec, tvec, _cameraMatrix, _distCoeffs,
                           undetectedCorners.back());
         }
     }
@@ -996,12 +996,12 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
                                vector<vector<Point2f > >& _undetectedMarkersProjectedCorners,
                                OutputArray _undetectedMarkersIds) {
     // check board points are in the same plane, if not, global homography cannot be applied
-    CV_Assert(_board->objPoints.size() > 0);
-    CV_Assert(_board->objPoints[0].size() > 0);
-    float boardZ = _board->objPoints[0][0].z;
-    for(unsigned int i = 0; i < _board->objPoints.size(); i++) {
-        for(unsigned int j = 0; j < _board->objPoints[i].size(); j++)
-            CV_Assert(boardZ == _board->objPoints[i][j].z);
+    CV_Assert(_board->getObjPoints().size() > 0);
+    CV_Assert(_board->getObjPoints()[0].size() > 0);
+    float boardZ = _board->getObjPoints()[0][0].z;
+    for(unsigned int i = 0; i < _board->getObjPoints().size(); i++) {
+        for(unsigned int j = 0; j < _board->getObjPoints()[i].size(); j++)
+            CV_Assert(boardZ == _board->getObjPoints()[i][j].z);
     }
 
     vector<Point2f> detectedMarkersObj2DAll; // Object coordinates (without Z) of all the detected
@@ -1011,14 +1011,14 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
                                                         // missing markers in different vectors
     vector<int> undetectedMarkersIds; // ids of missing markers
     // find markers included in board, and missing markers from board. Fill the previous vectors
-    for(unsigned int j = 0; j < _board->ids.size(); j++) {
+    for(unsigned int j = 0; j < _board->getIds().size(); j++) {
         bool found = false;
         for(unsigned int i = 0; i < _detectedIds.total(); i++) {
-            if(_detectedIds.getMat().ptr< int >()[i] == _board->ids[j]) {
+            if(_detectedIds.getMat().ptr< int >()[i] == _board->getIds()[j]) {
                 for(int c = 0; c < 4; c++) {
                     imageCornersAll.push_back(_detectedCorners.getMat(i).ptr< Point2f >()[c]);
                     detectedMarkersObj2DAll.push_back(
-                        Point2f(_board->objPoints[j][c].x, _board->objPoints[j][c].y));
+                        Point2f(_board->getObjPoints()[j][c].x, _board->getObjPoints()[j][c].y));
                 }
                 found = true;
                 break;
@@ -1028,9 +1028,9 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
             undetectedMarkersObj2D.push_back(vector<Point2f >());
             for(int c = 0; c < 4; c++) {
                 undetectedMarkersObj2D.back().push_back(
-                    Point2f(_board->objPoints[j][c].x, _board->objPoints[j][c].y));
+                    Point2f(_board->getObjPoints()[j][c].x, _board->getObjPoints()[j][c].y));
             }
-            undetectedMarkersIds.push_back(_board->ids[j]);
+            undetectedMarkersIds.push_back(_board->getIds()[j]);
         }
     }
     if(imageCornersAll.size() == 0) return;
