@@ -19,7 +19,8 @@
 #ifndef _OPENCV_APRIL_QUAD_THRESH_HPP_
 #define _OPENCV_APRIL_QUAD_THRESH_HPP_
 
-#include "opencv2/aruco.hpp"
+#include <opencv2/imgproc.hpp>
+#include "opencv2/aruco_detector.hpp"
 #include "unionfind.hpp"
 #include "zmaxheap.hpp"
 #include "zarray.hpp"
@@ -104,22 +105,15 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]);
  **/
 int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *cluster, struct sQuad *quad);
 
-/**
- *
- * @param mIm
- * @param parameters
- * @param mThresh
- */
+
 void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mThresh);
 
-/**
- *
- * @param parameters
- * @param mImg
- * @param contours
- * @return
- */
-zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const Mat & mImg, std::vector< std::vector< Point > > &contours);
+
+zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const Mat & mImg,
+                               std::vector<std::vector<Point> > &contours);
+
+void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std::vector<std::vector<Point2f> > &candidates,
+               std::vector<std::vector<Point> > &contours);
 
 }}
 #endif

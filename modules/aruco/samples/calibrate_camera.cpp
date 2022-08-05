@@ -39,7 +39,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
-#include <opencv2/aruco.hpp>
+#include <opencv2/aruco_detector.hpp>
+#include <opencv2/aruco/aruco_calib_pose.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
 #include <iostream>
@@ -162,6 +163,8 @@ int main(int argc, char *argv[]) {
     vector< vector< int > > allIds;
     Size imgSize;
 
+    aruco::ArucoDetector detector(dictionary, detectorParams);
+
     while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -170,10 +173,10 @@ int main(int argc, char *argv[]) {
         vector< vector< Point2f > > corners, rejected;
 
         // detect markers
-        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+        detector.detectMarkers(image, corners, ids, rejected);
 
         // refind strategy to detect more markers
-        if(refindStrategy) aruco::refineDetectedMarkers(image, board, corners, ids, rejected);
+        if(refindStrategy) detector.refineDetectedMarkers(image, board, corners, ids, rejected);
 
         // draw results
         image.copyTo(imageCopy);

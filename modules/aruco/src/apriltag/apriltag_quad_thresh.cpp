@@ -16,7 +16,7 @@
 // because we use a fixed-point 16 bit integer representation with one
 // fractional bit.
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 #include "apriltag_quad_thresh.hpp"
 
 //#define APRIL_DEBUG
@@ -1028,17 +1028,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
     return res;
 }
 
-/**
- *
- * @param nCidx0
- * @param nCidx1
- * @param nClusters
- * @param nW
- * @param nH
- * @param nquads
- * @param td
- * @param im
- */
+
 static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH, zarray_t *nquads, const Ptr<DetectorParameters> &td, const Mat im){
 
     CV_Assert(nquads != NULL);
@@ -1078,12 +1068,6 @@ static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH,
     }
 }
 
-/**
- *
- * @param mIm
- * @param parameters
- * @param mThresh
- */
 void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mThresh){
     int w = mIm.cols, h = mIm.rows;
     int s = (unsigned) mIm.step;
@@ -1306,14 +1290,7 @@ static void _darken(const Mat &im){
 }
 #endif
 
-/**
- *
- * @param parameters
- * @param mImg
- * @param contours
- * @return
- */
-zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const Mat & mImg, std::vector< std::vector< Point > > &contours){
+zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const Mat & mImg, std::vector<std::vector<Point > > &contours){
 
     ////////////////////////////////////////////////////////
     // step 1. threshold the image, creating the edge image.
@@ -1499,7 +1476,7 @@ out = Mat::zeros(h, w, CV_8UC3);
         zarray_t *cluster;
         _zarray_get(clusters, i, &cluster);
 
-        std::vector< Point > cnt;
+        std::vector<Point> cnt;
         for (int j = 0; j < _zarray_size(cluster); j++) {
             struct pt *p;
             _zarray_get_volatile(cluster, j, &p);
@@ -1565,6 +1542,125 @@ imwrite("2.5 debug_lines.pnm", out);
     }
     _zarray_destroy(clusters);
     return quads;
+}
+
+void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std::vector<std::vector<Point2f> > &candidates,
+               std::vector<std::vector<Point> > &contours){
+
+    ///////////////////////////////////////////////////////////
+    /// Step 1. Detect quads according to requested image decimation
+    /// and blurring parameters.
+    Mat quad_im;
+
+    if (_params->aprilTagQuadDecimate > 1){
+        resize(im_orig, quad_im, Size(), 1/_params->aprilTagQuadDecimate, 1/_params->aprilTagQuadDecimate, INTER_AREA);
+    }
+    else {
+        im_orig.copyTo(quad_im);
+    }
+
+    // Apply a Blur
+    if (_params->aprilTagQuadSigma != 0) {
+        // compute a reasonable kernel width by figuring that the
+        // kernel should go out 2 std devs.
+        //
+        // max sigma          ksz
+        // 0.499              1  (disabled)
+        // 0.999              3
+        // 1.499              5
+        // 1.999              7
+
+        float sigma = fabsf((float) _params->aprilTagQuadSigma);
+
+        int ksz = cvFloor(4 * sigma); // 2 std devs in each direction
+        ksz |= 1; // make odd number
+
+        if (ksz > 1) {
+            if (_params->aprilTagQuadSigma > 0)
+                GaussianBlur(quad_im, quad_im, Size(ksz, ksz), sigma, sigma, BORDER_REPLICATE);
+            else {
+                Mat orig;
+                quad_im.copyTo(orig);
+                GaussianBlur(quad_im, quad_im, Size(ksz, ksz), sigma, sigma, BORDER_REPLICATE);
+
+                // SHARPEN the image by subtracting the low frequency components.
+                for (int y = 0; y < orig.rows; y++) {
+                    for (int x = 0; x < orig.cols; x++) {
+                        int vorig = orig.data[y*orig.step + x];
+                        int vblur = quad_im.data[y*quad_im.step + x];
+
+                        int v = 2*vorig - vblur;
+                        if (v < 0)
+                            v = 0;
+                        if (v > 255)
+                            v = 255;
+
+                        quad_im.data[y*quad_im.step + x] = (uint8_t) v;
+                    }
+                }
+            }
+        }
+    }
+
+#ifdef APRIL_DEBUG
+    imwrite("1.1 debug_preprocess.pnm", quad_im);
+#endif
+
+    ///////////////////////////////////////////////////////////
+    /// Step 2. do the Threshold :: get the set of candidate quads
+    zarray_t *quads = apriltag_quad_thresh(_params, quad_im, contours);
+
+    CV_Assert(quads != NULL);
+
+    // adjust centers of pixels so that they correspond to the
+    // original full-resolution image.
+    if (_params->aprilTagQuadDecimate > 1) {
+        for (int i = 0; i < _zarray_size(quads); i++) {
+            struct sQuad *q;
+            _zarray_get_volatile(quads, i, &q);
+            for (int j = 0; j < 4; j++) {
+                q->p[j][0] *= _params->aprilTagQuadDecimate;
+                q->p[j][1] *= _params->aprilTagQuadDecimate;
+            }
+        }
+    }
+
+#ifdef APRIL_DEBUG
+    Mat im_quads = im_orig.clone();
+    im_quads = im_quads*0.5;
+    srandom(0);
+
+    for (int i = 0; i < _zarray_size(quads); i++) {
+        struct sQuad *quad;
+        _zarray_get_volatile(quads, i, &quad);
+
+        const int bias = 100;
+        int color = bias + (random() % (255-bias));
+
+        line(im_quads, Point(quad->p[0][0], quad->p[0][1]), Point(quad->p[1][0], quad->p[1][1]), color, 1);
+        line(im_quads, Point(quad->p[1][0], quad->p[1][1]), Point(quad->p[2][0], quad->p[2][1]), color, 1);
+        line(im_quads, Point(quad->p[2][0], quad->p[2][1]), Point(quad->p[3][0], quad->p[3][1]), color, 1);
+        line(im_quads, Point(quad->p[3][0], quad->p[3][1]), Point(quad->p[0][0], quad->p[0][1]), color, 1);
+    }
+    imwrite("1.2 debug_quads_raw.pnm", im_quads);
+#endif
+
+    ////////////////////////////////////////////////////////////////
+    /// Step 3. Save the output :: candidate corners
+    for (int i = 0; i < _zarray_size(quads); i++) {
+        struct sQuad *quad;
+        _zarray_get_volatile(quads, i, &quad);
+
+        std::vector<Point2f> corners;
+        corners.push_back(Point2f(quad->p[3][0], quad->p[3][1]));   //pA
+        corners.push_back(Point2f(quad->p[0][0], quad->p[0][1]));   //pB
+        corners.push_back(Point2f(quad->p[1][0], quad->p[1][1]));   //pC
+        corners.push_back(Point2f(quad->p[2][0], quad->p[2][1]));   //pD
+
+        candidates.push_back(corners);
+    }
+
+    _zarray_destroy(quads);
 }
 
 }}

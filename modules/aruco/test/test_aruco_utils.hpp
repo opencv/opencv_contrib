@@ -65,16 +65,16 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     // canonical image
     Mat markerImg;
     const int markerSizePixels = 100;
-    aruco::drawMarker(board->dictionary, board->ids[markerIndex], markerSizePixels, markerImg, markerBorder);
+    aruco::drawMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
 
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
-    vector< Point2f > corners;
+    vector<Point2f> corners;
 
     // get max coordinate of board
-    Point3f maxCoord = board->rightBottomBorder;
+    Point3f maxCoord = board->getRightBottomBorder();
     // copy objPoints
-    vector<Point3f> objPoints = board->objPoints[markerIndex];
+    vector<Point3f> objPoints = board->getObjPoints()[markerIndex];
     // move the marker to the origin
     for (size_t i = 0; i < objPoints.size(); i++)
         objPoints[i] -= (maxCoord / 2.f);
@@ -82,7 +82,7 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     projectPoints(objPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
     // get perspective transform
-    vector< Point2f > originalCorners;
+    vector<Point2f> originalCorners;
     originalCorners.push_back(Point2f(0, 0));
     originalCorners.push_back(Point2f((float)markerSizePixels, 0));
     originalCorners.push_back(Point2f((float)markerSizePixels, (float)markerSizePixels));
@@ -115,7 +115,7 @@ static inline Mat projectBoard(Ptr<aruco::GridBoard>& board, Mat cameraMatrix, d
     getSyntheticRT(yaw, pitch, distance, rvec, tvec);
 
     Mat img = Mat(imageSize, CV_8UC1, Scalar::all(255));
-    for (unsigned int index = 0; index < board->ids.size(); index++) {
+    for (unsigned int index = 0; index < board->getIds().size(); index++) {
         projectMarker(img, board.staticCast<aruco::Board>(), index, cameraMatrix, rvec, tvec, markerBorder);
     }
 
