@@ -79,10 +79,10 @@ void polyanticlockwise(std::vector<T> &points)
     // Sort the points in anti-clockwise order
     // Trace a line between the first and second point.
     // If the third point is at the right side, then the points are anti-clockwise
-    cv::Point v1 = points[1] - points[0];
-    cv::Point v2 = points[2] - points[0];
+    T v1 = points[1] - points[0];
+    T v2 = points[2] - points[0];
 
-    double o = (v1.x * v2.y) - (v1.y * v2.x);
+    double o = ((double)v1.x * v2.y) - ((double)v1.y * v2.x);
 
     if (o < 0.0) //if the third point is in the left side, then sort in anti-clockwise order
         std::swap(points[1], points[3]);
@@ -93,10 +93,10 @@ void polyclockwise(std::vector<T> &points)
     // Sort the points in clockwise order
     // Trace a line between the first and second point.
     // If the third point is at the right side, then the points are clockwise
-    cv::Point v1 = points[1] - points[0];
-    cv::Point v2 = points[2] - points[0];
+    T v1 = points[1] - points[0];
+    T v2 = points[2] - points[0];
 
-    double o = (v1.x * v2.y) - (v1.y * v2.x);
+    double o = ((double)v1.x * v2.y) - ((double)v1.y * v2.x);
 
     if (o > 0.0) //if the third point is in the left side, then sort in clockwise order
         std::swap(points[1], points[3]);
