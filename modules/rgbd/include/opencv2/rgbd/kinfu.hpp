@@ -12,11 +12,89 @@
 #include <opencv2/3d.hpp>
 
 namespace cv {
-namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
 
-struct CV_EXPORTS_W VolumeParams
+
+class CV_EXPORTS_W KinFu
+{
+public:
+    KinFu(VolumeType vt = VolumeType::TSDF, bool isHighDense = false);
+    ~KinFu();
+
+    VolumeSettings getVolumeSettings() const;
+
+    void render(OutputArray image) const;
+
+    /** @brief Renders a volume into an image
+
+        Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
+        Light pose is fixed in KinFu params.
+
+        @param image resulting image
+        @param cameraPose pose of camera to render from. If empty then render from current pose
+        which is a last frame camera pose.
+    */
+
+    void render(OutputArray image, const Matx44f& cameraPose) const;
+
+    /** @brief Gets points and normals of current 3d mesh
+
+        The order of normals corresponds to order of points.
+        The order of points is undefined.
+
+        @param points vector of points which are 4-float vectors
+        @param normals vector of normals which are 4-float vectors
+        */
+
+    void getCloud(OutputArray points, OutputArray normals) const;
+
+    /** @brief Gets points of current 3d mesh
+
+        The order of points is undefined.
+
+        @param points vector of points which are 4-float vectors
+        */
+
+    void getPoints(OutputArray points) const;
+
+    /** @brief Calculates normals for given points
+        @param points input vector of points which are 4-float vectors
+        @param normals output vector of corresponding normals which are 4-float vectors
+        */
+
+    void getNormals(InputArray points, OutputArray normals) const;
+
+    /** @brief Resets the algorithm
+
+    Clears current model and resets a pose.
+    */
+
+    void reset();
+
+    /** @brief Get current pose in voxel space */
+
+    const Affine3f getPose() const;
+
+    /** @brief Process next depth frame
+
+        Integrates depth into voxel space with respect to its ICP-calculated pose.
+        Input image is converted to CV_32F internally if has another type.
+
+    @param depth one-channel image which size and depth scale is described in algorithm's parameters
+    @return true if succeeded to align new frame with current scene, false if opposite
+    */
+
+    bool update(InputArray depth);
+
+    class Impl;
+private:
+    Ptr<Impl> impl;
+};
+
+namespace kinfu {
+
+struct CV_EXPORTS_W VolumeParams1
 {
     /** @brief Kind of Volume
         Values can be TSDF (single volume) or HASHTSDF (hashtable of volume units)
@@ -71,9 +149,9 @@ struct CV_EXPORTS_W VolumeParams
 
 
 
-struct CV_EXPORTS_W Params
+struct CV_EXPORTS_W Params1
 {
-    CV_WRAP Params()
+    CV_WRAP Params1()
     {
         setInitialVolumePose(Matx44f::eye());
     }
@@ -84,7 +162,7 @@ struct CV_EXPORTS_W Params
      * @param volumeInitialPoseRot rotation matrix
      * @param volumeInitialPoseTransl translation vector
      */
-    CV_WRAP Params(Matx33f volumeInitialPoseRot, Vec3f volumeInitialPoseTransl)
+    CV_WRAP Params1(Matx33f volumeInitialPoseRot, Vec3f volumeInitialPoseTransl)
     {
       setInitialVolumePose(volumeInitialPoseRot,volumeInitialPoseTransl);
     }
@@ -94,7 +172,7 @@ struct CV_EXPORTS_W Params
      * Sets the initial pose of the TSDF volume.
      * @param volumeInitialPose 4 by 4 Homogeneous Transform matrix to set the intial pose of TSDF volume
      */
-    CV_WRAP Params(Matx44f volumeInitialPose)
+    CV_WRAP Params1(Matx44f volumeInitialPose)
     {
       setInitialVolumePose(volumeInitialPose);
     }
@@ -118,23 +196,23 @@ struct CV_EXPORTS_W Params
      * @brief Default parameters
      * A set of parameters which provides better model quality, can be very slow.
      */
-    CV_WRAP static Ptr<Params> defaultParams();
+    CV_WRAP static Ptr<Params1> defaultParams();
 
     /** @brief Coarse parameters
     A set of parameters which provides better speed, can fail to match frames
     in case of rapid sensor motion.
     */
-    CV_WRAP static Ptr<Params> coarseParams();
+    CV_WRAP static Ptr<Params1> coarseParams();
 
     /** @brief HashTSDF parameters
       A set of parameters suitable for use with HashTSDFVolume
     */
-    CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
+    CV_WRAP static Ptr<Params1> hashTSDFParams(bool isCoarse);
 
     /** @brief ColoredTSDF parameters
       A set of parameters suitable for use with ColoredTSDFVolume
     */
-    CV_WRAP static Ptr<Params> coloredTSDFParams(bool isCoarse);
+    CV_WRAP static Ptr<Params1> coloredTSDFParams(bool isCoarse);
 
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
@@ -246,81 +324,6 @@ struct CV_EXPORTS_W Params
 
   That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
 */
-class CV_EXPORTS_W KinFu
-{
-public:
-    CV_WRAP static Ptr<KinFu> create(const Ptr<Params>& _params);
-    virtual ~KinFu();
-
-    /** @brief Get current parameters */
-    virtual const Params& getParams() const = 0;
-
-    /** @brief Renders a volume into an image
-
-      Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
-      Light pose is fixed in KinFu params.
-
-        @param image resulting image
-    */
-
-    CV_WRAP virtual void render(OutputArray image) const = 0;
-
-    /** @brief Renders a volume into an image
-
-      Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
-      Light pose is fixed in KinFu params.
-
-        @param image resulting image
-        @param cameraPose pose of camera to render from. If empty then render from current pose
-        which is a last frame camera pose.
-    */
-
-    CV_WRAP virtual void render(OutputArray image, const Matx44f& cameraPose) const = 0;
-
-    /** @brief Gets points and normals of current 3d mesh
-
-      The order of normals corresponds to order of points.
-      The order of points is undefined.
-
-        @param points vector of points which are 4-float vectors
-        @param normals vector of normals which are 4-float vectors
-     */
-    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals) const = 0;
-
-    /** @brief Gets points of current 3d mesh
-
-     The order of points is undefined.
-
-        @param points vector of points which are 4-float vectors
-     */
-    CV_WRAP virtual void getPoints(OutputArray points) const = 0;
-
-    /** @brief Calculates normals for given points
-        @param points input vector of points which are 4-float vectors
-        @param normals output vector of corresponding normals which are 4-float vectors
-     */
-    CV_WRAP virtual  void getNormals(InputArray points, OutputArray normals) const = 0;
-
-    /** @brief Resets the algorithm
-
-    Clears current model and resets a pose.
-    */
-    CV_WRAP virtual void reset() = 0;
-
-    /** @brief Get current pose in voxel space */
-    virtual const Affine3f getPose() const = 0;
-
-    /** @brief Process next depth frame
-
-      Integrates depth into voxel space with respect to its ICP-calculated pose.
-      Input image is converted to CV_32F internally if has another type.
-
-    @param depth one-channel image which size and depth scale is described in algorithm's parameters
-    @return true if succeeded to align new frame with current scene, false if opposite
-    */
-    CV_WRAP virtual bool update(InputArray depth) = 0;
-};
-
 //! @}
 }
 }

@@ -330,7 +330,7 @@ struct DepthSource
         }
     }
 
-    void updateParams(kinfu::Params& params)
+    void updateParams(kinfu::Params1& params)
     {
         if (vc.isOpened())
         {

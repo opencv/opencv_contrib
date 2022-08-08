@@ -124,33 +124,26 @@ int main(int argc, char **argv)
     if(!recordPath.empty())
         depthWriter = makePtr<DepthWriter>(recordPath);
 
-    Ptr<Params> params;
-    Ptr<KinFu> kf;
+    Ptr<Params1> params;
+    KinFu kf;
+    if (useHashTSDF)
+        kf = KinFu(VolumeType::HashTSDF, !coarse);
+    else
+        kf = KinFu(VolumeType::TSDF, !coarse);
 
     if(coarse)
-        params = Params::coarseParams();
+        params = Params1::coarseParams();
     else
-        params = Params::defaultParams();
+        params = Params1::defaultParams();
 
     if(useHashTSDF)
-        params = Params::hashTSDFParams(coarse);
+        params = Params1::hashTSDFParams(coarse);
 
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(true);
-
-    // Scene-specific params should be tuned for each scene individually
-    //float cubeSize = 1.f;
-    //params->voxelSize = cubeSize/params->volumeDims[0]; //meters
-    //params->tsdf_trunc_dist = 0.01f; //meters
-    //params->icpDistThresh = 0.01f; //meters
-    //params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
-    //params->tsdf_max_weight = 16;
-
-    if(!idle)
-        kf = KinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -173,7 +166,7 @@ int main(int argc, char **argv)
         if(pause)
         {
             // doesn't happen in idle mode
-            kf->getCloud(points, normals);
+            kf.getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -181,11 +174,14 @@ int main(int argc, char **argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
-                Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
-                window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     volSize),
-                                  Affine3f(kf->getParams().volumePose));
-                PauseCallbackArgs pca(*kf);
+                VolumeSettings vs = kf.getVolumeSettings();
+                Vec3d volumeDims;
+                vs.getVolumeDimensions(volumeDims);
+                Matx44f pose;
+                vs.getVolumePose(pose);
+                Vec3d volSize = vs.getVoxelSize() * volumeDims;
+                window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), Affine3f(pose));
+                PauseCallbackArgs pca(kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
                                                                 "Close the window or press Q to resume"), Point()));
@@ -207,9 +203,9 @@ int main(int argc, char **argv)
             if(!idle)
             {
                 imshow("depth", cvt8);
-                if(!kf->update(frame))
+                if(!kf.update(frame))
                 {
-                    kf->reset();
+                    kf.reset();
                     std::cout << "reset" << std::endl;
                 }
 #ifdef HAVE_OPENCV_VIZ
@@ -217,7 +213,7 @@ int main(int argc, char **argv)
                 {
                     if(coarse)
                     {
-                        kf->getCloud(points, normals);
+                        kf.getCloud(points, normals);
                         if(!points.empty() && !normals.empty())
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());
@@ -226,18 +222,20 @@ int main(int argc, char **argv)
                             window.showWidget("normals", cloudNormals);
                         }
                     }
-
+                    VolumeSettings vs = kf.getVolumeSettings();
+                    Vec3d volumeDims;
+                    vs.getVolumeDimensions(volumeDims);
+                    Matx44f pose;
+                    vs.getVolumePose(pose);
                     //window.showWidget("worldAxes", viz::WCoordinateSystem());
-                    Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
-                    window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                         volSize),
-                                      Affine3f(kf->getParams().volumePose));
-                    window.setViewerPose(kf->getPose());
+                    Vec3d volSize = vs.getVoxelSize() * volumeDims;
+                    window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize), Affine3f(pose));
+                    window.setViewerPose(kf.getPose());
                     window.spinOnce(1, true);
                 }
 #endif
 
-                kf->render(rendered);
+                kf.render(rendered);
             }
             else
             {
@@ -258,7 +256,7 @@ int main(int argc, char **argv)
         {
         case 'r':
             if(!idle)
-                kf->reset();
+                kf.reset();
             break;
         case 'q':
             return 0;
