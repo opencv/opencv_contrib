@@ -15,9 +15,13 @@ namespace ximgproc {
 
 /**
 @brief finds ellipses fastly in an image using projective invariant pruning.
-
-@param image input image, could be gray or color.
-@param ellipses output vector of found ellipses. each vector is encoded as five float $x, y, a, b, radius, score$.
+*
+* The function detects ellipses in images using projective invariant pruning.
+* For more details about this implementation, please see
+* [JIA2017FAST]  Jia, Qi et al, (2017). A Fast Ellipse Detector using Projective Invariant Pruning. IEEE Transactions on Image Processing.
+*
+@param _image input image, could be gray or color.
+@param _ellipses output vector of found ellipses. each vector is encoded as five float $x, y, a, b, radius, score$.
 @param scoreThreshold float, the threshold of ellipse score.
 @param reliabilityThreshold float, the threshold of reliability.
 @param centerDistanceThreshold float, the threshold of center distance.

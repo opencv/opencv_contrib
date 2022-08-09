@@ -8,7 +8,7 @@ namespace opencv_test { namespace  {
 typedef tuple<Size, MatType, int> EllipseDetectorTestParam;
 typedef TestBaseWithParam<EllipseDetectorTestParam> EllipseDetectorTest;
 
-PERF_TEST_P(EllipseDetectorTest, perf, Combine(SZ_TYPICAL, Values(CV_8U, CV_16U, CV_32F, CV_64F), Values(1, 3)))
+PERF_TEST_P(EllipseDetectorTest, perf, Combine(SZ_TYPICAL, Values(CV_8U), Values(1, 3)))
 {
     EllipseDetectorTestParam params = GetParam();
     Size sz = get<0>(params);
@@ -18,12 +18,9 @@ PERF_TEST_P(EllipseDetectorTest, perf, Combine(SZ_TYPICAL, Values(CV_8U, CV_16U,
     Mat src(sz, CV_MAKE_TYPE(matType, srcCn));
     std::vector<Vec6f> dst;
 
-    declare.in(src, WARMUP_RNG).out(dst);
+    declare.in(src).out(dst);
 
-    TEST_CYCLE_N(1)
-    {
-        ellipseDetector(src, dst, 0.7f, 0.5f, 0.05f);
-    }
+    TEST_CYCLE() ellipseDetector(src, dst, 0.7f, 0.5f, 0.05f);
 
     SANITY_CHECK_NOTHING();
 }
