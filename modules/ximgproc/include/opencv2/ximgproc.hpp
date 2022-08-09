@@ -62,6 +62,7 @@
 #include "ximgproc/edgepreserving_filter.hpp"
 #include "ximgproc/color_match.hpp"
 #include "ximgproc/radon_transform.hpp"
+#include "ximgproc/ellipse_detector.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing
@@ -97,6 +98,8 @@ an additional hysteresis step.
     @defgroup ximgproc_fourier Fourier descriptors
 
     @defgroup ximgproc_run_length_morphology Binary morphology on run-length encoded image
+
+    @defgroup ximgproc_ellipse_detector Ellipse detector using projective invariant pruning
 
     These functions support morphological operations on binary images. In order to be fast and space efficient binary images are encoded with a run-length representation.
     This representation groups continuous horizontal sequences of "on" pixels together in a "run". A run is charactarized by the column position of the first pixel in the run, the column
