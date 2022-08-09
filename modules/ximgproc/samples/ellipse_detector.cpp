@@ -27,7 +27,7 @@ int main() {
     cv::ximgproc::ellipseDetector(img, ells, 0.4f, 0.7f, 0.02f);
 
     // print output
-    for (int i = 0; i < ells.size(); i++) {
+    for (unsigned i = 0; i < ells.size(); i++) {
         Vec6f ell = ells[i];
         std::cout << ell << std::endl;
         Scalar color(0, 0, 255);

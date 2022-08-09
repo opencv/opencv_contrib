@@ -16,9 +16,9 @@ PERF_TEST_P(EllipseDetectorTest, perf, Combine(SZ_TYPICAL, Values(CV_8U), Values
     int srcCn = get<2>(params);
 
     Mat src(sz, CV_MAKE_TYPE(matType, srcCn));
-    std::vector<Vec6f> dst;
+    Mat dst(sz, CV_32FC(6));
 
-    declare.in(src).out(dst);
+    declare.in(src, WARMUP_RNG).out(dst);
 
     TEST_CYCLE() ellipseDetector(src, dst, 0.7f, 0.5f, 0.05f);
 

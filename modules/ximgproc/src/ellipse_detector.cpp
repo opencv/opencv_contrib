@@ -27,11 +27,11 @@ struct Ellipse {
         radius = 0.f, score = 0.f;
     };
 
-    Ellipse(float center_x, float center_y, float a, float b, float radius,
-            float score = 0.f) {
-        this->center_x = center_x, this->center_y = center_y;
-        this->a = a, this->b = b;
-        this->radius = radius, this->score = score;
+    Ellipse(float _center_x, float _center_y, float _a, float _b, float _radius,
+            float _score = 0.f) {
+        this->center_x = _center_x, this->center_y = _center_y;
+        this->a = _a, this->b = _b;
+        this->radius = _radius, this->score = _score;
 };
 
 Ellipse(const Ellipse &other) {
@@ -1228,21 +1228,21 @@ void EllipseDetectorImpl::getTriplets413(VVP &pi, VVP &pj, VVP &pk,
 int EllipseDetectorImpl::findMaxK(const int *v) const {
     int maxVal = 0, maxIdx = 0;
     for (int i = 0; i < ACC_R_SIZE; i++)
-        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : NULL;
+        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : 0;
     return maxIdx + 90;
 }
 
 int EllipseDetectorImpl::findMaxN(const int *v) const {
     int maxVal = 0, maxIdx = 0;
     for (int i = 0; i < ACC_N_SIZE; i++)
-        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : NULL;
+        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : 0;
     return maxIdx;
 }
 
 int EllipseDetectorImpl::findMaxA(const int *v) const {
     int maxVal = 0, maxIdx = 0;
     for (int i = 0; i < ACC_A_SIZE; i++)
-        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : NULL;
+        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : 0;
     return maxIdx;
 }
 
@@ -1320,8 +1320,6 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
 
     Mat magRow;
     magRow.create(1, imgSize.width, CV_32F);
-    const int flags = 3;
-    const int CV_CANNY_L2_GRADIENT = (1 << 31);
 
     // calculate magnitude and angle of gradient, perform non-maxima suppression.
     // fill the map with one of the following values:
@@ -1330,7 +1328,6 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
     // 2 - the pixel does belong to an edge
     for (int i = 0; i <= imgSize.height; i++) {
         int *tmpMag = magBuffer[(i > 0) + 1] + 1;
-        float *tmpMagFloat = (float *) tmpMag;
         const short *tmpDx = (short *) (dx[i]);
         const short *tmpDy = (short *) (dy[i]);
         uchar *tmpMap;
@@ -1969,24 +1966,24 @@ void EllipseDetectorImpl::clusterEllipses(std::vector<Ellipse> &ellipses) {
 }
 
 // enter of ellipse detector
-CV_EXPORTS void ellipseDetector(
-        InputArray _image, OutputArray _ellipses,
+void ellipseDetector(
+        InputArray image, OutputArray ellipses,
         float scoreThreshold, float reliabilityThreshold,
         float centerDistanceThreshold) {
 
     // check image empty and type
     CV_Assert(
-            !_image.empty() && (_image.isMat() || _image.isUMat()));
+            !image.empty() && (image.isMat() || image.isUMat()));
 
     // check ellipses type
     int type = CV_32FC(6);
-    if (_ellipses.fixedType()) {
-        type = _ellipses.type();
+    if (ellipses.fixedType()) {
+        type = ellipses.type();
         CV_CheckType(type, type == CV_32FC(6), "Wrong type of output ellipses");
     }
 
     // set class parameters
-    Size imgSize = _image.size();
+    Size imgSize = image.size();
     float maxCenterDistance =
             sqrt(float(imgSize.width * imgSize.width + imgSize.height * imgSize.height)) *
             centerDistanceThreshold;
@@ -1995,21 +1992,21 @@ CV_EXPORTS void ellipseDetector(
 
     // detect - ellipse format
     std::vector<Ellipse> ellipseResults;
-    Mat1b grayImage = _image.getMat();
-    if (_image.channels() != 1)
-        cvtColor(_image, grayImage, COLOR_BGR2GRAY);
+    Mat1b grayImage = image.getMat();
+    if (image.channels() != 1)
+        cvtColor(image, grayImage, COLOR_BGR2GRAY);
     edi.detect(grayImage, ellipseResults);
 
     // convert - ellipse format to std::vector<Vec6f>
     auto ellipseSize = unsigned(ellipseResults.size());
-    Mat ellipses(1, ellipseSize, CV_32FC(6));
-    for (int i = 0; i < ellipseSize; i++) {
+    Mat _ellipses(1, ellipseSize, CV_32FC(6));
+    for (unsigned i = 0; i < ellipseSize; i++) {
         Ellipse tmpEll = ellipseResults[i];
         Vec6f tmpVec(tmpEll.center_x, tmpEll.center_y, tmpEll.a, tmpEll.b, tmpEll.score,
                      tmpEll.radius);
-        ellipses.at<Vec6f>(i) = tmpVec;
+        _ellipses.at<Vec6f>(i) = tmpVec;
     }
-    ellipses.copyTo(_ellipses);
+    _ellipses.copyTo(ellipses);
 }
 } // namespace ximgproc
 } // namespace cv
