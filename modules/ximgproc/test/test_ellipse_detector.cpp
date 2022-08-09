@@ -11,7 +11,7 @@ namespace opencv_test { namespace {
 
 TEST(EllipseDetectorTest, EllipsesOnly)
 {
-    string picture_name = "imgproc/stuff.jpg";
+    string picture_name = "cv/imgproc/stuff.jpg";
     string filename = cvtest::TS::ptr()->get_data_path() + picture_name;
     Mat src = imread(filename, IMREAD_GRAYSCALE);
     EXPECT_FALSE(src.empty()) << "Invalid test image: " << filename;
@@ -24,7 +24,7 @@ TEST(EllipseDetectorTest, EllipsesOnly)
 
 TEST(EllipseDetectorTest, ManySmallEllipses)
 {
-    string picture_name = "imgproc/beads.jpg";
+    string picture_name = "cv/imgproc/beads.jpg";
     string filename = cvtest::TS::ptr()->get_data_path() + picture_name;
     Mat src = imread(filename, IMREAD_GRAYSCALE);
     EXPECT_FALSE(src.empty()) << "Invalid test image: " << filename;
