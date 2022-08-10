@@ -10,7 +10,7 @@ typedef TestBaseWithParam<FindEllipsesTestParam> FindEllipsesTest;
 
 PERF_TEST_P(FindEllipsesTest, perf, Combine(SZ_TYPICAL, Values(CV_8U), Values(1, 3)))
 {
-    EllipseDetectorTestParam params = GetParam();
+    FindEllipsesTestParam params = GetParam();
     Size sz = get<0>(params);
     int matType = get<1>(params);
     int srcCn = get<2>(params);
