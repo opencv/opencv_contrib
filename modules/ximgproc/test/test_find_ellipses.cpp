@@ -21,4 +21,4 @@ TEST(FindEllipsesTest, EllipsesOnly)
 
     EXPECT_EQ(ells.size(), size_t(3)) << "Should find 3 ellipses";
 }
-}
+}}
