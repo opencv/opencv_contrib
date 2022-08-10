@@ -135,14 +135,16 @@ namespace
 
         int total = findCorners_gpu(eigTex_, eig_.rows, eig_.cols, static_cast<float>(maxVal * qualityLevel_), mask, tmpCorners_.ptr<float2>(), tmpCorners_.cols, counterPtr_, stream_);
 
-
         if (total == 0)
         {
             _corners.release();
+            cudaSafeCall( cudaDestroyTextureObject(eigTex_) );
             return;
         }
 
         sortCorners_gpu(eigTex_, tmpCorners_.ptr<float2>(), total, stream_);
+
+        cudaSafeCall( cudaDestroyTextureObject(eigTex_) );
 
         if (minDistance_ < 1)
         {
