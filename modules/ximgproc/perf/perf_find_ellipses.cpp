@@ -5,10 +5,10 @@
 
 namespace opencv_test { namespace  {
 
-typedef tuple<Size, MatType, int> EllipseDetectorTestParam;
-typedef TestBaseWithParam<EllipseDetectorTestParam> EllipseDetectorTest;
+typedef tuple<Size, MatType, int> FindEllipsesTestParam;
+typedef TestBaseWithParam<FindEllipsesTestParam> FindEllipsesTest;
 
-PERF_TEST_P(EllipseDetectorTest, perf, Combine(SZ_TYPICAL, Values(CV_8U), Values(1, 3)))
+PERF_TEST_P(FindEllipsesTest, perf, Combine(SZ_TYPICAL, Values(CV_8U), Values(1, 3)))
 {
     EllipseDetectorTestParam params = GetParam();
     Size sz = get<0>(params);
@@ -20,7 +20,7 @@ PERF_TEST_P(EllipseDetectorTest, perf, Combine(SZ_TYPICAL, Values(CV_8U), Values
 
     declare.in(src, WARMUP_RNG).out(dst);
 
-    TEST_CYCLE() ellipseDetector(src, dst, 0.7f, 0.5f, 0.05f);
+    TEST_CYCLE() findEllipses(src, dst, 0.7f, 0.5f, 0.05f);
 
     SANITY_CHECK_NOTHING();
 }

@@ -1965,8 +1965,8 @@ void EllipseDetectorImpl::clusterEllipses(std::vector<Ellipse> &ellipses) {
     clusters.swap(ellipses);
 }
 
-// enter of ellipse detector
-void ellipseDetector(
+// find ellipses in images
+void findEllipses(
         InputArray image, OutputArray ellipses,
         float scoreThreshold, float reliabilityThreshold,
         float centerDistanceThreshold) {

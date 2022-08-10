@@ -10,15 +10,16 @@
 namespace cv {
 namespace ximgproc {
 
-//! @addtogroup ximgproc_ellipse_detector
+//! @addtogroup ximgproc_filters
 //! @{
 
 /**
-@brief finds ellipses fastly in an image using projective invariant pruning.
+@brief Finds ellipses fastly in an image using projective invariant pruning.
 *
 * The function detects ellipses in images using projective invariant pruning.
 * For more details about this implementation, please see
-* [JIA2017FAST]  Jia, Qi et al, (2017). A Fast Ellipse Detector using Projective Invariant Pruning. IEEE Transactions on Image Processing.
+* [JIA2017FAST]  Jia, Qi et al, (2017).
+* A Fast Ellipse Detector using Projective Invariant Pruning. IEEE Transactions on Image Processing.
 *
 @param image input image, could be gray or color.
 @param ellipses output vector of found ellipses. each vector is encoded as five float $x, y, a, b, radius, score$.
@@ -26,12 +27,12 @@ namespace ximgproc {
 @param reliabilityThreshold float, the threshold of reliability.
 @param centerDistanceThreshold float, the threshold of center distance.
 */
-CV_EXPORTS_W void ellipseDetector(
+CV_EXPORTS_W void findEllipses(
     InputArray image, OutputArray ellipses,
     float scoreThreshold = 0.7f, float reliabilityThreshold = 0.5f,
     float centerDistanceThreshold = 0.05f
 );
-//! @} ximgproc_ellipse_detector
+//! @} ximgproc_filters
 }
 }
 #endif

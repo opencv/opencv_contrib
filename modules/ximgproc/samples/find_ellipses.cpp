@@ -24,7 +24,7 @@ int main() {
     std::vector<Vec6f> ells;
 
     // test ellipse detection
-    cv::ximgproc::ellipseDetector(img, ells, 0.4f, 0.7f, 0.02f);
+    cv::ximgproc::findEllipses(img, ells, 0.4f, 0.7f, 0.02f);
 
     // print output
     for (unsigned i = 0; i < ells.size(); i++) {
