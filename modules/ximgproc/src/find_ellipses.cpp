@@ -5,6 +5,7 @@
 #include "precomp.hpp"
 #include <opencv2/core.hpp>
 #include <unordered_map>
+#include <numeric>
 
 namespace cv {
 namespace ximgproc {

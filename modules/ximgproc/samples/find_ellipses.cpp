@@ -12,7 +12,7 @@ using namespace cv;
 int main() {
 
     // load image
-    Mat img = imread("test.jpg", IMREAD_COLOR);
+    Mat img = imread(samples::findFile("stuff.jpg"), IMREAD_COLOR);
 
     // check if image is loaded
     if (img.empty()) {
@@ -40,8 +40,9 @@ int main() {
         );
     }
 
-    // save image
-    imwrite("result.jpg", img);
+    // show image
+    imshow("result", img);
+    waitKey();
 
     // end
     return 0;

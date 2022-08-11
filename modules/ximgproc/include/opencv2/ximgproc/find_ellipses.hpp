@@ -2,15 +2,15 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#ifndef __OPENCV_ELLIPSE_DETECTOR_HPP__
-#define __OPENCV_ELLIPSE_DETECTOR_HPP__
+#ifndef __OPENCV_FIND_ELLIPSES_HPP__
+#define __OPENCV_FIND_ELLIPSES_HPP__
 
 #include <opencv2/core.hpp>
 
 namespace cv {
 namespace ximgproc {
 
-//! @addtogroup ximgproc_filters
+//! @addtogroup ximgproc
 //! @{
 
 /**
@@ -32,7 +32,7 @@ CV_EXPORTS_W void findEllipses(
     float scoreThreshold = 0.7f, float reliabilityThreshold = 0.5f,
     float centerDistanceThreshold = 0.05f
 );
-//! @} ximgproc_filters
+//! @} ximgproc
 }
 }
 #endif
