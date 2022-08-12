@@ -87,25 +87,22 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        int findCorners_gpu(const cudaTextureObject_t &eigTex, const int &rows, const int &cols, float threshold, PtrStepSzb mask, float2* corners, int max_count, cudaStream_t stream)
+        int findCorners_gpu(const cudaTextureObject_t &eigTex, const int &rows, const int &cols, float threshold, PtrStepSzb mask, float2* corners, int max_count, int* counterPtr, cudaStream_t stream)
         {
-            int* counter_ptr;
-            cudaSafeCall( cudaMalloc(&counter_ptr, sizeof(int)) );
-
-            cudaSafeCall( cudaMemsetAsync(counter_ptr, 0, sizeof(int), stream) );
+            cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
             dim3 block(16, 16);
             dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
 
             if (mask.data)
-                findCorners<<<grid, block, 0, stream>>>(threshold, SingleMask(mask), corners, max_count, rows, cols, eigTex, counter_ptr);
+                findCorners<<<grid, block, 0, stream>>>(threshold, SingleMask(mask), corners, max_count, rows, cols, eigTex, counterPtr);
             else
-                findCorners<<<grid, block, 0, stream>>>(threshold, WithOutMask(), corners, max_count, rows, cols, eigTex, counter_ptr);
+                findCorners<<<grid, block, 0, stream>>>(threshold, WithOutMask(), corners, max_count, rows, cols, eigTex, counterPtr);
 
             cudaSafeCall( cudaGetLastError() );
 
             int count;
-            cudaSafeCall( cudaMemcpyAsync(&count, counter_ptr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
+            cudaSafeCall( cudaMemcpyAsync(&count, counterPtr, sizeof(int), cudaMemcpyDeviceToHost, stream) );
             if (stream)
                 cudaSafeCall(cudaStreamSynchronize(stream));
             else
