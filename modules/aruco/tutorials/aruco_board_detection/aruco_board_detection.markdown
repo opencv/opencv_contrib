@@ -156,7 +156,7 @@ In this case the margin is 10.
 
 The output image will be something like this:
 
-![](images/board.jpg)
+![](images/board.png)
 
 A full working example of board creation is included in the `create_board.cpp` inside the `modules/aruco/samples/`.
 
