@@ -2250,7 +2250,7 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
   unsigned int linePixelID = edges.sId[edges.numOfEdges];
   lines.xCors.resize( linePixelID );
   lines.yCors.resize( linePixelID );
-  lines.sId.resize( 5 * edges.numOfEdges );
+  lines.sId.resize( 5 * edges.numOfEdges + 1);
   unsigned int *pEdgeXCors = &edges.xCors.front();
   unsigned int *pEdgeYCors = &edges.yCors.front();
   unsigned int *pEdgeSID = &edges.sId.front();
