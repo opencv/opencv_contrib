@@ -34,6 +34,35 @@ class cudacodec_test(NewOpenCVTests):
             ret, _gpu_mat2 = reader.nextFrame(gpu_mat)
             #TODO: self.assertTrue(gpu_mat == gpu_mat2)
             self.assertTrue(ret)
+
+            params = cv.cudacodec.VideoReaderInitParams()
+            params.rawMode = True
+            ms_gs = 1234
+            reader = cv.cudacodec.createVideoReader(vid_path,[cv.CAP_PROP_OPEN_TIMEOUT_MSEC, ms_gs], params)
+            ret, ms = reader.get(cv.CAP_PROP_OPEN_TIMEOUT_MSEC)
+            self.assertTrue(ret and ms == ms_gs)
+            ret, raw_mode = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_RAW_MODE)
+            self.assertTrue(ret and raw_mode)
+
+            ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
+            self.assertTrue(ret and colour_code == cv.cudacodec.ColorFormat_BGRA)
+            colour_code_gs = cv.cudacodec.ColorFormat_GRAY
+            reader.set(colour_code_gs)
+            ret, colour_code = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_COLOR_FORMAT)
+            self.assertTrue(ret and colour_code == colour_code_gs)
+
+            ret, i_base = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_RAW_PACKAGES_BASE_INDEX)
+            self.assertTrue(ret and i_base == 2.0)
+            self.assertTrue(reader.grab())
+            ret, gpu_mat3 = reader.retrieve()
+            self.assertTrue(ret and isinstance(gpu_mat3,cv.cuda.GpuMat) and not gpu_mat3.empty())
+            ret = reader.retrieve(gpu_mat3)
+            self.assertTrue(ret and isinstance(gpu_mat3,cv.cuda.GpuMat) and not gpu_mat3.empty())
+            ret, n_raw_packages_since_last_grab = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB)
+            self.assertTrue(ret and n_raw_packages_since_last_grab > 0)
+            ret, raw_data = reader.retrieve(int(i_base))
+            self.assertTrue(ret and isinstance(raw_data,np.ndarray) and np.any(raw_data))
+
         except cv.error as e:
             notSupported = (e.code == cv.Error.StsNotImplemented or e.code == cv.Error.StsUnsupportedFormat or e.code == cv.Error.GPU_API_CALL_ERROR)
             self.assertTrue(notSupported)

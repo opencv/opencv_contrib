@@ -55,7 +55,7 @@ namespace cv { namespace cuda { namespace device
 {
     namespace gfft
     {
-        int findCorners_gpu(const cudaTextureObject_t &eigTex_, const int &rows, const int &cols, float threshold, PtrStepSzb mask, float2* corners, int max_count, cudaStream_t stream);
+        int findCorners_gpu(const cudaTextureObject_t &eigTex_, const int &rows, const int &cols, float threshold, PtrStepSzb mask, float2* corners, int max_count, int* counterPtr, cudaStream_t stream);
         void sortCorners_gpu(const cudaTextureObject_t &eigTex_, float2* corners, int count, cudaStream_t stream);
     }
 }}}
@@ -67,7 +67,7 @@ namespace
     public:
         GoodFeaturesToTrackDetector(int srcType, int maxCorners, double qualityLevel, double minDistance,
                                     int blockSize, bool useHarrisDetector, double harrisK);
-
+        ~GoodFeaturesToTrackDetector();
         void detect(InputArray image, OutputArray corners, InputArray mask, Stream& stream);
 
     private:
@@ -82,6 +82,8 @@ namespace
         GpuMat buf_;
         GpuMat eig_;
         GpuMat tmpCorners_;
+
+        int* counterPtr_;
     };
 
     GoodFeaturesToTrackDetector::GoodFeaturesToTrackDetector(int srcType, int maxCorners, double qualityLevel, double minDistance,
@@ -93,6 +95,12 @@ namespace
         cornerCriteria_ = useHarrisDetector ?
                     cuda::createHarrisCorner(srcType, blockSize, 3, harrisK) :
                     cuda::createMinEigenValCorner(srcType, blockSize, 3);
+        cudaSafeCall(cudaMalloc(&counterPtr_, sizeof(int)));
+    }
+
+    GoodFeaturesToTrackDetector::~GoodFeaturesToTrackDetector()
+    {
+        cudaSafeCall(cudaFree(counterPtr_));
     }
 
     void GoodFeaturesToTrackDetector::detect(InputArray _image, OutputArray _corners, InputArray _mask, Stream& stream)
@@ -125,16 +133,18 @@ namespace
         PtrStepSzf eig = eig_;
         cv::cuda::device::createTextureObjectPitch2D<float>(&eigTex_, eig, texDesc);
 
-        int total = findCorners_gpu(eigTex_, eig_.rows, eig_.cols, static_cast<float>(maxVal * qualityLevel_), mask, tmpCorners_.ptr<float2>(), tmpCorners_.cols, stream_);
-
+        int total = findCorners_gpu(eigTex_, eig_.rows, eig_.cols, static_cast<float>(maxVal * qualityLevel_), mask, tmpCorners_.ptr<float2>(), tmpCorners_.cols, counterPtr_, stream_);
 
         if (total == 0)
         {
             _corners.release();
+            cudaSafeCall( cudaDestroyTextureObject(eigTex_) );
             return;
         }
 
         sortCorners_gpu(eigTex_, tmpCorners_.ptr<float2>(), total, stream_);
+
+        cudaSafeCall( cudaDestroyTextureObject(eigTex_) );
 
         if (minDistance_ < 1)
         {

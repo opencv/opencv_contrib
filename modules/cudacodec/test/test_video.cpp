@@ -70,6 +70,10 @@ PARAM_TEST_CASE(CheckDecodeSurfaces, cv::cuda::DeviceInfo, std::string)
 {
 };
 
+PARAM_TEST_CASE(CheckInitParams, cv::cuda::DeviceInfo, std::string, bool, bool, bool)
+{
+};
+
 struct CheckParams : testing::TestWithParam<cv::cuda::DeviceInfo>
 {
     cv::cuda::DeviceInfo devInfo;
@@ -127,10 +131,9 @@ CUDA_TEST_P(CheckExtraData, Reader)
     const string path = get<0>(GET_PARAM(1));
     const int sz = get<1>(GET_PARAM(1));
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + path;
-    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, true);
-    double rawModeVal = -1;
-    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_MODE, rawModeVal));
-    ASSERT_TRUE(rawModeVal);
+    cv::cudacodec::VideoReaderInitParams params;
+    params.rawMode = true;
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
     double extraDataIdx = -1;
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_EXTRA_DATA_INDEX, extraDataIdx));
     ASSERT_EQ(extraDataIdx, 1 );
@@ -151,10 +154,9 @@ CUDA_TEST_P(CheckKeyFrame, Reader)
 
     const string path = GET_PARAM(1);
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + path;
-    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, true);
-    double rawModeVal = -1;
-    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_MODE, rawModeVal));
-    ASSERT_TRUE(rawModeVal);
+    cv::cudacodec::VideoReaderInitParams params;
+    params.rawMode = true;
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
     double rawIdxBase = -1;
     ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_PACKAGES_BASE_INDEX, rawIdxBase));
     ASSERT_EQ(rawIdxBase, 2);
@@ -187,6 +189,7 @@ CUDA_TEST_P(Video, Reader)
         {cudacodec::ColorFormat::GRAY,1},
         {cudacodec::ColorFormat::BGR,3},
         {cudacodec::ColorFormat::BGRA,4},
+        {cudacodec::ColorFormat::YUV,1}
     };
 
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
@@ -198,10 +201,13 @@ CUDA_TEST_P(Video, Reader)
         // request a different colour format for each frame
         const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
         reader->set(formatToChannels.first);
+        double colorFormat;
+        ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormat) && static_cast<cudacodec::ColorFormat>(colorFormat) == formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
-        ASSERT_TRUE(frame.cols == fmt.width && frame.rows == fmt.height);
+        const int height = formatToChannels.first == cudacodec::ColorFormat::YUV ? 1.5 * fmt.height : fmt.height;
+        ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
         ASSERT_TRUE(frame.channels() == formatToChannels.second);
     }
@@ -220,10 +226,9 @@ CUDA_TEST_P(VideoReadRaw, Reader)
     {
         std::ofstream file(fileNameOut, std::ios::binary);
         ASSERT_TRUE(file.is_open());
-        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, true);
-        double rawModeVal = -1;
-        ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_MODE, rawModeVal));
-        ASSERT_TRUE(rawModeVal);
+        cv::cudacodec::VideoReaderInitParams params;
+        params.rawMode = true;
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
         double rawIdxBase = -1;
         ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_PACKAGES_BASE_INDEX, rawIdxBase));
         ASSERT_EQ(rawIdxBase, 2);
@@ -248,7 +253,9 @@ CUDA_TEST_P(VideoReadRaw, Reader)
 
     {
         cv::Ptr<cv::cudacodec::VideoReader> readerReference = cv::cudacodec::createVideoReader(inputFile);
-        cv::Ptr<cv::cudacodec::VideoReader> readerActual = cv::cudacodec::createVideoReader(fileNameOut, {}, true);
+        cv::cudacodec::VideoReaderInitParams params;
+        params.rawMode = true;
+        cv::Ptr<cv::cudacodec::VideoReader> readerActual = cv::cudacodec::createVideoReader(fileNameOut, {}, params);
         double decodedFrameIdx = -1;
         ASSERT_TRUE(readerActual->get(cv::cudacodec::VideoReaderProps::PROP_DECODED_FRAME_IDX, decodedFrameIdx));
         ASSERT_EQ(decodedFrameIdx, 0);
@@ -321,7 +328,9 @@ CUDA_TEST_P(CheckDecodeSurfaces, Reader)
     }
 
     {
-        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, false, ulNumDecodeSurfaces - 1);
+        cv::cudacodec::VideoReaderInitParams params;
+        params.minNumDecodeSurfaces = ulNumDecodeSurfaces - 1;
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
         cv::cudacodec::FormatInfo fmt = reader->format();
         if (!fmt.valid) {
             reader->grab();
@@ -333,7 +342,9 @@ CUDA_TEST_P(CheckDecodeSurfaces, Reader)
     }
 
     {
-        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, false, ulNumDecodeSurfaces + 1);
+        cv::cudacodec::VideoReaderInitParams params;
+        params.minNumDecodeSurfaces = ulNumDecodeSurfaces + 1;
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
         cv::cudacodec::FormatInfo fmt = reader->format();
         if (!fmt.valid) {
             reader->grab();
@@ -344,6 +355,22 @@ CUDA_TEST_P(CheckDecodeSurfaces, Reader)
         for (int i = 0; i < 100; i++) ASSERT_TRUE(reader->grab());
     }
 }
+
+CUDA_TEST_P(CheckInitParams, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    cv::cudacodec::VideoReaderInitParams params;
+    params.udpSource = GET_PARAM(2);
+    params.allowFrameDrop = GET_PARAM(3);
+    params.rawMode = GET_PARAM(4);
+    double udpSource = 0, allowFrameDrop = 0, rawMode = 0;
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
+    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_UDP_SOURCE, udpSource) && static_cast<bool>(udpSource) == params.udpSource);
+    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_ALLOW_FRAME_DROP, allowFrameDrop) && static_cast<bool>(allowFrameDrop) == params.allowFrameDrop);
+    ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_RAW_MODE, rawMode) && static_cast<bool>(rawMode) == params.rawMode);
+}
+
 #endif // HAVE_NVCUVID
 
 #if defined(_WIN32) && defined(HAVE_NVCUVENC)
@@ -430,6 +457,11 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckParams, ALL_DEVICES);
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckDecodeSurfaces, testing::Combine(
     ALL_DEVICES,
     testing::Values("highgui/video/big_buck_bunny.mp4")));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckInitParams, testing::Combine(
+    ALL_DEVICES,
+    testing::Values("highgui/video/big_buck_bunny.mp4"),
+    testing::Values(true,false), testing::Values(true,false), testing::Values(true,false)));
 
 #endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace

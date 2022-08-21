@@ -52,7 +52,7 @@ namespace cv { namespace cudacodec { namespace detail {
 class VideoParser
 {
 public:
-    VideoParser(VideoDecoder* videoDecoder, FrameQueue* frameQueue);
+    VideoParser(VideoDecoder* videoDecoder, FrameQueue* frameQueue, const bool allowFrameDrop = false, const bool udpSource = false);
 
     ~VideoParser()
     {
@@ -63,13 +63,19 @@ public:
 
     bool hasError() const { return hasError_; }
 
+    bool udpSource() const { return  maxUnparsedPackets_ == 0; }
+
+    bool allowFrameDrops() const { return allowFrameDrop_; }
+
 private:
-    VideoDecoder* videoDecoder_;
-    FrameQueue* frameQueue_;
+    VideoDecoder* videoDecoder_ = 0;
+    FrameQueue* frameQueue_ = 0;
     CUvideoparser parser_;
-    int unparsedPackets_;
+    int unparsedPackets_ = 0;
+    int maxUnparsedPackets_ = 20;
     std::vector<RawPacket> currentFramePackets;
-    volatile bool hasError_;
+    volatile bool hasError_ = false;
+    bool allowFrameDrop_ = false;
 
     // Called when the decoder encounters a video format change (or initial sequence header)
     // This particular implementation of the callback returns 0 in case the video format changes

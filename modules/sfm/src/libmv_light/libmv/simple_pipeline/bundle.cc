@@ -24,6 +24,7 @@
 
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
+#include "ceres/version.h"
 #include "libmv/base/vector.h"
 #include "libmv/logging/logging.h"
 #include "libmv/multiview/fundamental.h"
@@ -485,7 +486,11 @@ void EuclideanBundleCommonIntrinsics(
     PackCamerasRotationAndTranslation(tracks, *reconstruction);
 
   // Parameterization used to restrict camera motion for modal solvers.
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
+  ceres::SubsetManifold *constant_translation_manifold = NULL;
+#else
   ceres::SubsetParameterization *constant_translation_parameterization = NULL;
+#endif
   if (bundle_constraints & BUNDLE_NO_TRANSLATION) {
       std::vector<int> constant_translation;
 
@@ -494,8 +499,13 @@ void EuclideanBundleCommonIntrinsics(
       constant_translation.push_back(4);
       constant_translation.push_back(5);
 
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
+      constant_translation_manifold =
+        new ceres::SubsetManifold(6, constant_translation);
+#else
       constant_translation_parameterization =
         new ceres::SubsetParameterization(6, constant_translation);
+#endif
   }
 
   // Add residual blocks to the problem.
@@ -538,8 +548,13 @@ void EuclideanBundleCommonIntrinsics(
       }
 
       if (bundle_constraints & BUNDLE_NO_TRANSLATION) {
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
+        problem.SetManifold(current_camera_R_t,
+                                    constant_translation_manifold);
+#else
         problem.SetParameterization(current_camera_R_t,
                                     constant_translation_parameterization);
+#endif
       }
 
       zero_weight_tracks_flags[marker.track] = false;
@@ -586,10 +601,17 @@ void EuclideanBundleCommonIntrinsics(
     // Always set K3 constant, it's not used at the moment.
     constant_intrinsics.push_back(OFFSET_K3);
 
+#if CERES_VERSION_MAJOR >= 3 || (CERES_VERSION_MAJOR >= 2 && CERES_VERSION_MINOR >= 1)
+    ceres::SubsetManifold *subset_manifold =
+      new ceres::SubsetManifold(OFFSET_MAX, constant_intrinsics);
+
+    problem.SetManifold(ceres_intrinsics, subset_manifold);
+#else
     ceres::SubsetParameterization *subset_parameterization =
       new ceres::SubsetParameterization(OFFSET_MAX, constant_intrinsics);
 
     problem.SetParameterization(ceres_intrinsics, subset_parameterization);
+#endif
   }
 
   // Configure the solver.

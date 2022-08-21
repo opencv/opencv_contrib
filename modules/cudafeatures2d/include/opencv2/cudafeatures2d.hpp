@@ -471,12 +471,36 @@ public:
                            int fastThreshold=20,
                            bool blurForDescriptor=false);
 
-    //! if true, image will be blurred before descriptors calculation
-    CV_WRAP virtual void setBlurForDescriptor(bool blurForDescriptor) = 0;
-    CV_WRAP virtual bool getBlurForDescriptor() const = 0;
+    CV_WRAP virtual void setMaxFeatures(int maxFeatures) = 0;
+    CV_WRAP virtual int getMaxFeatures() const = 0;
+
+    CV_WRAP virtual void setScaleFactor(double scaleFactor) = 0;
+    CV_WRAP virtual double getScaleFactor() const = 0;
+
+    CV_WRAP virtual void setNLevels(int nlevels) = 0;
+    CV_WRAP virtual int getNLevels() const = 0;
+
+    CV_WRAP virtual void setEdgeThreshold(int edgeThreshold) = 0;
+    CV_WRAP virtual int getEdgeThreshold() const = 0;
+
+    CV_WRAP virtual void setFirstLevel(int firstLevel) = 0;
+    CV_WRAP virtual int getFirstLevel() const = 0;
+
+    CV_WRAP virtual void setWTA_K(int wta_k) = 0;
+    CV_WRAP virtual int getWTA_K() const = 0;
+
+    CV_WRAP virtual void setScoreType(int scoreType) = 0;
+    CV_WRAP virtual int getScoreType() const = 0;
+
+    CV_WRAP virtual void setPatchSize(int patchSize) = 0;
+    CV_WRAP virtual int getPatchSize() const = 0;
 
     CV_WRAP virtual void setFastThreshold(int fastThreshold) = 0;
     CV_WRAP virtual int getFastThreshold() const = 0;
+
+    //! if true, image will be blurred before descriptors calculation
+    CV_WRAP virtual void setBlurForDescriptor(bool blurForDescriptor) = 0;
+    CV_WRAP virtual bool getBlurForDescriptor() const = 0;
 };
 
 //! @}

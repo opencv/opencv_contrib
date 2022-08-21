@@ -5,4 +5,4 @@ Extra 2D Features Framework
 2. Non-free 2D feature algorithms
 
 Extra 2D Features Framework containing experimental and non-free 2D feature detector/descriptor algorithms:
- SURF, BRIEF, Censure, Freak, LUCID, Daisy, BEBLID, Self-similar.
+ SURF, BRIEF, Censure, Freak, LUCID, Daisy, BEBLID, TEBLID, Self-similar.

@@ -273,7 +273,6 @@ int PoseCluster3D::readPoseCluster(FILE* f)
   status = fread(&id, sizeof(int), 1, f);
   status = fread(&numVotes, sizeof(int), 1, f);
   status = fread(&numPoses, sizeof(int), 1, f);
-  fclose(f);
 
   poseList.clear();
   poseList.resize(numPoses);
@@ -283,6 +282,7 @@ int PoseCluster3D::readPoseCluster(FILE* f)
     poseList[i]->readPose(f);
   }
 
+  fclose(f);
   return 0;
 }
 

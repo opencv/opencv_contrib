@@ -142,7 +142,7 @@ public:
      * parameters setup display method
      * @return a string which contains formatted parameters information
      */
-    const String printSetup();
+    String printSetup();
 
     /**
      * write xml/yml formated parameters information
@@ -232,7 +232,7 @@ public:
     inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure) CV_OVERRIDE { _segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure); }
     inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure) CV_OVERRIDE { _segmTool.setup(fs, applyDefaultSetupOnFailure); }
     inline virtual void setup(SegmentationParameters newParameters) CV_OVERRIDE { _segmTool.setup(newParameters); }
-    inline virtual const String printSetup() CV_OVERRIDE { return _segmTool.printSetup(); }
+    inline virtual String printSetup() CV_OVERRIDE { return _segmTool.printSetup(); }
     inline virtual struct SegmentationParameters getParameters() CV_OVERRIDE { return _segmTool.getParameters(); }
     inline virtual void write( String fs ) const CV_OVERRIDE { _segmTool.write(fs); }
     inline virtual void run(InputArray inputToSegment, const int channelIndex) CV_OVERRIDE { _segmTool.run(inputToSegment, channelIndex); }
@@ -368,7 +368,7 @@ void TransientAreasSegmentationModuleImpl::setup(cv::bioinspired::SegmentationPa
 
 }
 
-const String TransientAreasSegmentationModuleImpl::printSetup()
+String TransientAreasSegmentationModuleImpl::printSetup()
 {
     std::stringstream outmessage;
 

@@ -4,7 +4,7 @@ import cv2 as cv
 left_img = cv.imread(cv.samples.findFile("aloeL.jpg"), cv.IMREAD_COLOR)
 right_img = cv.imread(cv.samples.findFile("aloeR.jpg"), cv.IMREAD_COLOR)
 
-frame_size = leftImg.shape[0:2];
+frame_size = left_img.shape[0:2];
 
 stereo = cv.stereo.QuasiDenseStereo_create(frame_size[::-1])
 stereo.process(left_img, right_img)

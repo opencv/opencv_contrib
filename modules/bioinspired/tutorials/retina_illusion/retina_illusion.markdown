@@ -30,7 +30,7 @@ values of the two squares with the picker tool.
 
 In this image I've cropped a little piece of the A and B squares and I've put them side-by-side.
 It should be quite evident they have the same luminance.
-![Adelson checkerboard proof](images/checkershadow_illusion4med_proof.jpg)
+![Adelson checkerboard proof](images/checkershadow_illusion4med_proof.png)
 
 It's worth to know that this illusion works because the checkerboard image, as you may see it
 on your laptop, casts on your retina with dimensions that cause the retina local adaptation to take

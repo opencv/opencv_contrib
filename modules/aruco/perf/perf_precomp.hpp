@@ -5,7 +5,7 @@
 #define __OPENCV_PERF_PRECOMP_HPP__
 
 #include "opencv2/ts.hpp"
-#include "opencv2/aruco.hpp"
+#include "opencv2/aruco_detector.hpp"
 #include "opencv2/calib3d.hpp"
 
 #endif

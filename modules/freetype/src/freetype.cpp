@@ -66,7 +66,7 @@ class CV_EXPORTS_W FreeType2Impl CV_FINAL : public FreeType2
 public:
     FreeType2Impl();
     ~FreeType2Impl();
-    void loadFontData(String fontFileName, int id) CV_OVERRIDE;
+    void loadFontData(String fontFileName, int idx) CV_OVERRIDE;
     void setSplitNumber( int num ) CV_OVERRIDE;
     void putText(
         InputOutputArray img, const String& text, Point org,
@@ -92,17 +92,28 @@ private:
         int fontHeight, Scalar color,
         int thickness, int line_type, bool bottomLeftOrigin
     );
+
     void putTextBitmapBlend(
         InputOutputArray img, const String& text, Point org,
         int fontHeight, Scalar color,
         int thickness, int line_type, bool bottomLeftOrigin
     );
+
     void putTextOutline(
         InputOutputArray img, const String& text, Point org,
         int fontHeight, Scalar color,
         int thickness, int line_type, bool bottomLeftOrigin
     );
 
+    typedef void (putPixel_mono_fn)( Mat& _dst, const int _py, const int _px, const uint8_t *_col);
+    putPixel_mono_fn putPixel_8UC1_mono;
+    putPixel_mono_fn putPixel_8UC3_mono;
+    putPixel_mono_fn putPixel_8UC4_mono;
+
+    typedef void (putPixel_blend_fn)( Mat& _dst, const int _py, const int _px, const uint8_t *_col, const uint8_t alpha);
+    putPixel_blend_fn putPixel_8UC1_blend;
+    putPixel_blend_fn putPixel_8UC3_blend;
+    putPixel_blend_fn putPixel_8UC4_blend;
 
     static int mvFn( const FT_Vector *to, void * user);
     static int lnFn( const FT_Vector *to, void * user);
@@ -158,7 +169,8 @@ FreeType2Impl::FreeType2Impl()
 
 FreeType2Impl::~FreeType2Impl()
 {
-    if( mIsFaceAvailable  == true ){
+    if( mIsFaceAvailable  == true )
+    {
         hb_font_destroy (mHb_font);
         CV_Assert(!FT_Done_Face(mFace));
         mIsFaceAvailable = false;
@@ -168,12 +180,22 @@ FreeType2Impl::~FreeType2Impl()
 
 void FreeType2Impl::loadFontData(String fontFileName, int idx)
 {
-    if( mIsFaceAvailable  == true ){
+    CV_Assert( idx >= 0 );
+    if( mIsFaceAvailable  == true )
+    {
         hb_font_destroy (mHb_font);
         CV_Assert(!FT_Done_Face(mFace));
     }
-    CV_Assert(!FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) ) );
+
+    mIsFaceAvailable = false;
+    CV_Assert( !FT_New_Face( mLibrary, fontFileName.c_str(), static_cast<FT_Long>(idx), &(mFace) ) );
+
     mHb_font = hb_ft_font_create (mFace, NULL);
+    if ( mHb_font == NULL )
+    {
+        CV_Assert(!FT_Done_Face(mFace));
+        return;
+    }
     CV_Assert( mHb_font != NULL );
     mIsFaceAvailable = true;
 }
@@ -189,16 +211,17 @@ void FreeType2Impl::putText(
     int _thickness, int _line_type, bool _bottomLeftOrigin
 )
 {
-    CV_Assert( mIsFaceAvailable == true );
-    CV_Assert( ( _img.empty()    == false ) &&
-               ( _img.isMat()    == true  ) &&
-               ( _img.depth()    == CV_8U ) &&
-               ( _img.dims()     == 2     ) &&
-               ( _img.channels() == 3     ) );
-    CV_Assert( ( _line_type == CV_AA) ||
-               ( _line_type == 4 ) ||
-               ( _line_type == 8 ) );
-    CV_Assert( _fontHeight >= 0 );
+    CV_Assert  ( mIsFaceAvailable == true );
+    CV_Assert  ( _img.empty()    == false );
+    CV_Assert  ( _img.isMat()    == true  );
+    CV_Assert  ( _img.dims()     == 2     );
+    CV_Assert( ( _img.type()     == CV_8UC1 ) ||
+               ( _img.type()     == CV_8UC3 ) ||
+               ( _img.type()     == CV_8UC4 ) );
+    CV_Assert( ( _line_type == LINE_AA) ||
+               ( _line_type == LINE_4 ) ||
+               ( _line_type == LINE_8 ) );
+    CV_Assert  ( _fontHeight >= 0 );
 
     if ( _text.empty() )
     {
@@ -209,15 +232,11 @@ void FreeType2Impl::putText(
          return;
     }
 
-    if( _line_type == CV_AA && _img.depth() != CV_8U ){
-        _line_type = 8;
-    }
-
     CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
 
     if( _thickness < 0 ) // CV_FILLED
     {
-        if ( _line_type == CV_AA ) {
+        if ( _line_type == LINE_AA ) {
             putTextBitmapBlend( _img, _text, _org, _fontHeight, _color,
                 _thickness, _line_type, _bottomLeftOrigin );
         }else{
@@ -292,13 +311,36 @@ void FreeType2Impl::putTextOutline(
    hb_buffer_destroy (hb_buffer);
 }
 
+void FreeType2Impl::putPixel_8UC1_mono( Mat& _dst, const int _py, const int _px, const uint8_t *_col)
+{
+    uint8_t* ptr = _dst.ptr<uint8_t>( _py, _px );
+    (*ptr) = _col[0];
+}
+
+void FreeType2Impl::putPixel_8UC3_mono ( Mat& _dst, const int _py, const int _px, const uint8_t *_col)
+{
+    cv::Vec3b* ptr = _dst.ptr<cv::Vec3b>( _py, _px );
+    (*ptr)[0] = _col[0];
+    (*ptr)[1] = _col[1];
+    (*ptr)[2] = _col[2];
+}
+
+void FreeType2Impl::putPixel_8UC4_mono( Mat& _dst, const int _py, const int _px, const uint8_t *_col)
+{
+    cv::Vec4b* ptr = _dst.ptr<cv::Vec4b>( _py, _px );
+    (*ptr)[0] = _col[0];
+    (*ptr)[1] = _col[1];
+    (*ptr)[2] = _col[2];
+    (*ptr)[3] = _col[3];
+}
+
 void FreeType2Impl::putTextBitmapMono(
    InputOutputArray _img, const String& _text, Point _org,
    int _fontHeight, Scalar _color,
    int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
     CV_Assert( _thickness < 0 );
-    CV_Assert( _line_type == 4 || _line_type == 8);
+    CV_Assert( _line_type == LINE_4 || _line_type == LINE_8);
 
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();
@@ -317,6 +359,17 @@ void FreeType2Impl::putTextBitmapMono(
     if( _bottomLeftOrigin == true ){
         _org.y -= _fontHeight;
     }
+
+    const uint8_t _colorUC8n[4] = {
+        static_cast<uint8_t>(_color[0]),
+        static_cast<uint8_t>(_color[1]),
+        static_cast<uint8_t>(_color[2]),
+        static_cast<uint8_t>(_color[3]) };
+
+    void (cv::freetype::FreeType2Impl::*putPixel)( Mat&, const int, const int, const uint8_t*) =
+        (_img.type() == CV_8UC4)?(&FreeType2Impl::putPixel_8UC4_mono):
+        (_img.type() == CV_8UC3)?(&FreeType2Impl::putPixel_8UC3_mono):
+                                 (&FreeType2Impl::putPixel_8UC1_mono);
 
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert( !FT_Load_Glyph(mFace, info[i].codepoint, 0 ) );
@@ -351,10 +404,7 @@ void FreeType2Impl::putTextBitmapMono(
                     }
 
                     if ( ( (cl >> bit) & 0x01 ) == 1 ) {
-                        cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row,  gPos.x + col * 8 + (7 - bit) );
-                        (*ptr)[0] = _color[0];
-                        (*ptr)[1] = _color[1];
-                        (*ptr)[2] = _color[2];
+                        (this->*putPixel)( dst, gPos.y + row, gPos.x + col * 8 + (7 - bit), _colorUC8n );
                     }
                 }
             }
@@ -366,6 +416,80 @@ void FreeType2Impl::putTextBitmapMono(
     hb_buffer_destroy (hb_buffer);
 }
 
+// Alpha composite algorithm is porting from imgproc.
+// See https://github.com/opencv/opencv/blob/4.6.0/modules/imgproc/src/drawing.cpp
+// static void LineAA( Mat& img, Point2l pt1, Point2l pt2, const void* color )
+// ICV_PUT_POINT Macro.
+
+void FreeType2Impl::putPixel_8UC1_blend( Mat& _dst, const int _py, const int _px, const uint8_t *_col, const uint8_t alpha)
+{
+    const int a = alpha;
+    const int cb = _col[0];
+    uint8_t* tptr = _dst.ptr<uint8_t>( _py, _px );
+
+    int _cb = static_cast<int>(tptr[0]);
+    _cb += ((cb - _cb)*a + 127)>> 8;
+    _cb += ((cb - _cb)*a + 127)>> 8;
+
+    tptr[0] = static_cast<uint8_t>(_cb);
+}
+
+void FreeType2Impl::putPixel_8UC3_blend ( Mat& _dst, const int _py, const int _px, const uint8_t *_col, const uint8_t alpha)
+{
+    const int a = alpha;
+    const int cb = _col[0];
+    const int cg = _col[1];
+    const int cr = _col[2];
+    uint8_t* tptr = _dst.ptr<uint8_t>( _py, _px );
+
+    int _cb = static_cast<int>(tptr[0]);
+    _cb += ((cb - _cb)*a + 127)>> 8;
+    _cb += ((cb - _cb)*a + 127)>> 8;
+
+    int _cg = static_cast<int>(tptr[1]);
+    _cg += ((cg - _cg)*a + 127)>> 8;
+    _cg += ((cg - _cg)*a + 127)>> 8;
+
+    int _cr = static_cast<int>(tptr[2]);
+    _cr += ((cr - _cr)*a + 127)>> 8;
+    _cr += ((cr - _cr)*a + 127)>> 8;
+
+    tptr[0] = static_cast<uint8_t>(_cb);
+    tptr[1] = static_cast<uint8_t>(_cg);
+    tptr[2] = static_cast<uint8_t>(_cr);
+}
+
+void FreeType2Impl::putPixel_8UC4_blend( Mat& _dst, const int _py, const int _px, const uint8_t *_col, const uint8_t alpha)
+{
+    const uint8_t a = alpha;
+    const int cb = _col[0];
+    const int cg = _col[1];
+    const int cr = _col[2];
+    const int ca = _col[3];
+    uint8_t* tptr = _dst.ptr<uint8_t>( _py, _px );
+
+    int _cb = static_cast<int>(tptr[0]);
+    _cb += ((cb - _cb)*a + 127)>> 8;
+    _cb += ((cb - _cb)*a + 127)>> 8;
+
+    int _cg = static_cast<int>(tptr[1]);
+    _cg += ((cg - _cg)*a + 127)>> 8;
+    _cg += ((cg - _cg)*a + 127)>> 8;
+
+    int _cr = static_cast<int>(tptr[2]);
+    _cr += ((cr - _cr)*a + 127)>> 8;
+    _cr += ((cr - _cr)*a + 127)>> 8;
+
+    int _ca = static_cast<int>(tptr[3]);
+    _ca += ((ca - _ca)*a + 127)>> 8;
+    _ca += ((ca - _ca)*a + 127)>> 8;
+
+    tptr[0] = static_cast<uint8_t>(_cb);
+    tptr[1] = static_cast<uint8_t>(_cg);
+    tptr[2] = static_cast<uint8_t>(_cr);
+    tptr[3] = static_cast<uint8_t>(_ca);
+}
+
 void FreeType2Impl::putTextBitmapBlend(
    InputOutputArray _img, const String& _text, Point _org,
    int _fontHeight, Scalar _color,
@@ -373,7 +497,7 @@ void FreeType2Impl::putTextBitmapBlend(
 {
 
     CV_Assert( _thickness < 0 );
-    CV_Assert( _line_type == 16 );
+    CV_Assert( _line_type == LINE_AA );
 
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();
@@ -393,6 +517,17 @@ void FreeType2Impl::putTextBitmapBlend(
         _org.y -= _fontHeight;
     }
 
+    const uint8_t _colorUC8n[4] = {
+        static_cast<uint8_t>(_color[0]),
+        static_cast<uint8_t>(_color[1]),
+        static_cast<uint8_t>(_color[2]),
+        static_cast<uint8_t>(_color[3]) };
+
+    void (cv::freetype::FreeType2Impl::*putPixel)( Mat&, const int, const int, const uint8_t*, const uint8_t) =
+        (_img.type() == CV_8UC4)?(&FreeType2Impl::putPixel_8UC4_blend):
+        (_img.type() == CV_8UC3)?(&FreeType2Impl::putPixel_8UC3_blend):
+                                 (&FreeType2Impl::putPixel_8UC1_blend);
+
     for( unsigned int i = 0 ; i < textLen ; i ++ ){
         CV_Assert( !FT_Load_Glyph(mFace, info[i].codepoint, 0 ) );
         CV_Assert( !FT_Render_Glyph( mFace->glyph, FT_RENDER_MODE_NORMAL ) );
@@ -411,7 +546,7 @@ void FreeType2Impl::putTextBitmapBlend(
             }
 
             for (int col = 0; col < bmp->pitch; col ++) {
-                int cl = bmp->buffer[ row * bmp->pitch + col ];
+                uint8_t cl = bmp->buffer[ row * bmp->pitch + col ];
                 if ( cl == 0 ) {
                     continue;
                 }
@@ -424,12 +559,7 @@ void FreeType2Impl::putTextBitmapBlend(
                     break;
                 }
 
-                cv::Vec3b* ptr = dst.ptr<cv::Vec3b>( gPos.y + row , gPos.x + col);
-                double blendAlpha = (double ) cl / 255.0;
-
-                (*ptr)[0] = (double) _color[0] * blendAlpha + (*ptr)[0] * (1.0 - blendAlpha );
-                (*ptr)[1] = (double) _color[1] * blendAlpha + (*ptr)[1] * (1.0 - blendAlpha );
-                (*ptr)[2] = (double) _color[2] * blendAlpha + (*ptr)[2] * (1.0 - blendAlpha );
+                (this->*putPixel)( dst, gPos.y + row, gPos.x + col, _colorUC8n, cl );
             }
         }
         _org.x += ( mFace->glyph->advance.x ) >> 6;

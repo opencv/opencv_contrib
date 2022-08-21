@@ -3,7 +3,7 @@
 #include <opencv2/videoio.hpp>
 
 #include <opencv2/ovis.hpp>
-#include <opencv2/aruco.hpp>
+#include <opencv2/aruco_detector.hpp>
 
 #include <iostream>
 
