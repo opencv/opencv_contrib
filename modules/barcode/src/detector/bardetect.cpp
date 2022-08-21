@@ -86,6 +86,9 @@ void Detect::localization()
     for (const float scale:SCALE_LIST)
     {
         window_size = cvRound(min_side * scale);
+        if(window_size == 0) {
+            window_size = 1;
+        }
         calCoherence(window_size);
         barcodeErode();
         regionGrowing(window_size);
