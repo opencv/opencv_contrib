@@ -242,8 +242,7 @@ void cv::cuda::warpAffine(InputArray _src, OutputArray _dst, InputArray _M, Size
 
     bool useNpp = borderMode == BORDER_CONSTANT && ofs.x == 0 && ofs.y == 0 && useNppTab[src.depth()][src.channels() - 1][interpolation];
     // NPP bug on float data
-    useNpp = useNpp && src.depth() != CV_32F;
-
+    useNpp = useNpp && src.depth() != CV_32F && StreamAccessor::getStream(stream) == nullptr;
     if (useNpp)
     {
         typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, double coeffs[][3], int flags, cudaStream_t stream);
