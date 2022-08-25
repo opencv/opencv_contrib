@@ -54,6 +54,10 @@ PARAM_TEST_CASE(CheckExtraData, cv::cuda::DeviceInfo, check_extra_data_params_t)
 {
 };
 
+PARAM_TEST_CASE(Scaling, cv::cuda::DeviceInfo, std::string, Size2f, Rect2f, Rect2f)
+{
+};
+
 PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -175,6 +179,47 @@ CUDA_TEST_P(CheckKeyFrame, Reader)
                 break;
         }
     }
+}
+
+CUDA_TEST_P(Scaling, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    const Size2f targetSzIn = GET_PARAM(2);
+    const Rect2f srcRoiIn = GET_PARAM(3);
+    const Rect2f targetRoiIn = GET_PARAM(4);
+
+    GpuMat frameOr;
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> readerGs = cv::cudacodec::createVideoReader(inputFile);
+        readerGs->set(cudacodec::ColorFormat::GRAY);
+        ASSERT_TRUE(readerGs->nextFrame(frameOr));
+    }
+
+    cudacodec::VideoReaderInitParams params;
+    params.targetSz = Size(frameOr.cols * targetSzIn.width, frameOr.rows * targetSzIn.height);
+    params.srcRoi = Rect(frameOr.cols * srcRoiIn.x, frameOr.rows * srcRoiIn.y, frameOr.cols * srcRoiIn.width, frameOr.rows * srcRoiIn.height);
+    params.targetRoi = Rect(params.targetSz.width * targetRoiIn.x, params.targetSz.height * targetRoiIn.y, params.targetSz.width * targetRoiIn.width,
+        params.targetSz.height * targetRoiIn.height);
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
+    reader->set(cudacodec::ColorFormat::GRAY);
+    GpuMat frame;
+    ASSERT_TRUE(reader->nextFrame(frame));
+    const cudacodec::FormatInfo format = reader->format();
+    Size targetSzOut;
+    targetSzOut.width = params.targetSz.width - params.targetSz.width % 2; targetSzOut.height = params.targetSz.height - params.targetSz.height % 2;
+    Rect srcRoiOut, targetRoiOut;
+    srcRoiOut.x = params.srcRoi.x - params.srcRoi.x % 4; srcRoiOut.width = params.srcRoi.width - params.srcRoi.width % 4;
+    srcRoiOut.y = params.srcRoi.y - params.srcRoi.y % 2; srcRoiOut.height = params.srcRoi.height - params.srcRoi.height % 2;
+    targetRoiOut.x = params.targetRoi.x - params.targetRoi.x % 4; targetRoiOut.width = params.targetRoi.width - params.targetRoi.width % 4;
+    targetRoiOut.y = params.targetRoi.y - params.targetRoi.y % 2; targetRoiOut.height = params.targetRoi.height - params.targetRoi.height % 2;
+    ASSERT_TRUE(format.valid && format.targetSz == targetSzOut && format.srcRoi == srcRoiOut && format.targetRoi == targetRoiOut);
+    ASSERT_TRUE(frame.size() == targetSzOut);
+    GpuMat frameGs;
+    cv::cuda::resize(frameOr(srcRoiOut), frameGs, targetRoiOut.size(), 0, 0, INTER_AREA);
+    // assert on mean absolute error due to different resize algorithms
+    const double mae = cv::cuda::norm(frameGs, frame(targetRoiOut), NORM_L1)/frameGs.size().area();
+    ASSERT_LT(mae, 2.35);
 }
 
 CUDA_TEST_P(Video, Reader)
@@ -431,7 +476,14 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckSet, testing::Combine(
     ALL_DEVICES,
     testing::Values("highgui/video/big_buck_bunny.mp4")));
 
-#define VIDEO_SRC_R  "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+#define VIDEO_SRC_SCALING "highgui/video/big_buck_bunny.mp4"
+#define TARGET_SZ Size2f(1,1), Size2f(0.8,0.9), Size2f(2.3,1.8)
+#define SRC_ROI Rect2f(0,0,1,1), Rect2f(0.25,0.25,0.5,0.5)
+#define TARGET_ROI Rect2f(0,0,1,1), Rect2f(0.2,0.3,0.6,0.7)
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
+    ALL_DEVICES, testing::Values(VIDEO_SRC_SCALING), testing::Values(TARGET_SZ), testing::Values(SRC_ROI), testing::Values(TARGET_ROI)));
+
+#define VIDEO_SRC_R "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
     "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4", "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
     "cv/tracking/faceocc2/data/faceocc2.webm"

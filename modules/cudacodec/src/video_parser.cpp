@@ -120,10 +120,19 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
         newFormat.ulWidth = format->coded_width;
         newFormat.ulHeight = format->coded_height;
-        newFormat.width = format->coded_width;
-        newFormat.height = format->coded_height;
-        newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
         newFormat.fps = format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator);
+        newFormat.targetSz = thiz->videoDecoder_->getTargetSz();
+        newFormat.width = newFormat.targetSz.width ? newFormat.targetSz.width : format->coded_width;
+        newFormat.height = newFormat.targetSz.height ? newFormat.targetSz.height : format->coded_height;
+        newFormat.srcRoi = thiz->videoDecoder_->getSrcRoi();
+        if (newFormat.srcRoi.empty()) {
+            format->display_area.right = format->coded_width;
+            format->display_area.bottom = format->coded_height;
+            newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
+        }
+        else
+            newFormat.displayArea = newFormat.srcRoi;
+        newFormat.targetRoi = thiz->videoDecoder_->getTargetRoi();
         newFormat.ulNumDecodeSurfaces = min(!thiz->allowFrameDrop_ ? max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
             format->min_num_decode_surfaces * 2, 32);
         if (format->progressive_sequence)

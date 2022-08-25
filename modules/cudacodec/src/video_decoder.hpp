@@ -49,10 +49,17 @@ namespace cv { namespace cudacodec { namespace detail {
 class VideoDecoder
 {
 public:
-    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, CUcontext ctx, CUvideoctxlock lock) : ctx_(ctx), lock_(lock), decoder_(0)
+    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, cv::Size targetSz, cv::Rect srcRoi, cv::Rect targetRoi, CUcontext ctx, CUvideoctxlock lock) :
+        ctx_(ctx), lock_(lock), decoder_(0)
     {
         videoFormat_.codec = codec;
         videoFormat_.ulNumDecodeSurfaces = minNumDecodeSurfaces;
+        // alignment enforced by nvcuvid, likely due to chroma subsampling
+        videoFormat_.targetSz.width = targetSz.width - targetSz.width % 2; videoFormat_.targetSz.height = targetSz.height - targetSz.height % 2;
+        videoFormat_.srcRoi.x = srcRoi.x - srcRoi.x % 4; videoFormat_.srcRoi.width = srcRoi.width - srcRoi.width % 4;
+        videoFormat_.srcRoi.y = srcRoi.y - srcRoi.y % 2; videoFormat_.srcRoi.height = srcRoi.height - srcRoi.height % 2;
+        videoFormat_.targetRoi.x = targetRoi.x - targetRoi.x % 4; videoFormat_.targetRoi.width = targetRoi.width - targetRoi.width % 4;
+        videoFormat_.targetRoi.y = targetRoi.y - targetRoi.y % 2; videoFormat_.targetRoi.height = targetRoi.height - targetRoi.height % 2;
     }
 
     ~VideoDecoder()
@@ -66,6 +73,9 @@ public:
     // Get the code-type currently used.
     cudaVideoCodec codec() const { return static_cast<cudaVideoCodec>(videoFormat_.codec); }
     int nDecodeSurfaces() const { return videoFormat_.ulNumDecodeSurfaces; }
+    cv::Size getTargetSz() const { return videoFormat_.targetSz; }
+    cv::Rect getSrcRoi() const { return videoFormat_.srcRoi; }
+    cv::Rect getTargetRoi() const { return videoFormat_.targetRoi; }
 
     unsigned long frameWidth() const { return videoFormat_.ulWidth; }
     unsigned long frameHeight() const { return videoFormat_.ulHeight; }
@@ -89,7 +99,7 @@ public:
 
         cuSafeCall( cuvidMapVideoFrame(decoder_, picIdx, &ptr, &pitch, &videoProcParams) );
 
-        return cuda::GpuMat(frameHeight() * 3 / 2, frameWidth(), CV_8UC1, (void*) ptr, pitch);
+        return cuda::GpuMat(targetHeight() * 3 / 2, targetWidth(), CV_8UC1, (void*) ptr, pitch);
     }
 
     void unmapFrame(cuda::GpuMat& frame)
