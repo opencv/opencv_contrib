@@ -14,7 +14,7 @@ namespace zxing {
 
 Reader::~Reader() {}
 
-Ref<Result> Reader::decode(Ref<BinaryBitmap> image) { return decode(image, DecodeHints()); }
+vector<Ref<Result>> Reader::decode(Ref<BinaryBitmap> image) { return decode(image, DecodeHints()); }
 
 unsigned int Reader::getDecodeID() { return 0; }
 

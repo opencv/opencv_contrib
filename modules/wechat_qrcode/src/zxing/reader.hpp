@@ -23,8 +23,8 @@ protected:
     Reader() {}
 
 public:
-    virtual Ref<Result> decode(Ref<BinaryBitmap> image);
-    virtual Ref<Result> decode(Ref<BinaryBitmap> image, DecodeHints hints) = 0;
+    virtual vector<Ref<Result>> decode(Ref<BinaryBitmap> image);
+    virtual vector<Ref<Result>> decode(Ref<BinaryBitmap> image, DecodeHints hints) = 0;
 
     virtual ~Reader();
     virtual string name();

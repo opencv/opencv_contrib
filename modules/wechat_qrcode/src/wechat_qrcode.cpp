@@ -130,13 +130,13 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
         for (auto cur_scale : scale_list) {
             Mat scaled_img =
                 super_resolution_model_->processImageScale(cropped_img, cur_scale, use_nn_sr_);
-            string result;
+            
             DecoderMgr decodemgr;
-            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, result);
+            vector<Mat> zxing_points;
+            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, decode_results, zxing_points);
 
-            if (ret == 0) {
-                decode_results.push_back(result);
-                points.push_back(point);
+            if (ret == 0 && use_nn_detector_==0) {
+                points = zxing_points;
                 break;
             }
         }

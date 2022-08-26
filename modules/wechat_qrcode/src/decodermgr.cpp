@@ -18,7 +18,7 @@ using zxing::Result;
 using zxing::UnicomBlock;
 namespace cv {
 namespace wechat_qrcode {
-int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result) {
+int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, vector<string>& results, vector<Mat>& zxing_points) {
     int width = src.cols;
     int height = src.rows;
     if (width <= 20 || height <= 20)
@@ -28,7 +28,7 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result) {
     zxing::ArrayRef<uint8_t> scaled_img_zx =
         zxing::ArrayRef<uint8_t>(new zxing::Array<uint8_t>(scaled_img_data));
 
-    zxing::Ref<zxing::Result> zx_result;
+    vector<zxing::Ref<zxing::Result>> zx_results;
 
     decode_hints_.setUseNNDetector(use_nn_detector);
 
@@ -43,9 +43,22 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result) {
         } else {
             source->reset(scaled_img_zx.data(), width, height);
         }
-        int ret = TryDecode(source, zx_result);
+        int ret = TryDecode(source, zx_results);
         if (!ret) {
-            result = zx_result->getText()->getText();
+            for(unsigned int i=0; i<zx_results.size(); i++){
+                results.push_back(zx_results[i]->getText()->getText());
+                auto tmp_point = Mat(4, 2, CV_32FC1);
+                auto tmp_zx_points = zx_results[i]->getResultPoints();
+                tmp_point.at<float>(0, 0) = tmp_zx_points[0]->getX();
+                tmp_point.at<float>(0, 1) = tmp_zx_points[0]->getY();
+                tmp_point.at<float>(1, 0) = tmp_zx_points[1]->getX();
+                tmp_point.at<float>(1, 1) = tmp_zx_points[1]->getY();
+                tmp_point.at<float>(2, 0) = tmp_zx_points[2]->getX();
+                tmp_point.at<float>(2, 1) = tmp_zx_points[2]->getY();
+                tmp_point.at<float>(3, 0) = tmp_zx_points[3]->getX();
+                tmp_point.at<float>(3, 1) = tmp_zx_points[3]->getY();
+                zxing_points.push_back(tmp_point);
+            }
             return ret;
         }
         // try different binarizers
@@ -54,7 +67,7 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, string& result) {
     return -1;
 }
 
-int DecoderMgr::TryDecode(Ref<LuminanceSource> source, Ref<Result>& result) {
+int DecoderMgr::TryDecode(Ref<LuminanceSource> source, vector<Ref<Result>>& results) {
     int res = -1;
     string cell_result;
 
@@ -63,17 +76,17 @@ int DecoderMgr::TryDecode(Ref<LuminanceSource> source, Ref<Result>& result) {
     zxing::Ref<zxing::BinaryBitmap> binary_bitmap(new BinaryBitmap(binarizer));
     binary_bitmap->m_poUnicomBlock = qbarUicomBlock_;
 
-    result = Decode(binary_bitmap, decode_hints_);
-    res = (result == NULL) ? 1 : 0;
+    results = Decode(binary_bitmap, decode_hints_);
+    res = (results.size() == 0) ? 1 : 0;
 
     if (res == 0) {
-        result->setBinaryMethod(int(binarizer_mgr_.GetCurBinarizer()));
+        results[0]->setBinaryMethod(int(binarizer_mgr_.GetCurBinarizer()));
     }
 
     return res;
 }
 
-Ref<Result> DecoderMgr::Decode(Ref<BinaryBitmap> image, DecodeHints hints) {
+vector<Ref<Result>> DecoderMgr::Decode(Ref<BinaryBitmap> image, DecodeHints hints) {
     return reader_->decode(image, hints);
 }
 }  // namespace wechat_qrcode
