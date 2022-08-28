@@ -411,7 +411,7 @@ void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& ke
 {
   if( image.data == NULL )
   {
-    std::cout << "Error: input image for detection is empty" << std::endl;
+    std::cerr << "Error: input image for detection is empty" << std::endl;
     return;
   }
 
@@ -428,7 +428,7 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
 
   if( images.size() == 0 )
   {
-    std::cout << "Error: input image for detection is empty" << std::endl;
+    std::cerr << "Error: input image for detection is empty" << std::endl;
     return;
   }
 
@@ -557,7 +557,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   /* keypoints list can't be empty */
   if( keylines.size() == 0 )
   {
-    std::cout << "Error: keypoint list is empty" << std::endl;
+    std::cerr << "Error: keypoint list is empty" << std::endl;
     return;
   }
 
@@ -1520,7 +1520,7 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
   }
   if( anchorsSize > edgePixelArraySize )
   {
-    std::cout << "anchor size is larger than its maximal size. anchorsSize=" << anchorsSize << ", maximal size = " << edgePixelArraySize << std::endl;
+    std::cerr << "anchor size is larger than its maximal size. anchorsSize=" << anchorsSize << ", maximal size = " << edgePixelArraySize << std::endl;
     return -1;
   }
 
@@ -2180,19 +2180,19 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
   pSecondPartEdgeS_[offsetPS] = offsetPSecond;
   if( offsetPS > maxNumOfEdge )
   {
-    std::cout << "Edge drawing Error: The total number of edges is larger than MaxNumOfEdge, "
+    std::cerr << "Edge drawing Error: The total number of edges is larger than MaxNumOfEdge, "
         "numofedge = " << offsetPS << ", MaxNumOfEdge=" << maxNumOfEdge << std::endl;
     return -1;
   }
   if( offsetPFirst > edgePixelArraySize || offsetPSecond > edgePixelArraySize )
   {
-    std::cout << "Edge drawing Error: The total number of edge pixels is larger than MaxNumOfEdgePixels, "
+    std::cerr << "Edge drawing Error: The total number of edge pixels is larger than MaxNumOfEdgePixels, "
         "numofedgePixel1 = " << offsetPFirst << ",  numofedgePixel2 = " << offsetPSecond << ", MaxNumOfEdgePixel=" << edgePixelArraySize << std::endl;
     return -1;
   }
   if( !(offsetPFirst && offsetPSecond) )
   {
-      std::cout << "Edge drawing Error: lines not found" << std::endl;
+      std::cerr << "Edge drawing Error: lines not found" << std::endl;
       return -1;
   }
 
@@ -2242,7 +2242,7 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
   EdgeChains edges;
   if( ( EdgeDrawing( image, edges ) ) != 1 )
   {
-    std::cout << "Line Detection not finished" << std::endl;
+    std::cerr << "Line Detection not finished" << std::endl;
     return -1;
   }
 
@@ -2569,13 +2569,13 @@ double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCo
   int newLength = offsetE - newOffsetS;
   if( length <= 0 || newLength <= 0 )
   {
-    std::cout << "EDLineDetector::LeastSquaresLineFit_ Error:"
+    std::cerr << "EDLineDetector::LeastSquaresLineFit_ Error:"
         " the expected line index is wrong...offsetE = " << offsetE << ", offsetS=" << offsetS << ", newOffsetS=" << newOffsetS << std::endl;
     return -1;
   }
   if( lineEquation.size() != 2 )
   {
-    std::cout << "SHOULD NOT BE != 2" << std::endl;
+    std::cerr << "SHOULD NOT BE != 2" << std::endl;
   }
   cv::Mat_<float> matT( 2, newLength );
   cv::Mat_<float> vec( newLength, 1 );

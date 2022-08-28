@@ -53,7 +53,7 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
 
   if(img1.type() != img2.type())
   {
-    std::cout << "Input images have different types" << std::endl;
+    std::cerr << "Input images have different types" << std::endl;
     CV_Assert(img1.type() == img2.type());
   }
 
