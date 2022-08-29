@@ -1,4 +1,8 @@
-#ifdef HAVE_OPENCV_AUG
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+#ifndef OPENCV_AUG_MISC_PYTHON_HPP
+#define OPENCV_AUG_MISC_PYTHON_HPP
 typedef std::vector<cv::Ptr<cv::imgaug::Transform> > vector_Ptr_Transform;
 typedef std::vector<cv::Ptr<cv::imgaug::det::Transform> > vector_Ptr_imgaug_det_Transform;
 

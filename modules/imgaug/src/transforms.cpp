@@ -1,3 +1,6 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "precomp.hpp"
 #include <opencv2/highgui.hpp>
 #include <iostream>
@@ -12,7 +15,6 @@ namespace cv{
         static void getRandomAffineParams(const Size& size, const Vec2f& degrees, const Vec2f& translations, const Vec2f& scales, const Vec4f& shears, float* angle, float* translation_x, float* translation_y, float* scale, float* shear_x, float* shear_y);
         static void getAffineMatrix(Mat mat, float angle, float tx, float ty, float scale, float shear_x, float shear_y, int cx, int cy);
 
-        // NOTE: cv::randomCrop or randomCrop?
         void randomCrop(InputArray _src, OutputArray _dst, const Size& sz, const Vec4i& padding, bool pad_if_need, int fill, int padding_mode){
             // FIXME: whether the size of src should be (src.cols+left+right, src.rows+top+bottom)
 
@@ -36,39 +38,14 @@ namespace cv{
 
             int x, y;
             getRandomCropParams(src.rows, src.cols, sz.height, sz.width, &x, &y);
-            // FIXME: for test only
-            std::cout << x << " " << y << std::endl;
+
             Mat RoI(src, Rect(x, y, sz.width, sz.height));
             RoI.copyTo(_dst);
-            // inplace operation
+
             // NOTE: inplace operation not works in converting from python to numpy
-//        _dst.move(RoI);
+            // _dst.move(RoI);
         }
 
-//    CV_EXPORTS_W void randomCropV1(InputOutputArray _src, const Size& sz, const Vec4i& padding, bool pad_if_need, int fill, int padding_mode){
-//        Mat src = _src.getMat();
-//
-//        if(padding != Vec4i()){
-//            copyMakeBorder(src, src, padding[0], padding[1], padding[2], padding[3], padding_mode, fill);
-//        }
-//
-//        // NOTE: make sure src.rows == src.size().height and src.cols = src.size().width
-//        // pad the height if needed
-//        if(pad_if_need && src.rows < sz.height){
-//            Vec4i _padding = {sz.height - src.rows, sz.height - src.rows, 0, 0};
-//            copyMakeBorder(src, src, _padding[0], _padding[1], _padding[2], _padding[3], padding_mode, fill);
-//        }
-//        // pad the width if needed
-//        if(pad_if_need && src.cols < sz.width){
-//            Vec4i _padding = {0, 0, sz.width - src.cols, sz.width - src.cols};
-//            copyMakeBorder(src, src, _padding[0], _padding[1], _padding[2], _padding[3], padding_mode, fill);
-//        }
-//
-//        int x, y;
-//        getRandomCropParams(src.rows, src.cols, sz.height, sz.width, &x, &y);
-//        Mat cropped(src, Rect(x, y, sz.width, sz.height));
-//        (*(Mat*)_src.getObj()) = cropped;
-//    }
 
         static void getRandomCropParams(int h, int w, int th, int tw, int* x, int* y){
             if(h+1 < th || w+1 < tw){
@@ -79,11 +56,7 @@ namespace cv{
                 (*y) = 0;
                 return;
             }
-//        time_t t;
-//        srand((unsigned)time(&t));
-//        (*x) = static_cast<int> (rand() / static_cast<float> (RAND_MAX) * (w-tw+1));
-//        (*y) = static_cast<int> (rand()/ static_cast<float> (RAND_MAX) * (h-th+1));
-//        RNG rng = RNG(getTickCount());
+
             (*x) = rng.uniform(0, w-tw+1);
             (*y) = rng.uniform(0, h-th+1);
 
@@ -108,8 +81,6 @@ namespace cv{
              * -1 is flip bott horizontally and vertically
              */
 
-            // initialize RNG with seed of current tick count
-//        RNG rng = RNG(getTickCount());
             bool flag = rng.uniform(0., 1.) < p;
 
             Mat src = _src.getMat();
@@ -212,9 +183,6 @@ namespace cv{
         static void getRandomResizedCropParams(int height, int width, const Vec2d& scale, const Vec2d& ratio, Rect& rect) {
             int area = height * width;
 
-            // initialize random value generator
-//        RNG rng = RNG(getTickCount());
-
             for (int i = 0; i < 10; i++) {
                 double target_area = rng.uniform(scale[0], scale[1]) * area;
                 double aspect_ratio = rng.uniform(ratio[0], ratio[1]);
@@ -262,8 +230,6 @@ namespace cv{
 
         void colorJitter(InputArray _src, OutputArray _dst, const Vec2d& brightness, const Vec2d& contrast, const Vec2d& saturation, const Vec2d& hue){
             // TODO: check input values
-//        RNG rng = RNG(getTickCount());
-
             Mat src = _src.getMat();
 
             double brightness_factor, contrast_factor, saturation_factor, hue_factor;
@@ -282,13 +248,13 @@ namespace cv{
 
             for(int i : order){
                 if(i == 1 && brightness != Vec2d())
-                    adjust_brightness(src, brightness_factor);
+                    cv::adjustBrightness(src, brightness_factor);
                 if(i == 2 && contrast != Vec2d())
-                    adjust_contrast(src, contrast_factor);
+                    cv::adjustContrast(src, contrast_factor);
                 if(i == 3 && saturation != Vec2d())
-                    adjust_saturation(src, saturation_factor);
+                    cv::adjustSaturation(src, saturation_factor);
                 if(i == 4 && hue != Vec2d())
-                    adjust_hue(src, hue_factor);
+                    cv::adjustHue(src, hue_factor);
             }
 
             _dst.move(src);
@@ -305,20 +271,21 @@ namespace cv{
             colorJitter(src, dst, brightness, contrast, saturation, hue);
         }
 
-        void randomRotation(InputArray _src, OutputArray _dst, const Vec2d& degrees, int interpolation, bool expand, const Point2f& center, int fill){
+        void randomRotation(InputArray _src, OutputArray _dst, const Vec2d& degrees, int interpolation, bool expand, const Point2f& center, const Scalar& fill){
             Mat src = _src.getMat();
-//        RNG rng = RNG(getTickCount());
             // TODO: check the validation of degrees
             double angle = rng.uniform(degrees[0], degrees[1]);
 
             Point2f pt(src.cols/2., src.rows/2.);
-            if(center == Point2f()) pt = center;
+            if(center != Point2f()) pt = center;
+
             Mat r = getRotationMatrix2D(pt, angle, 1.0);
+
             // TODO: auto expand dst size to fit the rotated image
-            warpAffine(src, _dst, r, Size(src.cols, src.rows), interpolation, BORDER_CONSTANT, fill);
+            warpAffine(src, _dst, r, src.size(), interpolation, BORDER_CONSTANT, fill);
         }
 
-        RandomRotation::RandomRotation(const Vec2d& degrees, int interpolation, bool expand, const Point2f& center, int fill):
+        RandomRotation::RandomRotation(const Vec2d& degrees, int interpolation, bool expand, const Point2f& center, const Scalar& fill):
                 degrees(degrees),
                 interpolation(interpolation),
                 expand(expand),
@@ -349,7 +316,6 @@ namespace cv{
         }
 
         void randomGrayScale(InputArray _src, OutputArray _dst, double p){
-//        RNG rng = RNG(getTickCount());
             if(rng.uniform(0.0, 1.0) < p){
                 grayScale(_src, _dst, _src.channels());
                 return;
@@ -368,7 +334,6 @@ namespace cv{
         void randomErasing(InputArray _src, OutputArray _dst, double p, const Vec2d& scale, const Vec2d& ratio, const Scalar& value, bool inplace){
             // TODO: check the range of input values
             // TODO: currently inplace takes no effect
-//        RNG rng = RNG(getTickCount());
             Mat src = _src.getMat();
             if(rng.uniform(0., 1.) >= p){
                 _dst.move(src);
@@ -398,9 +363,6 @@ namespace cv{
 
         static void getRandomErasingCropParams(int height, int width, const Vec2d& scale, const Vec2d& ratio, Rect& rect) {
             int area = height * width;
-
-            // initialize random value generator
-//        RNG rng = RNG(getTickCount());
 
             for (int i = 0; i < 10; i++) {
                 double target_area = rng.uniform(scale[0], scale[1]) * area;
@@ -453,35 +415,38 @@ namespace cv{
                 std(std){};
 
         void Normalize::call(InputArray _src, OutputArray _dst) const{
-
             Mat src = _src.getMat();
+//            cvtColor(src, src, COLOR_BGR2RGB);
+
+            _dst.create(src.size(), CV_32FC3);
+            Mat dst = _dst.getMat();
+
             int cn = src.channels();
             std::vector<Mat> channels;
             split(src, channels);
 
             // normalize each channel to 0-1 first
             for(int i=0; i<cn; i++){
-                Mat dst;
-                normalize(channels[i], dst, 0, 1, NORM_MINMAX, CV_32F);
-                dst = (dst - mean[i])/std[i];
-                channels[i] = dst;
+                Mat temp;
+                channels[i].convertTo(temp, CV_32FC1, 1.f/255);
+                temp = (temp - mean[i])/std[i];
+                channels[i] = temp;
             }
 
-            merge(channels, _dst);
-
+            merge(channels, dst);
+//            cvtColor(dst, dst, COLOR_RGB2BGR);
         }
 
         void gaussianBlur(InputArray src, OutputArray dst, const Size& kernel_size, const Vec2f& sigma){
-//        RNG rng = RNG(getTickCount());
             float sigmaX = rng.uniform(sigma[0], sigma[1]);
-            GaussianBlur(src, dst, kernel_size, sigmaX);
+            cv::GaussianBlur(src, dst, kernel_size, sigmaX);
         }
 
-        GaussianBlurAug::GaussianBlurAug(const Size &kernel_size, const Vec2f &sigma):
+        GaussianBlur::GaussianBlur(const Size &kernel_size, const Vec2f &sigma):
                 kernel_size(kernel_size),
                 sigma(sigma){};
 
-        void GaussianBlurAug::call(InputArray src, OutputArray dst) const{
+        void GaussianBlur::call(InputArray src, OutputArray dst) const{
             gaussianBlur(src, dst, kernel_size, sigma);
         }
 

@@ -1,13 +1,17 @@
-//
-// Created by Chuyang Zhao on 2022/8/9.
-//
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #ifndef OPENCV_TRANSFORMS_DET_HPP
 #define OPENCV_TRANSFORMS_DET_HPP
+
 
 namespace cv{
     namespace imgaug{
         namespace det{
+
+            //! @addtogroup det
+            //! @{
+
             class CV_EXPORTS_W Transform{
             public:
                 CV_WRAP virtual void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& target) const = 0;
@@ -61,9 +65,9 @@ namespace cv{
 
                 int code;
             };
+            //! @}
         }
     }
-
 }
 
 #endif //OPENCV_TRANSFORMS_DET_HPP

@@ -1,15 +1,15 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #ifndef OPENCV_AUG_FUNCTIONAL_HPP
 #define OPENCV_AUG_FUNCTIONAL_HPP
 #include <opencv2/core.hpp>
 #include <vector>
 
 namespace cv {
-
-//    void blend(Mat& img1, Mat& img2, float ratio){
-//
-//    }
-
-    static void adjust_brightness(Mat& img, double brightness_factor){
+    //! @addtogroup imgaug
+    //! @{
+    static void adjustBrightness(Mat& img, double brightness_factor){
         CV_Assert(brightness_factor >= 0);
 
         int channels = img.channels();
@@ -17,17 +17,9 @@ namespace cv {
             CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
         }
         img = img * brightness_factor;
-        // NOTE: Can substitute for-loop with matrix multiplication for better efficiency?
-//        int nc = channels * img.cols;
-//        for(int j=0; j<img.rows; j++){
-//            uchar* data = img.ptr<uchar>(j);
-//            for(int i=0; i<nc; i++){
-//                data[i] = static_cast<uchar>( data[i] * brightness_factor);
-//            }
-//        }
     }
 
-    static void adjust_contrast(Mat& img, double contrast_factor){
+    static void adjustContrast(Mat& img, double contrast_factor){
 
         CV_Assert(contrast_factor >= 0);
 
@@ -48,7 +40,7 @@ namespace cv {
         merge(new_channels, img);
     }
 
-    static void adjust_saturation(Mat& img, double saturation_factor){
+    static void adjustSaturation(Mat& img, double saturation_factor){
         CV_Assert(saturation_factor >= 0);
 
         int num_channels = img.channels();
@@ -63,7 +55,7 @@ namespace cv {
         img = saturation_factor * img + (1-saturation_factor) * gray;
     }
 
-    static void adjust_hue(Mat& img, double hue_factor) {
+    static void adjustHue(Mat& img, double hue_factor) {
         // FIXME: the range of hue_factor needs to be modified
         CV_Assert(hue_factor >= 0);
 
@@ -88,6 +80,7 @@ namespace cv {
         }
         cvtColor(hsv, img, COLOR_HSV2BGR);
     }
+    //! @}
 };
 
 #endif

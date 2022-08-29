@@ -71,7 +71,7 @@ def train(dataloader, model, num_epochs, criterion, optimizer):
 
 
 def main():
-    root_dir = "imagenette2-320"
+    root_dir = "/Users/chuyang/Downloads/imagenette2-320"
     df_train = pd.read_csv(os.path.join(root_dir, "noisy_imagenette.csv"))
     print('load %d records' % len(df_train))
 

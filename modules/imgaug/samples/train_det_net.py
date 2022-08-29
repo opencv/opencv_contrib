@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="PennFudanPed")
+    parser.add_argument("--root", type=str, default="/Users/bytedance/Downloads/PennFudanPed")
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--backend", type=str, default="cv2")
 
