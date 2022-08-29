@@ -1,5 +1,5 @@
 set(the_description "WeChat QR code Detector")
-ocv_define_module(wechat_qrcode opencv_core opencv_imgproc opencv_dnn WRAP java objc python js)
+ocv_define_module(wechat_qrcode opencv_core opencv_imgproc opencv_objdetect opencv_dnn WRAP java objc python js)
 
 # iconv support isn't automatic on some systems
 if(CMAKE_VERSION VERSION_GREATER "3.11")
