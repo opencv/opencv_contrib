@@ -72,7 +72,9 @@ Codec FourccToCodec(int codec)
     switch (codec)
     {
     case CV_FOURCC_MACRO('m', 'p', 'e', 'g'): // fallthru
+    case CV_FOURCC_MACRO('m', 'p', 'g', '1'): // fallthru
     case CV_FOURCC_MACRO('M', 'P', 'G', '1'): return MPEG1;
+    case CV_FOURCC_MACRO('m', 'p', 'g', '2'): // fallthru
     case CV_FOURCC_MACRO('M', 'P', 'G', '2'): return MPEG2;
     case CV_FOURCC_MACRO('X', 'V', 'I', 'D'): // fallthru
     case CV_FOURCC_MACRO('m', 'p', '4', 'v'): // fallthru
@@ -85,8 +87,18 @@ Codec FourccToCodec(int codec)
     case CV_FOURCC_MACRO('h', '2', '6', '5'): // fallthru
     case CV_FOURCC_MACRO('h', 'e', 'v', 'c'): return HEVC;
     case CV_FOURCC_MACRO('M', 'J', 'P', 'G'): return JPEG;
-    case CV_FOURCC_MACRO('V', 'P', '8', '0'): return VP8;
-    case CV_FOURCC_MACRO('V', 'P', '9', '0'): return VP9;
+    case CV_FOURCC_MACRO('v', 'p', '8', '0'): // fallthru
+    case CV_FOURCC_MACRO('V', 'P', '8', '0'): // fallthru
+    case CV_FOURCC_MACRO('v', 'p', '0', '8'): // fallthru
+    case CV_FOURCC_MACRO('V', 'P', '0', '8'): return VP8;
+    case CV_FOURCC_MACRO('v', 'p', '9', '0'): // fallthru
+    case CV_FOURCC_MACRO('V', 'P', '9', '0'): // fallthru
+    case CV_FOURCC_MACRO('V', 'P', '0', '9'): // fallthru
+    case CV_FOURCC_MACRO('v', 'p', '0', '9'): return VP9;
+    case CV_FOURCC_MACRO('a', 'v', '1', '0'): // fallthru
+    case CV_FOURCC_MACRO('A', 'V', '1', '0'): // fallthru
+    case CV_FOURCC_MACRO('a', 'v', '0', '1'): // fallthru
+    case CV_FOURCC_MACRO('A', 'V', '0', '1'): return AV1;
     default:
         break;
     }

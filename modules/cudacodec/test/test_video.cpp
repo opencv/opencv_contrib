@@ -185,6 +185,11 @@ CUDA_TEST_P(Video, Reader)
     if (GET_PARAM(1) == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
         throw SkipTestException("FFmpeg backend not found");
 
+#ifdef _WIN32  // handle old FFmpeg backend
+    if (GET_PARAM(1) == "/cv/tracking/faceocc2/data/faceocc2.webm")
+        throw SkipTestException("Feature not yet supported by Windows FFmpeg shared library!");
+#endif
+
     const std::vector<std::pair< cudacodec::ColorFormat, int>> formatsToChannels = {
         {cudacodec::ColorFormat::GRAY,1},
         {cudacodec::ColorFormat::BGR,3},
@@ -196,7 +201,7 @@ CUDA_TEST_P(Video, Reader)
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
     cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
-    for (int i = 0; i < 100; i++)
+    for (int i = 0; i < 10; i++)
     {
         // request a different colour format for each frame
         const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
@@ -426,8 +431,10 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckSet, testing::Combine(
     ALL_DEVICES,
     testing::Values("highgui/video/big_buck_bunny.mp4")));
 
-#define VIDEO_SRC_R "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
-    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg"
+#define VIDEO_SRC_R  "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
+    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4", "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
+    "cv/tracking/faceocc2/data/faceocc2.webm"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
     testing::Values(VIDEO_SRC_R)));
