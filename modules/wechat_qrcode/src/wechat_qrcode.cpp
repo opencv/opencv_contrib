@@ -131,8 +131,8 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
     vector<string> decode_results;
     for (auto& point : candidate_points) {
         Mat cropped_img;
+        Align aligner;
         if (use_nn_detector_) {
-            Align aligner;
             cropped_img = cropObj(img, point, aligner);
         } else {
             cropped_img = img;
@@ -144,9 +144,19 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
                 super_resolution_model_->processImageScale(cropped_img, cur_scale, use_nn_sr_);
             string result;
             DecoderMgr decodemgr;
-            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, result);
-
+            vector<Point2f> points_qr;
+            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, result, points_qr);
             if (ret == 0) {
+                for (auto&& pt: points_qr) {
+                    pt /= cur_scale;
+                }
+
+                if (use_nn_detector_)
+                    points_qr = aligner.warpBack(points_qr);
+                for (int i = 0; i < 4; ++i) {
+                    point.at<float>(i, 0) = points_qr[i].x;
+                    point.at<float>(i, 1) = points_qr[i].y;
+                }
                 decode_results.push_back(result);
                 points.push_back(point);
                 break;
