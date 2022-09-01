@@ -73,32 +73,28 @@ void unique(const std::vector<T> &A, std::vector<T> &U)
             U.push_back(Tm[i]);
 }
 
-template <typename T>
-void polyanticlockwise(std::vector<T> &points)
+void polyanticlockwise(std::vector<cv::Point2f> &points)
 {
     // Sort the points in anti-clockwise order
     // Trace a line between the first and second point.
     // If the third point is at the right side, then the points are anti-clockwise
-    T v1 = points[1] - points[0];
-    T v2 = points[2] - points[0];
+    cv::Point2f v1 = points[1] - points[0];
+    cv::Point2f v2 = points[2] - points[0];
 
-    double o = ((double)v1.x * v2.y) - ((double)v1.y * v2.x);
-
-    if (o < 0.0) //if the third point is in the left side, then sort in anti-clockwise order
+    //if the third point is in the left side, then sort in anti-clockwise order
+    if ((v1.x * v2.y) - (v1.y * v2.x) < 0.0)
         std::swap(points[1], points[3]);
 }
-template <typename T>
-void polyclockwise(std::vector<T> &points)
+void polyclockwise(std::vector<cv::Point2f> &points)
 {
     // Sort the points in clockwise order
     // Trace a line between the first and second point.
     // If the third point is at the right side, then the points are clockwise
-    T v1 = points[1] - points[0];
-    T v2 = points[2] - points[0];
+    cv::Point2f v1 = points[1] - points[0];
+    cv::Point2f v2 = points[2] - points[0];
 
-    double o = ((double)v1.x * v2.y) - ((double)v1.y * v2.x);
-
-    if (o > 0.0) //if the third point is in the left side, then sort in clockwise order
+    //if the third point is in the left side, then sort in clockwise order
+    if ((v1.x * v2.y) - (v1.y * v2.x) > 0.0)
         std::swap(points[1], points[3]);
 }
 // Does lexical cast of the input argument to string
