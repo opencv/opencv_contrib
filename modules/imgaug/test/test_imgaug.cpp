@@ -324,10 +324,10 @@ TEST(Aug_Normalize, basic){
     string ref_path = findDataFile("imgaug/normalize_test_10.jpg");
     Mat ref = imread(ref_path);
     cv::imgaug::setSeed(15);
+    // Mean and std for ImageNet is [0.485, 0.456, 0.406], [0.229, 0.224, 0.225] in order of RGB.
+    // For order of BGR, they should be (0.406, 0.456, 0.485), (0.225, 0.224, 0.229)
     cv::imgaug::Normalize aug(Scalar(0.406, 0.456, 0.485), Scalar(0.225, 0.224, 0.229));
-
     aug.call(input, out);
-    cv::cvtColor(out, out, COLOR_RGB2BGR);
     out.convertTo(out, CV_8UC3, 255);
 
     if ( out.rows > 0 && out.rows == ref.rows && out.cols > 0 && out.cols == ref.cols ) {
@@ -343,4 +343,3 @@ TEST(Aug_Normalize, basic){
 
 
 }}
-

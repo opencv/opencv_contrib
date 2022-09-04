@@ -210,17 +210,21 @@ namespace cv{
         /** Initialize the ColorJitter class.
          *
          * @param brightness Specify the lower and upper bounds for the brightness factor.
-         * When brightness factor is larger, the augmented image is brighter. By default this function is disabled,
-         * you should pass non-zero tuple to enable this function.
+         * Brightness factor is >= 0. When brightness factor is 1, the brightness of the augmented image will not be changed.
+         * When brightness factor is larger, the augmented image is brighter.
+         * By default this function is disabled.
+         * You can also pass cv::Vec2d() to disable this function manually.
          * @param contrast Specify the lower and upper bounds for the contrast factor.
+         * Contrast factor is >= 0. When contrast factor is 1, the contrast of the augmented image will not be changed.
          * When contrast factor is larger, the contrast of the destination image is larger.
-         * By default this function is disabled, you should pass non-zero tuple to enable this function.
+         * By default this function is disabled. You can also pass cv::Vec2d() to disable this function manually.
          * @param saturation Specify the lower and upper bounds for the saturation factor.
+         * Saturation factor is >= 0. When saturation factor is 1, the saturation of the augmented image will not be changed.
          * When saturation factor is larger, the saturation of the destination image is larger.
-         * By default this function is disabled, you should pass non-zero tuple to enable this function.
+         * By default this function is disabled. You can also pass cv::Vec2d() to disable this function manually.
          * @param hue Specify the lower and upper bounds for the hue factor.
-         * When hue factor is larger, the hue of the destination image is larger.
-         * By default this function is disabled, you should pass non-zero tuple to enable this function.
+         * Hue factor should be in range of -1 to 1. When hue factor is 0, the hue of the augmented image will not be changed.
+         * By default this function is disabled. You can also pass cv::Vec2d() to disable this function manually.
          */
         CV_WRAP explicit ColorJitter(const Vec2d& brightness=Vec2d(), const Vec2d& contrast=Vec2d(), const Vec2d& saturation=Vec2d(), const Vec2d& hue=Vec2d());
 
@@ -426,7 +430,5 @@ namespace cv{
 
     }
 }
-
-
 
 #endif

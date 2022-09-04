@@ -57,7 +57,7 @@ namespace cv {
 
     static void adjustHue(Mat& img, double hue_factor) {
         // FIXME: the range of hue_factor needs to be modified
-        CV_Assert(hue_factor >= 0);
+        CV_Assert(hue_factor >= -1 && hue_factor <= 1);
 
         int num_channels = img.channels();
         if (num_channels != 1 && num_channels != 3) {
