@@ -170,7 +170,7 @@ class CV_ArucoRefine : public cvtest::BaseTest {
         params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
         if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3)
             params->useAruco3Detection = true;
-        Ptr<aruco::RefineParameters> refineParams = makePtr<aruco::RefineParameters>(10, 3., true);
+        Ptr<aruco::RefineParameters> refineParams = makePtr<aruco::RefineParameters>(10.f, 3.f, true);
         detector = aruco::ArucoDetector(dictionary, params, refineParams);
     }
 

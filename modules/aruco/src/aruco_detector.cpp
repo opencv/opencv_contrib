@@ -63,7 +63,7 @@ bool DetectorParameters::readDetectorParameters(const FileNode& fn) {
 
 bool DetectorParameters::writeDetectorParameters(const Ptr<FileStorage>& fs)
 {
-    if (fs.empty() && !fs->isOpened())
+    if (fs.empty() || !fs->isOpened())
         return false;
     return readWrite(*this, nullptr, fs);
 }
