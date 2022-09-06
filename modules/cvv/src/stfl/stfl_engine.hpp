@@ -773,7 +773,7 @@ private:
 		if (cmd == "group" || cmd == "sort")
 		{
 			int frontCut =
-			    std::min(qsizetype(hasByString ? 2 : 1), tokens.size());
+			    std::min(qsizetype(hasByString ? 2 : 1), qsizetype(tokens.size()));
 			tokens = cmdQuery.split(" ", Qt::SkipEmptyParts)
 			             .mid(frontCut, tokens.size());
 			QStringList args = tokens.join(" ").split(
