@@ -144,21 +144,23 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
                 super_resolution_model_->processImageScale(cropped_img, cur_scale, use_nn_sr_);
             string result;
             DecoderMgr decodemgr;
-            vector<Point2f> points_qr;
-            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, result, points_qr);
+            vector<vector<Point2f>> zxing_points;
+            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, decode_results, zxing_points);
             if (ret == 0) {
-                for (auto&& pt: points_qr) {
-                    pt /= cur_scale;
-                }
+                for(unsigned int i=0; i<zxing_points.size(); ++i){
+                    vector<Point2f> points_qr = zxing_points[i];
+                    for (auto&& pt: points_qr) {
+                        pt /= cur_scale;
+                    }
 
-                if (use_nn_detector_)
-                    points_qr = aligner.warpBack(points_qr);
-                for (int i = 0; i < 4; ++i) {
-                    point.at<float>(i, 0) = points_qr[i].x;
-                    point.at<float>(i, 1) = points_qr[i].y;
+                    if (use_nn_detector_)
+                        points_qr = aligner.warpBack(points_qr);
+                    for (int j = 0; j < 4; ++j) {
+                        point.at<float>(j, 0) = points_qr[j].x;
+                        point.at<float>(j, 1) = points_qr[j].y;
+                    }
+                    points.push_back(point);
                 }
-                decode_results.push_back(result);
-                points.push_back(point);
                 break;
             }
         }
