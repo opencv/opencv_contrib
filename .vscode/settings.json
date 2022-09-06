@@ -1,6 +1,0 @@
-{
-    "cquery.cacheDirectory": "${workspaceFolder}/.vscode/cquery_cached_index/",
-    "files.associations": {
-        "vector": "cpp"
-    }
-}
