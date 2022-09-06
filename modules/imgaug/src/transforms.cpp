@@ -62,12 +62,12 @@ namespace cv{
 
         }
 
-        RandomCrop::RandomCrop(const Size& sz, const Vec4i& padding, bool pad_if_need, int fill, int padding_mode):
-                sz (sz),
-                padding (padding),
-                pad_if_need (pad_if_need),
-                fill (fill),
-                padding_mode (padding_mode){};
+        RandomCrop::RandomCrop(const Size& _sz, const Vec4i& _padding, bool _pad_if_need, int _fill, int _padding_mode):
+                sz (_sz),
+                padding (_padding),
+                pad_if_need (_pad_if_need),
+                fill (_fill),
+                padding_mode (_padding_mode){};
 
         void RandomCrop::call(InputArray src, OutputArray dst) const{
             randomCrop(src, dst, sz, padding, pad_if_need, fill, padding_mode);
@@ -95,16 +95,16 @@ namespace cv{
             _dst.move(src);
         }
 
-        RandomFlip::RandomFlip(int flipCode, double p):
-                flipCode(flipCode),
-                p(p){};
+        RandomFlip::RandomFlip(int _flipCode, double _p):
+                flipCode(_flipCode),
+                p(_p){};
 
         void RandomFlip::call(InputArray src, OutputArray dst) const{
             randomFlip(src, dst);
         }
 
-        Compose::Compose(std::vector<Ptr<Transform> >& transforms):
-                transforms(transforms){};
+        Compose::Compose(std::vector<Ptr<Transform> >& _transforms):
+                transforms(_transforms){};
 
         void Compose::call(InputArray _src, OutputArray _dst) const{
             Mat src = _src.getMat();
@@ -115,9 +115,9 @@ namespace cv{
             src.copyTo(_dst);
         }
 
-        Resize::Resize(const Size& sz, int interpolation):
-                sz(sz),
-                interpolation(interpolation){};
+        Resize::Resize(const Size& _sz, int _interpolation):
+                sz(_sz),
+                interpolation(_interpolation){};
 
         void Resize::call(InputArray src, OutputArray dst) const{
             resize(src, dst, sz, 0, 0, interpolation);
@@ -152,17 +152,17 @@ namespace cv{
 
         }
 
-        CenterCrop::CenterCrop(const Size& size) :
-                size(size) {};
+        CenterCrop::CenterCrop(const Size& _size) :
+                size(_size) {};
 
         void CenterCrop::call(InputArray src, OutputArray dst) const {
             centerCrop(src, dst, size);
         }
 
-        Pad::Pad(const Vec4i& padding, const Scalar& fill, int padding_mode) :
-                padding(padding),
-                fill(fill),
-                padding_mode(padding_mode) {};
+        Pad::Pad(const Vec4i& _padding, const Scalar& _fill, int _padding_mode) :
+                padding(_padding),
+                fill(_fill),
+                padding_mode(_padding_mode) {};
 
         void Pad::call(InputArray src, OutputArray dst) const {
             copyMakeBorder(src, dst, padding[0], padding[1], padding[2], padding[3], padding_mode, fill);
@@ -218,11 +218,11 @@ namespace cv{
 
         }
 
-        RandomResizedCrop::RandomResizedCrop(const Size& size, const Vec2d& scale, const Vec2d& ratio, int interpolation) :
-                size(size),
-                scale(scale),
-                ratio(ratio),
-                interpolation(interpolation) {};
+        RandomResizedCrop::RandomResizedCrop(const Size& _size, const Vec2d& _scale, const Vec2d& _ratio, int _interpolation) :
+                size(_size),
+                scale(_scale),
+                ratio(_ratio),
+                interpolation(_interpolation) {};
 
         void RandomResizedCrop::call(InputArray src, OutputArray dst) const{
             randomResizedCrop(src, dst, size, scale, ratio, interpolation);
@@ -260,12 +260,12 @@ namespace cv{
             _dst.move(src);
         }
 
-        ColorJitter::ColorJitter(const Vec2d &brightness, const Vec2d &contrast, const Vec2d &saturation,
-                                 const Vec2d &hue):
-                brightness(brightness),
-                contrast(contrast),
-                saturation(saturation),
-                hue(hue){};
+        ColorJitter::ColorJitter(const Vec2d& _brightness, const Vec2d& _contrast, const Vec2d& _saturation,
+                                 const Vec2d& _hue):
+                brightness(_brightness),
+                contrast(_contrast),
+                saturation(_saturation),
+                hue(_hue){};
 
         void ColorJitter::call(InputArray src, OutputArray dst) const{
             colorJitter(src, dst, brightness, contrast, saturation, hue);
@@ -285,12 +285,12 @@ namespace cv{
             warpAffine(src, _dst, r, src.size(), interpolation, BORDER_CONSTANT, fill);
         }
 
-        RandomRotation::RandomRotation(const Vec2d& degrees, int interpolation, bool expand, const Point2f& center, const Scalar& fill):
-                degrees(degrees),
-                interpolation(interpolation),
-                expand(expand),
-                center(center),
-                fill(fill){};
+        RandomRotation::RandomRotation(const Vec2d& _degrees, int _interpolation, bool _expand, const Point2f& _center, const Scalar& _fill):
+                degrees(_degrees),
+                interpolation(_interpolation),
+                expand(_expand),
+                center(_center),
+                fill(_fill){};
 
         void RandomRotation::call(InputArray src, OutputArray dst) const{
             randomRotation(src, dst, degrees, interpolation, expand, center, fill);
@@ -308,8 +308,8 @@ namespace cv{
             merge(channels, 3, _dst);
         }
 
-        GrayScale::GrayScale(int num_channels):
-                num_channels(num_channels){};
+        GrayScale::GrayScale(int _num_channels):
+                num_channels(_num_channels){};
 
         void GrayScale::call(InputArray _src, OutputArray _dst) const{
             grayScale(_src, _dst, num_channels);
@@ -324,8 +324,8 @@ namespace cv{
             _dst.move(src);
         }
 
-        RandomGrayScale::RandomGrayScale(double p):
-                p(p){};
+        RandomGrayScale::RandomGrayScale(double _p):
+                p(_p){};
 
         void RandomGrayScale::call(InputArray src, OutputArray dst) const{
             randomGrayScale(src, dst);
@@ -398,21 +398,21 @@ namespace cv{
             rect.y = (height - rect.height) / 2;
         }
 
-        RandomErasing::RandomErasing(double p, const Vec2d &scale, const Vec2d &ratio, const Scalar &value, bool inplace):
-                p(p),
-                scale(scale),
-                ratio(ratio),
-                value(value),
-                inplace(inplace){};
+        RandomErasing::RandomErasing(double _p, const Vec2d& _scale, const Vec2d& _ratio, const Scalar& _value, bool _inplace):
+                p(_p),
+                scale(_scale),
+                ratio(_ratio),
+                value(_value),
+                inplace(_inplace){};
 
         void RandomErasing::call(InputArray src, OutputArray dst) const{
             randomErasing(src, dst, p, scale, ratio, value, inplace);
         }
 
         // NOTE: because Scalar contains 4 elements at most, normalize can only apply to image with channels no more than 4.
-        Normalize::Normalize(const Scalar &mean, const Scalar &std):
-                mean(mean),
-                std(std){};
+        Normalize::Normalize(const Scalar& _mean, const Scalar& _std):
+                mean(_mean),
+                std(_std){};
 
         void Normalize::call(InputArray _src, OutputArray _dst) const{
             Mat src = _src.getMat();
@@ -442,9 +442,9 @@ namespace cv{
             cv::GaussianBlur(src, dst, kernel_size, sigmaX);
         }
 
-        GaussianBlur::GaussianBlur(const Size &kernel_size, const Vec2f &sigma):
-                kernel_size(kernel_size),
-                sigma(sigma){};
+        GaussianBlur::GaussianBlur(const Size& _kernel_size, const Vec2f& _sigma):
+                kernel_size(_kernel_size),
+                sigma(_sigma){};
 
         void GaussianBlur::call(InputArray src, OutputArray dst) const{
             gaussianBlur(src, dst, kernel_size, sigma);
@@ -534,14 +534,14 @@ namespace cv{
 
         }
 
-        RandomAffine::RandomAffine(const Vec2f& degrees, const Vec2f& translations, const Vec2f& scales, const Vec4f& shears, int interpolation, const Scalar& fill, const Point2i& center):
-                degrees(degrees),
-                translations(translations),
-                scales(scales),
-                shears(shears),
-                interpolation(interpolation),
-                fill(fill),
-                center(center){};
+        RandomAffine::RandomAffine(const Vec2f& _degrees, const Vec2f& _translations, const Vec2f& _scales, const Vec4f& _shears, int _interpolation, const Scalar& _fill, const Point2i& _center):
+                degrees(_degrees),
+                translations(_translations),
+                scales(_scales),
+                shears(_shears),
+                interpolation(_interpolation),
+                fill(_fill),
+                center(_center){};
 
         void RandomAffine::call(InputArray src, OutputArray dst) const{
             randomAffine(src, dst, degrees, translations, scales, shears, interpolation, fill, center);

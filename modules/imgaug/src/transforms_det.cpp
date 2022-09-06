@@ -13,8 +13,8 @@ namespace cv{
             int clamp(int v, int lo, int hi);
             void rotate(int* x, int* y, int cx, int cy, double angle);
 
-            Compose::Compose(std::vector<Ptr<Transform> >& transforms):
-                    transforms(transforms){};
+            Compose::Compose(std::vector<Ptr<Transform> >& _transforms):
+                    transforms(_transforms){};
 
             void Compose::call(InputArray src, OutputArray dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
                 for(cv::imgaug::det::Transform* transform:transforms){
@@ -22,8 +22,8 @@ namespace cv{
                 }
             }
 
-            RandomFlip::RandomFlip(int flipCode, float p):
-                    flipCode(flipCode), p(p)
+            RandomFlip::RandomFlip(int _flipCode, float _p):
+                flipCode(_flipCode), p(_p)
             {
                 if(p < 0 || p > 1){
                     CV_Error(Error::Code::StsBadArg, "probability p must be between range 0 and 1");
@@ -51,7 +51,7 @@ namespace cv{
                  * flipCode > 0 (flip horizontally): (x', y') = (img.width - x - bbox.width, y)
                  * flipCode < 0 (flip diagonally): (x', y') = (img.width - x - bbox.width, img.height - y - bbox.height)
                  */
-                for(int i = 0; i < target.size(); i++){
+                for(unsigned i = 0; i < target.size(); i++){
                     if(flipCode == 0){
                         target[i].y = size.height - target[i].y - target[i].height;
                     }else if(flipCode > 0){
@@ -66,8 +66,8 @@ namespace cv{
 //        RandomCrop::RandomCrop(const Size& sz, const Vec4i& padding, bool pad_if_need, const Scalar& fill, int padding_mode):
 //        sz(sz), padding(padding), pad_if_need(pad_if_need), fill(fill), padding_mode(padding_mode){};
 
-            Resize::Resize(const Size& size, int interpolation):
-                    size(size), interpolation(interpolation){};
+            Resize::Resize(const Size& _size, int _interpolation):
+                    size(_size), interpolation(_interpolation){};
 
             void Resize::call(InputArray _src, OutputArray dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
                 Mat src = _src.getMat();
@@ -84,17 +84,17 @@ namespace cv{
                 }
             }
 
-            Convert::Convert(int code):
-                    code(code){};
+            Convert::Convert(int _code):
+                    code(_code){};
 
 
             void Convert::call(InputArray src, OutputArray dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
                 cvtColor(src, dst, code);
             }
 
-            RandomTranslation::RandomTranslation(const cv::Vec2i &translations, float threshold):
-                translations(translations),
-                threshold(threshold){};
+            RandomTranslation::RandomTranslation(const cv::Vec2i& _translations, float _threshold):
+                translations(_translations),
+                threshold(_threshold){};
 
 
             void RandomTranslation::call(cv::InputArray _src, cv::OutputArray _dst, std::vector<cv::Rect> &bboxes, std::vector<int>& labels) const {
@@ -135,9 +135,9 @@ namespace cv{
                 }
             }
 
-            RandomRotation::RandomRotation(const cv::Vec2d &angles, double threshold):
-                angles(angles),
-                threshold(threshold){};
+            RandomRotation::RandomRotation(const cv::Vec2d &_angles, double _threshold):
+                angles(_angles),
+                threshold(_threshold){};
 
             void RandomRotation::call(cv::InputArray _src, cv::OutputArray _dst, std::vector<cv::Rect> &bboxes,
                                       std::vector<int> &labels) const {

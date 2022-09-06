@@ -84,8 +84,6 @@ TEST(Aug_RandomCrop, padding){
 
     int th = 200;
     int tw = 200;
-    int i;
-    int j;
     Vec4d padding {10, 20, 30, 40};
 
     string ref_path = findDataFile("imgaug/random_crop_test_1.jpg");
@@ -95,8 +93,7 @@ TEST(Aug_RandomCrop, padding){
     cv::imgaug::RandomCrop aug(Size(tw, th), padding);
     Mat out;
     aug.call(input, out);
-//    imshow("out", out);
-//    waitKey(0);
+
     if ( out.rows > 0 && out.rows == ref.rows && out.cols > 0 && out.cols == ref.cols ) {
         // Calculate the L2 relative error between images.
         double errorL2 = cv::norm( out, ref, NORM_L2 );
@@ -329,6 +326,33 @@ TEST(Aug_Normalize, basic){
     cv::imgaug::Normalize aug(Scalar(0.406, 0.456, 0.485), Scalar(0.225, 0.224, 0.229));
     aug.call(input, out);
     out.convertTo(out, CV_8UC3, 255);
+
+    if ( out.rows > 0 && out.rows == ref.rows && out.cols > 0 && out.cols == ref.cols ) {
+        // Calculate the L2 relative error between images.
+        double errorL2 = cv::norm( out, ref, NORM_L2 );
+        // Convert to a reasonable scale, since L2 error is summed across all pixels of the image.
+        double error = errorL2 / (double)( out.rows * out.cols );
+        EXPECT_LE(error, 0.1);
+    }else{
+        ts->set_failed_test_info(TS::FAIL_MISMATCH);
+    }
+}
+
+
+TEST(Aug_ColorJitter, basic){
+    cout << "run test: color jitter (basic)" << endl;
+    cvtest::TS* ts = cvtest::TS::ptr();
+    string img_path = findDataFile("imgaug/lena.jpg");
+    Mat input = imread(img_path);
+    Mat out;
+
+    string ref_path = findDataFile("imgaug/color_jitter_test_11.jpg");
+    Mat ref = imread(ref_path);
+    cv::imgaug::setSeed(15);
+    // Mean and std for ImageNet is [0.485, 0.456, 0.406], [0.229, 0.224, 0.225] in order of RGB.
+    // For order of BGR, they should be (0.406, 0.456, 0.485), (0.225, 0.224, 0.229)
+    cv::imgaug::ColorJitter aug(cv::Vec2d(0, 2), cv::Vec2d(0, 2), cv::Vec2d(0, 2), cv::Vec2d(-0.5, 0.5));
+    aug.call(input, out);
 
     if ( out.rows > 0 && out.rows == ref.rows && out.cols > 0 && out.cols == ref.cols ) {
         // Calculate the L2 relative error between images.

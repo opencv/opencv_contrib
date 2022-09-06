@@ -21,7 +21,7 @@ namespace cv{
 
             //! Combine data augmentation methods into one and apply them sequentially to source image and annotation
             //! All combined data augmentation class must inherited from cv::imgaug::det::Transform
-            class CV_EXPORTS_W Compose{
+            class CV_EXPORTS_W Compose : Transform{
             public:
                 /** @brief Initialize Compose class.
                  *
@@ -38,14 +38,14 @@ namespace cv{
                  * in which x, y is the coordinates of the left top corner of the bounding box and w, h is the width and height of the bounding box.
                  * @param labels Class labels of the detected objects in source image. The order of the labels should correspond to the order of the bboxes.
                  */
-                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, CV_IN_OUT std::vector<int>& labels) const;
+                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, CV_IN_OUT std::vector<int>& labels) const override;
 
                 std::vector<cv::Ptr<cv::imgaug::det::Transform> > transforms;
             };
 
             class CV_EXPORTS_W RandomFlip: cv::imgaug::det::Transform{
             public:
-                /** @breif Initialize the RandomFlip class.
+                /** @brief Initialize the RandomFlip class.
                  *
                  * @param flipCode flipCode to specify the axis along which image is flipped. Set
                  * 0 for vertical axis, positive for horizontal axis, negative for both axes.
@@ -70,7 +70,7 @@ namespace cv{
                  * in which x, y is the coordinates of the left top corner of the bounding box and w, h is the width and height of the bounding box.
                  * @param labels Class labels of the detected objects in source image. The order of the labels should correspond to the order of the bboxes.
                  */
-                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const;
+                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const override;
 
                 /** @brief Flip the annotated bounding boxes.
                  *
@@ -115,7 +115,7 @@ namespace cv{
                  * in which x, y is the coordinates of the left top corner of the bounding box and w, h is the width and height of the bounding box.
                  * @param labels Class labels of the detected objects in source image. The order of the labels should correspond to the order of the bboxes.
                  */
-                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const;
+                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const override;
 
                 /** @brief Resize the bounding boxes of the detected objects in the source image.
                  *
@@ -146,7 +146,7 @@ namespace cv{
                  * in which x, y is the coordinates of the left top corner of the bounding box and w, h is the width and height of the bounding box.
                  * @param labels Class labels of the detected objects in source image. The order of the labels should correspond to the order of the bboxes.
                  */
-                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const;
+                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const override;
 
                 int code;
             };
@@ -157,7 +157,7 @@ namespace cv{
             //! The resolution of the image is not changed after the transformation. The remaining area after shift is filled with 0.
             class CV_EXPORTS_W RandomTranslation: cv::imgaug::det::Transform{
             public:
-                /** @breif Initialize the RandomTranslation class
+                /** @brief Initialize the RandomTranslation class
                  *
                  * @param translations Max translation pixels along x and y axes.
                  * @param threshold Bounding boxes with area in the remaining image less than threshold will be dropped.
@@ -173,7 +173,7 @@ namespace cv{
                  * in which x, y is the coordinates of the left top corner of the bounding box and w, h is the width and height of the bounding box.
                  * @param labels Class labels of the detected objects in source image. The order of the labels should correspond to the order of the bboxes.
                  */
-                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const;
+                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const override;
 
                 /** @brief Translate bounding boxes and filter invalid bounding boxes after translation.
                  *
@@ -210,7 +210,7 @@ namespace cv{
                  * in which x, y is the coordinates of the left top corner of the bounding box and w, h is the width and height of the bounding box.
                  * @param labels Class labels of the detected objects in source image. The order of the labels should correspond to the order of the bboxes.
                  */
-                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const;
+                CV_WRAP void call(InputArray src, OutputArray dst, CV_IN_OUT std::vector<cv::Rect>& bboxes, std::vector<int>& labels) const override;
 
                 /** @brief Rotate bounding boxes and filter out invalid bounding boxes after rotation.
                  *
