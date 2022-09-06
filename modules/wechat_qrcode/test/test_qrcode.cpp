@@ -304,7 +304,10 @@ TEST(Objdetect_QRCode_points_position, rotate45) {
     Mat image(800, 800, CV_8UC1);
     const int pixInBlob = 4;
     Size qrSize = Size((21+(params.version-1)*4)*pixInBlob,(21+(params.version-1)*4)*pixInBlob);
-    Rect2f rec((image.cols - qrSize.width)/2, (image.rows - qrSize.height)/2, qrSize.width, qrSize.height);
+    Rect2f rec(static_cast<float>((image.cols - qrSize.width)/2),
+               static_cast<float>((image.rows - qrSize.height)/2),
+               static_cast<float>(qrSize.width),
+               static_cast<float>(qrSize.height));
     vector<float> goldCorners = {rec.x, rec.y,
                                  rec.x+rec.width, rec.y,
                                  rec.x+rec.width, rec.y+rec.height,
@@ -324,10 +327,10 @@ TEST(Objdetect_QRCode_points_position, rotate45) {
     warpAffine(image, image, rot, image.size());
     vector<float> rotateGoldCorners;
     for (int i = 0; i < static_cast<int>(goldCorners.size()); i+= 2) {
-        rotateGoldCorners.push_back(rot.at<double>(0, 0) * goldCorners[i] +
-                                    rot.at<double>(0, 1) * goldCorners[i+1] + rot.at<double>(0, 2));
-        rotateGoldCorners.push_back(rot.at<double>(1, 0) * goldCorners[i] +
-                                    rot.at<double>(1, 1) * goldCorners[i+1] + rot.at<double>(1, 2));
+        rotateGoldCorners.push_back(static_cast<float>(rot.at<double>(0, 0) * goldCorners[i] +
+                                    rot.at<double>(0, 1) * goldCorners[i+1] + rot.at<double>(0, 2)));
+        rotateGoldCorners.push_back(static_cast<float>(rot.at<double>(1, 0) * goldCorners[i] +
+                                    rot.at<double>(1, 1) * goldCorners[i+1] + rot.at<double>(1, 2)));
     }
     vector<Mat> points2;
     auto decoded_info2 = detector.detectAndDecode(image, points2);
