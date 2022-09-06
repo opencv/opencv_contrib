@@ -22,6 +22,17 @@
 #include "element_group.hpp"
 #include "../qtutil/util.hpp"
 
+
+// WORKAROUND:
+//   - Qt::SplitBehavior introduced in 5.14, QString::SplitBehavior was removed in Qt6
+//   - Support required part of Qt::SplitBehavior from 5.15 for older Qt versions
+#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
+namespace Qt {
+	static constexpr QString::SplitBehavior SkipEmptyParts = QString::SkipEmptyParts;
+}
+#endif
+
+
 namespace cvv
 {
 namespace stfl
