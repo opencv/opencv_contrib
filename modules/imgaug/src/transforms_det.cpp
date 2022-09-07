@@ -116,7 +116,7 @@ namespace cv{
 
 
             void RandomTranslation::translateBoundingBox(std::vector<cv::Rect> &bboxes, std::vector<int> &labels, const cv::Size &imgSize, int tx, int ty) const {
-                for(int i=0; i < bboxes.size(); i++){
+                for(unsigned i=0; i < bboxes.size(); i++){
                     int x1 = clamp(bboxes[i].x + tx, 0, imgSize.width);
                     int y1 = clamp(bboxes[i].y + ty, 0, imgSize.height);
                     int x2 = clamp(bboxes[i].x + bboxes[i].width + tx, 0, imgSize.width);
@@ -152,13 +152,13 @@ namespace cv{
 //                cv::imshow("src", src);
 
                 Mat dst = _dst.getMat();
-                rotateBoundingBoxes(bboxes, labels, src.size(), angle, src.cols / 2, src.rows / 2, dst);
+                rotateBoundingBoxes(bboxes, labels, src.size(), angle, src.cols / 2, src.rows / 2);
 
             }
 
             void RandomRotation::rotateBoundingBoxes(std::vector<cv::Rect> &bboxes, std::vector<int> &labels,
-                                                     const cv::Size &imgSize, double angle, int cx, int cy, Mat& img) const {
-                for(int i=0; i < bboxes.size(); i++){
+                                                     const cv::Size &imgSize, double angle, int cx, int cy) const {
+                for(unsigned i=0; i < bboxes.size(); i++){
                     int x1 = bboxes[i].x;
                     int y1 = bboxes[i].y;
                     int x2 = bboxes[i].x + bboxes[i].width;
@@ -224,7 +224,6 @@ namespace cv{
                 (*x) = round(((*x) - cx) * cos(angle) - ((*y) - cy) * sin(angle) + cx);
                 (*y) = round(((*x) - cx) * sin(angle) + ((*y) - cy) * cos(angle) + cy);
             }
-
         }
     }
 }

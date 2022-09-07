@@ -1,5 +1,4 @@
 import cv2
-import matplotlib.pyplot as plt
 
 
 def random_crop(image):
@@ -42,9 +41,7 @@ def main():
     image = cv2.imread(input_path)
 
     image = compose(image)
-
-    plt.imshow(image)
-    plt.show()
+    cv2.imshow(image)
 
 
 if __name__ == '__main__':

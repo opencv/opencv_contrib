@@ -9,77 +9,37 @@
 namespace cv {
     //! @addtogroup imgaug
     //! @{
-    static void adjustBrightness(Mat& img, double brightness_factor){
-        CV_Assert(brightness_factor >= 0);
 
-        int channels = img.channels();
-        if(channels != 1 and channels != 3){
-            CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
-        }
-        img = img * brightness_factor;
-    }
+    /** @brief Adjust the brightness of the given image.
+     *
+     * @param img Source image. This operation is inplace.
+     * @param brightness_factor brightness factor which controls the brightness of the adjusted image.
+     * Brightness factor should be >= 0. When brightness factor is larger than 1, the output image will be brighter than original.
+     * When brightness factor is less than 1, the output image will be darker than original.
+     */
+    void adjustBrightness(Mat& img, double brightness_factor);
 
-    static void adjustContrast(Mat& img, double contrast_factor){
+    /** @brief Adjust the contrast of the given image.
+     *
+     * @param img Source image. This operation is inplace.
+     * @param contrast_factor contrast factor should be larger than 1. It controls the contrast of the adjusted image.
+     */
+    void adjustContrast(Mat& img, double contrast_factor);
 
-        CV_Assert(contrast_factor >= 0);
+    /** @brief Adjust the saturation of the given image.
+     *
+     * @param img Source image. This operation is inplace.
+     * @param saturation_factor saturation factor should be larger than 1. It controls the saturation of the adjusted image.
+     */
+    void adjustSaturation(Mat& img, double saturation_factor);
 
-        int num_channels = img.channels();
-        if(num_channels != 1 && num_channels != 3){
-            CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
-        }
-        Mat channels[num_channels];
-        split(img, channels);
-        std::vector<Mat> new_channels;
-        for(int i=0; i < num_channels; i++){
-            Mat& channel = channels[i];
-            Scalar avg = mean(channel);
-            Mat avg_mat(channel.size(), channel.type(), avg);
-            Mat new_channel = contrast_factor * channel + (1-contrast_factor) * avg_mat;
-            new_channels.push_back(new_channel);
-        }
-        merge(new_channels, img);
-    }
+    /** @brief Adjust the hue of the given image.
+     *
+     * @param img Source image. This operation is inplace.
+     * @param hue_factor hue factor should be in range [-1, 1]. It controls the hue of the adjusted image.
+     */
+    void adjustHue(Mat& img, double hue_factor);
 
-    static void adjustSaturation(Mat& img, double saturation_factor){
-        CV_Assert(saturation_factor >= 0);
-
-        int num_channels = img.channels();
-        if(num_channels != 1 && num_channels != 3){
-            CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
-        }
-        if(img.channels() == 1) return;
-        Mat gray;
-        cvtColor(img, gray, COLOR_BGR2GRAY);
-        std::vector<Mat> gray_arrays = {gray, gray, gray};
-        merge(gray_arrays, gray);
-        img = saturation_factor * img + (1-saturation_factor) * gray;
-    }
-
-    static void adjustHue(Mat& img, double hue_factor) {
-        // FIXME: the range of hue_factor needs to be modified
-        CV_Assert(hue_factor >= -1 && hue_factor <= 1);
-
-        int num_channels = img.channels();
-        if (num_channels != 1 && num_channels != 3) {
-            CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
-        }
-
-        if (num_channels == 1) return;
-        int hue_shift = saturate_cast<int> (hue_factor * 180);
-        Mat hsv;
-        cvtColor(img, hsv, COLOR_BGR2HSV);
-        for (int j=0; j<img.rows; j++){
-            for (int i=0; i<img.cols; i++){
-                int h = hsv.at<Vec3b>(j, i)[0];
-                if(h + hue_shift > 180)
-                    h =  h + hue_shift - 180;
-                else
-                    h = h + hue_shift;
-                hsv.at<Vec3b>(j, i)[0] = h;
-            }
-        }
-        cvtColor(hsv, img, COLOR_HSV2BGR);
-    }
     //! @}
 };
 

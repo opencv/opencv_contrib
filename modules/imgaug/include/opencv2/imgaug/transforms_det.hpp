@@ -221,7 +221,7 @@ namespace cv{
                  * @param cx x coordinate of the rotation center.
                  * @param cy y coordinate of the rotation center.
                  */
-                CV_WRAP void rotateBoundingBoxes(std::vector<cv::Rect>& bboxes, std::vector<int> &labels, const Size& imgSize, double angle, int cx, int cy, Mat& img) const;
+                CV_WRAP void rotateBoundingBoxes(std::vector<cv::Rect>& bboxes, std::vector<int> &labels, const Size& imgSize, double angle, int cx, int cy) const;
 
                 Vec2d angles;
                 double threshold;
