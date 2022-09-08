@@ -5,34 +5,6 @@
 
 namespace opencv_test{ namespace{
 
-class CV_Aug_RandomCropBaseTest : public cvtest::BaseTest{
-public:
-    RNG rng;
-
-    CV_Aug_RandomCropBaseTest(uint64 seed=0){
-        rng = RNG(seed);
-    }
-
-    void setSeed(uint64 seed){
-        rng.state = seed;
-    }
-
-    void getRandomCropParams(int h, int w, int th, int tw, int* x, int* y){
-        if(h+1 < th || w+1 < tw){
-            CV_Error( Error::StsBadSize, "The cropped size is larger than the image size" );
-        }
-        if(h == th && w == tw){
-            (*x) = 0;
-            (*y) = 0;
-            return;
-        }
-
-        (*x) = rng.uniform(0, w-tw+1);
-        (*y) = rng.uniform(0, h-th+1);
-
-    }
-
-};
 
 TEST(Aug_RandomCrop, no_padding){
     cout << "run test: no_padding" << endl;
@@ -40,20 +12,13 @@ TEST(Aug_RandomCrop, no_padding){
     string img_path = findDataFile("imgaug/lena.jpg");
     Mat input = imread(img_path);
 
-    CV_Aug_RandomCropBaseTest test;
-
-    int seed = 0;
-    test.setSeed(seed);
-
     int th = 200;
     int tw = 200;
-    int i;
-    int j;
-    test.getRandomCropParams(input.rows, input.cols, th, tw, &i, &j);
-    cout << "crop area: (" << i << "," << j << "," << th << "," << tw << ")" << endl;
 
     string ref_path = findDataFile("imgaug/random_crop_test_0.jpg");
     Mat ref = imread(ref_path);
+
+    int seed = 0;
 
     cv::imgaug::setSeed(seed);
     cv::imgaug::RandomCrop aug(Size(tw, th));
@@ -77,10 +42,7 @@ TEST(Aug_RandomCrop, padding){
     string img_path = findDataFile("imgaug/lena.jpg");
     Mat input = imread(img_path);
 
-    CV_Aug_RandomCropBaseTest test;
-
     int seed = 0;
-    test.setSeed(seed);
 
     int th = 200;
     int tw = 200;

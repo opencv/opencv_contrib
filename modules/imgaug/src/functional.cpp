@@ -6,7 +6,7 @@ namespace cv{
         CV_Assert(brightness_factor >= 0);
 
         int channels = img.channels();
-        if(channels != 1 and channels != 3){
+        if(channels != 1 && channels != 3){
             CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
         }
         img = img * brightness_factor;

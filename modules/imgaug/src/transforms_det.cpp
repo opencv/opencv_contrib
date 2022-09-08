@@ -205,8 +205,8 @@ namespace cv{
 
             inline void rotate(int* x, int* y, int cx, int cy, double angle){
                 // NOTE: when the unit of angle is degree instead of radius, the result may be incorrect.
-                (*x) = round(((*x) - cx) * cos(angle) - ((*y) - cy) * sin(angle) + cx);
-                (*y) = round(((*x) - cx) * sin(angle) + ((*y) - cy) * cos(angle) + cy);
+                (*x) = (int)round(((*x) - cx) * cos(angle) - ((*y) - cy) * sin(angle) + cx);
+                (*y) = (int)round(((*x) - cx) * sin(angle) + ((*y) - cy) * cos(angle) + cy);
             }
         }
     }

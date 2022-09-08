@@ -464,9 +464,9 @@ namespace cv{
             float* data = mat.ptr<float>(0);
 
             // convert from degrees to radians
-            angle = (CV_PI * angle) / 180;
-            shear_x = (CV_PI * shear_x) / 180;
-            shear_y = (CV_PI * shear_y) / 180;
+            angle = (float)(CV_PI * angle) / 180;
+            shear_x = (float)(CV_PI * shear_x) / 180;
+            shear_y = (float)(CV_PI * shear_y) / 180;
 
             data[0] = scale * cos(angle - shear_y) / cos(shear_y);
             data[1] = scale * (-cos(angle - shear_y) * tan(shear_x) / cos(shear_y) - sin(angle));
