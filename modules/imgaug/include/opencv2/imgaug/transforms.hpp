@@ -248,12 +248,10 @@ namespace cv{
          *
          * @param degrees Specify the lower and upper bounds for the rotation degree.
          * @param interpolation Interpolation mode. Refer to #InterpolationFlags for more details.
-         * @param expand Whether to expands the destination image to make it large enough to hold the entire rotated image.
-         * If you need expand, set it to true. Set it false to make the output image the same size as the input image.
          * @param center Rotation center, origin is the left corner of the image. By default it is set to the center of the image.
          * @param fill Fill value for the area outside the rotated image. Default is 0 for all channels.
          */
-        CV_WRAP explicit RandomRotation(const Vec2d& degrees, int interpolation=INTER_LINEAR, bool expand=false, const Point2f& center=Point2f(), const Scalar& fill=Scalar());
+        CV_WRAP explicit RandomRotation(const Vec2d& degrees, int interpolation=INTER_LINEAR, const Point2f& center=Point2f(), const Scalar& fill=Scalar());
 
         /** Apply augmentation method on source image. This operation is not inplace.
          *
@@ -264,7 +262,6 @@ namespace cv{
 
         Vec2d degrees;
         int interpolation;
-        bool expand;
         Point2f center;
         Scalar fill;
     };
@@ -415,15 +412,16 @@ namespace cv{
     };
 
     //! @cond IGNORED
-    CV_EXPORTS_W void randomCrop(InputArray src, OutputArray dst, const Size& sz, const Vec4i& padding=Vec4i() , bool pad_if_need=false, int fill=0, int padding_mode=BORDER_CONSTANT);CV_EXPORTS_W void randomFlip(InputArray src, OutputArray dst, int flipCode=0, double p=0.5);
-    CV_EXPORTS_W void centerCrop(InputArray src, OutputArray dst, const Size& size);
-    CV_EXPORTS void randomResizedCrop(InputArray src, OutputArray dst, const Size& size, const Vec2d& scale = Vec2d(0.08, 1.0), const Vec2d& ratio = Vec2d(3.0 / 4.0, 4.0 / 3.0), int interpolation = INTER_LINEAR);
-    CV_EXPORTS void colorJitter(InputArray src, OutputArray dst, const Vec2d& brightness=Vec2d(), const Vec2d& contrast=Vec2d(), const Vec2d& saturation=Vec2d(), const Vec2d& hue=Vec2d());
-    CV_EXPORTS void randomRotation(InputArray src, OutputArray dst, const Vec2d& degrees, int interpolation=INTER_LINEAR, bool expand=false, const Point2f& center=Point2f(), const Scalar& fill=Scalar(0));
-    CV_EXPORTS void randomGrayScale(InputArray src, OutputArray dst, double p=0.1);
-    CV_EXPORTS void randomErasing(InputArray src, OutputArray dst, double p=0.5, const Vec2d& scale=Vec2d(0.02, 0.33), const Vec2d& ratio=Vec2d(0.3, 0.33), const Scalar& value=Scalar(0, 100, 100), bool inplace=false);
-    CV_EXPORTS void gaussianBlur(InputArray src, OutputArray dst, const Size& kernel_size, const Vec2f& sigma=Vec2f(0.1, 2.0));
-    CV_EXPORTS void randomAffine(InputArray src, OutputArray dst, const Vec2f& degrees=Vec2f(0., 0.), const Vec2f& translations=Vec2f(0., 0.), const Vec2f& scales=Vec2f(1., 1.), const Vec4f& shears=Vec4f(0., 0., 0., 0.), int interpolation=INTER_NEAREST, const Scalar& fill=Scalar(), const Point2i& center=Point2i(-1, -1));
+    void grayScale(InputArray _src, OutputArray _dst, int num_channels);
+    void randomCrop(InputArray src, OutputArray dst, const Size& sz, const Vec4i& padding=Vec4i() , bool pad_if_need=false, int fill=0, int padding_mode=BORDER_CONSTANT);CV_EXPORTS_W void randomFlip(InputArray src, OutputArray dst, int flipCode=0, double p=0.5);
+    void centerCrop(InputArray src, OutputArray dst, const Size& size);
+    void randomResizedCrop(InputArray src, OutputArray dst, const Size& size, const Vec2d& scale = Vec2d(0.08, 1.0), const Vec2d& ratio = Vec2d(3.0 / 4.0, 4.0 / 3.0), int interpolation = INTER_LINEAR);
+    void colorJitter(InputArray src, OutputArray dst, const Vec2d& brightness=Vec2d(), const Vec2d& contrast=Vec2d(), const Vec2d& saturation=Vec2d(), const Vec2d& hue=Vec2d());
+    void randomRotation(InputArray src, OutputArray dst, const Vec2d& degrees, int interpolation=INTER_LINEAR, const Point2f& center=Point2f(), const Scalar& fill=Scalar(0));
+    void randomGrayScale(InputArray src, OutputArray dst, double p=0.1);
+    void randomErasing(InputArray src, OutputArray dst, double p=0.5, const Vec2d& scale=Vec2d(0.02, 0.33), const Vec2d& ratio=Vec2d(0.3, 0.33), const Scalar& value=Scalar(0, 100, 100), bool inplace=false);
+    void gaussianBlur(InputArray src, OutputArray dst, const Size& kernel_size, const Vec2f& sigma=Vec2f(0.1, 2.0));
+    void randomAffine(InputArray src, OutputArray dst, const Vec2f& degrees=Vec2f(0., 0.), const Vec2f& translations=Vec2f(0., 0.), const Vec2f& scales=Vec2f(1., 1.), const Vec4f& shears=Vec4f(0., 0., 0., 0.), int interpolation=INTER_NEAREST, const Scalar& fill=Scalar(), const Point2i& center=Point2i(-1, -1));
     //! @endcond
 
     //! @}

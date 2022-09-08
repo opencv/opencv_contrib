@@ -31,7 +31,7 @@ namespace cv{
             };
 
             void RandomFlip::call(InputArray _src, OutputArray _dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
-//            RNG rng = RNG(getTickCount());
+                CV_Assert(target.size() == labels.size());
                 bool flag = rng.uniform(0., 1.) < p;
 
                 Mat src = _src.getMat();
@@ -63,13 +63,11 @@ namespace cv{
                 }
             }
 
-//        RandomCrop::RandomCrop(const Size& sz, const Vec4i& padding, bool pad_if_need, const Scalar& fill, int padding_mode):
-//        sz(sz), padding(padding), pad_if_need(pad_if_need), fill(fill), padding_mode(padding_mode){};
-
             Resize::Resize(const Size& _size, int _interpolation):
                     size(_size), interpolation(_interpolation){};
 
             void Resize::call(InputArray _src, OutputArray dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
+                CV_Assert(target.size() == labels.size());
                 Mat src = _src.getMat();
                 resize(src, dst, size, 0, 0, interpolation);
                 resizeBoundingBox(target, src.size());
@@ -87,8 +85,8 @@ namespace cv{
             Convert::Convert(int _code):
                     code(_code){};
 
-
             void Convert::call(InputArray src, OutputArray dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
+                CV_Assert(target.size() == labels.size());
                 cvtColor(src, dst, code);
             }
 
@@ -98,6 +96,7 @@ namespace cv{
 
 
             void RandomTranslation::call(cv::InputArray _src, cv::OutputArray _dst, std::vector<cv::Rect> &bboxes, std::vector<int>& labels) const {
+                CV_Assert(bboxes.size() == labels.size());
                 int tx = rng.uniform(-translations[0], translations[0]);
                 int ty = rng.uniform(-translations[1], translations[1]);
 
@@ -141,23 +140,18 @@ namespace cv{
 
             void RandomRotation::call(cv::InputArray _src, cv::OutputArray _dst, std::vector<cv::Rect> &bboxes,
                                       std::vector<int> &labels) const {
+                CV_Assert(bboxes.size() == labels.size());
                 Mat src = _src.getMat();
                 double angle = rng.uniform(angles[0], angles[1]);
                 Mat rotation_matrix = getRotationMatrix2D(cv::Point2f(src.cols/2., src.rows/2.), angle, 1);
                 warpAffine(src, _dst, rotation_matrix, src.size());
 
-//                cv::Point pt1{bboxes[0].x, bboxes[0].y};
-//                cv::Point pt2{bboxes[0].x + bboxes[0].width, bboxes[0].y + bboxes[0].height};
-//                cv::rectangle(src, pt1, pt2, cv::Scalar(), 2);
-//                cv::imshow("src", src);
-
                 Mat dst = _dst.getMat();
-                rotateBoundingBoxes(bboxes, labels, src.size(), angle, src.cols / 2, src.rows / 2);
-
+                rotateBoundingBoxes(bboxes, labels, angle, src.cols / 2, src.rows / 2);
             }
 
             void RandomRotation::rotateBoundingBoxes(std::vector<cv::Rect> &bboxes, std::vector<int> &labels,
-                                                     const cv::Size &imgSize, double angle, int cx, int cy) const {
+                                                     double angle, int cx, int cy) const {
                 for(unsigned i=0; i < bboxes.size(); i++){
                     int x1 = bboxes[i].x;
                     int y1 = bboxes[i].y;
@@ -176,13 +170,6 @@ namespace cv{
                     rotate(&x2, &y2, cx, cy, angle);
                     rotate(&x3, &y3, cx, cy, angle);
                     rotate(&x4, &y4, cx, cy, angle);
-
-//                    cv::circle(img, Point2i(x1,y1), 3, Scalar(255, 255, 255), 1);
-//                    cv::circle(img, Point2i(x2,y2), 3, Scalar(255, 255, 255), 1);
-//                    cv::circle(img, Point2i(x3,y3), 3, Scalar(255, 255, 255), 1);
-//                    cv::circle(img, Point2i(x4,y4), 3, Scalar(255, 255, 255), 1);
-//                    cv::imshow("img", img);
-//                    cv::waitKey(0);
 
                     // shrink the rotated corners to get an enclosing box
                     int x_min = min({x1, x2, x3, x4});
@@ -217,10 +204,7 @@ namespace cv{
             }
 
             inline void rotate(int* x, int* y, int cx, int cy, double angle){
-//                int a = round(((*x) - cx) * cos(angle) - ((*y) - cy) * sin(angle) + cx);
-//                int b = round(((*x) - cx) * sin(angle) + ((*y) - cy) * cos(angle) + cy);
-//                *x = a;
-//                *y = b;
+                // NOTE: when the unit of angle is degree instead of radius, the result may be incorrect.
                 (*x) = round(((*x) - cx) * cos(angle) - ((*y) - cy) * sin(angle) + cx);
                 (*y) = round(((*x) - cx) * sin(angle) + ((*y) - cy) * cos(angle) + cy);
             }

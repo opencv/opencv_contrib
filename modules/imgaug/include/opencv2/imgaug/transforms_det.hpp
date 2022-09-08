@@ -216,12 +216,11 @@ namespace cv{
                  *
                  * @param bboxes Bounding box annotations.
                  * @param labels Class labels of the detected objects in source image.
-                 * @param imgSize Size of the source image.
                  * @param angle Rotation angle in degree.
                  * @param cx x coordinate of the rotation center.
                  * @param cy y coordinate of the rotation center.
                  */
-                CV_WRAP void rotateBoundingBoxes(std::vector<cv::Rect>& bboxes, std::vector<int> &labels, const Size& imgSize, double angle, int cx, int cy) const;
+                CV_WRAP void rotateBoundingBoxes(std::vector<cv::Rect>& bboxes, std::vector<int> &labels, double angle, int cx, int cy) const;
 
                 Vec2d angles;
                 double threshold;

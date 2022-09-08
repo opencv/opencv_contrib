@@ -16,15 +16,12 @@ namespace cv{
         static void getAffineMatrix(Mat mat, float angle, float tx, float ty, float scale, float shear_x, float shear_y, int cx, int cy);
 
         void randomCrop(InputArray _src, OutputArray _dst, const Size& sz, const Vec4i& padding, bool pad_if_need, int fill, int padding_mode){
-            // FIXME: whether the size of src should be (src.cols+left+right, src.rows+top+bottom)
-
             Mat src = _src.getMat();
 
             if(padding != Vec4i()){
                 copyMakeBorder(src, src, padding[0], padding[1], padding[2], padding[3], padding_mode, fill);
             }
 
-            // NOTE: make sure src.rows == src.size().height and src.cols = src.size().width
             // pad the height if needed
             if(pad_if_need && src.rows < sz.height){
                 Vec4i _padding = {sz.height - src.rows, sz.height - src.rows, 0, 0};
@@ -74,20 +71,12 @@ namespace cv{
         }
 
         void randomFlip(InputArray _src, OutputArray _dst, int flipCode, double p){
-            /*
-             * flipCode:
-             * 0 is vertical flip
-             * 1 is horizontal flip
-             * -1 is flip bott horizontally and vertically
-             */
 
             bool flag = rng.uniform(0., 1.) < p;
 
             Mat src = _src.getMat();
-//        _dst.create(src.size(), src.type());
-//        Mat dst = _dst.getMat();
+
             if(!flag){
-//            src.copyTo(dst);
                 _dst.move(src);
                 return;
             }
@@ -123,7 +112,6 @@ namespace cv{
             resize(src, dst, sz, 0, 0, interpolation);
         }
 
-        // size: (width, height)
         void centerCrop(InputArray _src, OutputArray _dst, const Size& size) {
             Mat src = _src.getMat();
             Mat padded(src);
@@ -143,13 +131,6 @@ namespace cv{
 
             Mat cropped(padded, Rect(x, y, size.width, size.height));
             _dst.move(cropped);
-//        _dst.create(size, src.type());
-//        Mat dst = _dst.getMat();
-            // Ensure the size of the cropped image is the same as the size of the dst
-//        CV_Assert(cropped.size() == dst.size() && cropped.type() == dst.type());
-//        cropped.copyTo(dst);
-
-
         }
 
         CenterCrop::CenterCrop(const Size& _size) :
@@ -232,7 +213,7 @@ namespace cv{
             // TODO: check input values
             Mat src = _src.getMat();
 
-            double brightness_factor, contrast_factor, saturation_factor, hue_factor;
+            double brightness_factor = 1, contrast_factor = 1, saturation_factor = 1, hue_factor = 0;
 
             if(brightness != Vec2d())
                 brightness_factor = rng.uniform(brightness[0], brightness[1]);
@@ -247,13 +228,13 @@ namespace cv{
             std::random_shuffle(order, order+4);
 
             for(int i : order){
-                if(i == 1 && brightness != Vec2d())
+                if(i == 1 && brightness_factor != 1)
                     cv::adjustBrightness(src, brightness_factor);
-                if(i == 2 && contrast != Vec2d())
+                if(i == 2 && contrast_factor != 1)
                     cv::adjustContrast(src, contrast_factor);
-                if(i == 3 && saturation != Vec2d())
+                if(i == 3 && saturation_factor != 1)
                     cv::adjustSaturation(src, saturation_factor);
-                if(i == 4 && hue != Vec2d())
+                if(i == 4 && hue_factor != 0)
                     cv::adjustHue(src, hue_factor);
             }
 
@@ -271,7 +252,7 @@ namespace cv{
             colorJitter(src, dst, brightness, contrast, saturation, hue);
         }
 
-        void randomRotation(InputArray _src, OutputArray _dst, const Vec2d& degrees, int interpolation, bool expand, const Point2f& center, const Scalar& fill){
+        void randomRotation(InputArray _src, OutputArray _dst, const Vec2d& degrees, int interpolation, const Point2f& center, const Scalar& fill){
             Mat src = _src.getMat();
             // TODO: check the validation of degrees
             double angle = rng.uniform(degrees[0], degrees[1]);
@@ -285,15 +266,14 @@ namespace cv{
             warpAffine(src, _dst, r, src.size(), interpolation, BORDER_CONSTANT, fill);
         }
 
-        RandomRotation::RandomRotation(const Vec2d& _degrees, int _interpolation, bool _expand, const Point2f& _center, const Scalar& _fill):
+        RandomRotation::RandomRotation(const Vec2d& _degrees, int _interpolation, const Point2f& _center, const Scalar& _fill):
                 degrees(_degrees),
                 interpolation(_interpolation),
-                expand(_expand),
                 center(_center),
                 fill(_fill){};
 
         void RandomRotation::call(InputArray src, OutputArray dst) const{
-            randomRotation(src, dst, degrees, interpolation, expand, center, fill);
+            randomRotation(src, dst, degrees, interpolation, center, fill);
         }
 
         void grayScale(InputArray _src, OutputArray _dst, int num_channels){
@@ -333,7 +313,6 @@ namespace cv{
 
         void randomErasing(InputArray _src, OutputArray _dst, double p, const Vec2d& scale, const Vec2d& ratio, const Scalar& value, bool inplace){
             // TODO: check the range of input values
-            // TODO: currently inplace takes no effect
             Mat src = _src.getMat();
             if(rng.uniform(0., 1.) >= p){
                 _dst.move(src);
@@ -357,8 +336,10 @@ namespace cv{
                 }
             }
 
-            _dst.move(src);
-
+            if(inplace)
+                _dst.move(src);
+            else
+                src.copyTo(_dst);
         }
 
         static void getRandomErasingCropParams(int height, int width, const Vec2d& scale, const Vec2d& ratio, Rect& rect) {
@@ -416,7 +397,6 @@ namespace cv{
 
         void Normalize::call(InputArray _src, OutputArray _dst) const{
             Mat src = _src.getMat();
-//            cvtColor(src, src, COLOR_BGR2RGB);
 
             _dst.create(src.size(), CV_32FC3);
             Mat dst = _dst.getMat();
@@ -434,7 +414,6 @@ namespace cv{
             }
 
             merge(channels, dst);
-//            cvtColor(dst, dst, COLOR_RGB2BGR);
         }
 
         void gaussianBlur(InputArray src, OutputArray dst, const Size& kernel_size, const Vec2f& sigma){
@@ -498,7 +477,6 @@ namespace cv{
         }
 
         static void getRandomAffineParams(const Size& size, const Vec2f& degrees, const Vec2f& translations, const Vec2f& scales, const Vec4f& shears, float* angle, float* translation_x, float* translation_y, float* scale, float* shear_x, float* shear_y){
-//        RNG rng = RNG(getTickCount());
 
             if(degrees == Vec2f(0, 0)) {
                 *angle = 0;
