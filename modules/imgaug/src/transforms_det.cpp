@@ -16,10 +16,12 @@ namespace cv{
             Compose::Compose(std::vector<Ptr<Transform> >& _transforms):
                     transforms(_transforms){};
 
-            void Compose::call(InputArray src, OutputArray dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
+            void Compose::call(InputArray _src, OutputArray _dst, std::vector<cv::Rect>& target, std::vector<int>& labels) const{
+                Mat src = _src.getMat();
                 for(cv::imgaug::det::Transform* transform:transforms){
-                    transform->call(src, dst, target, labels);
+                    transform->call(src, src, target, labels);
                 }
+                src.copyTo(_dst);
             }
 
             RandomFlip::RandomFlip(int _flipCode, float _p):
@@ -152,6 +154,8 @@ namespace cv{
 
             void RandomRotation::rotateBoundingBoxes(std::vector<cv::Rect> &bboxes, std::vector<int> &labels,
                                                      double angle, int cx, int cy) const {
+                angle = -angle * CV_PI / 180;
+
                 for(unsigned i=0; i < bboxes.size(); i++){
                     int x1 = bboxes[i].x;
                     int y1 = bboxes[i].y;
@@ -163,8 +167,6 @@ namespace cv{
                     int y4 = bboxes[i].y + bboxes[i].height;
 
                     // convert unit from degree to radius
-                    angle = -angle * CV_PI / 180;
-
                     // rotate the corners
                     rotate(&x1, &y1, cx, cy, angle);
                     rotate(&x2, &y2, cx, cy, angle);

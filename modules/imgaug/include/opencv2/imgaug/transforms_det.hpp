@@ -21,7 +21,7 @@ namespace cv{
 
             //! Combine data augmentation methods into one and apply them sequentially to source image and annotation
             //! All combined data augmentation class must inherited from cv::imgaug::det::Transform
-            class CV_EXPORTS_W Compose : Transform{
+            class CV_EXPORTS_W Compose : public Transform{
             public:
                 /** @brief Initialize Compose class.
                  *
@@ -43,7 +43,7 @@ namespace cv{
                 std::vector<cv::Ptr<cv::imgaug::det::Transform> > transforms;
             };
 
-            class CV_EXPORTS_W RandomFlip: cv::imgaug::det::Transform{
+            class CV_EXPORTS_W RandomFlip: public Transform{
             public:
                 /** @brief Initialize the RandomFlip class.
                  *
@@ -97,7 +97,7 @@ namespace cv{
 
 
             //! Resize the source image and its annotations into specified size.
-            class CV_EXPORTS_W Resize: cv::imgaug::det::Transform{
+            class CV_EXPORTS_W Resize: public Transform{
             public:
                 /** @brief Initialize the Resize class
                  *
@@ -129,7 +129,7 @@ namespace cv{
             };
 
             //! Convert the color space of the given image
-            class CV_EXPORTS_W Convert: cv::imgaug::det::Transform{
+            class CV_EXPORTS_W Convert: public Transform{
             public:
                 /** @brief Initialize the Convert class
                  *
@@ -155,7 +155,7 @@ namespace cv{
             //! Bounding boxes which has an area of less than the threshold in the remaining in the transformed image
             //! will be filtered.
             //! The resolution of the image is not changed after the transformation. The remaining area after shift is filled with 0.
-            class CV_EXPORTS_W RandomTranslation: cv::imgaug::det::Transform{
+            class CV_EXPORTS_W RandomTranslation: public Transform{
             public:
                 /** @brief Initialize the RandomTranslation class
                  *
@@ -192,7 +192,7 @@ namespace cv{
             //! Rotate the given image and its bounding boxes by a random angle.
             //! Filter invalid bounding boxes if its remaining area in the destination image is less than threshold.
             //! The size of the destination image is not changed. The remaining area in the destination image is filled with 0.
-            class CV_EXPORTS_W RandomRotation: cv::imgaug::det::Transform{
+            class CV_EXPORTS_W RandomRotation: public Transform{
             public:
                 /** @brief Initialize the RandomRotation class.
                  *
