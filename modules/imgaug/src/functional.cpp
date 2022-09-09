@@ -19,7 +19,7 @@ namespace cv{
         if(num_channels != 1 && num_channels != 3){
             CV_Error(Error::BadNumChannels, "Only support images with 1 or 3 channels");
         }
-        Mat channels[num_channels];
+       Mat* channels = new Mat[num_channels];
         split(img, channels);
         std::vector<Mat> new_channels;
         for(int i=0; i < num_channels; i++){
@@ -30,6 +30,7 @@ namespace cv{
             new_channels.push_back(new_channel);
         }
         merge(new_channels, img);
+        delete[] channels;
     }
 
     void adjustSaturation(Mat& img, double saturation_factor){
