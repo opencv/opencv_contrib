@@ -162,6 +162,9 @@ namespace cv{
         }
 
         static void getRandomResizedCropParams(int height, int width, const Vec2d& scale, const Vec2d& ratio, Rect& rect) {
+            // This implementation is inspired from the implementation in torchvision
+            // https://github.com/pytorch/vision/blob/main/torchvision/transforms/transforms.py
+
             int area = height * width;
 
             for (int i = 0; i < 10; i++) {

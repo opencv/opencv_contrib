@@ -1,11 +1,22 @@
 Data augmentation with imgaug {#tutorial_imgaug_basic_usage}
-==============================
+============================================================
+
+@tableofcontents
+
+@next_tutorial{tutorial_imgaug_object_detection}
+
+|    |    |
+| -: | :- |
+| Author | Chuyang Zhao |
+| Compatibility | OpenCV >= 4.0 |
 
 Goal
 ----
 In this tutorial, you will learn:
 - How to use imgaug to perform data augmentation for images
-- How to use imgaug to perform data augmentation for data in object detection task
+- How to compose multiple methods into one data augmentation method
+- How to change the seed of the random number generator used in imgaug
+
 
 Basics
 ------
@@ -20,8 +31,8 @@ but also annotation on the source images. So in these tasks, data augmentation s
 all these data. 
 
 The imgaug module implemented in OpenCV takes both these requirements into account. You can use imgaug module
-for a wide range of computer vision tasks. Detailed usages and currently supported tasks are shown below.
-The imgaug module in OpenCV is implemented in pure C++ and is backended with OpenCV efficient image processing operations,
+for a wide range of computer vision tasks. 
+The imgaug module in OpenCV is implemented in pure C++ and is backend with OpenCV efficient image processing operations,
 so it runs much faster and more efficient than the existing Python-based implementation. Powered with OpenCV, imgaug module
 is cross-platform and can convert to other language easily. This is especially useful when we want to 
 deploy our model along with its data preprocessing pipeline to production environment for better inference speed. 
@@ -29,160 +40,174 @@ With this feature, we can also use imgaug in other devices such as embed system 
 
 Usage
 -----
-### Basic Usage
 In this section, I will use some methods in imgaug to demonstrate how to use imgaug to perform data augmentation on images.
 For the details of all the methods in imgaug, please refer to the documentation @ref cv::imgaug .
 
-#### Apply single data augmentation method
-In C++ environment, you should include the header file `#include <opencv2/imgaug.hpp>` to use imgaug. 
+### Apply single data augmentation method
+@add_toggle_cpp
+In C++ environment, to use imgaug module you should include the header file:
+
+@code{.cpp}
+#include <opencv2/imgaug.hpp>
+@endcode
 
 We call the constructor of the data augmentation class to get its initialized instance.
-Here we get the instance of `RandomCrop` to perform random crop on the given images. `RandomCrop` requires parameter `sz`
+Here we get the instance of cv::imgaug::RandomCrop to perform random crop on the given images. cv::imgaug::RandomCrop requires parameter `sz`
 which is the size of the cropped area on the given image, here we pass cv::Size(300, 300) for this parameter.
 
-```c++
+@code{.cpp}
 imgaug::RandomCrop randomCrop(cv::Size(300, 300)); 
-```
+@endcode
 
+Then we read the source image in format cv::Mat and performs the data augmentation operation on it by calling cv::imgaug::RandomCrop::call function.
 
-Then we read the source image in format cv::Mat and performs the data augmentation operation on it by calling `randomCrop.call()` function.
-
-```c++
+@code{.cpp}
 Mat src = imread(samples::findFile("lena.jpg"), IMREAD_COLOR);
 Mat dst;
 randomCrop.call(src, dst);
-```
+@endcode
 
-We can show what we get:
-```c++
+Display the augmented image:
+
+@code{.cpp}
 imshow("result", dst);
 waitKey(0);
-```
+@endcode
 
 ![](images/random_crop_out.jpg)
 
-#### Compose multiple data augmentation methods
+@end_toggle
+
+@add_toggle_python
+In Python, to use imgaug module you should import the following package:
+
+@code{.py}
+from cv2 import imgaug
+@endcode
+
+We call the constructor of the data augmentation class to get its initialized instance.
+Here we get an instance of **cv::imgaug::RandomCrop** to perform random crop on the given images. **cv::imgaug::RandomCrop** requires a parameter `sz`
+which is the size of the cropped area on the given image, here we pass a two-elements tuple `(300, 300)` for this parameter.
+
+@code{.py}
+randomCrop = imgaug.RandomCrop(sz=(300, 300))
+@endcode
+
+Then we read the source image with **cv::imread** and performs the data augmentation operation on it by calling **cv::imgaug::RandomCrop::call** function.
+
+@code{.py}
+src = cv2.imread("lena.jpg", cv2.IMREAD_COLOR)
+dst = randomCrop.call(src)
+@endcode
+
+Display the augmented image:
+
+@code{.py}
+cv2.imshow("result", dst)
+cv2.waitKey(0)
+@endcode
+
+![](images/random_crop_out.jpg)
+
+@end_toggle
+
+### Compose multiple data augmentation methods
+@add_toggle_cpp
 To compose multiple data augmentation methods into one, firstly you need to 
 initialize the data augmentation classes you want to use later:
-```c++
+
+@code{.cpp}
 imgaug::RandomCrop randomCrop(cv::Size(300, 300));
 imgaug::RandomFlip randomFlip(1);
 imgaug::Resize resize(cv::Size(224, 224));
-```
+@endcode
 
-Because in @ref cv::imgaug::Compose , we call each data augmentation method by the pointer of their
-parent class @ref cv::imgaug::Transform. We need to use a vector of type cv::Ptr<cv::imgaug::Transform> to 
+Because in **cv::imgaug::Compose**, we call each data augmentation method by the pointer of their
+base class **cv::imgaug::Transform**. We need to use a vector of type **cv::Ptr<cv::imgaug::Transform>** to 
 store the addresses of all data augmentation instances.
 
-```c++
+@code{.cpp}
 std::vector<Ptr<imgaug::Transform> > transforms {&randomCrop, &randomFlip, &resize};
-```
+@endcode
 
-Then we construct the Compose class by passing `transforms` as the required argument.
+Then we construct the **cv::imgaug::Compose** class by passing `transforms` as the required argument.
 
-```c++
+@code{.cpp}
 imgaug::Compose aug(transforms);
-```
+@endcode
 
 We call the compose method the same way as normal data augmentation methods. The composed
 method will call all the methods in `transforms` on the given image sequentially:
 
-```c++
+@code{.cpp}
 Mat src = imread(samples::findFile("lena.jpg"), IMREAD_COLOR);
 Mat dst;
 aug.call(src, dst);
-```
+@endcode
 
 Here is the result we get:
 
 ![](images/compose_out.jpg)
 
-#### Change the seed of random number generator
-In imgaug, we use @ref cv::imgaug::rng as our random number generator. Commonly, when
+@end_toggle
+
+@add_toggle_python
+To compose multiple data augmentation methods into one, firstly you need to
+initialize the data augmentation classes you want to use later:
+
+@code{.py}
+randomCrop = imgaug.RandomCrop((300, 300))
+randomFlip = imgaug.RandomFlip(1)
+resize = imgaug.Resize((224, 224))
+@endcode
+
+We store all data augmentation instances in a list.
+
+@code{.py}
+transforms = [randomCrop, randomFlip, resize]
+@endcode
+
+Then we initialize the cv::imgaug::Compose class by passing the list of all data augmentation instances as the argument.
+
+@code{.py}
+aug = imgaug.Compose(transforms)
+@endcode
+
+We call the compose method the same way as normal data augmentation methods.
+The composed method will apply all the data augmentation methods in transforms list to the given image sequentially.
+
+@code{.py}
+src = cv2.imread("lena.jpg", cv2.IMREAD_COLOR)
+dst = aug.call(src)
+@endcode
+
+Here is the result we get:
+
+![](images/compose_out.jpg)
+
+@end_toggle
+
+### Change the seed of random number generator
+@add_toggle_cpp
+In imgaug, we use **cv::imgaug::rng** as our random number generator. Commonly, when
 we don't manually set the initial state of rng, its initial state will be set to the tick count 
-when it was initialized. But you can also manually set the seed of the rng by call cv::imgaug::setSeed():
-```c++
+when it was initialized. But you can also manually set the initial state of the rng by call **cv::imgaug::setSeed**:
+
+@code{.cpp}
 int seed = 1234;
 imgaug::setSeed(seed);
-```
+@endcode
 
-### Used in Object Detection
-In the previous section, we demonstrate how to use imgaug to perform transforms on pure images.
-In some tasks, the inputs contains not only images but also the annotations. We extend the imgaug
-module to support most of the main stream computer vision tasks. Here we demonstrate how to use imgaug for
-object detection.
+@end_toggle
 
-The inputs of object detection task contains source input image, the annotated bounding boxes, and the class labels
-for each bounding box. In C++, the input image is represented as cv::Mat, the annotated bounding boxes can be represented
-as std::vector<cv::Rect> in which each bounding box is represented as a cv::Rect. The annotated labels for objects in 
-bounding boxes can be represented as std::vector<int>.
+@add_toggle_python
+In imgaug, we use **cv::imgaug::rng** as our random number generator. Commonly, when
+we don't manually set the initial state of rng, its initial state will be set to the tick count
+when it was initialized. But you can also manually set the initial state of the rng by call **cv::imgaug::setSeed**:
 
-The data augmentation methods for object detection are implemented under namespace cv::imgaug::det, you can 
-find more details of all implemented methods in documentation @ref cv::imgaug::det.
+@code{.py}
+seed = 1234
+imgaug.setSeed(seed)
+@endcode
 
-To use the imgaug module in object detection, we need to include the header file <opencv2/imgaug.hpp>. 
-Take random flip as an example, we first initialize the cv::imgaug::det::RandomRotation instance:
-
-```c++
-imgaug::det::RandomRotation aug(Vec2d(-30, 30));
-```
-
-Then we read the source image and load its annotation data, including bounding boxes and class labels.
-In the following example, the annotation contains two bounding boxes and two class labels:
-
-```c++
-Mat src = imread(samples::findFile("lena.jpg"), IMREAD_COLOR);
-
-std::vector<Rect> bboxes{
-        Rect{112, 40, 249, 343},
-        Rect{61, 273, 113, 228}
-};
-
-std::vector<int> labels {1, 2};
-```
-
-The bounding boxes on the source image is as follows:
-
-![](images/det_src.png)
-
-Then we call random rotation operation on the given image and its annotations by imgaug::det::RandomRotation::call:
-
-```c++
-aug.call(src, dst, bboxes, labels);
-```
-
-The augmented image and its annotation are as follows:
-
-![](images/det_rotation_out.png)
-
-Full code of this example can be found at imgaug/samples/det_sample.cpp.
-
-#### Compose multiple data augmentation methods
-Compose multiple data augmentation methods into one in object detection module (cv::imgaug::det) is similar to basic imgaug module (cv::imgaug).
-We also need to initialize multiple data augmentation instances in imgaug::det :
-
-```c++
-imgaug::det::RandomRotation randomRotation(Vec2d(-30, 30));
-imgaug::det::RandomFlip randomFlip(1);
-imgaug::det::Resize resize(Size(224, 224));
-```
-
-Different from data augmentation classes in cv::imgaug, data augmentation classes in cv::imgaug::det are inherited from base class
-cv::imgaug::det::Transform, so we need to use pointer of type cv::imgaug::det::Transform to store the address of each data augmentation 
-instances in det module. We store their pointers in a vector and then initialize the imgaug::det::Compose class with this vector:
-
-```c++
-std::vector<Ptr<imgaug::det::Transform> > transforms {&randomRotation, &randomFlip, &resize};
-imgaug::det::Compose aug(transforms);
-```
-
-Then we can call the compose method on the given image and its annotation as follows:
-
-```c++
-aug.call(src, dst, bboxes, labels);
-```
-
-The augmented image and its annotation are as follows:
-
-![](images/det_compose_out.png)
-
+@end_toggle
