@@ -34,7 +34,7 @@ The imgaug module implemented in OpenCV takes both these requirements into accou
 for a wide range of computer vision tasks.
 The imgaug module in OpenCV is implemented in pure C++ and is backend with OpenCV efficient image processing operations,
 so it runs much faster and more efficient than the existing Python-based implementation. Powered with OpenCV, imgaug module
-is cross-platform and can convert to other language easily. This is especially useful when we want to 
+is cross-platform and can convert to other language easily. This is especially useful when we want to
 deploy our model along with its data preprocessing pipeline to production environment for better inference speed.
 With this feature, we can also use imgaug in other devices such as embed system and mobile phone easily.
 

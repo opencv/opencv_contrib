@@ -159,7 +159,9 @@ namespace cv{
             public:
                 /** @brief Initialize the RandomTranslation class
                  *
-                 * @param translations Max translation pixels along x and y axes.
+                 * @param translations Contains two elements tx and ty, representing tha maximum translation distances
+                 * along x axis and y axis in pixels. tx and ty must be >= 0. The actual translation distances along x and y axes
+                 * are sampled uniformly from [-tx, tx] and [-ty, ty].
                  * @param threshold Bounding boxes with area in the remaining image less than threshold will be dropped.
                  */
                 CV_WRAP explicit RandomTranslation(const Vec2i& translations, float threshold=0.25);
@@ -219,8 +221,9 @@ namespace cv{
                  * @param angle Rotation angle in degree.
                  * @param cx x coordinate of the rotation center.
                  * @param cy y coordinate of the rotation center.
+                 * @param imgSize Size of the destination image, used for clamping the coordinates of bounding boxes.
                  */
-                CV_WRAP void rotateBoundingBoxes(std::vector<cv::Rect>& bboxes, std::vector<int> &labels, double angle, int cx, int cy) const;
+                CV_WRAP void rotateBoundingBoxes(std::vector<cv::Rect>& bboxes, std::vector<int> &labels, double angle, int cx, int cy, const Size& imgSize) const;
 
                 Vec2d angles;
                 double threshold;

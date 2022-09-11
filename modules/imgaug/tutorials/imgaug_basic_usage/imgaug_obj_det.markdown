@@ -78,7 +78,8 @@ The augmented image and its annotation are as follows:
 
 ![](images/det_rotation_out.png)
 
-Full code of this example can be found at @include imgaug/samples/det_sample.cpp.
+Full code of this example:
+@include imgaug/samples/det_sample.cpp.
 
 @end_toggle
 

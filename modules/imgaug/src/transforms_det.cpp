@@ -149,11 +149,11 @@ namespace cv{
                 warpAffine(src, _dst, rotation_matrix, src.size());
 
                 Mat dst = _dst.getMat();
-                rotateBoundingBoxes(bboxes, labels, angle, src.cols / 2, src.rows / 2);
+                rotateBoundingBoxes(bboxes, labels, angle, src.cols / 2, src.rows / 2, dst.size());
             }
 
             void RandomRotation::rotateBoundingBoxes(std::vector<cv::Rect> &bboxes, std::vector<int> &labels,
-                                                     double angle, int cx, int cy) const {
+                                                     double angle, int cx, int cy, const Size& imgSize) const {
                 angle = -angle * CV_PI / 180;
 
                 for(unsigned i=0; i < bboxes.size(); i++){
@@ -178,6 +178,11 @@ namespace cv{
                     int y_min = min({y1, y2, y3, y4});
                     int x_max = max({x1, x2, x3, x4});
                     int y_max = max({y1, y2, y3, y4});
+
+                    x_min = clamp(x_min, 0, imgSize.width);
+                    y_min = clamp(y_min, 0, imgSize.height);
+                    x_max = clamp(x_max, 0, imgSize.width);
+                    y_max = clamp(y_max, 0, imgSize.height);
 
                     int w = x_max - x_min;
                     int h = y_max - y_min;
