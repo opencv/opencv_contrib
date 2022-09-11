@@ -12,12 +12,12 @@ void read_annotation(const String& path, std::vector<Rect>& bboxes, std::vector<
     int n;
     int sig;
     sig = fscanf(fp, "%d", &n);
-    CV_Assert(sig == 1);
+    CV_Assert(sig != EOF);
 
     for(int i=0; i < n; i++){
         int x, y, w, h, l;
         sig = fscanf(fp, "%d %d %d %d %d\n", &x, &y, &w, &h, &l);
-        CV_Assert(sig == 1);
+        CV_Assert(sig != EOF);
         bboxes.push_back(Rect(x, y, w, h));
         labels.push_back(l);
     }
