@@ -10,11 +10,11 @@ void read_annotation(const String& path, std::vector<Rect>& bboxes, std::vector<
     fp = fopen(path.c_str(), "rt");
 
     int n;
-    fscanf(fp, "%d", &n);
+    assert(fscanf(fp, "%d", &n) == 1);
 
     for(int i=0; i < n; i++){
         int x, y, w, h, l;
-        fscanf(fp, "%d %d %d %d %d\n", &x, &y, &w, &h, &l);
+        assert(fscanf(fp, "%d %d %d %d %d\n", &x, &y, &w, &h, &l) == 1);
         bboxes.push_back(Rect(x, y, w, h));
         labels.push_back(l);
     }

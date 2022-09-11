@@ -66,7 +66,7 @@ std::vector<int> labels {1, 2};
 
 The bounding boxes on the source image is as follows:
 
-![](images/det_src.png)
+![](images/det_src.jpg)
 
 Then we call random rotation operation on the given image and its annotations by imgaug::det::RandomRotation::call:
 
@@ -76,7 +76,7 @@ aug.call(src, dst, bboxes, labels);
 
 The augmented image and its annotation are as follows:
 
-![](images/det_rotation_out.png)
+![](images/det_rotation_out.jpg)
 
 Full code of this example:
 @include imgaug/samples/det_sample.cpp.
