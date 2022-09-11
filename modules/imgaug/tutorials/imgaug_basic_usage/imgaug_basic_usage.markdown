@@ -27,15 +27,15 @@ It acts as a regularizer and helps reduce overfitting when training a machine le
 In a narrow sense, data augmentation is to perform some sort of transforms on given images and generate the modified
 images as additional training data, but broadly speaking, data augmentation can perform not only on images.
 For computer vision tasks like object detection and semantic segmentation, the inputs contains not only images
-but also annotation on the source images. So in these tasks, data augmentation should be able to perform transforms on 
-all these data. 
+but also annotation on the source images. So in these tasks, data augmentation should be able to perform transforms on
+all these data.
 
 The imgaug module implemented in OpenCV takes both these requirements into account. You can use imgaug module
-for a wide range of computer vision tasks. 
+for a wide range of computer vision tasks.
 The imgaug module in OpenCV is implemented in pure C++ and is backend with OpenCV efficient image processing operations,
 so it runs much faster and more efficient than the existing Python-based implementation. Powered with OpenCV, imgaug module
 is cross-platform and can convert to other language easily. This is especially useful when we want to 
-deploy our model along with its data preprocessing pipeline to production environment for better inference speed. 
+deploy our model along with its data preprocessing pipeline to production environment for better inference speed.
 With this feature, we can also use imgaug in other devices such as embed system and mobile phone easily.
 
 Usage
@@ -56,7 +56,7 @@ Here we get the instance of cv::imgaug::RandomCrop to perform random crop on the
 which is the size of the cropped area on the given image, here we pass cv::Size(300, 300) for this parameter.
 
 @code{.cpp}
-imgaug::RandomCrop randomCrop(cv::Size(300, 300)); 
+imgaug::RandomCrop randomCrop(cv::Size(300, 300));
 @endcode
 
 Then we read the source image in format cv::Mat and performs the data augmentation operation on it by calling cv::imgaug::RandomCrop::call function.
@@ -113,7 +113,7 @@ cv2.waitKey(0)
 
 ### Compose multiple data augmentation methods
 @add_toggle_cpp
-To compose multiple data augmentation methods into one, firstly you need to 
+To compose multiple data augmentation methods into one, firstly you need to
 initialize the data augmentation classes you want to use later:
 
 @code{.cpp}
@@ -123,7 +123,7 @@ imgaug::Resize resize(cv::Size(224, 224));
 @endcode
 
 Because in **cv::imgaug::Compose**, we call each data augmentation method by the pointer of their
-base class **cv::imgaug::Transform**. We need to use a vector of type **cv::Ptr<cv::imgaug::Transform>** to 
+base class **cv::imgaug::Transform**. We need to use a vector of type **cv::Ptr<cv::imgaug::Transform>** to
 store the addresses of all data augmentation instances.
 
 @code{.cpp}
@@ -190,7 +190,7 @@ Here is the result we get:
 ### Change the seed of random number generator
 @add_toggle_cpp
 In imgaug, we use **cv::imgaug::rng** as our random number generator. Commonly, when
-we don't manually set the initial state of rng, its initial state will be set to the tick count 
+we don't manually set the initial state of rng, its initial state will be set to the tick count
 when it was initialized. But you can also manually set the initial state of the rng by call **cv::imgaug::setSeed**:
 
 @code{.cpp}

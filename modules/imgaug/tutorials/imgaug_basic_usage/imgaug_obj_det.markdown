@@ -116,7 +116,7 @@ labels = [1, 2]
 
 @note We represent the bounding box with a four-elements tuple (x, y, w, h),
 in which x and y are the coordinates of the top left corner of the bounding box,
-w and h are the width and height of the bounding box. The binding generator will 
+w and h are the width and height of the bounding box. The binding generator will
 convert the tuple into cv::Rect in C++. Please make sure the elements in the tuple
 is in the right order.
 
@@ -187,7 +187,7 @@ randomFlip = imgaug.det.RandomFlip(1)
 resize = imgaug.det.Resize((224, 224))
 @endcode
 
-We save all these methods in a list `transforms` as parameter to initialize Compose class. 
+We save all these methods in a list `transforms` as parameter to initialize Compose class.
 
 @code{.py}
 transforms = [randomRotation, randomFlip, resize]
