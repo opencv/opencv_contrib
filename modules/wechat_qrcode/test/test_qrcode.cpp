@@ -376,6 +376,35 @@ TEST(Objdetect_QRCode_Big, regression) {
     ASSERT_EQ(expect_msg, decoded_info[0]);
 }
 
+TEST(Objdetect_QRCode_Tiny, regression) {
+    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
+    string model_version = "_2021-01";
+    path_detect_prototxt = findDataFile("dnn/wechat"+model_version+"/detect.prototxt", false);
+    path_detect_caffemodel = findDataFile("dnn/wechat"+model_version+"/detect.caffemodel", false);
+    path_sr_prototxt = findDataFile("dnn/wechat"+model_version+"/sr.prototxt", false);
+    path_sr_caffemodel = findDataFile("dnn/wechat"+model_version+"/sr.caffemodel", false);
+
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
+                                                path_sr_caffemodel);
+
+    const cv::String expect_msg = "OpenCV";
+    QRCodeEncoder::Params params;
+    params.version = 4; // 33x33
+    Ptr<QRCodeEncoder> qrcode_enc = cv::QRCodeEncoder::create(params);
+    Mat qrImage;
+    qrcode_enc->encode(expect_msg, qrImage);
+    Mat tinyImage(80, 80, CV_8UC1);
+    const int pixInBlob = 2;
+    Size qrSize = Size((21+(params.version-1)*4)*pixInBlob,(21+(params.version-1)*4)*pixInBlob);
+    Mat roiImage = tinyImage(Rect((tinyImage.cols - qrSize.width)/2, (tinyImage.rows - qrSize.height)/2,
+                                   qrSize.width, qrSize.height));
+    cv::resize(qrImage, roiImage, qrSize, 1., 1., INTER_NEAREST);
+
+    vector<Mat> points;
+    auto decoded_info = detector.detectAndDecode(tinyImage, points);
+    ASSERT_EQ(1ull, decoded_info.size());
+    ASSERT_EQ(expect_msg, decoded_info[0]);
+}
 
 }  // namespace
 }  // namespace opencv_test

@@ -197,7 +197,7 @@ int WeChatQRCode::Impl::applyDetector(const Mat& img, vector<Mat>& points) {
 
     const float targetArea = 400.f * 400.f;
     // hard code input size
-    const float tmpScaleFactor = scaleFactor == -1.f ? sqrt(targetArea / (img_w * img_h)) : scaleFactor;
+    const float tmpScaleFactor = scaleFactor == -1.f ? min(1.f, sqrt(targetArea / (img_w * img_h))) : scaleFactor;
     int detect_width = img_w * tmpScaleFactor;
     int detect_height = img_h * tmpScaleFactor;
 
