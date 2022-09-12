@@ -50,16 +50,12 @@
 class RawPacket {
 public:
     RawPacket(const unsigned char* _data, const size_t _size = 0, const bool _containsKeyFrame = false);
-    ~RawPacket();
-    RawPacket(const RawPacket& other);
-    RawPacket(RawPacket&& other) noexcept;
-    RawPacket& operator=(const RawPacket& other);
-    RawPacket& operator=(RawPacket&& other) noexcept;
-    unsigned char* Data() const { return data; }
-    size_t size = 0;
-    bool containsKeyFrame = false;
+    const unsigned char* Data() const noexcept { return data.data(); }
+    size_t Size() const noexcept  { return data.size(); }
+    bool ContainsKeyFrame() const noexcept  { return containsKeyFrame; }
 private:
-    unsigned char* data = 0;
+    std::vector<unsigned char> data;
+    bool containsKeyFrame = false;
 };
 
 namespace cv { namespace cudacodec { namespace detail {

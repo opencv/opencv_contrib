@@ -45,32 +45,8 @@
 
 #ifdef HAVE_NVCUVID
 
-RawPacket::RawPacket(const unsigned char* _data, const size_t _size, const bool _containsKeyFrame) : size(_size), containsKeyFrame(_containsKeyFrame) {
-    data = new unsigned char[size];
-    memcpy(data, _data, size);
-};
-
-RawPacket::~RawPacket() {
-    if (data) delete[] data;
-}
-
-RawPacket::RawPacket(const RawPacket& other) : RawPacket(other.data, other.size, other.containsKeyFrame) {
-}
-
-RawPacket::RawPacket(RawPacket&& other) noexcept : data(std::exchange(other.data, nullptr)), size(std::exchange(other.size, 0)),
-    containsKeyFrame(std::exchange(other.containsKeyFrame, false))  {
-}
-
-RawPacket& RawPacket::operator=(const RawPacket& other) {
-    return *this = RawPacket(other);
-}
-
-RawPacket& RawPacket::operator=(RawPacket&& other) noexcept {
-    std::swap(data, other.data);
-    size = other.size;
-    containsKeyFrame = other.containsKeyFrame;
-    return *this;
-}
+RawPacket::RawPacket(const unsigned char* data_, const size_t size, const bool containsKeyFrame_) :
+    data(data_,data_ + size), containsKeyFrame(containsKeyFrame_) {};
 
 cv::cudacodec::detail::FrameQueue::~FrameQueue() {
     if (isFrameInUse_)
