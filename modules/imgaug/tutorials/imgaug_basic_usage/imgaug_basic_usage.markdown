@@ -69,6 +69,7 @@ randomCrop.call(src, dst);
 @endcode
 
 The original image is as follows:
+
 ![](images/lena.jpg)
 
 You can display the augmented image after applying random crop by:
@@ -105,6 +106,7 @@ dst = randomCrop.call(src)
 @endcode
 
 The original image is as follows:
+
 ![](images/lena.jpg)
 
 You can display the augmented image after applying random crop by:

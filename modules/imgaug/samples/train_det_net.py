@@ -3,27 +3,22 @@ import time
 
 import numpy as np
 import torch
-from PIL import Image
 import cv2
 import argparse
-import transforms as T
 import torchvision
 from tqdm import tqdm
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="/Users/bytedance/Downloads/PennFudanPed")
+    parser.add_argument("--root", type=str, default="PennFudanPed")
     parser.add_argument("--lr", type=float, default=3e-4)
-    parser.add_argument("--backend", type=str, default="cv2")
 
     return parser.parse_args()
 
 
 class PennFudanDataset(torch.utils.data.Dataset):
-    def __init__(self, root, transforms=None, backend='cv2'):
-        assert backend in ['cv2', 'pil']
-        self.backend = backend
+    def __init__(self, root, transforms=None):
         self.root = root
         self.transforms = transforms
         # load all image files, sorting them to
@@ -52,66 +47,32 @@ class PennFudanDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         # load images and masks
-        if self.backend == 'pil':
-            img_path = os.path.join(self.root, "PNGImages", self.imgs[idx])
-            mask_path = os.path.join(self.root, "PedMasks", self.masks[idx])
-            img = Image.open(img_path).convert("RGB")
-            # note that we haven't converted the mask to RGB,
-            # because each color corresponds to a different instance
-            # with 0 being background
-            mask = Image.open(mask_path)
-            mask = np.array(mask)
-            # convert the PIL Image into a numpy array
+        img_path = os.path.join(self.root, "PNGImages", self.imgs[idx])
+        mask_path = os.path.join(self.root, "PedMasks", self.masks[idx])
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # mask is array of size (H, W), all elements of array are integers
+        # background is 0, and each distinct person is represented as a distinct integer starting from 1
+        # you can treat mask as grayscale image
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        boxes = []
+        for x1, y1, x2, y2 in self._get_boxes(mask):
+            # NOTE: in opencv, box is represented as (x, y, width, height)
+            boxes.append([x1, y1, x2-x1, y2-y1])
+        num_objs = len(boxes)
+        labels = torch.ones((num_objs,), dtype=torch.int64)
 
-            boxes = []
-            for x1, y1, x2, y2 in self._get_boxes(mask):
-                boxes.append([x1, y1, x2, y2])
+        if self.transforms is not None:
+            img, boxes = self.transforms.call(img, boxes)
 
-            num_objs = len(boxes)
-            # convert everything into a torch.Tensor
-            boxes = torch.as_tensor(boxes, dtype=torch.float32)
-            # there is only one class
-            labels = torch.ones((num_objs,), dtype=torch.int64)
-            image_id = torch.tensor([idx])
+        # 1. transpose from (h, w, c) to (c, h, w)
+        # 2. normalize data into range 0-1
+        # 3. convert from np.array to torch.tensor
+        img = torch.tensor(np.transpose(img, (2, 0, 1)), dtype=torch.float32)
+        boxes = [[x1, y1, x1+width, y1+height] for x1, y1, width, height in boxes]
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
 
-            target = {
-                "boxes": boxes,
-                "labels": labels,
-                "image_id": image_id,
-            }
-
-            if self.transforms is not None:
-                img, target = self.transforms(img, target)
-
-            return img, target["boxes"], target["labels"]
-
-        else:
-            img_path = os.path.join(self.root, "PNGImages", self.imgs[idx])
-            mask_path = os.path.join(self.root, "PedMasks", self.masks[idx])
-            img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            # mask is array of size (H, W), all elements of array are integers
-            # background is 0, and each distinct person is represented as a distinct integer starting from 1
-            # you can treat mask as grayscale image
-            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
-            boxes = []
-            for x1, y1, x2, y2 in self._get_boxes(mask):
-                # NOTE: in opencv, box is represented as (x, y, width, height)
-                boxes.append([x1, y1, x2-x1, y2-y1])
-            num_objs = len(boxes)
-            labels = torch.ones((num_objs,), dtype=torch.int64)
-
-            if self.transforms is not None:
-                img, boxes = self.transforms.call(img, boxes)
-
-            # 1. transpose from (h, w, c) to (c, h, w)
-            # 2. normalize data into range 0-1
-            # 3. convert from np.array to torch.tensor
-            img = torch.tensor(np.transpose(img, (2, 0, 1)), dtype=torch.float32)
-            boxes = [[x1, y1, x1+width, y1+height] for x1, y1, width, height in boxes]
-            boxes = torch.as_tensor(boxes, dtype=torch.float32)
-
-            return img, boxes, labels
+        return img, boxes, labels
 
     def __len__(self):
         return len(self.imgs)
@@ -135,19 +96,13 @@ class PennFudanDataset(torch.utils.data.Dataset):
         return images, targets
 
 
-def get_transforms(backend='cv2'):
-    if backend == 'cv2':
-        transforms = cv2.det.Compose([
-            cv2.det.RandomFlip(),
-            cv2.det.Resize((500, 500)),
-        ])
-    elif backend == 'pil':
-        transforms = T.Compose([
-            T.RandomHorizontalFlip(0.5),
-            T.Resize((500, 500)),
-            T.PILToTensor(),
-            T.ConvertImageDtype(torch.float32),
-        ])
+def get_transforms():
+
+    transforms = cv2.det.Compose([
+        cv2.det.RandomFlip(),
+        cv2.det.Resize((500, 500)),
+    ])
+
     return transforms
 
 
@@ -172,15 +127,15 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    transforms = get_transforms(args.backend)
-    dataset = PennFudanDataset(args.root, transforms=transforms, backend=args.backend)
+    transforms = get_transforms()
+    dataset = PennFudanDataset(args.root, transforms=transforms)
 
     indices = torch.randperm(len(dataset)).tolist()
     train_set = torch.utils.data.Subset(dataset, indices[:-50])
     test_set = torch.utils.data.Subset(dataset, indices[-50:])
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=4, shuffle=True, num_workers=0, collate_fn=PennFudanDataset.collate_fn)
-    train_loader = torch.utils.data.DataLoader(test_set, batch_size=4, shuffle=False, num_workers=0, collate_fn=PennFudanDataset.collate_fn)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=4, shuffle=False, num_workers=0, collate_fn=PennFudanDataset.collate_fn)
 
     model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT").to(device)
 

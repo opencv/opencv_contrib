@@ -26,3 +26,11 @@ a model with its data preprocessing pipeline from Python to production environme
     *Author:* Chuyang Zhao
 
     Use imgaug to perform data augmentation for object detection task.
+
+-   @subpage tutorial_imgaug_pytorch
+
+    *Compatibility:* >= OpenCV 4.0
+
+    *Author:* Chuyang Zhao
+
+    Use imgaug with PyTorch for different computer vision tasks.
