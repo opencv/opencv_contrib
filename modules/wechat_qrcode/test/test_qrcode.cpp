@@ -408,5 +408,52 @@ TEST(Objdetect_QRCode_Tiny, regression) {
     ASSERT_EQ(expect_msg, decoded_info[0]);
 }
 
+
+typedef testing::TestWithParam<std::string> Objdetect_QRCode_Easy_Multi;
+TEST_P(Objdetect_QRCode_Easy_Multi, regression) {
+    string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
+    string model_path = GetParam();
+
+    if (!model_path.empty()) {
+        path_detect_prototxt = findDataFile(model_path + "/detect.prototxt", false);
+        path_detect_caffemodel = findDataFile(model_path + "/detect.caffemodel", false);
+        path_sr_prototxt = findDataFile(model_path + "/sr.prototxt", false);
+        path_sr_caffemodel = findDataFile(model_path + "/sr.caffemodel", false);
+    }
+
+    auto detector = wechat_qrcode::WeChatQRCode(path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt,
+                                                path_sr_caffemodel);
+
+    const cv::String expect_msg1 = "OpenCV1", expect_msg2 = "OpenCV2";
+    QRCodeEncoder::Params params;
+    params.version = 4; // 33x33
+    Ptr<QRCodeEncoder> qrcode_enc = cv::QRCodeEncoder::create(params);
+    Mat qrImage1, qrImage2;
+    qrcode_enc->encode(expect_msg1, qrImage1);
+    qrcode_enc->encode(expect_msg2, qrImage2);
+    const int pixInBlob = 2;
+    const int offset = 14;
+    const int qr_size = (params.version - 1) * 4 + 21;
+    Mat tinyImage = Mat::zeros(qr_size*pixInBlob+offset, (qr_size*pixInBlob+offset)*2, CV_8UC1);
+    Size qrSize = Size(qrImage1.cols, qrImage1.rows);
+
+    Mat roiImage = tinyImage(Rect((tinyImage.cols/2 - qrSize.width)/2, (tinyImage.rows - qrSize.height)/2,
+                                   qrSize.width, qrSize.height));
+    cv::resize(qrImage1, roiImage, qrSize, 1., 1., INTER_NEAREST);
+
+    roiImage = tinyImage(Rect((tinyImage.cols/2 - qrSize.width)/2+tinyImage.cols/2, (tinyImage.rows - qrSize.height)/2,
+                                   qrSize.width, qrSize.height));
+    cv::resize(qrImage2, roiImage, qrSize, 1., 1., INTER_NEAREST);
+
+    vector<Mat> points;
+    auto decoded_info = detector.detectAndDecode(tinyImage, points);
+    ASSERT_EQ(2ull, decoded_info.size());
+    ASSERT_TRUE((expect_msg1 == decoded_info[0] && expect_msg2 == decoded_info[1]) ||
+                (expect_msg1 == decoded_info[1] && expect_msg2 == decoded_info[0]));
+}
+
+std::string qrcode_model_path[] = {"", "dnn/wechat_2021-01"};
+INSTANTIATE_TEST_CASE_P(/**/, Objdetect_QRCode_Easy_Multi, testing::ValuesIn(qrcode_model_path));
+
 }  // namespace
 }  // namespace opencv_test
