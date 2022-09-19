@@ -45,14 +45,14 @@ int DecoderMgr::decodeImage(cv::Mat src, bool use_nn_detector, vector<string>& r
         }
         int ret = TryDecode(source, zx_results);
         if (!ret) {
-            for(unsigned int k=0; k<zx_results.size(); k++){
+            for(size_t k = 0; k < zx_results.size(); k++) {
                 results.emplace_back(zx_results[k]->getText()->getText());
                 vector<Point2f> tmp_qr_points;
                 auto tmp_zx_points = zx_results[k]->getResultPoints();
-                for(int i = 0; i < tmp_zx_points->size() / 4; i++) {
+                for (int i = 0; i < tmp_zx_points->size() / 4; i++) {
                     const int ind = i * 4;
                     for (int j = 1; j < 4; j++){
-                        tmp_qr_points.emplace_back(tmp_zx_points[ind+j]->getX(), tmp_zx_points[ind+j]->getY());
+                        tmp_qr_points.emplace_back(tmp_zx_points[ind + j]->getX(), tmp_zx_points[ind + j]->getY());
                     }
                     tmp_qr_points.emplace_back(tmp_zx_points[ind]->getX(), tmp_zx_points[ind]->getY());
                 }
