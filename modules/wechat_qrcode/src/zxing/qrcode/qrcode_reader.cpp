@@ -145,6 +145,9 @@ vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMat
                 setSuccFix(points);
                 result_list.push_back(result);
                 patternFoundFlag = true;
+                if (nowHints_.getUseNNDetector()) {
+                    return result_list;
+                }
             }
             // try different dimentions
             for (int j = 0; j < possibleAlignmentCount; j++) {
@@ -192,6 +195,9 @@ vector<Ref<Result>> QRCodeReader::decodeMore(Ref<BinaryBitmap> image, Ref<BitMat
                         setSuccFix(points);
                         result_list.push_back(result);
                         patternFoundFlag = true;
+                        if (nowHints_.getUseNNDetector()) {
+                            return result_list;
+                        }
                     }
                 }
             }
