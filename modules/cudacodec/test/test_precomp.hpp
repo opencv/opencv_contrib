@@ -47,6 +47,8 @@
 #include "opencv2/ts/cuda_test.hpp"
 
 #include "opencv2/cudacodec.hpp"
+#include "opencv2/cudawarping.hpp"
+#include "opencv2/cudaarithm.hpp"
 
 #include "cvconfig.h"
 
