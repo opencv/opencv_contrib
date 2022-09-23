@@ -17,7 +17,7 @@ class MSDDetector_test(NewOpenCVTests):
         self.assertFalse(msd is None)
 
         img1 = np.zeros((100, 100, 3), dtype=np.uint8)
-        kp1_, des1_ = msd.detectAndCompute(img1, None)
+        kp1_ = msd.detect(img1, None)
 
 
 if __name__ == '__main__':
