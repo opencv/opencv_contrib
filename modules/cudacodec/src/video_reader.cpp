@@ -256,7 +256,8 @@ namespace
             if (idx >= rawPacketsBaseIdx && idx < rawPacketsBaseIdx + rawPackets.size()) {
                 if (!frame.isMat())
                     CV_Error(Error::StsUnsupportedFormat, "Raw data is stored on the host and must be retrieved using a cv::Mat");
-                Mat tmp(1, rawPackets.at(idx - rawPacketsBaseIdx).size, CV_8UC1, rawPackets.at(idx - rawPacketsBaseIdx).Data(), rawPackets.at(idx - rawPacketsBaseIdx).size);
+                const size_t i = idx - rawPacketsBaseIdx;
+                Mat tmp(1, rawPackets.at(i).Size(), CV_8UC1, const_cast<unsigned char*>(rawPackets.at(i).Data()), rawPackets.at(i).Size());
                 frame.getMatRef() = tmp;
             }
         }
@@ -301,7 +302,7 @@ namespace
         case VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
             const int iPacket = propertyVal - rawPacketsBaseIdx;
             if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
-                propertyVal = rawPackets.at(iPacket).containsKeyFrame;
+                propertyVal = rawPackets.at(iPacket).ContainsKeyFrame();
                 return true;
             }
             else
