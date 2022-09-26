@@ -309,6 +309,9 @@ struct CV_EXPORTS_W_SIMPLE FormatInfo
     CV_PROP_RW double fps;
     CV_PROP_RW int ulNumDecodeSurfaces;//!< Maximum number of internal decode surfaces.
     CV_PROP_RW DeinterlaceMode deinterlaceMode;
+    CV_PROP_RW cv::Size targetSz;//!< Post-processed size of the output frame.
+    CV_PROP_RW cv::Rect srcRoi;//!< Region of interest decoded from video source.
+    CV_PROP_RW cv::Rect targetRoi;//!< Region of interest in the output frame containing the decoded frame.
 };
 
 /** @brief cv::cudacodec::VideoReader generic properties identifier.
@@ -516,6 +519,10 @@ surfaces it requires for correct functionality and optimal video memory usage bu
 overall application. The optimal number of decode surfaces (in terms of performance and memory utilization) should be decided by experimentation for each application,
 but it cannot go below the number determined by NVDEC.
 @param rawMode Allow the raw encoded data which has been read up until the last call to grab() to be retrieved by calling retrieve(rawData,RAW_DATA_IDX).
+@param targetSz Post-processed size (width/height should be multiples of 2) of the output frame, defaults to the size of the encoded video source.
+@param srcRoi Region of interest (x/width should be multiples of 4 and y/height multiples of 2) decoded from video source, defaults to the full frame.
+@param targetRoi Region of interest (x/width should be multiples of 4 and y/height multiples of 2) within the output frame to copy and resize the decoded frame to,
+defaults to the full frame.
 */
 struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
     CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0) {};
@@ -523,6 +530,9 @@ struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
     CV_PROP_RW bool allowFrameDrop;
     CV_PROP_RW int minNumDecodeSurfaces;
     CV_PROP_RW bool rawMode;
+    CV_PROP_RW cv::Size targetSz;
+    CV_PROP_RW cv::Rect srcRoi;
+    CV_PROP_RW cv::Rect targetRoi;
 };
 
 /** @brief Creates video reader.

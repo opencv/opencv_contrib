@@ -148,6 +148,14 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     createInfo_.ulTargetHeight      = videoFormat.height;
     createInfo_.ulMaxWidth          = videoFormat.ulMaxWidth;
     createInfo_.ulMaxHeight         = videoFormat.ulMaxHeight;
+    createInfo_.display_area.left   = videoFormat.displayArea.x;
+    createInfo_.display_area.right  = videoFormat.displayArea.x + videoFormat.displayArea.width;
+    createInfo_.display_area.top    = videoFormat.displayArea.y;
+    createInfo_.display_area.bottom = videoFormat.displayArea.y + videoFormat.displayArea.height;
+    createInfo_.target_rect.left    = videoFormat.targetRoi.x;
+    createInfo_.target_rect.right   = videoFormat.targetRoi.x + videoFormat.targetRoi.width;
+    createInfo_.target_rect.top     = videoFormat.targetRoi.y;
+    createInfo_.target_rect.bottom  = videoFormat.targetRoi.y + videoFormat.targetRoi.height;
     createInfo_.ulNumOutputSurfaces = 2;
     createInfo_.ulCreationFlags     = videoCreateFlags;
     createInfo_.vidLock = lock_;
