@@ -144,21 +144,44 @@ vector<string> WeChatQRCode::Impl::decode(const Mat& img, vector<Mat>& candidate
                 super_resolution_model_->processImageScale(cropped_img, cur_scale, use_nn_sr_);
             string result;
             DecoderMgr decodemgr;
-            vector<Point2f> points_qr;
-            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, result, points_qr);
+            vector<vector<Point2f>> zxing_points, check_points;
+            auto ret = decodemgr.decodeImage(scaled_img, use_nn_detector_, decode_results, zxing_points);
             if (ret == 0) {
-                for (auto&& pt: points_qr) {
-                    pt /= cur_scale;
-                }
+                for(size_t i = 0; i <zxing_points.size(); i++){
+                    vector<Point2f> points_qr = zxing_points[i];
+                    for (auto&& pt: points_qr) {
+                        pt /= cur_scale;
+                    }
 
-                if (use_nn_detector_)
-                    points_qr = aligner.warpBack(points_qr);
-                for (int i = 0; i < 4; ++i) {
-                    point.at<float>(i, 0) = points_qr[i].x;
-                    point.at<float>(i, 1) = points_qr[i].y;
+                    if (use_nn_detector_)
+                        points_qr = aligner.warpBack(points_qr);
+                    for (int j = 0; j < 4; ++j) {
+                        point.at<float>(j, 0) = points_qr[j].x;
+                        point.at<float>(j, 1) = points_qr[j].y;
+                    }
+                    // try to find duplicate qr corners
+                    bool isDuplicate = false;
+                    for (const auto &tmp_points: check_points) {
+                        const float eps = 10.f;
+                        for (size_t j = 0; j < tmp_points.size(); j++) {
+                            if (abs(tmp_points[j].x - points_qr[j].x) < eps &&
+                                abs(tmp_points[j].y - points_qr[j].y) < eps) {
+                                isDuplicate = true;
+                            }
+                            else {
+                                isDuplicate = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (isDuplicate == false) {
+                        points.push_back(point);
+                        check_points.push_back(points_qr);
+                    }
+                    else {
+                        decode_results.erase(decode_results.begin() + i, decode_results.begin() + i + 1);
+                    }
                 }
-                decode_results.push_back(result);
-                points.push_back(point);
                 break;
             }
         }
