@@ -249,6 +249,15 @@ void check_if_YUV420_available() {
 	if ((attrib.value & VA_RT_FORMAT_YUV420) == 0)
 		throw std::runtime_error("Desired YUV444 RT format not found");
 }
+
+void init_va() {
+	if (!va::open_display())
+		throw std::runtime_error("Failed to open VA display for CL-VA interoperability");
+
+	va::check_if_YUV420_available();
+
+	cv::va_intel::ocl::initializeContextFromVA(va::display, true);
+}
 } // namespace va
 }
 namespace kb {
@@ -380,14 +389,8 @@ void return_frame_buffer(cv::UMat &m) {
 int main(int argc, char **argv) {
 	using namespace kb;
 
-	if (!va::open_display())
-		throw std::runtime_error("Failed to open VA display for CL-VA interoperability");
-
-	va::check_if_YUV420_available();
-
-	cv::va_intel::ocl::initializeContextFromVA(va::display, true);
+	va::init_va();
 	cv::ocl::OpenCLExecutionContext vaContext = cv::ocl::OpenCLExecutionContext::getCurrent();
-
 	cv::VideoWriter video("tetra-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
 	egl::init_egl();
