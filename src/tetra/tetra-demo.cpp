@@ -462,7 +462,7 @@ int main(int argc, char **argv) {
 
 		int64 tick = cv::getTickCount();
 		if (cnt % int64(FPS) == 0)
-			cerr << "FPS : " << cv::getTickFrequency() / (cv::getTickCount() - start) << '\r';
+			cerr << "FPS : " << cv::getTickFrequency() / (tick - start) << '\r';
 		++cnt;
 	}
 
