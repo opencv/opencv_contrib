@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
 	cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
 	cv::UMat mask;
 	cv::UMat bgr;
-
+	uint64_t cnt = 0;
 	while (true) {
 		int64 start = cv::getTickCount();
 
@@ -461,8 +461,9 @@ int main(int argc, char **argv) {
 		video.write(bgr);
 
 		int64 tick = cv::getTickCount();
-		if (tick % int64(FPS) == 0)
+		if (cnt % int64(FPS) == 0)
 			cerr << "FPS : " << cv::getTickFrequency() / (cv::getTickCount() - start) << '\r';
+		++cnt;
 	}
 
 	return 0;
