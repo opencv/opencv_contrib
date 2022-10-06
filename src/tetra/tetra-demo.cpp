@@ -24,8 +24,8 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
 
-constexpr off_t WIDTH = 3840;
-constexpr off_t HEIGHT = 2160;
+constexpr off_t WIDTH = 1920;
+constexpr off_t HEIGHT = 1080;
 constexpr double FPS = 30;
 
 using std::cout;
