@@ -266,8 +266,8 @@ void eglCheckError(const std::filesystem::path &file, unsigned int line, const c
 		assert(false);
 	}
 }
-#define eglCheck(expr)                                      \
-        expr;                                               \
+#define eglCheck(expr)                                 \
+        expr;                                          \
         egl::eglCheckError(__FILE__, __LINE__, #expr);
 
 void init_egl() {
@@ -275,7 +275,8 @@ void init_egl() {
 	eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
 	eglCheck(eglInitialize(display, nullptr, nullptr));
 
-	const EGLint attributes[] = { EGL_BUFFER_SIZE, static_cast<EGLint>(24),
+	const EGLint attributes[] = {
+	EGL_BUFFER_SIZE, static_cast<EGLint>(24),
 	EGL_DEPTH_SIZE, static_cast<EGLint>(24),
 	EGL_STENCIL_SIZE, static_cast<EGLint>(0),
 	EGL_SAMPLE_BUFFERS,
@@ -305,7 +306,7 @@ void init_egl() {
 }
 
 EGLBoolean swapBuffers() {
-	return eglSwapBuffers(display, surface);
+	return eglCheck(eglSwapBuffers(display, surface));
 }
 }
 }
@@ -324,9 +325,9 @@ void glCheckError(const std::filesystem::path &file, unsigned int line, const ch
 		assert(false);
 	}
 }
-#define glCheck(expr)                                      \
-			expr;                                               \
-			gl::glCheckError(__FILE__, __LINE__, #expr);
+#define glCheck(expr)							 \
+	expr;                                        \
+	gl::glCheckError(__FILE__, __LINE__, #expr);
 
 void init_gl() {
 	glewInit();
@@ -367,13 +368,11 @@ void swapBuffers() {
 }
 
 void fetch_frame_buffer(cv::UMat &m) {
-	cv::ogl::convertFromGLTexture2D(*frame_buf_tex, m);
-	assert(glGetError() == GL_NO_ERROR);
+	glCheck(cv::ogl::convertFromGLTexture2D(*frame_buf_tex, m));
 }
 
 void return_frame_buffer(cv::UMat &m) {
-	cv::ogl::convertToGLTexture2D(m, *frame_buf_tex);
-	assert(glGetError() == GL_NO_ERROR);
+	glCheck(cv::ogl::convertToGLTexture2D(m, *frame_buf_tex));
 }
 }
 }
@@ -389,7 +388,7 @@ int main(int argc, char **argv) {
 	cv::va_intel::ocl::initializeContextFromVA(va::display, true);
 	cv::ocl::OpenCLExecutionContext vaContext = cv::ocl::OpenCLExecutionContext::getCurrent();
 
-	cv::VideoWriter video("out.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+	cv::VideoWriter video("tetra-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
 	egl::init_egl();
 	gl::init_gl();
@@ -402,9 +401,9 @@ int main(int argc, char **argv) {
 	while (true) {
 		int64 start = cv::getTickCount();
 
-		//draw a rotating tetrahedron
+		//Draw a rotating tetrahedron
 		glContext.bind();
-		glCheck(glRotatef(1, 0, 1, 0));
+		glRotatef(1, 0, 1, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glColor3f(1.0, 1.0, 1.0);
@@ -439,8 +438,8 @@ int main(int argc, char **argv) {
 		//Using OpenCL in the background
 		cv::flip(frameBuffer, frameBuffer, 0); //  flip the image in the y-axis
 
-		//do a glow effect using blur
 		{
+			//Do a glow effect using blur
 			cv::blur(frameBuffer, mask, cv::Size(50, 50));
 			cv::bitwise_not(mask, mask);
 			cv::bitwise_not(frameBuffer, frameBuffer);
@@ -452,7 +451,7 @@ int main(int argc, char **argv) {
 			cv::bitwise_not(mask, frameBuffer);
 		}
 
-		cv::cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2BGR); //convert to bgr
+		cv::cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2BGR); // Convert to bgr
 
 		vaContext.bind();
 		//encode the frame using VAAPI on the GPU.
