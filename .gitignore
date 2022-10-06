@@ -1,0 +1,9 @@
+.cproject
+.project
+.settings/
+src/*.o
+src/*.dep
+src/*.d
+src/tetra/tetra-demo
+
+
