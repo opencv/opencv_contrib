@@ -400,6 +400,8 @@ int main(int argc, char **argv) {
 	cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
 	cv::UMat mask;
 	cv::UMat bgr;
+	double sigma = 50;
+
 	uint64_t cnt = 0;
 	while (true) {
 		int64 start = cv::getTickCount();
@@ -443,7 +445,7 @@ int main(int argc, char **argv) {
 
 		{
 			//Do a glow effect using blur
-			cv::blur(frameBuffer, mask, cv::Size(50, 50));
+			cv::blur(frameBuffer, mask, cv::Size(sigma, sigma));
 			cv::bitwise_not(mask, mask);
 			cv::bitwise_not(frameBuffer, frameBuffer);
 			mask.assignTo(mask, CV_16U);
@@ -454,15 +456,17 @@ int main(int argc, char **argv) {
 			cv::bitwise_not(mask, frameBuffer);
 		}
 
-		cv::cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2BGR); // Convert to bgr
+		cv::cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2RGB); // Convert to RGB
 
 		vaContext.bind();
 		//encode the frame using VAAPI on the GPU.
 		video.write(bgr);
 
 		int64 tick = cv::getTickCount();
-		if (cnt % int64(FPS) == 0)
-			cerr << "FPS : " << cv::getTickFrequency() / (tick - start) << '\r';
+		double tickFreq = cv::getTickFrequency();
+
+		if (cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0)
+			cerr << "FPS : " << tickFreq / (tick - start + 1) << '\r';
 		++cnt;
 	}
 
