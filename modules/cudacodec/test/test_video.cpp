@@ -144,7 +144,7 @@ CUDA_TEST_P(CheckExtraData, Reader)
     ASSERT_TRUE(reader->grab());
     cv::Mat extraData;
     const bool newData = reader->retrieve(extraData, extraDataIdx);
-    ASSERT_TRUE(newData && sz || !newData && !sz);
+    ASSERT_TRUE((newData && sz) || (!newData && !sz));
     ASSERT_EQ(extraData.total(), sz);
 }
 
@@ -174,7 +174,7 @@ CUDA_TEST_P(CheckKeyFrame, Reader)
             nPackages++;
             double containsKeyFrame = i;
             ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME, containsKeyFrame));
-            ASSERT_TRUE(nPackages == 1 && containsKeyFrame || nPackages == 2 && !containsKeyFrame) << "nPackage: " << i;
+            ASSERT_TRUE((nPackages == 1 && containsKeyFrame) || (nPackages == 2 && !containsKeyFrame)) << "nPackage: " << i;
             if (nPackages >= maxNPackagesToCheck)
                 break;
         }
@@ -423,54 +423,361 @@ CUDA_TEST_P(CheckInitParams, Reader)
 
 #endif // HAVE_NVCUVID
 
-#if defined(_WIN32) && defined(HAVE_NVCUVENC)
-//////////////////////////////////////////////////////
-// VideoWriter
-
-CUDA_TEST_P(Video, Writer)
+#if defined(HAVE_NVCUVID) && defined(HAVE_NVCUVENC)
+struct TransCode : testing::TestWithParam<cv::cuda::DeviceInfo>
 {
-    cv::cuda::setDevice(GET_PARAM(0).deviceID());
-
-    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
-
-    std::string outputFile = cv::tempfile(".avi");
-    const double FPS = 25.0;
-
-    cv::VideoCapture reader(inputFile);
-    ASSERT_TRUE(reader.isOpened());
-
-    cv::Ptr<cv::cudacodec::VideoWriter> d_writer;
-
-    cv::Mat frame;
-    cv::cuda::GpuMat d_frame;
-
-    for (int i = 0; i < 10; ++i)
+    cv::cuda::DeviceInfo devInfo;
+    virtual void SetUp()
     {
-        reader >> frame;
-        ASSERT_FALSE(frame.empty());
+        devInfo = GetParam();
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
 
-        d_frame.upload(frame);
 
-        if (d_writer.empty())
-            d_writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), FPS);
-
-        d_writer->write(d_frame);
+CUDA_TEST_P(TransCode, H264ToH265)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h264";
+    constexpr cv::cudacodec::ENC_BUFFER_FORMAT surfaceFormatNv = cv::cudacodec::ENC_BUFFER_FORMAT::BF_NV12;
+    constexpr double fps = 25;
+    const cudacodec::VideoWriterCodec codec = cudacodec::VideoWriterCodec::HEVC;
+    const std::string ext = ".h265";
+    const std::string outputFile = cv::tempfile(ext.c_str());
+    constexpr int nFrames = 5;
+    Size frameSz;
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+        cv::cudacodec::FormatInfo fmt = reader->format();
+        reader->set(cudacodec::ColorFormat::YUV);
+        cv::Ptr<cv::cudacodec::VideoWriter> writer;
+        cv::cuda::GpuMat frame;
+        cv::cuda::Stream stream;
+        for (int i = 0; i < nFrames; ++i) {
+            ASSERT_TRUE(reader->nextFrame(frame, stream));
+            if (!fmt.valid) {
+                fmt = reader->format();
+                ASSERT_TRUE(fmt.valid);
+            }
+            ASSERT_FALSE(frame.empty());
+            Mat tst; frame.download(tst);
+            if (writer.empty()) {
+                frameSz = Size(fmt.width, fmt.height);
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, surfaceFormatNv, stream);
+            }
+            writer->write(frame);
+        }
     }
 
-    reader.release();
-    d_writer.release();
-
-    reader.open(outputFile);
-    ASSERT_TRUE(reader.isOpened());
-
-    for (int i = 0; i < 5; ++i)
     {
-        reader >> frame;
-        ASSERT_FALSE(frame.empty());
+        cv::VideoCapture cap(outputFile);
+        ASSERT_TRUE(cap.isOpened());
+        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
+        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        ASSERT_EQ(frameSz, Size(width, height));
+        ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
+        Mat frame;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+        }
     }
 }
 
-#endif // _WIN32, HAVE_NVCUVENC
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, TransCode, ALL_DEVICES);
+#endif
+
+#if defined(HAVE_NVCUVENC)
+
+//////////////////////////////////////////////////////
+// VideoWriter
+
+//==========================================================================
+
+bool CvtColor(const Mat& in, Mat& out, const cudacodec::ENC_BUFFER_FORMAT surfaceFormatNv) {
+    switch (surfaceFormatNv) {
+    case(cudacodec::ENC_BUFFER_FORMAT::BF_ARGB):
+        cv::cvtColor(in, out, COLOR_BGR2BGRA);
+        return true;
+    case(cudacodec::ENC_BUFFER_FORMAT::BF_ABGR):
+        cv::cvtColor(in, out, COLOR_BGR2RGBA);
+        return true;
+    default:
+        return false;
+    }
+}
+
+PARAM_TEST_CASE(WriteNv, cuda::DeviceInfo, bool, cudacodec::ENC_BUFFER_FORMAT)
+{
+};
+
+CUDA_TEST_P(WriteNv, Writer)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const bool deviceSrc = GET_PARAM(1);
+    const cv::cudacodec::ENC_BUFFER_FORMAT surfaceFormatNv = GET_PARAM(2);
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    constexpr double fps = 25;
+    const cudacodec::VideoWriterCodec codec = cudacodec::VideoWriterCodec::H264;
+    const std::string ext = ".h264";
+    const std::string outputFile = cv::tempfile(ext.c_str());
+    constexpr int nFrames = 5;
+    Size frameSz;
+    {
+        cv::VideoCapture cap(inputFile);
+        ASSERT_TRUE(cap.isOpened());
+        cv::Ptr<cv::cudacodec::VideoWriter> writer;
+        cv::Mat frame, frameNewSf;
+        cv::cuda::GpuMat dFrame;
+        cv::cuda::Stream stream;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+
+            if (writer.empty()) {
+                frameSz = frame.size();
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, surfaceFormatNv, stream);
+            }
+            CvtColor(frame, frameNewSf, surfaceFormatNv);
+            if (deviceSrc) {
+                dFrame.upload(frameNewSf);
+                writer->write(dFrame);
+            }
+            else
+                writer->write(frameNewSf);
+        }
+    }
+
+    {
+        cv::VideoCapture cap(outputFile);
+        ASSERT_TRUE(cap.isOpened());
+        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
+        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        ASSERT_EQ(frameSz, Size(width, height));
+        ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
+        Mat frame;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+        }
+    }
+}
+
+#define DEVICE_SRC true, false
+#define SURFACE_FORMAT_NV cv::cudacodec::ENC_BUFFER_FORMAT::BF_ARGB, cv::cudacodec::ENC_BUFFER_FORMAT::BF_ARGB
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, WriteNv, testing::Combine(ALL_DEVICES, testing::Values(DEVICE_SRC), testing::Values(SURFACE_FORMAT_NV)));
+
+void CvtColor(const Mat& in, Mat& out, const cudacodec::COLOR_FORMAT_CV surfaceFormatCv) {
+    switch (surfaceFormatCv) {
+    case(cudacodec::COLOR_FORMAT_CV::RGB):
+        return cv::cvtColor(in, out, COLOR_BGR2RGB);
+    case(cudacodec::COLOR_FORMAT_CV::BGRA):
+        return cv::cvtColor(in, out, COLOR_BGR2BGRA);
+    case(cudacodec::COLOR_FORMAT_CV::RGBA):
+        return cv::cvtColor(in, out, COLOR_BGR2RGBA);
+    case(cudacodec::COLOR_FORMAT_CV::GRAY):
+        return cv::cvtColor(in, out, COLOR_BGR2GRAY);
+    default:
+        in.copyTo(out);
+    }
+}
+
+PARAM_TEST_CASE(WriteCv, cv::cuda::DeviceInfo, bool, cv::cudacodec::VideoWriterCodec, double, cv::cudacodec::COLOR_FORMAT_CV)
+{
+};
+
+CUDA_TEST_P(WriteCv, Writer)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    const bool deviceSrc = GET_PARAM(1);
+    const cudacodec::VideoWriterCodec codec = GET_PARAM(2);
+    const double fps = GET_PARAM(3);
+    const cv::cudacodec::COLOR_FORMAT_CV surfaceFormatCv = GET_PARAM(4);
+    const std::string ext = codec == cudacodec::VideoWriterCodec::H264 ? ".h264" : ".hevc";
+    const std::string outputFile = cv::tempfile(ext.c_str());
+    constexpr int nFrames = 5;
+    Size frameSz;
+    {
+        cv::VideoCapture cap(inputFile);
+        ASSERT_TRUE(cap.isOpened());
+        cv::Ptr<cv::cudacodec::VideoWriter> writer;
+        cv::Mat frame, frameNewSf;
+        cv::cuda::GpuMat dFrame;
+        cv::cuda::Stream stream;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+            if (writer.empty()) {
+                frameSz = frame.size();
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, surfaceFormatCv, stream);
+            }
+            CvtColor(frame, frameNewSf, surfaceFormatCv);
+            if (deviceSrc) {
+                dFrame.upload(frameNewSf);
+                writer->write(dFrame);
+            }
+            else
+                writer->write(frameNewSf);
+        }
+    }
+
+    {
+        cv::VideoCapture cap(outputFile);
+        ASSERT_TRUE(cap.isOpened());
+        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
+        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        ASSERT_EQ(frameSz, Size(width, height));
+        ASSERT_TRUE(abs(fps - cap.get(CAP_PROP_FPS)) < 0.5);
+        Mat frame;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+        }
+    }
+}
+
+#define DEVICE_SRC true, false
+#define FPS 10, 29.7
+#define CODEC cv::cudacodec::VideoWriterCodec::H264, cv::cudacodec::VideoWriterCodec::HEVC
+#define SURFACE_FORMAT_CV cv::cudacodec::COLOR_FORMAT_CV::BGR, cv::cudacodec::COLOR_FORMAT_CV::RGB, cv::cudacodec::COLOR_FORMAT_CV::BGRA, \
+cv::cudacodec::COLOR_FORMAT_CV::RGBA, cv::cudacodec::COLOR_FORMAT_CV::GRAY
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, WriteCv, testing::Combine(ALL_DEVICES, testing::Values(DEVICE_SRC), testing::Values(CODEC), testing::Values(FPS),
+    testing::Values(SURFACE_FORMAT_CV)));
+
+
+struct EncoderParamsBase : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    cv::cuda::DeviceInfo devInfo;
+    cv::cudacodec::EncoderParams params;
+    virtual void SetUp()
+    {
+        devInfo = GetParam();
+        cv::cuda::setDevice(devInfo.deviceID());
+        // Fixed params for CBR test
+        params.nvPreset = cv::cudacodec::ENC_PRESET::ENC_PRESET_P7;
+        params.tuningInfo = cv::cudacodec::ENC_TUNING_INFO::ENC_TUNING_INFO_HIGH_QUALITY;
+        params.encodingProfile = cv::cudacodec::ENC_PROFILE::ENC_H264_PROFILE_MAIN;
+        params.rateControlMode = cv::cudacodec::ENC_PARAMS_RC_MODE::ENC_PARAMS_RC_CBR;
+        params.multiPassEncoding = cv::cudacodec::ENC_MULTI_PASS::ENC_TWO_PASS_FULL_RESOLUTION;
+        params.averageBitRate = 1e6;
+        params.maxBitRate = 0;
+        params.targetQuality = 0;
+        params.gopLength = 5;
+    }
+};
+
+struct EncoderParamsCv : EncoderParamsBase
+{
+};
+
+CUDA_TEST_P(EncoderParamsCv, Writer)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    constexpr double fps = 25.0;
+    constexpr cudacodec::VideoWriterCodec codec = cudacodec::VideoWriterCodec::H264;
+    const std::string ext = ".h264";
+    const std::string outputFile = cv::tempfile(ext.c_str());
+    Size frameSz;
+    constexpr int nFrames = 5;
+    {
+        cv::VideoCapture reader(inputFile);
+        ASSERT_TRUE(reader.isOpened());
+        const cv::cudacodec::COLOR_FORMAT_CV format = cv::cudacodec::COLOR_FORMAT_CV::BGR;
+        cv::Ptr<cv::cudacodec::VideoWriter> writer;
+        cv::Mat frame;
+        cv::cuda::GpuMat dFrame;
+        cv::cuda::Stream stream;
+        for (int i = 0; i < nFrames; ++i) {
+            reader >> frame;
+            ASSERT_FALSE(frame.empty());
+            dFrame.upload(frame);
+            if (writer.empty()) {
+                frameSz = frame.size();
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, format, params, stream);
+                cv::cudacodec::EncoderParams paramsOut = writer->getEncoderParams();
+                ASSERT_EQ(params, paramsOut);
+            }
+            writer->write(dFrame);
+        }
+    }
+
+    {
+        cv::VideoCapture cap(outputFile);
+        ASSERT_TRUE(cap.isOpened());
+        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
+        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        ASSERT_EQ(frameSz, Size(width, height));
+        ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
+        const bool checkGop = videoio_registry::hasBackend(CAP_FFMPEG);
+        Mat frame;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73))
+                ASSERT_TRUE(i % params.gopLength == 0);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParamsCv, ALL_DEVICES);
+
+struct EncoderParamsNv : EncoderParamsBase
+{
+};
+
+CUDA_TEST_P(EncoderParamsNv, Writer)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    constexpr double fps = 25.0;
+    constexpr cudacodec::VideoWriterCodec codec = cudacodec::VideoWriterCodec::H264;
+    const std::string ext = ".h264";
+    const std::string outputFile = cv::tempfile(ext.c_str());
+    Size frameSz;
+    constexpr int nFrames = 5;
+    {
+        cv::VideoCapture reader(inputFile);
+        ASSERT_TRUE(reader.isOpened());
+        const cv::cudacodec::ENC_BUFFER_FORMAT format = cv::cudacodec::ENC_BUFFER_FORMAT::BF_ARGB;
+        cv::Ptr<cv::cudacodec::VideoWriter> writer;
+        cv::Mat frame, frameNewSf;
+        cv::cuda::GpuMat dFrame;
+        cv::cuda::Stream stream;
+        for (int i = 0; i < nFrames; ++i) {
+            reader >> frame;
+            ASSERT_FALSE(frame.empty());
+            cvtColor(frame, frameNewSf, COLOR_BGR2BGRA);
+            dFrame.upload(frameNewSf);
+            if (writer.empty()) {
+                frameSz = frame.size();
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, format, params, stream);
+                cv::cudacodec::EncoderParams paramsOut = writer->getEncoderParams();
+                ASSERT_EQ(params, paramsOut);
+            }
+            writer->write(dFrame);
+        }
+    }
+
+    {
+        cv::VideoCapture cap(outputFile);
+        ASSERT_TRUE(cap.isOpened());
+        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
+        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        ASSERT_EQ(frameSz, Size(width, height));
+        ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
+        const bool checkGop = videoio_registry::hasBackend(CAP_FFMPEG);
+        Mat frame;
+        for (int i = 0; i < nFrames; ++i) {
+            cap >> frame;
+            ASSERT_FALSE(frame.empty());
+            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73))
+                ASSERT_TRUE(i % params.gopLength == 0);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParamsNv, ALL_DEVICES);
+
+#endif // HAVE_NVCUVENC
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckSet, testing::Combine(
     ALL_DEVICES,

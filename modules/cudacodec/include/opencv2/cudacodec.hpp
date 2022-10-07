@@ -66,114 +66,153 @@ using namespace cuda;  // Stream
 
 ////////////////////////////////// Video Encoding //////////////////////////////////
 
-// Works only under Windows.
-// Supports only H264 video codec and AVI files.
-
-enum SurfaceFormat
+/** @brief Codecs supported by Video writer, refer to Nvidia's GPU Support Matrix to confirm your GPU supports them.
+*/
+enum class VideoWriterCodec
 {
-    SF_UYVY = 0,
-    SF_YUY2,
-    SF_YV12,
-    SF_NV12,
-    SF_IYUV,
-    SF_BGR,
-    SF_GRAY = SF_BGR
+    H264 = 0,
+    HEVC = 1,
+    NumCodecs = 2
+};
+
+/** @brief OpenCV color formats.
+*/
+enum COLOR_FORMAT_CV {
+    UNDEFINED = 0,
+    BGR = 1, //!< Default OpenCV color format.
+    RGB = 2,
+    BGRA = 3,
+    RGBA = 4,
+    GRAY = 5
+};
+
+/** @brief Nvidia Video Codec SDK surface formats.
+*/
+enum ENC_BUFFER_FORMAT
+{
+    BF_UNDEFINED = 0x00000000, //!< Undefined buffer format.
+    BF_NV12 = 0x00000001, //!< Semi-Planar YUV [Y plane followed by interleaved UV plane].
+    BF_YV12 = 0x00000010, //!< Planar YUV [Y plane followed by V and U planes].
+    BF_IYUV = 0x00000100, //!< Planar YUV [Y plane followed by U and V planes].
+    BF_YUV444 = 0x00001000, //!< Planar YUV [Y plane followed by U and V planes].
+    BF_YUV420_10BIT = 0x00010000, //!< 10 bit Semi-Planar YUV [Y plane followed by interleaved UV plane]. Each pixel of size 2 bytes. Most Significant 10 bits contain pixel data.
+    BF_YUV444_10BIT = 0x00100000, //!< 10 bit Planar YUV444 [Y plane followed by U and V planes]. Each pixel of size 2 bytes. Most Significant 10 bits contain pixel data.
+    BF_ARGB = 0x01000000, //!< 8 bit Packed A8R8G8B8. This is a word-ordered format where a pixel is represented by a 32-bit word with B in the lowest 8 bits, G in the next 8 bits, R in the 8 bits after that and A in the highest 8 bits.
+    BF_ARGB10 = 0x02000000, //!< 10 bit Packed A2R10G10B10. This is a word-ordered format where a pixel is represented by a 32-bit word with B in the lowest 10 bits, G in the next 10 bits, R in the 10 bits after that and A in the highest 2 bits.
+    BF_AYUV = 0x04000000, //!< 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits.
+    BF_ABGR = 0x10000000, //!< 8 bit Packed A8B8G8R8. This is a word-ordered format where a pixel is represented by a 32-bit word with R in the lowest 8 bits, G in the next 8 bits, B in the 8 bits after that and A in the highest 8 bits.
+    BF_ABGR10 = 0x20000000, //!< 10 bit Packed A2B10G10R10. This is a word-ordered format where a pixel is represented by a 32-bit word with R in the lowest 10 bits, G in the next 10 bits, B in the 10 bits after that and A in the highest 2 bits.
+};
+
+/** @brief Rate Control Modes.
+*/
+enum ENC_PARAMS_RC_MODE {
+    ENC_PARAMS_RC_CONSTQP = 0x0, //!< Constant QP mode.
+    ENC_PARAMS_RC_VBR = 0x1, //!< Variable bitrate mode.
+    ENC_PARAMS_RC_CBR = 0x2 //!< Constant bitrate mode.
+};
+
+/** @brief Multi Pass Encoding.
+*/
+enum ENC_MULTI_PASS
+{
+    ENC_MULTI_PASS_DISABLED = 0x0, //!< Single Pass.
+    ENC_TWO_PASS_QUARTER_RESOLUTION = 0x1, //!< Two Pass encoding is enabled where first Pass is quarter resolution.
+    ENC_TWO_PASS_FULL_RESOLUTION = 0x2, //!< Two Pass encoding is enabled where first Pass is full resolution.
+};
+
+
+/** @brief Supported Encoder Profiles.
+*/
+enum ENC_PROFILE {
+    ENC_CODEC_PROFILE_AUTOSELECT = 0,
+    ENC_H264_PROFILE_BASELINE = 1,
+    ENC_H264_PROFILE_MAIN = 2,
+    ENC_H264_PROFILE_HIGH = 3,
+    ENC_H264_PROFILE_HIGH_444 = 4,
+    ENC_H264_PROFILE_STEREO = 5,
+    ENC_H264_PROFILE_PROGRESSIVE_HIGH = 6,
+    ENC_H264_PROFILE_CONSTRAINED_HIGH = 7,
+    ENC_HEVC_PROFILE_MAIN = 8,
+    ENC_HEVC_PROFILE_MAIN10 = 9,
+    ENC_HEVC_PROFILE_FREXT = 10
+};
+
+/** @brief Nvidia Encoding Presets. Performance degrades and quality improves as we move from P1 to P7.
+*/
+enum ENC_PRESET {
+    ENC_PRESET_P1 = 1,
+    ENC_PRESET_P2 = 2,
+    ENC_PRESET_P3 = 3,
+    ENC_PRESET_P4 = 4,
+    ENC_PRESET_P5 = 5,
+    ENC_PRESET_P6 = 6,
+    ENC_PRESET_P7 = 7
+};
+
+/** @brief Tuning information.
+*/
+enum ENC_TUNING_INFO {
+    ENC_TUNING_INFO_UNDEFINED = 0, //!< Undefined tuningInfo. Invalid value for encoding.
+    ENC_TUNING_INFO_HIGH_QUALITY = 1, //!< Tune presets for latency tolerant encoding.
+    ENC_TUNING_INFO_LOW_LATENCY = 2, //!< Tune presets for low latency streaming.
+    ENC_TUNING_INFO_ULTRA_LOW_LATENCY = 3, //!< Tune presets for ultra low latency streaming.
+    ENC_TUNING_INFO_LOSSLESS = 4, //!< Tune presets for lossless encoding.
+    ENC_TUNING_INFO_COUNT
+};
+
+/** Quantization Parameter for each type of frame when using ENC_PARAMS_RC_MODE::ENC_PARAMS_RC_CONSTQP.
+*/
+struct CV_EXPORTS_W_SIMPLE ENC_QP
+{
+    CV_PROP_RW uint32_t qpInterP; //!< Specifies QP value for P-frame.
+    CV_PROP_RW uint32_t qpInterB; //!< Specifies QP value for B-frame.
+    CV_PROP_RW uint32_t qpIntra; //!< Specifies QP value for Intra Frame.
 };
 
 /** @brief Different parameters for CUDA video encoder.
- */
-struct CV_EXPORTS_W EncoderParams
-{
-    int P_Interval;      //!< NVVE_P_INTERVAL,
-    int IDR_Period;      //!< NVVE_IDR_PERIOD,
-    int DynamicGOP;      //!< NVVE_DYNAMIC_GOP,
-    int RCType;          //!< NVVE_RC_TYPE,
-    int AvgBitrate;      //!< NVVE_AVG_BITRATE,
-    int PeakBitrate;     //!< NVVE_PEAK_BITRATE,
-    int QP_Level_Intra;  //!< NVVE_QP_LEVEL_INTRA,
-    int QP_Level_InterP; //!< NVVE_QP_LEVEL_INTER_P,
-    int QP_Level_InterB; //!< NVVE_QP_LEVEL_INTER_B,
-    int DeblockMode;     //!< NVVE_DEBLOCK_MODE,
-    int ProfileLevel;    //!< NVVE_PROFILE_LEVEL,
-    int ForceIntra;      //!< NVVE_FORCE_INTRA,
-    int ForceIDR;        //!< NVVE_FORCE_IDR,
-    int ClearStat;       //!< NVVE_CLEAR_STAT,
-    int DIMode;          //!< NVVE_SET_DEINTERLACE,
-    int Presets;         //!< NVVE_PRESETS,
-    int DisableCabac;    //!< NVVE_DISABLE_CABAC,
-    int NaluFramingType; //!< NVVE_CONFIGURE_NALU_FRAMING_TYPE
-    int DisableSPSPPS;   //!< NVVE_DISABLE_SPS_PPS
-
-    EncoderParams();
-    /** @brief Constructors.
-
-    @param configFile Config file name.
-
-    Creates default parameters or reads parameters from config file.
-     */
-    explicit EncoderParams(const String& configFile);
-
-    /** @brief Reads parameters from config file.
-
-    @param configFile Config file name.
-     */
-    void load(const String& configFile);
-    /** @brief Saves parameters to config file.
-
-    @param configFile Config file name.
-     */
-    void save(const String& configFile) const;
-};
-
-/** @brief Callbacks for CUDA video encoder.
- */
-class CV_EXPORTS_W EncoderCallBack
+*/
+struct CV_EXPORTS_W_SIMPLE EncoderParams
 {
 public:
-    enum PicType
-    {
-        IFRAME = 1,
-        PFRAME = 2,
-        BFRAME = 3
-    };
+    CV_WRAP EncoderParams();
+    CV_PROP_RW ENC_PRESET nvPreset;
+    CV_PROP_RW ENC_TUNING_INFO tuningInfo;
+    CV_PROP_RW ENC_PROFILE encodingProfile;
+    CV_PROP_RW ENC_PARAMS_RC_MODE rateControlMode;
+    CV_PROP_RW ENC_MULTI_PASS multiPassEncoding;
+    CV_PROP_RW ENC_QP constQp; //!< QP's for ENC_PARAMS_RC_CONSTQP.
+    CV_PROP_RW int averageBitRate; //!< target bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CBR.
+    CV_PROP_RW int maxBitRate; //!< upper bound on bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CONSTQP.
+    CV_PROP_RW float targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with ENC_PARAMS_RC_VBR.
+    CV_PROP_RW int gopLength;
+};
+CV_EXPORTS bool operator==(const EncoderParams& lhs, const EncoderParams& rhs);
+
+/** @brief Interface for encoder callbacks.
+
+User can implement own multiplexing by implementing this interface.
+*/
+class CV_EXPORTS_W EncoderCallBack {
+public:
+    /** @brief Callback function to signal that the encoded bitstream for one or more frames is ready.
+
+    @param vPacket The raw bitstream for one or more frames.
+    */
+    virtual void onEncoded(std::vector<std::vector<uint8_t>> vPacket) = 0;
+
+    /** @brief Callback function to that the encoding has finished.
+    * */
+    virtual void onEncodingFinished() = 0;
 
     virtual ~EncoderCallBack() {}
-
-    /** @brief Callback function to signal the start of bitstream that is to be encoded.
-
-    Callback must allocate buffer for CUDA encoder and return pointer to it and it's size.
-     */
-    virtual uchar* acquireBitStream(int* bufferSize) = 0;
-
-    /** @brief Callback function to signal that the encoded bitstream is ready to be written to file.
-    */
-    virtual void releaseBitStream(unsigned char* data, int size) = 0;
-
-    /** @brief Callback function to signal that the encoding operation on the frame has started.
-
-    @param frameNumber
-    @param picType Specify frame type (I-Frame, P-Frame or B-Frame).
-     */
-    CV_WRAP virtual void onBeginFrame(int frameNumber, EncoderCallBack::PicType picType) = 0;
-
-    /** @brief Callback function signals that the encoding operation on the frame has finished.
-
-    @param frameNumber
-    @param picType Specify frame type (I-Frame, P-Frame or B-Frame).
-     */
-    CV_WRAP virtual void onEndFrame(int frameNumber, EncoderCallBack::PicType picType) = 0;
 };
 
 /** @brief Video writer interface.
-
-The implementation uses H264 video codec.
-
-@note Currently only Windows platform is supported.
-
 @note
    -   An example on how to use the videoWriter class can be found at
         opencv_source_code/samples/gpu/video_writer.cpp
- */
+*/
 class CV_EXPORTS_W VideoWriter
 {
 public:
@@ -181,66 +220,134 @@ public:
 
     /** @brief Writes the next video frame.
 
-    @param frame The written frame.
-    @param lastFrame Indicates that it is end of stream. The parameter can be ignored.
+    @param frame The framet to be written.
 
-    The method write the specified image to video file. The image must have the same size and the same
+    The method encodes the specified image to a video stream. The image must have the same size and the same
     surface format as has been specified when opening the video writer.
-     */
-    CV_WRAP virtual void write(InputArray frame, bool lastFrame = false) = 0;
+    */
+    CV_WRAP virtual void write(InputArray frame) = 0;
 
+    /** @brief Retrieve the encoding parameters.
+    */
     CV_WRAP virtual EncoderParams getEncoderParams() const = 0;
+
+    /** @brief Waits until the encoding process has finished before calling EncoderCallBack::onEncodingFinished().
+    */
+    CV_WRAP virtual void close() = 0;
 };
 
 /** @brief Creates video writer.
 
-@param fileName Name of the output video file. Only AVI file format is supported.
+@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
 @param frameSize Size of the input video frames.
+@param codec Codec.
 @param fps Framerate of the created video stream.
-@param format Surface format of input frames ( SF_UYVY , SF_YUY2 , SF_YV12 , SF_NV12 ,
-SF_IYUV , SF_BGR or SF_GRAY). BGR or gray frames will be converted to YV12 format before
-encoding, frames with other formats will be used as is.
+@param colorFormat OpenCv color format of the frames to be encoded.
+@param stream Stream for frame pre-processing.
+*/
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
+    const double fps = 25.0, const COLOR_FORMAT_CV colorFormat = BGR, const Stream& stream = Stream::Null());
 
-The constructors initialize video writer. FFMPEG is used to write videos. User can implement own
-multiplexing with cudacodec::EncoderCallBack .
- */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, Size frameSize, double fps, SurfaceFormat format = SF_BGR);
-/** @overload
-@param fileName Name of the output video file. Only AVI file format is supported.
-@param frameSize Size of the input video frames.
-@param fps Framerate of the created video stream.
-@param params Encoder parameters. See cudacodec::EncoderParams .
-@param format Surface format of input frames ( SF_UYVY , SF_YUY2 , SF_YV12 , SF_NV12 ,
-SF_IYUV , SF_BGR or SF_GRAY). BGR or gray frames will be converted to YV12 format before
-encoding, frames with other formats will be used as is.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, Size frameSize, double fps, const EncoderParams& params, SurfaceFormat format = SF_BGR);
+/** @brief Creates video writer.
 
-/** @overload
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you
-want to work with raw video stream.
+@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
 @param frameSize Size of the input video frames.
+@param codec Codec.
 @param fps Framerate of the created video stream.
-@param format Surface format of input frames ( SF_UYVY , SF_YUY2 , SF_YV12 , SF_NV12 ,
-SF_IYUV , SF_BGR or SF_GRAY). BGR or gray frames will be converted to YV12 format before
-encoding, frames with other formats will be used as is.
+@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
+@param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallback, Size frameSize, double fps, SurfaceFormat format = SF_BGR);
-/** @overload
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you
-want to work with raw video stream.
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
+    const double fps = 25.0, const ENC_BUFFER_FORMAT bufferFormat = BF_ARGB, const Stream& stream = Stream::Null());
+
+/** @brief Creates video writer.
+
+@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
 @param frameSize Size of the input video frames.
+@param codec Codec.
 @param fps Framerate of the created video stream.
-@param params Encoder parameters. See cudacodec::EncoderParams.
-@param format Surface format of input frames ( SF_UYVY , SF_YUY2 , SF_YV12 , SF_NV12 ,
-SF_IYUV , SF_BGR or SF_GRAY). BGR or gray frames will be converted to YV12 format before
-encoding, frames with other formats will be used as is.
+@param colorFormat OpenCv color format of the frames to be encoded.
+@param params Additional encoding parameters.
+@param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallback, Size frameSize, double fps, const EncoderParams& params, SurfaceFormat format = SF_BGR);
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec,
+    const double fps, const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
+
+
+/** @brief Creates video writer.
+
+@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
+@param frameSize Size of the input video frames.
+@param codec Codec.
+@param fps Framerate of the created video stream.
+@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
+@param params Additional encoding parameters.
+@param stream Stream for frame pre-processing.
+*/
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec,
+    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
+
+/** @brief Creates video writer.
+
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param frameSize Size of the input video frames.
+@param codec Codec.
+@param fps Framerate of the created video stream.
+@param colorFormat OpenCv color format of the frames to be encoded.
+@param stream Stream for frame pre-processing.
+
+The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallBack.
+*/
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
+    const double fps = 25.0, const COLOR_FORMAT_CV colorFormat = BGR, const Stream& stream = Stream::Null());
+
+/** @brief Creates video writer.
+
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param frameSize Size of the input video frames.
+@param codec Codec.
+@param fps Framerate of the created video stream.
+@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
+@param stream Stream for frame pre-processing.
+
+The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallBack.
+*/
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
+    const double fps = 25.0, const ENC_BUFFER_FORMAT bufferFormat = BF_ARGB, const Stream& stream = Stream::Null());
+
+/** @brief Creates video writer.
+
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param frameSize Size of the input video frames.
+@param codec Codec.
+@param fps Framerate of the created video stream.
+@param colorFormat OpenCv color format of the frames to be encoded.
+@param params Additional encoding parameters.
+@param stream Stream for frame pre-processing.
+
+The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallBack.
+*/
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec,
+    const double fps, const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
+
+/** @brief Creates video writer.
+
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param frameSize Size of the input video frames.
+@param codec Codec.
+@param fps Framerate of the created video stream.
+@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
+@param params Additional encoding parameters.
+@param stream Stream for frame pre-processing.
+
+The constructors initialize video writer. User can implement own their multiplexing with cudacodec::EncoderCallBack.
+*/
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec,
+    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
 
 ////////////////////////////////// Video Decoding //////////////////////////////////////////
 
-/** @brief Video codecs supported by cudacodec::VideoReader .
+/** @brief Video codecs supported by cudacodec::VideoReader.
  */
 enum Codec
 {

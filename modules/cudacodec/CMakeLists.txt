@@ -18,9 +18,8 @@ if(HAVE_NVCUVID)
 endif()
 
 if(HAVE_NVCUVENC)
-  if(WIN32)
-    list(APPEND extra_libs ${CUDA_nvcuvenc_LIBRARY})
-  endif()
+    list(APPEND extra_libs ${CUDA_CUDA_LIBRARY}  ${CUDA_nvencodeapi_LIBRARY})
+    ocv_add_module(cudacodec opencv_cudaimgproc)
 endif()
 
 ocv_create_module(${extra_libs})
