@@ -1,6 +1,6 @@
-#define CL_TARGET_OPENCL_VERSION 300
+#define CL_TARGET_OPENCL_VERSION 220
 
-#include <iostream>
+#include <sstream>
 #include <filesystem>
 #include <dirent.h>
 #include <fcntl.h>
@@ -52,211 +52,211 @@ static int find_adapter(unsigned desiredVendorId);
 int drmfd = -1;
 
 class Directory {
-	typedef int (*fsort)(const struct dirent**, const struct dirent**);
+    typedef int (*fsort)(const struct dirent**, const struct dirent**);
 public:
-	Directory(const char *path) {
-		dirEntries_ = 0;
-		numEntries_ = scandir(path, &dirEntries_, filterFunc, (fsort) alphasort);
-	}
-	~Directory() {
-		if (numEntries_ && dirEntries_) {
-			for (int i = 0; i < numEntries_; ++i)
-				free(dirEntries_[i]);
-			free(dirEntries_);
-		}
-	}
-	int count() const {
-		return numEntries_;
-	}
-	const struct dirent* operator[](int index) const {
-		return ((dirEntries_ != 0) && (index >= 0) && (index < numEntries_)) ? dirEntries_[index] : 0;
-	}
+    Directory(const char *path) {
+        dirEntries_ = 0;
+        numEntries_ = scandir(path, &dirEntries_, filterFunc, (fsort) alphasort);
+    }
+    ~Directory() {
+        if (numEntries_ && dirEntries_) {
+            for (int i = 0; i < numEntries_; ++i)
+                free(dirEntries_[i]);
+            free(dirEntries_);
+        }
+    }
+    int count() const {
+        return numEntries_;
+    }
+    const struct dirent* operator[](int index) const {
+        return ((dirEntries_ != 0) && (index >= 0) && (index < numEntries_)) ? dirEntries_[index] : 0;
+    }
 protected:
-	static int filterFunc(const struct dirent *dir) {
-		if (!dir)
-			return 0;
-		if (!strcmp(dir->d_name, "."))
-			return 0;
-		if (!strcmp(dir->d_name, ".."))
-			return 0;
-		return 1;
-	}
+    static int filterFunc(const struct dirent *dir) {
+        if (!dir)
+            return 0;
+        if (!strcmp(dir->d_name, "."))
+            return 0;
+        if (!strcmp(dir->d_name, ".."))
+            return 0;
+        return 1;
+    }
 private:
-	int numEntries_;
-	struct dirent **dirEntries_;
+    int numEntries_;
+    struct dirent **dirEntries_;
 };
 
 static unsigned read_id(const char *devName, const char *idName) {
-	long int id = 0;
+    long int id = 0;
 
-	std::string fileName = cv::format("%s/%s/%s", VA_INTEL_PCI_DIR, devName, idName);
+    std::string fileName = cv::format("%s/%s/%s", VA_INTEL_PCI_DIR, devName, idName);
 
-	FILE *file = fopen(fileName.c_str(), "r");
-	if (file) {
-		char str[16] = "";
-		if (fgets(str, sizeof(str), file))
-			id = strtol(str, NULL, 16);
-		fclose(file);
-	}
-	return (unsigned) id;
+    FILE *file = fopen(fileName.c_str(), "r");
+    if (file) {
+        char str[16] = "";
+        if (fgets(str, sizeof(str), file))
+            id = strtol(str, NULL, 16);
+        fclose(file);
+    }
+    return (unsigned) id;
 }
 
 static int find_adapter(unsigned desiredVendorId) {
-	int adapterIndex = -1;
+    int adapterIndex = -1;
 
-	Directory dir(VA_INTEL_PCI_DIR);
+    Directory dir(VA_INTEL_PCI_DIR);
 
-	for (int i = 0; i < dir.count(); ++i) {
-		const char *name = dir[i]->d_name;
+    for (int i = 0; i < dir.count(); ++i) {
+        const char *name = dir[i]->d_name;
 
-		unsigned classId = read_id(name, "class");
-		if ((classId >> 16) == VA_INTEL_PCI_DISPLAY_CONTROLLER_CLASS) {
-			unsigned vendorId = read_id(name, "vendor");
-			if (vendorId == desiredVendorId) {
-				std::string subdirName = cv::format("%s/%s/%s", VA_INTEL_PCI_DIR, name, "drm");
-				Directory subdir(subdirName.c_str());
-				for (int j = 0; j < subdir.count(); ++j) {
-					if (!strncmp(subdir[j]->d_name, "card", 4)) {
-						adapterIndex = strtoul(subdir[j]->d_name + 4, NULL, 10);
-					}
-				}
-				break;
-			}
-		}
-	}
+        unsigned classId = read_id(name, "class");
+        if ((classId >> 16) == VA_INTEL_PCI_DISPLAY_CONTROLLER_CLASS) {
+            unsigned vendorId = read_id(name, "vendor");
+            if (vendorId == desiredVendorId) {
+                std::string subdirName = cv::format("%s/%s/%s", VA_INTEL_PCI_DIR, name, "drm");
+                Directory subdir(subdirName.c_str());
+                for (int j = 0; j < subdir.count(); ++j) {
+                    if (!strncmp(subdir[j]->d_name, "card", 4)) {
+                        adapterIndex = strtoul(subdir[j]->d_name + 4, NULL, 10);
+                    }
+                }
+                break;
+            }
+        }
+    }
 
-	return adapterIndex;
+    return adapterIndex;
 }
 
 class NodeInfo {
-	enum {
-		NUM_NODES = 2
-	};
+    enum {
+        NUM_NODES = 2
+    };
 public:
-	NodeInfo(int adapterIndex) {
-		const char *names[NUM_NODES] = { "renderD", "card" };
-		int numbers[NUM_NODES];
-		numbers[0] = adapterIndex + 128;
-		numbers[1] = adapterIndex;
-		for (int i = 0; i < NUM_NODES; ++i) {
-			paths_[i] = cv::format("%s%s%d", VA_INTEL_DRI_DIR, names[i], numbers[i]);
-		}
-	}
-	~NodeInfo() {
-		// nothing
-	}
-	int count() const {
-		return NUM_NODES;
-	}
-	const char* path(int index) const {
-		return ((index >= 0) && (index < NUM_NODES)) ? paths_[index].c_str() : 0;
-	}
+    NodeInfo(int adapterIndex) {
+        const char *names[NUM_NODES] = { "renderD", "card" };
+        int numbers[NUM_NODES];
+        numbers[0] = adapterIndex + 128;
+        numbers[1] = adapterIndex;
+        for (int i = 0; i < NUM_NODES; ++i) {
+            paths_[i] = cv::format("%s%s%d", VA_INTEL_DRI_DIR, names[i], numbers[i]);
+        }
+    }
+    ~NodeInfo() {
+        // nothing
+    }
+    int count() const {
+        return NUM_NODES;
+    }
+    const char* path(int index) const {
+        return ((index >= 0) && (index < NUM_NODES)) ? paths_[index].c_str() : 0;
+    }
 private:
-	std::string paths_[NUM_NODES];
+    std::string paths_[NUM_NODES];
 };
 
 static bool open_device_intel();
 static bool open_device_generic();
 
 static bool open_device_intel() {
-	const unsigned IntelVendorID = 0x8086;
+    const unsigned IntelVendorID = 0x8086;
 
-	int adapterIndex = find_adapter(IntelVendorID);
-	if (adapterIndex >= 0) {
-		NodeInfo nodes(adapterIndex);
+    int adapterIndex = find_adapter(IntelVendorID);
+    if (adapterIndex >= 0) {
+        NodeInfo nodes(adapterIndex);
 
-		for (int i = 0; i < nodes.count(); ++i) {
-			drmfd = open(nodes.path(i), O_RDWR);
-			if (drmfd >= 0) {
-				display = vaGetDisplayDRM(drmfd);
-				if (display)
-					return true;
-				close(drmfd);
-				drmfd = -1;
-			}
-		}
-	}
-	return false;
+        for (int i = 0; i < nodes.count(); ++i) {
+            drmfd = open(nodes.path(i), O_RDWR);
+            if (drmfd >= 0) {
+                display = vaGetDisplayDRM(drmfd);
+                if (display)
+                    return true;
+                close(drmfd);
+                drmfd = -1;
+            }
+        }
+    }
+    return false;
 }
 
 static bool open_device_generic() {
-	static const char *device_paths[] = { "/dev/dri/renderD128", "/dev/dri/card0" };
-	static const int num_devices = sizeof(device_paths) / sizeof(device_paths[0]);
+    static const char *device_paths[] = { "/dev/dri/renderD128", "/dev/dri/card0" };
+    static const int num_devices = sizeof(device_paths) / sizeof(device_paths[0]);
 
-	for (int i = 0; i < num_devices; ++i) {
-		drmfd = open(device_paths[i], O_RDWR);
-		if (drmfd >= 0) {
-			display = vaGetDisplayDRM(drmfd);
-			if (display)
-				return true;
-			close(drmfd);
-			drmfd = -1;
-		}
-	}
-	return false;
+    for (int i = 0; i < num_devices; ++i) {
+        drmfd = open(device_paths[i], O_RDWR);
+        if (drmfd >= 0) {
+            display = vaGetDisplayDRM(drmfd);
+            if (display)
+                return true;
+            close(drmfd);
+            drmfd = -1;
+        }
+    }
+    return false;
 }
 
 bool open_display() {
-	if (!initialized) {
-		drmfd = -1;
-		display = 0;
+    if (!initialized) {
+        drmfd = -1;
+        display = 0;
 
-		if (open_device_intel() || open_device_generic()) {
-			int majorVersion = 0, minorVersion = 0;
-			if (vaInitialize(display, &majorVersion, &minorVersion) == VA_STATUS_SUCCESS) {
-				initialized = true;
-				return true;
-			}
-			close(drmfd);
-			display = 0;
-			drmfd = -1;
-		}
-		return false; // Can't open VA display
-	}
-	return true;
+        if (open_device_intel() || open_device_generic()) {
+            int majorVersion = 0, minorVersion = 0;
+            if (vaInitialize(display, &majorVersion, &minorVersion) == VA_STATUS_SUCCESS) {
+                initialized = true;
+                return true;
+            }
+            close(drmfd);
+            display = 0;
+            drmfd = -1;
+        }
+        return false; // Can't open VA display
+    }
+    return true;
 }
 
 void close_display() {
-	if (initialized) {
-		if (display)
-			vaTerminate(display);
-		if (drmfd >= 0)
-			close(drmfd);
-		display = 0;
-		drmfd = -1;
-		initialized = false;
-	}
+    if (initialized) {
+        if (display)
+            vaTerminate(display);
+        if (drmfd >= 0)
+            close(drmfd);
+        display = 0;
+        drmfd = -1;
+        initialized = false;
+    }
 }
 
 void check_if_YUV420_available() {
-	VAEntrypoint entrypoints[5];
-	int num_entrypoints, vld_entrypoint;
-	VAConfigAttrib attrib;
-	VAStatus status;
+    VAEntrypoint entrypoints[5];
+    int num_entrypoints, vld_entrypoint;
+    VAConfigAttrib attrib;
+    VAStatus status;
 
-	status = vaQueryConfigEntrypoints(va::display, VAProfileVP9Profile0, entrypoints, &num_entrypoints);
-	assert(status == VA_STATUS_SUCCESS);
+    status = vaQueryConfigEntrypoints(va::display, VAProfileVP9Profile0, entrypoints, &num_entrypoints);
+    assert(status == VA_STATUS_SUCCESS);
 
-	for (vld_entrypoint = 0; vld_entrypoint < num_entrypoints; ++vld_entrypoint) {
-		if (entrypoints[vld_entrypoint] == VAEntrypointVLD)
-			break;
-	}
-	if (vld_entrypoint == num_entrypoints)
-		throw std::runtime_error("Failed to find VLD entry point");
+    for (vld_entrypoint = 0; vld_entrypoint < num_entrypoints; ++vld_entrypoint) {
+        if (entrypoints[vld_entrypoint] == VAEntrypointVLD)
+            break;
+    }
+    if (vld_entrypoint == num_entrypoints)
+        throw std::runtime_error("Failed to find VLD entry point");
 
-	attrib.type = VAConfigAttribRTFormat;
-	vaGetConfigAttributes(va::display, VAProfileVP9Profile0, VAEntrypointVLD, &attrib, 1);
-	if ((attrib.value & VA_RT_FORMAT_YUV420) == 0)
-		throw std::runtime_error("Desired YUV444 RT format not found");
+    attrib.type = VAConfigAttribRTFormat;
+    vaGetConfigAttributes(va::display, VAProfileVP9Profile0, VAEntrypointVLD, &attrib, 1);
+    if ((attrib.value & VA_RT_FORMAT_YUV420) == 0)
+        throw std::runtime_error("Desired YUV444 RT format not found");
 }
 
 void init_va() {
-	if (!va::open_display())
-		throw std::runtime_error("Failed to open VA display for CL-VA interoperability");
+    if (!va::open_display())
+        throw std::runtime_error("Failed to open VA display for CL-VA interoperability");
 
-	va::check_if_YUV420_available();
+    va::check_if_YUV420_available();
 
-	cv::va_intel::ocl::initializeContextFromVA(va::display, true);
+    cv::va_intel::ocl::initializeContextFromVA(va::display, true);
 }
 } // namespace va
 }
@@ -268,54 +268,55 @@ EGLSurface surface;
 EGLContext context;
 
 void eglCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
-	EGLint errorCode = eglGetError();
+    EGLint errorCode = eglGetError();
 
-	if (errorCode != EGL_SUCCESS) {
-		cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
-		assert(false);
-	}
+    if (errorCode != EGL_SUCCESS) {
+        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
+        assert(false);
+    }
 }
 #define eglCheck(expr)                                 \
         expr;                                          \
         egl::eglCheckError(__FILE__, __LINE__, #expr);
 
 void init_egl() {
-	eglCheck(eglBindAPI(EGL_OPENGL_API));
-	eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
-	eglCheck(eglInitialize(display, nullptr, nullptr));
+    eglCheck(eglBindAPI(EGL_OPENGL_API));
+    eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
+    eglCheck(eglInitialize(display, nullptr, nullptr));
 
-	const EGLint attributes[] = {
-	EGL_BUFFER_SIZE, static_cast<EGLint>(24),
-	EGL_DEPTH_SIZE, static_cast<EGLint>(24),
-	EGL_STENCIL_SIZE, static_cast<EGLint>(0),
-	EGL_SAMPLE_BUFFERS,
-	EGL_FALSE,
-	EGL_SAMPLES, 0,
-	EGL_SURFACE_TYPE,
-	EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
-	EGL_RENDERABLE_TYPE,
-	EGL_OPENGL_BIT,
-	EGL_NONE };
+    const EGLint attributes[] = {
+    EGL_BUFFER_SIZE, static_cast<EGLint>(24),
+    EGL_DEPTH_SIZE, static_cast<EGLint>(24),
+    EGL_STENCIL_SIZE, static_cast<EGLint>(0),
+    EGL_SAMPLE_BUFFERS,
+    EGL_FALSE,
+    EGL_SAMPLES, 0,
+    EGL_SURFACE_TYPE,
+    EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+    EGL_RENDERABLE_TYPE,
+    EGL_OPENGL_BIT,
+    EGL_NONE };
 
-	EGLint configCount;
-	EGLConfig configs[1];
+    EGLint configCount;
+    EGLConfig configs[1];
 
-	eglCheck(eglChooseConfig(display, attributes, configs, 1, &configCount));
-	EGLint attrib_list[] = { EGL_WIDTH, WIDTH, EGL_HEIGHT, HEIGHT, EGL_NONE };
+    eglCheck(eglChooseConfig(display, attributes, configs, 1, &configCount));
+    EGLint attrib_list[] = { EGL_WIDTH, WIDTH, EGL_HEIGHT, HEIGHT, EGL_NONE };
 
-	eglCheck(surface = eglCreatePbufferSurface(display, configs[0], attrib_list));
+    eglCheck(surface = eglCreatePbufferSurface(display, configs[0], attrib_list));
 
-	const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_CONTEXT_OPENGL_DEBUG, EGL_FALSE, EGL_NONE };
+    const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_CONTEXT_OPENGL_DEBUG, EGL_FALSE, EGL_NONE };
 
-	eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
-	eglCheck(eglMakeCurrent(display, surface, surface, context));
-
-	cerr << "EGL Version: " << eglQueryString(display, EGL_VERSION) << endl;
-	cerr << "OpenGL version: " << glGetString(GL_VERSION) << endl;
+    eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
+    eglCheck(eglMakeCurrent(display, surface, surface, context));
 }
 
 EGLBoolean swapBuffers() {
-	return eglCheck(eglSwapBuffers(display, surface));
+    return eglCheck(eglSwapBuffers(display, surface));
+}
+
+std::string get_info() {
+    return eglQueryString(display, EGL_VERSION);
 }
 }
 }
@@ -327,148 +328,173 @@ cv::ogl::Texture2D *frame_buf_tex;
 GLuint frame_buf_tex_name;
 
 void glCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
-	GLint errorCode = glGetError();
+    GLint errorCode = glGetError();
 
-	if (errorCode != GL_NO_ERROR) {
-		cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
-		assert(false);
-	}
+    if (errorCode != GL_NO_ERROR) {
+        cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
+        assert(false);
+    }
 }
 #define glCheck(expr)							 \
 	expr;                                        \
 	gl::glCheckError(__FILE__, __LINE__, #expr);
 
 void init_gl() {
-	glewInit();
+    glewInit();
 
-	cv::ogl::ocl::initializeContextFromGL();
+    cv::ogl::ocl::initializeContextFromGL();
 
-	frame_buf_tex_name = 0;
-	glCheck(glGenFramebuffers(1, &frame_buf_tex_name));
-	glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf_tex_name));
-	frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
-	frame_buf_tex->bind();
+    frame_buf_tex_name = 0;
+    glCheck(glGenFramebuffers(1, &frame_buf_tex_name));
+    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf_tex_name));
+    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
+    frame_buf_tex->bind();
 
-	glCheck(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, frame_buf_tex->texId(), 0));
-	GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-	glCheck(glDrawBuffers(1, drawBuffers));
-	assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-	glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf_tex_name));
+    glCheck(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, frame_buf_tex->texId(), 0));
+    GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+    glCheck(glDrawBuffers(1, drawBuffers));
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf_tex_name));
 
-	glCheck(glClearColor(0.1, 0.39, 0.88, 1.0));
-	glCheck(glColor3f(1.0, 1.0, 1.0));
+    glCheck(glClearColor(0.1, 0.39, 0.88, 1.0));
+    glCheck(glColor3f(1.0, 1.0, 1.0));
 
-	glCheck(glEnable(GL_CULL_FACE));
-	glCheck(glCullFace(GL_BACK));
+    glCheck(glEnable(GL_CULL_FACE));
+    glCheck(glCullFace(GL_BACK));
 
-	glCheck(glMatrixMode(GL_PROJECTION));
-	glCheck(glLoadIdentity());
-	glCheck(glFrustum(-2, 2, -1.5, 1.5, 1, 40));
+    glCheck(glMatrixMode(GL_PROJECTION));
+    glCheck(glLoadIdentity());
+    glCheck(glFrustum(-2, 2, -1.5, 1.5, 1, 40));
 
-	glCheck(glMatrixMode(GL_MODELVIEW));
-	glCheck(glLoadIdentity());
-	glCheck(glTranslatef(0, 0, -3));
-	glCheck(glRotatef(50, 1, 0, 0));
-	glCheck(glRotatef(70, 0, 1, 0));
+    glCheck(glMatrixMode(GL_MODELVIEW));
+    glCheck(glLoadIdentity());
+    glCheck(glTranslatef(0, 0, -3));
+    glCheck(glRotatef(50, 1, 0, 0));
+    glCheck(glRotatef(70, 0, 1, 0));
 }
 
 void swapBuffers() {
-	kb::egl::swapBuffers();
+    kb::egl::swapBuffers();
 }
 
 void fetch_frame_buffer(cv::UMat &m) {
-	glCheck(cv::ogl::convertFromGLTexture2D(*frame_buf_tex, m));
+    glCheck(cv::ogl::convertFromGLTexture2D(*frame_buf_tex, m));
 }
 
 void return_frame_buffer(cv::UMat &m) {
-	glCheck(cv::ogl::convertToGLTexture2D(m, *frame_buf_tex));
+    glCheck(cv::ogl::convertToGLTexture2D(m, *frame_buf_tex));
+}
+
+std::string get_info() {
+    return reinterpret_cast<const char*>(glGetString(GL_VERSION));
+}
+}
+}
+
+namespace kb {
+namespace cl {
+std::string get_info() {
+    std::stringstream ss;
+    std::vector<cv::ocl::PlatformInfo> plt_info;
+    cv::ocl::getPlatfomsInfo(plt_info);
+
+    for (const auto &info : plt_info) {
+        ss << '\t' << info.version() << " = " << info.name() << endl;
+    }
+    return ss.str();
 }
 }
 }
 
 int main(int argc, char **argv) {
-	using namespace kb;
+    using namespace kb;
 
-	va::init_va();
-	cv::ocl::OpenCLExecutionContext vaContext = cv::ocl::OpenCLExecutionContext::getCurrent();
-	cv::VideoWriter video("tetra-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    va::init_va();
+    cv::VideoWriter video("tetra-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    cv::ocl::OpenCLExecutionContext vaContext = cv::ocl::OpenCLExecutionContext::getCurrent();
 
-	egl::init_egl();
-	gl::init_gl();
-	cv::ocl::OpenCLExecutionContext glContext = cv::ocl::OpenCLExecutionContext::getCurrent();
+    egl::init_egl();
+    gl::init_gl();
 
-	cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
-	cv::UMat mask;
-	cv::UMat bgr;
-	double sigma = 50;
+    cv::ocl::OpenCLExecutionContext glContext = cv::ocl::OpenCLExecutionContext::getCurrent();
 
-	uint64_t cnt = 0;
-	while (true) {
-		int64 start = cv::getTickCount();
+    cerr << "EGL Version: " << egl::get_info() << endl;
+    cerr << "OpenGL version: " << gl::get_info() << endl;
+    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-		//Draw a rotating tetrahedron
-		glContext.bind();
-		glRotatef(1, 0, 1, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat mask;
+    cv::UMat videoFrame;
 
-		glColor3f(1.0, 1.0, 1.0);
-		glBegin(GL_LINES);
-		for (GLfloat i = -2.5; i <= 2.5; i += 0.25) {
-			glVertex3f(i, 0, 2.5);
-			glVertex3f(i, 0, -2.5);
-			glVertex3f(2.5, 0, i);
-			glVertex3f(-2.5, 0, i);
-		}
-		glEnd();
+    double sigma = 50;
+    int64 start = 0;
+    uint64_t cnt = 0;
 
-		glBegin(GL_TRIANGLE_STRIP);
-		glColor3f(1, 1, 1);
-		glVertex3f(0, 2, 0);
-		glColor3f(1, 0, 0);
-		glVertex3f(-1, 0, 1);
-		glColor3f(0, 1, 0);
-		glVertex3f(1, 0, 1);
-		glColor3f(0, 0, 1);
-		glVertex3f(0, 0, -1.4);
-		glColor3f(1, 1, 1);
-		glVertex3f(0, 2, 0);
-		glColor3f(1, 0, 0);
-		glVertex3f(-1, 0, 1);
-		glEnd();
+    while (true) {
+        start = cv::getTickCount();
 
-		glFlush();
-		gl::swapBuffers();
-		gl::fetch_frame_buffer(frameBuffer); //hand over the data (GPU 2 GPU) to OpenCV/OpenCL
+        //Draw a rotating tetrahedron
+        glContext.bind();
+        glRotatef(1, 0, 1, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//Using OpenCL in the background
-		cv::flip(frameBuffer, frameBuffer, 0); //  flip the image in the y-axis
+        glColor3f(1.0, 1.0, 1.0);
+        glBegin(GL_LINES);
+        for (GLfloat i = -2.5; i <= 2.5; i += 0.25) {
+            glVertex3f(i, 0, 2.5);
+            glVertex3f(i, 0, -2.5);
+            glVertex3f(2.5, 0, i);
+            glVertex3f(-2.5, 0, i);
+        }
+        glEnd();
 
-		{
-			//Do a glow effect using blur
-			cv::blur(frameBuffer, mask, cv::Size(sigma, sigma));
-			cv::bitwise_not(mask, mask);
-			cv::bitwise_not(frameBuffer, frameBuffer);
-			mask.assignTo(mask, CV_16U);
-			frameBuffer.assignTo(frameBuffer, CV_16U);
-			multiply(mask, frameBuffer, mask);
-			cv::divide(mask, cv::Scalar::all(255.0), mask);
-			mask.assignTo(mask, CV_8U);
-			cv::bitwise_not(mask, frameBuffer);
-		}
+        glBegin(GL_TRIANGLE_STRIP);
+            glColor3f(1, 1, 1);
+            glVertex3f(0, 2, 0);
+            glColor3f(1, 0, 0);
+            glVertex3f(-1, 0, 1);
+            glColor3f(0, 1, 0);
+            glVertex3f(1, 0, 1);
+            glColor3f(0, 0, 1);
+            glVertex3f(0, 0, -1.4);
+            glColor3f(1, 1, 1);
+            glVertex3f(0, 2, 0);
+            glColor3f(1, 0, 0);
+            glVertex3f(-1, 0, 1);
+        glEnd();
 
-		cv::cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2RGB); // Convert to RGB
+        glFlush();
+        gl::swapBuffers();
+        gl::fetch_frame_buffer(frameBuffer); //hand over the data (GPU 2 GPU) to OpenCV/OpenCL
 
-		vaContext.bind();
-		//encode the frame using VAAPI on the GPU.
-		video.write(bgr);
+        //Using OpenCL in the background
+        cv::flip(frameBuffer, frameBuffer, 0); //  flip the image in the y-axis
 
-		int64 tick = cv::getTickCount();
-		double tickFreq = cv::getTickFrequency();
+        {
+            //Do a glow effect using blur
+            cv::blur(frameBuffer, mask, cv::Size(sigma, sigma));
+            cv::bitwise_not(mask, mask);
+            cv::bitwise_not(frameBuffer, frameBuffer);
+            mask.assignTo(mask, CV_16U);
+            frameBuffer.assignTo(frameBuffer, CV_16U);
+            cv::multiply(mask, frameBuffer, mask);
+            cv::divide(mask, cv::Scalar::all(255.0), mask);
+            mask.assignTo(mask, CV_8U);
+            cv::bitwise_not(mask, frameBuffer);
+        }
 
-		if (cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0)
-			cerr << "FPS : " << tickFreq / (tick - start + 1) << '\r';
-		++cnt;
-	}
+        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB); // Color-conversion from BGRA to RGB
 
-	return 0;
+        vaContext.bind();
+        video.write(videoFrame); //encode the frame using VAAPI on the GPU.
+
+        int64 tick = cv::getTickCount();
+        double tickFreq = cv::getTickFrequency();
+        if (cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0)
+            cerr << "FPS : " << tickFreq / (tick - start + 1) << '\r';
+
+        ++cnt;
+    }
+
+    return 0;
 }
