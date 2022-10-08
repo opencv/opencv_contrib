@@ -17,7 +17,7 @@ release: ${TARGET}
 debug: ${TARGET}
 info: ${TARGET}
 profile: ${TARGET}
-hardcore: ${TARGET}
+unsafe: ${TARGET}
 asan: ${TARGET}
 
 ${TARGET}: ${OBJS}
