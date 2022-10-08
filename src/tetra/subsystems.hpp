@@ -403,9 +403,9 @@ std::string get_info() {
         ss << '\t' << info.version() << " = " << info.name() << endl;
     }
 
-    ss << "\tGL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-    ss << "\tGL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing")  ? "true" : "false") << endl;
-    ss << "\tVAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing")  ? "true" : "false") << endl;
+    ss << "\t\tGL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
+    ss << "\t\tGL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing")  ? "true" : "false") << endl;
+    ss << "\t\tVAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing")  ? "true" : "false") << endl;
     return ss.str();
 }
 }
