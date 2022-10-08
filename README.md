@@ -8,6 +8,7 @@ While I try to get the necessary changes into the official OpenCV repo (https://
 git clone --branch GCV https://github.com/kallaballa/opencv.git
 cd opencv
 mkdir build
+cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DWITH_OPENGL=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DWITH_QT=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF ..
 make -j8
 sudo make install
