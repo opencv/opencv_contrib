@@ -5,13 +5,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <filesystem>
-
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_backend.h>
 #include <opencv2/opencv.hpp>
 #include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
 #include <GL/glew.h>
 #include <EGL/egl.h>
 #include <CL/cl.h>
@@ -285,6 +287,60 @@ std::string get_info() {
 }
 } // namespace va
 
+namespace x11 {
+Display* xdisplay;
+Window xroot;
+Window xwin;
+XSetWindowAttributes swa;
+
+bool initialized = false;
+
+Display* get_x11_display() {
+    return xdisplay;
+}
+
+Window get_x11_window() {
+    return xwin;
+}
+
+bool is_initialized() {
+    return initialized;
+}
+
+void init_x11() {
+    xdisplay = XOpenDisplay(nullptr);
+    if (xdisplay == nullptr) {
+        cerr << "Unable to open X11 display" << endl;
+        exit(3);
+    }
+    xroot = DefaultRootWindow(xdisplay);
+    swa.event_mask  = ExposureMask;
+    xwin = XCreateWindow(xdisplay, xroot, 0, 0, WIDTH, HEIGHT, 0,
+    CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &swa);
+
+    XSetWindowAttributes xattr;
+
+    xattr.override_redirect = False;
+    XChangeWindowAttributes(xdisplay, xwin, CWOverrideRedirect, &xattr);
+
+    int one = 1;
+     XChangeProperty(
+        xdisplay, xwin,
+        XInternAtom ( xdisplay, "_HILDON_NON_COMPOSITED_WINDOW", False ),
+        XA_INTEGER,  32,  PropModeReplace,
+        (unsigned char*) &one,  1);
+
+     XWMHints hints;
+       hints.input = True;
+       hints.flags = InputHint;
+       XSetWMHints(xdisplay, xwin, &hints);
+
+    XMapWindow(xdisplay, xwin);
+    XStoreName(xdisplay, xwin, "tetra-demo");
+    initialized = true;
+}
+}
+
 namespace egl {
 //code in the kb::egl namespace deals with setting up EGL
 EGLDisplay display;
@@ -393,11 +449,17 @@ void debugMessageCallback(GLenum source, GLenum type, GLuint id,
 }
 
 void init_egl(bool debug = false) {
+    bool offscreen = !x11::is_initialized();
+
     eglCheck(eglBindAPI(EGL_OPENGL_API));
-    eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
+    if(offscreen) {
+        eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
+    } else {
+        eglCheck(display = eglGetDisplay(x11::get_x11_display()));
+    }
     eglCheck(eglInitialize(display, nullptr, nullptr));
 
-    const EGLint attributes[] = {
+    const EGLint egl_config_constraints[] = {
     EGL_BUFFER_SIZE, static_cast<EGLint>(24),
     EGL_DEPTH_SIZE, static_cast<EGLint>(24),
     EGL_STENCIL_SIZE, static_cast<EGLint>(0),
@@ -413,14 +475,19 @@ void init_egl(bool debug = false) {
     EGLint configCount;
     EGLConfig configs[1];
 
-    eglCheck(eglChooseConfig(display, attributes, configs, 1, &configCount));
+    eglCheck(eglChooseConfig(display, egl_config_constraints, configs, 1, &configCount));
     EGLint attrib_list[] = { EGL_WIDTH, WIDTH, EGL_HEIGHT, HEIGHT, EGL_NONE };
 
-    eglCheck(surface = eglCreatePbufferSurface(display, configs[0], attrib_list));
+    if(!offscreen) {
+        eglCheck(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
+    } else {
+        eglCheck(surface = eglCreatePbufferSurface(display, configs[0], attrib_list));
+    }
 
-    const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE, EGL_NONE };
+    const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE, EGL_NONE };
     eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
     eglCheck(eglMakeCurrent(display, surface, surface, context));
+    eglCheck(eglSwapInterval(display, 1));
     if(debug) {
         glCheck(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
         auto glDebugMessageCallback  = (void (*)(void *, void *))eglGetProcAddress("glDebugMessageCallback");
@@ -441,26 +508,26 @@ std::string get_info() {
 namespace gl {
 //code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
 cv::ogl::Texture2D *frame_buf_tex;
-GLuint frame_buf_tex_name;
+GLuint frame_buf;
+
 
 void init_gl() {
     glewInit();
 
     cv::ogl::ocl::initializeContextFromGL();
 
-    frame_buf_tex_name = 0;
-    glCheck(glGenFramebuffers(1, &frame_buf_tex_name));
-    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf_tex_name));
+    frame_buf = 0;
+    glCheck(glGenFramebuffers(1, &frame_buf));
+    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf));
     frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
-
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glCheck(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, frame_buf_tex->texId(), 0));
-    GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-    glCheck(glDrawBuffers(1, drawBuffers));
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf_tex_name));
 
-    glCheck(glClearColor(0.1, 0.39, 0.88, 1.0));
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+    glCheck(glViewport(0, 0, WIDTH, HEIGHT));
     glCheck(glColor3f(1.0, 1.0, 1.0));
 
     glCheck(glEnable(GL_CULL_FACE));
