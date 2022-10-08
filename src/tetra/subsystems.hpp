@@ -24,6 +24,31 @@ using std::cerr;
 using std::endl;
 
 namespace kb {
+
+void glCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
+    GLint errorCode = glGetError();
+
+    if (errorCode != GL_NO_ERROR) {
+        cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
+        assert(false);
+    }
+}
+#define glCheck(expr)                            \
+    expr;                                        \
+    kb::glCheckError(__FILE__, __LINE__, #expr);
+
+void eglCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
+    EGLint errorCode = eglGetError();
+
+    if (errorCode != EGL_SUCCESS) {
+        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
+        assert(false);
+    }
+}
+#define eglCheck(expr)                                 \
+        expr;                                          \
+        kb::eglCheckError(__FILE__, __LINE__, #expr);
+
 namespace va {
 //code in the kb::va namespace adapted from https://github.com/opencv/opencv/blob/4.x/samples/va_intel/display.cpp.inc
 
@@ -259,27 +284,115 @@ std::string get_info() {
     return ss.str();
 }
 } // namespace va
-}
-namespace kb {
+
 namespace egl {
 //code in the kb::egl namespace deals with setting up EGL
 EGLDisplay display;
 EGLSurface surface;
 EGLContext context;
 
-void eglCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
-    EGLint errorCode = eglGetError();
+void debugMessageCallback(GLenum source, GLenum type, GLuint id,
+                            GLenum severity, GLsizei length,
+                            const GLchar *msg, const void *data)
+{
+    std::string _source;
+    std::string _type;
+    std::string _severity;
 
-    if (errorCode != EGL_SUCCESS) {
-        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
-        assert(false);
+    switch (source) {
+        case GL_DEBUG_SOURCE_API:
+        _source = "API";
+        break;
+
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        _source = "WINDOW SYSTEM";
+        break;
+
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        _source = "SHADER COMPILER";
+        break;
+
+        case GL_DEBUG_SOURCE_THIRD_PARTY:
+        _source = "THIRD PARTY";
+        break;
+
+        case GL_DEBUG_SOURCE_APPLICATION:
+        _source = "APPLICATION";
+        break;
+
+        case GL_DEBUG_SOURCE_OTHER:
+        _source = "UNKNOWN";
+        break;
+
+        default:
+        _source = "UNKNOWN";
+        break;
     }
-}
-#define eglCheck(expr)                                 \
-        expr;                                          \
-        egl::eglCheckError(__FILE__, __LINE__, #expr);
 
-void init_egl() {
+    switch (type) {
+        case GL_DEBUG_TYPE_ERROR:
+        _type = "ERROR";
+        break;
+
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        _type = "DEPRECATED BEHAVIOR";
+        break;
+
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        _type = "UDEFINED BEHAVIOR";
+        break;
+
+        case GL_DEBUG_TYPE_PORTABILITY:
+        _type = "PORTABILITY";
+        break;
+
+        case GL_DEBUG_TYPE_PERFORMANCE:
+        _type = "PERFORMANCE";
+        break;
+
+        case GL_DEBUG_TYPE_OTHER:
+        _type = "OTHER";
+        break;
+
+        case GL_DEBUG_TYPE_MARKER:
+        _type = "MARKER";
+        break;
+
+        default:
+        _type = "UNKNOWN";
+        break;
+    }
+
+    switch (severity) {
+        case GL_DEBUG_SEVERITY_HIGH:
+        _severity = "HIGH";
+        break;
+
+        case GL_DEBUG_SEVERITY_MEDIUM:
+        _severity = "MEDIUM";
+        break;
+
+        case GL_DEBUG_SEVERITY_LOW:
+        _severity = "LOW";
+        break;
+
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+        _severity = "NOTIFICATION";
+        break;
+
+        default:
+        _severity = "UNKNOWN";
+        break;
+    }
+
+    fprintf(stderr, "%d: %s of %s severity, raised from %s: %s\n",
+            id, _type.c_str(), _severity.c_str(), _source.c_str(), msg);
+
+    if(type == GL_DEBUG_TYPE_ERROR)
+        exit(2);
+}
+
+void init_egl(bool debug = false) {
     eglCheck(eglBindAPI(EGL_OPENGL_API));
     eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     eglCheck(eglInitialize(display, nullptr, nullptr));
@@ -305,10 +418,15 @@ void init_egl() {
 
     eglCheck(surface = eglCreatePbufferSurface(display, configs[0], attrib_list));
 
-    const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_CONTEXT_OPENGL_DEBUG, EGL_FALSE, EGL_NONE };
-
+    const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE, EGL_NONE };
     eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
     eglCheck(eglMakeCurrent(display, surface, surface, context));
+    if(debug) {
+        glCheck(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
+        auto glDebugMessageCallback  = (void (*)(void *, void *))eglGetProcAddress("glDebugMessageCallback");
+        auto glGenBuffers = (void (*)(GLsizei n, GLuint* buffers))eglGetProcAddress("glGenBuffers");
+        glCheck(glDebugMessageCallback(reinterpret_cast<void*>(debugMessageCallback), nullptr));
+    }
 }
 
 EGLBoolean swapBuffers() {
@@ -318,26 +436,12 @@ EGLBoolean swapBuffers() {
 std::string get_info() {
     return eglQueryString(display, EGL_VERSION);
 }
-}
-}
+} //namespace egl
 
-namespace kb {
 namespace gl {
 //code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
 cv::ogl::Texture2D *frame_buf_tex;
 GLuint frame_buf_tex_name;
-
-void glCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
-    GLint errorCode = glGetError();
-
-    if (errorCode != GL_NO_ERROR) {
-        cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
-        assert(false);
-    }
-}
-#define glCheck(expr)                            \
-    expr;                                        \
-    gl::glCheckError(__FILE__, __LINE__, #expr);
 
 void init_gl() {
     glewInit();
@@ -380,10 +484,8 @@ void swapBuffers() {
 std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
-}
-}
+} // namespace gl
 
-namespace kb {
 namespace cl {
 
 void fetch_frame_buffer(cv::UMat &m) {
