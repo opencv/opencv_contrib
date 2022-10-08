@@ -13,11 +13,11 @@
 
 #include <va/va.h>
 #include <va/va_drm.h>
+#include <va/va_backend.h>
 #include <opencv2/opencv.hpp>
 #include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>
 #include <GL/glew.h>
-#include <GL/gl.h>
 #include <EGL/egl.h>
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
@@ -169,6 +169,7 @@ static bool open_device_intel() {
             drmfd = open(nodes.path(i), O_RDWR);
             if (drmfd >= 0) {
                 display = vaGetDisplayDRM(drmfd);
+                vaSetInfoCallback(display,nullptr,nullptr);
                 if (display)
                     return true;
                 close(drmfd);
@@ -187,6 +188,7 @@ static bool open_device_generic() {
         drmfd = open(device_paths[i], O_RDWR);
         if (drmfd >= 0) {
             display = vaGetDisplayDRM(drmfd);
+            vaSetInfoCallback(display,nullptr,nullptr);
             if (display)
                 return true;
             close(drmfd);
@@ -197,9 +199,11 @@ static bool open_device_generic() {
 }
 
 bool open_display() {
+
     if (!initialized) {
         drmfd = -1;
         display = 0;
+
 
         if (open_device_intel() || open_device_generic()) {
             int majorVersion = 0, minorVersion = 0;
@@ -257,6 +261,12 @@ void init_va() {
     va::check_if_YUV420_available();
 
     cv::va_intel::ocl::initializeContextFromVA(va::display, true);
+}
+
+std::string get_info() {
+    std::stringstream ss;
+    ss << VA_VERSION_S << " (" << vaQueryVendorString(display) << ")";
+    return ss.str();
 }
 } // namespace va
 }
@@ -418,8 +428,9 @@ int main(int argc, char **argv) {
 
     cv::ocl::OpenCLExecutionContext glContext = cv::ocl::OpenCLExecutionContext::getCurrent();
 
+    cerr << "VA Version: " << va::get_info() << endl;
     cerr << "EGL Version: " << egl::get_info() << endl;
-    cerr << "OpenGL version: " << gl::get_info() << endl;
+    cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
