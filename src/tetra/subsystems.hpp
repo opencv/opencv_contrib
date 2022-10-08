@@ -400,12 +400,12 @@ std::string get_info() {
     cv::ocl::getPlatfomsInfo(plt_info);
     const cv::ocl::Device& device = cv::ocl::Device::getDefault();
     for (const auto &info : plt_info) {
-        ss << '\t' << info.version() << " = " << info.name() << endl;
+        ss << "\t* " << info.version() << " = " << info.name() << endl;
     }
 
-    ss << "\t\tGL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-    ss << "\t\tGL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing")  ? "true" : "false") << endl;
-    ss << "\t\tVAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing")  ? "true" : "false") << endl;
+    ss << "\t  GL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
+    ss << "\t  GL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing")  ? "true" : "false") << endl;
+    ss << "\t  VAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing")  ? "true" : "false") << endl;
     return ss.str();
 }
 }
