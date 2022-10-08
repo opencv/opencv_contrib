@@ -424,7 +424,7 @@ void init_egl(bool debug = false) {
     if(debug) {
         glCheck(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
         auto glDebugMessageCallback  = (void (*)(void *, void *))eglGetProcAddress("glDebugMessageCallback");
-        auto glGenBuffers = (void (*)(GLsizei n, GLuint* buffers))eglGetProcAddress("glGenBuffers");
+        assert(glDebugMessageCallback);
         glCheck(glDebugMessageCallback(reinterpret_cast<void*>(debugMessageCallback), nullptr));
     }
 }
