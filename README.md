@@ -2,7 +2,7 @@
 OpenGL/OpenCL/VAAPI interop demo using my OpenCV-4.x fork (https://github.com/kallaballa/opencv/tree/GCV)
 
 # Instructions
-While I try to get the necessary changes into the official OpenCV repo (https://github.com/opencv/opencv/issues/22607) you need to build the OpenCV fork yourself. More detail instructions will follow.
+While I try to get the necessary changes into the official OpenCV repo (https://github.com/opencv/opencv/issues/22607) you need to build the OpenCV fork yourself. More detailed instructions will follow.
 
 ## Build OpenCV
 
