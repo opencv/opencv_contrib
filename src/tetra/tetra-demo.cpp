@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 
         glFlush();
         gl::swapBuffers();
-        gl::fetch_frame_buffer(frameBuffer); //hand over the data (GPU 2 GPU) to OpenCV/OpenCL
+        cl::fetch_frame_buffer(frameBuffer); //hand over the data (GPU 2 GPU) to OpenCV/OpenCL
 
         //Using OpenCL in the background
         cv::flip(frameBuffer, frameBuffer, 0); //  flip the image in the y-axis
