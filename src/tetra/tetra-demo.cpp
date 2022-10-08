@@ -6,9 +6,6 @@ constexpr double FPS = 30;
 
 #include "subsystems.hpp"
 
-#include <sstream>
-
-using std::cout;
 using std::cerr;
 using std::endl;
 
