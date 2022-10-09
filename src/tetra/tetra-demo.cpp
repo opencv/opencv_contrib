@@ -54,7 +54,7 @@ void blitFrameBufferToScreen() {
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void glow(cv::UMat &frameBuffer, cv::UMat &mask, int ksize = WIDTH / 90 % 2 == 0 ? WIDTH / 90 + 1 : WIDTH / 90) {
+void glow(cv::UMat &frameBuffer, cv::UMat &mask, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
     //do the blur on a 50% resized version for some extra performance
     cv::resize(frameBuffer, mask, cv::Size(), 0.5, 0.5);
     cv::boxFilter(mask, mask, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_CONSTANT);
@@ -105,9 +105,9 @@ int main(int argc, char **argv) {
         render(frameBuffer);
         //Transfer buffer ownership to OpenCL
         cl::fetch_frame_buffer(frameBuffer);
-        //Using OpenCL for a glow effect
+        //Using OpenCV/OpenCL for a glow effect
         glow(frameBuffer, mask);
-        //Color-conversion from BGRA to RGB, also OpenCL.
+        //Color-conversion from BGRA to RGB. Also OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Video frame is upside down -> flip it
         cv::flip(videoFrame, videoFrame, 0);
