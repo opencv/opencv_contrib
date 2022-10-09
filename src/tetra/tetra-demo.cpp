@@ -113,8 +113,8 @@ int main(int argc, char **argv) {
         GL_CONTEXT.bind();
         //Using OpenGL, render a rotating tetrahedron
         render(frameBuffer);
-        //Transfer buffer ownership to OpenCL
 
+        //Transfer buffer ownership to OpenCL
         gl::fetch_frame_buffer(frameBuffer);
         //Using OpenCV/OpenCL for a glow effect
         glow(frameBuffer);
