@@ -73,8 +73,10 @@ int main(int argc, char **argv) {
     using namespace kb;
 
     va::init_va();
-    cv::VideoWriter video("tetra-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
+
+    //Initialize VP9 HW encoding using VAAPI
+    cv::VideoWriter video("tetra-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
     //comment the next line for offscreen rendering
     x11::init_x11();
@@ -82,7 +84,6 @@ int main(int argc, char **argv) {
     //Passing true to init_egl will create a OpenGL debug context
     egl::init_egl();
     gl::init_gl();
-
     GL_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     cerr << "VA Version: " << va::get_info() << endl;
