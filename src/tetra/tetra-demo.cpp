@@ -95,7 +95,6 @@ int main(int argc, char **argv) {
     cv::UMat mask;
     cv::UMat videoFrame;
 
-
     uint64_t cnt = 0;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
