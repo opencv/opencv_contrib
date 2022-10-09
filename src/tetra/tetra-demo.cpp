@@ -91,15 +91,14 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-
     cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     cv::UMat mask;
     cv::UMat videoFrame;
 
     int64 start = 0;
     uint64_t cnt = 0;
+    start = cv::getTickCount();
     while (true) {
-        start = cv::getTickCount();
 
         GL_CONTEXT.bind();
 
@@ -138,8 +137,9 @@ int main(int argc, char **argv) {
         //Measure FPS
         int64 tick = cv::getTickCount();
         double tickFreq = cv::getTickFrequency();
-        if (cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0) {
-            cerr << "FPS : " << tickFreq / (tick - start + 1) << '\r';
+        if (cnt != 0 && cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0) {
+            cerr << "FPS : " << tickFreq / ((tick - start + 1) / cnt) << '\r';
+            start = cv::getTickCount();
             cnt = 0;
         }
 
