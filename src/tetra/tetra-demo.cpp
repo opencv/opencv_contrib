@@ -129,6 +129,7 @@ int main(int argc, char **argv) {
             //Blit the framebuffer we have been working on to the screen
             blitFrameBufferToScreen();
 
+            //check is the x11 window was closed
             if(x11::window_closed())
                 break;
         }
