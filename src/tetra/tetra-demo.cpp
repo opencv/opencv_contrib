@@ -14,7 +14,7 @@ using std::endl;
 cv::ocl::OpenCLExecutionContext VA_CONTEXT;
 cv::ocl::OpenCLExecutionContext GL_CONTEXT;
 
-void render(cv::UMat& frameBuffer) {
+void render() {
     glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf);
     glViewport(0, 0, WIDTH , HEIGHT );
     glRotatef(1, 0, 1, 0);
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-    cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat frameBuffer;
     cv::UMat videoFrame;
 
     uint64_t cnt = 1;
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
         //Activate the OpenCL context for OpenGL
         GL_CONTEXT.bind();
         //Using OpenGL, render a rotating tetrahedron
-        render(frameBuffer);
+        render();
 
         //Transfer buffer ownership to OpenCL
         gl::fetch_frame_buffer(frameBuffer);
@@ -135,6 +135,7 @@ int main(int argc, char **argv) {
             gl::return_frame_buffer(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
+
             //Check if the x11 window was closed
             if(x11::window_closed())
                 break;
