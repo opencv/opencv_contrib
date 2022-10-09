@@ -115,22 +115,24 @@ int main(int argc, char **argv) {
         //Color-conversion from BGRA to RGB, also OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
 
+        //Video frame is upside down -> flip it
         cv::flip(videoFrame, videoFrame, 0);
 
         VA_CONTEXT.bind();
+
         //Encode the frame using VAAPI on the GPU.
         video.write(videoFrame);
 
-        GL_CONTEXT.bind();
-
         if(x11::is_initialized()) {
+            GL_CONTEXT.bind();
+
             //Transfer buffer ownership back to OpenGL
             cl::return_frame_buffer(frameBuffer);
 
             //Blit the framebuffer we have been working on to the screen
             blitFrameBufferToScreen();
 
-            //check is the x11 window was closed
+            //Check if the x11 window was closed
             if(x11::window_closed())
                 break;
         }
