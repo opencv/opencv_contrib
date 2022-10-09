@@ -73,6 +73,10 @@ int main(int argc, char **argv) {
     using namespace kb;
 
     va::init_va();
+    /*
+     * The OpenCLExecutionContext for VAAPI needs to be copied right after init_va().
+     * Now everytime you want to do VAAPI interop first bind the context.
+     */
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     //Initialize VP9 HW encoding using VAAPI
@@ -84,6 +88,10 @@ int main(int argc, char **argv) {
     //Passing true to init_egl will create a OpenGL debug context
     egl::init_egl();
     gl::init_gl();
+    /*
+     * The OpenCLExecutionContext for OpenGL needs to be copied right after init_gl().
+     * Now everytime you want to do OpenGL interop first bind the context.
+     */
     GL_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     cerr << "VA Version: " << va::get_info() << endl;

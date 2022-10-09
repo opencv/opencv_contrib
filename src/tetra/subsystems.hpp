@@ -485,31 +485,37 @@ void init_egl(bool debug = false) {
     eglCheck(eglInitialize(display, nullptr, nullptr));
 
     const EGLint egl_config_constraints[] = {
-    EGL_BUFFER_SIZE, static_cast<EGLint>(24),
-    EGL_DEPTH_SIZE, static_cast<EGLint>(24),
-    EGL_STENCIL_SIZE, static_cast<EGLint>(0),
-    EGL_SAMPLE_BUFFERS,
-    EGL_FALSE,
-    EGL_SAMPLES, 0,
-    EGL_SURFACE_TYPE,
-    EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
-    EGL_RENDERABLE_TYPE,
-    EGL_OPENGL_BIT,
-    EGL_NONE };
+        EGL_STENCIL_SIZE, static_cast<EGLint>(0),
+        EGL_SAMPLE_BUFFERS,
+        EGL_FALSE,
+        EGL_SAMPLES, 0,
+        EGL_SURFACE_TYPE,
+        EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+        EGL_RENDERABLE_TYPE,
+        EGL_OPENGL_BIT,
+        EGL_NONE
+    };
 
     EGLint configCount;
     EGLConfig configs[1];
-
     eglCheck(eglChooseConfig(display, egl_config_constraints, configs, 1, &configCount));
-    EGLint attrib_list[] = { EGL_WIDTH, WIDTH, EGL_HEIGHT, HEIGHT, EGL_NONE };
 
     if(!offscreen) {
         eglCheck(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
-        eglCheck(surface = eglCreatePbufferSurface(display, configs[0], attrib_list));
+        EGLint pbuffer_attrib_list[] = {
+                EGL_WIDTH, WIDTH,
+                EGL_HEIGHT, HEIGHT,
+                EGL_NONE
+        };
+        eglCheck(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
 
-    const EGLint contextVersion[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE, EGL_NONE };
+    const EGLint contextVersion[] = {
+            EGL_CONTEXT_CLIENT_VERSION, 2,
+            EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
+            EGL_NONE
+    };
     eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
     eglCheck(eglMakeCurrent(display, surface, surface, context));
     eglCheck(eglSwapInterval(display, 1));
