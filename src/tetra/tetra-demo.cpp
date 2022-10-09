@@ -114,6 +114,7 @@ int main(int argc, char **argv) {
         //Using OpenGL, render a rotating tetrahedron
         render(frameBuffer);
         //Transfer buffer ownership to OpenCL
+
         gl::fetch_frame_buffer(frameBuffer);
         //Using OpenCV/OpenCL for a glow effect
         glow(frameBuffer);
@@ -121,6 +122,7 @@ int main(int argc, char **argv) {
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Video frame is upside down -> flip it
         cv::flip(videoFrame, videoFrame, 0);
+
         //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
         //Encode the frame using VAAPI on the GPU.
