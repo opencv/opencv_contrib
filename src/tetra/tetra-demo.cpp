@@ -5,6 +5,7 @@ constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 30;
 constexpr double OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
+constexpr const int HW_DEVICE_INDEX = 0;
 
 #include "subsystems.hpp"
 
@@ -81,7 +82,11 @@ int main(int argc, char **argv) {
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+            cv::VIDEOWRITER_PROP_HW_DEVICE, HW_DEVICE_INDEX,
+            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    });
 
     //If we are rendering offscreen we don't need x11
     if(!OFFSCREEN)
