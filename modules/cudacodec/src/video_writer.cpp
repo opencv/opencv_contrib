@@ -52,10 +52,10 @@ Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const V
 Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const VideoWriterCodec, const double, const ENC_BUFFER_FORMAT, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
 Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const VideoWriterCodec, const double, const COLOR_FORMAT_CV, const EncoderParams&, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
 Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const VideoWriterCodec, const double, const ENC_BUFFER_FORMAT, const EncoderParams&, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
-Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>&, const Size, const VideoWriterCodec codec, const double, const COLOR_FORMAT_CV, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
-Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>&, const Size, const VideoWriterCodec codec, const double, const ENC_BUFFER_FORMAT, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
-Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>&, const Size, const VideoWriterCodec, const double, const COLOR_FORMAT_CV, const EncoderParams&, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
-Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>&, const Size, const VideoWriterCodec, const double, const ENC_BUFFER_FORMAT, const EncoderParams&, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>&, const Size, const VideoWriterCodec codec, const double, const COLOR_FORMAT_CV, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>&, const Size, const VideoWriterCodec codec, const double, const ENC_BUFFER_FORMAT, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>&, const Size, const VideoWriterCodec, const double, const COLOR_FORMAT_CV, const EncoderParams&, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>&, const Size, const VideoWriterCodec, const double, const ENC_BUFFER_FORMAT, const EncoderParams&, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
 
 #else // !defined HAVE_NVCUVENC
 
@@ -72,7 +72,7 @@ bool operator==(const EncoderParams& lhs, const EncoderParams& rhs)
             rhs.averageBitRate, rhs.maxBitRate, rhs.targetQuality, rhs.gopLength);
 };
 
-class RawVideoWriter : public EncoderCallBack
+class RawVideoWriter : public EncoderCallback
 {
 public:
     RawVideoWriter(String fileName);
@@ -105,13 +105,13 @@ void RawVideoWriter::onEncoded(std::vector<std::vector<uint8_t>> vPacket) {
 class VideoWriterImpl : public VideoWriter
 {
 public:
-    VideoWriterImpl(const Ptr<EncoderCallBack>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
+    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
         const COLOR_FORMAT_CV surfaceFormatCv, const Stream& stream = Stream::Null());
-    VideoWriterImpl(const Ptr<EncoderCallBack>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
+    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
         const ENC_BUFFER_FORMAT surfaceFormatNv, const Stream& stream = Stream::Null());
-    VideoWriterImpl(const Ptr<EncoderCallBack>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
+    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
         const COLOR_FORMAT_CV surfaceFormatCv, const EncoderParams& encoderParams, const Stream& stream = Stream::Null());
-    VideoWriterImpl(const Ptr<EncoderCallBack>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
+    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const VideoWriterCodec codec, const double fps,
         const ENC_BUFFER_FORMAT surfaceFormatNv, const EncoderParams& encoderParams, const Stream& stream = Stream::Null());
     ~VideoWriterImpl();
     void write(InputArray frame);
@@ -122,7 +122,7 @@ private:
     void InitializeEncoder(NvEncoderCuda* const pEnc, const GUID codec, const double fps);
     void CopyToNvSurface(const InputArray src);
 
-    Ptr<EncoderCallBack> encoderCallBack;
+    Ptr<EncoderCallback> encoderCallback;
     COLOR_FORMAT_CV surfaceFormatCv = COLOR_FORMAT_CV::UNDEFINED;
     ENC_BUFFER_FORMAT surfaceFormatNv = ENC_BUFFER_FORMAT::BF_UNDEFINED;
     EncoderParams encoderParams;
@@ -160,9 +160,9 @@ int NChannels(const ENC_BUFFER_FORMAT format) {
     else return 1;
 }
 
-VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallBack>& encoderCallBack_, const Size frameSz, const VideoWriterCodec codec, const double fps,
+VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, const Size frameSz, const VideoWriterCodec codec, const double fps,
     const COLOR_FORMAT_CV surfaceFormatCv_, const EncoderParams& encoderParams_, const Stream& stream_) :
-    encoderCallBack(encoderCallBack_), surfaceFormatCv(surfaceFormatCv_), encoderParams(encoderParams_), stream(stream_)
+    encoderCallback(encoderCallBack_), surfaceFormatCv(surfaceFormatCv_), encoderParams(encoderParams_), stream(stream_)
 {
     surfaceFormatNv = NvSurfaceFormat(surfaceFormatCv);
     if (surfaceFormatNv == BF_UNDEFINED) {
@@ -174,31 +174,31 @@ VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallBack>& encoderCallBack_, c
     Init(codec, fps, frameSz);
 }
 
-VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallBack>& encoderCallBack_, const Size frameSz, const VideoWriterCodec codec, const double fps,
+VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, const Size frameSz, const VideoWriterCodec codec, const double fps,
     const ENC_BUFFER_FORMAT surfaceFormatNv_, const EncoderParams& encoderParams_, const Stream& stream_) :
-    encoderCallBack(encoderCallBack_), surfaceFormatNv(surfaceFormatNv_), encoderParams(encoderParams_), stream(stream_)
+    encoderCallback(encoderCallBack_), surfaceFormatNv(surfaceFormatNv_), encoderParams(encoderParams_), stream(stream_)
 {
     CV_Assert(surfaceFormatNv != BF_UNDEFINED);
     nSrcChannels = NChannels(surfaceFormatNv);
     Init(codec, fps, frameSz);
 }
 
-VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSz, const VideoWriterCodec codec, const double fps,
+VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallback, const Size frameSz, const VideoWriterCodec codec, const double fps,
     const COLOR_FORMAT_CV surfaceFormatCv, const Stream& stream) :
-    VideoWriterImpl(encoderCallBack, frameSz, codec, fps, surfaceFormatCv, EncoderParams(), stream)
+    VideoWriterImpl(encoderCallback, frameSz, codec, fps, surfaceFormatCv, EncoderParams(), stream)
 {
 }
 
-VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSz, const VideoWriterCodec codec, const double fps,
+VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallback, const Size frameSz, const VideoWriterCodec codec, const double fps,
     const ENC_BUFFER_FORMAT surfaceFormatNv, const Stream& stream) :
-    VideoWriterImpl(encoderCallBack, frameSz, codec, fps, surfaceFormatNv, EncoderParams(), stream)
+    VideoWriterImpl(encoderCallback, frameSz, codec, fps, surfaceFormatNv, EncoderParams(), stream)
 {
 }
 
 void VideoWriterImpl::close() {
     pEnc->EndEncode(vPacket);
-    encoderCallBack->onEncoded(vPacket);
-    encoderCallBack->onEncodingFinished();
+    encoderCallback->onEncoded(vPacket);
+    encoderCallback->onEncodingFinished();
 }
 
 VideoWriterImpl::~VideoWriterImpl() {
@@ -372,7 +372,7 @@ void VideoWriterImpl::write(const InputArray frame) {
     CV_Assert(frame.channels() == nSrcChannels);
     CopyToNvSurface(frame);
     pEnc->EncodeFrame(vPacket);
-    encoderCallBack->onEncoded(vPacket);
+    encoderCallback->onEncoded(vPacket);
 };
 
 EncoderParams VideoWriterImpl::getEncoderParams() const {
@@ -382,53 +382,53 @@ EncoderParams VideoWriterImpl::getEncoderParams() const {
 Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const COLOR_FORMAT_CV colorFormat, const Stream& stream)
 {
-    Ptr<EncoderCallBack> rawVideoWriter = new RawVideoWriter(fileName);
+    Ptr<EncoderCallback> rawVideoWriter = new RawVideoWriter(fileName);
     return createVideoWriter(rawVideoWriter, frameSize, codec, fps, colorFormat, stream);
 }
 
 Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const ENC_BUFFER_FORMAT bufferFormat, const Stream& stream)
 {
-    Ptr<EncoderCallBack> rawVideoWriter = new RawVideoWriter(fileName);
+    Ptr<EncoderCallback> rawVideoWriter = new RawVideoWriter(fileName);
     return createVideoWriter(rawVideoWriter, frameSize, codec, fps, bufferFormat, stream);
 }
 
 Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream)
 {
-    Ptr<EncoderCallBack> rawVideoWriter = new RawVideoWriter(fileName);
+    Ptr<EncoderCallback> rawVideoWriter = new RawVideoWriter(fileName);
     return createVideoWriter(rawVideoWriter, frameSize, codec, fps, colorFormat, params, stream);
 }
 
 Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream)
 {
-    Ptr<EncoderCallBack> rawVideoWriter = new RawVideoWriter(fileName);
+    Ptr<EncoderCallback> rawVideoWriter = new RawVideoWriter(fileName);
     return createVideoWriter(rawVideoWriter, frameSize, codec, fps, bufferFormat, params, stream);
 }
 
-Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec, const double fps,
+Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const COLOR_FORMAT_CV colorFormat, const Stream& stream)
 {
-    return makePtr<VideoWriterImpl>(encoderCallBack, frameSize, codec, fps, colorFormat, stream);
+    return makePtr<VideoWriterImpl>(encoderCallback, frameSize, codec, fps, colorFormat, stream);
 }
 
-Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec, const double fps,
+Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const ENC_BUFFER_FORMAT bufferFormat, const Stream& stream)
 {
-    return makePtr<VideoWriterImpl>(encoderCallBack, frameSize, codec, fps, bufferFormat, stream);
+    return makePtr<VideoWriterImpl>(encoderCallback, frameSize, codec, fps, bufferFormat, stream);
 }
 
-Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec, const double fps,
+Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream)
 {
-    return makePtr<VideoWriterImpl>(encoderCallBack, frameSize, codec, fps, colorFormat, params, stream);
+    return makePtr<VideoWriterImpl>(encoderCallback, frameSize, codec, fps, colorFormat, params, stream);
 }
 
-Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec, const double fps,
+Ptr<VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec, const double fps,
     const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream)
 {
-    return makePtr<VideoWriterImpl>(encoderCallBack, frameSize, codec, fps, bufferFormat, params, stream);
+    return makePtr<VideoWriterImpl>(encoderCallback, frameSize, codec, fps, bufferFormat, params, stream);
 }
 #endif // !defined HAVE_NVCUVENC
 

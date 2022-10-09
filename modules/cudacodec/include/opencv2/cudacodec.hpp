@@ -193,7 +193,7 @@ CV_EXPORTS bool operator==(const EncoderParams& lhs, const EncoderParams& rhs);
 
 User can implement own multiplexing by implementing this interface.
 */
-class CV_EXPORTS_W EncoderCallBack {
+class CV_EXPORTS_W EncoderCallback {
 public:
     /** @brief Callback function to signal that the encoded bitstream for one or more frames is ready.
 
@@ -205,7 +205,7 @@ public:
     * */
     virtual void onEncodingFinished() = 0;
 
-    virtual ~EncoderCallBack() {}
+    virtual ~EncoderCallback() {}
 };
 
 /** @brief Video writer interface.
@@ -231,7 +231,7 @@ public:
     */
     CV_WRAP virtual EncoderParams getEncoderParams() const = 0;
 
-    /** @brief Waits until the encoding process has finished before calling EncoderCallBack::onEncodingFinished().
+    /** @brief Waits until the encoding process has finished before calling EncoderCallback::onEncodingFinished().
     */
     CV_WRAP virtual void close() = 0;
 };
@@ -289,35 +289,35 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 
 /** @brief Creates video writer.
 
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
 @param frameSize Size of the input video frames.
 @param codec Codec.
 @param fps Framerate of the created video stream.
 @param colorFormat OpenCv color format of the frames to be encoded.
 @param stream Stream for frame pre-processing.
 
-The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallBack.
+The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
     const double fps = 25.0, const COLOR_FORMAT_CV colorFormat = BGR, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
 @param frameSize Size of the input video frames.
 @param codec Codec.
 @param fps Framerate of the created video stream.
 @param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
 @param stream Stream for frame pre-processing.
 
-The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallBack.
+The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
     const double fps = 25.0, const ENC_BUFFER_FORMAT bufferFormat = BF_ARGB, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
 @param frameSize Size of the input video frames.
 @param codec Codec.
 @param fps Framerate of the created video stream.
@@ -325,14 +325,14 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
 @param params Additional encoding parameters.
 @param stream Stream for frame pre-processing.
 
-The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallBack.
+The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec,
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec,
     const double fps, const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallBack . Use it if you want to work with the raw video stream.
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
 @param frameSize Size of the input video frames.
 @param codec Codec.
 @param fps Framerate of the created video stream.
@@ -340,9 +340,9 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
 @param params Additional encoding parameters.
 @param stream Stream for frame pre-processing.
 
-The constructors initialize video writer. User can implement own their multiplexing with cudacodec::EncoderCallBack.
+The constructors initialize video writer. User can implement own their multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallBack>& encoderCallBack, const Size frameSize, const VideoWriterCodec codec,
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec,
     const double fps, const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
 
 ////////////////////////////////// Video Decoding //////////////////////////////////////////
