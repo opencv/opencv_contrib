@@ -580,9 +580,6 @@ void swapBuffers() {
 std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
-} // namespace gl
-
-namespace cl {
 
 void fetch_frame_buffer(cv::UMat &m) {
     glCheck(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
@@ -591,6 +588,9 @@ void fetch_frame_buffer(cv::UMat &m) {
 void return_frame_buffer(cv::UMat &m) {
     glCheck(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
 }
+} // namespace gl
+
+namespace cl {
 
 std::string get_info() {
     std::stringstream ss;

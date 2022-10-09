@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
         //Using OpenGL, render a rotating tetrahedron
         render(frameBuffer);
         //Transfer buffer ownership to OpenCL
-        cl::fetch_frame_buffer(frameBuffer);
+        gl::fetch_frame_buffer(frameBuffer);
         //Using OpenCV/OpenCL for a glow effect
         glow(frameBuffer);
         //Color-conversion from BGRA to RGB. Also OpenCV/OpenCL.
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
         if(x11::is_initialized()) {
             GL_CONTEXT.bind();
             //Transfer buffer ownership back to OpenGL
-            cl::return_frame_buffer(frameBuffer);
+            gl::return_frame_buffer(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
             blitFrameBufferToScreen();
             //Check if the x11 window was closed
