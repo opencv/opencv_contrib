@@ -43,7 +43,6 @@ void render(cv::UMat& frameBuffer) {
         glColor3f(1, 0, 0);
         glVertex3f(-1, 0, 1);
     glEnd();
-    glFlush();
     kb::gl::swapBuffers();
 }
 
@@ -94,7 +93,6 @@ int main(int argc, char **argv) {
 
     int64 start = 0;
     uint64_t cnt = 0;
-
     while (true) {
         start = cv::getTickCount();
 
@@ -112,6 +110,8 @@ int main(int argc, char **argv) {
         //Color-conversion from BGRA to RGB, also OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
 
+        cv::flip(videoFrame, videoFrame, 0);
+
         VA_CONTEXT.bind();
         //Encode the frame using VAAPI on the GPU.
         video.write(videoFrame);
@@ -124,6 +124,9 @@ int main(int argc, char **argv) {
 
             //Blit the framebuffer we have been working on to screen
             blitFrameBufferToScreen();
+
+            if(x11::window_closed())
+                break;
         }
 
         //Measure FPS

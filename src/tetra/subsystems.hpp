@@ -268,7 +268,7 @@ void check_if_YUV420_available() {
     attrib.type = VAConfigAttribRTFormat;
     vaGetConfigAttributes(va::display, VAProfileVP9Profile0, VAEntrypointVLD, &attrib, 1);
     if ((attrib.value & VA_RT_FORMAT_YUV420) == 0)
-        throw std::runtime_error("Desired YUV444 RT format not found");
+        throw std::runtime_error("Desired YUV420 RT format not found");
 }
 
 void init_va() {
@@ -291,7 +291,7 @@ namespace x11 {
 Display* xdisplay;
 Window xroot;
 Window xwin;
-XSetWindowAttributes swa;
+Atom wmDeleteMessage;
 
 bool initialized = false;
 
@@ -307,19 +307,41 @@ bool is_initialized() {
     return initialized;
 }
 
+bool window_closed() {
+    if(XPending(xdisplay) == 0)
+        return false;
+
+    XEvent event;
+    XNextEvent(xdisplay, &event);
+
+    switch (event.type)
+    {
+        case ClientMessage:
+            if (event.xclient.data.l[0] == static_cast<long int>(wmDeleteMessage))
+                return true;
+            break;
+
+        default:
+            break;
+    }
+    return false;
+}
+
+
 void init_x11() {
     xdisplay = XOpenDisplay(nullptr);
     if (xdisplay == nullptr) {
         cerr << "Unable to open X11 display" << endl;
         exit(3);
     }
+
     xroot = DefaultRootWindow(xdisplay);
-    swa.event_mask  = ExposureMask;
+    XSetWindowAttributes swa;
+    swa.event_mask = ClientMessage;
     xwin = XCreateWindow(xdisplay, xroot, 0, 0, WIDTH, HEIGHT, 0,
     CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &swa);
 
     XSetWindowAttributes xattr;
-
     xattr.override_redirect = False;
     XChangeWindowAttributes(xdisplay, xwin, CWOverrideRedirect, &xattr);
 
@@ -337,6 +359,9 @@ void init_x11() {
 
     XMapWindow(xdisplay, xwin);
     XStoreName(xdisplay, xwin, "tetra-demo");
+    wmDeleteMessage = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(xdisplay, xwin, &wmDeleteMessage, 1);
+
     initialized = true;
 }
 }
@@ -521,8 +546,6 @@ void init_gl() {
     glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf));
     frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glCheck(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, frame_buf_tex->texId(), 0));
 
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
