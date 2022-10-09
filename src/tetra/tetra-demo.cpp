@@ -2,7 +2,7 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr double FPS = 24;
+constexpr double FPS = 30;
 
 #include "subsystems.hpp"
 
@@ -54,8 +54,11 @@ void blitFrameBufferToScreen() {
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void glow(cv::UMat &frameBuffer, cv::UMat &mask, double sigma = 50) {
-    cv::blur(frameBuffer, mask, cv::Size(sigma, sigma));
+void glow(cv::UMat &frameBuffer, cv::UMat &mask, double ksize = WIDTH / 90 % 2 == 0 ? WIDTH / 90 + 1 : WIDTH / 90) {
+    cv::resize(frameBuffer, mask, cv::Size(), 0.5, 0.5);
+    //do the blur on a 50% resized version for some extra performance
+    cv::boxFilter(mask, mask, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_CONSTANT);
+    cv::resize(mask, mask, cv::Size(WIDTH, HEIGHT));
     cv::bitwise_not(mask, mask);
     cv::bitwise_not(frameBuffer, frameBuffer);
     mask.assignTo(mask, CV_16U);
@@ -86,6 +89,7 @@ int main(int argc, char **argv) {
     cerr << "EGL Version: " << egl::get_info() << endl;
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
+
 
     cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     cv::UMat mask;
@@ -122,7 +126,7 @@ int main(int argc, char **argv) {
             //Transfer buffer ownership back to OpenGL
             cl::return_frame_buffer(frameBuffer);
 
-            //Blit the framebuffer we have been working on to screen
+            //Blit the framebuffer we have been working on to the screen
             blitFrameBufferToScreen();
 
             if(x11::window_closed())
