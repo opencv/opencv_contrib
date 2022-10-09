@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
     cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     cv::UMat videoFrame;
 
-    uint64_t cnt = 0;
+    uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
 
@@ -139,11 +139,11 @@ int main(int argc, char **argv) {
         }
 
         //Measure FPS
-        if (cnt != 0 && cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0) {
+        if (cnt % uint64(FPS) == 0) {
             int64 tick = cv::getTickCount();
             cerr << "FPS : " << tickFreq / ((tick - start + 1) / cnt) << '\r';
             start = tick;
-            cnt = 0;
+            cnt = 1;
         }
 
         ++cnt;
