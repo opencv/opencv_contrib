@@ -15,7 +15,7 @@ cv::ocl::OpenCLExecutionContext VA_CONTEXT;
 cv::ocl::OpenCLExecutionContext GL_CONTEXT;
 
 void render() {
-    //render a tetrahedron using immediate mode :)
+    //Render a tetrahedron using immediate mode :)
     glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf);
     glViewport(0, 0, WIDTH , HEIGHT );
     glRotatef(1, 0, 1, 0);
