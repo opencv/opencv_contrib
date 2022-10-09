@@ -588,6 +588,14 @@ void fetch_frame_buffer(cv::UMat &m) {
 void return_frame_buffer(cv::UMat &m) {
     glCheck(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
 }
+
+void blit_frame_buffer_to_screen() {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glViewport(0, 0, WIDTH, HEIGHT);
+    glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+}
 } // namespace gl
 
 namespace cl {

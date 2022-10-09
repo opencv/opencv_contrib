@@ -47,36 +47,30 @@ void render(cv::UMat& frameBuffer) {
     kb::gl::swapBuffers();
 }
 
-void blitFrameBufferToScreen() {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glViewport(0, 0, WIDTH, HEIGHT);
-    glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-}
+void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
+    static cv::UMat blur;
+    static cv::UMat src16;
 
-void glow(cv::UMat &frameBuffer, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
-    static cv::UMat mask;
-    cv::bitwise_not(frameBuffer, frameBuffer);
+    cv::bitwise_not(src, src);
 
-    //prepare the mask on a 50% resized version for some extra performance (especially when blurring)
-    cv::resize(frameBuffer, mask, cv::Size(), 0.5, 0.5);
-    cv::boxFilter(mask, mask, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
-    mask.assignTo(mask, CV_16U);
-    cv::resize(mask, mask, cv::Size(WIDTH, HEIGHT));
+    //Resize for some extra performance (especially when blurring)
+    cv::resize(src, blur, cv::Size(), 0.5, 0.5);
+    //Cheap blur
+    cv::boxFilter(blur, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+    //Back to original size
+    cv::resize(blur, blur, cv::Size(WIDTH, HEIGHT));
 
-    frameBuffer.assignTo(frameBuffer, CV_16U);
+    //Multiply the src image with a blurred version of itself
+    cv::multiply(src, blur, src16, 1, CV_16U);
+    //Normalize and convert back to CV_8U
+    cv::divide(src16, cv::Scalar::all(255.0), src, 1, CV_8U);
 
-    cv::multiply(mask, frameBuffer, mask);
-    cv::divide(mask, cv::Scalar::all(255.0), mask);
-    mask.assignTo(mask, CV_8U);
-
-    cv::bitwise_not(mask, frameBuffer);
+    cv::bitwise_not(src, src);
 }
 
 int main(int argc, char **argv) {
     using namespace kb;
-
+    //Initialize OpenCL Context for VAAPI
     va::init_va();
     /*
      * The OpenCLExecutionContext for VAAPI needs to be copied right after init_va().
@@ -93,6 +87,7 @@ int main(int argc, char **argv) {
 
     //Passing true to init_egl will create a OpenGL debug context
     egl::init_egl();
+    //Initialize OpenCL Context for OpenGL
     gl::init_gl();
     /*
      * The OpenCLExecutionContext for OpenGL needs to be copied right after init_gl().
@@ -113,6 +108,7 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
 
     while (true) {
+        //Activate the OpenCL context for OpenGL
         GL_CONTEXT.bind();
         //Using OpenGL, render a rotating tetrahedron
         render(frameBuffer);
@@ -120,21 +116,22 @@ int main(int argc, char **argv) {
         gl::fetch_frame_buffer(frameBuffer);
         //Using OpenCV/OpenCL for a glow effect
         glow(frameBuffer);
-        //Color-conversion from BGRA to RGB. Also OpenCV/OpenCL.
+        //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Video frame is upside down -> flip it
         cv::flip(videoFrame, videoFrame, 0);
-
+        //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
         //Encode the frame using VAAPI on the GPU.
         video.write(videoFrame);
 
         if(x11::is_initialized()) {
+            //Yet again activate the OpenCL context for OpenGL
             GL_CONTEXT.bind();
             //Transfer buffer ownership back to OpenGL
             gl::return_frame_buffer(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
-            blitFrameBufferToScreen();
+            gl::blit_frame_buffer_to_screen();
             //Check if the x11 window was closed
             if(x11::window_closed())
                 break;
