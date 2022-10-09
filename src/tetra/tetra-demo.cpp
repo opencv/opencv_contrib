@@ -54,9 +54,9 @@ void blitFrameBufferToScreen() {
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void glow(cv::UMat &frameBuffer, cv::UMat &mask, double ksize = WIDTH / 90 % 2 == 0 ? WIDTH / 90 + 1 : WIDTH / 90) {
-    cv::resize(frameBuffer, mask, cv::Size(), 0.5, 0.5);
+void glow(cv::UMat &frameBuffer, cv::UMat &mask, int ksize = WIDTH / 90 % 2 == 0 ? WIDTH / 90 + 1 : WIDTH / 90) {
     //do the blur on a 50% resized version for some extra performance
+    cv::resize(frameBuffer, mask, cv::Size(), 0.5, 0.5);
     cv::boxFilter(mask, mask, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_CONSTANT);
     cv::resize(mask, mask, cv::Size(WIDTH, HEIGHT));
     cv::bitwise_not(mask, mask);
