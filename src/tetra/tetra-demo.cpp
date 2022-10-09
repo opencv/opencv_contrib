@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
         if (cnt != 0 && cnt % int64(ceil(tickFreq / (FPS * 10000000))) == 0) {
             int64 tick = cv::getTickCount();
             cerr << "FPS : " << tickFreq / ((tick - start + 1) / cnt) << '\r';
-            start = cv::getTickCount();
+            start = tick;
             cnt = 0;
         }
 
