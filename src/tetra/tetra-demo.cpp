@@ -55,13 +55,14 @@ void blitFrameBufferToScreen() {
 }
 
 void glow(cv::UMat &frameBuffer, cv::UMat &mask, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
-    //do the blur on a 50% resized version for some extra performance
+    //prepare the mask on a 50% resized version for some extra performance (especially when blurring)
     cv::resize(frameBuffer, mask, cv::Size(), 0.5, 0.5);
     cv::boxFilter(mask, mask, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_CONSTANT);
-    cv::resize(mask, mask, cv::Size(WIDTH, HEIGHT));
     cv::bitwise_not(mask, mask);
-    cv::bitwise_not(frameBuffer, frameBuffer);
     mask.assignTo(mask, CV_16U);
+    cv::resize(mask, mask, cv::Size(WIDTH, HEIGHT));
+
+    cv::bitwise_not(frameBuffer, frameBuffer);
     frameBuffer.assignTo(frameBuffer, CV_16U);
     cv::multiply(mask, frameBuffer, mask);
     cv::divide(mask, cv::Scalar::all(255.0), mask);
