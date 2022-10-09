@@ -100,38 +100,28 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
 
     while (true) {
-
         GL_CONTEXT.bind();
-
         //Using OpenGL, render a rotating tetrahedron
         render(frameBuffer);
-
         //Transfer buffer ownership to OpenCL
         cl::fetch_frame_buffer(frameBuffer);
-
         //Using OpenCL for a glow effect
         glow(frameBuffer, mask);
-
         //Color-conversion from BGRA to RGB, also OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-
         //Video frame is upside down -> flip it
         cv::flip(videoFrame, videoFrame, 0);
 
         VA_CONTEXT.bind();
-
         //Encode the frame using VAAPI on the GPU.
         video.write(videoFrame);
 
         if(x11::is_initialized()) {
             GL_CONTEXT.bind();
-
             //Transfer buffer ownership back to OpenGL
             cl::return_frame_buffer(frameBuffer);
-
             //Blit the framebuffer we have been working on to the screen
             blitFrameBufferToScreen();
-
             //Check if the x11 window was closed
             if(x11::window_closed())
                 break;
