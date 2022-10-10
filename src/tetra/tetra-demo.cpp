@@ -3,7 +3,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 30;
-constexpr double OFFSCREEN = false;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
@@ -16,7 +16,7 @@ cv::ocl::OpenCLExecutionContext VA_CONTEXT;
 cv::ocl::OpenCLExecutionContext GL_CONTEXT;
 
 void render() {
-    //Render a tetrahedron using immediate mode :)
+    //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf);
     glViewport(0, 0, WIDTH , HEIGHT );
     glRotatef(1, 0, 1, 0);
@@ -51,17 +51,18 @@ void render() {
 }
 
 void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
+    static cv::UMat resize;
     static cv::UMat blur;
     static cv::UMat src16;
 
     cv::bitwise_not(src, src);
 
     //Resize for some extra performance (especially when blurring)
-    cv::resize(src, blur, cv::Size(), 0.5, 0.5);
+    cv::resize(src, resize, cv::Size(), 0.5, 0.5);
     //Cheap blur
-    cv::boxFilter(blur, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+    cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     //Back to original size
-    cv::resize(blur, blur, cv::Size(WIDTH, HEIGHT));
+    cv::resize(resize, blur, cv::Size(WIDTH, HEIGHT));
 
     //Multiply the src image with a blurred version of itself
     cv::multiply(src, blur, src16, 1, CV_16U);
