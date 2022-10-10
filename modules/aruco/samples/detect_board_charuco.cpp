@@ -182,8 +182,8 @@ int main(int argc, char *argv[]) {
         // estimate charuco board pose
         bool validPose = false;
         if(camMatrix.total() != 0)
-            validPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, charucoboard,
-                                                        camMatrix, distCoeffs, rvec, tvec);
+            validPose = estimatePoseCharucoBoard(charucoCorners, charucoIds, charucoboard,
+                                                 camMatrix, distCoeffs, rvec, tvec);
 
 
 

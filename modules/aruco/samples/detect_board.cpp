@@ -38,8 +38,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/aruco_detector.hpp>
-#include <opencv2/aruco/aruco_calib_pose.hpp>
+#include <opencv2/aruco.hpp>
 #include <vector>
 #include <iostream>
 #include "aruco_samples_utility.hpp"
@@ -179,8 +178,7 @@ int main(int argc, char *argv[]) {
         // estimate board pose
         int markersOfBoardDetected = 0;
         if(ids.size() > 0)
-            markersOfBoardDetected =
-                aruco::estimatePoseBoard(corners, ids, board, camMatrix, distCoeffs, rvec, tvec);
+            markersOfBoardDetected = estimatePoseBoard(corners, ids, board, camMatrix, distCoeffs, rvec, tvec);
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;

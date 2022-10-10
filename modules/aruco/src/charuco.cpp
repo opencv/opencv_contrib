@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html
 
 #include "precomp.hpp"
+#include <opencv2/calib3d.hpp>
 #include "opencv2/aruco/charuco.hpp"
-#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
 namespace cv {
@@ -30,8 +30,8 @@ static int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
         int currentCharucoId = _allCharucoIds.getMat().at< int >(i);
         int totalMarkers = 0; // nomber of closest marker detected
         // look for closest markers
-        for(unsigned int m = 0; m < _board->nearestMarkerIdx[currentCharucoId].size(); m++) {
-            int markerId = _board->getIds()[_board->nearestMarkerIdx[currentCharucoId][m]];
+        for(unsigned int m = 0; m < _board->getNearestMarkerIdx()[currentCharucoId].size(); m++) {
+            int markerId = _board->getIds()[_board->getNearestMarkerIdx()[currentCharucoId][m]];
             bool found = false;
             for(unsigned int k = 0; k < _allArucoIds.getMat().total(); k++) {
                 if(_allArucoIds.getMat().at< int >(k) == markerId) {
@@ -133,15 +133,15 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
 
     for(unsigned int i = 0; i < nCharucoCorners; i++) {
         if(charucoCorners.getMat().at< Point2f >(i) == Point2f(-1, -1)) continue;
-        if(board->nearestMarkerIdx[i].size() == 0) continue;
+        if(board->getNearestMarkerIdx()[i].size() == 0) continue;
 
         double minDist = -1;
         int counter = 0;
 
         // calculate the distance to each of the closest corner of each closest marker
-        for(unsigned int j = 0; j < board->nearestMarkerIdx[i].size(); j++) {
+        for(unsigned int j = 0; j < board->getNearestMarkerIdx()[i].size(); j++) {
             // find marker
-            int markerId = board->getIds()[board->nearestMarkerIdx[i][j]];
+            int markerId = board->getIds()[board->getNearestMarkerIdx()[i][j]];
             int markerIdx = -1;
             for(unsigned int k = 0; k < markerIds.getMat().total(); k++) {
                 if(markerIds.getMat().at< int >(k) == markerId) {
@@ -151,7 +151,7 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
             }
             if(markerIdx == -1) continue;
             Point2f markerCorner =
-                markerCorners.getMat(markerIdx).at< Point2f >(board->nearestMarkerCorners[i][j]);
+                markerCorners.getMat(markerIdx).at< Point2f >(board->getNearestMarkerCorners()[i][j]);
             Point2f charucoCorner = charucoCorners.getMat().at< Point2f >(i);
             double dist = norm(markerCorner - charucoCorner);
             if(minDist == -1) minDist = dist; // if first distance, just assign it
@@ -200,7 +200,7 @@ static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorne
     // project chessboard corners
     vector< Point2f > allChessboardImgPoints;
 
-    projectPoints(_board->chessboardCorners, approximatedRvec, approximatedTvec, _cameraMatrix,
+    projectPoints(_board->getChessboardCorners(), approximatedRvec, approximatedTvec, _cameraMatrix,
                   _distCoeffs, allChessboardImgPoints);
 
 
@@ -257,17 +257,17 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
         validTransform[i] = std::abs(det) > 1e-6;
     }
 
-    unsigned int nCharucoCorners = (unsigned int)_board->chessboardCorners.size();
+    unsigned int nCharucoCorners = (unsigned int)_board->getChessboardCorners().size();
     vector< Point2f > allChessboardImgPoints(nCharucoCorners, Point2f(-1, -1));
 
     // for each charuco corner, calculate its interpolation position based on the closest markers
     // homographies
     for(unsigned int i = 0; i < nCharucoCorners; i++) {
-        Point2f objPoint2D = Point2f(_board->chessboardCorners[i].x, _board->chessboardCorners[i].y);
+        Point2f objPoint2D = Point2f(_board->getChessboardCorners()[i].x, _board->getChessboardCorners()[i].y);
 
         vector< Point2f > interpolatedPositions;
-        for(unsigned int j = 0; j < _board->nearestMarkerIdx[i].size(); j++) {
-            int markerId = _board->getIds()[_board->nearestMarkerIdx[i][j]];
+        for(unsigned int j = 0; j < _board->getNearestMarkerIdx()[i].size(); j++) {
+            int markerId = _board->getIds()[_board->getNearestMarkerIdx()[i][j]];
             int markerIdx = -1;
             for(unsigned int k = 0; k < _markerIds.getMat().total(); k++) {
                 if(_markerIds.getMat().at< int >(k) == markerId) {

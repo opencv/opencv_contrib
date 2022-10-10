@@ -185,7 +185,7 @@ void CV_CharucoDetection::run(int) {
                 vector< Point2f > projectedCharucoCorners;
 
                 // copy chessboardCorners
-                vector<Point3f> copyChessboardCorners = board->chessboardCorners;
+                vector<Point3f> copyChessboardCorners = board->getChessboardCorners();
                 // move copyChessboardCorners points
                 for (size_t i = 0; i < copyChessboardCorners.size(); i++)
                     copyChessboardCorners[i] -= board->getRightBottomBorder() / 2.f;
@@ -196,7 +196,7 @@ void CV_CharucoDetection::run(int) {
 
                     int currentId = charucoIds[i];
 
-                    if(currentId >= (int)board->chessboardCorners.size()) {
+                    if(currentId >= (int)board->getChessboardCorners().size()) {
                         ts->printf(cvtest::TS::LOG, "Invalid Charuco corner id");
                         ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                         return;
@@ -284,8 +284,7 @@ void CV_CharucoPoseEstimation::run(int) {
                 if(charucoIds.size() == 0) continue;
 
                 // estimate charuco pose
-                aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix,
-                                                distCoeffs, rvec, tvec);
+                estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
 
 
                 // check axes
@@ -301,14 +300,14 @@ void CV_CharucoPoseEstimation::run(int) {
                 // check estimate result
                 vector< Point2f > projectedCharucoCorners;
 
-                projectPoints(board->chessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
+                projectPoints(board->getChessboardCorners(), rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
                 for(unsigned int i = 0; i < charucoIds.size(); i++) {
 
                     int currentId = charucoIds[i];
 
-                    if(currentId >= (int)board->chessboardCorners.size()) {
+                    if(currentId >= (int)board->getChessboardCorners().size()) {
                         ts->printf(cvtest::TS::LOG, "Invalid Charuco corner id");
                         ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                         return;
@@ -415,7 +414,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 vector< Point2f > projectedDiamondCorners;
 
                 // copy chessboardCorners
-                vector<Point3f> copyChessboardCorners = board->chessboardCorners;
+                vector<Point3f> copyChessboardCorners = board->getChessboardCorners();
                 // move copyChessboardCorners points
                 for (size_t i = 0; i < copyChessboardCorners.size(); i++)
                     copyChessboardCorners[i] -= board->getRightBottomBorder() / 2.f;
@@ -500,10 +499,10 @@ void CV_CharucoBoardCreation::run(int)
         Ptr<aruco::CharucoBoard> board_millimeters = aruco::CharucoBoard::create(
             n, n, squareSize_mm, squareSize_mm * markerSizeFactor, dictionary);
 
-        for (size_t i = 0; i < board_meters->nearestMarkerIdx.size(); i++)
+        for (size_t i = 0; i < board_meters->getNearestMarkerIdx().size(); i++)
         {
-            if (board_meters->nearestMarkerIdx[i].size() != board_millimeters->nearestMarkerIdx[i].size() ||
-                board_meters->nearestMarkerIdx[i][0] != board_millimeters->nearestMarkerIdx[i][0])
+            if (board_meters->getNearestMarkerIdx()[i].size() != board_millimeters->getNearestMarkerIdx()[i].size() ||
+                board_meters->getNearestMarkerIdx()[i][0] != board_millimeters->getNearestMarkerIdx()[i][0])
             {
                 ts->printf(cvtest::TS::LOG,
                     cv::format("Charuco board topology is sensitive to scale with squareSize=%.1f\n",
@@ -669,122 +668,6 @@ TEST(Charuco, testBoardSubpixelCoords)
 
     ASSERT_EQ(c_corners.rows, expected_corners.rows);
     EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-1);
-}
-
-TEST(CV_ArucoTutorial, can_find_choriginal)
-{
-    string imgPath = cvtest::findDataFile("choriginal.jpg", false);
-    Mat image = imread(imgPath);
-    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
-
-    vector< int > ids;
-    vector< vector< Point2f > > corners, rejected;
-    const size_t N = 17ull;
-    // corners of aruco markers with indices goldCornersIds
-    const int goldCorners[N][8] = { {268,77,  290,80,  286,97,  263,94},  {360,90,  382,93,  379,111, 357,108},
-                                    {211,106, 233,109, 228,127, 205,123}, {306,120, 328,124, 325,142, 302,138},
-                                    {402,135, 425,139, 423,157, 400,154}, {247,152, 271,155, 267,174, 242,171},
-                                    {347,167, 371,171, 369,191, 344,187}, {185,185, 209,189, 203,210, 178,206},
-                                    {288,201, 313,206, 309,227, 284,223}, {393,218, 418,222, 416,245, 391,241},
-                                    {223,240, 250,244, 244,268, 217,263}, {333,258, 359,262, 356,286, 329,282},
-                                    {152,281, 179,285, 171,312, 143,307}, {267,300, 294,305, 289,331, 261,327},
-                                    {383,319, 410,324, 408,351, 380,347}, {194,347, 223,352, 216,382, 186,377},
-                                    {315,368, 345,373, 341,403, 310,398} };
-    map<int, const int*> mapGoldCorners;
-    for (int i = 0; i < static_cast<int>(N); i++)
-        mapGoldCorners[i] = goldCorners[i];
-
-    detector.detectMarkers(image, corners, ids, rejected);
-
-    ASSERT_EQ(N, ids.size());
-    for (size_t i = 0; i < N; i++)
-    {
-        int arucoId = ids[i];
-        ASSERT_EQ(4ull, corners[i].size());
-        ASSERT_TRUE(mapGoldCorners.find(arucoId) != mapGoldCorners.end());
-        for (int j = 0; j < 4; j++)
-        {
-            EXPECT_NEAR(static_cast<float>(mapGoldCorners[arucoId][j * 2]), corners[i][j].x, 1.f);
-            EXPECT_NEAR(static_cast<float>(mapGoldCorners[arucoId][j * 2 + 1]), corners[i][j].y, 1.f);
-        }
-    }
-}
-
-TEST(CV_ArucoTutorial, can_find_chocclusion)
-{
-    string imgPath = cvtest::findDataFile("chocclusion_original.jpg", false);
-    Mat image = imread(imgPath);
-    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
-
-    vector< int > ids;
-    vector< vector< Point2f > > corners, rejected;
-    const size_t N = 13ull;
-    // corners of aruco markers with indices goldCornersIds
-    const int goldCorners[N][8] = { {301,57, 322,62, 317,79, 295,73}, {391,80, 413,85, 408,103, 386,97},
-                                    {242,79, 264,85, 256,102, 234,96}, {334,103, 357,109, 352,126, 329,121},
-                                    {428,129, 451,134, 448,152, 425,146}, {274,128, 296,134, 290,153, 266,147},
-                                    {371,154, 394,160, 390,180, 366,174}, {208,155, 232,161, 223,181, 199,175},
-                                    {309,182, 333,188, 327,209, 302,203}, {411,210, 436,216, 432,238, 407,231},
-                                    {241,212, 267,219, 258,242, 232,235}, {167,244, 194,252, 183,277, 156,269},
-                                    {202,314, 230,322, 220,349, 191,341} };
-    map<int, const int*> mapGoldCorners;
-    const int goldCornersIds[N] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15};
-    for (int i = 0; i < static_cast<int>(N); i++)
-        mapGoldCorners[goldCornersIds[i]] = goldCorners[i];
-
-    detector.detectMarkers(image, corners, ids, rejected);
-
-    ASSERT_EQ(N, ids.size());
-    for (size_t i = 0; i < N; i++)
-    {
-        int arucoId = ids[i];
-        ASSERT_EQ(4ull, corners[i].size());
-        ASSERT_TRUE(mapGoldCorners.find(arucoId) != mapGoldCorners.end());
-        for (int j = 0; j < 4; j++)
-        {
-            EXPECT_NEAR(static_cast<float>(mapGoldCorners[arucoId][j * 2]), corners[i][j].x, 1.f);
-            EXPECT_NEAR(static_cast<float>(mapGoldCorners[arucoId][j * 2 + 1]), corners[i][j].y, 1.f);
-        }
-    }
-}
-
-TEST(CV_ArucoTutorial, can_find_diamondmarkers)
-{
-    string imgPath = cvtest::findDataFile("diamondmarkers.png", false);
-    Mat image = imread(imgPath);
-
-    string dictPath = cvtest::findDataFile("tutorial_dict.yml", false);
-    Ptr<aruco::Dictionary> dictionary = makePtr<aruco::Dictionary>();
-    FileStorage fs(dictPath, FileStorage::READ);
-    dictionary->aruco::Dictionary::readDictionary(fs.root()); // set marker from tutorial_dict.yml
-
-    string detectorPath = cvtest::findDataFile("detector_params.yml", false);
-    fs = FileStorage(detectorPath, FileStorage::READ);
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
-    detectorParams->readDetectorParameters(fs.root());
-    detectorParams->cornerRefinementMethod = 3;
-
-    aruco::ArucoDetector detector(dictionary, detectorParams);
-
-    vector< int > ids;
-    vector< vector< Point2f > > corners, rejected;
-    const size_t N = 12ull;
-    // corner indices of ArUco markers
-    const int goldCornersIds[N] = { 4, 12, 11, 3, 12, 10, 12, 10, 10, 11, 2, 11 };
-    map<int, int> counterGoldCornersIds;
-    for (int i = 0; i < static_cast<int>(N); i++)
-        counterGoldCornersIds[goldCornersIds[i]]++;
-
-    detector.detectMarkers(image, corners, ids, rejected);
-    map<int, int> counterRes;
-    for (size_t i = 0; i < N; i++)
-    {
-        int arucoId = ids[i];
-        counterRes[arucoId]++;
-    }
-
-    ASSERT_EQ(N, ids.size());
-    EXPECT_EQ(counterGoldCornersIds, counterRes); // check the number of ArUco markers
 }
 
 TEST(Charuco, issue_14014)

@@ -107,7 +107,7 @@ void CV_ArucoBoardPose::run(int) {
 
                 // estimate pose
                 Mat rvec, tvec;
-                aruco::estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
+                estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
                 // check axes
                 vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->getRightBottomBorder().x);

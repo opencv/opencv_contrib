@@ -8,6 +8,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Mat;
 import org.opencv.core.CvType;
 import org.opencv.aruco.*;
+import org.opencv.objdetect.*;
 
 
 public class ArucoTest extends OpenCVTestCase {
@@ -37,7 +38,7 @@ public class ArucoTest extends OpenCVTestCase {
 
         Mat markerImage = new Mat();
         int id = 1, offset = 5, size = 40;
-        Aruco.drawMarker(dictionary, id, size, markerImage, detectorParameters.get_markerBorderBits());
+        Objdetect.drawMarker(dictionary, id, size, markerImage, detectorParameters.get_markerBorderBits());
 
         Mat image = new Mat(markerImage.rows() + 2*offset, markerImage.cols() + 2*offset,
                             CvType.CV_8UC1, new Scalar(255));
