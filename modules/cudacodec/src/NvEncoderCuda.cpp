@@ -130,7 +130,7 @@ void NvEncoderCuda::CopyToDeviceFrame(CUcontext device,
     cuSafeCall(cuCtxPushCurrent(device));
 
     uint32_t srcPitch = nSrcPitch ? nSrcPitch : NvEncoder::GetWidthInBytes(pixelFormat, width);
-    CUDA_MEMCPY2D m = { 0 };
+    CUDA_MEMCPY2D m = {};
     m.srcMemoryType = srcMemoryType;
     if (srcMemoryType == CU_MEMORYTYPE_HOST)
     {

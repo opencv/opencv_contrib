@@ -184,7 +184,7 @@ public:
     CV_PROP_RW ENC_QP constQp; //!< QP's for ENC_PARAMS_RC_CONSTQP.
     CV_PROP_RW int averageBitRate; //!< target bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CBR.
     CV_PROP_RW int maxBitRate; //!< upper bound on bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CONSTQP.
-    CV_PROP_RW float targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with ENC_PARAMS_RC_VBR.
+    CV_PROP_RW uint8_t targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with ENC_PARAMS_RC_VBR.
     CV_PROP_RW int gopLength;
 };
 CV_EXPORTS bool operator==(const EncoderParams& lhs, const EncoderParams& rhs);
@@ -257,8 +257,8 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 @param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
-    const double fps = 25.0, const ENC_BUFFER_FORMAT bufferFormat = BF_ARGB, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec,
+    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -312,8 +312,8 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
 
 The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
-    const double fps = 25.0, const ENC_BUFFER_FORMAT bufferFormat = BF_ARGB, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec,
+    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 

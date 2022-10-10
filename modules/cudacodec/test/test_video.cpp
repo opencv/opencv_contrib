@@ -143,7 +143,7 @@ CUDA_TEST_P(CheckExtraData, Reader)
     ASSERT_EQ(extraDataIdx, 1 );
     ASSERT_TRUE(reader->grab());
     cv::Mat extraData;
-    const bool newData = reader->retrieve(extraData, extraDataIdx);
+    const bool newData = reader->retrieve(extraData, static_cast<size_t>(extraDataIdx));
     ASSERT_TRUE((newData && sz) || (!newData && !sz));
     ASSERT_EQ(extraData.total(), sz);
 }
@@ -170,7 +170,7 @@ CUDA_TEST_P(CheckKeyFrame, Reader)
         ASSERT_TRUE(reader->grab());
         double N = -1;
         ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB,N));
-        for (int i = rawIdxBase; i < N + rawIdxBase; i++) {
+        for (int i = static_cast<int>(rawIdxBase); i < static_cast<int>(N + rawIdxBase); i++) {
             nPackages++;
             double containsKeyFrame = i;
             ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_LRF_HAS_KEY_FRAME, containsKeyFrame));
@@ -197,10 +197,11 @@ CUDA_TEST_P(Scaling, Reader)
     }
 
     cudacodec::VideoReaderInitParams params;
-    params.targetSz = Size(frameOr.cols * targetSzIn.width, frameOr.rows * targetSzIn.height);
-    params.srcRoi = Rect(frameOr.cols * srcRoiIn.x, frameOr.rows * srcRoiIn.y, frameOr.cols * srcRoiIn.width, frameOr.rows * srcRoiIn.height);
-    params.targetRoi = Rect(params.targetSz.width * targetRoiIn.x, params.targetSz.height * targetRoiIn.y, params.targetSz.width * targetRoiIn.width,
-        params.targetSz.height * targetRoiIn.height);
+    params.targetSz = Size(static_cast<int>(frameOr.cols * targetSzIn.width), static_cast<int>(frameOr.rows * targetSzIn.height));
+    params.srcRoi = Rect(static_cast<int>(frameOr.cols * srcRoiIn.x), static_cast<int>(frameOr.rows * srcRoiIn.y), static_cast<int>(frameOr.cols * srcRoiIn.width),
+        static_cast<int>(frameOr.rows * srcRoiIn.height));
+    params.targetRoi = Rect(static_cast<int>(params.targetSz.width * targetRoiIn.x), static_cast<int>(params.targetSz.height * targetRoiIn.y),
+        static_cast<int>(params.targetSz.width * targetRoiIn.width), static_cast<int>(params.targetSz.height * targetRoiIn.height));
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
     reader->set(cudacodec::ColorFormat::GRAY);
     GpuMat frame;
@@ -256,7 +257,7 @@ CUDA_TEST_P(Video, Reader)
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
-        const int height = formatToChannels.first == cudacodec::ColorFormat::YUV ? 1.5 * fmt.height : fmt.height;
+        const int height = formatToChannels.first == cudacodec::ColorFormat::YUV ? static_cast<int>(1.5 * fmt.height) : fmt.height;
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
         ASSERT_TRUE(frame.channels() == formatToChannels.second);
@@ -291,9 +292,9 @@ CUDA_TEST_P(VideoReadRaw, Reader)
             double N = -1;
             ASSERT_TRUE(reader->get(cv::cudacodec::VideoReaderProps::PROP_NUMBER_OF_RAW_PACKAGES_SINCE_LAST_GRAB,N));
             ASSERT_TRUE(N >= 0) << N << " < 0";
-            for (int i = rawIdxBase; i <= N + rawIdxBase; i++) {
+            for (int j = static_cast<int>(rawIdxBase); j <= static_cast<int>(N + rawIdxBase); j++) {
                 Mat rawPackets;
-                reader->retrieve(rawPackets, i);
+                reader->retrieve(rawPackets, j);
                 file.write((char*)rawPackets.data, rawPackets.total());
             }
         }
@@ -315,7 +316,7 @@ CUDA_TEST_P(VideoReadRaw, Reader)
         {
             ASSERT_TRUE(readerReference->nextFrame(reference));
             ASSERT_TRUE(readerActual->grab());
-            ASSERT_TRUE(readerActual->retrieve(actual, decodedFrameIdx));
+            ASSERT_TRUE(readerActual->retrieve(actual, static_cast<size_t>(decodedFrameIdx)));
             actual.download(actualHost);
             reference.download(referenceHost);
             ASSERT_TRUE(cvtest::norm(actualHost, referenceHost, NORM_INF) == 0);
@@ -471,8 +472,8 @@ CUDA_TEST_P(TransCode, H264ToH265)
     {
         cv::VideoCapture cap(outputFile);
         ASSERT_TRUE(cap.isOpened());
-        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
-        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        const int width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
+        const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
         Mat frame;
@@ -550,8 +551,8 @@ CUDA_TEST_P(WriteNv, Writer)
     {
         cv::VideoCapture cap(outputFile);
         ASSERT_TRUE(cap.isOpened());
-        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
-        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        const int width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
+        const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
         Mat frame;
@@ -624,8 +625,8 @@ CUDA_TEST_P(WriteCv, Writer)
     {
         cv::VideoCapture cap(outputFile);
         ASSERT_TRUE(cap.isOpened());
-        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
-        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        const int width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
+        const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_TRUE(abs(fps - cap.get(CAP_PROP_FPS)) < 0.5);
         Mat frame;
@@ -659,7 +660,7 @@ struct EncoderParamsBase : testing::TestWithParam<cv::cuda::DeviceInfo>
         params.encodingProfile = cv::cudacodec::ENC_PROFILE::ENC_H264_PROFILE_MAIN;
         params.rateControlMode = cv::cudacodec::ENC_PARAMS_RC_MODE::ENC_PARAMS_RC_CBR;
         params.multiPassEncoding = cv::cudacodec::ENC_MULTI_PASS::ENC_TWO_PASS_FULL_RESOLUTION;
-        params.averageBitRate = 1e6;
+        params.averageBitRate = 1000000;
         params.maxBitRate = 0;
         params.targetQuality = 0;
         params.gopLength = 5;
@@ -704,8 +705,8 @@ CUDA_TEST_P(EncoderParamsCv, Writer)
     {
         cv::VideoCapture cap(outputFile);
         ASSERT_TRUE(cap.isOpened());
-        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
-        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        const int width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
+        const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
         const bool checkGop = videoio_registry::hasBackend(CAP_FFMPEG);
@@ -713,8 +714,9 @@ CUDA_TEST_P(EncoderParamsCv, Writer)
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
             ASSERT_FALSE(frame.empty());
-            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73))
+            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73)) {
                 ASSERT_TRUE(i % params.gopLength == 0);
+            }
         }
     }
 }
@@ -760,8 +762,8 @@ CUDA_TEST_P(EncoderParamsNv, Writer)
     {
         cv::VideoCapture cap(outputFile);
         ASSERT_TRUE(cap.isOpened());
-        const int width = cap.get(CAP_PROP_FRAME_WIDTH);
-        const int height = cap.get(CAP_PROP_FRAME_HEIGHT);
+        const int width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
+        const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
         const bool checkGop = videoio_registry::hasBackend(CAP_FFMPEG);
@@ -769,8 +771,9 @@ CUDA_TEST_P(EncoderParamsNv, Writer)
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
             ASSERT_FALSE(frame.empty());
-            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73))
+            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73)) {
                 ASSERT_TRUE(i % params.gopLength == 0);
+            }
         }
     }
 }
@@ -784,9 +787,9 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckSet, testing::Combine(
     testing::Values("highgui/video/big_buck_bunny.mp4")));
 
 #define VIDEO_SRC_SCALING "highgui/video/big_buck_bunny.mp4"
-#define TARGET_SZ Size2f(1,1), Size2f(0.8,0.9), Size2f(2.3,1.8)
-#define SRC_ROI Rect2f(0,0,1,1), Rect2f(0.25,0.25,0.5,0.5)
-#define TARGET_ROI Rect2f(0,0,1,1), Rect2f(0.2,0.3,0.6,0.7)
+#define TARGET_SZ Size2f(1,1), Size2f(0.8f,0.9f), Size2f(2.3f,1.8f)
+#define SRC_ROI Rect2f(0,0,1,1), Rect2f(0.25f,0.25f,0.5f,0.5f)
+#define TARGET_ROI Rect2f(0,0,1,1), Rect2f(0.2f,0.3f,0.6f,0.7f)
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
     ALL_DEVICES, testing::Values(VIDEO_SRC_SCALING), testing::Values(TARGET_SZ), testing::Values(SRC_ROI), testing::Values(TARGET_ROI)));
 

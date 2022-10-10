@@ -38,7 +38,8 @@ NvEncoder::NvEncoder(NV_ENC_DEVICE_TYPE eDeviceType, void* pDevice, uint32_t nWi
         NVENC_THROW_ERROR("EncodeAPI not found", NV_ENC_ERR_NO_ENCODE_DEVICE);
     }
 
-    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS encodeSessionExParams = { NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER };
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS encodeSessionExParams = {};
+    encodeSessionExParams.version = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER;
     encodeSessionExParams.device = m_pDevice;
     encodeSessionExParams.deviceType = m_eDeviceType;
     encodeSessionExParams.apiVersion = NVENCAPI_VERSION;
@@ -58,8 +59,8 @@ void NvEncoder::LoadNvEncApi()
         NVENC_THROW_ERROR("Current Driver Version does not support this NvEncodeAPI version, please upgrade driver", NV_ENC_ERR_INVALID_VERSION);
     }
 
-
-    m_nvenc = { NV_ENCODE_API_FUNCTION_LIST_VER };
+    m_nvenc = {};
+    m_nvenc.version = NV_ENCODE_API_FUNCTION_LIST_VER;
     NVENC_API_CALL(NvEncodeAPICreateInstance(&m_nvenc));
 }
 
@@ -109,7 +110,9 @@ void NvEncoder::CreateDefaultEncoderParams(NV_ENC_INITIALIZE_PARAMS* pIntializeP
     pIntializeParams->enableEncodeAsync = GetCapabilityValue(codecGuid, NV_ENC_CAPS_ASYNC_ENCODE_SUPPORT);
 #endif
     pIntializeParams->tuningInfo = tuningInfo;
-    NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };
+    NV_ENC_PRESET_CONFIG presetConfig = {};
+    presetConfig.version = NV_ENC_PRESET_CONFIG_VER;
+    presetConfig.presetCfg.version = NV_ENC_CONFIG_VER;
     m_nvenc.nvEncGetEncodePresetConfigEx(m_hEncoder, codecGuid, presetGuid, tuningInfo, &presetConfig);
     memcpy(pIntializeParams->encodeConfig, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG));
 
@@ -200,7 +203,9 @@ void NvEncoder::CreateEncoder(const NV_ENC_INITIALIZE_PARAMS* pEncoderParams)
     }
     else
     {
-        NV_ENC_PRESET_CONFIG presetConfig = { NV_ENC_PRESET_CONFIG_VER, { NV_ENC_CONFIG_VER } };
+        NV_ENC_PRESET_CONFIG presetConfig = {};
+        presetConfig.version = NV_ENC_PRESET_CONFIG_VER;
+        presetConfig.presetCfg.version = NV_ENC_CONFIG_VER;
         m_nvenc.nvEncGetEncodePresetConfigEx(m_hEncoder, pEncoderParams->encodeGUID, pEncoderParams->presetGUID, pEncoderParams->tuningInfo, &presetConfig);
         memcpy(&m_encodeConfig, &presetConfig.presetCfg, sizeof(NV_ENC_CONFIG));
     }
@@ -283,8 +288,8 @@ const NvEncInputFrame* NvEncoder::GetNextInputFrame()
 
 void NvEncoder::MapResources(uint32_t bfrIdx)
 {
-    NV_ENC_MAP_INPUT_RESOURCE mapInputResource = { NV_ENC_MAP_INPUT_RESOURCE_VER };
-
+    NV_ENC_MAP_INPUT_RESOURCE mapInputResource = {};
+    mapInputResource.version = NV_ENC_MAP_INPUT_RESOURCE_VER;
     mapInputResource.registeredResource = m_vRegisteredResources[bfrIdx];
     NVENC_API_CALL(m_nvenc.nvEncMapInputResource(m_hEncoder, &mapInputResource));
     m_vMappedInputBuffers[bfrIdx] = mapInputResource.mappedResource;
@@ -319,7 +324,8 @@ void NvEncoder::GetSequenceParams(std::vector<uint8_t>& seqParams)
 {
     uint8_t spsppsData[1024]; // Assume maximum spspps data is 1KB or less
     memset(spsppsData, 0, sizeof(spsppsData));
-    NV_ENC_SEQUENCE_PARAM_PAYLOAD payload = { NV_ENC_SEQUENCE_PARAM_PAYLOAD_VER };
+    NV_ENC_SEQUENCE_PARAM_PAYLOAD payload = {};
+    payload.version = NV_ENC_SEQUENCE_PARAM_PAYLOAD_VER;
     uint32_t spsppsSize = 0;
 
     payload.spsppsBuffer = spsppsData;
@@ -352,7 +358,9 @@ NVENCSTATUS NvEncoder::DoEncode(NV_ENC_INPUT_PTR inputBuffer, NV_ENC_OUTPUT_PTR 
 
 void NvEncoder::SendEOS()
 {
-    NV_ENC_PIC_PARAMS picParams = { NV_ENC_PIC_PARAMS_VER };
+    NV_ENC_PIC_PARAMS picParams = {};
+    picParams.version = NV_ENC_PIC_PARAMS_VER;
+
     picParams.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     picParams.completionEvent = GetCompletionEvent(m_iToSend % m_nEncoderBuffer);
     NVENC_API_CALL(m_nvenc.nvEncEncodePicture(m_hEncoder, &picParams));
@@ -378,7 +386,8 @@ void NvEncoder::GetEncodedPacket(std::vector<NV_ENC_OUTPUT_PTR>& vOutputBuffer, 
     for (; m_iGot < iEnd; m_iGot++)
     {
         WaitForCompletionEvent(m_iGot % m_nEncoderBuffer);
-        NV_ENC_LOCK_BITSTREAM lockBitstreamData = { NV_ENC_LOCK_BITSTREAM_VER };
+        NV_ENC_LOCK_BITSTREAM lockBitstreamData = {};
+        lockBitstreamData.version = NV_ENC_LOCK_BITSTREAM_VER;
         lockBitstreamData.outputBitstream = vOutputBuffer[m_iGot % m_nEncoderBuffer];
         lockBitstreamData.doNotWait = false;
         NVENC_API_CALL(m_nvenc.nvEncLockBitstream(m_hEncoder, &lockBitstreamData));
@@ -424,7 +433,8 @@ NV_ENC_REGISTERED_PTR NvEncoder::RegisterResource(void* pBuffer, NV_ENC_INPUT_RE
     int width, int height, int pitch, NV_ENC_BUFFER_FORMAT bufferFormat, NV_ENC_BUFFER_USAGE bufferUsage,
     NV_ENC_FENCE_POINT_D3D12* pInputFencePoint, NV_ENC_FENCE_POINT_D3D12* pOutputFencePoint)
 {
-    NV_ENC_REGISTER_RESOURCE registerResource = { NV_ENC_REGISTER_RESOURCE_VER };
+    NV_ENC_REGISTER_RESOURCE registerResource = {};
+    registerResource.version = NV_ENC_REGISTER_RESOURCE_VER;
     registerResource.resourceType = eResourceType;
     registerResource.resourceToRegister = pBuffer;
     registerResource.width = width;
@@ -569,7 +579,6 @@ uint32_t NvEncoder::GetWidthInBytes(const NV_ENC_BUFFER_FORMAT bufferFormat, con
         return width * 4;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return 0;
     }
 }
 
@@ -646,7 +655,6 @@ void NvEncoder::GetChromaSubPlaneOffsets(const NV_ENC_BUFFER_FORMAT bufferFormat
         return;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return;
     }
 }
 
@@ -670,7 +678,6 @@ uint32_t NvEncoder::GetChromaHeight(const NV_ENC_BUFFER_FORMAT bufferFormat, con
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return 0;
     }
 }
 
@@ -697,7 +704,6 @@ uint32_t NvEncoder::GetChromaWidthInBytes(const NV_ENC_BUFFER_FORMAT bufferForma
         return 0;
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return 0;
     }
 }
 
@@ -708,7 +714,8 @@ int NvEncoder::GetCapabilityValue(GUID guidCodec, NV_ENC_CAPS capsToQuery)
     {
         return 0;
     }
-    NV_ENC_CAPS_PARAM capsParam = { NV_ENC_CAPS_PARAM_VER };
+    NV_ENC_CAPS_PARAM capsParam = {};
+    capsParam.version = NV_ENC_CAPS_PARAM_VER;
     capsParam.capsToQuery = capsToQuery;
     int v;
     m_nvenc.nvEncGetEncodeCaps(m_hEncoder, guidCodec, &capsParam, &v);
@@ -737,7 +744,6 @@ int NvEncoder::GetFrameSize() const
         return 4 * GetEncodeWidth() * GetEncodeHeight();
     default:
         NVENC_THROW_ERROR("Invalid Buffer format", NV_ENC_ERR_INVALID_PARAM);
-        return 0;
     }
 }
 
@@ -757,7 +763,8 @@ void NvEncoder::InitializeBitstreamBuffer()
 {
     for (int i = 0; i < m_nEncoderBuffer; i++)
     {
-        NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBuffer = { NV_ENC_CREATE_BITSTREAM_BUFFER_VER };
+        NV_ENC_CREATE_BITSTREAM_BUFFER createBitstreamBuffer = {};
+        createBitstreamBuffer.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
         NVENC_API_CALL(m_nvenc.nvEncCreateBitstreamBuffer(m_hEncoder, &createBitstreamBuffer));
         m_vBitstreamOutputBuffer[i] = createBitstreamBuffer.bitstreamBuffer;
     }

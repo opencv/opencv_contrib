@@ -59,6 +59,15 @@ Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>&, const
 
 #else // !defined HAVE_NVCUVENC
 
+ENC_BUFFER_FORMAT NvSurfaceFormat(const COLOR_FORMAT_CV format);
+int NChannels(const COLOR_FORMAT_CV format);
+int NChannels(const ENC_BUFFER_FORMAT format);
+GUID CodecGuid(const VideoWriterCodec codec);
+void FrameRate(const double fps, uint32_t& frameRateNum, uint32_t& frameRateDen);
+GUID EncodingProfileGuid(const ENC_PROFILE encodingProfile);
+GUID EncodingPresetGuid(const ENC_PRESET nvPreset);
+bool Equal(const GUID& g1, const GUID& g2);
+
 EncoderParams::EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
     rateControlMode(ENC_PARAMS_RC_VBR), multiPassEncoding(ENC_MULTI_PASS_DISABLED), constQp({ 0,0,0 }), averageBitRate(0), maxBitRate(0),
     targetQuality(30), gopLength(0)
@@ -119,7 +128,7 @@ public:
     void close();
 private:
     void Init(const VideoWriterCodec codec, const double fps, const Size frameSz);
-    void InitializeEncoder(NvEncoderCuda* const pEnc, const GUID codec, const double fps);
+    void InitializeEncoder(const GUID codec, const double fps);
     void CopyToNvSurface(const InputArray src);
 
     Ptr<EncoderCallback> encoderCallback;
@@ -225,7 +234,7 @@ void VideoWriterImpl::Init(const VideoWriterCodec codec, const double fps, const
     const GUID codecGuid = CodecGuid(codec);
     try {
         pEnc = new NvEncoderCuda(cuContext, frameSz.width, frameSz.height, (NV_ENC_BUFFER_FORMAT)surfaceFormatNv);
-        InitializeEncoder(pEnc, codecGuid, fps);
+        InitializeEncoder(codecGuid, fps);
         const cudaStream_t cudaStream = cuda::StreamAccessor::getStream(stream);
         pEnc->SetIOCudaStreams((NV_ENC_CUSTREAM_PTR)&cudaStream, (NV_ENC_CUSTREAM_PTR)&cudaStream);
     }
@@ -294,10 +303,12 @@ bool Equal(const GUID& g1, const GUID& g2) {
     return false;
 }
 
-void VideoWriterImpl::InitializeEncoder(NvEncoderCuda* const pEnc, const GUID codec, const double fps)
+void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
 {
-    NV_ENC_INITIALIZE_PARAMS initializeParams = { NV_ENC_INITIALIZE_PARAMS_VER };
-    NV_ENC_CONFIG encodeConfig = { NV_ENC_CONFIG_VER };
+    NV_ENC_INITIALIZE_PARAMS initializeParams = {};
+    initializeParams.version = NV_ENC_INITIALIZE_PARAMS_VER;
+    NV_ENC_CONFIG encodeConfig = {};
+    encodeConfig.version = NV_ENC_CONFIG_VER;
     initializeParams.encodeConfig = &encodeConfig;
     pEnc->CreateDefaultEncoderParams(&initializeParams, codec, EncodingPresetGuid(encoderParams.nvPreset), (NV_ENC_TUNING_INFO)encoderParams.tuningInfo);
     FrameRate(fps, initializeParams.frameRateNum, initializeParams.frameRateDen);
@@ -332,8 +343,6 @@ void VideoWriterImpl::CopyToNvSurface(const InputArray src)
             else
                 srcDevice.upload(src);
         }
-        Npp8u* pDst[3] = { dst, &dst[encoderInputFrame->pitch * pEnc->GetEncodeHeight()], &dst[encoderInputFrame->pitch * pEnc->GetEncodeHeight() * 2] };
-        const NppiSize oSizeROI = { pEnc->GetEncodeWidth(), pEnc->GetEncodeHeight() };
         if (surfaceFormatCv == COLOR_FORMAT_CV::BGR) {
             GpuMat dstGpuMat(pEnc->GetEncodeHeight(), pEnc->GetEncodeWidth(), CV_8UC4, dst, encoderInputFrame->pitch);
             cuda::cvtColor(srcDevice, dstGpuMat, COLOR_BGR2BGRA, 0, stream);
@@ -362,7 +371,7 @@ void VideoWriterImpl::CopyToNvSurface(const InputArray src)
     else {
         void* srcPtr = src.isGpuMat() ? src.getGpuMat().data : src.getMat().data;
         const CUmemorytype cuMemoryType = src.isGpuMat() ? CU_MEMORYTYPE_DEVICE : CU_MEMORYTYPE_HOST;
-        NvEncoderCuda::CopyToDeviceFrame(cuContext, srcPtr, src.step(), (CUdeviceptr)encoderInputFrame->inputPtr, (int)encoderInputFrame->pitch, pEnc->GetEncodeWidth(),
+        NvEncoderCuda::CopyToDeviceFrame(cuContext, srcPtr, static_cast<unsigned>(src.step()), (CUdeviceptr)encoderInputFrame->inputPtr, (int)encoderInputFrame->pitch, pEnc->GetEncodeWidth(),
             pEnc->GetEncodeHeight(), cuMemoryType, encoderInputFrame->bufferFormat, encoderInputFrame->chromaOffsets, encoderInputFrame->numChromaPlanes,
             false, cuda::StreamAccessor::getStream(stream));
     }

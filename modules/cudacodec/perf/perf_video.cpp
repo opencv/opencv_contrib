@@ -167,7 +167,7 @@ PERF_TEST_P(WriteToFile, VideoWriter, Combine(VIDEO_SRC, COLOR_FORMAT, CODEC))
             reader >> frameBgr;
             ASSERT_FALSE(frameBgr.empty());
             if (!writer.isOpened())
-                writer.open(outputFile, VideoWriter::fourcc('x', '2', '6', '4'), fps, frameBgr.size());
+                writer.open(outputFile, VideoWriter::fourcc('X', 'V', 'I', 'D'), fps, frameBgr.size());
             startTimer();
             writer.write(frameBgr);
             stopTimer();
