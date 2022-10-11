@@ -5,5 +5,7 @@ src/*/*.o
 src/*/*.dep
 src/*/*.d
 src/tetra/tetra-demo
+src/camera/camera-demo
+camera-demo.mkv
 tetra-demo.mkv
 
