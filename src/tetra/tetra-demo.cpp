@@ -57,7 +57,7 @@ void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WID
 
     cv::bitwise_not(src, src);
 
-    //Resize for some extra performance (especially when blurring)
+    //Resize for some extra performance
     cv::resize(src, resize, cv::Size(), 0.5, 0.5);
     //Cheap blur
     cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+    cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
         //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
         //Encode the frame using VAAPI on the GPU.
-        video.write(videoFrame);
+        encoder.write(videoFrame);
 
         if(x11::is_initialized()) {
             //Yet again activate the OpenCL context for OpenGL
