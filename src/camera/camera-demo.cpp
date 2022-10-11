@@ -22,7 +22,6 @@ int main(int argc, char **argv) {
      */
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
-    //Initialize VP9 HW encoding using VAAPI
     cv::VideoCapture cap("output.mp4", cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, 0,
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
