@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
 
     FPS = cap.get(cv::CAP_PROP_FPS);
     std::cerr << "FPS: " << FPS << std::endl;
-    cv::VideoWriter video("camera-demo.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_DEVICE, 0, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
     cerr << "VA Version: " << va::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
