@@ -39,7 +39,6 @@ int main(int argc, char **argv) {
     cerr << "VA Version: " << va::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-    cv::UMat frameBuffer(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     cv::UMat videoFrame;
 
     uint64_t cnt = 1;
