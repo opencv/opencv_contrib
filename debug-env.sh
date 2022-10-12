@@ -1,3 +1,8 @@
+OPENCV_LOC=/home/elchaschab/devel/opencv/
+FFMPEG_LOC=/home/elchaschab/devel/cartwheel-ffmpeg/ffmpeg/
+
+
+export LD_LIBRARY_PATH="$OPENCV_LOC/build/lib/:$FFMPEG_LOC/libavcodec/:$FFMPEG_LOC/libavutil/:$FFMPEG_LOC/libavdevice/:$FFMPEG_LOC/libavformat/:$FFMPEG_LOC/libavfilter/:$FFMPEG_LOC/libpostproc/:$FFMPEG_LOC/libswresample/:$FFMPEG_LOC/libswscale/:$LD_LIBRARY_PATH"
 export OPENCV_LOG_LEVEL=DEBUG
 export OPENCV_FFMPEG_LOGLEVEL=trace
 export OPENCV_VIDEOIO_DEBUG=1
@@ -13,7 +18,7 @@ export OPENCV_OPENCL_ABORT_ON_BUILD_ERROR=1
 #export OPENCV_OPENCL_SVM_DISABLE=1
 export OPENCV_DUMP_ERRORS=1
 export OPENCV_DUMP_CONFIG=1
-#export OPENCV_CPU_DISABLE=1
+#export OPENCV_CPU_DISABLE=
 export OPENCV_TRACE=1
 export OPENCV_TRACE_SYNC_OPENCL=1
 export OPENCV_FFMPEG_CAPTURE_OPTIONS="loglevel;debug"
