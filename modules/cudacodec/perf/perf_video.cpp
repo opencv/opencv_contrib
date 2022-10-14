@@ -147,7 +147,7 @@ PERF_TEST_P(WriteToFile, VideoWriter, Combine(VIDEO_SRC, COLOR_FORMAT, CODEC))
             frames.push_back(frame);
         }
         stream.waitForCompletion();
-        cv::Ptr<cv::cudacodec::VideoWriter> d_writer = cv::cudacodec::createVideoWriter(outputFile, frameBgr.size(), codec, fps, surfaceFormat, stream);
+        cv::Ptr<cv::cudacodec::VideoWriter> d_writer = cv::cudacodec::createVideoWriter(outputFile, frameBgr.size(), codec, fps, surfaceFormat, 0, stream);
         for (int i = 0; i < nFrames - 1; ++i) {
             startTimer();
             d_writer->write(frames[i]);

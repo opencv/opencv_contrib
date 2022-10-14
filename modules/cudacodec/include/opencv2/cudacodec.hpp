@@ -231,10 +231,11 @@ public:
 @param codec Codec.
 @param fps Framerate of the created video stream.
 @param colorFormat OpenCv color format of the frames to be encoded.
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback. Required for working with the encoded video stream.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec = CODEC_VW::H264,
-    const double fps = 25.0, const COLOR_FORMAT_VW colorFormat = BGR, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec = CODEC_VW::H264, const double fps = 25.0,
+    const COLOR_FORMAT_VW colorFormat = BGR, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -244,39 +245,11 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 @param fps Framerate of the created video stream.
 @param colorFormat OpenCv color format of the frames to be encoded.
 @param params Additional encoding parameters.
+@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback. Required for working with the encoded video stream.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec,
-    const double fps, const COLOR_FORMAT_VW colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
-
-/** @brief Creates video writer.
-
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
-@param frameSize Size of the input video frames.
-@param codec Codec.
-@param fps Framerate of the created video stream.
-@param colorFormat OpenCv color format of the frames to be encoded.
-@param stream Stream for frame pre-processing.
-
-The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const CODEC_VW codec = CODEC_VW::H264,
-    const double fps = 25.0, const COLOR_FORMAT_VW colorFormat = BGR, const Stream& stream = Stream::Null());
-
-/** @brief Creates video writer.
-
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
-@param frameSize Size of the input video frames.
-@param codec Codec.
-@param fps Framerate of the created video stream.
-@param colorFormat OpenCv color format of the frames to be encoded.
-@param params Additional encoding parameters.
-@param stream Stream for frame pre-processing.
-
-The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const CODEC_VW codec,
-    const double fps, const COLOR_FORMAT_VW colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec, const double fps,  const COLOR_FORMAT_VW colorFormat,
+    const EncoderParams& params, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
 
 ////////////////////////////////// Video Decoding //////////////////////////////////////////
 

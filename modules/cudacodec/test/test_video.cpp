@@ -463,7 +463,7 @@ CUDA_TEST_P(TransCode, H264ToH265)
             Mat tst; frame.download(tst);
             if (writer.empty()) {
                 frameSz = Size(fmt.width, fmt.height);
-                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, stream);
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, 0, stream);
             }
             writer->write(frame);
         }
@@ -537,7 +537,7 @@ CUDA_TEST_P(Write, Writer)
             ASSERT_FALSE(frame.empty());
             if (writer.empty()) {
                 frameSz = frame.size();
-                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, stream);
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, 0, stream);
             }
             CvtColor(frame, frameNewSf, colorFormat);
             if (deviceSrc) {
@@ -618,7 +618,7 @@ CUDA_TEST_P(EncoderParams, Writer)
             dFrame.upload(frame);
             if (writer.empty()) {
                 frameSz = frame.size();
-                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, params, stream);
+                writer = cv::cudacodec::createVideoWriter(outputFile, frameSz, codec, fps, colorFormat, params, 0, stream);
                 cv::cudacodec::EncoderParams paramsOut = writer->getEncoderParams();
                 ASSERT_EQ(params, paramsOut);
             }
