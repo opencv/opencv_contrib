@@ -68,40 +68,28 @@ using namespace cuda;  // Stream
 
 /** @brief Codecs supported by Video writer, refer to Nvidia's GPU Support Matrix to confirm your GPU supports them.
 */
-enum class VideoWriterCodec
+enum class CODEC_VW
 {
     H264 = 0,
     HEVC = 1,
     NumCodecs = 2
 };
 
-/** @brief OpenCV color formats.
+/** @brief Video writer color formats.
 */
-enum COLOR_FORMAT_CV {
+enum COLOR_FORMAT_VW {
     UNDEFINED = 0,
     BGR = 1, //!< Default OpenCV color format.
     RGB = 2,
     BGRA = 3,
     RGBA = 4,
-    GRAY = 5
-};
+    GRAY = 5,
 
-/** @brief Nvidia Video Codec SDK surface formats.
-*/
-enum ENC_BUFFER_FORMAT
-{
-    BF_UNDEFINED = 0x00000000, //!< Undefined buffer format.
-    BF_NV12 = 0x00000001, //!< Semi-Planar YUV [Y plane followed by interleaved UV plane].
-    BF_YV12 = 0x00000010, //!< Planar YUV [Y plane followed by V and U planes].
-    BF_IYUV = 0x00000100, //!< Planar YUV [Y plane followed by U and V planes].
-    BF_YUV444 = 0x00001000, //!< Planar YUV [Y plane followed by U and V planes].
-    BF_YUV420_10BIT = 0x00010000, //!< 10 bit Semi-Planar YUV [Y plane followed by interleaved UV plane]. Each pixel of size 2 bytes. Most Significant 10 bits contain pixel data.
-    BF_YUV444_10BIT = 0x00100000, //!< 10 bit Planar YUV444 [Y plane followed by U and V planes]. Each pixel of size 2 bytes. Most Significant 10 bits contain pixel data.
-    BF_ARGB = 0x01000000, //!< 8 bit Packed A8R8G8B8. This is a word-ordered format where a pixel is represented by a 32-bit word with B in the lowest 8 bits, G in the next 8 bits, R in the 8 bits after that and A in the highest 8 bits.
-    BF_ARGB10 = 0x02000000, //!< 10 bit Packed A2R10G10B10. This is a word-ordered format where a pixel is represented by a 32-bit word with B in the lowest 10 bits, G in the next 10 bits, R in the 10 bits after that and A in the highest 2 bits.
-    BF_AYUV = 0x04000000, //!< 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits.
-    BF_ABGR = 0x10000000, //!< 8 bit Packed A8B8G8R8. This is a word-ordered format where a pixel is represented by a 32-bit word with R in the lowest 8 bits, G in the next 8 bits, B in the 8 bits after that and A in the highest 8 bits.
-    BF_ABGR10 = 0x20000000, //!< 10 bit Packed A2B10G10R10. This is a word-ordered format where a pixel is represented by a 32-bit word with R in the lowest 10 bits, G in the next 10 bits, B in the 10 bits after that and A in the highest 2 bits.
+    NV_NV12 = 6, //!< Nvidia Buffer Format - Semi-Planar YUV [Y plane followed by interleaved UV plane].
+    NV_YV12 = 7, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by V and U planes].
+    NV_IYUV = 8, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes].
+    NV_YUV444 = 9, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes].
+    NV_AYUV = 10 //!< Nvidia Buffer Format - 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits.
 };
 
 /** @brief Rate Control Modes.
@@ -233,7 +221,7 @@ public:
 
     /** @brief Waits until the encoding process has finished before calling EncoderCallback::onEncodingFinished().
     */
-    CV_WRAP virtual void close() = 0;
+    CV_WRAP virtual void release() = 0;
 };
 
 /** @brief Creates video writer.
@@ -245,20 +233,8 @@ public:
 @param colorFormat OpenCv color format of the frames to be encoded.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
-    const double fps = 25.0, const COLOR_FORMAT_CV colorFormat = BGR, const Stream& stream = Stream::Null());
-
-/** @brief Creates video writer.
-
-@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
-@param frameSize Size of the input video frames.
-@param codec Codec.
-@param fps Framerate of the created video stream.
-@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
-@param stream Stream for frame pre-processing.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec,
-    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec = CODEC_VW::H264,
+    const double fps = 25.0, const COLOR_FORMAT_VW colorFormat = BGR, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -270,22 +246,8 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 @param params Additional encoding parameters.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec,
-    const double fps, const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
-
-
-/** @brief Creates video writer.
-
-@param fileName Name of the output video file. Only raw h264 or hevc files are supported.
-@param frameSize Size of the input video frames.
-@param codec Codec.
-@param fps Framerate of the created video stream.
-@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
-@param params Additional encoding parameters.
-@param stream Stream for frame pre-processing.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const VideoWriterCodec codec,
-    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec,
+    const double fps, const COLOR_FORMAT_VW colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -298,22 +260,8 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 
 The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec = VideoWriterCodec::H264,
-    const double fps = 25.0, const COLOR_FORMAT_CV colorFormat = BGR, const Stream& stream = Stream::Null());
-
-/** @brief Creates video writer.
-
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
-@param frameSize Size of the input video frames.
-@param codec Codec.
-@param fps Framerate of the created video stream.
-@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
-@param stream Stream for frame pre-processing.
-
-The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec,
-    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const CODEC_VW codec = CODEC_VW::H264,
+    const double fps = 25.0, const COLOR_FORMAT_VW colorFormat = BGR, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -327,23 +275,8 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
 
 The constructors initialize video writer. User can implement their own multiplexing with cudacodec::EncoderCallback.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec,
-    const double fps, const COLOR_FORMAT_CV colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
-
-/** @brief Creates video writer.
-
-@param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback . Use it if you want to work with the raw video stream.
-@param frameSize Size of the input video frames.
-@param codec Codec.
-@param fps Framerate of the created video stream.
-@param bufferFormat Nvidia Video Codec SDK buffer format of the frames to be encoded.
-@param params Additional encoding parameters.
-@param stream Stream for frame pre-processing.
-
-The constructors initialize video writer. User can implement own their multiplexing with cudacodec::EncoderCallback.
-*/
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const VideoWriterCodec codec,
-    const double fps, const ENC_BUFFER_FORMAT bufferFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCallback>& encoderCallback, const Size frameSize, const CODEC_VW codec,
+    const double fps, const COLOR_FORMAT_VW colorFormat, const EncoderParams& params, const Stream& stream = Stream::Null());
 
 ////////////////////////////////// Video Decoding //////////////////////////////////////////
 

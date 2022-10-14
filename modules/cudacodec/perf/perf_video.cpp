@@ -97,41 +97,41 @@ PERF_TEST_P(FileName, VideoReader, VIDEO_SRC)
 
 #if defined(HAVE_NVCUVENC)
 
-DEF_PARAM_TEST(WriteToFile, string, cv::cudacodec::COLOR_FORMAT_CV, cv::cudacodec::VideoWriterCodec);
+DEF_PARAM_TEST(WriteToFile, string, cv::cudacodec::COLOR_FORMAT_VW, cv::cudacodec::CODEC_VW);
 
-#define COLOR_FORMAT Values(cv::cudacodec::COLOR_FORMAT_CV::BGR, cv::cudacodec::COLOR_FORMAT_CV::RGB, cv::cudacodec::COLOR_FORMAT_CV::BGRA, \
-cv::cudacodec::COLOR_FORMAT_CV::RGBA, cv::cudacodec::COLOR_FORMAT_CV::GRAY)
-#define CODEC Values(cv::cudacodec::VideoWriterCodec::H264, cv::cudacodec::VideoWriterCodec::HEVC)
+#define COLOR_FORMAT Values(cv::cudacodec::COLOR_FORMAT_VW::BGR, cv::cudacodec::COLOR_FORMAT_VW::RGB, cv::cudacodec::COLOR_FORMAT_VW::BGRA, \
+cv::cudacodec::COLOR_FORMAT_VW::RGBA, cv::cudacodec::COLOR_FORMAT_VW::GRAY)
+#define CODEC Values(cv::cudacodec::CODEC_VW::H264, cv::cudacodec::CODEC_VW::HEVC)
 
 PERF_TEST_P(WriteToFile, VideoWriter, Combine(VIDEO_SRC, COLOR_FORMAT, CODEC))
 {
     declare.time(30);
     const string inputFile = perf::TestBase::getDataPath(GET_PARAM(0));
-    const cv::cudacodec::COLOR_FORMAT_CV surfaceFormat = GET_PARAM(1);
-    const cudacodec::VideoWriterCodec codec = GET_PARAM(2);
+    const cv::cudacodec::COLOR_FORMAT_VW surfaceFormat = GET_PARAM(1);
+    const cudacodec::CODEC_VW codec = GET_PARAM(2);
     const double fps = 25;
     const int nFrames = 20;
     cv::VideoCapture reader(inputFile);
     ASSERT_TRUE(reader.isOpened());
     Mat frameBgr;
     if (PERF_RUN_CUDA()) {
-        const std::string ext = codec == cudacodec::VideoWriterCodec::H264 ? ".h264" : ".hevc";
+        const std::string ext = codec == cudacodec::CODEC_VW::H264 ? ".h264" : ".hevc";
         const string outputFile = cv::tempfile(ext.c_str());
         std::vector<GpuMat> frames;
         cv::Mat frameNewSf;
         cuda::Stream stream;
         ColorConversionCodes conversionCode = COLOR_COLORCVT_MAX;
         switch (surfaceFormat) {
-        case cudacodec::COLOR_FORMAT_CV::RGB:
+        case cudacodec::COLOR_FORMAT_VW::RGB:
             conversionCode = COLOR_BGR2RGB;
             break;
-        case cudacodec::COLOR_FORMAT_CV::BGRA:
+        case cudacodec::COLOR_FORMAT_VW::BGRA:
             conversionCode = COLOR_BGR2BGRA;
             break;
-        case cudacodec::COLOR_FORMAT_CV::RGBA:
+        case cudacodec::COLOR_FORMAT_VW::RGBA:
             conversionCode = COLOR_BGR2RGBA;
             break;
-        case cudacodec::COLOR_FORMAT_CV::GRAY:
+        case cudacodec::COLOR_FORMAT_VW::GRAY:
             conversionCode = COLOR_BGR2GRAY;
         default:
             break;
@@ -155,11 +155,13 @@ PERF_TEST_P(WriteToFile, VideoWriter, Combine(VIDEO_SRC, COLOR_FORMAT, CODEC))
         }
         startTimer();
         d_writer->write(frames[nFrames - 1]);
-        d_writer->close();
+        d_writer->release();
         stopTimer();
+
+        ASSERT_EQ(0, remove(outputFile.c_str()));
     }
     else {
-        if (surfaceFormat != cv::cudacodec::COLOR_FORMAT_CV::BGR || codec != cv::cudacodec::VideoWriterCodec::H264)
+        if (surfaceFormat != cv::cudacodec::COLOR_FORMAT_VW::BGR || codec != cv::cudacodec::CODEC_VW::H264)
             throw PerfSkipTestException();
         cv::VideoWriter writer;
         const string outputFile = cv::tempfile(".avi");
@@ -178,6 +180,8 @@ PERF_TEST_P(WriteToFile, VideoWriter, Combine(VIDEO_SRC, COLOR_FORMAT, CODEC))
         writer.write(frameBgr);
         writer.release();
         stopTimer();
+
+        ASSERT_EQ(0, remove(outputFile.c_str()));
     }
     SANITY_CHECK(frameBgr);
 }

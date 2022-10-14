@@ -79,7 +79,8 @@ class cudacodec_test(NewOpenCVTests):
         #Test at least the existence of wrapped functions for now
 
         try:
-            _, fname = tempfile.mkstemp(suffix=".h264")
+            fd, fname = tempfile.mkstemp(suffix=".h264")
+            os.close(fd)
             encoder_params_in = cv.cudacodec.EncoderParams()
             encoder_params_in.gopLength = 10
             stream = cv.cuda.Stream()
@@ -98,6 +99,8 @@ class cudacodec_test(NewOpenCVTests):
         except cv.error as e:
             self.assertEqual(e.code, cv.Error.StsNotImplemented)
             self.skipTest("Either NVCUVENC or a GPU hardware encoder is missing or the encoding profile is not supported.")
+
+        os.remove(fname)
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
