@@ -2,10 +2,10 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr bool OFFSCREEN = true;
+constexpr double FPS = 60;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr double FPS = 60;
 
 #include "../common/subsystems.hpp"
 
@@ -48,7 +48,6 @@ void render() {
         glVertex3f(-1, 0, 1);
     glEnd();
     glFlush();
-    kb::gl::swapBuffers();
 }
 
 void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
@@ -147,6 +146,8 @@ int main(int argc, char **argv) {
             //Check if the x11 window was closed
             if(x11::window_closed())
                 break;
+
+            gl::swapBuffers();
         }
 
         //Measure FPS

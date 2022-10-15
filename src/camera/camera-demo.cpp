@@ -2,6 +2,7 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
+constexpr bool OFFSCREEN = false;
 constexpr const char* INPUT_FILENAME = "example.mp4";
 constexpr const char* OUTPUT_FILENAME = "camera-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
@@ -47,7 +48,6 @@ void render() {
         glVertex3f(-1, 0, 1);
     glEnd();
     glFlush();
-    kb::gl::swapBuffers();
 }
 
 void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
@@ -103,6 +103,10 @@ int main(int argc, char **argv) {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
+    //If we are rendering offscreen we don't need x11
+    if(!OFFSCREEN)
+        x11::init_x11();
+
     //Passing true to init_egl will create a OpenGL debug context
     egl::init_egl();
     //Initialize OpenCL Context for OpenGL
@@ -120,13 +124,20 @@ int main(int argc, char **argv) {
 
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
+    cv::UMat videoOutFrame;
     cv::UMat videoFrameRGBA;
+
+
+    render();
 
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
 
     while (true) {
+        GL_CONTEXT.bind();
+        gl::fetch_frame_buffer(frameBuffer);
+
         //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
         //Decode a frame using HW acceleration into a cv::UMat
@@ -143,7 +154,6 @@ int main(int argc, char **argv) {
         //Resize the frame. (OpenCL)
         cv::resize(videoFrameRGBA, frameBuffer, cv::Size(WIDTH, HEIGHT));
 
-        //Activate the OpenCL context for OpenGL
         GL_CONTEXT.bind();
         //Transfer buffer ownership to OpenGL
         gl::return_frame_buffer(frameBuffer);
@@ -155,13 +165,28 @@ int main(int argc, char **argv) {
         glow(frameBuffer);
 
         //Color-conversion from BGRA to RGB. (OpenCL)
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        cv::flip(videoFrame, videoFrame, 0);
+        cv::cvtColor(frameBuffer, videoOutFrame, cv::COLOR_BGRA2RGB);
+        cv::flip(videoOutFrame, videoOutFrame, 0);
 
         //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
         //Encode the frame using VAAPI on the GPU.
-        video.write(videoFrame);
+        video.write(videoOutFrame);
+
+        if(x11::is_initialized()) {
+            //Yet again activate the OpenCL context for OpenGL
+            GL_CONTEXT.bind();
+            //Transfer buffer ownership back to OpenGL
+            gl::return_frame_buffer(frameBuffer);
+            //Blit the framebuffer we have been working on to the screen
+            gl::blit_frame_buffer_to_screen();
+
+            //Check if the x11 window was closed
+            if(x11::window_closed())
+                break;
+
+            gl::swapBuffers();
+        }
 
         //Measure FPS
         if (cnt % uint64(FPS) == 0) {
