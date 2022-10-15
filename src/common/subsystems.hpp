@@ -581,11 +581,11 @@ std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
-void fetch_frame_buffer(cv::UMat &m) {
+void acquire_frame_buffer(cv::UMat &m) {
     glCheck(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
 }
 
-void return_frame_buffer(cv::UMat &m) {
+void release_frame_buffer(cv::UMat &m) {
     glCheck(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
 }
 

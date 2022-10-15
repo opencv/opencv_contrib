@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         render();
 
         //Transfer buffer ownership to OpenCL
-        gl::fetch_frame_buffer(frameBuffer);
+        gl::acquire_frame_buffer(frameBuffer);
         //Using OpenCV/OpenCL for a glow effect
         glow(frameBuffer);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
             //Yet again activate the OpenCL context for OpenGL
             GL_CONTEXT.bind();
             //Transfer buffer ownership back to OpenGL
-            gl::return_frame_buffer(frameBuffer);
+            gl::release_frame_buffer(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 

@@ -6,7 +6,7 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* INPUT_FILENAME = "example.mp4";
 constexpr const char* OUTPUT_FILENAME = "camera-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-double FPS;
+constexpr double FPS = 30;
 
 #include "../common/subsystems.hpp"
 
@@ -94,9 +94,6 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    FPS = cap.get(cv::CAP_PROP_FPS);
-    std::cerr << "Detected FPS: " << FPS << std::endl;
-
     cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
@@ -134,7 +131,7 @@ int main(int argc, char **argv) {
         //Activate the OpenCL context for OpenGL
         GL_CONTEXT.bind();
         //Initially get the framebuffer so we can write the video frame to it
-        gl::fetch_frame_buffer(frameBuffer);
+        gl::acquire_frame_buffer(frameBuffer);
 
         //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
@@ -154,10 +151,10 @@ int main(int argc, char **argv) {
 
         GL_CONTEXT.bind();
         //Transfer buffer ownership to OpenGL
-        gl::return_frame_buffer(frameBuffer);
+        gl::release_frame_buffer(frameBuffer);
         render();
         //Transfer buffer ownership to OpenCL
-        gl::fetch_frame_buffer(frameBuffer);
+        gl::acquire_frame_buffer(frameBuffer);
 
         //Glow effect (OpenCL)
         glow(frameBuffer);
@@ -175,7 +172,7 @@ int main(int argc, char **argv) {
             //Yet again activate the OpenCL context for OpenGL
             GL_CONTEXT.bind();
             //Transfer buffer ownership back to OpenGL
-            gl::return_frame_buffer(frameBuffer);
+            gl::release_frame_buffer(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 
