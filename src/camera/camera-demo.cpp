@@ -124,18 +124,16 @@ int main(int argc, char **argv) {
 
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
-    cv::UMat videoOutFrame;
     cv::UMat videoFrameRGBA;
-
-
-    render();
 
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
 
     while (true) {
+        //Activate the OpenCL context for OpenGL
         GL_CONTEXT.bind();
+        //Initially get the framebuffer so we can write the video frame to it
         gl::fetch_frame_buffer(frameBuffer);
 
         //Activate the OpenCL context for VAAPI
@@ -165,13 +163,13 @@ int main(int argc, char **argv) {
         glow(frameBuffer);
 
         //Color-conversion from BGRA to RGB. (OpenCL)
-        cv::cvtColor(frameBuffer, videoOutFrame, cv::COLOR_BGRA2RGB);
-        cv::flip(videoOutFrame, videoOutFrame, 0);
+        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
+        cv::flip(videoFrame, videoFrame, 0);
 
         //Activate the OpenCL context for VAAPI
         VA_CONTEXT.bind();
         //Encode the frame using VAAPI on the GPU.
-        video.write(videoOutFrame);
+        video.write(videoFrame);
 
         if(x11::is_initialized()) {
             //Yet again activate the OpenCL context for OpenGL
