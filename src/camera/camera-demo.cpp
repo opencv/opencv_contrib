@@ -6,7 +6,7 @@ constexpr bool OFFSCREEN = true;
 
 /*
  * We can't capture by index, so we provide the device filename (e.g.: /dev/video0).
- * Changing it to "example.mp4" works as well without additional changes because the stream info matches that of my v4l2 device
+ * Changing it to "example.mp4" works without additional changes because the stream info matches that of my v4l2 device
  * (Download example.mp4: https://user-images.githubusercontent.com/287266/195963580-ad945626-9bba-4e19-a1fb-68acaaca0483.mp4)
  */
 constexpr const char* INPUT_FILENAME = "/dev/video0";
