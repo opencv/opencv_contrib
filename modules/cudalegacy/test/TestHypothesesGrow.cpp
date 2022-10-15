@@ -100,7 +100,8 @@ bool TestHypothesesGrow::process()
 
     NCV_SKIP_COND_BEGIN
     ncvAssertReturn(this->src.fill(h_vecSrc), false);
-    memset(h_vecDst.ptr(), 0, h_vecDst.length() * sizeof(NcvRect32u));
+
+    *h_vecDst.ptr() = {};
     NCVVectorReuse<Ncv32u> h_vecDst_as32u(h_vecDst.getSegment(), lenDst * sizeof(NcvRect32u) / sizeof(Ncv32u));
     ncvAssertReturn(h_vecDst_as32u.isMemReused(), false);
     ncvAssertReturn(this->src.fill(h_vecDst_as32u), false);

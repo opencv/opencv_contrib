@@ -48,6 +48,7 @@
 #include "opencv2/core/cuda/limits.hpp"
 #include "opencv2/core/cuda/color.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
+#include "opencv2/cudev/ptr2d/texture.hpp"
 
 namespace cv { namespace cuda { namespace device
 {
@@ -389,10 +390,8 @@ namespace cv { namespace cuda { namespace device
     //
     // ported to CUDA
 
-    texture<uchar, cudaTextureType2D, cudaReadModeElementType> sourceTex(false, cudaFilterModePoint, cudaAddressModeClamp);
-
-    template <typename DstType>
-    __global__ void MHCdemosaic(PtrStepSz<DstType> dst, const int2 sourceOffset, const int2 firstRed)
+    template <typename DstType, class Ptr2D>
+    __global__ void MHCdemosaic(PtrStepSz<DstType> dst, Ptr2D src, const int2 firstRed)
     {
         const float   kAx = -1.0f / 8.0f,     kAy = -1.5f / 8.0f,     kAz =  0.5f / 8.0f    /*kAw = -1.0f / 8.0f*/;
         const float   kBx =  2.0f / 8.0f,   /*kBy =  0.0f / 8.0f,*/ /*kBz =  0.0f / 8.0f,*/   kBw =  4.0f / 8.0f  ;
@@ -408,8 +407,8 @@ namespace cv { namespace cuda { namespace device
             return;
 
         int2 center;
-        center.x = x + sourceOffset.x;
-        center.y = y + sourceOffset.y;
+        center.x = x;
+        center.y = y;
 
         int4 xCoord;
         xCoord.x = center.x - 2;
@@ -423,25 +422,26 @@ namespace cv { namespace cuda { namespace device
         yCoord.z = center.y + 1;
         yCoord.w = center.y + 2;
 
-        float C = tex2D(sourceTex, center.x, center.y); // ( 0, 0)
+        float C = src(center.y, center.x); // ( 0, 0)
 
         float4 Dvec;
-        Dvec.x = tex2D(sourceTex, xCoord.y, yCoord.y); // (-1,-1)
-        Dvec.y = tex2D(sourceTex, xCoord.y, yCoord.z); // (-1, 1)
-        Dvec.z = tex2D(sourceTex, xCoord.z, yCoord.y); // ( 1,-1)
-        Dvec.w = tex2D(sourceTex, xCoord.z, yCoord.z); // ( 1, 1)
+        Dvec.x = src(yCoord.y, xCoord.y); // (-1,-1)
+        Dvec.y = src(yCoord.z, xCoord.y); // (-1, 1)
+        Dvec.z = src(yCoord.y, xCoord.z); // ( 1,-1)
+        Dvec.w = src(yCoord.z, xCoord.z); // ( 1, 1)
+
 
         float4 value;
-        value.x = tex2D(sourceTex, center.x, yCoord.x); // ( 0,-2) A0
-        value.y = tex2D(sourceTex, center.x, yCoord.y); // ( 0,-1) B0
-        value.z = tex2D(sourceTex, xCoord.x, center.y); // (-2, 0) E0
-        value.w = tex2D(sourceTex, xCoord.y, center.y); // (-1, 0) F0
+        value.x = src(yCoord.x, center.x); // ( 0,-2) A0
+        value.y = src(yCoord.y, center.x); // ( 0,-1) B0
+        value.z = src(center.y, xCoord.x); // (-2, 0) E0
+        value.w = src(center.y, xCoord.y); // (-1, 0) F0
 
         // (A0 + A1), (B0 + B1), (E0 + E1), (F0 + F1)
-        value.x += tex2D(sourceTex, center.x, yCoord.w); // ( 0, 2) A1
-        value.y += tex2D(sourceTex, center.x, yCoord.z); // ( 0, 1) B1
-        value.z += tex2D(sourceTex, xCoord.w, center.y); // ( 2, 0) E1
-        value.w += tex2D(sourceTex, xCoord.z, center.y); // ( 1, 0) F1
+        value.x += src(yCoord.w, center.x); // ( 0, 2) A1
+        value.y += src(yCoord.z, center.x); // ( 0, 1) B1
+        value.z += src(center.y, xCoord.w); // ( 2, 0) E1
+        value.w += src(center.y, xCoord.z); // ( 1, 0) F1
 
         float4 PATTERN;
         PATTERN.x = kCx * C;
@@ -527,9 +527,15 @@ namespace cv { namespace cuda { namespace device
         const dim3 block(32, 8);
         const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
 
-        bindTexture(&sourceTex, src);
+        if (sourceOffset.x || sourceOffset.y) {
+            cv::cudev::TextureOff<uchar> texSrc(src, sourceOffset.y, sourceOffset.x);
+            MHCdemosaic<dst_t, cv::cudev::TextureOffPtr<uchar>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
+        }
+        else {
+            cv::cudev::Texture<uchar> texSrc(src);
+            MHCdemosaic<dst_t, cv::cudev::TexturePtr<uchar>><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, texSrc, firstRed);
+        }
 
-        MHCdemosaic<dst_t><<<grid, block, 0, stream>>>((PtrStepSz<dst_t>)dst, sourceOffset, firstRed);
         cudaSafeCall( cudaGetLastError() );
 
         if (stream == 0)

@@ -50,8 +50,7 @@
 #include "opencv2/core/cuda/reduce.hpp"
 #include "opencv2/core/cuda/filters.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
-
-#include <iostream>
+#include  <opencv2/cudev/ptr2d/texture.hpp>
 
 using namespace cv::cuda;
 using namespace cv::cuda::device;
@@ -63,224 +62,6 @@ namespace pyrlk
     __constant__ int c_halfWin_x;
     __constant__ int c_halfWin_y;
     __constant__ int c_iters;
-
-    texture<uchar, cudaTextureType2D, cudaReadModeNormalizedFloat> tex_I8U(false, cudaFilterModeLinear, cudaAddressModeClamp);
-    texture<uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat> tex_I8UC4(false, cudaFilterModeLinear, cudaAddressModeClamp);
-
-    texture<ushort4, cudaTextureType2D, cudaReadModeNormalizedFloat> tex_I16UC4(false, cudaFilterModeLinear, cudaAddressModeClamp);
-
-
-    texture<float, cudaTextureType2D, cudaReadModeElementType> tex_If(false, cudaFilterModeLinear, cudaAddressModeClamp);
-    texture<float4, cudaTextureType2D, cudaReadModeElementType> tex_If4(false, cudaFilterModeLinear, cudaAddressModeClamp);
-
-    texture<uchar, cudaTextureType2D, cudaReadModeElementType> tex_Ib(false, cudaFilterModePoint, cudaAddressModeClamp);
-
-    texture<uchar, cudaTextureType2D, cudaReadModeNormalizedFloat> tex_J8U(false, cudaFilterModeLinear, cudaAddressModeClamp);
-    texture<uchar4, cudaTextureType2D, cudaReadModeNormalizedFloat> tex_J8UC4(false, cudaFilterModeLinear, cudaAddressModeClamp);
-
-    texture<ushort4, cudaTextureType2D, cudaReadModeNormalizedFloat> tex_J16UC4(false, cudaFilterModeLinear, cudaAddressModeClamp);
-
-
-    texture<float, cudaTextureType2D, cudaReadModeElementType> tex_Jf(false, cudaFilterModeLinear, cudaAddressModeClamp);
-    texture<float4, cudaTextureType2D, cudaReadModeElementType> tex_Jf4(false, cudaFilterModeLinear, cudaAddressModeClamp);
-
-
-    template <int cn, typename T> struct Tex_I
-    {
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<typename TypeVec<T, cn>::vec_type> I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-
-    template <> struct Tex_I<1, uchar>
-    {
-        static __device__ __forceinline__ float read(float x, float y)
-        {
-            return tex2D(tex_I8U, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<uchar>& I)
-        {
-            bindTexture(&tex_I8U, I);
-        }
-    };
-    template <> struct Tex_I<1, ushort>
-    {
-        static __device__ __forceinline__ float read(float x, float y)
-        {
-            return 0.0;
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<ushort>& I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-    template <> struct Tex_I<1, int>
-    {
-        static __device__ __forceinline__ float read(float x, float y)
-        {
-            return 0.0;
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<int>& I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-    template <> struct Tex_I<1, float>
-    {
-        static __device__ __forceinline__ float read(float x, float y)
-        {
-            return tex2D(tex_If, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<float>& I)
-        {
-            bindTexture(&tex_If, I);
-        }
-    };
-    // ****************** 3 channel specializations ************************
-    template <> struct Tex_I<3, uchar>
-    {
-        static __device__ __forceinline__ float3 read(float x, float y)
-        {
-            return make_float3(0,0,0);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<uchar3> I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-    template <> struct Tex_I<3, ushort>
-    {
-        static __device__ __forceinline__ float3 read(float x, float y)
-        {
-            return make_float3(0, 0, 0);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<ushort3> I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-    template <> struct Tex_I<3, int>
-    {
-        static __device__ __forceinline__ float3 read(float x, float y)
-        {
-            return make_float3(0, 0, 0);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<int3> I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-    template <> struct Tex_I<3, float>
-    {
-        static __device__ __forceinline__ float3 read(float x, float y)
-        {
-            return make_float3(0, 0, 0);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<float3> I)
-        {
-            CV_UNUSED(I);
-        }
-    };
-    // ****************** 4 channel specializations ************************
-
-    template <> struct Tex_I<4, uchar>
-    {
-        static __device__ __forceinline__ float4 read(float x, float y)
-        {
-            return tex2D(tex_I8UC4, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<uchar4>& I)
-        {
-            bindTexture(&tex_I8UC4, I);
-        }
-    };
-    template <> struct Tex_I<4, ushort>
-    {
-        static __device__ __forceinline__ float4 read(float x, float y)
-        {
-            return tex2D(tex_I16UC4, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<ushort4>& I)
-        {
-            bindTexture(&tex_I16UC4, I);
-        }
-    };
-    template <> struct Tex_I<4, float>
-    {
-        static __device__ __forceinline__ float4 read(float x, float y)
-        {
-            return tex2D(tex_If4, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<float4>& I)
-        {
-            bindTexture(&tex_If4, I);
-        }
-    };
-    // ************* J  ***************
-    template <int cn, typename T> struct Tex_J
-    {
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<typename TypeVec<T,cn>::vec_type>& J)
-        {
-            CV_UNUSED(J);
-        }
-    };
-    template <> struct Tex_J<1, uchar>
-    {
-        static __device__ __forceinline__ float read(float x, float y)
-        {
-            return tex2D(tex_J8U, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<uchar>& J)
-        {
-            bindTexture(&tex_J8U, J);
-        }
-    };
-    template <> struct Tex_J<1, float>
-    {
-        static __device__ __forceinline__ float read(float x, float y)
-        {
-            return tex2D(tex_Jf, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<float>& J)
-        {
-            bindTexture(&tex_Jf, J);
-        }
-    };
-    // ************* 4 channel specializations ***************
-    template <> struct Tex_J<4, uchar>
-    {
-        static __device__ __forceinline__ float4 read(float x, float y)
-        {
-            return tex2D(tex_J8UC4, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<uchar4>& J)
-        {
-            bindTexture(&tex_J8UC4, J);
-        }
-    };
-    template <> struct Tex_J<4, ushort>
-    {
-        static __device__ __forceinline__ float4 read(float x, float y)
-        {
-            return tex2D(tex_J16UC4, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<ushort4>& J)
-        {
-            bindTexture(&tex_J16UC4, J);
-        }
-    };
-    template <> struct Tex_J<4, float>
-    {
-        static __device__ __forceinline__ float4 read(float x, float y)
-        {
-            return tex2D(tex_Jf4, x, y);
-        }
-        static __host__ __forceinline__ void bindTexture_(PtrStepSz<float4>& J)
-        {
-            bindTexture(&tex_Jf4, J);
-        }
-    };
 
     __device__ __forceinline__ void accum(float& dst, const float& val)
     {
@@ -364,8 +145,8 @@ namespace pyrlk
         }
     };
 
-    template <int cn, int PATCH_X, int PATCH_Y, bool calcErr, typename T>
-    __global__ void sparseKernel(const float2* prevPts, float2* nextPts, uchar* status, float* err, const int level, const int rows, const int cols)
+    template <int cn, int PATCH_X, int PATCH_Y, bool calcErr, typename T, class Ptr2D>
+    __global__ void sparseKernel(const Ptr2D texI, const Ptr2D texJ, const float2* prevPts, float2* nextPts, uchar* status, float* err, const int level, const int rows, const int cols)
     {
     #if __CUDA_ARCH__ <= 110
         const int BLOCK_SIZE = 128;
@@ -413,15 +194,14 @@ namespace pyrlk
                 float x = prevPt.x + xBase + 0.5f;
                 float y = prevPt.y + yBase + 0.5f;
 
-                I_patch[i][j] = Tex_I<cn, T>::read(x, y);
+                I_patch[i][j] = texI(y, x);
 
                 // Scharr Deriv
+                work_type dIdx = 3.0f * texI(y - 1, x + 1) + 10.0f * texI(y, x + 1) + 3.0f * texI(y + 1, x + 1) -
+                    (3.0f * texI(y - 1, x - 1) + 10.0f * texI(y, x - 1) + 3.0f * texI(y + 1, x - 1));
 
-                work_type dIdx = 3.0f * Tex_I<cn,T>::read(x+1, y-1) + 10.0f * Tex_I<cn, T>::read(x+1, y) + 3.0f * Tex_I<cn,T>::read(x+1, y+1) -
-                                 (3.0f * Tex_I<cn,T>::read(x-1, y-1) + 10.0f * Tex_I<cn, T>::read(x-1, y) + 3.0f * Tex_I<cn,T>::read(x-1, y+1));
-
-                work_type dIdy = 3.0f * Tex_I<cn,T>::read(x-1, y+1) + 10.0f * Tex_I<cn, T>::read(x, y+1) + 3.0f * Tex_I<cn,T>::read(x+1, y+1) -
-                                (3.0f * Tex_I<cn,T>::read(x-1, y-1) + 10.0f * Tex_I<cn, T>::read(x, y-1) + 3.0f * Tex_I<cn,T>::read(x+1, y-1));
+                work_type dIdy = 3.0f * texI(y + 1, x - 1) + 10.0f * texI(y + 1, x) + 3.0f * texI(y + 1, x + 1) -
+                    (3.0f * texI(y - 1, x - 1) + 10.0f * texI(y - 1, x) + 3.0f * texI(y - 1, x + 1));
 
                 dIdx_patch[i][j] = dIdx;
                 dIdy_patch[i][j] = dIdy;
@@ -490,7 +270,8 @@ namespace pyrlk
                 for (int x = threadIdx.x, j = 0; x < c_winSize_x; x += blockDim.x, ++j)
                 {
                     work_type I_val = I_patch[i][j];
-                    work_type J_val = Tex_J<cn, T>::read(nextPt.x + x + 0.5f, nextPt.y + y + 0.5f);
+
+                    work_type J_val = texJ(nextPt.y + y + 0.5f, nextPt.x + x + 0.5f);
 
                     work_type diff = (J_val - I_val) * 32.0f;
 
@@ -533,7 +314,8 @@ namespace pyrlk
                 for (int x = threadIdx.x, j = 0; x < c_winSize_x; x += blockDim.x, ++j)
                 {
                     work_type I_val = I_patch[i][j];
-                    work_type J_val = Tex_J<cn, T>::read(nextPt.x + x + 0.5f, nextPt.y + y + 0.5f);
+
+                    work_type J_val = texJ(nextPt.y + y + 0.5f, nextPt.x + x + 0.5f);
 
                     work_type diff = J_val - I_val;
 
@@ -749,6 +531,27 @@ namespace pyrlk
         }
     } // __global__ void sparseKernel_
 
+    // Specialization for non float data, cudaFilterModeLinear only compatible with cudaReadModeNormalizedFloat.
+    template<int cn, class T> class TextureLinear : public cv::cudev::Texture<typename TypeVec<T, cn>::vec_type, typename TypeVec<float, cn>::vec_type> {
+    public:
+        typedef typename TypeVec<T, cn>::vec_type elem_type;
+        typedef typename TypeVec<float, cn>::vec_type ret_type;
+        __host__ TextureLinear(PtrStepSz<elem_type> src, const bool normalizedCoords = false, const cudaTextureAddressMode addressMode = cudaAddressModeClamp) :
+            cv::cudev::Texture<elem_type, ret_type>(src, normalizedCoords, cudaFilterModeLinear, addressMode, cudaReadModeNormalizedFloat)
+        {
+        }
+    };
+
+    // Specialization for float data, cudaReadModeNormalizedFloat only compatible with cudaReadModeElementType.
+    template<int cn> class TextureLinear<cn, float> : public cv::cudev::Texture<typename TypeVec<float, cn>::vec_type, typename TypeVec<float, cn>::vec_type>
+    {
+    public:
+        typedef typename TypeVec<float, cn>::vec_type float_type;
+        __host__ TextureLinear(PtrStepSz<float_type> src, const bool normalizedCoords = false, const cudaTextureAddressMode addressMode = cudaAddressModeClamp) :
+            cv::cudev::Texture <float_type, float_type>(src, normalizedCoords, cudaFilterModeLinear, addressMode, cudaReadModeElementType)
+        {
+        }
+    };
 
     template <int cn, int PATCH_X, int PATCH_Y, typename T> class sparse_caller
     {
@@ -756,16 +559,16 @@ namespace pyrlk
         static void call(PtrStepSz<typename TypeVec<T, cn>::vec_type> I, PtrStepSz<typename TypeVec<T, cn>::vec_type> J, int rows, int cols, const float2* prevPts, float2* nextPts, uchar* status, float* err, int ptcount,
             int level, dim3 block, cudaStream_t stream)
         {
+            typedef typename TypeVec<T, cn>::vec_type dType;
+            typedef typename TypeVec<float, cn>::vec_type rType;
+            TextureLinear<cn,T> texI(I);
+            TextureLinear<cn,T> texJ(J);
             dim3 grid(ptcount);
-            CV_UNUSED(I);
-            CV_UNUSED(J);
             if (level == 0 && err)
-                sparseKernel<cn, PATCH_X, PATCH_Y, true, T> <<<grid, block, 0, stream >>>(prevPts, nextPts, status, err, level, rows, cols);
+                sparseKernel<cn, PATCH_X, PATCH_Y, true, T, cv::cudev::TexturePtr<dType,rType>><<<grid, block, 0, stream>>>(texI, texJ, prevPts, nextPts, status, err, level, rows, cols);
             else
-                sparseKernel<cn, PATCH_X, PATCH_Y, false, T> <<<grid, block, 0, stream >>>(prevPts, nextPts, status, err, level, rows, cols);
-
+                sparseKernel<cn, PATCH_X, PATCH_Y, false, T, cv::cudev::TexturePtr<dType, rType>><<<grid, block, 0, stream>>>(texI, texJ, prevPts, nextPts, status, err, level, rows, cols);
             cudaSafeCall(cudaGetLastError());
-
             if (stream == 0)
                 cudaSafeCall(cudaDeviceSynchronize());
         }
@@ -903,8 +706,8 @@ namespace pyrlk
     };
 
 
-    template <bool calcErr>
-    __global__ void denseKernel(PtrStepf u, PtrStepf v, const PtrStepf prevU, const PtrStepf prevV, PtrStepf err, const int rows, const int cols)
+    template <bool calcErr, class Ptr2D>
+    __global__ void denseKernel(const Ptr2D texI, const Ptr2D texJ, PtrStepf u, PtrStepf v, const PtrStepf prevU, const PtrStepf prevV, PtrStepf err, const int rows, const int cols)
     {
         extern __shared__ int smem[];
 
@@ -925,15 +728,15 @@ namespace pyrlk
                 float x = xBase - c_halfWin_x + j + 0.5f;
                 float y = yBase - c_halfWin_y + i + 0.5f;
 
-                I_patch[i * patchWidth + j] = tex2D(tex_If, x, y);
+                I_patch[i * patchWidth + j] = texI(y, x);
 
                 // Scharr Deriv
 
-                dIdx_patch[i * patchWidth + j] = 3 * tex2D(tex_If, x+1, y-1) + 10 * tex2D(tex_If, x+1, y) + 3 * tex2D(tex_If, x+1, y+1) -
-                                                (3 * tex2D(tex_If, x-1, y-1) + 10 * tex2D(tex_If, x-1, y) + 3 * tex2D(tex_If, x-1, y+1));
+                dIdx_patch[i * patchWidth + j] = 3 * texI(y - 1, x + 1) + 10 * texI(y, x + 1) + 3 * texI(y + 1, x + 1) -
+                    (3 * texI(y - 1, x - 1) + 10 * texI(y, x - 1) + 3 * texI(y + 1, x - 1));
 
-                dIdy_patch[i * patchWidth + j] = 3 * tex2D(tex_If, x-1, y+1) + 10 * tex2D(tex_If, x, y+1) + 3 * tex2D(tex_If, x+1, y+1) -
-                                                (3 * tex2D(tex_If, x-1, y-1) + 10 * tex2D(tex_If, x, y-1) + 3 * tex2D(tex_If, x+1, y-1));
+                dIdy_patch[i * patchWidth + j] = 3 * texI(y + 1, x - 1) + 10 * texI(y + 1,x) + 3 * texI(y+ 1, x + 1) -
+                    (3 * texI(y - 1, x - 1) + 10 * texI(y - 1,x) + 3 * texI(y - 1, x + 1));
             }
         }
 
@@ -1004,7 +807,7 @@ namespace pyrlk
                 for (int j = 0; j < c_winSize_x; ++j)
                 {
                     int I = I_patch[(threadIdx.y + i) * patchWidth + threadIdx.x + j];
-                    int J = tex2D(tex_Jf, nextPt.x - c_halfWin_x + j + 0.5f, nextPt.y - c_halfWin_y + i + 0.5f);
+                    int J = texJ(nextPt.y - c_halfWin_y + i + 0.5f, nextPt.x - c_halfWin_x + j + 0.5f);
 
                     int diff = (J - I) * 32;
 
@@ -1040,7 +843,8 @@ namespace pyrlk
                 for (int j = 0; j < c_winSize_x; ++j)
                 {
                     int I = I_patch[(threadIdx.y + i) * patchWidth + threadIdx.x + j];
-                    int J = tex2D(tex_Jf, nextPt.x - c_halfWin_x + j + 0.5f, nextPt.y - c_halfWin_y + i + 0.5f);
+
+                    int J = texJ(nextPt.y - c_halfWin_y + i + 0.5f, nextPt.x - c_halfWin_x + j + 0.5f);
 
                     errval += ::abs(J - I);
                 }
@@ -1109,9 +913,6 @@ namespace pyrlk
                 { sparse_caller<cn, 1, 5,T>::call, sparse_caller<cn, 2, 5,T>::call, sparse_caller<cn, 3, 5,T>::call, sparse_caller<cn, 4, 5,T>::call, sparse_caller<cn, 5, 5,T>::call }
             };
 
-            Tex_I<cn, T>::bindTexture_(I);
-            Tex_J<cn, T>::bindTexture_(J);
-
             funcs[patch.y - 1][patch.x - 1](I, J, I.rows, I.cols, prevPts, nextPts, status, err, ptcount,
                 level, block, stream);
         }
@@ -1119,9 +920,8 @@ namespace pyrlk
         {
             dim3 block(16, 16);
             dim3 grid(divUp(I.cols, block.x), divUp(I.rows, block.y));
-            Tex_I<1, T>::bindTexture_(I);
-            Tex_J<1, T>::bindTexture_(J);
-
+            TextureLinear<1, T> texI(I);
+            TextureLinear<1, T> texJ(J);
             int2 halfWin = make_int2((winSize.x - 1) / 2, (winSize.y - 1) / 2);
             const int patchWidth = block.x + 2 * halfWin.x;
             const int patchHeight = block.y + 2 * halfWin.y;
@@ -1129,12 +929,12 @@ namespace pyrlk
 
             if (err.data)
             {
-                denseKernel<true> << <grid, block, smem_size, stream >> >(u, v, prevU, prevV, err, I.rows, I.cols);
+                denseKernel<true, cv::cudev::TexturePtr<T,float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, err, I.rows, I.cols);
                 cudaSafeCall(cudaGetLastError());
             }
             else
             {
-                denseKernel<false> << <grid, block, smem_size, stream >> >(u, v, prevU, prevV, PtrStepf(), I.rows, I.cols);
+                denseKernel<false, cv::cudev::TexturePtr<T, float>><<<grid, block, smem_size, stream>>>(texI, texJ, u, v, prevU, prevV, PtrStepf(), I.rows, I.cols);
                 cudaSafeCall(cudaGetLastError());
             }
 

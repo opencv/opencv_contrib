@@ -48,6 +48,7 @@
 #include "opencv2/core/cuda/vec_math.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/filters.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 namespace cv { namespace cuda { namespace device
 {
@@ -77,8 +78,8 @@ namespace cv { namespace cuda { namespace device
                 dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
                 B<work_type> brd(src.rows, src.cols, VecTraits<work_type>::make(borderValue));
-                BorderReader< PtrStep<T>, B<work_type> > brdSrc(src, brd);
-                Filter< BorderReader< PtrStep<T>, B<work_type> > > filter_src(brdSrc);
+                BorderReader<PtrStep<T>, B<work_type>> brdSrc(src, brd);
+                Filter<BorderReader<PtrStep<T>, B<work_type>>> filter_src(brdSrc);
 
                 remap<<<grid, block, 0, stream>>>(filter_src, mapx, mapy, dst);
                 cudaSafeCall( cudaGetLastError() );
@@ -98,8 +99,8 @@ namespace cv { namespace cuda { namespace device
                 dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
                 B<work_type> brd(src.rows, src.cols, VecTraits<work_type>::make(borderValue));
-                BorderReader< PtrStep<T>, B<work_type> > brdSrc(src, brd);
-                Filter< BorderReader< PtrStep<T>, B<work_type> > > filter_src(brdSrc);
+                BorderReader<PtrStep<T>, B<work_type>> brdSrc(src, brd);
+                Filter<BorderReader<PtrStep<T>, B<work_type>>> filter_src(brdSrc);
 
                 remap<<<grid, block>>>(filter_src, mapx, mapy, dst);
                 cudaSafeCall( cudaGetLastError() );
@@ -108,88 +109,96 @@ namespace cv { namespace cuda { namespace device
             }
         };
 
-        #define OPENCV_CUDA_IMPLEMENT_REMAP_TEX(type) \
-            texture< type , cudaTextureType2D> tex_remap_ ## type (0, cudaFilterModePoint, cudaAddressModeClamp); \
-            struct tex_remap_ ## type ## _reader \
-            { \
-                typedef type elem_type; \
-                typedef int index_type; \
-                int xoff, yoff; \
-                tex_remap_ ## type ## _reader (int xoff_, int yoff_) : xoff(xoff_), yoff(yoff_) {} \
-                __device__ __forceinline__ elem_type operator ()(index_type y, index_type x) const \
-                { \
-                    return tex2D(tex_remap_ ## type , x + xoff, y + yoff); \
-                } \
-            }; \
-            template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, type> \
-            { \
-                static void call(PtrStepSz< type > src, PtrStepSz< type > srcWhole, int xoff, int yoff, PtrStepSzf mapx, PtrStepSzf mapy, \
-                    PtrStepSz< type > dst, const float* borderValue, bool cc20) \
-                { \
-                    typedef typename TypeVec<float, VecTraits< type >::cn>::vec_type work_type; \
-                    dim3 block(32, cc20 ? 8 : 4); \
-                    dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y)); \
-                    bindTexture(&tex_remap_ ## type , srcWhole); \
-                    tex_remap_ ## type ##_reader texSrc(xoff, yoff); \
-                    B<work_type> brd(src.rows, src.cols, VecTraits<work_type>::make(borderValue)); \
-                    BorderReader< tex_remap_ ## type ##_reader, B<work_type> > brdSrc(texSrc, brd); \
-                    Filter< BorderReader< tex_remap_ ## type ##_reader, B<work_type> > > filter_src(brdSrc); \
-                    remap<<<grid, block>>>(filter_src, mapx, mapy, dst); \
-                    cudaSafeCall( cudaGetLastError() ); \
-                    cudaSafeCall( cudaDeviceSynchronize() ); \
-                } \
-            }; \
-            template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, type> \
-            { \
-                static void call(PtrStepSz< type > src, PtrStepSz< type > srcWhole, int xoff, int yoff, PtrStepSzf mapx, PtrStepSzf mapy, \
-                    PtrStepSz< type > dst, const float*, bool) \
-                { \
-                    dim3 block(32, 8); \
-                    dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y)); \
-                    bindTexture(&tex_remap_ ## type , srcWhole); \
-                    tex_remap_ ## type ##_reader texSrc(xoff, yoff); \
-                    if (srcWhole.cols == src.cols && srcWhole.rows == src.rows) \
-                    { \
-                        Filter< tex_remap_ ## type ##_reader > filter_src(texSrc); \
-                        remap<<<grid, block>>>(filter_src, mapx, mapy, dst); \
-                    } \
-                    else \
-                    { \
-                        BrdReplicate<type> brd(src.rows, src.cols); \
-                        BorderReader< tex_remap_ ## type ##_reader, BrdReplicate<type> > brdSrc(texSrc, brd); \
-                        Filter< BorderReader< tex_remap_ ## type ##_reader, BrdReplicate<type> > > filter_src(brdSrc); \
-                        remap<<<grid, block>>>(filter_src, mapx, mapy, dst); \
-                    } \
-                    cudaSafeCall( cudaGetLastError() ); \
-                    cudaSafeCall( cudaDeviceSynchronize() ); \
-                } \
-            };
+        template <template <typename> class Filter, template <typename> class B, typename T> struct RemapDispatcherNonStreamTex
+        {
+            static void call(PtrStepSz< T > src, PtrStepSz< T > srcWhole, int xoff, int yoff, PtrStepSzf mapx, PtrStepSzf mapy,
+                PtrStepSz< T > dst, const float* borderValue, bool cc20)
+            {
+                typedef typename TypeVec<float, VecTraits< T >::cn>::vec_type work_type;
+                dim3 block(32, cc20 ? 8 : 4);
+                dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+                if (srcWhole.cols == src.cols && srcWhole.rows == src.rows)
+                {
+                    cudev::Texture<T> texSrcWhole(srcWhole);
+                    B<work_type> brd(src.rows, src.cols, VecTraits<work_type>::make(borderValue));
+                    BorderReader<cudev::TexturePtr<T>, B<work_type>> brdSrc(texSrcWhole, brd);
+                    Filter<BorderReader<cudev::TexturePtr<T>, B<work_type>>> filter_src(brdSrc);
+                    remap<<<grid, block>>>(filter_src, mapx, mapy, dst);
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar4)
+                }
+                else {
+                    cudev::TextureOff<T> texSrcWhole(srcWhole, yoff, xoff);
+                    B<work_type> brd(src.rows, src.cols, VecTraits<work_type>::make(borderValue));
+                    BorderReader<cudev::TextureOffPtr<T>, B<work_type>> brdSrc(texSrcWhole, brd);
+                    Filter<BorderReader<cudev::TextureOffPtr<T>, B<work_type>>> filter_src(brdSrc);
+                    remap<<<grid, block >>>(filter_src, mapx, mapy, dst);
+                }
 
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(schar)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(char2)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(char4)
+                cudaSafeCall( cudaGetLastError() );
+                cudaSafeCall( cudaDeviceSynchronize() );
+            }
+        };
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort4)
+        template <template <typename> class Filter, typename T> struct RemapDispatcherNonStreamTex<Filter, BrdReplicate, T>
+        {
+            static void call(PtrStepSz< T > src, PtrStepSz< T > srcWhole, int xoff, int yoff, PtrStepSzf mapx, PtrStepSzf mapy,
+                PtrStepSz< T > dst, const float*, bool)
+            {
+                dim3 block(32, 8);
+                dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
+                if (srcWhole.cols == src.cols && srcWhole.rows == src.rows)
+                {
+                    cudev::Texture<T> texSrcWhole(srcWhole);
+                    Filter<cudev::TexturePtr<T>> filter_src(texSrcWhole);
+                    remap<<<grid, block>>>(filter_src, mapx, mapy, dst);
+                }
+                else
+                {
+                    cudev::TextureOff<T> texSrcWhole(srcWhole, yoff, xoff);
+                    BrdReplicate<T> brd(src.rows, src.cols);
+                    BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
+                    Filter<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>> filter_src(brdSrc);
+                    remap<<<grid, block>>>(filter_src, mapx, mapy, dst);
+                }
+                cudaSafeCall( cudaGetLastError() );
+                cudaSafeCall( cudaDeviceSynchronize() );
+            }
+        };
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short4)
 
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int2)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int4)
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, uchar> :
+            RemapDispatcherNonStreamTex<Filter, B, uchar> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, uchar4> :
+            RemapDispatcherNonStreamTex<Filter, B, uchar4> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, ushort> :
+            RemapDispatcherNonStreamTex<Filter, B, ushort> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, ushort4> :
+            RemapDispatcherNonStreamTex<Filter, B, ushort4> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, short> :
+            RemapDispatcherNonStreamTex<Filter, B, short> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, short4> :
+            RemapDispatcherNonStreamTex<Filter, B, short4> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, float> :
+            RemapDispatcherNonStreamTex<Filter, B, float> {};
+        template <template <typename> class Filter, template <typename> class B> struct RemapDispatcherNonStream<Filter, B, float4> :
+            RemapDispatcherNonStreamTex<Filter, B, float4> {};
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float)
-        //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float4)
-
-        #undef OPENCV_CUDA_IMPLEMENT_REMAP_TEX
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, uchar> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, uchar> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, uchar4> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, uchar4> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, ushort> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, ushort> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, ushort4> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, ushort4> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, short> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, short> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, short4> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, short4> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, float> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, float> {};
+        template <template <typename> class Filter> struct RemapDispatcherNonStream<Filter, BrdReplicate, float4> :
+            RemapDispatcherNonStreamTex<Filter, BrdReplicate, float4> {};
 
         template <template <typename> class Filter, template <typename> class B, typename T> struct RemapDispatcher
         {
@@ -234,37 +243,23 @@ namespace cv { namespace cuda { namespace device
                 }
             };
 
-            callers[interpolation][borderMode](static_cast< PtrStepSz<T> >(src), static_cast< PtrStepSz<T> >(srcWhole), xoff, yoff, xmap, ymap,
-                static_cast< PtrStepSz<T> >(dst), borderValue, stream, cc20);
+            callers[interpolation][borderMode](static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), xoff, yoff, xmap, ymap,
+                static_cast<PtrStepSz<T>>(dst), borderValue, stream, cc20);
         }
 
         template void remap_gpu<uchar >(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<uchar2>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<uchar3>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<uchar4>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
 
-        //template void remap_gpu<schar>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<char2>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<char3>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<char4>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-
         template void remap_gpu<ushort >(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<ushort2>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<ushort3>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<ushort4>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
 
         template void remap_gpu<short >(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<short2>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<short3>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<short4>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
 
-        //template void remap_gpu<int >(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<int2>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<int3>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<int4>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-
         template void remap_gpu<float >(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        //template void remap_gpu<float2>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<float3>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template void remap_gpu<float4>(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
     } // namespace imgproc

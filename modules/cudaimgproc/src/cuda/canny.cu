@@ -48,6 +48,7 @@
 #include "opencv2/core/cuda/functional.hpp"
 #include "opencv2/core/cuda/utility.hpp"
 #include "opencv2/core/cuda.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 using namespace cv::cuda;
 using namespace cv::cuda::device;
@@ -90,47 +91,8 @@ namespace cv { namespace cuda { namespace device
 
 namespace canny
 {
-    struct SrcTex
-    {
-        virtual ~SrcTex() {}
-
-        __host__ SrcTex(int _xoff, int _yoff) : xoff(_xoff), yoff(_yoff) {}
-
-        __device__ __forceinline__ virtual int operator ()(int y, int x) const = 0;
-
-        int xoff;
-        int yoff;
-    };
-
-    texture<uchar, cudaTextureType2D, cudaReadModeElementType> tex_src(false, cudaFilterModePoint, cudaAddressModeClamp);
-    struct SrcTexRef : SrcTex
-    {
-        __host__ SrcTexRef(int _xoff, int _yoff) : SrcTex(_xoff, _yoff) {}
-
-        __device__ __forceinline__ int operator ()(int y, int x) const override
-        {
-            return tex2D(tex_src, x + xoff, y + yoff);
-        }
-    };
-
-    struct SrcTexObj : SrcTex
-    {
-        __host__ SrcTexObj(int _xoff, int _yoff, cudaTextureObject_t _tex_src_object) : SrcTex(_xoff, _yoff), tex_src_object(_tex_src_object) { }
-
-        __device__ __forceinline__ int operator ()(int y, int x) const override
-        {
-            return tex2D<uchar>(tex_src_object, x + xoff, y + yoff);
-        }
-
-        cudaTextureObject_t tex_src_object;
-    };
-
-    template <
-        class T,
-        class Norm,
-        typename = typename std::enable_if<std::is_base_of<SrcTex, T>::value>::type
-    >
-    __global__ void calcMagnitudeKernel(const T src, PtrStepi dx, PtrStepi dy, PtrStepSzf mag, const Norm norm)
+    template <class Norm>
+    __global__ void calcMagnitudeKernel(cv::cudev::TextureOffPtr<uchar> texSrc, PtrStepi dx, PtrStepi dy, PtrStepSzf mag, const Norm norm)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
         const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -138,8 +100,8 @@ namespace canny
         if (y >= mag.rows || x >= mag.cols)
             return;
 
-        int dxVal = (src(y - 1, x + 1) + 2 * src(y, x + 1) + src(y + 1, x + 1)) - (src(y - 1, x - 1) + 2 * src(y, x - 1) + src(y + 1, x - 1));
-        int dyVal = (src(y + 1, x - 1) + 2 * src(y + 1, x) + src(y + 1, x + 1)) - (src(y - 1, x - 1) + 2 * src(y - 1, x) + src(y - 1, x + 1));
+        int dxVal = (texSrc(y - 1, x + 1) + 2 * texSrc(y, x + 1) + texSrc(y + 1, x + 1)) - (texSrc(y - 1, x - 1) + 2 * texSrc(y, x - 1) + texSrc(y + 1, x - 1));
+        int dyVal = (texSrc(y + 1, x - 1) + 2 * texSrc(y + 1, x) + texSrc(y + 1, x + 1)) - (texSrc(y - 1, x - 1) + 2 * texSrc(y - 1, x) + texSrc(y - 1, x + 1));
 
         dx(y, x) = dxVal;
         dy(y, x) = dyVal;
@@ -151,63 +113,20 @@ namespace canny
     {
         const dim3 block(16, 16);
         const dim3 grid(divUp(mag.cols, block.x), divUp(mag.rows, block.y));
-
-        bool cc30 = deviceSupports(FEATURE_SET_COMPUTE_30);
-
-        if (cc30)
+        cv::cudev::TextureOff<uchar> texSrc(srcWhole, yoff, xoff);
+        if (L2Grad)
         {
-            cudaTextureDesc texDesc;
-            memset(&texDesc, 0, sizeof(texDesc));
-            texDesc.addressMode[0] = cudaAddressModeClamp;
-            texDesc.addressMode[1] = cudaAddressModeClamp;
-            texDesc.addressMode[2] = cudaAddressModeClamp;
-
-            cudaTextureObject_t tex = 0;
-            createTextureObjectPitch2D(&tex, srcWhole, texDesc);
-
-            SrcTexObj src(xoff, yoff, tex);
-
-            if (L2Grad)
-            {
-                L2 norm;
-                calcMagnitudeKernel<<<grid, block, 0, stream>>>(src, dx, dy, mag, norm);
-            }
-            else
-            {
-                L1 norm;
-                calcMagnitudeKernel<<<grid, block, 0, stream>>>(src, dx, dy, mag, norm);
-            }
-
-            cudaSafeCall( cudaGetLastError() );
-
-            if (stream == NULL)
-                cudaSafeCall( cudaDeviceSynchronize() );
-            else
-                cudaSafeCall( cudaStreamSynchronize(stream) );
-
-            cudaSafeCall( cudaDestroyTextureObject(tex) );
+            L2 norm;
+            calcMagnitudeKernel<<<grid, block, 0, stream>>>(texSrc, dx, dy, mag, norm);
         }
         else
         {
-            bindTexture(&tex_src, srcWhole);
-            SrcTexRef src(xoff, yoff);
-
-            if (L2Grad)
-            {
-                L2 norm;
-                calcMagnitudeKernel<<<grid, block, 0, stream>>>(src, dx, dy, mag, norm);
-            }
-            else
-            {
-                L1 norm;
-                calcMagnitudeKernel<<<grid, block, 0, stream>>>(src, dx, dy, mag, norm);
-            }
-
-            cudaSafeCall( cudaGetLastError() );
-
-            if (stream == NULL)
-                cudaSafeCall( cudaDeviceSynchronize() );
+            L1 norm;
+            calcMagnitudeKernel<<<grid, block, 0, stream>>>(texSrc, dx, dy, mag, norm);
         }
+
+        if (stream == NULL)
+            cudaSafeCall(cudaDeviceSynchronize());
     }
 
     void calcMagnitude(PtrStepSzi dx, PtrStepSzi dy, PtrStepSzf mag, bool L2Grad, cudaStream_t stream)
@@ -229,8 +148,7 @@ namespace canny
 
 namespace canny
 {
-    texture<float, cudaTextureType2D, cudaReadModeElementType> tex_mag(false, cudaFilterModePoint, cudaAddressModeClamp);
-    __global__ void calcMapKernel(const PtrStepSzi dx, const PtrStepi dy, PtrStepi map, const float low_thresh, const float high_thresh)
+    __global__ void calcMapKernel(cv::cudev::TexturePtr<float> texMag, const PtrStepSzi dx, const PtrStepi dy, PtrStepi map, const float low_thresh, const float high_thresh)
     {
         const int CANNY_SHIFT = 15;
         const int TG22 = (int)(0.4142135623730950488016887242097*(1<<CANNY_SHIFT) + 0.5);
@@ -245,7 +163,7 @@ namespace canny
         int dyVal = dy(y, x);
 
         const int s = (dxVal ^ dyVal) < 0 ? -1 : 1;
-        const float m = tex2D(tex_mag, x, y);
+        const float m = texMag(y, x);
 
         dxVal = ::abs(dxVal);
         dyVal = ::abs(dyVal);
@@ -264,69 +182,17 @@ namespace canny
 
             if (dyVal < tg22x)
             {
-                if (m > tex2D(tex_mag, x - 1, y) && m >= tex2D(tex_mag, x + 1, y))
+                if (m > texMag(y, x - 1) && m >= texMag(y, x + 1))
                     edge_type = 1 + (int)(m > high_thresh);
             }
             else if(dyVal > tg67x)
             {
-                if (m > tex2D(tex_mag, x, y - 1) && m >= tex2D(tex_mag, x, y + 1))
+                if (m > texMag(y - 1, x) && m >= texMag(y + 1, x))
                     edge_type = 1 + (int)(m > high_thresh);
             }
             else
             {
-                if (m > tex2D(tex_mag, x - s, y - 1) && m >= tex2D(tex_mag, x + s, y + 1))
-                    edge_type = 1 + (int)(m > high_thresh);
-            }
-        }
-
-        map(y, x) = edge_type;
-    }
-
-    __global__ void calcMapKernel(const PtrStepSzi dx, const PtrStepi dy, PtrStepi map, const float low_thresh, const float high_thresh, cudaTextureObject_t tex_mag)
-    {
-        const int CANNY_SHIFT = 15;
-        const int TG22 = (int)(0.4142135623730950488016887242097*(1<<CANNY_SHIFT) + 0.5);
-
-        const int x = blockIdx.x * blockDim.x + threadIdx.x;
-        const int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-        if (x == 0 || x >= dx.cols - 1 || y == 0 || y >= dx.rows - 1)
-            return;
-
-        int dxVal = dx(y, x);
-        int dyVal = dy(y, x);
-
-        const int s = (dxVal ^ dyVal) < 0 ? -1 : 1;
-        const float m = tex2D<float>(tex_mag, x, y);
-
-        dxVal = ::abs(dxVal);
-        dyVal = ::abs(dyVal);
-
-        // 0 - the pixel can not belong to an edge
-        // 1 - the pixel might belong to an edge
-        // 2 - the pixel does belong to an edge
-        int edge_type = 0;
-
-        if (m > low_thresh)
-        {
-            const int tg22x = dxVal * TG22;
-            const int tg67x = tg22x + ((dxVal + dxVal) << CANNY_SHIFT);
-
-            dyVal <<= CANNY_SHIFT;
-
-            if (dyVal < tg22x)
-            {
-                if (m > tex2D<float>(tex_mag, x - 1, y) && m >= tex2D<float>(tex_mag, x + 1, y))
-                    edge_type = 1 + (int)(m > high_thresh);
-            }
-            else if(dyVal > tg67x)
-            {
-                if (m > tex2D<float>(tex_mag, x, y - 1) && m >= tex2D<float>(tex_mag, x, y + 1))
-                    edge_type = 1 + (int)(m > high_thresh);
-            }
-            else
-            {
-                if (m > tex2D<float>(tex_mag, x - s, y - 1) && m >= tex2D<float>(tex_mag, x + s, y + 1))
+                if (m > texMag(y - 1, x - s) && m >= texMag(y + 1, x + s))
                     edge_type = 1 + (int)(m > high_thresh);
             }
         }
@@ -338,47 +204,10 @@ namespace canny
     {
         const dim3 block(16, 16);
         const dim3 grid(divUp(dx.cols, block.x), divUp(dx.rows, block.y));
-
-        if (deviceSupports(FEATURE_SET_COMPUTE_30))
-        {
-            // Use the texture object
-            cudaResourceDesc resDesc;
-            memset(&resDesc, 0, sizeof(resDesc));
-            resDesc.resType = cudaResourceTypePitch2D;
-            resDesc.res.pitch2D.devPtr = mag.ptr();
-            resDesc.res.pitch2D.height = mag.rows;
-            resDesc.res.pitch2D.width = mag.cols;
-            resDesc.res.pitch2D.pitchInBytes = mag.step;
-            resDesc.res.pitch2D.desc = cudaCreateChannelDesc<float>();
-
-            cudaTextureDesc texDesc;
-            memset(&texDesc, 0, sizeof(texDesc));
-            texDesc.addressMode[0] = cudaAddressModeClamp;
-            texDesc.addressMode[1] = cudaAddressModeClamp;
-            texDesc.addressMode[2] = cudaAddressModeClamp;
-
-            cudaTextureObject_t tex=0;
-            cudaCreateTextureObject(&tex, &resDesc, &texDesc, NULL);
-            calcMapKernel<<<grid, block, 0, stream>>>(dx, dy, map, low_thresh, high_thresh, tex);
-            cudaSafeCall( cudaGetLastError() );
-
-            if (stream == NULL)
-                cudaSafeCall( cudaDeviceSynchronize() );
-            else
-                cudaSafeCall( cudaStreamSynchronize(stream) );
-
-            cudaSafeCall( cudaDestroyTextureObject(tex) );
-        }
-        else
-        {
-            // Use the texture reference
-            bindTexture(&tex_mag, mag);
-            calcMapKernel<<<grid, block, 0, stream>>>(dx, dy, map, low_thresh, high_thresh);
-            cudaSafeCall( cudaGetLastError() );
-
-            if (stream == NULL)
-                cudaSafeCall( cudaDeviceSynchronize() );
-        }
+        cv::cudev::Texture<float> texMag(mag);
+        calcMapKernel<<<grid, block, 0, stream>>>(texMag, dx, dy, map, low_thresh, high_thresh);
+        if (stream == NULL)
+            cudaSafeCall( cudaDeviceSynchronize() );
     }
 }
 

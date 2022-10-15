@@ -51,6 +51,7 @@
 #include "opencv2/core/cuda/utility.hpp"
 #include "opencv2/core/cuda/functional.hpp"
 #include "opencv2/core/cuda/filters.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 namespace cv { namespace cuda { namespace device
 {
@@ -59,23 +60,19 @@ namespace cv { namespace cuda { namespace device
         void loadGlobalConstants(int maxCandidates, int maxFeatures, int img_rows, int img_cols, int nOctaveLayers, float hessianThreshold);
         void loadOctaveConstants(int octave, int layer_rows, int layer_cols);
 
-        void bindImgTex(PtrStepSzb img);
-        size_t bindSumTex(PtrStepSz<unsigned int> sum);
-        size_t bindMaskSumTex(PtrStepSz<unsigned int> maskSum);
-
-        void icvCalcLayerDetAndTrace_gpu(const PtrStepf& det, const PtrStepf& trace, int img_rows, int img_cols,
+        void icvCalcLayerDetAndTrace_gpu(const PtrStepSz<unsigned int>& sum, const PtrStepf& det, const PtrStepf& trace, int img_rows, int img_cols,
             int octave, int nOctaveLayer);
 
-        void icvFindMaximaInLayer_gpu(const PtrStepf& det, const PtrStepf& trace, int4* maxPosBuffer, unsigned int* maxCounter,
+        void icvFindMaximaInLayer_gpu(const PtrStepSz<unsigned int>& maskSum, const PtrStepf& det, const PtrStepf& trace, int4* maxPosBuffer, unsigned int* maxCounter,
             int img_rows, int img_cols, int octave, bool use_mask, int nLayers);
 
         void icvInterpolateKeypoint_gpu(const PtrStepf& det, const int4* maxPosBuffer, unsigned int maxCounter,
             float* featureX, float* featureY, int* featureLaplacian, int* featureOctave, float* featureSize, float* featureHessian,
             unsigned int* featureCounter);
 
-        void icvCalcOrientation_gpu(const float* featureX, const float* featureY, const float* featureSize, float* featureDir, int nFeatures);
+        void icvCalcOrientation_gpu(const PtrStepSz<unsigned int>& sum, const float* featureX, const float* featureY, const float* featureSize, float* featureDir, int nFeatures);
 
-        void compute_descriptors_gpu(PtrStepSz<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir, int nFeatures);
+        void compute_descriptors_gpu(const PtrStepSzb& img, PtrStepSz<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir, int nFeatures);
     }
 }}}
 
@@ -121,34 +118,8 @@ namespace cv { namespace cuda { namespace device
             cudaSafeCall( cudaMemcpyToSymbol(c_layer_cols, &layer_cols, sizeof(layer_cols)) );
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        // Integral image texture
 
-        texture<unsigned char, 2, cudaReadModeElementType> imgTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-        texture<unsigned int, 2, cudaReadModeElementType> sumTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-        texture<unsigned int, 2, cudaReadModeElementType> maskSumTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-
-        void bindImgTex(PtrStepSzb img)
-        {
-            bindTexture(&imgTex, img);
-        }
-
-        size_t bindSumTex(PtrStepSz<uint> sum)
-        {
-            size_t offset;
-            cudaChannelFormatDesc desc_sum = cudaCreateChannelDesc<uint>();
-            cudaSafeCall( cudaBindTexture2D(&offset, sumTex, sum.data, desc_sum, sum.cols, sum.rows, sum.step));
-            return offset / sizeof(uint);
-        }
-        size_t bindMaskSumTex(PtrStepSz<uint> maskSum)
-        {
-            size_t offset;
-            cudaChannelFormatDesc desc_sum = cudaCreateChannelDesc<uint>();
-            cudaSafeCall( cudaBindTexture2D(&offset, maskSumTex, maskSum.data, desc_sum, maskSum.cols, maskSum.rows, maskSum.step));
-            return offset / sizeof(uint);
-        }
-
-        template <int N> __device__ float icvCalcHaarPatternSum(const float src[][5], int oldSize, int newSize, int y, int x)
+        template <int N> __device__ float icvCalcHaarPatternSum(cudev::TexturePtr<unsigned int> texSum, const float src[][5], int oldSize, int newSize, int y, int x)
         {
         #if defined __CUDA_ARCH__ && __CUDA_ARCH__ >= 200
             typedef double real_t;
@@ -169,10 +140,10 @@ namespace cv { namespace cuda { namespace device
                 int dy2 = __float2int_rn(ratio * src[k][3]);
 
                 real_t t = 0;
-                t += tex2D(sumTex, x + dx1, y + dy1);
-                t -= tex2D(sumTex, x + dx1, y + dy2);
-                t -= tex2D(sumTex, x + dx2, y + dy1);
-                t += tex2D(sumTex, x + dx2, y + dy2);
+                t += texSum(y + dy1, x + dx1);
+                t -= texSum(y + dy2, x + dx1);
+                t -= texSum(y + dy1, x + dx2);
+                t += texSum(y + dy2, x + dx2);
 
                 d += t * src[k][4] / ((dx2 - dx1) * (dy2 - dy1));
             }
@@ -201,7 +172,7 @@ namespace cv { namespace cuda { namespace device
             return (HAAR_SIZE0 + HAAR_SIZE_INC * layer) << octave;
         }
 
-        __global__ void icvCalcLayerDetAndTrace(PtrStepf det, PtrStepf trace)
+        __global__ void icvCalcLayerDetAndTrace(cudev::TexturePtr<unsigned int> texSum, PtrStepf det, PtrStepf trace)
         {
             // Determine the indices
             const int gridDim_y = gridDim.y / (c_nOctaveLayers + 2);
@@ -222,29 +193,29 @@ namespace cv { namespace cuda { namespace device
 
             if (size <= c_img_rows && size <= c_img_cols && i < samples_i && j < samples_j)
             {
-                const float dx  = icvCalcHaarPatternSum<3>(c_DX , 9, size, (i << c_octave), (j << c_octave));
-                const float dy  = icvCalcHaarPatternSum<3>(c_DY , 9, size, (i << c_octave), (j << c_octave));
-                const float dxy = icvCalcHaarPatternSum<4>(c_DXY, 9, size, (i << c_octave), (j << c_octave));
+                const float dx  = icvCalcHaarPatternSum<3>(texSum, c_DX , 9, size, (i << c_octave), (j << c_octave));
+                const float dy  = icvCalcHaarPatternSum<3>(texSum, c_DY , 9, size, (i << c_octave), (j << c_octave));
+                const float dxy = icvCalcHaarPatternSum<4>(texSum, c_DXY, 9, size, (i << c_octave), (j << c_octave));
 
                 det.ptr(layer * c_layer_rows + i + margin)[j + margin] = dx * dy - 0.81f * dxy * dxy;
                 trace.ptr(layer * c_layer_rows + i + margin)[j + margin] = dx + dy;
             }
         }
 
-        void icvCalcLayerDetAndTrace_gpu(const PtrStepf& det, const PtrStepf& trace, int img_rows, int img_cols,
+        void icvCalcLayerDetAndTrace_gpu(const PtrStepSz<unsigned int>& sum, const PtrStepf& det, const PtrStepf& trace, int img_rows, int img_cols,
             int octave, int nOctaveLayers)
         {
             const int min_size = calcSize(octave, 0);
             const int max_samples_i = 1 + ((img_rows - min_size) >> octave);
             const int max_samples_j = 1 + ((img_cols - min_size) >> octave);
-
+            cudev::Texture<unsigned int> texSum(sum);
             dim3 threads(16, 16);
 
             dim3 grid;
             grid.x = divUp(max_samples_j, threads.x);
             grid.y = divUp(max_samples_i, threads.y) * (nOctaveLayers + 2);
 
-            icvCalcLayerDetAndTrace<<<grid, threads>>>(det, trace);
+            icvCalcLayerDetAndTrace<<<grid, threads>>>(texSum, det, trace);
             cudaSafeCall( cudaGetLastError() );
 
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -255,10 +226,14 @@ namespace cv { namespace cuda { namespace device
 
         __constant__ float c_DM[5] = {0, 0, 9, 9, 1};
 
-        struct WithMask
+        template<bool useMask = true>
+        struct Mask
         {
-            static __device__ bool check(int sum_i, int sum_j, int size)
+            __host__ Mask(){};
+            __host__ Mask(cudev::TexturePtr<unsigned int> tex_): tex(tex_) {};
+            __device__ bool check(int sum_i, int sum_j, int size)
             {
+                if (!useMask) return true;
                 float ratio = (float)size / 9.0f;
 
                 float d = 0;
@@ -269,19 +244,20 @@ namespace cv { namespace cuda { namespace device
                 int dy2 = __float2int_rn(ratio * c_DM[3]);
 
                 float t = 0;
-                t += tex2D(maskSumTex, sum_j + dx1, sum_i + dy1);
-                t -= tex2D(maskSumTex, sum_j + dx1, sum_i + dy2);
-                t -= tex2D(maskSumTex, sum_j + dx2, sum_i + dy1);
-                t += tex2D(maskSumTex, sum_j + dx2, sum_i + dy2);
+                t += tex(sum_i + dy1, sum_j + dx1);
+                t -= tex(sum_i + dy2, sum_j + dx1);
+                t -= tex(sum_i + dy1, sum_j + dx2);
+                t += tex(sum_i + dy2, sum_j + dx2);
 
                 d += t * c_DM[4] / ((dx2 - dx1) * (dy2 - dy1));
 
                 return (d >= 0.5f);
             }
+            cudev::TexturePtr<unsigned int> tex;
         };
 
-        template <typename Mask>
-        __global__ void icvFindMaximaInLayer(const PtrStepf det, const PtrStepf trace, int4* maxPosBuffer,
+        template<class T>
+        __global__ void icvFindMaximaInLayer(T mask, const PtrStepf det, const PtrStepf trace, int4* maxPosBuffer,
             unsigned int* maxCounter)
         {
             #if defined __CUDA_ARCH__ && __CUDA_ARCH__ >= 110
@@ -323,7 +299,7 @@ namespace cv { namespace cuda { namespace device
                     const int sum_i = (i - ((size >> 1) >> c_octave)) << c_octave;
                     const int sum_j = (j - ((size >> 1) >> c_octave)) << c_octave;
 
-                    if (Mask::check(sum_i, sum_j, size))
+                    if (mask.check(sum_i, sum_j, size))
                     {
                         // Check to see if we have a max (in its 26 neighbours)
                         const bool condmax = val0 > N9[localLin - 1 - blockDim.x - zoff]
@@ -374,7 +350,7 @@ namespace cv { namespace cuda { namespace device
             #endif
         }
 
-        void icvFindMaximaInLayer_gpu(const PtrStepf& det, const PtrStepf& trace, int4* maxPosBuffer, unsigned int* maxCounter,
+        void icvFindMaximaInLayer_gpu(const PtrStepSz<unsigned int>& maskSum, const PtrStepf& det, const PtrStepf& trace, int4* maxPosBuffer, unsigned int* maxCounter,
             int img_rows, int img_cols, int octave, bool use_mask, int nOctaveLayers)
         {
             const int layer_rows = img_rows >> octave;
@@ -390,10 +366,15 @@ namespace cv { namespace cuda { namespace device
 
             const size_t smem_size = threads.x * threads.y * 3 * sizeof(float);
 
-            if (use_mask)
-                icvFindMaximaInLayer<WithMask><<<grid, threads, smem_size>>>(det, trace, maxPosBuffer, maxCounter);
-            else
-                icvFindMaximaInLayer<WithOutMask><<<grid, threads, smem_size>>>(det, trace, maxPosBuffer, maxCounter);
+            if (use_mask) {
+                cudev::Texture<unsigned int> texMaskSum(maskSum);
+                Mask<true> mask(texMaskSum);
+                icvFindMaximaInLayer<<<grid, threads, smem_size>>>(mask, det, trace, maxPosBuffer, maxCounter);
+            }
+            else {
+                Mask<false> mask;
+                icvFindMaximaInLayer<<<grid, threads, smem_size>>>(mask, det, trace, maxPosBuffer, maxCounter);
+            }
 
             cudaSafeCall( cudaGetLastError() );
 
@@ -539,7 +520,7 @@ namespace cv { namespace cuda { namespace device
         __constant__ float c_NX[2][5] = {{0, 0, 2, 4, -1}, {2, 0, 4, 4, 1}};
         __constant__ float c_NY[2][5] = {{0, 0, 4, 2, 1}, {0, 2, 4, 4, -1}};
 
-        __global__ void icvCalcOrientation(const float* featureX, const float* featureY, const float* featureSize, float* featureDir)
+        __global__ void icvCalcOrientation(cudev::TexturePtr<unsigned int> texSum, const float* featureX, const float* featureY, const float* featureSize, float* featureDir)
         {
             __shared__ float s_X[128];
             __shared__ float s_Y[128];
@@ -576,8 +557,8 @@ namespace cv { namespace cuda { namespace device
                 if (y >= 0 && y < (c_img_rows + 1) - grad_wav_size &&
                     x >= 0 && x < (c_img_cols + 1) - grad_wav_size)
                 {
-                    X = c_aptW[tid] * icvCalcHaarPatternSum<2>(c_NX, 4, grad_wav_size, y, x);
-                    Y = c_aptW[tid] * icvCalcHaarPatternSum<2>(c_NY, 4, grad_wav_size, y, x);
+                    X = c_aptW[tid] * icvCalcHaarPatternSum<2>(texSum, c_NX, 4, grad_wav_size, y, x);
+                    Y = c_aptW[tid] * icvCalcHaarPatternSum<2>(texSum, c_NY, 4, grad_wav_size, y, x);
 
                     angle = atan2f(Y, X);
                     if (angle < 0)
@@ -676,8 +657,9 @@ namespace cv { namespace cuda { namespace device
         #undef ORI_WIN
         #undef ORI_SAMPLES
 
-        void icvCalcOrientation_gpu(const float* featureX, const float* featureY, const float* featureSize, float* featureDir, int nFeatures)
+        void icvCalcOrientation_gpu(const PtrStepSz<unsigned int>& sum, const float* featureX, const float* featureY, const float* featureSize, float* featureDir, int nFeatures)
         {
+            cudev::Texture<unsigned int> texSum(sum);
             dim3 threads;
             threads.x = 32;
             threads.y = 4;
@@ -685,7 +667,7 @@ namespace cv { namespace cuda { namespace device
             dim3 grid;
             grid.x = nFeatures;
 
-            icvCalcOrientation<<<grid, threads>>>(featureX, featureY, featureSize, featureDir);
+            icvCalcOrientation<<<grid, threads>>>(texSum, featureX, featureY, featureSize, featureDir);
             cudaSafeCall( cudaGetLastError() );
 
             cudaSafeCall( cudaDeviceSynchronize() );
@@ -724,12 +706,14 @@ namespace cv { namespace cuda { namespace device
         {
             typedef uchar elem_type;
 
+            __device__ WinReader(cudev::TexturePtr<uchar> tex_) : tex(tex_) {};
+
             __device__ __forceinline__ uchar operator ()(int i, int j) const
             {
                 float pixel_x = centerX + (win_offset + j) * cos_dir + (win_offset + i) * sin_dir;
                 float pixel_y = centerY - (win_offset + j) * sin_dir + (win_offset + i) * cos_dir;
 
-                return tex2D(imgTex, pixel_x, pixel_y);
+                return tex(pixel_y, pixel_x);
             }
 
             float centerX;
@@ -739,19 +723,17 @@ namespace cv { namespace cuda { namespace device
             float sin_dir;
             int width;
             int height;
+            cudev::TexturePtr<uchar> tex;
         };
 
-        __device__ void calc_dx_dy(const float* featureX, const float* featureY, const float* featureSize, const float* featureDir,
-                                   float& dx, float& dy);
-
-        __device__ void calc_dx_dy(const float* featureX, const float* featureY, const float* featureSize, const float* featureDir,
+        __device__ void calc_dx_dy(cudev::TexturePtr<uchar> tex, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir,
                                    float& dx, float& dy)
         {
             __shared__ float s_PATCH[PATCH_SZ + 1][PATCH_SZ + 1];
 
             dx = dy = 0.0f;
 
-            WinReader win;
+            WinReader win(tex);
 
             win.centerX = featureX[blockIdx.x];
             win.centerY = featureY[blockIdx.x];
@@ -813,14 +795,14 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        __global__ void compute_descriptors_64(PtrStep<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir)
+        __global__ void compute_descriptors_64(cudev::TexturePtr<uchar> texImg, PtrStep<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir)
         {
             __shared__ float smem[32 * 16];
 
             float* sRow = smem + threadIdx.y * 32;
 
             float dx, dy;
-            calc_dx_dy(featureX, featureY, featureSize, featureDir, dx, dy);
+            calc_dx_dy(texImg, featureX, featureY, featureSize, featureDir, dx, dy);
 
             float dxabs = ::fabsf(dx);
             float dyabs = ::fabsf(dy);
@@ -839,14 +821,14 @@ namespace cv { namespace cuda { namespace device
                 *descriptors_block = make_float4(dx, dy, dxabs, dyabs);
         }
 
-        __global__ void compute_descriptors_128(PtrStep<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir)
+        __global__ void compute_descriptors_128(cudev::TexturePtr<uchar> texImg, PtrStep<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir)
         {
             __shared__ float smem[32 * 16];
 
             float* sRow = smem + threadIdx.y * 32;
 
             float dx, dy;
-            calc_dx_dy(featureX, featureY, featureSize, featureDir, dx, dy);
+            calc_dx_dy(texImg, featureX, featureY, featureSize, featureDir, dx, dy);
 
             float4* descriptors_block = descriptors.ptr(blockIdx.x) + threadIdx.y * 2;
 
@@ -925,13 +907,13 @@ namespace cv { namespace cuda { namespace device
             descriptor_base[threadIdx.x] = val / s_len;
         }
 
-        void compute_descriptors_gpu(PtrStepSz<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir, int nFeatures)
+        void compute_descriptors_gpu(const PtrStepSzb& img, PtrStepSz<float4> descriptors, const float* featureX, const float* featureY, const float* featureSize, const float* featureDir, int nFeatures)
         {
             // compute unnormalized descriptors, then normalize them - odd indexing since grid must be 2D
-
+            cudev::Texture<unsigned char> texImg(img);
             if (descriptors.cols == 64)
             {
-                compute_descriptors_64<<<nFeatures, dim3(32, 16)>>>(descriptors, featureX, featureY, featureSize, featureDir);
+                compute_descriptors_64<<<nFeatures, dim3(32, 16)>>>(texImg, descriptors, featureX, featureY, featureSize, featureDir);
                 cudaSafeCall( cudaGetLastError() );
 
                 cudaSafeCall( cudaDeviceSynchronize() );
@@ -943,7 +925,7 @@ namespace cv { namespace cuda { namespace device
             }
             else
             {
-                compute_descriptors_128<<<nFeatures, dim3(32, 16)>>>(descriptors, featureX, featureY, featureSize, featureDir);
+                compute_descriptors_128<<<nFeatures, dim3(32, 16)>>>(texImg, descriptors, featureX, featureY, featureSize, featureDir);
                 cudaSafeCall( cudaGetLastError() );
 
                 cudaSafeCall( cudaDeviceSynchronize() );

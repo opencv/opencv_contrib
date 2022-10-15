@@ -45,36 +45,36 @@
 #include <thrust/device_ptr.h>
 #include <thrust/sort.h>
 
-#include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/utility.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 #include <thrust/execution_policy.h>
 namespace cv { namespace cuda { namespace device
 {
     namespace gfft
     {
-        template <class Mask> __global__ void findCorners(float threshold, const Mask mask, float2* corners, int max_count, int rows, int cols, cudaTextureObject_t eigTex, int *g_counter)
+        template <class Mask> __global__ void findCorners(cv::cudev::TexturePtr<float> tex, float threshold, const Mask mask, float2* corners, int max_count, int rows, int cols, int *g_counter)
         {
             const int j = blockIdx.x * blockDim.x + threadIdx.x;
             const int i = blockIdx.y * blockDim.y + threadIdx.y;
 
             if (i > 0 && i < rows - 1 && j > 0 && j < cols - 1 && mask(i, j))
             {
-                float val = tex2D<float>(eigTex, j, i);
+                float val = tex(i, j);
 
                 if (val > threshold)
                 {
                     float maxVal = val;
 
-                    maxVal = ::fmax(tex2D<float>(eigTex, j - 1, i - 1), maxVal);
-                    maxVal = ::fmax(tex2D<float>(eigTex, j    , i - 1), maxVal);
-                    maxVal = ::fmax(tex2D<float>(eigTex, j + 1, i - 1), maxVal);
+                    maxVal = ::fmax(tex(i - 1, j - 1), maxVal);
+                    maxVal = ::fmax(tex(i - 1, j), maxVal);
+                    maxVal = ::fmax(tex(i - 1, j + 1), maxVal);
 
-                    maxVal = ::fmax(tex2D<float>(eigTex, j - 1, i), maxVal);
-                    maxVal = ::fmax(tex2D<float>(eigTex, j + 1, i), maxVal);
+                    maxVal = ::fmax(tex(i, j - 1), maxVal);
+                    maxVal = ::fmax(tex(i, j + 1), maxVal);
 
-                    maxVal = ::fmax(tex2D<float>(eigTex, j - 1, i + 1), maxVal);
-                    maxVal = ::fmax(tex2D<float>(eigTex, j    , i + 1), maxVal);
-                    maxVal = ::fmax(tex2D<float>(eigTex, j + 1, i + 1), maxVal);
+                    maxVal = ::fmax(tex(i + 1, j - 1), maxVal);
+                    maxVal = ::fmax(tex(i + 1, j), maxVal);
+                    maxVal = ::fmax(tex(i + 1, j + 1), maxVal);
 
                     if (val == maxVal)
                     {
@@ -87,17 +87,18 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        int findCorners_gpu(const cudaTextureObject_t &eigTex, const int &rows, const int &cols, float threshold, PtrStepSzb mask, float2* corners, int max_count, int* counterPtr, cudaStream_t stream)
+        int findCorners_gpu(const PtrStepSzf eig, float threshold, PtrStepSzb mask, float2* corners, int max_count, int* counterPtr, cudaStream_t stream)
         {
             cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
+            cv::cudev::Texture<float> tex(eig);
 
             dim3 block(16, 16);
-            dim3 grid(divUp(cols, block.x), divUp(rows, block.y));
+            dim3 grid(divUp(eig.cols, block.x), divUp(eig.rows, block.y));
 
             if (mask.data)
-                findCorners<<<grid, block, 0, stream>>>(threshold, SingleMask(mask), corners, max_count, rows, cols, eigTex, counterPtr);
+                findCorners<<<grid, block, 0, stream>>>(tex, threshold, SingleMask(mask), corners, max_count, eig.rows, eig.cols, counterPtr);
             else
-                findCorners<<<grid, block, 0, stream>>>(threshold, WithOutMask(), corners, max_count, rows, cols, eigTex, counterPtr);
+                findCorners<<<grid, block, 0, stream>>>(tex, threshold, WithOutMask(), corners, max_count, eig.rows, eig.cols, counterPtr);
 
             cudaSafeCall( cudaGetLastError() );
 
@@ -113,27 +114,24 @@ namespace cv { namespace cuda { namespace device
         class EigGreater
         {
         public:
-            EigGreater(const cudaTextureObject_t &eigTex_) : eigTex(eigTex_)
-            {
+            EigGreater(cv::cudev::TexturePtr<float> tex_) : tex(tex_) {}
+            __device__ __forceinline__ bool operator()(float2 a, float2 b) const{
+                return tex(a.y, a.x) > tex(b.y, b.x);
             }
-            __device__ __forceinline__ bool operator()(float2 a, float2 b) const
-            {
-                return tex2D<float>(eigTex, a.x, a.y) > tex2D<float>(eigTex, b.x, b.y);
-            }
-
-            cudaTextureObject_t eigTex;
+            cv::cudev::TexturePtr<float> tex;
         };
 
-        void sortCorners_gpu(const cudaTextureObject_t &eigTex, float2* corners, int count, cudaStream_t stream)
+        void sortCorners_gpu(const PtrStepSzf eig, float2* corners, int count, cudaStream_t stream)
         {
+            cv::cudev::Texture<float> tex(eig);
             thrust::device_ptr<float2> ptr(corners);
 #if THRUST_VERSION >= 100802
             if (stream)
-                thrust::sort(thrust::cuda::par(ThrustAllocator::getAllocator()).on(stream), ptr, ptr + count, EigGreater(eigTex));
+                thrust::sort(thrust::cuda::par(ThrustAllocator::getAllocator()).on(stream), ptr, ptr + count, EigGreater(tex));
             else
-                thrust::sort(thrust::cuda::par(ThrustAllocator::getAllocator()), ptr, ptr + count, EigGreater(eigTex));
+                thrust::sort(thrust::cuda::par(ThrustAllocator::getAllocator()), ptr, ptr + count, EigGreater(tex));
 #else
-            thrust::sort(ptr, ptr + count, EigGreater(eigTex));
+            thrust::sort(ptr, ptr + count, EigGreater(tex));
 #endif
         }
     } // namespace optical_flow

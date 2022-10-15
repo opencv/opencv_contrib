@@ -43,7 +43,9 @@
 #if !defined CUDA_DISABLER
 
 #include "opencv2/core/cuda/common.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 #include <limits.h>
+
 
 namespace cv { namespace cuda { namespace device
 {
@@ -601,13 +603,12 @@ namespace cv { namespace cuda { namespace device
         /////////////////////////////////// Textureness filtering ////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        texture<unsigned char, 2, cudaReadModeNormalizedFloat> texForTF;
-
-        __device__ __forceinline__ float sobel(int x, int y)
+        __device__ __forceinline__ float sobel(cv::cudev::TexturePtr<uchar, float> texSrc, int x, int y)
         {
-            float conv = tex2D(texForTF, x - 1, y - 1) * (-1) + tex2D(texForTF, x + 1, y - 1) * (1) +
-                         tex2D(texForTF, x - 1, y    ) * (-2) + tex2D(texForTF, x + 1, y    ) * (2) +
-                         tex2D(texForTF, x - 1, y + 1) * (-1) + tex2D(texForTF, x + 1, y + 1) * (1);
+            float conv = texSrc(y - 1, x - 1) * (-1) + texSrc(y - 1, x + 1) * (1) +
+                texSrc(y, x - 1) * (-2) + texSrc(y, x + 1) * (2) +
+                texSrc(y + 1, x - 1) * (-1) + texSrc(y + 1, x + 1) * (1);
+
             return fabs(conv);
         }
 
@@ -635,7 +636,7 @@ namespace cv { namespace cuda { namespace device
 
         #define RpT (2 * ROWSperTHREAD)  // got experimentally
 
-        __global__ void textureness_kernel(PtrStepSzb disp, int winsz, float threshold)
+        __global__ void textureness_kernel(cv::cudev::TexturePtr<uchar,float> texSrc, PtrStepSzb disp, int winsz, float threshold)
         {
             int winsz2 = winsz/2;
             int n_dirty_pixels = (winsz2) * 2;
@@ -657,9 +658,9 @@ namespace cv { namespace cuda { namespace device
 
                 for(int i = y - winsz2; i <= y + winsz2; ++i)
                 {
-                    sum += sobel(x - winsz2, i);
+                    sum += sobel(texSrc, x - winsz2, i);
                     if (cols_extra)
-                        sum_extra += sobel(x + blockDim.x - winsz2, i);
+                        sum_extra += sobel(texSrc, x + blockDim.x - winsz2, i);
                 }
                 *cols = sum;
                 if (cols_extra)
@@ -675,12 +676,12 @@ namespace cv { namespace cuda { namespace device
 
                 for(int y = beg_row + 1; y < end_row; ++y)
                 {
-                    sum = sum - sobel(x - winsz2, y - winsz2 - 1) + sobel(x - winsz2, y + winsz2);
+                    sum = sum - sobel(texSrc, x - winsz2, y - winsz2 - 1) + sobel(texSrc, x - winsz2, y + winsz2);
                     *cols = sum;
 
                     if (cols_extra)
                     {
-                        sum_extra = sum_extra - sobel(x + blockDim.x - winsz2, y - winsz2 - 1) + sobel(x + blockDim.x - winsz2, y + winsz2);
+                        sum_extra = sum_extra - sobel(texSrc, x + blockDim.x - winsz2, y - winsz2 - 1) + sobel(texSrc, x + blockDim.x - winsz2, y + winsz2);
                         *cols_extra = sum_extra;
                     }
 
@@ -697,28 +698,16 @@ namespace cv { namespace cuda { namespace device
         void postfilter_textureness(const PtrStepSzb& input, int winsz, float avgTexturenessThreshold, const PtrStepSzb& disp, cudaStream_t & stream)
         {
             avgTexturenessThreshold *= winsz * winsz;
-
-            texForTF.filterMode     = cudaFilterModeLinear;
-            texForTF.addressMode[0] = cudaAddressModeWrap;
-            texForTF.addressMode[1] = cudaAddressModeWrap;
-
-            cudaChannelFormatDesc desc = cudaCreateChannelDesc<unsigned char>();
-            cudaSafeCall( cudaBindTexture2D( 0, texForTF, input.data, desc, input.cols, input.rows, input.step ) );
-
+            cv::cudev::Texture<unsigned char, float> tex(input, false, cudaFilterModeLinear, cudaAddressModeWrap, cudaReadModeNormalizedFloat);
             dim3 threads(128, 1, 1);
             dim3 grid(1, 1, 1);
-
             grid.x = divUp(input.cols, threads.x);
             grid.y = divUp(input.rows, RpT);
-
             size_t smem_size = (threads.x + threads.x + (winsz/2) * 2 ) * sizeof(float);
-            textureness_kernel<<<grid, threads, smem_size, stream>>>(disp, winsz, avgTexturenessThreshold);
+            textureness_kernel<<<grid, threads, smem_size, stream>>>(tex, disp, winsz, avgTexturenessThreshold);
             cudaSafeCall( cudaGetLastError() );
-
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
-
-            cudaSafeCall( cudaUnbindTexture (texForTF) );
         }
     } // namespace stereobm
 }}} // namespace cv { namespace cuda { namespace cudev
