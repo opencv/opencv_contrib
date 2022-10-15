@@ -31,7 +31,7 @@ sudo make install
 ```bash
 git clone https://github.com/kallaballa/GCV.git
 cd GCV
-make
+make -j2
 ```
 
 ## Run the demo tetra-demo:
