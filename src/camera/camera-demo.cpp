@@ -2,13 +2,23 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr bool OFFSCREEN = false;
-constexpr const char* INPUT_FILENAME = "example.mp4";
+constexpr bool OFFSCREEN = true;
+
+/*
+ * We can't capture by index, so we provide the device filename (e.g.: /dev/video0).
+ * Changing it to "example.mp4" works as well without additional changes because the stream info matches that of my v4l2 device
+ * (Download example.mp4: https://user-images.githubusercontent.com/287266/195963580-ad945626-9bba-4e19-a1fb-68acaaca0483.mp4)
+ */
+constexpr const char* INPUT_FILENAME = "/dev/video0";
 constexpr const char* OUTPUT_FILENAME = "camera-demo.mkv";
+//The ffmpeg capture and writer options we need to capture from v4l2 but don't overwrite the environment variables if they already exist.
+constexpr const char* CAPTURE_OPTIONS = "v|framerate;30|input_format;mjpeg|video_size;320x240|pixel_format;yuyv422|hwaccel_output_format;vaapi";
+constexpr const char* WRITER_OPTIONS = "v|vf;format=nv12,hwupload";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr double FPS = 30;
+double FPS;
 
 #include "../common/subsystems.hpp"
+#include <stdlib.h>
 
 using std::cerr;
 using std::endl;
@@ -73,7 +83,11 @@ void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WID
 }
 
 int main(int argc, char **argv) {
+    setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", CAPTURE_OPTIONS, 0);
+    setenv("OPENCV_FFMPEG_WRITER_OPTIONS", WRITER_OPTIONS, 0);
+
     using namespace kb;
+
     //Initialize OpenCL Context for VAAPI
     va::init_va();
     /*
@@ -90,12 +104,21 @@ int main(int argc, char **argv) {
     });
     // check if we succeeded
     if (!cap.isOpened()) {
-        cerr << "ERROR! Unable to open camera\n";
+        cerr << "ERROR! Unable to open camera" << endl;
         return -1;
     }
 
+    FPS = cap.get(cv::CAP_PROP_FPS);
+    cerr << "Detected FPS: " << FPS << endl;
+
+    //workaround for now. because we know for sure the source video has 30 FPS
+    if(FPS > 30.0) {
+        FPS = 30.0;
+        cerr << "Corrected FPS to: " << FPS << endl;
+    }
+
+    //Initialize VP9 HW encoding using VAAPI. We don't need to specify the hardware device twice. only generates a warning.
     cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
-            cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
