@@ -26,8 +26,9 @@ const string CAPTURE_OPTIONS = "framerate;" + std::to_string(INPUT_FPS)
         + "|input_format;" + INPUT_FORMAT
         + "|video_size;" + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT)
         + "|pixel_format;" + PIXEL_FORMAT
-        + "|hwaccel_output_format;vaapi";
-const string WRITER_OPTIONS = "vf;format=nv12,hwupload";
+        + "|video_codec;mjpeg";
+
+const string WRITER_OPTIONS = "";
 
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr bool OFFSCREEN = true;
@@ -92,6 +93,7 @@ void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WID
 }
 
 int main(int argc, char **argv) {
+    //The ffmpeg capture and writer options we need to capture from v4l2 but don't overwrite the environment variables if they already exist.
     setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", CAPTURE_OPTIONS.c_str(), 0);
     setenv("OPENCV_FFMPEG_WRITER_OPTIONS", WRITER_OPTIONS.c_str(), 0);
 
