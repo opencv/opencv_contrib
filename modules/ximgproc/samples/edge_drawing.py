@@ -46,6 +46,7 @@ def main():
     # Detect edges
     # you should call this before detectLines() and detectEllipses()
     ed.detectEdges(gray)
+
     segments = ed.getSegments()
     lines = ed.detectLines()
     ellipses = ed.detectEllipses()
@@ -67,14 +68,16 @@ def main():
 
     #Draw detected circles and ellipses
     if ellipses is not None: # Check if circles and ellipses have been found and only then iterate over these and add them to the image
-        ellipses = np.uint16(np.around(ellipses))
         for i in range(len(ellipses)):
+            center = (int(ellipses[i][0][0]), int(ellipses[i][0][1]))
+            axes = (int(ellipses[i][0][2])+int(ellipses[i][0][3]),int(ellipses[i][0][2])+int(ellipses[i][0][4]))
+            angle = ellipses[i][0][5]
             color = (0, 0, 255)
             if ellipses[i][0][2] == 0:
                 color = (0, 255, 0)
-            cv.ellipse(esrc, (ellipses[i][0][0], ellipses[i][0][1]), (ellipses[i][0][2]+ellipses[i][0][3],ellipses[i][0][2]+ellipses[i][0][4]),ellipses[i][0][5],0, 360, color, 2, cv.LINE_AA)
+            cv.ellipse(esrc, center, axes, angle,0, 360, color, 2, cv.LINE_AA)
 
-    cv.imshow("detected ellipses", esrc)
+    cv.imshow("detected circles and ellipses", esrc)
     cv.waitKey(0)
     print('Done')
 
