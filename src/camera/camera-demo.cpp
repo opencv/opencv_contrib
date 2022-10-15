@@ -25,8 +25,7 @@ const string OUTPUT_FILENAME = "camera-demo.mkv";
 const string CAPTURE_OPTIONS = "framerate;" + std::to_string(INPUT_FPS)
         + "|input_format;" + INPUT_FORMAT
         + "|video_size;" + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT)
-        + "|pixel_format;" + PIXEL_FORMAT
-        + "|video_codec;mjpeg";
+        + "|pixel_format;" + PIXEL_FORMAT;
 
 const string WRITER_OPTIONS = "";
 
