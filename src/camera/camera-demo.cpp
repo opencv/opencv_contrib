@@ -1,27 +1,36 @@
 #define CL_TARGET_OPENCL_VERSION 220
 
+//WIDTH and HEIGHT have to be specified before including subsystems.hpp
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr bool OFFSCREEN = true;
-
-/*
- * We can't capture by index, so we provide the device filename (e.g.: /dev/video0).
- * Changing it to "example.mp4" works without additional changes because the stream info matches that of my v4l2 device
- * (Download example.mp4: https://user-images.githubusercontent.com/287266/195963580-ad945626-9bba-4e19-a1fb-68acaaca0483.mp4)
- */
-constexpr const char* INPUT_FILENAME = "/dev/video0";
-constexpr const char* OUTPUT_FILENAME = "camera-demo.mkv";
-//The ffmpeg capture and writer options we need to capture from v4l2 but don't overwrite the environment variables if they already exist.
-constexpr const char* CAPTURE_OPTIONS = "v|framerate;30|input_format;mjpeg|video_size;320x240|pixel_format;yuyv422|hwaccel_output_format;vaapi";
-constexpr const char* WRITER_OPTIONS = "v|vf;format=nv12,hwupload";
-constexpr const int VA_HW_DEVICE_INDEX = 0;
-double FPS;
 
 #include "../common/subsystems.hpp"
 #include <stdlib.h>
+#include <string>
 
 using std::cerr;
 using std::endl;
+using std::string;
+
+//Static stream info. Has to match your v4l2 device
+constexpr double INPUT_FPS = 30;
+constexpr int INPUT_WIDTH = 320;
+constexpr int INPUT_HEIGHT = 240;
+const string INPUT_FORMAT = "mjpeg";
+const string PIXEL_FORMAT = "yuyv422";
+const string INPUT_FILENAME = "/dev/video0";
+const string OUTPUT_FILENAME = "camera-demo.mkv";
+
+//The ffmpeg capture and writer options we need to capture from v4l2 but don't overwrite the environment variables if they already exist.
+const string CAPTURE_OPTIONS = "framerate;" + std::to_string(INPUT_FPS)
+        + "|input_format;" + INPUT_FORMAT
+        + "|video_size;" + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT)
+        + "|pixel_format;" + PIXEL_FORMAT
+        + "|hwaccel_output_format;vaapi";
+const string WRITER_OPTIONS = "vf;format=nv12,hwupload";
+
+constexpr const int VA_HW_DEVICE_INDEX = 0;
+constexpr bool OFFSCREEN = true;
 
 cv::ocl::OpenCLExecutionContext VA_CONTEXT;
 cv::ocl::OpenCLExecutionContext GL_CONTEXT;
@@ -83,8 +92,8 @@ void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WID
 }
 
 int main(int argc, char **argv) {
-    setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", CAPTURE_OPTIONS, 0);
-    setenv("OPENCV_FFMPEG_WRITER_OPTIONS", WRITER_OPTIONS, 0);
+    setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", CAPTURE_OPTIONS.c_str(), 0);
+    setenv("OPENCV_FFMPEG_WRITER_OPTIONS", WRITER_OPTIONS.c_str(), 0);
 
     using namespace kb;
 
@@ -108,17 +117,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    FPS = cap.get(cv::CAP_PROP_FPS);
-    cerr << "Detected FPS: " << FPS << endl;
-
-    //workaround for now. because we know for sure the source video has 30 FPS
-    if(FPS > 30.0) {
-        FPS = 30.0;
-        cerr << "Corrected FPS to: " << FPS << endl;
-    }
-
     //Initialize VP9 HW encoding using VAAPI. We don't need to specify the hardware device twice. only generates a warning.
-    cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+    cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), INPUT_FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
         }
 
         //Measure FPS
-        if (cnt % uint64(FPS) == 0) {
+        if (cnt % uint64(INPUT_FPS) == 0) {
             int64 tick = cv::getTickCount();
             cerr << "FPS : " << tickFreq / ((tick - start + 1) / cnt) << '\r';
             start = tick;

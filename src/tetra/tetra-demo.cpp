@@ -2,7 +2,7 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr double FPS = 60;
+constexpr double INPUT_FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+    cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), INPUT_FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
         }
 
         //Measure FPS
-        if (cnt % uint64(FPS) == 0) {
+        if (cnt % uint64(INPUT_FPS) == 0) {
             int64 tick = cv::getTickCount();
             cerr << "FPS : " << tickFreq / ((tick - start + 1) / cnt) << '\r';
             start = tick;
