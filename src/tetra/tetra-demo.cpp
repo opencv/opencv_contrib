@@ -2,12 +2,12 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr double FPS = 30;
-constexpr bool OFFSCREEN = false;
+constexpr double FPS = 60;
+constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
-#include "subsystems.hpp"
+#include "../common/subsystems.hpp"
 
 using std::cerr;
 using std::endl;
@@ -47,6 +47,7 @@ void render() {
         glColor3f(1, 0, 0);
         glVertex3f(-1, 0, 1);
     glEnd();
+    glFlush();
     kb::gl::swapBuffers();
 }
 
