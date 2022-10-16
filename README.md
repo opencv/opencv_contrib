@@ -4,16 +4,6 @@ OpenGL/OpenCL/VAAPI interop demo using my OpenCV-4.x fork (https://github.com/ka
 # Instructions
 While I try to get the necessary changes into the official OpenCV repo (https://github.com/opencv/opencv/issues/22607 and https://github.com/opencv/opencv/issues/22622) you need to build the OpenCV fork yourself.
 
-## Build FFMPEG intel-cartwheel (only required for Intel Tiger Lake)
-* First follow the instructions in README.cartwheel
-* then configure with the following options:
-
-```bash
-./configure --disable-static --enable-shared --enable-vaapi --enable-libvorbis -enable-libvpx --enable-gpl --cpu=native --enable-opengl --enable-libfdk-aac --enable-libx264 --enable-libx265 --enable-nonfree
-make -j8
-sudo make install
-```
-
 ## Build OpenCV
 
 ```bash
@@ -34,13 +24,13 @@ cd GCV
 make -j2
 ```
 
-## Run the demo tetra-demo:
+## Run the tetra-demo:
 
 ```bash
 src/tetra/tetra-demo
 ```
 
-## Run the demo camera-demo:
+## Run the camera-demo:
 
 ```bash
 src/tetra/camera-demo
