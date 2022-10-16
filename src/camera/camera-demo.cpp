@@ -179,14 +179,14 @@ int main(int argc, char **argv) {
         gl::release_frame_buffer(frameBuffer);
         //Render using OpenGL
         render();
+
         //Aquire the frame buffer for use by OpenCL
         gl::acquire_frame_buffer(frameBuffer);
-
         //Glow effect (OpenCL)
         glow(frameBuffer);
-
         //Color-conversion from BGRA to RGB. (OpenCL)
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
+        //Video frame is upside down -> flip it (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
 
         //Activate the OpenCL context for VAAPI

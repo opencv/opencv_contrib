@@ -114,20 +114,21 @@ int main(int argc, char **argv) {
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
+    double lastFps = INPUT_FPS;
 
     while (true) {
         //Activate the OpenCL context for OpenGL
         GL_CONTEXT.bind();
-        //Using OpenGL, render a rotating tetrahedron
+        //Render using OpenGL
         render();
 
-        //Transfer buffer ownership to OpenCL
+        //Aquire the frame buffer for use by OpenCL
         gl::acquire_frame_buffer(frameBuffer);
-        //Using OpenCV/OpenCL for a glow effect
+        //Glow effect (OpenCL)
         glow(frameBuffer);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        //Video frame is upside down -> flip it
+        //Video frame is upside down -> flip it (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
 
         //Activate the OpenCL context for VAAPI
@@ -138,7 +139,7 @@ int main(int argc, char **argv) {
         if(x11::is_initialized()) {
             //Yet again activate the OpenCL context for OpenGL
             GL_CONTEXT.bind();
-            //Transfer buffer ownership back to OpenGL
+            //Release the frame buffer for use by OpenGL
             gl::release_frame_buffer(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
@@ -147,16 +148,19 @@ int main(int argc, char **argv) {
             if(x11::window_closed())
                 break;
 
+            //Transfer the back buffer (which we have been using as frame buffer) to the native window
             gl::swapBuffers();
         }
 
         //Measure FPS
-        if (cnt % uint64(INPUT_FPS) == 0) {
+        if (cnt % uint64(ceil(lastFps)) == 0) {
             int64 tick = cv::getTickCount();
-            cerr << "FPS : " << tickFreq / ((tick - start + 1) / cnt) << '\r';
+            lastFps = tickFreq / ((tick - start + 1) / cnt);
+            cerr << "FPS : " << lastFps << '\r';
             start = tick;
             cnt = 1;
         }
+
 
         ++cnt;
     }
