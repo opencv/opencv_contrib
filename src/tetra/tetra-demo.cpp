@@ -161,7 +161,6 @@ int main(int argc, char **argv) {
             cnt = 1;
         }
 
-
         ++cnt;
     }
 
