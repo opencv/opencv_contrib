@@ -2,7 +2,7 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr double INPUT_FPS = 60;
+constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
     VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
 
     //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), INPUT_FPS, cv::Size(WIDTH, HEIGHT), {
+    cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
-    double lastFps = INPUT_FPS;
+    double lastFps = FPS;
 
     while (true) {
         //Activate the OpenCL context for OpenGL
