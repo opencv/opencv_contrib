@@ -12,16 +12,16 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-//Static stream info. Has to match your v4l2 device
+//Static stream info. Has to match your capture device/file
 constexpr double INPUT_FPS = 30;
 constexpr int INPUT_WIDTH = 320;
 constexpr int INPUT_HEIGHT = 240;
 const string INPUT_FORMAT = "mjpeg";
 const string PIXEL_FORMAT = "yuyv422";
-const string INPUT_FILENAME = "/dev/video0";
+const string INPUT_FILENAME = "example.mp4";
 const string OUTPUT_FILENAME = "camera-demo.mkv";
 
-//The ffmpeg capture and writer options we need to capture from v4l2 but don't overwrite the environment variables if they already exist.
+//The ffmpeg capture and writer options we need to capture... but don't overwrite the environment variables if they already exist.
 const string CAPTURE_OPTIONS = "framerate;" + std::to_string(INPUT_FPS)
         + "|input_format;" + INPUT_FORMAT
         + "|video_size;" + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT)
@@ -92,7 +92,7 @@ void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WID
 }
 
 int main(int argc, char **argv) {
-    //The ffmpeg capture and writer options we need to capture from v4l2 but don't overwrite the environment variables if they already exist.
+    //The ffmpeg capture and writer options we need to capture... but don't overwrite the environment variables if they already exist.
     setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", CAPTURE_OPTIONS.c_str(), 0);
     setenv("OPENCV_FFMPEG_WRITER_OPTIONS", WRITER_OPTIONS.c_str(), 0);
 
