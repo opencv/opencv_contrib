@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
-    double lastFps = 0;
+    double lastFps = INPUT_FPS;
 
     while (true) {
         //Activate the OpenCL context for OpenGL
@@ -211,7 +211,7 @@ int main(int argc, char **argv) {
         }
 
         //Measure FPS
-        if (cnt % uint64(ceil(lastFps == 0 ? INPUT_FPS : lastFps)) == 0) {
+        if (cnt % uint64(ceil(lastFps)) == 0) {
             int64 tick = cv::getTickCount();
             lastFps = tickFreq / ((tick - start + 1) / cnt);
             cerr << "FPS : " << lastFps << '\r';
