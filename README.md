@@ -24,13 +24,13 @@ cd GCV
 make -j2
 ```
 
-## Run the demo tetra-demo:
+## Run the tetra-demo:
 
 ```bash
 src/tetra/tetra-demo
 ```
 
-## Run the demo camera-demo:
+## Run the camera-demo:
 
 ```bash
 src/tetra/camera-demo
