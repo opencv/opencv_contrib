@@ -17,54 +17,59 @@ typedef unsigned int uint;
 
 // ellipse format
 struct Ellipse {
-    float center_x, center_y;
+    Point2f center;
     float a, b;
     float radius;
     float score;
 
     Ellipse() {
-        center_x = 0.f, center_y = 0.f;
+        center = Point2f(0, 0);
         a = 0.f, b = 0.f;
         radius = 0.f, score = 0.f;
     };
 
-    Ellipse(float _center_x, float _center_y, float _a, float _b, float _radius,
+    Ellipse(Point2f _center, float _a, float _b, float _radius,
             float _score = 0.f) {
-        this->center_x = _center_x, this->center_y = _center_y;
+        center = _center;
         this->a = _a, this->b = _b;
         this->radius = _radius, this->score = _score;
-};
+    };
 
-Ellipse(const Ellipse &other) {
-    center_x = other.center_x;
-    center_y = other.center_y;
-    a = other.a, b = other.b;
-    radius = other.radius, score = other.score;
-};
+    Ellipse(float _center_x, float _center_y, float _a, float _b, float _radius,
+            float _score = 0.f) {
+        center = Point2f(_center_x, _center_y);
+        this->a = _a, this->b = _b;
+        this->radius = _radius, this->score = _score;
+    };
 
-bool operator<(const Ellipse &other) const {
-    if (score == other.score) {
-        float lhs_e = b / a;
-        float rhs_e = other.b / other.a;
-        if (lhs_e == rhs_e)
-            return false;
-        return lhs_e > rhs_e;
-    }
-    return score > other.score;
-};
+    Ellipse(const Ellipse &other) {
+        center = other.center;
+        a = other.a, b = other.b;
+        radius = other.radius, score = other.score;
+    };
+
+    bool operator<(const Ellipse &other) const {
+        if (score == other.score) {
+            float lhs_e = b / a;
+            float rhs_e = other.b / other.a;
+            if (lhs_e == rhs_e)
+                return false;
+            return lhs_e > rhs_e;
+        }
+        return score > other.score;
+    };
 };
 
 static int inline signal(float val) {
-return (0.f < val) - (val < 0.f);
+    return val > 0.f ? 1 : -1;
 }
 
 static bool sortPoint(const Point &lhs, const Point &rhs) {
-if (lhs.x == rhs.x)
-    return lhs.y < rhs.y;
-return lhs.x < rhs.x;
+    if (lhs.x == rhs.x) {
+        return lhs.y < rhs.y;
+    }
+    return lhs.x < rhs.x;
 }
-
-#define V2SP Point2f p3, Point2f p2, Point2f p1, Point2f p4, Point2f p5, Point2f p6
 
 static Point2f lineCrossPoint(Point2f l1p1, Point2f l1p2, Point2f l2p1, Point2f l2p2) {
     Point2f crossPoint;
@@ -101,42 +106,37 @@ static Point2f lineCrossPoint(Point2f l1p1, Point2f l1p2, Point2f l2p1, Point2f 
     return crossPoint;
 }
 
-static void pointToMat(Point2f p1, Point2f p2, float mat[2][2]) {
-    mat[0][0] = p1.x;
-    mat[0][1] = p1.y;
-    mat[1][0] = p2.x;
-    mat[1][1] = p2.y;
+static void pointToMat(Point2f p1, Point2f p2, Mat& mat) {
+    mat.at<float>(0, 0) = p1.x;
+    mat.at<float>(0, 1) = p1.y;
+    mat.at<float>(1, 0) = p2.x;
+    mat.at<float>(1, 1) = p2.y;
 }
 
-static float valueOfPoints(V2SP) {
+static float valueOfPoints(Point2f p3, Point2f p2, Point2f p1, Point2f p4, Point2f p5, Point2f p6) {
     float result = 1;
-    Mat A, B, C;
-    float matB[2][2], matC[2][2];
-    Point2f v, w, u;
-    v = lineCrossPoint(p1, p2, p3, p4);
-    w = lineCrossPoint(p5, p6, p3, p4);
-    u = lineCrossPoint(p5, p6, p1, p2);
 
-    pointToMat(u, v, matB);
-    pointToMat(p1, p2, matC);
-    B = Mat(2, 2, CV_32F, matB);
-    C = Mat(2, 2, CV_32F, matC);
+    Point2f v = lineCrossPoint(p1, p2, p3, p4);
+    Point2f w = lineCrossPoint(p5, p6, p3, p4);
+    Point2f u = lineCrossPoint(p5, p6, p1, p2);
+
+    Mat B = Mat(2, 2, CV_32F);
+    Mat C = Mat(2, 2, CV_32F);
+
+    pointToMat(u, v, B);
+    pointToMat(p1, p2, C);
+    Mat A = C * B.inv();
+    result *=
+            A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
+
+    pointToMat(p3, p4, C);
+    pointToMat(v, w, B);
     A = C * B.inv();
     result *=
             A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
 
-    pointToMat(p3, p4, matC);
-    pointToMat(v, w, matB);
-    B = Mat(2, 2, CV_32F, matB);
-    C = Mat(2, 2, CV_32F, matC);
-    A = C * B.inv();
-    result *=
-            A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
-
-    pointToMat(p5, p6, matC);
-    pointToMat(w, u, matB);
-    B = Mat(2, 2, CV_32F, matB);
-    C = Mat(2, 2, CV_32F, matC);
+    pointToMat(p5, p6, C);
+    pointToMat(w, u, B);
     A = C * B.inv();
     result *=
             A.at<float>(0, 0) * A.at<float>(1, 0) / (A.at<float>(0, 1) * A.at<float>(1, 1));
@@ -239,12 +239,6 @@ private:
     void preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn);
 
     void clusterEllipses(std::vector<Ellipse> &ellipses);
-
-    int findMaxK(const int *v) const;
-
-    int findMaxN(const int *v) const;
-
-    int findMaxA(const int *v) const;
 
     static float
     getMedianSlope(std::vector<Point2f> &med, Point2f &centers, std::vector<float> &slopes);
@@ -374,7 +368,8 @@ void EllipseDetectorImpl::getFastCenter(std::vector<Point> &e1, std::vector<Poin
         auto dx_ref = float(e1[0].x - med2.x);
         auto dy_ref = float(e1[0].y - med2.y);
 
-        if (dy_ref == 0) dy_ref = 0.00001f;
+        if (dx_ref == 0)
+            dx_ref = 0.00001f;
 
         float m_ref = dy_ref / dx_ref;
         data.ra = m_ref;
@@ -466,7 +461,8 @@ void EllipseDetectorImpl::getFastCenter(std::vector<Point> &e1, std::vector<Poin
         auto dx_ref = float(med1.x - e2[0].x);
         auto dy_ref = float(med1.y - e2[0].y);
 
-        if (dy_ref == 0) dy_ref = 0.00001f;
+        if (dx_ref == 0)
+            dx_ref = 0.00001f;
 
         float m_ref = dy_ref / dx_ref;
         data.rb = m_ref;
@@ -1226,27 +1222,6 @@ void EllipseDetectorImpl::getTriplets413(VVP &pi, VVP &pj, VVP &pk,
     }
 }
 
-int EllipseDetectorImpl::findMaxK(const int *v) const {
-    int maxVal = 0, maxIdx = 0;
-    for (int i = 0; i < ACC_R_SIZE; i++)
-        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : 0;
-    return maxIdx + 90;
-}
-
-int EllipseDetectorImpl::findMaxN(const int *v) const {
-    int maxVal = 0, maxIdx = 0;
-    for (int i = 0; i < ACC_N_SIZE; i++)
-        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : 0;
-    return maxIdx;
-}
-
-int EllipseDetectorImpl::findMaxA(const int *v) const {
-    int maxVal = 0, maxIdx = 0;
-    for (int i = 0; i < ACC_A_SIZE; i++)
-        (v[i] > maxVal) ? maxVal = v[i], maxIdx = i : 0;
-    return maxIdx;
-}
-
 void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
     // smooth image
     GaussianBlur(image, image, _kernelSize, _sigma);
@@ -1366,8 +1341,8 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
         }
 
         const int CANNY_SHIFT = 15;
-        const int TG22 = (int) (0.4142135623730950488016887242097 * (1 << CANNY_SHIFT) +
-                                0.5);
+        const float TAN22_5 = 0.4142135623730950488016887242097; // tan(22.5) = sqrt(2) - 1
+        const int TG22 = (int) (TAN22_5 * (1 << CANNY_SHIFT) + 0.5);
 
         // #define CANNY_PUSH(d)    *(d) = (uchar)2, *stack_top++ = (d)
         // #define CANNY_POP(d)     ((d) = *--stack_top)
@@ -1748,8 +1723,8 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     // find peak in N and K accumulator
-    int iN = findMaxN(accN);
-    int iK = findMaxK(accR);
+    int iN = std::distance(accN, std::max_element(accN, accN + ACC_N_SIZE));
+    int iK = std::distance(accR, std::max_element(accR, accR + ACC_R_SIZE)) + 90;
 
     // recover real values
     auto fK = float(iK);
@@ -1792,7 +1767,7 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     // find peak in A accumulator
-    int A = findMaxA(accA);
+    int A = std::distance(accA, std::max_element(accA, accA + ACC_A_SIZE));
     auto fA = float(A);
 
     // find B value. See Eq [23] in the paper
@@ -1814,8 +1789,8 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     int counter_on_perimeter = 0;
 
     for (ushort l = 0; l < sz_ei; ++l) {
-        float tx = float(edge_i[l].x) - ell.center_x;
-        float ty = float(edge_i[l].y) - ell.center_y;
+        float tx = float(edge_i[l].x) - ell.center.x;
+        float ty = float(edge_i[l].y) - ell.center.y;
         float rx = (tx * _cos - ty * _sin);
         float ry = (tx * _sin + ty * _cos);
 
@@ -1825,8 +1800,8 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     for (ushort l = 0; l < sz_ej; ++l) {
-        float tx = float(edge_j[l].x) - ell.center_x;
-        float ty = float(edge_j[l].y) - ell.center_y;
+        float tx = float(edge_j[l].x) - ell.center.x;
+        float ty = float(edge_j[l].y) - ell.center.y;
         float rx = (tx * _cos - ty * _sin);
         float ry = (tx * _sin + ty * _cos);
 
@@ -1836,8 +1811,8 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     for (ushort l = 0; l < sz_ek; ++l) {
-        float tx = float(edge_k[l].x) - ell.center_x;
-        float ty = float(edge_k[l].y) - ell.center_y;
+        float tx = float(edge_k[l].x) - ell.center.x;
+        float ty = float(edge_k[l].y) - ell.center.y;
         float rx = (tx * _cos - ty * _sin);
         float ry = (tx * _sin + ty * _cos);
 
@@ -1860,10 +1835,10 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     {
         Point2f p1(float(edge_i[0].x), float(edge_i[0].y));
         Point2f p2(float(edge_i[sz_ei - 1].x), float(edge_i[sz_ei - 1].y));
-        p1.x -= ell.center_x;
-        p1.y -= ell.center_y;
-        p2.x -= ell.center_x;
-        p2.y -= ell.center_y;
+        p1.x -= ell.center.x;
+        p1.y -= ell.center.y;
+        p2.x -= ell.center.x;
+        p2.y -= ell.center.y;
         Point2f r1((p1.x * _cos - p1.y * _sin), (p1.x * _sin + p1.y * _cos));
         Point2f r2((p2.x * _cos - p2.y * _sin), (p2.x * _sin + p2.y * _cos));
         di = abs(r2.x - r1.x) + abs(r2.y - r1.y);
@@ -1871,10 +1846,10 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     {
         Point2f p1(float(edge_j[0].x), float(edge_j[0].y));
         Point2f p2(float(edge_j[sz_ej - 1].x), float(edge_j[sz_ej - 1].y));
-        p1.x -= ell.center_x;
-        p1.y -= ell.center_y;
-        p2.x -= ell.center_x;
-        p2.y -= ell.center_y;
+        p1.x -= ell.center.x;
+        p1.y -= ell.center.y;
+        p2.x -= ell.center.x;
+        p2.y -= ell.center.y;
         Point2f r1((p1.x * _cos - p1.y * _sin), (p1.x * _sin + p1.y * _cos));
         Point2f r2((p2.x * _cos - p2.y * _sin), (p2.x * _sin + p2.y * _cos));
         dj = abs(r2.x - r1.x) + abs(r2.y - r1.y);
@@ -1882,10 +1857,10 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     {
         Point2f p1(float(edge_k[0].x), float(edge_k[0].y));
         Point2f p2(float(edge_k[sz_ek - 1].x), float(edge_k[sz_ek - 1].y));
-        p1.x -= ell.center_x;
-        p1.y -= ell.center_y;
-        p2.x -= ell.center_x;
-        p2.y -= ell.center_y;
+        p1.x -= ell.center.x;
+        p1.y -= ell.center.y;
+        p2.x -= ell.center.x;
+        p2.y -= ell.center.y;
         Point2f r1((p1.x * _cos - p1.y * _sin), (p1.x * _sin + p1.y * _cos));
         Point2f r2((p2.x * _cos - p2.y * _sin), (p2.x * _sin + p2.y * _cos));
         dk = abs(r2.x - r1.x) + abs(r2.y - r1.y);
@@ -1933,8 +1908,8 @@ void EllipseDetectorImpl::clusterEllipses(std::vector<Ellipse> &ellipses) {
             cDistanceThreshold = cDistanceThreshold * cDistanceThreshold;
 
             // filter centers
-            float cDistance = ((e1.center_x - e2.center_x) * (e1.center_x - e2.center_x) +
-                               (e1.center_y - e2.center_y) * (e1.center_y - e2.center_y));
+            float cDistance = ((e1.center.x - e2.center.x) * (e1.center.x - e2.center.x) +
+                               (e1.center.y - e2.center.y) * (e1.center.y - e2.center.y));
             if (cDistance > cDistanceThreshold)
                 continue;
 
@@ -2003,7 +1978,7 @@ void findEllipses(
     Mat _ellipses(1, ellipseSize, CV_32FC(6));
     for (unsigned i = 0; i < ellipseSize; i++) {
         Ellipse tmpEll = ellipseResults[i];
-        Vec6f tmpVec(tmpEll.center_x, tmpEll.center_y, tmpEll.a, tmpEll.b, tmpEll.score,
+        Vec6f tmpVec(tmpEll.center.x, tmpEll.center.y, tmpEll.a, tmpEll.b, tmpEll.score,
                      tmpEll.radius);
         _ellipses.at<Vec6f>(i) = tmpVec;
     }

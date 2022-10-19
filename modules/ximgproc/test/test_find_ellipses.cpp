@@ -17,8 +17,19 @@ TEST(FindEllipsesTest, EllipsesOnly)
     EXPECT_FALSE(src.empty()) << "Invalid test image: " << filename;
 
     vector<Vec6f> ells;
-    ximgproc::findEllipses(src, ells, 0.7f, 0.7f, 0.02f);
+    ximgproc::findEllipses(src, ells, 0.7f, 0.5f, 0.01f);
 
+    // number check
     EXPECT_EQ(ells.size(), size_t(3)) << "Should find 3 ellipses";
+    // position check
+    // first ellipse center
+    EXPECT_TRUE((ells[0][0] >= 393) && (ells[0][0] <= 394)) << "First ellipse center x is wrong";
+    EXPECT_TRUE((ells[0][1] >= 187) && (ells[0][1] <= 188)) << "First ellipse center y is wrong";
+    // second ellipse center
+    EXPECT_TRUE((ells[1][0] >= 208) && (ells[1][0] <= 209)) << "Second ellipse center x is wrong";
+    EXPECT_TRUE((ells[1][1] >= 307) && (ells[1][1] <= 308)) << "Second ellipse center y is wrong";
+    // third ellipse center
+    EXPECT_TRUE((ells[2][0] >=  229) && (ells[2][0] <=  230)) << "Third ellipse center x is wrong";
+    EXPECT_TRUE((ells[2][1] >=  57) && (ells[2][1] <=  58)) << "Third ellipse center y is wrong";
 }
 }}
