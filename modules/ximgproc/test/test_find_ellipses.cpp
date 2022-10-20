@@ -4,19 +4,18 @@
 #include "test_precomp.hpp"
 
 using namespace cv;
-using namespace std;
 
 namespace opencv_test { namespace {
 
 
 TEST(FindEllipsesTest, EllipsesOnly)
 {
-    string picture_name = "cv/imgproc/stuff.jpg";
-    string filename = cvtest::TS::ptr()->get_data_path() + picture_name;
+    std::string picture_name = "cv/imgproc/stuff.jpg";
+    std::string filename = cvtest::TS::ptr()->get_data_path() + picture_name;
     Mat src = imread(filename, IMREAD_GRAYSCALE);
     EXPECT_FALSE(src.empty()) << "Invalid test image: " << filename;
 
-    vector<Vec6f> ells;
+    std::vector<Vec6f> ells;
     ximgproc::findEllipses(src, ells, 0.7f, 0.75f, 0.02f);
 
     // number check
