@@ -30,7 +30,9 @@ TEST(FindEllipsesTest, EllipsesOnly)
     for (auto ell: ells) {
         bool has_match = false;
         for (auto c: {center_1, center_2, center_3}) {
-            if (norm(c - Point2f(ell[0], ell[1])) < 5) {
+            Point2f diff = c - Point2f(ell[0], ell[1]);
+            float distance = sqrt(diff.x * diff.x + diff.y * diff.y);
+            if (distance < 5.0) {
                 has_match = true;
                 break;
             }
