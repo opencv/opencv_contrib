@@ -58,6 +58,8 @@ struct Ellipse {
         }
         return score > other.score;
     };
+
+    virtual ~Ellipse() = default;
 };
 
 static int inline signal(float val) {
