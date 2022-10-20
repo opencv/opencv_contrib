@@ -162,7 +162,8 @@ private:
 
     int frameCounter;
     Matx44f pose;
-    OdometryFrame renderFrame;
+    // Mutable because it contains cache updated by icp.prepareFrame() during rendering
+    mutable OdometryFrame renderFrame;
     OdometryFrame prevFrame;
 };
 
@@ -340,9 +341,10 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
     MatType pts, nrm, rgb;
+    icp.prepareFrame(renderFrame);
     renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
-    renderFrame.getPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
+    renderFrame.getImage(rgb);
 
     detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }
