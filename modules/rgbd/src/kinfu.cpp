@@ -258,8 +258,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    OdometryFrame newFrame = icp.createOdometryFrame();
-    newFrame.setDepth(depth);
+    OdometryFrame newFrame(noArray(), depth);
 
     if(frameCounter == 0)
     {
@@ -289,12 +288,11 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         }
 
         MatType points, normals;
-        newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
-        newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
         volume.raycast(pose, points, normals);
 
-        newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
-        newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
+        std::vector<MatType> pch(3);
+        split(points, pch);
+        newFrame = OdometryFrame(noArray(), pch[2], noArray(), normals);
     }
 
     renderFrame = newFrame;

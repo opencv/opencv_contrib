@@ -162,7 +162,8 @@ private:
 
     int frameCounter;
     Matx44f pose;
-    OdometryFrame renderFrame;
+    // Mutable because it contains cache updated by icp.prepareFrame() during rendering
+    mutable OdometryFrame renderFrame;
     OdometryFrame prevFrame;
 };
 
@@ -289,10 +290,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
         rgb = _rgb;
 
-    OdometryFrame newFrame = icp.createOdometryFrame();
-
-    newFrame.setImage(rgb);
-    newFrame.setDepth(depth);
+    OdometryFrame newFrame(rgb, depth);
 
     if(frameCounter == 0)
     {
@@ -300,9 +298,6 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
 
         // use depth instead of distance
         volume.integrate(depth, rgb, pose);
-        // TODO: try to move setPyramidLevel from kinfu to volume
-        newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
-        newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
     }
     else
     {
@@ -324,19 +319,13 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         {
             // use depth instead of distance
             volume.integrate(depth, rgb, pose);
-            newFrame.setPyramidLevel(params.icpIterations.size(), OdometryFramePyramidType::PYR_IMAGE);
-            newFrame.setPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
         }
         MatType points, normals, colors;
-        newFrame.getPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
-        newFrame.getPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
-        newFrame.getPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
 
         volume.raycast(pose, points, normals, colors);
-
-        newFrame.setPyramidAt(points, OdometryFramePyramidType::PYR_CLOUD, 0);
-        newFrame.setPyramidAt(normals, OdometryFramePyramidType::PYR_NORM,  0);
-        newFrame.setPyramidAt(colors, OdometryFramePyramidType::PYR_IMAGE, 0);
+        std::vector<MatType> pch(3);
+        split(points, pch);
+        newFrame = OdometryFrame(colors, pch[2], noArray(), normals);
     }
 
     renderFrame = newFrame;
@@ -352,9 +341,10 @@ void ColoredKinFuImpl<MatType>::render(OutputArray image) const
 {
     CV_TRACE_FUNCTION();
     MatType pts, nrm, rgb;
+    icp.prepareFrame(renderFrame);
     renderFrame.getPyramidAt(pts, OdometryFramePyramidType::PYR_CLOUD, 0);
     renderFrame.getPyramidAt(nrm, OdometryFramePyramidType::PYR_NORM, 0);
-    renderFrame.getPyramidAt(rgb, OdometryFramePyramidType::PYR_IMAGE, 0);
+    renderFrame.getImage(rgb);
 
     detail::renderPointsNormalsColors(pts, nrm, rgb, image);
 }

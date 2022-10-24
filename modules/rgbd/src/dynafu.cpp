@@ -315,8 +315,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     else
         depth = _depth;
 
-    OdometryFrame newFrame = icp.createOdometryFrame();
-    newFrame.setDepth(depth);
+    OdometryFrame newFrame(noArray(), depth);
 
     //icp->prepareFrameCache(newFrame, OdometryFrame::CACHE_SRC);
 
@@ -338,8 +337,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         renderSurface(_depthRender, _vertRender, _normRender, false);
         _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
-        OdometryFrame estdFrame = icp.createOdometryFrame();
-        estdFrame.setDepth(estdDepth);
+        OdometryFrame estdFrame(noArray(), estdDepth);
         //icp->setDepthFactor(1.f);
         //icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);
         //icp->setDepthFactor(params.depthFactor);
@@ -362,8 +360,8 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             renderSurface(_depthRender, _vertRender, _normRender);
             _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
-            estdFrame = icp.createOdometryFrame();
-            estdFrame.getDepth(estdDepth);
+            estdFrame = OdometryFrame(noArray(), estdDepth);
+            icp.prepareFrame(estdFrame);
             //estdFrame = OdometryFrame::create(noArray(), estdDepth, noArray(), noArray(), -1);
             //icp->setDepthFactor(1.f);
             //icp->prepareFrameCache(estdFrame, OdometryFrame::CACHE_SRC);

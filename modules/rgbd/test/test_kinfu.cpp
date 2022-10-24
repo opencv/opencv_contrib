@@ -326,7 +326,7 @@ void flyTest(bool hiDense, bool inequal, bool hashTsdf = false)
 
     double rvecThreshold = hiDense ? 0.01 : 0.02;
     ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
-    double poseThreshold = hiDense ? 0.1 : 0.2;
+    double poseThreshold = hiDense ? 0.11 : 0.2;
     ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
 }
 
