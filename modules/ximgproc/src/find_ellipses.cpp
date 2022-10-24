@@ -289,8 +289,6 @@ EllipseDetectorImpl::EllipseDetectorImpl() {
     _minScore = 0.7f;
     _minReliability = 0.5;
     _uNs = 16;
-
-    srand(unsigned(time(nullptr)));
 }
 
 void EllipseDetectorImpl::setParameters(float maxCenterDistance, float minScore,
