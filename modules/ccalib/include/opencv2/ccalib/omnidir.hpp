@@ -150,11 +150,11 @@ namespace omnidir
     @param xi The parameter xi for CMei's model.
     @param flags Flags indicates the rectification type,  RECTIFY_PERSPECTIVE, RECTIFY_CYLINDRICAL, RECTIFY_LONGLATI and RECTIFY_STEREOGRAPHIC
     @param Knew Camera matrix of the distorted image. If it is not assigned, it is just K.
-    @param new_size The new image size. By default, it is the size of distorted.
+    @param newSize The new image size. By default, it is the size of distorted.
     @param R Rotation matrix between the input and output images. By default, it is identity matrix.
     */
     CV_EXPORTS_W void undistortImage(InputArray distorted, OutputArray undistorted, InputArray K, InputArray D, InputArray xi, int flags,
-        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
+        InputArray Knew = cv::noArray(), const Size& newSize = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
 
     /** @brief Estimates new camera intrinsic matrix for undistortion or rectification. Function is optimized for perspective (RECTIFY_PERSPECTIVE)
        and spherical (RECTIFY_LONGLATI) projection. For all other projection types supported by the omnidirectional model the new camera matrix is
@@ -208,40 +208,40 @@ namespace omnidir
 
     /** @brief Perform omnidirectional camera calibration, the default depth of outputs is CV_64F.
 
-    @param objectPoints Vector of vector of Vec3f object points in world (pattern) coordinate.
+    @param objectPoints Vector of vectors of Vec3f holding object points in the object (pattern) coordinate system.
     It also can be vector of Mat with size 1xN/Nx1 and type CV_32FC3. Data with depth of 64_F is also acceptable.
-    @param imagePoints Vector of vector of Vec2f corresponding image points of objectPoints. It must be the same
-    size and the same type with objectPoints.
+    @param imagePoints Vector of vectors of Vec2f holding image points corresponding to the objectPoints.
+    Must be the same size and the same type as objectPoints.
     @param size Image size of calibration images.
     @param K Output calibrated camera matrix.
     @param xi Output parameter xi for CMei's model
     @param D Output distortion parameters \f$(k_1, k_2, p_1, p_2)\f$
-    @param rvecs Output rotations for each calibration images
-    @param tvecs Output translation for each calibration images
+    @param rvecs Output rotation for each calibration image
+    @param tvecs Output translation for each calibration image
     @param flags The flags that control calibrate
     @param criteria Termination criteria for optimization
-    @param idx Indices of images that pass initialization, which are really used in calibration. So the size of rvecs is the
-    same as idx.total().
+    @param idx Indices of images that pass initialization and which are really used for calibration. So the size of rvecs
+    and tvecs is the same as idx.total().
     */
     CV_EXPORTS_W double calibrate(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, Size size,
         InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
         int flags, TermCriteria criteria, OutputArray idx=noArray());
 
     /** @brief Stereo calibration for omnidirectional camera model. It computes the intrinsic parameters for two
-    cameras and the extrinsic parameters between two cameras. The default depth of outputs is CV_64F.
+    cameras and the extrinsic parameters between the two cameras. The default depth of outputs is CV_64F.
 
-    @param objectPoints Object points in world (pattern) coordinate. Its type is vector<vector<Vec3f> >.
+    @param objectPoints Object points in the object (pattern) coordinate sytem. Its type is vector<vector<Vec3f> >.
     It also can be vector of Mat with size 1xN/Nx1 and type CV_32FC3. Data with depth of 64_F is also acceptable.
-    @param imagePoints1 The corresponding image points of the first camera, with type vector<vector<Vec2f> >.
+    @param imagePoints1 The image points of the first camera corresponding to objectPoints, with type vector<vector<Vec2f> >.
     It must be the same size and the same type as objectPoints.
-    @param imagePoints2 The corresponding image points of the second camera, with type vector<vector<Vec2f> >.
+    @param imagePoints2 The image points of the second camera corresponding to objectPoints, with type vector<vector<Vec2f> >.
     It must be the same size and the same type as objectPoints.
     @param imageSize1 Image size of calibration images of the first camera.
     @param imageSize2 Image size of calibration images of the second camera.
     @param K1 Output camera matrix for the first camera.
     @param xi1 Output parameter xi of Mei's model for the first camera
     @param D1 Output distortion parameters \f$(k_1, k_2, p_1, p_2)\f$ for the first camera
-    @param K2 Output camera matrix for the first camera.
+    @param K2 Output camera matrix for the second camera.
     @param xi2 Output parameter xi of CMei's model for the second camera
     @param D2 Output distortion parameters \f$(k_1, k_2, p_1, p_2)\f$ for the second camera
     @param rvec Output rotation between the first and second camera
@@ -250,8 +250,8 @@ namespace omnidir
     @param tvecsL Output translation for each image of the first camera
     @param flags The flags that control stereoCalibrate
     @param criteria Termination criteria for optimization
-    @param idx Indices of image pairs that pass initialization, which are really used in calibration. So the size of rvecs is the
-    same as idx.total().
+    @param idx Indices of image pairs that pass initialization and which are really used for calibration. So the size of rvecsL
+    and tvecsL is the same as idx.total().
     @
     */
     CV_EXPORTS_W double stereoCalibrate(InputOutputArrayOfArrays objectPoints, InputOutputArrayOfArrays imagePoints1, InputOutputArrayOfArrays imagePoints2,
@@ -260,8 +260,8 @@ namespace omnidir
 
     /** @brief Stereo rectification for omnidirectional camera model. It computes the rectification rotations for two cameras
 
-    @param R Rotation between the first and second camera
-    @param T Translation between the first and second camera
+    @param R Rotation between the first and second camera (rotation of second camera into first one)
+    @param T Translation between the first and second camera (translation of second camera into first one)
     @param R1 Output 3x3 rotation matrix for the first camera
     @param R2 Output 3x3 rotation matrix for the second camera
     */
