@@ -482,6 +482,7 @@ CUDA_TEST_P(TransCode, H264ToH265)
             ASSERT_FALSE(frame.empty());
         }
     }
+    ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, TransCode, ALL_DEVICES);
@@ -562,6 +563,7 @@ CUDA_TEST_P(Write, Writer)
             ASSERT_FALSE(frame.empty());
         }
     }
+    ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
 #define DEVICE_SRC true, false
@@ -643,6 +645,7 @@ CUDA_TEST_P(EncoderParams, Writer)
             }
         }
     }
+    ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParams, ALL_DEVICES);
