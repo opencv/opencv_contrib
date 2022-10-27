@@ -66,35 +66,56 @@ using namespace cuda;  // Stream
 
 ////////////////////////////////// Video Encoding //////////////////////////////////
 
-/** @brief Codecs supported by Video writer, refer to Nvidia's GPU Support Matrix to confirm your GPU supports them.
-*/
-enum class CODEC_VW
+/** @brief Video codecs supported by cudacodec::VideoReader and cudacodec::VideoWriter.
+@note
+   -   Support will depend on your hardware, refer to the Nvidia Video Codec SDK Video Encode and Decode GPU Support Matrix for details.
+ */
+enum Codec
 {
-    H264 = 0,
-    HEVC = 1,
-    NumCodecs = 2
+    MPEG1 = 0,
+    MPEG2,
+    MPEG4,
+    VC1,
+    H264,
+    JPEG,
+    H264_SVC,
+    H264_MVC,
+    HEVC,
+    VP8,
+    VP9,
+    AV1,
+    NumCodecs,
+
+    Uncompressed_YUV420 = (('I' << 24) | ('Y' << 16) | ('U' << 8) | ('V')),   //!< Y,U,V (4:2:0)
+    Uncompressed_YV12 = (('Y' << 24) | ('V' << 16) | ('1' << 8) | ('2')),   //!< Y,V,U (4:2:0)
+    Uncompressed_NV12 = (('N' << 24) | ('V' << 16) | ('1' << 8) | ('2')),   //!< Y,UV  (4:2:0)
+    Uncompressed_YUYV = (('Y' << 24) | ('U' << 16) | ('Y' << 8) | ('V')),   //!< YUYV/YUY2 (4:2:2)
+    Uncompressed_UYVY = (('U' << 24) | ('Y' << 16) | ('V' << 8) | ('Y'))    //!< UYVY (4:2:2)
 };
 
-/** @brief Video writer color formats.
+/** @brief ColorFormat for the frame returned by VideoReader::nextFrame()/VideoReader::retrieve() or used to initialize a VideoWriter.
 */
-enum COLOR_FORMAT_VW {
+enum class ColorFormat {
     UNDEFINED = 0,
-    BGR = 1, //!< Default OpenCV color format.
-    RGB = 2,
-    BGRA = 3,
-    RGBA = 4,
-    GRAY = 5,
+    BGRA = 1, //!< OpenCV color format, can be used with both VideoReader and VideoWriter.
+    BGR = 2, //!< OpenCV color format, can be used with both VideoReader and VideoWriter.
+    GRAY = 3, //!< OpenCV color format, can be used with both VideoReader and VideoWriter.
+    NV_NV12 = 4, //!< Nvidia color format - equivalent to YUV - Semi-Planar YUV [Y plane followed by interleaved UV plane], can be used with both VideoReader and VideoWriter.
 
-    NV_NV12 = 6, //!< Nvidia Buffer Format - Semi-Planar YUV [Y plane followed by interleaved UV plane].
-    NV_YV12 = 7, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by V and U planes].
-    NV_IYUV = 8, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes].
-    NV_YUV444 = 9, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes].
-    NV_AYUV = 10 //!< Nvidia Buffer Format - 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits.
+    RGB = 5, //!< OpenCV color format, can only be used with VideoWriter.
+    RGBA = 6, //!< OpenCV color format, can only be used with VideoWriter.
+    NV_YV12 = 8, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by V and U planes], use with VideoReader, can only be used with VideoWriter.
+    NV_IYUV = 9, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes], use with VideoReader, can only be used with VideoWriter.
+    NV_YUV444 = 10, //!< Nvidia Buffer Format - Planar YUV [Y plane followed by U and V planes], use with VideoReader, can only be used with VideoWriter.
+    NV_AYUV = 11, //!< Nvidia Buffer Format - 8 bit Packed A8Y8U8V8. This is a word-ordered format where a pixel is represented by a 32-bit word with V in the lowest 8 bits, U in the next 8 bits, Y in the 8 bits after that and A in the highest 8 bits, can only be used with VideoWriter.
+#ifndef CV_DOXYGEN
+    PROP_NOT_SUPPORTED
+#endif
 };
 
 /** @brief Rate Control Modes.
 */
-enum ENC_PARAMS_RC_MODE {
+enum EncodeParamsRcMode {
     ENC_PARAMS_RC_CONSTQP = 0x0, //!< Constant QP mode.
     ENC_PARAMS_RC_VBR = 0x1, //!< Variable bitrate mode.
     ENC_PARAMS_RC_CBR = 0x2 //!< Constant bitrate mode.
@@ -102,7 +123,7 @@ enum ENC_PARAMS_RC_MODE {
 
 /** @brief Multi Pass Encoding.
 */
-enum ENC_MULTI_PASS
+enum EncodeMultiPass
 {
     ENC_MULTI_PASS_DISABLED = 0x0, //!< Single Pass.
     ENC_TWO_PASS_QUARTER_RESOLUTION = 0x1, //!< Two Pass encoding is enabled where first Pass is quarter resolution.
@@ -112,7 +133,7 @@ enum ENC_MULTI_PASS
 
 /** @brief Supported Encoder Profiles.
 */
-enum ENC_PROFILE {
+enum EncodeProfile {
     ENC_CODEC_PROFILE_AUTOSELECT = 0,
     ENC_H264_PROFILE_BASELINE = 1,
     ENC_H264_PROFILE_MAIN = 2,
@@ -128,7 +149,7 @@ enum ENC_PROFILE {
 
 /** @brief Nvidia Encoding Presets. Performance degrades and quality improves as we move from P1 to P7.
 */
-enum ENC_PRESET {
+enum EncodePreset {
     ENC_PRESET_P1 = 1,
     ENC_PRESET_P2 = 2,
     ENC_PRESET_P3 = 3,
@@ -140,7 +161,7 @@ enum ENC_PRESET {
 
 /** @brief Tuning information.
 */
-enum ENC_TUNING_INFO {
+enum EncodeTuningInfo {
     ENC_TUNING_INFO_UNDEFINED = 0, //!< Undefined tuningInfo. Invalid value for encoding.
     ENC_TUNING_INFO_HIGH_QUALITY = 1, //!< Tune presets for latency tolerant encoding.
     ENC_TUNING_INFO_LOW_LATENCY = 2, //!< Tune presets for low latency streaming.
@@ -151,7 +172,7 @@ enum ENC_TUNING_INFO {
 
 /** Quantization Parameter for each type of frame when using ENC_PARAMS_RC_MODE::ENC_PARAMS_RC_CONSTQP.
 */
-struct CV_EXPORTS_W_SIMPLE ENC_QP
+struct CV_EXPORTS_W_SIMPLE EncodeQp
 {
     CV_PROP_RW uint32_t qpInterP; //!< Specifies QP value for P-frame.
     CV_PROP_RW uint32_t qpInterB; //!< Specifies QP value for B-frame.
@@ -164,12 +185,12 @@ struct CV_EXPORTS_W_SIMPLE EncoderParams
 {
 public:
     CV_WRAP EncoderParams();
-    CV_PROP_RW ENC_PRESET nvPreset;
-    CV_PROP_RW ENC_TUNING_INFO tuningInfo;
-    CV_PROP_RW ENC_PROFILE encodingProfile;
-    CV_PROP_RW ENC_PARAMS_RC_MODE rateControlMode;
-    CV_PROP_RW ENC_MULTI_PASS multiPassEncoding;
-    CV_PROP_RW ENC_QP constQp; //!< QP's for ENC_PARAMS_RC_CONSTQP.
+    CV_PROP_RW EncodePreset nvPreset;
+    CV_PROP_RW EncodeTuningInfo tuningInfo;
+    CV_PROP_RW EncodeProfile encodingProfile;
+    CV_PROP_RW EncodeParamsRcMode rateControlMode;
+    CV_PROP_RW EncodeMultiPass multiPassEncoding;
+    CV_PROP_RW EncodeQp constQp; //!< QP's for ENC_PARAMS_RC_CONSTQP.
     CV_PROP_RW int averageBitRate; //!< target bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CBR.
     CV_PROP_RW int maxBitRate; //!< upper bound on bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CONSTQP.
     CV_PROP_RW uint8_t targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with ENC_PARAMS_RC_VBR.
@@ -234,8 +255,8 @@ public:
 @param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback. Required for working with the encoded video stream.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec = CODEC_VW::H264, const double fps = 25.0,
-    const COLOR_FORMAT_VW colorFormat = BGR, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const Codec codec = Codec::H264, const double fps = 25.0,
+    const ColorFormat colorFormat = ColorFormat::BGR, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -248,35 +269,10 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 @param encoderCallback Callbacks for video encoder. See cudacodec::EncoderCallback. Required for working with the encoded video stream.
 @param stream Stream for frame pre-processing.
 */
-CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec, const double fps,  const COLOR_FORMAT_VW colorFormat,
+CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const Codec codec, const double fps,  const ColorFormat colorFormat,
     const EncoderParams& params, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
 
 ////////////////////////////////// Video Decoding //////////////////////////////////////////
-
-/** @brief Video codecs supported by cudacodec::VideoReader.
- */
-enum Codec
-{
-    MPEG1 = 0,
-    MPEG2,
-    MPEG4,
-    VC1,
-    H264,
-    JPEG,
-    H264_SVC,
-    H264_MVC,
-    HEVC,
-    VP8,
-    VP9,
-    AV1,
-    NumCodecs,
-
-    Uncompressed_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   //!< Y,U,V (4:2:0)
-    Uncompressed_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   //!< Y,V,U (4:2:0)
-    Uncompressed_NV12   = (('N'<<24)|('V'<<16)|('1'<<8)|('2')),   //!< Y,UV  (4:2:0)
-    Uncompressed_YUYV   = (('Y'<<24)|('U'<<16)|('Y'<<8)|('V')),   //!< YUYV/YUY2 (4:2:2)
-    Uncompressed_UYVY   = (('U'<<24)|('Y'<<16)|('V'<<8)|('Y'))    //!< UYVY (4:2:2)
-};
 
 /** @brief Chroma formats supported by cudacodec::VideoReader.
  */
@@ -339,18 +335,6 @@ enum class VideoReaderProps {
     PROP_COLOR_FORMAT = 6, //!< Set the ColorFormat of the decoded frame.  This can be changed before every call to nextFrame() and retrieve().
     PROP_UDP_SOURCE = 7, //!< Status of VideoReaderInitParams::udpSource initialization.
     PROP_ALLOW_FRAME_DROP = 8, //!< Status of VideoReaderInitParams::allowFrameDrop initialization.
-#ifndef CV_DOXYGEN
-    PROP_NOT_SUPPORTED
-#endif
-};
-
-/** @brief ColorFormat for the frame returned by nextFrame()/retrieve().
-*/
-enum class ColorFormat {
-    BGRA = 1,
-    BGR = 2,
-    GRAY = 3,
-    YUV = 4,
 #ifndef CV_DOXYGEN
     PROP_NOT_SUPPORTED
 #endif
@@ -451,8 +435,9 @@ public:
     /** @brief Set the desired ColorFormat for the frame returned by nextFrame()/retrieve().
 
     @param colorFormat Value of the ColorFormat.
+    @return `true` unless the colorFormat is not supported.
      */
-    CV_WRAP virtual void set(const ColorFormat colorFormat) = 0;
+    CV_WRAP virtual bool set(const ColorFormat colorFormat) = 0;
 
     /** @brief Returns the specified VideoReader property
 

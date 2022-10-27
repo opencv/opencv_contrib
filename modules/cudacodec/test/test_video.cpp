@@ -192,7 +192,7 @@ CUDA_TEST_P(Scaling, Reader)
     GpuMat frameOr;
     {
         cv::Ptr<cv::cudacodec::VideoReader> readerGs = cv::cudacodec::createVideoReader(inputFile);
-        readerGs->set(cudacodec::ColorFormat::GRAY);
+        ASSERT_TRUE(readerGs->set(cudacodec::ColorFormat::GRAY));
         ASSERT_TRUE(readerGs->nextFrame(frameOr));
     }
 
@@ -203,7 +203,7 @@ CUDA_TEST_P(Scaling, Reader)
     params.targetRoi = Rect(static_cast<int>(params.targetSz.width * targetRoiIn.x), static_cast<int>(params.targetSz.height * targetRoiIn.y),
         static_cast<int>(params.targetSz.width * targetRoiIn.width), static_cast<int>(params.targetSz.height * targetRoiIn.height));
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
-    reader->set(cudacodec::ColorFormat::GRAY);
+    ASSERT_TRUE(reader->set(cudacodec::ColorFormat::GRAY));
     GpuMat frame;
     ASSERT_TRUE(reader->nextFrame(frame));
     const cudacodec::FormatInfo format = reader->format();
@@ -240,24 +240,25 @@ CUDA_TEST_P(Video, Reader)
         {cudacodec::ColorFormat::GRAY,1},
         {cudacodec::ColorFormat::BGR,3},
         {cudacodec::ColorFormat::BGRA,4},
-        {cudacodec::ColorFormat::YUV,1}
+        {cudacodec::ColorFormat::NV_NV12,1}
     };
 
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    ASSERT_FALSE(reader->set(cudacodec::ColorFormat::RGB));
     cv::cudacodec::FormatInfo fmt = reader->format();
     cv::cuda::GpuMat frame;
     for (int i = 0; i < 10; i++)
     {
         // request a different colour format for each frame
         const std::pair< cudacodec::ColorFormat, int>& formatToChannels = formatsToChannels[i % formatsToChannels.size()];
-        reader->set(formatToChannels.first);
+        ASSERT_TRUE(reader->set(formatToChannels.first));
         double colorFormat;
         ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormat) && static_cast<cudacodec::ColorFormat>(colorFormat) == formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
         if(!fmt.valid)
             fmt = reader->format();
-        const int height = formatToChannels.first == cudacodec::ColorFormat::YUV ? static_cast<int>(1.5 * fmt.height) : fmt.height;
+        const int height = formatToChannels.first == cudacodec::ColorFormat::NV_NV12 ? static_cast<int>(1.5 * fmt.height) : fmt.height;
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
         ASSERT_TRUE(frame.channels() == formatToChannels.second);
@@ -439,9 +440,9 @@ struct TransCode : testing::TestWithParam<cv::cuda::DeviceInfo>
 CUDA_TEST_P(TransCode, H264ToH265)
 {
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.h264";
-    constexpr cv::cudacodec::COLOR_FORMAT_VW colorFormat = cv::cudacodec::COLOR_FORMAT_VW::NV_NV12;
+    constexpr cv::cudacodec::ColorFormat colorFormat = cv::cudacodec::ColorFormat::NV_NV12;
     constexpr double fps = 25;
-    const cudacodec::CODEC_VW codec = cudacodec::CODEC_VW::HEVC;
+    const cudacodec::Codec codec = cudacodec::Codec::HEVC;
     const std::string ext = ".h265";
     const std::string outputFile = cv::tempfile(ext.c_str());
     constexpr int nFrames = 5;
@@ -449,7 +450,7 @@ CUDA_TEST_P(TransCode, H264ToH265)
     {
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
         cv::cudacodec::FormatInfo fmt = reader->format();
-        reader->set(cudacodec::ColorFormat::YUV);
+        reader->set(cudacodec::ColorFormat::NV_NV12);
         cv::Ptr<cv::cudacodec::VideoWriter> writer;
         cv::cuda::GpuMat frame;
         cv::cuda::Stream stream;
@@ -495,22 +496,22 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, TransCode, ALL_DEVICES);
 
 //==========================================================================
 
-void CvtColor(const Mat& in, Mat& out, const cudacodec::COLOR_FORMAT_VW surfaceFormatCv) {
+void CvtColor(const Mat& in, Mat& out, const cudacodec::ColorFormat surfaceFormatCv) {
     switch (surfaceFormatCv) {
-    case(cudacodec::COLOR_FORMAT_VW::RGB):
+    case(cudacodec::ColorFormat::RGB):
         return cv::cvtColor(in, out, COLOR_BGR2RGB);
-    case(cudacodec::COLOR_FORMAT_VW::BGRA):
+    case(cudacodec::ColorFormat::BGRA):
         return cv::cvtColor(in, out, COLOR_BGR2BGRA);
-    case(cudacodec::COLOR_FORMAT_VW::RGBA):
+    case(cudacodec::ColorFormat::RGBA):
         return cv::cvtColor(in, out, COLOR_BGR2RGBA);
-    case(cudacodec::COLOR_FORMAT_VW::GRAY):
+    case(cudacodec::ColorFormat::GRAY):
         return cv::cvtColor(in, out, COLOR_BGR2GRAY);
     default:
         in.copyTo(out);
     }
 }
 
-PARAM_TEST_CASE(Write, cv::cuda::DeviceInfo, bool, cv::cudacodec::CODEC_VW, double, cv::cudacodec::COLOR_FORMAT_VW)
+PARAM_TEST_CASE(Write, cv::cuda::DeviceInfo, bool, cv::cudacodec::Codec, double, cv::cudacodec::ColorFormat)
 {
 };
 
@@ -519,10 +520,10 @@ CUDA_TEST_P(Write, Writer)
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
     const bool deviceSrc = GET_PARAM(1);
-    const cudacodec::CODEC_VW codec = GET_PARAM(2);
+    const cudacodec::Codec codec = GET_PARAM(2);
     const double fps = GET_PARAM(3);
-    const cv::cudacodec::COLOR_FORMAT_VW colorFormat = GET_PARAM(4);
-    const std::string ext = codec == cudacodec::CODEC_VW::H264 ? ".h264" : ".hevc";
+    const cv::cudacodec::ColorFormat colorFormat = GET_PARAM(4);
+    const std::string ext = codec == cudacodec::Codec::H264 ? ".h264" : ".hevc";
     const std::string outputFile = cv::tempfile(ext.c_str());
     constexpr int nFrames = 5;
     Size frameSz;
@@ -568,9 +569,9 @@ CUDA_TEST_P(Write, Writer)
 
 #define DEVICE_SRC true, false
 #define FPS 10, 29.7
-#define CODEC cv::cudacodec::CODEC_VW::H264, cv::cudacodec::CODEC_VW::HEVC
-#define COLOR_FORMAT cv::cudacodec::COLOR_FORMAT_VW::BGR, cv::cudacodec::COLOR_FORMAT_VW::RGB, cv::cudacodec::COLOR_FORMAT_VW::BGRA, \
-cv::cudacodec::COLOR_FORMAT_VW::RGBA, cv::cudacodec::COLOR_FORMAT_VW::GRAY
+#define CODEC cv::cudacodec::Codec::H264, cv::cudacodec::Codec::HEVC
+#define COLOR_FORMAT cv::cudacodec::ColorFormat::BGR, cv::cudacodec::ColorFormat::RGB, cv::cudacodec::ColorFormat::BGRA, \
+cv::cudacodec::ColorFormat::RGBA, cv::cudacodec::ColorFormat::GRAY
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Write, testing::Combine(ALL_DEVICES, testing::Values(DEVICE_SRC), testing::Values(CODEC), testing::Values(FPS),
     testing::Values(COLOR_FORMAT)));
 
@@ -584,11 +585,11 @@ struct EncoderParams : testing::TestWithParam<cv::cuda::DeviceInfo>
         devInfo = GetParam();
         cv::cuda::setDevice(devInfo.deviceID());
         // Fixed params for CBR test
-        params.nvPreset = cv::cudacodec::ENC_PRESET::ENC_PRESET_P7;
-        params.tuningInfo = cv::cudacodec::ENC_TUNING_INFO::ENC_TUNING_INFO_HIGH_QUALITY;
-        params.encodingProfile = cv::cudacodec::ENC_PROFILE::ENC_H264_PROFILE_MAIN;
-        params.rateControlMode = cv::cudacodec::ENC_PARAMS_RC_MODE::ENC_PARAMS_RC_CBR;
-        params.multiPassEncoding = cv::cudacodec::ENC_MULTI_PASS::ENC_TWO_PASS_FULL_RESOLUTION;
+        params.nvPreset = cv::cudacodec::EncodePreset::ENC_PRESET_P7;
+        params.tuningInfo = cv::cudacodec::EncodeTuningInfo::ENC_TUNING_INFO_HIGH_QUALITY;
+        params.encodingProfile = cv::cudacodec::EncodeProfile::ENC_H264_PROFILE_MAIN;
+        params.rateControlMode = cv::cudacodec::EncodeParamsRcMode::ENC_PARAMS_RC_CBR;
+        params.multiPassEncoding = cv::cudacodec::EncodeMultiPass::ENC_TWO_PASS_FULL_RESOLUTION;
         params.averageBitRate = 1000000;
         params.maxBitRate = 0;
         params.targetQuality = 0;
@@ -601,7 +602,7 @@ CUDA_TEST_P(EncoderParams, Writer)
 {
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
     constexpr double fps = 25.0;
-    constexpr cudacodec::CODEC_VW codec = cudacodec::CODEC_VW::H264;
+    constexpr cudacodec::Codec codec = cudacodec::Codec::H264;
     const std::string ext = ".h264";
     const std::string outputFile = cv::tempfile(ext.c_str());
     Size frameSz;
@@ -609,7 +610,7 @@ CUDA_TEST_P(EncoderParams, Writer)
     {
         cv::VideoCapture reader(inputFile);
         ASSERT_TRUE(reader.isOpened());
-        const cv::cudacodec::COLOR_FORMAT_VW colorFormat = cv::cudacodec::COLOR_FORMAT_VW::BGR;
+        const cv::cudacodec::ColorFormat colorFormat = cv::cudacodec::ColorFormat::BGR;
         cv::Ptr<cv::cudacodec::VideoWriter> writer;
         cv::Mat frame;
         cv::cuda::GpuMat dFrame;

@@ -48,17 +48,17 @@ using namespace cv::cuda;
 
 #if !defined(HAVE_NVCUVENC)
 
-Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const CODEC_VW, const double, const COLOR_FORMAT_VW, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
-Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const CODEC_VW, const double, const COLOR_FORMAT_VW, const EncoderParams&, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const Codec, const double, const ColorFormat, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cudacodec::VideoWriter> createVideoWriter(const String&, const Size, const Codec, const double, const ColorFormat, const EncoderParams&, const Ptr<EncoderCallback>, const cv::cuda::Stream&) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
 
 #else // !defined HAVE_NVCUVENC
 
-NV_ENC_BUFFER_FORMAT EncBufferFormat(const COLOR_FORMAT_VW colorFormat);
-int NChannels(const COLOR_FORMAT_VW colorFormat);
-GUID CodecGuid(const CODEC_VW codec);
+NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat);
+int NChannels(const ColorFormat colorFormat);
+GUID CodecGuid(const Codec codec);
 void FrameRate(const double fps, uint32_t& frameRateNum, uint32_t& frameRateDen);
-GUID EncodingProfileGuid(const ENC_PROFILE encodingProfile);
-GUID EncodingPresetGuid(const ENC_PRESET nvPreset);
+GUID EncodingProfileGuid(const EncodeProfile encodingProfile);
+GUID EncodingPresetGuid(const EncodePreset nvPreset);
 bool Equal(const GUID& g1, const GUID& g2);
 
 EncoderParams::EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
@@ -107,21 +107,21 @@ void RawVideoWriter::onEncoded(std::vector<std::vector<uint8_t>> vPacket) {
 class VideoWriterImpl : public VideoWriter
 {
 public:
-    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const CODEC_VW codec, const double fps,
-        const COLOR_FORMAT_VW colorFormat, const Stream& stream = Stream::Null());
-    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const CODEC_VW codec, const double fps,
-        const COLOR_FORMAT_VW colorFormat, const EncoderParams& encoderParams, const Stream& stream = Stream::Null());
+    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const Codec codec, const double fps,
+        const ColorFormat colorFormat, const Stream& stream = Stream::Null());
+    VideoWriterImpl(const Ptr<EncoderCallback>& videoWriter, const Size frameSize, const Codec codec, const double fps,
+        const ColorFormat colorFormat, const EncoderParams& encoderParams, const Stream& stream = Stream::Null());
     ~VideoWriterImpl();
     void write(InputArray frame);
     EncoderParams getEncoderParams() const;
     void release();
 private:
-    void Init(const CODEC_VW codec, const double fps, const Size frameSz);
+    void Init(const Codec codec, const double fps, const Size frameSz);
     void InitializeEncoder(const GUID codec, const double fps);
     void CopyToNvSurface(const InputArray src);
 
     Ptr<EncoderCallback> encoderCallback;
-    COLOR_FORMAT_VW colorFormat = COLOR_FORMAT_VW::UNDEFINED;
+    ColorFormat colorFormat = ColorFormat::UNDEFINED;
     NV_ENC_BUFFER_FORMAT surfaceFormat = NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED;
     EncoderParams encoderParams;
     Stream stream = Stream::Null();
@@ -131,43 +131,43 @@ private:
     CUcontext cuContext;
 };
 
-NV_ENC_BUFFER_FORMAT EncBufferFormat(const COLOR_FORMAT_VW colorFormat) {
+NV_ENC_BUFFER_FORMAT EncBufferFormat(const ColorFormat colorFormat) {
     switch (colorFormat) {
-    case BGR: return NV_ENC_BUFFER_FORMAT_ARGB;
-    case RGB: return NV_ENC_BUFFER_FORMAT_ABGR;
-    case BGRA: return NV_ENC_BUFFER_FORMAT_ARGB;
-    case RGBA: return NV_ENC_BUFFER_FORMAT_ABGR;
-    case GRAY:
-    case NV_NV12: return NV_ENC_BUFFER_FORMAT_NV12;
-    case NV_YV12: return NV_ENC_BUFFER_FORMAT_YV12;
-    case NV_IYUV: return NV_ENC_BUFFER_FORMAT_IYUV;
-    case NV_YUV444: return NV_ENC_BUFFER_FORMAT_YUV444;
-    case NV_AYUV: return NV_ENC_BUFFER_FORMAT_AYUV;
+    case ColorFormat::BGR: return NV_ENC_BUFFER_FORMAT_ARGB;
+    case ColorFormat::RGB: return NV_ENC_BUFFER_FORMAT_ABGR;
+    case ColorFormat::BGRA: return NV_ENC_BUFFER_FORMAT_ARGB;
+    case ColorFormat::RGBA: return NV_ENC_BUFFER_FORMAT_ABGR;
+    case ColorFormat::GRAY:
+    case ColorFormat::NV_NV12: return NV_ENC_BUFFER_FORMAT_NV12;
+    case ColorFormat::NV_YV12: return NV_ENC_BUFFER_FORMAT_YV12;
+    case ColorFormat::NV_IYUV: return NV_ENC_BUFFER_FORMAT_IYUV;
+    case ColorFormat::NV_YUV444: return NV_ENC_BUFFER_FORMAT_YUV444;
+    case ColorFormat::NV_AYUV: return NV_ENC_BUFFER_FORMAT_AYUV;
     default: return NV_ENC_BUFFER_FORMAT_UNDEFINED;
     }
 }
 
-int NChannels(const COLOR_FORMAT_VW colorFormat) {
+int NChannels(const ColorFormat colorFormat) {
     switch (colorFormat) {
-    case BGR:
-    case RGB:
-    case NV_IYUV:
-    case NV_YUV444: return 3;
-    case RGBA:
-    case BGRA:
-    case NV_AYUV: return 4;
-    case GRAY:
-    case NV_NV12:
-    case NV_YV12: return 1;
+    case ColorFormat::BGR:
+    case ColorFormat::RGB:
+    case ColorFormat::NV_IYUV:
+    case ColorFormat::NV_YUV444: return 3;
+    case ColorFormat::RGBA:
+    case ColorFormat::BGRA:
+    case ColorFormat::NV_AYUV: return 4;
+    case ColorFormat::GRAY:
+    case ColorFormat::NV_NV12:
+    case ColorFormat::NV_YV12: return 1;
     default: return 0;
     }
 }
 
-VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, const Size frameSz, const CODEC_VW codec, const double fps,
-    const COLOR_FORMAT_VW colorFormat_, const EncoderParams& encoderParams_, const Stream& stream_) :
+VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, const Size frameSz, const Codec codec, const double fps,
+    const ColorFormat colorFormat_, const EncoderParams& encoderParams_, const Stream& stream_) :
     encoderCallback(encoderCallBack_), colorFormat(colorFormat_), encoderParams(encoderParams_), stream(stream_)
 {
-    CV_Assert(colorFormat != UNDEFINED);
+    CV_Assert(colorFormat != ColorFormat::UNDEFINED);
     surfaceFormat = EncBufferFormat(colorFormat);
     if (surfaceFormat == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
         String msg = cv::format("Unsupported input surface format: %i", colorFormat);
@@ -178,8 +178,8 @@ VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallBack_, c
     Init(codec, fps, frameSz);
 }
 
-VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallback, const Size frameSz, const CODEC_VW codec, const double fps,
-    const COLOR_FORMAT_VW colorFormat, const Stream& stream) :
+VideoWriterImpl::VideoWriterImpl(const Ptr<EncoderCallback>& encoderCallback, const Size frameSz, const Codec codec, const double fps,
+    const ColorFormat colorFormat, const Stream& stream) :
     VideoWriterImpl(encoderCallback, frameSz, codec, fps, colorFormat, EncoderParams(), stream)
 {
 }
@@ -194,10 +194,10 @@ VideoWriterImpl::~VideoWriterImpl() {
     release();
 }
 
-GUID CodecGuid(const CODEC_VW codec) {
+GUID CodecGuid(const Codec codec) {
     switch (codec) {
-    case CODEC_VW::H264: return NV_ENC_CODEC_H264_GUID;
-    case CODEC_VW::HEVC: return NV_ENC_CODEC_HEVC_GUID;
+    case Codec::H264: return NV_ENC_CODEC_H264_GUID;
+    case Codec::HEVC: return NV_ENC_CODEC_HEVC_GUID;
     default: break;
     }
     std::string msg = "Unknown codec: cudacodec::VideoWriter only supports CODEC_VW::H264 and CODEC_VW::HEVC";
@@ -205,7 +205,7 @@ GUID CodecGuid(const CODEC_VW codec) {
     CV_Error(Error::StsUnsupportedFormat, msg);
 }
 
-void VideoWriterImpl::Init(const CODEC_VW codec, const double fps, const Size frameSz) {
+void VideoWriterImpl::Init(const Codec codec, const double fps, const Size frameSz) {
     // init context
     GpuMat temp(1, 1, CV_8UC1);
     temp.release();
@@ -241,7 +241,7 @@ void FrameRate(const double fps, uint32_t& frameRateNum, uint32_t& frameRateDen)
     frameRateDen = frame_rate_base;
 }
 
-GUID EncodingProfileGuid(const ENC_PROFILE encodingProfile) {
+GUID EncodingProfileGuid(const EncodeProfile encodingProfile) {
     switch (encodingProfile) {
     case(ENC_CODEC_PROFILE_AUTOSELECT): return NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID;
     case(ENC_H264_PROFILE_BASELINE): return NV_ENC_H264_PROFILE_BASELINE_GUID;
@@ -261,7 +261,7 @@ GUID EncodingProfileGuid(const ENC_PROFILE encodingProfile) {
     CV_Error(Error::StsUnsupportedFormat, msg);
 }
 
-GUID EncodingPresetGuid(const ENC_PRESET nvPreset) {
+GUID EncodingPresetGuid(const EncodePreset nvPreset) {
     switch (nvPreset) {
     case ENC_PRESET_P1: return NV_ENC_PRESET_P1_GUID;
     case ENC_PRESET_P2: return NV_ENC_PRESET_P2_GUID;
@@ -306,8 +306,8 @@ void VideoWriterImpl::InitializeEncoder(const GUID codec, const double fps)
     pEnc->CreateEncoder(&initializeParams);
 }
 
-inline bool CvFormat(const COLOR_FORMAT_VW cf) {
-    if (cf == BGR || cf == RGB || cf == BGRA || cf == RGBA || cf == GRAY)
+inline bool CvFormat(const ColorFormat cf) {
+    if (cf == ColorFormat::BGR || cf == ColorFormat::RGB || cf == ColorFormat::BGRA || cf == ColorFormat::RGBA || cf == ColorFormat::GRAY)
         return true;
     return false;
 }
@@ -319,7 +319,7 @@ void VideoWriterImpl::CopyToNvSurface(const InputArray src)
     if (CvFormat(colorFormat))
         CV_Assert(src.size() == Size(pEnc->GetEncodeWidth(), pEnc->GetEncodeHeight()));
     Npp8u* dst = (Npp8u*)encoderInputFrame->inputPtr;
-    if (colorFormat == COLOR_FORMAT_VW::BGR || colorFormat == COLOR_FORMAT_VW::RGB) {
+    if (colorFormat == ColorFormat::BGR || colorFormat == ColorFormat::RGB) {
         GpuMat srcDevice;
         if (src.isGpuMat())
             srcDevice = src.getGpuMat();
@@ -329,7 +329,7 @@ void VideoWriterImpl::CopyToNvSurface(const InputArray src)
             else
                 srcDevice.upload(src);
         }
-        if (colorFormat == COLOR_FORMAT_VW::BGR) {
+        if (colorFormat == ColorFormat::BGR) {
             GpuMat dstGpuMat(pEnc->GetEncodeHeight(), pEnc->GetEncodeWidth(), CV_8UC4, dst, encoderInputFrame->pitch);
             cuda::cvtColor(srcDevice, dstGpuMat, COLOR_BGR2BGRA, 0, stream);
         }
@@ -338,7 +338,7 @@ void VideoWriterImpl::CopyToNvSurface(const InputArray src)
             cuda::cvtColor(srcDevice, dstGpuMat, COLOR_RGB2RGBA, 0, stream);
         }
     }
-    else if (colorFormat == COLOR_FORMAT_VW::GRAY) {
+    else if (colorFormat == ColorFormat::GRAY) {
         const cudaMemcpyKind memcpyKind = src.isGpuMat() ? cudaMemcpyDeviceToDevice : cudaMemcpyHostToDevice;
         const void* srcPtr = src.isGpuMat() ? src.getGpuMat().data : src.getMat().data;
         const size_t srcPitch = src.isGpuMat() ? src.getGpuMat().step : src.getMat().step;
@@ -374,14 +374,14 @@ EncoderParams VideoWriterImpl::getEncoderParams() const {
     return encoderParams;
 };
 
-Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec, const double fps, const COLOR_FORMAT_VW colorFormat,
+Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const Codec codec, const double fps, const ColorFormat colorFormat,
     Ptr<EncoderCallback> encoderCallback, const Stream& stream)
 {
     encoderCallback = encoderCallback ? encoderCallback : new RawVideoWriter(fileName);
     return makePtr<VideoWriterImpl>(encoderCallback, frameSize, codec, fps, colorFormat, stream);
 }
 
-Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const CODEC_VW codec, const double fps, const COLOR_FORMAT_VW colorFormat,
+Ptr<VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const Codec codec, const double fps, const ColorFormat colorFormat,
     const EncoderParams& params, Ptr<EncoderCallback> encoderCallback, const Stream& stream)
 {
     encoderCallback = encoderCallback ? encoderCallback : new RawVideoWriter(fileName);

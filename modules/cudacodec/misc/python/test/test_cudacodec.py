@@ -85,11 +85,11 @@ class cudacodec_test(NewOpenCVTests):
             encoder_params_in.gopLength = 10
             stream = cv.cuda.Stream()
             sz = (1920,1080)
-            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.VideoWriterCodec_H264, 30, cv.cudacodec.ColorFormat_BGR,
-                                                    encoder_params_in, stream)
+            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.H264, 30, cv.cudacodec.ColorFormat_BGR,
+                                                    encoder_params_in, stream=stream)
             blankFrameIn = cv.cuda.GpuMat(sz,cv.CV_8UC3)
             writer.write(blankFrameIn)
-            writer.close()
+            writer.release()
             encoder_params_out = writer.getEncoderParams()
             self.assert_true(encoder_params_in.gopLength == encoder_params_out.gopLength)
             cap = cv.VideoCapture(fname,cv.CAP_FFMPEG)
