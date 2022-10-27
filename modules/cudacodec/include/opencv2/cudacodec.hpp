@@ -93,7 +93,7 @@ enum Codec
     Uncompressed_UYVY = (('U' << 24) | ('Y' << 16) | ('V' << 8) | ('Y'))    //!< UYVY (4:2:2)
 };
 
-/** @brief ColorFormat for the frame returned by VideoReader::nextFrame()/VideoReader::retrieve() or used to initialize a VideoWriter.
+/** @brief ColorFormat for the frame returned by VideoReader::nextFrame() and VideoReader::retrieve() or used to initialize a VideoWriter.
 */
 enum class ColorFormat {
     UNDEFINED = 0,
