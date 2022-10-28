@@ -1,6 +1,7 @@
 CXX      := g++
 CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -march=native -flto
 LDFLAGS  := -L/opt/local/lib -flto
+LIBS     := -lnanovg
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 
 DESTDIR := /
 PREFIX := /usr/local
@@ -31,11 +32,11 @@ clean: dirs
 
 export LDFLAGS
 export CXXFLAGS
+export LIBS
 
 dirs:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/camera/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-
 
 debian-release:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} release

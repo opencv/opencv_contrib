@@ -1,5 +1,5 @@
-#ifndef SRC_TETRA_SUBSYSTEMS_HPP_
-#define SRC_TETRA_SUBSYSTEMS_HPP_
+#ifndef SRC_SUBSYSTEMS_HPP_
+#define SRC_SUBSYSTEMS_HPP_
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -16,10 +16,16 @@
 #include <X11/Xutil.h>
 #include <GL/glew.h>
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <GL/gl.h>
+#include "nanovg.h"
+#define NANOVG_GL3_IMPLEMENTATION
+#include "nanovg_gl.h"
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
+
 
 using std::cout;
 using std::cerr;
@@ -53,12 +59,12 @@ void eglCheckError(const std::filesystem::path &file, unsigned int line, const c
 
 namespace va {
 //code in the kb::va namespace adapted from https://github.com/opencv/opencv/blob/4.x/samples/va_intel/display.cpp.inc
+cv::ocl::OpenCLExecutionContext context;
+VADisplay display = NULL;
+bool initialized = false;
 
 bool open_display();
 void close_display();
-
-VADisplay display = NULL;
-bool initialized = false;
 
 #define VA_INTEL_PCI_DIR "/sys/bus/pci/devices"
 #define VA_INTEL_DRI_DIR "/dev/dri/"
@@ -187,7 +193,7 @@ static bool open_device_intel() {
             drmfd = open(nodes.path(i), O_RDWR);
             if (drmfd >= 0) {
                 display = vaGetDisplayDRM(drmfd);
-                vaSetInfoCallback(display,nullptr,nullptr);
+                vaSetInfoCallback(display, nullptr, nullptr);
                 if (display)
                     return true;
                 close(drmfd);
@@ -206,7 +212,7 @@ static bool open_device_generic() {
         drmfd = open(device_paths[i], O_RDWR);
         if (drmfd >= 0) {
             display = vaGetDisplayDRM(drmfd);
-            vaSetInfoCallback(display,nullptr,nullptr);
+            vaSetInfoCallback(display, nullptr, nullptr);
             if (display)
                 return true;
             close(drmfd);
@@ -220,7 +226,6 @@ bool open_display() {
     if (!initialized) {
         drmfd = -1;
         display = 0;
-
 
         if (open_device_intel() || open_device_generic()) {
             int majorVersion = 0, minorVersion = 0;
@@ -271,13 +276,15 @@ void check_if_YUV420_available() {
         throw std::runtime_error("Desired YUV420 RT format not found");
 }
 
-void init_va() {
+void init() {
     if (!va::open_display())
         throw std::runtime_error("Failed to open VA display for CL-VA interoperability");
 
     va::check_if_YUV420_available();
 
     cv::va_intel::ocl::initializeContextFromVA(va::display, true);
+
+    va::context = cv::ocl::OpenCLExecutionContext::getCurrent();
 }
 
 std::string get_info() {
@@ -285,15 +292,27 @@ std::string get_info() {
     ss << VA_VERSION_S << " (" << vaQueryVendorString(display) << ")";
     return ss.str();
 }
+
+void bind() {
+    context.bind();
+}
 } // namespace va
 
 namespace x11 {
-Display* xdisplay;
+Display *xdisplay;
 Window xroot;
 Window xwin;
 Atom wmDeleteMessage;
 
 bool initialized = false;
+
+std::pair<unsigned int, unsigned int> get_window_size() {
+    std::pair<unsigned int, unsigned int> ret;
+    int x, y;
+    unsigned int border, depth;
+    XGetGeometry(xdisplay, xwin, &xroot, &x, &y, &ret.first, &ret.second, &border, &depth);
+    return ret;
+}
 
 Display* get_x11_display() {
     return xdisplay;
@@ -308,27 +327,25 @@ bool is_initialized() {
 }
 
 bool window_closed() {
-    if(XPending(xdisplay) == 0)
+    if (XPending(xdisplay) == 0)
         return false;
 
     XEvent event;
     XNextEvent(xdisplay, &event);
 
-    switch (event.type)
-    {
-        case ClientMessage:
-            if (event.xclient.data.l[0] == static_cast<long int>(wmDeleteMessage))
-                return true;
-            break;
+    switch (event.type) {
+    case ClientMessage:
+        if (event.xclient.data.l[0] == static_cast<long int>(wmDeleteMessage))
+            return true;
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
     return false;
 }
 
-
-void init_x11() {
+void init() {
     xdisplay = XOpenDisplay(nullptr);
     if (xdisplay == nullptr) {
         cerr << "Unable to open X11 display" << endl;
@@ -346,23 +363,54 @@ void init_x11() {
     XChangeWindowAttributes(xdisplay, xwin, CWOverrideRedirect, &xattr);
 
     int one = 1;
-     XChangeProperty(
-        xdisplay, xwin,
-        XInternAtom ( xdisplay, "_HILDON_NON_COMPOSITED_WINDOW", False ),
-        XA_INTEGER,  32,  PropModeReplace,
-        (unsigned char*) &one,  1);
+    XChangeProperty(xdisplay, xwin, XInternAtom(xdisplay, "_HILDON_NON_COMPOSITED_WINDOW", False),
+    XA_INTEGER, 32, PropModeReplace, (unsigned char*) &one, 1);
 
-     XWMHints hints;
-       hints.input = True;
-       hints.flags = InputHint;
-       XSetWMHints(xdisplay, xwin, &hints);
+    XWMHints hints;
+    hints.input = True;
+    hints.flags = InputHint;
+    XSetWMHints(xdisplay, xwin, &hints);
 
     XMapWindow(xdisplay, xwin);
-    XStoreName(xdisplay, xwin, "tetra-demo");
+    XStoreName(xdisplay, xwin, "nanovg-demo");
     wmDeleteMessage = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(xdisplay, xwin, &wmDeleteMessage, 1);
+    XSelectInput(xdisplay, xwin, ButtonPressMask | Button1MotionMask );
 
     initialized = true;
+}
+
+enum EventState {
+    NONE,
+    PRESS,
+    RELEASE,
+    MOTION
+};
+
+std::pair<EventState,cv::Point> consume_event() {
+    XEvent event;
+    EventState state;
+    int revert_to;
+    XGetInputFocus(xdisplay, &xwin, &revert_to);
+    int x = 0, y = 0;
+    if (XEventsQueued(xdisplay, QueuedAlready) > 0) {
+        XNextEvent(xdisplay, &event);
+        switch (event.type) {
+
+        case ButtonPress:
+            x = event.xmotion.x;
+            y = event.xmotion.y;
+            state = PRESS;
+            break;
+        case MotionNotify:
+            x = event.xmotion.x;
+            y = event.xmotion.y;
+            state = MOTION;
+            break;
+        }
+    }
+
+    return {state,{x,y}};
 }
 }
 
@@ -372,112 +420,112 @@ EGLDisplay display;
 EGLSurface surface;
 EGLContext context;
 
-void debugMessageCallback(GLenum source, GLenum type, GLuint id,
-                            GLenum severity, GLsizei length,
-                            const GLchar *msg, const void *data)
-{
+void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *msg, const void *data) {
     std::string _source;
     std::string _type;
     std::string _severity;
 
     switch (source) {
-        case GL_DEBUG_SOURCE_API:
+    case GL_DEBUG_SOURCE_API:
         _source = "API";
         break;
 
-        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
         _source = "WINDOW SYSTEM";
         break;
 
-        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+    case GL_DEBUG_SOURCE_SHADER_COMPILER:
         _source = "SHADER COMPILER";
         break;
 
-        case GL_DEBUG_SOURCE_THIRD_PARTY:
+    case GL_DEBUG_SOURCE_THIRD_PARTY:
         _source = "THIRD PARTY";
         break;
 
-        case GL_DEBUG_SOURCE_APPLICATION:
+    case GL_DEBUG_SOURCE_APPLICATION:
         _source = "APPLICATION";
         break;
 
-        case GL_DEBUG_SOURCE_OTHER:
+    case GL_DEBUG_SOURCE_OTHER:
         _source = "UNKNOWN";
         break;
 
-        default:
+    default:
         _source = "UNKNOWN";
         break;
     }
 
     switch (type) {
-        case GL_DEBUG_TYPE_ERROR:
+    case GL_DEBUG_TYPE_ERROR:
         _type = "ERROR";
         break;
 
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
         _type = "DEPRECATED BEHAVIOR";
         break;
 
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
         _type = "UDEFINED BEHAVIOR";
         break;
 
-        case GL_DEBUG_TYPE_PORTABILITY:
+    case GL_DEBUG_TYPE_PORTABILITY:
         _type = "PORTABILITY";
         break;
 
-        case GL_DEBUG_TYPE_PERFORMANCE:
+    case GL_DEBUG_TYPE_PERFORMANCE:
         _type = "PERFORMANCE";
         break;
 
-        case GL_DEBUG_TYPE_OTHER:
+    case GL_DEBUG_TYPE_OTHER:
         _type = "OTHER";
         break;
 
-        case GL_DEBUG_TYPE_MARKER:
+    case GL_DEBUG_TYPE_MARKER:
         _type = "MARKER";
         break;
 
-        default:
+    default:
         _type = "UNKNOWN";
         break;
     }
 
     switch (severity) {
-        case GL_DEBUG_SEVERITY_HIGH:
+    case GL_DEBUG_SEVERITY_HIGH:
         _severity = "HIGH";
         break;
 
-        case GL_DEBUG_SEVERITY_MEDIUM:
+    case GL_DEBUG_SEVERITY_MEDIUM:
         _severity = "MEDIUM";
         break;
 
-        case GL_DEBUG_SEVERITY_LOW:
+    case GL_DEBUG_SEVERITY_LOW:
         _severity = "LOW";
         break;
 
-        case GL_DEBUG_SEVERITY_NOTIFICATION:
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
         _severity = "NOTIFICATION";
         break;
 
-        default:
+    default:
         _severity = "UNKNOWN";
         break;
     }
 
-    fprintf(stderr, "%d: %s of %s severity, raised from %s: %s\n",
-            id, _type.c_str(), _severity.c_str(), _source.c_str(), msg);
+    fprintf(stderr, "%d: %s of %s severity, raised from %s: %s\n", id, _type.c_str(), _severity.c_str(), _source.c_str(), msg);
 
-    if(type == GL_DEBUG_TYPE_ERROR)
+    if (type == GL_DEBUG_TYPE_ERROR)
         exit(2);
 }
 
-void init_egl(bool debug = false) {
+EGLBoolean swap_buffers() {
+    return eglCheck(eglSwapBuffers(display, surface));
+}
+
+void init(bool debug = false) {
     bool offscreen = !x11::is_initialized();
 
     eglCheck(eglBindAPI(EGL_OPENGL_API));
-    if(offscreen) {
+    if (offscreen) {
         eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
         eglCheck(display = eglGetDisplay(x11::get_x11_display()));
@@ -485,50 +533,55 @@ void init_egl(bool debug = false) {
     eglCheck(eglInitialize(display, nullptr, nullptr));
 
     const EGLint egl_config_constraints[] = {
-        EGL_STENCIL_SIZE, static_cast<EGLint>(0),
-        EGL_SAMPLE_BUFFERS,
-        EGL_FALSE,
-        EGL_SAMPLES, 0,
-        EGL_SURFACE_TYPE,
-        EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
-        EGL_RENDERABLE_TYPE,
-        EGL_OPENGL_BIT,
-        EGL_NONE
-    };
+    EGL_STENCIL_SIZE, static_cast<EGLint>(8),
+    EGL_DEPTH_SIZE, static_cast<EGLint>(16),
+    EGL_BUFFER_SIZE, static_cast<EGLint>(32),
+    EGL_RED_SIZE, static_cast<EGLint>(8),
+    EGL_GREEN_SIZE, static_cast<EGLint>(8),
+    EGL_BLUE_SIZE, static_cast<EGLint>(8),
+    EGL_ALPHA_SIZE, static_cast<EGLint>(8),
+    EGL_SAMPLE_BUFFERS, EGL_TRUE,
+    EGL_SAMPLES, 16,
+    EGL_SURFACE_TYPE, EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+    EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+    EGL_CONFORMANT, EGL_OPENGL_BIT,
+    EGL_CONFIG_CAVEAT, EGL_NONE,
+    EGL_NONE };
 
     EGLint configCount;
     EGLConfig configs[1];
     eglCheck(eglChooseConfig(display, egl_config_constraints, configs, 1, &configCount));
 
-    if(!offscreen) {
+    EGLint stencilSize;
+    eglGetConfigAttrib(display, configs[0],
+    EGL_STENCIL_SIZE, &stencilSize);
+
+    if (!offscreen) {
         eglCheck(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
         EGLint pbuffer_attrib_list[] = {
-                EGL_WIDTH, WIDTH,
-                EGL_HEIGHT, HEIGHT,
-                EGL_NONE
-        };
+        EGL_WIDTH, WIDTH,
+        EGL_HEIGHT, HEIGHT,
+        EGL_NONE };
         eglCheck(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
 
     const EGLint contextVersion[] = {
-            EGL_CONTEXT_CLIENT_VERSION, 2,
-            EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
-            EGL_NONE
-    };
+    EGL_CONTEXT_MAJOR_VERSION, 4,
+    EGL_CONTEXT_MINOR_VERSION, 6,
+    EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
+    EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
+    EGL_NONE };
     eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
     eglCheck(eglMakeCurrent(display, surface, surface, context));
     eglCheck(eglSwapInterval(display, 1));
-    if(debug) {
+
+    if (debug) {
         glCheck(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
-        auto glDebugMessageCallback  = (void (*)(void *, void *))eglGetProcAddress("glDebugMessageCallback");
+        auto glDebugMessageCallback = (void (*)(void*, void*)) eglGetProcAddress("glDebugMessageCallback");
         assert(glDebugMessageCallback);
         glCheck(glDebugMessageCallback(reinterpret_cast<void*>(debugMessageCallback), nullptr));
     }
-}
-
-EGLBoolean swapBuffers() {
-    return eglCheck(eglSwapBuffers(display, surface));
 }
 
 std::string get_info() {
@@ -540,52 +593,57 @@ namespace gl {
 //code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
 cv::ogl::Texture2D *frame_buf_tex;
 GLuint frame_buf;
+cv::ocl::OpenCLExecutionContext context;
+bool initialized = false;
 
+void bind() {
+    context.bind();
+}
 
-void init_gl() {
+void init() {
+    glewExperimental = true;
     glewInit();
 
     cv::ogl::ocl::initializeContextFromGL();
 
     frame_buf = 0;
     glCheck(glGenFramebuffers(1, &frame_buf));
-    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf));
+    glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
+
+    GLuint sb;
+    glGenRenderbuffers(1, &sb);
+    glBindRenderbuffer(GL_RENDERBUFFER, sb);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);
+
+    glCheck(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sb));
+
     frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
-    glCheck(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, frame_buf_tex->texId(), 0));
+    glCheck(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
 
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-    glCheck(glViewport(0, 0, WIDTH, HEIGHT));
-    glCheck(glColor3f(1.0, 1.0, 1.0));
-
-    glCheck(glEnable(GL_CULL_FACE));
-    glCheck(glCullFace(GL_BACK));
-
-    glCheck(glMatrixMode(GL_PROJECTION));
-    glCheck(glLoadIdentity());
-    glCheck(glFrustum(-2, 2, -1.5, 1.5, 1, 40));
-
-    glCheck(glMatrixMode(GL_MODELVIEW));
-    glCheck(glLoadIdentity());
-    glCheck(glTranslatef(0, 0, -3));
-    glCheck(glRotatef(50, 1, 0, 0));
-    glCheck(glRotatef(70, 0, 1, 0));
+    gl::context = cv::ocl::OpenCLExecutionContext::getCurrent();
+    initialized = true;
 }
 
-void swapBuffers() {
-    kb::egl::swapBuffers();
+bool is_initialized() {
+    return initialized;
+}
+
+void swap_buffers() {
+    kb::egl::swap_buffers();
 }
 
 std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
-void acquire_frame_buffer(cv::UMat &m) {
+void acquire_from_gl(cv::UMat &m) {
     glCheck(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
 }
 
-void release_frame_buffer(cv::UMat &m) {
+void release_to_gl(cv::UMat &m) {
     glCheck(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
 }
 
@@ -594,6 +652,7 @@ void blit_frame_buffer_to_screen() {
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
 }
 } // namespace gl
 
@@ -603,17 +662,85 @@ std::string get_info() {
     std::stringstream ss;
     std::vector<cv::ocl::PlatformInfo> plt_info;
     cv::ocl::getPlatfomsInfo(plt_info);
-    const cv::ocl::Device& device = cv::ocl::Device::getDefault();
+    const cv::ocl::Device &device = cv::ocl::Device::getDefault();
     for (const auto &info : plt_info) {
         ss << "\t* " << info.version() << " = " << info.name() << endl;
     }
 
     ss << "\t  GL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-    ss << "\t  GL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing")  ? "true" : "false") << endl;
-    ss << "\t  VAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing")  ? "true" : "false") << endl;
+    ss << "\t  GL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing") ? "true" : "false") << endl;
+    ss << "\t  VAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
     return ss.str();
 }
-}
+} //namespace cl
+
+namespace nvg {
+NVGcontext *vg;
+
+void clear() {
+    glCheck(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
-#endif /* SRC_TETRA_SUBSYSTEMS_HPP_ */
+void push() {
+    glCheck(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
+    glCheck(glPushAttrib(GL_ALL_ATTRIB_BITS));
+    glCheck(glMatrixMode(GL_MODELVIEW));
+    glCheck(glPushMatrix());
+    glCheck(glMatrixMode(GL_PROJECTION));
+    glCheck(glPushMatrix());
+    glCheck(glMatrixMode(GL_TEXTURE));
+    glCheck(glPushMatrix());
+}
+
+void pop() {
+    glCheck(glMatrixMode(GL_TEXTURE));
+    glCheck(glPopMatrix());
+    glCheck(glMatrixMode(GL_PROJECTION));
+    glCheck(glPopMatrix());
+    glCheck(glMatrixMode(GL_MODELVIEW));
+    glCheck(glPopMatrix());
+    glCheck(glPopClientAttrib());
+    glCheck(glPopAttrib());
+}
+
+void begin(int w, int h, double pxRatio = 1) {
+    push();
+    glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
+    nvgSave(vg);
+    nvgBeginFrame(vg, w, h, pxRatio);
+}
+
+void end() {
+    nvgEndFrame(vg);
+    nvgRestore(vg);
+    pop();
+    glCheck(glFlush());
+    glCheck(glFinish());
+}
+
+void init(bool debug = false) {
+    push();
+
+    glCheck(glViewport(0, 0, WIDTH, HEIGHT));
+    glCheck(glEnable(GL_STENCIL_TEST));
+    glCheck(glStencilMask(~0));
+    glCheck(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+
+    vg = nvgCreateGL3(NVG_STENCIL_STROKES | debug ? NVG_DEBUG : 0);
+    if (vg == NULL) {
+        cerr << "Couldn't init nanovg." << endl;
+        exit(24);
+    }
+
+    nvgCreateFont(vg, "icons", "fonts/entypo.ttf");
+    nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
+    nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
+
+    pop();
+}
+} //namespace nvg
+}
+
+#endif /* SRC_SUBSYSTEMS_HPP_ */

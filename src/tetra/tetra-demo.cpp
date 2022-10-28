@@ -3,7 +3,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
@@ -12,8 +12,23 @@ constexpr const int VA_HW_DEVICE_INDEX = 0;
 using std::cerr;
 using std::endl;
 
-cv::ocl::OpenCLExecutionContext VA_CONTEXT;
-cv::ocl::OpenCLExecutionContext GL_CONTEXT;
+void init_render() {
+    glViewport(0, 0, WIDTH, HEIGHT);
+    glColor3f(1.0, 1.0, 1.0);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glFrustum(-2, 2, -1.5, 1.5, 1, 40);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glTranslatef(0, 0, -3);
+    glRotatef(50, 1, 0, 0);
+    glRotatef(70, 0, 1, 0);
+}
 
 void render() {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
@@ -50,7 +65,7 @@ void render() {
     glFlush();
 }
 
-void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
+void glow_effect(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
     static cv::UMat resize;
     static cv::UMat blur;
     static cv::UMat src16;
@@ -75,12 +90,7 @@ void glow(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WID
 int main(int argc, char **argv) {
     using namespace kb;
     //Initialize OpenCL Context for VAAPI
-    va::init_va();
-    /*
-     * The OpenCLExecutionContext for VAAPI needs to be copied right after init_va().
-     * Now everytime you want to do VAAPI interop first bind the context.
-     */
-    VA_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
+    va::init();
 
     //Initialize VP9 HW encoding using VAAPI
     cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
@@ -91,17 +101,12 @@ int main(int argc, char **argv) {
 
     //If we are rendering offscreen we don't need x11
     if(!OFFSCREEN)
-        x11::init_x11();
+        x11::init();
 
     //Passing true to init_egl will create a OpenGL debug context
-    egl::init_egl();
+    egl::init();
     //Initialize OpenCL Context for OpenGL
-    gl::init_gl();
-    /*
-     * The OpenCLExecutionContext for OpenGL needs to be copied right after init_gl().
-     * Now everytime you want to do OpenGL interop first bind the context.
-     */
-    GL_CONTEXT = cv::ocl::OpenCLExecutionContext::getCurrent();
+    gl::init();
 
     cerr << "VA Version: " << va::get_info() << endl;
     cerr << "EGL Version: " << egl::get_info() << endl;
@@ -116,31 +121,33 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
     double lastFps = FPS;
 
+    init_render();
+
     while (true) {
         //Activate the OpenCL context for OpenGL
-        GL_CONTEXT.bind();
+        gl::bind();
         //Render using OpenGL
         render();
 
         //Aquire the frame buffer for use by OpenCL
-        gl::acquire_frame_buffer(frameBuffer);
+        gl::acquire_from_gl(frameBuffer);
         //Glow effect (OpenCL)
-        glow(frameBuffer);
+        glow_effect(frameBuffer);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Video frame is upside down -> flip it (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
 
         //Activate the OpenCL context for VAAPI
-        VA_CONTEXT.bind();
+        va::bind();
         //Encode the frame using VAAPI on the GPU.
         encoder.write(videoFrame);
 
         if(x11::is_initialized()) {
             //Yet again activate the OpenCL context for OpenGL
-            GL_CONTEXT.bind();
+            gl::bind();
             //Release the frame buffer for use by OpenGL
-            gl::release_frame_buffer(frameBuffer);
+            gl::release_to_gl(frameBuffer);
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 
@@ -149,7 +156,7 @@ int main(int argc, char **argv) {
                 break;
 
             //Transfer the back buffer (which we have been using as frame buffer) to the native window
-            gl::swapBuffers();
+            gl::swap_buffers();
         }
 
         //Measure FPS
