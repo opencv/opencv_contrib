@@ -2,7 +2,7 @@
 import os
 import cv2 as cv
 import numpy as np
-
+import tempfile
 from tests_common import NewOpenCVTests, unittest
 
 class cudacodec_test(NewOpenCVTests):
@@ -79,12 +79,28 @@ class cudacodec_test(NewOpenCVTests):
         #Test at least the existence of wrapped functions for now
 
         try:
-            _writer = cv.cudacodec.createVideoWriter("tmp", (128, 128), 30)
+            fd, fname = tempfile.mkstemp(suffix=".h264")
+            os.close(fd)
+            encoder_params_in = cv.cudacodec.EncoderParams()
+            encoder_params_in.gopLength = 10
+            stream = cv.cuda.Stream()
+            sz = (1920,1080)
+            writer = cv.cudacodec.createVideoWriter(fname, sz, cv.cudacodec.H264, 30, cv.cudacodec.ColorFormat_BGR,
+                                                    encoder_params_in, stream=stream)
+            blankFrameIn = cv.cuda.GpuMat(sz,cv.CV_8UC3)
+            writer.write(blankFrameIn)
+            writer.release()
+            encoder_params_out = writer.getEncoderParams()
+            self.assert_true(encoder_params_in.gopLength == encoder_params_out.gopLength)
+            cap = cv.VideoCapture(fname,cv.CAP_FFMPEG)
+            self.assert_true(cap.isOpened())
+            ret, blankFrameOut = cap.read()
+            self.assert_true(ret and blankFrameOut.shape == blankFrameIn.download().shape)
         except cv.error as e:
             self.assertEqual(e.code, cv.Error.StsNotImplemented)
-            self.skipTest("NVCUVENC is not installed")
+            self.skipTest("Either NVCUVENC or a GPU hardware encoder is missing or the encoding profile is not supported.")
 
-        self.assertTrue(True) #It is sufficient that no exceptions have been there
+        os.remove(fname)
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
