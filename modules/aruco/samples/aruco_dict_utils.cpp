@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
         if (checkFlippedMarkers)
             dictionary = generateCustomAsymmetricDictionary(nMarkers, markerSize, makePtr<aruco::Dictionary>(), 0);
         else
-            dictionary = aruco::generateCustomDictionary(nMarkers, markerSize, makePtr<aruco::Dictionary>(), 0);
+            dictionary = aruco::extendDictionary(nMarkers, markerSize, makePtr<aruco::Dictionary>(), 0);
         dictionary->writeDictionary(fs);
     }
 

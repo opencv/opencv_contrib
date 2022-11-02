@@ -15,7 +15,7 @@ public class ArucoTest extends OpenCVTestCase {
 
     public void testArucoIssue3133() {
         byte[][] marker = {{0,1,1},{1,1,1},{0,1,1}};
-        Dictionary dictionary = Dictionary.create(1, 3);
+        Dictionary dictionary = extendDictionary(1, 3);
         dictionary.set_maxCorrectionBits(0);
         Mat markerBits = new Mat(3, 3, CvType.CV_8UC1);
         for (int i = 0; i < 3; i++) {
@@ -32,7 +32,7 @@ public class ArucoTest extends OpenCVTestCase {
     }
 
     public void testArucoDetector() {
-        Dictionary dictionary = Dictionary.get(0);
+        Dictionary dictionary = getPredefinedDictionary(0);
         DetectorParameters detectorParameters = new DetectorParameters();
         ArucoDetector detector = new ArucoDetector(dictionary, detectorParameters);
 
