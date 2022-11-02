@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     bool estimatePose = parser.has("c");
     float markerLength = parser.get<float>("l");
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = detectorParams->readDetectorParameters(fs.root());

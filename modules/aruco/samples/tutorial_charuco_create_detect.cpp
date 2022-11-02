@@ -38,7 +38,7 @@ static inline void detectCharucoBoardWithCalibrationPose()
         //! [dictboard]
         cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
         cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
-        cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
+        cv::Ptr<cv::aruco::DetectorParameters> params = cv::makePtr<cv::aruco::DetectorParameters>();
         //! [dictboard]
         while (inputVideo.grab()) {
             //! [inputImg]
@@ -92,7 +92,7 @@ static inline void detectCharucoBoardWithoutCalibration()
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
 
-    cv::Ptr<cv::aruco::DetectorParameters> params = cv::aruco::DetectorParameters::create();
+    cv::Ptr<cv::aruco::DetectorParameters> params = cv::makePtr<cv::aruco::DetectorParameters>();
     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;

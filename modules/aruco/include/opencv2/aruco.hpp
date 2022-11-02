@@ -10,12 +10,11 @@
 namespace cv {
 namespace aruco {
 
-
 /**
 @deprecated Use class ArucoDetector::detectMarkers
 */
 CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
-                                OutputArray ids, const Ptr<DetectorParameters> &parameters = DetectorParameters::create(),
+                                OutputArray ids, const Ptr<DetectorParameters> &parameters = makePtr<DetectorParameters>(),
                                 OutputArrayOfArrays rejectedImgPoints = noArray());
 
 /**
@@ -27,7 +26,7 @@ CV_EXPORTS_W void refineDetectedMarkers(InputArray image,const  Ptr<Board> &boar
                                         InputArray cameraMatrix = noArray(), InputArray distCoeffs = noArray(),
                                         float minRepDistance = 10.f, float errorCorrectionRate = 3.f,
                                         bool checkAllOrders = true, OutputArray recoveredIdxs = noArray(),
-                                        const Ptr<DetectorParameters> &parameters = DetectorParameters::create());
+                                        const Ptr<DetectorParameters> &parameters = makePtr<DetectorParameters>());
 
 /**
 @deprecated Use Board::draw
@@ -138,14 +137,12 @@ CV_EXPORTS_W bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray
 CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float markerLength,
                                             InputArray cameraMatrix, InputArray distCoeffs,
                                             OutputArray rvecs, OutputArray tvecs, OutputArray objPoints = noArray(),
-                                            const Ptr<EstimateParameters>& estimateParameters = EstimateParameters::create());
+                                            const Ptr<EstimateParameters>& estimateParameters = makePtr<EstimateParameters>());
 
 
-/**
-@deprecated Use CharucoBoard::testCharucoCornersCollinear
+/** @deprecated Use CharucoBoard::testCharucoCornersCollinear
  */
 CV_EXPORTS_W bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &board, InputArray charucoIds);
-
 
 }
 }

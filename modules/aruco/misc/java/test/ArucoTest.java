@@ -33,8 +33,8 @@ public class ArucoTest extends OpenCVTestCase {
 
     public void testArucoDetector() {
         Dictionary dictionary = Dictionary.get(0);
-        DetectorParameters detectorParameters = DetectorParameters.create();
-        ArucoDetector detector = ArucoDetector.create(dictionary, detectorParameters);
+        DetectorParameters detectorParameters = new DetectorParameters();
+        ArucoDetector detector = new ArucoDetector(dictionary, detectorParameters);
 
         Mat markerImage = new Mat();
         int id = 1, offset = 5, size = 40;

@@ -132,7 +132,7 @@ void CV_CharucoDetection::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> params = makePtr<aruco::DetectorParameters>();
     params->minDistanceToBorder = 3;
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, detector.dictionary);
@@ -160,7 +160,7 @@ void CV_CharucoDetection::run(int) {
                 vector<vector<Point2f> > corners;
                 vector<int> ids;
 
-                detector.params->markerBorderBits = markerBorder;
+                detector.detectorParams->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids);
 
                 if(ids.size() == 0) {
@@ -238,7 +238,7 @@ void CV_CharucoPoseEstimation::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> params = makePtr<aruco::DetectorParameters>();
     params->minDistanceToBorder = 3;
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, detector.dictionary);
@@ -264,7 +264,7 @@ void CV_CharucoPoseEstimation::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                detector.params->markerBorderBits = markerBorder;
+                detector.detectorParams->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids);
 
                 ASSERT_EQ(ids.size(), board->getIds().size());
@@ -348,13 +348,11 @@ void CV_CharucoDiamondDetection::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> params = makePtr<aruco::DetectorParameters>();
     params->minDistanceToBorder = 0;
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     float squareLength = 0.03f;
     float markerLength = 0.015f;
-    Ptr<aruco::CharucoBoard> board =
-        aruco::CharucoBoard::create(3, 3, squareLength, markerLength, detector.dictionary);
 
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
@@ -370,7 +368,8 @@ void CV_CharucoDiamondDetection::run(int) {
                 vector<int> idsTmp;
                 for(int i = 0; i < 4; i++)
                     idsTmp.push_back(4 * iter + i);
-                board->setIds(idsTmp);
+                Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(3, 3, squareLength, markerLength,
+                                                                             detector.dictionary, idsTmp);
                 iter++;
 
                 // get synthetic image
@@ -381,7 +380,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                detector.params->markerBorderBits = markerBorder;
+                detector.detectorParams->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids);
 
                 if(ids.size() != 4) {
@@ -440,7 +439,7 @@ void CV_CharucoDiamondDetection::run(int) {
                     }
                 }
 
-                Ptr<aruco::EstimateParameters> estimateParameters = aruco::EstimateParameters::create();
+                Ptr<aruco::EstimateParameters> estimateParameters = makePtr<aruco::EstimateParameters>();
                 estimateParameters->pattern = aruco::ARUCO_CW_TOP_LEFT_CORNER;
                 // estimate diamond pose
                 vector< Vec3d > estimatedRvec, estimatedTvec;
@@ -544,7 +543,7 @@ TEST(Charuco, testCharucoCornersCollinear_true)
     int dictionaryId = 11;
 
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
     Ptr<aruco::Dictionary> dictionary =
             aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
@@ -586,7 +585,7 @@ TEST(Charuco, testCharucoCornersCollinear_false)
     int dictionaryId = 11;
 
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
     Ptr<aruco::Dictionary> dictionary =
             aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
@@ -637,14 +636,14 @@ TEST(Charuco, testBoardSubpixelCoords)
 
     cv::Mat gray;
 
-    auto dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
-    auto board = cv::aruco::CharucoBoard::create(4, 4, 1.f, .8f, dict);
+    Ptr<aruco::Dictionary> dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
+    Ptr<aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(4, 4, 1.f, .8f, dict);
 
     // generate ChArUco board
     board->draw(Size(res.width, res.height), gray, 150);
     cv::GaussianBlur(gray, gray, Size(5, 5), 1.0);
 
-    auto params = cv::aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> params = makePtr<aruco::DetectorParameters>();
     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
 
     aruco::ArucoDetector detector(dict, params);
@@ -675,7 +674,7 @@ TEST(Charuco, issue_14014)
     string imgPath = cvtest::findDataFile("aruco/recover.png");
     Mat img = imread(imgPath);
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
     detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
     detectorParams->cornerRefinementMinAccuracy = 0.01;
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_7X7_250), detectorParams);

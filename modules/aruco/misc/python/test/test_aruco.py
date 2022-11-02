@@ -21,14 +21,11 @@ class aruco_test(NewOpenCVTests):
 
         np.testing.assert_array_equal(board.getIds().squeeze(), ids)
 
-        board.setIds(rev_ids)
+        board = cv.aruco.CharucoBoard_create(7, 5, 1, 0.5, aruco_dict, rev_ids)
         np.testing.assert_array_equal(board.getIds().squeeze(), rev_ids)
 
-        board.setIds(ids)
+        board = cv.aruco.CharucoBoard_create(7, 5, 1, 0.5, aruco_dict, ids)
         np.testing.assert_array_equal(board.getIds().squeeze(), ids)
-
-        with self.assertRaises(cv.error):
-            board.setIds(np.array([0]))
 
     def test_drawCharucoDiamond(self):
         aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
@@ -86,9 +83,9 @@ class aruco_test(NewOpenCVTests):
         self.assertEqual(dist, 0)
 
     def test_aruco_detector(self):
-        aruco_params = cv.aruco.DetectorParameters_create()
+        aruco_params = cv.aruco.DetectorParameters()
         aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_250)
-        aruco_detector = cv.aruco.ArucoDetector_create(aruco_dict, aruco_params)
+        aruco_detector = cv.aruco.ArucoDetector(aruco_dict, aruco_params)
         id = 2
         marker_size = 100
         offset = 10
@@ -109,9 +106,9 @@ class aruco_test(NewOpenCVTests):
             np.testing.assert_array_equal(gold_corners, corners[i].reshape(4, 2))
 
     def test_aruco_detector_refine(self):
-        aruco_params = cv.aruco.DetectorParameters_create()
+        aruco_params = cv.aruco.DetectorParameters()
         aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_250)
-        aruco_detector = cv.aruco.ArucoDetector_create(aruco_dict, aruco_params)
+        aruco_detector = cv.aruco.ArucoDetector(aruco_dict, aruco_params)
         board_size = (3, 4)
         board = cv.aruco.GridBoard_create(board_size[0], board_size[1], 5.0, 1.0, aruco_dict)
         board_image = board.draw((board_size[0]*50, board_size[1]*50), marginSize=10)

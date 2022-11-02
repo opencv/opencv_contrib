@@ -90,7 +90,7 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
     else
         grey = _image.getMat();
 
-    const Ptr<DetectorParameters> params = DetectorParameters::create(); // use default params for corner refinement
+    const Ptr<DetectorParameters> params = makePtr<aruco::DetectorParameters>(); // use default params for corner refinement
 
     //// For each of the charuco corners, apply subpixel refinement using its correspondind winSize
     parallel_for_(Range(0, (int)filteredChessboardImgPoints.size()), [&](const Range& range) {
@@ -367,10 +367,6 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
     const float minRepDistanceRate = 1.302455f;
 
-    // create Charuco board layout for diamond (3x3 layout)
-    Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dictionary);
-
-
     vector< vector< Point2f > > diamondCorners;
     vector< Vec4i > diamondIds;
 
@@ -420,18 +416,21 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
         }
         if(candidates.size() < 3) break; // we need at least 3 free markers
         // modify charuco layout id to make sure all the ids are different than current id
+        vector<int> tmpIds(4);
         for(int k = 1; k < 4; k++)
-            _charucoDiamondLayout->changeId(k, currentId + 1 + k);
+            tmpIds[k] = currentId + 1 + k;
         // current id is assigned to [0], so it is the marker on the top
-        _charucoDiamondLayout->changeId(0, currentId);
+        tmpIds[0] = currentId;
+        // create Charuco board layout for diamond (3x3 layout)
+        Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., dictionary,
+                                                                       tmpIds);
 
         // try to find the rest of markers in the diamond
         vector< int > acceptedIdxs;
-        Ptr<Board> _b = _charucoDiamondLayout.staticCast<Board>();
         Ptr<RefineParameters> refineParameters = makePtr<RefineParameters>(minRepDistance, -1.f, false);
-        ArucoDetector detector(dictionary, DetectorParameters::create(), refineParameters);
-        detector.refineDetectedMarkers(grey, _b, currentMarker, currentMarkerId, candidates, noArray(), noArray(),
-                                       acceptedIdxs);
+        ArucoDetector detector(dictionary, makePtr<DetectorParameters>(), refineParameters);
+        detector.refineDetectedMarkers(grey, _charucoDiamondLayout, currentMarker, currentMarkerId, candidates,
+                                       noArray(), noArray(), acceptedIdxs);
 
         // if found, we have a diamond
         if(currentMarker.size() == 4) {
@@ -491,14 +490,12 @@ void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int square
     CV_Assert(squareLength > 0 && markerLength > 0 && squareLength > markerLength);
     CV_Assert(marginSize >= 0 && borderBits > 0);
 
-    // create a charuco board similar to a charuco marker and print it
-    Ptr<CharucoBoard> board =
-        CharucoBoard::create(3, 3, (float)squareLength, (float)markerLength, dictionary);
-
     // assign the charuco marker ids
+    vector<int> tmpIds(4);
     for(int i = 0; i < 4; i++)
-        board->changeId(i, ids[i]);
-
+       tmpIds[i] = ids[i];
+    // create a charuco board similar to a charuco marker and print it
+    Ptr<CharucoBoard> board = CharucoBoard::create(3, 3, (float)squareLength, (float)markerLength, dictionary, tmpIds);
     Size outSize(3 * squareLength + 2 * marginSize, 3 * squareLength + 2 * marginSize);
     board->draw(outSize, _img, marginSize, borderBits);
 }

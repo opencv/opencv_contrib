@@ -9,6 +9,9 @@ namespace cv {
 namespace aruco {
 using namespace std;
 
+EstimateParameters::EstimateParameters() : pattern(ARUCO_CCW_CENTER), useExtrinsicGuess(false),
+                                           solvePnPMethod(SOLVEPNP_ITERATIVE) {}
+
 double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputArray _counter,
                             const Ptr<Board> &board, Size imageSize, InputOutputArray _cameraMatrix,
                             InputOutputArray _distCoeffs, OutputArrayOfArrays _rvecs,

@@ -11,6 +11,55 @@ namespace aruco {
 //! @addtogroup aruco
 //! @{
 
+/** @brief rvec/tvec define the right handed coordinate system of the marker.
+ *
+ * PatternPositionType defines center this system and axes direction.
+ * Axis X (red color) - first coordinate, axis Y (green color) - second coordinate,
+ * axis Z (blue color) - third coordinate.
+ * @sa estimatePoseSingleMarkers(), check tutorial_aruco_detection in aruco contrib
+ */
+enum PatternPositionType {
+    /** @brief The marker coordinate system is centered on the middle of the marker.
+     *
+     * The coordinates of the four corners (CCW order) of the marker in its own coordinate system are:
+     * (-markerLength/2, markerLength/2, 0), (markerLength/2, markerLength/2, 0),
+     * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0).
+     *
+     * These pattern points define this coordinate system:
+     * ![Image with axes drawn](tutorials/images/singlemarkersaxes.jpg)
+     */
+    ARUCO_CCW_CENTER,
+    /** @brief The marker coordinate system is centered on the top-left corner of the marker.
+     *
+     * The coordinates of the four corners (CW order) of the marker in its own coordinate system are:
+     * (0, 0, 0), (markerLength, 0, 0),
+     * (markerLength, markerLength, 0), (0, markerLength, 0).
+     *
+     * These pattern points define this coordinate system:
+     * ![Image with axes drawn](tutorials/images/singlemarkersaxes2.jpg)
+     *
+     * These pattern dots are convenient to use with a chessboard/ChArUco board.
+     */
+    ARUCO_CW_TOP_LEFT_CORNER
+};
+
+/** @brief Pose estimation parameters
+ *
+ * @param pattern Defines center this system and axes direction (default PatternPositionType::ARUCO_CCW_CENTER).
+ * @param useExtrinsicGuess Parameter used for SOLVEPNP_ITERATIVE. If true (1), the function uses the provided
+ * rvec and tvec values as initial approximations of the rotation and translation vectors, respectively, and further
+ * optimizes them (default false).
+ * @param solvePnPMethod Method for solving a PnP problem: see @ref calib3d_solvePnP_flags (default SOLVEPNP_ITERATIVE).
+ * @sa PatternPositionType, solvePnP(), check tutorial_aruco_detection in aruco contrib
+ */
+struct CV_EXPORTS_W EstimateParameters {
+    CV_PROP_RW PatternPositionType pattern;
+    CV_PROP_RW bool useExtrinsicGuess;
+    CV_PROP_RW int solvePnPMethod;
+
+    CV_WRAP EstimateParameters();
+};
+
 /**
  * @brief Calibrate a camera using aruco markers
  *

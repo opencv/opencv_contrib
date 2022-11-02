@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = detectorParams->readDetectorParameters(fs.root());
