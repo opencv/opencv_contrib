@@ -91,7 +91,7 @@ void CV_ArucoBoardPose::run(int) {
                 vector<int> tmpIds;
                 for(int i = 0; i < sizeX*sizeY; i++)
                     tmpIds.push_back((iter + int(i)) % 250);
-                Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(sizeX, sizeY, 0.02f, 0.005f, detector.dictionary, tmpIds);
+                Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(sizeX, sizeY, 0.02f, 0.005f, detector.getDictionary(), tmpIds);
                 int markerBorder = iter % 2 + 1;
                 iter++;
                 // create synthetic image
@@ -99,7 +99,7 @@ void CV_ArucoBoardPose::run(int) {
                                        imgSize, markerBorder);
                 vector<vector<Point2f> > corners;
                 vector<int> ids;
-                detector.detectorParams->markerBorderBits = markerBorder;
+                detector.getDetectorParameters()->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids);
 
                 ASSERT_EQ(ids.size(), gridboard->getIds().size());
@@ -185,7 +185,7 @@ void CV_ArucoRefine::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.dictionary);
+    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.getDictionary());
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
@@ -198,7 +198,7 @@ void CV_ArucoRefine::run(int) {
                 vector<int> tmpIds;
                 for(unsigned int i = 0; i < gridboard->getIds().size(); i++)
                     tmpIds.push_back(iter + int(i) % 250);
-                gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.dictionary, tmpIds);
+                gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.getDictionary(), tmpIds);
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
@@ -208,7 +208,7 @@ void CV_ArucoRefine::run(int) {
                 // detect markers
                 vector<vector<Point2f> > corners, rejected;
                 vector<int> ids;
-                detector.detectorParams->markerBorderBits = markerBorder;
+                detector.getDetectorParameters()->markerBorderBits = markerBorder;
                 detector.detectMarkers(img, corners, ids, rejected);
 
                 // remove a marker from detection
