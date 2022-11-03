@@ -15,7 +15,7 @@ SingleColorKeyPen::SingleColorKeyPen(std::vector<cv::KeyPoint>, QWidget *parent)
 	auto layout = util::make_unique<QVBoxLayout>();
 	auto button = util::make_unique<QPushButton>("Color Dialog");
 
-	layout->setMargin(0);
+	layout->setContentsMargins(QMargins());
 
 	connect(colordia_, SIGNAL(currentColorChanged(const QColor &)), this,
 		SLOT(updateColor(const QColor &)));
