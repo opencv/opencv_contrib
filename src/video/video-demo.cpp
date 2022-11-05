@@ -57,16 +57,6 @@ void render() {
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
-    glColor3f(1.0, 1.0, 1.0);
-    glBegin(GL_LINES);
-    for (GLfloat i = -2.5; i <= 2.5; i += 0.25) {
-        glVertex3f(i, 0, 2.5);
-        glVertex3f(i, 0, -2.5);
-        glVertex3f(2.5, 0, i);
-        glVertex3f(-2.5, 0, i);
-    }
-    glEnd();
-
     glBegin(GL_TRIANGLE_STRIP);
         glColor3f(1, 1, 1);
         glVertex3f(0, 2, 0);
