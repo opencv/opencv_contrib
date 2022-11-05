@@ -1,4 +1,4 @@
-#define CL_TARGET_OPENCL_VERSION 220
+#define CL_TARGET_OPENCL_VERSION 300
 
 //WIDTH and HEIGHT have to be specified before including subsystems.hpp
 constexpr long unsigned int WIDTH = 1920;
@@ -195,6 +195,8 @@ int main(int argc, char **argv) {
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Video frame is upside down -> flip it (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
+        //Release the frame buffer for use by OpenGL
+        gl::release_to_gl(frameBuffer);
 
         //Activate the OpenCL context for VAAPI
         va::bind();
@@ -204,8 +206,7 @@ int main(int argc, char **argv) {
         if(x11::is_initialized()) {
             //Yet again activate the OpenCL context for OpenGL
             gl::bind();
-            //Release the frame buffer for use by OpenGL
-            gl::release_to_gl(frameBuffer);
+
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 

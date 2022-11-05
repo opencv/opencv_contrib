@@ -294,7 +294,7 @@ std::string get_info() {
 }
 
 void bind() {
-    context.bind();
+    va::context.bind();
 }
 } // namespace va
 
@@ -596,10 +596,6 @@ GLuint frame_buf;
 cv::ocl::OpenCLExecutionContext context;
 bool initialized = false;
 
-void bind() {
-    context.bind();
-}
-
 void init() {
     glewExperimental = true;
     glewInit();
@@ -626,6 +622,11 @@ void init() {
     gl::context = cv::ocl::OpenCLExecutionContext::getCurrent();
     initialized = true;
 }
+
+void bind() {
+    gl::context.bind();
+}
+
 
 bool is_initialized() {
     return initialized;
