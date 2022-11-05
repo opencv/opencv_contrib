@@ -1,5 +1,5 @@
 # GCV
-OpenGL/OpenCL/VAAPI interop demo using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/GCV)
+OpenGL/OpenCL/VAAPI interop demo using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/4.x)
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
