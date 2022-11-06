@@ -25,7 +25,7 @@ make -j2
 ```
 ## Download the example file
 ```bash
-wget -O bunny.ogg https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_1080p_stereo.ogg
+wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
 ## Run the tetra-demo:
 
@@ -36,11 +36,11 @@ src/tetra/tetra-demo
 ## Run the video-demo:
 
 ```bash
-src/video/video-demo bunny.ogg
+src/video/video-demo bunny.webm
 ```
 
 ## Run the nanovg-demo:
 
 ```bash
-src/nanovg/nanovg-demo bunny.ogg
+src/nanovg/nanovg-demo bunny.webm
 ```
