@@ -26,7 +26,6 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
 
-
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -294,7 +293,7 @@ std::string get_info() {
 }
 
 void bind() {
-    va::context.bind();
+    context.bind();
 }
 } // namespace va
 
@@ -375,44 +374,10 @@ void init() {
     XStoreName(xdisplay, xwin, "nanovg-demo");
     wmDeleteMessage = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(xdisplay, xwin, &wmDeleteMessage, 1);
-    XSelectInput(xdisplay, xwin, ButtonPressMask | Button1MotionMask );
 
     initialized = true;
 }
-
-enum EventState {
-    NONE,
-    PRESS,
-    RELEASE,
-    MOTION
-};
-
-std::pair<EventState,cv::Point> consume_event() {
-    XEvent event;
-    EventState state;
-    int revert_to;
-    XGetInputFocus(xdisplay, &xwin, &revert_to);
-    int x = 0, y = 0;
-    if (XEventsQueued(xdisplay, QueuedAlready) > 0) {
-        XNextEvent(xdisplay, &event);
-        switch (event.type) {
-
-        case ButtonPress:
-            x = event.xmotion.x;
-            y = event.xmotion.y;
-            state = PRESS;
-            break;
-        case MotionNotify:
-            x = event.xmotion.x;
-            y = event.xmotion.y;
-            state = MOTION;
-            break;
-        }
-    }
-
-    return {state,{x,y}};
-}
-}
+} // namespace x11
 
 namespace egl {
 //code in the kb::egl namespace deals with setting up EGL
@@ -594,7 +559,10 @@ namespace gl {
 cv::ogl::Texture2D *frame_buf_tex;
 GLuint frame_buf;
 cv::ocl::OpenCLExecutionContext context;
-bool initialized = false;
+
+void bind() {
+    context.bind();
+}
 
 void init() {
     glewExperimental = true;
@@ -606,6 +574,7 @@ void init() {
     glCheck(glGenFramebuffers(1, &frame_buf));
     glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
 
+    // Create stencil render buffer (note that I create depth buffer the exact same way, and It works.
     GLuint sb;
     glGenRenderbuffers(1, &sb);
     glBindRenderbuffer(GL_RENDERBUFFER, sb);
@@ -620,16 +589,6 @@ void init() {
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
     gl::context = cv::ocl::OpenCLExecutionContext::getCurrent();
-    initialized = true;
-}
-
-void bind() {
-    gl::context.bind();
-}
-
-
-bool is_initialized() {
-    return initialized;
 }
 
 void swap_buffers() {
@@ -705,11 +664,21 @@ void pop() {
     glCheck(glPopAttrib());
 }
 
-void begin(int w, int h, double pxRatio = 1) {
+void begin() {
     push();
+
+    float w = WIDTH;
+    float h = HEIGHT;
+    if(x11::is_initialized()) {
+        auto ws = x11::get_window_size();
+        w = ws.first;
+        h = ws.second;
+    }
+
     glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    nvgBeginFrame(vg, w, h, pxRatio);
+    glCheck(glViewport(0, HEIGHT - h, w, h));
+    nvgBeginFrame(vg, w, h, std::fmax(WIDTH/w, HEIGHT/h));
 }
 
 void end() {
@@ -736,8 +705,8 @@ void init(bool debug = false) {
     }
 
     nvgCreateFont(vg, "icons", "fonts/entypo.ttf");
-    nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
-    nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
+    nvgCreateFont(vg, "sans-bold", "fonts/TheBoldFont.ttf");
+    nvgCreateFont(vg, "sans", "fonts/TheBoldFont.ttf");
 
     pop();
 }

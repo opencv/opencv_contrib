@@ -3,6 +3,9 @@
 //WIDTH and HEIGHT have to be specified before including subsystems.hpp
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
+constexpr const int VA_HW_DEVICE_INDEX = 0;
+constexpr bool OFFSCREEN = false;
+constexpr const char *OUTPUT_FILENAME = "video-demo.mkv";
 
 #include "../common/subsystems.hpp"
 #include <stdlib.h>
@@ -11,26 +14,6 @@ constexpr long unsigned int HEIGHT = 1080;
 using std::cerr;
 using std::endl;
 using std::string;
-
-//Static stream info. Has to match your capture device/file
-constexpr double INPUT_FPS = 30;
-constexpr int INPUT_WIDTH = 320;
-constexpr int INPUT_HEIGHT = 240;
-const string INPUT_FORMAT = "mjpeg";
-const string PIXEL_FORMAT = "yuyv422";
-const string INPUT_FILENAME = "example.mp4";
-const string OUTPUT_FILENAME = "camera-demo.mkv";
-
-//The ffmpeg capture and writer options we need to capture... but don't overwrite the environment variables if they already exist.
-const string CAPTURE_OPTIONS = "framerate;" + std::to_string(INPUT_FPS)
-        + "|input_format;" + INPUT_FORMAT
-        + "|video_size;" + std::to_string(INPUT_WIDTH) + "x" + std::to_string(INPUT_HEIGHT)
-        + "|pixel_format;" + PIXEL_FORMAT;
-
-const string WRITER_OPTIONS = "";
-
-constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr bool OFFSCREEN = false;
 
 void init_render() {
     glViewport(0, 0, WIDTH, HEIGHT);
@@ -52,8 +35,7 @@ void init_render() {
 
 void render() {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
-    glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf);
-    glViewport(0, 0, WIDTH , HEIGHT );
+    glViewport(0, 0, WIDTH, HEIGHT);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -97,29 +79,31 @@ void glow_effect(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 
 }
 
 int main(int argc, char **argv) {
-    //The ffmpeg capture and writer options we need to capture... but don't overwrite the environment variables if they already exist.
-    setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", CAPTURE_OPTIONS.c_str(), 0);
-    setenv("OPENCV_FFMPEG_WRITER_OPTIONS", WRITER_OPTIONS.c_str(), 0);
-
     using namespace kb;
 
+    if(argc != 2) {
+        cerr << "Usage: video-demo <video-file>" << endl;
+        exit(1);
+    }
     //Initialize OpenCL Context for VAAPI
     va::init();
 
     //Initialize MJPEG HW decoding using VAAPI
-    cv::VideoCapture cap(INPUT_FILENAME, cv::CAP_FFMPEG, {
+    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
     // check if we succeeded
-    if (!cap.isOpened()) {
+    if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open camera" << endl;
         return -1;
     }
 
+    double fps = capture.get(cv::CAP_PROP_FPS);
+
     //Initialize VP9 HW encoding using VAAPI. We don't need to specify the hardware device twice. only generates a warning.
-    cv::VideoWriter video(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), INPUT_FPS, cv::Size(WIDTH, HEIGHT), {
+    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
@@ -145,7 +129,7 @@ int main(int argc, char **argv) {
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
-    double lastFps = INPUT_FPS;
+    double lastFps = fps;
 
     init_render();
 
@@ -158,17 +142,17 @@ int main(int argc, char **argv) {
         //Activate the OpenCL context for VAAPI
         va::bind();
         //Decode a frame on the GPU using VAAPI
-        cap >> videoFrame;
+        capture >> videoFrame;
         if (videoFrame.empty()) {
             cerr << "End of stream. Exiting" << endl;
             break;
         }
 
-        //The video is upside-down. Flip it. (OpenCL)
+        //The frameBuffer is upside-down. Flip videoFrame. (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
-        //Color-conversion from BGRA to RGB. (OpenCL)
+        //Color-conversion from RGB to BGRA. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameRGBA, cv::COLOR_RGB2BGRA);
-        //Resize the frame. (OpenCL)
+        //Resize the frame if necessary. (OpenCL)
         cv::resize(videoFrameRGBA, frameBuffer, cv::Size(WIDTH, HEIGHT));
 
         gl::bind();
@@ -191,7 +175,7 @@ int main(int argc, char **argv) {
         //Activate the OpenCL context for VAAPI
         va::bind();
         //Encode the frame using VAAPI on the GPU.
-        video.write(videoFrame);
+        writer.write(videoFrame);
 
         if(x11::is_initialized()) {
             //Yet again activate the OpenCL context for OpenGL
