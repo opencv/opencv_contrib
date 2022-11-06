@@ -197,8 +197,10 @@ int main(int argc, char **argv) {
 
         //we use time to calculated the current hue
         float time = cv::getTickCount() / cv::getTickFrequency();
-        //hue fading between 0.0f and 1.0f
-        float hue = (sinf((2.0f*(time*0.12f) + 3.0f) * CV_PI/2.0f) + 1.0f) / 2.0f;
+        //nanovg hue fading between 0.0f and 1.0f
+        float nvgHue = (sinf(time*0.12f)+1.0f) / 2.0f;
+        //opencv hue fading between 0 and 255
+        int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time*0.12f))+1.0f) * 128.0))) % 255;
 
         //The frameBuffer is upside-down. Flip videoFrame. (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
@@ -207,7 +209,7 @@ int main(int argc, char **argv) {
         //Extract the hue channel
         cv::extractChannel(videoFrameHSV, hueChannel, 0);
         //Set the current hue
-        hueChannel.setTo(hue * 255.0f);
+        hueChannel.setTo(cvHue);
         //Insert the hue channel
         cv::insertChannel(hueChannel, videoFrameHSV, 0);
         //Color-conversion from HSV to RGB. (OpenCL)
@@ -223,7 +225,7 @@ int main(int argc, char **argv) {
         gl::release_to_gl(frameBuffer);
         //Render using nanovg;
         nvg::begin();
-        drawColorwheel(nvg::vg, WIDTH - 300, HEIGHT - 300, 250.0f, 250.0f, hue);
+        drawColorwheel(nvg::vg, WIDTH - 300, HEIGHT - 300, 250.0f, 250.0f, nvgHue);
         nvg::end();
 
         //Aquire frame buffer from OpenGL
