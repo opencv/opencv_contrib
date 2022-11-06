@@ -7,10 +7,21 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
 * If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
 
-There are currently three demos:
-* tetra-demo: renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
-* video-demo: renders a rainbow tetrahedron on top of a input-video using OpenGL and encodes to VP9
-* nanovg-demo: renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes to VP9
+There are currently three demos (**the preview videos are scaled down and highly compressed**):
+## tetra-demo
+Renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
+
+https://user-images.githubusercontent.com/287266/200169105-2bb88288-cb07-49bb-97ef-57ac61a0cfb8.mp4
+
+## video-demo
+Renders a rainbow tetrahedron on top of a input-video using OpenGL and encodes to VP9
+
+https://user-images.githubusercontent.com/287266/200169164-231cb4d8-db5c-444b-8aff-55c9f1a822cc.mp4
+
+## nanovg-demo
+Renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes to VP9
+
+https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92ba-ab7903168754.mp4
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
