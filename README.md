@@ -36,11 +36,11 @@ src/tetra/tetra-demo
 ## Run the video-demo:
 
 ```bash
-src/tetra/video-demo bunny.webm
+src/video/video-demo bunny.webm
 ```
 
 ## Run the nanovg-demo:
 
 ```bash
-src/tetra/nanovg-demo bunny.webm
+src/nanovg/nanovg-demo bunny.webm
 ```
