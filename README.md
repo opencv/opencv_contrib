@@ -1,5 +1,16 @@
 # GCV
-OpenGL/OpenCL/VAAPI interop demo using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/4.x)
+OpenGL/OpenCL/VAAPI interop demos using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/4.x)
+
+The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV to create programs that run mostly (the part the matters) on the GPU. 
+
+# Hardware requirements
+* Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
+* If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
+
+There are currently three demos:
+* tetra-demo: renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
+* video-demo: renders a rainbow tetrahedron on top of a input-video using OpenGL and encodes to VP9
+* nanovg-demo: renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes to VP9
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
