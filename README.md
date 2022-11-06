@@ -23,15 +23,24 @@ git clone https://github.com/kallaballa/GCV.git
 cd GCV
 make -j2
 ```
-
+## Download the example file
+```bash
+wget -o bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
+```
 ## Run the tetra-demo:
 
 ```bash
 src/tetra/tetra-demo
 ```
 
-## Run the camera-demo:
+## Run the video-demo:
 
 ```bash
-src/tetra/camera-demo
+src/tetra/video-demo bunny.webm
+```
+
+## Run the nanovg-demo:
+
+```bash
+src/tetra/nanovg-demo bunny.webm
 ```
