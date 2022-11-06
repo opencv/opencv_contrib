@@ -574,7 +574,6 @@ void init() {
     glCheck(glGenFramebuffers(1, &frame_buf));
     glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
 
-    // Create stencil render buffer (note that I create depth buffer the exact same way, and It works.
     GLuint sb;
     glGenRenderbuffers(1, &sb);
     glBindRenderbuffer(GL_RENDERBUFFER, sb);
