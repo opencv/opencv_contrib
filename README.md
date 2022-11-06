@@ -3,6 +3,8 @@ OpenGL/OpenCL/VAAPI interop demos using the 4.x branch of OpenCV (https://github
 
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. 
 
+The author of the example video (which is also used for the demos videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
+
 # Hardware requirements
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
 * If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
