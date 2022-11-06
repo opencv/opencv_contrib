@@ -25,7 +25,7 @@ make -j2
 ```
 ## Download the example file
 ```bash
-wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
+wget -O bunny.webm https://download.blender.org/peach/bigbuckbunny_movies/big_buck_bunny_1080p_stereo.ogg
 ```
 ## Run the tetra-demo:
 
