@@ -35,6 +35,7 @@ void init_render() {
 
 void render() {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
+    glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf);
     glViewport(0, 0, WIDTH, HEIGHT);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -152,6 +153,7 @@ int main(int argc, char **argv) {
         cv::flip(videoFrame, videoFrame, 0);
         //Color-conversion from RGB to BGRA. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameRGBA, cv::COLOR_RGB2BGRA);
+
         //Resize the frame if necessary. (OpenCL)
         cv::resize(videoFrameRGBA, frameBuffer, cv::Size(WIDTH, HEIGHT));
 
