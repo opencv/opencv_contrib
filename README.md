@@ -26,6 +26,11 @@ Renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes 
 
 https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92ba-ab7903168754.mp4
 
+## optflow-demo and optflow_mt-demo
+My take on a optical flow visualization on top of a video. Encoded to VP9. "optflow_mt" is an example on how to use threads to maximize use of both GPU and CPU.
+
+https://user-images.githubusercontent.com/287266/200512662-8251cf2c-23b3-4376-b664-d3a85b42d187.mp4
+
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
 
@@ -69,3 +74,16 @@ src/video/video-demo bunny.webm
 ```bash
 src/nanovg/nanovg-demo bunny.webm
 ```
+
+## Run the optflow-demo:
+
+```bash
+src/optflow/optflow-demo bunny.webm
+```
+
+## Run the optflow_mt-demo:
+
+```bash
+src/optflow_mt/optflow-demo_mt bunny.webm
+```
+
