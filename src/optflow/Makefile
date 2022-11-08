@@ -1,6 +1,6 @@
-TARGET := optflow
+TARGET := optflow-demo
 
-SRCS    := optflow.cpp
+SRCS    := optflow-demo.cpp
 
 #precompiled headers
 HEADERS := 
