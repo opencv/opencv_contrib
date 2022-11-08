@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 
                 if (status[i] == 1 && nextPoints[i].y >= 0 && nextPoints[i].x >= 0 && nextPoints[i].y < nextVideoFrameGray.rows && nextPoints[i].x < nextVideoFrameGray.cols) {
                     double len = hypot(fabs(nextPoints[i].x - prevPoints[i].x), fabs(nextPoints[i].y - prevPoints[i].y));
-                    if (len > 0 && len < (WIDTH/64.0)) {
+                    if (len > 0) {
                         newPoints.push_back(nextPoints[i]);
 
                         nvgMoveTo(vg, nextPoints[i].x, nextPoints[i].y);
