@@ -616,7 +616,6 @@ void blit_frame_buffer_to_screen() {
 } // namespace gl
 
 namespace cl {
-
 std::string get_info() {
     std::stringstream ss;
     std::vector<cv::ocl::PlatformInfo> plt_info;
@@ -703,9 +702,11 @@ void init(bool debug = false) {
         exit(24);
     }
 
+    /*
     nvgCreateFont(vg, "icons", "fonts/entypo.ttf");
-    nvgCreateFont(vg, "sans-bold", "fonts/TheBoldFont.ttf");
-    nvgCreateFont(vg, "sans", "fonts/TheBoldFont.ttf");
+    nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
+    nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
+    */
 
     pop();
 }
