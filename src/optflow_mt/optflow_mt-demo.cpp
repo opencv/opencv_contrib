@@ -130,13 +130,12 @@ int main(int argc, char **argv) {
             nvg::begin();
             nvg::clear();
             newPoints.clear();
+            using kb::nvg::vg;
+            nvgBeginPath(vg);
+            nvgStrokeWidth(vg, std::fmax(2.0, WIDTH/960.0));
+            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 32));
+
             for (size_t i = 0; i < prevPoints.size(); i++) {
-                using kb::nvg::vg;
-
-                nvgBeginPath(vg);
-                nvgStrokeWidth(vg, std::fmax(2.0, WIDTH/960.0));
-                nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 32));
-
                 if (status[i] == 1 && nextPoints[i].y >= 0 && nextPoints[i].x >= 0 && nextPoints[i].y < nextVideoFrameGray.rows && nextPoints[i].x < nextVideoFrameGray.cols) {
                     double len = hypot(fabs(nextPoints[i].x - prevPoints[i].x), fabs(nextPoints[i].y - prevPoints[i].y));
                     if (len > 0) {
@@ -146,17 +145,13 @@ int main(int argc, char **argv) {
                         nvgLineTo(vg, prevPoints[i].x, prevPoints[i].y);
                     }
                 }
-                nvgStroke(vg);
             }
-
+            nvgStroke(vg);
             nvg::end();
 
             prevVideoFrameGray = nextVideoFrameGray.clone();
             prevPoints = nextPoints;
-        } else {
-            continue;
         }
-
         gl::acquire_from_gl(frameBuffer);
 
         cv::flip(frameBuffer, frameBuffer, 0);

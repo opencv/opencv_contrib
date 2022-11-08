@@ -114,14 +114,13 @@ int main(int argc, char **argv) {
             cv::calcOpticalFlowPyrLK(prevVideoFrameGray, nextVideoFrameGray, prevPoints, nextPoints, status, err, cv::Size(15, 15), 2, criteria);
 
             nvg::begin();
-
             newPoints.clear();
-            for (size_t i = 0; i < prevPoints.size(); i++) {
-                using kb::nvg::vg;
 
-                nvgBeginPath(vg);
-                nvgStrokeWidth(vg, std::fmax(2.0, WIDTH/960.0));
-                nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 32));
+            using kb::nvg::vg;
+            nvgBeginPath(vg);
+            nvgStrokeWidth(vg, std::fmax(2.0, WIDTH/960.0));
+            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 32));
+            for (size_t i = 0; i < prevPoints.size(); i++) {
 
                 if (status[i] == 1 && nextPoints[i].y >= 0 && nextPoints[i].x >= 0 && nextPoints[i].y < foregroundMaskGrey.rows && nextPoints[i].x < foregroundMaskGrey.cols) {
                     double len = hypot(fabs(nextPoints[i].x - prevPoints[i].x), fabs(nextPoints[i].y - prevPoints[i].y));
@@ -132,15 +131,13 @@ int main(int argc, char **argv) {
                         nvgLineTo(vg, prevPoints[i].x, prevPoints[i].y);
                     }
                 }
-                nvgStroke(vg);
             }
+            nvgStroke(vg);
 
             nvg::end();
 
             prevVideoFrameGray = nextVideoFrameGray.clone();
             prevPoints = nextPoints;
-        } else {
-            continue;
         }
 
         gl::acquire_from_gl(frameBuffer);
