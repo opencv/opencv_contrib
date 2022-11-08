@@ -10,7 +10,7 @@ The author of the example video (which is also used for the demos videos in this
 * Support for OpenCL 2.0
 * If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
 
-There are currently three demos (**the preview videos are scaled down and highly compressed**):
+There are currently five demos (**the preview videos are scaled down and highly compressed**):
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
 
