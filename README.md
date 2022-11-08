@@ -10,7 +10,7 @@ The author of the example video (which is also used for the demos videos in this
 * Support for OpenCL 2.0
 * If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
 
-There are currently three demos (**the preview videos are scaled down and highly compressed**):
+There are currently five demos (**the preview videos are scaled down and highly compressed**):
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
 
@@ -25,6 +25,11 @@ https://user-images.githubusercontent.com/287266/200169164-231cb4d8-db5c-444b-8a
 Renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes to VP9
 
 https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92ba-ab7903168754.mp4
+
+## optflow-demo and optflow_mt-demo
+My take on a optical flow visualization on top of a video. Encoded to VP9. "optflow_mt" is an example on how to use threads to maximize use of both GPU and CPU.
+
+https://user-images.githubusercontent.com/287266/200512662-8251cf2c-23b3-4376-b664-d3a85b42d187.mp4
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
@@ -69,3 +74,16 @@ src/video/video-demo bunny.webm
 ```bash
 src/nanovg/nanovg-demo bunny.webm
 ```
+
+## Run the optflow-demo:
+
+```bash
+src/optflow/optflow-demo bunny.webm
+```
+
+## Run the optflow_mt-demo:
+
+```bash
+src/optflow_mt/optflow-demo_mt bunny.webm
+```
+
