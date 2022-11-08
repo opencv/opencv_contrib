@@ -4,7 +4,7 @@ SRCS    := optflow.cpp
 
 #precompiled headers
 HEADERS := 
-OBJS    := ${SRCS:.cpp=.o} ../common/color.o
+OBJS    := ${SRCS:.cpp=.o}
 DEPS    := ${SRCS:.cpp=.dep} 
 
 CXXFLAGS += -fpic `pkg-config --cflags egl opencv4 libva-drm glew`
