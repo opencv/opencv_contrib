@@ -2,7 +2,7 @@
 
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
 #include "../common/subsystems.hpp"
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, std::fmax(3.0, WIDTH/960.0));
-            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 64));
+            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 48));
             for (size_t i = 0; i < prevPoints.size(); i++) {
 
                 if (status[i] == 1 && nextPoints[i].y >= 0 && nextPoints[i].x >= 0 && nextPoints[i].y < foregroundMaskGrey.rows && nextPoints[i].x < foregroundMaskGrey.cols) {
