@@ -1,14 +1,14 @@
 # GCV
 OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using my 4.x branch of OpenCV (https://github.com/kallaballa/opencv/tree/GCV)
 
-The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. 
+The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU until there [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository.
 
 The author of the example video (which is also used for the demos videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 
 # Hardware requirements
 * Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
-* If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
+* If you are on a recent Intel Platform (Gen8 - Gen12) you need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
 
 There are currently four demos (**the preview videos are scaled down and highly compressed**):
 ## tetra-demo
@@ -41,7 +41,7 @@ git clone --branch GCV https://github.com/kallaballa/opencv.git
 cd opencv
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DHAVE_EGL_INTEROP=ON -DWITH_OPENGL=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DWITH_QT=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF ..
+cmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_EGL_INTEROP=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DWITH_QT=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF ..
 make -j8
 sudo make install
 ```
