@@ -1,4 +1,4 @@
-#define CL_TARGET_OPENCL_VERSION 200
+#define CL_TARGET_OPENCL_VERSION 120
 
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     cv::UMat frameBuffer;
     cv::UMat background;
     cv::UMat foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
-    cv::UMat videoFrame, flipped, nextVideoFrameGray, prevVideoFrameGray, foregroundMaskGrey;
+    cv::UMat videoFrame, nextVideoFrameGray, prevVideoFrameGray, foregroundMaskGrey;
 
     cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 32.0, false);
 
@@ -78,14 +78,9 @@ int main(int argc, char **argv) {
         if (videoFrame.empty())
             break;
 
-        gl::bind();
-        gl::acquire_from_gl(frameBuffer);
-
         cv::resize(videoFrame, videoFrame, cv::Size(WIDTH, HEIGHT));
         cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
         cvtColor(videoFrame, nextVideoFrameGray, cv::COLOR_RGB2GRAY);
-        frameBuffer = cv::Scalar::all(0);
-        gl::release_to_gl(frameBuffer);
 
         bgSubtractor->apply(videoFrame, foregroundMaskGrey);
 
@@ -102,6 +97,8 @@ int main(int argc, char **argv) {
             }
         }
 
+        gl::bind();
+
         if (allPoints.size() > 4) {
             prevPoints = allPoints;
             if (prevVideoFrameGray.empty()) {
@@ -114,6 +111,7 @@ int main(int argc, char **argv) {
             cv::calcOpticalFlowPyrLK(prevVideoFrameGray, nextVideoFrameGray, prevPoints, nextPoints, status, err, cv::Size(15, 15), 2, criteria);
 
             nvg::begin();
+            nvg::clear();
             newPoints.clear();
 
             using kb::nvg::vg;

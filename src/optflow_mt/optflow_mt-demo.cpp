@@ -1,4 +1,4 @@
-#define CL_TARGET_OPENCL_VERSION 200
+#define CL_TARGET_OPENCL_VERSION 120
 
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
