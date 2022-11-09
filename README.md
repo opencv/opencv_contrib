@@ -1,5 +1,5 @@
 # GCV
-OpenGL/OpenCL/VAAPI interop demos using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/4.x)
+OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/4.x)
 
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. 
 
