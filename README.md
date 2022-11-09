@@ -12,24 +12,24 @@ The author of the example video (which is also used for the demos videos in this
 
 There are currently four demos (**the preview videos are scaled down and highly compressed**):
 ## tetra-demo
-Renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
+Renders a rainbow tetrahedron on blue background using OpenGL and decodes/encodes on the GPU.
 
 https://user-images.githubusercontent.com/287266/200169105-2bb88288-cb07-49bb-97ef-57ac61a0cfb8.mp4
 
 ## video-demo
-Renders a rainbow tetrahedron on top of a input-video using OpenGL and encodes to VP9
+Renders a rainbow tetrahedron on top of a input-video using OpenGL and decodes/encodes on the GPU.
 
 https://user-images.githubusercontent.com/287266/200169164-231cb4d8-db5c-444b-8aff-55c9f1a822cc.mp4
 
 ## nanovg-demo
-Renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes to VP9
+Renders a color wheel on top of a input-video using nanovg (OpenGL) and decodes/encodes on the GPU.
 
 https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92ba-ab7903168754.mp4
 
 ## optflow-demo
-My take on a optical flow visualization on top of a video. Encoded to VP9.
+My take on a optical flow visualization on top of a video. Uses nanovg for rendering (OpenGL) and decodes/encodes on the GPU.
 
-https://user-images.githubusercontent.com/287266/200512662-8251cf2c-23b3-4376-b664-d3a85b42d187.mp4
+https://user-images.githubusercontent.com/287266/200934845-2cd16ad3-3d92-4529-90aa-ecd48670800f.mp4
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
