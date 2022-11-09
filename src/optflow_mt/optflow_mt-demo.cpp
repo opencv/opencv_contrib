@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     cv::UMat foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     cv::UMat videoFrame2, nextVideoFrameGray, prevVideoFrameGray;
     vector<cv::Point2f> fgPoints2, prevPoints, nextPoints, newPoints;
+    double avgLength = 1;
 
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
@@ -132,13 +133,14 @@ int main(int argc, char **argv) {
             newPoints.clear();
             using kb::nvg::vg;
             nvgBeginPath(vg);
-            nvgStrokeWidth(vg, std::fmax(2.0, WIDTH/960.0));
-            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 32));
+            nvgStrokeWidth(vg, std::fmax(3.0, WIDTH/960.0));
+            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 64));
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
                 if (status[i] == 1 && nextPoints[i].y >= 0 && nextPoints[i].x >= 0 && nextPoints[i].y < nextVideoFrameGray.rows && nextPoints[i].x < nextVideoFrameGray.cols) {
                     double len = hypot(fabs(nextPoints[i].x - prevPoints[i].x), fabs(nextPoints[i].y - prevPoints[i].y));
-                    if (len > 0) {
+                    avgLength = ((avgLength * 0.95) + (len * 0.05));
+                    if (len > 0 && len < avgLength) {
                         newPoints.push_back(nextPoints[i]);
 
                         nvgMoveTo(vg, nextPoints[i].x, nextPoints[i].y);

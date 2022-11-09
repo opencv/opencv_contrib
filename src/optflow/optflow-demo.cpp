@@ -66,6 +66,7 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> allPoints, prevPoints, nextPoints, newPoints;
     vector<vector<cv::Point> > contours;
     vector<cv::Vec4i> hierarchy;
+    double avgLength = 1;
 
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
@@ -116,13 +117,14 @@ int main(int argc, char **argv) {
 
             using kb::nvg::vg;
             nvgBeginPath(vg);
-            nvgStrokeWidth(vg, std::fmax(2.0, WIDTH/960.0));
-            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 32));
+            nvgStrokeWidth(vg, std::fmax(3.0, WIDTH/960.0));
+            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 64));
             for (size_t i = 0; i < prevPoints.size(); i++) {
 
                 if (status[i] == 1 && nextPoints[i].y >= 0 && nextPoints[i].x >= 0 && nextPoints[i].y < foregroundMaskGrey.rows && nextPoints[i].x < foregroundMaskGrey.cols) {
                     double len = hypot(fabs(nextPoints[i].x - prevPoints[i].x), fabs(nextPoints[i].y - prevPoints[i].y));
-                    if (len > 0) {
+                    avgLength = ((avgLength * 0.95) + (len * 0.05));
+                    if (len > 0 && len < avgLength) {
                         newPoints.push_back(nextPoints[i]);
 
                         nvgMoveTo(vg, nextPoints[i].x, nextPoints[i].y);
