@@ -39,22 +39,22 @@ dirs:
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-	${MAKE} -C src/optflow_mt/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+	
 debian-release:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} release
-	${MAKE} -C src/optflow_mt/ ${MAKEFLAGS} CXX=${CXX} release
-	
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} release
+
 debian-clean:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} clean
-	${MAKE} -C src/optflow_mt/ ${MAKEFLAGS} CXX=${CXX} clean
-
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} clean
+	
 install: ${TARGET}
 	true
 

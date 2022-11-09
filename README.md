@@ -1,16 +1,16 @@
 # GCV
-OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using the 4.x branch of OpenCV (https://github.com/opencv/opencv/tree/4.x)
+OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using my 4.x branch of OpenCV (https://github.com/kallaballa/opencv/tree/GCV)
 
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. 
 
 The author of the example video (which is also used for the demos videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 
 # Hardware requirements
+* Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
-* Support for OpenCL 2.0
 * If you are on a recent Intel Platform (Gen8 - Gen12) you probably need to install an alternative [compute-runtime](https://github.com/kallaballa/compute-runtime)
 
-There are currently five demos (**the preview videos are scaled down and highly compressed**):
+There are currently four demos (**the preview videos are scaled down and highly compressed**):
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL and encodes to VP9
 
@@ -26,8 +26,8 @@ Renders a color wheel on top of a input-video using nanovg (OpenGL) and encodes 
 
 https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92ba-ab7903168754.mp4
 
-## optflow-demo and optflow_mt-demo
-My take on a optical flow visualization on top of a video. Encoded to VP9. "optflow_mt" is an example on how to use threads to maximize use of both GPU and CPU.
+## optflow-demo
+My take on a optical flow visualization on top of a video. Encoded to VP9.
 
 https://user-images.githubusercontent.com/287266/200512662-8251cf2c-23b3-4376-b664-d3a85b42d187.mp4
 
@@ -37,7 +37,7 @@ You need to build the most recent 4.x branch of OpenCV.
 ## Build OpenCV
 
 ```bash
-git clone --branch 4.x https://github.com/opencv/opencv.git
+git clone --branch GCV https://github.com/kallaballa/opencv.git
 cd opencv
 mkdir build
 cd build
@@ -81,9 +81,4 @@ src/nanovg/nanovg-demo bunny.webm
 src/optflow/optflow-demo bunny.webm
 ```
 
-## Run the optflow_mt-demo:
-
-```bash
-src/optflow_mt/optflow-demo_mt bunny.webm
-```
 
