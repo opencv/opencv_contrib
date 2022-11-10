@@ -66,8 +66,6 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
     const size_t elemSize = src.elemSize();
     const size_t elemSize1 = src.elemSize1();
 
-    //CV_Assert( elemSize == 1 || elemSize == 4 || elemSize == 8 );
-
     GpuMat dst = getOutputMat(_dst, src.cols, src.rows, src.type(), stream);
 
     const bool isNppiNativelySupported =
@@ -201,6 +199,9 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
       else if (!(elemSize%8) && ((elemSize/8)==2))
         nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
           dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
+
+      if (!stream)
+        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
     }//end if (isElemSizeSupportedByNppi)
     else if (isElemSizeSupportedByGridTranspose)
     {
