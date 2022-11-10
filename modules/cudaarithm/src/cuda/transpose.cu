@@ -77,12 +77,23 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
       (srcType == CV_32SC1) || (srcType == CV_32SC3) || (srcType == CV_32SC4) ||
       (srcType == CV_32FC1) || (srcType == CV_32FC3) || (srcType == CV_32FC4);
     const bool isElemSizeSupportedByNppi =
-      ((elemSize != 0) && !(elemSize%1) && ((elemSize/1)<=4)) ||
-      ((elemSize != 0) && !(elemSize%2) && ((elemSize/2)<=4)) ||
-      ((elemSize != 0) && !(elemSize%4) && ((elemSize/4)<=4)) ||
-      ((elemSize != 0) && !(elemSize%8) && ((elemSize/8)<=2));
-    if (src.empty())
-      dst.release();
+      (!(elemSize%1) && ((elemSize/1)<=4)) ||
+      (!(elemSize%2) && ((elemSize/2)<=4)) ||
+      (!(elemSize%4) && ((elemSize/4)<=4)) ||
+      (!(elemSize%8) && ((elemSize/8)<=2));
+    const bool isElemSizeSupportedByGridTranspose =
+      (elemSize == 1) || (elemSize == 2) || (elemSize == 4) || (elemSize == 8);
+    const bool isSupported = isNppiNativelySupported || isElemSizeSupportedByNppi || isElemSizeSupportedByGridTranspose;
+
+    if (!isSupported)
+      CV_Error(Error::StsUnsupportedFormat, "");
+    else if (src.empty())
+      CV_Error(Error::StsBadArg,"image is empty");
+
+    if ((src.cols == 1) && (dst.cols == 1))
+      src.copyTo(dst, stream);
+    else if (((src.cols == 1) || (src.rows == 1)) && (src.cols*src.elemSize() == src.step))
+      src.reshape(0, src.cols).copyTo(dst, stream);
     else if (isNppiNativelySupported)
     {
         NppStreamHandler h(StreamAccessor::getStream(stream));
@@ -191,16 +202,17 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
         nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
           dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
     }//end if (isElemSizeSupportedByNppi)
-    else if (elemSize == 1)
-      gridTranspose(globPtr<unsigned char>(src), globPtr<unsigned char>(dst), stream);
-    else if (elemSize == 2)
-      gridTranspose(globPtr<unsigned short>(src), globPtr<unsigned short>(dst), stream);
-    else if (elemSize == 4)
-      gridTranspose(globPtr<signed int>(src), globPtr<signed int>(dst), stream);
-    else if (elemSize == 8)
-      gridTranspose(globPtr<double>(src), globPtr<float>(dst), stream);
-    else
-      CV_Error(Error::StsUnsupportedFormat, "");
+    else if (isElemSizeSupportedByGridTranspose)
+    {
+      if (elemSize == 1)
+        gridTranspose(globPtr<unsigned char>(src), globPtr<unsigned char>(dst), stream);
+      else if (elemSize == 2)
+        gridTranspose(globPtr<unsigned short>(src), globPtr<unsigned short>(dst), stream);
+      else if (elemSize == 4)
+        gridTranspose(globPtr<signed int>(src), globPtr<signed int>(dst), stream);
+      else if (elemSize == 8)
+        gridTranspose(globPtr<double>(src), globPtr<double>(dst), stream);
+    }//end if (isElemSizeSupportedByGridTranspose)
 
     syncOutput(dst, _dst, stream);
 }
