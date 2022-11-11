@@ -90,7 +90,9 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 
     if ((src.cols == 1) && (dst.cols == 1))
       src.copyTo(dst, stream);
-    else if (((src.cols == 1) || (src.rows == 1)) && (src.cols*src.elemSize() == src.step))
+    else if (src.rows == 1)
+      src.reshape(0, src.cols).copyTo(dst, stream);
+    else if ((src.cols == 1) && (src.cols*src.elemSize() == src.step))
       src.reshape(0, src.cols).copyTo(dst, stream);
     else if (isNppiNativelySupported)
     {
