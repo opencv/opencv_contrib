@@ -32,6 +32,7 @@ public:
             // release lock as long as the wait and reaquire it afterwards.
             c.wait(lock);
         }
+
         T val = q.front();
         q.pop();
         return val;
