@@ -1,4 +1,4 @@
-//https://stackoverflow.com/questions/15278343/c11-thread-safe-queue
+//started with https://stackoverflow.com/questions/15278343/c11-thread-safe-queue
 #ifndef SAFE_QUEUE
 #define SAFE_QUEUE
 
@@ -10,8 +10,8 @@
 template<class T>
 class SafeQueue {
 public:
-    SafeQueue() :
-            q(), m(), c() {
+    SafeQueue(size_t maxSize) :
+            q(), m(), cempty(), cfull(), maxSize(maxSize) {
     }
 
     ~SafeQueue() {
@@ -19,20 +19,23 @@ public:
 
     // Add an element to the queue.
     void enqueue(T t) {
-        std::lock_guard<std::mutex> lock(m);
+        std::unique_lock<std::mutex> lock(m);
+        while (q.size() >= maxSize) {
+            cfull.wait(lock);
+        }
         q.push(t);
-        c.notify_one();
+        cempty.notify_one();
     }
 
     // Get the "front"-element.
     // If the queue is empty, wait till a element is avaiable.
     T dequeue() {
+        cfull.notify_one();
         std::unique_lock<std::mutex> lock(m);
         while (q.empty()) {
             // release lock as long as the wait and reaquire it afterwards.
-            c.wait(lock);
+            cempty.wait(lock);
         }
-
         T val = q.front();
         q.pop();
         return val;
@@ -40,6 +43,8 @@ public:
 private:
     std::queue<T> q;
     mutable std::mutex m;
-    std::condition_variable c;
+    std::condition_variable cempty;
+    std::condition_variable cfull;
+    int maxSize;
 };
 #endif

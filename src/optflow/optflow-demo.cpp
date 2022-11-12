@@ -3,26 +3,24 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr unsigned int DOWN_SCALE = 2;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
-constexpr int MAX_POINTS = 2500;
 
-#include "../common/tsafe_queue.hpp"
 #include "../common/subsystems.hpp"
-#include <thread>
 #include <csignal>
 #include <cstdint>
-#include <iterator>
-#include <iomanip>
 #include <string>
 
+#include <opencv2/imgproc.hpp>
 #include <opencv2/optflow.hpp>
-#include <opencv2/objdetect.hpp>
 
 using std::cerr;
 using std::endl;
 using std::vector;
 using std::string;
+
+int current_max_points = 2000;
+float current_stroke = 5.0f;
 
 static bool done = false;
 static void finish(int ignore) {
@@ -30,8 +28,36 @@ static void finish(int ignore) {
     done = true;
 }
 
-SafeQueue<std::tuple<cv::UMat, std::vector<uchar>, std::vector<cv::Point2f>, std::vector<cv::Point2f>>> task_queue;
-cv::RNG rng;
+void make_delaunay_mesh(const cv::Size &size, cv::Subdiv2D &subdiv, vector<cv::Point2f> &dstPoints) {
+    vector<cv::Vec6f> triangleList;
+    subdiv.getTriangleList(triangleList);
+    vector<cv::Point2f> pt(3);
+    cv::Rect rect(0, 0, size.width, size.height);
+
+    for (size_t i = 0; i < triangleList.size(); i++) {
+        cv::Vec6f t = triangleList[i];
+        pt[0] = cv::Point2f(t[0], t[1]);
+        pt[1] = cv::Point2f(t[2], t[3]);
+        pt[2] = cv::Point2f(t[4], t[5]);
+
+        if (rect.contains(pt[0]) && rect.contains(pt[1]) && rect.contains(pt[2])) {
+            dstPoints.push_back(pt[0]);
+            dstPoints.push_back(pt[1]);
+            dstPoints.push_back(pt[2]);
+        }
+    }
+}
+
+void collect_delaunay_mesh_points(const int width, const int height, const std::vector<cv::Point2f> &inPoints, std::vector<cv::Point2f> &outPoints) {
+    cv::Subdiv2D subdiv(cv::Rect(0, 0, width, height));
+    subdiv.insert(inPoints);
+    vector<cv::Point2f> triPoints;
+    make_delaunay_mesh( { width, height }, subdiv, triPoints);
+
+    for (size_t i = 0; i < triPoints.size(); i++) {
+        outPoints.push_back(triPoints[i]);
+    }
+}
 
 int main(int argc, char **argv) {
     signal(SIGINT, finish);
@@ -43,15 +69,22 @@ int main(int argc, char **argv) {
     }
 
     va::init();
-    cv::VideoCapture cap(argv[1], cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    cv::VideoCapture cap(argv[1], cv::CAP_FFMPEG, {
+            cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+            cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    });
+
     if (!cap.isOpened()) {
         cerr << "ERROR! Unable to open camera" << endl;
         return -1;
     }
 
     double fps = cap.get(cv::CAP_PROP_FPS);
-
-    cv::VideoWriter encoder("optflow.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    cv::VideoWriter encoder("optflow.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    });
 
     if (!OFFSCREEN)
         x11::init();
@@ -64,130 +97,117 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-
-    std::thread producer([&]() {
-        cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(300, 32.0, true);
-        cv::UMat videoFrame, downScaled;
-        cv::UMat downPrevGrey, downNextGrey, downMaskGrey, downEqualGrey;
-        cv::UMat downNextGreyFloat, downMaskGreyFloat, downTargetGreyFloat;
-        vector<cv::Point2f> downPoints, downPrevPoints, downNextPoints, downNewPoints;
-        vector<vector<cv::Point> > contours;
-        vector<cv::Vec4i> hierarchy;
-        std::vector<uchar> status;
-        std::vector<float> err;
-
-        va::bind();
-        while (!done) {
-            cap >> videoFrame;
-            if (videoFrame.empty())
-                break;
-
-            cv::resize(videoFrame, videoFrame, cv::Size(WIDTH, HEIGHT));
-            cv::resize(videoFrame, downScaled, cv::Size(0, 0), 1.0 / DOWN_SCALE, 1.0 / DOWN_SCALE);
-            cvtColor(downScaled, downNextGrey, cv::COLOR_RGB2GRAY);
-            equalizeHist(downNextGrey, downEqualGrey);
-            bgSubtractor->apply(downEqualGrey, downMaskGrey);
-            int morph_size = 1;
-            cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-            cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(-1, -1), 1);
-            findContours(downMaskGrey, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-
-            downPoints.clear();
-            for (const auto &c : contours) {
-                for (const auto &pt : c) {
-                    downPoints.push_back(pt);
-                }
-            }
-
-            if (downPoints.size() > 4) {
-                int copyn = std::min(downPoints.size(), (MAX_POINTS - downPrevPoints.size()));
-                std::random_shuffle(downPoints.begin(), downPoints.end());
-
-                if(downPrevPoints.size() < MAX_POINTS) {
-                    std::copy(downPoints.begin(), downPoints.begin() + copyn, std::back_inserter(downPrevPoints));
-                }
-
-                if (downPrevGrey.empty()) {
-                   downPrevGrey = downNextGrey.clone();
-                }
-
-                cv::TermCriteria criteria = cv::TermCriteria((cv::TermCriteria::COUNT) + (cv::TermCriteria::EPS), 10, 0.03);
-                cv::calcOpticalFlowPyrLK(downPrevGrey, downNextGrey, downPrevPoints, downNextPoints, status, err, cv::Size(15, 15), 2, criteria);
-
-                downNewPoints.clear();
-                for(size_t i = 0; i < status.size(); ++i) {
-                    if (status[i] == 1) {
-                        downNewPoints.push_back(downNextPoints[i]);
-                    }
-                }
-
-                task_queue.enqueue( { videoFrame.clone(), status, downPrevPoints, downNextPoints });
-                downPrevPoints = downNewPoints;
-            }
-            downPrevGrey = downNextGrey.clone();
-        }
-
-        task_queue.enqueue({{},{},{},{}});
-    });
-
-    double avgLength = 1;
-
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
     double lastFps = fps;
 
-    cv::UMat frameBuffer;
-    cv::UMat background;
+    cv::UMat frameBuffer, videoFrame, downScaled, background;
     cv::UMat foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
-    cv::UMat videoFrame;
-    vector<cv::Point2f> downPrevPoints, downNextPoints, upPrevPoints, upNextPoints;
+    cv::UMat downPrevGrey, downNextGrey, downMaskGrey;
+    vector<cv::Point2f> contourPoints, downNewPoints, downPrevPoints, downNextPoints, meshPoints, upPrevPoints, upNextPoints;
+    cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 32.0, false);
     std::vector<uchar> status;
-
-    while (true) {
-        auto tup = task_queue.dequeue();
-        videoFrame = std::get<0>(tup);
-        status = std::get<1>(tup);
-        downPrevPoints = std::get<2>(tup);
-        downNextPoints = std::get<3>(tup);
-
-        if(videoFrame.empty())
+    std::vector<float> err;
+    vector<cv::Point2f> hull;
+    vector<vector<cv::Point> > contours;
+    vector<cv::Vec4i> hierarchy;
+    while (!done) {
+        va::bind();
+        cap >> videoFrame;
+        if (videoFrame.empty())
             break;
 
+        cv::resize(videoFrame, videoFrame, cv::Size(WIDTH, HEIGHT));
         cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
+        cv::resize(videoFrame, downScaled, cv::Size(0, 0), 1.0 / DOWN_SCALE, 1.0 / DOWN_SCALE);
+        cv::boxFilter(downScaled, downScaled, -1, cv::Size(5, 5), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+        cvtColor(downScaled, downNextGrey, cv::COLOR_RGB2GRAY);
+
+        bgSubtractor->apply(downScaled, downMaskGrey);
+
+        int morph_size = 1;
+        cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+        cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(-1, -1), 1);
+//        cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_CLOSE, element, cv::Point(-1, -1), 2);
+        findContours(downMaskGrey, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+        imshow("dmg", downMaskGrey);
+        cv::waitKey(1);
+
+        meshPoints.clear();
+        for (const auto &c : contours) {
+            contourPoints.clear();
+            for (const auto &pt : c) {
+                contourPoints.push_back(pt);
+            }
+            collect_delaunay_mesh_points(downMaskGrey.cols, downMaskGrey.rows, contourPoints, meshPoints);
+        }
 
         gl::bind();
-        if (downPrevPoints.size() > 1 && downNextPoints.size() > 1) {
-            upNextPoints.clear();
-            upPrevPoints.clear();
-            for (cv::Point2f pt : downPrevPoints) {
-                upPrevPoints.push_back(pt *= float(DOWN_SCALE));
+        nvg::begin();
+        nvg::clear();
+
+        if (meshPoints.size() > 4) {
+            cv::convexHull(meshPoints, hull);
+            double area = cv::contourArea(hull);
+            current_max_points = log(2.0 + ((meshPoints.size() / area) * 10)) * 1000.0;
+            int copyn = std::min(meshPoints.size(), (current_max_points - downPrevPoints.size()));
+            std::random_shuffle(meshPoints.begin(), meshPoints.end());
+
+//            std::cerr << current_stroke << ":" << current_max_points << endl;
+
+            if (downPrevPoints.size() < current_max_points) {
+                std::copy(meshPoints.begin(), meshPoints.begin() + copyn, std::back_inserter(downPrevPoints));
             }
 
-            for (cv::Point2f pt : downNextPoints) {
-                upNextPoints.push_back(pt *= float(DOWN_SCALE));
+            if (downPrevGrey.empty()) {
+                downPrevGrey = downNextGrey.clone();
             }
+            std::cerr << hull.size() << ":" << meshPoints.size() << ":" << downPrevPoints.size() << ":" << downNextPoints.size() << ":" << current_max_points << endl;
 
-            nvg::begin();
-            nvg::clear();
-            using kb::nvg::vg;
-            nvgBeginPath(vg);
-            nvgStrokeWidth(vg, std::fmax(3.0, WIDTH/960.0));
-            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 48));
-            for (size_t i = 0; i < downPrevPoints.size(); i++) {
-                if (status[i] == 1 && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH) {
-                    double len = hypot(fabs(upNextPoints[i].x - upPrevPoints[i].x), fabs(upNextPoints[i].y - upPrevPoints[i].y));
-                    avgLength = ((avgLength * 0.95) + (len * 0.05));
-                    if (len > 0 && len < avgLength) {
-                        nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
-                        nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
+
+            cv::TermCriteria criteria = cv::TermCriteria((cv::TermCriteria::COUNT) + (cv::TermCriteria::EPS), 10, 0.03);
+            cv::calcOpticalFlowPyrLK(downPrevGrey, downNextGrey, downPrevPoints, downNextPoints, status, err, cv::Size(15, 15), 2, criteria, cv::OPTFLOW_LK_GET_MIN_EIGENVALS);
+
+            downNewPoints.clear();
+
+            if (downPrevPoints.size() > 1 && downNextPoints.size() > 1) {
+                upNextPoints.clear();
+                upPrevPoints.clear();
+                for (cv::Point2f pt : downPrevPoints) {
+                    upPrevPoints.push_back(pt *= float(DOWN_SCALE));
+                }
+
+                for (cv::Point2f pt : downNextPoints) {
+                    upNextPoints.push_back(pt *= float(DOWN_SCALE));
+                }
+
+                current_stroke = 1.0f + (log(1.0f + log(1.0f + (area / 1500.0f))) * 4.0f);
+                using kb::nvg::vg;
+                nvgBeginPath(vg);
+                nvgStrokeWidth(vg, current_stroke);
+                nvgStrokeColor(vg, nvgHSLA(0.5, 1, 0.5, 32));
+
+                for (size_t i = 0; i < downPrevPoints.size(); i++) {
+                    if (status[i] == 1 && err[i] < (40.0f / current_max_points) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH) {
+                        downNewPoints.push_back(downNextPoints[i]);
+                        double diffX = fabs(upNextPoints[i].x - upPrevPoints[i].x);
+                        double diffY = fabs(upNextPoints[i].y - upPrevPoints[i].y);
+                        double len = hypot(diffX, diffY);
+                        if (len > 0) {
+                            nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
+                            nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
+                        }
                     }
                 }
-            }
-            nvgStroke(vg);
+                nvgStroke(vg);
 
-            nvg::end();
+            }
+            downPrevPoints = downNewPoints;
         }
+        nvg::end();
+
+        downPrevGrey = downNextGrey.clone();
 
         gl::acquire_from_gl(frameBuffer);
 
@@ -226,8 +246,6 @@ int main(int argc, char **argv) {
 
         ++cnt;
     }
-
-    producer.join();
 
     return 0;
 }
