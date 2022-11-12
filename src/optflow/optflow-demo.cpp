@@ -22,8 +22,7 @@ using std::vector;
 using std::list;
 using std::string;
 
-int current_max_points = 2000;
-float current_stroke = 5.0f;
+int max_points = 2000;
 
 static bool done = false;
 static void finish(int ignore) {
@@ -168,8 +167,6 @@ int main(int argc, char **argv) {
             cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
             cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(-1, -1), 1);
             findContours(downMaskGrey, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-            imshow("dmg", downMaskGrey);
-            cv::waitKey(1);
 
             meshPoints.clear();
             for (const auto &c : contours) {
@@ -186,13 +183,13 @@ int main(int argc, char **argv) {
 
             if (meshPoints.size() > 12) {
                 cv::convexHull(meshPoints, downHull);
-                double area = cv::contourArea(downHull);
-                double density = (meshPoints.size() / area);
-                current_max_points = density * 25000.0;
-                int copyn = std::min(meshPoints.size(), (current_max_points - downPrevPoints.size()));
+                float area = cv::contourArea(downHull);
+                float density = (meshPoints.size() / area);
+                float max_points = density * 25000.0;
+                size_t copyn = std::min(meshPoints.size(), (size_t(std::ceil(max_points)) - downPrevPoints.size()));
                 std::random_shuffle(meshPoints.begin(), meshPoints.end());
 
-                if (downPrevPoints.size() < current_max_points) {
+                if (downPrevPoints.size() < max_points) {
                     std::copy(meshPoints.begin(), meshPoints.begin() + copyn, std::back_inserter(downPrevPoints));
                 }
 
@@ -217,24 +214,22 @@ int main(int argc, char **argv) {
                     }
                     overdefine(downHull, downOverdefined, 5);
                     cv::RotatedRect ellipse = cv::fitEllipse(downOverdefined);
-                    double shortAxis = std::min(ellipse.size.width, ellipse.size.height) * float(DOWN_SCALE);
-                    double wholeArea = WIDTH * HEIGHT;
-                    current_stroke = 20.0 * sqrt(area / wholeArea);
-                    std::cerr << current_stroke << ":" << sqrt(area / wholeArea) << endl;
+                    float shortAxis = std::min(ellipse.size.width, ellipse.size.height) * float(DOWN_SCALE);
+                    float wholeArea = WIDTH * HEIGHT;
+                    float stroke = 20.0 * sqrt(area / wholeArea);
 
                     using kb::nvg::vg;
                     nvgBeginPath(vg);
-                    nvgStrokeWidth(vg, current_stroke);
+                    nvgStrokeWidth(vg, stroke);
                     nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 48));
 
                     for (size_t i = 0; i < downPrevPoints.size(); i++) {
                         if (status[i] == 1 && err[i] < 0.005 && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH) {
                             downNewPoints.push_back(downNextPoints[i]);
-                            double diffX = fabs(upNextPoints[i].x - upPrevPoints[i].x);
-                            double diffY = fabs(upNextPoints[i].y - upPrevPoints[i].y);
-                            double len = hypot(diffX, diffY);
+                            float diffX = fabs(upNextPoints[i].x - upPrevPoints[i].x);
+                            float diffY = fabs(upNextPoints[i].y - upPrevPoints[i].y);
+                            float len = hypot(diffX, diffY);
                             if (len > 0 && len < shortAxis / 3.0) {
-//                            std::cerr << err[i] << ":" << current_max_points << endl;
                                 nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
                                 nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
                             }
@@ -247,7 +242,6 @@ int main(int argc, char **argv) {
             }
             nvg::end();
         } else {
-            cerr << "clear" << endl;
             gl::bind();
             nvg::begin();
             nvg::clear();
