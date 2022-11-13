@@ -2,7 +2,7 @@
 
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
-constexpr unsigned int DOWN_SCALE = 2;
+constexpr float SCALE_FACTOR = 0.5;
 constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 
@@ -13,6 +13,7 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 #include <cstdint>
 #include <string>
 
+#include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/optflow.hpp>
 
@@ -22,77 +23,12 @@ using std::vector;
 using std::list;
 using std::string;
 
-int max_points = 2000;
+float current_max_points = 2000;
 
 static bool done = false;
 static void finish(int ignore) {
     std::cerr << endl;
     done = true;
-}
-
-void overdefine(const vector<cv::Point2f>& srcPts, vector<cv::Point2f>& dstPts, size_t minPoints) {
-    assert(srcPts.size() > 1);
-    list<cv::Point2f> copy;
-    for(auto& pt : srcPts) {
-        copy.push_back(pt);
-    }
-
-    off_t diff = minPoints - copy.size();
-    while(diff > 0)  {
-        auto it = copy.begin();
-        for(size_t i = 0; i < copy.size() && diff > 0; i+=2) {
-            const auto& first = *it;
-            ++it;
-            if(it == copy.end())
-                it = copy.begin();
-            const auto& second = *it;
-            auto insertee = first;
-            auto vector = second - first;
-            vector.x /= 2.0;
-            vector.y /= 2.0;
-            insertee.x += vector.x;
-            insertee.y += vector.y;
-            --it;
-            copy.insert(it, std::move(insertee));
-            ++it;
-            --diff;
-        }
-    }
-    for(auto& pt : copy) {
-        dstPts.push_back(pt);
-    }
-    assert(dstPts.size() >= minPoints);
-}
-
-void make_delaunay_mesh(const cv::Size &size, cv::Subdiv2D &subdiv, vector<cv::Point2f> &dstPoints) {
-    vector<cv::Vec6f> triangleList;
-    subdiv.getTriangleList(triangleList);
-    vector<cv::Point2f> pt(3);
-    cv::Rect rect(0, 0, size.width, size.height);
-
-    for (size_t i = 0; i < triangleList.size(); i++) {
-        cv::Vec6f t = triangleList[i];
-        pt[0] = cv::Point2f(t[0], t[1]);
-        pt[1] = cv::Point2f(t[2], t[3]);
-        pt[2] = cv::Point2f(t[4], t[5]);
-
-        if (rect.contains(pt[0]) && rect.contains(pt[1]) && rect.contains(pt[2])) {
-            dstPoints.push_back(pt[0]);
-            dstPoints.push_back(pt[1]);
-            dstPoints.push_back(pt[2]);
-        }
-    }
-}
-
-void collect_delaunay_mesh_points(const int width, const int height, const std::vector<cv::Point2f> &inPoints, std::vector<cv::Point2f> &outPoints) {
-    cv::Subdiv2D subdiv(cv::Rect(0, 0, width, height));
-    subdiv.insert(inPoints);
-    vector<cv::Point2f> triPoints;
-    make_delaunay_mesh( { width, height }, subdiv, triPoints);
-
-    for (size_t i = 0; i < triPoints.size(); i++) {
-        outPoints.push_back(triPoints[i]);
-    }
 }
 
 int main(int argc, char **argv) {
@@ -138,16 +74,14 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
     double lastFps = fps;
 
-    cv::UMat frameBuffer, videoFrame, downScaled, background;
-    cv::UMat foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat frameBuffer, videoFrame, downScaled, background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     cv::UMat downPrevGrey, downNextGrey, downMaskGrey;
-    vector<cv::Point2f> contourPoints, downNewPoints, downPrevPoints, downNextPoints, meshPoints, upPrevPoints, upNextPoints;
-    cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 32.0, false);
+
+    vector<cv::Point2f> featurePoints, downNewPoints, downPrevPoints, downNextPoints, downHull, upPrevPoints, upNextPoints;
+    cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
+    cv::Ptr<cv::ORB> detector = cv::ORB::create(10000);
     std::vector<uchar> status;
     std::vector<float> err;
-    vector<cv::Point2f> downHull, downOverdefined;
-    vector<vector<cv::Point> > contours;
-    vector<cv::Vec4i> hierarchy;
     while (!done) {
         va::bind();
         cap >> videoFrame;
@@ -156,65 +90,56 @@ int main(int argc, char **argv) {
 
         cv::resize(videoFrame, videoFrame, cv::Size(WIDTH, HEIGHT));
         cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
-        cv::resize(videoFrame, downScaled, cv::Size(0, 0), 1.0 / DOWN_SCALE, 1.0 / DOWN_SCALE);
-        cv::boxFilter(downScaled, downScaled, -1, cv::Size(5, 5), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+        cv::resize(videoFrame, downScaled, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
         cvtColor(downScaled, downNextGrey, cv::COLOR_RGB2GRAY);
 
-        bgSubtractor->apply(downScaled, downMaskGrey);
+        bgSubtractor->apply(downNextGrey, downMaskGrey);
 
-        if (cv::countNonZero(downMaskGrey) < (WIDTH * HEIGHT * 0.1)) {
+        if (cv::countNonZero(downMaskGrey) < ((WIDTH*SCALE_FACTOR) * (HEIGHT*SCALE_FACTOR) * 0.25)) {
             int morph_size = 1;
             cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-            cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(-1, -1), 1);
-            findContours(downMaskGrey, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+            cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(-1, -1), 2);
 
-            meshPoints.clear();
-            for (const auto &c : contours) {
-                contourPoints.clear();
-                for (const auto &pt : c) {
-                    contourPoints.push_back(pt);
-                }
-                collect_delaunay_mesh_points(downMaskGrey.cols, downMaskGrey.rows, contourPoints, meshPoints);
+            vector<cv::KeyPoint> kps;
+            detector->detect(downMaskGrey,kps);
+            featurePoints.clear();
+
+            for (const auto &kp : kps) {
+                featurePoints.push_back(kp.pt);
             }
 
             gl::bind();
             nvg::begin();
             nvg::clear();
 
-            if (meshPoints.size() > 12) {
-                cv::convexHull(meshPoints, downHull);
+            if (featurePoints.size() > 12) {
+                cv::convexHull(featurePoints, downHull);
                 float area = cv::contourArea(downHull);
-                float density = (meshPoints.size() / area);
-                float max_points = density * 25000.0;
-                size_t copyn = std::min(meshPoints.size(), (size_t(std::ceil(max_points)) - downPrevPoints.size()));
-                std::random_shuffle(meshPoints.begin(), meshPoints.end());
-
-                if (downPrevPoints.size() < max_points) {
-                    std::copy(meshPoints.begin(), meshPoints.begin() + copyn, std::back_inserter(downPrevPoints));
+                float density = (featurePoints.size() / area);
+                current_max_points = density * 25000.0;
+                size_t copyn = std::min(featurePoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
+                if (downPrevPoints.size() < current_max_points) {
+                    std::copy(featurePoints.begin(), featurePoints.begin() + copyn, std::back_inserter(downPrevPoints));
                 }
 
                 if (downPrevGrey.empty()) {
                     downPrevGrey = downNextGrey.clone();
                 }
 
-                cv::TermCriteria criteria = cv::TermCriteria((cv::TermCriteria::COUNT) + (cv::TermCriteria::EPS), 10, 0.03);
-                cv::calcOpticalFlowPyrLK(downPrevGrey, downNextGrey, downPrevPoints, downNextPoints, status, err, cv::Size(15, 15), 2, criteria, cv::OPTFLOW_LK_GET_MIN_EIGENVALS);
+                cv::calcOpticalFlowPyrLK(downPrevGrey, downNextGrey, downPrevPoints, downNextPoints, status, err);
 
                 downNewPoints.clear();
-
                 if (downPrevPoints.size() > 1 && downNextPoints.size() > 1) {
                     upNextPoints.clear();
                     upPrevPoints.clear();
                     for (cv::Point2f pt : downPrevPoints) {
-                        upPrevPoints.push_back(pt *= float(DOWN_SCALE));
+                        upPrevPoints.push_back(pt /= SCALE_FACTOR);
                     }
 
                     for (cv::Point2f pt : downNextPoints) {
-                        upNextPoints.push_back(pt *= float(DOWN_SCALE));
+                        upNextPoints.push_back(pt /= SCALE_FACTOR);
                     }
-                    overdefine(downHull, downOverdefined, 5);
-                    cv::RotatedRect ellipse = cv::fitEllipse(downOverdefined);
-                    float shortAxis = std::min(ellipse.size.width, ellipse.size.height) * float(DOWN_SCALE);
+
                     float wholeArea = WIDTH * HEIGHT;
                     float stroke = 20.0 * sqrt(area / wholeArea);
 
@@ -224,19 +149,16 @@ int main(int argc, char **argv) {
                     nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 48));
 
                     for (size_t i = 0; i < downPrevPoints.size(); i++) {
-                        if (status[i] == 1 && err[i] < 0.005 && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH) {
+                        if (status[i] == 1 && err[i] < (1000000.0 / area)
+                                && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
+                                && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH
+                                && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
                             downNewPoints.push_back(downNextPoints[i]);
-                            float diffX = fabs(upNextPoints[i].x - upPrevPoints[i].x);
-                            float diffY = fabs(upNextPoints[i].y - upPrevPoints[i].y);
-                            float len = hypot(diffX, diffY);
-                            if (len > 0 && len < shortAxis / 3.0) {
-                                nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
-                                nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
-                            }
+                            nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
+                            nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
                         }
                     }
                     nvgStroke(vg);
-
                 }
                 downPrevPoints = downNewPoints;
             }
@@ -256,13 +178,12 @@ int main(int argc, char **argv) {
         cv::flip(frameBuffer, frameBuffer, 0);
         cv::addWeighted(foreground, 0.9, frameBuffer, 1.1, 0.0, foreground);
         cv::addWeighted(background, 1.0, foreground, 1.0, 0.0, frameBuffer);
-        cv::flip(frameBuffer, frameBuffer, 0);
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
+        cv::flip(frameBuffer, frameBuffer, 0);
 
         gl::release_to_gl(frameBuffer);
 
         va::bind();
-        cv::flip(videoFrame, videoFrame, 0);
         encoder.write(videoFrame);
 
         if (x11::is_initialized()) {
