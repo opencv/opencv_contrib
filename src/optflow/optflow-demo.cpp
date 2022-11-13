@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 
     cv::Size frameBufferSize(WIDTH, HEIGHT);
     cv::UMat frameBuffer, videoFrame, resized, down, background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
-    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMaskGrey;
+    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMaskGrey, downMaskDilateGrey;
 
     vector<cv::Point2f> downFeaturePoints, downNewPoints, downPrevPoints, downNextPoints, downHull;
     vector<cv::Point2f> upPrevPoints, upNextPoints;
@@ -109,24 +109,28 @@ int main(int argc, char **argv) {
         nvg::begin();
         nvg::clear();
 
-        if (cv::countNonZero(downMaskGrey) < (SCALED_WIDTH * SCALED_HEIGHT * 0.25)) {
-            int morph_size = 1;
-            cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-            cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+        int morph_size = 1;
+        cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+        cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+        morph_size = 4;
+        element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+        cv::morphologyEx(downMaskGrey, downMaskDilateGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), 3, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 
-            detector->detect(downMaskGrey, keypoints);
-            downFeaturePoints.clear();
+        detector->detect(downMaskGrey, keypoints);
+        downFeaturePoints.clear();
 
-            for (const auto &kp : keypoints) {
-                downFeaturePoints.push_back(kp.pt);
-            }
+        for (const auto &kp : keypoints) {
+            downFeaturePoints.push_back(kp.pt);
+        }
 
-            if (downFeaturePoints.size() > 4) {
-                cv::convexHull(downFeaturePoints, downHull);
-                float area = cv::contourArea(downHull);
-                float density = (downFeaturePoints.size() / area);
-                float stroke = 30.0 * sqrt(area / (SCALED_WIDTH * SCALED_HEIGHT * 4));
-                current_max_points = density * 500000.0;
+        if (downFeaturePoints.size() > 4) {
+            cv::convexHull(downFeaturePoints, downHull);
+            float area = cv::contourArea(downHull);
+            float density = (downFeaturePoints.size() / area);
+            float stroke = 30.0 * sqrt(area / (SCALED_WIDTH * SCALED_HEIGHT * 4));
+            current_max_points = density * 500000.0;
+            cerr << (cv::countNonZero(downMaskDilateGrey) * area) << ":" << (SCALED_WIDTH * SCALED_HEIGHT * 2000) << endl;
+            if ((cv::countNonZero(downMaskDilateGrey) * area) < (SCALED_WIDTH * SCALED_HEIGHT * 2000)) {
                 size_t copyn = std::min(downFeaturePoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
                 if (downPrevPoints.size() < current_max_points) {
                     std::copy(downFeaturePoints.begin(), downFeaturePoints.begin() + copyn, std::back_inserter(downPrevPoints));
@@ -153,15 +157,12 @@ int main(int argc, char **argv) {
                     using kb::nvg::vg;
                     nvgBeginPath(vg);
                     nvgStrokeWidth(vg, stroke);
-                    nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.55, 16));
+                    nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.55, 8));
 
                     for (size_t i = 0; i < downPrevPoints.size(); i++) {
-                        if (status[i] == 1 && err[i] < (1.0 / density)
-                                && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
-                                && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH
-                                && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
+                        if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
                             float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
-                            if(len < sqrt(area)) {
+                            if (len < sqrt(area)) {
                                 downNewPoints.push_back(downNextPoints[i]);
                                 nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
                                 nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
@@ -171,9 +172,9 @@ int main(int argc, char **argv) {
                     nvgStroke(vg);
                 }
                 downPrevPoints = downNewPoints;
+            } else {
+                foreground = cv::Scalar::all(0);
             }
-        } else {
-            foreground = cv::Scalar::all(0);
         }
         nvg::end();
 
