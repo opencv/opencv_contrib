@@ -76,11 +76,11 @@ int main(int argc, char **argv) {
 
     cv::Size frameBufferSize(WIDTH, HEIGHT);
     cv::UMat frameBuffer, videoFrame, resized, down, background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
-    cv::UMat downPrevGrey, downNextGrey, downMaskGrey;
+    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMaskGrey;
 
-    vector<cv::Point2f> downFeaturePoints, downNewPoints, downPrevPoints, downNextPoints, downHull;
+    vector<cv::Point2f> downNewPoints, downPrevPoints, downNextPoints, downHull;
     vector<cv::Point2f> upPrevPoints, upNextPoints;
-    vector<cv::KeyPoint> keypoints;
+    vector<cv::KeyPoint> downPrevKeyPoints, keypoints;
 
     std::vector<uchar> status;
     std::vector<float> err;
@@ -95,11 +95,11 @@ int main(int argc, char **argv) {
         cap >> videoFrame;
         if (videoFrame.empty())
             break;
-        if(videoFrame.size() != frameBufferSize)
+        if(videoFrame.size().width != frameBufferSize.width || videoFrame.size().height != frameBufferSize.height)
             cv::resize(videoFrame, resized, frameBufferSize);
         else
             resized = videoFrame;
-        cv::resize(videoFrame, down, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
+        cv::resize(resized, down, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
         cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
         cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
 
@@ -115,20 +115,21 @@ int main(int argc, char **argv) {
             cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 
             detector->detect(downMaskGrey, keypoints);
-            downFeaturePoints.clear();
+            downPrevKeyPoints.clear();
 
             for (const auto &kp : keypoints) {
-                downFeaturePoints.push_back(kp.pt);
+                downPrevKeyPoints.push_back(kp.pt);
             }
 
-            if (downFeaturePoints.size() > 4) {
-                cv::convexHull(downFeaturePoints, downHull);
+            if (downPrevKeyPoints.size() > 4) {
+                cv::convexHull(downPrevKeyPoints, downHull);
                 float area = cv::contourArea(downHull);
-                float density = (downFeaturePoints.size() / area);
-                current_max_points = density * 25000.0;
-                size_t copyn = std::min(downFeaturePoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
+                float density = (downPrevKeyPoints.size() / area);
+                float stroke = 30.0 * sqrt(area / (SCALED_WIDTH * SCALED_HEIGHT * 4));
+                current_max_points = density * 500000.0;
+                size_t copyn = std::min(downPrevKeyPoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
                 if (downPrevPoints.size() < current_max_points) {
-                    std::copy(downFeaturePoints.begin(), downFeaturePoints.begin() + copyn, std::back_inserter(downPrevPoints));
+                    std::copy(downPrevKeyPoints.begin(), downPrevKeyPoints.begin() + copyn, std::back_inserter(downPrevPoints));
                 }
 
                 if (downPrevGrey.empty()) {
@@ -149,14 +150,12 @@ int main(int argc, char **argv) {
                         upNextPoints.push_back(pt /= SCALE_FACTOR);
                     }
 
-                    float stroke = 30.0 * sqrt(area / (SCALED_WIDTH * SCALED_HEIGHT * 4));
-
                     using kb::nvg::vg;
                     nvgBeginPath(vg);
                     nvgStrokeWidth(vg, stroke);
-                    nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 48));
 
                     for (size_t i = 0; i < downPrevPoints.size(); i++) {
+                        nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.55, 16));
                         if (status[i] == 1 && err[i] < (1.0 / density)
                                 && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
                                 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH
@@ -183,8 +182,12 @@ int main(int argc, char **argv) {
         gl::acquire_from_gl(frameBuffer);
 
         cv::flip(frameBuffer, frameBuffer, 0);
-        cv::addWeighted(foreground, 0.9, frameBuffer, 1.1, 0.0, foreground);
-        cv::addWeighted(background, 1.0, foreground, 1.0, 0.0, frameBuffer);
+        cv::subtract(foreground, cv::Scalar::all(8), foreground);
+        cv::add(foreground, frameBuffer, foreground);
+        cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
+        cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
+        cv::add(background, foreground, frameBuffer);
+
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         cv::flip(frameBuffer, frameBuffer, 0);
 
