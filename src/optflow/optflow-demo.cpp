@@ -3,7 +3,7 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr float SCALE_FACTOR = 0.5;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 
 #include "../common/subsystems.hpp"
@@ -23,7 +23,7 @@ using std::vector;
 using std::list;
 using std::string;
 
-float current_max_points = 2000;
+float current_max_points = 5000;
 
 static bool done = false;
 static void finish(int ignore) {
@@ -69,19 +69,22 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
+    cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
+    cv::Ptr<cv::ORB> detector = cv::ORB::create(10000);
+
+    cv::UMat frameBuffer, videoFrame, downScaled, background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat downPrevGrey, downNextGrey, downMaskGrey;
+
+    vector<cv::Point2f> downFeaturePoints, downNewPoints, downPrevPoints, downNextPoints, downHull, upPrevPoints, upNextPoints;
+
+    std::vector<uchar> status;
+    std::vector<float> err;
+
     uint64_t cnt = 1;
     int64 start = cv::getTickCount();
     double tickFreq = cv::getTickFrequency();
     double lastFps = fps;
 
-    cv::UMat frameBuffer, videoFrame, downScaled, background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
-    cv::UMat downPrevGrey, downNextGrey, downMaskGrey;
-
-    vector<cv::Point2f> featurePoints, downNewPoints, downPrevPoints, downNextPoints, downHull, upPrevPoints, upNextPoints;
-    cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
-    cv::Ptr<cv::ORB> detector = cv::ORB::create(10000);
-    std::vector<uchar> status;
-    std::vector<float> err;
     while (!done) {
         va::bind();
         cap >> videoFrame;
@@ -102,24 +105,24 @@ int main(int argc, char **argv) {
 
             vector<cv::KeyPoint> kps;
             detector->detect(downMaskGrey,kps);
-            featurePoints.clear();
+            downFeaturePoints.clear();
 
             for (const auto &kp : kps) {
-                featurePoints.push_back(kp.pt);
+                downFeaturePoints.push_back(kp.pt);
             }
 
             gl::bind();
             nvg::begin();
             nvg::clear();
 
-            if (featurePoints.size() > 12) {
-                cv::convexHull(featurePoints, downHull);
+            if (downFeaturePoints.size() > 4) {
+                cv::convexHull(downFeaturePoints, downHull);
                 float area = cv::contourArea(downHull);
-                float density = (featurePoints.size() / area);
+                float density = (downFeaturePoints.size() / area);
                 current_max_points = density * 25000.0;
-                size_t copyn = std::min(featurePoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
+                size_t copyn = std::min(downFeaturePoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
                 if (downPrevPoints.size() < current_max_points) {
-                    std::copy(featurePoints.begin(), featurePoints.begin() + copyn, std::back_inserter(downPrevPoints));
+                    std::copy(downFeaturePoints.begin(), downFeaturePoints.begin() + copyn, std::back_inserter(downPrevPoints));
                 }
 
                 if (downPrevGrey.empty()) {
@@ -140,8 +143,8 @@ int main(int argc, char **argv) {
                         upNextPoints.push_back(pt /= SCALE_FACTOR);
                     }
 
-                    float wholeArea = WIDTH * HEIGHT;
-                    float stroke = 20.0 * sqrt(area / wholeArea);
+                    float wholeArea = (WIDTH * SCALE_FACTOR) * (HEIGHT * SCALE_FACTOR);
+                    float stroke = 20.0 * sqrt(area / (wholeArea * 4));
 
                     using kb::nvg::vg;
                     nvgBeginPath(vg);
