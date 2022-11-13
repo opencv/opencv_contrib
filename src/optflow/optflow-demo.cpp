@@ -78,9 +78,9 @@ int main(int argc, char **argv) {
     cv::UMat frameBuffer, videoFrame, resized, down, background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
     cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMaskGrey;
 
-    vector<cv::Point2f> downNewPoints, downPrevPoints, downNextPoints, downHull;
+    vector<cv::Point2f> downFeaturePoints, downNewPoints, downPrevPoints, downNextPoints, downHull;
     vector<cv::Point2f> upPrevPoints, upNextPoints;
-    vector<cv::KeyPoint> downPrevKeyPoints, keypoints;
+    vector<cv::KeyPoint> keypoints;
 
     std::vector<uchar> status;
     std::vector<float> err;
@@ -115,21 +115,21 @@ int main(int argc, char **argv) {
             cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 
             detector->detect(downMaskGrey, keypoints);
-            downPrevKeyPoints.clear();
+            downFeaturePoints.clear();
 
             for (const auto &kp : keypoints) {
-                downPrevKeyPoints.push_back(kp.pt);
+                downFeaturePoints.push_back(kp.pt);
             }
 
-            if (downPrevKeyPoints.size() > 4) {
-                cv::convexHull(downPrevKeyPoints, downHull);
+            if (downFeaturePoints.size() > 4) {
+                cv::convexHull(downFeaturePoints, downHull);
                 float area = cv::contourArea(downHull);
-                float density = (downPrevKeyPoints.size() / area);
+                float density = (downFeaturePoints.size() / area);
                 float stroke = 30.0 * sqrt(area / (SCALED_WIDTH * SCALED_HEIGHT * 4));
                 current_max_points = density * 500000.0;
-                size_t copyn = std::min(downPrevKeyPoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
+                size_t copyn = std::min(downFeaturePoints.size(), (size_t(std::ceil(current_max_points)) - downPrevPoints.size()));
                 if (downPrevPoints.size() < current_max_points) {
-                    std::copy(downPrevKeyPoints.begin(), downPrevKeyPoints.begin() + copyn, std::back_inserter(downPrevPoints));
+                    std::copy(downFeaturePoints.begin(), downFeaturePoints.begin() + copyn, std::back_inserter(downPrevPoints));
                 }
 
                 if (downPrevGrey.empty()) {
@@ -153,9 +153,9 @@ int main(int argc, char **argv) {
                     using kb::nvg::vg;
                     nvgBeginPath(vg);
                     nvgStrokeWidth(vg, stroke);
+                    nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.55, 16));
 
                     for (size_t i = 0; i < downPrevPoints.size(); i++) {
-                        nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.55, 16));
                         if (status[i] == 1 && err[i] < (1.0 / density)
                                 && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
                                 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH
