@@ -3,7 +3,9 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr float SCALE_FACTOR = 0.5;
-constexpr bool OFFSCREEN = true;
+constexpr unsigned long SCALED_WIDTH = WIDTH * SCALE_FACTOR;
+constexpr unsigned long SCALED_HEIGHT = HEIGHT * SCALE_FACTOR;
+constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 
 #include "../common/subsystems.hpp"
@@ -70,12 +72,15 @@ int main(int argc, char **argv) {
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     cv::Ptr<cv::BackgroundSubtractor> bgSubtractor = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
-    cv::Ptr<cv::ORB> detector = cv::ORB::create(10000);
+    cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
 
-    cv::UMat frameBuffer, videoFrame, downScaled, background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::Size frameBufferSize(WIDTH, HEIGHT);
+    cv::UMat frameBuffer, videoFrame, resized, down, background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
     cv::UMat downPrevGrey, downNextGrey, downMaskGrey;
 
-    vector<cv::Point2f> downFeaturePoints, downNewPoints, downPrevPoints, downNextPoints, downHull, upPrevPoints, upNextPoints;
+    vector<cv::Point2f> downFeaturePoints, downNewPoints, downPrevPoints, downNextPoints, downHull;
+    vector<cv::Point2f> upPrevPoints, upNextPoints;
+    vector<cv::KeyPoint> keypoints;
 
     std::vector<uchar> status;
     std::vector<float> err;
@@ -85,35 +90,36 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
     double lastFps = fps;
 
+    va::bind();
     while (!done) {
-        va::bind();
         cap >> videoFrame;
         if (videoFrame.empty())
             break;
-
-        cv::resize(videoFrame, videoFrame, cv::Size(WIDTH, HEIGHT));
-        cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
-        cv::resize(videoFrame, downScaled, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
-        cvtColor(downScaled, downNextGrey, cv::COLOR_RGB2GRAY);
+        if(videoFrame.size() != frameBufferSize)
+            cv::resize(videoFrame, resized, frameBufferSize);
+        else
+            resized = videoFrame;
+        cv::resize(videoFrame, down, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
+        cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
+        cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
 
         bgSubtractor->apply(downNextGrey, downMaskGrey);
 
-        if (cv::countNonZero(downMaskGrey) < ((WIDTH*SCALE_FACTOR) * (HEIGHT*SCALE_FACTOR) * 0.25)) {
-            int morph_size = 1;
-            cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-            cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(-1, -1), 2);
+        gl::bind();
+        nvg::begin();
+        nvg::clear();
 
-            vector<cv::KeyPoint> kps;
-            detector->detect(downMaskGrey,kps);
+        if (cv::countNonZero(downMaskGrey) < (SCALED_WIDTH * SCALED_HEIGHT * 0.25)) {
+            int morph_size = 1;
+            cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+            cv::morphologyEx(downMaskGrey, downMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+
+            detector->detect(downMaskGrey, keypoints);
             downFeaturePoints.clear();
 
-            for (const auto &kp : kps) {
+            for (const auto &kp : keypoints) {
                 downFeaturePoints.push_back(kp.pt);
             }
-
-            gl::bind();
-            nvg::begin();
-            nvg::clear();
 
             if (downFeaturePoints.size() > 4) {
                 cv::convexHull(downFeaturePoints, downHull);
@@ -143,8 +149,7 @@ int main(int argc, char **argv) {
                         upNextPoints.push_back(pt /= SCALE_FACTOR);
                     }
 
-                    float wholeArea = (WIDTH * SCALE_FACTOR) * (HEIGHT * SCALE_FACTOR);
-                    float stroke = 20.0 * sqrt(area / (wholeArea * 4));
+                    float stroke = 30.0 * sqrt(area / (SCALED_WIDTH * SCALED_HEIGHT * 4));
 
                     using kb::nvg::vg;
                     nvgBeginPath(vg);
@@ -152,27 +157,26 @@ int main(int argc, char **argv) {
                     nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.5, 48));
 
                     for (size_t i = 0; i < downPrevPoints.size(); i++) {
-                        if (status[i] == 1 && err[i] < (1000000.0 / area)
+                        if (status[i] == 1 && err[i] < (1.0 / density)
                                 && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
                                 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH
                                 && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
-                            downNewPoints.push_back(downNextPoints[i]);
-                            nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
-                            nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
+                            float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
+                            if(len < sqrt(area)) {
+                                downNewPoints.push_back(downNextPoints[i]);
+                                nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
+                                nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
+                            }
                         }
                     }
                     nvgStroke(vg);
                 }
                 downPrevPoints = downNewPoints;
             }
-            nvg::end();
         } else {
-            gl::bind();
-            nvg::begin();
-            nvg::clear();
-            nvg::end();
             foreground = cv::Scalar::all(0);
         }
+        nvg::end();
 
         downPrevGrey = downNextGrey.clone();
 
@@ -186,11 +190,7 @@ int main(int argc, char **argv) {
 
         gl::release_to_gl(frameBuffer);
 
-        va::bind();
-        encoder.write(videoFrame);
-
         if (x11::is_initialized()) {
-            gl::bind();
             gl::blit_frame_buffer_to_screen();
 
             if (x11::window_closed()) {
@@ -200,6 +200,9 @@ int main(int argc, char **argv) {
 
             gl::swap_buffers();
         }
+
+        va::bind();
+        encoder.write(videoFrame);
 
         //Measure FPS
         if (cnt % uint64(ceil(lastFps)) == 0) {
