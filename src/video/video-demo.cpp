@@ -34,7 +34,6 @@ void init_tetrahedron() {
 }
 
 void render_tetrahedron() {
-    kb::gl::begin();
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glViewport(0, 0, WIDTH, HEIGHT);
     glRotatef(1, 0, 1, 0);
@@ -54,7 +53,6 @@ void render_tetrahedron() {
         glColor3f(1, 0, 0);
         glVertex3f(-1, 0, 1);
     glEnd();
-    kb::gl::end();
 }
 
 void glow_effect(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
@@ -160,7 +158,9 @@ int main(int argc, char **argv) {
         gl::release_to_gl(frameBuffer);
 
         //Render using OpenGL
+        gl::begin();
         render_tetrahedron();
+        gl::end();
 
         //Aquire the frame buffer for use by OpenCL
         gl::acquire_from_gl(frameBuffer);
