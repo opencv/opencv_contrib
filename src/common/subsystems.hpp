@@ -564,6 +564,15 @@ void bind() {
     context.bind();
 }
 
+void begin() {
+    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf));
+}
+
+void end() {
+    glCheck(glFlush());
+    glCheck(glFinish());
+}
+
 void init() {
     glewExperimental = true;
     glewInit();
@@ -663,6 +672,7 @@ void pop() {
 }
 
 void begin() {
+    gl::begin();
     push();
 
     float w = WIDTH;
@@ -683,8 +693,7 @@ void end() {
     nvgEndFrame(vg);
     nvgRestore(vg);
     pop();
-    glCheck(glFlush());
-    glCheck(glFinish());
+    gl::end();
 }
 
 void init(bool debug = false) {
