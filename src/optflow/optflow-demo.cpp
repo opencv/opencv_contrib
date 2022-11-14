@@ -98,10 +98,8 @@ int main(int argc, char **argv) {
         cap >> videoFrame;
         if (videoFrame.empty())
             break;
-        if(videoFrame.size().width != frameBufferSize.width || videoFrame.size().height != frameBufferSize.height)
-            cv::resize(videoFrame, resized, frameBufferSize);
-        else
-            resized = videoFrame;
+
+        cv::resize(videoFrame, resized, frameBufferSize);
         cv::resize(resized, down, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
         cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
         cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
