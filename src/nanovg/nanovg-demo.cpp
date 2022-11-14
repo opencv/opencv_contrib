@@ -179,14 +179,10 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
     double lastFps = fps;
 
-    while (!done) {
-        //Bind the OpenCL context for OpenGL
-        gl::bind();
-        //Initially aquire the framebuffer so we can write the video frame to it
-        gl::acquire_from_gl(frameBuffer);
+    //Bind the OpenCL context for VAAPI
+    va::bind();
 
-        //Bind the OpenCL context for VAAPI
-        va::bind();
+    while (!done) {
         //Decode a frame on the GPU using VAAPI
         capture >> videoFrame;
         if (videoFrame.empty()) {
@@ -215,13 +211,16 @@ int main(int argc, char **argv) {
         cv::cvtColor(videoFrameHSV, videoFrame, cv::COLOR_HSV2RGB_FULL);
         //Color-conversion from RGB to BGRA. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameBGRA, cv::COLOR_RGB2BGRA);
+
+        //Bind the OpenCL context for OpenGL
+        gl::bind();
+        //Aquire the framebuffer so we can write the video frame to it
+        gl::acquire_from_gl(frameBuffer);
         //Resize the frame if necessary. (OpenCL)
         cv::resize(videoFrameBGRA, frameBuffer, cv::Size(WIDTH, HEIGHT));
-
-        //Bind the OpenCL context for OpenGL again for rendering
-        gl::bind();
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
+
         //Render using nanovg;
         nvg::begin();
         drawColorwheel(nvg::vg, WIDTH - 300, HEIGHT - 300, 250.0f, 250.0f, nvgHue);

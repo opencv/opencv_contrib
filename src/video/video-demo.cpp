@@ -134,14 +134,10 @@ int main(int argc, char **argv) {
 
     init_render();
 
-    while (true) {
-        //Activate the OpenCL context for OpenGL
-        gl::bind();
-        //Initially aquire the framebuffer so we can write the video frame to it
-        gl::acquire_from_gl(frameBuffer);
+    //Activate the OpenCL context for VAAPI
+    va::bind();
 
-        //Activate the OpenCL context for VAAPI
-        va::bind();
+    while (true) {
         //Decode a frame on the GPU using VAAPI
         capture >> videoFrame;
         if (videoFrame.empty()) {
@@ -154,12 +150,15 @@ int main(int argc, char **argv) {
         //Color-conversion from RGB to BGRA. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameRGBA, cv::COLOR_RGB2BGRA);
 
+        //Activate the OpenCL context for OpenGL
+        gl::bind();
+        //Initially aquire the framebuffer so we can write the video frame to it
+        gl::acquire_from_gl(frameBuffer);
         //Resize the frame if necessary. (OpenCL)
         cv::resize(videoFrameRGBA, frameBuffer, cv::Size(WIDTH, HEIGHT));
-
-        gl::bind();
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
+
         //Render using OpenGL
         render();
 
