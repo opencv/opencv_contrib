@@ -168,8 +168,6 @@ int main(int argc, char **argv) {
         glow_effect(frameBuffer);
         //Color-conversion from BGRA to RGB. (OpenCL)
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        //Video frame is upside down -> flip it (OpenCL)
-        cv::flip(videoFrame, videoFrame, 0);
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
@@ -187,6 +185,8 @@ int main(int argc, char **argv) {
 
         //Activate the OpenCL context for VAAPI
         va::bind();
+        //Video frame is upside down -> flip it (OpenCL)
+        cv::flip(videoFrame, videoFrame, 0);
         //Encode the frame using VAAPI on the GPU.
         writer.write(videoFrame);
 
