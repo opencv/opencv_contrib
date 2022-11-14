@@ -174,15 +174,7 @@ int main(int argc, char **argv) {
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
-        //Activate the OpenCL context for VAAPI
-        va::bind();
-        //Encode the frame using VAAPI on the GPU.
-        writer.write(videoFrame);
-
         if(x11::is_initialized()) {
-            //Yet again activate the OpenCL context for OpenGL
-            gl::bind();
-
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 
@@ -193,6 +185,11 @@ int main(int argc, char **argv) {
             //Transfer the back buffer (which we have been using as frame buffer) to the native window
             gl::swap_buffers();
         }
+
+        //Activate the OpenCL context for VAAPI
+        va::bind();
+        //Encode the frame using VAAPI on the GPU.
+        writer.write(videoFrame);
 
         //Measure FPS
         if (cnt % uint64(ceil(lastFps)) == 0) {
