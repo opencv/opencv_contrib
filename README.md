@@ -29,7 +29,7 @@ https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92
 ## optflow-demo
 My take on a optical flow visualization on top of a video. Uses nanovg for rendering (OpenGL) and decodes/encodes on the GPU.
 
-https://user-images.githubusercontent.com/287266/201521400-9900bfc7-d901-447f-bb7c-683b53451b23.mp4
+https://user-images.githubusercontent.com/287266/201636576-f0e887f8-80ce-4962-9667-62c04c5dbf41.mp4
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
