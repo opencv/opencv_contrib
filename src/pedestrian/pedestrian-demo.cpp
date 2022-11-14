@@ -31,7 +31,7 @@ static void finish(int ignore) {
     done = true;
 }
 
-SafeQueue<std::pair<std::vector<cv::Rect>, cv::UMat>> queue;
+SafeQueue<std::pair<std::vector<cv::Rect>, cv::UMat>> task_queue;
 
 int main(int argc, char **argv) {
     signal(SIGINT, finish);
@@ -92,9 +92,9 @@ int main(int argc, char **argv) {
             cv::cvtColor(videoFrameDown1, videoFrameDownGrey1, cv::COLOR_RGB2GRAY);
 
             hog.detectMultiScale(videoFrameDownGrey1, locations1);
-            queue.enqueue( { locations1, videoFrameUp1.clone() });
+            task_queue.enqueue( { locations1, videoFrameUp1.clone() });
         }
-        queue.enqueue( { { }, { } });
+        task_queue.enqueue( { { }, { } });
     });
 
     uint64_t cnt = 1;
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     cv::UMat videoFrame2;
     std::vector<cv::Rect> locations2;
     while (!done) {
-        auto p = queue.dequeue();
+        auto p = task_queue.dequeue();
         locations2 = p.first;
         videoFrame2 = p.second;
 
