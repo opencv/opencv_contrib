@@ -15,7 +15,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-void init_render() {
+void init_tetrahedron() {
     glViewport(0, 0, WIDTH, HEIGHT);
     glColor3f(1.0, 1.0, 1.0);
 
@@ -33,9 +33,9 @@ void init_render() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render() {
+void render_tetrahedron() {
+    kb::gl::begin();
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
-    glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf);
     glViewport(0, 0, WIDTH, HEIGHT);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -54,7 +54,7 @@ void render() {
         glColor3f(1, 0, 0);
         glVertex3f(-1, 0, 1);
     glEnd();
-    glFlush();
+    kb::gl::end();
 }
 
 void glow_effect(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     double tickFreq = cv::getTickFrequency();
     double lastFps = fps;
 
-    init_render();
+    init_tetrahedron();
 
     //Activate the OpenCL context for VAAPI
     va::bind();
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
         gl::release_to_gl(frameBuffer);
 
         //Render using OpenGL
-        render();
+        render_tetrahedron();
 
         //Aquire the frame buffer for use by OpenCL
         gl::acquire_from_gl(frameBuffer);

@@ -29,6 +29,7 @@ using std::string;
 
 float current_max_points = 5000;
 float last_movement = 0;
+
 static bool done = false;
 static void finish(int ignore) {
     std::cerr << endl;
