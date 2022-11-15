@@ -32,7 +32,7 @@ void init_scene() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render() {
+void render_scene() {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glViewport(0, 0, WIDTH, HEIGHT);
     glRotatef(1, 0, 1, 0);
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
 
         //Render using OpenGL
         gl::begin();
-        render();
+        render_scene();
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL

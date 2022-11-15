@@ -30,7 +30,7 @@ void init_scene() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render() {
+void render_scene() {
     glViewport(0, 0, WIDTH , HEIGHT );
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
         gl::bind();
         //Render using OpenGL
         gl::begin();
-        render();
+        render_scene();
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL
