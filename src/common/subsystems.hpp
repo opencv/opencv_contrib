@@ -48,7 +48,7 @@ void print_fps() {
     ++cnt;
 }
 
-void glCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
+void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();
 
     if (errorCode != GL_NO_ERROR) {
@@ -56,11 +56,11 @@ void glCheckError(const std::filesystem::path &file, unsigned int line, const ch
         assert(false);
     }
 }
-#define glCheck(expr)                            \
+#define GL_CHECK(expr)                            \
     expr;                                        \
-    kb::glCheckError(__FILE__, __LINE__, #expr);
+    kb::gl_check_error(__FILE__, __LINE__, #expr);
 
-void eglCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
+void egl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     EGLint errorCode = eglGetError();
 
     if (errorCode != EGL_SUCCESS) {
@@ -68,9 +68,9 @@ void eglCheckError(const std::filesystem::path &file, unsigned int line, const c
         assert(false);
     }
 }
-#define eglCheck(expr)                                 \
+#define EGL_CHECK(expr)                                 \
         expr;                                          \
-        kb::eglCheckError(__FILE__, __LINE__, #expr);
+        kb::egl_check_error(__FILE__, __LINE__, #expr);
 
 namespace va {
 //code in the kb::va namespace adapted from https://github.com/opencv/opencv/blob/4.x/samples/va_intel/display.cpp.inc
@@ -499,19 +499,19 @@ void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 }
 
 EGLBoolean swap_buffers() {
-    return eglCheck(eglSwapBuffers(display, surface));
+    return EGL_CHECK(eglSwapBuffers(display, surface));
 }
 
 void init(bool debug = false) {
     bool offscreen = !x11::is_initialized();
 
-    eglCheck(eglBindAPI(EGL_OPENGL_API));
+    EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
     if (offscreen) {
-        eglCheck(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
+        EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
-        eglCheck(display = eglGetDisplay(x11::get_x11_display()));
+        EGL_CHECK(display = eglGetDisplay(x11::get_x11_display()));
     }
-    eglCheck(eglInitialize(display, nullptr, nullptr));
+    EGL_CHECK(eglInitialize(display, nullptr, nullptr));
 
     const EGLint egl_config_constraints[] = {
     EGL_STENCIL_SIZE, static_cast<EGLint>(8),
@@ -531,20 +531,20 @@ void init(bool debug = false) {
 
     EGLint configCount;
     EGLConfig configs[1];
-    eglCheck(eglChooseConfig(display, egl_config_constraints, configs, 1, &configCount));
+    EGL_CHECK(eglChooseConfig(display, egl_config_constraints, configs, 1, &configCount));
 
     EGLint stencilSize;
     eglGetConfigAttrib(display, configs[0],
     EGL_STENCIL_SIZE, &stencilSize);
 
     if (!offscreen) {
-        eglCheck(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
+        EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
         EGLint pbuffer_attrib_list[] = {
         EGL_WIDTH, WIDTH,
         EGL_HEIGHT, HEIGHT,
         EGL_NONE };
-        eglCheck(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
+        EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
 
     const EGLint contextVersion[] = {
@@ -553,15 +553,15 @@ void init(bool debug = false) {
     EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
     EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
     EGL_NONE };
-    eglCheck(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
-    eglCheck(eglMakeCurrent(display, surface, surface, context));
-    eglCheck(eglSwapInterval(display, 1));
+    EGL_CHECK(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
+    EGL_CHECK(eglMakeCurrent(display, surface, surface, context));
+    EGL_CHECK(eglSwapInterval(display, 1));
 
     if (debug) {
-        glCheck(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
+        GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
         auto glDebugMessageCallback = (void (*)(void*, void*)) eglGetProcAddress("glDebugMessageCallback");
         assert(glDebugMessageCallback);
-        glCheck(glDebugMessageCallback(reinterpret_cast<void*>(debugMessageCallback), nullptr));
+        GL_CHECK(glDebugMessageCallback(reinterpret_cast<void*>(debugMessageCallback), nullptr));
     }
 }
 
@@ -581,12 +581,12 @@ void bind() {
 }
 
 void begin() {
-    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf));
+    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf));
 }
 
 void end() {
-    glCheck(glFlush());
-    glCheck(glFinish());
+    GL_CHECK(glFlush());
+    GL_CHECK(glFinish());
 }
 
 void init() {
@@ -596,19 +596,19 @@ void init() {
     cv::ogl::ocl::initializeContextFromGL();
 
     frame_buf = 0;
-    glCheck(glGenFramebuffers(1, &frame_buf));
-    glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
+    GL_CHECK(glGenFramebuffers(1, &frame_buf));
+    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
 
     GLuint sb;
     glGenRenderbuffers(1, &sb);
     glBindRenderbuffer(GL_RENDERBUFFER, sb);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);
 
-    glCheck(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sb));
+    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sb));
 
     frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
-    glCheck(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
+    GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
 
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
@@ -624,11 +624,11 @@ std::string get_info() {
 }
 
 void acquire_from_gl(cv::UMat &m) {
-    glCheck(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
+    GL_CHECK(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
 }
 
 void release_to_gl(cv::UMat &m) {
-    glCheck(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
+    GL_CHECK(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
 }
 
 void blit_frame_buffer_to_screen() {
@@ -661,30 +661,30 @@ namespace nvg {
 NVGcontext *vg;
 
 void clear() {
-    glCheck(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-    glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+    GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
 void push() {
-    glCheck(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
-    glCheck(glPushAttrib(GL_ALL_ATTRIB_BITS));
-    glCheck(glMatrixMode(GL_MODELVIEW));
-    glCheck(glPushMatrix());
-    glCheck(glMatrixMode(GL_PROJECTION));
-    glCheck(glPushMatrix());
-    glCheck(glMatrixMode(GL_TEXTURE));
-    glCheck(glPushMatrix());
+    GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
+    GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
+    GL_CHECK(glMatrixMode(GL_MODELVIEW));
+    GL_CHECK(glPushMatrix());
+    GL_CHECK(glMatrixMode(GL_PROJECTION));
+    GL_CHECK(glPushMatrix());
+    GL_CHECK(glMatrixMode(GL_TEXTURE));
+    GL_CHECK(glPushMatrix());
 }
 
 void pop() {
-    glCheck(glMatrixMode(GL_TEXTURE));
-    glCheck(glPopMatrix());
-    glCheck(glMatrixMode(GL_PROJECTION));
-    glCheck(glPopMatrix());
-    glCheck(glMatrixMode(GL_MODELVIEW));
-    glCheck(glPopMatrix());
-    glCheck(glPopClientAttrib());
-    glCheck(glPopAttrib());
+    GL_CHECK(glMatrixMode(GL_TEXTURE));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glMatrixMode(GL_PROJECTION));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glMatrixMode(GL_MODELVIEW));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glPopClientAttrib());
+    GL_CHECK(glPopAttrib());
 }
 
 void begin() {
@@ -699,9 +699,9 @@ void begin() {
         h = ws.second;
     }
 
-    glCheck(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
+    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    glCheck(glViewport(0, HEIGHT - h, w, h));
+    GL_CHECK(glViewport(0, HEIGHT - h, w, h));
     nvgBeginFrame(vg, w, h, std::fmax(WIDTH/w, HEIGHT/h));
 }
 
@@ -715,11 +715,11 @@ void end() {
 void init(bool debug = false) {
     push();
 
-    glCheck(glViewport(0, 0, WIDTH, HEIGHT));
-    glCheck(glEnable(GL_STENCIL_TEST));
-    glCheck(glStencilMask(~0));
-    glCheck(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-    glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+    GL_CHECK(glViewport(0, 0, WIDTH, HEIGHT));
+    GL_CHECK(glEnable(GL_STENCIL_TEST));
+    GL_CHECK(glStencilMask(~0));
+    GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     vg = nvgCreateGL3(NVG_STENCIL_STROKES | debug ? NVG_DEBUG : 0);
     if (vg == NULL) {
