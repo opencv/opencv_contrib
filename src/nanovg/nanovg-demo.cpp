@@ -181,8 +181,6 @@ int main(int argc, char **argv) {
         //opencv hue fading between 0 and 255
         int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time*0.12f))+1.0f) * 128.0))) % 255;
 
-        //The frameBuffer is upside-down. Flip videoFrame. (OpenCL)
-        cv::flip(videoFrame, videoFrame, 0);
         //Color-conversion from RGB to HSV. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameHSV, cv::COLOR_RGB2HSV_FULL);
         //Extract the hue channel
@@ -223,8 +221,6 @@ int main(int argc, char **argv) {
 
         //Activate the OpenCL context for VAAPI
         va::bind();
-        //The videoFrame is upside-down. Flip. (OpenCL)
-        cv::flip(videoFrame, videoFrame, 0);
         //Encode the frame using VAAPI on the GPU.
         writer << videoFrame;
 

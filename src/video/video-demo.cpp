@@ -137,8 +137,7 @@ int main(int argc, char **argv) {
             break;
         }
 
-        //The frameBuffer is upside-down. Flip videoFrame. (OpenCL)
-        cv::flip(videoFrame, videoFrame, 0);
+
         //Color-conversion from RGB to BGRA. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameRGBA, cv::COLOR_RGB2BGRA);
 
@@ -171,8 +170,6 @@ int main(int argc, char **argv) {
 
         //Activate the OpenCL context for VAAPI
         va::bind();
-        //Video frame is upside down -> flip it (OpenCL)
-        cv::flip(videoFrame, videoFrame, 0);
         //Encode the frame using VAAPI on the GPU.
         writer << videoFrame;
 

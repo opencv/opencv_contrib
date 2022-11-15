@@ -179,14 +179,12 @@ int main(int argc, char **argv) {
         downPrevGrey = downNextGrey.clone();
 
         gl::acquire_from_gl(frameBuffer);
-        cv::flip(frameBuffer, frameBuffer, 0);
         cv::subtract(foreground, cv::Scalar::all(9), foreground);
         cv::add(foreground, frameBuffer, foreground);
         cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
         cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
         cv::add(background, foreground, frameBuffer);
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        cv::flip(frameBuffer, frameBuffer, 0);
         gl::release_to_gl(frameBuffer);
 
         //if x11 is enabled it displays the framebuffer in the native window. returns false if the window was closed.

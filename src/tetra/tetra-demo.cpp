@@ -128,8 +128,6 @@ int main(int argc, char **argv) {
 
         //Activate the OpenCL context for VAAPI
         va::bind();
-        //Video frame is upside down because the frameBuffer is. -> flip it (OpenCL)
-        cv::flip(videoFrame, videoFrame, 0);
         //Encode the frame using VAAPI on the GPU.
         writer << videoFrame;
 
