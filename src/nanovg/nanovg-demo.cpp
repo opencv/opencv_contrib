@@ -7,7 +7,6 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
 #include "../common/subsystems.hpp"
-#include <csignal>
 #include <iomanip>
 
 using std::cerr;
@@ -117,16 +116,7 @@ void drawColorwheel(NVGcontext *vg, float x, float y, float w, float h, float hu
     nvgRestore(vg);
 }
 
-bool done = false;
-static void finish(int ignore) {
-    std::cerr << endl;
-    done = true;
-}
-
 int main(int argc, char **argv) {
-    done = false;
-    signal(SIGINT, finish);
-
     using namespace kb;
     //Initialize OpenCL Context for VAAPI
     va::init();
@@ -143,9 +133,9 @@ int main(int argc, char **argv) {
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    // check if we succeeded
+    // Check if we succeeded
     if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open camera" << endl;
+        cerr << "ERROR! Unable to video input" << endl;
         return -1;
     }
 
@@ -182,7 +172,7 @@ int main(int argc, char **argv) {
     //Bind the OpenCL context for VAAPI
     va::bind();
 
-    while (!done) {
+    while (true) {
         //Decode a frame on the GPU using VAAPI
         capture >> videoFrame;
         if (videoFrame.empty()) {
@@ -239,7 +229,6 @@ int main(int argc, char **argv) {
 
             //Check if the x11 window was closed
             if (x11::window_closed()) {
-                finish(0);
                 break;
             }
             //Transfer the back buffer (which we have been using as frame buffer) to the native window

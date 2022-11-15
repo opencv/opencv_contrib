@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     va::init();
 
     //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter encoder(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
         //Video frame is upside down because the frameBuffer is. -> flip it (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
         //Encode the frame using VAAPI on the GPU.
-        encoder.write(videoFrame);
+        writer.write(videoFrame);
 
         //Measure FPS
         if (cnt % uint64(ceil(lastFps)) == 0) {

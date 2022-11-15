@@ -11,7 +11,6 @@ constexpr float SCENE_CHANGE_THRESH = 0.29f;
 constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
 
 #include "../common/subsystems.hpp"
-#include <csignal>
 #include <list>
 #include <vector>
 #include <cstdint>
@@ -26,12 +25,6 @@ using std::endl;
 using std::vector;
 using std::list;
 using std::string;
-
-static bool done = false;
-static void finish(int ignore) {
-    std::cerr << endl;
-    done = true;
-}
 
 void prepare_background_mask(const cv::UMat& srcGrey, cv::UMat& mask) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
@@ -122,7 +115,6 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
 }
 
 int main(int argc, char **argv) {
-    signal(SIGINT, finish);
     using namespace kb;
 
     if (argc != 2) {
@@ -131,19 +123,19 @@ int main(int argc, char **argv) {
     }
 
     va::init();
-    cv::VideoCapture cap(argv[1], cv::CAP_FFMPEG, {
+    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    if (!cap.isOpened()) {
-        cerr << "ERROR! Unable to open camera" << endl;
+    if (!capture.isOpened()) {
+        cerr << "ERROR! Unable to video input" << endl;
         return -1;
     }
 
-    double fps = cap.get(cv::CAP_PROP_FPS);
-    cv::VideoWriter encoder("optflow.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+    double fps = capture.get(cv::CAP_PROP_FPS);
+    cv::VideoWriter writer("optflow.mkv", cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
@@ -170,8 +162,8 @@ int main(int argc, char **argv) {
     double lastFps = fps;
 
     va::bind();
-    while (!done) {
-        cap >> videoFrame;
+    while (true) {
+        capture >> videoFrame;
         if (videoFrame.empty())
             break;
 
@@ -210,7 +202,6 @@ int main(int argc, char **argv) {
             gl::blit_frame_buffer_to_screen();
 
             if (x11::window_closed()) {
-                finish(0);
                 break;
             }
 
@@ -218,7 +209,7 @@ int main(int argc, char **argv) {
         }
 
         va::bind();
-        encoder.write(videoFrame);
+        writer.write(videoFrame);
 
         //Measure FPS
         if (cnt % uint64(ceil(lastFps)) == 0) {

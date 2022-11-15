@@ -93,9 +93,9 @@ int main(int argc, char **argv) {
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
-    // check if we succeeded
+
     if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open camera" << endl;
+        cerr << "ERROR! Unable to video input" << endl;
         return -1;
     }
 
