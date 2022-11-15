@@ -651,7 +651,6 @@ std::string get_info() {
     }
 
     ss << "\t  GL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-    ss << "\t  GL MSAA sharing: " << (device.isExtensionSupported("cl_khr_gl_msaa_sharing") ? "true" : "false") << endl;
     ss << "\t  VAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
     return ss.str();
 }

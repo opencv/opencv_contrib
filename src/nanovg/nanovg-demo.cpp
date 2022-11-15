@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
-        //Render using nanovg;
+        //Render using nanovg
         nvg::begin();
         drawColorwheel(nvg::vg, WIDTH - 300, HEIGHT - 300, 250.0f, 250.0f, nvgHue);
         nvg::end();

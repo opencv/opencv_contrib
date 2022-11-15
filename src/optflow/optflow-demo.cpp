@@ -3,15 +3,12 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr float SCALE_FACTOR = 0.5f;
-constexpr unsigned long SCALED_WIDTH = WIDTH * SCALE_FACTOR;
-constexpr unsigned long SCALED_HEIGHT = HEIGHT * SCALE_FACTOR;
 constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr float SCENE_CHANGE_THRESH = 0.29f;
 constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
 
 #include "../common/subsystems.hpp"
-#include <list>
 #include <vector>
 #include <cstdint>
 #include <string>
@@ -23,7 +20,6 @@ constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
 using std::cerr;
 using std::endl;
 using std::vector;
-using std::list;
 using std::string;
 
 void prepare_background_mask(const cv::UMat& srcGrey, cv::UMat& mask) {
