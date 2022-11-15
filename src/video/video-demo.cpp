@@ -8,7 +8,6 @@ constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "video-demo.mkv";
 
 #include "../common/subsystems.hpp"
-#include <stdlib.h>
 #include <string>
 
 using std::cerr;

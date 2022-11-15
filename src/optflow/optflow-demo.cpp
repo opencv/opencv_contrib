@@ -11,7 +11,6 @@ constexpr float MAX_POINTS = 500000.0;
 
 #include "../common/subsystems.hpp"
 #include <vector>
-#include <cstdint>
 #include <string>
 
 #include <opencv2/features2d.hpp>

@@ -7,7 +7,6 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
 #include "../common/subsystems.hpp"
-#include <iomanip>
 
 using std::cerr;
 using std::endl;
