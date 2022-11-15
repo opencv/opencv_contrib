@@ -121,11 +121,11 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
+    init_scene();
+
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
     cv::UMat videoFrameRGBA;
-
-    init_scene();
 
     //Activate the OpenCL context for VAAPI
     va::bind();

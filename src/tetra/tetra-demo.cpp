@@ -95,6 +95,8 @@ int main(int argc, char **argv) {
     //Initialize OpenCL Context for OpenGL
     gl::init();
 
+    init_scene();
+
     cerr << "VA Version: " << va::get_info() << endl;
     cerr << "EGL Version: " << egl::get_info() << endl;
     cerr << "OpenGL Version: " << gl::get_info() << endl;
@@ -102,8 +104,6 @@ int main(int argc, char **argv) {
 
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
-
-    init_scene();
 
     while (true) {
         //Activate the OpenCL context for OpenGL

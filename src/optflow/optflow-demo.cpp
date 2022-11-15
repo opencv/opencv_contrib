@@ -3,7 +3,7 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr float SCALE_FACTOR = 0.5f;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr float SCENE_CHANGE_THRESH = 0.29f;
 constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
