@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
 
     // Check if we succeeded
     if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to video input" << endl;
+        cerr << "ERROR! Unable to open video input" << endl;
         return -1;
     }
 
