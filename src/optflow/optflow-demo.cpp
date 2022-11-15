@@ -189,15 +189,9 @@ int main(int argc, char **argv) {
         cv::flip(frameBuffer, frameBuffer, 0);
         gl::release_to_gl(frameBuffer);
 
-        if (x11::is_initialized()) {
-            gl::blit_frame_buffer_to_screen();
-
-            if (x11::window_closed()) {
-                break;
-            }
-
-            gl::swap_buffers();
-        }
+        //if x11 is enabled it displays the framebuffer in the native window. returns false if the window was closed.
+        if(!gl::display())
+            break;
 
         va::bind();
         writer << videoFrame;

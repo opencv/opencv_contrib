@@ -31,23 +31,6 @@ using std::cerr;
 using std::endl;
 
 namespace kb {
-void print_fps() {
-    static uint64_t cnt = 0;
-    static int64 start = cv::getTickCount();
-    static double tickFreq = cv::getTickFrequency();
-    static double fps = 1;
-
-    if (cnt > 0 && cnt % uint64(ceil(fps)) == 0) {
-        int64 tick = cv::getTickCount();
-        fps = tickFreq / ((tick - start + 1) / cnt);
-        cerr << "FPS : " << fps << '\r';
-        start = tick;
-        cnt = 1;
-    }
-
-    ++cnt;
-}
-
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();
 
@@ -615,10 +598,6 @@ void init() {
     gl::context = cv::ocl::OpenCLExecutionContext::getCurrent();
 }
 
-void swap_buffers() {
-    kb::egl::swap_buffers();
-}
-
 std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
@@ -637,6 +616,22 @@ void blit_frame_buffer_to_screen() {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
+}
+
+bool display() {
+    if(x11::is_initialized()) {
+        //Blit the framebuffer we have been working on to the screen
+        gl::blit_frame_buffer_to_screen();
+
+        //Check if the x11 window was closed
+        if(x11::window_closed())
+            return false;
+
+        //Transfer the back buffer (which we have been using as frame buffer) to the native window
+        egl::swap_buffers();
+    }
+
+    return true;
 }
 } // namespace gl
 
@@ -735,6 +730,23 @@ void init(bool debug = false) {
     pop();
 }
 } //namespace nvg
+
+void print_fps() {
+    static uint64_t cnt = 0;
+    static int64 start = cv::getTickCount();
+    static double tickFreq = cv::getTickFrequency();
+    static double fps = 1;
+
+    if (cnt > 0 && cnt % uint64(ceil(fps)) == 0) {
+        int64 tick = cv::getTickCount();
+        fps = tickFreq / ((tick - start + 1) / cnt);
+        cerr << "FPS : " << fps << '\r';
+        start = tick;
+        cnt = 1;
+    }
+
+    ++cnt;
+}
 }
 
 #endif /* SRC_SUBSYSTEMS_HPP_ */

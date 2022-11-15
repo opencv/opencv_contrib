@@ -122,17 +122,9 @@ int main(int argc, char **argv) {
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
-        if(x11::is_initialized()) {
-            //Blit the framebuffer we have been working on to the screen
-            gl::blit_frame_buffer_to_screen();
-
-            //Check if the x11 window was closed
-            if(x11::window_closed())
-                break;
-
-            //Transfer the back buffer (which we have been using as frame buffer) to the native window
-            gl::swap_buffers();
-        }
+        //if x11 is enabled it displays the framebuffer in the native window. returns false if the window was closed.
+        if(!gl::display())
+            break;
 
         //Activate the OpenCL context for VAAPI
         va::bind();
