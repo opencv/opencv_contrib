@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
         //The videoFrame is upside-down. Flip. (OpenCL)
         cv::flip(videoFrame, videoFrame, 0);
         //Encode the frame using VAAPI on the GPU.
-        writer.write(videoFrame);
+        writer << videoFrame;
 
         print_fps();
     }

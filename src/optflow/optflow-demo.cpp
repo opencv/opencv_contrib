@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
         }
 
         va::bind();
-        writer.write(videoFrame);
+        writer << videoFrame;
 
         print_fps();
     }
