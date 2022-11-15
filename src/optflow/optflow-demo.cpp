@@ -93,7 +93,7 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, stroke);
-            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.55, 8));
+            nvgStrokeColor(vg, nvgHSLA(0.1, 1, 0.7, 3));
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
                 if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
 
         gl::acquire_from_gl(frameBuffer);
         cv::flip(frameBuffer, frameBuffer, 0);
-        cv::subtract(foreground, cv::Scalar::all(8), foreground);
+        cv::subtract(foreground, cv::Scalar::all(9), foreground);
         cv::add(foreground, frameBuffer, foreground);
         cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
         cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
