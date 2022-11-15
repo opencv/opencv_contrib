@@ -125,11 +125,6 @@ int main(int argc, char **argv) {
     cv::UMat videoFrame;
     cv::UMat videoFrameRGBA;
 
-    uint64_t cnt = 1;
-    int64 start = cv::getTickCount();
-    double tickFreq = cv::getTickFrequency();
-    double lastFps = fps;
-
     init_tetrahedron();
 
     //Activate the OpenCL context for VAAPI
@@ -190,16 +185,7 @@ int main(int argc, char **argv) {
         //Encode the frame using VAAPI on the GPU.
         writer.write(videoFrame);
 
-        //Measure FPS
-        if (cnt % uint64(ceil(lastFps)) == 0) {
-            int64 tick = cv::getTickCount();
-            lastFps = tickFreq / ((tick - start + 1) / cnt);
-            cerr << "FPS : " << lastFps << '\r';
-            start = tick;
-            cnt = 1;
-        }
-
-        ++cnt;
+        print_fps();
     }
 
     return 0;

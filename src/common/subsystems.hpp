@@ -31,6 +31,22 @@ using std::cerr;
 using std::endl;
 
 namespace kb {
+void print_fps() {
+    static uint64_t cnt = 0;
+    static int64 start = cv::getTickCount();
+    static double tickFreq = cv::getTickFrequency();
+    static double fps = 1;
+
+    if (cnt > 0 && cnt % uint64(ceil(fps)) == 0) {
+        int64 tick = cv::getTickCount();
+        fps = tickFreq / ((tick - start + 1) / cnt);
+        cerr << "FPS : " << fps << '\r';
+        start = tick;
+        cnt = 1;
+    }
+
+    ++cnt;
+}
 
 void glCheckError(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();

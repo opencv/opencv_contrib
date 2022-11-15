@@ -156,11 +156,6 @@ int main(int argc, char **argv) {
     cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMaskGrey;
     vector<cv::Point2f> detectedPoints;
 
-    uint64_t cnt = 1;
-    int64 start = cv::getTickCount();
-    double tickFreq = cv::getTickFrequency();
-    double lastFps = fps;
-
     va::bind();
     while (true) {
         capture >> videoFrame;
@@ -211,16 +206,7 @@ int main(int argc, char **argv) {
         va::bind();
         writer.write(videoFrame);
 
-        //Measure FPS
-        if (cnt % uint64(ceil(lastFps)) == 0) {
-            int64 tick = cv::getTickCount();
-            lastFps = tickFreq / ((tick - start + 1) / cnt);
-            cerr << "FPS : " << lastFps << '\r';
-            start = tick;
-            cnt = 1;
-        }
-
-        ++cnt;
+        print_fps();
     }
 
     return 0;
