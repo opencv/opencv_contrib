@@ -3,10 +3,11 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr float SCALE_FACTOR = 0.5f;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr float SCENE_CHANGE_THRESH = 0.29f;
 constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
+constexpr float MAX_POINTS = 500000.0;
 
 #include "../common/subsystems.hpp"
 #include <vector>
@@ -69,7 +70,7 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
         float area = cv::contourArea(hull);
         float density = (detectedPoints.size() / area);
         float stroke = 30.0 * sqrt(area / (nextGrey.cols * nextGrey.rows * 4));
-        size_t currentMaxPoints = density * 500000.0;
+        size_t currentMaxPoints = density * MAX_POINTS;
 
         size_t copyn = std::min(detectedPoints.size(), (size_t(std::ceil(currentMaxPoints)) - prevPoints.size()));
         if (prevPoints.size() < currentMaxPoints) {
@@ -159,7 +160,7 @@ int main(int argc, char **argv) {
             break;
 
         cv::resize(videoFrame, resized, frameBufferSize);
-        cv::resize(resized, down, cv::Size(0, 0), SCALE_FACTOR, SCALE_FACTOR);
+        cv::resize(videoFrame, down, cv::Size(WIDTH * SCALE_FACTOR, HEIGHT * SCALE_FACTOR));
         cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
         cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
 

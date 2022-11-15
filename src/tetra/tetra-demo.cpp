@@ -12,7 +12,7 @@ constexpr const int VA_HW_DEVICE_INDEX = 0;
 using std::cerr;
 using std::endl;
 
-void init_tetrahedron() {
+void init_scene() {
     glViewport(0, 0, WIDTH, HEIGHT);
     glColor3f(1.0, 1.0, 1.0);
 
@@ -30,7 +30,7 @@ void init_tetrahedron() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render_tetrahedron() {
+void render() {
     glViewport(0, 0, WIDTH , HEIGHT );
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -103,14 +103,14 @@ int main(int argc, char **argv) {
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
 
-    init_tetrahedron();
+    init_scene();
 
     while (true) {
         //Activate the OpenCL context for OpenGL
         gl::bind();
         //Render using OpenGL
         gl::begin();
-        render_tetrahedron();
+        render();
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL

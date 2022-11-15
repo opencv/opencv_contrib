@@ -15,7 +15,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-void init_tetrahedron() {
+void init_scene() {
     glViewport(0, 0, WIDTH, HEIGHT);
     glColor3f(1.0, 1.0, 1.0);
 
@@ -33,7 +33,7 @@ void init_tetrahedron() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render_tetrahedron() {
+void render() {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glViewport(0, 0, WIDTH, HEIGHT);
     glRotatef(1, 0, 1, 0);
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     cv::UMat videoFrame;
     cv::UMat videoFrameRGBA;
 
-    init_tetrahedron();
+    init_scene();
 
     //Activate the OpenCL context for VAAPI
     va::bind();
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 
         //Render using OpenGL
         gl::begin();
-        render_tetrahedron();
+        render();
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL
