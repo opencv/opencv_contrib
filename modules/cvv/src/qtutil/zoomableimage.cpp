@@ -398,7 +398,7 @@ QPointF ZoomableImage::mapImagePointToParent(QPointF point) const
 
 void ZoomableImage::mouseMoveEvent(QMouseEvent * event)
 {
-#if QT_VERSION >= 0x060000
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 	QPoint pos = event->globalPosition().toPoint();
 #else
 	QPoint pos = event->globalPos();
