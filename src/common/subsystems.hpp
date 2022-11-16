@@ -609,10 +609,9 @@ void acquire_from_gl(cv::UMat &m) {
 }
 
 void release_to_gl(cv::UMat &m) {
-    //The OpenGL frameBuffer is upside-down. Flip it. (OpenCL)
+    //The OpenGL frameBuffer is upside-down. Flip it back. (OpenCL)
     cv::flip(m, m, 0);
     GL_CHECK(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
-
 }
 
 void blit_frame_buffer_to_screen() {
