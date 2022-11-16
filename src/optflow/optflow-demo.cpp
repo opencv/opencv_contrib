@@ -1,26 +1,26 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
-constexpr bool OFFSCREEN = false;
+constexpr unsigned long WIDTH = 3840;
+constexpr unsigned long HEIGHT = 2160;
+constexpr bool OFFSCREEN = true;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 
 //Visualization parameters
-constexpr float FG_SCALE_FACTOR = 0.5f;
-constexpr float FG_LOSS_PERCENT = 4.7;
+constexpr float FG_SCALE = 0.5f;
+constexpr float FG_LOSS = 4.7; //in percent
 
 constexpr float SCENE_CHANGE_THRESH = 0.29f;
 constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
 
 constexpr float MAX_POINTS = 250000.0;
-constexpr float POINT_LOSS_PERCENT = 25;
+constexpr float POINT_LOSS = 25; // in percent
 
-constexpr float MAX_STROKE_SIZE = 17;
+constexpr int MAX_STROKE = 17;
 
-constexpr float HUE_DEGREES = 36;
-constexpr float SATURATION_PERCENT = 100;
-constexpr float LIGHTNESS_PERCENT = 60;
-constexpr float ALPHA_PERCENT = 2.85;
+constexpr float HUE = 36; //in degress
+constexpr float SATURATION = 100; //in percent
+constexpr float LIGHTNESS = 60; //in percent
+constexpr float ALPHA = 2.85; //in percent
 
 constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH / 120;
 
@@ -60,7 +60,7 @@ void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& point
     }
 }
 
-bool detect_scene_change(const cv::UMat& srcMotionMaskGrey) {
+bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, float thresh, float theshDiff) {
     static float last_movement = 0;
 
     float movement = cv::countNonZero(srcMotionMaskGrey) / double(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
@@ -68,12 +68,15 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey) {
     float relM = relation * log10(1.0f + (movement * 9.0));
     float relLM = relation * log10(1.0f + (last_movement * 9.0));
     bool result = !((movement > 0 && last_movement > 0 && relation > 0)
-            && (relM < SCENE_CHANGE_THRESH && relLM < SCENE_CHANGE_THRESH && fabs(relM - relLM) < SCENE_CHANGE_THRESH_DIFF));
+            && (relM < thresh && relLM < thresh && fabs(relM - relLM) < theshDiff));
     last_movement = (last_movement + movement) / 2.0f;
     return result;
 }
 
-void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints, const double scaleFactor) {
+void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
+        const float scaleFactor, const int maxStrokeSize,
+        const float hueDegress, const float satPercent, const float lightPercent, const float alphaPercent,
+        int maxPoints, float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
     static std::vector<uchar> status;
@@ -83,11 +86,11 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
         cv::convexHull(detectedPoints, hull);
         float area = cv::contourArea(hull);
         float density = (detectedPoints.size() / area);
-        float stroke = MAX_STROKE_SIZE * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
-        size_t currentMaxPoints = density * MAX_POINTS;
+        float stroke = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
+        size_t currentMaxPoints = density * maxPoints;
 
         std::random_shuffle(prevPoints.begin(), prevPoints.end());
-        prevPoints.resize(ceil(prevPoints.size() * (1.0f - (POINT_LOSS_PERCENT / 100.0f))));
+        prevPoints.resize(ceil(prevPoints.size() * (1.0f - (pointLossPercent / 100.0f))));
 
         size_t copyn = std::min(detectedPoints.size(), (size_t(std::ceil(currentMaxPoints)) - prevPoints.size()));
         if (prevPoints.size() < currentMaxPoints) {
@@ -110,10 +113,10 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, stroke);
-            nvgStrokeColor(vg, nvgHSLA(HUE_DEGREES / 360.0, SATURATION_PERCENT / 100.f, LIGHTNESS_PERCENT / 100.0f, 255 * (ALPHA_PERCENT / 100.0f)));
+            nvgStrokeColor(vg, nvgHSLA(hueDegress / 360.0, satPercent / 100.f, lightPercent / 100.0f, 255 * (alphaPercent / 100.0f)));
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
-                if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < HEIGHT && upNextPoints[i].x < WIDTH && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
+                if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
                     float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
                     if (len < sqrt(area)) {
                         newPoints.push_back(nextPoints[i]);
@@ -128,7 +131,7 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
     }
 }
 
-void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize = GLOW_KERNEL_SIZE) {
+void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
     static cv::UMat dst16;
@@ -140,7 +143,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize = GLOW_KERN
     //Cheap blur
     cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     //Back to original size
-    cv::resize(resize, blur, cv::Size(WIDTH, HEIGHT));
+    cv::resize(resize, blur, src.size());
 
     //Multiply the src image with a blurred version of itself
     cv::multiply(dst, blur, dst16, 1, CV_16U);
@@ -148,6 +151,18 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize = GLOW_KERN
     cv::divide(dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
 
     cv::bitwise_not(dst, dst);
+}
+
+void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int glowKernelSize, float fgLossPercent) {
+    static cv::UMat glow;
+    static cv::UMat backgroundGrey;
+
+    cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
+    cv::add(foreground, frameBuffer, foreground);
+    glow_effect(foreground, glow, glowKernelSize);
+    cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
+    cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
+    cv::add(background, glow, dst);
 }
 
 int main(int argc, char **argv) {
@@ -188,7 +203,7 @@ int main(int argc, char **argv) {
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     cv::Size frameBufferSize(WIDTH, HEIGHT);
-    cv::Size scaledSize(WIDTH * FG_SCALE_FACTOR, HEIGHT * FG_SCALE_FACTOR);
+    cv::Size scaledSize(WIDTH * FG_SCALE, HEIGHT * FG_SCALE);
     cv::UMat frameBuffer, videoFrame, resized, down, background, glow, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
     cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
     vector<cv::Point2f> detectedPoints;
@@ -211,8 +226,8 @@ int main(int argc, char **argv) {
         nvg::begin();
         nvg::clear();
         if (!downPrevGrey.empty()) {
-            if (!detect_scene_change(downMotionMaskGrey)) {
-                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE_FACTOR);
+            if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
+                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, HUE, SATURATION, LIGHTNESS, ALPHA, MAX_POINTS, POINT_LOSS);
             }
         }
         nvg::end();
@@ -220,12 +235,7 @@ int main(int argc, char **argv) {
         downPrevGrey = downNextGrey.clone();
 
         gl::acquire_from_gl(frameBuffer);
-        cv::subtract(foreground, cv::Scalar::all(255.0f * (FG_LOSS_PERCENT / 100.0f)), foreground);
-        cv::add(foreground, frameBuffer, foreground);
-        glow_effect(foreground, glow);
-        cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
-        cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
-        cv::add(background, glow, frameBuffer);
+        composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         gl::release_to_gl(frameBuffer);
 
