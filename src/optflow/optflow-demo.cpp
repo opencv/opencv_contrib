@@ -1,8 +1,8 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-constexpr unsigned long WIDTH = 3840;
-constexpr unsigned long HEIGHT = 2160;
-constexpr bool OFFSCREEN = true;
+constexpr unsigned long WIDTH = 1920;
+constexpr unsigned long HEIGHT = 1080;
+constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 
 //Visualization parameters
