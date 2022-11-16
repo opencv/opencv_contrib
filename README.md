@@ -3,7 +3,8 @@ OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using my 4.x fork of
 
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
 
-The author of the example video (which is also used for the demos videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
+* The author of the example video (which is also used for two of the demo videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
+* The right holders of the video used for the optical flow visualization are **https://www.bbtv.com**. I tried to contact them several times to get an opinion on my fair-use for educational purpose. The original video: https://www.youtube.com/watch?v=ItGwXRCcisA
 
 # Requirements
 * Support for OpenCL 1.2
@@ -29,7 +30,7 @@ https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92
 ## optflow-demo
 My take on a optical flow visualization on top of a video. Uses nanovg for rendering (OpenGL) and decodes/encodes on the GPU.
 
-https://user-images.githubusercontent.com/287266/201636576-f0e887f8-80ce-4962-9667-62c04c5dbf41.mp4
+https://user-images.githubusercontent.com/287266/202174513-331e6f08-8397-4521-969b-24cbc43d27fc.mp4
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
