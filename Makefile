@@ -1,5 +1,5 @@
 CXX      := g++
-CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -march=native -flto -I/usr/include/opencv4/
+CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -march=native -flto -I/usr/local/include/opencv4/
 LDFLAGS  := -L/opt/local/lib -flto
 LIBS     := -lnanovg
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 

@@ -280,7 +280,7 @@ void init() {
 
     va::check_if_YUV420_available();
 
-    cv::va_intel::ocl::initializeContextFromVA(va::display, true);
+    cv::va_intel::ocl::initializeContextFromVA(va::display);
 
     va::context = cv::ocl::OpenCLExecutionContext::getCurrent();
 }
