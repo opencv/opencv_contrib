@@ -1,11 +1,14 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
+//WIDTH and HEIGHT have to be specified before including subsystems.hpp
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
+
+constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH / 120;
 
 #include "../common/subsystems.hpp"
 
@@ -52,26 +55,26 @@ void render_scene() {
     glEnd();
 }
 
-void glow_effect(cv::UMat &src, int ksize = WIDTH / 85 % 2 == 0 ? WIDTH / 85  + 1 : WIDTH / 85) {
+void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
-    static cv::UMat src16;
+    static cv::UMat dst16;
 
-    cv::bitwise_not(src, src);
+    cv::bitwise_not(src, dst);
 
     //Resize for some extra performance
-    cv::resize(src, resize, cv::Size(), 0.5, 0.5);
+    cv::resize(dst, resize, cv::Size(), 0.5, 0.5);
     //Cheap blur
     cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     //Back to original size
-    cv::resize(resize, blur, cv::Size(WIDTH, HEIGHT));
+    cv::resize(resize, blur, src.size());
 
     //Multiply the src image with a blurred version of itself
-    cv::multiply(src, blur, src16, 1, CV_16U);
+    cv::multiply(dst, blur, dst16, 1, CV_16U);
     //Normalize and convert back to CV_8U
-    cv::divide(src16, cv::Scalar::all(255.0), src, 1, CV_8U);
+    cv::divide(dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
 
-    cv::bitwise_not(src, src);
+    cv::bitwise_not(dst, dst);
 }
 
 int main(int argc, char **argv) {
@@ -116,7 +119,7 @@ int main(int argc, char **argv) {
         //Aquire the frame buffer for use by OpenCL
         gl::acquire_from_gl(frameBuffer);
         //Glow effect (OpenCL)
-        glow_effect(frameBuffer);
+        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Release the frame buffer for use by OpenGL

@@ -1,5 +1,6 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
+//WIDTH and HEIGHT have to be specified before including subsystems.hpp
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
@@ -67,6 +68,7 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, float thresh, float 
     float relation = movement > 0 && last_movement > 0 ? std::max(movement, last_movement) / std::min(movement, last_movement) : 0;
     float relM = relation * log10(1.0f + (movement * 9.0));
     float relLM = relation * log10(1.0f + (last_movement * 9.0));
+
     bool result = !((movement > 0 && last_movement > 0 && relation > 0)
             && (relM < thresh && relLM < thresh && fabs(relM - relLM) < theshDiff));
     last_movement = (last_movement + movement) / 2.0f;
