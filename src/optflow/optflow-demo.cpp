@@ -175,12 +175,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    va::init();
     cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
+
+    //Copy OpenCL Context for VAAPI. Must be called right after VideoWriter/VideoCapture initialization.
+    va::init();
 
     if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open video input" << endl;
@@ -199,7 +201,6 @@ int main(int argc, char **argv) {
     gl::init();
     nvg::init();
 
-    cerr << "VA Version: " << va::get_info() << endl;
     cerr << "EGL Version: " << egl::get_info() << endl;
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;

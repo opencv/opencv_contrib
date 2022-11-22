@@ -79,15 +79,15 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 
 int main(int argc, char **argv) {
     using namespace kb;
-    //Initialize OpenCL Context for VAAPI
-    va::init();
-
     //Initialize VP9 HW encoding using VAAPI
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
+
+    //Copy OpenCL Context for VAAPI. Must be called right after VideoWriter/VideoCapture initialization.
+    va::init();
 
     //If we are rendering offscreen we don't need x11
     if(!OFFSCREEN)
@@ -100,7 +100,6 @@ int main(int argc, char **argv) {
 
     init_scene();
 
-    cerr << "VA Version: " << va::get_info() << endl;
     cerr << "EGL Version: " << egl::get_info() << endl;
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;

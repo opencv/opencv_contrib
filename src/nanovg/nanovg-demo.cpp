@@ -117,9 +117,6 @@ void drawColorwheel(NVGcontext *vg, float x, float y, float w, float h, float hu
 
 int main(int argc, char **argv) {
     using namespace kb;
-    //Initialize OpenCL Context for VAAPI
-    va::init();
-
     if (argc != 2) {
         cerr << "Usage: nanovg-demo <video-file>" << endl;
         exit(1);
@@ -131,6 +128,9 @@ int main(int argc, char **argv) {
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
+
+    //Copy OpenCL Context for VAAPI. Must be called right after VideoWriter/VideoCapture initialization.
+    va::init();
 
     // Check if we succeeded
     if (!capture.isOpened()) {
@@ -152,7 +152,6 @@ int main(int argc, char **argv) {
     gl::init();
     nvg::init();
 
-    cerr << "VA Version: " << va::get_info() << endl;
     cerr << "EGL Version: " << egl::get_info() << endl;
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
