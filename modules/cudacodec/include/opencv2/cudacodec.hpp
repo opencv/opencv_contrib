@@ -184,7 +184,10 @@ struct CV_EXPORTS_W_SIMPLE EncodeQp
 struct CV_EXPORTS_W_SIMPLE EncoderParams
 {
 public:
-    CV_WRAP EncoderParams();
+    CV_WRAP EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
+        rateControlMode(ENC_PARAMS_RC_VBR), multiPassEncoding(ENC_MULTI_PASS_DISABLED), constQp({ 0,0,0 }), averageBitRate(0), maxBitRate(0),
+        targetQuality(30), gopLength(0) {};
+
     CV_PROP_RW EncodePreset nvPreset;
     CV_PROP_RW EncodeTuningInfo tuningInfo;
     CV_PROP_RW EncodeProfile encodingProfile;
@@ -218,6 +221,11 @@ public:
 };
 
 /** @brief Video writer interface.
+
+Available when built with WITH_NVCUVENC=ON while Nvidia's Video Codec SDK is installed.
+
+Encoding support is dependent on the GPU, refer to the Nvidia Video Codec SDK Video Encode and Decode GPU Support Matrix for details.
+
 @note
    -   An example on how to use the videoWriter class can be found at
         opencv_source_code/samples/gpu/video_writer.cpp
@@ -341,6 +349,10 @@ enum class VideoReaderProps {
 };
 
 /** @brief Video reader interface.
+
+Available when built with WITH_NVCUVID=ON while Nvidia's Video Codec SDK is installed.
+
+Decoding support is dependent on the GPU, refer to the Nvidia Video Codec SDK Video Encode and Decode GPU Support Matrix for details.
 
 @note
    -   An example on how to use the videoReader class can be found at
