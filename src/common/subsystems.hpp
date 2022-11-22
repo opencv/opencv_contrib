@@ -63,7 +63,7 @@ void init() {
 }
 
 void bind() {
-    context.bind();
+    va::context.bind();
 }
 } // namespace va
 
@@ -331,7 +331,7 @@ GLuint frame_buf;
 cv::ocl::OpenCLExecutionContext context;
 
 void bind() {
-    context.bind();
+    gl::context.bind();
 }
 
 void begin() {
