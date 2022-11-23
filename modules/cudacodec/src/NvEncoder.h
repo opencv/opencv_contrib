@@ -235,7 +235,7 @@ protected:
     */
     NV_ENC_REGISTERED_PTR RegisterResource(void* pBuffer, NV_ENC_INPUT_RESOURCE_TYPE eResourceType,
         int width, int height, int pitch, NV_ENC_BUFFER_FORMAT bufferFormat, NV_ENC_BUFFER_USAGE bufferUsage = NV_ENC_INPUT_IMAGE,
-        NV_ENC_FENCE_POINT_D3D12* pInputFencePoint = NULL, NV_ENC_FENCE_POINT_D3D12* pOutputFencePoint = NULL);
+        NV_ENC_FENCE_POINT_D3D12* pInputFencePoint = NULL);
 
     /**
     * @brief This function returns maximum width used to open the encoder session.

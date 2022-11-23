@@ -431,7 +431,7 @@ bool NvEncoder::Reconfigure(const NV_ENC_RECONFIGURE_PARAMS* pReconfigureParams)
 
 NV_ENC_REGISTERED_PTR NvEncoder::RegisterResource(void* pBuffer, NV_ENC_INPUT_RESOURCE_TYPE eResourceType,
     int width, int height, int pitch, NV_ENC_BUFFER_FORMAT bufferFormat, NV_ENC_BUFFER_USAGE bufferUsage,
-    NV_ENC_FENCE_POINT_D3D12* pInputFencePoint, NV_ENC_FENCE_POINT_D3D12* pOutputFencePoint)
+    NV_ENC_FENCE_POINT_D3D12* pInputFencePoint)
 {
     NV_ENC_REGISTER_RESOURCE registerResource = {};
     registerResource.version = NV_ENC_REGISTER_RESOURCE_VER;
@@ -443,7 +443,6 @@ NV_ENC_REGISTERED_PTR NvEncoder::RegisterResource(void* pBuffer, NV_ENC_INPUT_RE
     registerResource.bufferFormat = bufferFormat;
     registerResource.bufferUsage = bufferUsage;
     registerResource.pInputFencePoint = pInputFencePoint;
-    registerResource.pOutputFencePoint = pOutputFencePoint;
     NVENC_API_CALL(m_nvenc.nvEncRegisterResource(m_hEncoder, &registerResource));
 
     return registerResource.registeredResource;
