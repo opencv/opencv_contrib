@@ -61,12 +61,6 @@ GUID EncodingProfileGuid(const EncodeProfile encodingProfile);
 GUID EncodingPresetGuid(const EncodePreset nvPreset);
 bool Equal(const GUID& g1, const GUID& g2);
 
-EncoderParams::EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
-    rateControlMode(ENC_PARAMS_RC_VBR), multiPassEncoding(ENC_MULTI_PASS_DISABLED), constQp({ 0,0,0 }), averageBitRate(0), maxBitRate(0),
-    targetQuality(30), gopLength(0)
-{
-};
-
 bool operator==(const EncoderParams& lhs, const EncoderParams& rhs)
 {
     return std::tie(lhs.nvPreset, lhs.tuningInfo, lhs.encodingProfile, lhs.rateControlMode, lhs.multiPassEncoding, lhs.constQp.qpInterB, lhs.constQp.qpInterP, lhs.constQp.qpIntra,
