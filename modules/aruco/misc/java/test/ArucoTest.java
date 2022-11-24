@@ -19,8 +19,11 @@ public class ArucoTest extends OpenCVTestCase {
 
             Mat point1 = new Mat(4, 3, CvType.CV_32FC1);
             int row = 0, col = 0;
-            point1.put(row ,col, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0);
-
+            double squareLength = 40.;
+            point1.put(row, col, 0, 0, 0,
+                                 0, squareLength, 0,
+                                 squareLength, squareLength, 0,
+                                 0, squareLength, 0);
             List<Mat>objPoints = new ArrayList<Mat>();
             objPoints.add(point1);
 
@@ -30,7 +33,7 @@ public class ArucoTest extends OpenCVTestCase {
             Board board = Board.create(objPoints, dictionary, ids);
 
             Mat image = new Mat();
-            board.draw(new Size(50, 50), image);
+            board.draw(new Size(80, 80), image, 2);
 
             assertTrue(image.total() > 0);
         }
