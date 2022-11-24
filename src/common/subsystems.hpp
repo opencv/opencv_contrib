@@ -322,12 +322,14 @@ void init(bool debug = false) {
 std::string get_info() {
     return eglQueryString(display, EGL_VERSION);
 }
+
 } //namespace egl
 
 namespace gl {
 //code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
 cv::ogl::Texture2D *frame_buf_tex;
 GLuint frame_buf;
+GLuint render_buf;
 cv::ocl::OpenCLExecutionContext context;
 
 void bind() {
@@ -335,12 +337,42 @@ void bind() {
 }
 
 void begin() {
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, kb::gl::frame_buf));
+    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf));
+    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
+    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
+    frame_buf_tex->bind();
 }
 
 void end() {
+    GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0));
+    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
+}
+
+void push() {
+    GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
+    GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
+    GL_CHECK(glMatrixMode(GL_MODELVIEW));
+    GL_CHECK(glPushMatrix());
+    GL_CHECK(glMatrixMode(GL_PROJECTION));
+    GL_CHECK(glPushMatrix());
+    GL_CHECK(glMatrixMode(GL_TEXTURE));
+    GL_CHECK(glPushMatrix());
+}
+
+void pop() {
+    GL_CHECK(glMatrixMode(GL_TEXTURE));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glMatrixMode(GL_PROJECTION));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glMatrixMode(GL_MODELVIEW));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glPopClientAttrib());
+    GL_CHECK(glPopAttrib());
 }
 
 void init() {
@@ -353,12 +385,11 @@ void init() {
     GL_CHECK(glGenFramebuffers(1, &frame_buf));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
 
-    GLuint sb;
-    glGenRenderbuffers(1, &sb);
-    glBindRenderbuffer(GL_RENDERBUFFER, sb);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT);
+    GL_CHECK(glGenRenderbuffers(1, &render_buf));
+    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
+    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT));
 
-    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, sb));
+    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
 
     frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
@@ -374,6 +405,7 @@ std::string get_info() {
 }
 
 void acquire_from_gl(cv::UMat &m) {
+    gl::begin();
     GL_CHECK(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
     //The OpenGL frameBuffer is upside-down. Flip it. (OpenCL)
     cv::flip(m, m, 0);
@@ -383,6 +415,7 @@ void release_to_gl(cv::UMat &m) {
     //The OpenGL frameBuffer is upside-down. Flip it back. (OpenCL)
     cv::flip(m, m, 0);
     GL_CHECK(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
+    gl::end();
 }
 
 void blit_frame_buffer_to_screen() {
@@ -434,31 +467,9 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f) 
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
-void push() {
-    GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
-    GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
-    GL_CHECK(glMatrixMode(GL_MODELVIEW));
-    GL_CHECK(glPushMatrix());
-    GL_CHECK(glMatrixMode(GL_PROJECTION));
-    GL_CHECK(glPushMatrix());
-    GL_CHECK(glMatrixMode(GL_TEXTURE));
-    GL_CHECK(glPushMatrix());
-}
-
-void pop() {
-    GL_CHECK(glMatrixMode(GL_TEXTURE));
-    GL_CHECK(glPopMatrix());
-    GL_CHECK(glMatrixMode(GL_PROJECTION));
-    GL_CHECK(glPopMatrix());
-    GL_CHECK(glMatrixMode(GL_MODELVIEW));
-    GL_CHECK(glPopMatrix());
-    GL_CHECK(glPopClientAttrib());
-    GL_CHECK(glPopAttrib());
-}
-
 void begin() {
     gl::begin();
-    push();
+    gl::push();
 
     float w = WIDTH;
     float h = HEIGHT;
@@ -477,12 +488,12 @@ void begin() {
 void end() {
     nvgEndFrame(vg);
     nvgRestore(vg);
-    pop();
+    gl::pop();
     gl::end();
 }
 
 void init(bool debug = false) {
-    push();
+    gl::push();
 
     GL_CHECK(glViewport(0, 0, WIDTH, HEIGHT));
     GL_CHECK(glEnable(GL_STENCIL_TEST));
@@ -502,7 +513,7 @@ void init(bool debug = false) {
     nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
     */
 
-    pop();
+    gl::pop();
 }
 } //namespace nvg
 
