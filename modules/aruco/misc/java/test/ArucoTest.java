@@ -6,6 +6,7 @@ import java.util.List;
 import org.opencv.test.OpenCVTestCase;
 import org.opencv.core.Scalar;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.core.CvType;
 import org.opencv.aruco.*;
 import org.opencv.objdetect.*;
@@ -13,9 +14,30 @@ import org.opencv.objdetect.*;
 
 public class ArucoTest extends OpenCVTestCase {
 
+    public void testDrawBoards() {
+            Dictionary dictionary = Objdetect.getPredefinedDictionary(Objdetect.DICT_4X4_50);
+
+            Mat point1 = new Mat(4, 3, CvType.CV_32FC1);
+            int row = 0, col = 0;
+            point1.put(row ,col, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0);
+
+            List<Mat>objPoints = new ArrayList<Mat>();
+            objPoints.add(point1);
+
+            Mat ids = new Mat(1, 1, CvType.CV_32SC1);
+            ids.put(row, col, 0);
+
+            Board board = Board.create(objPoints, dictionary, ids);
+
+            Mat image = new Mat();
+            board.draw(new Size(50, 50), image);
+
+            assertTrue(image.total() > 0);
+        }
+
     public void testArucoIssue3133() {
         byte[][] marker = {{0,1,1},{1,1,1},{0,1,1}};
-        Dictionary dictionary = extendDictionary(1, 3);
+        Dictionary dictionary = Objdetect.extendDictionary(1, 3);
         dictionary.set_maxCorrectionBits(0);
         Mat markerBits = new Mat(3, 3, CvType.CV_8UC1);
         for (int i = 0; i < 3; i++) {
@@ -32,7 +54,7 @@ public class ArucoTest extends OpenCVTestCase {
     }
 
     public void testArucoDetector() {
-        Dictionary dictionary = getPredefinedDictionary(0);
+        Dictionary dictionary = Objdetect.getPredefinedDictionary(0);
         DetectorParameters detectorParameters = new DetectorParameters();
         ArucoDetector detector = new ArucoDetector(dictionary, detectorParameters);
 

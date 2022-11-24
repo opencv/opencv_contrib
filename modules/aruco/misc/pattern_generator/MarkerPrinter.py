@@ -39,7 +39,7 @@ def SaveArucoDictBytesList(filePath = "arucoDictBytesList.npz"):
 
         arucoDictBytesList = {}
         for name, flag in dictInfo:
-            arucoDict = aruco.Dictionary_get(flag)
+            arucoDict = aruco.getPredefinedDictionary(flag)
             arucoDictBytesList[name] = arucoDict.bytesList
 
         np.savez_compressed(filePath, **arucoDictBytesList)

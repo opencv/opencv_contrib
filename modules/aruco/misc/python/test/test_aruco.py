@@ -16,7 +16,7 @@ class aruco_test(NewOpenCVTests):
         ids = np.arange(17)
         rev_ids = ids[::-1]
 
-        aruco_dict  = cv.aruco.Dictionary_get(cv.aruco.DICT_5X5_250)
+        aruco_dict  = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_5X5_250)
         board = cv.aruco.CharucoBoard_create(7, 5, 1, 0.5, aruco_dict)
 
         np.testing.assert_array_equal(board.getIds().squeeze(), ids)
@@ -28,7 +28,7 @@ class aruco_test(NewOpenCVTests):
         np.testing.assert_array_equal(board.getIds().squeeze(), ids)
 
     def test_drawCharucoDiamond(self):
-        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
         img = cv.aruco.drawCharucoDiamond(aruco_dict, np.array([0, 1, 2, 3]), 100, 80)
         self.assertTrue(img is not None)
 
@@ -62,7 +62,7 @@ class aruco_test(NewOpenCVTests):
                 os.remove(filename)
 
     def test_identify(self):
-        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
         expected_idx = 9
         expected_rotation = 2
         bit_marker = np.array([[0, 1, 1, 0], [1, 0, 1, 0], [1, 1, 1, 1], [0, 0, 1, 1]], dtype=np.uint8)
@@ -74,7 +74,7 @@ class aruco_test(NewOpenCVTests):
         self.assertEqual(rotation, expected_rotation)
 
     def test_getDistanceToId(self):
-        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_50)
+        aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
         idx = 7
         rotation = 3
         bit_marker = np.array([[0, 1, 0, 1], [0, 1, 1, 1], [1, 1, 0, 0], [0, 1, 0, 0]], dtype=np.uint8)
@@ -84,7 +84,7 @@ class aruco_test(NewOpenCVTests):
 
     def test_aruco_detector(self):
         aruco_params = cv.aruco.DetectorParameters()
-        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_250)
+        aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_250)
         aruco_detector = cv.aruco.ArucoDetector(aruco_dict, aruco_params)
         id = 2
         marker_size = 100
@@ -107,7 +107,7 @@ class aruco_test(NewOpenCVTests):
 
     def test_aruco_detector_refine(self):
         aruco_params = cv.aruco.DetectorParameters()
-        aruco_dict = cv.aruco.Dictionary_get(cv.aruco.DICT_4X4_250)
+        aruco_dict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_250)
         aruco_detector = cv.aruco.ArucoDetector(aruco_dict, aruco_params)
         board_size = (3, 4)
         board = cv.aruco.GridBoard_create(board_size[0], board_size[1], 5.0, 1.0, aruco_dict)
