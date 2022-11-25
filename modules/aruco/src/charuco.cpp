@@ -427,7 +427,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
         // try to find the rest of markers in the diamond
         vector< int > acceptedIdxs;
-        Ptr<RefineParameters> refineParameters = makePtr<RefineParameters>(minRepDistance, -1.f, false);
+        RefineParameters refineParameters(minRepDistance, -1.f, false);
         ArucoDetector detector(dictionary, makePtr<DetectorParameters>(), refineParameters);
         detector.refineDetectedMarkers(grey, _charucoDiamondLayout, currentMarker, currentMarkerId, candidates,
                                        noArray(), noArray(), acceptedIdxs);
