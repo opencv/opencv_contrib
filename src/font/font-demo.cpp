@@ -95,7 +95,8 @@ int main(int argc, char **argv) {
             }
         }
         nvg::end();
-        if(y == 0)
+
+        if(y == 0) //nothing drawn, exit
             break;
 
         //Aquire frame buffer from OpenGL
