@@ -54,14 +54,11 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> dst = {{WIDTH/3,0},{WIDTH/1.5,0},{WIDTH,HEIGHT},{0,HEIGHT}};
     cv::Mat M = cv::getPerspectiveTransform(src, dst);
 
-    size_t cnt = 1;
-    float y = 0;
+    size_t cnt = 0;
+    float y;
 
     while (true) {
         y = 0;
-        //rewind the istringstream
-        iss.clear(std::stringstream::goodbit);
-        iss.seekg(0);
 
         //Activate the OpenCL context for OpenGL
         gl::bind();
@@ -74,12 +71,13 @@ int main(int argc, char **argv) {
             nvgFontFace(vg, "serif");
             nvgFillColor(vg, nvgHSLA(0.15, 1, 0.5, 255));
             nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+
+            //only draw lines that are visible
             off_t progressLines = cnt / FONT_SIZE;
             off_t skipLines = (numLines - progressLines) - 1;
             skipLines = skipLines < 0 ? 0 : skipLines;
             off_t maxLines = HEIGHT / FONT_SIZE;
-            off_t currentHeight = (numLines - skipLines) * FONT_SIZE;
-            off_t translateY = cnt - currentHeight;
+            off_t translateY = cnt - (numLines - skipLines) * FONT_SIZE;
             nvgTranslate(vg, 0, translateY);
 
             for (std::string line; std::getline(iss, line); ) {
@@ -98,6 +96,10 @@ int main(int argc, char **argv) {
 
         if(y == 0) //nothing drawn, exit
             break;
+
+        //rewind the istringstream
+        iss.clear(std::stringstream::goodbit);
+        iss.seekg(0);
 
         //Aquire frame buffer from OpenGL
         gl::acquire_from_gl(frameBuffer);
