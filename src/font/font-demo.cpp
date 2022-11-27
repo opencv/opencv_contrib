@@ -77,9 +77,11 @@ int main(int argc, char **argv) {
 
             std::istringstream iss(text);
             for (std::string line; std::getline(iss, line); ) {
-                if(skipLines == 0 && (y / lineh) < maxLines) {
-                    nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
-                    y += lineh;
+                if(skipLines == 0) {
+                    if((y / lineh) < maxLines) {
+                        nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
+                        y += lineh;
+                    }
                 } else {
                    --skipLines;
                 }
@@ -89,8 +91,8 @@ int main(int argc, char **argv) {
 
         //Aquire frame buffer from OpenGL
         gl::acquire_from_gl(frameBuffer);
-        //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::warpPerspective(frameBuffer, frameBuffer, M, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Transfer buffer ownership back to OpenGL
         gl::release_to_gl(frameBuffer);
