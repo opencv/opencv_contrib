@@ -6,13 +6,14 @@ constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
-
+constexpr float FONT_SIZE = 40.0f;
 #include "../common/subsystems.hpp"
 
 #include <string>
 #include <algorithm>
 #include <vector>
 #include <sstream>
+#include <limits>
 
 using std::cerr;
 using std::endl;
@@ -46,51 +47,60 @@ int main(int argc, char **argv) {
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
 
-    //Bind the OpenCL context for VAAPI
     string text = cv::getBuildInformation();
-    size_t numLines = std::count(text.begin(), text.end(), '\n');
+    std::istringstream iss(text);
+    off_t numLines = std::count(text.begin(), text.end(), '\n');
     vector<cv::Point2f> src = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
     vector<cv::Point2f> dst = {{WIDTH/3,0},{WIDTH/1.5,0},{WIDTH,HEIGHT},{0,HEIGHT}};
     cv::Mat M = cv::getPerspectiveTransform(src, dst);
 
-    float cnt = 1;
+    size_t cnt = 1;
+    float y = 0;
+
     while (true) {
-        //Render using nanovg
+        y = 0;
+        //rewind the istringstream
+        iss.clear(std::stringstream::goodbit);
+        iss.seekg(0);
+
+        //Activate the OpenCL context for OpenGL
         gl::bind();
+        //Render using nanovg
         nvg::begin();
         nvg::clear();
         {
             using kb::nvg::vg;
-
-            float lineh;
-            float y = 0;
-
-            nvgFontSize(vg, 40.0f);
+            nvgFontSize(vg, FONT_SIZE);
             nvgFontFace(vg, "serif");
             nvgFillColor(vg, nvgHSLA(0.15, 1, 0.5, 255));
             nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-            nvgTextMetrics(vg, NULL, NULL, &lineh);
-            size_t displayLines = ceil(cnt / lineh);
-            size_t skipLines = numLines - displayLines;
-            size_t maxLines = ceil(HEIGHT / lineh) + 1;
-            nvgTranslate(vg, 0, cnt - ((displayLines * lineh)));
+            off_t progressLines = cnt / FONT_SIZE;
+            off_t skipLines = (numLines - progressLines) - 1;
+            skipLines = skipLines < 0 ? 0 : skipLines;
+            off_t maxLines = HEIGHT / FONT_SIZE;
+            off_t currentHeight = (numLines - skipLines) * FONT_SIZE;
+            off_t translateY = cnt - currentHeight;
+            nvgTranslate(vg, 0, translateY);
 
-            std::istringstream iss(text);
             for (std::string line; std::getline(iss, line); ) {
-                if(skipLines == 0) {
-                    if((y / lineh) < maxLines) {
+                if(skipLines <= 0) {
+                    if(((translateY + y) / FONT_SIZE) < maxLines) {
                         nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
-                        y += lineh;
-                    }
+                        y += FONT_SIZE;
+                    } else
+                        break;
                 } else {
                    --skipLines;
                 }
             }
         }
         nvg::end();
+        if(y == 0)
+            break;
 
         //Aquire frame buffer from OpenGL
         gl::acquire_from_gl(frameBuffer);
+        //fake 3d text effect
         cv::warpPerspective(frameBuffer, frameBuffer, M, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
@@ -108,7 +118,7 @@ int main(int argc, char **argv) {
 
         print_fps();
         ++cnt;
-        if(cnt > 1000000)
+        if(cnt == std::numeric_limits<size_t>().max())
             cnt = 1;
     }
 
