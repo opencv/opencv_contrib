@@ -469,7 +469,7 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f) 
 
 void begin() {
     gl::begin();
-    gl::push();
+//    gl::push();
 
     float w = WIDTH;
     float h = HEIGHT;
@@ -488,7 +488,7 @@ void begin() {
 void end() {
     nvgEndFrame(vg);
     nvgRestore(vg);
-    gl::pop();
+//    gl::pop();
     gl::end();
 }
 
@@ -508,7 +508,7 @@ void init(bool debug = false) {
     }
 
 
-    nvgCreateFont(vg, "icons", "assets/LinLibertine_R.ttf");
+    nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
     /*nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
     nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
     */
