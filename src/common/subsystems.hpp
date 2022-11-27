@@ -507,9 +507,9 @@ void init(bool debug = false) {
         exit(24);
     }
 
-    /*
-    nvgCreateFont(vg, "icons", "fonts/entypo.ttf");
-    nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
+
+    nvgCreateFont(vg, "icons", "assets/LinLibertine_R.ttf");
+    /*nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
     nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
     */
 
