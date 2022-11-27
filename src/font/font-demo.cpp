@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> dst = {{WIDTH/3.5,0},{WIDTH/1.4,0},{WIDTH,HEIGHT},{0,HEIGHT}};
     cv::Mat M = cv::getPerspectiveTransform(src, dst);
 
-    float cnt = 0;
+    float cnt = 1;
     while (true) {
         //Render using nanovg
         gl::bind();
@@ -65,19 +65,24 @@ int main(int argc, char **argv) {
             float lineh;
             float y = 0;
 
-            nvgFontSize(vg, 45.0f);
+            nvgFontSize(vg, 40.0f);
             nvgFontFace(vg, "serif");
             nvgFillColor(vg, nvgHSLA(0.15, 1, 0.5, 255));
             nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
             nvgTextMetrics(vg, NULL, NULL, &lineh);
-            nvgTranslate(vg, 0, cnt - ((numLines * lineh)));
+            size_t displayLines = ceil(cnt / lineh);
+            size_t skipLines = numLines - displayLines;
+            size_t maxLines = ceil(HEIGHT / lineh) + 1;
+            nvgTranslate(vg, 0, cnt - ((displayLines * lineh)));
 
             std::istringstream iss(text);
-
-            for (std::string line; std::getline(iss, line); )
-            {
-                nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
-                y += lineh;
+            for (std::string line; std::getline(iss, line); ) {
+                if(skipLines == 0 && (y / lineh) < maxLines) {
+                    nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
+                    y += lineh;
+                } else {
+                   --skipLines;
+                }
             }
         }
         nvg::end();
