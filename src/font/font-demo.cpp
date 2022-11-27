@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
     string text = cv::getBuildInformation();
     size_t numLines = std::count(text.begin(), text.end(), '\n');
     vector<cv::Point2f> src = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-    vector<cv::Point2f> dst = {{WIDTH/3.5,0},{WIDTH/1.4,0},{WIDTH,HEIGHT},{0,HEIGHT}};
+    vector<cv::Point2f> dst = {{WIDTH/3,0},{WIDTH/1.5,0},{WIDTH,HEIGHT},{0,HEIGHT}};
     cv::Mat M = cv::getPerspectiveTransform(src, dst);
 
     float cnt = 1;
