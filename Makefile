@@ -1,6 +1,6 @@
 CXX      := g++
 CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -march=native -flto -I/usr/local/include/opencv4/
-LDFLAGS  := -L/opt/local/lib -flto
+LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64
 LIBS     := -lnanovg
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 
 DESTDIR := /
@@ -39,19 +39,22 @@ dirs:
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-	
+	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+
 debian-release:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} release
+	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} release
 
 debian-clean:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} clean
-	
+	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} clean
+
 install: ${TARGET}
 	true
 

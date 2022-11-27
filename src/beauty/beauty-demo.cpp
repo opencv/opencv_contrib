@@ -4,9 +4,9 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr double SCALE = 0.125;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr int VA_HW_DEVICE_INDEX = 0;
-constexpr int BLUR_KERNEL_SIZE = WIDTH / 240 % 2 == 0 ? WIDTH / 240 + 1 : WIDTH / 240;
+constexpr int BLUR_KERNEL_SIZE = WIDTH / 360 % 2 == 0 ? WIDTH / 360 + 1 : WIDTH / 360;
 
 #include "../common/subsystems.hpp"
 
