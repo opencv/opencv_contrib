@@ -7,6 +7,7 @@ constexpr const char *OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
 constexpr float FONT_SIZE = 40.0f;
+
 #include "../common/subsystems.hpp"
 
 #include <string>
@@ -81,7 +82,7 @@ int main(int argc, char **argv) {
             nvgTranslate(vg, 0, translateY);
 
             for (std::string line; std::getline(iss, line); ) {
-                if(skipLines <= 0) {
+                if(skipLines == 0) {
                     if(((translateY + y) / FONT_SIZE) < maxLines) {
                         nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
                         y += FONT_SIZE;
@@ -119,10 +120,11 @@ int main(int argc, char **argv) {
         //Encode the frame using VAAPI on the GPU.
         writer << videoFrame;
 
-        print_fps();
         ++cnt;
         if(cnt == std::numeric_limits<size_t>().max())
             cnt = 1;
+
+        print_fps();
     }
 
     return 0;

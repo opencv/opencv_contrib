@@ -353,28 +353,6 @@ void end() {
     GL_CHECK(glFinish());
 }
 
-void push() {
-    GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
-    GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
-    GL_CHECK(glMatrixMode(GL_MODELVIEW));
-    GL_CHECK(glPushMatrix());
-    GL_CHECK(glMatrixMode(GL_PROJECTION));
-    GL_CHECK(glPushMatrix());
-    GL_CHECK(glMatrixMode(GL_TEXTURE));
-    GL_CHECK(glPushMatrix());
-}
-
-void pop() {
-    GL_CHECK(glMatrixMode(GL_TEXTURE));
-    GL_CHECK(glPopMatrix());
-    GL_CHECK(glMatrixMode(GL_PROJECTION));
-    GL_CHECK(glPopMatrix());
-    GL_CHECK(glMatrixMode(GL_MODELVIEW));
-    GL_CHECK(glPopMatrix());
-    GL_CHECK(glPopClientAttrib());
-    GL_CHECK(glPopAttrib());
-}
-
 void init() {
     glewExperimental = true;
     glewInit();
@@ -404,14 +382,14 @@ std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
-void acquire_from_gl(cv::UMat &m) {
+void acquire_from_gl(cv::UMat& m) {
     gl::begin();
     GL_CHECK(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
     //The OpenGL frameBuffer is upside-down. Flip it. (OpenCL)
     cv::flip(m, m, 0);
 }
 
-void release_to_gl(cv::UMat &m) {
+void release_to_gl(cv::UMat& m) {
     //The OpenGL frameBuffer is upside-down. Flip it back. (OpenCL)
     cv::flip(m, m, 0);
     GL_CHECK(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
@@ -423,7 +401,6 @@ void blit_frame_buffer_to_screen() {
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
 }
 
 bool display() {
@@ -503,11 +480,7 @@ void init(bool debug = false) {
         exit(24);
     }
 
-
     nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
-    /*nvgCreateFont(vg, "sans-bold", "fonts/DejaVuSans-Bold.ttf");
-    nvgCreateFont(vg, "sans", "fonts/DejaVuSans.ttf");
-    */
 }
 } //namespace nvg
 

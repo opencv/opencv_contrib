@@ -1,29 +1,13 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
+#include <cmath>
+
 //WIDTH and HEIGHT have to be specified before including subsystems.hpp
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
+constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
-
-//Visualization parameters
-constexpr float FG_SCALE = 0.5f;
-constexpr float FG_LOSS = 4.7; //in percent
-
-constexpr float SCENE_CHANGE_THRESH = 0.29f;
-constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
-
-constexpr float MAX_POINTS = 250000.0;
-constexpr float POINT_LOSS = 25; // in percent
-
-constexpr int MAX_STROKE = 17;
-
-constexpr float HUE = 36; //in degress
-constexpr float SATURATION = 100; //in percent
-constexpr float LIGHTNESS = 60; //in percent
-constexpr float ALPHA = 2.85; //in percent
-
-constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH / 120;
 
 #include "../common/subsystems.hpp"
 #include <vector>
@@ -32,6 +16,29 @@ constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/optflow.hpp>
+
+/** Visualization parameters **/
+
+// Generate the foreground at this scale.
+constexpr float FG_SCALE = 0.5f;
+// On every frame the foreground loses on brightness. specifies the loss in percent.
+constexpr float FG_LOSS = 4.7;
+// Peak thresholds for the scene change detection. Raising them makes the detection less sensitive but
+// the default should be fine.
+constexpr float SCENE_CHANGE_THRESH = 0.29f;
+constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
+// The theoretical maximum number of points to track which is scaled by the density of detected points
+// and therefor is usually much smaller.
+constexpr float MAX_POINTS = 250000.0;
+// How many of the tracked points to lose intentionally, in percent.
+constexpr float POINT_LOSS = 25;
+// The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
+// of tracked points and therefor is usually much smaller.
+constexpr int MAX_STROKE = 17;
+// Intensity of glow defined by kernel size. The default scales with the image diagonal.
+constexpr int GLOW_KERNEL_SIZE = DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138;
+//hue, saturation, lightness and alpha all from 0 to 255
+const cv::Scalar COLOR(26, 255, 153, 7);
 
 using std::cerr;
 using std::endl;
@@ -77,7 +84,7 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, float thresh, float 
 
 void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
         const float scaleFactor, const int maxStrokeSize,
-        const float hueDegress, const float satPercent, const float lightPercent, const float alphaPercent,
+        const cv::Scalar color,
         int maxPoints, float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
@@ -115,7 +122,7 @@ void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nex
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, stroke);
-            nvgStrokeColor(vg, nvgHSLA(hueDegress / 360.0, satPercent / 100.f, lightPercent / 100.0f, 255 * (alphaPercent / 100.0f)));
+            nvgStrokeColor(vg, nvgHSLA(color[0] / 255.0, color[1] / 255.f, color[2] / 255.0f, color[3]));
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
                 if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
@@ -230,7 +237,7 @@ int main(int argc, char **argv) {
         nvg::clear();
         if (!downPrevGrey.empty()) {
             if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
-                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, HUE, SATURATION, LIGHTNESS, ALPHA, MAX_POINTS, POINT_LOSS);
+                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, COLOR, MAX_POINTS, POINT_LOSS);
             }
         }
         nvg::end();
