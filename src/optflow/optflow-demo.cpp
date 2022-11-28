@@ -38,7 +38,7 @@ constexpr int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
 constexpr int GLOW_KERNEL_SIZE = DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138;
 //hue, saturation, lightness and alpha all from 0 to 255
-const cv::Scalar COLOR(26, 255, 153, 7);
+const cv::Scalar EFFECT_COLOR(26, 255, 153, 7);
 
 using std::cerr;
 using std::endl;
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
         nvg::clear();
         if (!downPrevGrey.empty()) {
             if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
-                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, COLOR, MAX_POINTS, POINT_LOSS);
+                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
             }
         }
         nvg::end();

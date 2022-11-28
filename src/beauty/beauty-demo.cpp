@@ -164,7 +164,6 @@ void reduce_shadows(const cv::UMat& srcBGR, cv::UMat& dstBGR, double to_percent)
     cv::add(valueFloat, cv::Scalar::all(minOut), valueFloat);
 
     valueFloat.convertTo(hsvChannels[2], CV_8U, 255.0);
-
     cv::merge(hsvChannels, hsv);
     cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
 }
@@ -215,10 +214,9 @@ int main(int argc, char **argv) {
     cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
     cv::UMat rhalf(lhalf.size(), lhalf.type());
     //GREY
-    cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey;
+    cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey, resMaskGrey;
     //BGR-Float
     cv::UMat videoFrameOutFloat;
-    cv::UMat white(HEIGHT, WIDTH, CV_8U, cv::Scalar::all(255));
     cv::Mat faces;
     vector<cv::Rect> faceRects;
     vector<vector<cv::Point2f>> shapes;
@@ -273,7 +271,7 @@ int main(int argc, char **argv) {
             blender.prepare(cv::Rect(0,0, WIDTH,HEIGHT));
             blender.feed(reduced, faceBgMaskGrey, cv::Point(0,0));
             blender.feed(resized, faceBgMaskInvGrey, cv::Point(0,0));
-            blender.blend(videoFrameOutFloat, white);
+            blender.blend(videoFrameOutFloat, resMaskGrey);
             videoFrameOutFloat.convertTo(videoFrameOut, CV_8U, 1.0);
 
             cv::boxFilter(videoFrameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
@@ -282,7 +280,7 @@ int main(int argc, char **argv) {
             cv::add(videoFrameOut, masked, videoFrameOut);
 
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
-            cv::resize(videoFrameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
+            cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
         } else {
             gl::acquire_from_gl(frameBuffer);
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
