@@ -18,7 +18,7 @@ constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
 // On every frame the foreground loses on brightness. specifies the loss in percent.
 constexpr float FG_LOSS = 3;
-// Intensity of glow defined by kernel size. The default scales with the image diagonal.
+// Intensity of blur defined by kernel size. The default scales with the image diagonal.
 constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
 using std::cerr;
@@ -27,7 +27,7 @@ using std::vector;
 using std::string;
 
 //adapted from cv::dnn_objdetect::InferBbox
-static inline bool comparator (std::pair<double, size_t> l1,
+static inline bool pair_comparator (std::pair<double, size_t> l1,
     std::pair<double, size_t> l2)
 {
   return l1.first > l2.first;
@@ -70,7 +70,7 @@ std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> > *box
     for (size_t tidx = 0; tidx < (*probs).size(); ++tidx) {
         temp_sort[tidx] = std::make_pair((*probs)[tidx], static_cast<size_t>(tidx));
     }
-    std::sort(temp_sort.begin(), temp_sort.end(), comparator);
+    std::sort(temp_sort.begin(), temp_sort.end(), pair_comparator);
 
     for (size_t idx = 0; idx < temp_sort.size(); ++idx) {
         prob_args_sorted[idx] = temp_sort[idx].second;
