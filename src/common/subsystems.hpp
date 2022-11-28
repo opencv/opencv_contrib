@@ -433,13 +433,22 @@ std::string get_info() {
     std::stringstream ss;
     std::vector<cv::ocl::PlatformInfo> plt_info;
     cv::ocl::getPlatfomsInfo(plt_info);
-    const cv::ocl::Device &device = cv::ocl::Device::getDefault();
+    const cv::ocl::Device &defaultDevice = cv::ocl::Device::getDefault();
+    cv::ocl::Device current;
     for (const auto &info : plt_info) {
-        ss << "\t* " << info.version() << " = " << info.name() << endl;
+        for(size_t i = 0; i < info.deviceNumber(); ++i) {
+        ss << "\t";
+        info.getDevice(current, i);
+        if(defaultDevice.name() == current.name())
+            ss << "* ";
+        else
+            ss << "  ";
+        ss << info.version() << " = " << info.name() << endl;
+        ss << "\t\t  GL sharing: " << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
+        ss << "\t\t  VAAPI media sharing: " << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
+        }
     }
 
-    ss << "\t  GL sharing: " << (device.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-    ss << "\t  VAAPI media sharing: " << (device.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
     return ss.str();
 }
 } //namespace cl
@@ -494,18 +503,20 @@ void init(bool debug = false) {
 
 void print_fps() {
     static uint64_t cnt = 0;
-    static int64 start = cv::getTickCount();
-    static double tickFreq = cv::getTickFrequency();
     static double fps = 1;
+    static cv::TickMeter meter;
 
-    if (cnt > 0 && cnt % uint64(ceil(fps)) == 0) {
-        int64 tick = cv::getTickCount();
-        fps = tickFreq / ((tick - start + 1) / cnt);
-        cerr << "FPS : " << fps << '\r';
-        start = tick;
-        cnt = 1;
+    if (cnt > 0) {
+        meter.stop();
+
+        if (cnt % uint64(ceil(fps)) == 0) {
+            fps = meter.getFPS();
+            cerr << "FPS : " << fps << '\r';
+            cnt = 0;
+        }
     }
 
+    meter.start();
     ++cnt;
 }
 }
