@@ -17,7 +17,7 @@ constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int BLUR_KERNEL_SIZE = DIAG / 413 % 2 == 0 ? DIAG / 413 + 1 : DIAG / 413;
+constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / 413 % 2 == 0 ? DIAG / 413 + 1 : DIAG / 413), 1);
 
 using std::cerr;
 using std::endl;

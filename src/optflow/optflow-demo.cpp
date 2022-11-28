@@ -36,7 +36,7 @@ constexpr float POINT_LOSS = 25;
 // of tracked points and therefor is usually much smaller.
 constexpr int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
-constexpr int GLOW_KERNEL_SIZE = DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138;
+constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
 //hue, saturation, lightness and alpha all from 0 to 255
 const cv::Scalar EFFECT_COLOR(26, 255, 153, 7);
 
