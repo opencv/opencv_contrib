@@ -5,7 +5,7 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
-constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
+constexpr const char* OUTPUT_FILENAME = "nanovg-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 
 using std::cerr;

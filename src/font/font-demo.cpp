@@ -11,9 +11,10 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
-constexpr const char *OUTPUT_FILENAME = "font-demo.mkv";
+constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
+
 constexpr float FONT_SIZE = 40.0f;
 
 using std::cerr;
@@ -51,8 +52,8 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-    //BGRA frame buffer.
-    cv::UMat frameBuffer;
+    //BGRA frame buffer and warped image
+    cv::UMat frameBuffer, warped;
     //BGR video frame.
     cv::UMat videoFrame;
 
@@ -133,9 +134,9 @@ int main(int argc, char **argv) {
         //Aquire frame buffer from OpenGL.
         gl::acquire_from_gl(frameBuffer);
         //Pseudo 3D text effect.
-        cv::warpPerspective(frameBuffer, frameBuffer, M, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        cv::warpPerspective(frameBuffer, warped, M, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
+        cv::cvtColor(warped, videoFrame, cv::COLOR_BGRA2RGB);
         //Transfer buffer ownership back to OpenGL.
         gl::release_to_gl(frameBuffer);
 
@@ -151,7 +152,7 @@ int main(int argc, char **argv) {
         ++cnt;
         //Wrap the cnt around if it becomes to big.
         if(cnt == std::numeric_limits<size_t>().max())
-            cnt = 1;
+            cnt = 0;
 
         print_fps();
     }

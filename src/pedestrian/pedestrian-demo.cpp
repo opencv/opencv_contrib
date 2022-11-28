@@ -18,7 +18,7 @@ constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
 constexpr double HEIGHT_FACTOR = double(HEIGHT) / DOWNSIZE_HEIGHT;
 constexpr bool OFFSCREEN = false;
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr const char *OUTPUT_FILENAME = "pedestrian-demo.mkv";
+constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
 using std::cerr;
 using std::endl;

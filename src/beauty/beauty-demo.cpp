@@ -14,7 +14,7 @@ constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr double SCALE = 0.125;
 constexpr bool OFFSCREEN = false;
-constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
+constexpr const char* OUTPUT_FILENAME = "beauty-demo.mkv";
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
