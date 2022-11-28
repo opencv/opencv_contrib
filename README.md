@@ -62,7 +62,7 @@ sudo make install
 ```bash
 git clone https://github.com/kallaballa/GCV.git
 cd GCV
-make -j2
+make
 ```
 ## Download the example file
 ```bash
