@@ -210,7 +210,10 @@ int main(int argc, char **argv) {
     //BGRA
     cv::UMat frameBuffer;
     //BGR
-    cv::UMat videoFrameIn, videoFrameOut, resized, down, faceBgMask, diff, blurred, reduced, masked, lhalf, rhalf;
+    cv::UMat videoFrameIn, resized, down, faceBgMask, diff, blurred, reduced, masked;
+    cv::UMat videoFrameOut(HEIGHT, WIDTH, CV_8UC3);
+    cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
+    cv::UMat rhalf(lhalf.size(), lhalf.type());
     //GREY
     cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey;
     //BGR-Float
@@ -242,6 +245,7 @@ int main(int argc, char **argv) {
         }
 
         shapes.clear();
+
         if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
             featuresList.clear();
             for (size_t i = 0; i < faceRects.size(); ++i) {
@@ -279,27 +283,16 @@ int main(int argc, char **argv) {
 
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
             cv::resize(videoFrameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
-            videoFrameOut = cv::Scalar::all(0);
-            lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-            rhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
-            cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-            gl::release_to_gl(frameBuffer);
-            ;
         } else {
-            resized.copyTo(videoFrameOut);
             gl::acquire_from_gl(frameBuffer);
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
-            if(rhalf.cols == 0 || rhalf.rows == 0) {
-                rhalf = cv::UMat(lhalf.size(), lhalf.type());
-            } else {
-                rhalf = cv::Scalar::all(0);
-            }
-            videoFrameOut = cv::Scalar::all(0);
-            lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-            rhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
-            cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-            gl::release_to_gl(frameBuffer);
         }
+
+        videoFrameOut = cv::Scalar::all(0);
+        lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+        rhalf.copyTo(videoFrameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+        cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
+        gl::release_to_gl(frameBuffer);
 
         if (!gl::display())
             break;
