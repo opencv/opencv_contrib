@@ -80,10 +80,10 @@ int main(int argc, char *argv[]) {
     bool estimatePose = parser.has("c");
     float markerLength = parser.get<float>("l");
 
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
+    aruco::DetectorParameters detectorParams;
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -92,9 +92,9 @@ int main(int argc, char *argv[]) {
 
     if (parser.has("refine")) {
         //override cornerRefinementMethod read from config file
-        detectorParams->cornerRefinementMethod = parser.get<int>("refine");
+        detectorParams.cornerRefinementMethod = parser.get<int>("refine");
     }
-    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << detectorParams->cornerRefinementMethod << std::endl;
+    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << detectorParams.cornerRefinementMethod << std::endl;
 
     int camId = parser.get<int>("ci");
 

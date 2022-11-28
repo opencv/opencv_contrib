@@ -102,10 +102,10 @@ int main(int argc, char *argv[]) {
     if(parser.get<bool>("zt")) calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
     if(parser.get<bool>("pc")) calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
 
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
+    aruco::DetectorParameters detectorParams;
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;

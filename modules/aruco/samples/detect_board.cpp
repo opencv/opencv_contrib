@@ -97,16 +97,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
+    aruco::DetectorParameters detectorParams;
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
         }
     }
-    detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX; // do corner refinement in markers
+    detectorParams.cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX; // do corner refinement in markers
 
     String video;
     if(parser.has("v")) {

@@ -14,7 +14,7 @@ using namespace std;
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
                    OutputArrayOfArrays _rejectedImgPoints) {
-    ArucoDetector detector(_dictionary, _params);
+    ArucoDetector detector(_dictionary, *_params);
     detector.detectMarkers(_image, _corners, _ids, _rejectedImgPoints);
 }
 
@@ -25,7 +25,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
                            bool checkAllOrders, OutputArray _recoveredIdxs,
                            const Ptr<DetectorParameters> &_params) {
     RefineParameters refineParams(minRepDistance, errorCorrectionRate, checkAllOrders);
-    ArucoDetector detector(_board->getDictionary(), _params, refineParams);
+    ArucoDetector detector(_board->getDictionary(), *_params, refineParams);
     detector.refineDetectedMarkers(_image, _board, _detectedCorners, _detectedIds, _rejectedCorners, _cameraMatrix,
                                    _distCoeffs, _recoveredIdxs);
 }

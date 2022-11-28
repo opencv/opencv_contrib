@@ -51,7 +51,7 @@ TEST(CV_ArucoTutorial, can_find_gboriginal)
 
     FileStorage fs(dictPath, FileStorage::READ);
     dictionary->aruco::Dictionary::readDictionary(fs.root()); // set marker from tutorial_dict.yml
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
+    aruco::DetectorParameters detectorParams;
 
     aruco::ArucoDetector detector(dictionary, detectorParams);
 
@@ -186,9 +186,9 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
 
     string detectorPath = cvtest::findDataFile("detector_params.yml", false);
     fs = FileStorage(detectorPath, FileStorage::READ);
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
-    detectorParams->readDetectorParameters(fs.root());
-    detectorParams->cornerRefinementMethod = 3;
+    aruco::DetectorParameters detectorParams;
+    detectorParams.readDetectorParameters(fs.root());
+    detectorParams.cornerRefinementMethod = 3;
 
     aruco::ArucoDetector detector(dictionary, detectorParams);
 

@@ -90,7 +90,7 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
     else
         grey = _image.getMat();
 
-    const Ptr<DetectorParameters> params = makePtr<aruco::DetectorParameters>(); // use default params for corner refinement
+    DetectorParameters params; // use default params for corner refinement
 
     //// For each of the charuco corners, apply subpixel refinement using its correspondind winSize
     parallel_for_(Range(0, (int)filteredChessboardImgPoints.size()), [&](const Range& range) {
@@ -102,12 +102,12 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
             in.push_back(filteredChessboardImgPoints[i] - Point2f(0.5, 0.5)); // adjust sub-pixel coordinates for cornerSubPix
             Size winSize = filteredWinSizes[i];
             if (winSize.height == -1 || winSize.width == -1)
-                winSize = Size(params->cornerRefinementWinSize, params->cornerRefinementWinSize);
+                winSize = Size(params.cornerRefinementWinSize, params.cornerRefinementWinSize);
 
             cornerSubPix(grey, in, winSize, Size(),
                          TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS,
-                                      params->cornerRefinementMaxIterations,
-                                      params->cornerRefinementMinAccuracy));
+                                      params.cornerRefinementMaxIterations,
+                                      params.cornerRefinementMinAccuracy));
 
             filteredChessboardImgPoints[i] = in[0] + Point2f(0.5, 0.5);
         }
@@ -428,7 +428,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
         // try to find the rest of markers in the diamond
         vector< int > acceptedIdxs;
         RefineParameters refineParameters(minRepDistance, -1.f, false);
-        ArucoDetector detector(dictionary, makePtr<DetectorParameters>(), refineParameters);
+        ArucoDetector detector(dictionary, DetectorParameters(), refineParameters);
         detector.refineDetectedMarkers(grey, _charucoDiamondLayout, currentMarker, currentMarkerId, candidates,
                                        noArray(), noArray(), acceptedIdxs);
 
