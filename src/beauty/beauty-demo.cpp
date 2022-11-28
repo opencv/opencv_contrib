@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
     if (!OFFSCREEN)
-        x11::init();
+        x11::init("beauty-demo");
     egl::init();
     gl::init();
     nvg::init();

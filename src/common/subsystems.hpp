@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string>
 #include <filesystem>
 #include <va/va.h>
 #include <va/va_drm.h>
@@ -122,7 +123,7 @@ bool window_closed() {
     return false;
 }
 
-void init() {
+void init(const std::string& title) {
     xdisplay = XOpenDisplay(nullptr);
     if (xdisplay == nullptr) {
         cerr << "Unable to open X11 display" << endl;
@@ -149,7 +150,7 @@ void init() {
     XSetWMHints(xdisplay, xwin, &hints);
 
     XMapWindow(xdisplay, xwin);
-    XStoreName(xdisplay, xwin, "nanovg-demo");
+    XStoreName(xdisplay, xwin, title.c_str());
     wmDeleteMessage = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(xdisplay, xwin, &wmDeleteMessage, 1);
 

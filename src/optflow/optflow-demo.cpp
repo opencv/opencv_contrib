@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
     });
 
     if (!OFFSCREEN)
-        x11::init();
+        x11::init("optflow-demo");
     egl::init();
     gl::init();
     nvg::init();

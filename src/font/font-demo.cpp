@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
     //If we render offscreen we don't need x11.
     if (!OFFSCREEN)
-        x11::init();
+        x11::init("font-demo");
     //Passing 'true' to egl::init() creates a debug OpenGL-context.
     egl::init();
     //Initialize OpenGL.

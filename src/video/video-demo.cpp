@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 
     //If we are rendering offscreen we don't need x11
     if(!OFFSCREEN)
-        x11::init();
+        x11::init("video-demo");
 
     //Passing true to init_egl will create a OpenGL debug context
     egl::init();
