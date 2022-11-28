@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    va::init();
+    va::copy();
 
 
     if (!cap.isOpened()) {

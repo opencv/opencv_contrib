@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     });
 
     //Copy OpenCL Context for VAAPI. Must be called right after VideoWriter/VideoCapture initialization.
-    va::init();
+    va::copy();
 
     //If we are rendering offscreen we don't need x11
     if(!OFFSCREEN)

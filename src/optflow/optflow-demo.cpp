@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
     });
 
     //Copy OpenCL Context for VAAPI. Must be called right after VideoWriter/VideoCapture initialization.
-    va::init();
+    va::copy();
 
     if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open video input" << endl;

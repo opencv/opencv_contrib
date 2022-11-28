@@ -66,7 +66,7 @@ void egl_check_error(const std::filesystem::path &file, unsigned int line, const
 namespace va {
 cv::ocl::OpenCLExecutionContext context;
 
-void init() {
+void copy() {
     va::context = cv::ocl::OpenCLExecutionContext::getCurrent();
 }
 
