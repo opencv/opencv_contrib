@@ -33,9 +33,14 @@ Renders a Star Wars like text crawl using nanovg (OpenGL). Encodes on the GPU.
 https://user-images.githubusercontent.com/287266/204157553-758adaeb-e9b8-48eb-bc09-8098a5379d2b.mp4
 
 ## optflow-demo
-My take on a optical flow visualization on top of a video. Uses nanovg for rendering (OpenGL) and decodes/encodes on the GPU.
+My take on a optical flow visualization on top of a video. Uses nanovg for rendering (OpenGL), calculates the optical flow (OpenCL) and decodes/encodes on the GPU.
 
 https://user-images.githubusercontent.com/287266/202174513-331e6f08-8397-4521-969b-24cbc43d27fc.mp4
+
+## pedestrian-demo
+Pedestrian detection using HOG/SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a SVM (OpenCL) and decodes/encodes on the GPU. Note: Detection rate is not impressive and depends highly on the video.
+
+https://user-images.githubusercontent.com/287266/204364376-e08a4943-17a4-408f-a5b0-bfd95ffc44ae.mp4
 
 # Instructions
 You need to build the most recent 4.x branch of OpenCV.
@@ -91,6 +96,12 @@ src/font/font-demo
 
 ```bash
 src/optflow/optflow-demo bunny.webm
+```
+
+## Run the pedestrian-demo:
+
+```bash
+src/pedestrian/pedestrian-demo bunny.webm
 ```
 
 
