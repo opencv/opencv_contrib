@@ -8,8 +8,9 @@ constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
+constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH / 120;
+constexpr int GLOW_KERNEL_SIZE = DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138;
 
 using std::cerr;
 using std::endl;
