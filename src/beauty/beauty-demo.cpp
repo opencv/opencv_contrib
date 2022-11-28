@@ -13,7 +13,7 @@
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr double SCALE = 0.125;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr int BLUR_KERNEL_SIZE = WIDTH / 360 % 2 == 0 ? WIDTH / 360 + 1 : WIDTH / 360;
 
@@ -220,6 +220,7 @@ int main(int argc, char **argv) {
     vector<cv::Rect> faceRects;
     vector<vector<cv::Point2f>> shapes;
     vector<FaceFeatures> featuresList;
+
     va::bind();
     while (true) {
         capture >> videoFrameIn;
@@ -283,9 +284,15 @@ int main(int argc, char **argv) {
             rhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
             cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
             gl::release_to_gl(frameBuffer);
+            ;
         } else {
             resized.copyTo(videoFrameOut);
             gl::acquire_from_gl(frameBuffer);
+            cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
+            cv::resize(white, rhalf, cv::Size(0, 0), 0.5, 0.5);
+            videoFrameOut = cv::Scalar::all(0);
+            lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+            rhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
             cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
             gl::release_to_gl(frameBuffer);
         }
