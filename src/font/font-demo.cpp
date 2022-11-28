@@ -135,6 +135,8 @@ int main(int argc, char **argv) {
         gl::acquire_from_gl(frameBuffer);
         //Pseudo 3D text effect.
         cv::warpPerspective(frameBuffer, warped, M, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        //Copy back to frame buffer
+        warped.copyTo(frameBuffer);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(warped, videoFrame, cv::COLOR_BGRA2RGB);
         //Transfer buffer ownership back to OpenGL.
