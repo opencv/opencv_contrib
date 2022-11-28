@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    //Copy OpenCL Context for VAAPI. Must be called right after VideoWriter/VideoCapture initialization.
+    //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
     va::copy();
 
     // Check if we succeeded
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
         //Transfer buffer ownership back to OpenGL
         gl::release_to_gl(frameBuffer);
 
-        //if x11 is enabled it displays the framebuffer in the native window. returns false if the window was closed.
+        //if x11 is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!gl::display())
             break;
 
