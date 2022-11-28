@@ -17,6 +17,7 @@ using std::endl;
 using std::string;
 
 void init_scene(unsigned long w, unsigned long h) {
+    //Initialize the OpenGL scene
     glViewport(0, 0, w, h);
     glColor3f(1.0, 1.0, 1.0);
 
@@ -86,6 +87,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    //Initialize the application
     kb::init(WIDTH, HEIGHT);
 
     //Initialize MJPEG HW decoding using VAAPI
@@ -126,9 +128,10 @@ int main(int argc, char **argv) {
 
     init_scene(WIDTH, HEIGHT);
 
-    cv::UMat frameBuffer;
+    //BGRA
+    cv::UMat frameBuffer, tmpVideoFrame;
+    //RGB
     cv::UMat videoFrame;
-    cv::UMat videoFrameRGBA;
 
     //Activate the OpenCL context for VAAPI
     va::bind();
@@ -142,14 +145,14 @@ int main(int argc, char **argv) {
         }
 
         //Color-conversion from RGB to BGRA. (OpenCL)
-        cv::cvtColor(videoFrame, videoFrameRGBA, cv::COLOR_RGB2BGRA);
+        cv::cvtColor(videoFrame, tmpVideoFrame, cv::COLOR_RGB2BGRA);
 
         //Activate the OpenCL context for OpenGL
         gl::bind();
         //Initially aquire the framebuffer so we can write the video frame to it
         gl::acquire_from_gl(frameBuffer);
         //Resize the frame if necessary. (OpenCL)
-        cv::resize(videoFrameRGBA, frameBuffer, cv::Size(WIDTH, HEIGHT));
+        cv::resize(tmpVideoFrame, frameBuffer, cv::Size(WIDTH, HEIGHT));
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 

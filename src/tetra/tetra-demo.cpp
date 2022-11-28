@@ -16,6 +16,7 @@ using std::cerr;
 using std::endl;
 
 void init_scene(unsigned long w, unsigned long h) {
+    //Initialize the OpenGL scene
     glViewport(0, 0, w, h);
     glColor3f(1.0, 1.0, 1.0);
 
@@ -81,6 +82,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 int main(int argc, char **argv) {
     using namespace kb;
 
+    //Initialize the application
     kb::init(WIDTH, HEIGHT);
 
     //Initialize VP9 HW encoding using VAAPI
@@ -108,7 +110,9 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
+    //BGRA
     cv::UMat frameBuffer;
+    //RGB
     cv::UMat videoFrame;
 
     while (true) {

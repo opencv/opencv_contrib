@@ -215,7 +215,11 @@ int main(int argc, char **argv) {
 
     cv::Size frameBufferSize(WIDTH, HEIGHT);
     cv::Size scaledSize(WIDTH * FG_SCALE, HEIGHT * FG_SCALE);
-    cv::UMat frameBuffer, videoFrame, resized, down, background, glow, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
+    //BGRA
+    cv::UMat frameBuffer, background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
+    //RGB
+    cv::UMat videoFrame, resized, down;
+    //GREY
     cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
     vector<cv::Point2f> detectedPoints;
 
