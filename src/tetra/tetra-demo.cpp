@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
-        //if x11 is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        //If x11 is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!gl::display())
             break;
 
