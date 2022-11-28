@@ -1,8 +1,7 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include <cmath>
-
 #include "../common/subsystems.hpp"
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -69,7 +68,7 @@ void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& point
     }
 }
 
-bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, float thresh, float theshDiff) {
+bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
     static float last_movement = 0;
 
     float movement = cv::countNonZero(srcMotionMaskGrey) / double(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
@@ -83,10 +82,8 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, float thresh, float 
     return result;
 }
 
-void visualize_sparse_optical_flow(const cv::UMat& prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
-        const float scaleFactor, const int maxStrokeSize,
-        const cv::Scalar color,
-        int maxPoints, float pointLossPercent) {
+void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
+        const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
     static std::vector<uchar> status;
