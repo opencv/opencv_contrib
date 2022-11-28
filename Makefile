@@ -41,6 +41,7 @@ dirs:
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 
 debian-release:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} release
@@ -49,6 +50,7 @@ debian-release:
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} release
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} release
 
 debian-clean:
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} clean
@@ -57,6 +59,7 @@ debian-clean:
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} clean
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} clean
 
 install: ${TARGET}
 	true
