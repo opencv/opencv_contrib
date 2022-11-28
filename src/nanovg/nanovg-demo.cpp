@@ -1,12 +1,12 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
+#include "../common/subsystems.hpp"
+
 constexpr unsigned long WIDTH = 1920;
 constexpr unsigned long HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-
-#include "../common/subsystems.hpp"
 
 using std::cerr;
 using std::endl;
@@ -121,6 +121,8 @@ int main(int argc, char **argv) {
         cerr << "Usage: nanovg-demo <video-file>" << endl;
         exit(1);
     }
+
+    kb::init(WIDTH, HEIGHT);
 
     //Initialize MJPEG HW decoding using VAAPI
     cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {

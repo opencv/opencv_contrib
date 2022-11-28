@@ -1,6 +1,8 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-//WIDTH and HEIGHT have to be specified before including subsystems.hpp
+#include "../common/subsystems.hpp"
+#include <string>
+
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr const int VA_HW_DEVICE_INDEX = 0;
@@ -9,15 +11,12 @@ constexpr const char *OUTPUT_FILENAME = "video-demo.mkv";
 
 constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH / 120;
 
-#include "../common/subsystems.hpp"
-#include <string>
-
 using std::cerr;
 using std::endl;
 using std::string;
 
-void init_scene() {
-    glViewport(0, 0, WIDTH, HEIGHT);
+void init_scene(unsigned long w, unsigned long h) {
+    glViewport(0, 0, w, h);
     glColor3f(1.0, 1.0, 1.0);
 
     glEnable(GL_CULL_FACE);
@@ -34,9 +33,9 @@ void init_scene() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render_scene() {
+void render_scene(unsigned long w, unsigned long h) {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
-    glViewport(0, 0, WIDTH, HEIGHT);
+    glViewport(0, 0, w, h);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -86,6 +85,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    kb::init(WIDTH, HEIGHT);
+
     //Initialize MJPEG HW decoding using VAAPI
     cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
@@ -122,7 +123,7 @@ int main(int argc, char **argv) {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
     cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
-    init_scene();
+    init_scene(WIDTH, HEIGHT);
 
     cv::UMat frameBuffer;
     cv::UMat videoFrame;
@@ -139,7 +140,6 @@ int main(int argc, char **argv) {
             break;
         }
 
-
         //Color-conversion from RGB to BGRA. (OpenCL)
         cv::cvtColor(videoFrame, videoFrameRGBA, cv::COLOR_RGB2BGRA);
 
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 
         //Render using OpenGL
         gl::begin();
-        render_scene();
+        render_scene(WIDTH, HEIGHT);
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL

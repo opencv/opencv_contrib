@@ -2,13 +2,6 @@
 
 #include <cmath>
 
-//WIDTH and HEIGHT have to be specified before including subsystems.hpp
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
-constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-constexpr bool OFFSCREEN = false;
-constexpr int VA_HW_DEVICE_INDEX = 0;
-
 #include "../common/subsystems.hpp"
 #include <vector>
 #include <string>
@@ -17,13 +10,21 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 #include <opencv2/imgproc.hpp>
 #include <opencv2/optflow.hpp>
 
+/** Application parameters **/
+
+constexpr unsigned long WIDTH = 1920;
+constexpr unsigned long HEIGHT = 1080;
+constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+constexpr bool OFFSCREEN = false;
+constexpr int VA_HW_DEVICE_INDEX = 0;
+
 /** Visualization parameters **/
 
 // Generate the foreground at this scale.
 constexpr float FG_SCALE = 0.5f;
 // On every frame the foreground loses on brightness. specifies the loss in percent.
 constexpr float FG_LOSS = 4.7;
-// Peak thresholds for the scene change detection. Raising them makes the detection less sensitive but
+// Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 // the default should be fine.
 constexpr float SCENE_CHANGE_THRESH = 0.29f;
 constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
@@ -181,6 +182,8 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
+
+    kb::init(WIDTH, HEIGHT);
 
     cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,

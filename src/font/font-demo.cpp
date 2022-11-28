@@ -1,13 +1,5 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
-constexpr bool OFFSCREEN = false;
-constexpr const char *OUTPUT_FILENAME = "font-demo.mkv";
-constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr double FPS = 60;
-constexpr float FONT_SIZE = 40.0f;
-
 #include "../common/subsystems.hpp"
 
 #include <string>
@@ -15,6 +7,14 @@ constexpr float FONT_SIZE = 40.0f;
 #include <vector>
 #include <sstream>
 #include <limits>
+
+constexpr unsigned long WIDTH = 1920;
+constexpr unsigned long HEIGHT = 1080;
+constexpr bool OFFSCREEN = false;
+constexpr const char *OUTPUT_FILENAME = "font-demo.mkv";
+constexpr const int VA_HW_DEVICE_INDEX = 0;
+constexpr double FPS = 60;
+constexpr float FONT_SIZE = 40.0f;
 
 using std::cerr;
 using std::endl;
@@ -24,6 +24,8 @@ using std::stringstream;
 
 int main(int argc, char **argv) {
     using namespace kb;
+
+    kb::init(WIDTH, HEIGHT);
 
     //Initialize VP9 HW encoding using VAAPI
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {

@@ -1,15 +1,5 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-constexpr unsigned long WIDTH = 1280;
-constexpr unsigned long HEIGHT = 720;
-constexpr unsigned long DOWNSIZE_WIDTH = 640;
-constexpr unsigned long DOWNSIZE_HEIGHT = 360;
-constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
-constexpr double HEIGHT_FACTOR = double(HEIGHT) / DOWNSIZE_HEIGHT;
-constexpr bool OFFSCREEN = false;
-constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr const char *OUTPUT_FILENAME = "pedestrian-demo.mkv";
-
 #include "../common/tsafe_queue.hpp"
 #include "../common/subsystems.hpp"
 #include <csignal>
@@ -19,6 +9,16 @@ constexpr const char *OUTPUT_FILENAME = "pedestrian-demo.mkv";
 #include <string>
 
 #include <opencv2/objdetect/objdetect.hpp>
+
+constexpr unsigned long WIDTH = 1280;
+constexpr unsigned long HEIGHT = 720;
+constexpr unsigned long DOWNSIZE_WIDTH = 640;
+constexpr unsigned long DOWNSIZE_HEIGHT = 360;
+constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
+constexpr double HEIGHT_FACTOR = double(HEIGHT) / DOWNSIZE_HEIGHT;
+constexpr bool OFFSCREEN = false;
+constexpr const int VA_HW_DEVICE_INDEX = 0;
+constexpr const char *OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
 using std::cerr;
 using std::endl;
@@ -41,6 +41,8 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: pedestrian-demo <input-video-file>" << endl;
         exit(1);
     }
+
+    kb::init(WIDTH, HEIGHT);
 
     cv::VideoCapture cap(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,

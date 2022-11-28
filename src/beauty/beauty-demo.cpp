@@ -1,13 +1,5 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-//WIDTH and HEIGHT have to be specified before including subsystems.hpp
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
-constexpr double SCALE = 0.125;
-constexpr bool OFFSCREEN = true;
-constexpr int VA_HW_DEVICE_INDEX = 0;
-constexpr int BLUR_KERNEL_SIZE = WIDTH / 360 % 2 == 0 ? WIDTH / 360 + 1 : WIDTH / 360;
-
 #include "../common/subsystems.hpp"
 
 #include <vector>
@@ -17,6 +9,13 @@ constexpr int BLUR_KERNEL_SIZE = WIDTH / 360 % 2 == 0 ? WIDTH / 360 + 1 : WIDTH 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/face.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
+
+constexpr unsigned long WIDTH = 1920;
+constexpr unsigned long HEIGHT = 1080;
+constexpr double SCALE = 0.125;
+constexpr bool OFFSCREEN = true;
+constexpr int VA_HW_DEVICE_INDEX = 0;
+constexpr int BLUR_KERNEL_SIZE = WIDTH / 360 % 2 == 0 ? WIDTH / 360 + 1 : WIDTH / 360;
 
 using std::cerr;
 using std::endl;
@@ -177,6 +176,8 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
+
+    kb::init(WIDTH, HEIGHT);
 
     cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(320, 320), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
     cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();

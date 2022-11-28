@@ -31,6 +31,14 @@ using std::cerr;
 using std::endl;
 
 namespace kb {
+unsigned long WINDOW_WIDTH;
+unsigned long WINDOW_HEIGHT;
+
+void init(unsigned long width, unsigned long height) {
+    WINDOW_WIDTH = width;
+    WINDOW_HEIGHT = height;
+}
+
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();
 
@@ -124,7 +132,7 @@ void init() {
     xroot = DefaultRootWindow(xdisplay);
     XSetWindowAttributes swa;
     swa.event_mask = ClientMessage;
-    xwin = XCreateWindow(xdisplay, xroot, 0, 0, WIDTH, HEIGHT, 0,
+    xwin = XCreateWindow(xdisplay, xroot, 0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, 0,
     CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &swa);
 
     XSetWindowAttributes xattr;
@@ -295,8 +303,8 @@ void init(bool debug = false) {
         EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
         EGLint pbuffer_attrib_list[] = {
-        EGL_WIDTH, WIDTH,
-        EGL_HEIGHT, HEIGHT,
+        EGL_WIDTH, kb::WINDOW_WIDTH,
+        EGL_HEIGHT, kb::WINDOW_HEIGHT,
         EGL_NONE };
         EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
@@ -365,11 +373,11 @@ void init() {
 
     GL_CHECK(glGenRenderbuffers(1, &render_buf));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
-    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIDTH, HEIGHT));
+    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT));
 
     GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
 
-    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(WIDTH, HEIGHT), cv::ogl::Texture2D::RGBA, false);
+    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
     GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
 
@@ -400,7 +408,7 @@ void blit_frame_buffer_to_screen() {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer(0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, 0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
 bool display() {
@@ -447,8 +455,8 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f) 
 void begin() {
     gl::begin();
 
-    float w = WIDTH;
-    float h = HEIGHT;
+    float w = kb::WINDOW_WIDTH;
+    float h = kb::WINDOW_HEIGHT;
     if(x11::is_initialized()) {
         auto ws = x11::get_window_size();
         w = ws.first;
@@ -457,8 +465,8 @@ void begin() {
 
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    GL_CHECK(glViewport(0, HEIGHT - h, w, h));
-    nvgBeginFrame(vg, w, h, std::fmax(WIDTH/w, HEIGHT/h));
+    GL_CHECK(glViewport(0, WINDOW_HEIGHT - h, w, h));
+    nvgBeginFrame(vg, w, h, std::fmax(kb::WINDOW_WIDTH/w, kb::WINDOW_HEIGHT/h));
 }
 
 void end() {
@@ -468,7 +476,7 @@ void end() {
 }
 
 void init(bool debug = false) {
-    GL_CHECK(glViewport(0, 0, WIDTH, HEIGHT));
+    GL_CHECK(glViewport(0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT));
     GL_CHECK(glEnable(GL_STENCIL_TEST));
     GL_CHECK(glStencilMask(~0));
     GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));

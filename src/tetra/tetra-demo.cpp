@@ -1,6 +1,7 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-//WIDTH and HEIGHT have to be specified before including subsystems.hpp
+#include "../common/subsystems.hpp"
+
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
@@ -10,13 +11,11 @@ constexpr const int VA_HW_DEVICE_INDEX = 0;
 
 constexpr int GLOW_KERNEL_SIZE = WIDTH / 120 % 2 == 0 ? WIDTH / 120  + 1 : WIDTH / 120;
 
-#include "../common/subsystems.hpp"
-
 using std::cerr;
 using std::endl;
 
-void init_scene() {
-    glViewport(0, 0, WIDTH, HEIGHT);
+void init_scene(unsigned long w, unsigned long h) {
+    glViewport(0, 0, w, h);
     glColor3f(1.0, 1.0, 1.0);
 
     glEnable(GL_CULL_FACE);
@@ -33,8 +32,9 @@ void init_scene() {
     glRotatef(70, 0, 1, 0);
 }
 
-void render_scene() {
-    glViewport(0, 0, WIDTH , HEIGHT );
+void render_scene(unsigned long w, unsigned long h) {
+    //Render a tetrahedron using immediate mode because the code is more concise for a demo
+    glViewport(0, 0, w, h);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -79,6 +79,9 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 
 int main(int argc, char **argv) {
     using namespace kb;
+
+    kb::init(WIDTH, HEIGHT);
+
     //Initialize VP9 HW encoding using VAAPI
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
@@ -98,7 +101,7 @@ int main(int argc, char **argv) {
     //Initialize OpenCL Context for OpenGL
     gl::init();
 
-    init_scene();
+    init_scene(WIDTH, HEIGHT);
 
     cerr << "EGL Version: " << egl::get_info() << endl;
     cerr << "OpenGL Version: " << gl::get_info() << endl;
@@ -112,7 +115,7 @@ int main(int argc, char **argv) {
         gl::bind();
         //Render using OpenGL
         gl::begin();
-        render_scene();
+        render_scene(WIDTH, HEIGHT);
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL
