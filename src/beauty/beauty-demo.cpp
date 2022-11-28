@@ -289,7 +289,11 @@ int main(int argc, char **argv) {
             resized.copyTo(videoFrameOut);
             gl::acquire_from_gl(frameBuffer);
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
-            cv::resize(white, rhalf, cv::Size(0, 0), 0.5, 0.5);
+            if(rhalf.cols == 0 || rhalf.rows == 0) {
+                rhalf = cv::UMat(lhalf.size(), lhalf.type());
+            } else {
+                rhalf = cv::Scalar::all(0);
+            }
             videoFrameOut = cv::Scalar::all(0);
             lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
             rhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
