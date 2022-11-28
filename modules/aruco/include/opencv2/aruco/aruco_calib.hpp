@@ -52,7 +52,7 @@ enum PatternPositionType {
  * @param solvePnPMethod Method for solving a PnP problem: see @ref calib3d_solvePnP_flags (default SOLVEPNP_ITERATIVE).
  * @sa PatternPositionType, solvePnP(), check tutorial_aruco_detection in aruco contrib
  */
-struct CV_EXPORTS_W EstimateParameters {
+struct CV_EXPORTS_W_SIMPLE EstimateParameters {
     CV_PROP_RW PatternPositionType pattern;
     CV_PROP_RW bool useExtrinsicGuess;
     CV_PROP_RW int solvePnPMethod;
