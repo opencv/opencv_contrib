@@ -11,7 +11,7 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
 * If you are on a recent Intel Platform (Gen8 - Gen12) you need to install an [alternative compute-runtime](https://github.com/kallaballa/compute-runtime)
 
-There are currently five demos (**the preview videos are scaled down and compressed**):
+There are currently six demos (**the preview videos are scaled down and compressed**):
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL and decodes/encodes on the GPU.
 
