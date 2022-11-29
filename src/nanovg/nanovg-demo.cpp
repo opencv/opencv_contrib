@@ -2,8 +2,8 @@
 
 #include "../common/subsystems.hpp"
 
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1920;
+constexpr unsigned int HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "nanovg-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
@@ -150,6 +150,7 @@ int main(int argc, char **argv) {
 
     if (!OFFSCREEN)
         x11::init("nanovg-demo");
+    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
     egl::init();
     gl::init();
     nvg::init();

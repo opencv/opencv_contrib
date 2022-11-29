@@ -10,8 +10,8 @@
 #include <opencv2/face.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
 
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1920;
+constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "beauty-demo.mkv";
@@ -113,7 +113,7 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
     kb::nvg::clear();
     using kb::nvg::vg;
 
-    for (int i = 0; i < lm.size(); i++) {
+    for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
 
@@ -131,7 +131,7 @@ void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
     kb::nvg::clear();
     using kb::nvg::vg;
 
-    for (int i = 0; i < lm.size(); i++) {
+    for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         for (size_t j = 5; j < 8; ++j) {
             nvgBeginPath(vg);
@@ -201,6 +201,7 @@ int main(int argc, char **argv) {
 
     if (!OFFSCREEN)
         x11::init("beauty-demo");
+    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
     egl::init();
     gl::init();
     nvg::init();

@@ -32,10 +32,10 @@ using std::cerr;
 using std::endl;
 
 namespace kb {
-unsigned long WINDOW_WIDTH;
-unsigned long WINDOW_HEIGHT;
+unsigned int WINDOW_WIDTH;
+unsigned int WINDOW_HEIGHT;
 
-void init(unsigned long width, unsigned long height) {
+void init(unsigned int width, unsigned int height) {
     WINDOW_WIDTH = width;
     WINDOW_HEIGHT = height;
 }
@@ -265,7 +265,7 @@ EGLBoolean swap_buffers() {
     return EGL_CHECK(eglSwapBuffers(display, surface));
 }
 
-void init(bool debug = false) {
+void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
     bool offscreen = !x11::is_initialized();
 
     EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
@@ -285,7 +285,7 @@ void init(bool debug = false) {
     EGL_BLUE_SIZE, static_cast<EGLint>(8),
     EGL_ALPHA_SIZE, static_cast<EGLint>(8),
     EGL_SAMPLE_BUFFERS, EGL_TRUE,
-    EGL_SAMPLES, 16,
+    EGL_SAMPLES, samples,
     EGL_SURFACE_TYPE, EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
     EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
     EGL_CONFORMANT, EGL_OPENGL_BIT,
@@ -304,15 +304,15 @@ void init(bool debug = false) {
         EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
         EGLint pbuffer_attrib_list[] = {
-        EGL_WIDTH, kb::WINDOW_WIDTH,
-        EGL_HEIGHT, kb::WINDOW_HEIGHT,
+        EGL_WIDTH, int(kb::WINDOW_WIDTH),
+        EGL_HEIGHT, int(kb::WINDOW_HEIGHT),
         EGL_NONE };
         EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
 
     const EGLint contextVersion[] = {
-    EGL_CONTEXT_MAJOR_VERSION, 4,
-    EGL_CONTEXT_MINOR_VERSION, 6,
+    EGL_CONTEXT_MAJOR_VERSION, major,
+    EGL_CONTEXT_MINOR_VERSION, minor,
     EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
     EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
     EGL_NONE };
@@ -406,10 +406,10 @@ void release_to_gl(cv::UMat& m) {
 }
 
 void blit_frame_buffer_to_screen() {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBlitFramebuffer(0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, 0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
+    GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
+    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+    GL_CHECK(glBlitFramebuffer(0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, 0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
 bool display() {
@@ -437,16 +437,16 @@ std::string get_info() {
     const cv::ocl::Device &defaultDevice = cv::ocl::Device::getDefault();
     cv::ocl::Device current;
     for (const auto &info : plt_info) {
-        for(size_t i = 0; i < info.deviceNumber(); ++i) {
-        ss << "\t";
-        info.getDevice(current, i);
-        if(defaultDevice.name() == current.name())
-            ss << "* ";
-        else
-            ss << "  ";
-        ss << info.version() << " = " << info.name() << endl;
-        ss << "\t\t  GL sharing: " << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-        ss << "\t\t  VAAPI media sharing: " << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
+        for (int i = 0; i < info.deviceNumber(); ++i) {
+            ss << "\t";
+            info.getDevice(current, i);
+            if (defaultDevice.name() == current.name())
+                ss << "* ";
+            else
+                ss << "  ";
+            ss << info.version() << " = " << info.name() << endl;
+            ss << "\t\t  GL sharing: " << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
+            ss << "\t\t  VAAPI media sharing: " << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
         }
     }
 
@@ -520,6 +520,6 @@ void print_fps() {
     meter.start();
     ++cnt;
 }
-}
+} //namespace kb
 
 #endif /* SRC_SUBSYSTEMS_HPP_ */

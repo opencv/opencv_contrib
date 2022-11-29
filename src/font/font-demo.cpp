@@ -8,8 +8,8 @@
 #include <sstream>
 #include <limits>
 
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1920;
+constexpr unsigned int HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     if (!OFFSCREEN)
         x11::init("font-demo");
     //Passing 'true' to egl::init() creates a debug OpenGL-context.
-    egl::init();
+    egl::init(4, 6, 16);
     //Initialize OpenGL.
     gl::init();
     //Initialize nanovg.

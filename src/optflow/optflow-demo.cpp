@@ -11,8 +11,8 @@
 
 /** Application parameters **/
 
-constexpr unsigned long WIDTH = 1920;
-constexpr unsigned long HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1920;
+constexpr unsigned int HEIGHT = 1080;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
@@ -205,6 +205,7 @@ int main(int argc, char **argv) {
 
     if (!OFFSCREEN)
         x11::init("optflow-demo");
+    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
     egl::init();
     gl::init();
     nvg::init();

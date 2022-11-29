@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     if(!OFFSCREEN)
         x11::init("video-demo");
 
-    //Passing true to init_egl will create a OpenGL debug context
+    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
     egl::init();
     //Initialize OpenCL Context for OpenGL
     gl::init();
