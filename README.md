@@ -4,7 +4,8 @@ OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using my 4.x fork of
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
 
 * The author of the example video (which is also used for two of the demo videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
-* The right holders of the video used for the optical flow visualization and pedestrian detection are **https://www.bbtv.com**. I tried to contact them several times to get an opinion on my fair-use for educational purpose. The original video: https://www.youtube.com/watch?v=ItGwXRCcisA
+* The author of the video used for pedestrian detection is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
+* The right holders of the video used for the optical flow visualization and pedestrian detection are **https://www.bbtv.com**. I tried to contact them several times to get an opinion on my fair-use for educational purpose. ([Original video](https://www.youtube.com/watch?v=ItGwXRCcisA))
 
 # Requirements
 * Support for OpenCL 1.2
