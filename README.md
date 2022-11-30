@@ -45,7 +45,7 @@ Note: Detection rate is not very impressive and depends highly on the video.
 https://user-images.githubusercontent.com/287266/204570888-9bf48c6e-3422-4fce-94e4-27a98db76dea.mp4
 
 # Instructions
-You need to build the most recent 4.x branch of OpenCV.
+You need to build my 4.x branch of OpenCV.
 
 ## Build OpenCV
 
