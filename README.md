@@ -31,7 +31,7 @@ https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92
 ## font-demo
 Renders a Star Wars like text crawl using nanovg (OpenGL). Encodes on the GPU.
 
-https://user-images.githubusercontent.com/287266/204157553-758adaeb-e9b8-48eb-bc09-8098a5379d2b.mp4
+https://user-images.githubusercontent.com/287266/205178834-a5f035b1-bdd1-4e57-8543-5c5d706fce7c.mp4
 
 ## optflow-demo
 My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCL) to isolate areas with motion, detects features to track (OpenCL), calculates the optical flow (OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
