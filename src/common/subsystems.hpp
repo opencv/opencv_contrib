@@ -457,8 +457,8 @@ std::string get_info() {
 namespace nvg {
 NVGcontext *vg;
 
-void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f) {
-    GL_CHECK(glClearColor(r, g, b, 1.0f));
+void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, const float& a = 1.0f) {
+    GL_CHECK(glClearColor(r, g, b, a));
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
@@ -499,6 +499,11 @@ void init(bool debug = false) {
     }
 
     nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
+
+    //workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
+    cv::UMat fb;
+    gl::acquire_from_gl(fb);
+    gl::release_to_gl(fb);
 }
 } //namespace nvg
 
