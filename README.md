@@ -34,12 +34,12 @@ Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) 
 https://user-images.githubusercontent.com/287266/205178834-a5f035b1-bdd1-4e57-8543-5c5d706fce7c.mp4
 
 ## optflow-demo
-My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCL) to isolate areas with motion, detects features to track (OpenCL), calculates the optical flow (OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
+My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/202174513-331e6f08-8397-4521-969b-24cbc43d27fc.mp4
 
 ## pedestrian-demo
-Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI). 
+Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI). 
 Note: Detection rate is not very impressive and depends highly on the video.
 
 https://user-images.githubusercontent.com/287266/204570888-9bf48c6e-3422-4fce-94e4-27a98db76dea.mp4
