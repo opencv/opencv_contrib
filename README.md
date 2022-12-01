@@ -4,12 +4,13 @@ OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using my 4.x fork of
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
 
 * The author of the example video (which is also used for two of the demo videos in this README) is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
-* The right holders of the video used for the optical flow visualization and pedestrian detection are **https://www.bbtv.com**. I tried to contact them several times to get an opinion on my fair-use for educational purpose. The original video: https://www.youtube.com/watch?v=ItGwXRCcisA
+* The author of the video used for pedestrian detection is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
+* The right holders of the video used for the optical flow visualization are **https://www.bbtv.com**. I tried to contact them several times to get an opinion on my fair-use for educational purpose. ([Original video](https://www.youtube.com/watch?v=ItGwXRCcisA))
 
 # Requirements
 * Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
-* If you are on a recent Intel Platform (Gen8 - Gen12) you need to install an [alternative compute-runtime](https://github.com/kallaballa/compute-runtime)
+* If you are on a recent Intel Platform (Gen8 - Gen12) you **need to install** an [**alternative compute-runtime**](https://github.com/kallaballa/compute-runtime)
 
 There are currently six demos (**the preview videos are scaled down and compressed**):
 ## tetra-demo
@@ -33,17 +34,18 @@ Renders a Star Wars like text crawl using nanovg (OpenGL). Encodes on the GPU.
 https://user-images.githubusercontent.com/287266/204157553-758adaeb-e9b8-48eb-bc09-8098a5379d2b.mp4
 
 ## optflow-demo
-My take on a optical flow visualization on top of a video. Uses nanovg for rendering (OpenGL), calculates the optical flow (OpenCL) and decodes/encodes on the GPU.
+My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCL) to isolate areas with motion, detects features to track (OpenCL), calculates the optical flow (OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/202174513-331e6f08-8397-4521-969b-24cbc43d27fc.mp4
 
 ## pedestrian-demo
-Pedestrian detection using HOG/SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a SVM (OpenCL) and decodes/encodes on the GPU. Note: Detection rate is not impressive and depends highly on the video.
+Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI). 
+Note: Detection rate is not very impressive and depends highly on the video.
 
-https://user-images.githubusercontent.com/287266/204364376-e08a4943-17a4-408f-a5b0-bfd95ffc44ae.mp4
+https://user-images.githubusercontent.com/287266/204570888-9bf48c6e-3422-4fce-94e4-27a98db76dea.mp4
 
 # Instructions
-You need to build the most recent 4.x branch of OpenCV.
+You need to build my 4.x branch of OpenCV.
 
 ## Build OpenCV
 
@@ -52,7 +54,7 @@ git clone --branch GCV https://github.com/kallaballa/opencv.git
 cd opencv
 mkdir build
 cd build
-ccmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_GLX=OFF -DOPENCV_ENABLE_EGL=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF ..
+ccmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_GLX=ON -DOPENCV_ENABLE_EGL=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF ..
 make -j8
 sudo make install
 ```
