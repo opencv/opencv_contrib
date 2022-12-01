@@ -14,22 +14,22 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 
 There are currently six demos (**the preview videos are scaled down and compressed**):
 ## tetra-demo
-Renders a rainbow tetrahedron on blue background using OpenGL and decodes/encodes on the GPU.
+Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/200169105-2bb88288-cb07-49bb-97ef-57ac61a0cfb8.mp4
 
 ## video-demo
-Renders a rainbow tetrahedron on top of a input-video using OpenGL and decodes/encodes on the GPU.
+Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/200169164-231cb4d8-db5c-444b-8aff-55c9f1a822cc.mp4
 
 ## nanovg-demo
-Renders a color wheel on top of a input-video using nanovg (OpenGL) and decodes/encodes on the GPU.
+Renders a color wheel on top of a input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/200169216-1ff25db5-f5e0-49d1-92ba-ab7903168754.mp4
 
 ## font-demo
-Renders a Star Wars like text crawl using nanovg (OpenGL). Encodes on the GPU.
+Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/205178834-a5f035b1-bdd1-4e57-8543-5c5d706fce7c.mp4
 
