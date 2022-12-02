@@ -21,7 +21,7 @@ https://user-images.githubusercontent.com/287266/205185854-6fe42c8a-7cf7-4a35-bf
 ## video-demo
 Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/200169164-231cb4d8-db5c-444b-8aff-55c9f1a822cc.mp4
+https://user-images.githubusercontent.com/287266/205186059-c96e2728-62e4-41c5-b6a2-c7e393efeda2.mp4
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
