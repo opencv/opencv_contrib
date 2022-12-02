@@ -81,9 +81,7 @@ src/tetra/tetra-demo
 ```bash
 src/video/video-demo bunny.webm
 ```
-cmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF ..
-make -j8
-sudo make install
+
 ## Run the nanovg-demo:
 
 ```bash
