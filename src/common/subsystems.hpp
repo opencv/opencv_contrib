@@ -230,7 +230,7 @@ void init(const string &title, int major = 4, int minor = 6, bool debug = false)
 //    if (app::OFFSCREEN) {
 //        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
 //    }
-    assert(glfwInit());
+    assert(glfwInit() == GLFW_TRUE);
 
     glfwSetErrorCallback(error_callback);
 
