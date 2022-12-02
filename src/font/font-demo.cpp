@@ -129,9 +129,9 @@ int main(int argc, char **argv) {
             off_t translateY = HEIGHT - cnt;
             nvgTranslate(vg, 0, translateY);
 
-            for (const auto& line : lines) {
-                if(translateY + y > -textHeight) {
-                    nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
+            for (const auto &line : lines) {
+                if (translateY + y > -textHeight && translateY + y <= HEIGHT) {
+                    nvgText(vg, WIDTH / 2.0, y, line.c_str(), line.c_str() + line.size());
                     y += FONT_SIZE;
                 } else {
                     //We can stop reading lines if the current line exceeds the page.
