@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
         //Begin a nanovg frame.
         nvg::begin();
         //Clear the screen with black.
-        nvg::clear(0,0,0,0);
+        nvg::clear();
         {
             using kb::nvg::vg;
             nvgBeginPath(vg);
