@@ -16,7 +16,7 @@ There are currently six demos (**the preview videos are scaled down and compress
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/200169105-2bb88288-cb07-49bb-97ef-57ac61a0cfb8.mp4
+https://user-images.githubusercontent.com/287266/205185854-6fe42c8a-7cf7-4a35-bf13-0168a95619a2.mp4
 
 ## video-demo
 Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
