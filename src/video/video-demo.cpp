@@ -88,7 +88,9 @@ int main(int argc, char **argv) {
     }
 
     //Initialize the application
-    kb::init(WIDTH, HEIGHT);
+    app::init("Video Demo", WIDTH, HEIGHT, OFFSCREEN);
+    //Print system information
+    app::print_system_info();
 
     //Initialize MJPEG HW decoding using VAAPI
     cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
@@ -112,19 +114,6 @@ int main(int argc, char **argv) {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
-
-    //If we are rendering offscreen we don't need x11
-    if(!OFFSCREEN)
-        x11::init("video-demo");
-
-    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
-    egl::init();
-    //Initialize OpenCL Context for OpenGL
-    gl::init();
-
-    cerr << "EGL Version: " << egl::get_info() << endl;
-    cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     init_scene(WIDTH, HEIGHT);
 
@@ -170,8 +159,8 @@ int main(int argc, char **argv) {
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
-        //If x11 is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!gl::display())
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if(!app::display())
             break;
 
         //Activate the OpenCL context for VAAPI
@@ -179,7 +168,7 @@ int main(int argc, char **argv) {
         //Encode the frame using VAAPI on the GPU.
         writer << videoFrame;
 
-        print_fps();
+        app::print_fps();
     }
 
     return 0;

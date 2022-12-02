@@ -114,7 +114,10 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    kb::init(WIDTH, HEIGHT);
+    //Initialize the application
+    app::init("Pedestrian Demo", WIDTH, HEIGHT, OFFSCREEN);
+    //Print system information
+    app::print_system_info();
 
     cv::VideoCapture cap(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
@@ -135,17 +138,6 @@ int main(int argc, char **argv) {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
-
-    if (!OFFSCREEN)
-        x11::init("pedestrian-demo");
-    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
-    egl::init();
-    gl::init();
-    nvg::init();
-
-    cerr << "EGL Version: " << egl::get_info() << endl;
-    cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     //BGRA
     cv::UMat frameBuffer, background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
@@ -209,13 +201,14 @@ int main(int argc, char **argv) {
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         gl::release_to_gl(frameBuffer);
 
-        if (!gl::display())
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if (!app::display())
             break;
 
         va::bind();
         writer << videoFrame;
 
-        print_fps();
+        app::print_fps();
     }
 
     return 0;

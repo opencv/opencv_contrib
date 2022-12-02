@@ -179,7 +179,10 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    kb::init(WIDTH, HEIGHT);
+    //Initialize the application
+    app::init("Beauty Demo", WIDTH, HEIGHT, OFFSCREEN);
+    //Print system information
+    app::print_system_info();
 
     cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(320, 320), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
     cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
@@ -198,17 +201,6 @@ int main(int argc, char **argv) {
 
     double fps = capture.get(cv::CAP_PROP_FPS);
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
-
-    if (!OFFSCREEN)
-        x11::init("beauty-demo");
-    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
-    egl::init();
-    gl::init();
-    nvg::init();
-
-    cerr << "EGL Version: " << egl::get_info() << endl;
-    cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     //BGRA
     cv::UMat frameBuffer;
@@ -296,13 +288,13 @@ int main(int argc, char **argv) {
         cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
         gl::release_to_gl(frameBuffer);
 
-        if (!gl::display())
+        if (!app::display())
             break;
 
         va::bind();
         writer << videoFrameOut;
 
-        print_fps();
+        app::print_fps();
     }
 
     return 0;

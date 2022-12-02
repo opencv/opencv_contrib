@@ -30,15 +30,9 @@
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::string;
 
 namespace kb {
-unsigned int WINDOW_WIDTH;
-unsigned int WINDOW_HEIGHT;
-
-void init(unsigned int width, unsigned int height) {
-    WINDOW_WIDTH = width;
-    WINDOW_HEIGHT = height;
-}
 
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();
@@ -63,6 +57,12 @@ void egl_check_error(const std::filesystem::path &file, unsigned int line, const
 #define EGL_CHECK(expr)                                 \
         expr;                                          \
         kb::egl_check_error(__FILE__, __LINE__, #expr);
+
+namespace app {
+unsigned int WINDOW_WIDTH;
+unsigned int WINDOW_HEIGHT;
+bool offscreen;
+} //app
 
 namespace va {
 cv::ocl::OpenCLExecutionContext context;
@@ -133,7 +133,7 @@ void init(const std::string& title) {
     xroot = DefaultRootWindow(xdisplay);
     XSetWindowAttributes swa;
     swa.event_mask = ClientMessage;
-    xwin = XCreateWindow(xdisplay, xroot, 0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, 0,
+    xwin = XCreateWindow(xdisplay, xroot, 0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT, 0,
     CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &swa);
 
     XSetWindowAttributes xattr;
@@ -266,10 +266,8 @@ EGLBoolean swap_buffers() {
 }
 
 void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
-    bool offscreen = !x11::is_initialized();
-
     EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
-    if (offscreen) {
+    if (app::offscreen) {
         EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
         EGL_CHECK(display = eglGetDisplay(x11::get_x11_display()));
@@ -300,12 +298,12 @@ void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
     eglGetConfigAttrib(display, configs[0],
     EGL_STENCIL_SIZE, &stencilSize);
 
-    if (!offscreen) {
+    if (!app::offscreen) {
         EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
         EGLint pbuffer_attrib_list[] = {
-        EGL_WIDTH, int(kb::WINDOW_WIDTH),
-        EGL_HEIGHT, int(kb::WINDOW_HEIGHT),
+        EGL_WIDTH, int(app::WINDOW_WIDTH),
+        EGL_HEIGHT, int(app::WINDOW_HEIGHT),
         EGL_NONE };
         EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
@@ -374,11 +372,11 @@ void init() {
 
     GL_CHECK(glGenRenderbuffers(1, &render_buf));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
-    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT));
+    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::WINDOW_WIDTH, app::WINDOW_HEIGHT));
 
     GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
 
-    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT), cv::ogl::Texture2D::RGBA, false);
+    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::WINDOW_WIDTH, app::WINDOW_HEIGHT), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
     GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
 
@@ -409,23 +407,7 @@ void blit_frame_buffer_to_screen() {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, 0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-}
-
-bool display() {
-    if(x11::is_initialized()) {
-        //Blit the framebuffer we have been working on to the screen
-        gl::blit_frame_buffer_to_screen();
-
-        //Check if the x11 window was closed
-        if(x11::window_closed())
-            return false;
-
-        //Transfer the back buffer (which we have been using as frame buffer) to the native window
-        egl::swap_buffers();
-    }
-
-    return true;
+    GL_CHECK(glBlitFramebuffer(0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT, 0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 } // namespace gl
 
@@ -465,18 +447,18 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, 
 void begin() {
     gl::begin();
 
-    float w = kb::WINDOW_WIDTH;
-    float h = kb::WINDOW_HEIGHT;
-    if(x11::is_initialized()) {
-        auto ws = x11::get_window_size();
-        w = ws.first;
-        h = ws.second;
-    }
+    float w = app::WINDOW_WIDTH;
+    float h = app::WINDOW_HEIGHT;
+//    if(x11::is_initialized()) {
+//        auto ws = x11::get_window_size();
+//        w = ws.first;
+//        h = ws.second;
+//    }
 
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    GL_CHECK(glViewport(0, WINDOW_HEIGHT - h, w, h));
-    nvgBeginFrame(vg, w, h, std::fmax(kb::WINDOW_WIDTH/w, kb::WINDOW_HEIGHT/h));
+    GL_CHECK(glViewport(0, app::WINDOW_HEIGHT - h, w, h));
+    nvgBeginFrame(vg, w, h, std::fmax(app::WINDOW_WIDTH/w, app::WINDOW_HEIGHT/h));
 }
 
 void end() {
@@ -486,7 +468,7 @@ void end() {
 }
 
 void init(bool debug = false) {
-    GL_CHECK(glViewport(0, 0, kb::WINDOW_WIDTH, kb::WINDOW_HEIGHT));
+    GL_CHECK(glViewport(0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT));
     GL_CHECK(glEnable(GL_STENCIL_TEST));
     GL_CHECK(glStencilMask(~0));
     GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
@@ -507,24 +489,63 @@ void init(bool debug = false) {
 }
 } //namespace nvg
 
-void print_fps() {
-    static uint64_t cnt = 0;
-    static double fps = 1;
-    static cv::TickMeter meter;
+namespace app {
+    void init(const string& windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 16, bool debugContext = false) {
+        WINDOW_WIDTH = width;
+        WINDOW_HEIGHT = height;
 
-    if (cnt > 0) {
-        meter.stop();
+        //If we are rendering offscreen we don't need x11
+        if(!offscreen)
+            x11::init(windowTitle);
 
-        if (cnt % uint64(ceil(fps)) == 0) {
-            fps = meter.getFPS();
-            cerr << "FPS : " << fps << '\r';
-            cnt = 0;
-        }
+        //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
+        egl::init(major, minor, samples, debugContext);
+        //Initialize OpenCL Context for OpenGL
+        gl::init();
+        nvg::init();
     }
 
-    meter.start();
-    ++cnt;
-}
+    bool display() {
+        if(x11::is_initialized()) {
+            //Blit the framebuffer we have been working on to the screen
+            gl::blit_frame_buffer_to_screen();
+
+            //Check if the x11 window was closed
+            if(x11::window_closed())
+                return false;
+
+            //Transfer the back buffer (which we have been using as frame buffer) to the native window
+            egl::swap_buffers();
+        }
+
+        return true;
+    }
+
+    void print_system_info() {
+        cerr << "EGL Version: " << egl::get_info() << endl;
+        cerr << "OpenGL Version: " << gl::get_info() << endl;
+        cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
+    }
+
+    void print_fps() {
+        static uint64_t cnt = 0;
+        static double fps = 1;
+        static cv::TickMeter meter;
+
+        if (cnt > 0) {
+            meter.stop();
+
+            if (cnt % uint64(ceil(fps)) == 0) {
+                fps = meter.getFPS();
+                cerr << "FPS : " << fps << '\r';
+                cnt = 0;
+            }
+        }
+
+        meter.start();
+        ++cnt;
+    }
+} //namespace app
 } //namespace kb
 
 #endif /* SRC_SUBSYSTEMS_HPP_ */

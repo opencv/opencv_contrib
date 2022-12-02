@@ -83,7 +83,9 @@ int main(int argc, char **argv) {
     using namespace kb;
 
     //Initialize the application
-    kb::init(WIDTH, HEIGHT);
+    app::init("Tetra Demo", WIDTH, HEIGHT, OFFSCREEN);
+    //Print system information
+    app::print_system_info();
 
     //Initialize VP9 HW encoding using VAAPI
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
@@ -94,21 +96,8 @@ int main(int argc, char **argv) {
 
     //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
     va::copy();
-
-    //If we are rendering offscreen we don't need x11
-    if(!OFFSCREEN)
-        x11::init("tetra-demo");
-
-    //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
-    egl::init();
-    //Initialize OpenCL Context for OpenGL
-    gl::init();
-
+    //Initialize the OpenGL scene
     init_scene(WIDTH, HEIGHT);
-
-    cerr << "EGL Version: " << egl::get_info() << endl;
-    cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
 
     //BGRA
     cv::UMat frameBuffer;
@@ -132,8 +121,8 @@ int main(int argc, char **argv) {
         //Release the frame buffer for use by OpenGL
         gl::release_to_gl(frameBuffer);
 
-        //If x11 is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!gl::display())
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if(!app::display())
             break;
 
         //Activate the OpenCL context for VAAPI
@@ -141,7 +130,7 @@ int main(int argc, char **argv) {
         //Encode the frame using VAAPI on the GPU.
         writer << videoFrame;
 
-        print_fps();
+        app::print_fps();
     }
 
     return 0;
