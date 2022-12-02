@@ -226,18 +226,6 @@ void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-//EGLContext get_egl_display() {
-//    return glfwGetEGLDisplay();
-//}
-//
-//EGLContext get_egl_context() {
-//    return glfwGetEGLContext(window);
-//}
-//
-//EGLSurface get_egl_surface() {
-//    return glfwGetEGLSurface(window);
-//}
-
 void init(const string &title, int major = 4, int minor = 6) {
     assert(glfwInit());
     glfwSetErrorCallback(error_callback);

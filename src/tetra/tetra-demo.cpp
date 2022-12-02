@@ -133,5 +133,7 @@ int main(int argc, char **argv) {
         app::print_fps();
     }
 
+    app::terminate();
+
     return 0;
 }
