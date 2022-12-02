@@ -39,7 +39,6 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-
 namespace kb {
 
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
@@ -211,7 +210,11 @@ void init(const std::string& title) {
 
 namespace glfw {
 GLFWwindow *window;
+bool initialized = false;
 
+bool is_initialized() {
+    return initialized;
+}
 void processInput(GLFWwindow *window){
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -264,9 +267,11 @@ void init(const string &title, int major = 4, int minor = 6, bool debug = false)
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    initialized = true;
 }
 
 void terminate() {
+    initialized = false;
     glfwDestroyWindow(window);
     glfwTerminate();
 }
@@ -644,11 +649,17 @@ bool display() {
             egl::swap_buffers();
         }
 #else
-    gl::blit_frame_buffer_to_screen();
-    glfw::processInput(glfw::window);
-    glfwSwapBuffers(glfw::window);
-    glfwPollEvents();
-    return !glfwWindowShouldClose(glfw::window);
+    if(glfw::is_initialized()) {
+        if(!app::OFFSCREEN) {
+            gl::blit_frame_buffer_to_screen();
+            glfw::processInput(glfw::window);
+            glfwSwapBuffers(glfw::window);
+            glfwPollEvents();
+            return !glfwWindowShouldClose(glfw::window);
+        } else {
+            glfwPollEvents();
+        }
+    }
 #endif
     return true;
 }
