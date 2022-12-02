@@ -33,7 +33,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::vector;
-using std::stringstream;
+using std::istringstream;
 
 int main(int argc, char **argv) {
     using namespace kb;
@@ -59,10 +59,13 @@ int main(int argc, char **argv) {
 
     //The text to display
     string text = cv::getBuildInformation();
-    //Create a istringstream that we will read and then rewind. over again.
+    //Save the text to a vector
     std::istringstream iss(text);
-    //Count the number of lines.
-    off_t numLines = std::count(text.begin(), text.end(), '\n');
+    vector<string> lines;
+    for (std::string line; std::getline(iss, line); ) {
+        lines.push_back(line);
+    }
+    off_t numLines = lines.size();
 
     //Derive the transformation matrix M for the pseudo 3D effect from src and dst.
     vector<cv::Point2f> src = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
@@ -102,6 +105,7 @@ int main(int argc, char **argv) {
     //Y-position of the current line in pixels.
     float y;
 
+
     while (true) {
         y = 0;
         gl::bind();
@@ -119,30 +123,19 @@ int main(int argc, char **argv) {
 
             /** only draw lines that are visible **/
 
-            //Progress measured in lines.
-            off_t progressLines = cnt / FONT_SIZE;
-            //How many lines to skip.
-            off_t skipLines = (numLines - progressLines) - 1;
-            skipLines = skipLines < 0 ? 0 : skipLines;
-            //How many lines fit on the page.
-            off_t pageLines = HEIGHT / FONT_SIZE;
-            //How many pixels to translate the text down.
-            off_t translateY = cnt - ((numLines - skipLines) * FONT_SIZE);
+            //Height of the text in pixels
+            off_t textHeight = (numLines * FONT_SIZE);
+            //How many pixels to translate the text up.
+            off_t translateY = HEIGHT - cnt;
             nvgTranslate(vg, 0, translateY);
 
-            for (std::string line; std::getline(iss, line); ) {
-                //Check if all yet-to-crawl lines have been skipped.
-                if(skipLines == 0) {
-                    //Check if the current line fits in the page.
-                    if(((translateY + y) / FONT_SIZE) < pageLines) {
-                        nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
-                        y += FONT_SIZE;
-                    } else {
-                        //We can stop reading lines if the current line exceeds the page.
-                        break;
-                    }
+            for (const auto& line : lines) {
+                if(translateY + y > -textHeight) {
+                    nvgText(vg, WIDTH/2.0, y, line.c_str(), line.c_str() + line.size());
+                    y += FONT_SIZE;
                 } else {
-                   --skipLines;
+                    //We can stop reading lines if the current line exceeds the page.
+                    break;
                 }
             }
         }
@@ -153,10 +146,6 @@ int main(int argc, char **argv) {
             //Nothing drawn, exit.
             break;
         }
-
-        //Rewind the istringstream.
-        iss.clear(std::stringstream::goodbit);
-        iss.seekg(0);
 
         //Aquire frame buffer from OpenGL.
         gl::acquire_from_gl(frameBuffer);
