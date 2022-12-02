@@ -1,6 +1,8 @@
 .cproject
 .project
 .settings/
+assets/
+experiments/
 src/*/*.o
 src/*/*.dep
 src/*/*.d
@@ -8,4 +10,8 @@ src/tetra/tetra-demo
 src/video/video-demo
 src/nanovg/nanovg-demo
 src/optflow/optflow-demo
-
+src/beauty/beauty-demo
+src/font/font-demo
+src/pedestrian/pedestrian-demo
+*.webm
+*.mkv
