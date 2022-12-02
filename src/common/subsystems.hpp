@@ -61,7 +61,7 @@ void egl_check_error(const std::filesystem::path &file, unsigned int line, const
 namespace app {
 unsigned int WINDOW_WIDTH;
 unsigned int WINDOW_HEIGHT;
-bool offscreen;
+bool OFFSCREEN;
 } //app
 
 namespace va {
@@ -267,7 +267,7 @@ EGLBoolean swap_buffers() {
 
 void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
     EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
-    if (app::offscreen) {
+    if (app::OFFSCREEN) {
         EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
         EGL_CHECK(display = eglGetDisplay(x11::get_x11_display()));
@@ -298,7 +298,7 @@ void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
     eglGetConfigAttrib(display, configs[0],
     EGL_STENCIL_SIZE, &stencilSize);
 
-    if (!app::offscreen) {
+    if (!app::OFFSCREEN) {
         EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
     } else {
         EGLint pbuffer_attrib_list[] = {
@@ -493,9 +493,10 @@ namespace app {
     void init(const string& windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 16, bool debugContext = false) {
         WINDOW_WIDTH = width;
         WINDOW_HEIGHT = height;
+        OFFSCREEN = offscreen;
 
         //If we are rendering offscreen we don't need x11
-        if(!offscreen)
+        if(!OFFSCREEN)
             x11::init(windowTitle);
 
         //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
