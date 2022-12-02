@@ -12,12 +12,19 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/Xutil.h>
 #include <GL/glew.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#if !defined(__APPLE__)
+#  include <X11/Xlib.h>
+#  include <X11/Xatom.h>
+#  include <X11/Xutil.h>
+#  include <X11/extensions/Xrandr.h>
+#  include <EGL/egl.h>
+#  include <EGL/eglext.h>
+#endif
+#if !defined(_GCV_ONLY_X11)
+#  define GLFW_INCLUDE_NONE
+#  include <GLFW/glfw3.h>
+#endif
 #include <GL/gl.h>
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -31,6 +38,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+
 
 namespace kb {
 
@@ -46,17 +54,58 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     expr;                                        \
     kb::gl_check_error(__FILE__, __LINE__, #expr);
 
+#ifdef _GCV_ONLY_X11
+//adapted from https://github.com/glfw/glfw/blob/master/src/egl_context.c
+const char* get_egl_error_string(EGLint error)
+{
+    switch (error)
+    {
+        case EGL_SUCCESS:
+            return "Success";
+        case EGL_NOT_INITIALIZED:
+            return "EGL is not or could not be initialized";
+        case EGL_BAD_ACCESS:
+            return "EGL cannot access a requested resource";
+        case EGL_BAD_ALLOC:
+            return "EGL failed to allocate resources for the requested operation";
+        case EGL_BAD_ATTRIBUTE:
+            return "An unrecognized attribute or attribute value was passed in the attribute list";
+        case EGL_BAD_CONTEXT:
+            return "An EGLContext argument does not name a valid EGL rendering context";
+        case EGL_BAD_CONFIG:
+            return "An EGLConfig argument does not name a valid EGL frame buffer configuration";
+        case EGL_BAD_CURRENT_SURFACE:
+            return "The current surface of the calling thread is a window, pixel buffer or pixmap that is no longer valid";
+        case EGL_BAD_DISPLAY:
+            return "An EGLDisplay argument does not name a valid EGL display connection";
+        case EGL_BAD_SURFACE:
+            return "An EGLSurface argument does not name a valid surface configured for GL rendering";
+        case EGL_BAD_MATCH:
+            return "Arguments are inconsistent";
+        case EGL_BAD_PARAMETER:
+            return "One or more argument values are invalid";
+        case EGL_BAD_NATIVE_PIXMAP:
+            return "A NativePixmapType argument does not refer to a valid native pixmap";
+        case EGL_BAD_NATIVE_WINDOW:
+            return "A NativeWindowType argument does not refer to a valid native window";
+        case EGL_CONTEXT_LOST:
+            return "The application must destroy all contexts and reinitialise";
+        default:
+            return "ERROR: UNKNOWN EGL ERROR";
+    }
+}
 void egl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     EGLint errorCode = eglGetError();
 
     if (errorCode != EGL_SUCCESS) {
-        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
+        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << get_egl_error_string(errorCode) << "\n   " << endl;
         assert(false);
     }
 }
 #define EGL_CHECK(expr)                                 \
         expr;                                          \
         kb::egl_check_error(__FILE__, __LINE__, #expr);
+#endif
 
 namespace app {
 unsigned int WINDOW_WIDTH;
@@ -76,6 +125,7 @@ void bind() {
 }
 } // namespace va
 
+#ifdef _GCV_ONLY_X11
 namespace x11 {
 Display *xdisplay;
 Window xroot;
@@ -157,7 +207,69 @@ void init(const std::string& title) {
     initialized = true;
 }
 } // namespace x11
+#else
 
+namespace glfw {
+GLFWwindow *window;
+
+void processInput(GLFWwindow *window){
+    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+}
+
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+    // make sure the viewport matches the new window dimensions; note that width and
+    // height will be significantly larger than specified on retina displays.
+    glViewport(0, 0, width, height);
+}
+void error_callback(int error, const char *description) {
+    fprintf(stderr, "Error: %s\n", description);
+}
+
+//EGLContext get_egl_display() {
+//    return glfwGetEGLDisplay();
+//}
+//
+//EGLContext get_egl_context() {
+//    return glfwGetEGLContext(window);
+//}
+//
+//EGLSurface get_egl_surface() {
+//    return glfwGetEGLSurface(window);
+//}
+
+void init(const string &title, int major = 4, int minor = 6) {
+    assert(glfwInit());
+    glfwSetErrorCallback(error_callback);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    window = glfwCreateWindow(app::WINDOW_WIDTH, app::WINDOW_HEIGHT, title.c_str(), nullptr, nullptr);
+    if (window == NULL) {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        exit(11);
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+}
+
+void terminate() {
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
+} // namespace glfw
+
+#endif
+
+#ifdef _GCV_ONLY_X11
 namespace egl {
 //code in the kb::egl namespace deals with setting up EGL
 EGLDisplay display;
@@ -270,7 +382,9 @@ void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
     if (app::OFFSCREEN) {
         EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
+#ifdef _GCV_ONLY_X11
         EGL_CHECK(display = eglGetDisplay(x11::get_x11_display()));
+#endif
     }
     EGL_CHECK(eglInitialize(display, nullptr, nullptr));
 
@@ -298,8 +412,18 @@ void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
     eglGetConfigAttrib(display, configs[0],
     EGL_STENCIL_SIZE, &stencilSize);
 
+    const EGLint contextVersion[] = {
+    EGL_CONTEXT_MAJOR_VERSION, major,
+    EGL_CONTEXT_MINOR_VERSION, minor,
+    EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
+    EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
+    EGL_NONE };
+    EGL_CHECK(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
+
     if (!app::OFFSCREEN) {
+#ifdef _GCV_ONLY_X11
         EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
+#endif
     } else {
         EGLint pbuffer_attrib_list[] = {
         EGL_WIDTH, int(app::WINDOW_WIDTH),
@@ -308,13 +432,7 @@ void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
         EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
 
-    const EGLint contextVersion[] = {
-    EGL_CONTEXT_MAJOR_VERSION, major,
-    EGL_CONTEXT_MINOR_VERSION, minor,
-    EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
-    EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
-    EGL_NONE };
-    EGL_CHECK(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
+
     EGL_CHECK(eglMakeCurrent(display, surface, surface, context));
     EGL_CHECK(eglSwapInterval(display, 1));
 
@@ -331,7 +449,7 @@ std::string get_info() {
 }
 
 } //namespace egl
-
+#endif
 namespace gl {
 //code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
 cv::ogl::Texture2D *frame_buf_tex;
@@ -449,11 +567,6 @@ void begin() {
 
     float w = app::WINDOW_WIDTH;
     float h = app::WINDOW_HEIGHT;
-//    if(x11::is_initialized()) {
-//        auto ws = x11::get_window_size();
-//        w = ws.first;
-//        h = ws.second;
-//    }
 
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
@@ -490,62 +603,85 @@ void init(bool debug = false) {
 } //namespace nvg
 
 namespace app {
-    void init(const string& windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 16, bool debugContext = false) {
-        WINDOW_WIDTH = width;
-        WINDOW_HEIGHT = height;
-        OFFSCREEN = offscreen;
+void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 16, bool debugContext = false) {
+    WINDOW_WIDTH = width;
+    WINDOW_HEIGHT = height;
+    OFFSCREEN = offscreen;
 
-        //If we are rendering offscreen we don't need x11
-        if(!OFFSCREEN)
-            x11::init(windowTitle);
+    //If we are rendering offscreen we don't need x11
 
+#ifdef _GCV_ONLY_X11
+    if (!OFFSCREEN) {
+        x11::init(windowTitle);
         //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
         egl::init(major, minor, samples, debugContext);
-        //Initialize OpenCL Context for OpenGL
-        gl::init();
-        nvg::init();
     }
+#else
+        glfw::init(windowTitle, major, minor);
+#endif
 
-    bool display() {
+    //Initialize OpenCL Context for OpenGL
+    gl::init();
+    nvg::init();
+}
+
+bool display() {
+#ifdef _GCV_ONLY_X11
         if(x11::is_initialized()) {
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 
-            //Check if the x11 window was closed
-            if(x11::window_closed())
+            //Check if the x11 wl_window was closed
+            if(x11::is_initialized() && x11::window_closed())
                 return false;
 
-            //Transfer the back buffer (which we have been using as frame buffer) to the native window
+            //Transfer the back buffer (which we have been using as frame buffer) to the native wl_window
             egl::swap_buffers();
         }
+#else
+    gl::blit_frame_buffer_to_screen();
+    glfw::processInput(glfw::window);
+    glfwSwapBuffers(glfw::window);
+    glfwPollEvents();
+    return !glfwWindowShouldClose(glfw::window);
+#endif
+    return true;
+}
 
-        return true;
-    }
-
-    void print_system_info() {
+void print_system_info() {
+#ifdef _GCV_ONLY_X11
         cerr << "EGL Version: " << egl::get_info() << endl;
-        cerr << "OpenGL Version: " << gl::get_info() << endl;
-        cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
-    }
+#endif
+    cerr << "OpenGL Version: " << gl::get_info() << endl;
+    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
+}
 
-    void print_fps() {
-        static uint64_t cnt = 0;
-        static double fps = 1;
-        static cv::TickMeter meter;
+void print_fps() {
+    static uint64_t cnt = 0;
+    static double fps = 1;
+    static cv::TickMeter meter;
 
-        if (cnt > 0) {
-            meter.stop();
+    if (cnt > 0) {
+        meter.stop();
 
-            if (cnt % uint64(ceil(fps)) == 0) {
-                fps = meter.getFPS();
-                cerr << "FPS : " << fps << '\r';
-                cnt = 0;
-            }
+        if (cnt % uint64(ceil(fps)) == 0) {
+            fps = meter.getFPS();
+            cerr << "FPS : " << fps << '\r';
+            cnt = 0;
         }
-
-        meter.start();
-        ++cnt;
     }
+
+    meter.start();
+    ++cnt;
+}
+
+void terminate() {
+#ifdef _GCV_ONLY_X11
+    //TODO properly cleanup X11 and EGL
+#else
+    glfwTerminate();
+#endif
+}
 } //namespace app
 } //namespace kb
 

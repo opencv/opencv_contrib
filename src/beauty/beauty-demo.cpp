@@ -46,31 +46,24 @@ struct FaceFeatures {
         // left eyebrow
         for (; i <= 21; ++i)
             left_eyebrow_.push_back(shape[i] / scale);
-
         // Right eyebrow
         for (; i <= 26; ++i)
             right_eyebrow_.push_back(shape[i] / scale);
-
         // Line on top of nose
         for (; i <= 30; ++i)
             top_nose_.push_back(shape[i] / scale);
-
         // Bottom part of the nose
         for (; i <= 35; ++i)
             bottom_nose_.push_back(shape[i] / scale);
-
         // Left eye
         for (; i <= 41; ++i)
             left_eye_.push_back(shape[i] / scale);
-
         // Right eye
         for (; i <= 47; ++i)
             right_eye_.push_back(shape[i] / scale);
-
         // Lips outer part
         for (; i <= 59; ++i)
             outer_lips_.push_back(shape[i] / scale);
-
         // Lips inside part
         for (; i <= 67; ++i)
             inside_lips_.push_back(shape[i] / scale);

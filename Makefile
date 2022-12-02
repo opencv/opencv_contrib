@@ -6,6 +6,12 @@ LIBS     := -lnanovg
 DESTDIR := /
 PREFIX := /usr/local
 
+ifdef GCV_ONLY_X11
+CXXFLAGS += -D_GCV_ONLY_X11
+else
+LIBS += `pkg-config --libs glfw3`
+endif
+
 all: release
 
 release: CXXFLAGS += -g0 -O3

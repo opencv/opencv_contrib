@@ -9,7 +9,7 @@ DEPS    := ${SRCS:.cpp=.dep}
 
 CXXFLAGS += -fpic `pkg-config --cflags egl opencv4 libva-drm glew`
 LDFLAGS +=  
-LIBS += -lm `pkg-config --libs egl opencv4 libva-drm glew` -lnanovg -lopencv_optflow -lOpenCL
+LIBS += -lm `pkg-config --libs egl opencv4 libva-drm glew` -lopencv_optflow -lOpenCL
 .PHONY: all release debug clean distclean 
 
 all: release
