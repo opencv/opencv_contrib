@@ -226,18 +226,35 @@ void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-void init(const string &title, int major = 4, int minor = 6) {
+void init(const string &title, int major = 4, int minor = 6, bool debug = false) {
+//    if (app::OFFSCREEN) {
+//        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
+//    }
     assert(glfwInit());
+
     glfwSetErrorCallback(error_callback);
+
+    if(debug)
+        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+
+#ifdef __APPLE__
+    /* We need to explicitly ask for a 3.2 context on OS X */
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+
+    if (app::OFFSCREEN) {
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    }
 
     window = glfwCreateWindow(app::WINDOW_WIDTH, app::WINDOW_HEIGHT, title.c_str(), nullptr, nullptr);
     if (window == NULL) {
@@ -605,7 +622,7 @@ void init(const string &windowTitle, unsigned int width, unsigned int height, bo
         egl::init(major, minor, samples, debugContext);
     }
 #else
-        glfw::init(windowTitle, major, minor);
+        glfw::init(windowTitle, major, minor, debugContext);
 #endif
 
     //Initialize OpenCL Context for OpenGL
