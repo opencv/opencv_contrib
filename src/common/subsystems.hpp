@@ -6,9 +6,6 @@
 #include <unistd.h>
 #include <string>
 #include <filesystem>
-#include <va/va.h>
-#include <va/va_drm.h>
-#include <va/va_backend.h>
 #include <opencv2/opencv.hpp>
 #include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>

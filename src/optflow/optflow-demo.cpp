@@ -38,7 +38,7 @@ constexpr float POINT_LOSS = 25;
 constexpr int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
 constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
-//hue, saturation, lightness and alpha all from 0 to 255
+// Hue, saturation, lightness and alpha all from 0 to 255
 const cv::Scalar EFFECT_COLOR(26, 255, 153, 7);
 
 using std::cerr;
@@ -124,9 +124,12 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
             nvgStrokeColor(vg, nvgHSLA(color[0] / 255.0, color[1] / 255.f, color[2] / 255.0f, color[3]));
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
-                if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor && !(upPrevPoints[i].x == upNextPoints[i].x && upPrevPoints[i].y == upNextPoints[i].y)) {
+                if (status[i] == 1 && err[i] < (1.0 / density)
+                        && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
+                        && upNextPoints[i].y < nextGrey.rows / scaleFactor
+                            && upNextPoints[i].x < nextGrey.cols / scaleFactor) {
                     float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
-                    if (len < sqrt(area)) {
+                    if (len > 0 && len < sqrt(area)) {
                         newPoints.push_back(nextPoints[i]);
                         nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
                         nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
@@ -182,7 +185,7 @@ int main(int argc, char **argv) {
     }
 
     //Initialize the application
-    app::init("Sparse Optflow Demo", WIDTH, HEIGHT, OFFSCREEN);
+    app::init("Sparse Optical Flow Demo", WIDTH, HEIGHT, OFFSCREEN);
     //Print system information
     app::print_system_info();
 
@@ -226,15 +229,18 @@ int main(int argc, char **argv) {
         cv::resize(videoFrame, down, scaledSize);
         cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
         cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
-
+        //subtract the background to create a motion mask
         prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+        //detect trackable points in the motion mask
         detect_points(downMotionMaskGrey, detectedPoints);
 
         gl::bind();
         nvg::begin();
         nvg::clear();
         if (!downPrevGrey.empty()) {
+            //we don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
             if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
+                //visualize the sparse optical flow using nanovg
                 visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
             }
         }
