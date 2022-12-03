@@ -13,6 +13,7 @@
 #include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>
 #include <GL/glew.h>
+
 #if !defined(__APPLE__)
 #  include <X11/Xlib.h>
 #  include <X11/Xatom.h>
@@ -21,10 +22,12 @@
 #  include <EGL/egl.h>
 #  include <EGL/eglext.h>
 #endif
+
 #if !defined(_GCV_ONLY_X11)
 #  define GLFW_INCLUDE_NONE
 #  include <GLFW/glfw3.h>
 #endif
+
 #include <GL/gl.h>
 #include "nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -141,14 +144,6 @@ std::pair<unsigned int, unsigned int> get_window_size() {
     return ret;
 }
 
-Display* get_x11_display() {
-    return xdisplay;
-}
-
-Window get_x11_window() {
-    return xwin;
-}
-
 bool is_initialized() {
     return initialized;
 }
@@ -215,7 +210,7 @@ bool initialized = false;
 bool is_initialized() {
     return initialized;
 }
-void processInput(GLFWwindow *window){
+void process_input(GLFWwindow *window){
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
@@ -229,10 +224,7 @@ void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-void init(const string &title, int major = 4, int minor = 6, bool debug = false) {
-//    if (app::OFFSCREEN) {
-//        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_NULL);
-//    }
+void init(const string &title, int major = 4, int minor = 6, int samples = 4, bool debug = false) {
     assert(glfwInit() == GLFW_TRUE);
 
     glfwSetErrorCallback(error_callback);
@@ -241,7 +233,6 @@ void init(const string &title, int major = 4, int minor = 6, bool debug = false)
         glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 #ifdef __APPLE__
-    /* We need to explicitly ask for a 3.2 context on OS X */
     glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -252,7 +243,7 @@ void init(const string &title, int major = 4, int minor = 6, bool debug = false)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
 #endif
-
+    glfwWindowHint(GLFW_SAMPLES, samples);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 
     if (app::OFFSCREEN) {
@@ -387,13 +378,13 @@ EGLBoolean swap_buffers() {
     return EGL_CHECK(eglSwapBuffers(display, surface));
 }
 
-void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
+void init(int major = 4, int minor = 6, int samples = 4, bool debug = false) {
     EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
     if (app::OFFSCREEN) {
         EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
 #ifdef _GCV_ONLY_X11
-        EGL_CHECK(display = eglGetDisplay(x11::get_x11_display()));
+        EGL_CHECK(display = eglGetDisplay(x11::xdisplay));
 #endif
     }
     EGL_CHECK(eglInitialize(display, nullptr, nullptr));
@@ -432,7 +423,7 @@ void init(int major = 4, int minor = 6, int samples = 16, bool debug = false) {
 
     if (!app::OFFSCREEN) {
 #ifdef _GCV_ONLY_X11
-        EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::get_x11_window(), nullptr));
+        EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::xwin, nullptr));
 #endif
     } else {
         EGLint pbuffer_attrib_list[] = {
@@ -574,13 +565,11 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, 
 
 void begin() {
     gl::begin();
-
     float w = app::WINDOW_WIDTH;
     float h = app::WINDOW_HEIGHT;
-
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    GL_CHECK(glViewport(0, app::WINDOW_HEIGHT - h, w, h));
+    GL_CHECK(glViewport(0, 0, w, h));
     nvgBeginFrame(vg, w, h, std::fmax(app::WINDOW_WIDTH/w, app::WINDOW_HEIGHT/h));
 }
 
@@ -613,12 +602,10 @@ void init(bool debug = false) {
 } //namespace nvg
 
 namespace app {
-void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 16, bool debugContext = false) {
+void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 4, bool debugContext = false) {
     WINDOW_WIDTH = width;
     WINDOW_HEIGHT = height;
     OFFSCREEN = offscreen;
-
-    //If we are rendering offscreen we don't need x11
 
 #ifdef _GCV_ONLY_X11
     if (!OFFSCREEN) {
@@ -627,7 +614,7 @@ void init(const string &windowTitle, unsigned int width, unsigned int height, bo
         egl::init(major, minor, samples, debugContext);
     }
 #else
-        glfw::init(windowTitle, major, minor, debugContext);
+    glfw::init(windowTitle, major, minor, samples, debugContext);
 #endif
 
     //Initialize OpenCL Context for OpenGL
@@ -652,7 +639,7 @@ bool display() {
     if(glfw::is_initialized()) {
         if(!app::OFFSCREEN) {
             gl::blit_frame_buffer_to_screen();
-            glfw::processInput(glfw::window);
+            glfw::process_input(glfw::window);
             glfwSwapBuffers(glfw::window);
             glfwPollEvents();
             return !glfwWindowShouldClose(glfw::window);
