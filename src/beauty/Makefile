@@ -7,9 +7,9 @@ HEADERS :=
 OBJS    := ${SRCS:.cpp=.o}
 DEPS    := ${SRCS:.cpp=.dep} 
 
-CXXFLAGS += -fpic `pkg-config --cflags egl opencv4 libva-drm glew`
+CXXFLAGS += -fpic
 LDFLAGS +=  
-LIBS += -lm `pkg-config --libs egl opencv4 libva-drm glew` -lopencv_dnn -lOpenCL
+LIBS += -lm -lopencv_dnn -lOpenCL
 .PHONY: all release debug clean distclean 
 
 all: release
