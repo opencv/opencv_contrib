@@ -110,9 +110,9 @@ void egl_check_error(const std::filesystem::path &file, unsigned int line, const
 #endif
 
 namespace app {
-unsigned int WINDOW_WIDTH;
-unsigned int WINDOW_HEIGHT;
-bool OFFSCREEN;
+unsigned int window_width;
+unsigned int window_height;
+bool offscreen;
 } //app
 
 namespace va {
@@ -177,7 +177,7 @@ void init(const std::string& title) {
     xroot = DefaultRootWindow(xdisplay);
     XSetWindowAttributes swa;
     swa.event_mask = ClientMessage;
-    xwin = XCreateWindow(xdisplay, xroot, 0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT, 0,
+    xwin = XCreateWindow(xdisplay, xroot, 0, 0, app::window_width, app::window_height, 0,
     CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &swa);
 
     XSetWindowAttributes xattr;
@@ -206,11 +206,13 @@ void init(const std::string& title) {
 namespace glfw {
 GLFWwindow *window;
 bool initialized = false;
+int framebuffer_width;
+int framebuffer_height;
 
 bool is_initialized() {
     return initialized;
 }
-void process_input(GLFWwindow *window){
+void processInput(GLFWwindow *window){
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
@@ -218,15 +220,19 @@ void process_input(GLFWwindow *window){
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
+    framebuffer_width = width;
+    framebuffer_height = height;
     glViewport(0, 0, width, height);
 }
+
 void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
 void init(const string &title, int major = 4, int minor = 6, int samples = 4, bool debug = false) {
     assert(glfwInit() == GLFW_TRUE);
-
+    framebuffer_width = app::window_width;
+    framebuffer_height = app::window_height;
     glfwSetErrorCallback(error_callback);
 
     if(debug)
@@ -246,11 +252,11 @@ void init(const string &title, int major = 4, int minor = 6, int samples = 4, bo
     glfwWindowHint(GLFW_SAMPLES, samples);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 
-    if (app::OFFSCREEN) {
+    if (app::offscreen) {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     }
 
-    window = glfwCreateWindow(app::WINDOW_WIDTH, app::WINDOW_HEIGHT, title.c_str(), nullptr, nullptr);
+    window = glfwCreateWindow(app::window_width, app::window_height, title.c_str(), nullptr, nullptr);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -380,7 +386,7 @@ EGLBoolean swap_buffers() {
 
 void init(int major = 4, int minor = 6, int samples = 4, bool debug = false) {
     EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
-    if (app::OFFSCREEN) {
+    if (app::offscreen) {
         EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
     } else {
 #ifdef _GCV_ONLY_X11
@@ -421,14 +427,14 @@ void init(int major = 4, int minor = 6, int samples = 4, bool debug = false) {
     EGL_NONE };
     EGL_CHECK(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
 
-    if (!app::OFFSCREEN) {
+    if (!app::offscreen) {
 #ifdef _GCV_ONLY_X11
         EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::xwin, nullptr));
 #endif
     } else {
         EGLint pbuffer_attrib_list[] = {
-        EGL_WIDTH, int(app::WINDOW_WIDTH),
-        EGL_HEIGHT, int(app::WINDOW_HEIGHT),
+        EGL_WIDTH, int(app::window_width),
+        EGL_HEIGHT, int(app::window_height),
         EGL_NONE };
         EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
     }
@@ -491,11 +497,11 @@ void init() {
 
     GL_CHECK(glGenRenderbuffers(1, &render_buf));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
-    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::WINDOW_WIDTH, app::WINDOW_HEIGHT));
+    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::window_width, app::window_height));
 
     GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
 
-    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::WINDOW_WIDTH, app::WINDOW_HEIGHT), cv::ogl::Texture2D::RGBA, false);
+    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::window_width, app::window_height), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
     GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
 
@@ -526,7 +532,7 @@ void blit_frame_buffer_to_screen() {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT, 0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    GL_CHECK(glBlitFramebuffer(0, 0, app::window_width, app::window_height, 0, 0, app::window_width, app::window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 } // namespace gl
 
@@ -565,12 +571,21 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, 
 
 void begin() {
     gl::begin();
-    float w = app::WINDOW_WIDTH;
-    float h = app::WINDOW_HEIGHT;
+
+    float w;
+    float h;
+#ifdef _GCV_ONLY_X11
+    auto ws = x11::get_window_size();
+    w = ws.first;
+    h = ws.second;
+#else
+    w = glfw::framebuffer_width;
+    h = glfw::framebuffer_height;
+#endif
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    GL_CHECK(glViewport(0, 0, w, h));
-    nvgBeginFrame(vg, w, h, std::fmax(app::WINDOW_WIDTH/w, app::WINDOW_HEIGHT/h));
+    GL_CHECK(glViewport(0, 0,w, h));
+    nvgBeginFrame(vg, w, h, std::fmax(app::window_width/w, app::window_height/h));
 }
 
 void end() {
@@ -580,7 +595,7 @@ void end() {
 }
 
 void init(bool debug = false) {
-    GL_CHECK(glViewport(0, 0, app::WINDOW_WIDTH, app::WINDOW_HEIGHT));
+    GL_CHECK(glViewport(0, 0, app::window_width, app::window_height));
     GL_CHECK(glEnable(GL_STENCIL_TEST));
     GL_CHECK(glStencilMask(~0));
     GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
@@ -603,12 +618,12 @@ void init(bool debug = false) {
 
 namespace app {
 void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 4, bool debugContext = false) {
-    WINDOW_WIDTH = width;
-    WINDOW_HEIGHT = height;
-    OFFSCREEN = offscreen;
+    app::window_width = width;
+    app::window_height = height;
+    app::offscreen = offscreen;
 
 #ifdef _GCV_ONLY_X11
-    if (!OFFSCREEN) {
+    if (!offscreen) {
         x11::init(windowTitle);
         //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
         egl::init(major, minor, samples, debugContext);
@@ -637,9 +652,9 @@ bool display() {
         }
 #else
     if(glfw::is_initialized()) {
-        if(!app::OFFSCREEN) {
+        if(!app::offscreen) {
             gl::blit_frame_buffer_to_screen();
-            glfw::process_input(glfw::window);
+            glfw::processInput(glfw::window);
             glfwSwapBuffers(glfw::window);
             glfwPollEvents();
             return !glfwWindowShouldClose(glfw::window);
