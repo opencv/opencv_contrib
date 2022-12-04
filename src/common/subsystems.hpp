@@ -112,17 +112,6 @@ unsigned int window_height;
 bool offscreen;
 } //app
 
-namespace va {
-cv::ocl::OpenCLExecutionContext context;
-
-void copy() {
-    va::context = cv::ocl::OpenCLExecutionContext::getCurrent();
-}
-
-void bind() {
-    va::context.bind();
-}
-} // namespace va
 
 #ifdef _GCV_ONLY_X11
 namespace x11 {
@@ -473,6 +462,13 @@ void end() {
     GL_CHECK(glFinish());
 }
 
+void render(std::function<void()> fn) {
+    gl::bind();
+    gl::begin();
+    fn();
+    gl::end();
+}
+
 void init() {
     glewExperimental = true;
     glewInit();
@@ -502,6 +498,17 @@ std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
+void blit_frame_buffer_to_screen() {
+    GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
+    GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
+    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+    GL_CHECK(glBlitFramebuffer(0, 0, app::window_width, app::window_height, 0, 0, app::window_width, app::window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+}
+} // namespace gl
+
+namespace cl {
+cv::UMat frameBuffer;
+
 void acquire_from_gl(cv::UMat& m) {
     gl::begin();
     GL_CHECK(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
@@ -516,15 +523,13 @@ void release_to_gl(cv::UMat& m) {
     gl::end();
 }
 
-void blit_frame_buffer_to_screen() {
-    GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
-    GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
-    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, app::window_width, app::window_height, 0, 0, app::window_width, app::window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+void work(std::function<void(cv::UMat& m)> fn) {
+    gl::bind();
+    acquire_from_gl(frameBuffer);
+    fn(frameBuffer);
+    release_to_gl(frameBuffer);
 }
-} // namespace gl
 
-namespace cl {
 std::string get_info() {
     std::stringstream ss;
     std::vector<cv::ocl::PlatformInfo> plt_info;
@@ -583,6 +588,13 @@ void end() {
     gl::end();
 }
 
+void render(std::function<void()> fn) {
+    gl::bind();
+    nvg::begin();
+    fn();
+    nvg::end();
+}
+
 void init(bool debug = false) {
     GL_CHECK(glViewport(0, 0, app::window_width, app::window_height));
     GL_CHECK(glEnable(GL_STENCIL_TEST));
@@ -599,12 +611,41 @@ void init(bool debug = false) {
     nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
 
     //FIXME workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
+    gl::bind();
     cv::UMat fb;
-    gl::acquire_from_gl(fb);
-    gl::release_to_gl(fb);
+    cl::acquire_from_gl(fb);
+    cl::release_to_gl(fb);
 }
 } //namespace nvg
+namespace va {
+cv::ocl::OpenCLExecutionContext context;
+cv::UMat videoFrame;
 
+void copy() {
+    va::context = cv::ocl::OpenCLExecutionContext::getCurrent();
+}
+
+void bind() {
+    va::context.bind();
+}
+
+void read(std::function<void(cv::UMat&)> fn) {
+    va::bind();
+    fn(va::videoFrame);
+    gl::bind();
+    cl::acquire_from_gl(cl::frameBuffer);
+    //Color-conversion from RGB to BGRA (OpenCL)
+    cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
+    cl::release_to_gl(cl::frameBuffer);
+}
+
+void write(std::function<void(const cv::UMat&)> fn) {
+    va::bind();
+    //Color-conversion from BGRA to RGB. (OpenCL)
+    cv::cvtColor(cl::frameBuffer, va::videoFrame, cv::COLOR_BGRA2RGB);
+    fn(va::videoFrame);
+}
+} // namespace va
 namespace app {
 void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 4, bool debugContext = false) {
     app::window_width = width;

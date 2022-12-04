@@ -191,11 +191,11 @@ int main(int argc, char **argv) {
         //Bind the OpenCL context for OpenGL
         gl::bind();
         //Aquire the framebuffer so we can write the video frame to it
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         //Resize the frame if necessary. (OpenCL)
         cv::resize(videoFrameBGRA, frameBuffer, cv::Size(WIDTH, HEIGHT));
         //Release the frame buffer for use by OpenGL
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //Render using nanovg
         nvg::begin();
@@ -203,11 +203,11 @@ int main(int argc, char **argv) {
         nvg::end();
 
         //Aquire frame buffer from OpenGL
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Transfer buffer ownership back to OpenGL
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())

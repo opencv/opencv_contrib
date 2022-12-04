@@ -93,11 +93,11 @@ int main(int argc, char **argv) {
     nvg::end();
 
     //Aquire frame buffer from OpenGL.
-    gl::acquire_from_gl(frameBuffer);
+    cl::acquire_from_gl(frameBuffer);
     //Copy the star rendering.
     frameBuffer.copyTo(stars);
     //Release frame buffer to OpenGL.
-    gl::release_to_gl(frameBuffer);
+    cl::release_to_gl(frameBuffer);
 
     //Frame count.
     size_t cnt = 0;
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
         }
 
         //Aquire frame buffer from OpenGL.
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         //Pseudo 3D text effect.
         cv::warpPerspective(frameBuffer, warped, tm, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Transfer buffer ownership back to OpenGL.
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())

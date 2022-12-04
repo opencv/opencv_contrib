@@ -264,11 +264,11 @@ int main(int argc, char **argv) {
             draw_face_bg_mask(featuresList);
             nvg::end();
 
-            gl::acquire_from_gl(frameBuffer);
+            cl::acquire_from_gl(frameBuffer);
             //Convert/Copy the mask
             cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
             cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
-            gl::release_to_gl(frameBuffer);
+            cl::release_to_gl(frameBuffer);
 
             nvg::begin();
             nvg::clear();
@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
             draw_face_fg_mask(featuresList);
             nvg::end();
 
-            gl::acquire_from_gl(frameBuffer);
+            cl::acquire_from_gl(frameBuffer);
             //Convert/Copy the mask
             cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
 
@@ -308,15 +308,15 @@ int main(int argc, char **argv) {
             lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
             rhalf.copyTo(videoFrameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
             cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-            gl::release_to_gl(frameBuffer);
+            cl::release_to_gl(frameBuffer);
         } else {
-            gl::acquire_from_gl(frameBuffer);
+            cl::acquire_from_gl(frameBuffer);
             videoFrameOut = cv::Scalar::all(0);
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
             lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
             lhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
             cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-            gl::release_to_gl(frameBuffer);
+            cl::release_to_gl(frameBuffer);
         }
 
         if (!app::display())

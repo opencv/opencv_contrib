@@ -113,13 +113,13 @@ int main(int argc, char **argv) {
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Release the frame buffer for use by OpenGL
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())

@@ -196,10 +196,10 @@ int main(int argc, char **argv) {
         }
         nvg::end();
 
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if (!app::display())

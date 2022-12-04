@@ -6,7 +6,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
@@ -139,11 +139,11 @@ int main(int argc, char **argv) {
         //Activate the OpenCL context for OpenGL
         gl::bind();
         //Initially aquire the framebuffer so we can write the video frame to it
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         //Resize the frame if necessary. (OpenCL)
         cv::resize(tmpVideoFrame, frameBuffer, cv::Size(WIDTH, HEIGHT));
         //Release the frame buffer for use by OpenGL
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //Render using OpenGL
         gl::begin();
@@ -151,13 +151,13 @@ int main(int argc, char **argv) {
         gl::end();
 
         //Aquire the frame buffer for use by OpenCL
-        gl::acquire_from_gl(frameBuffer);
+        cl::acquire_from_gl(frameBuffer);
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
         //Color-conversion from BGRA to RGB. (OpenCL)
         cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
         //Release the frame buffer for use by OpenGL
-        gl::release_to_gl(frameBuffer);
+        cl::release_to_gl(frameBuffer);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())
