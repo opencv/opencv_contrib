@@ -12,7 +12,7 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
 * If you are on a recent Intel Platform (Gen8 - Gen12) you **need to install** an [**alternative compute-runtime**](https://github.com/kallaballa/compute-runtime)
 
-There are currently six demos (**the preview videos are scaled down and compressed**):
+There are currently seven demos (**the preview videos are scaled down and compressed**):
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
@@ -43,6 +43,9 @@ Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Us
 Note: Detection rate is not very impressive and depends highly on the video.
 
 https://user-images.githubusercontent.com/287266/204570888-9bf48c6e-3422-4fce-94e4-27a98db76dea.mp4
+
+## beauty-demo
+Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
 
 # Instructions
 You need to build my 4.x branch of OpenCV.
@@ -104,6 +107,12 @@ src/optflow/optflow-demo bunny.webm
 
 ```bash
 src/pedestrian/pedestrian-demo bunny.webm
+```
+
+## Run the beauty-demo:
+
+```bash
+src/beauty/beauty-demo bunny.webm
 ```
 
 
