@@ -109,8 +109,6 @@ struct FaceFeatures {
 };
 
 void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
-    kb::nvg::begin();
-    kb::nvg::clear();
     using kb::nvg::vg;
 
     for (size_t i = 0; i < lm.size(); i++) {
@@ -123,12 +121,9 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
         nvgRotate(vg, rotRect.angle);
         nvgFill(vg);
     }
-    kb::nvg::end();
 }
 
 void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
-    kb::nvg::begin();
-    kb::nvg::clear();
     using kb::nvg::vg;
 
     for (size_t i = 0; i < lm.size(); i++) {
@@ -144,7 +139,6 @@ void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
             nvgFill(vg);
         }
     }
-    kb::nvg::end();
 }
 
 void reduce_shadows(const cv::UMat& srcBGR, cv::UMat& dstBGR, double to_percent) {
@@ -263,20 +257,34 @@ int main(int argc, char **argv) {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / frameBuffer.size().width));
             }
 
+            nvg::begin();
+            nvg::clear();
+            //Draw the face background mask (= face oval)
             draw_face_bg_mask(featuresList);
+            nvg::end();
+
 
             gl::acquire_from_gl(frameBuffer);
+            //Convert/Copy the mask
             cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
             cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
             gl::release_to_gl(frameBuffer);
 
+            nvg::begin();
+            nvg::clear();
+            //Draw the face forground mask (= eyes and outer lips)
             draw_face_fg_mask(featuresList);
+            nvg::end();
 
             gl::acquire_from_gl(frameBuffer);
+            //Convert/Copy the mask
             cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
+
+            //Dilate the face forground mask to make eyes and mouth areas wider
             int morph_size = 1;
             cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
             cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+
             cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
             cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
 
