@@ -112,7 +112,7 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
 
         nvgBeginPath(vg);
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
-        nvgEllipse(vg, rotRect.center.x, rotRect.center.y, rotRect.size.width / 2, rotRect.size.height / 2);
+        nvgEllipse(vg, rotRect.center.x, rotRect.center.y, rotRect.size.width / 2, rotRect.size.height / 2.33);
         nvgRotate(vg, rotRect.angle);
         nvgFill(vg);
     }
@@ -155,13 +155,22 @@ void reduce_shadows(const cv::UMat& srcBGR, cv::UMat& dstBGR, double to_percent)
     cv::minMaxLoc(valueFloat, &minIn, &maxIn);
     cv::subtract(valueFloat, minIn, valueFloat);
     cv::divide(valueFloat, cv::Scalar::all(maxIn - minIn), valueFloat);
-    double minOut = (minIn * (1.0f - (to_percent / 100.0)));
+    double minOut = (minIn + (1.0 * (to_percent / 100.0)));
     cv::multiply(valueFloat, cv::Scalar::all(1.0 - minOut), valueFloat);
     cv::add(valueFloat, cv::Scalar::all(minOut), valueFloat);
 
     valueFloat.convertTo(hsvChannels[2], CV_8U, 255.0);
     cv::merge(hsvChannels, hsv);
     cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
+}
+
+void unsharp_mask(const cv::UMat& src, cv::UMat& dst, const float strength) {
+    static cv::UMat blurred;
+    cv::medianBlur(src, blurred, 3);
+    cv::UMat laplacian;
+    cv::Laplacian(blurred, laplacian, CV_8U);
+    cv::multiply(laplacian, cv::Scalar::all(strength), laplacian);
+    cv::subtract(src, laplacian, dst);
 }
 
 int main(int argc, char **argv) {
@@ -198,7 +207,7 @@ int main(int argc, char **argv) {
     //BGRA
     cv::UMat frameBuffer;
     //BGR
-    cv::UMat videoFrameIn, resized, down, faceBgMask, diff, blurred, reduced, masked;
+    cv::UMat videoFrameIn, resized, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
     cv::UMat videoFrameOut(HEIGHT, WIDTH, CV_8UC3);
     cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
     cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -256,7 +265,8 @@ int main(int argc, char **argv) {
             cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
             cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
 
-            reduce_shadows(resized, reduced, 10);
+            unsharp_mask(resized, sharpened, 10);
+            reduce_shadows(resized, reduced, 5);
             blender.prepare(cv::Rect(0,0, WIDTH,HEIGHT));
             blender.feed(reduced, faceBgMaskGrey, cv::Point(0,0));
             blender.feed(resized, faceBgMaskInvGrey, cv::Point(0,0));
@@ -266,7 +276,7 @@ int main(int argc, char **argv) {
             cv::boxFilter(videoFrameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             cv::subtract(blurred, resized, diff);
             bitwise_and(diff, faceBgMask, masked);
-            cv::add(videoFrameOut, masked, videoFrameOut);
+            cv::add(videoFrameOut, masked, reduced);
 
             cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
             cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
