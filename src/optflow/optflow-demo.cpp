@@ -229,18 +229,18 @@ int main(int argc, char **argv) {
         cv::resize(videoFrame, down, scaledSize);
         cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
         cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
-        //subtract the background to create a motion mask
+        //Subtract the background to create a motion mask
         prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-        //detect trackable points in the motion mask
+        //Detect trackable points in the motion mask
         detect_points(downMotionMaskGrey, detectedPoints);
 
         gl::bind();
         nvg::begin();
         nvg::clear();
         if (!downPrevGrey.empty()) {
-            //we don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+            //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
             if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
-                //visualize the sparse optical flow using nanovg
+                //Visualize the sparse optical flow using nanovg
                 visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
             }
         }

@@ -65,12 +65,11 @@ int main(int argc, char **argv) {
     for (std::string line; std::getline(iss, line); ) {
         lines.push_back(line);
     }
-    off_t numLines = lines.size();
 
-    //Derive the transformation matrix M for the pseudo 3D effect from src and dst.
-    vector<cv::Point2f> src = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-    vector<cv::Point2f> dst = {{WIDTH/3,0},{WIDTH/1.5,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-    cv::Mat M = cv::getPerspectiveTransform(src, dst);
+    //Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
+    vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
+    vector<cv::Point2f> quad2 = {{WIDTH/3,0},{WIDTH/1.5,0},{WIDTH,HEIGHT},{0,HEIGHT}};
+    cv::Mat tm = cv::getPerspectiveTransform(quad1, quad2);
     cv::RNG rng(cv::getTickCount());
 
     //Activate the OpenCL context for OpenGL.
@@ -123,6 +122,8 @@ int main(int argc, char **argv) {
 
             /** only draw lines that are visible **/
 
+            //Total number of lines in the text
+            off_t numLines = lines.size();
             //Height of the text in pixels
             off_t textHeight = (numLines * FONT_SIZE);
             //How many pixels to translate the text up.
@@ -150,7 +151,7 @@ int main(int argc, char **argv) {
         //Aquire frame buffer from OpenGL.
         gl::acquire_from_gl(frameBuffer);
         //Pseudo 3D text effect.
-        cv::warpPerspective(frameBuffer, warped, M, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        cv::warpPerspective(frameBuffer, warped, tm, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
         cv::add(stars, warped, frameBuffer);
         //Color-conversion from BGRA to RGB. OpenCV/OpenCL.

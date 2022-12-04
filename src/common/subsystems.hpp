@@ -141,10 +141,6 @@ std::pair<unsigned int, unsigned int> get_window_size() {
     return ret;
 }
 
-bool is_initialized() {
-    return initialized;
-}
-
 bool window_closed() {
     if (XPending(xdisplay) == 0)
         return false;
@@ -206,17 +202,12 @@ bool initialized = false;
 int framebuffer_width;
 int framebuffer_height;
 
-bool is_initialized() {
-    return initialized;
-}
 void processInput(GLFWwindow *window){
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
     framebuffer_width = width;
     framebuffer_height = height;
     glViewport(0, 0, width, height);
@@ -245,9 +236,9 @@ void init(const string &title, int major = 4, int minor = 6, int samples = 4, bo
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 #endif
     glfwWindowHint(GLFW_SAMPLES, samples);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 
     if (app::offscreen) {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -540,6 +531,7 @@ std::string get_info() {
     cv::ocl::getPlatfomsInfo(plt_info);
     const cv::ocl::Device &defaultDevice = cv::ocl::Device::getDefault();
     cv::ocl::Device current;
+    ss << endl;
     for (const auto &info : plt_info) {
         for (int i = 0; i < info.deviceNumber(); ++i) {
             ss << "\t";
@@ -606,7 +598,7 @@ void init(bool debug = false) {
 
     nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
 
-    //workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
+    //FIXME workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
     cv::UMat fb;
     gl::acquire_from_gl(fb);
     gl::release_to_gl(fb);
@@ -636,19 +628,19 @@ void init(const string &windowTitle, unsigned int width, unsigned int height, bo
 
 bool display() {
 #ifdef _GCV_ONLY_X11
-        if(x11::is_initialized()) {
+        if(x11::initialized) {
             //Blit the framebuffer we have been working on to the screen
             gl::blit_frame_buffer_to_screen();
 
             //Check if the x11 wl_window was closed
-            if(x11::is_initialized() && x11::window_closed())
+            if(x11::initialized && x11::window_closed())
                 return false;
 
             //Transfer the back buffer (which we have been using as frame buffer) to the native wl_window
             egl::swap_buffers();
         }
 #else
-    if(glfw::is_initialized()) {
+    if(glfw::initialized) {
         if(!app::offscreen) {
             gl::blit_frame_buffer_to_screen();
             glfw::processInput(glfw::window);
@@ -668,7 +660,7 @@ void print_system_info() {
         cerr << "EGL Version: " << egl::get_info() << endl;
 #endif
     cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << endl << cl::get_info() << endl;
+    cerr << "OpenCL Platforms: " << cl::get_info() << endl;
 }
 
 void print_fps() {
