@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     //Print system information
     app::print_system_info();
 
-    cv::VideoCapture cap(argv[1], cv::CAP_FFMPEG, {
+    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
             cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
@@ -127,12 +127,12 @@ int main(int argc, char **argv) {
 
     va::copy();
 
-    if (!cap.isOpened()) {
+    if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open video-input" << endl;
         return -1;
     }
 
-    double fps = cap.get(cv::CAP_PROP_FPS);
+    double fps = capture.get(cv::CAP_PROP_FPS);
     cerr << "Detected FPS: " << fps << endl;
     cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
@@ -140,9 +140,9 @@ int main(int argc, char **argv) {
     });
 
     //BGRA
-    cv::UMat frameBuffer, background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
     //RGB
-    cv::UMat videoFrame, videoFrameUp, videoFrameDown;
+    cv::UMat rgb, videoFrameUp, videoFrameDown;
     //GREY
     cv::UMat videoFrameDownGrey;
 
@@ -154,14 +154,23 @@ int main(int argc, char **argv) {
     vector<double> probs;
     va::bind();
     while (true) {
-        cap >> videoFrame;
-        if (videoFrame.empty())
+        bool success = va::read([&capture](cv::UMat& videoFrame){
+            //videoFrame will be converted to BGRA and stored in the frameBuffer.
+            capture >> videoFrame;
+        });
+
+        if(!success)
             break;
 
-        cv::resize(videoFrame, videoFrameUp, cv::Size(WIDTH, HEIGHT));
-        cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
-        cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
-        hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
+        cl::compute([&](cv::UMat& frameBuffer){
+            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+            cv::resize(rgb, videoFrameUp, cv::Size(WIDTH, HEIGHT));
+            cv::resize(rgb, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+            cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
+            cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
+            hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
+        });
+
         maxLocations.clear();
         if (!locations.empty()) {
             boxes.clear();
@@ -179,12 +188,8 @@ int main(int argc, char **argv) {
             }
         }
 
-        cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
-
-        gl::bind();
-        nvg::begin();
-        nvg::clear();
-        {
+        nvg::render([&](int w, int h) {
+            nvg::clear();
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, std::fmax(2.0, WIDTH / 960.0));
@@ -193,20 +198,21 @@ int main(int argc, char **argv) {
                 nvgRect(vg, maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
             }
             nvgStroke(vg);
-        }
-        nvg::end();
+        });
 
-        cl::acquire_from_gl(frameBuffer);
-        composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        cl::release_to_gl(frameBuffer);
+        cl::compute([&](cv::UMat& frameBuffer){
+            //Put it all together
+            composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if (!app::display())
             break;
 
-        va::bind();
-        writer << videoFrame;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         app::print_fps();
     }

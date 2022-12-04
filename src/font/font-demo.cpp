@@ -53,9 +53,7 @@ int main(int argc, char **argv) {
     va::copy();
 
     //BGRA
-    cv::UMat frameBuffer, stars, warped;
-    //BGR
-    cv::UMat videoFrame;
+    cv::UMat stars, warped;
 
     //The text to display
     string text = cv::getBuildInformation();
@@ -72,12 +70,8 @@ int main(int argc, char **argv) {
     cv::Mat tm = cv::getPerspectiveTransform(quad1, quad2);
     cv::RNG rng(cv::getTickCount());
 
-    //Activate the OpenCL context for OpenGL.
-    gl::bind();
-    //Begin a nanovg frame.
-    nvg::begin();
-    nvg::clear(0,0,0,1);
-    {
+    nvg::render([&](int w, int h) {
+        nvg::clear();
         //draw stars
         using kb::nvg::vg;
         int numStars = rng.uniform(MIN_STAR_COUNT, MAX_STAR_COUNT);
@@ -88,31 +82,21 @@ int main(int argc, char **argv) {
             nvgCircle(vg, rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), MAX_STAR_SIZE);
             nvgStroke(vg);
         }
-    }
-    //End a nanovg frame
-    nvg::end();
+    });
 
-    //Aquire frame buffer from OpenGL.
-    cl::acquire_from_gl(frameBuffer);
-    //Copy the star rendering.
-    frameBuffer.copyTo(stars);
-    //Release frame buffer to OpenGL.
-    cl::release_to_gl(frameBuffer);
+    cl::compute([&](cv::UMat& frameBuffer){
+        frameBuffer.copyTo(stars);
+    });
 
     //Frame count.
     size_t cnt = 0;
     //Y-position of the current line in pixels.
     float y;
-
-
     while (true) {
         y = 0;
-        gl::bind();
-        //Begin a nanovg frame.
-        nvg::begin();
-        //Clear the screen with black.
-        nvg::clear();
-        {
+
+        nvg::render([&](int w, int h) {
+            nvg::clear();
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgFontSize(vg, FONT_SIZE);
@@ -139,38 +123,32 @@ int main(int argc, char **argv) {
                     break;
                 }
             }
-        }
-        //End a nanovg frame
-        nvg::end();
+        });
 
         if(y == 0) {
             //Nothing drawn, exit.
             break;
         }
 
-        //Aquire frame buffer from OpenGL.
-        cl::acquire_from_gl(frameBuffer);
-        //Pseudo 3D text effect.
-        cv::warpPerspective(frameBuffer, warped, tm, videoFrame.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
-        //Combine layers
-        cv::add(stars, warped, frameBuffer);
-        //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        //Transfer buffer ownership back to OpenGL.
-        cl::release_to_gl(frameBuffer);
+        cl::compute([&](cv::UMat& frameBuffer){
+            //Pseudo 3D text effect.
+            cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+            //Combine layers
+            cv::add(stars, warped, frameBuffer);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())
             break;
 
-        //Activate the OpenCL context for VAAPI.
-        va::bind();
-        //Encode the frame using VAAPI on the GPU.
-        writer << videoFrame;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         ++cnt;
         //Wrap the cnt around if it becomes to big.
-        if(cnt == std::numeric_limits<size_t>().max())
+        if(cnt > std::numeric_limits<size_t>().max() / 2.0)
             cnt = 0;
 
         app::print_fps();

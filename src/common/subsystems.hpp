@@ -458,14 +458,15 @@ void end() {
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
+    //glFlush seems enough
     GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
+    //  GL_CHECK(glFinish());
 }
 
-void render(std::function<void()> fn) {
+void render(std::function<void(int,int)> fn) {
     gl::bind();
     gl::begin();
-    fn();
+    fn(app::window_width, app::window_height);
     gl::end();
 }
 
@@ -523,7 +524,7 @@ void release_to_gl(cv::UMat& m) {
     gl::end();
 }
 
-void work(std::function<void(cv::UMat& m)> fn) {
+void compute(std::function<void(cv::UMat& m)> fn) {
     gl::bind();
     acquire_from_gl(frameBuffer);
     fn(frameBuffer);
@@ -573,8 +574,8 @@ void begin() {
     w = ws.first;
     h = ws.second;
 #else
-    w = glfw::framebuffer_width;
-    h = glfw::framebuffer_height;
+    w = app::window_width;
+    h = app::window_height;
 #endif
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
@@ -588,10 +589,10 @@ void end() {
     gl::end();
 }
 
-void render(std::function<void()> fn) {
+void render(std::function<void(int,int)> fn) {
     gl::bind();
     nvg::begin();
-    fn();
+    fn(app::window_width, app::window_height);
     nvg::end();
 }
 
@@ -629,14 +630,17 @@ void bind() {
     va::context.bind();
 }
 
-void read(std::function<void(cv::UMat&)> fn) {
+bool read(std::function<void(cv::UMat&)> fn) {
     va::bind();
     fn(va::videoFrame);
     gl::bind();
     cl::acquire_from_gl(cl::frameBuffer);
+    if(va::videoFrame.empty())
+        return false;
     //Color-conversion from RGB to BGRA (OpenCL)
     cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
     cl::release_to_gl(cl::frameBuffer);
+    return true;
 }
 
 void write(std::function<void(const cv::UMat&)> fn) {

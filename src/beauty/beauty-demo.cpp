@@ -215,34 +215,37 @@ int main(int argc, char **argv) {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    //BGRA
-    cv::UMat frameBuffer;
     //BGR
-    cv::UMat videoFrameIn, resized, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
-    cv::UMat videoFrameOut(HEIGHT, WIDTH, CV_8UC3);
+    cv::UMat rgb, resized, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
+    cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
     cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
     cv::UMat rhalf(lhalf.size(), lhalf.type());
     //GREY
     cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey, resMaskGrey;
     //BGR-Float
-    cv::UMat videoFrameOutFloat;
+    cv::UMat frameOutFloat;
 
     cv::Mat faces;
     vector<cv::Rect> faceRects;
     vector<vector<cv::Point2f>> shapes;
     vector<FaceFeatures> featuresList;
 
-    va::bind();
     while (true) {
-        capture >> videoFrameIn;
-        if (videoFrameIn.empty())
+        bool success = va::read([&capture](cv::UMat& videoFrame){
+            //videoFrame will be converted to BGRA and stored in the frameBuffer.
+            capture >> videoFrame;
+        });
+
+        if(!success)
             break;
 
-        cv::resize(videoFrameIn, resized, cv::Size(WIDTH, HEIGHT));
-        cv::resize(videoFrameIn, down, cv::Size(0, 0), SCALE, SCALE);
-        cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
-
-        detector->detect(down, faces);
+        cl::compute([&](cv::UMat& frameBuffer){
+            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+            cv::resize(rgb, resized, cv::Size(WIDTH, HEIGHT));
+            cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
+            cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
+            detector->detect(down, faces);
+        });
 
         faceRects.clear();
         for (int i = 0; i < faces.rows; i++) {
@@ -251,79 +254,80 @@ int main(int argc, char **argv) {
 
         shapes.clear();
 
-        gl::bind();
         if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
             featuresList.clear();
             for (size_t i = 0; i < faceRects.size(); ++i) {
-                featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / frameBuffer.size().width));
+                featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
             }
 
-            nvg::begin();
-            nvg::clear();
-            //Draw the face background mask (= face oval)
-            draw_face_bg_mask(featuresList);
-            nvg::end();
+            nvg::render([&](int w, int h) {
+                nvg::clear();
+                //Draw the face background mask (= face oval)
+                draw_face_bg_mask(featuresList);
+            });
 
-            cl::acquire_from_gl(frameBuffer);
-            //Convert/Copy the mask
-            cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
-            cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
-            cl::release_to_gl(frameBuffer);
+            cl::compute([&](cv::UMat &frameBuffer) {
+                //Convert/Copy the mask
+                cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
+                cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
+            });
 
-            nvg::begin();
-            nvg::clear();
-            //Draw the face forground mask (= eyes and outer lips)
-            draw_face_fg_mask(featuresList);
-            nvg::end();
+            nvg::render([&](int w, int h) {
+                nvg::clear();
+                //Draw the face forground mask (= eyes and outer lips)
+                draw_face_fg_mask(featuresList);
+            });
 
-            cl::acquire_from_gl(frameBuffer);
-            //Convert/Copy the mask
-            cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
+            cl::compute([&](cv::UMat &frameBuffer) {
+                //Convert/Copy the mask
+                cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
 
-            //Dilate the face forground mask to make eyes and mouth areas wider
-            int morph_size = 1;
-            cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-            cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+                //Dilate the face forground mask to make eyes and mouth areas wider
+                int morph_size = 1;
+                cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+                cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 
-            cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
-            cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
+                cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
+                cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
 
-            unsharp_mask(resized, sharpened, UNSHARP_STRENGTH);
-            reduce_shadows(resized, reduced, REDUCE_SHADOW);
-            blender.prepare(cv::Rect(0,0, WIDTH,HEIGHT));
-            blender.feed(reduced, faceBgMaskGrey, cv::Point(0,0));
-            blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0,0));
-            blender.blend(videoFrameOutFloat, resMaskGrey);
-            videoFrameOutFloat.convertTo(videoFrameOut, CV_8U, 1.0);
+                unsharp_mask(resized, sharpened, UNSHARP_STRENGTH);
+                reduce_shadows(resized, reduced, REDUCE_SHADOW);
+                blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+                blender.feed(reduced, faceBgMaskGrey, cv::Point(0, 0));
+                blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
+                blender.blend(frameOutFloat, resMaskGrey);
+                frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
-            cv::boxFilter(videoFrameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
-            cv::subtract(blurred, resized, diff);
-            bitwise_and(diff, faceBgMask, masked);
-            cv::add(videoFrameOut, masked, reduced);
+                cv::boxFilter(frameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+                cv::subtract(blurred, resized, diff);
+                bitwise_and(diff, faceBgMask, masked);
+                cv::add(frameOut, masked, reduced);
 
-            cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
-            cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
+                cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
-            videoFrameOut = cv::Scalar::all(0);
-            lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-            rhalf.copyTo(videoFrameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
-            cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-            cl::release_to_gl(frameBuffer);
+                frameOut = cv::Scalar::all(0);
+                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+                rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+                cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
+            });
         } else {
-            cl::acquire_from_gl(frameBuffer);
-            videoFrameOut = cv::Scalar::all(0);
-            cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
-            lhalf.copyTo(videoFrameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-            lhalf.copyTo(videoFrameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
-            cvtColor(videoFrameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-            cl::release_to_gl(frameBuffer);
+            cl::compute([&](cv::UMat &frameBuffer) {
+                frameOut = cv::Scalar::all(0);
+                cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+                lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
+                cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
+            });
         }
 
         if (!app::display())
             break;
 
-        va::bind();
-        writer << videoFrameOut;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         app::print_fps();
     }

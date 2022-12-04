@@ -5,7 +5,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -96,39 +96,32 @@ int main(int argc, char **argv) {
 
     //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
     va::copy();
-    //Initialize the OpenGL scene
-    init_scene(WIDTH, HEIGHT);
 
-    //BGRA
-    cv::UMat frameBuffer;
-    //RGB
-    cv::UMat videoFrame;
+    gl::render([](int w, int h) {
+        //Initialize the OpenGL scene
+        init_scene(WIDTH, HEIGHT);
+    });
 
     while (true) {
-        //Activate the OpenCL context for OpenGL
-        gl::bind();
         //Render using OpenGL
-        gl::begin();
-        render_scene(WIDTH, HEIGHT);
-        gl::end();
+        gl::render([](int w, int h) {
+            render_scene(w, h);
+        });
 
         //Aquire the frame buffer for use by OpenCL
-        cl::acquire_from_gl(frameBuffer);
-        //Glow effect (OpenCL)
-        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-        //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        //Release the frame buffer for use by OpenGL
-        cl::release_to_gl(frameBuffer);
+        cl::compute([](cv::UMat &frameBuffer) {
+            //Glow effect (OpenCL)
+            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())
             break;
 
-        //Activate the OpenCL context for VAAPI
-        va::bind();
-        //Encode the frame using VAAPI on the GPU.
-        writer << videoFrame;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         app::print_fps();
     }

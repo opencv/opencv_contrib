@@ -212,53 +212,61 @@ int main(int argc, char **argv) {
     cv::Size frameBufferSize(WIDTH, HEIGHT);
     cv::Size scaledSize(WIDTH * FG_SCALE, HEIGHT * FG_SCALE);
     //BGRA
-    cv::UMat frameBuffer, background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
     //RGB
-    cv::UMat videoFrame, resized, down;
+    cv::UMat rgb, resized, down;
     //GREY
     cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
     vector<cv::Point2f> detectedPoints;
 
-    va::bind();
     while (true) {
-        capture >> videoFrame;
-        if (videoFrame.empty())
+        bool success = va::read([&capture](cv::UMat& videoFrame){
+            //videoFrame will be converted to BGRA and stored in the frameBuffer.
+            capture >> videoFrame;
+        });
+
+        if(!success)
             break;
 
-        cv::resize(videoFrame, resized, frameBufferSize);
-        cv::resize(videoFrame, down, scaledSize);
-        cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
-        cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
-        //Subtract the background to create a motion mask
-        prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+        cl::compute([&](cv::UMat& frameBuffer){
+            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+            cv::resize(rgb, resized, frameBufferSize);
+            cv::resize(rgb, down, scaledSize);
+            cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
+            cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
+            //Subtract the background to create a motion mask
+            prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+        });
+
         //Detect trackable points in the motion mask
         detect_points(downMotionMaskGrey, detectedPoints);
 
-        gl::bind();
-        nvg::begin();
-        nvg::clear();
-        if (!downPrevGrey.empty()) {
-            //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-            if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
-                //Visualize the sparse optical flow using nanovg
-                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
+        nvg::render([&](int w, int h) {
+            nvg::clear();
+            if (!downPrevGrey.empty()) {
+                //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+                if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
+                    //Visualize the sparse optical flow using nanovg
+                    visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
+                }
             }
-        }
-        nvg::end();
+        });
 
         downPrevGrey = downNextGrey.clone();
 
-        cl::acquire_from_gl(frameBuffer);
-        composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        cl::release_to_gl(frameBuffer);
+        cl::compute([&](cv::UMat& frameBuffer){
+            //Put it all together (OpenCL)
+            composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())
             break;
 
-        va::bind();
-        writer << videoFrame;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         app::print_fps();
     }

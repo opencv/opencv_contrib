@@ -115,58 +115,42 @@ int main(int argc, char **argv) {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    init_scene(WIDTH, HEIGHT);
-
-    //BGRA
-    cv::UMat frameBuffer, tmpVideoFrame;
-    //RGB
-    cv::UMat videoFrame;
-
-    //Activate the OpenCL context for VAAPI
-    va::bind();
+    gl::render([](int w, int h) {
+        init_scene(w, h);
+    });
 
     while (true) {
-        //Decode a frame on the GPU using VAAPI
-        capture >> videoFrame;
-        if (videoFrame.empty()) {
-            cerr << "End of stream. Exiting" << endl;
+        bool success = va::read([&capture](cv::UMat& videoFrame){
+            //videoFrame will be converted to BGRA and stored in the frameBuffer.
+            capture >> videoFrame;
+        });
+
+        if(!success)
             break;
-        }
 
-        //Color-conversion from RGB to BGRA. (OpenCL)
-        cv::cvtColor(videoFrame, tmpVideoFrame, cv::COLOR_RGB2BGRA);
+        cl::compute([](cv::UMat& frameBuffer){
+            //Resize the frame if necessary. (OpenCL)
+            cv::resize(frameBuffer, frameBuffer, cv::Size(WIDTH, HEIGHT));
+        });
 
-        //Activate the OpenCL context for OpenGL
-        gl::bind();
-        //Initially aquire the framebuffer so we can write the video frame to it
-        cl::acquire_from_gl(frameBuffer);
-        //Resize the frame if necessary. (OpenCL)
-        cv::resize(tmpVideoFrame, frameBuffer, cv::Size(WIDTH, HEIGHT));
-        //Release the frame buffer for use by OpenGL
-        cl::release_to_gl(frameBuffer);
+        gl::render([](int w, int h) {
+            //Render using OpenGL
+            render_scene(w, h);
+        });
 
-        //Render using OpenGL
-        gl::begin();
-        render_scene(WIDTH, HEIGHT);
-        gl::end();
-
-        //Aquire the frame buffer for use by OpenCL
-        cl::acquire_from_gl(frameBuffer);
-        //Glow effect (OpenCL)
-        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-        //Color-conversion from BGRA to RGB. (OpenCL)
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        //Release the frame buffer for use by OpenGL
-        cl::release_to_gl(frameBuffer);
+        cl::compute([&GLOW_KERNEL_SIZE](cv::UMat& frameBuffer){
+            //Glow effect (OpenCL)
+            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())
             break;
 
-        //Activate the OpenCL context for VAAPI
-        va::bind();
-        //Encode the frame using VAAPI on the GPU.
-        writer << videoFrame;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         app::print_fps();
     }

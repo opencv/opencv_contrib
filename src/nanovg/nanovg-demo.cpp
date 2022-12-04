@@ -151,23 +151,12 @@ int main(int argc, char **argv) {
             cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
     });
 
-    cv::UMat frameBuffer;
-    cv::UMat videoFrame;
-    cv::UMat videoFrameBGRA;
-    cv::UMat videoFrameHSV;
+    cv::UMat rgb;
+    cv::UMat bgra;
+    cv::UMat hsv;
     cv::UMat hueChannel;
 
-    //Bind the OpenCL context for VAAPI
-    va::bind();
-
     while (true) {
-        //Decode a frame on the GPU using VAAPI
-        capture >> videoFrame;
-        if (videoFrame.empty()) {
-            cerr << "End of stream. Exiting" << endl;
-            break;
-        }
-
         //we use time to calculated the current hue
         float time = cv::getTickCount() / cv::getTickFrequency();
         //nanovg hue fading between 0.0f and 1.0f
@@ -175,48 +164,45 @@ int main(int argc, char **argv) {
         //opencv hue fading between 0 and 255
         int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time*0.12f))+1.0f) * 128.0))) % 255;
 
-        //Color-conversion from RGB to HSV. (OpenCL)
-        cv::cvtColor(videoFrame, videoFrameHSV, cv::COLOR_RGB2HSV_FULL);
-        //Extract the hue channel
-        cv::extractChannel(videoFrameHSV, hueChannel, 0);
-        //Set the current hue
-        hueChannel.setTo(cvHue);
-        //Insert the hue channel
-        cv::insertChannel(hueChannel, videoFrameHSV, 0);
-        //Color-conversion from HSV to RGB. (OpenCL)
-        cv::cvtColor(videoFrameHSV, videoFrame, cv::COLOR_HSV2RGB_FULL);
-        //Color-conversion from RGB to BGRA. (OpenCL)
-        cv::cvtColor(videoFrame, videoFrameBGRA, cv::COLOR_RGB2BGRA);
+        bool success = va::read([&capture](cv::UMat& videoFrame){
+            //videoFrame will be converted to BGRA and stored in the frameBuffer.
+            capture >> videoFrame;
+        });
 
-        //Bind the OpenCL context for OpenGL
-        gl::bind();
-        //Aquire the framebuffer so we can write the video frame to it
-        cl::acquire_from_gl(frameBuffer);
-        //Resize the frame if necessary. (OpenCL)
-        cv::resize(videoFrameBGRA, frameBuffer, cv::Size(WIDTH, HEIGHT));
-        //Release the frame buffer for use by OpenGL
-        cl::release_to_gl(frameBuffer);
+        if(!success)
+            break;
+
+        cl::compute([&](cv::UMat& frameBuffer){
+            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+            //Color-conversion from RGB to HSV. (OpenCL)
+            cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+            //Extract the hue channel
+            cv::extractChannel(hsv, hueChannel, 0);
+            //Set the current hue
+            hueChannel.setTo(cvHue);
+            //Insert the hue channel
+            cv::insertChannel(hueChannel, hsv, 0);
+            //Color-conversion from HSV to RGB. (OpenCL)
+            cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+            //Color-conversion from RGB to BGRA. (OpenCL)
+            cv::cvtColor(rgb, bgra, cv::COLOR_RGB2BGRA);
+            //Resize the frame if necessary. (OpenCL)
+            cv::resize(bgra, frameBuffer, cv::Size(WIDTH, HEIGHT));
+        });
 
         //Render using nanovg
-        nvg::begin();
-        drawColorwheel(nvg::vg, WIDTH - 300, HEIGHT - 300, 250.0f, 250.0f, nvgHue);
-        nvg::end();
-
-        //Aquire frame buffer from OpenGL
-        cl::acquire_from_gl(frameBuffer);
-        //Color-conversion from BGRA to RGB. OpenCV/OpenCL.
-        cv::cvtColor(frameBuffer, videoFrame, cv::COLOR_BGRA2RGB);
-        //Transfer buffer ownership back to OpenGL
-        cl::release_to_gl(frameBuffer);
+        nvg::render([&](int w, int h) {
+            drawColorwheel(nvg::vg, w - 300, h - 300, 250.0f, 250.0f, nvgHue);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!app::display())
             break;
 
-        //Activate the OpenCL context for VAAPI
-        va::bind();
-        //Encode the frame using VAAPI on the GPU.
-        writer << videoFrame;
+        va::write([&writer](const cv::UMat& videoFrame){
+            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+            writer << videoFrame;
+        });
 
         app::print_fps();
     }
