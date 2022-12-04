@@ -192,8 +192,12 @@ int main(int argc, char **argv) {
     //Print system information
     app::print_system_info();
 
+    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
+            cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+            cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    });
 
-    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
     va::copy();
 
@@ -208,12 +212,13 @@ int main(int argc, char **argv) {
 
     cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(w * SCALE, h * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
     cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
+    facemark->loadModel("assets/lbfmodel.yaml");
     cv::detail::MultiBandBlender blender(true);
 
-    facemark->loadModel("assets/lbfmodel.yaml");
-
-
-    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    });
 
     //BGRA
     cv::UMat frameBuffer;
