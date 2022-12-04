@@ -21,10 +21,11 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /** Effect parameters **/
+
 constexpr int BLUR_DIV = 400;
 constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
 constexpr float UNSHARP_STRENGTH = 3.0f;
-constexpr int REDUCE_SHADOW = 7; //percent
+constexpr int REDUCE_SHADOW = 5; //percent
 constexpr int DILATE_ITERATIONS = 1;
 
 using std::cerr;
@@ -117,7 +118,7 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
 
         nvgBeginPath(vg);
         nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
-        nvgEllipse(vg, rotRect.center.x, rotRect.center.y, rotRect.size.width / 2, rotRect.size.height / 2.5);
+        nvgEllipse(vg, rotRect.center.x, rotRect.center.y * 1.5, rotRect.size.width / 2, rotRect.size.height / 2);
         nvgRotate(vg, rotRect.angle);
         nvgFill(vg);
     }
@@ -262,7 +263,6 @@ int main(int argc, char **argv) {
             //Draw the face background mask (= face oval)
             draw_face_bg_mask(featuresList);
             nvg::end();
-
 
             gl::acquire_from_gl(frameBuffer);
             //Convert/Copy the mask
