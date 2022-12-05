@@ -56,7 +56,7 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
     CV_ArucoBoardPose(ArucoAlgParams arucoAlgParams)
     {
         aruco::DetectorParameters params;
-        Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+        aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
         params.minDistanceToBorder = 3;
         if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3) {
             params.useAruco3Detection = true;
@@ -163,7 +163,7 @@ class CV_ArucoRefine : public cvtest::BaseTest {
     public:
     CV_ArucoRefine(ArucoAlgParams arucoAlgParams)
     {
-        Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+        aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
         aruco::DetectorParameters params;
         params.minDistanceToBorder = 3;
         params.cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;

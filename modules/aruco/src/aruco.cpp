@@ -14,7 +14,7 @@ using namespace std;
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
                    OutputArrayOfArrays _rejectedImgPoints) {
-    ArucoDetector detector(_dictionary, *_params);
+    ArucoDetector detector(*_dictionary, *_params);
     detector.detectMarkers(_image, _corners, _ids, _rejectedImgPoints);
 }
 

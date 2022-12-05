@@ -392,7 +392,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 vector< vector< Point2f > > diamondCorners;
                 vector< Vec4i > diamondIds;
                 aruco::detectCharucoDiamond(img, corners, ids, squareLength / markerLength, diamondCorners, diamondIds,
-                                            cameraMatrix, distCoeffs, detector.getDictionary());
+                                            cameraMatrix, distCoeffs, makePtr<aruco::Dictionary>(detector.getDictionary()));
 
                 // check results
                 if(diamondIds.size() != 1) {
@@ -485,7 +485,7 @@ CV_CharucoBoardCreation::CV_CharucoBoardCreation() {}
 
 void CV_CharucoBoardCreation::run(int)
 {
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_5X5_250);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_5X5_250);
     int n = 6;
 
     float markerSizeFactor = 0.5f;
@@ -545,8 +545,7 @@ TEST(Charuco, testCharucoCornersCollinear_true)
 
     Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
-    Ptr<aruco::Dictionary> dictionary =
-            aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
@@ -587,8 +586,7 @@ TEST(Charuco, testCharucoCornersCollinear_false)
 
     Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
-    Ptr<aruco::Dictionary> dictionary =
-            aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
@@ -636,7 +634,7 @@ TEST(Charuco, testBoardSubpixelCoords)
 
     cv::Mat gray;
 
-    Ptr<aruco::Dictionary> dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
+    aruco::Dictionary dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_APRILTAG_36h11);
     Ptr<aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(4, 4, 1.f, .8f, dict);
 
     // generate ChArUco board

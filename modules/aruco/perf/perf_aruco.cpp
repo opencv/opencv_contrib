@@ -82,7 +82,7 @@ public:
 
     std::pair<Mat, vector<Point2f> > getProjectMarker(int id, double yaw, double pitch,
                                                       const aruco::DetectorParameters& parameters,
-                                                      const Ptr<aruco::Dictionary>& dictionary)
+                                                      const aruco::Dictionary& dictionary)
     {
         auto marker_corners = std::make_pair(Mat(imgMarkerSize, imgMarkerSize, CV_8UC1, Scalar::all(255)), vector<Point2f>());
         Mat& img = marker_corners.first;
@@ -124,7 +124,7 @@ public:
 
     std::pair<Mat, map<int, vector<Point2f> > > getProjectMarkersTile(const int numMarkers,
                                                                       const aruco::DetectorParameters& params,
-                                                                      const Ptr<aruco::Dictionary>& dictionary)
+                                                                      const aruco::Dictionary& dictionary)
     {
         Mat tileImage(imgMarkerSize*numMarkers, imgMarkerSize*numMarkers, CV_8UC1, Scalar::all(255));
         map<int, vector<Point2f> > idCorners;
@@ -177,7 +177,7 @@ static inline double getMaxDistance(map<int, vector<Point2f> > &golds, const vec
 PERF_TEST_P(EstimateAruco, ArucoFirst, ESTIMATE_PARAMS)
 {
     UseArucoParams testParams = GetParam();
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     aruco::DetectorParameters detectorParams;
     detectorParams.minDistanceToBorder = 1;
     detectorParams.markerBorderBits = 1;
@@ -211,7 +211,7 @@ PERF_TEST_P(EstimateAruco, ArucoFirst, ESTIMATE_PARAMS)
 PERF_TEST_P(EstimateAruco, ArucoSecond, ESTIMATE_PARAMS)
 {
     UseArucoParams testParams = GetParam();
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     aruco::DetectorParameters detectorParams;
     detectorParams.minDistanceToBorder = 1;
     detectorParams.markerBorderBits = 1;
@@ -267,7 +267,7 @@ Values(std::make_pair(1440, 1), std::make_pair(480, 3), std::make_pair(144, 10))
 PERF_TEST_P(EstimateLargeAruco, ArucoFHD, ESTIMATE_FHD_PARAMS)
 {
     ArucoTestParams testParams = GetParam();
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     aruco::DetectorParameters detectorParams;
     detectorParams.minDistanceToBorder = 1;
     detectorParams.markerBorderBits = 1;
