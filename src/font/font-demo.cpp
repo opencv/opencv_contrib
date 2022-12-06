@@ -71,10 +71,9 @@ int main(int argc, char **argv) {
         cv::Mat tm = cv::getPerspectiveTransform(quad1, quad2);
         cv::RNG rng(cv::getTickCount());
 
-        nvg::render([&](int w, int h) {
+        nvg::render([&](NVGcontext* vg, int w, int h) {
             nvg::clear();
             //draw stars
-            using kb::nvg::vg;
             int numStars = rng.uniform(MIN_STAR_COUNT, MAX_STAR_COUNT);
             for(int i = 0; i < numStars; ++i) {
                 nvgBeginPath(vg);
@@ -85,7 +84,7 @@ int main(int argc, char **argv) {
             }
         });
 
-        cl::compute([&](cv::UMat& frameBuffer){
+        cl::compute([&](kb::CLExecContext_t& clctx, cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
 
@@ -96,9 +95,8 @@ int main(int argc, char **argv) {
         while (true) {
             y = 0;
 
-            nvg::render([&](int w, int h) {
+            nvg::render([&](NVGcontext* vg, int w, int h) {
                 nvg::clear();
-                using kb::nvg::vg;
                 nvgBeginPath(vg);
                 nvgFontSize(vg, FONT_SIZE);
                 nvgFontFace(vg, "serif");
@@ -131,16 +129,14 @@ int main(int argc, char **argv) {
                 break;
             }
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](kb::CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 //Pseudo 3D text effect.
                 cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
                 //Combine layers
                 cv::add(stars, warped, frameBuffer);
             });
 
-
-
-            va::write([&writer](const cv::UMat& videoFrame){
+            va::write([&writer](kb::CLExecContext_t& clctx, const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

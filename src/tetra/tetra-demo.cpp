@@ -110,12 +110,12 @@ int main(int argc, char **argv) {
             });
 
             //Aquire the frame buffer for use by OpenCL
-            cl::compute([](cv::UMat &frameBuffer) {
+            cl::compute([](CLExecContext_t& clctx, cv::UMat &frameBuffer) {
                 //Glow effect (OpenCL)
                 glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
             });
 
-            va::write([&writer](const cv::UMat& videoFrame){
+            va::write([&writer](CLExecContext_t& clctx, const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

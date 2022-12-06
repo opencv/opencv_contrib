@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
         vector<double> probs;
 
         while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
+            bool success = va::read([&capture](CLExecContext_t& clclx, cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
             if(!success)
                 break;
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](CLExecContext_t& clclx, cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
                 cv::resize(rgb, videoFrameUp, cv::Size(WIDTH, HEIGHT));
                 cv::resize(rgb, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
@@ -188,9 +188,8 @@ int main(int argc, char **argv) {
                 }
             }
 
-            nvg::render([&](int w, int h) {
+            nvg::render([&](NVGcontext* vg, int w, int h) {
                 nvg::clear();
-                using kb::nvg::vg;
                 nvgBeginPath(vg);
                 nvgStrokeWidth(vg, std::fmax(2.0, WIDTH / 960.0));
                 nvgStrokeColor(vg, nvgHSLA(0.0, 1, 0.5, 200));
@@ -200,12 +199,12 @@ int main(int argc, char **argv) {
                 nvgStroke(vg);
             });
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](CLExecContext_t& clclx, cv::UMat& frameBuffer){
                 //Put it all together
                 composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
             });
 
-            va::write([&writer](const cv::UMat& videoFrame){
+            va::write([&writer](CLExecContext_t& clclx, const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

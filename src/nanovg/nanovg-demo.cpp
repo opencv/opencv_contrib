@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
             //opencv hue fading between 0 and 255
             int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time*0.12f))+1.0f) * 128.0))) % 255;
 
-            bool success = va::read([&capture](cv::UMat& videoFrame){
+            bool success = va::read([&capture](CLExecContext_t& clctx, cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
             if(!success)
                 break;
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
                 //Color-conversion from RGB to HSV. (OpenCL)
                 cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
@@ -192,11 +192,11 @@ int main(int argc, char **argv) {
             });
 
             //Render using nanovg
-            nvg::render([&](int w, int h) {
-                drawColorwheel(nvg::vg, w - 300, h - 300, 250.0f, 250.0f, nvgHue);
+            nvg::render([&](NVGcontext* vg, int w, int h) {
+                drawColorwheel(vg, w - 300, h - 300, 250.0f, 250.0f, nvgHue);
             });
 
-            va::write([&writer](const cv::UMat& videoFrame){
+            va::write([&writer](CLExecContext_t& clctx, const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

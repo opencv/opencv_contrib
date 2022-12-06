@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         });
 
         while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
+            bool success = va::read([&capture](CLExecContext_t& clctx, cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
             if(!success)
                 break;
 
-            cl::compute([](cv::UMat& frameBuffer){
+            cl::compute([](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 //Resize the frame if necessary. (OpenCL)
                 cv::resize(frameBuffer, frameBuffer, cv::Size(WIDTH, HEIGHT));
             });
@@ -139,12 +139,12 @@ int main(int argc, char **argv) {
                 render_scene(w, h);
             });
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 //Glow effect (OpenCL)
                 glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
             });
 
-            va::write([&](const cv::UMat& videoFrame){
+            va::write([&](CLExecContext_t& clctx, const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

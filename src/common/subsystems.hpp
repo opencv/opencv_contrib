@@ -28,6 +28,7 @@ using std::string;
 
 namespace kb {
 
+typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();
 
@@ -153,7 +154,7 @@ namespace gl {
 cv::ogl::Texture2D *frame_buf_tex;
 GLuint frame_buf;
 GLuint render_buf;
-cv::ocl::OpenCLExecutionContext context;
+CLExecContext_t context;
 
 void bind() {
     gl::context.bind();
@@ -205,7 +206,7 @@ void init() {
 
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-    gl::context = cv::ocl::OpenCLExecutionContext::getCurrent();
+    gl::context = CLExecContext_t::getCurrent();
 }
 
 std::string get_info() {
@@ -237,11 +238,11 @@ void release_to_gl(cv::UMat& m) {
     gl::end();
 }
 
-void compute(std::function<void(cv::UMat& m)> fn) {
+void compute(std::function<void(CLExecContext_t&, cv::UMat&)> fn) {
     gl::bind();
-    acquire_from_gl(frameBuffer);
-    fn(frameBuffer);
-    release_to_gl(frameBuffer);
+    acquire_from_gl(cl::frameBuffer);
+    fn(CLExecContext_t::getCurrent(), cl::frameBuffer);
+    release_to_gl(cl::frameBuffer);
 }
 
 std::string get_info() {
@@ -269,64 +270,21 @@ std::string get_info() {
 }
 } //namespace cl
 
-namespace nvg {
-NVGcontext *vg;
-
-void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, const float& a = 1.0f) {
-    GL_CHECK(glClearColor(r, g, b, a));
-    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-}
-
-void begin() {
-    gl::begin();
-
-    float r = display::get_pixel_ratio();
-    float w = app::window_width * r;
-    float h = app::window_height * r;
-
-    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
-    nvgSave(vg);
-    GL_CHECK(glViewport(0, 0,w * r, h * r));
-    nvgBeginFrame(vg, w, h, std::fmax(w * r, h * r));
-}
-
-void end() {
-    nvgEndFrame(vg);
-    nvgRestore(vg);
-    gl::end();
-}
-
-void render(std::function<void(int,int)> fn) {
-    gl::bind();
-    nvg::begin();
-    fn(app::window_width, app::window_height);
-    nvg::end();
-}
-
-void init(NVGcontext *context) {
-    if (context == nullptr) {
-        cerr << "Couldn't init nanovg." << endl;
-        exit(24);
-    }
-    vg = context;
-    nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
-}
-} //namespace nvg
 namespace va {
-cv::ocl::OpenCLExecutionContext context;
+CLExecContext_t context;
 cv::UMat videoFrame;
 
 void copy() {
-    va::context = cv::ocl::OpenCLExecutionContext::getCurrent();
+    va::context = CLExecContext_t::getCurrent();
 }
 
 void bind() {
     va::context.bind();
 }
 
-bool read(std::function<void(cv::UMat&)> fn) {
+bool read(std::function<void(CLExecContext_t&, cv::UMat&)> fn) {
     va::bind();
-    fn(va::videoFrame);
+    fn(va::context, va::videoFrame);
     gl::bind();
     cl::acquire_from_gl(cl::frameBuffer);
     if(va::videoFrame.empty())
@@ -337,12 +295,12 @@ bool read(std::function<void(cv::UMat&)> fn) {
     return true;
 }
 
-void write(std::function<void(const cv::UMat&)> fn) {
+void write(std::function<void(CLExecContext_t&, const cv::UMat&)> fn) {
     va::bind();
     //Color-conversion from BGRA to RGB. (OpenCL)
     cv::cvtColor(cl::frameBuffer, va::videoFrame, cv::COLOR_BGRA2RGB);
     cv::flip(va::videoFrame, va::videoFrame, 0);
-    fn(va::videoFrame);
+    fn(va::context, va::videoFrame);
 }
 } // namespace va
 
@@ -427,6 +385,44 @@ void update_size(float pixelRatio = display::get_pixel_ratio(display::window)) {
 }
 } //namespace gui
 
+namespace nvg {
+void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, const float& a = 1.0f) {
+    GL_CHECK(glClearColor(r, g, b, a));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+}
+
+void begin() {
+    gl::begin();
+
+    float r = display::get_pixel_ratio();
+    float w = app::window_width * r;
+    float h = app::window_height * r;
+    NVGcontext* vg = gui::screen->nvg_context();
+    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
+    nvgSave(vg);
+    GL_CHECK(glViewport(0, 0,w * r, h * r));
+    nvgBeginFrame(vg, w, h, std::fmax(w * r, h * r));
+}
+
+void end() {
+    NVGcontext* vg = gui::screen->nvg_context();
+    nvgEndFrame(vg);
+    nvgRestore(vg);
+    gl::end();
+}
+
+void render(std::function<void(NVGcontext*,int,int)> fn) {
+    gl::bind();
+    nvg::begin();
+    fn(gui::screen->nvg_context(), app::window_width, app::window_height);
+    nvg::end();
+}
+
+void init() {
+    nvgCreateFont(gui::screen->nvg_context(), "libertine", "assets/LinLibertine_RB.ttf");
+}
+} //namespace nvg
+
 namespace app {
 void print_system_info() {
     cerr << "OpenGL Version: " << gl::get_info() << endl;
@@ -442,7 +438,7 @@ void init(const string &windowTitle, unsigned int width, unsigned int height, bo
     display::init(windowTitle, samples, debugContext);
     gui::init(width, height);
     gl::init();
-    nvg::init(screen->nvg_context());
+    nvg::init();
 }
 
 
@@ -466,7 +462,7 @@ bool display() {
     return true;
 }
 
-void update_fps(bool graphical = false) {
+void update_fps(bool graphical = true) {
     static uint64_t cnt = 0;
     static double fps = 1;
     static cv::TickMeter meter;
@@ -482,16 +478,17 @@ void update_fps(bool graphical = false) {
     }
 
     if (graphical) {
-        nvg::render([&](int w, int h) {
-            nvgBeginPath(nvg::vg);
-            nvgRoundedRect(nvg::vg, 10, 10, 60 * 6, 60, 10);
-            nvgFillColor(nvg::vg, nvgRGBA(255, 255, 255, 180));
-            nvgFill (nvg::vg);
-            nvgFontSize(nvg::vg, 60.0f);
-            nvgFontFace(nvg::vg, "sans-bold");
-            nvgFillColor(nvg::vg, nvgRGBA(90, 90, 90, 200));
-            nvgTextAlign(nvg::vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-            nvgText(nvg::vg, 22, 37, ("FPS: " + std::to_string(fps)).c_str(), nullptr);
+        nvg::render([&](NVGcontext* vg, int w, int h) {
+            nvgBeginPath(vg);
+            nvgRoundedRect(vg, 10, 10, 60 * 6, 60, 10);
+            nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
+            nvgFill (vg);
+
+            nvgFontSize(vg, 60.0f);
+            nvgFontFace(vg, "libertine");
+            nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
+            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+            nvgText(vg, 22, 37, ("FPS: " + std::to_string(fps)).c_str(), nullptr);
         });
     }
 

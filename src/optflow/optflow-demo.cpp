@@ -43,7 +43,9 @@ float ALPHA = 0.1f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color EFFECT_COLOR(1.0f, 0.75f, 0.4f, 1.0f);
 //show graphical FPS
-bool SHOW_FPS = false;
+bool SHOW_FPS = true;
+//Use OpenCL or not
+bool USE_OPENCL = true;
 
 using std::cerr;
 using std::endl;
@@ -87,7 +89,7 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, 
     return result;
 }
 
-void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
+void visualize_sparse_optical_flow(NVGcontext* vg, const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
         const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
@@ -122,7 +124,6 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
                 upNextPoints.push_back(pt /= scaleFactor);
             }
 
-            using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, stroke);
             nvgStrokeColor(vg, nvgRGBA(color[0], color[1], color[2], color[3]));
@@ -187,6 +188,7 @@ void setup_gui() {
     using namespace kb::display;
 
     win = form->add_window(nanogui::Vector2i(6, 45), "Settings");
+    make_gui_variable("Use OpenCL", USE_OPENCL, "Enable or disable OpenCL acceleration");
     form->add_group("Foreground");
     make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
     make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
@@ -217,8 +219,7 @@ void setup_gui() {
     make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
     form->add_group("Display");
-    make_gui_variable("Show FPS", SHOW_FPS, "Display the FPS on screen");
-
+    make_gui_variable("Show FPS", SHOW_FPS, "Enable or disable the On-screen FPS display");
     form->add_button("Fullscreen", []() {
         set_fullscreen(!is_fullscreen());
     });
@@ -267,7 +268,9 @@ int main(int argc, char **argv) {
         vector<cv::Point2f> detectedPoints;
 
         while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
+            cv::ocl::setUseOpenCL(USE_OPENCL);
+
+            bool success = va::read([&capture](CLExecContext_t& clctx, cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -275,7 +278,7 @@ int main(int argc, char **argv) {
             if(!success)
                 break;
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
                 cv::resize(rgb, resized, frameBufferSize);
                 cv::resize(rgb, down, cv::Size(WIDTH * FG_SCALE, HEIGHT * FG_SCALE));
@@ -288,26 +291,26 @@ int main(int argc, char **argv) {
             //Detect trackable points in the motion mask
             detect_points(downMotionMaskGrey, detectedPoints);
 
-            nvg::render([&](int w, int h) {
+            nvg::render([&](NVGcontext* vg, int w, int h) {
                 nvg::clear();
                 if (!downPrevGrey.empty()) {
                     //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                     if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
                         //Visualize the sparse optical flow using nanovg
                         cv::Scalar color = cv::Scalar(EFFECT_COLOR.r() * 255.0f, EFFECT_COLOR.g() * 255.0f, EFFECT_COLOR.b() * 255.0f, ALPHA * 255.0f);
-                        visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, color, MAX_POINTS, POINT_LOSS);
+                        visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, color, MAX_POINTS, POINT_LOSS);
                     }
                 }
             });
 
             downPrevGrey = downNextGrey.clone();
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 //Put it all together (OpenCL)
                 composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
             });
 
-            va::write([&writer](const cv::UMat& videoFrame){
+            va::write([&writer](CLExecContext_t& clctx, const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
