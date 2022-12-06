@@ -15,7 +15,7 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 # Dependencies
 * EGL
 * GLEW
-* GFWL3
+* GLFW3
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
