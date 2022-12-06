@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
 
     gl::render([](int w, int h) {
         //Initialize the OpenGL scene
-        init_scene(WIDTH, HEIGHT);
+        init_scene(w, h);
     });
 
     while (true) {
