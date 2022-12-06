@@ -6,12 +6,7 @@ LIBS     := -lnanogui
 DESTDIR := /
 PREFIX := /usr/local
 
-ifdef GCV_ONLY_X11
-CXXFLAGS += -D_GCV_ONLY_X11 `pkg-config --cflags egl opencv4 glew`
-LIBS += `pkg-config --libs egl opencv4 glew`
-else
-LIBS += `pkg-config --libs egl glfw3 opencv4 glew`
-endif
+LIBS += `pkg-config --libs glfw3 opencv4 glew`
 
 all: release
 
@@ -37,7 +32,6 @@ asan: dirs
 
 clean: dirs
 
-export GCV_ONLY_X11
 export LDFLAGS
 export CXXFLAGS
 export LIBS

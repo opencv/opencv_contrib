@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <thread>
 #include <opencv2/opencv.hpp>
-#include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>
 #define NANOGUI_USE_OPENGL
 #include <nanogui/nanogui.h>
