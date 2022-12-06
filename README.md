@@ -15,7 +15,6 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 # Dependencies
 tetra-demo and video-demo have no additional dependencies.
 The other demos require:
-* [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
 There are currently seven demos (**the preview videos are scaled down and compressed**):
