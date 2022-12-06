@@ -27,7 +27,7 @@ constexpr int MAX_STAR_COUNT = 3000;
 constexpr float MIN_STAR_LIGHTNESS = 1.0f;
 constexpr int MIN_STAR_ALPHA = 5;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
-constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
+constexpr int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;

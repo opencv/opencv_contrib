@@ -9,6 +9,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/optflow.hpp>
 
+using std::cerr;
+using std::endl;
+using std::vector;
+using std::string;
+
 /** Application parameters **/
 
 constexpr unsigned int WIDTH = 1920;
@@ -21,36 +26,31 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 /** Visualization parameters **/
 
 // Generate the foreground at this scale.
-float FG_SCALE = 0.5f;
+float fg_scale = 0.5f;
 // On every frame the foreground loses on brightness. specifies the loss in percent.
-float FG_LOSS = 2.5;
+float fg_loss = 2.5;
 // Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 // the default should be fine.
-float SCENE_CHANGE_THRESH = 0.29f;
-float SCENE_CHANGE_THRESH_DIFF = 0.1f;
+float scene_change_thresh = 0.29f;
+float scene_change_thresh_diff = 0.1f;
 // The theoretical maximum number of points to track which is scaled by the density of detected points
 // and therefor is usually much smaller.
-int MAX_POINTS = 250000;
+int max_points = 250000;
 // How many of the tracked points to lose intentionally, in percent.
-float POINT_LOSS = 25;
+float point_loss = 25;
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
-int MAX_STROKE = 17;
+int max_stroke = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
-int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
-// Keep ALPHA separate for the GUI
-float ALPHA = 0.1f;
+int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
+// Keep alpha separate for the GUI
+float alpha = 0.1f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color EFFECT_COLOR(1.0f, 0.75f, 0.4f, 1.0f);
-//show graphical FPS
-bool SHOW_FPS = true;
+//display on-screen FPS
+bool show_fps = true;
 //Use OpenCL or not
-bool USE_OPENCL = true;
-
-using std::cerr;
-using std::endl;
-using std::vector;
-using std::string;
+bool use_opencl = true;
 
 void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
@@ -188,26 +188,29 @@ void setup_gui() {
     using namespace kb::display;
 
     win = form->add_window(nanogui::Vector2i(6, 45), "Settings");
-    make_gui_variable("Use OpenCL", USE_OPENCL, "Enable or disable OpenCL acceleration");
-    form->add_group("Foreground");
-    make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
-    make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
-
-    form->add_group("Scene Change Detection");
-    make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-    make_gui_variable("Threshold Diff", SCENE_CHANGE_THRESH_DIFF, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
-
-    form->add_group("Points");
-    make_gui_variable("Max. Points", MAX_POINTS, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
-    make_gui_variable("Point Loss", POINT_LOSS, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
-
-    form->add_group("Effect");
-    make_gui_variable("Max. Stroke Size", MAX_STROKE, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-    auto glowKernel = make_gui_variable("Glow Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
-    glowKernel->set_callback([](const int& k) {
-        GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+    auto useOpenCL = make_gui_variable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
+    useOpenCL->set_callback([](bool b){
+        cv::ocl::setUseOpenCL(b);
     });
 
+    form->add_group("Foreground");
+    make_gui_variable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
+    make_gui_variable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
+
+    form->add_group("Scene Change Detection");
+    make_gui_variable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+    make_gui_variable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
+
+    form->add_group("Points");
+    make_gui_variable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
+    make_gui_variable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
+
+    form->add_group("Effect");
+    make_gui_variable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
+    auto glowKernel = make_gui_variable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
+    glowKernel->set_callback([](const int& k) {
+        glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+    });
     auto color = form->add_variable("Color", EFFECT_COLOR);
     color->set_tooltip("The effect color");
     color->set_final_callback([](const nanogui::Color &c) {
@@ -215,11 +218,10 @@ void setup_gui() {
         EFFECT_COLOR[1] = c[1];
         EFFECT_COLOR[2] = c[2];
     });
-
-    make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f, true, "", "The opacity of the effect");
+    make_gui_variable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
     form->add_group("Display");
-    make_gui_variable("Show FPS", SHOW_FPS, "Enable or disable the On-screen FPS display");
+    make_gui_variable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     form->add_button("Fullscreen", []() {
         set_fullscreen(!is_fullscreen());
     });
@@ -268,8 +270,6 @@ int main(int argc, char **argv) {
         vector<cv::Point2f> detectedPoints;
 
         while (true) {
-            cv::ocl::setUseOpenCL(USE_OPENCL);
-
             bool success = va::read([&capture](CLExecContext_t& clctx, cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
             cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
                 cv::resize(rgb, resized, frameBufferSize);
-                cv::resize(rgb, down, cv::Size(WIDTH * FG_SCALE, HEIGHT * FG_SCALE));
+                cv::resize(rgb, down, cv::Size(WIDTH * fg_scale, HEIGHT * fg_scale));
                 cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
                 cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
                 //Subtract the background to create a motion mask
@@ -295,10 +295,10 @@ int main(int argc, char **argv) {
                 nvg::clear();
                 if (!downPrevGrey.empty()) {
                     //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-                    if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
+                    if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                         //Visualize the sparse optical flow using nanovg
-                        cv::Scalar color = cv::Scalar(EFFECT_COLOR.r() * 255.0f, EFFECT_COLOR.g() * 255.0f, EFFECT_COLOR.b() * 255.0f, ALPHA * 255.0f);
-                        visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, color, MAX_POINTS, POINT_LOSS);
+                        cv::Scalar color = cv::Scalar(EFFECT_COLOR.r() * 255.0f, EFFECT_COLOR.g() * 255.0f, EFFECT_COLOR.b() * 255.0f, alpha * 255.0f);
+                        visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
                     }
                 }
             });
@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
 
             cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 //Put it all together (OpenCL)
-                composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
+                composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
             });
 
             va::write([&writer](CLExecContext_t& clctx, const cv::UMat& videoFrame){
@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
                 writer << videoFrame;
             });
 
-            app::update_fps(SHOW_FPS);
+            app::update_fps(show_fps);
 
             //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
             if(!app::display())

@@ -17,7 +17,7 @@ constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
 // On every frame the foreground loses on brightness. Specifies the loss in percent.
-constexpr float FG_LOSS = 3;
+constexpr float fg_loss = 3;
 // Intensity of blur defined by kernel size. The default scales with the image diagonal.
 constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
 
             cl::compute([&](CLExecContext_t& clclx, cv::UMat& frameBuffer){
                 //Put it all together
-                composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
+                composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, fg_loss);
             });
 
             va::write([&writer](CLExecContext_t& clclx, const cv::UMat& videoFrame){

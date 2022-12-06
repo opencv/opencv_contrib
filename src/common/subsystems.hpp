@@ -50,7 +50,12 @@ bool offscreen;
 namespace display {
 GLFWwindow *window;
 
-static float get_pixel_ratio(GLFWwindow *win = display::window) {
+void terminate() {
+    glfwDestroyWindow(display::window);
+    glfwTerminate();
+}
+
+float get_pixel_ratio(GLFWwindow *win = display::window) {
 #if defined(_WIN32)
     HWND hWnd = glfwGetWin32Window(win);
     HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
@@ -173,7 +178,8 @@ void end() {
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
-    //glFlush seems enough but i wanna make sure...
+    //glFlush seems enough but i wanna make sure that there won't be race conditions.
+    //At least on TigerLake/Iris it doesn't make a difference in performance.
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
 }
@@ -467,7 +473,7 @@ bool display() {
     return true;
 }
 
-void update_fps(bool graphical = true) {
+void update_fps(bool graphical = false) {
     static uint64_t cnt = 0;
     static double fps = 1;
     static cv::TickMeter meter;
@@ -505,8 +511,7 @@ void update_fps(bool graphical = true) {
 }
 
 void terminate() {
-    glfwDestroyWindow(display::window);
-    glfwTerminate();
+    display::terminate();
     exit(0);
 }
 } //namespace app

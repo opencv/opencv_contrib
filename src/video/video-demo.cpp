@@ -10,7 +10,7 @@ constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+constexpr int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
 
             cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
                 //Glow effect (OpenCL)
-                glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+                glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
             });
 
             va::write([&](CLExecContext_t& clctx, const cv::UMat& videoFrame){
