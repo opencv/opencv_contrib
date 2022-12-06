@@ -126,88 +126,88 @@ int main(int argc, char **argv) {
     app::init("Nanovg Demo", WIDTH, HEIGHT, OFFSCREEN);
     //Print system information
     app::print_system_info();
+    app::run([&]() {
+        //Initialize MJPEG HW decoding using VAAPI
+        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
+                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        });
 
-    //Initialize MJPEG HW decoding using VAAPI
-    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-            cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
+        va::copy();
+
+        // Check if we succeeded
+        if (!capture.isOpened()) {
+            cerr << "ERROR! Unable to open video input" << endl;
+            return;
+        }
+
+        double fps = capture.get(cv::CAP_PROP_FPS);
+
+        //Initialize VP9 HW encoding using VAAPI
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        });
+
+        cv::UMat rgb;
+        cv::UMat bgra;
+        cv::UMat hsv;
+        cv::UMat hueChannel;
+
+        while (true) {
+            //we use time to calculated the current hue
+            float time = cv::getTickCount() / cv::getTickFrequency();
+            //nanovg hue fading between 0.0f and 1.0f
+            float nvgHue = (sinf(time*0.12f)+1.0f) / 2.0f;
+            //opencv hue fading between 0 and 255
+            int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time*0.12f))+1.0f) * 128.0))) % 255;
+
+            bool success = va::read([&capture](cv::UMat& videoFrame){
+                //videoFrame will be converted to BGRA and stored in the frameBuffer.
+                capture >> videoFrame;
+            });
+
+            if(!success)
+                break;
+
+            cl::compute([&](cv::UMat& frameBuffer){
+                cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+                //Color-conversion from RGB to HSV. (OpenCL)
+                cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+                //Extract the hue channel
+                cv::extractChannel(hsv, hueChannel, 0);
+                //Set the current hue
+                hueChannel.setTo(cvHue);
+                //Insert the hue channel
+                cv::insertChannel(hueChannel, hsv, 0);
+                //Color-conversion from HSV to RGB. (OpenCL)
+                cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+                //Color-conversion from RGB to BGRA. (OpenCL)
+                cv::cvtColor(rgb, bgra, cv::COLOR_RGB2BGRA);
+                //Resize the frame if necessary. (OpenCL)
+                cv::resize(bgra, frameBuffer, cv::Size(WIDTH, HEIGHT));
+            });
+
+            //Render using nanovg
+            nvg::render([&](int w, int h) {
+                drawColorwheel(nvg::vg, w - 300, h - 300, 250.0f, 250.0f, nvgHue);
+            });
+
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
+
+            va::write([&writer](const cv::UMat& videoFrame){
+                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+                writer << videoFrame;
+            });
+
+            app::print_fps();
+        }
+
+        app::terminate();
     });
-
-    //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-    va::copy();
-
-    // Check if we succeeded
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        return -1;
-    }
-
-    double fps = capture.get(cv::CAP_PROP_FPS);
-
-    //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    cv::UMat rgb;
-    cv::UMat bgra;
-    cv::UMat hsv;
-    cv::UMat hueChannel;
-
-    while (true) {
-        //we use time to calculated the current hue
-        float time = cv::getTickCount() / cv::getTickFrequency();
-        //nanovg hue fading between 0.0f and 1.0f
-        float nvgHue = (sinf(time*0.12f)+1.0f) / 2.0f;
-        //opencv hue fading between 0 and 255
-        int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time*0.12f))+1.0f) * 128.0))) % 255;
-
-        bool success = va::read([&capture](cv::UMat& videoFrame){
-            //videoFrame will be converted to BGRA and stored in the frameBuffer.
-            capture >> videoFrame;
-        });
-
-        if(!success)
-            break;
-
-        cl::compute([&](cv::UMat& frameBuffer){
-            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-            //Color-conversion from RGB to HSV. (OpenCL)
-            cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
-            //Extract the hue channel
-            cv::extractChannel(hsv, hueChannel, 0);
-            //Set the current hue
-            hueChannel.setTo(cvHue);
-            //Insert the hue channel
-            cv::insertChannel(hueChannel, hsv, 0);
-            //Color-conversion from HSV to RGB. (OpenCL)
-            cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
-            //Color-conversion from RGB to BGRA. (OpenCL)
-            cv::cvtColor(rgb, bgra, cv::COLOR_RGB2BGRA);
-            //Resize the frame if necessary. (OpenCL)
-            cv::resize(bgra, frameBuffer, cv::Size(WIDTH, HEIGHT));
-        });
-
-        //Render using nanovg
-        nvg::render([&](int w, int h) {
-            drawColorwheel(nvg::vg, w - 300, h - 300, 250.0f, 250.0f, nvgHue);
-        });
-
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!app::display())
-            break;
-
-        va::write([&writer](const cv::UMat& videoFrame){
-            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-            writer << videoFrame;
-        });
-
-        app::print_fps();
-    }
-
-    app::terminate();
-
     return 0;
 }

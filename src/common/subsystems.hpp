@@ -89,14 +89,12 @@ bool is_fullscreen() {
 void set_fullscreen(bool f) {
     auto monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-//    float pixelRatio = get_pixel_ratio(glfw::window);
     if(f) {
         glfwSetWindowMonitor(display::window, monitor, 0,0, mode->width, mode->height, mode->refreshRate);
-        display::update_size();
     } else {
         glfwSetWindowMonitor(display::window, nullptr, 0,0,app::window_width, app::window_height,mode->refreshRate);
-        display::update_size();
     }
+    display::update_size();
 }
 
 void framebuffer_size_callback(GLFWwindow *win, int width, int height) {
@@ -310,8 +308,8 @@ void init(NVGcontext *context) {
         cerr << "Couldn't init nanovg." << endl;
         exit(24);
     }
-
     vg = context;
+    nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
 
     //FIXME workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
     gl::bind();

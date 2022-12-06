@@ -87,44 +87,46 @@ int main(int argc, char **argv) {
     //Print system information
     app::print_system_info();
 
-    //Initialize VP9 HW encoding using VAAPI
-    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
-            cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
+    app::run([&]() {
+        //Initialize VP9 HW encoding using VAAPI
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+                cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        });
 
-    //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-    va::copy();
+        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
+        va::copy();
 
-    gl::render([](int w, int h) {
-        //Initialize the OpenGL scene
-        init_scene(w, h);
-    });
-
-    while (true) {
-        //Render using OpenGL
         gl::render([](int w, int h) {
-            render_scene(w, h);
+            //Initialize the OpenGL scene
+            init_scene(w, h);
         });
 
-        //Aquire the frame buffer for use by OpenCL
-        cl::compute([](cv::UMat &frameBuffer) {
-            //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-        });
+        while (true) {
+            //Render using OpenGL
+            gl::render([](int w, int h) {
+                render_scene(w, h);
+            });
 
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!app::display())
-            break;
+            //Aquire the frame buffer for use by OpenCL
+            cl::compute([](cv::UMat &frameBuffer) {
+                //Glow effect (OpenCL)
+                glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+            });
 
-        va::write([&writer](const cv::UMat& videoFrame){
-            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-            writer << videoFrame;
-        });
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
 
-        app::print_fps();
-    }
+            va::write([&writer](const cv::UMat& videoFrame){
+                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+                writer << videoFrame;
+            });
+
+            app::print_fps();
+        }
+    });
 
     app::terminate();
 

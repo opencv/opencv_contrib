@@ -92,70 +92,71 @@ int main(int argc, char **argv) {
     //Print system information
     app::print_system_info();
 
-    //Initialize MJPEG HW decoding using VAAPI
-    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-            cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-    va::copy();
-
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        return -1;
-    }
-
-    double fps = capture.get(cv::CAP_PROP_FPS);
-
-    //Initialize VP9 HW encoding using VAAPI. We don't need to specify the hardware device twice. only generates a warning.
-    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    gl::render([](int w, int h) {
-        init_scene(w, h);
-    });
-
-    while (true) {
-        bool success = va::read([&capture](cv::UMat& videoFrame){
-            //videoFrame will be converted to BGRA and stored in the frameBuffer.
-            capture >> videoFrame;
+    app::run([&]() {
+        //Initialize MJPEG HW decoding using VAAPI
+        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
+                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
 
-        if(!success)
-            break;
+        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
+        va::copy();
 
-        cl::compute([](cv::UMat& frameBuffer){
-            //Resize the frame if necessary. (OpenCL)
-            cv::resize(frameBuffer, frameBuffer, cv::Size(WIDTH, HEIGHT));
+        if (!capture.isOpened()) {
+            cerr << "ERROR! Unable to open video input" << endl;
+            return;
+        }
+
+        double fps = capture.get(cv::CAP_PROP_FPS);
+
+        //Initialize VP9 HW encoding using VAAPI. We don't need to specify the hardware device twice. only generates a warning.
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
 
         gl::render([](int w, int h) {
-            //Render using OpenGL
-            render_scene(w, h);
+            init_scene(w, h);
         });
 
-        cl::compute([&GLOW_KERNEL_SIZE](cv::UMat& frameBuffer){
-            //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-        });
+        while (true) {
+            bool success = va::read([&capture](cv::UMat& videoFrame){
+                //videoFrame will be converted to BGRA and stored in the frameBuffer.
+                capture >> videoFrame;
+            });
 
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!app::display())
-            break;
+            if(!success)
+                break;
 
-        va::write([&writer](const cv::UMat& videoFrame){
-            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-            writer << videoFrame;
-        });
+            cl::compute([](cv::UMat& frameBuffer){
+                //Resize the frame if necessary. (OpenCL)
+                cv::resize(frameBuffer, frameBuffer, cv::Size(WIDTH, HEIGHT));
+            });
 
-        app::print_fps();
-    }
+            gl::render([](int w, int h) {
+                //Render using OpenGL
+                render_scene(w, h);
+            });
 
-    app::terminate();
+            cl::compute([&](cv::UMat& frameBuffer){
+                //Glow effect (OpenCL)
+                glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+            });
 
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
+
+            va::write([&](const cv::UMat& videoFrame){
+                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+                writer << videoFrame;
+            });
+
+            app::print_fps();
+        }
+
+        app::terminate();
+    });
     return 0;
 }

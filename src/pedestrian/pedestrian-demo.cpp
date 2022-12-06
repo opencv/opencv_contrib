@@ -118,106 +118,106 @@ int main(int argc, char **argv) {
     app::init("Pedestrian Demo", WIDTH, HEIGHT, OFFSCREEN);
     //Print system information
     app::print_system_info();
-
-    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-            cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    va::copy();
-
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video-input" << endl;
-        return -1;
-    }
-
-    double fps = capture.get(cv::CAP_PROP_FPS);
-    cerr << "Detected FPS: " << fps << endl;
-    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    //BGRA
-    cv::UMat background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
-    //RGB
-    cv::UMat rgb, videoFrameUp, videoFrameDown;
-    //GREY
-    cv::UMat videoFrameDownGrey;
-
-    cv::HOGDescriptor hog;
-    hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
-    std::vector<cv::Rect> locations;
-    std::vector<cv::Rect> maxLocations;
-    vector<vector<double>> boxes;
-    vector<double> probs;
-    va::bind();
-    while (true) {
-        bool success = va::read([&capture](cv::UMat& videoFrame){
-            //videoFrame will be converted to BGRA and stored in the frameBuffer.
-            capture >> videoFrame;
+    app::run([&]() {
+        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
+                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
 
-        if(!success)
-            break;
+        va::copy();
 
-        cl::compute([&](cv::UMat& frameBuffer){
-            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-            cv::resize(rgb, videoFrameUp, cv::Size(WIDTH, HEIGHT));
-            cv::resize(rgb, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
-            cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
-            cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
-            hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
-        });
-
-        maxLocations.clear();
-        if (!locations.empty()) {
-            boxes.clear();
-            probs.clear();
-            for (const auto &rect : locations) {
-                boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
-                probs.push_back(1.0);
-            }
-
-            vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
-
-            for (size_t i = 0; i < keep.size(); ++i) {
-                if (keep[i])
-                    maxLocations.push_back(locations[i]);
-            }
+        if (!capture.isOpened()) {
+            cerr << "ERROR! Unable to open video-input" << endl;
+            return;
         }
 
-        nvg::render([&](int w, int h) {
-            nvg::clear();
-            using kb::nvg::vg;
-            nvgBeginPath(vg);
-            nvgStrokeWidth(vg, std::fmax(2.0, WIDTH / 960.0));
-            nvgStrokeColor(vg, nvgHSLA(0.0, 1, 0.5, 200));
-            for (size_t i = 0; i < maxLocations.size(); i++) {
-                nvgRect(vg, maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
+        double fps = capture.get(cv::CAP_PROP_FPS);
+        cerr << "Detected FPS: " << fps << endl;
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        });
+
+        //BGRA
+        cv::UMat background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+        //RGB
+        cv::UMat rgb, videoFrameUp, videoFrameDown;
+        //GREY
+        cv::UMat videoFrameDownGrey;
+
+        cv::HOGDescriptor hog;
+        hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+        std::vector<cv::Rect> locations;
+        std::vector<cv::Rect> maxLocations;
+        vector<vector<double>> boxes;
+        vector<double> probs;
+
+        while (true) {
+            bool success = va::read([&capture](cv::UMat& videoFrame){
+                //videoFrame will be converted to BGRA and stored in the frameBuffer.
+                capture >> videoFrame;
+            });
+
+            if(!success)
+                break;
+
+            cl::compute([&](cv::UMat& frameBuffer){
+                cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+                cv::resize(rgb, videoFrameUp, cv::Size(WIDTH, HEIGHT));
+                cv::resize(rgb, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+                cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
+                cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
+                hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
+            });
+
+            maxLocations.clear();
+            if (!locations.empty()) {
+                boxes.clear();
+                probs.clear();
+                for (const auto &rect : locations) {
+                    boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
+                    probs.push_back(1.0);
+                }
+
+                vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
+
+                for (size_t i = 0; i < keep.size(); ++i) {
+                    if (keep[i])
+                        maxLocations.push_back(locations[i]);
+                }
             }
-            nvgStroke(vg);
-        });
 
-        cl::compute([&](cv::UMat& frameBuffer){
-            //Put it all together
-            composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
-        });
+            nvg::render([&](int w, int h) {
+                nvg::clear();
+                using kb::nvg::vg;
+                nvgBeginPath(vg);
+                nvgStrokeWidth(vg, std::fmax(2.0, WIDTH / 960.0));
+                nvgStrokeColor(vg, nvgHSLA(0.0, 1, 0.5, 200));
+                for (size_t i = 0; i < maxLocations.size(); i++) {
+                    nvgRect(vg, maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
+                }
+                nvgStroke(vg);
+            });
 
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if (!app::display())
-            break;
+            cl::compute([&](cv::UMat& frameBuffer){
+                //Put it all together
+                composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
+            });
 
-        va::write([&writer](const cv::UMat& videoFrame){
-            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-            writer << videoFrame;
-        });
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if (!app::display())
+                break;
 
-        app::print_fps();
-    }
+            va::write([&writer](const cv::UMat& videoFrame){
+                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+                writer << videoFrame;
+            });
 
-    app::terminate();
+            app::print_fps();
+        }
 
+        app::terminate();
+    });
     return 0;
 }
