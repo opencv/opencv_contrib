@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
                 nvg::clear();
                 nvgBeginPath(vg);
                 nvgFontSize(vg, FONT_SIZE);
-                nvgFontFace(vg, "serif");
+                nvgFontFace(vg, "libertine");
                 nvgFillColor(vg, nvgHSLA(0.15, 1, 0.5, 255));
                 nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
