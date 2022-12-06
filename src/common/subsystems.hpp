@@ -395,13 +395,13 @@ void begin() {
     gl::begin();
 
     float r = display::get_pixel_ratio();
-    float w = app::window_width * r;
-    float h = app::window_height * r;
+    float w = app::window_width;
+    float h = app::window_height;
     NVGcontext* vg = gui::screen->nvg_context();
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
     GL_CHECK(glViewport(0, 0,w * r, h * r));
-    nvgBeginFrame(vg, w, h, std::fmax(w * r, h * r));
+    nvgBeginFrame(vg, w, h, r);
 }
 
 void end() {
@@ -420,6 +420,11 @@ void render(std::function<void(NVGcontext*,int,int)> fn) {
 
 void init() {
     nvgCreateFont(gui::screen->nvg_context(), "libertine", "assets/LinLibertine_RB.ttf");
+
+    //workaround for first frame color glitch
+    cv::UMat tmp;
+    cl::acquire_from_gl(tmp);
+    cl::release_to_gl(tmp);
 }
 } //namespace nvg
 
@@ -479,16 +484,19 @@ void update_fps(bool graphical = true) {
 
     if (graphical) {
         nvg::render([&](NVGcontext* vg, int w, int h) {
+            string text = "FPS: " + std::to_string(fps);
+
             nvgBeginPath(vg);
-            nvgRoundedRect(vg, 10, 10, 60 * 6, 60, 10);
+            nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);
             nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
             nvgFill (vg);
 
+            nvgBeginPath(vg);
             nvgFontSize(vg, 60.0f);
-            nvgFontFace(vg, "libertine");
+            nvgFontFace(vg, "mono");
             nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-            nvgText(vg, 22, 37, ("FPS: " + std::to_string(fps)).c_str(), nullptr);
+            nvgText(vg, 22, 37, text.c_str(), nullptr);
         });
     }
 
