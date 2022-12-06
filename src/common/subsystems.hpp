@@ -49,9 +49,9 @@ bool offscreen;
 namespace display {
 GLFWwindow *window;
 
-static float get_pixel_ratio(GLFWwindow *window) {
+static float get_pixel_ratio(GLFWwindow *win = display::window) {
 #if defined(_WIN32)
-    HWND hWnd = glfwGetWin32Window(window);
+    HWND hWnd = glfwGetWin32Window(win);
     HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
     /* The following function only exists on Windows 8.1+, but we don't want to make that a dependency */
     static HRESULT (WINAPI *GetDpiForMonitor_)(HMONITOR, UINT, UINT*, UINT*) = nullptr;
@@ -73,12 +73,12 @@ static float get_pixel_ratio(GLFWwindow *window) {
 #else
     int fbW, fbH;
     int w, h;
-    glfwGetFramebufferSize(window, &fbW, &fbH);
-    glfwGetWindowSize(window, &w, &h);
+    glfwGetFramebufferSize(win, &fbW, &fbH);
+    glfwGetWindowSize(win, &w, &h);
     return (float)fbW / (float)w;
 #endif
 }
-void update_size(float pixelRatio = display::get_pixel_ratio(display::window)) {
+void update_size(float pixelRatio = display::get_pixel_ratio()) {
     glfwSetWindowSize(display::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
     glViewport(0, 0, app::window_width * pixelRatio, app::window_height * pixelRatio);
 }
@@ -280,14 +280,14 @@ void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, 
 void begin() {
     gl::begin();
 
-    float w;
-    float h;
-    w = app::window_width;
-    h = app::window_height;
+    float r = display::get_pixel_ratio();
+    float w = app::window_width * r;
+    float h = app::window_height * r;
+
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    GL_CHECK(glViewport(0, 0,w, h));
-    nvgBeginFrame(vg, w, h, std::fmax(app::window_width/w, app::window_height/h));
+    GL_CHECK(glViewport(0, 0,w * r, h * r));
+    nvgBeginFrame(vg, w, h, std::fmax(w * r, h * r));
 }
 
 void end() {
