@@ -190,8 +190,8 @@ void setup_gui() {
     make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     form->add_group("Scene Change Detection");
-    make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f, true, "", "Peak threshold. Lowering them makes detection more sensitive");
-    make_gui_variable("Threshold Diff", SCENE_CHANGE_THRESH_DIFF, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering them makes detection more sensitive");
+    make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+    make_gui_variable("Threshold Diff", SCENE_CHANGE_THRESH_DIFF, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
 
     form->add_group("Points");
     make_gui_variable("Max. Points", MAX_POINTS, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
