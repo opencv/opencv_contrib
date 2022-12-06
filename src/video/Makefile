@@ -1,6 +1,6 @@
-TARGET := video-demo2
+TARGET := video-demo
 
-SRCS    := video-demo2.cpp
+SRCS    := video-demo.cpp
 
 #precompiled headers
 HEADERS := 

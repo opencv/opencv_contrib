@@ -6,33 +6,23 @@
 #include <unistd.h>
 #include <string>
 #include <filesystem>
+#include <thread>
 #include <opencv2/opencv.hpp>
 #include "opencv2/core/va_intel.hpp"
 #include <opencv2/videoio.hpp>
+#define NANOGUI_USE_OPENGL
+#include <nanogui/nanogui.h>
+#include <EGL/egl.h>
 #include <GL/glew.h>
-
-#if !defined(__APPLE__)
-#  include <X11/Xlib.h>
-#  include <X11/Xatom.h>
-#  include <X11/Xutil.h>
-#  include <X11/extensions/Xrandr.h>
-#  include <EGL/egl.h>
-#  include <EGL/eglext.h>
-#endif
-
-#if !defined(_GCV_ONLY_X11)
-#  define GLFW_INCLUDE_NONE
-#  include <GLFW/glfw3.h>
-#endif
-
 #include <GL/gl.h>
-#include "nanovg.h"
-#define NANOVG_GL3_IMPLEMENTATION
-#include "nanovg_gl.h"
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
+#define GLFW_INCLUDE_GLCOREARB
+
+#include <GLFW/glfw3.h>
+#include <nanogui/opengl.h>
 
 using std::cout;
 using std::cerr;
@@ -53,58 +43,17 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     expr;                                        \
     kb::gl_check_error(__FILE__, __LINE__, #expr);
 
-#ifdef _GCV_ONLY_X11
-//adapted from https://github.com/glfw/glfw/blob/master/src/egl_context.c
-const char* get_egl_error_string(EGLint error)
-{
-    switch (error)
-    {
-        case EGL_SUCCESS:
-            return "Success";
-        case EGL_NOT_INITIALIZED:
-            return "EGL is not or could not be initialized";
-        case EGL_BAD_ACCESS:
-            return "EGL cannot access a requested resource";
-        case EGL_BAD_ALLOC:
-            return "EGL failed to allocate resources for the requested operation";
-        case EGL_BAD_ATTRIBUTE:
-            return "An unrecognized attribute or attribute value was passed in the attribute list";
-        case EGL_BAD_CONTEXT:
-            return "An EGLContext argument does not name a valid EGL rendering context";
-        case EGL_BAD_CONFIG:
-            return "An EGLConfig argument does not name a valid EGL frame buffer configuration";
-        case EGL_BAD_CURRENT_SURFACE:
-            return "The current surface of the calling thread is a window, pixel buffer or pixmap that is no longer valid";
-        case EGL_BAD_DISPLAY:
-            return "An EGLDisplay argument does not name a valid EGL display connection";
-        case EGL_BAD_SURFACE:
-            return "An EGLSurface argument does not name a valid surface configured for GL rendering";
-        case EGL_BAD_MATCH:
-            return "Arguments are inconsistent";
-        case EGL_BAD_PARAMETER:
-            return "One or more argument values are invalid";
-        case EGL_BAD_NATIVE_PIXMAP:
-            return "A NativePixmapType argument does not refer to a valid native pixmap";
-        case EGL_BAD_NATIVE_WINDOW:
-            return "A NativeWindowType argument does not refer to a valid native window";
-        case EGL_CONTEXT_LOST:
-            return "The application must destroy all contexts and reinitialise";
-        default:
-            return "ERROR: UNKNOWN EGL ERROR";
-    }
-}
 void egl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     EGLint errorCode = eglGetError();
 
     if (errorCode != EGL_SUCCESS) {
-        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << get_egl_error_string(errorCode) << "\n   " << endl;
+        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
         assert(false);
     }
 }
-#define EGL_CHECK(expr)                                 \
-        expr;                                          \
-        kb::egl_check_error(__FILE__, __LINE__, #expr);
-#endif
+#define EGL_CHECK(expr)                            \
+    expr;                                        \
+    kb::egl_check_error(__FILE__, __LINE__, #expr);
 
 namespace app {
 unsigned int window_width;
@@ -112,82 +61,8 @@ unsigned int window_height;
 bool offscreen;
 } //app
 
-
-#ifdef _GCV_ONLY_X11
-namespace x11 {
-Display *xdisplay;
-Window xroot;
-Window xwin;
-Atom wmDeleteMessage;
-
-bool initialized = false;
-
-std::pair<unsigned int, unsigned int> get_window_size() {
-    std::pair<unsigned int, unsigned int> ret;
-    int x, y;
-    unsigned int border, depth;
-    XGetGeometry(xdisplay, xwin, &xroot, &x, &y, &ret.first, &ret.second, &border, &depth);
-    return ret;
-}
-
-bool window_closed() {
-    if (XPending(xdisplay) == 0)
-        return false;
-
-    XEvent event;
-    XNextEvent(xdisplay, &event);
-
-    switch (event.type) {
-    case ClientMessage:
-        if (event.xclient.data.l[0] == static_cast<long int>(wmDeleteMessage))
-            return true;
-        break;
-
-    default:
-        break;
-    }
-    return false;
-}
-
-void init(const std::string& title) {
-    xdisplay = XOpenDisplay(nullptr);
-    if (xdisplay == nullptr) {
-        cerr << "Unable to open X11 display" << endl;
-        exit(3);
-    }
-
-    xroot = DefaultRootWindow(xdisplay);
-    XSetWindowAttributes swa;
-    swa.event_mask = ClientMessage;
-    xwin = XCreateWindow(xdisplay, xroot, 0, 0, app::window_width, app::window_height, 0,
-    CopyFromParent, InputOutput, CopyFromParent, CWEventMask, &swa);
-
-    XSetWindowAttributes xattr;
-    xattr.override_redirect = False;
-    XChangeWindowAttributes(xdisplay, xwin, CWOverrideRedirect, &xattr);
-
-    int one = 1;
-    XChangeProperty(xdisplay, xwin, XInternAtom(xdisplay, "_HILDON_NON_COMPOSITED_WINDOW", False),
-    XA_INTEGER, 32, PropModeReplace, (unsigned char*) &one, 1);
-
-    XWMHints hints;
-    hints.input = True;
-    hints.flags = InputHint;
-    XSetWMHints(xdisplay, xwin, &hints);
-
-    XMapWindow(xdisplay, xwin);
-    XStoreName(xdisplay, xwin, title.c_str());
-    wmDeleteMessage = XInternAtom(xdisplay, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(xdisplay, xwin, &wmDeleteMessage, 1);
-
-    initialized = true;
-}
-} // namespace x11
-#else
-
 namespace glfw {
 GLFWwindow *window;
-bool initialized = false;
 int framebuffer_width;
 int framebuffer_height;
 
@@ -199,39 +74,55 @@ void processInput(GLFWwindow *window){
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     framebuffer_width = width;
     framebuffer_height = height;
-    glViewport(0, 0, width, height);
 }
 
 void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-void init(const string &title, int major = 4, int minor = 6, int samples = 4, bool debug = false) {
+void init(const string &title, int major, int minor, int samples = 4, bool debug = false) {
     assert(glfwInit() == GLFW_TRUE);
     framebuffer_width = app::window_width;
     framebuffer_height = app::window_height;
     glfwSetErrorCallback(error_callback);
 
-    if(debug)
-        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+//    if(debug)
+//        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-#ifdef __APPLE__
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#else
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+//#ifdef __APPLE__
+//    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+//    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+//    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+//    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+//#else
+//    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+//    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+//    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+//    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+//    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+//#endif
+//    glfwWindowHint(GLFW_SAMPLES, samples);
+//
+//    if (app::offscreen) {
+//        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+//    }
+
+    glfwSetTime(0);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-#endif
-    glfwWindowHint(GLFW_SAMPLES, samples);
 
-    if (app::offscreen) {
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    }
+    glfwWindowHint(GLFW_SAMPLES, 0);
+    glfwWindowHint(GLFW_RED_BITS, 8);
+    glfwWindowHint(GLFW_GREEN_BITS, 8);
+    glfwWindowHint(GLFW_BLUE_BITS, 8);
+    glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     window = glfwCreateWindow(app::window_width, app::window_height, title.c_str(), nullptr, nullptr);
     if (window == NULL) {
@@ -241,199 +132,10 @@ void init(const string &title, int major = 4, int minor = 6, int samples = 4, bo
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    initialized = true;
 }
 
-void terminate() {
-    initialized = false;
-    glfwDestroyWindow(window);
-    glfwTerminate();
-}
 } // namespace glfw
 
-#endif
-
-#ifdef _GCV_ONLY_X11
-namespace egl {
-//code in the kb::egl namespace deals with setting up EGL
-EGLDisplay display;
-EGLSurface surface;
-EGLContext context;
-
-void debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *msg, const void *data) {
-    std::string _source;
-    std::string _type;
-    std::string _severity;
-
-    switch (source) {
-    case GL_DEBUG_SOURCE_API:
-        _source = "API";
-        break;
-
-    case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-        _source = "WINDOW SYSTEM";
-        break;
-
-    case GL_DEBUG_SOURCE_SHADER_COMPILER:
-        _source = "SHADER COMPILER";
-        break;
-
-    case GL_DEBUG_SOURCE_THIRD_PARTY:
-        _source = "THIRD PARTY";
-        break;
-
-    case GL_DEBUG_SOURCE_APPLICATION:
-        _source = "APPLICATION";
-        break;
-
-    case GL_DEBUG_SOURCE_OTHER:
-        _source = "UNKNOWN";
-        break;
-
-    default:
-        _source = "UNKNOWN";
-        break;
-    }
-
-    switch (type) {
-    case GL_DEBUG_TYPE_ERROR:
-        _type = "ERROR";
-        break;
-
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        _type = "DEPRECATED BEHAVIOR";
-        break;
-
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        _type = "UDEFINED BEHAVIOR";
-        break;
-
-    case GL_DEBUG_TYPE_PORTABILITY:
-        _type = "PORTABILITY";
-        break;
-
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        _type = "PERFORMANCE";
-        break;
-
-    case GL_DEBUG_TYPE_OTHER:
-        _type = "OTHER";
-        break;
-
-    case GL_DEBUG_TYPE_MARKER:
-        _type = "MARKER";
-        break;
-
-    default:
-        _type = "UNKNOWN";
-        break;
-    }
-
-    switch (severity) {
-    case GL_DEBUG_SEVERITY_HIGH:
-        _severity = "HIGH";
-        break;
-
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        _severity = "MEDIUM";
-        break;
-
-    case GL_DEBUG_SEVERITY_LOW:
-        _severity = "LOW";
-        break;
-
-    case GL_DEBUG_SEVERITY_NOTIFICATION:
-        _severity = "NOTIFICATION";
-        break;
-
-    default:
-        _severity = "UNKNOWN";
-        break;
-    }
-
-    fprintf(stderr, "%d: %s of %s severity, raised from %s: %s\n", id, _type.c_str(), _severity.c_str(), _source.c_str(), msg);
-
-    if (type == GL_DEBUG_TYPE_ERROR)
-        exit(2);
-}
-
-EGLBoolean swap_buffers() {
-    return EGL_CHECK(eglSwapBuffers(display, surface));
-}
-
-void init(int major = 4, int minor = 6, int samples = 4, bool debug = false) {
-    EGL_CHECK(eglBindAPI(EGL_OPENGL_API));
-    if (app::offscreen) {
-        EGL_CHECK(display = eglGetDisplay(EGL_DEFAULT_DISPLAY));
-    } else {
-#ifdef _GCV_ONLY_X11
-        EGL_CHECK(display = eglGetDisplay(x11::xdisplay));
-#endif
-    }
-    EGL_CHECK(eglInitialize(display, nullptr, nullptr));
-
-    const EGLint egl_config_constraints[] = {
-    EGL_STENCIL_SIZE, static_cast<EGLint>(8),
-    EGL_DEPTH_SIZE, static_cast<EGLint>(16),
-    EGL_BUFFER_SIZE, static_cast<EGLint>(32),
-    EGL_RED_SIZE, static_cast<EGLint>(8),
-    EGL_GREEN_SIZE, static_cast<EGLint>(8),
-    EGL_BLUE_SIZE, static_cast<EGLint>(8),
-    EGL_ALPHA_SIZE, static_cast<EGLint>(8),
-    EGL_SAMPLE_BUFFERS, EGL_TRUE,
-    EGL_SAMPLES, samples,
-    EGL_SURFACE_TYPE, EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
-    EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-    EGL_CONFORMANT, EGL_OPENGL_BIT,
-    EGL_CONFIG_CAVEAT, EGL_NONE,
-    EGL_NONE };
-
-    EGLint configCount;
-    EGLConfig configs[1];
-    EGL_CHECK(eglChooseConfig(display, egl_config_constraints, configs, 1, &configCount));
-
-    EGLint stencilSize;
-    eglGetConfigAttrib(display, configs[0],
-    EGL_STENCIL_SIZE, &stencilSize);
-
-    const EGLint contextVersion[] = {
-    EGL_CONTEXT_MAJOR_VERSION, major,
-    EGL_CONTEXT_MINOR_VERSION, minor,
-    EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
-    EGL_CONTEXT_OPENGL_DEBUG, debug ? EGL_TRUE : EGL_FALSE,
-    EGL_NONE };
-    EGL_CHECK(context = eglCreateContext(display, configs[0], EGL_NO_CONTEXT, contextVersion));
-
-    if (!app::offscreen) {
-#ifdef _GCV_ONLY_X11
-        EGL_CHECK(surface = eglCreateWindowSurface(display, configs[0], x11::xwin, nullptr));
-#endif
-    } else {
-        EGLint pbuffer_attrib_list[] = {
-        EGL_WIDTH, int(app::window_width),
-        EGL_HEIGHT, int(app::window_height),
-        EGL_NONE };
-        EGL_CHECK(surface = eglCreatePbufferSurface(display, configs[0], pbuffer_attrib_list));
-    }
-
-
-    EGL_CHECK(eglMakeCurrent(display, surface, surface, context));
-    EGL_CHECK(eglSwapInterval(display, 1));
-
-    if (debug) {
-        GL_CHECK(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
-        auto glDebugMessageCallback = (void (*)(void*, void*)) eglGetProcAddress("glDebugMessageCallback");
-        assert(glDebugMessageCallback);
-        GL_CHECK(glDebugMessageCallback(reinterpret_cast<void*>(debugMessageCallback), nullptr));
-    }
-}
-
-std::string get_info() {
-    return eglQueryString(display, EGL_VERSION);
-}
-
-} //namespace egl
-#endif
 namespace gl {
 //code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
 cv::ogl::Texture2D *frame_buf_tex;
@@ -458,9 +160,9 @@ void end() {
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
-    //glFlush seems enough
+    //glFlush seems enough but i wanna make sure...
     GL_CHECK(glFlush());
-    //  GL_CHECK(glFinish());
+    GL_CHECK(glFinish());
 }
 
 void render(std::function<void(int,int)> fn) {
@@ -479,15 +181,14 @@ void init() {
     frame_buf = 0;
     GL_CHECK(glGenFramebuffers(1, &frame_buf));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
-
     GL_CHECK(glGenRenderbuffers(1, &render_buf));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
     GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::window_width, app::window_height));
 
     GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
-
     frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::window_width, app::window_height), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
+
     GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
 
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
@@ -569,14 +270,8 @@ void begin() {
 
     float w;
     float h;
-#ifdef _GCV_ONLY_X11
-    auto ws = x11::get_window_size();
-    w = ws.first;
-    h = ws.second;
-#else
     w = app::window_width;
     h = app::window_height;
-#endif
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
     GL_CHECK(glViewport(0, 0,w, h));
@@ -596,20 +291,13 @@ void render(std::function<void(int,int)> fn) {
     nvg::end();
 }
 
-void init(bool debug = false) {
-    GL_CHECK(glViewport(0, 0, app::window_width, app::window_height));
-    GL_CHECK(glEnable(GL_STENCIL_TEST));
-    GL_CHECK(glStencilMask(~0));
-    GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-
-    vg = nvgCreateGL3(NVG_STENCIL_STROKES | debug ? NVG_DEBUG : 0);
-    if (vg == NULL) {
+void init(NVGcontext *context) {
+    if (context == nullptr) {
         cerr << "Couldn't init nanovg." << endl;
         exit(24);
     }
 
-    nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
+    vg = context;
 
     //FIXME workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
     gl::bind();
@@ -647,65 +335,163 @@ void write(std::function<void(const cv::UMat&)> fn) {
     va::bind();
     //Color-conversion from BGRA to RGB. (OpenCL)
     cv::cvtColor(cl::frameBuffer, va::videoFrame, cv::COLOR_BGRA2RGB);
+    cv::flip(va::videoFrame, va::videoFrame, 0);
     fn(va::videoFrame);
 }
 } // namespace va
+
+namespace gui {
+using namespace nanogui;
+ref<nanogui::Screen> screen;
+FormHelper* form;
+
+template <typename T> nanogui::detail::FormWidget<T> * make_gui_variable(const string& name, T& v, const T& min, const T& max, bool spinnable = true, const string& unit = "") {
+    using kb::gui::form;
+    auto var = form->add_variable(name, v);
+    var->set_spinnable(spinnable);
+    var->set_min_value(min);
+    var->set_max_value(max);
+    var->set_units(unit);
+    return var;
+}
+
+static float get_pixel_ratio(GLFWwindow *window) {
+#if defined(_WIN32)
+    HWND hWnd = glfwGetWin32Window(window);
+    HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+    /* The following function only exists on Windows 8.1+, but we don't want to make that a dependency */
+    static HRESULT (WINAPI *GetDpiForMonitor_)(HMONITOR, UINT, UINT*, UINT*) = nullptr;
+    static bool GetDpiForMonitor_tried = false;
+
+    if (!GetDpiForMonitor_tried) {
+        auto shcore = LoadLibrary(TEXT("shcore"));
+        if (shcore)
+            GetDpiForMonitor_ = (decltype(GetDpiForMonitor_)) GetProcAddress(shcore, "GetDpiForMonitor");
+        GetDpiForMonitor_tried = true;
+    }
+
+    if (GetDpiForMonitor_) {
+        uint32_t dpiX, dpiY;
+        if (GetDpiForMonitor_(monitor, 0 /* effective DPI */, &dpiX, &dpiY) == S_OK)
+            return std::round(dpiX / 96.0);
+    }
+    return 1.f;
+#else
+    int fbW, fbH;
+    int w, h;
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+    glfwGetWindowSize(window, &w, &h);
+    return (float)fbW / (float)w;
+#endif
+}
+
+bool is_fullscreen() {
+    return glfwGetWindowMonitor(glfw::window) != nullptr;
+}
+void set_fullscreen(bool f) {
+    auto monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    float pixelRatio = get_pixel_ratio(glfw::window);
+    if(f) {
+        glfwSetWindowMonitor(glfw::window, monitor, 0,0, mode->width, mode->height, mode->refreshRate);
+        glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
+    } else {
+        glfwSetWindowMonitor(glfw::window, nullptr, 0,0,app::window_width, app::window_height,mode->refreshRate);
+        glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
+    }
+}
+} //namespace gui
+
 namespace app {
-void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, int major = 4, int minor = 6, int samples = 4, bool debugContext = false) {
+void print_system_info() {
+    cerr << "OpenGL Version: " << gl::get_info() << endl;
+    cerr << "OpenCL Platforms: " << cl::get_info() << endl;
+}
+
+void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, bool fullscreen = false, int major = 4, int minor = 6, int samples = 4, bool debugContext = false) {
+    using namespace kb::gui;
     app::window_width = width;
     app::window_height = height;
     app::offscreen = offscreen;
 
-#ifdef _GCV_ONLY_X11
-    if (!offscreen) {
-        x11::init(windowTitle);
-        //you can set OpenGL-version, multisample-buffer samples and enable debug context using egl::init()
-        egl::init(major, minor, samples, debugContext);
-    }
-#else
-    glfw::init(windowTitle, major, minor, samples, debugContext);
-#endif
+    glfw::init(windowTitle, samples, debugContext);
 
-    //Initialize OpenCL Context for OpenGL
+    screen = new nanogui::Screen();
+    screen->initialize(glfw::window, false);
+    screen->set_size(nanogui::Vector2i(width, height));
     gl::init();
-    nvg::init();
+    nvg::init(screen->nvg_context());
+
+    form = new FormHelper(screen);
+
+}
+
+void run(std::function<void()> fn) {
+    using namespace kb::gui;
+
+    screen->set_visible(true);
+    screen->perform_layout();
+    float pixelRatio = get_pixel_ratio(glfw::window);
+    screen->set_size(nanogui::Vector2i(app::window_width * pixelRatio, app::window_height * pixelRatio));
+    glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
+    glViewport(0, 0, app::window_width * pixelRatio, app::window_height * pixelRatio);
+
+    glfwSetWindowAttrib(glfw::window, GLFW_RESIZABLE, GLFW_FALSE);
+
+    glfwSetCursorPosCallback(glfw::window,
+            [](GLFWwindow *, double x, double y) {
+            screen->cursor_pos_callback_event(x, y);
+        }
+    );
+
+    glfwSetMouseButtonCallback(glfw::window,
+        [](GLFWwindow *, int button, int action, int modifiers) {
+            screen->mouse_button_callback_event(button, action, modifiers);
+        }
+    );
+
+    glfwSetKeyCallback(glfw::window,
+        [](GLFWwindow *, int key, int scancode, int action, int mods) {
+            screen->key_callback_event(key, scancode, action, mods);
+        }
+    );
+
+    glfwSetCharCallback(glfw::window,
+        [](GLFWwindow *, unsigned int codepoint) {
+            screen->char_callback_event(codepoint);
+        }
+    );
+
+    glfwSetDropCallback(glfw::window,
+        [](GLFWwindow *, int count, const char **filenames) {
+            screen->drop_callback_event(count, filenames);
+        }
+    );
+
+    glfwSetScrollCallback(glfw::window,
+        [](GLFWwindow *, double x, double y) {
+            screen->scroll_callback_event(x, y);
+       }
+    );
+
+    glfwSetFramebufferSizeCallback(glfw::window,
+        [](GLFWwindow *, int width, int height) {
+            screen->resize_callback_event(width, height);
+        }
+    );
+    fn();
 }
 
 bool display() {
-#ifdef _GCV_ONLY_X11
-        if(x11::initialized) {
-            //Blit the framebuffer we have been working on to the screen
-            gl::blit_frame_buffer_to_screen();
-
-            //Check if the x11 wl_window was closed
-            if(x11::initialized && x11::window_closed())
-                return false;
-
-            //Transfer the back buffer (which we have been using as frame buffer) to the native wl_window
-            egl::swap_buffers();
-        }
-#else
-    if(glfw::initialized) {
-        if(!app::offscreen) {
-            gl::blit_frame_buffer_to_screen();
-            glfw::processInput(glfw::window);
-            glfwSwapBuffers(glfw::window);
-            glfwPollEvents();
-            return !glfwWindowShouldClose(glfw::window);
-        } else {
-            glfwPollEvents();
-        }
+    if(!app::offscreen) {
+        glfwPollEvents();
+        gui::screen->draw_contents();
+        gl::blit_frame_buffer_to_screen();
+        gui::screen->draw_widgets();
+        glfwSwapBuffers(glfw::window);
+        return !glfwWindowShouldClose(glfw::window);
     }
-#endif
     return true;
-}
-
-void print_system_info() {
-#ifdef _GCV_ONLY_X11
-        cerr << "EGL Version: " << egl::get_info() << endl;
-#endif
-    cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << cl::get_info() << endl;
 }
 
 void print_fps() {
@@ -728,11 +514,9 @@ void print_fps() {
 }
 
 void terminate() {
-#ifdef _GCV_ONLY_X11
-    //TODO properly cleanup X11 and EGL
-#else
+    glfwDestroyWindow(glfw::window);
     glfwTerminate();
-#endif
+    exit(0);
 }
 } //namespace app
 } //namespace kb

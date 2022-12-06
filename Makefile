@@ -1,7 +1,7 @@
 CXX      := g++
-CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -march=native -flto -I/usr/local/include/opencv4/
+CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -march=native -flto -I/usr/local/include/opencv4/ -I/usr/local/include/nanovg
 LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64
-LIBS     := -lnanovg
+LIBS     := -lnanogui
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 
 DESTDIR := /
 PREFIX := /usr/local
@@ -10,7 +10,7 @@ ifdef GCV_ONLY_X11
 CXXFLAGS += -D_GCV_ONLY_X11 `pkg-config --cflags egl opencv4 glew`
 LIBS += `pkg-config --libs egl opencv4 glew`
 else
-LIBS += `pkg-config --libs glfw3 opencv4 glew`
+LIBS += `pkg-config --libs egl glfw3 opencv4 glew`
 endif
 
 all: release

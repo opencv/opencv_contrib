@@ -21,25 +21,28 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 /** Visualization parameters **/
 
 // Generate the foreground at this scale.
-constexpr float FG_SCALE = 0.5f;
+float FG_SCALE = 0.5f;
 // On every frame the foreground loses on brightness. specifies the loss in percent.
-constexpr float FG_LOSS = 4.7;
+float FG_LOSS = 2.5;
 // Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 // the default should be fine.
-constexpr float SCENE_CHANGE_THRESH = 0.29f;
-constexpr float SCENE_CHANGE_THRESH_DIFF = 0.1f;
+float SCENE_CHANGE_THRESH = 0.29f;
+float SCENE_CHANGE_THRESH_DIFF = 0.1f;
 // The theoretical maximum number of points to track which is scaled by the density of detected points
 // and therefor is usually much smaller.
-constexpr float MAX_POINTS = 250000.0;
+int MAX_POINTS = 250000;
 // How many of the tracked points to lose intentionally, in percent.
-constexpr float POINT_LOSS = 25;
+float POINT_LOSS = 25;
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
-constexpr int MAX_STROKE = 17;
+int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
-constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
-// Hue, saturation, lightness and alpha all from 0 to 255
-const cv::Scalar EFFECT_COLOR(26, 255, 153, 7);
+int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
+
+int ALPHA = 25;
+// Hue, saturation and lightness all from 0 to 255
+cv::Scalar EFFECT_COLOR(26, 255, 180, ALPHA);
+
 
 using std::cerr;
 using std::endl;
@@ -176,6 +179,64 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
+cv::Scalar rgb_to_hsl(const nanogui::Color& c) {
+    cv::Mat rgb(1,1, CV_8UC3, cv::Scalar(c.r() * 255,c.g() * 255,c.b() * 255));
+    cv::Mat hls;
+    cvtColor(rgb, hls, cv::COLOR_RGB2HLS_FULL);
+    return cv::Scalar(hls.data[0], hls.data[2], hls.data[1]);
+}
+
+nanogui::Color hsl_to_rgb(const cv::Scalar& hsl) {
+    cv::Mat hls(1,1, CV_8UC3, cv::Scalar(hsl[0],hsl[2],hsl[1]));
+    cv::Mat rgb;
+    cvtColor(hls, rgb, cv::COLOR_HLS2RGB_FULL);
+    return nanogui::Color(rgb.data[0] / 255.0f, rgb.data[1] / 255.0f, rgb.data[2] / 255.0f, 255.0f);
+}
+
+nanogui::Window* window;
+nanogui::Color effect_color_rgb = hsl_to_rgb(EFFECT_COLOR);
+
+void setup_gui() {
+    using namespace kb::gui;
+
+    bool enabled = true;
+    window = form->add_window(nanogui::Vector2i(0, 0), "Settings");
+    form->add_group("Foreground");
+    make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f);
+    make_gui_variable("Loss", FG_LOSS, 0.1f, 0.99f);
+
+    form->add_group("Scene Change Detection");
+    make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f);
+    make_gui_variable("Threshold Diff", SCENE_CHANGE_THRESH_DIFF, 0.1f, 1.0f);
+
+    form->add_group("Points");
+    make_gui_variable("Max. Points", MAX_POINTS, 10, 1000000);
+    make_gui_variable("Point Loss", POINT_LOSS, 0.0f, 100.0f, true, "%");
+
+    form->add_group("Effect");
+    make_gui_variable("Max. Stroke Size", MAX_STROKE, 1, 100, true, "px");
+    auto glowKernel = make_gui_variable("Glow Kernel Size", GLOW_KERNEL_SIZE, 1, 63);
+    glowKernel->set_callback([](const int& k) {
+        GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+    });
+
+    auto color = form->add_variable("Color", effect_color_rgb);
+    color->set_final_callback([](const nanogui::Color &c) {
+        cerr << c << endl;
+        EFFECT_COLOR = rgb_to_hsl(c);
+        EFFECT_COLOR[3] = ALPHA;
+    });
+
+    auto alpha = make_gui_variable("Alpha", ALPHA, 0, 255);
+    alpha->set_callback([](const int& a) {
+        EFFECT_COLOR[3] = a;
+    });
+
+    form->add_button("Fullscreen", []() {
+        set_fullscreen(!is_fullscreen());
+    });
+}
+
 int main(int argc, char **argv) {
     using namespace kb;
 
@@ -186,92 +247,91 @@ int main(int argc, char **argv) {
 
     //Initialize the application
     app::init("Sparse Optical Flow Demo", WIDTH, HEIGHT, OFFSCREEN);
-    //Print system information
     app::print_system_info();
-
-    cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-            cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-    va::copy();
-
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        return -1;
-    }
-
-    double fps = capture.get(cv::CAP_PROP_FPS);
-    cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-            cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-    });
-
-    cv::Size frameBufferSize(WIDTH, HEIGHT);
-    cv::Size scaledSize(WIDTH * FG_SCALE, HEIGHT * FG_SCALE);
-    //BGRA
-    cv::UMat background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
-    //RGB
-    cv::UMat rgb, resized, down;
-    //GREY
-    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
-    vector<cv::Point2f> detectedPoints;
-
-    while (true) {
-        bool success = va::read([&capture](cv::UMat& videoFrame){
-            //videoFrame will be converted to BGRA and stored in the frameBuffer.
-            capture >> videoFrame;
+    setup_gui();
+    app::run([&]() {
+        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
+                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
+                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
 
-        if(!success)
-            break;
+        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
+        va::copy();
 
-        cl::compute([&](cv::UMat& frameBuffer){
-            cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-            cv::resize(rgb, resized, frameBufferSize);
-            cv::resize(rgb, down, scaledSize);
-            cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
-            cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
-            //Subtract the background to create a motion mask
-            prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+        if (!capture.isOpened()) {
+            cerr << "ERROR! Unable to open video input" << endl;
+            return;
+        }
+
+        double fps = capture.get(cv::CAP_PROP_FPS);
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
 
-        //Detect trackable points in the motion mask
-        detect_points(downMotionMaskGrey, detectedPoints);
+        cv::Size frameBufferSize(WIDTH, HEIGHT);
+        //BGRA
+        cv::UMat background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
+        //RGB
+        cv::UMat rgb, resized, down;
+        //GREY
+        cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
+        vector<cv::Point2f> detectedPoints;
 
-        nvg::render([&](int w, int h) {
-            nvg::clear();
-            if (!downPrevGrey.empty()) {
-                //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-                if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
-                    //Visualize the sparse optical flow using nanovg
-                    visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
+        while (true) {
+            bool success = va::read([&capture](cv::UMat& videoFrame){
+                //videoFrame will be converted to BGRA and stored in the frameBuffer.
+                capture >> videoFrame;
+            });
+
+            if(!success)
+                break;
+
+            cl::compute([&](cv::UMat& frameBuffer){
+                cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
+                cv::resize(rgb, resized, frameBufferSize);
+                cv::resize(rgb, down, cv::Size(WIDTH * FG_SCALE, HEIGHT * FG_SCALE));
+                cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
+                cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
+                //Subtract the background to create a motion mask
+                prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+            });
+
+            //Detect trackable points in the motion mask
+            detect_points(downMotionMaskGrey, detectedPoints);
+
+            nvg::render([&](int w, int h) {
+                nvg::clear();
+                if (!downPrevGrey.empty()) {
+                    //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+                    if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
+                        //Visualize the sparse optical flow using nanovg
+                        visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
+                    }
                 }
-            }
-        });
+            });
 
-        downPrevGrey = downNextGrey.clone();
+            downPrevGrey = downNextGrey.clone();
 
-        cl::compute([&](cv::UMat& frameBuffer){
-            //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
-        });
+            cl::compute([&](cv::UMat& frameBuffer){
+                //Put it all together (OpenCL)
+                composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
+            });
 
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!app::display())
-            break;
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
 
-        va::write([&writer](const cv::UMat& videoFrame){
-            //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-            writer << videoFrame;
-        });
+            va::write([&writer](const cv::UMat& videoFrame){
+                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
+                writer << videoFrame;
+            });
 
-        app::print_fps();
-    }
+            app::print_fps();
+        }
 
-    app::terminate();
-
+        app::terminate();
+    });
     return 0;
 }
