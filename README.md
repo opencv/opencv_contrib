@@ -13,8 +13,10 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 * If you are on a recent Intel Platform (Gen8 - Gen12) you **need to install** an [**alternative compute-runtime**](https://github.com/kallaballa/compute-runtime)
 
 # Dependencies
-tetra-demo and video-demo have no additional dependencies.
-The other demos require:
+* EGL
+* GLEW
+* GFWL3
+* [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
 There are currently seven demos (**the preview videos are scaled down and compressed**):
