@@ -12,7 +12,6 @@
 #include <opencv2/videoio.hpp>
 #define NANOGUI_USE_OPENGL
 #include <nanogui/nanogui.h>
-#include <EGL/egl.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <CL/cl.h>
@@ -43,18 +42,6 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     expr;                                        \
     kb::gl_check_error(__FILE__, __LINE__, #expr);
 
-void egl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
-    EGLint errorCode = eglGetError();
-
-    if (errorCode != EGL_SUCCESS) {
-        cerr << "EGL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << endl;
-        assert(false);
-    }
-}
-#define EGL_CHECK(expr)                            \
-    expr;                                        \
-    kb::egl_check_error(__FILE__, __LINE__, #expr);
-
 namespace app {
 unsigned int window_width;
 unsigned int window_height;
@@ -63,17 +50,59 @@ bool offscreen;
 
 namespace glfw {
 GLFWwindow *window;
-int framebuffer_width;
-int framebuffer_height;
 
-void processInput(GLFWwindow *window){
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
+static float get_pixel_ratio(GLFWwindow *window) {
+#if defined(_WIN32)
+    HWND hWnd = glfwGetWin32Window(window);
+    HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+    /* The following function only exists on Windows 8.1+, but we don't want to make that a dependency */
+    static HRESULT (WINAPI *GetDpiForMonitor_)(HMONITOR, UINT, UINT*, UINT*) = nullptr;
+    static bool GetDpiForMonitor_tried = false;
+
+    if (!GetDpiForMonitor_tried) {
+        auto shcore = LoadLibrary(TEXT("shcore"));
+        if (shcore)
+            GetDpiForMonitor_ = (decltype(GetDpiForMonitor_)) GetProcAddress(shcore, "GetDpiForMonitor");
+        GetDpiForMonitor_tried = true;
+    }
+
+    if (GetDpiForMonitor_) {
+        uint32_t dpiX, dpiY;
+        if (GetDpiForMonitor_(monitor, 0 /* effective DPI */, &dpiX, &dpiY) == S_OK)
+            return std::round(dpiX / 96.0);
+    }
+    return 1.f;
+#else
+    int fbW, fbH;
+    int w, h;
+    glfwGetFramebufferSize(window, &fbW, &fbH);
+    glfwGetWindowSize(window, &w, &h);
+    return (float)fbW / (float)w;
+#endif
+}
+void update_size(float pixelRatio = glfw::get_pixel_ratio(glfw::window)) {
+    glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
+    glViewport(0, 0, app::window_width * pixelRatio, app::window_height * pixelRatio);
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    framebuffer_width = width;
-    framebuffer_height = height;
+bool is_fullscreen() {
+    return glfwGetWindowMonitor(glfw::window) != nullptr;
+}
+void set_fullscreen(bool f) {
+    auto monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+//    float pixelRatio = get_pixel_ratio(glfw::window);
+    if(f) {
+        glfwSetWindowMonitor(glfw::window, monitor, 0,0, mode->width, mode->height, mode->refreshRate);
+        glfw::update_size();
+    } else {
+        glfwSetWindowMonitor(glfw::window, nullptr, 0,0,app::window_width, app::window_height,mode->refreshRate);
+        glfw::update_size();
+    }
+}
+
+void framebuffer_size_callback(GLFWwindow *win, int width, int height) {
+    glfw::update_size();
 }
 
 void error_callback(int error, const char *description) {
@@ -82,40 +111,29 @@ void error_callback(int error, const char *description) {
 
 void init(const string &title, int major, int minor, int samples = 4, bool debug = false) {
     assert(glfwInit() == GLFW_TRUE);
-    framebuffer_width = app::window_width;
-    framebuffer_height = app::window_height;
     glfwSetErrorCallback(error_callback);
 
-//    if(debug)
-//        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+    if(debug)
+        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-//#ifdef __APPLE__
-//    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
-//    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
-//    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-//#else
-//    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-//    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-//    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-//    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-//    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-//#endif
-//    glfwWindowHint(GLFW_SAMPLES, samples);
-//
-//    if (app::offscreen) {
-//        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-//    }
+    if (app::offscreen) {
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    }
 
     glfwSetTime(0);
 
+#ifdef __APPLE__
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-//    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-
-    glfwWindowHint(GLFW_SAMPLES, 0);
+#endif
+    glfwWindowHint(GLFW_SAMPLES, samples);
     glfwWindowHint(GLFW_RED_BITS, 8);
     glfwWindowHint(GLFW_GREEN_BITS, 8);
     glfwWindowHint(GLFW_BLUE_BITS, 8);
@@ -133,7 +151,6 @@ void init(const string &title, int major, int minor, int samples = 4, bool debug
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 }
-
 } // namespace glfw
 
 namespace gl {
@@ -355,50 +372,58 @@ template <typename T> nanogui::detail::FormWidget<T> * make_gui_variable(const s
     return var;
 }
 
-static float get_pixel_ratio(GLFWwindow *window) {
-#if defined(_WIN32)
-    HWND hWnd = glfwGetWin32Window(window);
-    HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-    /* The following function only exists on Windows 8.1+, but we don't want to make that a dependency */
-    static HRESULT (WINAPI *GetDpiForMonitor_)(HMONITOR, UINT, UINT*, UINT*) = nullptr;
-    static bool GetDpiForMonitor_tried = false;
+void init(int w, int h) {
+    screen = new nanogui::Screen();
+    screen->initialize(glfw::window, false);
+    screen->set_size(nanogui::Vector2i(w, h));
+    form = new FormHelper(screen);
 
-    if (!GetDpiForMonitor_tried) {
-        auto shcore = LoadLibrary(TEXT("shcore"));
-        if (shcore)
-            GetDpiForMonitor_ = (decltype(GetDpiForMonitor_)) GetProcAddress(shcore, "GetDpiForMonitor");
-        GetDpiForMonitor_tried = true;
-    }
-
-    if (GetDpiForMonitor_) {
-        uint32_t dpiX, dpiY;
-        if (GetDpiForMonitor_(monitor, 0 /* effective DPI */, &dpiX, &dpiY) == S_OK)
-            return std::round(dpiX / 96.0);
-    }
-    return 1.f;
-#else
-    int fbW, fbH;
-    int w, h;
-    glfwGetFramebufferSize(window, &fbW, &fbH);
-    glfwGetWindowSize(window, &w, &h);
-    return (float)fbW / (float)w;
-#endif
+    glfwSetCursorPosCallback(glfw::window,
+            [](GLFWwindow *, double x, double y) {
+        gui::screen->cursor_pos_callback_event(x, y);
+        }
+    );
+    glfwSetMouseButtonCallback(glfw::window,
+        [](GLFWwindow *, int button, int action, int modifiers) {
+        gui::screen->mouse_button_callback_event(button, action, modifiers);
+        }
+    );
+    glfwSetKeyCallback(glfw::window,
+        [](GLFWwindow *, int key, int scancode, int action, int mods) {
+        gui::screen->key_callback_event(key, scancode, action, mods);
+        }
+    );
+    glfwSetCharCallback(glfw::window,
+        [](GLFWwindow *, unsigned int codepoint) {
+        gui::screen->char_callback_event(codepoint);
+        }
+    );
+    glfwSetDropCallback(glfw::window,
+        [](GLFWwindow *, int count, const char **filenames) {
+        gui::screen->drop_callback_event(count, filenames);
+        }
+    );
+    glfwSetScrollCallback(glfw::window,
+        [](GLFWwindow *, double x, double y) {
+        gui::screen->scroll_callback_event(x, y);
+       }
+    );
+    glfwSetFramebufferSizeCallback(glfw::window,
+        [](GLFWwindow *, int width, int height) {
+            gui::screen->resize_callback_event(width, height);
+        }
+    );
 }
 
-bool is_fullscreen() {
-    return glfwGetWindowMonitor(glfw::window) != nullptr;
+void set_visible(bool v) {
+    gui::screen->set_visible(v);
+    gui::screen->perform_layout();
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 }
-void set_fullscreen(bool f) {
-    auto monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    float pixelRatio = get_pixel_ratio(glfw::window);
-    if(f) {
-        glfwSetWindowMonitor(glfw::window, monitor, 0,0, mode->width, mode->height, mode->refreshRate);
-        glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
-    } else {
-        glfwSetWindowMonitor(glfw::window, nullptr, 0,0,app::window_width, app::window_height,mode->refreshRate);
-        glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
-    }
+
+void update_size(float pixelRatio = glfw::get_pixel_ratio(glfw::window)) {
+    gui::screen->set_size(nanogui::Vector2i(app::window_width * pixelRatio, app::window_height * pixelRatio));
+    glfw::update_size(pixelRatio);
 }
 } //namespace gui
 
@@ -415,70 +440,16 @@ void init(const string &windowTitle, unsigned int width, unsigned int height, bo
     app::offscreen = offscreen;
 
     glfw::init(windowTitle, samples, debugContext);
-
-    screen = new nanogui::Screen();
-    screen->initialize(glfw::window, false);
-    screen->set_size(nanogui::Vector2i(width, height));
+    gui::init(width, height);
     gl::init();
     nvg::init(screen->nvg_context());
-
-    form = new FormHelper(screen);
-
 }
 
+
 void run(std::function<void()> fn) {
-    using namespace kb::gui;
+    gui::set_visible(true);
+    gui::update_size();
 
-    screen->set_visible(true);
-    screen->perform_layout();
-    float pixelRatio = get_pixel_ratio(glfw::window);
-    screen->set_size(nanogui::Vector2i(app::window_width * pixelRatio, app::window_height * pixelRatio));
-    glfwSetWindowSize(glfw::window, app::window_width * pixelRatio, app::window_height * pixelRatio);
-    glViewport(0, 0, app::window_width * pixelRatio, app::window_height * pixelRatio);
-
-    glfwSetWindowAttrib(glfw::window, GLFW_RESIZABLE, GLFW_FALSE);
-
-    glfwSetCursorPosCallback(glfw::window,
-            [](GLFWwindow *, double x, double y) {
-            screen->cursor_pos_callback_event(x, y);
-        }
-    );
-
-    glfwSetMouseButtonCallback(glfw::window,
-        [](GLFWwindow *, int button, int action, int modifiers) {
-            screen->mouse_button_callback_event(button, action, modifiers);
-        }
-    );
-
-    glfwSetKeyCallback(glfw::window,
-        [](GLFWwindow *, int key, int scancode, int action, int mods) {
-            screen->key_callback_event(key, scancode, action, mods);
-        }
-    );
-
-    glfwSetCharCallback(glfw::window,
-        [](GLFWwindow *, unsigned int codepoint) {
-            screen->char_callback_event(codepoint);
-        }
-    );
-
-    glfwSetDropCallback(glfw::window,
-        [](GLFWwindow *, int count, const char **filenames) {
-            screen->drop_callback_event(count, filenames);
-        }
-    );
-
-    glfwSetScrollCallback(glfw::window,
-        [](GLFWwindow *, double x, double y) {
-            screen->scroll_callback_event(x, y);
-       }
-    );
-
-    glfwSetFramebufferSizeCallback(glfw::window,
-        [](GLFWwindow *, int width, int height) {
-            screen->resize_callback_event(width, height);
-        }
-    );
     fn();
 }
 

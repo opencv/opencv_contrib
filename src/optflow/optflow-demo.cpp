@@ -38,11 +38,10 @@ float POINT_LOSS = 25;
 int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
 int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
-
+// Keep ALPHA separate for the GUI
 int ALPHA = 25;
 // Hue, saturation and lightness all from 0 to 255
 cv::Scalar EFFECT_COLOR(26, 255, 180, ALPHA);
-
 
 using std::cerr;
 using std::endl;
@@ -193,14 +192,15 @@ nanogui::Color hsl_to_rgb(const cv::Scalar& hsl) {
     return nanogui::Color(rgb.data[0] / 255.0f, rgb.data[1] / 255.0f, rgb.data[2] / 255.0f, 255.0f);
 }
 
-nanogui::Window* window;
+nanogui::Window* win;
 nanogui::Color effect_color_rgb = hsl_to_rgb(EFFECT_COLOR);
 
 void setup_gui() {
     using namespace kb::gui;
+    using namespace kb::glfw;
 
     bool enabled = true;
-    window = form->add_window(nanogui::Vector2i(0, 0), "Settings");
+    win = form->add_window(nanogui::Vector2i(0, 0), "Settings");
     form->add_group("Foreground");
     make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f);
     make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%");
@@ -222,7 +222,6 @@ void setup_gui() {
 
     auto color = form->add_variable("Color", effect_color_rgb);
     color->set_final_callback([](const nanogui::Color &c) {
-        cerr << c << endl;
         EFFECT_COLOR = rgb_to_hsl(c);
         EFFECT_COLOR[3] = ALPHA;
     });
