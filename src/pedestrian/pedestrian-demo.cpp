@@ -163,9 +163,8 @@ int main(int argc, char **argv) {
                 break;
 
             cl::compute([&](CLExecContext_t& clclx, cv::UMat& frameBuffer){
-                cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-                cv::resize(rgb, videoFrameUp, cv::Size(WIDTH, HEIGHT));
-                cv::resize(rgb, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+                cvtColor(frameBuffer,videoFrameUp,cv::COLOR_BGRA2RGB);
+                cv::resize(frameBuffer, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
                 cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
                 cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
                 hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);

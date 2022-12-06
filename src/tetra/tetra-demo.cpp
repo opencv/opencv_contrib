@@ -2,8 +2,8 @@
 
 #include "../common/subsystems.hpp"
 
-constexpr long unsigned int WIDTH = 1920;
-constexpr long unsigned int HEIGHT = 1080;
+constexpr long unsigned int WIDTH = 3840;
+constexpr long unsigned int HEIGHT = 2160;
 constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";

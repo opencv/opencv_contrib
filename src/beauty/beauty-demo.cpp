@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
         });
 
         //BGR
-        cv::UMat rgb, resized, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
+        cv::UMat rgb, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
         cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -237,7 +237,6 @@ int main(int argc, char **argv) {
 
             cl::compute([&](CLExecContext_t& clclx, cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-                cv::resize(rgb, resized, cv::Size(WIDTH, HEIGHT));
                 cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
                 cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
                 detector->detect(down, faces);
@@ -286,8 +285,8 @@ int main(int argc, char **argv) {
                     cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
                     cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
 
-                    unsharp_mask(resized, sharpened, UNSHARP_STRENGTH);
-                    reduce_shadows(resized, reduced, REDUCE_SHADOW);
+                    unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
+                    reduce_shadows(rgb, reduced, REDUCE_SHADOW);
                     blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
                     blender.feed(reduced, faceBgMaskGrey, cv::Point(0, 0));
                     blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
@@ -295,11 +294,11 @@ int main(int argc, char **argv) {
                     frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
                     cv::boxFilter(frameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
-                    cv::subtract(blurred, resized, diff);
+                    cv::subtract(blurred, rgb, diff);
                     bitwise_and(diff, faceBgMask, masked);
                     cv::add(frameOut, masked, reduced);
 
-                    cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                    cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
                     cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
                     frameOut = cv::Scalar::all(0);
@@ -310,7 +309,7 @@ int main(int argc, char **argv) {
             } else {
                 cl::compute([&](CLExecContext_t& clclx, cv::UMat &frameBuffer) {
                     frameOut = cv::Scalar::all(0);
-                    cv::resize(resized, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                    cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
                     lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
                     lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
                     cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);

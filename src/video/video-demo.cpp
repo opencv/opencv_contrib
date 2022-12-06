@@ -6,7 +6,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr const int VA_HW_DEVICE_INDEX = 0;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
@@ -128,11 +128,6 @@ int main(int argc, char **argv) {
 
             if(!success)
                 break;
-
-            cl::compute([](CLExecContext_t& clctx, cv::UMat& frameBuffer){
-                //Resize the frame if necessary. (OpenCL)
-                cv::resize(frameBuffer, frameBuffer, cv::Size(WIDTH, HEIGHT));
-            });
 
             gl::render([](int w, int h) {
                 //Render using OpenGL

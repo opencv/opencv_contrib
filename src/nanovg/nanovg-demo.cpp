@@ -186,9 +186,7 @@ int main(int argc, char **argv) {
                 //Color-conversion from HSV to RGB. (OpenCL)
                 cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
                 //Color-conversion from RGB to BGRA. (OpenCL)
-                cv::cvtColor(rgb, bgra, cv::COLOR_RGB2BGRA);
-                //Resize the frame if necessary. (OpenCL)
-                cv::resize(bgra, frameBuffer, cv::Size(WIDTH, HEIGHT));
+                cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
             });
 
             //Render using nanovg

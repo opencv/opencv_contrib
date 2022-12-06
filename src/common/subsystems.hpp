@@ -297,6 +297,7 @@ bool read(std::function<void(CLExecContext_t&, cv::UMat&)> fn) {
         return false;
     //Color-conversion from RGB to BGRA (OpenCL)
     cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
+    cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::window_width, app::window_height));
     cl::release_to_gl(cl::frameBuffer);
     return true;
 }

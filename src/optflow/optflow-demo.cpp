@@ -181,13 +181,13 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-nanogui::Window* win;
 
 void setup_gui() {
     using namespace kb::gui;
     using namespace kb::display;
 
-    win = form->add_window(nanogui::Vector2i(6, 45), "Settings");
+    static nanogui::Window* win = form->add_window(nanogui::Vector2i(6, 45), "Settings");
+
     auto useOpenCL = make_gui_variable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
     useOpenCL->set_callback([](bool b){
         cv::ocl::setUseOpenCL(b);
@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
         //BGRA
         cv::UMat background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
         //RGB
-        cv::UMat rgb, resized, down;
+        cv::UMat rgb, down;
         //GREY
         cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
         vector<cv::Point2f> detectedPoints;
@@ -279,10 +279,8 @@ int main(int argc, char **argv) {
                 break;
 
             cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
-                cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-                cv::resize(rgb, resized, frameBufferSize);
-                cv::resize(rgb, down, cv::Size(WIDTH * fg_scale, HEIGHT * fg_scale));
-                cv::cvtColor(resized, background, cv::COLOR_RGB2BGRA);
+                cv::resize(frameBuffer, down, cv::Size(WIDTH * fg_scale, HEIGHT * fg_scale));
+                cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
                 cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
                 //Subtract the background to create a motion mask
                 prepare_motion_mask(downNextGrey, downMotionMaskGrey);
