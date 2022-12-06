@@ -38,11 +38,12 @@ float POINT_LOSS = 25;
 int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
 int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
-// Keep ALPHA separate for the GUI
-int ALPHA = 25;
-// Hue, saturation and lightness all from 0 to 255
-cv::Scalar EFFECT_COLOR(26, 255, 180, ALPHA);
 
+// Keep ALPHA separate for the GUI
+float ALPHA = 0.1f;
+
+// Red, green, blue and alpha. All from 0.0f to 1.0f
+nanogui::Color EFFECT_COLOR(1.0f, 0.75f, 0.4f, 1.0f);
 using std::cerr;
 using std::endl;
 using std::vector;
@@ -123,7 +124,7 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
             using kb::nvg::vg;
             nvgBeginPath(vg);
             nvgStrokeWidth(vg, stroke);
-            nvgStrokeColor(vg, nvgHSLA(color[0] / 255.0, color[1] / 255.f, color[2] / 255.0f, color[3]));
+            nvgStrokeColor(vg, nvgRGBA(color[0], color[1], color[2], color[3]));
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
                 if (status[i] == 1 && err[i] < (1.0 / density)
@@ -178,22 +179,7 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-cv::Scalar rgb_to_hsl(const nanogui::Color& c) {
-    cv::Mat rgb(1,1, CV_8UC3, cv::Scalar(c.r() * 255,c.g() * 255,c.b() * 255));
-    cv::Mat hls;
-    cvtColor(rgb, hls, cv::COLOR_RGB2HLS_FULL);
-    return cv::Scalar(hls.data[0], hls.data[2], hls.data[1]);
-}
-
-nanogui::Color hsl_to_rgb(const cv::Scalar& hsl) {
-    cv::Mat hls(1,1, CV_8UC3, cv::Scalar(hsl[0],hsl[2],hsl[1]));
-    cv::Mat rgb;
-    cvtColor(hls, rgb, cv::COLOR_HLS2RGB_FULL);
-    return nanogui::Color(rgb.data[0] / 255.0f, rgb.data[1] / 255.0f, rgb.data[2] / 255.0f, 255.0f);
-}
-
 nanogui::Window* win;
-nanogui::Color effect_color_rgb = hsl_to_rgb(EFFECT_COLOR);
 
 void setup_gui() {
     using namespace kb::gui;
@@ -220,16 +206,14 @@ void setup_gui() {
         GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
 
-    auto color = form->add_variable("Color", effect_color_rgb);
+    auto color = form->add_variable("Color", EFFECT_COLOR);
     color->set_final_callback([](const nanogui::Color &c) {
-        EFFECT_COLOR = rgb_to_hsl(c);
-        EFFECT_COLOR[3] = ALPHA;
+        EFFECT_COLOR[0] = c[0];
+        EFFECT_COLOR[1] = c[1];
+        EFFECT_COLOR[2] = c[2];
     });
 
-    auto alpha = make_gui_variable("Alpha", ALPHA, 0, 255);
-    alpha->set_callback([](const int& a) {
-        EFFECT_COLOR[3] = a;
-    });
+    auto alpha = make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f);
 
     form->add_button("Fullscreen", []() {
         set_fullscreen(!is_fullscreen());
@@ -306,7 +290,8 @@ int main(int argc, char **argv) {
                     //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                     if (!detect_scene_change(downMotionMaskGrey, SCENE_CHANGE_THRESH, SCENE_CHANGE_THRESH_DIFF)) {
                         //Visualize the sparse optical flow using nanovg
-                        visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, EFFECT_COLOR, MAX_POINTS, POINT_LOSS);
+                        cv::Scalar color = cv::Scalar(EFFECT_COLOR.r() * 255.0f, EFFECT_COLOR.g() * 255.0f, EFFECT_COLOR.b() * 255.0f, ALPHA * 255.0f);
+                        visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, FG_SCALE, MAX_STROKE, color, MAX_POINTS, POINT_LOSS);
                     }
                 }
             });
