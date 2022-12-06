@@ -197,7 +197,7 @@ nanogui::Color effect_color_rgb = hsl_to_rgb(EFFECT_COLOR);
 
 void setup_gui() {
     using namespace kb::gui;
-    using namespace kb::glfw;
+    using namespace kb::display;
 
     bool enabled = true;
     win = form->add_window(nanogui::Vector2i(0, 0), "Settings");
