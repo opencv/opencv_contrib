@@ -38,12 +38,11 @@ float POINT_LOSS = 25;
 int MAX_STROKE = 17;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
 int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
-
 // Keep ALPHA separate for the GUI
 float ALPHA = 0.1f;
-
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color EFFECT_COLOR(1.0f, 0.75f, 0.4f, 1.0f);
+
 using std::cerr;
 using std::endl;
 using std::vector;
