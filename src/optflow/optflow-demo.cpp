@@ -203,7 +203,7 @@ void setup_gui() {
     window = form->add_window(nanogui::Vector2i(0, 0), "Settings");
     form->add_group("Foreground");
     make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f);
-    make_gui_variable("Loss", FG_LOSS, 0.1f, 0.99f);
+    make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%");
 
     form->add_group("Scene Change Detection");
     make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f);
