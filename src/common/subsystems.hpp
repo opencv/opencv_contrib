@@ -19,7 +19,6 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
 #define GLFW_INCLUDE_GLCOREARB
-
 #include <GLFW/glfw3.h>
 #include <nanogui/opengl.h>
 
@@ -116,9 +115,8 @@ void init(const string &title, int major, int minor, int samples = 4, bool debug
     if(debug)
         glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    if (app::offscreen) {
+    if(app::offscreen)
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    }
 
     glfwSetTime(0);
 
@@ -447,7 +445,8 @@ void init(const string &windowTitle, unsigned int width, unsigned int height, bo
 
 
 void run(std::function<void()> fn) {
-    gui::set_visible(true);
+    if(!app::offscreen)
+        gui::set_visible(true);
     gui::update_size();
 
     fn();
