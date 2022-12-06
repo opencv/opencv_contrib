@@ -310,12 +310,6 @@ void init(NVGcontext *context) {
     }
     vg = context;
     nvgCreateFont(vg, "serif", "assets/LinLibertine_RB.ttf");
-
-    //FIXME workaround for color glitch in first frame. I don't know why yet but acquiring and releasing the framebuffer fixes it.
-    gl::bind();
-    cv::UMat fb;
-    cl::acquire_from_gl(fb);
-    cl::release_to_gl(fb);
 }
 } //namespace nvg
 namespace va {
