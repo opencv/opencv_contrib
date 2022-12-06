@@ -126,6 +126,7 @@ int main(int argc, char **argv) {
     app::init("Nanovg Demo", WIDTH, HEIGHT, OFFSCREEN);
     //Print system information
     app::print_system_info();
+
     app::run([&]() {
         //Initialize MJPEG HW decoding using VAAPI
         cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
@@ -195,16 +196,16 @@ int main(int argc, char **argv) {
                 drawColorwheel(nvg::vg, w - 300, h - 300, 250.0f, 250.0f, nvgHue);
             });
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
-
             va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
 
-            app::print_fps();
+            app::update_fps();
+
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
         }
 
         app::terminate();

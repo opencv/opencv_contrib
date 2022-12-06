@@ -144,16 +144,16 @@ int main(int argc, char **argv) {
                 glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
             });
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
-
             va::write([&](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
 
-            app::print_fps();
+            app::update_fps();
+
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
         }
 
         app::terminate();

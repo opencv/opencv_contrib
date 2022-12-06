@@ -205,16 +205,16 @@ int main(int argc, char **argv) {
                 composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, FG_LOSS);
             });
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if (!app::display())
-                break;
-
             va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
 
-            app::print_fps();
+            app::update_fps();
+
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if (!app::display())
+                break;
         }
 
         app::terminate();

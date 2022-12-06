@@ -357,6 +357,14 @@ using namespace nanogui;
 ref<nanogui::Screen> screen;
 FormHelper* form;
 
+nanogui::detail::FormWidget<bool> * make_gui_variable(const string& name, bool& v, const string& tooltip = "") {
+    using kb::gui::form;
+    auto var = form->add_variable(name, v);
+    if(!tooltip.empty())
+        var->set_tooltip(tooltip);
+    return var;
+}
+
 template <typename T> nanogui::detail::FormWidget<T> * make_gui_variable(const string& name, T& v, const T& min, const T& max, bool spinnable = true, const string& unit = "", const string tooltip = "") {
     using kb::gui::form;
     auto var = form->add_variable(name, v);
@@ -464,7 +472,7 @@ bool display() {
     return true;
 }
 
-void print_fps() {
+void update_fps(bool graphical = false) {
     static uint64_t cnt = 0;
     static double fps = 1;
     static cv::TickMeter meter;
@@ -477,6 +485,20 @@ void print_fps() {
             cerr << "FPS : " << fps << '\r';
             cnt = 0;
         }
+    }
+
+    if (graphical) {
+        nvg::render([&](int w, int h) {
+            nvgBeginPath(nvg::vg);
+            nvgRoundedRect(nvg::vg, 10, 10, 60 * 6, 60, 10);
+            nvgFillColor(nvg::vg, nvgRGBA(255, 255, 255, 180));
+            nvgFill (nvg::vg);
+            nvgFontSize(nvg::vg, 60.0f);
+            nvgFontFace(nvg::vg, "sans-bold");
+            nvgFillColor(nvg::vg, nvgRGBA(90, 90, 90, 200));
+            nvgTextAlign(nvg::vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+            nvgText(nvg::vg, 22, 37, ("FPS: " + std::to_string(fps)).c_str(), nullptr);
+        });
     }
 
     meter.start();

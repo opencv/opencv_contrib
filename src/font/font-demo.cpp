@@ -138,21 +138,23 @@ int main(int argc, char **argv) {
                 cv::add(stars, warped, frameBuffer);
             });
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
+
 
             va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
 
+            app::update_fps();
+
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
+
             ++cnt;
             //Wrap the cnt around if it becomes to big.
             if(cnt > std::numeric_limits<size_t>().max() / 2.0)
                 cnt = 0;
-
-            app::print_fps();
         }
 
         app::terminate();

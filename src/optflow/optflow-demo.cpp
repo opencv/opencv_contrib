@@ -42,6 +42,8 @@ int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG
 float ALPHA = 0.1f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color EFFECT_COLOR(1.0f, 0.75f, 0.4f, 1.0f);
+//show graphical FPS
+bool SHOW_FPS = false;
 
 using std::cerr;
 using std::endl;
@@ -184,7 +186,7 @@ void setup_gui() {
     using namespace kb::gui;
     using namespace kb::display;
 
-    win = form->add_window(nanogui::Vector2i(0, 0), "Settings");
+    win = form->add_window(nanogui::Vector2i(6, 45), "Settings");
     form->add_group("Foreground");
     make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
     make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
@@ -212,7 +214,10 @@ void setup_gui() {
         EFFECT_COLOR[2] = c[2];
     });
 
-    auto alpha = make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f, true, "", "The opacity of the effect");
+    make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f, true, "", "The opacity of the effect");
+
+    form->add_group("Display");
+    make_gui_variable("Show FPS", SHOW_FPS, "Display the FPS on screen");
 
     form->add_button("Fullscreen", []() {
         set_fullscreen(!is_fullscreen());
@@ -302,16 +307,16 @@ int main(int argc, char **argv) {
                 composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, FG_LOSS);
             });
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
-
             va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
 
-            app::print_fps();
+            app::update_fps(SHOW_FPS);
+
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!app::display())
+                break;
         }
 
         app::terminate();
