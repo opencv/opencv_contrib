@@ -360,13 +360,16 @@ using namespace nanogui;
 ref<nanogui::Screen> screen;
 FormHelper* form;
 
-template <typename T> nanogui::detail::FormWidget<T> * make_gui_variable(const string& name, T& v, const T& min, const T& max, bool spinnable = true, const string& unit = "") {
+template <typename T> nanogui::detail::FormWidget<T> * make_gui_variable(const string& name, T& v, const T& min, const T& max, bool spinnable = true, const string& unit = "", const string tooltip = "") {
     using kb::gui::form;
     auto var = form->add_variable(name, v);
     var->set_spinnable(spinnable);
     var->set_min_value(min);
     var->set_max_value(max);
-    var->set_units(unit);
+    if(!unit.empty())
+        var->set_units(unit);
+    if(!tooltip.empty())
+        var->set_tooltip(tooltip);
     return var;
 }
 

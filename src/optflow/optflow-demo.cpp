@@ -184,35 +184,35 @@ void setup_gui() {
     using namespace kb::gui;
     using namespace kb::display;
 
-    bool enabled = true;
     win = form->add_window(nanogui::Vector2i(0, 0), "Settings");
     form->add_group("Foreground");
-    make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f);
-    make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%");
+    make_gui_variable("Scale", FG_SCALE, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
+    make_gui_variable("Loss", FG_LOSS, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     form->add_group("Scene Change Detection");
-    make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f);
-    make_gui_variable("Threshold Diff", SCENE_CHANGE_THRESH_DIFF, 0.1f, 1.0f);
+    make_gui_variable("Threshold", SCENE_CHANGE_THRESH, 0.1f, 1.0f, true, "", "Peak threshold. Lowering them makes detection more sensitive");
+    make_gui_variable("Threshold Diff", SCENE_CHANGE_THRESH_DIFF, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering them makes detection more sensitive");
 
     form->add_group("Points");
-    make_gui_variable("Max. Points", MAX_POINTS, 10, 1000000);
-    make_gui_variable("Point Loss", POINT_LOSS, 0.0f, 100.0f, true, "%");
+    make_gui_variable("Max. Points", MAX_POINTS, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
+    make_gui_variable("Point Loss", POINT_LOSS, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
 
     form->add_group("Effect");
-    make_gui_variable("Max. Stroke Size", MAX_STROKE, 1, 100, true, "px");
-    auto glowKernel = make_gui_variable("Glow Kernel Size", GLOW_KERNEL_SIZE, 1, 63);
+    make_gui_variable("Max. Stroke Size", MAX_STROKE, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
+    auto glowKernel = make_gui_variable("Glow Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
     glowKernel->set_callback([](const int& k) {
         GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
 
     auto color = form->add_variable("Color", EFFECT_COLOR);
+    color->set_tooltip("The effect color");
     color->set_final_callback([](const nanogui::Color &c) {
         EFFECT_COLOR[0] = c[0];
         EFFECT_COLOR[1] = c[1];
         EFFECT_COLOR[2] = c[2];
     });
 
-    auto alpha = make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f);
+    auto alpha = make_gui_variable("Alpha", ALPHA, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
     form->add_button("Fullscreen", []() {
         set_fullscreen(!is_fullscreen());
