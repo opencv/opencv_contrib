@@ -181,12 +181,11 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-
 void setup_gui() {
     using namespace kb::gui;
     using namespace kb::display;
 
-    static nanogui::Window* win = form->add_window(nanogui::Vector2i(6, 45), "Settings");
+    form->add_window(nanogui::Vector2i(6, 45), "Settings");
 
     auto useOpenCL = make_gui_variable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
     useOpenCL->set_callback([](bool b){
@@ -236,10 +235,12 @@ int main(int argc, char **argv) {
     }
 
     //Initialize the application
-    app::init("Sparse Optical Flow Demo", WIDTH, HEIGHT, OFFSCREEN);
+    app::init("Sparse Optical Flow Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
     app::print_system_info();
     setup_gui();
     app::run([&]() {
+        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+
         cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
                 cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
                 cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
@@ -255,12 +256,11 @@ int main(int argc, char **argv) {
         }
 
         double fps = capture.get(cv::CAP_PROP_FPS);
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameBufferSize, {
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
 
-        cv::Size frameBufferSize(WIDTH, HEIGHT);
         //BGRA
         cv::UMat background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
         //RGB
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
                 break;
 
             cl::compute([&](cv::UMat& frameBuffer){
-                cv::resize(frameBuffer, down, cv::Size(WIDTH * fg_scale, HEIGHT * fg_scale));
+                cv::resize(frameBuffer, down, cv::Size(frameBufferSize.width * fg_scale, frameBufferSize.height * fg_scale));
                 cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
                 cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
                 //Subtract the background to create a motion mask

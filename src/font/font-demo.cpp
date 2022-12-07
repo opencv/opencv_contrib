@@ -39,13 +39,15 @@ int main(int argc, char **argv) {
     using namespace kb;
 
     //Initialize the application
-    app::init("Font Demo", WIDTH, HEIGHT, OFFSCREEN);
+    app::init("Font Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
     //Print system information
     app::print_system_info();
 
     app::run([&]() {
+        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+
         //Initialize VP9 HW encoding using VAAPI
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, frameBufferSize, {
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });

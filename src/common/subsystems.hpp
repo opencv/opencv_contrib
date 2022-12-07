@@ -46,6 +46,8 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
 namespace app {
 unsigned int window_width;
 unsigned int window_height;
+unsigned int frame_buffer_width;
+unsigned int frame_buffer_height;
 bool offscreen;
 } //app
 
@@ -99,9 +101,7 @@ float get_pixel_ratio(GLFWwindow *win = display::get_window()) {
 #endif
 }
 void update_size(GLFWwindow *win = display::get_window()) {
-    float pixelRatio = display::get_pixel_ratio(win);
-    glfwSetWindowSize(win, app::window_width * pixelRatio, app::window_height * pixelRatio);
-    glViewport(0, 0, app::window_width * pixelRatio, app::window_height * pixelRatio);
+    glfwSetWindowSize(win, app::window_width, app::window_height);
 }
 
 bool is_fullscreen(GLFWwindow* win = display::get_window()) {
@@ -111,16 +111,17 @@ bool is_fullscreen(GLFWwindow* win = display::get_window()) {
 void set_fullscreen(bool f, GLFWwindow* win = display::get_window()) {
     auto monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    float pixelRatio = display::get_pixel_ratio(win);
     if(f) {
         glfwSetWindowMonitor(win, monitor, 0,0, mode->width, mode->height, mode->refreshRate);
     } else {
-        glfwSetWindowMonitor(win, nullptr, 0,0,app::window_width, app::window_height,mode->refreshRate);
+        glfwSetWindowMonitor(win, nullptr, 0,0,app::window_width, app::window_height ,mode->refreshRate);
     }
-    display::update_size();
+    display::update_size(win);
 }
-
-void framebuffer_size_callback(GLFWwindow *win, int width, int height) {
-    display::update_size();
+//
+void frame_buffer_size_callback(GLFWwindow *win, int width, int height) {
+//        glViewport(0, 0, width, height);
 }
 
 void error_callback(int error, const char *description) {
@@ -166,7 +167,7 @@ void init(const string &title, int major, int minor, int samples, bool debug) {
         exit(11);
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(window, frame_buffer_size_callback);
 }
 } // namespace display
 
@@ -199,29 +200,27 @@ void end() {
 void render(std::function<void(int,int)> fn) {
     CLExecScope_t scope(gl::context);
     gl::begin();
-    fn(app::window_width, app::window_height);
+    fn(app::frame_buffer_width, app::frame_buffer_height);
     gl::end();
 }
 
 void init() {
     glewExperimental = true;
     glewInit();
-
     cv::ogl::ocl::initializeContextFromGL();
-
     frame_buf = 0;
     GL_CHECK(glGenFramebuffers(1, &frame_buf));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
     GL_CHECK(glGenRenderbuffers(1, &render_buf));
-    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
-    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::window_width, app::window_height));
 
-    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
-    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::window_width, app::window_height), cv::ogl::Texture2D::RGBA, false);
+    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::frame_buffer_width, app::frame_buffer_height), cv::ogl::Texture2D::RGBA, false);
     frame_buf_tex->bind();
 
-    GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
+    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
+    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::window_width, app::window_height));
+    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
 
+    GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
     gl::context = CLExecContext_t::getCurrent();
@@ -231,11 +230,11 @@ std::string get_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
-void blit_frame_buffer_to_screen() {
+void blit_frame_buffer_to_screen(int x = 0, int y = 0) {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, app::window_width, app::window_height, 0, 0, app::window_width, app::window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    GL_CHECK(glBlitFramebuffer(0, 0, app::frame_buffer_width, app::frame_buffer_height, x, y, x + app::frame_buffer_width, y + app::frame_buffer_height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 } // namespace gl
 
@@ -306,9 +305,10 @@ bool read(std::function<void(cv::UMat&)> fn) {
         cl::acquire_from_gl(cl::frameBuffer);
         if(va::videoFrame.empty())
             return false;
-        //Color-conversion from RGB to BGRA (OpenCL)
+
         cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
-        cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::window_width, app::window_height));
+        cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::frame_buffer_width, app::frame_buffer_height));
+        assert(cl::frameBuffer.size() == cv::Size(app::frame_buffer_width, app::frame_buffer_height));
         cl::release_to_gl(cl::frameBuffer);
     }
     return true;
@@ -316,9 +316,10 @@ bool read(std::function<void(cv::UMat&)> fn) {
 
 void write(std::function<void(const cv::UMat&)> fn) {
     CLExecScope_t scope(va::context);
-    //Color-conversion from BGRA to RGB. (OpenCL)
+    cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::frame_buffer_width, app::frame_buffer_height));
     cv::cvtColor(cl::frameBuffer, va::videoFrame, cv::COLOR_BGRA2RGB);
     cv::flip(va::videoFrame, va::videoFrame, 0);
+    assert(videoFrame.size() == cv::Size(app::frame_buffer_width, app::frame_buffer_height));
     fn(va::videoFrame);
 }
 } // namespace va
@@ -400,7 +401,7 @@ void set_visible(bool v) {
 
 void update_size() {
     float pixelRatio = display::get_pixel_ratio();
-    gui::screen->set_size(nanogui::Vector2i(app::window_width * pixelRatio, app::window_height * pixelRatio));
+    gui::screen->set_size(nanogui::Vector2i(app::window_width, app::window_height));
     display::update_size();
 }
 } //namespace gui
@@ -415,12 +416,11 @@ void begin() {
     gl::begin();
 
     float r = display::get_pixel_ratio();
-    float w = app::window_width;
-    float h = app::window_height;
+    float w = app::frame_buffer_width;
+    float h = app::frame_buffer_height;
     NVGcontext* vg = gui::screen->nvg_context();
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
     nvgSave(vg);
-    GL_CHECK(glViewport(0, 0,w * r, h * r));
     nvgBeginFrame(vg, w, h, r);
 }
 
@@ -434,7 +434,7 @@ void end() {
 void render(std::function<void(NVGcontext*,int,int)> fn) {
     CLExecScope_t scope(gl::context);
     nvg::begin();
-    fn(gui::screen->nvg_context(), app::window_width, app::window_height);
+    fn(gui::screen->nvg_context(), app::frame_buffer_width, app::frame_buffer_height);
     nvg::end();
 }
 
@@ -454,14 +454,18 @@ void print_system_info() {
     cerr << "OpenCL Platforms: " << cl::get_info() << endl;
 }
 
-void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, bool fullscreen = false, int major = 4, int minor = 6, int samples = 0, bool debugContext = false) {
+void init(const string &windowTitle, unsigned int windowWidth, unsigned int windowHeight, unsigned int frameBufferWidth, unsigned int frameBufferHeight, bool offscreen = false, bool fullscreen = false, int major = 4, int minor = 6, int samples = 0, bool debugContext = false) {
     using namespace kb::gui;
-    app::window_width = width;
-    app::window_height = height;
+    assert(frameBufferWidth <= windowWidth && frameBufferHeight <= windowHeight);
+    app::window_width = windowWidth;
+    app::window_height = windowHeight;
+    app::frame_buffer_width = frameBufferWidth;
+    app::frame_buffer_height = frameBufferHeight;
+
     app::offscreen = offscreen;
 
     display::init(windowTitle, major, minor, samples, debugContext);
-    gui::init(width, height);
+    gui::init(windowWidth, windowHeight);
     gl::init();
     nvg::init();
 }

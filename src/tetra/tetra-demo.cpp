@@ -16,8 +16,8 @@ using std::cerr;
 using std::endl;
 
 void init_scene(unsigned long w, unsigned long h) {
-    //Initialize the OpenGL scene
     glViewport(0, 0, w, h);
+    //Initialize the OpenGL scene
     glColor3f(1.0, 1.0, 1.0);
 
     glEnable(GL_CULL_FACE);
@@ -35,8 +35,8 @@ void init_scene(unsigned long w, unsigned long h) {
 }
 
 void render_scene(unsigned long w, unsigned long h) {
-    //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glViewport(0, 0, w, h);
+    //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -83,13 +83,15 @@ int main(int argc, char **argv) {
     using namespace kb;
 
     //Initialize the application
-    app::init("Tetra Demo", WIDTH, HEIGHT, OFFSCREEN);
+    app::init("Tetra Demo", WIDTH, HEIGHT, WIDTH / 2.0, HEIGHT / 2.0, OFFSCREEN);
     //Print system information
     app::print_system_info();
 
     app::run([&]() {
+        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+
         //Initialize VP9 HW encoding using VAAPI
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), {
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, frameBufferSize, {
                 cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
@@ -111,6 +113,8 @@ int main(int argc, char **argv) {
 
             //Aquire the frame buffer for use by OpenCL
             cl::compute([](cv::UMat &frameBuffer) {
+                imshow("fb", frameBuffer);
+                cv::waitKey(1);
                 //Glow effect (OpenCL)
                 glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
             });

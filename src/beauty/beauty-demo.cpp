@@ -179,10 +179,12 @@ int main(int argc, char **argv) {
     }
 
     //Initialize the application
-    app::init("Beauty Demo", WIDTH, HEIGHT, OFFSCREEN);
+    app::init("Beauty Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
     //Print system information
     app::print_system_info();
     app::run([&]() {
+        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+
         cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
                 cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
                 cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
@@ -206,7 +208,7 @@ int main(int argc, char **argv) {
         facemark->loadModel("assets/lbfmodel.yaml");
         cv::detail::MultiBandBlender blender(true);
 
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(WIDTH, HEIGHT), {
+        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameBufferSize, {
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
         });
