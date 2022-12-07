@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         });
 
         while (true) {
-            bool success = va::read([&capture](CLExecContext_t& clctx, cv::UMat& videoFrame){
+            bool success = va::read([&capture](cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -134,12 +134,12 @@ int main(int argc, char **argv) {
                 render_scene(w, h);
             });
 
-            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
+            cl::compute([&](cv::UMat& frameBuffer){
                 //Glow effect (OpenCL)
                 glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
             });
 
-            va::write([&](CLExecContext_t& clctx, const cv::UMat& videoFrame){
+            va::write([&](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

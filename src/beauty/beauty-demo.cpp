@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
         vector<FaceFeatures> featuresList;
 
         while (true) {
-            bool success = va::read([&capture](CLExecContext_t& clclx, cv::UMat& videoFrame){
+            bool success = va::read([&capture](cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
             if(!success)
                 break;
 
-            cl::compute([&](CLExecContext_t& clclx, cv::UMat& frameBuffer){
+            cl::compute([&](cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
                 cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
                 cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
                     draw_face_bg_mask(vg, featuresList);
                 });
 
-                cl::compute([&](CLExecContext_t& clclx, cv::UMat &frameBuffer) {
+                cl::compute([&](cv::UMat &frameBuffer) {
                     //Convert/Copy the mask
                     cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
                     cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
                     draw_face_fg_mask(vg, featuresList);
                 });
 
-                cl::compute([&](CLExecContext_t& clclx, cv::UMat &frameBuffer) {
+                cl::compute([&](cv::UMat &frameBuffer) {
                     //Convert/Copy the mask
                     cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
 
@@ -307,7 +307,7 @@ int main(int argc, char **argv) {
                     cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
                 });
             } else {
-                cl::compute([&](CLExecContext_t& clclx, cv::UMat &frameBuffer) {
+                cl::compute([&](cv::UMat &frameBuffer) {
                     frameOut = cv::Scalar::all(0);
                     cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
                     lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
                 });
             }
 
-            va::write([&writer](CLExecContext_t& clclx, const cv::UMat& videoFrame){
+            va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

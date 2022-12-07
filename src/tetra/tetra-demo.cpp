@@ -2,8 +2,8 @@
 
 #include "../common/subsystems.hpp"
 
-constexpr long unsigned int WIDTH = 3840;
-constexpr long unsigned int HEIGHT = 2160;
+constexpr long unsigned int WIDTH = 1920;
+constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
@@ -110,12 +110,12 @@ int main(int argc, char **argv) {
             });
 
             //Aquire the frame buffer for use by OpenCL
-            cl::compute([](CLExecContext_t& clctx, cv::UMat &frameBuffer) {
+            cl::compute([](cv::UMat &frameBuffer) {
                 //Glow effect (OpenCL)
                 glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
             });
 
-            va::write([&writer](CLExecContext_t& clctx, const cv::UMat& videoFrame){
+            va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

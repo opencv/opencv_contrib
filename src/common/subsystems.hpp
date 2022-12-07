@@ -29,6 +29,8 @@ using std::string;
 namespace kb {
 
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
+typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
+
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     GLint errorCode = glGetError();
 
@@ -111,7 +113,7 @@ void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
-void init(const string &title, int major, int minor, int samples = 4, bool debug = false) {
+void init(const string &title, int major, int minor, int samples, bool debug) {
     assert(glfwInit() == GLFW_TRUE);
     glfwSetErrorCallback(error_callback);
 
@@ -129,8 +131,8 @@ void init(const string &title, int major, int minor, int samples = 4, bool debug
     glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #else
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 #endif
@@ -161,10 +163,6 @@ GLuint frame_buf;
 GLuint render_buf;
 CLExecContext_t context;
 
-void bind() {
-    gl::context.bind();
-}
-
 void begin() {
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
@@ -185,7 +183,7 @@ void end() {
 }
 
 void render(std::function<void(int,int)> fn) {
-    gl::bind();
+    CLExecScope_t scope(gl::context);
     gl::begin();
     fn(app::window_width, app::window_height);
     gl::end();
@@ -244,10 +242,10 @@ void release_to_gl(cv::UMat& m) {
     gl::end();
 }
 
-void compute(std::function<void(CLExecContext_t&, cv::UMat&)> fn) {
-    gl::bind();
+void compute(std::function<void(cv::UMat&)> fn) {
+    CLExecScope_t scope(gl::context);
     acquire_from_gl(cl::frameBuffer);
-    fn(CLExecContext_t::getCurrent(), cl::frameBuffer);
+    fn(cl::frameBuffer);
     release_to_gl(cl::frameBuffer);
 }
 
@@ -284,30 +282,30 @@ void copy() {
     va::context = CLExecContext_t::getCurrent();
 }
 
-void bind() {
-    va::context.bind();
-}
-
-bool read(std::function<void(CLExecContext_t&, cv::UMat&)> fn) {
-    va::bind();
-    fn(va::context, va::videoFrame);
-    gl::bind();
-    cl::acquire_from_gl(cl::frameBuffer);
-    if(va::videoFrame.empty())
-        return false;
-    //Color-conversion from RGB to BGRA (OpenCL)
-    cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
-    cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::window_width, app::window_height));
-    cl::release_to_gl(cl::frameBuffer);
+bool read(std::function<void(cv::UMat&)> fn) {
+    {
+        CLExecScope_t scope(va::context);
+        fn(va::videoFrame);
+    }
+    {
+        CLExecScope_t scope(gl::context);
+        cl::acquire_from_gl(cl::frameBuffer);
+        if(va::videoFrame.empty())
+            return false;
+        //Color-conversion from RGB to BGRA (OpenCL)
+        cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
+        cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::window_width, app::window_height));
+        cl::release_to_gl(cl::frameBuffer);
+    }
     return true;
 }
 
-void write(std::function<void(CLExecContext_t&, const cv::UMat&)> fn) {
-    va::bind();
+void write(std::function<void(const cv::UMat&)> fn) {
+    CLExecScope_t scope(va::context);
     //Color-conversion from BGRA to RGB. (OpenCL)
     cv::cvtColor(cl::frameBuffer, va::videoFrame, cv::COLOR_BGRA2RGB);
     cv::flip(va::videoFrame, va::videoFrame, 0);
-    fn(va::context, va::videoFrame);
+    fn(va::videoFrame);
 }
 } // namespace va
 
@@ -386,7 +384,7 @@ void set_visible(bool v) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 }
 
-void update_size(float pixelRatio = display::get_pixel_ratio(display::window)) {
+void update_size(float pixelRatio = display::get_pixel_ratio()) {
     gui::screen->set_size(nanogui::Vector2i(app::window_width * pixelRatio, app::window_height * pixelRatio));
     display::update_size(pixelRatio);
 }
@@ -419,7 +417,7 @@ void end() {
 }
 
 void render(std::function<void(NVGcontext*,int,int)> fn) {
-    gl::bind();
+    CLExecScope_t scope(gl::context);
     nvg::begin();
     fn(gui::screen->nvg_context(), app::window_width, app::window_height);
     nvg::end();
@@ -441,18 +439,17 @@ void print_system_info() {
     cerr << "OpenCL Platforms: " << cl::get_info() << endl;
 }
 
-void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, bool fullscreen = false, int major = 4, int minor = 6, int samples = 4, bool debugContext = false) {
+void init(const string &windowTitle, unsigned int width, unsigned int height, bool offscreen = false, bool fullscreen = false, int major = 4, int minor = 6, int samples = 0, bool debugContext = false) {
     using namespace kb::gui;
     app::window_width = width;
     app::window_height = height;
     app::offscreen = offscreen;
 
-    display::init(windowTitle, samples, debugContext);
+    display::init(windowTitle, major, minor, samples, debugContext);
     gui::init(width, height);
     gl::init();
     nvg::init();
 }
-
 
 void run(std::function<void()> fn) {
     if(!app::offscreen)

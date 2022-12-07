@@ -46,7 +46,7 @@ int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG
 // Keep alpha separate for the GUI
 float alpha = 0.1f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
-nanogui::Color EFFECT_COLOR(1.0f, 0.75f, 0.4f, 1.0f);
+nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
 bool show_fps = true;
 //Use OpenCL or not
@@ -211,12 +211,12 @@ void setup_gui() {
     glowKernel->set_callback([](const int& k) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
-    auto color = form->add_variable("Color", EFFECT_COLOR);
+    auto color = form->add_variable("Color", effect_color);
     color->set_tooltip("The effect color");
     color->set_final_callback([](const nanogui::Color &c) {
-        EFFECT_COLOR[0] = c[0];
-        EFFECT_COLOR[1] = c[1];
-        EFFECT_COLOR[2] = c[2];
+        effect_color[0] = c[0];
+        effect_color[1] = c[1];
+        effect_color[2] = c[2];
     });
     make_gui_variable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
@@ -270,7 +270,7 @@ int main(int argc, char **argv) {
         vector<cv::Point2f> detectedPoints;
 
         while (true) {
-            bool success = va::read([&capture](CLExecContext_t& clctx, cv::UMat& videoFrame){
+            bool success = va::read([&capture](cv::UMat& videoFrame){
                 //videoFrame will be converted to BGRA and stored in the frameBuffer.
                 capture >> videoFrame;
             });
@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
             if(!success)
                 break;
 
-            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
+            cl::compute([&](cv::UMat& frameBuffer){
                 cv::resize(frameBuffer, down, cv::Size(WIDTH * fg_scale, HEIGHT * fg_scale));
                 cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
                 cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
@@ -295,7 +295,7 @@ int main(int argc, char **argv) {
                     //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                     if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                         //Visualize the sparse optical flow using nanovg
-                        cv::Scalar color = cv::Scalar(EFFECT_COLOR.r() * 255.0f, EFFECT_COLOR.g() * 255.0f, EFFECT_COLOR.b() * 255.0f, alpha * 255.0f);
+                        cv::Scalar color = cv::Scalar(effect_color.r() * 255.0f, effect_color.g() * 255.0f, effect_color.b() * 255.0f, alpha * 255.0f);
                         visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
                     }
                 }
@@ -303,12 +303,12 @@ int main(int argc, char **argv) {
 
             downPrevGrey = downNextGrey.clone();
 
-            cl::compute([&](CLExecContext_t& clctx, cv::UMat& frameBuffer){
+            cl::compute([&](cv::UMat& frameBuffer){
                 //Put it all together (OpenCL)
                 composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
             });
 
-            va::write([&writer](CLExecContext_t& clctx, const cv::UMat& videoFrame){
+            va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });

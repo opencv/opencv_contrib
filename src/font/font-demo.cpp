@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
             }
         });
 
-        cl::compute([&](kb::CLExecContext_t& clctx, cv::UMat& frameBuffer){
+        cl::compute([&](cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
 
@@ -129,14 +129,14 @@ int main(int argc, char **argv) {
                 break;
             }
 
-            cl::compute([&](kb::CLExecContext_t& clctx, cv::UMat& frameBuffer){
+            cl::compute([&](cv::UMat& frameBuffer){
                 //Pseudo 3D text effect.
                 cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
                 //Combine layers
                 cv::add(stars, warped, frameBuffer);
             });
 
-            va::write([&writer](kb::CLExecContext_t& clctx, const cv::UMat& videoFrame){
+            va::write([&writer](const cv::UMat& videoFrame){
                 //videoFrame is the frameBuffer converted to BGR. Ready to be written.
                 writer << videoFrame;
             });
