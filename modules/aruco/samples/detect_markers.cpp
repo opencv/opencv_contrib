@@ -92,9 +92,9 @@ int main(int argc, char *argv[]) {
 
     if (parser.has("refine")) {
         //override cornerRefinementMethod read from config file
-        detectorParams.cornerRefinementMethod = parser.get<int>("refine");
+        detectorParams.cornerRefinementMethod = parser.get<aruco::CornerRefineMethod>("refine");
     }
-    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << detectorParams.cornerRefinementMethod << std::endl;
+    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << (int)detectorParams.cornerRefinementMethod << std::endl;
 
     int camId = parser.get<int>("ci");
 

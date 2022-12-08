@@ -188,7 +188,7 @@ TEST(CV_ArucoTutorial, can_find_diamondmarkers)
     fs = FileStorage(detectorPath, FileStorage::READ);
     aruco::DetectorParameters detectorParams;
     detectorParams.readDetectorParameters(fs.root());
-    detectorParams.cornerRefinementMethod = 3;
+    detectorParams.cornerRefinementMethod = aruco::CORNER_REFINE_APRILTAG;
 
     aruco::ArucoDetector detector(dictionary, detectorParams);
 
