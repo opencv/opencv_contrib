@@ -290,7 +290,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
     else
         rgb = _rgb;
 
-    OdometryFrame newFrame(rgb, depth);
+    OdometryFrame newFrame(depth, rgb);
 
     if(frameCounter == 0)
     {
@@ -325,7 +325,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         volume.raycast(pose, points, normals, colors);
         std::vector<MatType> pch(3);
         split(points, pch);
-        newFrame = OdometryFrame(colors, pch[2], noArray(), normals);
+        newFrame = OdometryFrame(pch[2], colors, noArray(), normals);
     }
 
     renderFrame = newFrame;

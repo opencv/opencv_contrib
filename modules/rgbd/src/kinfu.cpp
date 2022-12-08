@@ -258,7 +258,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    OdometryFrame newFrame(noArray(), depth);
+    OdometryFrame newFrame(depth);
 
     if(frameCounter == 0)
     {
@@ -292,7 +292,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
 
         std::vector<MatType> pch(3);
         split(points, pch);
-        newFrame = OdometryFrame(noArray(), pch[2], noArray(), normals);
+        newFrame = OdometryFrame(pch[2], noArray(), noArray(), normals);
     }
 
     renderFrame = newFrame;

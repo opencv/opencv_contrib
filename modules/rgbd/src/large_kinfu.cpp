@@ -321,7 +321,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    OdometryFrame newFrame(noArray(), depth);
+    OdometryFrame newFrame(depth);
 
     CV_LOG_INFO(NULL, "Current frameID: " << frameCounter);
     for (const auto& it : submapMgr->activeSubmaps)
