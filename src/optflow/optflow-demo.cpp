@@ -236,9 +236,7 @@ int main(int argc, char **argv) {
 
 
     cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
-
     kb::print_system_info();
-
     setup_gui(window);
 
     auto capture = window->makeVACapture(argv[1], 0);

@@ -32,11 +32,14 @@ asan: dirs
 
 clean: dirs
 
+docs:
+	doxygen Doxyfile
+
 export LDFLAGS
 export CXXFLAGS
 export LIBS
 
-dirs:
+dirs: docs
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 #	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 #	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
