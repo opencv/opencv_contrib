@@ -43,226 +43,520 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     expr;                                        \
     kb::gl_check_error(__FILE__, __LINE__, #expr);
 
-namespace app {
-unsigned int window_width;
-unsigned int window_height;
-unsigned int frame_buffer_width;
-unsigned int frame_buffer_height;
-bool offscreen;
-} //app
+class CLGLContext {
+    friend class CLVAContext;
+    friend class NanoVGContext;
+    friend class Window;
 
-namespace display {
-GLFWwindow* window;
+    cv::UMat frameBuffer_;
+    cv::ogl::Texture2D *frameBufferTex_;
+    GLuint frameBufferID;
+    GLuint renderBufferID;
+    CLExecContext_t context_;
+    cv::Size windowSize_;
+    cv::Size frameBufferSize_;
+public:
+    CLGLContext(cv::Size windowSize, cv::Size frameBufferSize) :
+            windowSize_(windowSize), frameBufferSize_(frameBufferSize) {
+        glewExperimental = true;
+        glewInit();
+        cv::ogl::ocl::initializeContextFromGL();
+        frameBufferID = 0;
+        GL_CHECK(glGenFramebuffers(1, &frameBufferID));
+        GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferID));
+        GL_CHECK(glGenRenderbuffers(1, &renderBufferID));
 
-GLFWwindow* get_window() {
-    return window;
-}
+        frameBufferTex_ = new cv::ogl::Texture2D(frameBufferSize_, cv::ogl::Texture2D::RGBA, false);
+        frameBufferTex_->bind();
 
-void terminate(GLFWwindow *win = display::get_window()) {
-    glfwDestroyWindow(win);
-    glfwTerminate();
-}
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID));
+        GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, windowSize.width, windowSize.height));
+        GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID));
 
-std::pair<int,int> frameBufferSize(GLFWwindow *win = display::get_window()) {
-    int fbW, fbH;
-    glfwGetFramebufferSize(win, &fbW, &fbH);
-    return {fbW, fbH};
-}
+        GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBufferTex_->texId(), 0));
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-std::pair<int,int> windowSize(GLFWwindow *win = display::get_window()) {
-    int w, h;
-    glfwGetWindowSize(win, &w, &h);
-    return {w, h};
-}
-
-float get_pixel_ratio(GLFWwindow *win = display::get_window()) {
-#if defined(_WIN32)
-    HWND hWnd = glfwGetWin32Window(win);
-    HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-    /* The following function only exists on Windows 8.1+, but we don't want to make that a dependency */
-    static HRESULT (WINAPI *GetDpiForMonitor_)(HMONITOR, UINT, UINT*, UINT*) = nullptr;
-    static bool GetDpiForMonitor_tried = false;
-
-    if (!GetDpiForMonitor_tried) {
-        auto shcore = LoadLibrary(TEXT("shcore"));
-        if (shcore)
-            GetDpiForMonitor_ = (decltype(GetDpiForMonitor_)) GetProcAddress(shcore, "GetDpiForMonitor");
-        GetDpiForMonitor_tried = true;
+        context_ = CLExecContext_t::getCurrentRef();
     }
 
-    if (GetDpiForMonitor_) {
-        uint32_t dpiX, dpiY;
-        if (GetDpiForMonitor_(monitor, 0 /* effective DPI */, &dpiX, &dpiY) == S_OK)
-            return std::round(dpiX / 96.0);
+    cv::ogl::Texture2D& getFrameBufferTexture() {
+        return *frameBufferTex_;
     }
-    return 1.f;
-#else
-    return (float)frameBufferSize(win).first / (float)windowSize(win).first;
-#endif
-}
-void update_size(GLFWwindow *win = display::get_window()) {
-    glfwSetWindowSize(win, app::window_width, app::window_height);
-}
 
-bool is_fullscreen(GLFWwindow* win = display::get_window()) {
-    return glfwGetWindowMonitor(win) != nullptr;
-}
-
-void set_fullscreen(bool f, GLFWwindow* win = display::get_window()) {
-    auto monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    float pixelRatio = display::get_pixel_ratio(win);
-    if(f) {
-        glfwSetWindowMonitor(win, monitor, 0,0, mode->width, mode->height, mode->refreshRate);
-    } else {
-        glfwSetWindowMonitor(win, nullptr, 0,0,app::window_width, app::window_height ,mode->refreshRate);
+    cv::Size getSize() {
+        return frameBufferSize_;
     }
-    display::update_size(win);
+
+    void render(std::function<void(cv::Size&)> fn) {
+        CLExecScope_t scope(context_);
+        begin();
+        fn(frameBufferSize_);
+        end();
+    }
+
+
+    void compute(std::function<void(cv::UMat&)> fn) {
+        CLExecScope_t scope(getCLExecContext());
+        acquireFromGL(frameBuffer_);
+        fn(frameBuffer_);
+        releaseToGL(frameBuffer_);
+    }
+private:
+    cv::ogl::Texture2D& getTexture2D() {
+        return *frameBufferTex_;
+    }
+
+    CLExecContext_t& getCLExecContext() {
+        return context_;
+    }
+
+    void blitFrameBufferToScreen(int x = 0, int y = 0) {
+        GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID));
+        GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
+        GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+        GL_CHECK(glBlitFramebuffer(0, 0, frameBufferSize_.width, frameBufferSize_.height, x, y, x + frameBufferSize_.width, y + frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    }
+
+    void begin() {
+        GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID));
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID));
+        GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID));
+        frameBufferTex_->bind();
+    }
+
+    void end() {
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
+        GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0));
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
+        GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+        //glFlush seems enough but i wanna make sure that there won't be race conditions.
+        //At least on TigerLake/Iris it doesn't make a difference in performance.
+        GL_CHECK(glFlush());
+        GL_CHECK(glFinish());
+    }
+
+    void acquireFromGL(cv::UMat &m) {
+        begin();
+        GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
+        //FIXME
+        cv::flip(m, m, 0);
+    }
+
+    void releaseToGL(cv::UMat &m) {
+        //FIXME
+        cv::flip(m, m, 0);
+        GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
+        end();
+    }
+};
+
+class Window;
+class CLVAContext {
+    friend class Window;
+    CLExecContext_t context_;
+    CLGLContext &fbContext_;
+    cv::UMat frameBuffer_;
+    cv::UMat videoFrame_;
+    bool hasContext_ = false;
+public:
+    CLVAContext(CLGLContext &fbContext) :
+        fbContext_(fbContext) {
+    }
+
+    bool capture(std::function<void(cv::UMat&)> fn) {
+        {
+            CLExecScope_t scope(context_);
+            fn(videoFrame_);
+        }
+        {
+            CLExecScope_t scope(fbContext_.getCLExecContext());
+            fbContext_.acquireFromGL(frameBuffer_);
+            if (videoFrame_.empty())
+                return false;
+
+            cv::cvtColor(videoFrame_, frameBuffer_, cv::COLOR_RGB2BGRA);
+            cv::Size fbSize = fbContext_.getSize();
+            cv::resize(frameBuffer_, frameBuffer_, fbSize);
+            fbContext_.releaseToGL(frameBuffer_);
+            assert(frameBuffer_.size() == fbSize);
+        }
+        return true;
+    }
+
+    void write(std::function<void(const cv::UMat&)> fn) {
+        cv::Size fbSize = fbContext_.getSize();
+        {
+            CLExecScope_t scope(fbContext_.getCLExecContext());
+            fbContext_.acquireFromGL(frameBuffer_);
+            cv::resize(frameBuffer_, frameBuffer_, fbSize);
+            cv::cvtColor(frameBuffer_, videoFrame_, cv::COLOR_BGRA2RGB);
+            fbContext_.releaseToGL(frameBuffer_);
+        }
+        assert(videoFrame_.size() == fbSize);
+        {
+            CLExecScope_t scope(context_);
+            fn(videoFrame_);
+        }
+    }
+
+private:
+    bool hasContext() {
+        return !context_.empty();
+    }
+
+    void copyContext() {
+        context_ = CLExecContext_t::getCurrentRef();
+    }
+};
+// class CLVAContext
+
+class NanoVGContext {
+    NVGcontext *context_;
+    CLGLContext &fbContext_;
+    float pixelRatio_;
+public:
+    NanoVGContext(NVGcontext *context, CLGLContext &fbContext, float pixelRatio) :
+            context_(context), fbContext_(fbContext), pixelRatio_(pixelRatio) {
+        nvgCreateFont(context_, "libertine", "assets/LinLibertine_RB.ttf");
+
+        //FIXME workaround for first frame color glitch
+        cv::UMat tmp;
+        fbContext_.acquireFromGL(tmp);
+        fbContext_.releaseToGL(tmp);
+    }
+
+    void render(std::function<void(NVGcontext*, const cv::Size&)> fn) {
+        CLExecScope_t scope(fbContext_.getCLExecContext());
+        begin();
+        fn(context_, fbContext_.getSize());
+        end();
+    }
+private:
+    void begin() {
+        fbContext_.begin();
+
+        float r = pixelRatio_;
+        float w = fbContext_.getSize().width;
+        float h = fbContext_.getSize().height;
+//    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
+        nvgSave (context_);
+        nvgBeginFrame(context_, w, h, r);
+    }
+
+    void end() {
+        nvgEndFrame (context_);
+        nvgRestore(context_);
+        fbContext_.end();
+    }
+};
+
+static void error_callback(int error, const char *description) {
+    fprintf(stderr, "GLFW Error: %s\n", description);
 }
-//
-void frame_buffer_size_callback(GLFWwindow *win, int width, int height) {
-//        glViewport(0, 0, width, height);
-}
 
-void error_callback(int error, const char *description) {
-    fprintf(stderr, "Error: %s\n", description);
-}
+class Window {
+    cv::Size size_;
+    bool offscreen_;
+    GLFWwindow *glfwWindow_;
+    cv::Ptr<CLGLContext> clglContext_;
+    cv::Ptr<CLVAContext> clvaContext_;
+    cv::Ptr<NanoVGContext> nvgContext_;
+    cv::Ptr<cv::VideoCapture> capture_;
+    cv::Ptr<cv::VideoWriter> writer_;
+    cv::Ptr<nanogui::Screen> screen_;
+    cv::Ptr<nanogui::FormHelper> form_;
+public:
 
-void init(const string &title, int major, int minor, int samples, bool debug) {
-    assert(glfwInit() == GLFW_TRUE);
-    glfwSetErrorCallback(error_callback);
+    Window(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false) :
+            size_(size), offscreen_(offscreen) {
+        assert(glfwInit() == GLFW_TRUE);
+        glfwSetErrorCallback(error_callback);
 
-    if(debug)
-        glfwWindowHint (GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+        if (debug)
+            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    if(app::offscreen)
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        if (offscreen)
+            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    glfwSetTime(0);
+        glfwSetTime(0);
 
 #ifdef __APPLE__
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#else
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+        glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    #else
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 #endif
-    glfwWindowHint(GLFW_SAMPLES, samples);
-    glfwWindowHint(GLFW_RED_BITS, 8);
-    glfwWindowHint(GLFW_GREEN_BITS, 8);
-    glfwWindowHint(GLFW_BLUE_BITS, 8);
-    glfwWindowHint(GLFW_ALPHA_BITS, 8);
-    glfwWindowHint(GLFW_STENCIL_BITS, 8);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_SAMPLES, samples);
+        glfwWindowHint(GLFW_RED_BITS, 8);
+        glfwWindowHint(GLFW_GREEN_BITS, 8);
+        glfwWindowHint(GLFW_BLUE_BITS, 8);
+        glfwWindowHint(GLFW_ALPHA_BITS, 8);
+        glfwWindowHint(GLFW_STENCIL_BITS, 8);
+        glfwWindowHint(GLFW_DEPTH_BITS, 24);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    window = glfwCreateWindow(app::window_width, app::window_height, title.c_str(), nullptr, nullptr);
-    if (window == NULL) {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        exit(11);
+
+        glfwWindow_ = glfwCreateWindow(size.width, size.height, title.c_str(), nullptr, nullptr);
+        if (glfwWindow_ == NULL) {
+            std::cout << "Failed to create GLFW window" << std::endl;
+            glfwTerminate();
+            exit(11);
+        }
+        glfwMakeContextCurrent(getGLFWWindow());
+//        glfwSetFramebufferSizeCallback(getGLFWWindow(), frame_buffer_size_callback);
+
+        screen_ = new nanogui::Screen();
+        screen_->initialize(getGLFWWindow(), false);
+        screen_->set_size(nanogui::Vector2i(size.width, size.height));
+        form_ = new nanogui::FormHelper(screen_);
+
+        glfwSetWindowUserPointer(getGLFWWindow(), this);
+
+        glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->cursor_pos_callback_event(x, y);
+        }
+        );
+        glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->mouse_button_callback_event(button, action, modifiers);
+        }
+        );
+        glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->key_callback_event(key, scancode, action, mods);
+        }
+        );
+        glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, unsigned int codepoint) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->char_callback_event(codepoint);
+        }
+        );
+        glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int count, const char **filenames) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->drop_callback_event(count, filenames);
+        }
+        );
+        glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->scroll_callback_event(x, y);
+        }
+        );
+        glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int width, int height) {
+            Window *win = (Window*) glfwGetWindowUserPointer(glfwWin);
+            win->screen_->resize_callback_event(width, height);
+        }
+        );
+
+        //FIXME
+        clglContext_ = new CLGLContext(size, size);
+        clvaContext_ = new CLVAContext(*clglContext_);
+        nvgContext_ = new NanoVGContext(getNVGcontext(), *clglContext_, getPixelRatio());
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, frame_buffer_size_callback);
-}
-} // namespace display
 
-namespace gl {
-//code in the kb::gl namespace deals with OpenGL (and OpenCV/GL) internals
-cv::ogl::Texture2D *frame_buf_tex;
-GLuint frame_buf;
-GLuint render_buf;
-CLExecContext_t context;
+    ~Window() {
+        terminate();
+    }
 
-void begin() {
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frame_buf));
-    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
-    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
-    frame_buf_tex->bind();
-}
+    cv::Ptr<nanogui::FormHelper> form() {
+        return form_;
+    }
 
-void end() {
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
-    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0));
-    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    CLGLContext& clgl() {
+        return *clglContext_;
+    }
 
-    //glFlush seems enough but i wanna make sure that there won't be race conditions.
-    //At least on TigerLake/Iris it doesn't make a difference in performance.
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
-}
+    CLVAContext& clva() {
+        return *clvaContext_;
+    }
 
-void render(std::function<void(int,int)> fn) {
-    CLExecScope_t scope(gl::context);
-    gl::begin();
-    fn(app::frame_buffer_width, app::frame_buffer_height);
-    gl::end();
-}
+    NanoVGContext& nvg() {
+        return *nvgContext_;
+    }
 
-void init() {
-    glewExperimental = true;
-    glewInit();
-    cv::ogl::ocl::initializeContextFromGL();
-    frame_buf = 0;
-    GL_CHECK(glGenFramebuffers(1, &frame_buf));
-    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buf));
-    GL_CHECK(glGenRenderbuffers(1, &render_buf));
+    void render(std::function<void(const cv::Size&)> fn) {
+        clgl().render(fn);
+    }
 
-    frame_buf_tex = new cv::ogl::Texture2D(cv::Size(app::frame_buffer_width, app::frame_buffer_height), cv::ogl::Texture2D::RGBA, false);
-    frame_buf_tex->bind();
+    void compute(std::function<void(cv::UMat&)> fn) {
+        clgl().compute(fn);
+    }
 
-    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, render_buf));
-    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, app::window_width, app::window_height));
-    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buf));
+    void renderNVG(std::function<void(NVGcontext*, const cv::Size&)> fn) {
+        nvg().render(fn);
+    }
 
-    GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frame_buf_tex->texId(), 0));
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    bool captureVA() {
+        return clva().capture([=,this](cv::UMat& videoFrame){
+            *(this->capture_) >> videoFrame;
+        });
+    }
 
-    gl::context = CLExecContext_t::getCurrent();
-}
+    void writeVA() {
+        clva().write([=,this](const cv::UMat& videoFrame){
+            *(this->writer_) << videoFrame;
+        });
+    }
 
-std::string get_info() {
+    cv::VideoWriter& makeVAWriter(const string& outputFilename, int fourcc, float fps, cv::Size frameSize, int vaDeviceIndex) {
+        writer_ = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, {
+                cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        });
+
+        if(!clva().hasContext()) {
+            clva().copyContext();
+        }
+        return *writer_;
+    }
+
+    cv::VideoCapture& makeVACapture(const string& intputFilename, int vaDeviceIndex) {
+        //Initialize MJPEG HW decoding using VAAPI
+        capture_ = new cv::VideoCapture(intputFilename, cv::CAP_FFMPEG, {
+                cv::CAP_PROP_HW_DEVICE, vaDeviceIndex,
+                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+        });
+
+        if(!clva().hasContext()) {
+            clva().copyContext();
+        }
+
+        return *capture_;
+    }
+
+    void clear(const float &r = 0.0f, const float &g = 0.0f, const float &b = 0.0f, const float &a = 1.0f) {
+        GL_CHECK(glClearColor(r, g, b, a));
+        GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+    }
+
+    void terminate() {
+        glfwDestroyWindow(getGLFWWindow());
+        glfwTerminate();
+    }
+
+    cv::Size getFrameBufferSize() {
+        int fbW, fbH;
+        glfwGetFramebufferSize(getGLFWWindow(), &fbW, &fbH);
+        return {fbW, fbH};
+    }
+
+    void updateSize() {
+        setSize(size_);
+    }
+
+    cv::Size getSize() {
+        return size_;
+    }
+
+    float getPixelRatio() {
+#if defined(EMSCRIPTEN)
+        return emscripten_get_device_pixel_ratio();
+#else
+        float xscale, yscale;
+        glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
+        return xscale;
+#endif
+    }
+
+    void setSize(cv::Size sz) {
+        screen_->set_size(nanogui::Vector2i(sz.width / getPixelRatio(), sz.height / getPixelRatio()));
+        glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
+    }
+
+    bool isFullscreen() {
+        return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
+    }
+
+    void setFullscreen(bool f) {
+        auto monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+        if (f) {
+            glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+        } else {
+            glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getSize().width, getSize().width, mode->refreshRate);
+        }
+        setSize(getSize());
+    }
+
+    void setResizable(bool r) {
+        glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
+    }
+
+    void setVisible(bool v) {
+        screen_->set_visible(v);
+        screen_->perform_layout();
+
+        glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
+        updateSize();
+    }
+
+    bool isOffscreen() {
+        return offscreen_;
+    }
+
+    nanogui::Window* makeWindow(int x, int y, const string& title) {
+        return form()->add_window(nanogui::Vector2i(6, 45), "Display");
+    }
+
+    nanogui::Label* makeGroup(const string& label) {
+        return form()->add_group(label);
+    }
+
+    nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "") {
+        auto var = form()->add_variable(name, v);
+        if (!tooltip.empty())
+            var->set_tooltip(tooltip);
+        return var;
+    }
+
+    template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable = true, const string &unit = "", const string tooltip = "") {
+        auto var = form()->add_variable(name, v);
+        var->set_spinnable(spinnable);
+        var->set_min_value(min);
+        var->set_max_value(max);
+        if (!unit.empty())
+            var->set_units(unit);
+        if (!tooltip.empty())
+            var->set_tooltip(tooltip);
+        return var;
+    }
+
+    bool display() {
+        if (!offscreen_) {
+            glfwPollEvents();
+            screen_->draw_contents();
+            clglContext_->blitFrameBufferToScreen();
+            screen_->draw_widgets();
+            glfwSwapBuffers(glfwWindow_);
+            return !glfwWindowShouldClose(glfwWindow_);
+        }
+        return true;
+    }
+private:
+    GLFWwindow* getGLFWWindow() {
+        return glfwWindow_;
+    }
+
+    NVGcontext* getNVGcontext() {
+        return screen_->nvg_context();
+    }
+};
+// class Window
+
+static std::string get_gl_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
-void blit_frame_buffer_to_screen(int x = 0, int y = 0) {
-    GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, kb::gl::frame_buf));
-    GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
-    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, app::frame_buffer_width, app::frame_buffer_height, x, y, x + app::frame_buffer_width, y + app::frame_buffer_height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-}
-} // namespace gl
-
-namespace cl {
-cv::UMat frameBuffer;
-
-void acquire_from_gl(cv::UMat& m) {
-    gl::begin();
-    GL_CHECK(cv::ogl::convertFromGLTexture2D(*gl::frame_buf_tex, m));
-    //The OpenGL frameBuffer is upside-down. Flip it. (OpenCL)
-    cv::flip(m, m, 0);
-}
-
-void release_to_gl(cv::UMat& m) {
-    //The OpenGL frameBuffer is upside-down. Flip it back. (OpenCL)
-    cv::flip(m, m, 0);
-    GL_CHECK(cv::ogl::convertToGLTexture2D(m, *gl::frame_buf_tex));
-    gl::end();
-}
-
-void compute(std::function<void(cv::UMat&)> fn) {
-    CLExecScope_t scope(gl::context);
-    acquire_from_gl(cl::frameBuffer);
-    fn(cl::frameBuffer);
-    release_to_gl(cl::frameBuffer);
-}
-
-std::string get_info() {
+static std::string get_cl_info() {
     std::stringstream ss;
     std::vector<cv::ocl::PlatformInfo> plt_info;
     cv::ocl::getPlatfomsInfo(plt_info);
@@ -285,254 +579,47 @@ std::string get_info() {
 
     return ss.str();
 }
-} //namespace cl
 
-namespace va {
-CLExecContext_t context;
-cv::UMat videoFrame;
-
-void copy() {
-    va::context = CLExecContext_t::getCurrent();
+static void print_system_info() {
+    cerr << "OpenGL Version: " << get_gl_info() << endl;
+    cerr << "OpenCL Platforms: " << get_cl_info() << endl;
 }
 
-bool read(std::function<void(cv::UMat&)> fn) {
-    {
-        CLExecScope_t scope(va::context);
-        fn(va::videoFrame);
+static void update_fps(cv::Ptr<Window> window, bool graphical = false) {
+        static uint64_t cnt = 0;
+        static double fps = 1;
+        static cv::TickMeter meter;
+
+        if (cnt > 0) {
+            meter.stop();
+
+            if (cnt % uint64(ceil(fps)) == 0) {
+                fps = meter.getFPS();
+                cerr << "FPS : " << fps << '\r';
+                cnt = 0;
+            }
+        }
+
+        if (graphical) {
+            window->renderNVG([&](NVGcontext *vg, const cv::Size &size) {
+                string text = "FPS: " + std::to_string(fps);
+                nvgBeginPath(vg);
+                nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);
+                nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
+                nvgFill(vg);
+
+                nvgBeginPath(vg);
+                nvgFontSize(vg, 60.0f);
+                nvgFontFace(vg, "mono");
+                nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
+                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                nvgText(vg, 22, 37, text.c_str(), nullptr);
+            });
+        }
+
+        meter.start();
+        ++cnt;
     }
-    {
-        CLExecScope_t scope(gl::context);
-        cl::acquire_from_gl(cl::frameBuffer);
-        if(va::videoFrame.empty())
-            return false;
-
-        cv::cvtColor(va::videoFrame, cl::frameBuffer, cv::COLOR_RGB2BGRA);
-        cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::frame_buffer_width, app::frame_buffer_height));
-        assert(cl::frameBuffer.size() == cv::Size(app::frame_buffer_width, app::frame_buffer_height));
-        cl::release_to_gl(cl::frameBuffer);
-    }
-    return true;
-}
-
-void write(std::function<void(const cv::UMat&)> fn) {
-    CLExecScope_t scope(va::context);
-    cv::resize(cl::frameBuffer, cl::frameBuffer, cv::Size(app::frame_buffer_width, app::frame_buffer_height));
-    cv::cvtColor(cl::frameBuffer, va::videoFrame, cv::COLOR_BGRA2RGB);
-    cv::flip(va::videoFrame, va::videoFrame, 0);
-    assert(videoFrame.size() == cv::Size(app::frame_buffer_width, app::frame_buffer_height));
-    fn(va::videoFrame);
-}
-} // namespace va
-
-namespace gui {
-using namespace nanogui;
-ref<nanogui::Screen> screen;
-FormHelper* form;
-
-nanogui::detail::FormWidget<bool> * make_gui_variable(const string& name, bool& v, const string& tooltip = "") {
-    using kb::gui::form;
-    auto var = form->add_variable(name, v);
-    if(!tooltip.empty())
-        var->set_tooltip(tooltip);
-    return var;
-}
-
-template <typename T> nanogui::detail::FormWidget<T> * make_gui_variable(const string& name, T& v, const T& min, const T& max, bool spinnable = true, const string& unit = "", const string tooltip = "") {
-    using kb::gui::form;
-    auto var = form->add_variable(name, v);
-    var->set_spinnable(spinnable);
-    var->set_min_value(min);
-    var->set_max_value(max);
-    if(!unit.empty())
-        var->set_units(unit);
-    if(!tooltip.empty())
-        var->set_tooltip(tooltip);
-    return var;
-}
-
-void init(int w, int h, GLFWwindow* win = display::get_window()) {
-    screen = new nanogui::Screen();
-    screen->initialize(win, false);
-    screen->set_size(nanogui::Vector2i(w, h));
-    form = new FormHelper(screen);
-
-    glfwSetCursorPosCallback(win,
-            [](GLFWwindow *, double x, double y) {
-        gui::screen->cursor_pos_callback_event(x, y);
-        }
-    );
-    glfwSetMouseButtonCallback(win,
-        [](GLFWwindow *, int button, int action, int modifiers) {
-        gui::screen->mouse_button_callback_event(button, action, modifiers);
-        }
-    );
-    glfwSetKeyCallback(win,
-        [](GLFWwindow *, int key, int scancode, int action, int mods) {
-        gui::screen->key_callback_event(key, scancode, action, mods);
-        }
-    );
-    glfwSetCharCallback(win,
-        [](GLFWwindow *, unsigned int codepoint) {
-        gui::screen->char_callback_event(codepoint);
-        }
-    );
-    glfwSetDropCallback(win,
-        [](GLFWwindow *, int count, const char **filenames) {
-        gui::screen->drop_callback_event(count, filenames);
-        }
-    );
-    glfwSetScrollCallback(win,
-        [](GLFWwindow *, double x, double y) {
-        gui::screen->scroll_callback_event(x, y);
-       }
-    );
-    glfwSetFramebufferSizeCallback(win,
-        [](GLFWwindow *, int width, int height) {
-            gui::screen->resize_callback_event(width, height);
-        }
-    );
-}
-
-void set_visible(bool v) {
-    gui::screen->set_visible(v);
-    gui::screen->perform_layout();
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-}
-
-void update_size() {
-    float pixelRatio = display::get_pixel_ratio();
-    gui::screen->set_size(nanogui::Vector2i(app::window_width, app::window_height));
-    display::update_size();
-}
-} //namespace gui
-
-namespace nvg {
-void clear(const float& r = 0.0f, const float& g = 0.0f, const float& b = 0.0f, const float& a = 1.0f) {
-    GL_CHECK(glClearColor(r, g, b, a));
-    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-}
-
-void begin() {
-    gl::begin();
-
-    float r = display::get_pixel_ratio();
-    float w = app::frame_buffer_width;
-    float h = app::frame_buffer_height;
-    NVGcontext* vg = gui::screen->nvg_context();
-    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
-    nvgSave(vg);
-    nvgBeginFrame(vg, w, h, r);
-}
-
-void end() {
-    NVGcontext* vg = gui::screen->nvg_context();
-    nvgEndFrame(vg);
-    nvgRestore(vg);
-    gl::end();
-}
-
-void render(std::function<void(NVGcontext*,int,int)> fn) {
-    CLExecScope_t scope(gl::context);
-    nvg::begin();
-    fn(gui::screen->nvg_context(), app::frame_buffer_width, app::frame_buffer_height);
-    nvg::end();
-}
-
-void init() {
-    nvgCreateFont(gui::screen->nvg_context(), "libertine", "assets/LinLibertine_RB.ttf");
-
-    //workaround for first frame color glitch
-    cv::UMat tmp;
-    cl::acquire_from_gl(tmp);
-    cl::release_to_gl(tmp);
-}
-} //namespace nvg
-
-namespace app {
-void print_system_info() {
-    cerr << "OpenGL Version: " << gl::get_info() << endl;
-    cerr << "OpenCL Platforms: " << cl::get_info() << endl;
-}
-
-void init(const string &windowTitle, unsigned int windowWidth, unsigned int windowHeight, unsigned int frameBufferWidth, unsigned int frameBufferHeight, bool offscreen = false, bool fullscreen = false, int major = 4, int minor = 6, int samples = 0, bool debugContext = false) {
-    using namespace kb::gui;
-    assert(frameBufferWidth <= windowWidth && frameBufferHeight <= windowHeight);
-    app::window_width = windowWidth;
-    app::window_height = windowHeight;
-    app::frame_buffer_width = frameBufferWidth;
-    app::frame_buffer_height = frameBufferHeight;
-
-    app::offscreen = offscreen;
-
-    display::init(windowTitle, major, minor, samples, debugContext);
-    gui::init(windowWidth, windowHeight);
-    gl::init();
-    nvg::init();
-}
-
-void run(std::function<void()> fn) {
-    if(!app::offscreen)
-        gui::set_visible(true);
-    gui::update_size();
-
-    fn();
-}
-
-bool display() {
-    if(!app::offscreen) {
-        glfwPollEvents();
-        gui::screen->draw_contents();
-        gl::blit_frame_buffer_to_screen();
-        gui::screen->draw_widgets();
-        auto* win = display::get_window();
-        glfwSwapBuffers(win);
-        return !glfwWindowShouldClose(win);
-    }
-    return true;
-}
-
-void update_fps(bool graphical = false) {
-    static uint64_t cnt = 0;
-    static double fps = 1;
-    static cv::TickMeter meter;
-
-    if (cnt > 0) {
-        meter.stop();
-
-        if (cnt % uint64(ceil(fps)) == 0) {
-            fps = meter.getFPS();
-            cerr << "FPS : " << fps << '\r';
-            cnt = 0;
-        }
-    }
-
-    if (graphical) {
-        nvg::render([&](NVGcontext* vg, int w, int h) {
-            string text = "FPS: " + std::to_string(fps);
-
-            nvgBeginPath(vg);
-            nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);
-            nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
-            nvgFill (vg);
-
-            nvgBeginPath(vg);
-            nvgFontSize(vg, 60.0f);
-            nvgFontFace(vg, "mono");
-            nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
-            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-            nvgText(vg, 22, 37, text.c_str(), nullptr);
-        });
-    }
-
-    meter.start();
-    ++cnt;
-}
-
-void terminate() {
-    display::terminate();
-    exit(0);
-}
-} //namespace app
 } //namespace kb
 
 #endif /* SRC_SUBSYSTEMS_HPP_ */

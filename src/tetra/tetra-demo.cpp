@@ -82,57 +82,40 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 int main(int argc, char **argv) {
     using namespace kb;
 
-    //Initialize the application
-    app::init("Tetra Demo", WIDTH, HEIGHT, WIDTH / 2.0, HEIGHT / 2.0, OFFSCREEN);
+    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+
     //Print system information
-    app::print_system_info();
+    kb::print_system_info();
 
-    app::run([&]() {
-        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, window->getSize(), 0);
 
-        //Initialize VP9 HW encoding using VAAPI
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, frameBufferSize, {
-                cv::VIDEOWRITER_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
-
-        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-        va::copy();
-
-        gl::render([](int w, int h) {
-            //Initialize the OpenGL scene
-            init_scene(w, h);
-        });
-
-        while (true) {
-            //Render using OpenGL
-            gl::render([](int w, int h) {
-                render_scene(w, h);
-            });
-
-            //Aquire the frame buffer for use by OpenCL
-            cl::compute([](cv::UMat &frameBuffer) {
-                imshow("fb", frameBuffer);
-                cv::waitKey(1);
-                //Glow effect (OpenCL)
-                glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
-            });
-
-            va::write([&writer](const cv::UMat& videoFrame){
-                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-                writer << videoFrame;
-            });
-
-            app::update_fps();
-
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
-        }
+    window->render([](const cv::Size &size) {
+        //Initialize the OpenGL scene
+        init_scene(size.width, size.height);
     });
 
-    app::terminate();
+    while (true) {
+        //Render using OpenGL
+        window->render([](const cv::Size &size) {
+            render_scene(size.width, size.height);
+        });
+
+        //Aquire the frame buffer for use by OpenCL
+        window->compute([](cv::UMat &frameBuffer) {
+            //Glow effect (OpenCL)
+            glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
+        });
+
+        window->writeVA();
+
+        update_fps(window);
+
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if (!window->display())
+            break;
+    }
+
+    window->terminate();
 
     return 0;
 }

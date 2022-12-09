@@ -19,40 +19,17 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
-There are currently seven demos (**the preview videos are scaled down and compressed**):
-## tetra-demo
-Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/205185854-6fe42c8a-7cf7-4a35-bf13-0168a95619a2.mp4
+There are currently seven demos **but only two are maintained** till I am done with the API redesign (**the preview videos are scaled down and compressed**):
 
 ## video-demo
 Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/205186059-c96e2728-62e4-41c5-b6a2-c7e393efeda2.mp4
 
-## nanovg-demo
-Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/205188005-6c48d443-89b5-4ba7-81a7-252a12baa1ac.mp4
-
-## font-demo
-Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/205252994-684256b4-a0c9-4755-b4b8-ca06e56501db.mp4
-
 ## optflow-demo
 My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/202174513-331e6f08-8397-4521-969b-24cbc43d27fc.mp4
-
-## pedestrian-demo
-Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI). 
-Note: Detection rate is not very impressive and depends highly on the video.
-
-https://user-images.githubusercontent.com/287266/204570888-9bf48c6e-3422-4fce-94e4-27a98db76dea.mp4
-
-## beauty-demo
-Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
 
 # Instructions
 You need to build my 4.x branch of OpenCV, nanovg and nanogui.
@@ -102,11 +79,6 @@ make
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
-## Run the tetra-demo:
-
-```bash
-src/tetra/tetra-demo
-```
 
 ## Run the video-demo:
 
@@ -114,34 +86,10 @@ src/tetra/tetra-demo
 src/video/video-demo bunny.webm
 ```
 
-## Run the nanovg-demo:
-
-```bash
-src/nanovg/nanovg-demo bunny.webm
-```
-
-## Run the font-demo:
-
-```bash
-src/font/font-demo
-```
-
 ## Run the optflow-demo:
 
 ```bash
 src/optflow/optflow-demo bunny.webm
-```
-
-## Run the pedestrian-demo:
-
-```bash
-src/pedestrian/pedestrian-demo bunny.webm
-```
-
-## Run the beauty-demo:
-
-```bash
-src/beauty/beauty-demo bunny.webm
 ```
 
 

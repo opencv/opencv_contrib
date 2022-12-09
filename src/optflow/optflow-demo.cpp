@@ -181,146 +181,129 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-void setup_gui() {
-    using namespace kb::gui;
-    using namespace kb::display;
+void setup_gui(cv::Ptr<kb::Window> window) {
+    window->makeWindow(6, 45, "Settings");
 
-    form->add_window(nanogui::Vector2i(6, 45), "Settings");
-
-    auto useOpenCL = make_gui_variable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
+    auto useOpenCL = window->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
     useOpenCL->set_callback([](bool b){
         cv::ocl::setUseOpenCL(b);
     });
 
-    form->add_group("Foreground");
-    make_gui_variable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
-    make_gui_variable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
+    window->makeGroup("Foreground");
+    window->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
+    window->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
-    form->add_group("Scene Change Detection");
-    make_gui_variable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-    make_gui_variable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
+    window->makeGroup("Scene Change Detection");
+    window->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+    window->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
 
-    form->add_group("Points");
-    make_gui_variable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
-    make_gui_variable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
+    window->makeGroup("Points");
+    window->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
+    window->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
 
-    form->add_group("Effect");
-    make_gui_variable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-    auto glowKernel = make_gui_variable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
+    window->makeGroup("Effect");
+    window->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
+    auto glowKernel = window->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     glowKernel->set_callback([](const int& k) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
-    auto color = form->add_variable("Color", effect_color);
+    auto color = window->form()->add_variable("Color", effect_color);
     color->set_tooltip("The effect color");
     color->set_final_callback([](const nanogui::Color &c) {
         effect_color[0] = c[0];
         effect_color[1] = c[1];
         effect_color[2] = c[2];
     });
-    make_gui_variable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
+    window->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
-    form->add_group("Display");
-    make_gui_variable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-    form->add_button("Fullscreen", []() {
-        set_fullscreen(!is_fullscreen());
+
+    window->makeWindow(6, 45, "Display");
+    window->makeGroup("Display");
+    window->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+    window->form()->add_button("Fullscreen", [=]() {
+        window->setFullscreen(!window->isFullscreen());
     });
+
+    if(!window->isOffscreen())
+        window->setVisible(true);
 }
 
 int main(int argc, char **argv) {
-    using namespace kb;
-
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
 
-    //Initialize the application
-    app::init("Sparse Optical Flow Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
-    app::print_system_info();
-    setup_gui();
-    app::run([&]() {
-        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
 
-        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+
+    kb::print_system_info();
+
+    setup_gui(window);
+
+    auto capture = window->makeVACapture(argv[1], 0);
+
+    if (!capture.isOpened()) {
+        cerr << "ERROR! Unable to open video input" << endl;
+        window->terminate();
+        exit(-1);
+    }
+
+    float fps = capture.get(cv::CAP_PROP_FPS);
+    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), 0);
+
+    //BGRA
+    cv::UMat background, foreground(window->getSize(), CV_8UC4, cv::Scalar::all(0));
+    //RGB
+    cv::UMat rgb, down;
+    //GREY
+    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
+    vector<cv::Point2f> detectedPoints;
+
+    while (true) {
+        if(!window->captureVA())
+            break;
+
+        window->compute([&](cv::UMat& frameBuffer){
+            cv::resize(frameBuffer, down, cv::Size(window->getSize().width * fg_scale, window->getSize().height * fg_scale));
+            cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
         });
 
-        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-        va::copy();
+        cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
+        //Subtract the background to create a motion mask
+        prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+        //Detect trackable points in the motion mask
+        detect_points(downMotionMaskGrey, detectedPoints);
 
-        if (!capture.isOpened()) {
-            cerr << "ERROR! Unable to open video input" << endl;
-            return;
-        }
-
-        double fps = capture.get(cv::CAP_PROP_FPS);
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameBufferSize, {
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
-
-        //BGRA
-        cv::UMat background, foreground(frameBufferSize, CV_8UC4, cv::Scalar::all(0));
-        //RGB
-        cv::UMat rgb, down;
-        //GREY
-        cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
-        vector<cv::Point2f> detectedPoints;
-
-        while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
-                //videoFrame will be converted to BGRA and stored in the frameBuffer.
-                capture >> videoFrame;
-            });
-
-            if(!success)
-                break;
-
-            cl::compute([&](cv::UMat& frameBuffer){
-                cv::resize(frameBuffer, down, cv::Size(frameBufferSize.width * fg_scale, frameBufferSize.height * fg_scale));
-                cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
-                cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
-                //Subtract the background to create a motion mask
-                prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-            });
-
-            //Detect trackable points in the motion mask
-            detect_points(downMotionMaskGrey, detectedPoints);
-
-            nvg::render([&](NVGcontext* vg, int w, int h) {
-                nvg::clear();
-                if (!downPrevGrey.empty()) {
-                    //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-                    if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
-                        //Visualize the sparse optical flow using nanovg
-                        cv::Scalar color = cv::Scalar(effect_color.r() * 255.0f, effect_color.g() * 255.0f, effect_color.b() * 255.0f, alpha * 255.0f);
-                        visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
-                    }
+        window->renderNVG([&](NVGcontext* vg, const cv::Size& sz) {
+            window->clear();
+            if (!downPrevGrey.empty()) {
+                //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+                if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
+                    //Visualize the sparse optical flow using nanovg
+                    cv::Scalar color = cv::Scalar(effect_color.r() * 255.0f, effect_color.g() * 255.0f, effect_color.b() * 255.0f, alpha * 255.0f);
+                    visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
                 }
-            });
+            }
+        });
 
-            downPrevGrey = downNextGrey.clone();
+        downPrevGrey = downNextGrey.clone();
 
-            cl::compute([&](cv::UMat& frameBuffer){
-                //Put it all together (OpenCL)
-                composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
-            });
+        window->compute([&](cv::UMat& frameBuffer){
+            //Put it all together (OpenCL)
+            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
+        });
 
-            va::write([&writer](const cv::UMat& videoFrame){
-                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-                writer << videoFrame;
-            });
+        window->writeVA();
 
-            app::update_fps(show_fps);
+        update_fps(window, show_fps);
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
-        }
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if(!window->display())
+            break;
+    }
 
-        app::terminate();
-    });
+    window->terminate();
+
     return 0;
 }
