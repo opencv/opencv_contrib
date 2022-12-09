@@ -483,7 +483,7 @@ $(function() {
 <div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>        });</div>
 <div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>    }</div>
 <div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span> </div>
-<div class="line"><a id="l00408" name="l00408"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#ae39b9a155c5d90df8e1a854f9e69de07">  408</a></span>    cv::VideoWriter&amp; <a class="code hl_function" href="classkb_1_1Window.html#ae39b9a155c5d90df8e1a854f9e69de07">makeVAWriter</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; outputFilename, <span class="keywordtype">int</span> fourcc, <span class="keywordtype">float</span> fps, cv::Size frameSize, <span class="keywordtype">int</span> vaDeviceIndex) {</div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#ae11f72e67ffcf2fc2e19c0ec4519a5c6">  408</a></span>    cv::VideoWriter&amp; <a class="code hl_function" href="classkb_1_1Window.html#ae11f72e67ffcf2fc2e19c0ec4519a5c6">makeVAWriter</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; outputFilename, <span class="keyword">const</span> <span class="keywordtype">int</span> fourcc, <span class="keyword">const</span> <span class="keywordtype">float</span> fps, <span class="keyword">const</span> cv::Size&amp; frameSize, <span class="keyword">const</span> <span class="keywordtype">int</span> vaDeviceIndex) {</div>
 <div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>        writer_ = <span class="keyword">new</span> cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc(<span class="charliteral">&#39;V&#39;</span>, <span class="charliteral">&#39;P&#39;</span>, <span class="charliteral">&#39;9&#39;</span>, <span class="charliteral">&#39;0&#39;</span>), fps, frameSize, {</div>
 <div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>                cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex,</div>
 <div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,</div>
@@ -496,7 +496,7 @@ $(function() {
 <div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>        <span class="keywordflow">return</span> *writer_;</div>
 <div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>    }</div>
 <div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span> </div>
-<div class="line"><a id="l00421" name="l00421"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a74e9c74afbe076783bb505c771c63dea">  421</a></span>    cv::VideoCapture&amp; <a class="code hl_function" href="classkb_1_1Window.html#a74e9c74afbe076783bb505c771c63dea">makeVACapture</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; intputFilename, <span class="keywordtype">int</span> vaDeviceIndex) {</div>
+<div class="line"><a id="l00421" name="l00421"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#aa89b954c0224f4a0cc7800d4ad7b2cbb">  421</a></span>    cv::VideoCapture&amp; <a class="code hl_function" href="classkb_1_1Window.html#aa89b954c0224f4a0cc7800d4ad7b2cbb">makeVACapture</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; intputFilename, <span class="keyword">const</span> <span class="keywordtype">int</span> vaDeviceIndex) {</div>
 <div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>        <span class="comment">//Initialize MJPEG HW decoding using VAAPI</span></div>
 <div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>        capture_ = <span class="keyword">new</span> cv::VideoCapture(intputFilename, cv::CAP_FFMPEG, {</div>
 <div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>                cv::CAP_PROP_HW_DEVICE, vaDeviceIndex,</div>
@@ -511,24 +511,24 @@ $(function() {
 <div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>        <span class="keywordflow">return</span> *capture_;</div>
 <div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>    }</div>
 <div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span> </div>
-<div class="line"><a id="l00436" name="l00436"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#ab6bd266d592ee7540a3998ce23ab48f3">  436</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#ab6bd266d592ee7540a3998ce23ab48f3">clear</a>(<span class="keyword">const</span> <span class="keywordtype">float</span> &amp;r = 0.0f, <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;g = 0.0f, <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;b = 0.0f, <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;a = 1.0f) {</div>
-<div class="line"><a id="l00437" name="l00437"></a><span class="lineno">  437</span>        <a class="code hl_define" href="subsystems_8hpp.html#abaa783d204822dc071653ede21be0a1a">GL_CHECK</a>(glClearColor(r, g, b, a));</div>
-<div class="line"><a id="l00438" name="l00438"></a><span class="lineno">  438</span>        <a class="code hl_define" href="subsystems_8hpp.html#abaa783d204822dc071653ede21be0a1a">GL_CHECK</a>(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));</div>
-<div class="line"><a id="l00439" name="l00439"></a><span class="lineno">  439</span>    }</div>
-<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span> </div>
-<div class="line"><a id="l00441" name="l00441"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a11e2b68dbd22370711eb410bf3cb73e3">  441</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#a11e2b68dbd22370711eb410bf3cb73e3">terminate</a>() {</div>
-<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>        glfwDestroyWindow(getGLFWWindow());</div>
-<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>        glfwTerminate();</div>
-<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>    }</div>
-<div class="line"><a id="l00445" name="l00445"></a><span class="lineno">  445</span> </div>
-<div class="line"><a id="l00446" name="l00446"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a6137c40b71004895a0d0b9e459874101">  446</a></span>    cv::Size <a class="code hl_function" href="classkb_1_1Window.html#a6137c40b71004895a0d0b9e459874101">getFrameBufferSize</a>() {</div>
-<div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>        <span class="keywordtype">int</span> fbW, fbH;</div>
-<div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span>        glfwGetFramebufferSize(getGLFWWindow(), &amp;fbW, &amp;fbH);</div>
-<div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span>        <span class="keywordflow">return</span> {fbW, fbH};</div>
-<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>    }</div>
-<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span> </div>
-<div class="line"><a id="l00452" name="l00452"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#acc2beca2ba19e3a2fad6fe35606ce789">  452</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#acc2beca2ba19e3a2fad6fe35606ce789">updateSize</a>() {</div>
-<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>        <a class="code hl_function" href="classkb_1_1Window.html#a56048b26120e1033f371c59073308813">setSize</a>(size_);</div>
+<div class="line"><a id="l00436" name="l00436"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a6179ca2f60cb8b86fa1468fadddb6205">  436</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#a6179ca2f60cb8b86fa1468fadddb6205">clear</a>(<span class="keyword">const</span> cv::Scalar&amp; rgba = cv::Scalar(0,0,0,255)) {</div>
+<div class="line"><a id="l00437" name="l00437"></a><span class="lineno">  437</span>        <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;r = rgba[0] / 255.0f;</div>
+<div class="line"><a id="l00438" name="l00438"></a><span class="lineno">  438</span>        <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;g = rgba[1] / 255.0f;</div>
+<div class="line"><a id="l00439" name="l00439"></a><span class="lineno">  439</span>        <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;b = rgba[2] / 255.0f;</div>
+<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span>        <span class="keyword">const</span> <span class="keywordtype">float</span> &amp;a = rgba[3] / 255.0f;</div>
+<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>        <a class="code hl_define" href="subsystems_8hpp.html#abaa783d204822dc071653ede21be0a1a">GL_CHECK</a>(glClearColor(r, g, b, a));</div>
+<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>        <a class="code hl_define" href="subsystems_8hpp.html#abaa783d204822dc071653ede21be0a1a">GL_CHECK</a>(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));</div>
+<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>    }</div>
+<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span> </div>
+<div class="line"><a id="l00445" name="l00445"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a11e2b68dbd22370711eb410bf3cb73e3">  445</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#a11e2b68dbd22370711eb410bf3cb73e3">terminate</a>() {</div>
+<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>        glfwDestroyWindow(getGLFWWindow());</div>
+<div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>        glfwTerminate();</div>
+<div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span>    }</div>
+<div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span> </div>
+<div class="line"><a id="l00450" name="l00450"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a6137c40b71004895a0d0b9e459874101">  450</a></span>    cv::Size <a class="code hl_function" href="classkb_1_1Window.html#a6137c40b71004895a0d0b9e459874101">getFrameBufferSize</a>() {</div>
+<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>        <span class="keywordtype">int</span> fbW, fbH;</div>
+<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>        glfwGetFramebufferSize(getGLFWWindow(), &amp;fbW, &amp;fbH);</div>
+<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>        <span class="keywordflow">return</span> {fbW, fbH};</div>
 <div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>    }</div>
 <div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span> </div>
 <div class="line"><a id="l00456" name="l00456"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">  456</a></span>    cv::Size <a class="code hl_function" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">getSize</a>() {</div>
@@ -545,7 +545,7 @@ $(function() {
 <div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>    }</div>
 <div class="line"><a id="l00469" name="l00469"></a><span class="lineno">  469</span> </div>
-<div class="line"><a id="l00470" name="l00470"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a56048b26120e1033f371c59073308813">  470</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#a56048b26120e1033f371c59073308813">setSize</a>(cv::Size sz) {</div>
+<div class="line"><a id="l00470" name="l00470"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#ab3fce6b6748735dead804dbf734fa57d">  470</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#ab3fce6b6748735dead804dbf734fa57d">setSize</a>(<span class="keyword">const</span> cv::Size&amp; sz) {</div>
 <div class="line"><a id="l00471" name="l00471"></a><span class="lineno">  471</span>        screen_-&gt;set_size(nanogui::Vector2i(sz.width / <a class="code hl_function" href="classkb_1_1Window.html#a8591d313b0a4e9ea318fd204c63459b7">getPixelRatio</a>(), sz.height / <a class="code hl_function" href="classkb_1_1Window.html#a8591d313b0a4e9ea318fd204c63459b7">getPixelRatio</a>()));</div>
 <div class="line"><a id="l00472" name="l00472"></a><span class="lineno">  472</span>        glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);</div>
 <div class="line"><a id="l00473" name="l00473"></a><span class="lineno">  473</span>    }</div>
@@ -562,145 +562,157 @@ $(function() {
 <div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>            glfwSetWindowMonitor(getGLFWWindow(), <span class="keyword">nullptr</span>, 0, 0, <a class="code hl_function" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">getSize</a>().width, <a class="code hl_function" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">getSize</a>().width, mode-&gt;refreshRate);</div>
 <div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>        }</div>
-<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>        <a class="code hl_function" href="classkb_1_1Window.html#a56048b26120e1033f371c59073308813">setSize</a>(<a class="code hl_function" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">getSize</a>());</div>
+<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>        <a class="code hl_function" href="classkb_1_1Window.html#ab3fce6b6748735dead804dbf734fa57d">setSize</a>(<a class="code hl_function" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">getSize</a>());</div>
 <div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>    }</div>
 <div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span> </div>
-<div class="line"><a id="l00490" name="l00490"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#afc4df1b83a96276ec0104885acaab58d">  490</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#afc4df1b83a96276ec0104885acaab58d">setResizable</a>(<span class="keywordtype">bool</span> r) {</div>
-<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>        glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);</div>
+<div class="line"><a id="l00490" name="l00490"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a888663e36020c198b6ebbfc592e4c586">  490</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkb_1_1Window.html#a888663e36020c198b6ebbfc592e4c586">isResizable</a>() {</div>
+<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>        <span class="keywordflow">return</span> glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;</div>
 <div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>    }</div>
 <div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span> </div>
-<div class="line"><a id="l00494" name="l00494"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a418e95f4e0f40626077d1040e07a6558">  494</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#a418e95f4e0f40626077d1040e07a6558">setVisible</a>(<span class="keywordtype">bool</span> v) {</div>
-<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>        screen_-&gt;set_visible(v);</div>
-<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>        screen_-&gt;perform_layout();</div>
+<div class="line"><a id="l00494" name="l00494"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#afc4df1b83a96276ec0104885acaab58d">  494</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#afc4df1b83a96276ec0104885acaab58d">setResizable</a>(<span class="keywordtype">bool</span> r) {</div>
+<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>        glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);</div>
+<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>    }</div>
 <div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span> </div>
-<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>        glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);</div>
-<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>        <a class="code hl_function" href="classkb_1_1Window.html#acc2beca2ba19e3a2fad6fe35606ce789">updateSize</a>();</div>
+<div class="line"><a id="l00498" name="l00498"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a2a8ef8dffad20aac63f55f7589410ac9">  498</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkb_1_1Window.html#a2a8ef8dffad20aac63f55f7589410ac9">isVisible</a>() {</div>
+<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>        <span class="keywordflow">return</span> glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;</div>
 <div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>    }</div>
 <div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span> </div>
-<div class="line"><a id="l00502" name="l00502"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#af05bd601579f7af7634315930da17cf4">  502</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkb_1_1Window.html#af05bd601579f7af7634315930da17cf4">isOffscreen</a>() {</div>
-<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>        <span class="keywordflow">return</span> offscreen_;</div>
-<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>    }</div>
+<div class="line"><a id="l00502" name="l00502"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a418e95f4e0f40626077d1040e07a6558">  502</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#a418e95f4e0f40626077d1040e07a6558">setVisible</a>(<span class="keywordtype">bool</span> v) {</div>
+<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>        screen_-&gt;set_visible(v);</div>
+<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>        screen_-&gt;perform_layout();</div>
 <div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span> </div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a8db16e258c4eb6964c58e5d8b86d91c4">  506</a></span>    nanogui::Window* <a class="code hl_function" href="classkb_1_1Window.html#a8db16e258c4eb6964c58e5d8b86d91c4">makeWindow</a>(<span class="keywordtype">int</span> x, <span class="keywordtype">int</span> y, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; title) {</div>
-<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_window(nanogui::Vector2i(6, 45), <span class="stringliteral">&quot;Display&quot;</span>);</div>
+<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>        glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);</div>
+<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>        <a class="code hl_function" href="classkb_1_1Window.html#ab3fce6b6748735dead804dbf734fa57d">setSize</a>(<a class="code hl_function" href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">getSize</a>());</div>
 <div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span>    }</div>
 <div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span> </div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a65c4f8b66c6125159c0f305ec2e4ae86">  510</a></span>    nanogui::Label* <a class="code hl_function" href="classkb_1_1Window.html#a65c4f8b66c6125159c0f305ec2e4ae86">makeGroup</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; label) {</div>
-<div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_group(label);</div>
+<div class="line"><a id="l00510" name="l00510"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#af05bd601579f7af7634315930da17cf4">  510</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkb_1_1Window.html#af05bd601579f7af7634315930da17cf4">isOffscreen</a>() {</div>
+<div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>        <span class="keywordflow">return</span> offscreen_;</div>
 <div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span>    }</div>
 <div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span> </div>
-<div class="line"><a id="l00514" name="l00514"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#ade932dcc0312e484c22cd9fb46c86a84">  514</a></span>    nanogui::detail::FormWidget&lt;bool&gt;* <a class="code hl_function" href="classkb_1_1Window.html#ade932dcc0312e484c22cd9fb46c86a84">makeFormVariable</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;name, <span class="keywordtype">bool</span> &amp;v, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;tooltip = <span class="stringliteral">&quot;&quot;</span>) {</div>
-<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>        <span class="keyword">auto</span> var = <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_variable(name, v);</div>
-<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>        <span class="keywordflow">if</span> (!tooltip.empty())</div>
-<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span>            var-&gt;set_tooltip(tooltip);</div>
-<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>        <span class="keywordflow">return</span> var;</div>
-<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>    }</div>
-<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span> </div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a182b2c69daf119cda51bc0ff8a7a9fd9">  521</a></span>    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt; nanogui::detail::FormWidget&lt;T&gt;* <a class="code hl_function" href="classkb_1_1Window.html#a182b2c69daf119cda51bc0ff8a7a9fd9">makeFormVariable</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;name, T &amp;v, <span class="keyword">const</span> T &amp;min, <span class="keyword">const</span> T &amp;max, <span class="keywordtype">bool</span> spinnable = <span class="keyword">true</span>, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;unit = <span class="stringliteral">&quot;&quot;</span>, <span class="keyword">const</span> <span class="keywordtype">string</span> tooltip = <span class="stringliteral">&quot;&quot;</span>) {</div>
-<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>        <span class="keyword">auto</span> var = <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_variable(name, v);</div>
-<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>        var-&gt;set_spinnable(spinnable);</div>
-<div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>        var-&gt;set_min_value(min);</div>
-<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>        var-&gt;set_max_value(max);</div>
-<div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>        <span class="keywordflow">if</span> (!unit.empty())</div>
-<div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>            var-&gt;set_units(unit);</div>
+<div class="line"><a id="l00514" name="l00514"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#afff96928ff40dfb18bafe2ce202c17b0">  514</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkb_1_1Window.html#afff96928ff40dfb18bafe2ce202c17b0">setOffscreen</a>(<span class="keywordtype">bool</span> o) {</div>
+<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>        offscreen_ = o;</div>
+<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>    }</div>
+<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span> </div>
+<div class="line"><a id="l00518" name="l00518"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a8db16e258c4eb6964c58e5d8b86d91c4">  518</a></span>    nanogui::Window* <a class="code hl_function" href="classkb_1_1Window.html#a8db16e258c4eb6964c58e5d8b86d91c4">makeWindow</a>(<span class="keywordtype">int</span> x, <span class="keywordtype">int</span> y, <span class="keyword">const</span> <span class="keywordtype">string</span>&amp; title) {</div>
+<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_window(nanogui::Vector2i(6, 45), <span class="stringliteral">&quot;Display&quot;</span>);</div>
+<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>    }</div>
+<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span> </div>
+<div class="line"><a id="l00522" name="l00522"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a65c4f8b66c6125159c0f305ec2e4ae86">  522</a></span>    nanogui::Label* <a class="code hl_function" href="classkb_1_1Window.html#a65c4f8b66c6125159c0f305ec2e4ae86">makeGroup</a>(<span class="keyword">const</span> <span class="keywordtype">string</span>&amp; label) {</div>
+<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_group(label);</div>
+<div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>    }</div>
+<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span> </div>
+<div class="line"><a id="l00526" name="l00526"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#ade932dcc0312e484c22cd9fb46c86a84">  526</a></span>    nanogui::detail::FormWidget&lt;bool&gt;* <a class="code hl_function" href="classkb_1_1Window.html#ade932dcc0312e484c22cd9fb46c86a84">makeFormVariable</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;name, <span class="keywordtype">bool</span> &amp;v, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;tooltip = <span class="stringliteral">&quot;&quot;</span>) {</div>
+<div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>        <span class="keyword">auto</span> var = <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_variable(name, v);</div>
 <div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span>        <span class="keywordflow">if</span> (!tooltip.empty())</div>
 <div class="line"><a id="l00529" name="l00529"></a><span class="lineno">  529</span>            var-&gt;set_tooltip(tooltip);</div>
 <div class="line"><a id="l00530" name="l00530"></a><span class="lineno">  530</span>        <span class="keywordflow">return</span> var;</div>
 <div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span>    }</div>
 <div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span> </div>
-<div class="line"><a id="l00533" name="l00533"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a0134b08a01e8c8b950149f7f9c8b6923">  533</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkb_1_1Window.html#a0134b08a01e8c8b950149f7f9c8b6923">display</a>() {</div>
-<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span>        <span class="keywordflow">if</span> (!offscreen_) {</div>
-<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span>            glfwPollEvents();</div>
-<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span>            screen_-&gt;draw_contents();</div>
-<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span>            clglContext_-&gt;blitFrameBufferToScreen();</div>
-<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span>            screen_-&gt;draw_widgets();</div>
-<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>            glfwSwapBuffers(glfwWindow_);</div>
-<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>            <span class="keywordflow">return</span> !glfwWindowShouldClose(glfwWindow_);</div>
-<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>        }</div>
-<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00533" name="l00533"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a182b2c69daf119cda51bc0ff8a7a9fd9">  533</a></span>    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt; nanogui::detail::FormWidget&lt;T&gt;* <a class="code hl_function" href="classkb_1_1Window.html#a182b2c69daf119cda51bc0ff8a7a9fd9">makeFormVariable</a>(<span class="keyword">const</span> <span class="keywordtype">string</span> &amp;name, T &amp;v, <span class="keyword">const</span> T &amp;min, <span class="keyword">const</span> T &amp;max, <span class="keywordtype">bool</span> spinnable = <span class="keyword">true</span>, <span class="keyword">const</span> <span class="keywordtype">string</span> &amp;unit = <span class="stringliteral">&quot;&quot;</span>, <span class="keyword">const</span> <span class="keywordtype">string</span> tooltip = <span class="stringliteral">&quot;&quot;</span>) {</div>
+<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span>        <span class="keyword">auto</span> var = <a class="code hl_function" href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">form</a>()-&gt;add_variable(name, v);</div>
+<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span>        var-&gt;set_spinnable(spinnable);</div>
+<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span>        var-&gt;set_min_value(min);</div>
+<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span>        var-&gt;set_max_value(max);</div>
+<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span>        <span class="keywordflow">if</span> (!unit.empty())</div>
+<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>            var-&gt;set_units(unit);</div>
+<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>        <span class="keywordflow">if</span> (!tooltip.empty())</div>
+<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>            var-&gt;set_tooltip(tooltip);</div>
+<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span>        <span class="keywordflow">return</span> var;</div>
 <div class="line"><a id="l00543" name="l00543"></a><span class="lineno">  543</span>    }</div>
-<div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>    GLFWwindow* getGLFWWindow() {</div>
-<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>        <span class="keywordflow">return</span> glfwWindow_;</div>
-<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>    }</div>
-<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span> </div>
-<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>    NVGcontext* getNVGcontext() {</div>
-<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>        <span class="keywordflow">return</span> screen_-&gt;nvg_context();</div>
-<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>    }</div>
-<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>};</div>
-<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span><span class="comment">// class Window</span></div>
-<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span> </div>
-<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span><span class="keyword">static</span> std::string get_gl_info() {</div>
-<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>    <span class="keywordflow">return</span> <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(glGetString(GL_VERSION));</div>
-<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>}</div>
-<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span> </div>
-<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span><span class="keyword">static</span> std::string get_cl_info() {</div>
-<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>    std::stringstream ss;</div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>    std::vector&lt;cv::ocl::PlatformInfo&gt; plt_info;</div>
-<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>    cv::ocl::getPlatfomsInfo(plt_info);</div>
-<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>    <span class="keyword">const</span> cv::ocl::Device &amp;defaultDevice = cv::ocl::Device::getDefault();</div>
-<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>    cv::ocl::Device current;</div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>    ss &lt;&lt; endl;</div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span> &amp;info : plt_info) {</div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; info.deviceNumber(); ++i) {</div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>            ss &lt;&lt; <span class="stringliteral">&quot;\t&quot;</span>;</div>
-<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>            info.getDevice(current, i);</div>
-<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span>            <span class="keywordflow">if</span> (defaultDevice.name() == current.name())</div>
-<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>                ss &lt;&lt; <span class="stringliteral">&quot;* &quot;</span>;</div>
-<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>            <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>                ss &lt;&lt; <span class="stringliteral">&quot;  &quot;</span>;</div>
-<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span>            ss &lt;&lt; info.version() &lt;&lt; <span class="stringliteral">&quot; = &quot;</span> &lt;&lt; info.name() &lt;&lt; endl;</div>
-<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span>            ss &lt;&lt; <span class="stringliteral">&quot;\t\t  GL sharing: &quot;</span> &lt;&lt; (current.isExtensionSupported(<span class="stringliteral">&quot;cl_khr_gl_sharing&quot;</span>) ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; endl;</div>
-<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>            ss &lt;&lt; <span class="stringliteral">&quot;\t\t  VAAPI media sharing: &quot;</span> &lt;&lt; (current.isExtensionSupported(<span class="stringliteral">&quot;cl_intel_va_api_media_sharing&quot;</span>) ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; endl;</div>
-<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>        }</div>
-<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>    }</div>
-<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span> </div>
-<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>    <span class="keywordflow">return</span> ss.str();</div>
-<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>}</div>
-<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span> </div>
-<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span><span class="keyword">static</span> <span class="keywordtype">void</span> print_system_info() {</div>
-<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>    cerr &lt;&lt; <span class="stringliteral">&quot;OpenGL Version: &quot;</span> &lt;&lt; get_gl_info() &lt;&lt; endl;</div>
-<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>    cerr &lt;&lt; <span class="stringliteral">&quot;OpenCL Platforms: &quot;</span> &lt;&lt; get_cl_info() &lt;&lt; endl;</div>
-<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span>}</div>
-<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span> </div>
-<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span><span class="keyword">static</span> <span class="keywordtype">void</span> update_fps(cv::Ptr&lt;Window&gt; window, <span class="keywordtype">bool</span> graphical = <span class="keyword">false</span>) {</div>
-<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>        <span class="keyword">static</span> uint64_t cnt = 0;</div>
-<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>        <span class="keyword">static</span> <span class="keywordtype">double</span> fps = 1;</div>
-<div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>        <span class="keyword">static</span> cv::TickMeter meter;</div>
-<div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span> </div>
-<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>        <span class="keywordflow">if</span> (cnt &gt; 0) {</div>
-<div class="line"><a id="l00594" name="l00594"></a><span class="lineno">  594</span>            meter.stop();</div>
-<div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span> </div>
-<div class="line"><a id="l00596" name="l00596"></a><span class="lineno">  596</span>            <span class="keywordflow">if</span> (cnt % uint64(ceil(fps)) == 0) {</div>
-<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span>                fps = meter.getFPS();</div>
-<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span>                cerr &lt;&lt; <span class="stringliteral">&quot;FPS : &quot;</span> &lt;&lt; fps &lt;&lt; <span class="charliteral">&#39;\r&#39;</span>;</div>
-<div class="line"><a id="l00599" name="l00599"></a><span class="lineno">  599</span>                cnt = 0;</div>
-<div class="line"><a id="l00600" name="l00600"></a><span class="lineno">  600</span>            }</div>
-<div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span>        }</div>
-<div class="line"><a id="l00602" name="l00602"></a><span class="lineno">  602</span> </div>
-<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span>        <span class="keywordflow">if</span> (graphical) {</div>
-<div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span>            window-&gt;renderNVG([&amp;](NVGcontext *vg, <span class="keyword">const</span> cv::Size &amp;size) {</div>
-<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>                <span class="keywordtype">string</span> text = <span class="stringliteral">&quot;FPS: &quot;</span> + std::to_string(fps);</div>
-<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>                nvgBeginPath(vg);</div>
-<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span>                nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);</div>
-<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span>                nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));</div>
-<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>                nvgFill(vg);</div>
-<div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span> </div>
-<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>                nvgBeginPath(vg);</div>
-<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>                nvgFontSize(vg, 60.0f);</div>
-<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>                nvgFontFace(vg, <span class="stringliteral">&quot;mono&quot;</span>);</div>
-<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span>                nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));</div>
-<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);</div>
-<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span>                nvgText(vg, 22, 37, text.c_str(), <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>            });</div>
-<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span>        }</div>
-<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span> </div>
-<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span>        meter.start();</div>
-<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>        ++cnt;</div>
-<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span>    }</div>
-<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>} <span class="comment">//namespace kb</span></div>
-<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span> </div>
-<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span><span class="preprocessor">#endif </span><span class="comment">/* SRC_SUBSYSTEMS_HPP_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span> </div>
+<div class="line"><a id="l00545" name="l00545"></a><span class="lineno"><a class="line" href="classkb_1_1Window.html#a0134b08a01e8c8b950149f7f9c8b6923">  545</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkb_1_1Window.html#a0134b08a01e8c8b950149f7f9c8b6923">display</a>() {</div>
+<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>        <span class="keywordflow">if</span> (!offscreen_) {</div>
+<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>            glfwPollEvents();</div>
+<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>            screen_-&gt;draw_contents();</div>
+<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>            clglContext_-&gt;blitFrameBufferToScreen();</div>
+<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>            screen_-&gt;draw_widgets();</div>
+<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>            glfwSwapBuffers(glfwWindow_);</div>
+<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>            <span class="keywordflow">return</span> !glfwWindowShouldClose(glfwWindow_);</div>
+<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>        }</div>
+<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>    }</div>
+<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>    GLFWwindow* getGLFWWindow() {</div>
+<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>        <span class="keywordflow">return</span> glfwWindow_;</div>
+<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>    }</div>
+<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span> </div>
+<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>    NVGcontext* getNVGcontext() {</div>
+<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>        <span class="keywordflow">return</span> screen_-&gt;nvg_context();</div>
+<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>    }</div>
+<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>};</div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span><span class="comment">// class Window</span></div>
+<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span> </div>
+<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span><span class="keyword">static</span> std::string get_gl_info() {</div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>    <span class="keywordflow">return</span> <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(glGetString(GL_VERSION));</div>
+<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>}</div>
+<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span> </div>
+<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span><span class="keyword">static</span> std::string get_cl_info() {</div>
+<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>    std::stringstream ss;</div>
+<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>    std::vector&lt;cv::ocl::PlatformInfo&gt; plt_info;</div>
+<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span>    cv::ocl::getPlatfomsInfo(plt_info);</div>
+<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span>    <span class="keyword">const</span> cv::ocl::Device &amp;defaultDevice = cv::ocl::Device::getDefault();</div>
+<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>    cv::ocl::Device current;</div>
+<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>    ss &lt;&lt; endl;</div>
+<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span> &amp;info : plt_info) {</div>
+<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; info.deviceNumber(); ++i) {</div>
+<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>            ss &lt;&lt; <span class="stringliteral">&quot;\t&quot;</span>;</div>
+<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>            info.getDevice(current, i);</div>
+<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>            <span class="keywordflow">if</span> (defaultDevice.name() == current.name())</div>
+<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>                ss &lt;&lt; <span class="stringliteral">&quot;* &quot;</span>;</div>
+<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>            <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>                ss &lt;&lt; <span class="stringliteral">&quot;  &quot;</span>;</div>
+<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span>            ss &lt;&lt; info.version() &lt;&lt; <span class="stringliteral">&quot; = &quot;</span> &lt;&lt; info.name() &lt;&lt; endl;</div>
+<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>            ss &lt;&lt; <span class="stringliteral">&quot;\t\t  GL sharing: &quot;</span> &lt;&lt; (current.isExtensionSupported(<span class="stringliteral">&quot;cl_khr_gl_sharing&quot;</span>) ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; endl;</div>
+<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>            ss &lt;&lt; <span class="stringliteral">&quot;\t\t  VAAPI media sharing: &quot;</span> &lt;&lt; (current.isExtensionSupported(<span class="stringliteral">&quot;cl_intel_va_api_media_sharing&quot;</span>) ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; endl;</div>
+<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>        }</div>
+<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>    }</div>
+<div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span> </div>
+<div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span>    <span class="keywordflow">return</span> ss.str();</div>
+<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>}</div>
+<div class="line"><a id="l00594" name="l00594"></a><span class="lineno">  594</span> </div>
+<div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span><span class="keyword">static</span> <span class="keywordtype">void</span> print_system_info() {</div>
+<div class="line"><a id="l00596" name="l00596"></a><span class="lineno">  596</span>    cerr &lt;&lt; <span class="stringliteral">&quot;OpenGL Version: &quot;</span> &lt;&lt; get_gl_info() &lt;&lt; endl;</div>
+<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span>    cerr &lt;&lt; <span class="stringliteral">&quot;OpenCL Platforms: &quot;</span> &lt;&lt; get_cl_info() &lt;&lt; endl;</div>
+<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span>}</div>
+<div class="line"><a id="l00599" name="l00599"></a><span class="lineno">  599</span> </div>
+<div class="line"><a id="l00600" name="l00600"></a><span class="lineno">  600</span><span class="keyword">static</span> <span class="keywordtype">void</span> update_fps(cv::Ptr&lt;Window&gt; window, <span class="keywordtype">bool</span> graphical = <span class="keyword">false</span>) {</div>
+<div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span>        <span class="keyword">static</span> uint64_t cnt = 0;</div>
+<div class="line"><a id="l00602" name="l00602"></a><span class="lineno">  602</span>        <span class="keyword">static</span> <span class="keywordtype">double</span> fps = 1;</div>
+<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span>        <span class="keyword">static</span> cv::TickMeter meter;</div>
+<div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span> </div>
+<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>        <span class="keywordflow">if</span> (cnt &gt; 0) {</div>
+<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>            meter.stop();</div>
+<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span> </div>
+<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span>            <span class="keywordflow">if</span> (cnt % uint64(ceil(fps)) == 0) {</div>
+<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>                fps = meter.getFPS();</div>
+<div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span>                cerr &lt;&lt; <span class="stringliteral">&quot;FPS : &quot;</span> &lt;&lt; fps &lt;&lt; <span class="charliteral">&#39;\r&#39;</span>;</div>
+<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>                cnt = 0;</div>
+<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>            }</div>
+<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>        }</div>
+<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span> </div>
+<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>        <span class="keywordflow">if</span> (graphical) {</div>
+<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span>            window-&gt;renderNVG([&amp;](NVGcontext *vg, <span class="keyword">const</span> cv::Size &amp;size) {</div>
+<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>                <span class="keywordtype">string</span> text = <span class="stringliteral">&quot;FPS: &quot;</span> + std::to_string(fps);</div>
+<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span>                nvgBeginPath(vg);</div>
+<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span>                nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);</div>
+<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span>                nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));</div>
+<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>                nvgFill(vg);</div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span> </div>
+<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>                nvgBeginPath(vg);</div>
+<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span>                nvgFontSize(vg, 60.0f);</div>
+<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span>                nvgFontFace(vg, <span class="stringliteral">&quot;mono&quot;</span>);</div>
+<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span>                nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));</div>
+<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span>                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);</div>
+<div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span>                nvgText(vg, 22, 37, text.c_str(), <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span>            });</div>
+<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>        }</div>
+<div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span> </div>
+<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>        meter.start();</div>
+<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>        ++cnt;</div>
+<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>    }</div>
+<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>} <span class="comment">//namespace kb</span></div>
+<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span> </div>
+<div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span><span class="preprocessor">#endif </span><span class="comment">/* SRC_SUBSYSTEMS_HPP_ */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="aclasskb_1_1CLGLContext_html"><div class="ttname"><a href="classkb_1_1CLGLContext.html">kb::CLGLContext</a></div><div class="ttdef"><b>Definition:</b> subsystems.hpp:46</div></div>
 <div class="ttc" id="aclasskb_1_1CLGLContext_html_a0d35bbab3560534623e9bd8626f7ed44"><div class="ttname"><a href="classkb_1_1CLGLContext.html#a0d35bbab3560534623e9bd8626f7ed44">kb::CLGLContext::CLGLContext</a></div><div class="ttdeci">CLGLContext(cv::Size windowSize, cv::Size frameBufferSize)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:59</div></div>
 <div class="ttc" id="aclasskb_1_1CLGLContext_html_a40904883698a2deeecbe86114d178b62"><div class="ttname"><a href="classkb_1_1CLGLContext.html#a40904883698a2deeecbe86114d178b62">kb::CLGLContext::getSize</a></div><div class="ttdeci">cv::Size getSize()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:86</div></div>
@@ -715,36 +727,38 @@ $(function() {
 <div class="ttc" id="aclasskb_1_1NanoVGContext_html_a534ad6875a03314424763b73d18a8c88"><div class="ttname"><a href="classkb_1_1NanoVGContext.html#a534ad6875a03314424763b73d18a8c88">kb::NanoVGContext::NanoVGContext</a></div><div class="ttdeci">NanoVGContext(NVGcontext *context, CLGLContext &amp;fbContext, float pixelRatio)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:219</div></div>
 <div class="ttc" id="aclasskb_1_1NanoVGContext_html_aa6aa9c3fd86dbc5a7c4155894405e367"><div class="ttname"><a href="classkb_1_1NanoVGContext.html#aa6aa9c3fd86dbc5a7c4155894405e367">kb::NanoVGContext::render</a></div><div class="ttdeci">void render(std::function&lt; void(NVGcontext *, const cv::Size &amp;)&gt; fn)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:229</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html"><div class="ttname"><a href="classkb_1_1Window.html">kb::Window</a></div><div class="ttdef"><b>Definition:</b> subsystems.hpp:258</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a0134b08a01e8c8b950149f7f9c8b6923"><div class="ttname"><a href="classkb_1_1Window.html#a0134b08a01e8c8b950149f7f9c8b6923">kb::Window::display</a></div><div class="ttdeci">bool display()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:533</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a0134b08a01e8c8b950149f7f9c8b6923"><div class="ttname"><a href="classkb_1_1Window.html#a0134b08a01e8c8b950149f7f9c8b6923">kb::Window::display</a></div><div class="ttdeci">bool display()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:545</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a0165146e0d919cfc7e10cdce91e3881d"><div class="ttname"><a href="classkb_1_1Window.html#a0165146e0d919cfc7e10cdce91e3881d">kb::Window::Window</a></div><div class="ttdeci">Window(const cv::Size &amp;size, bool offscreen, const string &amp;title, int major=4, int minor=6, int samples=0, bool debug=false)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:271</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a11e2b68dbd22370711eb410bf3cb73e3"><div class="ttname"><a href="classkb_1_1Window.html#a11e2b68dbd22370711eb410bf3cb73e3">kb::Window::terminate</a></div><div class="ttdeci">void terminate()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:441</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a182b2c69daf119cda51bc0ff8a7a9fd9"><div class="ttname"><a href="classkb_1_1Window.html#a182b2c69daf119cda51bc0ff8a7a9fd9">kb::Window::makeFormVariable</a></div><div class="ttdeci">nanogui::detail::FormWidget&lt; T &gt; * makeFormVariable(const string &amp;name, T &amp;v, const T &amp;min, const T &amp;max, bool spinnable=true, const string &amp;unit=&quot;&quot;, const string tooltip=&quot;&quot;)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:521</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a11e2b68dbd22370711eb410bf3cb73e3"><div class="ttname"><a href="classkb_1_1Window.html#a11e2b68dbd22370711eb410bf3cb73e3">kb::Window::terminate</a></div><div class="ttdeci">void terminate()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:445</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a182b2c69daf119cda51bc0ff8a7a9fd9"><div class="ttname"><a href="classkb_1_1Window.html#a182b2c69daf119cda51bc0ff8a7a9fd9">kb::Window::makeFormVariable</a></div><div class="ttdeci">nanogui::detail::FormWidget&lt; T &gt; * makeFormVariable(const string &amp;name, T &amp;v, const T &amp;min, const T &amp;max, bool spinnable=true, const string &amp;unit=&quot;&quot;, const string tooltip=&quot;&quot;)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:533</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a1dea3e6ff58188b8b250e33d419b66f8"><div class="ttname"><a href="classkb_1_1Window.html#a1dea3e6ff58188b8b250e33d419b66f8">kb::Window::setFullscreen</a></div><div class="ttdeci">void setFullscreen(bool f)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:479</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a2750ca6390897200d299ce153bf13712"><div class="ttname"><a href="classkb_1_1Window.html#a2750ca6390897200d299ce153bf13712">kb::Window::clgl</a></div><div class="ttdeci">CLGLContext &amp; clgl()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:372</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a418e95f4e0f40626077d1040e07a6558"><div class="ttname"><a href="classkb_1_1Window.html#a418e95f4e0f40626077d1040e07a6558">kb::Window::setVisible</a></div><div class="ttdeci">void setVisible(bool v)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:494</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a2a8ef8dffad20aac63f55f7589410ac9"><div class="ttname"><a href="classkb_1_1Window.html#a2a8ef8dffad20aac63f55f7589410ac9">kb::Window::isVisible</a></div><div class="ttdeci">bool isVisible()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:498</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a418e95f4e0f40626077d1040e07a6558"><div class="ttname"><a href="classkb_1_1Window.html#a418e95f4e0f40626077d1040e07a6558">kb::Window::setVisible</a></div><div class="ttdeci">void setVisible(bool v)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:502</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a439d440794227d1a7264cd0a4d6fccbe"><div class="ttname"><a href="classkb_1_1Window.html#a439d440794227d1a7264cd0a4d6fccbe">kb::Window::getSize</a></div><div class="ttdeci">cv::Size getSize()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:456</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a56048b26120e1033f371c59073308813"><div class="ttname"><a href="classkb_1_1Window.html#a56048b26120e1033f371c59073308813">kb::Window::setSize</a></div><div class="ttdeci">void setSize(cv::Size sz)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:470</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a5b84ad0b202c30fbd97666c4bdd822ae"><div class="ttname"><a href="classkb_1_1Window.html#a5b84ad0b202c30fbd97666c4bdd822ae">kb::Window::render</a></div><div class="ttdeci">void render(std::function&lt; void(const cv::Size &amp;)&gt; fn)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:384</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a6137c40b71004895a0d0b9e459874101"><div class="ttname"><a href="classkb_1_1Window.html#a6137c40b71004895a0d0b9e459874101">kb::Window::getFrameBufferSize</a></div><div class="ttdeci">cv::Size getFrameBufferSize()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:446</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a65c4f8b66c6125159c0f305ec2e4ae86"><div class="ttname"><a href="classkb_1_1Window.html#a65c4f8b66c6125159c0f305ec2e4ae86">kb::Window::makeGroup</a></div><div class="ttdeci">nanogui::Label * makeGroup(const string &amp;label)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:510</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a6137c40b71004895a0d0b9e459874101"><div class="ttname"><a href="classkb_1_1Window.html#a6137c40b71004895a0d0b9e459874101">kb::Window::getFrameBufferSize</a></div><div class="ttdeci">cv::Size getFrameBufferSize()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:450</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a6179ca2f60cb8b86fa1468fadddb6205"><div class="ttname"><a href="classkb_1_1Window.html#a6179ca2f60cb8b86fa1468fadddb6205">kb::Window::clear</a></div><div class="ttdeci">void clear(const cv::Scalar &amp;rgba=cv::Scalar(0, 0, 0, 255))</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:436</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a65c4f8b66c6125159c0f305ec2e4ae86"><div class="ttname"><a href="classkb_1_1Window.html#a65c4f8b66c6125159c0f305ec2e4ae86">kb::Window::makeGroup</a></div><div class="ttdeci">nanogui::Label * makeGroup(const string &amp;label)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:522</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a6a4efb8af15b1b4bc964258333c9daf3"><div class="ttname"><a href="classkb_1_1Window.html#a6a4efb8af15b1b4bc964258333c9daf3">kb::Window::~Window</a></div><div class="ttdeci">~Window()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:364</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a71bb4dfca63a093c9121eb3c44e9e90e"><div class="ttname"><a href="classkb_1_1Window.html#a71bb4dfca63a093c9121eb3c44e9e90e">kb::Window::isFullscreen</a></div><div class="ttdeci">bool isFullscreen()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:475</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a74e9c74afbe076783bb505c771c63dea"><div class="ttname"><a href="classkb_1_1Window.html#a74e9c74afbe076783bb505c771c63dea">kb::Window::makeVACapture</a></div><div class="ttdeci">cv::VideoCapture &amp; makeVACapture(const string &amp;intputFilename, int vaDeviceIndex)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:421</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a8591d313b0a4e9ea318fd204c63459b7"><div class="ttname"><a href="classkb_1_1Window.html#a8591d313b0a4e9ea318fd204c63459b7">kb::Window::getPixelRatio</a></div><div class="ttdeci">float getPixelRatio()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:460</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_a8db16e258c4eb6964c58e5d8b86d91c4"><div class="ttname"><a href="classkb_1_1Window.html#a8db16e258c4eb6964c58e5d8b86d91c4">kb::Window::makeWindow</a></div><div class="ttdeci">nanogui::Window * makeWindow(int x, int y, const string &amp;title)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:506</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a888663e36020c198b6ebbfc592e4c586"><div class="ttname"><a href="classkb_1_1Window.html#a888663e36020c198b6ebbfc592e4c586">kb::Window::isResizable</a></div><div class="ttdeci">bool isResizable()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:490</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_a8db16e258c4eb6964c58e5d8b86d91c4"><div class="ttname"><a href="classkb_1_1Window.html#a8db16e258c4eb6964c58e5d8b86d91c4">kb::Window::makeWindow</a></div><div class="ttdeci">nanogui::Window * makeWindow(int x, int y, const string &amp;title)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:518</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_a97a6db849611519ea3e44b36b52f0557"><div class="ttname"><a href="classkb_1_1Window.html#a97a6db849611519ea3e44b36b52f0557">kb::Window::writeVA</a></div><div class="ttdeci">void writeVA()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:402</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_aa61f11de33d1451ac4ec78721f841038"><div class="ttname"><a href="classkb_1_1Window.html#aa61f11de33d1451ac4ec78721f841038">kb::Window::captureVA</a></div><div class="ttdeci">bool captureVA()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:396</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_aa6f1f7f85bd5d350eb263b474c97eac6"><div class="ttname"><a href="classkb_1_1Window.html#aa6f1f7f85bd5d350eb263b474c97eac6">kb::Window::nvg</a></div><div class="ttdeci">NanoVGContext &amp; nvg()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:380</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_aa89b954c0224f4a0cc7800d4ad7b2cbb"><div class="ttname"><a href="classkb_1_1Window.html#aa89b954c0224f4a0cc7800d4ad7b2cbb">kb::Window::makeVACapture</a></div><div class="ttdeci">cv::VideoCapture &amp; makeVACapture(const string &amp;intputFilename, const int vaDeviceIndex)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:421</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_aab1121bcf9162f9fcbc16cc42d2a4694"><div class="ttname"><a href="classkb_1_1Window.html#aab1121bcf9162f9fcbc16cc42d2a4694">kb::Window::compute</a></div><div class="ttdeci">void compute(std::function&lt; void(cv::UMat &amp;)&gt; fn)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:388</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_ab301d32f11698f9b9daf0076f990fdcb"><div class="ttname"><a href="classkb_1_1Window.html#ab301d32f11698f9b9daf0076f990fdcb">kb::Window::form</a></div><div class="ttdeci">cv::Ptr&lt; nanogui::FormHelper &gt; form()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:368</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_ab6bd266d592ee7540a3998ce23ab48f3"><div class="ttname"><a href="classkb_1_1Window.html#ab6bd266d592ee7540a3998ce23ab48f3">kb::Window::clear</a></div><div class="ttdeci">void clear(const float &amp;r=0.0f, const float &amp;g=0.0f, const float &amp;b=0.0f, const float &amp;a=1.0f)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:436</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_acc2beca2ba19e3a2fad6fe35606ce789"><div class="ttname"><a href="classkb_1_1Window.html#acc2beca2ba19e3a2fad6fe35606ce789">kb::Window::updateSize</a></div><div class="ttdeci">void updateSize()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:452</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_ab3fce6b6748735dead804dbf734fa57d"><div class="ttname"><a href="classkb_1_1Window.html#ab3fce6b6748735dead804dbf734fa57d">kb::Window::setSize</a></div><div class="ttdeci">void setSize(const cv::Size &amp;sz)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:470</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_ad2c9aa60d6f77d1fc8f65820f210af50"><div class="ttname"><a href="classkb_1_1Window.html#ad2c9aa60d6f77d1fc8f65820f210af50">kb::Window::renderNVG</a></div><div class="ttdeci">void renderNVG(std::function&lt; void(NVGcontext *, const cv::Size &amp;)&gt; fn)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:392</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_ade932dcc0312e484c22cd9fb46c86a84"><div class="ttname"><a href="classkb_1_1Window.html#ade932dcc0312e484c22cd9fb46c86a84">kb::Window::makeFormVariable</a></div><div class="ttdeci">nanogui::detail::FormWidget&lt; bool &gt; * makeFormVariable(const string &amp;name, bool &amp;v, const string &amp;tooltip=&quot;&quot;)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:514</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_ae39b9a155c5d90df8e1a854f9e69de07"><div class="ttname"><a href="classkb_1_1Window.html#ae39b9a155c5d90df8e1a854f9e69de07">kb::Window::makeVAWriter</a></div><div class="ttdeci">cv::VideoWriter &amp; makeVAWriter(const string &amp;outputFilename, int fourcc, float fps, cv::Size frameSize, int vaDeviceIndex)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:408</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_af05bd601579f7af7634315930da17cf4"><div class="ttname"><a href="classkb_1_1Window.html#af05bd601579f7af7634315930da17cf4">kb::Window::isOffscreen</a></div><div class="ttdeci">bool isOffscreen()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:502</div></div>
-<div class="ttc" id="aclasskb_1_1Window_html_afc4df1b83a96276ec0104885acaab58d"><div class="ttname"><a href="classkb_1_1Window.html#afc4df1b83a96276ec0104885acaab58d">kb::Window::setResizable</a></div><div class="ttdeci">void setResizable(bool r)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:490</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_ade932dcc0312e484c22cd9fb46c86a84"><div class="ttname"><a href="classkb_1_1Window.html#ade932dcc0312e484c22cd9fb46c86a84">kb::Window::makeFormVariable</a></div><div class="ttdeci">nanogui::detail::FormWidget&lt; bool &gt; * makeFormVariable(const string &amp;name, bool &amp;v, const string &amp;tooltip=&quot;&quot;)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:526</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_ae11f72e67ffcf2fc2e19c0ec4519a5c6"><div class="ttname"><a href="classkb_1_1Window.html#ae11f72e67ffcf2fc2e19c0ec4519a5c6">kb::Window::makeVAWriter</a></div><div class="ttdeci">cv::VideoWriter &amp; makeVAWriter(const string &amp;outputFilename, const int fourcc, const float fps, const cv::Size &amp;frameSize, const int vaDeviceIndex)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:408</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_af05bd601579f7af7634315930da17cf4"><div class="ttname"><a href="classkb_1_1Window.html#af05bd601579f7af7634315930da17cf4">kb::Window::isOffscreen</a></div><div class="ttdeci">bool isOffscreen()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:510</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_afc4df1b83a96276ec0104885acaab58d"><div class="ttname"><a href="classkb_1_1Window.html#afc4df1b83a96276ec0104885acaab58d">kb::Window::setResizable</a></div><div class="ttdeci">void setResizable(bool r)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:494</div></div>
 <div class="ttc" id="aclasskb_1_1Window_html_aff214b9dd51113167f9118ae27d57df6"><div class="ttname"><a href="classkb_1_1Window.html#aff214b9dd51113167f9118ae27d57df6">kb::Window::clva</a></div><div class="ttdeci">CLVAContext &amp; clva()</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:376</div></div>
+<div class="ttc" id="aclasskb_1_1Window_html_afff96928ff40dfb18bafe2ce202c17b0"><div class="ttname"><a href="classkb_1_1Window.html#afff96928ff40dfb18bafe2ce202c17b0">kb::Window::setOffscreen</a></div><div class="ttdeci">void setOffscreen(bool o)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:514</div></div>
 <div class="ttc" id="anamespacekb_html"><div class="ttname"><a href="namespacekb.html">kb</a></div><div class="ttdef"><b>Definition:</b> subsystems.hpp:29</div></div>
 <div class="ttc" id="anamespacekb_html_a0d609d60d6d9db89d88aef2f5c9f813a"><div class="ttname"><a href="namespacekb.html#a0d609d60d6d9db89d88aef2f5c9f813a">kb::CLExecContext_t</a></div><div class="ttdeci">cv::ocl::OpenCLExecutionContext CLExecContext_t</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:31</div></div>
 <div class="ttc" id="anamespacekb_html_a2a397efde8eab1afaa2bc61ab888a0a1"><div class="ttname"><a href="namespacekb.html#a2a397efde8eab1afaa2bc61ab888a0a1">kb::gl_check_error</a></div><div class="ttdeci">void gl_check_error(const std::filesystem::path &amp;file, unsigned int line, const char *expression)</div><div class="ttdef"><b>Definition:</b> subsystems.hpp:34</div></div>
