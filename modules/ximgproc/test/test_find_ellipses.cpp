@@ -23,9 +23,9 @@ TEST(FindEllipsesTest, EllipsesOnly)
 
     // position check
     // target centers
-    Point2f center_1(226.9, 57.2);
-    Point2f center_2(393.1, 187.0);
-    Point2f center_3(208.5, 307.5);
+    Point2f center_1(226.9f, 57.2f);
+    Point2f center_2(393.1f, 187.0f);
+    Point2f center_3(208.5f, 307.5f);
     // matching
     for (auto ell: ells) {
         bool has_match = false;

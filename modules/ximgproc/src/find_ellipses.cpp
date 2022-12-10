@@ -310,11 +310,11 @@ float EllipseDetectorImpl::getMedianSlope(std::vector<Point2f> &med, Point2f &ce
     // centers  : centroid of the points in med
     // slopes	: vector of the slopes
 
-    unsigned pointCount = med.size();
+    size_t pointCount = med.size();
     // CV_Assert(pointCount >= 2);
 
-    unsigned halfSize = pointCount >> 1;
-    unsigned quarterSize = halfSize >> 1;
+    size_t halfSize = pointCount >> 1;
+    size_t quarterSize = halfSize >> 1;
 
     std::vector<float> xx, yy;
     slopes.reserve(halfSize);
@@ -333,7 +333,7 @@ float EllipseDetectorImpl::getMedianSlope(std::vector<Point2f> &med, Point2f &ce
         float den = (p2.x - p1.x);
         float num = (p2.y - p1.y);
 
-        if (den == 0) den = 0.00001f;
+        den = (std::fabs(den) >= 1e-5) ? den : 0.00001f;  // FIXIT: algorithm is not reliable
 
         slopes.push_back(num / den);
     }
@@ -1341,7 +1341,7 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
         }
 
         const int CANNY_SHIFT = 15;
-        const float TAN22_5 = 0.4142135623730950488016887242097; // tan(22.5) = sqrt(2) - 1
+        const float TAN22_5 = 0.4142135623730950488016887242097f; // tan(22.5) = sqrt(2) - 1
         const int TG22 = (int) (TAN22_5 * (1 << CANNY_SHIFT) + 0.5);
 
         // #define CANNY_PUSH(d)    *(d) = (uchar)2, *stack_top++ = (d)
@@ -1723,8 +1723,8 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     // find peak in N and K accumulator
-    int iN = std::distance(accN, std::max_element(accN, accN + ACC_N_SIZE));
-    int iK = std::distance(accR, std::max_element(accR, accR + ACC_R_SIZE)) + 90;
+    int iN = (int)std::distance(accN, std::max_element(accN, accN + ACC_N_SIZE));
+    int iK = (int)std::distance(accR, std::max_element(accR, accR + ACC_R_SIZE)) + 90;
 
     // recover real values
     auto fK = float(iK);
@@ -1767,7 +1767,7 @@ void EllipseDetectorImpl::findEllipses(Point2f &center, VP &edge_i, VP &edge_j, 
     }
 
     // find peak in A accumulator
-    int A = std::distance(accA, std::max_element(accA, accA + ACC_A_SIZE));
+    int A = (int)std::distance(accA, std::max_element(accA, accA + ACC_A_SIZE));
     auto fA = float(A);
 
     // find B value. See Eq [23] in the paper
