@@ -86,74 +86,51 @@ int main(int argc, char **argv) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
+    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
 
-    //Initialize the application
-    app::init("Video Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
+    if(!window->isOffscreen())
+        window->setVisible(true);
+
     //Print system information
-    app::print_system_info();
+    kb::print_system_info();
 
-    app::run([&]() {
-        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+    auto capture = window->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
-        //Initialize MJPEG HW decoding using VAAPI
-        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
+    if (!capture.isOpened()) {
+        cerr << "ERROR! Unable to open video input" << endl;
+        exit(-1);
+    }
 
-        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-        va::copy();
+    float fps = capture.get(cv::CAP_PROP_FPS);
+    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
 
-        if (!capture.isOpened()) {
-            cerr << "ERROR! Unable to open video input" << endl;
-            return;
-        }
-
-        double fps = capture.get(cv::CAP_PROP_FPS);
-
-        //Initialize VP9 HW encoding using VAAPI. We don't need to specify the hardware device twice. only generates a warning.
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameBufferSize, {
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
-
-        gl::render([](int w, int h) {
-            init_scene(w, h);
-        });
-
-        while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
-                //videoFrame will be converted to BGRA and stored in the frameBuffer.
-                capture >> videoFrame;
-            });
-
-            if(!success)
-                break;
-
-            gl::render([](int w, int h) {
-                //Render using OpenGL
-                render_scene(w, h);
-            });
-
-            cl::compute([&](cv::UMat& frameBuffer){
-                //Glow effect (OpenCL)
-                glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
-            });
-
-            va::write([&](const cv::UMat& videoFrame){
-                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-                writer << videoFrame;
-            });
-
-            app::update_fps();
-
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
-        }
-
-        app::terminate();
+    window->render([](const cv::Size& sz) {
+        init_scene(sz.width, sz.height);
     });
+
+    while (true) {
+        if(!window->captureVA())
+            break;
+
+        window->render([](const cv::Size& sz) {
+            //Render using OpenGL
+            render_scene(sz.width, sz.height);
+        });
+
+        window->compute([&](cv::UMat& frameBuffer){
+            //Glow effect (OpenCL)
+            glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
+        });
+
+
+        window->writeVA();
+
+        update_fps(window, false);
+
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if(!window->display())
+            break;
+    }
+
     return 0;
 }
