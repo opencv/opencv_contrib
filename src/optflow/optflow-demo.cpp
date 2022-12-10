@@ -13,6 +13,7 @@ using std::cerr;
 using std::endl;
 using std::vector;
 using std::string;
+using namespace std::literals::chrono_literals;
 
 /** Application parameters **/
 
@@ -182,7 +183,7 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
 }
 
 void setup_gui(cv::Ptr<kb::Window> window) {
-    auto subWin = window->makeWindow(6, 45, "Settings");
+    window->makeWindow(6, 45, "Settings");
 
     auto useOpenCL = window->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
 
@@ -201,7 +202,7 @@ void setup_gui(cv::Ptr<kb::Window> window) {
     window->makeGroup("Effect");
     window->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
     auto glowKernel = window->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
-    glowKernel.set_callback([](const int& k) {
+    glowKernel->set_callback([](const int& k) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
     auto color = window->form()->add_variable("Color", effect_color);
@@ -243,6 +244,7 @@ int main(int argc, char **argv) {
     }
 
     float fps = capture.get(cv::CAP_PROP_FPS);
+
     window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
 
     //BGRA

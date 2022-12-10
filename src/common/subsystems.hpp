@@ -367,17 +367,23 @@ public:
 
     ~Window() {
         //don't delete form_. it is autmatically cleaned up by screen_
-        delete screen_;
-        delete writer_;
-        delete capture_;
-        delete nvgContext_;
-        delete clvaContext_;
-        delete clglContext_;
+        if(screen_)
+            delete screen_;
+        if(writer_)
+            delete writer_;
+        if(capture_)
+            delete capture_;
+        if(nvgContext_)
+            delete nvgContext_;
+        if(clvaContext_)
+            delete clvaContext_;
+        if(clglContext_)
+            delete clglContext_;
         glfwDestroyWindow(getGLFWWindow());
         glfwTerminate();
     }
 
-    cv::Ptr<nanogui::FormHelper> form() {
+    nanogui::FormHelper* form() {
         return form_;
     }
 
@@ -419,6 +425,10 @@ public:
         clva().write([=,this](const cv::UMat& videoFrame){
             *(this->writer_) << videoFrame;
         });
+    }
+
+    void makeGLFWContextCurrent() {
+        glfwMakeContextCurrent(getGLFWWindow());
     }
 
     cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex) {
@@ -526,22 +536,22 @@ public:
         offscreen_ = o;
     }
 
-    nanogui::Window& makeWindow(int x, int y, const string& title) {
-        return *form()->add_window(nanogui::Vector2i(x, y), title);
+    nanogui::Window* makeWindow(int x, int y, const string& title) {
+        return form()->add_window(nanogui::Vector2i(x, y), title);
     }
 
-    nanogui::Label& makeGroup(const string& label) {
-        return *form()->add_group(label);
+    nanogui::Label* makeGroup(const string& label) {
+        return form()->add_group(label);
     }
 
-    nanogui::detail::FormWidget<bool>& makeFormVariable(const string &name, bool &v, const string &tooltip = "") {
+    nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "") {
         auto var = form()->add_variable(name, v);
         if (!tooltip.empty())
             var->set_tooltip(tooltip);
-        return *var;
+        return var;
     }
 
-    template<typename T> nanogui::detail::FormWidget<T>& makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable = true, const string &unit = "", const string tooltip = "") {
+    template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable = true, const string &unit = "", const string tooltip = "") {
         auto var = form()->add_variable(name, v);
         var->set_spinnable(spinnable);
         var->set_min_value(min);
@@ -550,7 +560,7 @@ public:
             var->set_units(unit);
         if (!tooltip.empty())
             var->set_tooltip(tooltip);
-        return *var;
+        return var;
     }
 
     void setUseOpenCL(bool u) {
