@@ -206,7 +206,11 @@ private:
     }
 
     void copyContext() {
-        context_ = CLExecContext_t::getCurrentRef();
+        context_ = CLExecContext_t::getCurrent();
+    }
+
+    CLExecContext_t getCLExecContext() {
+        return context_;
     }
 };
 // class CLVAContext
@@ -259,13 +263,14 @@ class Window {
     cv::Size size_;
     bool offscreen_;
     GLFWwindow *glfwWindow_;
-    cv::Ptr<CLGLContext> clglContext_;
-    cv::Ptr<CLVAContext> clvaContext_;
-    cv::Ptr<NanoVGContext> nvgContext_;
-    cv::Ptr<cv::VideoCapture> capture_;
-    cv::Ptr<cv::VideoWriter> writer_;
-    cv::Ptr<nanogui::Screen> screen_;
-    cv::Ptr<nanogui::FormHelper> form_;
+    CLGLContext* clglContext_;
+    CLVAContext* clvaContext_;
+    NanoVGContext* nvgContext_;
+    cv::VideoCapture* capture_;
+    cv::VideoWriter* writer_;
+    nanogui::Screen* screen_;
+    nanogui::FormHelper* form_;
+    cv::TickMeter tickMeter_;
 public:
 
     Window(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false) :
@@ -307,7 +312,7 @@ public:
         if (glfwWindow_ == NULL) {
             std::cout << "Failed to create GLFW window" << std::endl;
             glfwTerminate();
-            exit(11);
+            exit(-1);
         }
         glfwMakeContextCurrent(getGLFWWindow());
 //        glfwSetFramebufferSizeCallback(getGLFWWindow(), frame_buffer_size_callback);
@@ -355,14 +360,21 @@ public:
         }
         );
 
-        //FIXME
         clglContext_ = new CLGLContext(size, size);
         clvaContext_ = new CLVAContext(*clglContext_);
         nvgContext_ = new NanoVGContext(getNVGcontext(), *clglContext_, getPixelRatio());
     }
 
     ~Window() {
-        terminate();
+        //don't delete form_. it is autmatically cleaned up by screen_
+        delete screen_;
+        delete writer_;
+        delete capture_;
+        delete nvgContext_;
+        delete clvaContext_;
+        delete clglContext_;
+        glfwDestroyWindow(getGLFWWindow());
+        glfwTerminate();
     }
 
     cv::Ptr<nanogui::FormHelper> form() {
@@ -379,6 +391,10 @@ public:
 
     NanoVGContext& nvg() {
         return *nvgContext_;
+    }
+
+    cv::TickMeter& getTickMeter() {
+        return tickMeter_;
     }
 
     void render(std::function<void(const cv::Size&)> fn) {
@@ -405,7 +421,7 @@ public:
         });
     }
 
-    cv::VideoWriter& makeVAWriter(const string& outputFilename, int fourcc, float fps, cv::Size frameSize, int vaDeviceIndex) {
+    cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex) {
         writer_ = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, {
                 cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex,
                 cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
@@ -418,7 +434,7 @@ public:
         return *writer_;
     }
 
-    cv::VideoCapture& makeVACapture(const string& intputFilename, int vaDeviceIndex) {
+    cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex) {
         //Initialize MJPEG HW decoding using VAAPI
         capture_ = new cv::VideoCapture(intputFilename, cv::CAP_FFMPEG, {
                 cv::CAP_PROP_HW_DEVICE, vaDeviceIndex,
@@ -433,24 +449,19 @@ public:
         return *capture_;
     }
 
-    void clear(const float &r = 0.0f, const float &g = 0.0f, const float &b = 0.0f, const float &a = 1.0f) {
+    void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255)) {
+        const float &r = rgba[0] / 255.0f;
+        const float &g = rgba[1] / 255.0f;
+        const float &b = rgba[2] / 255.0f;
+        const float &a = rgba[3] / 255.0f;
         GL_CHECK(glClearColor(r, g, b, a));
         GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-    }
-
-    void terminate() {
-        glfwDestroyWindow(getGLFWWindow());
-        glfwTerminate();
     }
 
     cv::Size getFrameBufferSize() {
         int fbW, fbH;
         glfwGetFramebufferSize(getGLFWWindow(), &fbW, &fbH);
         return {fbW, fbH};
-    }
-
-    void updateSize() {
-        setSize(size_);
     }
 
     cv::Size getSize() {
@@ -467,7 +478,7 @@ public:
 #endif
     }
 
-    void setSize(cv::Size sz) {
+    void setSize(const cv::Size& sz) {
         screen_->set_size(nanogui::Vector2i(sz.width / getPixelRatio(), sz.height / getPixelRatio()));
         glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
     }
@@ -487,8 +498,16 @@ public:
         setSize(getSize());
     }
 
+    bool isResizable() {
+        return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
+    }
+
     void setResizable(bool r) {
         glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
+    }
+
+    bool isVisible() {
+        return glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;
     }
 
     void setVisible(bool v) {
@@ -496,29 +515,33 @@ public:
         screen_->perform_layout();
 
         glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
-        updateSize();
+        setSize(getSize());
     }
 
     bool isOffscreen() {
         return offscreen_;
     }
 
-    nanogui::Window* makeWindow(int x, int y, const string& title) {
-        return form()->add_window(nanogui::Vector2i(6, 45), "Display");
+    void setOffscreen(bool o) {
+        offscreen_ = o;
     }
 
-    nanogui::Label* makeGroup(const string& label) {
-        return form()->add_group(label);
+    nanogui::Window& makeWindow(int x, int y, const string& title) {
+        return *form()->add_window(nanogui::Vector2i(x, y), title);
     }
 
-    nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "") {
+    nanogui::Label& makeGroup(const string& label) {
+        return *form()->add_group(label);
+    }
+
+    nanogui::detail::FormWidget<bool>& makeFormVariable(const string &name, bool &v, const string &tooltip = "") {
         auto var = form()->add_variable(name, v);
         if (!tooltip.empty())
             var->set_tooltip(tooltip);
-        return var;
+        return *var;
     }
 
-    template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable = true, const string &unit = "", const string tooltip = "") {
+    template<typename T> nanogui::detail::FormWidget<T>& makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable = true, const string &unit = "", const string tooltip = "") {
         auto var = form()->add_variable(name, v);
         var->set_spinnable(spinnable);
         var->set_min_value(min);
@@ -527,7 +550,14 @@ public:
             var->set_units(unit);
         if (!tooltip.empty())
             var->set_tooltip(tooltip);
-        return var;
+        return *var;
+    }
+
+    void setUseOpenCL(bool u) {
+        tickMeter_.reset();
+        clglContext_->getCLExecContext().setUseOpenCL(u);
+        clvaContext_->getCLExecContext().setUseOpenCL(u);
+        cv::ocl::setUseOpenCL(u);
     }
 
     bool display() {
@@ -587,37 +617,33 @@ static void print_system_info() {
 
 static void update_fps(cv::Ptr<Window> window, bool graphical = false) {
         static uint64_t cnt = 0;
-        static double fps = 1;
-        static cv::TickMeter meter;
-
+        float fps;
         if (cnt > 0) {
-            meter.stop();
+            window->getTickMeter().stop();
 
-            if (cnt % uint64(ceil(fps)) == 0) {
-                fps = meter.getFPS();
-                cerr << "FPS : " << fps << '\r';
+            if (window->getTickMeter().getTimeMilli() > 1000) {
+                cerr << "FPS : " << (fps = window->getTickMeter().getFPS()) << '\r';
+                if (graphical) {
+                    window->renderNVG([&](NVGcontext *vg, const cv::Size &size) {
+                        string text = "FPS: " + std::to_string(fps);
+                        nvgBeginPath(vg);
+                        nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);
+                        nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
+                        nvgFill(vg);
+
+                        nvgBeginPath(vg);
+                        nvgFontSize(vg, 60.0f);
+                        nvgFontFace(vg, "mono");
+                        nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
+                        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                        nvgText(vg, 22, 37, text.c_str(), nullptr);
+                    });
+                }
                 cnt = 0;
             }
         }
 
-        if (graphical) {
-            window->renderNVG([&](NVGcontext *vg, const cv::Size &size) {
-                string text = "FPS: " + std::to_string(fps);
-                nvgBeginPath(vg);
-                nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);
-                nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
-                nvgFill(vg);
-
-                nvgBeginPath(vg);
-                nvgFontSize(vg, 60.0f);
-                nvgFontFace(vg, "mono");
-                nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
-                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                nvgText(vg, 22, 37, text.c_str(), nullptr);
-            });
-        }
-
-        meter.start();
+        window->getTickMeter().start();
         ++cnt;
     }
 } //namespace kb

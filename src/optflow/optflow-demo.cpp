@@ -182,12 +182,9 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
 }
 
 void setup_gui(cv::Ptr<kb::Window> window) {
-    window->makeWindow(6, 45, "Settings");
+    auto subWin = window->makeWindow(6, 45, "Settings");
 
     auto useOpenCL = window->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
-    useOpenCL->set_callback([](bool b){
-        cv::ocl::setUseOpenCL(b);
-    });
 
     window->makeGroup("Foreground");
     window->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
@@ -204,7 +201,7 @@ void setup_gui(cv::Ptr<kb::Window> window) {
     window->makeGroup("Effect");
     window->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
     auto glowKernel = window->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
-    glowKernel->set_callback([](const int& k) {
+    glowKernel.set_callback([](const int& k) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
     auto color = window->form()->add_variable("Color", effect_color);
@@ -217,7 +214,7 @@ void setup_gui(cv::Ptr<kb::Window> window) {
     window->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
 
-    window->makeWindow(6, 45, "Display");
+    window->makeWindow(240, 45, "Display");
     window->makeGroup("Display");
     window->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     window->form()->add_button("Fullscreen", [=]() {
@@ -234,21 +231,19 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-
     cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
     kb::print_system_info();
     setup_gui(window);
 
-    auto capture = window->makeVACapture(argv[1], 0);
+    auto capture = window->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open video input" << endl;
-        window->terminate();
         exit(-1);
     }
 
     float fps = capture.get(cv::CAP_PROP_FPS);
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), 0);
+    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
 
     //BGRA
     cv::UMat background, foreground(window->getSize(), CV_8UC4, cv::Scalar::all(0));
@@ -259,6 +254,9 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> detectedPoints;
 
     while (true) {
+        if(cv::ocl::useOpenCL() != use_opencl)
+            window->setUseOpenCL(use_opencl);
+
         if(!window->captureVA())
             break;
 
@@ -300,8 +298,6 @@ int main(int argc, char **argv) {
         if(!window->display())
             break;
     }
-
-    window->terminate();
 
     return 0;
 }
