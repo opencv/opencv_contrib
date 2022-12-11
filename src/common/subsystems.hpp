@@ -262,11 +262,11 @@ static void error_callback(int error, const char *description) {
 class Window {
     cv::Size size_;
     bool offscreen_;
+    string title_;
     int major_;
     int minor_;
     int samples_;
     bool debug_;
-    string title_;
     GLFWwindow *glfwWindow_ = nullptr;
     CLGLContext* clglContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
@@ -276,8 +276,6 @@ class Window {
     nanogui::Screen* screen_ = nullptr;
     nanogui::FormHelper* form_ = nullptr;
     cv::TickMeter tickMeter_;
-    std::mutex pollMutex_;
-    bool startPolling_ = false;
     bool closed_ = false;
 public:
 
@@ -579,9 +577,9 @@ public:
     }
 
     bool display() {
-        std::scoped_lock<std::mutex> lock(pollMutex_);
         bool result = true;
         if (!offscreen_) {
+            glfwPollEvents();
             screen_->draw_contents();
             clglContext_->blitFrameBufferToScreen();
             screen_->draw_widgets();
@@ -589,14 +587,7 @@ public:
             result = !glfwWindowShouldClose(glfwWindow_);
         }
 
-        startPolling_ = true;
         return result;
-    }
-
-    void pollEvents() {
-        std::scoped_lock<std::mutex> lock(pollMutex_);
-        if(startPolling_)
-            glfwPollEvents();
     }
 
     bool isClosed() {
