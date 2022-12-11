@@ -607,7 +607,6 @@ private:
         return screen_->nvg_context();
     }
 };
-// class Window
 
 static std::string get_gl_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));

@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
     cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+    window->initialize();
 
     if(!window->isOffscreen())
         window->setVisible(true);
