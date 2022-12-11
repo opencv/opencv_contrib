@@ -262,26 +262,54 @@ static void error_callback(int error, const char *description) {
 class Window {
     cv::Size size_;
     bool offscreen_;
-    GLFWwindow *glfwWindow_;
-    CLGLContext* clglContext_;
-    CLVAContext* clvaContext_;
-    NanoVGContext* nvgContext_;
-    cv::VideoCapture* capture_;
-    cv::VideoWriter* writer_;
-    nanogui::Screen* screen_;
-    nanogui::FormHelper* form_;
+    int major_;
+    int minor_;
+    int samples_;
+    bool debug_;
+    string title_;
+    GLFWwindow *glfwWindow_ = nullptr;
+    CLGLContext* clglContext_ = nullptr;
+    CLVAContext* clvaContext_ = nullptr;
+    NanoVGContext* nvgContext_ = nullptr;
+    cv::VideoCapture* capture_ = nullptr;
+    cv::VideoWriter* writer_ = nullptr;
+    nanogui::Screen* screen_ = nullptr;
+    nanogui::FormHelper* form_ = nullptr;
     cv::TickMeter tickMeter_;
+    std::mutex pollMutex_;
+    bool startPolling_ = false;
 public:
 
     Window(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false) :
-            size_(size), offscreen_(offscreen) {
+            size_(size), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+    }
+
+    ~Window() {
+        //don't delete form_. it is autmatically cleaned up by screen_
+        if(screen_)
+            delete screen_;
+        if(writer_)
+            delete writer_;
+        if(capture_)
+            delete capture_;
+        if(nvgContext_)
+            delete nvgContext_;
+        if(clvaContext_)
+            delete clvaContext_;
+        if(clglContext_)
+            delete clglContext_;
+        glfwDestroyWindow(getGLFWWindow());
+        glfwTerminate();
+    }
+
+    void initialize() {
         assert(glfwInit() == GLFW_TRUE);
         glfwSetErrorCallback(error_callback);
 
-        if (debug)
+        if (debug_)
             glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-        if (offscreen)
+        if (offscreen_)
             glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
         glfwSetTime(0);
@@ -292,12 +320,12 @@ public:
         glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     #else
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
         glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
 #endif
-        glfwWindowHint(GLFW_SAMPLES, samples);
+        glfwWindowHint(GLFW_SAMPLES, samples_);
         glfwWindowHint(GLFW_RED_BITS, 8);
         glfwWindowHint(GLFW_GREEN_BITS, 8);
         glfwWindowHint(GLFW_BLUE_BITS, 8);
@@ -307,8 +335,7 @@ public:
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-
-        glfwWindow_ = glfwCreateWindow(size.width, size.height, title.c_str(), nullptr, nullptr);
+        glfwWindow_ = glfwCreateWindow(size_.width, size_.height, title_.c_str(), nullptr, nullptr);
         if (glfwWindow_ == NULL) {
             std::cout << "Failed to create GLFW window" << std::endl;
             glfwTerminate();
@@ -319,7 +346,7 @@ public:
 
         screen_ = new nanogui::Screen();
         screen_->initialize(getGLFWWindow(), false);
-        screen_->set_size(nanogui::Vector2i(size.width, size.height));
+        screen_->set_size(nanogui::Vector2i(size_.width, size_.height));
         form_ = new nanogui::FormHelper(screen_);
 
         glfwSetWindowUserPointer(getGLFWWindow(), this);
@@ -359,30 +386,10 @@ public:
             win->screen_->resize_callback_event(width, height);
         }
         );
-
-        clglContext_ = new CLGLContext(size, size);
+        clglContext_ = new CLGLContext(getSize(), getSize());
         clvaContext_ = new CLVAContext(*clglContext_);
         nvgContext_ = new NanoVGContext(getNVGcontext(), *clglContext_, getPixelRatio());
     }
-
-    ~Window() {
-        //don't delete form_. it is autmatically cleaned up by screen_
-        if(screen_)
-            delete screen_;
-        if(writer_)
-            delete writer_;
-        if(capture_)
-            delete capture_;
-        if(nvgContext_)
-            delete nvgContext_;
-        if(clvaContext_)
-            delete clvaContext_;
-        if(clglContext_)
-            delete clglContext_;
-        glfwDestroyWindow(getGLFWWindow());
-        glfwTerminate();
-    }
-
     nanogui::FormHelper* form() {
         return form_;
     }
@@ -572,14 +579,21 @@ public:
 
     bool display() {
         if (!offscreen_) {
-//            glfwPollEvents();
+            std::scoped_lock<std::mutex> lock(pollMutex_);
             screen_->draw_contents();
             clglContext_->blitFrameBufferToScreen();
             screen_->draw_widgets();
             glfwSwapBuffers(glfwWindow_);
+            startPolling_ = true;
             return !glfwWindowShouldClose(glfwWindow_);
         }
         return true;
+    }
+
+    void pollEvents() {
+        std::scoped_lock<std::mutex> lock(pollMutex_);
+        if(startPolling_)
+            glfwPollEvents();
     }
 private:
     GLFWwindow* getGLFWWindow() {

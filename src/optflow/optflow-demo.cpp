@@ -234,8 +234,10 @@ int main(int argc, char **argv) {
     }
     bool initialized = false;
     std::mutex mtx;
+    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+
     std::thread worker([&]() {
-        cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+        window->initialize();
         kb::print_system_info();
         setup_gui(window);
 
@@ -298,21 +300,14 @@ int main(int argc, char **argv) {
             window->writeVA();
 
             update_fps(window, show_fps);
-            mtx.lock();
-            initialized = true;
             //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
             if(!window->display())
                 break;
-            mtx.unlock();
         }
     });
 
     while(true) {
-        if(initialized) {
-            mtx.lock();
-            glfwPollEvents();
-            mtx.unlock();
-        }
+        window->pollEvents();
         std::this_thread::sleep_for(10ms);
     }
 
