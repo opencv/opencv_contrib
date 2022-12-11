@@ -232,8 +232,6 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
-    bool initialized = false;
-    std::mutex mtx;
     cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 
     std::thread worker([&]() {
