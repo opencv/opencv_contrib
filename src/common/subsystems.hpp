@@ -572,7 +572,7 @@ public:
 
     bool display() {
         if (!offscreen_) {
-            glfwPollEvents();
+//            glfwPollEvents();
             screen_->draw_contents();
             clglContext_->blitFrameBufferToScreen();
             screen_->draw_widgets();

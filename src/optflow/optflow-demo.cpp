@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <thread>
 
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
@@ -231,75 +232,91 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
+    bool initialized = false;
+    std::mutex mtx;
+    std::thread worker([&]() {
+        cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+        kb::print_system_info();
+        setup_gui(window);
 
-    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
-    kb::print_system_info();
-    setup_gui(window);
+        auto capture = window->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
-    auto capture = window->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+        if (!capture.isOpened()) {
+            cerr << "ERROR! Unable to open video input" << endl;
+            exit(-1);
+        }
 
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        exit(-1);
-    }
+        float fps = capture.get(cv::CAP_PROP_FPS);
 
-    float fps = capture.get(cv::CAP_PROP_FPS);
+        window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
 
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
+        //BGRA
+        cv::UMat background, foreground(window->getSize(), CV_8UC4, cv::Scalar::all(0));
+        //RGB
+        cv::UMat rgb, down;
+        //GREY
+        cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
+        vector<cv::Point2f> detectedPoints;
 
-    //BGRA
-    cv::UMat background, foreground(window->getSize(), CV_8UC4, cv::Scalar::all(0));
-    //RGB
-    cv::UMat rgb, down;
-    //GREY
-    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
-    vector<cv::Point2f> detectedPoints;
+        while (true) {
+            if(cv::ocl::useOpenCL() != use_opencl)
+                window->setUseOpenCL(use_opencl);
 
-    while (true) {
-        if(cv::ocl::useOpenCL() != use_opencl)
-            window->setUseOpenCL(use_opencl);
+            if(!window->captureVA())
+                break;
 
-        if(!window->captureVA())
-            break;
+            window->compute([&](cv::UMat& frameBuffer){
+                cv::resize(frameBuffer, down, cv::Size(window->getSize().width * fg_scale, window->getSize().height * fg_scale));
+                cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
+            });
 
-        window->compute([&](cv::UMat& frameBuffer){
-            cv::resize(frameBuffer, down, cv::Size(window->getSize().width * fg_scale, window->getSize().height * fg_scale));
-            cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
-        });
+            cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
+            //Subtract the background to create a motion mask
+            prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+            //Detect trackable points in the motion mask
+            detect_points(downMotionMaskGrey, detectedPoints);
 
-        cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
-        //Subtract the background to create a motion mask
-        prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-        //Detect trackable points in the motion mask
-        detect_points(downMotionMaskGrey, detectedPoints);
-
-        window->renderNVG([&](NVGcontext* vg, const cv::Size& sz) {
-            window->clear();
-            if (!downPrevGrey.empty()) {
-                //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-                if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
-                    //Visualize the sparse optical flow using nanovg
-                    cv::Scalar color = cv::Scalar(effect_color.r() * 255.0f, effect_color.g() * 255.0f, effect_color.b() * 255.0f, alpha * 255.0f);
-                    visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
+            window->renderNVG([&](NVGcontext* vg, const cv::Size& sz) {
+                window->clear();
+                if (!downPrevGrey.empty()) {
+                    //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+                    if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
+                        //Visualize the sparse optical flow using nanovg
+                        cv::Scalar color = cv::Scalar(effect_color.r() * 255.0f, effect_color.g() * 255.0f, effect_color.b() * 255.0f, alpha * 255.0f);
+                        visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
+                    }
                 }
-            }
-        });
+            });
 
-        downPrevGrey = downNextGrey.clone();
+            downPrevGrey = downNextGrey.clone();
 
-        window->compute([&](cv::UMat& frameBuffer){
-            //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
-        });
+            window->compute([&](cv::UMat& frameBuffer){
+                //Put it all together (OpenCL)
+                composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
+            });
 
-        window->writeVA();
+            window->writeVA();
 
-        update_fps(window, show_fps);
+            update_fps(window, show_fps);
+            mtx.lock();
+            initialized = true;
+            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+            if(!window->display())
+                break;
+            mtx.unlock();
+        }
+    });
 
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!window->display())
-            break;
+    while(true) {
+        if(initialized) {
+            mtx.lock();
+            glfwPollEvents();
+            mtx.unlock();
+        }
+        std::this_thread::sleep_for(10ms);
     }
+
+    worker.join();
 
     return 0;
 }
