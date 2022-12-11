@@ -278,6 +278,7 @@ class Window {
     cv::TickMeter tickMeter_;
     std::mutex pollMutex_;
     bool startPolling_ = false;
+    bool closed_ = false;
 public:
 
     Window(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false) :
@@ -578,22 +579,33 @@ public:
     }
 
     bool display() {
+        std::scoped_lock<std::mutex> lock(pollMutex_);
+        bool result = true;
         if (!offscreen_) {
-            std::scoped_lock<std::mutex> lock(pollMutex_);
             screen_->draw_contents();
             clglContext_->blitFrameBufferToScreen();
             screen_->draw_widgets();
             glfwSwapBuffers(glfwWindow_);
-            startPolling_ = true;
-            return !glfwWindowShouldClose(glfwWindow_);
+            result = !glfwWindowShouldClose(glfwWindow_);
         }
-        return true;
+
+        startPolling_ = true;
+        return result;
     }
 
     void pollEvents() {
         std::scoped_lock<std::mutex> lock(pollMutex_);
         if(startPolling_)
             glfwPollEvents();
+    }
+
+    bool isClosed() {
+        return closed_;
+
+    }
+    void close() {
+        setVisible(false);
+        closed_ = true;
     }
 private:
     GLFWwindow* getGLFWWindow() {

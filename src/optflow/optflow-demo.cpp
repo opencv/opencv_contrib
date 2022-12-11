@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
     }
     bool initialized = false;
     std::mutex mtx;
-    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 
     std::thread worker([&]() {
         window->initialize();
@@ -304,9 +304,10 @@ int main(int argc, char **argv) {
             if(!window->display())
                 break;
         }
+        window->close();
     });
 
-    while(true) {
+    while(!window->isClosed()) {
         window->pollEvents();
         std::this_thread::sleep_for(10ms);
     }
