@@ -284,13 +284,15 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         std::vector<MatType> channels;
         _rgb.convertTo(rgb_tmp, COLOR_TYPE);
         cv::split(rgb_tmp, channels);
+        // we use 4-channel RGB0 image
+        // for vectorization simplicity
         channels.push_back(MatType::zeros(channels[0].size(), CV_32F));
         merge(channels, rgb);
     }
     else
         rgb = _rgb;
 
-    OdometryFrame newFrame(rgb, depth);
+    OdometryFrame newFrame(depth, rgb);
 
     if(frameCounter == 0)
     {
@@ -325,7 +327,7 @@ bool ColoredKinFuImpl<MatType>::updateT(const MatType& _depth, const MatType& _r
         volume.raycast(pose, points, normals, colors);
         std::vector<MatType> pch(3);
         split(points, pch);
-        newFrame = OdometryFrame(colors, pch[2], noArray(), normals);
+        newFrame = OdometryFrame(pch[2], colors, noArray(), normals);
     }
 
     renderFrame = newFrame;
