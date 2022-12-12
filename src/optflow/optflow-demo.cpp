@@ -1,6 +1,7 @@
+
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/subsystems.hpp"
+#include "../common/glwindow.hpp"
 #include <cmath>
 #include <vector>
 #include <string>
@@ -183,7 +184,7 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-void setup_gui(cv::Ptr<kb::Window> window) {
+void setup_gui(cv::Ptr<kb::GLWindow> window) {
     window->makeWindow(5, 45, "Settings");
 
     window->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
@@ -231,7 +232,9 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+
+    cv::Ptr<kb::GLWindow> window = new kb::GLWindow(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+
     window->initialize();
 
     kb::print_system_info();

@@ -1,7 +1,7 @@
 CXX      := g++
 CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -flto -I/usr/local/include/opencv4/ -I/usr/local/include/nanovg
-LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64
-LIBS     := -lnanogui
+LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64 -L../common/
+LIBS     := -lnanogui -lopencv_glwindow
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 
 DESTDIR := /
 PREFIX := /usr/local
@@ -40,6 +40,7 @@ export CXXFLAGS
 export LIBS
 
 dirs: docs
+	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 #	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 #	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
@@ -49,6 +50,7 @@ dirs: docs
 #	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 
 debian-release:
+	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} release
@@ -58,6 +60,7 @@ debian-release:
 	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} release
 
 debian-clean:
+	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} clean

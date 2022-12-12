@@ -1,6 +1,7 @@
+
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/subsystems.hpp"
+#include "../common/glwindow.hpp"
 #include <string>
 
 constexpr long unsigned int WIDTH = 1920;
@@ -86,7 +87,7 @@ int main(int argc, char **argv) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+    cv::Ptr<kb::GLWindow> window = new kb::GLWindow(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
     window->initialize();
 
     if(!window->isOffscreen())
