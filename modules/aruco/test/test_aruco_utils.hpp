@@ -65,7 +65,7 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     // canonical image
     Mat markerImg;
     const int markerSizePixels = 100;
-    aruco::drawMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
+    aruco::generateImageMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
 
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));

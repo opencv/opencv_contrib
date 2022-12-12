@@ -497,7 +497,7 @@ void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int square
     // create a charuco board similar to a charuco marker and print it
     Ptr<CharucoBoard> board = CharucoBoard::create(3, 3, (float)squareLength, (float)markerLength, *dictionary, tmpIds);
     Size outSize(3 * squareLength + 2 * marginSize, 3 * squareLength + 2 * marginSize);
-    board->draw(outSize, _img, marginSize, borderBits);
+    board->generateImage(outSize, _img, marginSize, borderBits);
 }
 
 

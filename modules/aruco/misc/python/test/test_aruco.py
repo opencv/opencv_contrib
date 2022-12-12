@@ -17,7 +17,7 @@ class aruco_test(NewOpenCVTests):
         id = 2
         marker_size = 100
         offset = 10
-        img_marker = cv.aruco.drawMarker(aruco_dict, id, marker_size, aruco_params.markerBorderBits)
+        img_marker = cv.aruco.generateImageMarker(aruco_dict, id, marker_size, aruco_params.markerBorderBits)
         img_marker = np.pad(img_marker, pad_width=offset, mode='constant', constant_values=255)
         gold_corners = np.array([[offset, offset],[marker_size+offset-1.0,offset],
                                  [marker_size+offset-1.0,marker_size+offset-1.0],

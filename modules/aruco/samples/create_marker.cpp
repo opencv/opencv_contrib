@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
     }
 
     Mat markerImg;
-    aruco::drawMarker(dictionary, markerId, markerSize, markerImg, borderBits);
+    aruco::generateImageMarker(dictionary, markerId, markerSize, markerImg, borderBits);
 
     if(showImage) {
         imshow("marker", markerImg);

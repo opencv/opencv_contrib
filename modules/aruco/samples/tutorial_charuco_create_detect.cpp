@@ -17,7 +17,7 @@ static inline void createBoard()
     //! [createBoard]
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
     cv::Mat boardImage;
-    board->draw(cv::Size(600, 500), boardImage, 10, 1);
+    board->generateImage(cv::Size(600, 500), boardImage, 10, 1);
     //! [createBoard]
     cv::imwrite("BoardImage.jpg", boardImage);
 }

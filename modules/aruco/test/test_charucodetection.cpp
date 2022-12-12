@@ -641,7 +641,7 @@ TEST(Charuco, testBoardSubpixelCoords)
     Ptr<aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(4, 4, 1.f, .8f, dict);
 
     // generate ChArUco board
-    board->draw(Size(res.width, res.height), gray, 150);
+    board->generateImage(Size(res.width, res.height), gray, 150);
     cv::GaussianBlur(gray, gray, Size(5, 5), 1.0);
 
     aruco::DetectorParameters params;

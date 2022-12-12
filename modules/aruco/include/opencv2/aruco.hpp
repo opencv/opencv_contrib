@@ -140,7 +140,7 @@ CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float ma
                                             const Ptr<EstimateParameters>& estimateParameters = makePtr<EstimateParameters>());
 
 
-/** @deprecated Use CharucoBoard::testCharucoCornersCollinear
+/** @deprecated Use CharucoBoard::checkCharucoCornersCollinear
  */
 CV_EXPORTS_W bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &board, InputArray charucoIds);
 

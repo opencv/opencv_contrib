@@ -31,7 +31,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
 }
 
 void drawPlanarBoard(const Ptr<Board> &board, Size outSize, const _OutputArray &img, int marginSize, int borderBits) {
-    board->draw(outSize, img, marginSize, borderBits);
+    board->generateImage(outSize, img, marginSize, borderBits);
 }
 
 void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners, InputArray detectedIds,
@@ -120,7 +120,7 @@ bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
 }
 
 bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &board, InputArray charucoIds) {
-    return board->testCharucoCornersCollinear(charucoIds);
+    return board->checkCharucoCornersCollinear(charucoIds);
 }
 
 /**

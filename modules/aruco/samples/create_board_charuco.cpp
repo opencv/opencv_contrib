@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
     // show created board
     Mat boardImage;
-    board->draw(imageSize, boardImage, margins, borderBits);
+    board->generateImage(imageSize, boardImage, margins, borderBits);
 
     if(showImage) {
         imshow("board", boardImage);

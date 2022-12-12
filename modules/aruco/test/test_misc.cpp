@@ -20,7 +20,7 @@ TEST(CV_ArucoDrawMarker, regression_1226)
 
     ASSERT_NO_THROW(
     {
-        board->draw(sz, mat, 0, 1);
+        board->generateImage(sz, mat, 0, 1);
     });
 }
 

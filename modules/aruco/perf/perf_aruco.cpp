@@ -90,7 +90,7 @@ public:
 
         // canonical image
         const int markerSizePixels = static_cast<int>(imgMarkerSize/sqrt(2.f));
-        aruco::drawMarker(dictionary, id, markerSizePixels, img, parameters.markerBorderBits);
+        aruco::generateImageMarker(dictionary, id, markerSizePixels, img, parameters.markerBorderBits);
 
         // get rvec and tvec for the perspective
         const double distance = 0.1;
