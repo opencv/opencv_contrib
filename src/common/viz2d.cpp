@@ -1,4 +1,4 @@
-#include "glwindow.hpp"
+#include "viz2d.hpp"
 
 #include "util.hpp"
 
@@ -12,11 +12,11 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     }
 }
 
-GLWindow::GLWindow(const cv::Size &size, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
+Viz2D::Viz2D(const cv::Size &size, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         size_(size), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
 }
 
-GLWindow::~GLWindow() {
+Viz2D::~Viz2D() {
     //don't delete form_. it is autmatically cleaned up by screen_
     if (screen_)
         delete screen_;
@@ -34,7 +34,7 @@ GLWindow::~GLWindow() {
     glfwTerminate();
 }
 
-void GLWindow::initialize() {
+void Viz2D::initialize() {
     assert(glfwInit() == GLFW_TRUE);
     glfwSetErrorCallback(kb::error_callback);
 
@@ -78,97 +78,115 @@ void GLWindow::initialize() {
 
     screen_ = new nanogui::Screen();
     screen_->initialize(getGLFWWindow(), false);
-    screen_->set_size(nanogui::Vector2i(size_.width, size_.height));
     form_ = new nanogui::FormHelper(screen_);
+    this->setSize(size_);
 
     glfwSetWindowUserPointer(getGLFWWindow(), this);
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->cursor_pos_callback_event(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->mouse_button_callback_event(button, action, modifiers);
     }
     );
     glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->key_callback_event(key, scancode, action, mods);
     }
     );
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, unsigned int codepoint) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->char_callback_event(codepoint);
     }
     );
     glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int count, const char **filenames) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->drop_callback_event(count, filenames);
     }
     );
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->scroll_callback_event(x, y);
     }
     );
+
+//    glfwSetWindowContentScaleCallback(getGLFWWindow(),
+//        [](GLFWwindow* glfwWin, float xscale, float yscale) {
+//            Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+//            win->screen_->m_pixel_ratio = win->getXPixelRatio();
+//            win->screen_->resize_callback_event(win->getSize().width, win->getSize().height);
+//        }
+//    );
+//
     glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int width, int height) {
-        GLWindow *win = (GLWindow*) glfwGetWindowUserPointer(glfwWin);
+        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
         win->screen_->resize_callback_event(width, height);
     }
     );
-    clglContext_ = new CLGLContext(getSize());
+
+    clglContext_ = new CLGLContext(this->getNativeFrameBufferSize());
     clvaContext_ = new CLVAContext(*clglContext_);
     nvgContext_ = new NanoVGContext(*this, getNVGcontext(), *clglContext_);
 }
 
-nanogui::FormHelper* GLWindow::form() {
+cv::Size Viz2D::calculatedSize() {
+    int w = getSize().width * getXPixelRatio();
+    int h = getSize().height * getYPixelRatio();
+    w = w % 2 == 0? w : w + 1;
+    h = h % 2 == 0? h : h + 1;
+    return cv::Size(w, h);
+}
+nanogui::FormHelper* Viz2D::form() {
     return form_;
 }
 
-CLGLContext& GLWindow::clgl() {
+CLGLContext& Viz2D::clgl() {
     return *clglContext_;
 }
 
-CLVAContext& GLWindow::clva() {
+CLVAContext& Viz2D::clva() {
     return *clvaContext_;
 }
 
-NanoVGContext& GLWindow::nvg() {
+NanoVGContext& Viz2D::nvg() {
     return *nvgContext_;
 }
 
-void GLWindow::render(std::function<void(const cv::Size&)> fn) {
+void Viz2D::render(std::function<void(const cv::Size&)> fn) {
     clgl().render(fn);
 }
 
-void GLWindow::compute(std::function<void(cv::UMat&)> fn) {
+void Viz2D::compute(std::function<void(cv::UMat&)> fn) {
     clgl().compute(fn);
 }
 
-void GLWindow::renderNVG(std::function<void(NVGcontext*, const cv::Size&)> fn) {
+void Viz2D::renderNVG(std::function<void(NVGcontext*, const cv::Size&)> fn) {
     nvg().render(fn);
 }
 
-bool GLWindow::captureVA() {
+bool Viz2D::captureVA() {
     return clva().capture([=, this](cv::UMat &videoFrame) {
         *(this->capture_) >> videoFrame;
     });
 }
 
-void GLWindow::writeVA() {
+void Viz2D::writeVA() {
     clva().write([=, this](const cv::UMat &videoFrame) {
         *(this->writer_) << videoFrame;
     });
 }
 
-void GLWindow::makeGLFWContextCurrent() {
+void Viz2D::makeGLFWContextCurrent() {
     glfwMakeContextCurrent(getGLFWWindow());
 }
 
-cv::VideoWriter& GLWindow::makeVAWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+cv::VideoWriter& Viz2D::makeVAWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     writer_ = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    clva().setVideoFrameSize(frameSize);
 
     if (!clva().hasContext()) {
         clva().copyContext();
@@ -176,9 +194,12 @@ cv::VideoWriter& GLWindow::makeVAWriter(const string &outputFilename, const int 
     return *writer_;
 }
 
-cv::VideoCapture& GLWindow::makeVACapture(const string &intputFilename, const int vaDeviceIndex) {
+cv::VideoCapture& Viz2D::makeVACapture(const string &intputFilename, const int vaDeviceIndex) {
     //Initialize MJPEG HW decoding using VAAPI
     capture_ = new cv::VideoCapture(intputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    float w = capture_->get(cv::CAP_PROP_FRAME_WIDTH);
+    float h = capture_->get(cv::CAP_PROP_FRAME_HEIGHT);
+    clva().setVideoFrameSize(cv::Size(w,h));
 
     if (!clva().hasContext()) {
         clva().copyContext();
@@ -187,7 +208,7 @@ cv::VideoCapture& GLWindow::makeVACapture(const string &intputFilename, const in
     return *capture_;
 }
 
-void GLWindow::clear(const cv::Scalar &rgba) {
+void Viz2D::clear(const cv::Scalar &rgba) {
     const float &r = rgba[0] / 255.0f;
     const float &g = rgba[1] / 255.0f;
     const float &b = rgba[2] / 255.0f;
@@ -196,17 +217,22 @@ void GLWindow::clear(const cv::Scalar &rgba) {
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
-cv::Size GLWindow::getFrameBufferSize() {
-    int fbW, fbH;
-    glfwGetFramebufferSize(getGLFWWindow(), &fbW, &fbH);
-    return {fbW, fbH};
+cv::Size Viz2D::getNativeFrameBufferSize() {
+    int w, h;
+    glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
+    return {w, h};
 }
 
-cv::Size GLWindow::getSize() {
-    return size_;
+cv::Size Viz2D::getFrameBufferSize() {
+    return clglContext_->getSize();
+}
+cv::Size Viz2D::getSize() {
+    int w, h;
+    glfwGetWindowSize(getGLFWWindow(), &w, &h);
+    return {w, h};
 }
 
-float GLWindow::getPixelRatio() {
+float Viz2D::getXPixelRatio() {
 #if defined(EMSCRIPTEN)
         return emscripten_get_device_pixel_ratio();
 #else
@@ -216,76 +242,85 @@ float GLWindow::getPixelRatio() {
 #endif
 }
 
-void GLWindow::setSize(const cv::Size &sz) {
-    screen_->set_size(nanogui::Vector2i(sz.width / getPixelRatio(), sz.height / getPixelRatio()));
-    glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
+float Viz2D::getYPixelRatio() {
+#if defined(EMSCRIPTEN)
+        return emscripten_get_device_pixel_ratio();
+#else
+    float xscale, yscale;
+    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
+    return yscale;
+#endif
 }
 
-bool GLWindow::isFullscreen() {
+void Viz2D::setSize(const cv::Size &sz) {
+    screen_->set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
+}
+
+bool Viz2D::isFullscreen() {
     return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
 }
 
-void GLWindow::setFullscreen(bool f) {
+void Viz2D::setFullscreen(bool f) {
     auto monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
     if (f) {
         glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
     } else {
-        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getSize().width, getSize().width, mode->refreshRate);
+        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getNativeFrameBufferSize().width, getNativeFrameBufferSize().height, mode->refreshRate);
     }
-    setSize(getSize());
+    setSize(size_);
 }
 
-bool GLWindow::isResizable() {
+bool Viz2D::isResizable() {
     return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
 }
 
-void GLWindow::setResizable(bool r) {
+void Viz2D::setResizable(bool r) {
     glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
 }
 
-bool GLWindow::isVisible() {
+bool Viz2D::isVisible() {
     return glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;
 }
 
-void GLWindow::setVisible(bool v) {
-    setSize(getSize());
-    screen_->set_visible(v);
+void Viz2D::setVisible(bool v) {
     screen_->perform_layout();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
+    screen_->set_visible(v);
+    setSize(size_);
 }
 
-bool GLWindow::isOffscreen() {
+bool Viz2D::isOffscreen() {
     return offscreen_;
 }
 
-nanogui::Window* GLWindow::makeWindow(int x, int y, const string &title) {
+nanogui::Window* Viz2D::makeWindow(int x, int y, const string &title) {
     return form()->add_window(nanogui::Vector2i(x, y), title);
 }
 
-nanogui::Label* GLWindow::makeGroup(const string &label) {
+nanogui::Label* Viz2D::makeGroup(const string &label) {
     return form()->add_group(label);
 }
 
-nanogui::detail::FormWidget<bool>* GLWindow::makeFormVariable(const string &name, bool &v, const string &tooltip) {
+nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, bool &v, const string &tooltip) {
     auto var = form()->add_variable(name, v);
     if (!tooltip.empty())
         var->set_tooltip(tooltip);
     return var;
 }
 
-void GLWindow::setUseOpenCL(bool u) {
+void Viz2D::setUseOpenCL(bool u) {
     clglContext_->getCLExecContext().setUseOpenCL(u);
     clvaContext_->getCLExecContext().setUseOpenCL(u);
     cv::ocl::setUseOpenCL(u);
 }
 
-bool GLWindow::display() {
+bool Viz2D::display() {
     bool result = true;
     if (!offscreen_) {
         glfwPollEvents();
         screen_->draw_contents();
-        clglContext_->blitFrameBufferToScreen();
+        clglContext_->blitFrameBufferToScreen(getSize());
         screen_->draw_widgets();
         glfwSwapBuffers(glfwWindow_);
         result = !glfwWindowShouldClose(glfwWindow_);
@@ -294,20 +329,20 @@ bool GLWindow::display() {
     return result;
 }
 
-bool GLWindow::isClosed() {
+bool Viz2D::isClosed() {
     return closed_;
 
 }
-void GLWindow::close() {
+void Viz2D::close() {
     setVisible(false);
     closed_ = true;
 }
 
-GLFWwindow* GLWindow::getGLFWWindow() {
+GLFWwindow* Viz2D::getGLFWWindow() {
     return glfwWindow_;
 }
 
-NVGcontext* GLWindow::getNVGcontext() {
+NVGcontext* Viz2D::getNVGcontext() {
     return screen_->nvg_context();
 }
 } /* namespace kb */

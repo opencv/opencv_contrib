@@ -1,5 +1,5 @@
-#ifndef SRC_COMMON_GLWINDOW_HPP_
-#define SRC_COMMON_GLWINDOW_HPP_
+#ifndef SRC_COMMON_VIZ2D_HPP_
+#define SRC_COMMON_VIZ2D_HPP_
 
 #include <string>
 #include <opencv2/opencv.hpp>
@@ -20,7 +20,7 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     expr;                                        \
     kb::gl_check_error(__FILE__, __LINE__, #expr);
 
-class GLWindow {
+class Viz2D {
     cv::Size size_;
     bool offscreen_;
     string title_;
@@ -39,10 +39,10 @@ class GLWindow {
     bool closed_ = false;
 public:
 
-    GLWindow(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
-    ~GLWindow();
+    Viz2D(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+    ~Viz2D();
     void initialize();
-
+    cv::Size calculatedSize();
     nanogui::FormHelper* form();
     CLGLContext& clgl();
     CLVAContext& clva();
@@ -56,9 +56,11 @@ public:
     cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex);
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
     void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
+    cv::Size getNativeFrameBufferSize();
     cv::Size getFrameBufferSize();
     cv::Size getSize();
-    float getPixelRatio();
+    float getXPixelRatio();
+    float getYPixelRatio();
     void setSize(const cv::Size& sz);
     bool isFullscreen();
     void setFullscreen(bool f);
@@ -93,4 +95,4 @@ private:
 
 } /* namespace kb */
 
-#endif /* SRC_COMMON_GLWINDOW_HPP_ */
+#endif /* SRC_COMMON_VIZ2D_HPP_ */

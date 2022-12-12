@@ -1,7 +1,7 @@
 
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/glwindow.hpp"
+#include "../common/viz2d.hpp"
 #include <string>
 
 constexpr long unsigned int WIDTH = 1920;
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<kb::GLWindow> window = new kb::GLWindow(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
     window->initialize();
 
     if(!window->isOffscreen())
@@ -104,7 +104,9 @@ int main(int argc, char **argv) {
     }
 
     float fps = capture.get(cv::CAP_PROP_FPS);
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
+    float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
+    float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, {width, height}, VA_HW_DEVICE_INDEX);
 
     window->render([](const cv::Size& sz) {
         init_scene(sz.width, sz.height);
@@ -126,8 +128,6 @@ int main(int argc, char **argv) {
 
 
         window->writeVA();
-
-        update_fps(window, false);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!window->display())

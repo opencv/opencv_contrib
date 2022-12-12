@@ -1,7 +1,7 @@
 
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/glwindow.hpp"
+#include "../common/viz2d.hpp"
 #include <cmath>
 #include <vector>
 #include <string>
@@ -184,7 +184,7 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-void setup_gui(cv::Ptr<kb::GLWindow> window) {
+void setup_gui(cv::Ptr<kb::Viz2D> window) {
     window->makeWindow(5, 45, "Settings");
 
     window->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<kb::GLWindow> window = new kb::GLWindow(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 
     window->initialize();
 
@@ -248,11 +248,12 @@ int main(int argc, char **argv) {
     }
 
     float fps = capture.get(cv::CAP_PROP_FPS);
-
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, window->getSize(), VA_HW_DEVICE_INDEX);
+    float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
+    float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size{width, height}, VA_HW_DEVICE_INDEX);
 
     //BGRA
-    cv::UMat background, foreground(window->getSize(), CV_8UC4, cv::Scalar::all(0));
+    cv::UMat background, foreground(window->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
     //RGB
     cv::UMat rgb, down;
     //GREY
@@ -267,7 +268,7 @@ int main(int argc, char **argv) {
             break;
 
         window->compute([&](cv::UMat& frameBuffer){
-            cv::resize(frameBuffer, down, cv::Size(window->getSize().width * fg_scale, window->getSize().height * fg_scale));
+            cv::resize(frameBuffer, down, cv::Size(window->getNativeFrameBufferSize().width * fg_scale, window->getNativeFrameBufferSize().height * fg_scale));
             cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
         });
 
@@ -299,6 +300,7 @@ int main(int argc, char **argv) {
         window->writeVA();
 
         update_fps(window, show_fps);
+
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!window->display())
             break;

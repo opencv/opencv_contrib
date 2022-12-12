@@ -8,14 +8,14 @@
 #include "util.hpp"
 
 namespace kb {
-class GLWindow;
+class Viz2D;
 
 class NanoVGContext {
-    GLWindow& window_;
+    Viz2D& window_;
     NVGcontext *context_;
     CLGLContext &fbContext_;
 public:
-    NanoVGContext(GLWindow& window, NVGcontext *context, CLGLContext &fbContext);
+    NanoVGContext(Viz2D& window, NVGcontext *context, CLGLContext &fbContext);
     void render(std::function<void(NVGcontext*, const cv::Size&)> fn);
 private:
     void begin();

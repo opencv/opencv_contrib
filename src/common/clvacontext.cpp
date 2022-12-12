@@ -1,6 +1,6 @@
 #include "clvacontext.hpp"
 
-#include "glwindow.hpp"
+#include "viz2d.hpp"
 
 namespace kb {
 
@@ -8,10 +8,18 @@ CLVAContext::CLVAContext(CLGLContext &fbContext) :
         fbContext_(fbContext) {
 }
 
+void CLVAContext::setVideoFrameSize(const cv::Size& sz) {
+    if(videoFrameSize_ != cv::Size(0,0))
+        assert(videoFrameSize_ == sz && "Input and output video sizes don't match");
+
+    videoFrameSize_ = sz;
+}
+
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
     {
         CLExecScope_t scope(context_);
         fn(videoFrame_);
+        videoFrameSize_ = videoFrame_.size();
     }
     {
         CLExecScope_t scope(fbContext_.getCLExecContext());
@@ -19,9 +27,10 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
         if (videoFrame_.empty())
             return false;
 
-        cv::cvtColor(videoFrame_, frameBuffer_, cv::COLOR_RGB2BGRA);
         cv::Size fbSize = fbContext_.getSize();
-        cv::resize(frameBuffer_, frameBuffer_, fbSize);
+        cv::resize(videoFrame_, rgbBuffer_, fbSize);
+        cv::cvtColor(rgbBuffer_, frameBuffer_, cv::COLOR_RGB2BGRA);
+
         fbContext_.releaseToGL(frameBuffer_);
         assert(frameBuffer_.size() == fbSize);
     }
@@ -33,11 +42,13 @@ void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
     {
         CLExecScope_t scope(fbContext_.getCLExecContext());
         fbContext_.acquireFromGL(frameBuffer_);
-        cv::resize(frameBuffer_, frameBuffer_, fbSize);
-        cv::cvtColor(frameBuffer_, videoFrame_, cv::COLOR_BGRA2RGB);
+
+        cv::cvtColor(frameBuffer_, rgbBuffer_, cv::COLOR_BGRA2RGB);
+        cv::resize(rgbBuffer_, videoFrame_, videoFrameSize_);
+
         fbContext_.releaseToGL(frameBuffer_);
     }
-    assert(videoFrame_.size() == fbSize);
+    assert(videoFrame_.size() == videoFrameSize_);
     {
         CLExecScope_t scope(context_);
         fn(videoFrame_);

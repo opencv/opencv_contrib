@@ -1,7 +1,7 @@
 CXX      := g++
 CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -flto -I/usr/local/include/opencv4/ -I/usr/local/include/nanovg
 LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64 -L../common/
-LIBS     := -lnanogui -lopencv_glwindow
+LIBS     := -lnanogui -lopencv_viz2d
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 
 DESTDIR := /
 PREFIX := /usr/local

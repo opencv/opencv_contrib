@@ -16,12 +16,12 @@
 
 namespace kb {
 
-class GLWindow;
+class Viz2D;
 
 class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
-    friend class GLWindow;
+    friend class Viz2D;
 
     cv::UMat frameBuffer_;
     cv::ogl::Texture2D *frameBufferTex_;
@@ -30,7 +30,7 @@ class CLGLContext {
     CLExecContext_t context_;
     cv::Size frameBufferSize_;
 public:
-    CLGLContext(cv::Size frameBufferSize);
+    CLGLContext(const cv::Size& frameBufferSize);
     cv::ogl::Texture2D& getFrameBufferTexture();
     cv::Size getSize();
     void render(std::function<void(cv::Size&)> fn);
@@ -38,7 +38,7 @@ public:
 private:
     cv::ogl::Texture2D& getTexture2D();
     CLExecContext_t& getCLExecContext();
-    void blitFrameBufferToScreen(int x = 0, int y = 0);
+    void blitFrameBufferToScreen(const cv::Size& size);
     void begin();
     void end();
     void acquireFromGL(cv::UMat &m);

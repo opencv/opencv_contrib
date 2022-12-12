@@ -1,10 +1,11 @@
 #include "clglcontext.hpp"
-#include "glwindow.hpp"
 #include "util.hpp"
+#include "viz2d.hpp"
 
 namespace kb {
-CLGLContext::CLGLContext(cv::Size frameBufferSize) :
-    frameBufferSize_(frameBufferSize) {
+
+CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
+        frameBufferSize_(frameBufferSize) {
     glewExperimental = true;
     glewInit();
     cv::ogl::ocl::initializeContextFromGL();
@@ -23,7 +24,7 @@ CLGLContext::CLGLContext(cv::Size frameBufferSize) :
     GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBufferTex_->texId(), 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-    context_ = CLExecContext_t::getCurrentRef();
+    context_ = CLExecContext_t::getCurrent();
 }
 
 cv::ogl::Texture2D& CLGLContext::getFrameBufferTexture() {
@@ -57,11 +58,11 @@ CLExecContext_t& CLGLContext::getCLExecContext() {
     return context_;
 }
 
-void CLGLContext::blitFrameBufferToScreen(int x, int y) {
+void CLGLContext::blitFrameBufferToScreen(const cv::Size& windowSize) {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, frameBufferSize_.width, frameBufferSize_.height, x, y, x + frameBufferSize_.width, y + frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    GL_CHECK(glBlitFramebuffer(0, 0, frameBufferSize_.width, frameBufferSize_.height, 0, windowSize.height - frameBufferSize_.height, frameBufferSize_.width, frameBufferSize_.height + windowSize.height - frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
 void CLGLContext::begin() {

@@ -1,10 +1,10 @@
 #include "nanovgcontext.hpp"
 
-#include "glwindow.hpp"
+#include "viz2d.hpp"
 
 namespace kb {
 
-NanoVGContext::NanoVGContext(GLWindow &window, NVGcontext *context, CLGLContext &fbContext) :
+NanoVGContext::NanoVGContext(Viz2D &window, NVGcontext *context, CLGLContext &fbContext) :
         window_(window), context_(context), fbContext_(fbContext) {
     nvgCreateFont(context_, "libertine", "assets/LinLibertine_RB.ttf");
 
@@ -24,10 +24,9 @@ void NanoVGContext::render(std::function<void(NVGcontext*, const cv::Size&)> fn)
 void NanoVGContext::begin() {
     fbContext_.begin();
 
-    float r = window_.getPixelRatio();
-    float w = window_.getSize().width;
-    float h = window_.getSize().height;
-//    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, kb::gl::frame_buf));
+    float w = window_.getNativeFrameBufferSize().width;
+    float h = window_.getNativeFrameBufferSize().height;
+    float r = window_.getXPixelRatio();
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
 }

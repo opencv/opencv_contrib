@@ -1,5 +1,6 @@
 #include "util.hpp"
-#include "glwindow.hpp"
+
+#include "viz2d.hpp"
 
 namespace kb {
 
@@ -40,7 +41,7 @@ void print_system_info() {
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
 }
 
-void update_fps(cv::Ptr<GLWindow> window, bool graphical) {
+void update_fps(cv::Ptr<kb::Viz2D> window, bool graphical) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     float fps;
@@ -73,4 +74,5 @@ void update_fps(cv::Ptr<GLWindow> window, bool graphical) {
     tick.start();
     ++cnt;
 }
+
 } //namespace kb

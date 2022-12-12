@@ -1,6 +1,6 @@
-TARGET := libopencv_glwindow.so
+TARGET := libopencv_viz2d.so
 
-SRCS    := clglcontext.cpp clvacontext.cpp nanovgcontext.cpp glwindow.cpp util.cpp
+SRCS    := clglcontext.cpp clvacontext.cpp nanovgcontext.cpp viz2d.cpp util.cpp
 
 #precompiled headers
 HEADERS := 
