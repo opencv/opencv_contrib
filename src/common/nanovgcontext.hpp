@@ -13,7 +13,7 @@ class Viz2D;
 class NanoVGContext {
     Viz2D& window_;
     NVGcontext *context_;
-    CLGLContext &fbContext_;
+    CLGLContext &clglContext_;
 public:
     NanoVGContext(Viz2D& window, NVGcontext *context, CLGLContext &fbContext);
     void render(std::function<void(NVGcontext*, const cv::Size&)> fn);

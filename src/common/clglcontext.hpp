@@ -27,6 +27,7 @@ class CLGLContext {
     cv::ogl::Texture2D *frameBufferTex_;
     GLuint frameBufferID;
     GLuint renderBufferID;
+    GLint viewport_[4];
     CLExecContext_t context_;
     cv::Size frameBufferSize_;
 public:

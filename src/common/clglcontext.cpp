@@ -35,14 +35,6 @@ cv::Size CLGLContext::getSize() {
     return frameBufferSize_;
 }
 
-void CLGLContext::render(std::function<void(cv::Size&)> fn) {
-    CLExecScope_t scope(context_);
-    begin();
-    fn(frameBufferSize_);
-    end();
-}
-
-
 void CLGLContext::compute(std::function<void(cv::UMat&)> fn) {
     CLExecScope_t scope(getCLExecContext());
     acquireFromGL(frameBuffer_);
@@ -66,6 +58,7 @@ void CLGLContext::blitFrameBufferToScreen(const cv::Size& windowSize) {
 }
 
 void CLGLContext::begin() {
+    GL_CHECK(glGetIntegerv( GL_VIEWPORT, viewport_ ));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID));
     GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID));
@@ -77,11 +70,11 @@ void CLGLContext::end() {
     GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-
     //glFlush seems enough but i wanna make sure that there won't be race conditions.
     //At least on TigerLake/Iris it doesn't make a difference in performance.
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
+    GL_CHECK(glViewport(viewport_[0], viewport_[1], viewport_[2], viewport_[3]));
 }
 
 void CLGLContext::acquireFromGL(cv::UMat &m) {

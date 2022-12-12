@@ -12,8 +12,8 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     }
 }
 
-Viz2D::Viz2D(const cv::Size &size, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        size_(size), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
+        size_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
 }
 
 Viz2D::~Viz2D() {
@@ -128,7 +128,7 @@ void Viz2D::initialize() {
     }
     );
 
-    clglContext_ = new CLGLContext(this->getNativeFrameBufferSize());
+    clglContext_ = new CLGLContext(this->getFrameBufferSize());
     clvaContext_ = new CLVAContext(*clglContext_);
     nvgContext_ = new NanoVGContext(*this, getNVGcontext(), *clglContext_);
 }
@@ -156,8 +156,19 @@ NanoVGContext& Viz2D::nvg() {
     return *nvgContext_;
 }
 
+cv::Size Viz2D::getVideoFrameSize() {
+    return clva().getVideoFrameSize();
+}
+
+void Viz2D::setVideoFrameSize(const cv::Size& sz) {
+    clva().setVideoFrameSize(sz);
+}
+
 void Viz2D::render(std::function<void(const cv::Size&)> fn) {
-    clgl().render(fn);
+    CLExecScope_t scope(clglContext_->getCLExecContext());
+    clglContext_->begin();
+    fn(getVideoFrameSize());
+    clglContext_->end();
 }
 
 void Viz2D::compute(std::function<void(cv::UMat&)> fn) {
@@ -186,7 +197,7 @@ void Viz2D::makeGLFWContextCurrent() {
 
 cv::VideoWriter& Viz2D::makeVAWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     writer_ = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
-    clva().setVideoFrameSize(frameSize);
+    setVideoFrameSize(frameSize);
 
     if (!clva().hasContext()) {
         clva().copyContext();
@@ -199,7 +210,7 @@ cv::VideoCapture& Viz2D::makeVACapture(const string &intputFilename, const int v
     capture_ = new cv::VideoCapture(intputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float w = capture_->get(cv::CAP_PROP_FRAME_WIDTH);
     float h = capture_->get(cv::CAP_PROP_FRAME_HEIGHT);
-    clva().setVideoFrameSize(cv::Size(w,h));
+    setVideoFrameSize(cv::Size(w,h));
 
     if (!clva().hasContext()) {
         clva().copyContext();
@@ -224,7 +235,7 @@ cv::Size Viz2D::getNativeFrameBufferSize() {
 }
 
 cv::Size Viz2D::getFrameBufferSize() {
-    return clglContext_->getSize();
+    return frameBufferSize_;
 }
 cv::Size Viz2D::getSize() {
     int w, h;

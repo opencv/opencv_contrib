@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
     window->initialize();
 
     if(!window->isOffscreen())

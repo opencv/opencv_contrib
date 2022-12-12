@@ -22,6 +22,7 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
 
 class Viz2D {
     cv::Size size_;
+    cv::Size frameBufferSize_;
     bool offscreen_;
     string title_;
     int major_;
@@ -37,9 +38,10 @@ class Viz2D {
     nanogui::Screen* screen_ = nullptr;
     nanogui::FormHelper* form_ = nullptr;
     bool closed_ = false;
+    cv::Size videoFrameSize_ = cv::Size(0,0);
 public:
 
-    Viz2D(const cv::Size &size, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+    Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     ~Viz2D();
     void initialize();
     cv::Size calculatedSize();
@@ -47,7 +49,8 @@ public:
     CLGLContext& clgl();
     CLVAContext& clva();
     NanoVGContext& nvg();
-    cv::TickMeter& getTickMeter();
+    cv::Size getVideoFrameSize();
+    void setVideoFrameSize(const cv::Size& sz);
     void render(std::function<void(const cv::Size&)> fn);
     void compute(std::function<void(cv::UMat&)> fn);
     void renderNVG(std::function<void(NVGcontext*, const cv::Size&)> fn);

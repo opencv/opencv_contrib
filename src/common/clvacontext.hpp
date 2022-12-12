@@ -18,6 +18,7 @@ class CLVAContext {
     cv::Size videoFrameSize_;
 public:
     CLVAContext(CLGLContext &fbContext);
+    cv::Size getVideoFrameSize();
     void setVideoFrameSize(const cv::Size& sz);
     bool capture(std::function<void(cv::UMat&)> fn);
     void write(std::function<void(const cv::UMat&)> fn);

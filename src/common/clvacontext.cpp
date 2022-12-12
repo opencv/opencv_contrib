@@ -10,9 +10,15 @@ CLVAContext::CLVAContext(CLGLContext &fbContext) :
 
 void CLVAContext::setVideoFrameSize(const cv::Size& sz) {
     if(videoFrameSize_ != cv::Size(0,0))
-        assert(videoFrameSize_ == sz && "Input and output video sizes don't match");
+        assert(videoFrameSize_ == sz || "Input and output video sizes don't match");
 
     videoFrameSize_ = sz;
+}
+
+cv::Size CLVAContext::getVideoFrameSize() {
+    assert(videoFrameSize_ == cv::Size(0,0) || "Video frame size not initialized");
+
+    return videoFrameSize_;
 }
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {

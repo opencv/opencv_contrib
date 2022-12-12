@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 
     window->initialize();
 
@@ -268,7 +268,7 @@ int main(int argc, char **argv) {
             break;
 
         window->compute([&](cv::UMat& frameBuffer){
-            cv::resize(frameBuffer, down, cv::Size(window->getNativeFrameBufferSize().width * fg_scale, window->getNativeFrameBufferSize().height * fg_scale));
+            cv::resize(frameBuffer, down, cv::Size(window->getFrameBufferSize().width * fg_scale, window->getFrameBufferSize().height * fg_scale));
             cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
         });
 
