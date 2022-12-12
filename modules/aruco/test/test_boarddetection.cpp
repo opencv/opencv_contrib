@@ -82,6 +82,7 @@ void CV_ArucoBoardPose::run(int) {
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     const int sizeX = 3, sizeY = 3;
+    aruco::DetectorParameters detectorParameters = detector.getDetectorParameters();
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.15) {
@@ -98,7 +99,8 @@ void CV_ArucoBoardPose::run(int) {
                                        imgSize, markerBorder);
                 vector<vector<Point2f> > corners;
                 vector<int> ids;
-                detector.getDetectorParameters().markerBorderBits = markerBorder;
+                detectorParameters.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(detectorParameters);
                 detector.detectMarkers(img, corners, ids);
 
                 ASSERT_EQ(ids.size(), gridboard->getIds().size());
@@ -189,6 +191,7 @@ void CV_ArucoRefine::run(int) {
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+    aruco::DetectorParameters detectorParameters = detector.getDetectorParameters();
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
@@ -207,7 +210,8 @@ void CV_ArucoRefine::run(int) {
                 // detect markers
                 vector<vector<Point2f> > corners, rejected;
                 vector<int> ids;
-                detector.getDetectorParameters().markerBorderBits = markerBorder;
+                detectorParameters.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(detectorParameters);
                 detector.detectMarkers(img, corners, ids, rejected);
 
                 // remove a marker from detection

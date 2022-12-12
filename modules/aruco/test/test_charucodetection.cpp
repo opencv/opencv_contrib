@@ -160,7 +160,8 @@ void CV_CharucoDetection::run(int) {
                 vector<vector<Point2f> > corners;
                 vector<int> ids;
 
-                detector.getDetectorParameters().markerBorderBits = markerBorder;
+                params.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(params);
                 detector.detectMarkers(img, corners, ids);
 
                 if(ids.size() == 0) {
@@ -264,7 +265,8 @@ void CV_CharucoPoseEstimation::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                detector.getDetectorParameters().markerBorderBits = markerBorder;
+                params.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(params);
                 detector.detectMarkers(img, corners, ids);
 
                 ASSERT_EQ(ids.size(), board->getIds().size());
@@ -348,7 +350,7 @@ void CV_CharucoDiamondDetection::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    aruco::DetectorParameters params ;
+    aruco::DetectorParameters params;
     params.minDistanceToBorder = 0;
     aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     float squareLength = 0.03f;
@@ -380,7 +382,8 @@ void CV_CharucoDiamondDetection::run(int) {
                 // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
-                detector.getDetectorParameters().markerBorderBits = markerBorder;
+                params.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(params);
                 detector.detectMarkers(img, corners, ids);
 
                 if(ids.size() != 4) {
