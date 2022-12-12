@@ -66,6 +66,11 @@ void Viz2D::initialize() {
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    /* I figure we don't need double buffering because the texture is our backbuffer
+     * But EGL/X11 anyway doesn't support rendering to the front buffer, yet. But on wayland it should work.
+     * And I am not sure about vsync on other platforms.
+     */
+    //    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
     glfwWindow_ = glfwCreateWindow(size_.width, size_.height, title_.c_str(), nullptr, nullptr);
     if (glfwWindow_ == NULL) {
@@ -74,7 +79,6 @@ void Viz2D::initialize() {
         exit(-1);
     }
     glfwMakeContextCurrent(getGLFWWindow());
-//        glfwSetFramebufferSizeCallback(getGLFWWindow(), frame_buffer_size_callback);
 
     screen_ = new nanogui::Screen();
     screen_->initialize(getGLFWWindow(), false);
