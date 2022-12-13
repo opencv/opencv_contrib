@@ -139,7 +139,7 @@ order starting on 0, so they will be 0, 1, 2, ..., 34. This can be easily custom
 through ```board.ids```, like in the ```Board``` parent class.
 
 After creating a Grid Board, we probably want to print it and use it. A function to generate the image
-of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::draw()```. For example:
+of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::generateImage()```. For example:
 
 @code{.cpp}
     cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
@@ -152,7 +152,7 @@ to the board dimensions, it will be centered on the image.
 - ```boardImage```: the output image with the board.
 - The third parameter is the (optional) margin in pixels, so none of the markers are touching the image border.
 In this case the margin is 10.
-- Finally, the size of the marker border, similarly to ```drawMarker()``` function. The default value is 1.
+- Finally, the size of the marker border, similarly to ```generateImageMarker()``` function. The default value is 1.
 
 The output image will be something like this:
 

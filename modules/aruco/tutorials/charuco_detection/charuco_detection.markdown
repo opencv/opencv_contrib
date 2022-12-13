@@ -75,7 +75,7 @@ The ids of each of the markers are assigned by default in ascending order and st
 This can be easily customized by accessing to the ids vector through ```board.ids```, like in the ```Board``` parent class.
 
 Once we have our ```CharucoBoard``` object, we can create an image to print it. This can be done with the
-<code>CharucoBoard::draw()</code> method:
+<code>CharucoBoard::generateImage()</code> method:
 
 @snippet samples/tutorial_charuco_create_detect.cpp createBoard
 
@@ -84,7 +84,7 @@ to the board dimensions, it will be centered on the image.
 - ```boardImage```: the output image with the board.
 - The third parameter is the (optional) margin in pixels, so none of the markers are touching the image border.
 In this case the margin is 10.
-- Finally, the size of the marker border, similarly to ```drawMarker()``` function. The default value is 1.
+- Finally, the size of the marker border, similarly to ```generateImageMarker()``` function. The default value is 1.
 
 The output image will be something like this:
 

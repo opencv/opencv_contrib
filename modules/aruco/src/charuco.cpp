@@ -14,12 +14,9 @@ using namespace std;
 /**
   * Remove charuco corners if any of their minMarkers closest markers has not been detected
   */
-static int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
-                                                    InputArray _allCharucoCorners,
-                                                    InputArray _allCharucoIds,
-                                                    InputArray _allArucoIds, int minMarkers,
-                                                    OutputArray _filteredCharucoCorners,
-                                                    OutputArray _filteredCharucoIds) {
+static int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board, InputArray _allCharucoCorners,
+                                           InputArray _allCharucoIds, InputArray _allArucoIds, int minMarkers,
+                                           OutputArray _filteredCharucoCorners, OutputArray _filteredCharucoIds) {
 
     CV_Assert(minMarkers >= 0 && minMarkers <= 2);
 
@@ -58,10 +55,8 @@ static int _filterCornersWithoutMinMarkers(const Ptr<CharucoBoard> &_board,
   * @brief From all projected chessboard corners, select those inside the image and apply subpixel
   * refinement. Returns number of valid corners.
   */
-static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image,
-                                                      OutputArray _selectedCorners,
-                                                      OutputArray _selectedIds,
-                                                      const vector< Size > &winSizes) {
+static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray _image, OutputArray _selectedCorners,
+                                             OutputArray _selectedIds, const vector< Size > &winSizes) {
 
     const int minDistToBorder = 2; // minimum distance of the corner to the image border
     // remaining corners, ids and window refinement sizes after removing corners outside the image
@@ -176,12 +171,10 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
 /**
   * Interpolate charuco corners using approximated pose estimation
   */
-static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorners,
-                                                 InputArray _markerIds, InputArray _image,
-                                                 const Ptr<CharucoBoard> &_board,
+static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorners, InputArray _markerIds,
+                                                 InputArray _image, const Ptr<CharucoBoard> &_board,
                                                  InputArray _cameraMatrix, InputArray _distCoeffs,
-                                                 OutputArray _charucoCorners,
-                                                 OutputArray _charucoIds) {
+                                                 OutputArray _charucoCorners, OutputArray _charucoIds) {
 
     CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
     CV_Assert(_markerCorners.total() == _markerIds.getMat().total() &&
@@ -219,11 +212,9 @@ static int _interpolateCornersCharucoApproxCalib(InputArrayOfArrays _markerCorne
 /**
   * Interpolate charuco corners using local homography
   */
-static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
-                                              InputArray _markerIds, InputArray _image,
-                                              const Ptr<CharucoBoard> &_board,
-                                              OutputArray _charucoCorners,
-                                              OutputArray _charucoIds) {
+static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners, InputArray _markerIds,
+                                              InputArray _image, const Ptr<CharucoBoard> &_board,
+                                              OutputArray _charucoCorners, OutputArray _charucoIds) {
 
     CV_Assert(_image.getMat().channels() == 1 || _image.getMat().channels() == 3);
     CV_Assert(_markerCorners.total() == _markerIds.getMat().total() &&
@@ -316,14 +307,12 @@ int interpolateCornersCharuco(InputArrayOfArrays _markerCorners, InputArray _mar
 
     // if camera parameters are avaible, use approximated calibration
     if(_cameraMatrix.total() != 0) {
-        _interpolateCornersCharucoApproxCalib(_markerCorners, _markerIds, _image, _board,
-                                                     _cameraMatrix, _distCoeffs, _charucoCorners,
-                                                     _charucoIds);
+        _interpolateCornersCharucoApproxCalib(_markerCorners, _markerIds, _image, _board, _cameraMatrix, _distCoeffs,
+                                              _charucoCorners, _charucoIds);
     }
     // else use local homography
     else {
-        _interpolateCornersCharucoLocalHom(_markerCorners, _markerIds, _image, _board,
-                                                  _charucoCorners, _charucoIds);
+        _interpolateCornersCharucoLocalHom(_markerCorners, _markerIds, _image, _board, _charucoCorners, _charucoIds);
     }
 
     // to return a charuco corner, its closest aruco markers should have been detected
@@ -359,9 +348,8 @@ void drawDetectedCornersCharuco(InputOutputArray _image, InputArray _charucoCorn
 }
 
 
-void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
-                          InputArray _markerIds, float squareMarkerLengthRate,
-                          OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
+void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners, InputArray _markerIds,
+                          float squareMarkerLengthRate, OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
                           InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dictionary) {
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
 
@@ -501,8 +489,7 @@ void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int square
 }
 
 
-void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners,
-                          InputArray _ids, Scalar borderColor) {
+void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners, InputArray _ids, Scalar borderColor) {
     CV_Assert(_image.getMat().total() != 0 &&
               (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
     CV_Assert((_corners.total() == _ids.total()) || _ids.total() == 0);

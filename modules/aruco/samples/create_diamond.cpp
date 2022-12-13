@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY(dictionaryId));
 
     istringstream ss(idsString);
     vector< string > splittedIds;

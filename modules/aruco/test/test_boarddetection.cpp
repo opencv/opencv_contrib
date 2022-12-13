@@ -111,7 +111,7 @@ void CV_ArucoBoardPose::run(int) {
                 estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
                 // check axes
-                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->getRightBottomBorder().x);
+                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->getRightBottomCorner().x);
                 vector<Point2f> topLeft = getMarkerById(gridboard->getIds()[0], corners, ids);
                 ASSERT_NEAR(topLeft[0].x, axes[0].x, 2.f);
                 ASSERT_NEAR(topLeft[0].y, axes[0].y, 2.f);

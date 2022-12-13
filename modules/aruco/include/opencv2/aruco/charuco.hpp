@@ -91,7 +91,7 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
                                        InputArray cameraMatrix = noArray(),
                                        InputArray distCoeffs = noArray(),
                                        Ptr<Dictionary> dictionary = makePtr<Dictionary>
-                                               (getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME::DICT_4X4_50)));
+                                               (getPredefinedDictionary(PREDEFINED_DICTIONARY::DICT_4X4_50)));
 
 
 

@@ -189,7 +189,7 @@ void CV_CharucoDetection::run(int) {
                 vector<Point3f> copyChessboardCorners = board->getChessboardCorners();
                 // move copyChessboardCorners points
                 for (size_t i = 0; i < copyChessboardCorners.size(); i++)
-                    copyChessboardCorners[i] -= board->getRightBottomBorder() / 2.f;
+                    copyChessboardCorners[i] -= board->getRightBottomCorner() / 2.f;
                 projectPoints(copyChessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedCharucoCorners);
 
@@ -419,7 +419,7 @@ void CV_CharucoDiamondDetection::run(int) {
                 vector<Point3f> copyChessboardCorners = board->getChessboardCorners();
                 // move copyChessboardCorners points
                 for (size_t i = 0; i < copyChessboardCorners.size(); i++)
-                    copyChessboardCorners[i] -= board->getRightBottomBorder() / 2.f;
+                    copyChessboardCorners[i] -= board->getRightBottomCorner() / 2.f;
 
                 projectPoints(copyChessboardCorners, rvec, tvec, cameraMatrix, distCoeffs,
                               projectedDiamondCorners);
@@ -548,7 +548,7 @@ TEST(Charuco, testCharucoCornersCollinear_true)
 
     Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY(dictionaryId));
 
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
@@ -589,7 +589,7 @@ TEST(Charuco, testCharucoCornersCollinear_false)
 
     Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY(dictionaryId));
 
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);

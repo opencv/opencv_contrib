@@ -72,7 +72,7 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     vector<Point2f> corners;
 
     // get max coordinate of board
-    Point3f maxCoord = board->getRightBottomBorder();
+    Point3f maxCoord = board->getRightBottomCorner();
     // copy objPoints
     vector<Point3f> objPoints = board->getObjPoints()[markerIndex];
     // move the marker to the origin
