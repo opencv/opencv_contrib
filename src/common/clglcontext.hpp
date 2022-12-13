@@ -21,12 +21,16 @@ class Viz2D;
 class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
+    friend class Viz2D;
     cv::ogl::Texture2D *frameBufferTex_;
     GLuint frameBufferID;
     GLuint renderBufferID;
     GLint viewport_[4];
     CLExecContext_t context_;
     cv::Size frameBufferSize_;
+    cv::ogl::Texture2D& getTexture2D();
+    CLExecContext_t& getCLExecContext();
+    void blitFrameBufferToScreen(const cv::Size& size);
 public:
     class FrameBufferScope {
         CLGLContext& ctx_;
@@ -58,16 +62,12 @@ public:
     cv::ogl::Texture2D& getFrameBufferTexture();
     cv::Size getSize();
     void opencl(std::function<void(cv::UMat&)> fn);
-private:
-    cv::ogl::Texture2D& getTexture2D();
-    CLExecContext_t& getCLExecContext();
-    void blitFrameBufferToScreen(const cv::Size& size);
+protected:
     void begin();
     void end();
-protected:
-    cv::UMat frameBuffer_;
     void acquireFromGL(cv::UMat &m);
     void releaseToGL(cv::UMat &m);
+    cv::UMat frameBuffer_;
 };
 } /* namespace kb */
 
