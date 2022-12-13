@@ -1,6 +1,6 @@
-TARGET := libopencv_viz2d.so
+TARGET := libviz2d.so
 
-SRCS    := clglcontext.cpp clvacontext.cpp nanovgcontext.cpp viz2d.cpp util.cpp
+SRCS    := detail/clglcontext.cpp detail/clvacontext.cpp detail/nanovgcontext.cpp viz2d.cpp util.cpp nvg.cpp
 
 #precompiled headers
 HEADERS := 

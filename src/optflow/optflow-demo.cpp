@@ -2,6 +2,10 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
 #include "../common/viz2d.hpp"
+#include "../common/nvg.hpp"
+#include "../common/util.hpp"
+
+
 #include <cmath>
 #include <vector>
 #include <string>
@@ -10,6 +14,7 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/optflow.hpp>
+#include <opencv2/core/ocl.hpp>
 
 using std::cerr;
 using std::endl;
@@ -92,7 +97,7 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, 
     return result;
 }
 
-void visualize_sparse_optical_flow(NVGcontext* vg, const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
+void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
         const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
@@ -127,9 +132,10 @@ void visualize_sparse_optical_flow(NVGcontext* vg, const cv::UMat &prevGrey, con
                 upNextPoints.push_back(pt /= scaleFactor);
             }
 
-            nvgBeginPath(vg);
-            nvgStrokeWidth(vg, stroke);
-            nvgStrokeColor(vg, nvgRGBA(color[0], color[1], color[2], color[3]));
+            using namespace kb;
+            nvg::beginPath();
+            nvg::strokeWidth(stroke);
+            nvg::strokeColor(color);
 
             for (size_t i = 0; i < prevPoints.size(); i++) {
                 if (status[i] == 1 && err[i] < (1.0 / density)
@@ -139,12 +145,12 @@ void visualize_sparse_optical_flow(NVGcontext* vg, const cv::UMat &prevGrey, con
                     float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
                     if (len > 0 && len < sqrt(area)) {
                         newPoints.push_back(nextPoints[i]);
-                        nvgMoveTo(vg, upNextPoints[i].x, upNextPoints[i].y);
-                        nvgLineTo(vg, upPrevPoints[i].x, upPrevPoints[i].y);
+                        nvg::moveTo(upNextPoints[i].x, upNextPoints[i].y);
+                        nvg::lineTo(upPrevPoints[i].x, upPrevPoints[i].y);
                     }
                 }
             }
-            nvgStroke(vg);
+            nvg::stroke();
         }
         prevPoints = newPoints;
     }
@@ -184,60 +190,61 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-void setup_gui(cv::Ptr<kb::Viz2D> window) {
-    window->makeWindow(5, 45, "Settings");
+void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
+    v2d->makeWindow(5, 45, "Settings");
+    v2d->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
+    v2d->makeGroup("Foreground");
+    v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
+    v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
-    window->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
-    window->makeGroup("Foreground");
-    window->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
-    window->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
+    v2d->makeGroup("Scene Change Detection");
+    v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+    v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
 
-    window->makeGroup("Scene Change Detection");
-    window->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-    window->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
+    v2d->makeGroup("Points");
+    v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
+    v2d->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
 
-    window->makeGroup("Points");
-    window->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
-    window->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
-
-    window->makeGroup("Effect");
-    window->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-    auto glowKernel = window->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
+    v2d->makeGroup("Effect");
+    v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
+    auto glowKernel = v2d->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     glowKernel->set_callback([](const int& k) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
-    auto color = window->form()->add_variable("Color", effect_color);
+    auto color = v2d->form()->add_variable("Color", effect_color);
     color->set_tooltip("The effect color");
     color->set_final_callback([](const nanogui::Color &c) {
         effect_color[0] = c[0];
         effect_color[1] = c[1];
         effect_color[2] = c[2];
     });
-    window->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
+    v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
 
-    window->makeWindow(240, 45, "Display");
-    window->makeGroup("Display");
-    window->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-    window->form()->add_button("Fullscreen", [=]() {
-        window->setFullscreen(!window->isFullscreen());
+    v2d->makeWindow(240, 45, "Display");
+    v2d->makeGroup("Display");
+    v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+    v2d->form()->add_button("Fullscreen", [=]() {
+        v2d->setFullscreen(!v2d->isFullscreen());
     });
 
-    if(!window->isOffscreen())
-        window->setVisible(true);
+    if(!v2d->isOffscreen())
+        v2d->setVisible(true);
 }
 
 int main(int argc, char **argv) {
+    using namespace kb::viz2d;
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
 
-    cv::Ptr<kb::Viz2D> v2d = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 
     v2d->initialize();
 
-    kb::print_system_info();
+    print_system_info();
+
     setup_gui(v2d);
 
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
@@ -278,14 +285,14 @@ int main(int argc, char **argv) {
         //Detect trackable points in the motion mask
         detect_points(downMotionMaskGrey, detectedPoints);
 
-        v2d->nanovg([&](NVGcontext* vg, const cv::Size& sz) {
+        v2d->nanovg([&](const cv::Size& sz) {
             v2d->clear();
             if (!downPrevGrey.empty()) {
                 //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                 if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                     //Visualize the sparse optical flow using nanovg
-                    cv::Scalar color = cv::Scalar(effect_color.r() * 255.0f, effect_color.g() * 255.0f, effect_color.b() * 255.0f, alpha * 255.0f);
-                    visualize_sparse_optical_flow(vg, downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
+                    cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, alpha * 255.0f);
+                    visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
                 }
             }
         });
@@ -299,7 +306,7 @@ int main(int argc, char **argv) {
 
         v2d->writeVA();
 
-        update_fps(v2d, show_fps);
+//        update_fps(v2d, show_fps);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())

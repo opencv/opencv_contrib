@@ -2,13 +2,14 @@
 #define SRC_COMMON_CLVACONTEXT_HPP_
 
 #include "clglcontext.hpp"
-#include "util.hpp"
 
 namespace kb {
+namespace viz2d {
 class Viz2D;
+namespace detail {
 
 class CLVAContext {
-    friend class Viz2D;
+    friend class kb::viz2d::Viz2D;
     CLExecContext_t context_;
     CLGLContext &clglContext_;
     cv::UMat frameBuffer_;
@@ -29,6 +30,8 @@ public:
     bool hasContext();
     void copyContext();
 };
-} /* namespace kb */
+}
+}
+}
 
 #endif /* SRC_COMMON_CLVACONTEXT_HPP_ */

@@ -12,16 +12,20 @@
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 
-#include "util.hpp"
+#include "../util.hpp"
+
 
 namespace kb {
-
+namespace viz2d {
 class Viz2D;
+namespace detail {
+typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
+typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
 
 class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
-    friend class Viz2D;
+    friend class kb::viz2d::Viz2D;
     cv::ogl::Texture2D *frameBufferTex_;
     GLuint frameBufferID;
     GLuint renderBufferID;
@@ -69,6 +73,8 @@ protected:
     void releaseToGL(cv::UMat &m);
     cv::UMat frameBuffer_;
 };
-} /* namespace kb */
+}
+}
+}
 
 #endif /* SRC_COMMON_CLGLCONTEXT_HPP_ */

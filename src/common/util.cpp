@@ -1,8 +1,19 @@
 #include "util.hpp"
 
 #include "viz2d.hpp"
+#include "nvg.hpp"
 
 namespace kb {
+namespace viz2d {
+
+void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
+    int errorCode = glGetError();
+
+    if (errorCode != 0) {
+        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << std::endl;
+        assert(false);
+    }
+}
 
 void error_callback(int error, const char *description) {
     fprintf(stderr, "GLFW Error: %s\n", description);
@@ -41,7 +52,7 @@ void print_system_info() {
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
 }
 
-void update_fps(cv::Ptr<kb::Viz2D> window, bool graphical) {
+void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphical) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     float fps;
@@ -52,19 +63,20 @@ void update_fps(cv::Ptr<kb::Viz2D> window, bool graphical) {
         if (tick.getTimeMilli() > 1000) {
             cerr << "FPS : " << (fps = tick.getFPS()) << '\r';
             if (graphical) {
-                window->nanovg([&](NVGcontext *vg, const cv::Size &size) {
+                window->nanovg([&](const cv::Size &size) {
+                    using namespace kb;
                     string text = "FPS: " + std::to_string(fps);
-                    nvgBeginPath(vg);
-                    nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);
-                    nvgFillColor(vg, nvgRGBA(255, 255, 255, 180));
-                    nvgFill(vg);
+                    nvg::beginPath();
+                    nvg::roundedRect(10, 10, 30 * text.size() + 10, 60, 10);
+                    nvg::fillColor(cv::Scalar(255, 255, 255, 180));
+                    nvg::fill();
 
-                    nvgBeginPath(vg);
-                    nvgFontSize(vg, 60.0f);
-                    nvgFontFace(vg, "mono");
-                    nvgFillColor(vg, nvgRGBA(90, 90, 90, 255));
-                    nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                    nvgText(vg, 22, 37, text.c_str(), nullptr);
+                    nvg::beginPath();
+                    nvg::fontSize(60.0f);
+                    nvg::fontFace("mono");
+                    nvg::fillColor(cv::Scalar(90, 90, 90, 255));
+                    nvg::textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                    nvg::text(22, 37, text.c_str(), nullptr);
                 });
             }
             cnt = 0;
@@ -74,5 +86,5 @@ void update_fps(cv::Ptr<kb::Viz2D> window, bool graphical) {
     tick.start();
     ++cnt;
 }
-
+}
 } //namespace kb

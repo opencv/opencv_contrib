@@ -1,6 +1,8 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
 #include "../common/viz2d.hpp"
+#include "../common/util.hpp"
+
 #include <string>
 
 constexpr long unsigned int WIDTH = 1920;
@@ -80,20 +82,20 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb;
+    using namespace kb::viz2d;
 
     if(argc != 2) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<kb::Viz2D> v2d = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
     v2d->initialize();
 
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
     //Print system information
-    kb::print_system_info();
+    print_system_info();
 
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 

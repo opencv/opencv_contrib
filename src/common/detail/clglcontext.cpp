@@ -1,8 +1,11 @@
 #include "clglcontext.hpp"
-#include "util.hpp"
-#include "viz2d.hpp"
+#include "../util.hpp"
+#include "../viz2d.hpp"
 
 namespace kb {
+namespace viz2d {
+namespace detail {
+
 //FIXME use cv::ogl
 CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
@@ -96,5 +99,6 @@ void CLGLContext::releaseToGL(cv::UMat &m) {
     cv::flip(m, m, 0);
     GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
 }
-
-} /* namespace kb */
+}
+}
+}

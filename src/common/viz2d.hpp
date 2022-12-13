@@ -4,10 +4,8 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
-
-#include "clglcontext.hpp"
-#include "clvacontext.hpp"
-#include "nanovgcontext.hpp"
+#include <nanogui/nanogui.h>
+#include <GL/glew.h>
 
 using std::cout;
 using std::cerr;
@@ -15,13 +13,17 @@ using std::endl;
 using std::string;
 
 namespace kb {
+namespace viz2d {
+namespace detail {
+class CLGLContext;
+class CLVAContext;
+class NanoVGContext;
+}
+using namespace kb::viz2d::detail;
 
-void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression);
-#define GL_CHECK(expr)                            \
-    expr;                                        \
-    kb::gl_check_error(__FILE__, __LINE__, #expr);
+class NVG;
 
-class Viz2D {
+class Viz2D: private nanogui::Screen {
     cv::Size size_;
     cv::Size frameBufferSize_;
     bool offscreen_;
@@ -36,19 +38,18 @@ class Viz2D {
     NanoVGContext* nvgContext_ = nullptr;
     cv::VideoCapture* capture_ = nullptr;
     cv::VideoWriter* writer_ = nullptr;
-    nanogui::Screen* screen_ = nullptr;
     nanogui::FormHelper* form_ = nullptr;
     bool closed_ = false;
     cv::Size videoFrameSize_ = cv::Size(0,0);
 public:
     Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
-    ~Viz2D();
+    virtual ~Viz2D();
     void initialize();
 
     cv::ogl::Texture2D& texture();
     void opengl(std::function<void(const cv::Size&)> fn);
     void opencl(std::function<void(cv::UMat&)> fn);
-    void nanovg(std::function<void(NVGcontext*, const cv::Size&)> fn);
+    void nanovg(std::function<void(const cv::Size&)> fn);
     void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
 
     bool captureVA();
@@ -92,15 +93,18 @@ public:
     }
 
     void setUseOpenCL(bool u);
+    NVGcontext* getNVGcontext();
 private:
+    virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
+
     CLGLContext& clgl();
     CLVAContext& clva();
     NanoVGContext& nvg();
+    nanogui::Screen& screen();
     void makeGLFWContextCurrent();
     GLFWwindow* getGLFWWindow();
-    NVGcontext* getNVGcontext();
 };
-
+}
 } /* namespace kb */
 
 #endif /* SRC_COMMON_VIZ2D_HPP_ */

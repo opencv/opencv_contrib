@@ -1,16 +1,10 @@
 #include "viz2d.hpp"
-
-#include "util.hpp"
+#include "detail/clglcontext.hpp"
+#include "detail/clvacontext.hpp"
+#include "detail/nanovgcontext.hpp"
 
 namespace kb {
-void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
-    int errorCode = glGetError();
-
-    if (errorCode != 0) {
-        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << std::endl;
-        assert(false);
-    }
-}
+namespace viz2d {
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         size_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
@@ -18,9 +12,7 @@ Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscre
 }
 
 Viz2D::~Viz2D() {
-    //don't delete form_. it is autmatically cleaned up by screen_
-    if (screen_)
-        delete screen_;
+    //don't delete form_. it is autmatically cleaned up by the base class (nanogui::Screen)
     if (writer_)
         delete writer_;
     if (capture_)
@@ -37,7 +29,7 @@ Viz2D::~Viz2D() {
 
 void Viz2D::initialize() {
     assert(glfwInit() == GLFW_TRUE);
-    glfwSetErrorCallback(kb::error_callback);
+    glfwSetErrorCallback(kb::viz2d::error_callback);
 
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
@@ -81,44 +73,42 @@ void Viz2D::initialize() {
     }
     glfwMakeContextCurrent(getGLFWWindow());
 
-    screen_ = new nanogui::Screen();
-    screen_->initialize(getGLFWWindow(), false);
-    form_ = new nanogui::FormHelper(screen_);
+    screen().initialize(getGLFWWindow(), false);
+    form_ = new nanogui::FormHelper(this);
     this->setSize(size_);
 
     glfwSetWindowUserPointer(getGLFWWindow(), this);
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->cursor_pos_callback_event(x, y);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().cursor_pos_callback_event(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->mouse_button_callback_event(button, action, modifiers);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().mouse_button_callback_event(button, action, modifiers);
     }
     );
     glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->key_callback_event(key, scancode, action, mods);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().key_callback_event(key, scancode, action, mods);
     }
     );
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, unsigned int codepoint) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->char_callback_event(codepoint);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().char_callback_event(codepoint);
     }
     );
     glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int count, const char **filenames) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->drop_callback_event(count, filenames);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().drop_callback_event(count, filenames);
     }
     );
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->scroll_callback_event(x, y);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().scroll_callback_event(x, y);
     }
     );
-
 
 //FIXME resize internal buffers?
 //    glfwSetWindowContentScaleCallback(getGLFWWindow(),
@@ -127,14 +117,14 @@ void Viz2D::initialize() {
 //    );
 
     glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int width, int height) {
-        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        v2d->screen_->resize_callback_event(width, height);
+        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+        v2d->screen().resize_callback_event(width, height);
     }
     );
 
-    clglContext_ = new CLGLContext(this->getFrameBufferSize());
-    clvaContext_ = new CLVAContext(*clglContext_);
-    nvgContext_ = new NanoVGContext(*this, getNVGcontext(), *clglContext_);
+    clglContext_ = new detail::CLGLContext(this->getFrameBufferSize());
+    clvaContext_ = new detail::CLVAContext(*clglContext_);
+    nvgContext_ = new detail::NanoVGContext(*this, getNVGcontext(), *clglContext_);
 }
 
 cv::ogl::Texture2D& Viz2D::texture() {
@@ -143,6 +133,23 @@ cv::ogl::Texture2D& Viz2D::texture() {
 
 nanogui::FormHelper* Viz2D::form() {
     return form_;
+}
+
+bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
+    if (nanogui::Screen::keyboard_event(key, scancode, action, modifiers))
+        return true;
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        nanogui::Screen::set_visible(!screen().visible());
+        return true;
+    } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+        auto children = nanogui::Screen::children();
+        for(auto* child : children) {
+            child->set_visible(!child->visible());
+        }
+
+        return true;
+    }
+    return false;
 }
 
 CLGLContext& Viz2D::clgl() {
@@ -157,6 +164,10 @@ NanoVGContext& Viz2D::nvg() {
     return *nvgContext_;
 }
 
+nanogui::Screen& Viz2D::screen() {
+    return *dynamic_cast<nanogui::Screen*>(this);
+}
+
 cv::Size Viz2D::getVideoFrameSize() {
     return clva().getVideoFrameSize();
 }
@@ -166,8 +177,8 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
 }
 
 void Viz2D::opengl(std::function<void(const cv::Size&)> fn) {
-    CLExecScope_t scope(clglContext_->getCLExecContext());
-    CLGLContext::GLScope glScope(*clglContext_);
+    detail::CLExecScope_t scope(clglContext_->getCLExecContext());
+    detail::CLGLContext::GLScope glScope(*clglContext_);
     fn(getFrameBufferSize());
 }
 
@@ -175,7 +186,7 @@ void Viz2D::opencl(std::function<void(cv::UMat&)> fn) {
     clgl().opencl(fn);
 }
 
-void Viz2D::nanovg(std::function<void(NVGcontext*, const cv::Size&)> fn) {
+void Viz2D::nanovg(std::function<void(const cv::Size&)> fn) {
     nvg().render(fn);
 }
 
@@ -265,7 +276,7 @@ float Viz2D::getYPixelRatio() {
 }
 
 void Viz2D::setSize(const cv::Size &sz) {
-    screen_->set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
+    screen().set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
 }
 
 bool Viz2D::isFullscreen() {
@@ -296,9 +307,9 @@ bool Viz2D::isVisible() {
 }
 
 void Viz2D::setVisible(bool v) {
-    screen_->perform_layout();
+    screen().perform_layout();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
-    screen_->set_visible(v);
+    screen().set_visible(v);
     setSize(size_);
 }
 
@@ -331,9 +342,9 @@ bool Viz2D::display() {
     bool result = true;
     if (!offscreen_) {
         glfwPollEvents();
-        screen_->draw_contents();
+        screen().draw_contents();
         clglContext_->blitFrameBufferToScreen(getSize());
-        screen_->draw_widgets();
+        screen().draw_widgets();
         glfwSwapBuffers(glfwWindow_);
         result = !glfwWindowShouldClose(glfwWindow_);
     }
@@ -355,6 +366,7 @@ GLFWwindow* Viz2D::getGLFWWindow() {
 }
 
 NVGcontext* Viz2D::getNVGcontext() {
-    return screen_->nvg_context();
+    return screen().nvg_context();
 }
-} /* namespace kb */
+}
+}

@@ -1,9 +1,10 @@
 #include "nanovgcontext.hpp"
 
-#include "viz2d.hpp"
+#include "../viz2d.hpp"
 
 namespace kb {
-
+namespace viz2d {
+namespace detail {
 NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbContext) :
         v2d_(v2d), context_(context), clglContext_(fbContext) {
     nvgCreateFont(context_, "libertine", "assets/LinLibertine_RB.ttf");
@@ -13,11 +14,12 @@ NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbCon
     CLGLContext::FrameBufferScope fbScope(clglContext_, tmp);
 }
 
-void NanoVGContext::render(std::function<void(NVGcontext*, const cv::Size&)> fn) {
+void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
     CLExecScope_t scope(clglContext_.getCLExecContext());
     CLGLContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
-    fn(context_, clglContext_.getSize());
+    kb::nvg::detail::set_current_context(context_),
+    fn(clglContext_.getSize());
 }
 
 void NanoVGContext::begin() {
@@ -31,7 +33,10 @@ void NanoVGContext::begin() {
 }
 
 void NanoVGContext::end() {
+    //FIXME make nvgCancelFrame possible
     nvgEndFrame(context_);
     nvgRestore(context_);
 }
-} /* namespace kb */
+}
+}
+}

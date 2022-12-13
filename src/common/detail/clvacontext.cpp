@@ -1,8 +1,10 @@
 #include "clvacontext.hpp"
 
-#include "viz2d.hpp"
+#include "../viz2d.hpp"
 
 namespace kb {
+namespace viz2d {
+namespace detail {
 
 CLVAContext::CLVAContext(CLGLContext &clglContext) :
         clglContext_(clglContext) {
@@ -17,7 +19,6 @@ void CLVAContext::setVideoFrameSize(const cv::Size& sz) {
 
 cv::Size CLVAContext::getVideoFrameSize() {
     assert(videoFrameSize_ == cv::Size(0,0) || "Video frame size not initialized");
-
     return videoFrameSize_;
 }
 
@@ -71,4 +72,6 @@ void CLVAContext::copyContext() {
 CLExecContext_t CLVAContext::getCLExecContext() {
     return context_;
 }
-} /* namespace kb */
+}
+}
+}
