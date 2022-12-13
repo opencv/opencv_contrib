@@ -16,9 +16,8 @@ NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbCon
 
 void NanoVGContext::render(std::function<void(NVGcontext*, const cv::Size&)> fn) {
     CLExecScope_t scope(clglContext_.getCLExecContext());
-    begin();
+    NanoVGContext::Scope nvgScope(*this);
     fn(context_, clglContext_.getSize());
-    end();
 }
 
 void NanoVGContext::begin() {
