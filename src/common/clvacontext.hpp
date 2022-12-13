@@ -8,7 +8,6 @@ namespace kb {
 class Viz2D;
 
 class CLVAContext {
-    friend class Viz2D;
     CLExecContext_t context_;
     CLGLContext &clglContext_;
     cv::UMat frameBuffer_;

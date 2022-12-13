@@ -8,8 +8,6 @@
 #include "util.hpp"
 
 namespace kb {
-class Viz2D;
-
 class NanoVGContext {
     Viz2D& v2d_;
     NVGcontext *context_;

@@ -16,12 +16,12 @@ NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbCon
 
 void NanoVGContext::render(std::function<void(NVGcontext*, const cv::Size&)> fn) {
     CLExecScope_t scope(clglContext_.getCLExecContext());
+    CLGLContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
     fn(context_, clglContext_.getSize());
 }
 
 void NanoVGContext::begin() {
-    clglContext_.begin();
     float w = v2d_.getVideoFrameSize().width;
     float h = v2d_.getVideoFrameSize().height;
     float r = v2d_.getXPixelRatio();
@@ -34,6 +34,5 @@ void NanoVGContext::begin() {
 void NanoVGContext::end() {
     nvgEndFrame(context_);
     nvgRestore(context_);
-    clglContext_.end();
 }
 } /* namespace kb */

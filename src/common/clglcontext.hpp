@@ -21,7 +21,6 @@ class Viz2D;
 class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
-    friend class Viz2D;
     cv::ogl::Texture2D *frameBufferTex_;
     GLuint frameBufferID;
     GLuint renderBufferID;
@@ -29,16 +28,28 @@ class CLGLContext {
     CLExecContext_t context_;
     cv::Size frameBufferSize_;
 public:
-    class Scope {
+    class FrameBufferScope {
         CLGLContext& ctx_;
         cv::UMat& m_;
     public:
-        Scope(CLGLContext& ctx, cv::UMat& m) : ctx_(ctx), m_(m) {
+        FrameBufferScope(CLGLContext& ctx, cv::UMat& m) : ctx_(ctx), m_(m) {
             ctx_.acquireFromGL(m_);
         }
 
-        ~Scope() {
+        ~FrameBufferScope() {
             ctx_.releaseToGL(m_);
+        }
+    };
+
+    class GLScope {
+        CLGLContext& ctx_;
+    public:
+        GLScope(CLGLContext& ctx) : ctx_(ctx) {
+            ctx_.begin();
+        }
+
+        ~GLScope() {
+            ctx_.end();
         }
     };
 

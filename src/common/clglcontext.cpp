@@ -45,7 +45,8 @@ cv::Size CLGLContext::getSize() {
 
 void CLGLContext::opencl(std::function<void(cv::UMat&)> fn) {
     CLExecScope_t clExecScope(getCLExecContext());
-    CLGLContext::Scope fbScope(*this, frameBuffer_);
+    CLGLContext::GLScope glScope(*this);
+    CLGLContext::FrameBufferScope fbScope(*this, frameBuffer_);
     fn(frameBuffer_);
 }
 
@@ -85,7 +86,6 @@ void CLGLContext::end() {
 }
 
 void CLGLContext::acquireFromGL(cv::UMat &m) {
-    begin();
     GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
     //FIXME
     cv::flip(m, m, 0);
@@ -95,7 +95,6 @@ void CLGLContext::releaseToGL(cv::UMat &m) {
     //FIXME
     cv::flip(m, m, 0);
     GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
-    end();
 }
 
 } /* namespace kb */

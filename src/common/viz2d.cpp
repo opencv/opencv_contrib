@@ -167,9 +167,8 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
 
 void Viz2D::opengl(std::function<void(const cv::Size&)> fn) {
     CLExecScope_t scope(clglContext_->getCLExecContext());
-    clglContext_->begin();
+    CLGLContext::GLScope glScope(*clglContext_);
     fn(getFrameBufferSize());
-    clglContext_->end();
 }
 
 void Viz2D::opencl(std::function<void(cv::UMat&)> fn) {
