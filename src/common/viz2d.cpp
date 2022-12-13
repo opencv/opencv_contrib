@@ -14,6 +14,7 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         size_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+    assert(frameBufferSize_.width >= size_.width && frameBufferSize_.height >= size_.height);
 }
 
 Viz2D::~Viz2D() {
@@ -88,47 +89,46 @@ void Viz2D::initialize() {
     glfwSetWindowUserPointer(getGLFWWindow(), this);
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->cursor_pos_callback_event(x, y);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->cursor_pos_callback_event(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->mouse_button_callback_event(button, action, modifiers);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->mouse_button_callback_event(button, action, modifiers);
     }
     );
     glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->key_callback_event(key, scancode, action, mods);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->key_callback_event(key, scancode, action, mods);
     }
     );
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, unsigned int codepoint) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->char_callback_event(codepoint);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->char_callback_event(codepoint);
     }
     );
     glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int count, const char **filenames) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->drop_callback_event(count, filenames);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->drop_callback_event(count, filenames);
     }
     );
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->scroll_callback_event(x, y);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->scroll_callback_event(x, y);
     }
     );
 
+
+//FIXME resize internal buffers?
 //    glfwSetWindowContentScaleCallback(getGLFWWindow(),
 //        [](GLFWwindow* glfwWin, float xscale, float yscale) {
-//            Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-//            win->screen_->m_pixel_ratio = win->getXPixelRatio();
-//            win->screen_->resize_callback_event(win->getSize().width, win->getSize().height);
 //        }
 //    );
-//
+
     glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int width, int height) {
-        Viz2D *win = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
-        win->screen_->resize_callback_event(width, height);
+        Viz2D *v2d = (Viz2D*) glfwGetWindowUserPointer(glfwWin);
+        v2d->screen_->resize_callback_event(width, height);
     }
     );
 
@@ -137,13 +137,10 @@ void Viz2D::initialize() {
     nvgContext_ = new NanoVGContext(*this, getNVGcontext(), *clglContext_);
 }
 
-cv::Size Viz2D::calculatedSize() {
-    int w = getSize().width * getXPixelRatio();
-    int h = getSize().height * getYPixelRatio();
-    w = w % 2 == 0? w : w + 1;
-    h = h % 2 == 0? h : h + 1;
-    return cv::Size(w, h);
+cv::ogl::Texture2D& Viz2D::texture() {
+    return clglContext_->getTexture2D();
 }
+
 nanogui::FormHelper* Viz2D::form() {
     return form_;
 }
@@ -168,18 +165,18 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
     clva().setVideoFrameSize(sz);
 }
 
-void Viz2D::render(std::function<void(const cv::Size&)> fn) {
+void Viz2D::opengl(std::function<void(const cv::Size&)> fn) {
     CLExecScope_t scope(clglContext_->getCLExecContext());
     clglContext_->begin();
-    fn(getVideoFrameSize());
+    fn(getFrameBufferSize());
     clglContext_->end();
 }
 
-void Viz2D::compute(std::function<void(cv::UMat&)> fn) {
-    clgl().compute(fn);
+void Viz2D::opencl(std::function<void(cv::UMat&)> fn) {
+    clgl().opencl(fn);
 }
 
-void Viz2D::renderNVG(std::function<void(NVGcontext*, const cv::Size&)> fn) {
+void Viz2D::nanovg(std::function<void(NVGcontext*, const cv::Size&)> fn) {
     nvg().render(fn);
 }
 
@@ -241,6 +238,7 @@ cv::Size Viz2D::getNativeFrameBufferSize() {
 cv::Size Viz2D::getFrameBufferSize() {
     return frameBufferSize_;
 }
+
 cv::Size Viz2D::getSize() {
     int w, h;
     glfwGetWindowSize(getGLFWWindow(), &w, &h);

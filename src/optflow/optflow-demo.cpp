@@ -233,14 +233,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+    cv::Ptr<kb::Viz2D> v2d = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 
-    window->initialize();
+    v2d->initialize();
 
     kb::print_system_info();
-    setup_gui(window);
+    setup_gui(v2d);
 
-    auto capture = window->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+    auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open video input" << endl;
@@ -250,10 +250,10 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size{width, height}, VA_HW_DEVICE_INDEX);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size{width, height}, VA_HW_DEVICE_INDEX);
 
     //BGRA
-    cv::UMat background, foreground(window->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
+    cv::UMat background, foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
     //RGB
     cv::UMat rgb, down;
     //GREY
@@ -262,13 +262,13 @@ int main(int argc, char **argv) {
 
     while (true) {
         if(cv::ocl::useOpenCL() != use_opencl)
-            window->setUseOpenCL(use_opencl);
+            v2d->setUseOpenCL(use_opencl);
 
-        if(!window->captureVA())
+        if(!v2d->captureVA())
             break;
 
-        window->compute([&](cv::UMat& frameBuffer){
-            cv::resize(frameBuffer, down, cv::Size(window->getFrameBufferSize().width * fg_scale, window->getFrameBufferSize().height * fg_scale));
+        v2d->opencl([&](cv::UMat& frameBuffer){
+            cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
             cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
         });
 
@@ -278,8 +278,8 @@ int main(int argc, char **argv) {
         //Detect trackable points in the motion mask
         detect_points(downMotionMaskGrey, detectedPoints);
 
-        window->renderNVG([&](NVGcontext* vg, const cv::Size& sz) {
-            window->clear();
+        v2d->nanovg([&](NVGcontext* vg, const cv::Size& sz) {
+            v2d->clear();
             if (!downPrevGrey.empty()) {
                 //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                 if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
@@ -292,17 +292,17 @@ int main(int argc, char **argv) {
 
         downPrevGrey = downNextGrey.clone();
 
-        window->compute([&](cv::UMat& frameBuffer){
+        v2d->opencl([&](cv::UMat& frameBuffer){
             //Put it all together (OpenCL)
             composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
         });
 
-        window->writeVA();
+        v2d->writeVA();
 
-        update_fps(window, show_fps);
+        update_fps(v2d, show_fps);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!window->display())
+        if(!v2d->display())
             break;
     }
 

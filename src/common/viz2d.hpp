@@ -40,31 +40,29 @@ class Viz2D {
     bool closed_ = false;
     cv::Size videoFrameSize_ = cv::Size(0,0);
 public:
-
     Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     ~Viz2D();
     void initialize();
-    cv::Size calculatedSize();
-    nanogui::FormHelper* form();
-    CLGLContext& clgl();
-    CLVAContext& clva();
-    NanoVGContext& nvg();
-    cv::Size getVideoFrameSize();
-    void setVideoFrameSize(const cv::Size& sz);
-    void render(std::function<void(const cv::Size&)> fn);
-    void compute(std::function<void(cv::UMat&)> fn);
-    void renderNVG(std::function<void(NVGcontext*, const cv::Size&)> fn);
+
+    cv::ogl::Texture2D& texture();
+    void opengl(std::function<void(const cv::Size&)> fn);
+    void opencl(std::function<void(cv::UMat&)> fn);
+    void nanovg(std::function<void(NVGcontext*, const cv::Size&)> fn);
+    void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
+
     bool captureVA();
     void writeVA();
     cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex);
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
-    void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
-    cv::Size getNativeFrameBufferSize();
-    cv::Size getFrameBufferSize();
+
+    void setSize(const cv::Size& sz);
     cv::Size getSize();
+    void setVideoFrameSize(const cv::Size& sz);
+    cv::Size getVideoFrameSize();
+    cv::Size getFrameBufferSize();
+    cv::Size getNativeFrameBufferSize();
     float getXPixelRatio();
     float getYPixelRatio();
-    void setSize(const cv::Size& sz);
     bool isFullscreen();
     void setFullscreen(bool f);
     bool isResizable();
@@ -72,6 +70,11 @@ public:
     bool isVisible();
     void setVisible(bool v);
     bool isOffscreen();
+    bool isClosed();
+    void close();
+    bool display();
+
+    nanogui::FormHelper* form();
     nanogui::Window* makeWindow(int x, int y, const string& title);
     nanogui::Label* makeGroup(const string& label);
     nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "");
@@ -86,11 +89,12 @@ public:
             var->set_tooltip(tooltip);
         return var;
     }
+
     void setUseOpenCL(bool u);
-    bool display();
-    bool isClosed();
-    void close();
 private:
+    CLGLContext& clgl();
+    CLVAContext& clva();
+    NanoVGContext& nvg();
     void makeGLFWContextCurrent();
     GLFWwindow* getGLFWWindow();
     NVGcontext* getNVGcontext();

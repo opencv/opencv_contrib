@@ -3,7 +3,7 @@
 #include "viz2d.hpp"
 
 namespace kb {
-
+//FIXME use cv::ogl
 CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
     glewExperimental = true;
@@ -27,6 +27,14 @@ CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
     context_ = CLExecContext_t::getCurrent();
 }
 
+
+CLGLContext::~CLGLContext() {
+    end();
+    frameBufferTex_->release();
+    glDeleteRenderbuffers( 1, &renderBufferID);
+    glDeleteFramebuffers( 1, &frameBufferID);
+}
+
 cv::ogl::Texture2D& CLGLContext::getFrameBufferTexture() {
     return *frameBufferTex_;
 }
@@ -35,11 +43,10 @@ cv::Size CLGLContext::getSize() {
     return frameBufferSize_;
 }
 
-void CLGLContext::compute(std::function<void(cv::UMat&)> fn) {
-    CLExecScope_t scope(getCLExecContext());
-    acquireFromGL(frameBuffer_);
+void CLGLContext::opencl(std::function<void(cv::UMat&)> fn) {
+    CLExecScope_t clExecScope(getCLExecContext());
+    CLGLContext::Scope fbScope(*this, frameBuffer_);
     fn(frameBuffer_);
-    releaseToGL(frameBuffer_);
 }
 
 cv::ogl::Texture2D& CLGLContext::getTexture2D() {

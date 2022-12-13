@@ -1,4 +1,3 @@
-
 #define CL_TARGET_OPENCL_VERSION 120
 
 #include "../common/viz2d.hpp"
@@ -87,16 +86,16 @@ int main(int argc, char **argv) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<kb::Viz2D> window = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
-    window->initialize();
+    cv::Ptr<kb::Viz2D> v2d = new kb::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+    v2d->initialize();
 
-    if(!window->isOffscreen())
-        window->setVisible(true);
+    if(!v2d->isOffscreen())
+        v2d->setVisible(true);
 
     //Print system information
     kb::print_system_info();
 
-    auto capture = window->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+    auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
         cerr << "ERROR! Unable to open video input" << endl;
@@ -106,31 +105,31 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, {width, height}, VA_HW_DEVICE_INDEX);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, {width, height}, VA_HW_DEVICE_INDEX);
 
-    window->render([](const cv::Size& sz) {
+    v2d->opengl([](const cv::Size& sz) {
         init_scene(sz.width, sz.height);
     });
 
     while (true) {
-        if(!window->captureVA())
+        if(!v2d->captureVA())
             break;
 
-        window->render([](const cv::Size& sz) {
+        v2d->opengl([](const cv::Size& sz) {
             //Render using OpenGL
             render_scene(sz.width, sz.height);
         });
 
-        window->compute([&](cv::UMat& frameBuffer){
+        v2d->opencl([&](cv::UMat& frameBuffer){
             //Glow effect (OpenCL)
             glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
         });
 
 
-        window->writeVA();
+        v2d->writeVA();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!window->display())
+        if(!v2d->display())
             break;
     }
 

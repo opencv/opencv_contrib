@@ -52,7 +52,7 @@ void update_fps(cv::Ptr<kb::Viz2D> window, bool graphical) {
         if (tick.getTimeMilli() > 1000) {
             cerr << "FPS : " << (fps = tick.getFPS()) << '\r';
             if (graphical) {
-                window->renderNVG([&](NVGcontext *vg, const cv::Size &size) {
+                window->nanovg([&](NVGcontext *vg, const cv::Size &size) {
                     string text = "FPS: " + std::to_string(fps);
                     nvgBeginPath(vg);
                     nvgRoundedRect(vg, 10, 10, 30 * text.size() + 10, 60, 10);

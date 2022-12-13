@@ -4,8 +4,8 @@
 
 namespace kb {
 
-NanoVGContext::NanoVGContext(Viz2D &window, NVGcontext *context, CLGLContext &fbContext) :
-        window_(window), context_(context), clglContext_(fbContext) {
+NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbContext) :
+        v2d_(v2d), context_(context), clglContext_(fbContext) {
     nvgCreateFont(context_, "libertine", "assets/LinLibertine_RB.ttf");
 
     //FIXME workaround for first frame color glitch
@@ -23,13 +23,12 @@ void NanoVGContext::render(std::function<void(NVGcontext*, const cv::Size&)> fn)
 
 void NanoVGContext::begin() {
     clglContext_.begin();
-
-    float w = window_.clva().getVideoFrameSize().width;
-    float h = window_.clva().getVideoFrameSize().height;
-    float r = window_.getXPixelRatio();
+    float w = v2d_.getVideoFrameSize().width;
+    float h = v2d_.getVideoFrameSize().height;
+    float r = v2d_.getXPixelRatio();
 
     nvgSave(context_);
-    nvgBeginFrame(context_, w, h, 1);
+    nvgBeginFrame(context_, w, h, r);
     GL_CHECK(glViewport(0, 0,w,h));
 }
 

@@ -11,11 +11,22 @@ namespace kb {
 class Viz2D;
 
 class NanoVGContext {
-    Viz2D& window_;
+    Viz2D& v2d_;
     NVGcontext *context_;
     CLGLContext &clglContext_;
 public:
-    NanoVGContext(Viz2D& window, NVGcontext *context, CLGLContext &fbContext);
+    class Scope {
+        NanoVGContext& ctx_;
+    public:
+        Scope(NanoVGContext& ctx) : ctx_(ctx) {
+            ctx_.begin();
+        }
+
+        ~Scope() {
+            ctx_.end();
+        }
+    };
+    NanoVGContext(Viz2D& v2d, NVGcontext *context, CLGLContext &fbContext);
     void render(std::function<void(NVGcontext*, const cv::Size&)> fn);
 private:
     void begin();

@@ -22,8 +22,6 @@ class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
     friend class Viz2D;
-
-    cv::UMat frameBuffer_;
     cv::ogl::Texture2D *frameBufferTex_;
     GLuint frameBufferID;
     GLuint renderBufferID;
@@ -31,17 +29,32 @@ class CLGLContext {
     CLExecContext_t context_;
     cv::Size frameBufferSize_;
 public:
+    class Scope {
+        CLGLContext& ctx_;
+        cv::UMat& m_;
+    public:
+        Scope(CLGLContext& ctx, cv::UMat& m) : ctx_(ctx), m_(m) {
+            ctx_.acquireFromGL(m_);
+        }
+
+        ~Scope() {
+            ctx_.releaseToGL(m_);
+        }
+    };
+
     CLGLContext(const cv::Size& frameBufferSize);
+    virtual ~CLGLContext();
     cv::ogl::Texture2D& getFrameBufferTexture();
     cv::Size getSize();
-    void render(std::function<void(cv::Size&)> fn);
-    void compute(std::function<void(cv::UMat&)> fn);
+    void opencl(std::function<void(cv::UMat&)> fn);
 private:
     cv::ogl::Texture2D& getTexture2D();
     CLExecContext_t& getCLExecContext();
     void blitFrameBufferToScreen(const cv::Size& size);
     void begin();
     void end();
+protected:
+    cv::UMat frameBuffer_;
     void acquireFromGL(cv::UMat &m);
     void releaseToGL(cv::UMat &m);
 };

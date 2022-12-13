@@ -10,7 +10,7 @@ class Viz2D;
 class CLVAContext {
     friend class Viz2D;
     CLExecContext_t context_;
-    CLGLContext &fbContext_;
+    CLGLContext &clglContext_;
     cv::UMat frameBuffer_;
     cv::UMat videoFrame_;
     cv::UMat rgbBuffer_;

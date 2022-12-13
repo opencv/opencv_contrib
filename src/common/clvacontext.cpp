@@ -4,8 +4,8 @@
 
 namespace kb {
 
-CLVAContext::CLVAContext(CLGLContext &fbContext) :
-        fbContext_(fbContext) {
+CLVAContext::CLVAContext(CLGLContext &clglContext) :
+        clglContext_(clglContext) {
 }
 
 void CLVAContext::setVideoFrameSize(const cv::Size& sz) {
@@ -28,31 +28,28 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
         videoFrameSize_ = videoFrame_.size();
     }
     {
-        CLExecScope_t scope(fbContext_.getCLExecContext());
-        fbContext_.acquireFromGL(frameBuffer_);
+        CLExecScope_t scope(clglContext_.getCLExecContext());
+        CLGLContext::Scope fbScope(clglContext_, frameBuffer_);
         if (videoFrame_.empty())
             return false;
 
-        cv::Size fbSize = fbContext_.getSize();
+        cv::Size fbSize = clglContext_.getSize();
         cv::resize(videoFrame_, rgbBuffer_, fbSize);
         cv::cvtColor(rgbBuffer_, frameBuffer_, cv::COLOR_RGB2BGRA);
 
-        fbContext_.releaseToGL(frameBuffer_);
         assert(frameBuffer_.size() == fbSize);
     }
     return true;
 }
 
 void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
-    cv::Size fbSize = fbContext_.getSize();
+    cv::Size fbSize = clglContext_.getSize();
     {
-        CLExecScope_t scope(fbContext_.getCLExecContext());
-        fbContext_.acquireFromGL(frameBuffer_);
+        CLExecScope_t scope(clglContext_.getCLExecContext());
+        CLGLContext::Scope fbScope(clglContext_, frameBuffer_);
 
         cv::cvtColor(frameBuffer_, rgbBuffer_, cv::COLOR_BGRA2RGB);
         cv::resize(rgbBuffer_, videoFrame_, videoFrameSize_);
-
-        fbContext_.releaseToGL(frameBuffer_);
     }
     assert(videoFrame_.size() == videoFrameSize_);
     {
