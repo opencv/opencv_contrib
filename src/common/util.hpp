@@ -9,6 +9,7 @@
 
 namespace kb {
 namespace viz2d {
+class Viz2D;
 
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression);
 
