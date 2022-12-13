@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
 
         v2d->writeVA();
 
-//        update_fps(v2d, show_fps);
+        update_fps(v2d, show_fps);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())

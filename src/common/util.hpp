@@ -20,7 +20,7 @@ void error_callback(int error, const char *description);
 std::string get_gl_info();
 std::string get_cl_info();
 void print_system_info();
-//void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
+void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
 }
 }
 
