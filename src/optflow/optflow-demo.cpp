@@ -207,11 +207,11 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 
     v2d->makeGroup("Effect");
     v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-    auto glowKernel = v2d->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
+    auto* glowKernel = v2d->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     glowKernel->set_callback([](const int& k) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
-    auto color = v2d->form()->add_variable("Color", effect_color);
+    auto* color = v2d->form()->add_variable("Color", effect_color);
     color->set_tooltip("The effect color");
     color->set_final_callback([](const nanogui::Color &c) {
         effect_color[0] = c[0];
@@ -227,9 +227,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->form()->add_button("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
-
-    if(!v2d->isOffscreen())
-        v2d->setVisible(true);
 }
 
 int main(int argc, char **argv) {
@@ -240,12 +237,13 @@ int main(int argc, char **argv) {
     }
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
-
     v2d->initialize();
-
     print_system_info();
 
-    setup_gui(v2d);
+    if(!v2d->isOffscreen()) {
+        setup_gui(v2d);
+        v2d->setVisible(true);
+    }
 
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
@@ -262,9 +260,9 @@ int main(int argc, char **argv) {
     //BGRA
     cv::UMat background, foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
     //RGB
-    cv::UMat rgb, down;
+    cv::UMat down;
     //GREY
-    cv::UMat backgroundGrey, downPrevGrey, downNextGrey, downMotionMaskGrey;
+    cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     vector<cv::Point2f> detectedPoints;
 
     while (true) {
