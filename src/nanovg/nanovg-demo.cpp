@@ -15,7 +15,7 @@ using std::endl;
 
 void drawColorwheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
-    using namespace kb;
+    using namespace kb::viz2d;
     int i;
     float r0, r1, ax, ay, bx, by, cx, cy, aeps, r;
     nvg::Paint paint;
@@ -29,8 +29,8 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
     aeps = 0.5f / r1;   // half a pixel arc length in radians (2pi cancels out).
 
     for (i = 0; i < 6; i++) {
-        float a0 = (float) i / 6.0f * NVG_PI * 2.0f - aeps;
-        float a1 = (float) (i + 1.0f) / 6.0f * NVG_PI * 2.0f + aeps;
+        float a0 = (float) i / 6.0f * CV_PI * 2.0f - aeps;
+        float a1 = (float) (i + 1.0f) / 6.0f * CV_PI * 2.0f + aeps;
         nvg::beginPath();
         nvg::arc(cx, cy, r0, a0, a1, NVG_CW);
         nvg::arc(cx, cy, r1, a1, a0, NVG_CCW);
@@ -39,7 +39,9 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
         ay = cy + sinf(a0) * (r0 + r1) * 0.5f;
         bx = cx + cosf(a1) * (r0 + r1) * 0.5f;
         by = cy + sinf(a1) * (r0 + r1) * 0.5f;
-        paint = nvg::linearGradient(ax, ay, bx, by, kb::viz2d::convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR), kb::viz2d::convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
+        paint = nvg::linearGradient(ax, ay, bx, by,
+                kb::viz2d::convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
+                kb::viz2d::convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
         nvg::fillPaint(paint);
         nvg::fill();
     }
@@ -54,7 +56,7 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
     // Selector
     nvg::save();
     nvg::translate(cx, cy);
-    nvg::rotate(hue * NVG_PI * 2);
+    nvg::rotate((hue/255.0) * CV_PI * 2);
 
     // Marker on
     nvg::strokeWidth(2.0f);
@@ -82,7 +84,7 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
     nvg::lineTo(ax, ay);
     nvg::lineTo(bx, by);
     nvg::closePath();
-    paint = nvg::linearGradient(r, 0, ax, ay, kb::viz2d::convert(cv::Scalar(hue * 180, 128, 255, 255), cv::COLOR_HLS2BGR), cv::Scalar(255, 255, 255, 255));
+    paint = nvg::linearGradient(r, 0, ax, ay, kb::viz2d::convert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
     nvg::fillPaint(paint);
     nvg::fill();
     paint = nvg::linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));
@@ -144,10 +146,8 @@ int main(int argc, char **argv) {
     while (true) {
         //we use time to calculated the current hue
         float time = cv::getTickCount() / cv::getTickFrequency();
-        //nanovg hue fading between 0.0f and 1.0f
-        float nvgHue = (sinf(time * 0.12f) + 1.0f) / 2.0f;
-        //opencv hue fading between 0 and 255
-        int cvHue = (42 + uint8_t(std::round(((1.0 - sinf(time * 0.12f)) + 1.0f) * 128.0))) % 255;
+        //nanovg hue fading between 0.0f and 255.0f
+        float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
 
         if (!v2d->captureVA())
             break;
@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
             //Extract the hue channel
             cv::extractChannel(hsv, hueChannel, 0);
             //Set the current hue
-            hueChannel.setTo(cvHue);
+            hueChannel.setTo(hue);
             //Insert the hue channel
             cv::insertChannel(hueChannel, hsv, 0);
             //Color-conversion from HSV to RGB. (OpenCL)
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 
         //Render using nanovg
         v2d->nanovg([&](const cv::Size &sz) {
-            drawColorwheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, nvgHue);
+            drawColorwheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
         });
 
         v2d->writeVA();

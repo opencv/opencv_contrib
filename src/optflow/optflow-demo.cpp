@@ -132,7 +132,7 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
                 upNextPoints.push_back(pt /= scaleFactor);
             }
 
-            using namespace kb;
+            using namespace kb::viz2d;
             nvg::beginPath();
             nvg::strokeWidth(stroke);
             nvg::strokeColor(color);
