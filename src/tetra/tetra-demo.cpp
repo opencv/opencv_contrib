@@ -1,6 +1,7 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/subsystems.hpp"
+#include "../common/viz2d.hpp"
+#include "../common/util.hpp"
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
@@ -80,42 +81,40 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb;
+    using namespace kb::viz2d;
 
-    cv::Ptr<kb::Window> window = new kb::Window(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+    print_system_info();
+//    if(!v2d->isOffscreen())
+        v2d->setVisible(true);
 
-    //Print system information
-    kb::print_system_info();
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 
-    window->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, window->getSize(), 0);
-
-    window->render([](const cv::Size &size) {
+    v2d->opengl([](const cv::Size &size) {
         //Initialize the OpenGL scene
         init_scene(size.width, size.height);
     });
 
     while (true) {
         //Render using OpenGL
-        window->render([](const cv::Size &size) {
+        v2d->opengl([](const cv::Size &size) {
             render_scene(size.width, size.height);
         });
 
         //Aquire the frame buffer for use by OpenCL
-        window->compute([](cv::UMat &frameBuffer) {
+        v2d->opencl([](cv::UMat &frameBuffer) {
             //Glow effect (OpenCL)
             glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
         });
 
-        window->writeVA();
+        v2d->writeVA();
 
-        update_fps(window);
+        update_fps(v2d, false);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if (!window->display())
+        if (!v2d->display())
             break;
     }
-
-    window->terminate();
 
     return 0;
 }
