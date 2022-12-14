@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
     print_system_info();
-//    if(!v2d->isOffscreen())
+    if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
