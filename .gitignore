@@ -6,6 +6,10 @@ experiments/
 src/*/*.o
 src/*/*.dep
 src/*/*.d
+src/*/*/*.o
+src/*/*/*.dep
+src/*/*/*.d
+src/common/libviz2d.so
 src/tetra/tetra-demo
 src/video/video-demo
 src/nanovg/nanovg-demo
