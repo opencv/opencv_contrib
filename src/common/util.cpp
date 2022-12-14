@@ -91,18 +91,18 @@ cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     static cv::Mat tmpIn(1,1,CV_8UC3);
     static cv::Mat tmpOut(1,1,CV_8UC3);
     double srcC0 = src[0];
-    switch(code) {
+    switch (code) {
     case cv::COLOR_HSV2BGR:
     case cv::COLOR_HSV2RGB:
     case cv::COLOR_HLS2BGR:
     case cv::COLOR_HLS2RGB:
-        srcC0 = ((30 + uint8_t(180 - src[0])) + 90) % 180;
-                break;
+        srcC0 = ((120 + uint8_t(180 - src[0]))) % 180;
+        break;
     case cv::COLOR_HSV2BGR_FULL:
     case cv::COLOR_HSV2RGB_FULL:
     case cv::COLOR_HLS2BGR_FULL:
     case cv::COLOR_HLS2RGB_FULL:
-        srcC0 = ((42 + uint8_t(255 - src[0])) + 127) % 255;
+        srcC0 = ((170 + uint8_t(255 - src[0]))) % 255;
         break;
     default:
         break;
@@ -111,7 +111,25 @@ cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
 
     cvtColor(tmpIn, tmpOut, code);
     const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
-    cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
+    double dstC2 = vdst[2];
+
+    switch (code) {
+    case cv::COLOR_BGR2HSV:
+    case cv::COLOR_RGB2HSV:
+    case cv::COLOR_BGR2HLS:
+    case cv::COLOR_RGB2HLS:
+        dstC2 = ((int16_t(180 - src[0])) - 120) % 180;
+        break;
+    case cv::COLOR_BGR2HSV_FULL:
+    case cv::COLOR_RGB2HSV_FULL:
+    case cv::COLOR_BGR2HLS_FULL:
+    case cv::COLOR_RGB2HLS_FULL:
+        dstC2 = ((int16_t(255 - src[0])) - 170) % 255;
+        break;
+    default:
+        break;
+    }
+    cv::Scalar dst(vdst[0],vdst[1],dstC2, src[3]);
     return dst;
 }
 
