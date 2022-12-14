@@ -548,7 +548,7 @@ TEST(Charuco, testCharucoCornersCollinear_true)
 
     Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
 
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
@@ -589,7 +589,7 @@ TEST(Charuco, testCharucoCornersCollinear_false)
 
     Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
 
-    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
 
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);

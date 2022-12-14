@@ -404,7 +404,7 @@ From all the provided dictionaries, it is recommended to choose the smallest one
 For instance, if you need 200 markers of 6x6 bits, it is better to use `DICT_6X6_250` than `DICT_6X6_1000`.
 The smaller the dictionary, the higher the inter-marker distance.
 
-The list of available predefined dictionaries can be found in the documentation for the `PREDEFINED_DICTIONARY` enum.
+The list of available predefined dictionaries can be found in the documentation for the `PredefinedDictionaryType` enum.
 
 ### Automatic dictionary generation
 
