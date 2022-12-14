@@ -23,13 +23,37 @@ struct GlyphPosition {
 };
 
 struct Paint {
+    Paint() {
+    }
+    Paint(const NVGpaint& np) {
+        memcpy(this->xform, np.xform, sizeof(this->xform));
+        memcpy(this->extent, np.extent, sizeof(this->extent));
+        this->radius = np.radius;
+        this->feather = np.feather;
+        this->innerColor = cv::Scalar(np.innerColor.rgba[2] * 255, np.innerColor.rgba[1] * 255, np.innerColor.rgba[0] * 255, np.innerColor.rgba[3] * 255);
+        this->outerColor = cv::Scalar(np.outerColor.rgba[2] * 255, np.outerColor.rgba[1] * 255, np.outerColor.rgba[0] * 255, np.outerColor.rgba[3] * 255);
+        this->image = np.image;
+    }
+
+    NVGpaint toNVGpaint() {
+        NVGpaint np;
+        memcpy(np.xform, this->xform, sizeof(this->xform));
+        memcpy(np.extent, this->extent, sizeof(this->extent));
+        np.radius = this->radius;
+        np.feather = this->feather;
+        np.innerColor = nvgRGBA(this->innerColor[2], this->innerColor[1], this->innerColor[0], this->innerColor[3]);
+        np.outerColor = nvgRGBA(this->outerColor[2], this->outerColor[1], this->outerColor[0], this->outerColor[3]);
+        np.image = this->image;
+        return np;
+    }
+
     float xform[6];
     float extent[2];
-    float radius;
-    float feather;
+    float radius = 0;
+    float feather = 0;
     cv::Scalar innerColor;
     cv::Scalar outerColor;
-    int image;
+    int image = 0;
 };
 
 namespace detail {
@@ -119,6 +143,14 @@ void ellipse(float cx, float cy, float rx, float ry);
 void circle(float cx, float cy, float r);
 void fill();
 void stroke();
+
+Paint linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol);
+Paint boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol);
+Paint radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol);
+Paint imagePattern(float ox, float oy, float ex, float ey, float angle, int image, float alpha);
+void scissor(float x, float y, float w, float h);
+void intersectScissor(float x, float y, float w, float h);
+void resetScissor();
 };
 
 static NVG* nvg_instance;
@@ -200,6 +232,14 @@ void ellipse(float cx, float cy, float rx, float ry);
 void circle(float cx, float cy, float r);
 void fill();
 void stroke();
+
+Paint linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol);
+Paint boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol);
+Paint radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol);
+Paint imagePattern(float ox, float oy, float ex, float ey, float angle, int image, float alpha);
+void scissor(float x, float y, float w, float h);
+void intersectScissor(float x, float y, float w, float h);
+void resetScissor();
 } // namespace nvg
 } // namespace kb
 

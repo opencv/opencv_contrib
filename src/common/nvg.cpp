@@ -131,15 +131,7 @@ void NVG::strokeColor(const cv::Scalar& bgra) {
 }
 
 void NVG::strokePaint(Paint paint) {
-    NVGpaint np;
-    memcpy(paint.xform, np.xform, 6);
-    memcpy(paint.extent, np.extent, 2);
-    np.radius = paint.radius;
-    np.feather = paint.feather;
-    np.innerColor = nvgRGBA(paint.innerColor[2],paint.innerColor[1],paint.innerColor[0],paint.innerColor[3]);
-    np.outerColor = nvgRGBA(paint.outerColor[2],paint.outerColor[1],paint.outerColor[0],paint.outerColor[3]);;
-    np.image = paint.image;
-
+    NVGpaint np = paint.toNVGpaint();
     nvgStrokePaint(getContext(), np);
 }
 
@@ -148,15 +140,7 @@ void NVG::fillColor(const cv::Scalar& bgra) {
 }
 
 void NVG::fillPaint(Paint paint) {
-    NVGpaint np;
-    memcpy(paint.xform, np.xform, 6);
-    memcpy(paint.extent, np.extent, 2);
-    np.radius = paint.radius;
-    np.feather = paint.feather;
-    np.innerColor = nvgRGBA(paint.innerColor[2],paint.innerColor[1],paint.innerColor[0],paint.innerColor[3]);
-    np.outerColor = nvgRGBA(paint.outerColor[2],paint.outerColor[1],paint.outerColor[0],paint.outerColor[3]);;
-    np.image = paint.image;
-
+    NVGpaint np = paint.toNVGpaint();
     nvgFillPaint(getContext(), np);
 }
 
@@ -323,7 +307,41 @@ void NVG::fill() {
 void NVG::stroke() {
     nvgStroke(getContext());
 }
-} //namespace detail
+
+Paint NVG::linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol) {
+    NVGpaint np = nvgLinearGradient(getContext(), sx, sy, ex, ey, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
+    Paint p(np);
+    cerr << "paint " << p.innerColor << ":" << p.outerColor << endl;
+    return p;
+}
+
+Paint NVG::boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol) {
+    NVGpaint np = nvgBoxGradient(getContext(), x, y, w, h, r, f, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
+    return Paint(np);
+}
+
+Paint NVG::radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol) {
+    NVGpaint np = nvgRadialGradient(getContext(), cx, cy, inr, outr, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
+    return Paint(np);
+}
+
+Paint NVG::imagePattern(float ox, float oy, float ex, float ey, float angle, int image, float alpha) {
+    NVGpaint np = nvgImagePattern(getContext(), ox, oy, ex, ey, angle, image, alpha);
+    return Paint(np);
+}
+
+void NVG::scissor(float x, float y, float w, float h) {
+    nvgScissor(getContext(), x, y, w, h);
+}
+
+void NVG::intersectScissor(float x, float y, float w, float h) {
+    nvgIntersectScissor(getContext(), x, y, w, h);
+}
+
+void NVG::resetScissor() {
+    nvgResetScissor(getContext());
+}
+}
 
 int createFont(const char* name, const char* filename) {
     return detail::get_current_context()->createFont(name,filename);
@@ -595,5 +613,32 @@ void stroke() {
     detail::get_current_context()->stroke();
 }
 
+Paint linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol) {
+    return detail::get_current_context()->linearGradient(sx, sy, ex, ey, icol, ocol);
+}
+
+Paint boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol) {
+    return detail::get_current_context()->boxGradient(x, y, w, h, r, f, icol, ocol);
+}
+
+Paint radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol) {
+    return detail::get_current_context()->radialGradient(cx, cy, inr, outr, icol, ocol);
+}
+
+Paint imagePattern(float ox, float oy, float ex, float ey, float angle, int image, float alpha) {
+    return detail::get_current_context()->imagePattern(ox, oy, ex, ey, angle, image, alpha);
+}
+
+void scissor(float x, float y, float w, float h) {
+    detail::get_current_context()->scissor(x, y, w, h);
+}
+
+void intersectScissor(float x, float y, float w, float h) {
+    detail::get_current_context()->intersectScissor(x, y, w, h);
+}
+
+void resetScissor() {
+    detail::get_current_context()->resetScissor();
+}
 } //namespace nvg
 } //namespace kb
