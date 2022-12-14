@@ -90,8 +90,24 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphical) {
 cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     static cv::Mat tmpIn(1,1,CV_8UC3);
     static cv::Mat tmpOut(1,1,CV_8UC3);
-
-    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(src[0], src[1], src[2]);
+    double srcC0 = src[0];
+    switch(code) {
+    case cv::COLOR_HSV2BGR:
+    case cv::COLOR_HSV2RGB:
+    case cv::COLOR_HLS2BGR:
+    case cv::COLOR_HLS2RGB:
+        srcC0 = ((30 + uint8_t(180 - src[0])) + 90) % 180;
+                break;
+    case cv::COLOR_HSV2BGR_FULL:
+    case cv::COLOR_HSV2RGB_FULL:
+    case cv::COLOR_HLS2BGR_FULL:
+    case cv::COLOR_HLS2RGB_FULL:
+        srcC0 = ((42 + uint8_t(255 - src[0])) + 127) % 255;
+        break;
+    default:
+        break;
+    }
+    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(srcC0, src[1], src[2]);
 
     cvtColor(tmpIn, tmpOut, code);
     const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
