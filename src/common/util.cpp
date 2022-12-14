@@ -86,5 +86,18 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphical) {
     tick.start();
     ++cnt;
 }
+
+cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
+    static cv::Mat tmpIn(1,1,CV_8UC3);
+    static cv::Mat tmpOut(1,1,CV_8UC3);
+
+    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(src[0], src[1], src[2]);
+
+    cvtColor(tmpIn, tmpOut, code);
+    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
+    cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
+    return dst;
 }
-} //namespace kb
+
+}
+}

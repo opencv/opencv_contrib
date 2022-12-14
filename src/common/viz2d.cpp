@@ -9,6 +9,7 @@ namespace viz2d {
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         size_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
     assert(frameBufferSize_.width >= size_.width && frameBufferSize_.height >= size_.height);
+    initialize();
 }
 
 Viz2D::~Viz2D() {

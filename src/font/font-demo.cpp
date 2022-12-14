@@ -37,25 +37,11 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
-    static cv::Mat tmpIn(1,1,CV_8UC3);
-    static cv::Mat tmpOut(1,1,CV_8UC3);
-
-    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(src[0], src[1], src[2]);
-
-    cvtColor(tmpIn, tmpOut, code);
-    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
-    cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
-    return dst;
-}
-
 int main(int argc, char **argv) {
     using namespace kb::viz2d;
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
-    v2d->initialize();
     print_system_info();
-
     if(!v2d->isOffscreen()) {
         v2d->setVisible(true);
     }

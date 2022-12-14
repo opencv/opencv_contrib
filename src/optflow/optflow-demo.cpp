@@ -237,13 +237,12 @@ int main(int argc, char **argv) {
     }
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
-    v2d->initialize();
     print_system_info();
-
     if(!v2d->isOffscreen()) {
         setup_gui(v2d);
         v2d->setVisible(true);
     }
+
 
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 

@@ -22,6 +22,7 @@ std::string get_gl_info();
 std::string get_cl_info();
 void print_system_info();
 void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
+cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 }
 }
 
