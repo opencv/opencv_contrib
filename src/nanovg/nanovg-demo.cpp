@@ -82,7 +82,7 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
     nvg::lineTo(ax, ay);
     nvg::lineTo(bx, by);
     nvg::closePath();
-    paint = nvg::linearGradient(r, 0, ax, ay, kb::viz2d::convert(cv::Scalar(hue * 180, 255, 128, 255), cv::COLOR_HLS2BGR), cv::Scalar(255, 255, 255, 255));
+    paint = nvg::linearGradient(r, 0, ax, ay, kb::viz2d::convert(cv::Scalar(hue * 180, 128, 255, 255), cv::COLOR_HLS2BGR), cv::Scalar(255, 255, 255, 255));
     nvg::fillPaint(paint);
     nvg::fill();
     paint = nvg::linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));
