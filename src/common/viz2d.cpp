@@ -23,8 +23,8 @@ Viz2D::~Viz2D() {
         delete clvaContext_;
     if (clglContext_)
         delete clglContext_;
-    glfwDestroyWindow(getGLFWWindow());
-    glfwTerminate();
+//    glfwDestroyWindow(getGLFWWindow());
+//    glfwTerminate();
 }
 
 void Viz2D::initialize() {
