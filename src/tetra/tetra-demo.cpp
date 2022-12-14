@@ -16,9 +16,9 @@ constexpr int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 +
 using std::cerr;
 using std::endl;
 
-void init_scene(unsigned long w, unsigned long h) {
-    glViewport(0, 0, w, h);
+void init_scene(const cv::Size& sz) {
     //Initialize the OpenGL scene
+    glViewport(0, 0, sz.width, sz.height);
     glColor3f(1.0, 1.0, 1.0);
 
     glEnable(GL_CULL_FACE);
@@ -35,9 +35,9 @@ void init_scene(unsigned long w, unsigned long h) {
     glRotatef(70, 0, 1, 0);
 }
 
-void render_scene(unsigned long w, unsigned long h) {
-    glViewport(0, 0, w, h);
+void render_scene(const cv::Size& sz) {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
+    glViewport(0, 0, sz.width, sz.height);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -90,16 +90,11 @@ int main(int argc, char **argv) {
 
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 
-    v2d->opengl([](const cv::Size &size) {
-        //Initialize the OpenGL scene
-        init_scene(size.width, size.height);
-    });
+    v2d->opengl(init_scene);
 
     while (true) {
         //Render using OpenGL
-        v2d->opengl([](const cv::Size &size) {
-            render_scene(size.width, size.height);
-        });
+        v2d->opengl(render_scene);
 
         //Aquire the frame buffer for use by OpenCL
         v2d->opencl([](cv::UMat &frameBuffer) {

@@ -18,9 +18,9 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-void init_scene(unsigned long w, unsigned long h) {
+void init_scene(const cv::Size& sz) {
     //Initialize the OpenGL scene
-    glViewport(0, 0, w, h);
+    glViewport(0, 0, sz.width, sz.height);
     glColor3f(1.0, 1.0, 1.0);
 
     glEnable(GL_CULL_FACE);
@@ -37,9 +37,9 @@ void init_scene(unsigned long w, unsigned long h) {
     glRotatef(70, 0, 1, 0);
 }
 
-void render_scene(unsigned long w, unsigned long h) {
+void render_scene(const cv::Size& sz) {
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
-    glViewport(0, 0, w, h);
+    glViewport(0, 0, sz.width, sz.height);
     glRotatef(1, 0, 1, 0);
     glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 
@@ -93,8 +93,6 @@ int main(int argc, char **argv) {
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
-
-
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
@@ -105,20 +103,15 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, {width, height}, VA_HW_DEVICE_INDEX);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, v2d->getFrameBufferSize(), VA_HW_DEVICE_INDEX);
 
-    v2d->opengl([](const cv::Size& sz) {
-        init_scene(sz.width, sz.height);
-    });
+    v2d->opengl(init_scene);
 
     while (true) {
         if(!v2d->captureVA())
             break;
 
-        v2d->opengl([](const cv::Size& sz) {
-            //Render using OpenGL
-            render_scene(sz.width, sz.height);
-        });
+        v2d->opengl(render_scene);
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Glow effect (OpenCL)
