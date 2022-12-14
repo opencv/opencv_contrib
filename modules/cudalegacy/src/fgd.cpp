@@ -365,49 +365,30 @@ namespace
         }
     }
 
+
     int findForegroundRegions(GpuMat& d_foreground, Mat& h_foreground, std::vector< std::vector<Point> >& foreground_regions,
                               CvMemStorage* storage, const FGDParams& params)
     {
         int region_count = 0;
 
         // Discard under-size foreground regions:
-
         d_foreground.download(h_foreground);
-        IplImage ipl_foreground = cvIplImage(h_foreground);
-        CvSeq* first_seq = 0;
 
-        cvFindContours(&ipl_foreground, storage, &first_seq, sizeof(CvContour), CV_RETR_LIST);
+        std::vector<std::vector<cv::Point> > contours, result;
+        std::vector<cv::Vec4i> hierarchy;
+        cv::findContours(h_foreground, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+        CV_Assert(contours.size() > 0);
 
-        for (CvSeq* seq = first_seq; seq; seq = seq->h_next)
+        // adding top-level contours to results, filtering by size
+        for (int i = 0; i < contours.size(); ++i)
         {
-            CvContour* cnt = reinterpret_cast<CvContour*>(seq);
-
-            if (cnt->rect.width * cnt->rect.height < params.minArea || (params.is_obj_without_holes && CV_IS_SEQ_HOLE(seq)))
-            {
-                // Delete under-size contour:
-                CvSeq* prev_seq = seq->h_prev;
-                if (prev_seq)
-                {
-                    prev_seq->h_next = seq->h_next;
-
-                    if (seq->h_next)
-                        seq->h_next->h_prev = prev_seq;
-                }
-                else
-                {
-                    first_seq = seq->h_next;
-
-                    if (seq->h_next)
-                        seq->h_next->h_prev = NULL;
-                }
-            }
-            else
-            {
-                region_count++;
-            }
+            const std::vector<cv::Point> & cnt = contours[i];
+            const cv::Rect brect = cv::boundingRect(cnt);
+            bool isHole = hierarchy[i][3] >= 0; // contour with parent is hole
+            if (brect.area() < params.minArea || isHole && params.is_obj_without_holes)
+                continue;
+            foreground_regions.push_back(cnt);
         }
-
-        seqToContours(first_seq, storage, foreground_regions);
         h_foreground.setTo(0);
 
         drawContours(h_foreground, foreground_regions, -1, Scalar::all(255), -1);
