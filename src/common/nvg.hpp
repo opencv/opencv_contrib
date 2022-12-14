@@ -6,20 +6,13 @@
 #include <nanogui/opengl.h>
 
 namespace kb {
+namespace viz2d {
 namespace nvg {
 
-struct TextRow {
-    const char* start;  // Pointer to the input text where the row starts.
-    const char* end;    // Pointer to the input text where the row ends (one past the last character).
-    const char* next;   // Pointer to the beginning of the next row.
-    float width;        // Logical width of the row.
-    float minx, maxx;   // Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
+struct TextRow : public NVGtextRow {
 };
 
-struct GlyphPosition {
-    const char* str;    // Position of the glyph in the input string.
-    float x;            // The x-coordinate of the logical glyph position.
-    float minx, maxx;   // The bounds of the glyph shape.
+struct GlyphPosition : public NVGglyphPosition {
 };
 
 struct Paint {
@@ -156,7 +149,7 @@ void resetScissor();
 static NVG* nvg_instance;
 
 void set_current_context(NVGcontext* ctx);
-NVG* get_current_context();
+static NVG* get_current_context();
 } // namespace detail
 
 int createFont(const char* name, const char* filename);
@@ -240,8 +233,9 @@ Paint imagePattern(float ox, float oy, float ex, float ey, float angle, int imag
 void scissor(float x, float y, float w, float h);
 void intersectScissor(float x, float y, float w, float h);
 void resetScissor();
-} // namespace nvg
-} // namespace kb
+}
+}
+}
 
 
 

@@ -1,6 +1,7 @@
 #include "nvg.hpp"
 
 namespace kb {
+namespace viz2d {
 namespace nvg {
 namespace detail {
 class NVG;
@@ -11,7 +12,7 @@ void set_current_context(NVGcontext* ctx) {
     nvg_instance = new NVG(ctx);
 }
 
-NVG* get_current_context() {
+static NVG* get_current_context() {
     assert(nvg_instance != nullptr);
     return nvg_instance;
 }
@@ -81,15 +82,7 @@ void NVG::textBoxBounds(float x, float y, float breakRowWidth, const char* strin
 }
 
 int NVG::textGlyphPositions(float x, float y, const char* string, const char* end, GlyphPosition* positions, int maxPositions) {
-    std::vector<NVGglyphPosition> gp(maxPositions);
-    int result = nvgTextGlyphPositions(getContext(), x, y, string, end, gp.data(), maxPositions);
-    for(int i = 0; i < maxPositions; ++i) {
-        positions[i].str = gp[i].str;
-        positions[i].x = gp[i].x;
-        positions[i].minx = gp[i].minx;
-        positions[i].maxx = gp[i].maxx;
-    }
-    return result;
+    return nvgTextGlyphPositions(getContext(), x, y, string, end, positions, maxPositions);
 }
 
 void NVG::textMetrics(float* ascender, float* descender, float* lineh) {
@@ -97,17 +90,7 @@ void NVG::textMetrics(float* ascender, float* descender, float* lineh) {
 }
 
 int NVG::textBreakLines(const char* string, const char* end, float breakRowWidth, TextRow* rows, int maxRows) {
-    NVGtextRow tr[maxRows];
-    int result = nvgTextBreakLines(getContext(),string, end, breakRowWidth, tr, maxRows);
-    for(int i = 0; i < maxRows; ++i) {
-        rows[i].start = tr[i].start;
-        rows[i].end = tr[i].end;
-        rows[i].next = tr[i].next;
-        rows[i].width = tr[i].width;
-        rows[i].minx = tr[i].minx;
-        rows[i].maxx = tr[i].maxx;
-    }
-    return result;
+    return nvgTextBreakLines(getContext(),string, end, breakRowWidth, rows, maxRows);
 }
 
 void NVG::save() {
@@ -310,9 +293,7 @@ void NVG::stroke() {
 
 Paint NVG::linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol) {
     NVGpaint np = nvgLinearGradient(getContext(), sx, sy, ex, ey, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
-    Paint p(np);
-    cerr << "paint " << p.innerColor << ":" << p.outerColor << endl;
-    return p;
+    return Paint(np);
 }
 
 Paint NVG::boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol) {
@@ -640,5 +621,6 @@ void intersectScissor(float x, float y, float w, float h) {
 void resetScissor() {
     detail::get_current_context()->resetScissor();
 }
-} //namespace nvg
-} //namespace kb
+}
+}
+}
