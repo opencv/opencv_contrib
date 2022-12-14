@@ -69,8 +69,10 @@ using namespace cv::cuda;
 
 __host__ __forceinline__ void checkCudaError(cudaError_t err, const char* file, const int line, const char* func)
 {
-    if (cudaSuccess != err)
+    if (cudaSuccess != err) {
+        cudaGetLastError(); // reset the last stored error to cudaSuccess
         cv::error(cv::Error::GpuApiCallError, cudaGetErrorString(err), func, file, line);
+    }
 }
 
 #define CV_CUDEV_SAFE_CALL(expr) cv::cudev::checkCudaError((expr), __FILE__, __LINE__, CV_Func)
