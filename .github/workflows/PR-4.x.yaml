@@ -13,7 +13,6 @@ jobs:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U20.yaml@main
 
   Ubuntu2004-x64-CUDA:
-    if: "${{ contains(github.event.pull_request.labels.*.name, 'category: cuda') }}"
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U20-Cuda.yaml@main
 
   Windows10-x64:
