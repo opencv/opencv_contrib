@@ -55,15 +55,14 @@ class CV_ArucoBoardPose : public cvtest::BaseTest {
     public:
     CV_ArucoBoardPose(ArucoAlgParams arucoAlgParams)
     {
-        Ptr<aruco::DetectorParameters> params;
-        Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-        params = aruco::DetectorParameters::create();
-        params->minDistanceToBorder = 3;
+        aruco::DetectorParameters params;
+        aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+        params.minDistanceToBorder = 3;
         if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3) {
-            params->useAruco3Detection = true;
-            params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
-            params->minSideLengthCanonicalImg = 16;
-            params->errorCorrectionRate = 0.8;
+            params.useAruco3Detection = true;
+            params.cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+            params.minSideLengthCanonicalImg = 16;
+            params.errorCorrectionRate = 0.8;
         }
         detector = aruco::ArucoDetector(dictionary, params);
     }
@@ -78,21 +77,21 @@ void CV_ArucoBoardPose::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.dictionary);
-    Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+    const int sizeX = 3, sizeY = 3;
+    aruco::DetectorParameters detectorParameters = detector.getDetectorParameters();
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.15) {
         for(int yaw = -55; yaw <= 50; yaw += 25) {
             for(int pitch = -55; pitch <= 50; pitch += 25) {
                 vector<int> tmpIds;
-                for(unsigned int i = 0; i < gridboard->getIds().size(); i++)
+                for(int i = 0; i < sizeX*sizeY; i++)
                     tmpIds.push_back((iter + int(i)) % 250);
-                gridboard->setIds(tmpIds);
+                Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(sizeX, sizeY, 0.02f, 0.005f, detector.getDictionary(), tmpIds);
                 int markerBorder = iter % 2 + 1;
                 iter++;
                 // create synthetic image
@@ -100,17 +99,19 @@ void CV_ArucoBoardPose::run(int) {
                                        imgSize, markerBorder);
                 vector<vector<Point2f> > corners;
                 vector<int> ids;
-                detector.params->markerBorderBits = markerBorder;
+                detectorParameters.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(detectorParameters);
                 detector.detectMarkers(img, corners, ids);
 
                 ASSERT_EQ(ids.size(), gridboard->getIds().size());
 
                 // estimate pose
                 Mat rvec, tvec;
-                aruco::estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
+                Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
+                estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
                 // check axes
-                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->getRightBottomBorder().x);
+                vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->getRightBottomCorner().x);
                 vector<Point2f> topLeft = getMarkerById(gridboard->getIds()[0], corners, ids);
                 ASSERT_NEAR(topLeft[0].x, axes[0].x, 2.f);
                 ASSERT_NEAR(topLeft[0].y, axes[0].y, 2.f);
@@ -164,13 +165,13 @@ class CV_ArucoRefine : public cvtest::BaseTest {
     public:
     CV_ArucoRefine(ArucoAlgParams arucoAlgParams)
     {
-        Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-        Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-        params->minDistanceToBorder = 3;
-        params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
+        aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+        aruco::DetectorParameters params;
+        params.minDistanceToBorder = 3;
+        params.cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
         if (arucoAlgParams == ArucoAlgParams::USE_ARUCO3)
-            params->useAruco3Detection = true;
-        Ptr<aruco::RefineParameters> refineParams = makePtr<aruco::RefineParameters>(10.f, 3.f, true);
+            params.useAruco3Detection = true;
+        aruco::RefineParameters refineParams(10.f, 3.f, true);
         detector = aruco::ArucoDetector(dictionary, params, refineParams);
     }
 
@@ -185,12 +186,12 @@ void CV_ArucoRefine::run(int) {
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
-    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.dictionary);
-    Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
+    Ptr<aruco::GridBoard> gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.getDictionary());
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
     cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
     cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+    aruco::DetectorParameters detectorParameters = detector.getDetectorParameters();
 
     // for different perspectives
     for(double distance = 0.2; distance <= 0.4; distance += 0.2) {
@@ -199,7 +200,7 @@ void CV_ArucoRefine::run(int) {
                 vector<int> tmpIds;
                 for(unsigned int i = 0; i < gridboard->getIds().size(); i++)
                     tmpIds.push_back(iter + int(i) % 250);
-                gridboard->setIds(tmpIds);
+                gridboard = aruco::GridBoard::create(3, 3, 0.02f, 0.005f, detector.getDictionary(), tmpIds);
                 int markerBorder = iter % 2 + 1;
                 iter++;
 
@@ -209,7 +210,8 @@ void CV_ArucoRefine::run(int) {
                 // detect markers
                 vector<vector<Point2f> > corners, rejected;
                 vector<int> ids;
-                detector.params->markerBorderBits = markerBorder;
+                detectorParameters.markerBorderBits = markerBorder;
+                detector.setDetectorParameters(detectorParameters);
                 detector.detectMarkers(img, corners, ids, rejected);
 
                 // remove a marker from detection
@@ -221,8 +223,9 @@ void CV_ArucoRefine::run(int) {
                 ids.erase(ids.begin(), ids.begin() + 1);
 
                 // try to refind the erased marker
+                Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
                 detector.refineDetectedMarkers(img, board, corners, ids, rejected, cameraMatrix,
-                                             distCoeffs, noArray());
+                                               distCoeffs, noArray());
 
                 // check result
                 if((int)ids.size() < markersBeforeDelete) {
@@ -268,8 +271,6 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
                               0., 0., 1 };
     cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64F, matrixData);
 
-    cv::Ptr<cv::aruco::Board> boardPtr = makePtr<cv::aruco::Board>();
-    cv::aruco::Board& board = *boardPtr;
 
     vector<cv::Point3f> pts3d1, pts3d2;
     pts3d1.push_back(cv::Point3f(0.326198f, -0.030621f, 0.303620f));
@@ -282,8 +283,9 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     pts3d2.push_back(cv::Point3f(-0.105289f, -0.102120f, 0.237120f));
     pts3d2.push_back(cv::Point3f(-0.102926f, -0.032235f, 0.240349f));
 
-    board.setObjPoints({pts3d1, pts3d2});
-    board.setIds(vector<int>{0, 1});
+    vector<int> tmpIds = {0, 1};
+    vector<vector<Point3f> > tmpObjectPoints = {pts3d1, pts3d2};
+    Ptr<aruco::Board> board = aruco::Board::create(tmpObjectPoints, aruco::getPredefinedDictionary(0), tmpIds);
 
     vector<vector<Point2f> > corners;
     vector<Point2f> pts2d;
@@ -300,12 +302,12 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     corners.push_back(pts2d);
 
     Vec3d rvec, tvec;
-    int nUsed = cv::aruco::estimatePoseBoard(corners, board.getIds(), boardPtr, cameraMatrix, Mat(), rvec, tvec);
+    int nUsed = cv::aruco::estimatePoseBoard(corners, board->getIds(), board, cameraMatrix, Mat(), rvec, tvec);
     ASSERT_EQ(nUsed, 2);
 
     cv::Matx33d rotm; cv::Point3d out;
     cv::Rodrigues(rvec, rotm);
-    out = cv::Point3d(tvec) + rotm*Point3d(board.getObjPoints()[0][0]);
+    out = cv::Point3d(tvec) + rotm*Point3d(board->getObjPoints()[0][0]);
     ASSERT_GT(out.z, 0);
 
     corners.clear(); pts2d.clear();
@@ -321,11 +323,11 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     pts2d.push_back(cv::Point2f(586.3f, 188.5f));
     corners.push_back(pts2d);
 
-    nUsed = cv::aruco::estimatePoseBoard(corners, board.getIds(), boardPtr, cameraMatrix, Mat(), rvec, tvec, true);
+    nUsed = cv::aruco::estimatePoseBoard(corners, board->getIds(), board, cameraMatrix, Mat(), rvec, tvec, true);
     ASSERT_EQ(nUsed, 2);
 
     cv::Rodrigues(rvec, rotm);
-    out = cv::Point3d(tvec) + rotm*Point3d(board.getObjPoints()[0][0]);
+    out = cv::Point3d(tvec) + rotm*Point3d(board->getObjPoints()[0][0]);
     ASSERT_GT(out.z, 0);
 }
 

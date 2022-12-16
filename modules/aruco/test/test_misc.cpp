@@ -13,14 +13,14 @@ TEST(CV_ArucoDrawMarker, regression_1226)
     int bwidth = 1600;
     int bheight = 1200;
 
-    cv::Ptr<cv::aruco::Dictionary> dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+    cv::aruco::Dictionary dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(squares_x, squares_y, 1.0, 0.75, dict);
     cv::Size sz(bwidth, bheight);
     cv::Mat mat;
 
     ASSERT_NO_THROW(
     {
-        board->draw(sz, mat, 0, 1);
+        board->generateImage(sz, mat, 0, 1);
     });
 }
 

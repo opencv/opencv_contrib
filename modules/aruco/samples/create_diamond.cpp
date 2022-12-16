@@ -86,8 +86,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::Dictionary> dictionary =
-        aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
 
     istringstream ss(idsString);
     vector< string > splittedIds;
@@ -104,7 +103,7 @@ int main(int argc, char *argv[]) {
         ids[i] = atoi(splittedIds[i].c_str());
 
     Mat markerImg;
-    aruco::drawCharucoDiamond(dictionary, ids, squareLength, markerLength, markerImg, margins,
+    aruco::drawCharucoDiamond(makePtr<aruco::Dictionary>(dictionary), ids, squareLength, markerLength, markerImg, margins,
                               borderBits);
 
     if(showImage) {

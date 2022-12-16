@@ -1,14 +1,14 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
-#ifndef __OPENCV_CHARUCO_HPP__
-#define __OPENCV_CHARUCO_HPP__
+#ifndef OPENCV_CHARUCO_HPP
+#define OPENCV_CHARUCO_HPP
 
 #include <opencv2/core.hpp>
 #include <vector>
 #include <opencv2/aruco.hpp>
-#include <opencv2/aruco_detector.hpp>
-#include <opencv2/aruco/aruco_calib_pose.hpp>
+#include <opencv2/objdetect/aruco_detector.hpp>
+#include <opencv2/aruco/aruco_calib.hpp>
 
 
 namespace cv {
@@ -90,7 +90,8 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
                                        OutputArrayOfArrays diamondCorners, OutputArray diamondIds,
                                        InputArray cameraMatrix = noArray(),
                                        InputArray distCoeffs = noArray(),
-                                       Ptr<Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::PREDEFINED_DICTIONARY_NAME::DICT_4X4_50));
+                                       Ptr<Dictionary> dictionary = makePtr<Dictionary>
+                                               (getPredefinedDictionary(PredefinedDictionaryType::DICT_4X4_50)));
 
 
 
@@ -134,8 +135,8 @@ CV_EXPORTS_W void drawDetectedDiamonds(InputOutputArray image, InputArrayOfArray
  * This function return the image of a ChArUco marker, ready to be printed.
  */
 CV_EXPORTS_W void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength,
-                                   int markerLength, OutputArray img, int marginSize = 0,
-                                   int borderBits = 1);
+                                     int markerLength, OutputArray img, int marginSize = 0,
+                                     int borderBits = 1);
 
 //! @}
 }

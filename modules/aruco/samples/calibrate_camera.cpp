@@ -39,8 +39,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
-#include <opencv2/aruco_detector.hpp>
-#include <opencv2/aruco/aruco_calib_pose.hpp>
+#include <opencv2/objdetect/aruco_detector.hpp>
+#include <opencv2/aruco/aruco_calib.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
 #include <iostream>
@@ -102,10 +102,10 @@ int main(int argc, char *argv[]) {
     if(parser.get<bool>("zt")) calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
     if(parser.get<bool>("pc")) calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    aruco::DetectorParameters detectorParams;
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -135,14 +135,14 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        bool readOk = dictionary.aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             cerr << "Invalid dictionary file" << endl;
             return 0;

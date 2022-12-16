@@ -65,14 +65,14 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     // canonical image
     Mat markerImg;
     const int markerSizePixels = 100;
-    aruco::drawMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
+    aruco::generateImageMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
 
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector<Point2f> corners;
 
     // get max coordinate of board
-    Point3f maxCoord = board->getRightBottomBorder();
+    Point3f maxCoord = board->getRightBottomCorner();
     // copy objPoints
     vector<Point3f> objPoints = board->getObjPoints()[markerIndex];
     // move the marker to the origin

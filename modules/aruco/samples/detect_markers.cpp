@@ -38,8 +38,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/aruco_detector.hpp>
-#include <opencv2/aruco/aruco_calib_pose.hpp>
+#include <opencv2/aruco.hpp>
 #include <iostream>
 #include "aruco_samples_utility.hpp"
 
@@ -81,10 +80,10 @@ int main(int argc, char *argv[]) {
     bool estimatePose = parser.has("c");
     float markerLength = parser.get<float>("l");
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    aruco::DetectorParameters detectorParams;
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
@@ -93,9 +92,9 @@ int main(int argc, char *argv[]) {
 
     if (parser.has("refine")) {
         //override cornerRefinementMethod read from config file
-        detectorParams->cornerRefinementMethod = parser.get<int>("refine");
+        detectorParams.cornerRefinementMethod = parser.get<aruco::CornerRefineMethod>("refine");
     }
-    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << detectorParams->cornerRefinementMethod << std::endl;
+    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << (int)detectorParams.cornerRefinementMethod << std::endl;
 
     int camId = parser.get<int>("ci");
 
@@ -109,14 +108,14 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        bool readOk = dictionary.aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             std::cerr << "Invalid dictionary file" << std::endl;
             return 0;

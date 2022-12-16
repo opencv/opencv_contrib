@@ -67,7 +67,7 @@ Marker Creation
 ------
 
 Before their detection, markers need to be printed in order to be placed in the environment.
-Marker images can be generated using the `drawMarker()` function.
+Marker images can be generated using the `generateImageMarker()` function.
 
 For example, lets analyze the following call:
 
@@ -404,7 +404,7 @@ From all the provided dictionaries, it is recommended to choose the smallest one
 For instance, if you need 200 markers of 6x6 bits, it is better to use `DICT_6X6_250` than `DICT_6X6_1000`.
 The smaller the dictionary, the higher the inter-marker distance.
 
-The list of available predefined dictionaries can be found in the documentation for the `PREDEFINED_DICTIONARY_NAME` enum.
+The list of available predefined dictionaries can be found in the documentation for the `PredefinedDictionaryType` enum.
 
 ### Automatic dictionary generation
 
@@ -644,7 +644,7 @@ This parameter indicates the width of the marker border. It is relative to the s
 value of 2 indicates the border has the width of two internal bits.
 
 This parameter needs to coincide with the border size of the markers you are using. The border size
-can be configured in the marker drawing functions such as `drawMarker()`.
+can be configured in the marker drawing functions such as `generateImageMarker()`.
 
 Default value:
 
