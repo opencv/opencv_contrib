@@ -45,9 +45,9 @@ dirs: docs
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-#	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-#	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 
 debian-release:
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} release

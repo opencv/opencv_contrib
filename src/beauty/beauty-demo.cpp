@@ -1,6 +1,8 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/subsystems.hpp"
+#include "../common/viz2d.hpp"
+#include "../common/nvg.hpp"
+#include "../common/util.hpp"
 
 #include <vector>
 #include <string>
@@ -16,7 +18,7 @@ constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125;
 constexpr bool OFFSCREEN = false;
-constexpr const char* OUTPUT_FILENAME = "beauty-demo.mkv";
+constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 constexpr int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
@@ -109,36 +111,38 @@ struct FaceFeatures {
     }
 };
 
-void draw_face_bg_mask(NVGcontext* vg, const vector<FaceFeatures> &lm) {
+void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
+    using namespace kb::viz2d;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
 
-        nvgBeginPath(vg);
-        nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
-        nvgEllipse(vg, rotRect.center.x, rotRect.center.y * 1.5, rotRect.size.width / 2, rotRect.size.height / 2);
-        nvgRotate(vg, rotRect.angle);
-        nvgFill(vg);
+        nvg::beginPath();
+        nvg::fillColor(cv::Scalar(255, 255, 255, 255));
+        nvg::ellipse(rotRect.center.x, rotRect.center.y * 1.5, rotRect.size.width / 2, rotRect.size.height / 2);
+        nvg::rotate(rotRect.angle);
+        nvg::fill();
     }
 }
 
-void draw_face_fg_mask(NVGcontext* vg, const vector<FaceFeatures> &lm) {
+void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
+    using namespace kb::viz2d;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         for (size_t j = 5; j < 8; ++j) {
-            nvgBeginPath(vg);
-            nvgFillColor(vg, nvgRGBA(255, 255, 255, 255));
-            nvgMoveTo(vg, features[j][0].x, features[j][0].y);
+            nvg::beginPath();
+            nvg::fillColor(cv::Scalar(255, 255, 255, 255));
+            nvg::moveTo(features[j][0].x, features[j][0].y);
             for (size_t k = 1; k < features[j].size(); ++k) {
-                nvgLineTo(vg, features[j][k].x, features[j][k].y);
+                nvg::lineTo(features[j][k].x, features[j][k].y);
             }
-            nvgClosePath(vg);
-            nvgFill(vg);
+            nvg::closePath();
+            nvg::fill();
         }
     }
 }
 
-void reduce_shadows(const cv::UMat& srcBGR, cv::UMat& dstBGR, double to_percent) {
+void reduce_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double to_percent) {
     assert(srcBGR.type() == CV_8UC3);
     static cv::UMat hsv;
     static vector<cv::UMat> hsvChannels;
@@ -146,7 +150,7 @@ void reduce_shadows(const cv::UMat& srcBGR, cv::UMat& dstBGR, double to_percent)
 
     cvtColor(srcBGR, hsv, cv::COLOR_BGR2HSV);
     cv::split(hsv, hsvChannels);
-    hsvChannels[2].convertTo(valueFloat, CV_32F, 1.0/255.0);
+    hsvChannels[2].convertTo(valueFloat, CV_32F, 1.0 / 255.0);
 
     double minIn, maxIn;
     cv::minMaxLoc(valueFloat, &minIn, &maxIn);
@@ -161,7 +165,7 @@ void reduce_shadows(const cv::UMat& srcBGR, cv::UMat& dstBGR, double to_percent)
     cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
 }
 
-void unsharp_mask(const cv::UMat& src, cv::UMat& dst, const float strength) {
+void unsharp_mask(const cv::UMat &src, cv::UMat &dst, const float strength) {
     static cv::UMat blurred;
     cv::medianBlur(src, blurred, 3);
     cv::UMat laplacian;
@@ -171,166 +175,143 @@ void unsharp_mask(const cv::UMat& src, cv::UMat& dst, const float strength) {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb;
+    using namespace kb::viz2d;
 
     if (argc != 2) {
         std::cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
 
-    //Initialize the application
-    app::init("Beauty Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
-    //Print system information
-    app::print_system_info();
-    app::run([&]() {
-        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+    print_system_info();
+    if (!v2d->isOffscreen())
+        v2d->setVisible(true);
 
-        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
+    auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+
+    if (!capture.isOpened()) {
+        cerr << "ERROR! Unable to open video input" << endl;
+        exit(-1);
+    }
+
+    float fps = capture.get(cv::CAP_PROP_FPS);
+    float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
+    float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, v2d->getFrameBufferSize(), VA_HW_DEVICE_INDEX);
+
+    cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(width * SCALE, height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+    cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
+    facemark->loadModel("assets/lbfmodel.yaml");
+    cv::detail::MultiBandBlender blender(true);
+
+    //BGR
+    cv::UMat rgb, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
+    cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
+    cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
+    cv::UMat rhalf(lhalf.size(), lhalf.type());
+    //GREY
+    cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey, resMaskGrey;
+    //BGR-Float
+    cv::UMat frameOutFloat;
+
+    cv::Mat faces;
+    vector<cv::Rect> faceRects;
+    vector<vector<cv::Point2f>> shapes;
+    vector<FaceFeatures> featuresList;
+
+    while (true) {
+        if(!v2d->captureVA())
+                   break;
+
+        v2d->opencl([&](cv::UMat &frameBuffer) {
+            cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
+            cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
+            cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
+            detector->detect(down, faces);
         });
 
-        //Copy OpenCL Context for VAAPI. Must be called right after first VideoWriter/VideoCapture initialization.
-        va::copy();
-
-        if (!capture.isOpened()) {
-            cerr << "ERROR! Unable to open video input" << endl;
-            return;
+        faceRects.clear();
+        for (int i = 0; i < faces.rows; i++) {
+            faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
         }
 
-        double fps = capture.get(cv::CAP_PROP_FPS);
-        int w = capture.get(cv::CAP_PROP_FRAME_WIDTH);
-        int h = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+        shapes.clear();
 
-        cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(w * SCALE, h * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-        cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
-        facemark->loadModel("assets/lbfmodel.yaml");
-        cv::detail::MultiBandBlender blender(true);
-
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameBufferSize, {
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
-
-        //BGR
-        cv::UMat rgb, down, faceBgMask, diff, blurred, reduced, sharpened, masked;
-        cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
-        cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
-        cv::UMat rhalf(lhalf.size(), lhalf.type());
-        //GREY
-        cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey, resMaskGrey;
-        //BGR-Float
-        cv::UMat frameOutFloat;
-
-        cv::Mat faces;
-        vector<cv::Rect> faceRects;
-        vector<vector<cv::Point2f>> shapes;
-        vector<FaceFeatures> featuresList;
-
-        while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
-                //videoFrame will be converted to BGRA and stored in the frameBuffer.
-                capture >> videoFrame;
-            });
-
-            if(!success)
-                break;
-
-            cl::compute([&](cv::UMat& frameBuffer){
-                cvtColor(frameBuffer,rgb,cv::COLOR_BGRA2RGB);
-                cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
-                cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
-                detector->detect(down, faces);
-            });
-
-            faceRects.clear();
-            for (int i = 0; i < faces.rows; i++) {
-                faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
+        if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
+            featuresList.clear();
+            for (size_t i = 0; i < faceRects.size(); ++i) {
+                featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
             }
 
-            shapes.clear();
-
-            if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
-                featuresList.clear();
-                for (size_t i = 0; i < faceRects.size(); ++i) {
-                    featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
-                }
-
-                nvg::render([&](NVGcontext* vg, int w, int h) {
-                    nvg::clear();
-                    //Draw the face background mask (= face oval)
-                    draw_face_bg_mask(vg, featuresList);
-                });
-
-                cl::compute([&](cv::UMat &frameBuffer) {
-                    //Convert/Copy the mask
-                    cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
-                    cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
-                });
-
-                nvg::render([&](NVGcontext* vg, int w, int h) {
-                    nvg::clear();
-                    //Draw the face forground mask (= eyes and outer lips)
-                    draw_face_fg_mask(vg, featuresList);
-                });
-
-                cl::compute([&](cv::UMat &frameBuffer) {
-                    //Convert/Copy the mask
-                    cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
-
-                    //Dilate the face forground mask to make eyes and mouth areas wider
-                    int morph_size = 1;
-                    cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-                    cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
-
-                    cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
-                    cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
-
-                    unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
-                    reduce_shadows(rgb, reduced, REDUCE_SHADOW);
-                    blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
-                    blender.feed(reduced, faceBgMaskGrey, cv::Point(0, 0));
-                    blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
-                    blender.blend(frameOutFloat, resMaskGrey);
-                    frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
-
-                    cv::boxFilter(frameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
-                    cv::subtract(blurred, rgb, diff);
-                    bitwise_and(diff, faceBgMask, masked);
-                    cv::add(frameOut, masked, reduced);
-
-                    cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
-                    cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
-
-                    frameOut = cv::Scalar::all(0);
-                    lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-                    rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
-                    cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-                });
-            } else {
-                cl::compute([&](cv::UMat &frameBuffer) {
-                    frameOut = cv::Scalar::all(0);
-                    cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
-                    lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-                    lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
-                    cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
-                });
-            }
-
-            va::write([&writer](const cv::UMat& videoFrame){
-                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-                writer << videoFrame;
+            v2d->nanovg([&](const cv::Size& sz) {
+                v2d->clear();
+                //Draw the face background mask (= face oval)
+                draw_face_bg_mask(featuresList);
             });
 
-            app::update_fps();
+            v2d->opencl([&](cv::UMat &frameBuffer) {
+                //Convert/Copy the mask
+                cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
+                cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
+            });
 
-            //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if(!app::display())
-                break;
+            v2d->nanovg([&](const cv::Size& sz) {
+                v2d->clear();
+                //Draw the face forground mask (= eyes and outer lips)
+                draw_face_fg_mask(featuresList);
+            });
+
+            v2d->opencl([&](cv::UMat &frameBuffer) {
+                //Convert/Copy the mask
+                cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
+
+                //Dilate the face forground mask to make eyes and mouth areas wider
+                int morph_size = 1;
+                cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+                cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+
+                cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
+                cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
+
+                unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
+                reduce_shadows(rgb, reduced, REDUCE_SHADOW);
+                blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+                blender.feed(reduced, faceBgMaskGrey, cv::Point(0, 0));
+                blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
+                blender.blend(frameOutFloat, resMaskGrey);
+                frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
+
+                cv::boxFilter(frameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+                cv::subtract(blurred, rgb, diff);
+                bitwise_and(diff, faceBgMask, masked);
+                cv::add(frameOut, masked, reduced);
+
+                cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
+
+                frameOut = cv::Scalar::all(0);
+                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+                rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+                cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
+            });
+        } else {
+            v2d->opencl([&](cv::UMat &frameBuffer) {
+                frameOut = cv::Scalar::all(0);
+                cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+                lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
+                cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
+            });
         }
 
-        app::terminate();
-    });
+        update_fps(v2d, true);
+
+        v2d->writeVA();
+
+        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+        if(!v2d->display())
+            break;
+    }
+
     return 0;
 }

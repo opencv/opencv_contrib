@@ -1,6 +1,9 @@
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include "../common/subsystems.hpp"
+#include "../common/viz2d.hpp"
+#include "../common/nvg.hpp"
+#include "../common/util.hpp"
+
 #include <string>
 
 #include <opencv2/objdetect/objdetect.hpp>
@@ -107,40 +110,29 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
 }
 
 int main(int argc, char **argv) {
-    using namespace kb;
+    using namespace kb::viz2d;
 
     if (argc != 2) {
         std::cerr << "Usage: pedestrian-demo <video-input>" << endl;
         exit(1);
     }
 
-    //Initialize the application
-    app::init("Pedestrian Demo", WIDTH, HEIGHT, WIDTH, HEIGHT, OFFSCREEN);
-    //Print system information
-    app::print_system_info();
-    app::run([&]() {
-        cv::Size frameBufferSize(app::frame_buffer_width, app::frame_buffer_height);
+    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+        print_system_info();
+        if (!v2d->isOffscreen())
+            v2d->setVisible(true);
 
-        cv::VideoCapture capture(argv[1], cv::CAP_FFMPEG, {
-                cv::CAP_PROP_HW_DEVICE, VA_HW_DEVICE_INDEX,
-                cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
-
-        va::copy();
+        auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
         if (!capture.isOpened()) {
-            cerr << "ERROR! Unable to open video-input" << endl;
-            return;
+            cerr << "ERROR! Unable to open video input" << endl;
+            exit(-1);
         }
 
-        double fps = capture.get(cv::CAP_PROP_FPS);
-        cerr << "Detected FPS: " << fps << endl;
-        cv::VideoWriter writer(OUTPUT_FILENAME, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameBufferSize, {
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
-                cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1
-        });
-
+        float fps = capture.get(cv::CAP_PROP_FPS);
+        float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
+        float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+        v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, v2d->getFrameBufferSize(), VA_HW_DEVICE_INDEX);
         //BGRA
         cv::UMat background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
         //RGB
@@ -156,15 +148,10 @@ int main(int argc, char **argv) {
         vector<double> probs;
 
         while (true) {
-            bool success = va::read([&capture](cv::UMat& videoFrame){
-                //videoFrame will be converted to BGRA and stored in the frameBuffer.
-                capture >> videoFrame;
-            });
+            if(!v2d->captureVA())
+                       break;
 
-            if(!success)
-                break;
-
-            cl::compute([&](cv::UMat& frameBuffer){
+            v2d->opencl([&](cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,videoFrameUp,cv::COLOR_BGRA2RGB);
                 cv::resize(frameBuffer, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
                 cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
@@ -189,35 +176,30 @@ int main(int argc, char **argv) {
                 }
             }
 
-            nvg::render([&](NVGcontext* vg, int w, int h) {
-                nvg::clear();
-                nvgBeginPath(vg);
-                nvgStrokeWidth(vg, std::fmax(2.0, WIDTH / 960.0));
-                nvgStrokeColor(vg, nvgHSLA(0.0, 1, 0.5, 200));
+            v2d->nanovg([&](const cv::Size& sz) {
+                v2d->clear();
+                nvg::beginPath();
+                nvg::strokeWidth(std::fmax(2.0, WIDTH / 960.0));
+                nvg::strokeColor(kb::viz2d::convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
                 for (size_t i = 0; i < maxLocations.size(); i++) {
-                    nvgRect(vg, maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
+                    nvg::rect(maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
                 }
-                nvgStroke(vg);
+                nvg::stroke();
             });
 
-            cl::compute([&](cv::UMat& frameBuffer){
+            v2d->opencl([&](cv::UMat& frameBuffer){
                 //Put it all together
                 composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, fg_loss);
             });
 
-            va::write([&writer](const cv::UMat& videoFrame){
-                //videoFrame is the frameBuffer converted to BGR. Ready to be written.
-                writer << videoFrame;
-            });
+            update_fps(v2d, true);
 
-            app::update_fps();
+            v2d->writeVA();
 
             //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-            if (!app::display())
+            if(!v2d->display())
                 break;
         }
 
-        app::terminate();
-    });
     return 0;
 }
