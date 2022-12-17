@@ -4,7 +4,7 @@ OpenGL/OpenCL/VAAPI interop demos (aka. run it on the GPU!) using my 4.x fork of
 The goal of the demos is to show how to use OpenCL interop in conjunction with OpenCV on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
 
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
-* The author of the dance video **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
+* The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
 
 # Requirements
 * Support for OpenCL 1.2
