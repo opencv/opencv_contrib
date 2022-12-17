@@ -119,7 +119,7 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
 
         nvg::beginPath();
         nvg::fillColor(cv::Scalar(255, 255, 255, 255));
-        nvg::ellipse(rotRect.center.x, rotRect.center.y * 1.5, rotRect.size.width / 2, rotRect.size.height / 2);
+        nvg::ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
         nvg::rotate(rotRect.angle);
         nvg::fill();
     }
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
     cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
     cv::UMat rhalf(lhalf.size(), lhalf.type());
     //GREY
-    cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey, resMaskGrey;
+    cv::UMat downGrey, faceBgMaskGrey, faceBgMaskInvGrey, faceFgMaskGrey;
     //BGR-Float
     cv::UMat frameOutFloat;
 
@@ -225,10 +225,11 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
-            cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
-            cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
-            detector->detect(down, faces);
         });
+
+        cv::resize(rgb, down, cv::Size(0, 0), SCALE, SCALE);
+        cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
+        detector->detect(down, faces);
 
         faceRects.clear();
         for (int i = 0; i < faces.rows; i++) {
@@ -273,21 +274,18 @@ int main(int argc, char **argv) {
                 cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
                 cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
 
-                unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
                 reduce_shadows(rgb, reduced, REDUCE_SHADOW);
+                cv::boxFilter(reduced, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+
+                unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
                 blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
-                blender.feed(reduced, faceBgMaskGrey, cv::Point(0, 0));
+                blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
                 blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
-                blender.blend(frameOutFloat, resMaskGrey);
+                blender.blend(frameOutFloat, cv::UMat());
                 frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
-                cv::boxFilter(frameOut, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
-                cv::subtract(blurred, rgb, diff);
-                bitwise_and(diff, faceBgMask, masked);
-                cv::add(frameOut, masked, reduced);
-
                 cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
-                cv::resize(reduced, rhalf, cv::Size(0, 0), 0.5, 0.5);
+                cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
                 frameOut = cv::Scalar::all(0);
                 lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
