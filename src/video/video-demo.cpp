@@ -118,6 +118,7 @@ int main(int argc, char **argv) {
             glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
         });
 
+        update_fps(v2d, true);
 
         v2d->writeVA();
 

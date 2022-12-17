@@ -133,9 +133,9 @@ int main(int argc, char **argv) {
             cv::add(stars, warped, frameBuffer);
         });
 
-        v2d->writeVA();
+        update_fps(v2d, true);
 
-        update_fps(v2d, false);
+        v2d->writeVA();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())

@@ -6,7 +6,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -102,9 +102,9 @@ int main(int argc, char **argv) {
             glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
         });
 
-        v2d->writeVA();
+        update_fps(v2d, true);
 
-        update_fps(v2d, false);
+        v2d->writeVA();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if (!v2d->display())

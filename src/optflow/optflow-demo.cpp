@@ -301,9 +301,9 @@ int main(int argc, char **argv) {
             composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
         });
 
-        v2d->writeVA();
-
         update_fps(v2d, show_fps);
+
+        v2d->writeVA();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())
