@@ -202,6 +202,7 @@ int main(int argc, char **argv) {
     cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(width * SCALE, height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
     cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
     facemark->loadModel("assets/lbfmodel.yaml");
+    //FIXME try FeatherBlender
     cv::detail::MultiBandBlender blender(true);
 
     //BGR
