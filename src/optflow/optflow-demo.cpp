@@ -37,6 +37,8 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 float fg_scale = 0.5f;
 // On every frame the foreground loses on brightness. specifies the loss in percent.
 float fg_loss = 2.5;
+//Convert the background to greyscale
+bool grey_background = true;
 // Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 // the default should be fine.
 float scene_change_thresh = 0.29f;
@@ -48,17 +50,25 @@ int max_points = 250000;
 float point_loss = 25;
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
-int max_stroke = 17;
+int max_stroke = 14;
 // Intensity of glow defined by kernel size. The default scales with the image diagonal.
 int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
 // Keep alpha separate for the GUI
-float alpha = 0.1f;
+float alpha = 0.05f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
 bool show_fps = true;
 //Use OpenCL or not
 bool use_opencl = true;
+//Use a global bloom effect
+bool use_bloom = false;
+//The kernel size of the bloom effect
+int bloom_kernel_size = 3;
+//The lightness selection threshold
+int bloom_thresh = 235;
+//The intensity of the bloom filter
+float bloom_gain = 4;
 
 void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
@@ -156,6 +166,29 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
     }
 }
 
+void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
+    static cv::UMat hsv;
+    static cv::UMat sv16;
+    static cv::UMat sv;
+    static cv::UMat threshGrey;
+    static cv::UMat blur;
+
+    static std::vector<cv::UMat> hsvChannels;
+    cv::cvtColor(src, hsv, cv::COLOR_BGR2HSV);
+    cv::split(hsv, hsvChannels);
+    cv::bitwise_not(hsvChannels[1], hsvChannels[1]);
+
+    cv::multiply(hsvChannels[1], hsvChannels[2], sv16, 1, CV_16U);
+    cv::divide(sv16, cv::Scalar(255.0), sv, 1, CV_8U);
+    cv::threshold(sv, threshGrey, threshValue, 255, cv::THRESH_BINARY);
+
+    cv::boxFilter(threshGrey, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+    cv::cvtColor(blur, blur, cv::COLOR_GRAY2BGRA);
+
+    addWeighted(src, 1.0, blur, gain, 0, dst);
+}
+
+
 void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
@@ -178,34 +211,36 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int glowKernelSize, float fgLossPercent) {
+void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int glowKernelSize, float fgLossPercent, bool greyBackground) {
     static cv::UMat glow;
     static cv::UMat backgroundGrey;
 
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
     cv::add(foreground, frameBuffer, foreground);
     glow_effect(foreground, glow, glowKernelSize);
-    cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
-    cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
+
+    if(greyBackground) {
+        cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
+        cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
+    }
+
     cv::add(background, glow, dst);
 }
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->makeWindow(5, 45, "Settings");
-    v2d->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
+    v2d->makeWindow(5, 30, "Effects");
     v2d->makeGroup("Foreground");
     v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
-    v2d->makeGroup("Scene Change Detection");
-    v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-    v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
+    v2d->makeGroup("Background");
+    v2d->makeFormVariable("Grey", grey_background, "Enable or disable global bloom effect");
 
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
     v2d->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
 
-    v2d->makeGroup("Effect");
+    v2d->makeGroup("Optical flow");
     v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
     auto* glowKernel = v2d->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     glowKernel->set_callback([](const int& k) {
@@ -219,9 +254,23 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         effect_color[2] = c[2];
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
+    v2d->makeGroup("Global Bloom");
+    v2d->makeFormVariable("Enable", use_bloom, "Enable or disable global bloom effect");
+    auto* bloomKernel = v2d->makeFormVariable("Bloom Kernel Size", bloom_kernel_size, 1, 63, true, "", "Size of global bloom effect defined by kernel size");
+    bloomKernel->set_callback([](const int& k) {
+        bloom_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+    });
+    v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold");
+    v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain");
 
+    v2d->makeWindow(240, 30, "Settings");
+    v2d->makeGroup("Acceleration");
+    v2d->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
 
-    v2d->makeWindow(240, 45, "Display");
+    v2d->makeGroup("Scene Change Detection");
+    v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+    v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
+
     v2d->makeGroup("Display");
     v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     v2d->form()->add_button("Fullscreen", [=]() {
@@ -242,7 +291,6 @@ int main(int argc, char **argv) {
         setup_gui(v2d);
         v2d->setVisible(true);
     }
-
 
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
@@ -273,7 +321,7 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
-            cv::cvtColor(frameBuffer, background, cv::COLOR_RGB2BGRA);
+            frameBuffer.copyTo(background);
         });
 
         cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
@@ -298,7 +346,9 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss);
+            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss, grey_background);
+            if(use_bloom)
+                bloom(frameBuffer, frameBuffer, bloom_kernel_size, bloom_thresh, bloom_gain);
         });
 
         update_fps(v2d, show_fps);
