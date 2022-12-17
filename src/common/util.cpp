@@ -52,34 +52,36 @@ void print_system_info() {
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
 }
 
-void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphical) {
+void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphically) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
-    float fps;
+    static float fps;
 
     if (cnt > 0) {
         tick.stop();
 
-        if (tick.getTimeMilli() > 1000) {
+        if (tick.getTimeMilli() > 50) {
             cerr << "FPS : " << (fps = tick.getFPS()) << '\r';
-            if (graphical) {
-                window->nanovg([&](const cv::Size &size) {
-                    using namespace kb;
-                    string text = "FPS: " + std::to_string(fps);
-                    nvg::beginPath();
-                    nvg::roundedRect(10, 10, 30 * text.size() + 10, 60, 10);
-                    nvg::fillColor(cv::Scalar(255, 255, 255, 180));
-                    nvg::fill();
-
-                    nvg::beginPath();
-                    nvg::fontSize(60.0f);
-                    nvg::fontFace("mono");
-                    nvg::fillColor(cv::Scalar(90, 90, 90, 255));
-                    nvg::textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                    nvg::text(22, 37, text.c_str(), nullptr);
-                });
-            }
             cnt = 0;
+            tick.reset();
+        }
+
+        if (graphically) {
+            window->nanovg([&](const cv::Size &size) {
+                using namespace kb;
+                string text = "FPS: " + std::to_string(fps);
+                nvg::beginPath();
+                nvg::roundedRect(5, 5, 15 * text.size() + 5, 30, 5);
+                nvg::fillColor(cv::Scalar(255, 255, 255, 180));
+                nvg::fill();
+
+                nvg::beginPath();
+                nvg::fontSize(30.0f);
+                nvg::fontFace("mono");
+                nvg::fillColor(cv::Scalar(90, 90, 90, 255));
+                nvg::textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                nvg::text(10, 20, text.c_str(), nullptr);
+            });
         }
     }
 
@@ -88,48 +90,13 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphical) {
 }
 
 cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
-    static cv::Mat tmpIn(1,1,CV_8UC3);
-    static cv::Mat tmpOut(1,1,CV_8UC3);
-    double srcC0 = src[0];
-    switch (code) {
-    case cv::COLOR_HSV2BGR:
-    case cv::COLOR_HSV2RGB:
-    case cv::COLOR_HLS2BGR:
-    case cv::COLOR_HLS2RGB:
-        srcC0 = ((120 + uint8_t(180 - src[0]))) % 180;
-        break;
-    case cv::COLOR_HSV2BGR_FULL:
-    case cv::COLOR_HSV2RGB_FULL:
-    case cv::COLOR_HLS2BGR_FULL:
-    case cv::COLOR_HLS2RGB_FULL:
-        srcC0 = ((170 + uint8_t(255 - src[0]))) % 255;
-        break;
-    default:
-        break;
-    }
-    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(srcC0, src[1], src[2]);
+    cv::Mat tmpIn(1,1,CV_8UC3);
+    cv::Mat tmpOut(1,1,CV_8UC3);
 
+    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(src[0], src[1], src[2]);
     cvtColor(tmpIn, tmpOut, code);
     const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
-    double dstC2 = vdst[2];
-
-    switch (code) {
-    case cv::COLOR_BGR2HSV:
-    case cv::COLOR_RGB2HSV:
-    case cv::COLOR_BGR2HLS:
-    case cv::COLOR_RGB2HLS:
-        dstC2 = ((int16_t(180 - src[0])) - 120) % 180;
-        break;
-    case cv::COLOR_BGR2HSV_FULL:
-    case cv::COLOR_RGB2HSV_FULL:
-    case cv::COLOR_BGR2HLS_FULL:
-    case cv::COLOR_RGB2HLS_FULL:
-        dstC2 = ((int16_t(255 - src[0])) - 170) % 255;
-        break;
-    default:
-        break;
-    }
-    cv::Scalar dst(vdst[0],vdst[1],dstC2, src[3]);
+    cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
     return dst;
 }
 

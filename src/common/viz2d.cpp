@@ -140,7 +140,7 @@ bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
     if (nanogui::Screen::keyboard_event(key, scancode, action, modifiers))
         return true;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        nanogui::Screen::set_visible(!screen().visible());
+        setOffscreen(!isOffscreen());
         return true;
     } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
         auto children = nanogui::Screen::children();
@@ -316,6 +316,11 @@ void Viz2D::setVisible(bool v) {
 
 bool Viz2D::isOffscreen() {
     return offscreen_;
+}
+
+void Viz2D::setOffscreen(bool o) {
+    offscreen_ = o;
+    setVisible(!o);
 }
 
 nanogui::Window* Viz2D::makeWindow(int x, int y, const string &title) {

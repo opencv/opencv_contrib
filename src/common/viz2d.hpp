@@ -72,6 +72,7 @@ public:
     bool isVisible();
     void setVisible(bool v);
     bool isOffscreen();
+    void setOffscreen(bool o);
     bool isClosed();
     void close();
     bool display();
