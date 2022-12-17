@@ -11,6 +11,7 @@
 #include <opencv2/core/opengl.hpp>
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 #include "../util.hpp"
 

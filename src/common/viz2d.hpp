@@ -1,6 +1,7 @@
 #ifndef SRC_COMMON_VIZ2D_HPP_
 #define SRC_COMMON_VIZ2D_HPP_
 
+#include <filesystem>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
@@ -18,7 +19,17 @@ namespace detail {
 class CLGLContext;
 class CLVAContext;
 class NanoVGContext;
+void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression);
+
+#define GL_CHECK(expr)                            \
+    expr;                                        \
+    kb::viz2d::gl_check_error(__FILE__, __LINE__, #expr);
+
+void error_callback(int error, const char *description);
 }
+
+cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code);
+
 using namespace kb::viz2d::detail;
 
 class NVG;

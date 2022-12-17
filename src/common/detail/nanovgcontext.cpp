@@ -22,7 +22,30 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
     fn(clglContext_.getSize());
 }
 
+void push() {
+    GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
+    GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
+    GL_CHECK(glMatrixMode(GL_MODELVIEW));
+    GL_CHECK(glPushMatrix());
+    GL_CHECK(glMatrixMode(GL_PROJECTION));
+    GL_CHECK(glPushMatrix());
+    GL_CHECK(glMatrixMode(GL_TEXTURE));
+    GL_CHECK(glPushMatrix());
+}
+
+void pop() {
+    GL_CHECK(glMatrixMode(GL_TEXTURE));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glMatrixMode(GL_PROJECTION));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glMatrixMode(GL_MODELVIEW));
+    GL_CHECK(glPopMatrix());
+    GL_CHECK(glPopClientAttrib());
+    GL_CHECK(glPopAttrib());
+}
+
 void NanoVGContext::begin() {
+    push();
     float w = v2d_.getVideoFrameSize().width;
     float h = v2d_.getVideoFrameSize().height;
     float r = v2d_.getXPixelRatio();
@@ -36,6 +59,7 @@ void NanoVGContext::end() {
     //FIXME make nvgCancelFrame possible
     nvgEndFrame(context_);
     nvgRestore(context_);
+    pop();
 }
 }
 }

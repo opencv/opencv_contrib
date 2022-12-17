@@ -5,6 +5,31 @@
 
 namespace kb {
 namespace viz2d {
+namespace detail {
+void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
+    int errorCode = glGetError();
+
+    if (errorCode != 0) {
+        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << std::endl;
+        assert(false);
+    }
+}
+
+void error_callback(int error, const char *description) {
+    fprintf(stderr, "GLFW Error: %s\n", description);
+}
+}
+
+cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
+    cv::Mat tmpIn(1,1,CV_8UC3);
+    cv::Mat tmpOut(1,1,CV_8UC3);
+
+    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(src[0], src[1], src[2]);
+    cvtColor(tmpIn, tmpOut, code);
+    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
+    cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
+    return dst;
+}
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         size_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {

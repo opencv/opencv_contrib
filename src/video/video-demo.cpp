@@ -12,8 +12,7 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
-
+constexpr int glow_kernel_size = std::max(int(DIAG / 500 % 2 == 0 ? DIAG / 500 + 1 : DIAG / 500), 1);
 using std::cerr;
 using std::endl;
 using std::string;

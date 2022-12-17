@@ -28,8 +28,8 @@ constexpr int MIN_STAR_COUNT = 1000;
 constexpr int MAX_STAR_COUNT = 3000;
 constexpr float MIN_STAR_LIGHTNESS = 1.0f;
 constexpr int MIN_STAR_ALPHA = 5;
-// Intensity of glow defined by kernel size. The default scales with the image diagonal.
-constexpr int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
+// Intensity of bloom effect defined by kernel size. The default scales with the image diagonal.
+constexpr int bloom_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200  + 1 : DIAG / 200), 1);
 
 using std::cerr;
 using std::endl;
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
             nvg::beginPath();
             nvg::fontSize(FONT_SIZE);
             nvg::fontFace("libertine");
-            nvg::fillColor(convert(cv::Scalar(0.15 * 180.0, 128, 128, 255), cv::COLOR_HLS2BGR));
+            nvg::fillColor(convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
             nvg::textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
             /** only draw lines that are visible **/
