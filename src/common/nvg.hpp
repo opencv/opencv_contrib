@@ -53,12 +53,18 @@ namespace detail {
 
 class NVG {
     friend class Viz2D;
-    NVGcontext* ctx_;
+    static NVG* nvg_instance_;
+    NVGcontext* ctx_ = nullptr;
+
 public:
     NVG(NVGcontext* ctx) : ctx_(ctx) {
     }
 
+    static void setCurrentContext(NVGcontext* ctx);
+    static NVG* getCurrentContext();
+
     NVGcontext* getContext() {
+        assert(ctx_ != nullptr);
         return ctx_;
     }
 public:
@@ -145,11 +151,6 @@ void scissor(float x, float y, float w, float h);
 void intersectScissor(float x, float y, float w, float h);
 void resetScissor();
 };
-
-static NVG* nvg_instance;
-
-void set_current_context(NVGcontext* ctx);
-static NVG* get_current_context();
 } // namespace detail
 
 int createFont(const char* name, const char* filename);

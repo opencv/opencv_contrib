@@ -6,15 +6,17 @@ namespace nvg {
 namespace detail {
 class NVG;
 
-void set_current_context(NVGcontext* ctx) {
-    if(nvg_instance != nullptr)
-        delete nvg_instance;
-    nvg_instance = new NVG(ctx);
+NVG* NVG::nvg_instance_ = nullptr;
+
+void NVG::setCurrentContext(NVGcontext* ctx) {
+    if(nvg_instance_ != nullptr)
+        delete nvg_instance_;
+    nvg_instance_ = new NVG(ctx);
 }
 
-static NVG* get_current_context() {
-    assert(nvg_instance != nullptr);
-    return nvg_instance;
+NVG* NVG::getCurrentContext() {
+    assert(nvg_instance_ != nullptr);
+    return nvg_instance_;
 }
 
 int NVG::createFont(const char* name, const char* filename) {
@@ -325,301 +327,301 @@ void NVG::resetScissor() {
 }
 
 int createFont(const char* name, const char* filename) {
-    return detail::get_current_context()->createFont(name,filename);
+    return detail::NVG::getCurrentContext()->createFont(name,filename);
 }
 
 int createFontMem(const char* name, unsigned char* data, int ndata, int freeData) {
-    return detail::get_current_context()->createFontMem(name, data, ndata, freeData);
+    return detail::NVG::getCurrentContext()->createFontMem(name, data, ndata, freeData);
 }
 
 int findFont(const char* name) {
-    return detail::get_current_context()->findFont(name);
+    return detail::NVG::getCurrentContext()->findFont(name);
 }
 
 int addFallbackFontId(int baseFont, int fallbackFont) {
-    return detail::get_current_context()->addFallbackFontId(baseFont, fallbackFont);
+    return detail::NVG::getCurrentContext()->addFallbackFontId(baseFont, fallbackFont);
 }
 int addFallbackFont(const char* baseFont, const char* fallbackFont) {
-    return detail::get_current_context()->addFallbackFont(baseFont, fallbackFont);
+    return detail::NVG::getCurrentContext()->addFallbackFont(baseFont, fallbackFont);
 }
 
 void fontSize(float size) {
-    detail::get_current_context()->fontSize(size);
+    detail::NVG::getCurrentContext()->fontSize(size);
 }
 
 void fontBlur(float blur) {
-    detail::get_current_context()->fontBlur(blur);
+    detail::NVG::getCurrentContext()->fontBlur(blur);
 }
 
 void textLetterSpacing(float spacing) {
-    detail::get_current_context()->textLetterSpacing(spacing);
+    detail::NVG::getCurrentContext()->textLetterSpacing(spacing);
 }
 
 void textLineHeight(float lineHeight) {
-    detail::get_current_context()->textLineHeight(lineHeight);
+    detail::NVG::getCurrentContext()->textLineHeight(lineHeight);
 }
 
 void textAlign(int align) {
-    detail::get_current_context()->textAlign(align);
+    detail::NVG::getCurrentContext()->textAlign(align);
 }
 
 void fontFaceId(int font) {
-    detail::get_current_context()->fontFaceId(font);
+    detail::NVG::getCurrentContext()->fontFaceId(font);
 }
 
 void fontFace(const char* font) {
-    detail::get_current_context()->fontFace(font);
+    detail::NVG::getCurrentContext()->fontFace(font);
 }
 
 float text(float x, float y, const char* string, const char* end) {
-    return detail::get_current_context()->text(x, y, string, end);
+    return detail::NVG::getCurrentContext()->text(x, y, string, end);
 }
 
 void textBox(float x, float y, float breakRowWidth, const char* string, const char* end) {
-    detail::get_current_context()->textBox(x, y, breakRowWidth, string, end);
+    detail::NVG::getCurrentContext()->textBox(x, y, breakRowWidth, string, end);
 }
 
 float textBounds(float x, float y, const char* string, const char* end, float* bounds) {
-    return detail::get_current_context()->textBounds(x, y, string, end, bounds);
+    return detail::NVG::getCurrentContext()->textBounds(x, y, string, end, bounds);
 }
 
 void textBoxBounds(float x, float y, float breakRowWidth, const char* string, const char* end, float* bounds) {
-    detail::get_current_context()->textBoxBounds(x, y, breakRowWidth, string, end, bounds);
+    detail::NVG::getCurrentContext()->textBoxBounds(x, y, breakRowWidth, string, end, bounds);
 }
 
 int textGlyphPositions(float x, float y, const char* string, const char* end, GlyphPosition* positions, int maxPositions) {
-    return detail::get_current_context()->textGlyphPositions(x, y, string, end, positions, maxPositions);
+    return detail::NVG::getCurrentContext()->textGlyphPositions(x, y, string, end, positions, maxPositions);
 }
 
 void textMetrics(float* ascender, float* descender, float* lineh) {
-    detail::get_current_context()->textMetrics(ascender, descender, lineh);
+    detail::NVG::getCurrentContext()->textMetrics(ascender, descender, lineh);
 }
 
 int textBreakLines(const char* string, const char* end, float breakRowWidth, TextRow* rows, int maxRows) {
-    return detail::get_current_context()->textBreakLines(string, end, breakRowWidth, rows, maxRows);
+    return detail::NVG::getCurrentContext()->textBreakLines(string, end, breakRowWidth, rows, maxRows);
 }
 
 void save() {
-    detail::get_current_context()->save();
+    detail::NVG::getCurrentContext()->save();
 }
 
 void restore() {
-    detail::get_current_context()->restore();
+    detail::NVG::getCurrentContext()->restore();
 }
 
 void reset() {
-    detail::get_current_context()->reset();
+    detail::NVG::getCurrentContext()->reset();
 }
 
 void shapeAntiAlias(int enabled) {
-    detail::get_current_context()->strokeColor(enabled);
+    detail::NVG::getCurrentContext()->strokeColor(enabled);
 }
 
 void strokeColor(const cv::Scalar& bgra) {
-    detail::get_current_context()->strokeColor(bgra);
+    detail::NVG::getCurrentContext()->strokeColor(bgra);
 }
 
 void strokePaint(Paint paint) {
-    detail::get_current_context()->strokePaint(paint);
+    detail::NVG::getCurrentContext()->strokePaint(paint);
 }
 
 void fillColor(const cv::Scalar& color) {
-    detail::get_current_context()->fillColor(color);
+    detail::NVG::getCurrentContext()->fillColor(color);
 }
 
 void fillPaint(Paint paint) {
-    detail::get_current_context()->fillPaint(paint);
+    detail::NVG::getCurrentContext()->fillPaint(paint);
 }
 
 void miterLimit(float limit) {
-    detail::get_current_context()->miterLimit(limit);
+    detail::NVG::getCurrentContext()->miterLimit(limit);
 }
 
 void strokeWidth(float size) {
-    detail::get_current_context()->strokeWidth(size);
+    detail::NVG::getCurrentContext()->strokeWidth(size);
 }
 
 void lineCap(int cap) {
-    detail::get_current_context()->lineCap(cap);
+    detail::NVG::getCurrentContext()->lineCap(cap);
 }
 
 void lineJoin(int join) {
-    detail::get_current_context()->lineJoin(join);
+    detail::NVG::getCurrentContext()->lineJoin(join);
 }
 
 void globalAlpha(float alpha) {
-    detail::get_current_context()->globalAlpha(alpha);
+    detail::NVG::getCurrentContext()->globalAlpha(alpha);
 }
 
 void resetTransform() {
-    detail::get_current_context()->resetTransform();
+    detail::NVG::getCurrentContext()->resetTransform();
 }
 
 void transform(float a, float b, float c, float d, float e, float f) {
-    detail::get_current_context()->transform(a, b, c, d, e, f);
+    detail::NVG::getCurrentContext()->transform(a, b, c, d, e, f);
 }
 
 void translate(float x, float y) {
-    detail::get_current_context()->translate(x, y);
+    detail::NVG::getCurrentContext()->translate(x, y);
 }
 
 void rotate(float angle) {
-    detail::get_current_context()->rotate(angle);
+    detail::NVG::getCurrentContext()->rotate(angle);
 }
 
 void skewX(float angle) {
-    detail::get_current_context()->skewX(angle);
+    detail::NVG::getCurrentContext()->skewX(angle);
 }
 
 void skewY(float angle) {
-    detail::get_current_context()->skewY(angle);
+    detail::NVG::getCurrentContext()->skewY(angle);
 }
 
 void scale(float x, float y) {
-    detail::get_current_context()->scale(x, y);
+    detail::NVG::getCurrentContext()->scale(x, y);
 }
 
 void currentTransform(float* xform) {
-    detail::get_current_context()->currentTransform(xform);
+    detail::NVG::getCurrentContext()->currentTransform(xform);
 }
 
 void transformIdentity(float* dst) {
-    detail::get_current_context()->transformIdentity(dst);
+    detail::NVG::getCurrentContext()->transformIdentity(dst);
 }
 
 void transformTranslate(float* dst, float tx, float ty) {
-    detail::get_current_context()->transformTranslate(dst, tx, ty);
+    detail::NVG::getCurrentContext()->transformTranslate(dst, tx, ty);
 }
 
 void transformScale(float* dst, float sx, float sy) {
-    detail::get_current_context()->transformScale(dst, sx, sy);
+    detail::NVG::getCurrentContext()->transformScale(dst, sx, sy);
 }
 
 void transformRotate(float* dst, float a) {
-    detail::get_current_context()->transformRotate(dst, a);
+    detail::NVG::getCurrentContext()->transformRotate(dst, a);
 }
 
 void transformSkewX(float* dst, float a) {
-    detail::get_current_context()->transformSkewX(dst, a);
+    detail::NVG::getCurrentContext()->transformSkewX(dst, a);
 }
 
 void transformSkewY(float* dst, float a) {
-    detail::get_current_context()->transformSkewY(dst, a);
+    detail::NVG::getCurrentContext()->transformSkewY(dst, a);
 }
 
 void transformMultiply(float* dst, const float* src) {
-    detail::get_current_context()->transformMultiply(dst, src);
+    detail::NVG::getCurrentContext()->transformMultiply(dst, src);
 }
 
 void transformPremultiply(float* dst, const float* src) {
-    detail::get_current_context()->transformPremultiply(dst, src);
+    detail::NVG::getCurrentContext()->transformPremultiply(dst, src);
 }
 
 int transformInverse(float* dst, const float* src) {
-    return detail::get_current_context()->transformInverse(dst, src);
+    return detail::NVG::getCurrentContext()->transformInverse(dst, src);
 }
 
 void transformPoint(float* dstx, float* dsty, const float* xform, float srcx, float srcy) {
-    return detail::get_current_context()->transformPoint(dstx, dsty, xform, srcx, srcy);
+    return detail::NVG::getCurrentContext()->transformPoint(dstx, dsty, xform, srcx, srcy);
 }
 
 float degToRad(float deg) {
-    return detail::get_current_context()->degToRad(deg);
+    return detail::NVG::getCurrentContext()->degToRad(deg);
 }
 
 float radToDeg(float rad) {
-    return detail::get_current_context()->radToDeg(rad);
+    return detail::NVG::getCurrentContext()->radToDeg(rad);
 }
 
 void beginPath() {
-    detail::get_current_context()->beginPath();
+    detail::NVG::getCurrentContext()->beginPath();
 }
 void moveTo(float x, float y) {
-    detail::get_current_context()->moveTo(x, y);
+    detail::NVG::getCurrentContext()->moveTo(x, y);
 }
 
 void lineTo(float x, float y) {
-    detail::get_current_context()->lineTo(x, y);
+    detail::NVG::getCurrentContext()->lineTo(x, y);
 }
 
 void bezierTo(float c1x, float c1y, float c2x, float c2y, float x, float y) {
-    detail::get_current_context()->bezierTo(c1x, c1y, c2x, c2y, x, y);
+    detail::NVG::getCurrentContext()->bezierTo(c1x, c1y, c2x, c2y, x, y);
 }
 
 void quadTo(float cx, float cy, float x, float y) {
-    detail::get_current_context()->quadTo(cx, cy, x, y);
+    detail::NVG::getCurrentContext()->quadTo(cx, cy, x, y);
 }
 
 void arcTo(float x1, float y1, float x2, float y2, float radius) {
-    detail::get_current_context()->arcTo(x1, y1, x2, y2, radius);
+    detail::NVG::getCurrentContext()->arcTo(x1, y1, x2, y2, radius);
 }
 
 void closePath() {
-    detail::get_current_context()->closePath();
+    detail::NVG::getCurrentContext()->closePath();
 }
 
 void pathWinding(int dir) {
-    detail::get_current_context()->pathWinding(dir);
+    detail::NVG::getCurrentContext()->pathWinding(dir);
 }
 
 void arc(float cx, float cy, float r, float a0, float a1, int dir) {
-    detail::get_current_context()->arc(cx, cy, r, a0, a1, dir);
+    detail::NVG::getCurrentContext()->arc(cx, cy, r, a0, a1, dir);
 }
 
 void rect(float x, float y, float w, float h) {
-    detail::get_current_context()->rect(x, y, w, h);
+    detail::NVG::getCurrentContext()->rect(x, y, w, h);
 }
 
 void roundedRect(float x, float y, float w, float h, float r) {
-    detail::get_current_context()->roundedRect(x, y, w, h, r);
+    detail::NVG::getCurrentContext()->roundedRect(x, y, w, h, r);
 }
 
 void roundedRectVarying(float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft) {
-    detail::get_current_context()->roundedRectVarying(x, y, w, h, radTopLeft, radTopRight, radBottomRight, radBottomLeft);
+    detail::NVG::getCurrentContext()->roundedRectVarying(x, y, w, h, radTopLeft, radTopRight, radBottomRight, radBottomLeft);
 }
 
 void ellipse(float cx, float cy, float rx, float ry) {
-    detail::get_current_context()->ellipse(cx, cy, rx, ry);
+    detail::NVG::getCurrentContext()->ellipse(cx, cy, rx, ry);
 }
 
 void circle(float cx, float cy, float r) {
-    detail::get_current_context()->circle(cx, cy, r);
+    detail::NVG::getCurrentContext()->circle(cx, cy, r);
 }
 
 void fill() {
-    detail::get_current_context()->fill();
+    detail::NVG::getCurrentContext()->fill();
 }
 
 void stroke() {
-    detail::get_current_context()->stroke();
+    detail::NVG::getCurrentContext()->stroke();
 }
 
 Paint linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol) {
-    return detail::get_current_context()->linearGradient(sx, sy, ex, ey, icol, ocol);
+    return detail::NVG::getCurrentContext()->linearGradient(sx, sy, ex, ey, icol, ocol);
 }
 
 Paint boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol) {
-    return detail::get_current_context()->boxGradient(x, y, w, h, r, f, icol, ocol);
+    return detail::NVG::getCurrentContext()->boxGradient(x, y, w, h, r, f, icol, ocol);
 }
 
 Paint radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol) {
-    return detail::get_current_context()->radialGradient(cx, cy, inr, outr, icol, ocol);
+    return detail::NVG::getCurrentContext()->radialGradient(cx, cy, inr, outr, icol, ocol);
 }
 
 Paint imagePattern(float ox, float oy, float ex, float ey, float angle, int image, float alpha) {
-    return detail::get_current_context()->imagePattern(ox, oy, ex, ey, angle, image, alpha);
+    return detail::NVG::getCurrentContext()->imagePattern(ox, oy, ex, ey, angle, image, alpha);
 }
 
 void scissor(float x, float y, float w, float h) {
-    detail::get_current_context()->scissor(x, y, w, h);
+    detail::NVG::getCurrentContext()->scissor(x, y, w, h);
 }
 
 void intersectScissor(float x, float y, float w, float h) {
-    detail::get_current_context()->intersectScissor(x, y, w, h);
+    detail::NVG::getCurrentContext()->intersectScissor(x, y, w, h);
 }
 
 void resetScissor() {
-    detail::get_current_context()->resetScissor();
+    detail::NVG::getCurrentContext()->resetScissor();
 }
 }
 }
