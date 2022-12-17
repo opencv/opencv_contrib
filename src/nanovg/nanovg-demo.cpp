@@ -170,6 +170,7 @@ int main(int argc, char **argv) {
 
         //Render using nanovg
         v2d->nanovg([&](const cv::Size &sz) {
+            hue = ((170 + uint8_t(255 - hue))) % 255;
             drawColorwheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
         });
 
