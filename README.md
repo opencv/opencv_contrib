@@ -22,33 +22,33 @@ There are currently seven demos (**the preview videos are scaled down and compre
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208221534-1e7c6616-048a-4b56-b85b-e0a0809f4552.mp4
+https://user-images.githubusercontent.com/287266/208234618-49284df0-5fc7-4381-8c9a-063df7400a88.mp4
 
 ## video-demo
 Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208221541-e9f4207f-c172-4211-918a-aa171abea891.mp4
+https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7f6-3532d5464248.mp4
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208221731-3cc65700-c37f-4280-b796-81d168d648c2.mp4
+https://user-images.githubusercontent.com/287266/208234597-6a019841-42a2-4e69-8153-4de426e7748d.mp4
 
 ## font-demo
 Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208221604-04de645a-f75c-49fe-86eb-ffddacc04bf3.mp4
+https://user-images.githubusercontent.com/287266/208234573-20c03f7f-0acf-4ec2-8355-72dfe22dec64.mp4
 
 ## optflow-demo
 My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208221621-8ba527e0-9391-4ec5-8b08-f2d1232f5908.mp4
+https://user-images.githubusercontent.com/287266/208234553-3669df17-dbea-4166-aaf1-e2d5c447e9f0.mp4
 
 ## pedestrian-demo
 Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI). 
 Note: Detection rate is not very impressive and depends highly on the video.
 
-https://user-images.githubusercontent.com/287266/208221654-ed9cab36-db2b-478a-9227-31668158d6ae.mp4
+https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a280-aab57a2fbae3.mp4
 
 ## beauty-demo
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
