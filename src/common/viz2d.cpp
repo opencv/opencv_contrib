@@ -31,6 +31,78 @@ cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
+std::set<Viz2DWindow*> Viz2DWindow::all_windows_;
+
+Viz2DWindow::Viz2DWindow(nanogui::Screen *screen, int x, int y, const string &title) :
+        Window(screen, title), screen_(screen), lastPos_(x, y) {
+    all_windows_.insert(this);
+    oldLayout_ = new nanogui::AdvancedGridLayout( { 10, 0, 10, 0 }, { });
+    oldLayout_->set_margin(10);
+    oldLayout_->set_col_stretch(2, 1);
+    this->set_position( { x, y });
+    this->set_layout(oldLayout_);
+    this->set_visible(true);
+
+    minBtn_ = this->button_panel()->add<nanogui::Button>("_");
+    maxBtn_ = this->button_panel()->add<nanogui::Button>("+");
+    newLayout_ = new nanogui::AdvancedGridLayout( { 10, 0, 10, 0 }, { });
+
+    maxBtn_->set_visible(false);
+
+    maxBtn_->set_callback([&, this]() {
+        this->minBtn_->set_visible(true);
+        this->maxBtn_->set_visible(false);
+
+        for (auto *child : this->children()) {
+            child->set_visible(true);
+        }
+
+        this->set_layout(oldLayout_);
+        this->screen_->perform_layout();
+    });
+
+    minBtn_->set_callback([&, this]() {
+        this->minBtn_->set_visible(false);
+        this->maxBtn_->set_visible(true);
+
+        for (auto *child : this->children()) {
+            child->set_visible(false);
+        }
+        this->set_size( { 0, 0 });
+        this->set_layout(newLayout_);
+        this->screen_->perform_layout();
+    });
+}
+
+Viz2DWindow::~Viz2DWindow() {
+    all_windows_.erase(this);
+}
+
+bool Viz2DWindow::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) {
+    if (m_drag && (button & (1 << GLFW_MOUSE_BUTTON_1)) != 0) {
+        for (auto *win : all_windows_) {
+            if (win != this) {
+                if (win->contains(this->position())
+                        || win->contains( { this->position()[0] + this->size()[0], this->position()[1] + this->size()[1] })
+                        || win->contains( { this->position()[0], this->position()[1] + this->size()[1] })
+                        || win->contains( { this->position()[0] + this->size()[0], this->position()[1] })
+                        || this->contains(win->position())
+                        || this->contains( { win->position()[0] + win->size()[0], win->position()[1] + win->size()[1] })
+                        || this->contains( { win->position()[0], win->position()[1] + win->size()[1] })
+                        || this->contains( { win->position()[0] + win->size()[0], win->position()[1] })) {
+                    this->set_position(lastPos_);
+                    return true;
+                }
+            }
+        }
+        lastPos_ = m_pos;
+        bool result = nanogui::Window::mouse_drag_event(p, rel, button, mods);
+
+        return result;
+    }
+    return false;
+}
+
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         initialSize_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
     assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);

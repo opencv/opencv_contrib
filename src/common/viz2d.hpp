@@ -32,6 +32,23 @@ cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
 using namespace kb::viz2d::detail;
 
+
+class Viz2DWindow : public nanogui::Window {
+private:
+    static std::set<Viz2DWindow*> all_windows_;
+    nanogui::Screen* screen_;
+    nanogui::Vector2i lastPos_;
+    nanogui::Button* minBtn_;
+    nanogui::Button* maxBtn_;
+    nanogui::ref<nanogui::AdvancedGridLayout> oldLayout_;
+    nanogui::ref<nanogui::AdvancedGridLayout> newLayout_;
+
+public:
+    Viz2DWindow(nanogui::Screen* screen, int x, int y, const string& title);
+    virtual ~Viz2DWindow();
+    bool mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) override;
+};
+
 class NVG;
 
 class Viz2D: public nanogui::Screen {
