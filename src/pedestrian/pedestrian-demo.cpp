@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
         vector<double> probs;
 
         while (true) {
-            if(!v2d->captureVA())
+            if(!v2d->capture())
                        break;
 
             v2d->opencl([&](cv::UMat& frameBuffer){
@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
 
             update_fps(v2d, true);
 
-            v2d->writeVA();
+            v2d->write();
 
             //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
             if(!v2d->display())

@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <vector>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -58,7 +59,7 @@ nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
 bool show_fps = true;
 //Use OpenCL or not
-bool use_opencl = true;
+bool use_acceleration = true;
 //Use a global bloom effect
 bool use_bloom = false;
 //The kernel size of the bloom effect
@@ -105,8 +106,7 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, 
     return result;
 }
 
-void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints,
-        const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
+void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, vector<cv::Point2f> &detectedPoints, const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
     static std::vector<uchar> status;
@@ -115,52 +115,51 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
     if (detectedPoints.size() > 4) {
         cv::convexHull(detectedPoints, hull);
         float area = cv::contourArea(hull);
-        float density = (detectedPoints.size() / area);
-        float stroke = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
-        size_t currentMaxPoints = density * maxPoints;
+        if (area > 0) {
+            float density = (detectedPoints.size() / area);
+            float stroke = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
+            size_t currentMaxPoints = ceil(density * maxPoints);
 
-        std::random_shuffle(prevPoints.begin(), prevPoints.end());
-        prevPoints.resize(ceil(prevPoints.size() * (1.0f - (pointLossPercent / 100.0f))));
+            std::random_shuffle(prevPoints.begin(), prevPoints.end());
+            prevPoints.resize(ceil(prevPoints.size() * (1.0f - (pointLossPercent / 100.0f))));
 
-        size_t copyn = std::min(detectedPoints.size(), (size_t(std::ceil(currentMaxPoints)) - prevPoints.size()));
-        if (prevPoints.size() < currentMaxPoints) {
-            std::copy(detectedPoints.begin(), detectedPoints.begin() + copyn, std::back_inserter(prevPoints));
-        }
-
-        cv::calcOpticalFlowPyrLK(prevGrey, nextGrey, prevPoints, nextPoints, status, err);
-        newPoints.clear();
-        if (prevPoints.size() > 1 && nextPoints.size() > 1) {
-            upNextPoints.clear();
-            upPrevPoints.clear();
-            for (cv::Point2f pt : prevPoints) {
-                upPrevPoints.push_back(pt /= scaleFactor);
+            size_t copyn = std::min(detectedPoints.size(), (size_t(std::ceil(currentMaxPoints)) - prevPoints.size()));
+            if (prevPoints.size() < currentMaxPoints) {
+                std::copy(detectedPoints.begin(), detectedPoints.begin() + copyn, std::back_inserter(prevPoints));
             }
 
-            for (cv::Point2f pt : nextPoints) {
-                upNextPoints.push_back(pt /= scaleFactor);
-            }
+            cv::calcOpticalFlowPyrLK(prevGrey, nextGrey, prevPoints, nextPoints, status, err);
+            newPoints.clear();
+            if (prevPoints.size() > 1 && nextPoints.size() > 1) {
+                upNextPoints.clear();
+                upPrevPoints.clear();
+                for (cv::Point2f pt : prevPoints) {
+                    upPrevPoints.push_back(pt /= scaleFactor);
+                }
 
-            using namespace kb::viz2d;
-            nvg::beginPath();
-            nvg::strokeWidth(stroke);
-            nvg::strokeColor(color);
+                for (cv::Point2f pt : nextPoints) {
+                    upNextPoints.push_back(pt /= scaleFactor);
+                }
 
-            for (size_t i = 0; i < prevPoints.size(); i++) {
-                if (status[i] == 1 && err[i] < (1.0 / density)
-                        && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0
-                        && upNextPoints[i].y < nextGrey.rows / scaleFactor
-                            && upNextPoints[i].x < nextGrey.cols / scaleFactor) {
-                    float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
-                    if (len > 0 && len < sqrt(area)) {
-                        newPoints.push_back(nextPoints[i]);
-                        nvg::moveTo(upNextPoints[i].x, upNextPoints[i].y);
-                        nvg::lineTo(upPrevPoints[i].x, upPrevPoints[i].y);
+                using namespace kb::viz2d;
+                nvg::beginPath();
+                nvg::strokeWidth(stroke);
+                nvg::strokeColor(color);
+
+                for (size_t i = 0; i < prevPoints.size(); i++) {
+                    if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor) {
+                        float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
+                        if (len > 0 && len < sqrt(area)) {
+                            newPoints.push_back(nextPoints[i]);
+                            nvg::moveTo(upNextPoints[i].x, upNextPoints[i].y);
+                            nvg::lineTo(upPrevPoints[i].x, upPrevPoints[i].y);
+                        }
                     }
                 }
+                nvg::stroke();
             }
-            nvg::stroke();
+            prevPoints = newPoints;
         }
-        prevPoints = newPoints;
     }
 }
 
@@ -225,24 +224,90 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     cv::add(background, glow, dst);
 }
 
-void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    auto* effectWindow = v2d->makeWindow(5, 30, "Effects");
-//    nanogui::Button* btn = v2d->form()->add_button("Expand", [=]() {
-//        for(auto* child : effectWindow->children()) {
-//            child->set_visible(true);
-//        }
-//        btn->set_visible(false);
-//        v2d->perform_layout();
-//    });
+class Viz2DWindow : public nanogui::Window {
+private:
+    static std::set<Viz2DWindow*> all_windows_;
+    nanogui::Screen* screen_;
+    nanogui::Vector2i lastPos_;
+    nanogui::Button* minBtn_;
+    nanogui::Button* maxBtn_;
+    nanogui::ref<nanogui::AdvancedGridLayout> oldLayout_;
+    nanogui::ref<nanogui::AdvancedGridLayout> newLayout_;
 
-    effectWindow->button_panel()->add<nanogui::Button>("_")->set_callback([=](){
-        effectWindow->set_visible(false);
-        for(auto* child : effectWindow->children()) {
-            child->set_visible(false);
+public:
+    Viz2DWindow(nanogui::Screen* screen, int x, int y, const string& title) : Window(screen, title), screen_(screen), lastPos_(x, y) {
+        all_windows_.insert(this);
+        oldLayout_ = new nanogui::AdvancedGridLayout({10, 0, 10, 0}, {});
+        oldLayout_->set_margin(10);
+        oldLayout_->set_col_stretch(2, 1);
+        this->set_position({x,y});
+        this->set_layout(oldLayout_);
+        this->set_visible(true);
+
+        minBtn_ = this->button_panel()->add<nanogui::Button>("_");
+        maxBtn_ = this->button_panel()->add<nanogui::Button>("+");
+        newLayout_ = new nanogui::AdvancedGridLayout({10, 0, 10, 0},{});
+
+        maxBtn_->set_visible(false);
+
+        maxBtn_->set_callback([&,this](){
+            this->minBtn_->set_visible(true);
+            this->maxBtn_->set_visible(false);
+
+            for(auto* child : this->children()) {
+                child->set_visible(true);
+            }
+
+            this->set_layout(oldLayout_);
+            this->screen_->perform_layout();
+        });
+
+        minBtn_->set_callback([&,this](){
+            this->minBtn_->set_visible(false);
+            this->maxBtn_->set_visible(true);
+
+            for(auto* child : this->children()) {
+                child->set_visible(false);
+            }
+            this->set_size({0,0});
+            this->set_layout(newLayout_);
+            this->screen_->perform_layout();
+        });
+    }
+
+    virtual ~Viz2DWindow() {
+        all_windows_.erase(this);
+    }
+
+    bool mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) {
+        if (m_drag && (button & (1 << GLFW_MOUSE_BUTTON_1)) != 0) {
+            for(auto* win : all_windows_) {
+                if(win != this) {
+                    if(win->contains(this->position()) ||
+                            win->contains({this->position()[0] + this->size()[0], this->position()[1] + this->size()[1]}) ||
+                            win->contains({this->position()[0], this->position()[1] + this->size()[1]}) ||
+                            win->contains({this->position()[0] + this->size()[0], this->position()[1]})) {
+                        this->set_position(lastPos_);
+                        return false;
+                    }
+                }
+            }
+            lastPos_ = m_pos;
+            bool result = nanogui::Window::mouse_drag_event(p, rel, button, mods);
+
+            return result;
         }
-//        btn->set_visible(true);
-        v2d->perform_layout();
-    });
+        return false;
+    }
+};
+
+std::set<Viz2DWindow*> Viz2DWindow::all_windows_;
+Viz2DWindow* effectWindow;
+Viz2DWindow* settingsWindow;
+
+void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
+    effectWindow = new Viz2DWindow(v2d, 5, 30, "Effects");
+    v2d->form()->set_window(effectWindow);
 
     v2d->makeGroup("Foreground");
     v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
@@ -278,17 +343,11 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold");
     v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain");
 
-    auto* settingsWindow = v2d->makeWindow(240, 30, "Settings");
-//    settingsWindow->button_panel()->add<nanogui::Button>("_")->set_callback([=](){
-//        settingsWindow->set_visible(false);
-//        nanogui::Button* btn = lbl->add<nanogui::Button>("Settings");
-//        btn->set_callback([=](){
-//            settingsWindow->set_visible(true);
-//        });
-//        v2d->perform_layout();
-//    });
-    v2d->makeGroup("Acceleration");
-    v2d->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
+    settingsWindow = new Viz2DWindow(v2d, 240, 30, "Settings");
+    v2d->form()->set_window(settingsWindow);
+
+    v2d->makeGroup("Hardware Acceleration");
+    v2d->makeFormVariable("Enable", use_acceleration, "Enable or disable libva and OpenCL acceleration");
 
     v2d->makeGroup("Scene Change Detection");
     v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
@@ -336,10 +395,9 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> detectedPoints;
 
     while (true) {
-        if(cv::ocl::useOpenCL() != use_opencl)
-            v2d->setUseOpenCL(use_opencl);
+        v2d->setAccelerated(use_acceleration);
 
-        if(!v2d->captureVA())
+        if(!v2d->capture())
             break;
 
         v2d->opencl([&](cv::UMat& frameBuffer){
@@ -376,7 +434,7 @@ int main(int argc, char **argv) {
 
         update_fps(v2d, show_fps);
 
-        v2d->writeVA();
+        v2d->write();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())

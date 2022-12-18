@@ -52,6 +52,10 @@ class Viz2D: public nanogui::Screen {
     nanogui::FormHelper* form_ = nullptr;
     bool closed_ = false;
     cv::Size videoFrameSize_ = cv::Size(0,0);
+    std::filesystem::path capturePath_;
+    std::filesystem::path writerPath_;
+    int vaCaptureDeviceIndex_;
+    int vaWriterDeviceIndex_;
 public:
     Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
@@ -63,10 +67,13 @@ public:
     void nanovg(std::function<void(const cv::Size&)> fn);
     void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
 
-    bool captureVA();
-    void writeVA();
+    bool capture();
+    void write();
     cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex);
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
+    cv::VideoWriter& makeWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize);
+    cv::VideoCapture& makeCapture(const string& intputFilename);
+
 
     void setWindowSize(const cv::Size& sz);
     cv::Size getWindowSize();
@@ -105,7 +112,7 @@ public:
         return var;
     }
 
-    void setUseOpenCL(bool u);
+    void setAccelerated(bool u);
     NVGcontext* getNVGcontext();
 private:
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers);

@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
         //nanovg hue fading between 0.0f and 255.0f
         float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
 
-        if (!v2d->captureVA())
+        if (!v2d->capture())
             break;
 
         v2d->opencl([&](cv::UMat &frameBuffer) {
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
 
         update_fps(v2d, true);
 
-        v2d->writeVA();
+        v2d->write();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())
