@@ -192,7 +192,6 @@ void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 
     addWeighted(src, 1.0, blur, gain, 0, dst);
 }
 
-
 void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
@@ -263,7 +262,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     v2d->makeGroup("Background");
-    v2d->form()->add_variable("Enumeration", background_mode, true)->set_items({"Grey", "Color", "Value", "Lightness"});
+    v2d->form()->add_variable("Color Mode", background_mode, true)->set_items({"Grey", "Color", "Value", "Lightness"});
 
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");

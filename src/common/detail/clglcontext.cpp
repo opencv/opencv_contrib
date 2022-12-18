@@ -30,7 +30,6 @@ CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
     context_ = CLExecContext_t::getCurrent();
 }
 
-
 CLGLContext::~CLGLContext() {
     end();
     frameBufferTex_->release();
@@ -61,11 +60,11 @@ CLExecContext_t& CLGLContext::getCLExecContext() {
     return context_;
 }
 
-void CLGLContext::blitFrameBufferToScreen(const cv::Size& windowSize) {
+void CLGLContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize) {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(0, 0, frameBufferSize_.width, frameBufferSize_.height, 0, windowSize.height - frameBufferSize_.height, frameBufferSize_.width, frameBufferSize_.height + windowSize.height - frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    GL_CHECK(glBlitFramebuffer(viewport.x, viewport.y, viewport.x + viewport.width, viewport.y + viewport.height, 0, windowSize.height - frameBufferSize_.height, frameBufferSize_.width, windowSize.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
 void CLGLContext::begin() {
@@ -76,7 +75,6 @@ void CLGLContext::begin() {
     frameBufferTex_->bind();
     GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBufferTex_->texId(), 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-
 }
 
 void CLGLContext::end() {

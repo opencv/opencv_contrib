@@ -52,8 +52,8 @@ void NanoVGContext::begin() {
 
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
-    GL_CHECK(glViewport(0, 0, w, h));
 }
+
 
 void NanoVGContext::end() {
     //FIXME make nvgCancelFrame possible

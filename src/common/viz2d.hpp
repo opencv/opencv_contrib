@@ -58,6 +58,9 @@ class Viz2D: public nanogui::Screen {
     friend class NanoVGContext;
     const cv::Size initialSize_;
     cv::Size frameBufferSize_;
+    cv::Rect viewport_;
+    float scale_;
+    cv::Vec2f cursor_;
     bool offscreen_;
     string title_;
     int major_;
@@ -94,8 +97,11 @@ public:
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
     cv::VideoWriter& makeWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize);
     cv::VideoCapture& makeCapture(const string& intputFilename);
-
-
+    void zoom(float amt = 0.0625);
+    cv::Vec2f getCursor();
+    void setCursor(int x, int y);
+    float getScale();
+    cv::Rect getViewport();
     void setWindowSize(const cv::Size& sz);
     cv::Size getWindowSize();
     cv::Size getInitialSize();

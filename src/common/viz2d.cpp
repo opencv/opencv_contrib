@@ -133,7 +133,7 @@ bool Viz2DWindow::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Ve
 }
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        initialSize_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), cursor_(0,0), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
     assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
     initialize();
 }
@@ -207,11 +207,15 @@ void Viz2D::initialize() {
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().cursor_pos_callback_event(x, y);
+        v2d->setCursor(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().mouse_button_callback_event(button, action, modifiers);
+//        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+//            v2d->pan(v2d->getCursor()[0], v2d->getCursor()[1]);
+//        }
     }
     );
     glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
@@ -232,6 +236,7 @@ void Viz2D::initialize() {
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().scroll_callback_event(x, y);
+        v2d->zoom(-y / 50.0f);
     }
     );
 
@@ -374,7 +379,6 @@ cv::VideoCapture& Viz2D::makeCapture(const string &inputFilename) {
     float h = capture_->get(cv::CAP_PROP_FRAME_HEIGHT);
     setVideoFrameSize(cv::Size(w,h));
 
-
     return *capture_;
 }
 
@@ -385,6 +389,53 @@ void Viz2D::clear(const cv::Scalar &rgba) {
     const float &a = rgba[3] / 255.0f;
     GL_CHECK(glClearColor(r, g, b, a));
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+}
+
+void Viz2D::zoom(float amount) {
+    scale_ += amount;
+    if(scale_ <= 0.025) {
+        scale_ = 0.025;
+        return;
+    } else if(scale_ > 1) {
+        scale_ = 1;
+        return;
+    }
+
+    cv::Vec2f offset;
+    double origW = getFrameBufferSize().width;
+    double origH = getFrameBufferSize().height;
+    double oldW = (origW * (scale_ - amount));
+    double oldH = (origH * (scale_ - amount));
+
+    offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(cursor_[0], origH - cursor_[1]);
+
+    viewport_.width = scale_ * origW;
+    viewport_.height = scale_ * origH;
+
+    float delta_x = offset[0] / oldW;
+    float delta_y = offset[1] / oldH;
+
+    float x_offset = delta_x * (viewport_.width - oldW);
+    float y_offset = delta_y * (viewport_.height - oldH);
+
+    viewport_.x += x_offset;
+    viewport_.y += y_offset;
+}
+
+cv::Vec2f Viz2D::getCursor() {
+    return cursor_;
+}
+
+void Viz2D::setCursor(int x, int y) {
+    cursor_ = {x, y};
+}
+
+float Viz2D::getScale() {
+    return scale_;
+}
+
+cv::Rect Viz2D::getViewport() {
+    return viewport_;
 }
 
 cv::Size Viz2D::getNativeFrameBufferSize() {
@@ -501,10 +552,10 @@ void Viz2D::setAccelerated(bool a) {
         double fourcc = 0;
 
         if(writer_) {
-            double w = writer_->get(cv::CAP_PROP_FRAME_WIDTH);
-            double h = writer_->get(cv::CAP_PROP_FRAME_HEIGHT);
-            double fps = writer_->get(cv::CAP_PROP_FPS);
-            double fourcc = writer_->get(cv::CAP_PROP_FOURCC);
+            w = writer_->get(cv::CAP_PROP_FRAME_WIDTH);
+            h = writer_->get(cv::CAP_PROP_FRAME_HEIGHT);
+            fps = writer_->get(cv::CAP_PROP_FPS);
+            fourcc = writer_->get(cv::CAP_PROP_FOURCC);
         }
 
         if(a) {
@@ -535,7 +586,7 @@ bool Viz2D::display() {
     if (!offscreen_) {
         glfwPollEvents();
         screen().draw_contents();
-        clglContext_->blitFrameBufferToScreen(getWindowSize());
+        clglContext_->blitFrameBufferToScreen(getViewport(), getWindowSize());
         screen().draw_widgets();
         glfwSwapBuffers(glfwWindow_);
         result = !glfwWindowShouldClose(glfwWindow_);
