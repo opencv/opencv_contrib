@@ -32,12 +32,19 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 
 /** Visualization parameters **/
 
+enum BackgroundModes {
+    GREY,
+    COLOR,
+    VALUE,
+    LIGHTNESS
+};
+
 // Generate the foreground at this scale.
 float fg_scale = 0.5f;
 // On every frame the foreground loses on brightness. specifies the loss in percent.
 float fg_loss = 2.5;
 //Convert the background to greyscale
-bool grey_background = true;
+BackgroundModes background_mode = GREY;
 // Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 // the default should be fine.
 float scene_change_thresh = 0.29f;
@@ -208,17 +215,37 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int glowKernelSize, float fgLossPercent, bool greyBackground) {
+void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int glowKernelSize, float fgLossPercent, BackgroundModes mode) {
+    static cv::UMat tmp;
     static cv::UMat glow;
     static cv::UMat backgroundGrey;
+    static vector<cv::UMat> channels;
 
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
     cv::add(foreground, frameBuffer, foreground);
     glow_effect(foreground, glow, glowKernelSize);
 
-    if(greyBackground) {
+    switch (mode) {
+    case GREY:
         cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
         cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
+        break;
+    case VALUE:
+        cv::cvtColor(background, tmp, cv::COLOR_BGRA2BGR);
+        cv::cvtColor(tmp, tmp, cv::COLOR_BGR2HSV);
+        split(tmp, channels);
+        cv::cvtColor(channels[2], background, cv::COLOR_GRAY2RGBA);
+        break;
+    case LIGHTNESS:
+        cv::cvtColor(background, tmp, cv::COLOR_BGRA2BGR);
+        cv::cvtColor(tmp, tmp, cv::COLOR_BGR2HLS);
+        split(tmp, channels);
+        cv::cvtColor(channels[1], background, cv::COLOR_GRAY2RGBA);
+        break;
+    case COLOR:
+        break;
+    default:
+        break;
     }
 
     cv::add(background, glow, dst);
@@ -236,7 +263,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     v2d->makeGroup("Background");
-    v2d->makeFormVariable("Grey", grey_background, "Enable or disable global bloom effect");
+    v2d->form()->add_variable("Enumeration", background_mode, true)->set_items({"Grey", "Color", "Value", "Lightness"});
 
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
@@ -349,7 +376,7 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss, grey_background);
+            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss, background_mode);
             if(use_bloom)
                 bloom(frameBuffer, frameBuffer, bloom_kernel_size, bloom_thresh, bloom_gain);
         });
