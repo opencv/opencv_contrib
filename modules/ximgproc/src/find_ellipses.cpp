@@ -1304,8 +1304,8 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
     // 2 - the pixel does belong to an edge
     for (int i = 0; i <= imgSize.height; i++) {
         int *tmpMag = magBuffer[(i > 0) + 1] + 1;
-        const short *tmpDx = (short *) (dx[i]);
-        const short *tmpDy = (short *) (dy[i]);
+        const short *tmpDx = (short *) (dx.data + dx.step * i);
+        const short *tmpDy = (short *) (dy.data + dy.step * i);
         uchar *tmpMap;
         int prevFlag = 0;
 
