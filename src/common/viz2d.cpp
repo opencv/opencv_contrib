@@ -321,7 +321,7 @@ void Viz2D::setFullscreen(bool f) {
         setWindowSize(getNativeFrameBufferSize());
     } else {
         glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getInitialSize().width, getInitialSize().height, 0);
-//        setWindowSize(getInitialSize());
+        setWindowSize(getInitialSize());
     }
 }
 
