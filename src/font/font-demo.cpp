@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         for(int i = 0; i < numStars; ++i) {
             nvg::beginPath();
             nvg::strokeWidth(rng.uniform(0.5f, MAX_STAR_SIZE));
-            nvg::strokeColor(convert(cv::Scalar(0, rng.uniform(MIN_STAR_LIGHTNESS, 1.0f) * 255, 255, rng.uniform(MIN_STAR_ALPHA, 255)), cv::COLOR_HLS2BGR));
+            nvg::strokeColor(color_convert(cv::Scalar(0, rng.uniform(MIN_STAR_LIGHTNESS, 1.0f) * 255, 255, rng.uniform(MIN_STAR_ALPHA, 255)), cv::COLOR_HLS2BGR));
             nvg::circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), MAX_STAR_SIZE);
             nvg::stroke();
         }
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
             nvg::beginPath();
             nvg::fontSize(FONT_SIZE);
             nvg::fontFace("libertine");
-            nvg::fillColor(convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
+            nvg::fillColor(color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
             nvg::textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
             /** only draw lines that are visible **/

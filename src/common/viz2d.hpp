@@ -28,14 +28,14 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
 void error_callback(int error, const char *description);
 }
 
-cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code);
+cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
 using namespace kb::viz2d::detail;
 
 class NVG;
 
-class Viz2D: private nanogui::Screen {
-    cv::Size size_;
+class Viz2D: public nanogui::Screen {
+    const cv::Size initialSize_;
     cv::Size frameBufferSize_;
     bool offscreen_;
     string title_;
@@ -53,7 +53,7 @@ class Viz2D: private nanogui::Screen {
     bool closed_ = false;
     cv::Size videoFrameSize_ = cv::Size(0,0);
 public:
-    Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+    Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
     void initialize();
 
@@ -68,8 +68,9 @@ public:
     cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex);
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
 
-    void setSize(const cv::Size& sz);
-    cv::Size getSize();
+    void setWindowSize(const cv::Size& sz);
+    cv::Size getWindowSize();
+    cv::Size getInitialSize();
     void setVideoFrameSize(const cv::Size& sz);
     cv::Size getVideoFrameSize();
     cv::Size getFrameBufferSize();

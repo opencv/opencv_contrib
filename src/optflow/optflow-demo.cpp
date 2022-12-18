@@ -1,10 +1,8 @@
-
 #define CL_TARGET_OPENCL_VERSION 120
 
 #include "../common/viz2d.hpp"
 #include "../common/nvg.hpp"
 #include "../common/util.hpp"
-
 
 #include <cmath>
 #include <vector>
@@ -228,7 +226,24 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
 }
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->makeWindow(5, 30, "Effects");
+    auto* effectWindow = v2d->makeWindow(5, 30, "Effects");
+//    nanogui::Button* btn = v2d->form()->add_button("Expand", [=]() {
+//        for(auto* child : effectWindow->children()) {
+//            child->set_visible(true);
+//        }
+//        btn->set_visible(false);
+//        v2d->perform_layout();
+//    });
+
+    effectWindow->button_panel()->add<nanogui::Button>("_")->set_callback([=](){
+        effectWindow->set_visible(false);
+        for(auto* child : effectWindow->children()) {
+            child->set_visible(false);
+        }
+//        btn->set_visible(true);
+        v2d->perform_layout();
+    });
+
     v2d->makeGroup("Foreground");
     v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
@@ -263,7 +278,15 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold");
     v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain");
 
-    v2d->makeWindow(240, 30, "Settings");
+    auto* settingsWindow = v2d->makeWindow(240, 30, "Settings");
+//    settingsWindow->button_panel()->add<nanogui::Button>("_")->set_callback([=](){
+//        settingsWindow->set_visible(false);
+//        nanogui::Button* btn = lbl->add<nanogui::Button>("Settings");
+//        btn->set_callback([=](){
+//            settingsWindow->set_visible(true);
+//        });
+//        v2d->perform_layout();
+//    });
     v2d->makeGroup("Acceleration");
     v2d->makeFormVariable("Use OpenCL", use_opencl, "Enable or disable OpenCL acceleration");
 

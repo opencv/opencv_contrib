@@ -40,8 +40,8 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
         bx = cx + cosf(a1) * (r0 + r1) * 0.5f;
         by = cy + sinf(a1) * (r0 + r1) * 0.5f;
         paint = nvg::linearGradient(ax, ay, bx, by,
-                kb::viz2d::convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
-                kb::viz2d::convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
+                kb::viz2d::color_convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
+                kb::viz2d::color_convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
         nvg::fillPaint(paint);
         nvg::fill();
     }
@@ -84,7 +84,7 @@ void drawColorwheel(float x, float y, float w, float h, float hue) {
     nvg::lineTo(ax, ay);
     nvg::lineTo(bx, by);
     nvg::closePath();
-    paint = nvg::linearGradient(r, 0, ax, ay, kb::viz2d::convert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
+    paint = nvg::linearGradient(r, 0, ax, ay, kb::viz2d::color_convert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
     nvg::fillPaint(paint);
     nvg::fill();
     paint = nvg::linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));

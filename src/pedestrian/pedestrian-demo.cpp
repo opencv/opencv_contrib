@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
                 v2d->clear();
                 nvg::beginPath();
                 nvg::strokeWidth(std::fmax(2.0, WIDTH / 960.0));
-                nvg::strokeColor(kb::viz2d::convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
+                nvg::strokeColor(kb::viz2d::color_convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
                 for (size_t i = 0; i < maxLocations.size(); i++) {
                     nvg::rect(maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
                 }

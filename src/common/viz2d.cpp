@@ -20,7 +20,7 @@ void error_callback(int error, const char *description) {
 }
 }
 
-cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
+cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Mat tmpIn(1,1,CV_8UC3);
     cv::Mat tmpOut(1,1,CV_8UC3);
 
@@ -32,8 +32,8 @@ cv::Scalar convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
 }
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        size_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
-    assert(frameBufferSize_.width >= size_.width && frameBufferSize_.height >= size_.height);
+        initialSize_(size), frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+    assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
     initialize();
 }
 
@@ -91,7 +91,7 @@ void Viz2D::initialize() {
      */
     //    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
-    glfwWindow_ = glfwCreateWindow(size_.width, size_.height, title_.c_str(), nullptr, nullptr);
+    glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr, nullptr);
     if (glfwWindow_ == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -101,7 +101,7 @@ void Viz2D::initialize() {
 
     screen().initialize(getGLFWWindow(), false);
     form_ = new nanogui::FormHelper(this);
-    this->setSize(size_);
+    this->setWindowSize(initialSize_);
 
     glfwSetWindowUserPointer(getGLFWWindow(), this);
 
@@ -275,10 +275,14 @@ cv::Size Viz2D::getFrameBufferSize() {
     return frameBufferSize_;
 }
 
-cv::Size Viz2D::getSize() {
+cv::Size Viz2D::getWindowSize() {
     int w, h;
     glfwGetWindowSize(getGLFWWindow(), &w, &h);
     return {w, h};
+}
+
+cv::Size Viz2D::getInitialSize() {
+    return initialSize_;
 }
 
 float Viz2D::getXPixelRatio() {
@@ -301,8 +305,8 @@ float Viz2D::getYPixelRatio() {
 #endif
 }
 
-void Viz2D::setSize(const cv::Size &sz) {
-    screen().set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
+void Viz2D::setWindowSize(const cv::Size &sz) {
+    set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
 }
 
 bool Viz2D::isFullscreen() {
@@ -314,10 +318,11 @@ void Viz2D::setFullscreen(bool f) {
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
     if (f) {
         glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+        setWindowSize(getNativeFrameBufferSize());
     } else {
-        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getNativeFrameBufferSize().width, getNativeFrameBufferSize().height, mode->refreshRate);
+        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getInitialSize().width, getInitialSize().height, 0);
+//        setWindowSize(getInitialSize());
     }
-    setSize(size_);
 }
 
 bool Viz2D::isResizable() {
@@ -333,10 +338,10 @@ bool Viz2D::isVisible() {
 }
 
 void Viz2D::setVisible(bool v) {
-    screen().perform_layout();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
     screen().set_visible(v);
-    setSize(size_);
+//    setSize(size_);
+    screen().perform_layout();
 }
 
 bool Viz2D::isOffscreen() {
@@ -374,7 +379,7 @@ bool Viz2D::display() {
     if (!offscreen_) {
         glfwPollEvents();
         screen().draw_contents();
-        clglContext_->blitFrameBufferToScreen(getSize());
+        clglContext_->blitFrameBufferToScreen(getWindowSize());
         screen().draw_widgets();
         glfwSwapBuffers(glfwWindow_);
         result = !glfwWindowShouldClose(glfwWindow_);
