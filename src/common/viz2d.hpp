@@ -19,6 +19,7 @@ namespace detail {
 class CLGLContext;
 class CLVAContext;
 class NanoVGContext;
+
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression);
 
 #define GL_CHECK(expr)                            \
@@ -32,26 +33,29 @@ cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
 using namespace kb::viz2d::detail;
 
-
 class Viz2DWindow : public nanogui::Window {
 private:
-    static std::set<Viz2DWindow*> all_windows_;
+    static std::function<bool(Viz2DWindow*, Viz2DWindow*)> viz2DWin_Xcomparator;
+    static std::set<Viz2DWindow*, decltype(viz2DWin_Xcomparator)> all_windows_xsorted_;
     nanogui::Screen* screen_;
-    nanogui::Vector2i lastPos_;
+    nanogui::Vector2i lastDragPos_;
+    nanogui::Vector2i maximizedPos_;
     nanogui::Button* minBtn_;
     nanogui::Button* maxBtn_;
     nanogui::ref<nanogui::AdvancedGridLayout> oldLayout_;
     nanogui::ref<nanogui::AdvancedGridLayout> newLayout_;
-
+    bool minimized_ = false;
 public:
     Viz2DWindow(nanogui::Screen* screen, int x, int y, const string& title);
     virtual ~Viz2DWindow();
+    bool isMinimized();
     bool mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) override;
 };
 
 class NVG;
 
 class Viz2D: public nanogui::Screen {
+    friend class NanoVGContext;
     const cv::Size initialSize_;
     cv::Size frameBufferSize_;
     bool offscreen_;
@@ -130,8 +134,8 @@ public:
     }
 
     void setAccelerated(bool u);
-    NVGcontext* getNVGcontext();
 private:
+
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
 
     CLGLContext& clgl();
@@ -140,6 +144,7 @@ private:
     nanogui::Screen& screen();
     void makeGLFWContextCurrent();
     GLFWwindow* getGLFWWindow();
+    NVGcontext* getNVGcontext();
 };
 }
 } /* namespace kb */
