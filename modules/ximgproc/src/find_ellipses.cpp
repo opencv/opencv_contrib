@@ -1974,15 +1974,14 @@ void findEllipses(
     edi.detect(grayImage, ellipseResults);
 
     // convert - ellipse format to std::vector<Vec6f>
-    auto ellipseSize = unsigned(ellipseResults.size());
-    Mat _ellipses(1, ellipseSize, CV_32FC(6));
-    for (unsigned i = 0; i < ellipseSize; i++) {
+    std::vector<Vec6f> _ellipses;
+    for (size_t i = 0; i < ellipseResults.size(); i++) {
         Ellipse tmpEll = ellipseResults[i];
         Vec6f tmpVec(tmpEll.center.x, tmpEll.center.y, tmpEll.a, tmpEll.b, tmpEll.score,
                      tmpEll.radius);
-        _ellipses.at<Vec6f>(i) = tmpVec;
+        _ellipses.push_back(tmpVec);
     }
-    _ellipses.copyTo(ellipses);
+    Mat(_ellipses).copyTo(ellipses);
 }
 } // namespace ximgproc
 } // namespace cv

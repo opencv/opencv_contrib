@@ -17,8 +17,8 @@ namespace ximgproc {
 @brief Finds ellipses fastly in an image using projective invariant pruning.
 *
 * The function detects ellipses in images using projective invariant pruning.
-* For more details about this implementation, please see
-* [JIA2017FAST]  Jia, Qi et al, (2017).
+* For more details about this implementation, please see @cite jia2017fast
+* Jia, Qi et al, (2017).
 * A Fast Ellipse Detector using Projective Invariant Pruning. IEEE Transactions on Image Processing.
 *
 @param image input image, could be gray or color.
