@@ -36,7 +36,9 @@ enum BackgroundModes {
     GREY,
     COLOR,
     VALUE,
-    LIGHTNESS
+    RED,
+    GREEN,
+    BLUE
 };
 
 // Generate the foreground at this scale.
@@ -235,13 +237,19 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
         cv::cvtColor(background, tmp, cv::COLOR_BGRA2BGR);
         cv::cvtColor(tmp, tmp, cv::COLOR_BGR2HSV);
         split(tmp, channels);
-        cv::cvtColor(channels[2], background, cv::COLOR_GRAY2RGBA);
+        cv::cvtColor(channels[2], background, cv::COLOR_GRAY2BGRA);
         break;
-    case LIGHTNESS:
-        cv::cvtColor(background, tmp, cv::COLOR_BGRA2BGR);
-        cv::cvtColor(tmp, tmp, cv::COLOR_BGR2HLS);
-        split(tmp, channels);
-        cv::cvtColor(channels[1], background, cv::COLOR_GRAY2RGBA);
+    case RED:
+        split(background, channels);
+        cv::cvtColor(channels[2], background, cv::COLOR_GRAY2BGRA);
+        break;
+    case GREEN:
+        split(background, channels);
+        cv::cvtColor(channels[1], background, cv::COLOR_GRAY2BGRA);
+        break;
+    case BLUE:
+        split(background, channels);
+        cv::cvtColor(channels[0], background, cv::COLOR_GRAY2BGRA);
         break;
     case COLOR:
         break;
@@ -264,7 +272,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     v2d->makeGroup("Background");
-    v2d->form()->add_variable("Color Mode", background_mode, true)->set_items({"Grey", "Color", "Value", "Lightness"});
+    v2d->form()->add_variable("Color Mode", background_mode, true)->set_items({"Grey", "Color", "Value", "Red", "Green", "Blue"});
 
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
@@ -277,7 +285,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
     auto* color = v2d->form()->add_variable("Color", effect_color);
-    color->set_tooltip("The effect color");
+    color->set_tooltip("The primary effect color");
     color->set_final_callback([](const nanogui::Color &c) {
         effect_color[0] = c[0];
         effect_color[1] = c[1];
@@ -338,7 +346,7 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size{width, height}, VA_HW_DEVICE_INDEX);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
 
     //BGRA
     cv::UMat background, foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));

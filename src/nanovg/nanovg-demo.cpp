@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, v2d->getFrameBufferSize(), VA_HW_DEVICE_INDEX);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
 
     cv::UMat rgb;
     cv::UMat bgra;

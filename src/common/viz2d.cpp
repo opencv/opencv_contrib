@@ -473,7 +473,7 @@ cv::Vec2f Viz2D::getCursor() {
 }
 
 void Viz2D::setCursor(int x, int y) {
-    cursor_ = {x, y};
+    cursor_ = {float(x), float(y)};
 }
 
 float Viz2D::getScale() {
