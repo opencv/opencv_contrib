@@ -236,7 +236,7 @@ void Viz2D::initialize() {
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().scroll_callback_event(x, y);
-        v2d->zoom(-y / 50.0f);
+        v2d->zoom(y < 0 ? 1.1 : 0.9);
     }
     );
 
@@ -392,34 +392,58 @@ void Viz2D::clear(const cv::Scalar &rgba) {
 }
 
 void Viz2D::zoom(float amount) {
-    scale_ += amount;
+    double oldScale = scale_;
+    double origW = getFrameBufferSize().width;
+    double origH = getFrameBufferSize().height;
+
+    scale_ *= amount;
     if(scale_ <= 0.025) {
         scale_ = 0.025;
         return;
     } else if(scale_ > 1) {
         scale_ = 1;
-        return;
+        viewport_.width = origW;
+        viewport_.height = origW;
+        if(amount > 1) {
+            viewport_.x += log10(((viewport_.x * (1.0 - amount)) / viewport_.width) * 9 + 1.0) * viewport_.width;
+            viewport_.y += log10(((viewport_.y * (1.0 - amount)) / viewport_.height) * 9 + 1.0) * viewport_.height;
+        } else {
+            viewport_.x += log10(((-viewport_.x * (1.0 - amount)) / viewport_.width) * 9 + 1.0) * viewport_.width;
+            viewport_.y += log10(((-viewport_.y * (1.0 - amount)) / viewport_.height) * 9 + 1.0) * viewport_.height;
+        }
     }
 
     cv::Vec2f offset;
-    double origW = getFrameBufferSize().width;
-    double origH = getFrameBufferSize().height;
-    double oldW = (origW * (scale_ - amount));
-    double oldH = (origH * (scale_ - amount));
+    double oldW = (origW * oldScale);
+    double oldH = (origH * oldScale);
+    viewport_.width = std::min(scale_ * origW, origW);
+    viewport_.height = std::min(scale_ * origH, origH);
 
-    offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(cursor_[0], origH - cursor_[1]);
+    float delta_x;
+    float delta_y;
 
-    viewport_.width = scale_ * origW;
-    viewport_.height = scale_ * origH;
+    if(amount < 1.0) {
+        offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(cursor_[0], origH - cursor_[1]);
+        delta_x = offset[0] / oldW;
+        delta_y = offset[1] / oldH;
+    } else {
+        offset = cv::Vec2f(viewport_.x - (viewport_.width / 2.0), viewport_.y - (viewport_.height / 2.0)) - cv::Vec2f(viewport_.x, viewport_.y);
+        delta_x = offset[0] / oldW;
+        delta_y = offset[1] / oldH;
+    }
 
-    float delta_x = offset[0] / oldW;
-    float delta_y = offset[1] / oldH;
+    float x_offset;
+    float y_offset;
+        x_offset = delta_x * (viewport_.width - oldW);
+        y_offset = delta_y * (viewport_.height - oldH);
 
-    float x_offset = delta_x * (viewport_.width - oldW);
-    float y_offset = delta_y * (viewport_.height - oldH);
-
-    viewport_.x += x_offset;
-    viewport_.y += y_offset;
+    if (amount < 1.0) {
+        viewport_.x += x_offset;
+        viewport_.y += y_offset;
+    } else {
+        viewport_.x += x_offset;
+        viewport_.y += y_offset;
+    }
 }
 
 cv::Vec2f Viz2D::getCursor() {
