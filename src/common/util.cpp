@@ -62,7 +62,6 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphically) {
                 nvg::fillColor(cv::Scalar(255, 255, 255, 180));
                 nvg::fill();
 
-                nvg::beginPath();
                 nvg::fontSize(30.0f);
                 nvg::fontFace("mono");
                 nvg::fillColor(cv::Scalar(90, 90, 90, 255));
