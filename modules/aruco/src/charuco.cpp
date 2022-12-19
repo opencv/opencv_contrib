@@ -321,33 +321,6 @@ int interpolateCornersCharuco(InputArrayOfArrays _markerCorners, InputArray _mar
 }
 
 
-void drawDetectedCornersCharuco(InputOutputArray _image, InputArray _charucoCorners,
-                                InputArray _charucoIds, Scalar cornerColor) {
-
-    CV_Assert(_image.getMat().total() != 0 &&
-              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
-    CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()) ||
-              _charucoIds.getMat().total() == 0);
-
-    unsigned int nCorners = (unsigned int)_charucoCorners.getMat().total();
-    for(unsigned int i = 0; i < nCorners; i++) {
-        Point2f corner = _charucoCorners.getMat().at< Point2f >(i);
-
-        // draw first corner mark
-        rectangle(_image, corner - Point2f(3, 3), corner + Point2f(3, 3), cornerColor, 1, LINE_AA);
-
-        // draw ID
-        if(_charucoIds.total() != 0) {
-            int id = _charucoIds.getMat().at< int >(i);
-            stringstream s;
-            s << "id=" << id;
-            putText(_image, s.str(), corner + Point2f(5, -5), FONT_HERSHEY_SIMPLEX, 0.5,
-                    cornerColor, 2);
-        }
-    }
-}
-
-
 void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners, InputArray _markerIds,
                           float squareMarkerLengthRate, OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
                           InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dictionary) {

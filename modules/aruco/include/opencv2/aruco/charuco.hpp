@@ -48,21 +48,6 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
                                            InputArray distCoeffs = noArray(), int minMarkers = 2);
 
 /**
- * @brief Draws a set of Charuco corners
- * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
- * altered.
- * @param charucoCorners vector of detected charuco corners
- * @param charucoIds list of identifiers for each corner in charucoCorners
- * @param cornerColor color of the square surrounding each corner
- *
- * This function draws a set of detected Charuco corners. If identifiers vector is provided, it also
- * draws the id of each corner.
- */
-CV_EXPORTS_W void drawDetectedCornersCharuco(InputOutputArray image, InputArray charucoCorners,
-                                             InputArray charucoIds = noArray(),
-                                             Scalar cornerColor = Scalar(255, 0, 0));
-
-/**
  * @brief Detect ChArUco Diamond markers
  *
  * @param image input image necessary for corner subpixel.
