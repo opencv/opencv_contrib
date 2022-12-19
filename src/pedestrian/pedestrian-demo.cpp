@@ -154,10 +154,11 @@ int main(int argc, char **argv) {
             v2d->opencl([&](cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,videoFrameUp,cv::COLOR_BGRA2RGB);
                 cv::resize(frameBuffer, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
-                cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
-                cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
-                hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
             });
+
+            cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
+            cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
+            hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
 
             maxLocations.clear();
             if (!locations.empty()) {
@@ -177,14 +178,16 @@ int main(int argc, char **argv) {
             }
 
             v2d->nanovg([&](const cv::Size& sz) {
+                using namespace kb::viz2d::nvg;
+
                 v2d->clear();
-                nvg::beginPath();
-                nvg::strokeWidth(std::fmax(2.0, WIDTH / 960.0));
-                nvg::strokeColor(kb::viz2d::color_convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
+                beginPath();
+                strokeWidth(std::fmax(2.0, WIDTH / 960.0));
+                strokeColor(kb::viz2d::color_convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
                 for (size_t i = 0; i < maxLocations.size(); i++) {
-                    nvg::rect(maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
+                    rect(maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
                 }
-                nvg::stroke();
+                stroke();
             });
 
             v2d->opencl([&](cv::UMat& frameBuffer){

@@ -112,32 +112,32 @@ struct FaceFeatures {
 };
 
 void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
-    using namespace kb::viz2d;
+    using namespace kb::viz2d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
 
-        nvg::beginPath();
-        nvg::fillColor(cv::Scalar(255, 255, 255, 255));
-        nvg::ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
-        nvg::rotate(rotRect.angle);
-        nvg::fill();
+        beginPath();
+        fillColor(cv::Scalar(255, 255, 255, 255));
+        ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
+        rotate(rotRect.angle);
+        fill();
     }
 }
 
 void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
-    using namespace kb::viz2d;
+    using namespace kb::viz2d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         for (size_t j = 5; j < 8; ++j) {
-            nvg::beginPath();
-            nvg::fillColor(cv::Scalar(255, 255, 255, 255));
-            nvg::moveTo(features[j][0].x, features[j][0].y);
+            beginPath();
+            fillColor(cv::Scalar(255, 255, 255, 255));
+            moveTo(features[j][0].x, features[j][0].y);
             for (size_t k = 1; k < features[j].size(); ++k) {
-                nvg::lineTo(features[j][k].x, features[j][k].y);
+                lineTo(features[j][k].x, features[j][k].y);
             }
-            nvg::closePath();
-            nvg::fill();
+            closePath();
+            fill();
         }
     }
 }

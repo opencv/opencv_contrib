@@ -128,7 +128,7 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
         float area = cv::contourArea(hull);
         if (area > 0) {
             float density = (detectedPoints.size() / area);
-            float stroke = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
+            float strokeSize = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
             size_t currentMaxPoints = ceil(density * maxPoints);
 
             std::random_shuffle(prevPoints.begin(), prevPoints.end());
@@ -152,22 +152,22 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
                     upNextPoints.push_back(pt /= scaleFactor);
                 }
 
-                using namespace kb::viz2d;
-                nvg::beginPath();
-                nvg::strokeWidth(stroke);
-                nvg::strokeColor(color);
+                using namespace kb::viz2d::nvg;
+                beginPath();
+                strokeWidth(strokeSize);
+                strokeColor(color);
 
                 for (size_t i = 0; i < prevPoints.size(); i++) {
                     if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor) {
                         float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
                         if (len > 0 && len < sqrt(area)) {
                             newPoints.push_back(nextPoints[i]);
-                            nvg::moveTo(upNextPoints[i].x, upNextPoints[i].y);
-                            nvg::lineTo(upPrevPoints[i].x, upPrevPoints[i].y);
+                            moveTo(upNextPoints[i].x, upNextPoints[i].y);
+                            lineTo(upPrevPoints[i].x, upPrevPoints[i].y);
                         }
                     }
                 }
-                nvg::stroke();
+                stroke();
             }
             prevPoints = newPoints;
         }

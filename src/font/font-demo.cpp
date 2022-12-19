@@ -52,9 +52,9 @@ int main(int argc, char **argv) {
     cv::UMat stars, warped;
 
     //The text to display
-    string text = cv::getBuildInformation();
+    string txt = cv::getBuildInformation();
     //Save the text to a vector
-    std::istringstream iss(text);
+    std::istringstream iss(txt);
     vector<string> lines;
     for (std::string line; std::getline(iss, line); ) {
         lines.push_back(line);
@@ -67,16 +67,16 @@ int main(int argc, char **argv) {
     cv::RNG rng(cv::getTickCount());
 
     v2d->nanovg([&](const cv::Size& sz) {
-        using namespace kb;
+        using namespace kb::viz2d::nvg;
         v2d->clear();
         //draw stars
         int numStars = rng.uniform(MIN_STAR_COUNT, MAX_STAR_COUNT);
         for(int i = 0; i < numStars; ++i) {
-            nvg::beginPath();
-            nvg::strokeWidth(rng.uniform(0.5f, MAX_STAR_SIZE));
-            nvg::strokeColor(color_convert(cv::Scalar(0, rng.uniform(MIN_STAR_LIGHTNESS, 1.0f) * 255, 255, rng.uniform(MIN_STAR_ALPHA, 255)), cv::COLOR_HLS2BGR));
-            nvg::circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), MAX_STAR_SIZE);
-            nvg::stroke();
+            beginPath();
+            strokeWidth(rng.uniform(0.5f, MAX_STAR_SIZE));
+            strokeColor(color_convert(cv::Scalar(0, rng.uniform(MIN_STAR_LIGHTNESS, 1.0f) * 255, 255, rng.uniform(MIN_STAR_ALPHA, 255)), cv::COLOR_HLS2BGR));
+            circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), MAX_STAR_SIZE);
+            stroke();
         }
     });
 
@@ -92,13 +92,13 @@ int main(int argc, char **argv) {
         y = 0;
 
         v2d->nanovg([&](const cv::Size& sz) {
-            using namespace kb;
+            using namespace kb::viz2d::nvg;
             v2d->clear();
 
-            nvg::fontSize(FONT_SIZE);
-            nvg::fontFace("libertine");
-            nvg::fillColor(color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
-            nvg::textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+            fontSize(FONT_SIZE);
+            fontFace("libertine");
+            fillColor(color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
+            textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
             /** only draw lines that are visible **/
 
@@ -108,11 +108,11 @@ int main(int argc, char **argv) {
             off_t textHeight = (numLines * FONT_SIZE);
             //How many pixels to translate the text up.
             off_t translateY = HEIGHT - cnt;
-            nvg::translate(0, translateY);
+            translate(0, translateY);
 
             for (const auto &line : lines) {
                 if (translateY + y > -textHeight && translateY + y <= HEIGHT) {
-                    nvg::text(WIDTH / 2.0, y, line.c_str(), line.c_str() + line.size());
+                    text(WIDTH / 2.0, y, line.c_str(), line.c_str() + line.size());
                     y += FONT_SIZE;
                 } else {
                     //We can stop reading lines if the current line exceeds the page.
