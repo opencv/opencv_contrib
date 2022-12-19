@@ -46,12 +46,16 @@ void pop() {
 
 void NanoVGContext::begin() {
     push();
-    float w = v2d_.getVideoFrameSize().width;
-    float h = v2d_.getVideoFrameSize().height;
+    float w = v2d_.getFrameBufferSize().width;
+    float h = v2d_.getFrameBufferSize().height;
     float r = v2d_.getXPixelRatio();
 
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
+//FIXME mirroring with text somehow doesn't work
+//    nvgTranslate(context_, 0, h);
+//    nvgScale(context_, 1, -1);
+    GL_CHECK(glViewport(0, 0, w, h));
 }
 
 

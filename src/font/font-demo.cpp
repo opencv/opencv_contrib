@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
         v2d->nanovg([&](const cv::Size& sz) {
             using namespace kb;
             v2d->clear();
-            nvg::beginPath();
+
             nvg::fontSize(FONT_SIZE);
             nvg::fontFace("libertine");
             nvg::fillColor(color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));

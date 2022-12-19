@@ -30,6 +30,7 @@ cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
     return dst;
 }
+
 std::function<bool(Viz2DWindow*, Viz2DWindow*)> Viz2DWindow::viz2DWin_Xcomparator([](Viz2DWindow* lhs, Viz2DWindow* rhs){ return lhs->position()[0] < rhs->position()[0]; });
 std::set<Viz2DWindow*, decltype(Viz2DWindow::viz2DWin_Xcomparator)> Viz2DWindow::all_windows_xsorted_(viz2DWin_Xcomparator);
 
@@ -218,7 +219,7 @@ void Viz2D::initialize() {
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().mouse_button_callback_event(button, action, modifiers);
-        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (button == GLFW_MOUSE_BUTTON_RIGHT) {
             v2d->setMouseDrag(action == GLFW_PRESS);
         }
     }
