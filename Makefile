@@ -1,5 +1,5 @@
 CXX      := g++
-CXXFLAGS := -std=c++20 -pthread -fno-strict-aliasing -pedantic -Wall -flto -I/usr/local/include/opencv4/ -I/usr/local/include/nanovg
+CXXFLAGS := -std=c++20 -pthread -Wno-deprecated-enum-enum-conversion -fno-strict-aliasing -pedantic -Wall -flto -I/usr/local/include/opencv4/ -I/usr/local/include/nanovg
 LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64 -L../common/
 LIBS     := -lnanogui -lviz2d
 .PHONY: all release debian-release info debug asan clean debian-clean distclean 
