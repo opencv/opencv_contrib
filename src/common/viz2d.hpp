@@ -80,6 +80,7 @@ class Viz2D: public nanogui::Screen {
     std::filesystem::path writerPath_;
     int vaCaptureDeviceIndex_;
     int vaWriterDeviceIndex_;
+    bool mouseDrag_ = false;
 public:
     Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
@@ -97,7 +98,10 @@ public:
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
     cv::VideoWriter& makeWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize);
     cv::VideoCapture& makeCapture(const string& intputFilename);
-    void zoom(float amt = 0.0625);
+    void setMouseDrag(bool d);
+    bool isMouseDrag();
+    void pan(int x, int y);
+    void zoom(float factor);
     cv::Vec2f getCursor();
     void setCursor(int x, int y);
     float getScale();

@@ -207,15 +207,20 @@ void Viz2D::initialize() {
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().cursor_pos_callback_event(x, y);
+        auto cursor = v2d->getCursor();
+        auto diff = cursor - cv::Vec2f(x, y);
+        if(v2d->isMouseDrag()) {
+            v2d->pan(diff[0], -diff[1]);
+        }
         v2d->setCursor(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().mouse_button_callback_event(button, action, modifiers);
-//        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
-//            v2d->pan(v2d->getCursor()[0], v2d->getCursor()[1]);
-//        }
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            v2d->setMouseDrag(action == GLFW_PRESS);
+        }
     }
     );
     glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
@@ -391,12 +396,28 @@ void Viz2D::clear(const cv::Scalar &rgba) {
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 }
 
-void Viz2D::zoom(float amount) {
+void Viz2D::setMouseDrag(bool d) {
+    mouseDrag_ = d;
+}
+
+bool Viz2D::isMouseDrag() {
+    return mouseDrag_;
+}
+
+void Viz2D::pan(int x, int y) {
+    viewport_.x += x * scale_;
+    viewport_.y += y * scale_;
+}
+
+void Viz2D::zoom(float factor) {
+    if(scale_ == 1 && viewport_.x == 0 && viewport_.y && factor > 1)
+        return;
+
     double oldScale = scale_;
     double origW = getFrameBufferSize().width;
     double origH = getFrameBufferSize().height;
 
-    scale_ *= amount;
+    scale_ *= factor;
     if(scale_ <= 0.025) {
         scale_ = 0.025;
         return;
@@ -404,12 +425,12 @@ void Viz2D::zoom(float amount) {
         scale_ = 1;
         viewport_.width = origW;
         viewport_.height = origW;
-        if(amount > 1) {
-            viewport_.x += log10(((viewport_.x * (1.0 - amount)) / viewport_.width) * 9 + 1.0) * viewport_.width;
-            viewport_.y += log10(((viewport_.y * (1.0 - amount)) / viewport_.height) * 9 + 1.0) * viewport_.height;
+        if(factor > 1) {
+            viewport_.x += log10(((viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0) * viewport_.width;
+            viewport_.y += log10(((viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0) * viewport_.height;
         } else {
-            viewport_.x += log10(((-viewport_.x * (1.0 - amount)) / viewport_.width) * 9 + 1.0) * viewport_.width;
-            viewport_.y += log10(((-viewport_.y * (1.0 - amount)) / viewport_.height) * 9 + 1.0) * viewport_.height;
+            viewport_.x += log10(((-viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0) * viewport_.width;
+            viewport_.y += log10(((-viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0) * viewport_.height;
         }
     }
 
@@ -422,7 +443,7 @@ void Viz2D::zoom(float amount) {
     float delta_x;
     float delta_y;
 
-    if(amount < 1.0) {
+    if(factor < 1.0) {
         offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(cursor_[0], origH - cursor_[1]);
         delta_x = offset[0] / oldW;
         delta_y = offset[1] / oldH;
@@ -437,7 +458,7 @@ void Viz2D::zoom(float amount) {
         x_offset = delta_x * (viewport_.width - oldW);
         y_offset = delta_y * (viewport_.height - oldH);
 
-    if (amount < 1.0) {
+    if (factor < 1.0) {
         viewport_.x += x_offset;
         viewport_.y += y_offset;
     } else {
