@@ -45,7 +45,6 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
 }
 
 void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
-    cv::Size fbSize = clglContext_.getSize();
     {
         CLExecScope_t scope(clglContext_.getCLExecContext());
         CLGLContext::GLScope glScope(clglContext_);
