@@ -15,7 +15,7 @@
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
