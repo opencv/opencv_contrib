@@ -65,6 +65,8 @@ float alpha = 0.05f;
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
 bool show_fps = true;
+//Stretch frame buffer to window size
+bool stretch = false;
 //Use OpenCL or not
 bool use_acceleration = true;
 //Use a global bloom effect
@@ -303,6 +305,10 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 
     v2d->makeGroup("Display");
     v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+    v2d->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool& s) {
+        v2d->setStretching(s);
+    });
+
     v2d->form()->add_button("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });

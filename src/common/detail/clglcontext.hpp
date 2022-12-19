@@ -35,7 +35,7 @@ class CLGLContext {
     cv::Size frameBufferSize_;
     cv::ogl::Texture2D& getTexture2D();
     CLExecContext_t& getCLExecContext();
-    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize);
+    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch = false);
 public:
     class FrameBufferScope {
         CLGLContext& ctx_;

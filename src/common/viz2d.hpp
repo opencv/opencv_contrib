@@ -62,6 +62,7 @@ class Viz2D: public nanogui::Screen {
     float scale_;
     cv::Vec2f cursor_;
     bool offscreen_;
+    bool stretch_;
     string title_;
     int major_;
     int minor_;
@@ -123,6 +124,8 @@ public:
     void setVisible(bool v);
     bool isOffscreen();
     void setOffscreen(bool o);
+    void setStretching(bool s);
+    bool isStretching();
     bool isClosed();
     void close();
     bool display();

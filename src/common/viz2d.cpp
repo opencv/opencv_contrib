@@ -134,7 +134,7 @@ bool Viz2DWindow::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Ve
 }
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), cursor_(0,0), offscreen_(offscreen), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), cursor_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
     assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
     initialize();
 }
@@ -572,6 +572,14 @@ void Viz2D::setOffscreen(bool o) {
     setVisible(!o);
 }
 
+void Viz2D::setStretching(bool s) {
+    stretch_ = s;
+}
+
+bool Viz2D::isStretching() {
+    return stretch_;
+}
+
 nanogui::Window* Viz2D::makeWindow(int x, int y, const string &title) {
     return form()->add_window(nanogui::Vector2i(x, y), title);
 }
@@ -632,7 +640,7 @@ bool Viz2D::display() {
     if (!offscreen_) {
         glfwPollEvents();
         screen().draw_contents();
-        clglContext_->blitFrameBufferToScreen(getViewport(), getWindowSize());
+        clglContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());
         screen().draw_widgets();
         glfwSwapBuffers(glfwWindow_);
         result = !glfwWindowShouldClose(glfwWindow_);
