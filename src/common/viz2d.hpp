@@ -127,6 +127,8 @@ public:
     void setStretching(bool s);
     bool isStretching();
     bool isClosed();
+    bool isAccelerated();
+    void setAccelerated(bool u);
     void close();
     bool display();
 
@@ -145,8 +147,6 @@ public:
             var->set_tooltip(tooltip);
         return var;
     }
-
-    void setAccelerated(bool u);
 private:
 
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers);

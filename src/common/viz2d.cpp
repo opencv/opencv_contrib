@@ -595,6 +595,10 @@ nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, b
     return var;
 }
 
+bool Viz2D::isAccelerated() {
+    return cv::ocl::useOpenCL();
+}
+
 void Viz2D::setAccelerated(bool a) {
     if(a != cv::ocl::useOpenCL()) {
         clglContext_->getCLExecContext().setUseOpenCL(a);
