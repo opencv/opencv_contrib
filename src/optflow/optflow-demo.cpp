@@ -256,8 +256,11 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
 
 kb::viz2d::Viz2DWindow* effectWindow;
 kb::viz2d::Viz2DWindow* settingsWindow;
+kb::viz2d::Viz2DWindow* menuWindow;
 
-void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
+
+void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
+    v2d->makeCurrent();
     effectWindow = new kb::viz2d::Viz2DWindow(v2d, 5, 30, "Effects");
     v2d->form()->set_window(effectWindow);
 
@@ -304,7 +307,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         }
         use_bloom = b;
     });
-    settingsWindow = new kb::viz2d::Viz2DWindow(v2d, 240, 30, "Settings");
+    settingsWindow = new kb::viz2d::Viz2DWindow(v2d, 220, 320, "Settings");
     v2d->form()->set_window(settingsWindow);
 
     v2d->makeGroup("Hardware Acceleration");
@@ -314,15 +317,26 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
     v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
 
-    v2d->makeGroup("Display");
-    v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-    v2d->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool& s) {
+    v2dMenu->makeCurrent();
+    menuWindow = new kb::viz2d::Viz2DWindow(v2dMenu, 0, 0, "Display");
+    v2dMenu->form()->set_window(menuWindow);
+
+    v2dMenu->makeGroup("Display");
+    v2dMenu->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+    v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool& s) {
         v2d->setStretching(s);
     });
 
-    v2d->form()->add_button("Fullscreen", [=]() {
+    v2dMenu->form()->add_button("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
+
+    v2dMenu->form()->add_button("Offscreen", [=]() {
+            v2d->setOffscreen(!v2d->isOffscreen());
+    });
+
+    menuWindow->center();
+    v2d->makeCurrent();
 }
 
 int main(int argc, char **argv) {
@@ -332,13 +346,18 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+    cv::Ptr<Viz2D> v2dMenu = new Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+    v2d->makeCurrent();
     print_system_info();
     if(!v2d->isOffscreen()) {
-        setup_gui(v2d);
+        setup_gui(v2d, v2dMenu);
         v2d->setVisible(true);
+        v2dMenu->setVisible(true);
     }
 
+    v2d->makeCurrent();
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
@@ -359,6 +378,7 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> detectedPoints;
 
     while (true) {
+        v2d->makeCurrent();
         if(v2d->isAccelerated() != use_acceleration)
             v2d->setAccelerated(use_acceleration);
 
@@ -401,6 +421,9 @@ int main(int argc, char **argv) {
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())
+            break;
+
+        if(!v2dMenu->display())
             break;
     }
 

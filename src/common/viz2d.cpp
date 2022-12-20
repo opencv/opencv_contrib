@@ -20,6 +20,22 @@ void error_callback(int error, const char *description) {
 }
 }
 
+template <typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& widgets) {
+    T w;
+    for(auto* child: parent->children()) {
+        find_widgets(child, widgets);
+        if((w = dynamic_cast<T>(child)) != nullptr) {
+            widgets.push_back(w);
+        }
+    }
+}
+
+bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i &p) {
+    nanogui::Vector2i d = p - w->absolute_position();
+    return d.x() >= 0 && d.y() >= 0 &&
+           d.x() < w->size().x() && d.y() < w->size().y();
+}
+
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Mat tmpIn(1,1,CV_8UC3);
     cv::Mat tmpOut(1,1,CV_8UC3);
@@ -134,9 +150,9 @@ bool Viz2DWindow::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Ve
 }
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), cursor_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
+        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug), vaCaptureDeviceIndex_(0), vaWriterDeviceIndex_(0) {
     assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
-    initialize();
+    initializeWindowing();
 }
 
 Viz2D::~Viz2D() {
@@ -153,7 +169,7 @@ Viz2D::~Viz2D() {
         delete clglContext_;
 }
 
-void Viz2D::initialize() {
+void Viz2D::initializeWindowing() {
     assert(glfwInit() == GLFW_TRUE);
     glfwSetErrorCallback(kb::viz2d::error_callback);
 
@@ -163,7 +179,7 @@ void Viz2D::initialize() {
     if (offscreen_)
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    glfwSetTime(0);
+//    glfwSetTime(0);
 
 #ifdef __APPLE__
         glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -208,12 +224,12 @@ void Viz2D::initialize() {
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().cursor_pos_callback_event(x, y);
-        auto cursor = v2d->getCursor();
+        auto cursor = v2d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
         if(v2d->isMouseDrag()) {
             v2d->pan(diff[0], -diff[1]);
         }
-        v2d->setCursor(x, y);
+        v2d->setMousePosition(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
@@ -241,7 +257,16 @@ void Viz2D::initialize() {
     );
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().scroll_callback_event(x, y);
+        std::vector<nanogui::Widget*> widgets;
+        find_widgets(&v2d->screen(), widgets);
+        for(auto* w : widgets) {
+            auto mousePos = nanogui::Vector2i(v2d->getMousePosition()[0] / v2d->getXPixelRatio(), v2d->getMousePosition()[1] / v2d->getYPixelRatio());
+            if(contains_absolute(w, mousePos)) {
+                v2d->screen().scroll_callback_event(x, y);
+                return;
+            }
+        }
+
         v2d->zoom(y < 0 ? 1.1 : 0.9);
     }
     );
@@ -313,8 +338,8 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
 }
 
 void Viz2D::opengl(std::function<void(const cv::Size&)> fn) {
-    detail::CLExecScope_t scope(clglContext_->getCLExecContext());
-    detail::CLGLContext::GLScope glScope(*clglContext_);
+    detail::CLExecScope_t scope(clgl().getCLExecContext());
+    detail::CLGLContext::GLScope glScope(clgl());
     fn(getFrameBufferSize());
 }
 
@@ -338,7 +363,7 @@ void Viz2D::write() {
     });
 }
 
-void Viz2D::makeGLFWContextCurrent() {
+void Viz2D::makeCurrent() {
     glfwMakeContextCurrent(getGLFWWindow());
 }
 
@@ -425,7 +450,7 @@ void Viz2D::zoom(float factor) {
     } else if(scale_ > 1) {
         scale_ = 1;
         viewport_.width = origW;
-        viewport_.height = origW;
+        viewport_.height = origH;
         if(factor > 1) {
             viewport_.x += log10(((viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0) * viewport_.width;
             viewport_.y += log10(((viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0) * viewport_.height;
@@ -433,6 +458,7 @@ void Viz2D::zoom(float factor) {
             viewport_.x += log10(((-viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0) * viewport_.width;
             viewport_.y += log10(((-viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0) * viewport_.height;
         }
+        return;
     }
 
     cv::Vec2f offset;
@@ -445,7 +471,7 @@ void Viz2D::zoom(float factor) {
     float delta_y;
 
     if(factor < 1.0) {
-        offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(cursor_[0], origH - cursor_[1]);
+        offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(mousePos_[0], origH - mousePos_[1]);
         delta_x = offset[0] / oldW;
         delta_y = offset[1] / oldH;
     } else {
@@ -468,12 +494,18 @@ void Viz2D::zoom(float factor) {
     }
 }
 
-cv::Vec2f Viz2D::getCursor() {
-    return cursor_;
+cv::Vec2f Viz2D::getPosition() {
+    int x, y;
+    glfwGetWindowPos(getGLFWWindow(), &x, &y);
+    return {float(x), float(y)};
 }
 
-void Viz2D::setCursor(int x, int y) {
-    cursor_ = {float(x), float(y)};
+cv::Vec2f Viz2D::getMousePosition() {
+    return mousePos_;
+}
+
+void Viz2D::setMousePosition(int x, int y) {
+    mousePos_ = {float(x), float(y)};
 }
 
 float Viz2D::getScale() {
@@ -643,6 +675,7 @@ void Viz2D::setAccelerated(bool a) {
 bool Viz2D::display() {
     bool result = true;
     if (!offscreen_) {
+        makeCurrent();
         glfwPollEvents();
         screen().draw_contents();
         clglContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());

@@ -60,7 +60,7 @@ class Viz2D: public nanogui::Screen {
     cv::Size frameBufferSize_;
     cv::Rect viewport_;
     float scale_;
-    cv::Vec2f cursor_;
+    cv::Vec2f mousePos_;
     bool offscreen_;
     bool stretch_;
     string title_;
@@ -85,7 +85,8 @@ class Viz2D: public nanogui::Screen {
 public:
     Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
-    void initialize();
+    void initializeWindowing();
+    void makeCurrent();
 
     cv::ogl::Texture2D& texture();
     void opengl(std::function<void(const cv::Size&)> fn);
@@ -103,8 +104,8 @@ public:
     bool isMouseDrag();
     void pan(int x, int y);
     void zoom(float factor);
-    cv::Vec2f getCursor();
-    void setCursor(int x, int y);
+    cv::Vec2f getPosition();
+    cv::Vec2f getMousePosition();
     float getScale();
     cv::Rect getViewport();
     void setWindowSize(const cv::Size& sz);
@@ -149,14 +150,13 @@ public:
         return var;
     }
 private:
-
-    virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
+    virtual bool keyboard_event(int key, int scancode, int action, int modifiers) override;
+    void setMousePosition(int x, int y);
 
     CLGLContext& clgl();
     CLVAContext& clva();
     NanoVGContext& nvg();
     nanogui::Screen& screen();
-    void makeGLFWContextCurrent();
     GLFWwindow* getGLFWWindow();
     NVGcontext* getNVGcontext();
 };
