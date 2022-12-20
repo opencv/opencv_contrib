@@ -134,8 +134,9 @@ void CV_CharucoDetection::run(int) {
     Size imgSize(500, 500);
     aruco::DetectorParameters params;
     params.minDistanceToBorder = 3;
-    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
-    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, detector.getDictionary());
+    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f,
+                                                                 aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
+    aruco::CharucoDetector detector(board, aruco::CharucoParameters(), params);
 
     cameraMatrix.at<double>(0, 0) = cameraMatrix.at<double>(1, 1) = 600;
     cameraMatrix.at<double>(0, 2) = imgSize.width / 2;
@@ -156,30 +157,29 @@ void CV_CharucoDetection::run(int) {
                 Mat img = projectCharucoBoard(board, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                               distance, imgSize, markerBorder, rvec, tvec);
 
-                // detect markers
+                // detect markers and interpolate charuco corners
                 vector<vector<Point2f> > corners;
-                vector<int> ids;
+                vector<Point2f> charucoCorners;
+                vector<int> ids, charucoIds;
 
                 params.markerBorderBits = markerBorder;
                 detector.setDetectorParameters(params);
-                detector.detectMarkers(img, corners, ids);
+
+                //detector.detectMarkers(img, corners, ids);
+                if(iter % 2 == 0) {
+                    detector.detectBoard(img, corners, ids, charucoCorners, charucoIds);
+                } else {
+                    aruco::CharucoParameters charucoParameters;
+                    charucoParameters.cameraMatrix = cameraMatrix;
+                    charucoParameters.distCoeffs = distCoeffs;
+                    detector.setCharucoParameters(charucoParameters);
+                    detector.detectBoard(img, corners, ids, charucoCorners, charucoIds);
+                }
 
                 if(ids.size() == 0) {
                     ts->printf(cvtest::TS::LOG, "Marker detection failed");
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                     return;
-                }
-
-                // interpolate charuco corners
-                vector<Point2f> charucoCorners;
-                vector<int> charucoIds;
-
-                if(iter % 2 == 0) {
-                    aruco::interpolateCornersCharuco(corners, ids, img, board, charucoCorners,
-                                                     charucoIds);
-                } else {
-                    aruco::interpolateCornersCharuco(corners, ids, img, board, charucoCorners,
-                                                     charucoIds, cameraMatrix, distCoeffs);
                 }
 
                 // check results
@@ -241,12 +241,12 @@ void CV_CharucoPoseEstimation::run(int) {
     Size imgSize(500, 500);
     aruco::DetectorParameters params;
     params.minDistanceToBorder = 3;
-    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
-    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, detector.getDictionary());
+    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(4, 4, 0.03f, 0.015f, aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
+    aruco::CharucoDetector detector(board, aruco::CharucoParameters(), params);
 
-    cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
-    cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
-    cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
+    cameraMatrix.at<double>(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
+    cameraMatrix.at<double>(0, 2) = imgSize.width / 2;
+    cameraMatrix.at<double>(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     // for different perspectives
@@ -263,30 +263,29 @@ void CV_CharucoPoseEstimation::run(int) {
                                               distance, imgSize, markerBorder, rvec, tvec);
 
                 // detect markers
-                vector< vector< Point2f > > corners;
-                vector< int > ids;
+                vector<vector<Point2f> > corners;
+                vector<int> ids;
                 params.markerBorderBits = markerBorder;
                 detector.setDetectorParameters(params);
-                detector.detectMarkers(img, corners, ids);
 
-                ASSERT_EQ(ids.size(), board->getIds().size());
-
-                // interpolate charuco corners
-                vector< Point2f > charucoCorners;
-                vector< int > charucoIds;
+                // detect markers and interpolate charuco corners
+                vector<Point2f> charucoCorners;
+                vector<int> charucoIds;
 
                 if(iter % 2 == 0) {
-                    aruco::interpolateCornersCharuco(corners, ids, img, board, charucoCorners,
-                                                     charucoIds);
+                    detector.detectBoard(img, corners, ids, charucoCorners, charucoIds);
                 } else {
-                    aruco::interpolateCornersCharuco(corners, ids, img, board, charucoCorners,
-                                                     charucoIds, cameraMatrix, distCoeffs);
+                    aruco::CharucoParameters charucoParameters;
+                    charucoParameters.cameraMatrix = cameraMatrix;
+                    charucoParameters.distCoeffs = distCoeffs;
+                    detector.setCharucoParameters(charucoParameters);
+                    detector.detectBoard(img, corners, ids, charucoCorners, charucoIds);
                 }
-
+                ASSERT_EQ(ids.size(), board->getIds().size());
                 if(charucoIds.size() == 0) continue;
 
                 // estimate charuco pose
-                estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
+                getCharucoBoardPose(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
 
 
                 // check axes
@@ -352,15 +351,23 @@ void CV_CharucoDiamondDetection::run(int) {
     Size imgSize(500, 500);
     aruco::DetectorParameters params;
     params.minDistanceToBorder = 0;
-    aruco::ArucoDetector detector(aruco::getPredefinedDictionary(aruco::DICT_6X6_250), params);
     float squareLength = 0.03f;
     float markerLength = 0.015f;
+    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(3, 3, squareLength, markerLength,
+                                                                aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
+    aruco::CharucoDetector detector(board);
 
-    cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
-    cameraMatrix.at< double >(0, 2) = imgSize.width / 2;
-    cameraMatrix.at< double >(1, 2) = imgSize.height / 2;
+
+    cameraMatrix.at<double>(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
+    cameraMatrix.at<double>(0, 2) = imgSize.width / 2;
+    cameraMatrix.at<double>(1, 2) = imgSize.height / 2;
 
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
+    aruco::CharucoParameters charucoParameters;
+    charucoParameters.cameraMatrix = cameraMatrix;
+    charucoParameters.distCoeffs = distCoeffs;
+    detector.setCharucoParameters(charucoParameters);
+
     // for different perspectives
     for(double distance = 0.2; distance <= 0.3; distance += 0.1) {
         for(int yaw = -50; yaw <= 50; yaw += 25) {
@@ -370,8 +377,9 @@ void CV_CharucoDiamondDetection::run(int) {
                 vector<int> idsTmp;
                 for(int i = 0; i < 4; i++)
                     idsTmp.push_back(4 * iter + i);
-                Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(3, 3, squareLength, markerLength,
-                                                                             detector.getDictionary(), idsTmp);
+                board = aruco::CharucoBoard::create(3, 3, squareLength, markerLength,
+                                                    aruco::getPredefinedDictionary(aruco::DICT_6X6_250), idsTmp);
+                detector.setBoard(board);
                 iter++;
 
                 // get synthetic image
@@ -380,22 +388,25 @@ void CV_CharucoDiamondDetection::run(int) {
                                               distance, imgSize, markerBorder, rvec, tvec);
 
                 // detect markers
-                vector< vector< Point2f > > corners;
-                vector< int > ids;
+                vector<vector<Point2f>> corners;
+                vector<int> ids;
                 params.markerBorderBits = markerBorder;
                 detector.setDetectorParameters(params);
-                detector.detectMarkers(img, corners, ids);
+                //detector.detectMarkers(img, corners, ids);
 
+
+                // detect diamonds
+                vector<vector<Point2f>> diamondCorners;
+                vector<Vec4i> diamondIds;
+
+                detector.detectDiamonds(img, corners, ids, diamondCorners, diamondIds);
+
+                // check detect
                 if(ids.size() != 4) {
                     ts->printf(cvtest::TS::LOG, "Not enough markers for diamond detection");
                     ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
                     return;
                 }
-                // detect diamonds
-                vector< vector< Point2f > > diamondCorners;
-                vector< Vec4i > diamondIds;
-                aruco::detectCharucoDiamond(img, corners, ids, squareLength / markerLength, diamondCorners, diamondIds,
-                                            cameraMatrix, distCoeffs, makePtr<aruco::Dictionary>(detector.getDictionary()));
 
                 // check results
                 if(diamondIds.size() != 1) {
@@ -442,12 +453,10 @@ void CV_CharucoDiamondDetection::run(int) {
                     }
                 }
 
-                Ptr<aruco::EstimateParameters> estimateParameters = makePtr<aruco::EstimateParameters>();
-                estimateParameters->pattern = aruco::ARUCO_CW_TOP_LEFT_CORNER;
                 // estimate diamond pose
                 vector< Vec3d > estimatedRvec, estimatedTvec;
-                aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, cameraMatrix, distCoeffs, estimatedRvec,
-                                                 estimatedTvec, noArray(), estimateParameters);
+                getMarkersPoses(diamondCorners, squareLength, cameraMatrix, distCoeffs, estimatedRvec,
+                                                 estimatedTvec, noArray(), false);
 
                 // check result
                 vector< Point2f > projectedDiamondCornersPose;
@@ -569,9 +578,9 @@ TEST(Charuco, testCharucoCornersCollinear_true)
         charucoIdsDiagonalLine[i] = arrDiag[i];
     }
 
-    bool resultAxisLine = cv::aruco::testCharucoCornersCollinear(charucoBoard, charucoIdsAxisLine);
+    bool resultAxisLine = charucoBoard->checkCharucoCornersCollinear(charucoIdsAxisLine);
 
-    bool resultDiagonalLine = cv::aruco::testCharucoCornersCollinear(charucoBoard, charucoIdsDiagonalLine);
+    bool resultDiagonalLine = charucoBoard->checkCharucoCornersCollinear(charucoIdsDiagonalLine);
 
     EXPECT_TRUE(resultAxisLine);
 
@@ -608,7 +617,7 @@ TEST(Charuco, testCharucoCornersCollinear_false)
     }
 
 
-    bool result = cv::aruco::testCharucoCornersCollinear(charucoBoard, charucoIds);
+    bool result = charucoBoard->checkCharucoCornersCollinear(charucoIds);
 
     EXPECT_FALSE(result);
 }
@@ -647,25 +656,19 @@ TEST(Charuco, testBoardSubpixelCoords)
     aruco::DetectorParameters params;
     params.cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
 
-    aruco::ArucoDetector detector(dict, params);
+
+    aruco::CharucoParameters charucoParameters;
+    charucoParameters.cameraMatrix = K;
+    aruco::CharucoDetector detector(board, charucoParameters);
+    detector.setDetectorParameters(params);
 
     std::vector<int> ids;
-    std::vector<std::vector<cv::Point2f>> corners, rejected;
+    std::vector<std::vector<cv::Point2f>> corners;
+    cv::Mat c_ids, c_corners;
 
-    detector.detectMarkers(gray, corners, ids, rejected);
+    detector.detectBoard(gray, corners, ids, c_corners, c_ids);
 
     ASSERT_EQ(ids.size(), size_t(8));
-
-    cv::Mat c_ids, c_corners;
-    cv::aruco::interpolateCornersCharuco(corners, ids, gray, board, c_corners, c_ids, K);
-
-    ASSERT_EQ(c_corners.rows, expected_corners.rows);
-    EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-1);
-
-    c_ids = cv::Mat();
-    c_corners = cv::Mat();
-    cv::aruco::interpolateCornersCharuco(corners, ids, gray, board, c_corners, c_ids);
-
     ASSERT_EQ(c_corners.rows, expected_corners.rows);
     EXPECT_NEAR(0, cvtest::norm(expected_corners, c_corners.reshape(1), NORM_INF), 1e-1);
 }

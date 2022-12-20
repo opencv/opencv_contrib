@@ -108,7 +108,7 @@ void CV_ArucoBoardPose::run(int) {
                 // estimate pose
                 Mat rvec, tvec;
                 Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
-                estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
+                getBoardPose(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
                 // check axes
                 vector<Point2f> axes = getAxis(cameraMatrix, distCoeffs, rvec, tvec, gridboard->getRightBottomCorner().x);
@@ -302,7 +302,7 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     corners.push_back(pts2d);
 
     Vec3d rvec, tvec;
-    int nUsed = cv::aruco::estimatePoseBoard(corners, board->getIds(), board, cameraMatrix, Mat(), rvec, tvec);
+    int nUsed = getBoardPose(corners, board->getIds(), board, cameraMatrix, Mat(), rvec, tvec);
     ASSERT_EQ(nUsed, 2);
 
     cv::Matx33d rotm; cv::Point3d out;
@@ -323,7 +323,7 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     pts2d.push_back(cv::Point2f(586.3f, 188.5f));
     corners.push_back(pts2d);
 
-    nUsed = cv::aruco::estimatePoseBoard(corners, board->getIds(), board, cameraMatrix, Mat(), rvec, tvec, true);
+    nUsed = getBoardPose(corners, board->getIds(), board, cameraMatrix, Mat(), rvec, tvec, true);
     ASSERT_EQ(nUsed, 2);
 
     cv::Rodrigues(rvec, rotm);

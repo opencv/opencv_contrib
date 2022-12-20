@@ -7,7 +7,7 @@
 #include <opencv2/core.hpp>
 #include <vector>
 #include <opencv2/aruco.hpp>
-#include <opencv2/objdetect/aruco_detector.hpp>
+#include <opencv2/objdetect/charuco_detector.hpp>
 #include <opencv2/aruco/aruco_calib.hpp>
 
 
