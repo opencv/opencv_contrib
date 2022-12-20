@@ -2294,14 +2294,15 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CvtColor, testing::Combine(
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // Demosaicing
 
-struct Demosaicing : testing::TestWithParam<cv::cuda::DeviceInfo>
+struct Demosaicing : testing::TestWithParam<testing::tuple<cv::cuda::DeviceInfo, bool>>
 {
     cv::cuda::DeviceInfo devInfo;
+    bool useRoi;
 
     virtual void SetUp()
     {
-        devInfo = GetParam();
-
+        devInfo = GET_PARAM(0);
+        useRoi = GET_PARAM(1);
         cv::cuda::setDevice(devInfo.deviceID());
     }
 
@@ -2419,7 +2420,7 @@ CUDA_TEST_P(Demosaicing, BayerBG2BGR_MHT)
     mosaic(img, src, cv::Point(1, 1));
 
     cv::cuda::GpuMat dst;
-    cv::cuda::demosaicing(loadMat(src), dst, cv::cuda::COLOR_BayerBG2BGR_MHT);
+    cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerBG2BGR_MHT);
 
     EXPECT_MAT_SIMILAR(img, dst, 5e-3);
 }
@@ -2433,7 +2434,7 @@ CUDA_TEST_P(Demosaicing, BayerGB2BGR_MHT)
     mosaic(img, src, cv::Point(0, 1));
 
     cv::cuda::GpuMat dst;
-    cv::cuda::demosaicing(loadMat(src), dst, cv::cuda::COLOR_BayerGB2BGR_MHT);
+    cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerGB2BGR_MHT);
 
     EXPECT_MAT_SIMILAR(img, dst, 5e-3);
 }
@@ -2447,7 +2448,7 @@ CUDA_TEST_P(Demosaicing, BayerRG2BGR_MHT)
     mosaic(img, src, cv::Point(0, 0));
 
     cv::cuda::GpuMat dst;
-    cv::cuda::demosaicing(loadMat(src), dst, cv::cuda::COLOR_BayerRG2BGR_MHT);
+    cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerRG2BGR_MHT);
 
     EXPECT_MAT_SIMILAR(img, dst, 5e-3);
 }
@@ -2461,12 +2462,11 @@ CUDA_TEST_P(Demosaicing, BayerGR2BGR_MHT)
     mosaic(img, src, cv::Point(1, 0));
 
     cv::cuda::GpuMat dst;
-    cv::cuda::demosaicing(loadMat(src), dst, cv::cuda::COLOR_BayerGR2BGR_MHT);
-
+    cv::cuda::demosaicing(loadMat(src, useRoi), dst, cv::cuda::COLOR_BayerGR2BGR_MHT);
     EXPECT_MAT_SIMILAR(img, dst, 5e-3);
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, Demosaicing, ALL_DEVICES);
+INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, Demosaicing, testing::Combine(ALL_DEVICES, WHOLE_SUBMAT));
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // swapChannels

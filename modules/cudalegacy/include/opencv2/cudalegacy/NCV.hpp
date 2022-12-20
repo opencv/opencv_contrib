@@ -119,9 +119,9 @@ typedef               bool NcvBool;
 typedef          long long Ncv64s;
 
 #if defined(__APPLE__) && !defined(__CUDACC__)
-    typedef uint64_t Ncv64u;
+    typedef uint64 Ncv64u;
 #else
-    typedef unsigned long long Ncv64u;
+    typedef uint64 Ncv64u;
 #endif
 
 typedef                int Ncv32s;

@@ -46,6 +46,7 @@
 #include "opencv2/core/cuda/border_interpolate.hpp"
 #include "opencv2/core/cuda/limits.hpp"
 #include "opencv2/core/cuda.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 using namespace cv::cuda;
 using namespace cv::cuda::device;
@@ -102,63 +103,8 @@ namespace tvl1flow
         }
     }
 
-    struct SrcTex
-    {
-        virtual ~SrcTex() {}
-
-        __device__ __forceinline__ virtual float I1(float x, float y) const = 0;
-        __device__ __forceinline__ virtual float I1x(float x, float y) const = 0;
-        __device__ __forceinline__ virtual float I1y(float x, float y) const = 0;
-    };
-
-    texture<float, cudaTextureType2D, cudaReadModeElementType> tex_I1 (false, cudaFilterModePoint, cudaAddressModeClamp);
-    texture<float, cudaTextureType2D, cudaReadModeElementType> tex_I1x(false, cudaFilterModePoint, cudaAddressModeClamp);
-    texture<float, cudaTextureType2D, cudaReadModeElementType> tex_I1y(false, cudaFilterModePoint, cudaAddressModeClamp);
-    struct SrcTexRef : SrcTex
-    {
-        __device__ __forceinline__ float I1(float x, float y) const CV_OVERRIDE
-        {
-            return tex2D(tex_I1, x, y);
-        }
-        __device__ __forceinline__ float I1x(float x, float y) const CV_OVERRIDE
-        {
-            return tex2D(tex_I1x, x, y);
-        }
-        __device__ __forceinline__ float I1y(float x, float y) const CV_OVERRIDE
-        {
-            return tex2D(tex_I1y, x, y);
-        }
-    };
-
-    struct SrcTexObj : SrcTex
-    {
-        __host__ SrcTexObj(cudaTextureObject_t tex_obj_I1_, cudaTextureObject_t tex_obj_I1x_, cudaTextureObject_t tex_obj_I1y_)
-            : tex_obj_I1(tex_obj_I1_), tex_obj_I1x(tex_obj_I1x_), tex_obj_I1y(tex_obj_I1y_) {}
-
-        __device__ __forceinline__ float I1(float x, float y) const CV_OVERRIDE
-        {
-            return tex2D<float>(tex_obj_I1, x, y);
-        }
-        __device__ __forceinline__ float I1x(float x, float y) const CV_OVERRIDE
-        {
-            return tex2D<float>(tex_obj_I1x, x, y);
-        }
-        __device__ __forceinline__ float I1y(float x, float y) const CV_OVERRIDE
-        {
-            return tex2D<float>(tex_obj_I1y, x, y);
-        }
-
-        cudaTextureObject_t tex_obj_I1;
-        cudaTextureObject_t tex_obj_I1x;
-        cudaTextureObject_t tex_obj_I1y;
-    };
-
-    template <
-        typename T,
-        typename = typename std::enable_if<std::is_base_of<SrcTex, T>::value>::type
-    >
     __global__ void warpBackwardKernel(
-        const PtrStepSzf I0, const T src, const PtrStepf u1, const PtrStepf u2,
+        const PtrStepSzf I0, const cv::cudev::TexturePtr<float> I1, const cv::cudev::TexturePtr<float> I1x, const cv::cudev::TexturePtr<float> I1y, const PtrStepf u1, const PtrStepf u2,
         PtrStepf I1w, PtrStepf I1wx, PtrStepf I1wy, PtrStepf grad, PtrStepf rho)
     {
         const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -189,11 +135,9 @@ namespace tvl1flow
             for (int cx = xmin; cx <= xmax; ++cx)
             {
                 const float w = bicubicCoeff(wx - cx) * bicubicCoeff(wy - cy);
-
-                sum  += w * src.I1(cx, cy);
-                sumx += w * src.I1x(cx, cy);
-                sumy += w * src.I1y(cx, cy);
-
+                sum  += w * I1(cy, cx);
+                sumx += w * I1x(cy, cx);
+                sumy += w * I1y(cy, cx);
                 wsum += w;
             }
         }
@@ -224,49 +168,14 @@ namespace tvl1flow
                       PtrStepSzf I1wy, PtrStepSzf grad, PtrStepSzf rho,
                       cudaStream_t stream)
     {
+        cv::cudev::Texture<float> texI1(I1);
+        cv::cudev::Texture<float> texI1x(I1x);
+        cv::cudev::Texture<float> texI1y(I1y);
         const dim3 block(32, 8);
         const dim3 grid(divUp(I0.cols, block.x), divUp(I0.rows, block.y));
-
-        bool cc30 = deviceSupports(FEATURE_SET_COMPUTE_30);
-
-        if (cc30)
-        {
-            cudaTextureDesc texDesc;
-            memset(&texDesc, 0, sizeof(texDesc));
-            texDesc.addressMode[0] = cudaAddressModeClamp;
-            texDesc.addressMode[1] = cudaAddressModeClamp;
-            texDesc.addressMode[2] = cudaAddressModeClamp;
-
-            cudaTextureObject_t texObj_I1 = 0, texObj_I1x = 0, texObj_I1y = 0;
-
-            createTextureObjectPitch2D(&texObj_I1, I1, texDesc);
-            createTextureObjectPitch2D(&texObj_I1x, I1x, texDesc);
-            createTextureObjectPitch2D(&texObj_I1y, I1y, texDesc);
-
-            warpBackwardKernel << <grid, block, 0, stream >> > (I0, SrcTexObj(texObj_I1, texObj_I1x, texObj_I1y), u1, u2, I1w, I1wx, I1wy, grad, rho);
-            cudaSafeCall(cudaGetLastError());
-
-            if (!stream)
-                cudaSafeCall(cudaDeviceSynchronize());
-            else
-                cudaSafeCall(cudaStreamSynchronize(stream));
-
-            cudaSafeCall(cudaDestroyTextureObject(texObj_I1));
-            cudaSafeCall(cudaDestroyTextureObject(texObj_I1x));
-            cudaSafeCall(cudaDestroyTextureObject(texObj_I1y));
-        }
-        else
-        {
-            bindTexture(&tex_I1, I1);
-            bindTexture(&tex_I1x, I1x);
-            bindTexture(&tex_I1y, I1y);
-
-            warpBackwardKernel << <grid, block, 0, stream >> > (I0, SrcTexRef(), u1, u2, I1w, I1wx, I1wy, grad, rho);
-            cudaSafeCall(cudaGetLastError());
-
-            if (!stream)
-                cudaSafeCall(cudaDeviceSynchronize());
-        }
+        warpBackwardKernel<<<grid, block, 0, stream>>>(I0, texI1, texI1x, texI1y , u1, u2, I1w, I1wx, I1wy, grad, rho);
+        if (!stream)
+            cudaSafeCall(cudaDeviceSynchronize());
     }
 }
 

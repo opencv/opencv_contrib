@@ -46,6 +46,7 @@
 #include "opencv2/core/cuda/reduce.hpp"
 #include "opencv2/core/cuda/functional.hpp"
 #include "opencv2/core/cuda/warp_shuffle.hpp"
+#include  <opencv2/cudev/ptr2d/texture.hpp>
 
 namespace cv { namespace cuda { namespace device
 {
@@ -825,64 +826,57 @@ namespace cv { namespace cuda { namespace device
         //-------------------------------------------------------------------
         // Resize
 
-        texture<uchar4, 2, cudaReadModeNormalizedFloat> resize8UC4_tex;
-        texture<uchar,  2, cudaReadModeNormalizedFloat> resize8UC1_tex;
-
-        __global__ void resize_for_hog_kernel(float sx, float sy, PtrStepSz<uchar> dst, int colOfs)
+        __global__ void resize_for_hog_kernel(cv::cudev::TexturePtr<uchar, float> src, float sx, float sy, PtrStepSz<uchar> dst)
         {
             unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
             unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
 
             if (x < dst.cols && y < dst.rows)
-                dst.ptr(y)[x] = tex2D(resize8UC1_tex, x * sx + colOfs, y * sy) * 255;
+                dst.ptr(y)[x] = src(y * sy, x * sx) * 255;
         }
 
-        __global__ void resize_for_hog_kernel(float sx, float sy, PtrStepSz<uchar4> dst, int colOfs)
+        __global__ void resize_for_hog_kernel(cv::cudev::TexturePtr<uchar4, float4> src, float sx, float sy, PtrStepSz<uchar4> dst)
         {
             unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
             unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
 
             if (x < dst.cols && y < dst.rows)
             {
-                float4 val = tex2D(resize8UC4_tex, x * sx + colOfs, y * sy);
+                float4 val = src(y * sy, x * sx);
                 dst.ptr(y)[x] = make_uchar4(val.x * 255, val.y * 255, val.z * 255, val.w * 255);
             }
         }
 
-        template<class T, class TEX>
-        static void resize_for_hog(const PtrStepSzb& src, PtrStepSzb dst, TEX& tex)
+        static void resize_for_hog_8UC1(const PtrStepSzb& src, PtrStepSzb dst)
         {
-            tex.filterMode = cudaFilterModeLinear;
-
-            size_t texOfs = 0;
-            int colOfs = 0;
-
-            cudaChannelFormatDesc desc = cudaCreateChannelDesc<T>();
-            cudaSafeCall( cudaBindTexture2D(&texOfs, tex, src.data, desc, src.cols, src.rows, src.step) );
-
-            if (texOfs != 0)
-            {
-                colOfs = static_cast<int>( texOfs/sizeof(T) );
-                cudaSafeCall( cudaUnbindTexture(tex) );
-                cudaSafeCall( cudaBindTexture2D(&texOfs, tex, src.data, desc, src.cols, src.rows, src.step) );
-            }
-
+            cv::cudev::Texture<uchar,float> tex(src.rows, src.cols, src.data, src.step, false, cudaFilterModeLinear, cudaAddressModeClamp, cudaReadModeNormalizedFloat);
             dim3 threads(32, 8);
             dim3 grid(divUp(dst.cols, threads.x), divUp(dst.rows, threads.y));
 
             float sx = static_cast<float>(src.cols) / dst.cols;
             float sy = static_cast<float>(src.rows) / dst.rows;
 
-            resize_for_hog_kernel<<<grid, threads>>>(sx, sy, (PtrStepSz<T>)dst, colOfs);
+            resize_for_hog_kernel<<<grid, threads>>>(tex, sx, sy, (PtrStepSz<uchar>)dst);
             cudaSafeCall( cudaGetLastError() );
-
             cudaSafeCall( cudaDeviceSynchronize() );
-
-            cudaSafeCall( cudaUnbindTexture(tex) );
         }
 
-        void resize_8UC1(const PtrStepSzb& src, PtrStepSzb dst) { resize_for_hog<uchar> (src, dst, resize8UC1_tex); }
-        void resize_8UC4(const PtrStepSzb& src, PtrStepSzb dst) { resize_for_hog<uchar4>(src, dst, resize8UC4_tex); }
+        static void resize_for_hog_8UC4(const PtrStepSzb& src, PtrStepSzb dst)
+        {
+            cv::cudev::Texture<uchar4, float4> tex(src.rows, src.cols, reinterpret_cast<uchar4*>(src.data), src.step, false, cudaFilterModeLinear, cudaAddressModeClamp, cudaReadModeNormalizedFloat);
+            dim3 threads(32, 8);
+            dim3 grid(divUp(dst.cols, threads.x), divUp(dst.rows, threads.y));
+
+            float sx = static_cast<float>(src.cols) / dst.cols;
+            float sy = static_cast<float>(src.rows) / dst.rows;
+
+            resize_for_hog_kernel<<<grid, threads>>>(tex, sx, sy, (PtrStepSz<uchar4>)dst);
+            cudaSafeCall(cudaGetLastError());
+            cudaSafeCall(cudaDeviceSynchronize());
+        }
+
+        void resize_8UC1(const PtrStepSzb& src, PtrStepSzb dst) { resize_for_hog_8UC1(src, dst); }
+        void resize_8UC4(const PtrStepSzb& src, PtrStepSzb dst) { resize_for_hog_8UC4(src, dst); }
     } // namespace hog
 }}} // namespace cv { namespace cuda { namespace cudev
 

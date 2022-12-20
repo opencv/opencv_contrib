@@ -47,6 +47,7 @@
 #include "opencv2/core/cuda/vec_math.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 #include "opencv2/opencv_modules.hpp"
 
@@ -58,10 +59,7 @@ namespace cv { namespace cuda { namespace device
     {
         /////////////////////////////////////////// Corner Harris /////////////////////////////////////////////////
 
-        texture<float, cudaTextureType2D, cudaReadModeElementType> harrisDxTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-        texture<float, cudaTextureType2D, cudaReadModeElementType> harrisDyTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-
-        __global__ void cornerHarris_kernel(const int block_size, const float k, PtrStepSzf dst)
+        __global__ void cornerHarris_kernel(cv::cudev::TexturePtr<float> texDx, cv::cudev::TexturePtr<float> texDy, const int block_size, const float k, PtrStepSzf dst)
         {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -81,8 +79,8 @@ namespace cv { namespace cuda { namespace device
                 {
                     for (int j = jbegin; j < jend; ++j)
                     {
-                        float dx = tex2D(harrisDxTex, j, i);
-                        float dy = tex2D(harrisDyTex, j, i);
+                        float dx = texDx(i, j);
+                        float dy = texDy(i, j);
 
                         a += dx * dx;
                         b += dx * dy;
@@ -95,7 +93,7 @@ namespace cv { namespace cuda { namespace device
         }
 
         template <typename BR, typename BC>
-        __global__ void cornerHarris_kernel(const int block_size, const float k, PtrStepSzf dst, const BR border_row, const BC border_col)
+        __global__ void cornerHarris_kernel(cv::cudev::TexturePtr<float> texDx, cv::cudev::TexturePtr<float> texDy, const int block_size, const float k, PtrStepSzf dst, const BR border_row, const BC border_col)
         {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -119,8 +117,8 @@ namespace cv { namespace cuda { namespace device
                     {
                         const int x = border_row.idx_col(j);
 
-                        float dx = tex2D(harrisDxTex, x, y);
-                        float dy = tex2D(harrisDyTex, x, y);
+                        float dx = texDx(y, x);
+                        float dy = texDy(y, x);
 
                         a += dx * dx;
                         b += dx * dy;
@@ -136,22 +134,20 @@ namespace cv { namespace cuda { namespace device
         {
             dim3 block(32, 8);
             dim3 grid(divUp(Dx.cols, block.x), divUp(Dx.rows, block.y));
-
-            bindTexture(&harrisDxTex, Dx);
-            bindTexture(&harrisDyTex, Dy);
-
+            cv::cudev::Texture<float> texDx(Dx);
+            cv::cudev::Texture<float> texDy(Dy);
             switch (border_type)
             {
             case BORDER_REFLECT101:
-                cornerHarris_kernel<<<grid, block, 0, stream>>>(block_size, k, dst, BrdRowReflect101<void>(Dx.cols), BrdColReflect101<void>(Dx.rows));
+                cornerHarris_kernel<<<grid, block, 0, stream>>>(texDx, texDy, block_size, k, dst, BrdRowReflect101<void>(Dx.cols), BrdColReflect101<void>(Dx.rows));
                 break;
 
             case BORDER_REFLECT:
-                cornerHarris_kernel<<<grid, block, 0, stream>>>(block_size, k, dst, BrdRowReflect<void>(Dx.cols), BrdColReflect<void>(Dx.rows));
+                cornerHarris_kernel<<<grid, block, 0, stream>>>(texDx, texDy, block_size, k, dst, BrdRowReflect<void>(Dx.cols), BrdColReflect<void>(Dx.rows));
                 break;
 
             case BORDER_REPLICATE:
-                cornerHarris_kernel<<<grid, block, 0, stream>>>(block_size, k, dst);
+                cornerHarris_kernel<<<grid, block, 0, stream>>>(texDx, texDy, block_size, k, dst);
                 break;
             }
 
@@ -163,10 +159,7 @@ namespace cv { namespace cuda { namespace device
 
         /////////////////////////////////////////// Corner Min Eigen Val /////////////////////////////////////////////////
 
-        texture<float, cudaTextureType2D, cudaReadModeElementType> minEigenValDxTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-        texture<float, cudaTextureType2D, cudaReadModeElementType> minEigenValDyTex(0, cudaFilterModePoint, cudaAddressModeClamp);
-
-        __global__ void cornerMinEigenVal_kernel(const int block_size, PtrStepSzf dst)
+        __global__ void cornerMinEigenVal_kernel(cv::cudev::TexturePtr<float> texMinEigenValDx, cv::cudev::TexturePtr<float> texMinEigenValDy, const int block_size, PtrStepSzf dst)
         {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -186,8 +179,8 @@ namespace cv { namespace cuda { namespace device
                 {
                     for (int j = jbegin; j < jend; ++j)
                     {
-                        float dx = tex2D(minEigenValDxTex, j, i);
-                        float dy = tex2D(minEigenValDyTex, j, i);
+                        float dx = texMinEigenValDx(i, j);
+                        float dy = texMinEigenValDy(i, j);
 
                         a += dx * dx;
                         b += dx * dy;
@@ -204,7 +197,7 @@ namespace cv { namespace cuda { namespace device
 
 
         template <typename BR, typename BC>
-        __global__ void cornerMinEigenVal_kernel(const int block_size, PtrStepSzf dst, const BR border_row, const BC border_col)
+        __global__ void cornerMinEigenVal_kernel(cv::cudev::TexturePtr<float> texMinEigenValDx, cv::cudev::TexturePtr<float> texMinEigenValDy, const int block_size, PtrStepSzf dst, const BR border_row, const BC border_col)
         {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -228,8 +221,8 @@ namespace cv { namespace cuda { namespace device
                     {
                         int x = border_row.idx_col(j);
 
-                        float dx = tex2D(minEigenValDxTex, x, y);
-                        float dy = tex2D(minEigenValDyTex, x, y);
+                        float dx = texMinEigenValDx(y, x);
+                        float dy = texMinEigenValDy(y, x);
 
                         a += dx * dx;
                         b += dx * dy;
@@ -248,22 +241,20 @@ namespace cv { namespace cuda { namespace device
         {
             dim3 block(32, 8);
             dim3 grid(divUp(Dx.cols, block.x), divUp(Dx.rows, block.y));
-
-            bindTexture(&minEigenValDxTex, Dx);
-            bindTexture(&minEigenValDyTex, Dy);
-
+            cv::cudev::Texture<float> texMinEigenValDx(Dx);
+            cv::cudev::Texture<float> texMinEigenValDy(Dy);
             switch (border_type)
             {
             case BORDER_REFLECT101:
-                cornerMinEigenVal_kernel<<<grid, block, 0, stream>>>(block_size, dst, BrdRowReflect101<void>(Dx.cols), BrdColReflect101<void>(Dx.rows));
+                cornerMinEigenVal_kernel<<<grid, block, 0, stream>>>(texMinEigenValDx, texMinEigenValDy, block_size, dst, BrdRowReflect101<void>(Dx.cols), BrdColReflect101<void>(Dx.rows));
                 break;
 
             case BORDER_REFLECT:
-                cornerMinEigenVal_kernel<<<grid, block, 0, stream>>>(block_size, dst, BrdRowReflect<void>(Dx.cols), BrdColReflect<void>(Dx.rows));
+                cornerMinEigenVal_kernel<<<grid, block, 0, stream>>>(texMinEigenValDx, texMinEigenValDy, block_size, dst, BrdRowReflect<void>(Dx.cols), BrdColReflect<void>(Dx.rows));
                 break;
 
             case BORDER_REPLICATE:
-                cornerMinEigenVal_kernel<<<grid, block, 0, stream>>>(block_size, dst);
+                cornerMinEigenVal_kernel<<<grid, block, 0, stream>>>(texMinEigenValDx, texMinEigenValDy, block_size, dst);
                 break;
             }
 

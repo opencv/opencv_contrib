@@ -47,19 +47,16 @@
 #include "opencv2/core/cuda/vec_math.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 namespace cv { namespace cuda { namespace device
 {
     namespace imgproc
     {
-        texture<uchar4, 2> tex_meanshift;
-
-        __device__ short2 do_mean_shift(int x0, int y0, unsigned char* out,
-                                        size_t out_step, int cols, int rows,
-                                        int sp, int sr, int maxIter, float eps)
+        __device__ short2 do_mean_shift(cv::cudev::TexturePtr<uchar4> tex, int x0, int y0, unsigned char* out,size_t out_step, int cols, int rows, int sp, int sr, int maxIter, float eps)
         {
             int isr2 = sr*sr;
-            uchar4 c = tex2D(tex_meanshift, x0, y0 );
+            uchar4 c = tex(y0, x0);
 
             // iterate meanshift procedure
             for( int iter = 0; iter < maxIter; iter++ )
@@ -79,7 +76,7 @@ namespace cv { namespace cuda { namespace device
                     int rowCount = 0;
                     for( int x = minx; x <= maxx; x++ )
                     {
-                        uchar4 t = tex2D( tex_meanshift, x, y );
+                        uchar4 t = tex(y, x);
 
                         int norm2 = (t.x - c.x) * (t.x - c.x) + (t.y - c.y) * (t.y - c.y) + (t.z - c.z) * (t.z - c.z);
                         if( norm2 <= isr2 )
@@ -119,13 +116,13 @@ namespace cv { namespace cuda { namespace device
             return make_short2((short)x0, (short)y0);
         }
 
-        __global__ void meanshift_kernel(unsigned char* out, size_t out_step, int cols, int rows, int sp, int sr, int maxIter, float eps )
+        __global__ void meanshift_kernel(cv::cudev::TexturePtr<uchar4> tex, unsigned char* out, size_t out_step, int cols, int rows, int sp, int sr, int maxIter, float eps )
         {
             int x0 = blockIdx.x * blockDim.x + threadIdx.x;
             int y0 = blockIdx.y * blockDim.y + threadIdx.y;
 
             if( x0 < cols && y0 < rows )
-                do_mean_shift(x0, y0, out, out_step, cols, rows, sp, sr, maxIter, eps);
+                do_mean_shift(tex, x0, y0, out, out_step, cols, rows, sp, sr, maxIter, eps);
         }
 
         void meanShiftFiltering_gpu(const PtrStepSzb& src, PtrStepSzb dst, int sp, int sr, int maxIter, float eps, cudaStream_t stream)
@@ -134,21 +131,15 @@ namespace cv { namespace cuda { namespace device
             dim3 threads(32, 8, 1);
             grid.x = divUp(src.cols, threads.x);
             grid.y = divUp(src.rows, threads.y);
-
-            cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar4>();
-            cudaSafeCall( cudaBindTexture2D( 0, tex_meanshift, src.data, desc, src.cols, src.rows, src.step ) );
-
-            meanshift_kernel<<< grid, threads, 0, stream >>>( dst.data, dst.step, dst.cols, dst.rows, sp, sr, maxIter, eps );
+            cv::cudev::Texture<uchar4> tex(src.rows, src.cols, (uchar4*)src.data, src.step);
+            meanshift_kernel<<< grid, threads, 0, stream >>>( tex, dst.data, dst.step, dst.cols, dst.rows, sp, sr, maxIter, eps );
             cudaSafeCall( cudaGetLastError() );
-
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
         }
 
-        __global__ void meanshiftproc_kernel(unsigned char* outr, size_t outrstep,
-                                             unsigned char* outsp, size_t outspstep,
-                                             int cols, int rows,
-                                             int sp, int sr, int maxIter, float eps)
+        __global__ void meanshiftproc_kernel(cv::cudev::TexturePtr<uchar4> tex, unsigned char* outr, size_t outrstep, unsigned char* outsp, size_t outspstep,
+            int cols, int rows,int sp, int sr, int maxIter, float eps)
         {
             int x0 = blockIdx.x * blockDim.x + threadIdx.x;
             int y0 = blockIdx.y * blockDim.y + threadIdx.y;
@@ -156,7 +147,7 @@ namespace cv { namespace cuda { namespace device
             if( x0 < cols && y0 < rows )
             {
                 int basesp = (blockIdx.y * blockDim.y + threadIdx.y) * outspstep + (blockIdx.x * blockDim.x + threadIdx.x) * 2 * sizeof(short);
-                *(short2*)(outsp + basesp) = do_mean_shift(x0, y0, outr, outrstep, cols, rows, sp, sr, maxIter, eps);
+                *(short2*)(outsp + basesp) = do_mean_shift(tex, x0, y0, outr, outrstep, cols, rows, sp, sr, maxIter, eps);
             }
         }
 
@@ -166,13 +157,9 @@ namespace cv { namespace cuda { namespace device
             dim3 threads(32, 8, 1);
             grid.x = divUp(src.cols, threads.x);
             grid.y = divUp(src.rows, threads.y);
-
-            cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar4>();
-            cudaSafeCall( cudaBindTexture2D( 0, tex_meanshift, src.data, desc, src.cols, src.rows, src.step ) );
-
-            meanshiftproc_kernel<<< grid, threads, 0, stream >>>( dstr.data, dstr.step, dstsp.data, dstsp.step, dstr.cols, dstr.rows, sp, sr, maxIter, eps );
+            cv::cudev::Texture<uchar4> tex(src.rows, src.cols, (uchar4*)src.data, src.step);
+            meanshiftproc_kernel<<< grid, threads, 0, stream >>>( tex, dstr.data, dstr.step, dstsp.data, dstsp.step, dstr.cols, dstr.rows, sp, sr, maxIter, eps );
             cudaSafeCall( cudaGetLastError() );
-
             if (stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
         }

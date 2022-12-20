@@ -213,7 +213,7 @@ __device__ double shfl_up(double val, uint delta, int width = warpSize)
     return __hiloint2double(hi, lo);
 }
 
-__device__ __forceinline__ unsigned long long shfl_up(unsigned long long val, uint delta, int width = warpSize)
+__device__ __forceinline__ uint64 shfl_up(uint64 val, uint delta, int width = warpSize)
 {
     return __shfl_up(val, delta, width);
 }
