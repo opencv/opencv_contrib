@@ -158,12 +158,10 @@ public:
         return var;
     }
 
-
     nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
 private:
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers) override;
     void setMousePosition(int x, int y);
-
     CLGLContext& clgl();
     CLVAContext& clva();
     NanoVGContext& nvg();
