@@ -388,7 +388,7 @@ Selecting a dictionary
 
 The aruco module provides the `Dictionary` class to represent a dictionary of markers.
 
-In addition to the marker size and the number of markers in the dictionary, there is another important parameter of the dictionary - 
+In addition to the marker size and the number of markers in the dictionary, there is another important parameter of the dictionary -
 the inter-marker distance. The inter-marker distance is the minimum distance between dictionary markers
 that determines the dictionary's ability to detect and correct errors.
 
@@ -572,8 +572,8 @@ For instance, a image with size 640x480 and a minimum relative marker perimeter 
 to a minimum marker perimeter of 640x0.05 = 32 pixels, since 640 is the maximum dimension of the
 image. The same applies for the `maxMarkerPerimeterRate` parameter.
 
-If the `minMarkerPerimeterRate` is too low, detection performance can be significantly reduced, 
-as many more contours will be considered for future stages. 
+If the `minMarkerPerimeterRate` is too low, detection performance can be significantly reduced,
+as many more contours will be considered for future stages.
 This penalization is not so noticeable for the `maxMarkerPerimeterRate` parameter, since there are
 usually many more small contours than big contours.
 A `minMarkerPerimeterRate` value of 0 and a `maxMarkerPerimeterRate` value of 4 (or more) will be
@@ -764,7 +764,7 @@ be accurate, for instance for pose estimation. It is usually a time-consuming st
 
 #### cornerRefinementMethod
 
-This parameter determines whether the corner subpixel process is performed or not and which method to use 
+This parameter determines whether the corner subpixel process is performed or not and which method to use
 if it is being performed. It can be disabled if accurate corners are not necessary. Possible values are
 `CORNER_REFINE_NONE`, `CORNER_REFINE_SUBPIX`, `CORNER_REFINE_CONTOUR`, and `CORNER_REFINE_APRILTAG`.
 
@@ -776,7 +776,7 @@ Default value:
 
 This parameter determines the window size of the subpixel refinement process.
 
-High values can cause close corners of the image to be included in the window area, so that the corner 
+High values can cause close corners of the image to be included in the window area, so that the corner
 of the marker moves to a different and incorrect location during the process. Also, it may affect performance.
 
 Default value:
