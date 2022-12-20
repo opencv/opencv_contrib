@@ -183,6 +183,7 @@ int main(int argc, char **argv) {
     }
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+    v2d->setStretching(true);
     print_system_info();
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
@@ -222,7 +223,7 @@ int main(int argc, char **argv) {
 
     while (true) {
         if(!v2d->capture())
-                   break;
+            break;
 
         v2d->opencl([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
@@ -266,31 +267,34 @@ int main(int argc, char **argv) {
             v2d->opencl([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
                 cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
+            });
 
-                //Dilate the face forground mask to make eyes and mouth areas wider
-                int morph_size = 1;
-                cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-                cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
+            //Dilate the face forground mask to make eyes and mouth areas wider
+            int morph_size = 1;
+            cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+            cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 
-                cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
-                cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
+            cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
+            cv::bitwise_not(faceBgMaskGrey, faceBgMaskInvGrey);
 
-                reduce_shadows(rgb, reduced, REDUCE_SHADOW);
-                cv::boxFilter(reduced, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            reduce_shadows(rgb, reduced, REDUCE_SHADOW);
+            cv::boxFilter(reduced, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
 
-                unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
-                blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
-                blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
-                blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
-                blender.blend(frameOutFloat, cv::UMat());
-                frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
+            unsharp_mask(rgb, sharpened, UNSHARP_STRENGTH);
+            blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+            blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
+            blender.feed(sharpened, faceBgMaskInvGrey, cv::Point(0, 0));
+            blender.blend(frameOutFloat, cv::UMat());
+            frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
-                cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
-                cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
+            cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
+            cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
-                frameOut = cv::Scalar::all(0);
-                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-                rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+            frameOut = cv::Scalar::all(0);
+            lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+            rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+
+            v2d->opencl([&](cv::UMat &frameBuffer) {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2RGBA);
             });
         } else {
