@@ -30,25 +30,16 @@ corners) are employed.
 The aruco module allows the use of Boards. The main class is the ```cv::aruco::Board``` class which defines the Board layout:
 
 @code{.cpp}
-    class  Board {
-    public:
-        std::vector<std::vector<cv::Point3f> > objPoints;
-        cv::Ptr<cv::aruco::Dictionary> dictionary;
-        std::vector<int> ids;
-    };
-
 struct BoardImpl;
 Ptr<BoardImpl> boardImpl;
 
 struct Board::BoardImpl {
-    std::vector<std::vector<Point3f> > objPoints;
-    Dictionary dictionary;
-    Point3f rightBottomBorder;
+    std::vector<std::vector<cv::Point3f> > objPoints;
+    cv::aruco::Dictionary dictionary;
+    cv::Point3f rightBottomBorder;
     std::vector<int> ids;
 
-    BoardImpl() {
-        dictionary = Dictionary(getPredefinedDictionary(PredefinedDictionaryType::DICT_4X4_50));
-    }
+    ...
 };
 @endcode
 
@@ -57,6 +48,7 @@ A object of type ```Board``` has three parameters:
 For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting
 with the top left corner.
 - The ```dictionary``` parameter indicates to which marker dictionary the Board markers belong to.
+- The ```rightBottomBorder``` parameter is the coordinate of the bottom right corner of the board. It is set when calling the function create().
 - Finally, the ```ids``` structure indicates the identifiers of each of the markers in ```objPoints``` respect to the specified  ```dictionary```.
 
 
