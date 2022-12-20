@@ -426,7 +426,7 @@ The list of available predefined dictionaries can be found in the documentation 
 A dictionary can be generated automatically to adjust the desired number of markers and bits to optimize the inter-marker distance:
 
 @code{.cpp}
-cv::aruco::Dictionary dictionary = cv::aruco::generateCustomDictionary(36, 5);
+cv::aruco::Dictiojary dictionary = cv::aruco::extendDictionary(36, 5);
 @endcode
 
 This will generate a customized dictionary composed of 36 markers of 5x5 bits. The process can take several
