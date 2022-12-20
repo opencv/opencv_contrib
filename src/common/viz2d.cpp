@@ -612,22 +612,41 @@ bool Viz2D::isStretching() {
     return stretch_;
 }
 
-nanogui::Window* Viz2D::makeWindow(int x, int y, const string &title) {
-    return form()->add_window(nanogui::Vector2i(x, y), title);
+Viz2DWindow* Viz2D::makeWindow(int x, int y, const string &title) {
+    this->makeCurrent();
+    auto* win = new kb::viz2d::Viz2DWindow(this, x, y, title);
+    this->form()->set_window(win);
+    return win;
 }
 
 nanogui::Label* Viz2D::makeGroup(const string &label) {
     return form()->add_group(label);
 }
 
-nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, bool &v, const string &tooltip, bool visible) {
+nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, bool &v, const string &tooltip, bool visible, bool enabled) {
     auto var = form()->add_variable(name, v);
+    var->set_enabled(enabled);
     var->set_visible(visible);
     if (!tooltip.empty())
         var->set_tooltip(tooltip);
     return var;
 }
 
+nanogui::ColorPicker* Viz2D::makeColorPicker(const string& label, nanogui::Color& color, const string& tooltip, std::function<void(const nanogui::Color)> fn, bool visible, bool enabled) {
+    auto* colorPicker = form()->add_variable(label, color);
+    colorPicker->set_enabled(enabled);
+    colorPicker->set_visible(visible);
+    if (!tooltip.empty())
+    colorPicker->set_tooltip(tooltip);
+    if(fn)
+        colorPicker->set_final_callback(fn);
+
+    return colorPicker;
+}
+
+nanogui::Button* Viz2D::makeButton(const string& caption, std::function<void()> fn) {
+    return this->form()->add_button(caption, fn);
+}
 bool Viz2D::isAccelerated() {
     return cv::ocl::useOpenCL();
 }
