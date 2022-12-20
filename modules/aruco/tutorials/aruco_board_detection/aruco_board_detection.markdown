@@ -36,6 +36,20 @@ The aruco module allows the use of Boards. The main class is the ```cv::aruco::B
         cv::Ptr<cv::aruco::Dictionary> dictionary;
         std::vector<int> ids;
     };
+
+struct BoardImpl;
+Ptr<BoardImpl> boardImpl;
+
+struct Board::BoardImpl {
+    std::vector<std::vector<Point3f> > objPoints;
+    Dictionary dictionary;
+    Point3f rightBottomBorder;
+    std::vector<int> ids;
+
+    BoardImpl() {
+        dictionary = Dictionary(getPredefinedDictionary(PredefinedDictionaryType::DICT_4X4_50));
+    }
+};
 @endcode
 
 A object of type ```Board``` has three parameters:
@@ -55,22 +69,35 @@ In fact, to use marker boards, a standard marker detection should be done before
 The aruco module provides a specific function, ```estimatePoseBoard()```, to perform pose estimation for boards:
 
 @code{.cpp}
-    cv::Mat inputImage;
-    // camera parameters are read from somewhere
-    cv::Mat cameraMatrix, distCoeffs;
-    // You can read camera parameters from tutorial_camera_params.yml
-    readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is located in detect_board.cpp
-    // assume we have a function to create the board object
-    cv::Ptr<cv::aruco::Board> board = cv::aruco::Board::create();
-    ...
-    std::vector<int> markerIds;
-    std::vector<std::vector<cv::Point2f>> markerCorners;
-    cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
-    // if at least one marker detected
-    if(markerIds.size() > 0) {
-        cv::Vec3d rvec, tvec;
-        int valid = cv::aruco::estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
-    }
+cv::Mat inputImage;
+
+// Camera parameters are read from somewhere
+cv::Mat cameraMatrix, distCoeffs;
+
+// You can read camera parameters from tutorial_camera_params.yml
+readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is implemented in aruco_samples_utility.hpp
+
+// Assume we have a function to create the board object
+cv::Ptr<cv::aruco::Board> board = cv::aruco::Board::create();
+
+...
+
+std::vector<int> markerIds;
+std::vector<std::vector<cv::Point2f>> markerCorners;
+
+cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
+cv::aruco::ArucoDetector detector(board.dictionary, detectorParams);
+
+detector.detectMarkers(inputImage, markerCorners, markerIds);
+
+cv::Vec3d rvec, tvec;
+
+// If at least one marker detected
+if(markerIds.size() > 0) {
+    int valid = cv::aruco::estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
+}
+
+
 @endcode
 
 The parameters of estimatePoseBoard are:
@@ -81,7 +108,7 @@ The parameters of estimatePoseBoard are:
 - ```rvec``` and ```tvec```: estimated pose of the Board. If not empty then treated as initial guess.
 - The function returns the total number of markers employed for estimating the board pose. Note that not all the
  markers provided in ```markerCorners``` and ```markerIds``` should be used, since only the markers whose ids are
-listed in the ```Board::ids``` structure are considered.
+listed in the ```Board::BoardImpl::ids``` structure are considered.
 
 The ```drawFrameAxes()``` function can be used to check the obtained pose. For instance:
 
@@ -135,8 +162,7 @@ in any unit, having in mind that the estimated pose for this board will be measu
 - Finally, the dictionary of the markers is provided.
 
 So, this board will be composed by 5x7=35 markers. The ids of each of the markers are assigned, by default, in ascending
-order starting on 0, so they will be 0, 1, 2, ..., 34. This can be easily customized by accessing to the ids vector
-through ```board.ids```, like in the ```Board``` parent class.
+order starting on 0, so they will be 0, 1, 2, ..., 34.
 
 After creating a Grid Board, we probably want to print it and use it. A function to generate the image
 of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::generateImage()```. For example:
@@ -144,7 +170,7 @@ of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::generateImage()```.
 @code{.cpp}
     cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
     cv::Mat boardImage;
-    board->draw( cv::Size(600, 500), boardImage, 10, 1 );
+    board->generateImage( cv::Size(600, 500), boardImage, 10, 1 );
 @endcode
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
@@ -173,12 +199,16 @@ Finally, a full example of board detection:
 
     cv::Mat cameraMatrix, distCoeffs;
     // You can read camera parameters from tutorial_camera_params.yml
-    readCameraParameters(filename, cameraMatrix, distCoeffs); // This function is located in detect_board.cpp
+    readCameraParameters(filename, cameraMatrix, distCoeffs);  // This function is implemented in aruco_samples_utility.hpp
 
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    // To use tutorial sample, you need read custome dictionaty from tutorial_dict.yml
-    readDictionary(filename, dictionary); // This function is located in detect_board.cpp
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+
+    // To use tutorial sample, you need read custom dictionaty from tutorial_dict.yml
+    readDictionary(filename, dictionary); // This function is implemented in opencv/modules/objdetect/src/aruco/aruco_dictionary.cpp
     cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
+
+    cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
+    cv::aruco::ArucoDetector detector(dictionary, detectorParams);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -187,16 +217,18 @@ Finally, a full example of board detection:
 
         std::vector<int> ids;
         std::vector<std::vector<cv::Point2f> > corners;
-        cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
-        // if at least one marker detected
+        // Detect markers
+        detector.detectMarkers(image, corners, ids);
+
+        // If at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             cv::Vec3d rvec, tvec;
             int valid = estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
 
-            // if at least one board marker detected
+            // If at least one board marker detected
             if(valid > 0)
                 cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }
@@ -269,13 +301,17 @@ internal bits are not analyzed at all and only the corner distances are evaluate
 This is an example of using the  ```refineDetectedMarkers()``` function:
 
 @code{.cpp}
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+
+    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
+    cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
+    cv::aruco::ArucoDetector detector(dictionary, detectorParams);
+
     std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-    cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, cv::aruco::DetectorParameters(), rejectedCandidates);
+    detector.detectMarkers(inputImage, markerCorners, markerIds, rejectedCandidates);
 
-    cv::aruco::refineDetectedMarkersinputImage, board, markerCorners, markerIds, rejectedCandidates);
+    detector.refineDetectedMarkers(inputImage, board, markerCorners, markerIds, rejectedCandidates);
     // After calling this function, if any new marker has been detected it will be removed from rejectedCandidates and included
     // at the end of markerCorners and markerIds
 @endcode
