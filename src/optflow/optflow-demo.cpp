@@ -274,17 +274,29 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2d->makeGroup("Optical flow");
     v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
 
-    v2d->makeColorPicker("Color", effect_color, "The primary effect color",[](const nanogui::Color &c) {
+    v2d->makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
         effect_color[0] = c[0];
         effect_color[1] = c[1];
         effect_color[2] = c[2];
+        effect_color[3] = alpha;
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
     v2d->makeGroup("Post Processing");
     auto* enableBloom = v2d->makeFormVariable("Enable Bloom", use_bloom, "Enable or disable the bloom effect");
     auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
-    kernelSize->set_callback([](const int& k) {
-        kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+    kernelSize->set_callback([=](const int& k) {
+        static int lastKernelSize = kernel_size;
+
+        if(k == lastKernelSize)
+            return;
+
+        if(k <= lastKernelSize) {
+            kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+        } else if(k > lastKernelSize)
+            kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+
+        lastKernelSize = k;
+        kernelSize->set_value(kernel_size);
     });
 
     auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
@@ -390,7 +402,7 @@ int main(int argc, char **argv) {
                 //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                 if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                     //Visualize the sparse optical flow using nanovg
-                    cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, alpha * 255.0f);
+                    cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, effect_color.a() * 255.0f);
                     visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
                 }
             }

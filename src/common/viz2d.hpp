@@ -133,7 +133,6 @@ public:
     void close();
     bool display();
 
-    nanogui::FormHelper* form();
     Viz2DWindow* makeWindow(int x, int y, const string& title);
     nanogui::Label* makeGroup(const string& label);
     nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "", bool visible = true, bool enabled = true);
@@ -162,6 +161,7 @@ public:
 private:
     virtual bool keyboard_event(int key, int scancode, int action, int modifiers) override;
     void setMousePosition(int x, int y);
+    nanogui::FormHelper* form();
     CLGLContext& clgl();
     CLVAContext& clva();
     NanoVGContext& nvg();
