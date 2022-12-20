@@ -135,9 +135,10 @@ public:
     nanogui::FormHelper* form();
     nanogui::Window* makeWindow(int x, int y, const string& title);
     nanogui::Label* makeGroup(const string& label);
-    nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "");
-    template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable, const string &unit, const string tooltip) {
+    nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "", bool visible = true);
+    template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable, const string &unit, const string tooltip, bool visible = true) {
         auto var = form()->add_variable(name, v);
+        var->set_visible(visible);
         var->set_spinnable(spinnable);
         var->set_min_value(min);
         var->set_max_value(max);

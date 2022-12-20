@@ -12,7 +12,7 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int glow_kernel_size = std::max(int(DIAG / 500 % 2 == 0 ? DIAG / 500 + 1 : DIAG / 500), 1);
+constexpr int kernel_size = std::max(int(DIAG / 500 % 2 == 0 ? DIAG / 500 + 1 : DIAG / 500), 1);
 using std::cerr;
 using std::endl;
 using std::string;
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
+            glow_effect(frameBuffer, frameBuffer, kernel_size);
         });
 
         update_fps(v2d, true);

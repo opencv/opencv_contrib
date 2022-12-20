@@ -11,7 +11,7 @@ constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+constexpr int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
         //Aquire the frame buffer for use by OpenCL
         v2d->opencl([](cv::UMat &frameBuffer) {
             //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
+            glow_effect(frameBuffer, frameBuffer, kernel_size);
         });
 
         update_fps(v2d, true);

@@ -588,8 +588,9 @@ nanogui::Label* Viz2D::makeGroup(const string &label) {
     return form()->add_group(label);
 }
 
-nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, bool &v, const string &tooltip) {
+nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, bool &v, const string &tooltip, bool visible) {
     auto var = form()->add_variable(name, v);
+    var->set_visible(visible);
     if (!tooltip.empty())
         var->set_tooltip(tooltip);
     return var;

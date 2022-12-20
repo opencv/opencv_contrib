@@ -36,9 +36,7 @@ enum BackgroundModes {
     GREY,
     COLOR,
     VALUE,
-    RED,
-    GREEN,
-    BLUE
+    NONE
 };
 
 // Generate the foreground at this scale.
@@ -59,8 +57,6 @@ float point_loss = 25;
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
 int max_stroke = 14;
-// Intensity of glow defined by kernel size. The default scales with the image diagonal.
-int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
 // Keep alpha separate for the GUI
 float alpha = 0.05f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
@@ -71,14 +67,14 @@ bool show_fps = true;
 bool stretch = false;
 //Use OpenCL or not
 bool use_acceleration = true;
-//Use a global bloom effect
+//Use the bloom effect
 bool use_bloom = false;
-//The kernel size of the bloom effect
-int bloom_kernel_size = 3;
+// Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
+int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
 //The lightness selection threshold
 int bloom_thresh = 235;
 //The intensity of the bloom filter
-float bloom_gain = 4;
+float bloom_gain = 1;
 
 void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
@@ -175,20 +171,22 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
 }
 
 void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
-    static cv::UMat hsv;
-    static cv::UMat sv16;
-    static cv::UMat sv;
+    static cv::UMat bgr;
+    static cv::UMat hls;
+    static cv::UMat ls16;
+    static cv::UMat ls;
     static cv::UMat threshGrey;
     static cv::UMat blur;
+    static std::vector<cv::UMat> hlsChannels;
 
-    static std::vector<cv::UMat> hsvChannels;
-    cv::cvtColor(src, hsv, cv::COLOR_BGR2HSV);
-    cv::split(hsv, hsvChannels);
-    cv::bitwise_not(hsvChannels[1], hsvChannels[1]);
+    cv::cvtColor(src, bgr, cv::COLOR_BGRA2RGB);
+    cv::cvtColor(bgr, hls, cv::COLOR_BGR2HLS);
+    cv::split(hls, hlsChannels);
+    cv::bitwise_not(hlsChannels[2], hlsChannels[2]);
 
-    cv::multiply(hsvChannels[1], hsvChannels[2], sv16, 1, CV_16U);
-    cv::divide(sv16, cv::Scalar(255.0), sv, 1, CV_8U);
-    cv::threshold(sv, threshGrey, threshValue, 255, cv::THRESH_BINARY);
+    cv::multiply(hlsChannels[1], hlsChannels[2], ls16, 1, CV_16U);
+    cv::divide(ls16, cv::Scalar(255.0), ls, 1, CV_8U);
+    cv::threshold(ls, threshGrey, threshValue, 255, cv::THRESH_BINARY);
 
     cv::boxFilter(threshGrey, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     cv::cvtColor(blur, blur, cv::COLOR_GRAY2BGRA);
@@ -218,15 +216,14 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int glowKernelSize, float fgLossPercent, BackgroundModes mode) {
+void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes mode, bool useBloom) {
     static cv::UMat tmp;
-    static cv::UMat glow;
+    static cv::UMat post;
     static cv::UMat backgroundGrey;
     static vector<cv::UMat> channels;
 
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
     cv::add(foreground, frameBuffer, foreground);
-    glow_effect(foreground, glow, glowKernelSize);
 
     switch (mode) {
     case GREY:
@@ -239,25 +236,22 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
         split(tmp, channels);
         cv::cvtColor(channels[2], background, cv::COLOR_GRAY2BGRA);
         break;
-    case RED:
-        split(background, channels);
-        cv::cvtColor(channels[2], background, cv::COLOR_GRAY2BGRA);
-        break;
-    case GREEN:
-        split(background, channels);
-        cv::cvtColor(channels[1], background, cv::COLOR_GRAY2BGRA);
-        break;
-    case BLUE:
-        split(background, channels);
-        cv::cvtColor(channels[0], background, cv::COLOR_GRAY2BGRA);
-        break;
     case COLOR:
+        break;
+    case NONE:
+        background = cv::Scalar::all(0);
         break;
     default:
         break;
     }
 
-    cv::add(background, glow, dst);
+    if(useBloom) {
+        bloom(foreground, post, kernelSize, bloom_thresh, bloom_gain);
+    } else {
+        glow_effect(foreground, post, kernelSize);
+    }
+
+    cv::add(background, post, dst);
 }
 
 kb::viz2d::Viz2DWindow* effectWindow;
@@ -272,7 +266,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     v2d->makeGroup("Background");
-    v2d->form()->add_variable("Color Mode", background_mode, true)->set_items({"Grey", "Color", "Value", "Red", "Green", "Blue"});
+    v2d->form()->add_variable("Mode", background_mode, true)->set_items({"Grey", "Color", "Value", "None"});
 
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
@@ -280,10 +274,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 
     v2d->makeGroup("Optical flow");
     v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-    auto* glowKernel = v2d->makeFormVariable("Glow Kernel Size", glow_kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
-    glowKernel->set_callback([](const int& k) {
-        glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-    });
+
     auto* color = v2d->form()->add_variable("Color", effect_color);
     color->set_tooltip("The primary effect color");
     color->set_final_callback([](const nanogui::Color &c) {
@@ -292,15 +283,27 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         effect_color[2] = c[2];
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
-    v2d->makeGroup("Global Bloom");
-    v2d->makeFormVariable("Enable", use_bloom, "Enable or disable global bloom effect");
-    auto* bloomKernel = v2d->makeFormVariable("Bloom Kernel Size", bloom_kernel_size, 1, 63, true, "", "Size of global bloom effect defined by kernel size");
-    bloomKernel->set_callback([](const int& k) {
-        bloom_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+    v2d->makeGroup("Post Processing");
+    auto* enableBloom = v2d->makeFormVariable("Enable Bloom", use_bloom, "Enable or disable the bloom effect");
+    auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
+    kernelSize->set_callback([](const int& k) {
+        kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
     });
-    v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold");
-    v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain");
 
+    auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold");
+    auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain");
+    thresh->set_enabled(false);
+    gain->set_enabled(false);
+    enableBloom->set_callback([&,thresh, gain](const bool& b) {
+        if(b) {
+            thresh->set_enabled(true);
+            gain->set_enabled(true);
+        } else {
+            thresh->set_enabled(false);
+            gain->set_enabled(false);
+        }
+        use_bloom = b;
+    });
     settingsWindow = new kb::viz2d::Viz2DWindow(v2d, 240, 30, "Settings");
     v2d->form()->set_window(settingsWindow);
 
@@ -349,15 +352,15 @@ int main(int argc, char **argv) {
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
 
     //BGRA
-    cv::UMat background, foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
-    //RGB
-    cv::UMat down;
+    cv::UMat background, down;
+    cv::UMat foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
     //GREY
     cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     vector<cv::Point2f> detectedPoints;
 
     while (true) {
-        v2d->setAccelerated(use_acceleration);
+        if(v2d->isAccelerated() != use_acceleration)
+            v2d->setAccelerated(use_acceleration);
 
         if(!v2d->capture())
             break;
@@ -367,7 +370,7 @@ int main(int argc, char **argv) {
             frameBuffer.copyTo(background);
         });
 
-        cv::cvtColor(down, downNextGrey, cv::COLOR_RGB2GRAY);
+        cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
         //Subtract the background to create a motion mask
         prepare_motion_mask(downNextGrey, downMotionMaskGrey);
         //Detect trackable points in the motion mask
@@ -389,9 +392,7 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, glow_kernel_size, fg_loss, background_mode);
-            if(use_bloom)
-                bloom(frameBuffer, frameBuffer, bloom_kernel_size, bloom_thresh, bloom_gain);
+            composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, use_bloom);
         });
 
         update_fps(v2d, show_fps);
