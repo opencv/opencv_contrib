@@ -156,13 +156,28 @@ int main(int argc, char *argv[]) {
 
         vector< int > ids;
         vector< vector< Point2f > > corners, rejected;
-        vector< Vec3d > rvecs, tvecs;
 
         // detect markers and estimate pose
         detector.detectMarkers(image, corners, ids, rejected);
-        if(estimatePose && ids.size() > 0)
-            aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
-                                             tvecs);
+
+        int nMarkers = corners.size();
+        vector<Vec3d> rvecs(nMarkers), tvecs(nMarkers);
+
+        if(estimatePose && ids.size() > 0) {
+            // float markerLength = 0.05;
+
+            // Set coordinate system
+            cv::Mat objPoints(4, 1, CV_32FC3);
+            objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+            objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
+            objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+            objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+
+            // Calculate pose for each marker
+            for (int i = 0; i < nMarkers; i++) {
+                solvePnP(objPoints, corners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
+            }
+        }
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;

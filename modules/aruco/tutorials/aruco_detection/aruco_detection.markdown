@@ -273,15 +273,21 @@ The camera pose relative to the marker is a 3d transformation from the marker co
 camera coordinate system. It is specified by rotation and translation vectors (see `solvePnP()` function for more
 information).
 
-The aruco module provides a function to estimate the poses of all the detected markers:
-
 @code{.cpp}
 cv::Mat cameraMatrix, distCoeffs;
 // You can read camera parameters from tutorial_camera_params.yml
 readCameraParameters(cameraParamsFilename, cameraMatrix, distCoeffs); // This function is implemented in aruco_samples_utility.hpp
 
 std::vector<cv::Vec3d> rvecs, tvecs;
-cv::aruco::estimatePoseSingleMarkers(markerCorners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+// Set coordinate system
+cv::Mat objPoints(4, 1, CV_32FC3);
+...
+
+// Calculate pose for each marker
+for (int i = 0; i < nMarkers; i++) {
+    solvePnP(objPoints, corners.at(i), cameraMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
+}
 @endcode
 
 - The `markerCorners` parameter is the vector of marker corners returned by the `detectMarkers()` function.
@@ -321,6 +327,7 @@ cv::VideoCapture inputVideo;
 inputVideo.open(0);
 
 cv::Mat cameraMatrix, distCoeffs;
+float markerLength = 0.05;
 
 // You can read camera parameters from tutorial_camera_params.yml
 readCameraParameters(cameraParamsFilename, cameraMatrix, distCoeffs); // This function is implemented in aruco_samples_utility.hpp
@@ -340,10 +347,22 @@ while (inputVideo.grab()) {
 
     // If at least one marker detected
     if (ids.size() > 0) {
-        std::vector<cv::Vec3d> rvecs, tvecs;
-
         cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
-        cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+        int nMarkers = corners.size();
+        std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
+
+        // Set coordinate system
+        cv::Mat objPoints(4, 1, CV_32FC3);
+        objPoints.ptr<cv::Vec3f>(0)[0] = cv::Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+        objPoints.ptr<cv::Vec3f>(0)[1] = cv::Vec3f(markerLength/2.f, markerLength/2.f, 0);
+        objPoints.ptr<cv::Vec3f>(0)[2] = cv::Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+        objPoints.ptr<cv::Vec3f>(0)[3] = cv::Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+
+        // Calculate pose for each marker
+        for (int i = 0; i < nMarkers; i++) {
+            solvePnP(objPoints, corners.at(i), cameraMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
+        }
 
         // Draw axis for each marker
         for(unsigned int i = 0; i < ids.size(); i++)
