@@ -21,17 +21,6 @@ using std::vector;
 using std::string;
 using namespace std::literals::chrono_literals;
 
-/** Application parameters **/
-
-constexpr unsigned int WIDTH = 1920;
-constexpr unsigned int HEIGHT = 1080;
-constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
-constexpr bool OFFSCREEN = false;
-constexpr int VA_HW_DEVICE_INDEX = 0;
-
-/** Visualization parameters **/
-
 enum BackgroundModes {
     GREY,
     COLOR,
@@ -44,6 +33,17 @@ enum PostProcModes {
     BLOOM,
     NONE
 };
+
+/** Application parameters **/
+
+constexpr unsigned int WIDTH = 1920;
+constexpr unsigned int HEIGHT = 1080;
+constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
+constexpr bool OFFSCREEN = false;
+constexpr int VA_HW_DEVICE_INDEX = 0;
+
+/** Visualization parameters **/
 
 // Generate the foreground at this scale.
 float fg_scale = 0.5f;
@@ -291,7 +291,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
     v2d->makeGroup("Post Processing");
-    auto* enableBloom = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
+    auto* postPocMode = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
     auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     kernelSize->set_callback([=](const int& k) {
         static int lastKernelSize = kernel_size;
@@ -310,7 +310,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
 
     auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
     auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
-    enableBloom->set_callback([&,kernelSize, thresh, gain](const int& m) {
+    postPocMode->set_callback([&,kernelSize, thresh, gain](const int& m) {
         if(m == BLOOM) {
             thresh->set_enabled(true);
             gain->set_enabled(true);
@@ -383,6 +383,8 @@ int main(int argc, char **argv) {
     //BGRA
     cv::UMat background, down;
     cv::UMat foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
+    //RGB
+    cv::UMat menuFrame;
     //GREY
     cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     vector<cv::Point2f> detectedPoints;
@@ -422,11 +424,16 @@ int main(int argc, char **argv) {
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Put it all together (OpenCL)
             composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, post_proc_mode);
+            cvtColor(frameBuffer, menuFrame, cv::COLOR_BGRA2RGB);
         });
 
         update_fps(v2d, show_fps);
 
         v2d->write();
+
+        v2dMenu->capture([=](cv::UMat& videoFrame) {
+            menuFrame.copyTo(videoFrame);
+        });
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if(!v2d->display())

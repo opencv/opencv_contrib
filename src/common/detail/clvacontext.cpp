@@ -24,9 +24,14 @@ cv::Size CLVAContext::getVideoFrameSize() {
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
     {
-        CLExecScope_t scope(context_);
-        fn(videoFrame_);
-        videoFrameSize_ = videoFrame_.size();
+        if(!context_ .empty()) {
+            CLExecScope_t scope(context_);
+            fn(videoFrame_);
+            videoFrameSize_ = videoFrame_.size();
+        } else {
+            fn(videoFrame_);
+            videoFrameSize_ = videoFrame_.size();
+        }
     }
     {
         CLExecScope_t scope(clglContext_.getCLExecContext());

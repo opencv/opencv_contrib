@@ -96,7 +96,9 @@ public:
     void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
 
     bool capture();
+    bool capture(std::function<void(cv::UMat&)> fn);
     void write();
+    void write(std::function<void(const cv::UMat&)> fn);
     cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex);
     cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
     cv::VideoWriter& makeWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize);

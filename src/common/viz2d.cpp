@@ -369,10 +369,18 @@ bool Viz2D::capture() {
     });
 }
 
+bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
+    return clva().capture(fn);
+}
+
 void Viz2D::write() {
     clva().write([=, this](const cv::UMat &videoFrame) {
         *(this->writer_) << videoFrame;
     });
+}
+
+void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
+    clva().write(fn);
 }
 
 void Viz2D::makeCurrent() {
