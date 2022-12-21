@@ -58,7 +58,7 @@ float point_loss = 25;
 // of tracked points and therefor is usually much smaller.
 int max_stroke = 14;
 // Keep alpha separate for the GUI
-float alpha = 0.05f;
+float alpha = 0.5f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
@@ -278,7 +278,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
         effect_color[0] = c[0];
         effect_color[1] = c[1];
         effect_color[2] = c[2];
-        effect_color[3] = alpha;
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
     v2d->makeGroup("Post Processing");
@@ -336,7 +335,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     });
 
     menuWindow->center();
-    v2d->makeCurrent();
 }
 
 int main(int argc, char **argv) {
@@ -349,7 +347,6 @@ int main(int argc, char **argv) {
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
     cv::Ptr<Viz2D> v2dMenu = new Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
-    v2d->makeCurrent();
     print_system_info();
     if(!v2d->isOffscreen()) {
         setup_gui(v2d, v2dMenu);
@@ -357,7 +354,6 @@ int main(int argc, char **argv) {
         v2dMenu->setVisible(true);
     }
 
-    v2d->makeCurrent();
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
@@ -378,7 +374,6 @@ int main(int argc, char **argv) {
     vector<cv::Point2f> detectedPoints;
 
     while (true) {
-        v2d->makeCurrent();
         if(v2d->isAccelerated() != use_acceleration)
             v2d->setAccelerated(use_acceleration);
 
@@ -402,7 +397,7 @@ int main(int argc, char **argv) {
                 //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
                 if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                     //Visualize the sparse optical flow using nanovg
-                    cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, effect_color.a() * 255.0f);
+                    cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, alpha * 255.0f);
                     visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
                 }
             }

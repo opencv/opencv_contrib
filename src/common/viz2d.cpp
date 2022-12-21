@@ -319,21 +319,25 @@ bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
 
 CLGLContext& Viz2D::clgl() {
     assert(clglContext_ != nullptr);
+    makeCurrent();
     return *clglContext_;
 }
 
 CLVAContext& Viz2D::clva() {
     assert(clvaContext_ != nullptr);
+    makeCurrent();
     return *clvaContext_;
 }
 
 NanoVGContext& Viz2D::nvg() {
     assert(nvgContext_ != nullptr);
+    makeCurrent();
     return *nvgContext_;
 }
 
 nanogui::Screen& Viz2D::screen() {
     assert(screen_ != nullptr);
+    makeCurrent();
     return *screen_;
 }
 
@@ -503,6 +507,7 @@ void Viz2D::zoom(float factor) {
 }
 
 cv::Vec2f Viz2D::getPosition() {
+    makeCurrent();
     int x, y;
     glfwGetWindowPos(getGLFWWindow(), &x, &y);
     return {float(x), float(y)};
@@ -525,6 +530,7 @@ cv::Rect Viz2D::getViewport() {
 }
 
 cv::Size Viz2D::getNativeFrameBufferSize() {
+    makeCurrent();
     int w, h;
     glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
     return {w, h};
@@ -535,6 +541,7 @@ cv::Size Viz2D::getFrameBufferSize() {
 }
 
 cv::Size Viz2D::getWindowSize() {
+    makeCurrent();
     int w, h;
     glfwGetWindowSize(getGLFWWindow(), &w, &h);
     return {w, h};
@@ -545,6 +552,7 @@ cv::Size Viz2D::getInitialSize() {
 }
 
 float Viz2D::getXPixelRatio() {
+    makeCurrent();
 #if defined(EMSCRIPTEN)
         return emscripten_get_device_pixel_ratio();
 #else
@@ -555,6 +563,7 @@ float Viz2D::getXPixelRatio() {
 }
 
 float Viz2D::getYPixelRatio() {
+    makeCurrent();
 #if defined(EMSCRIPTEN)
         return emscripten_get_device_pixel_ratio();
 #else
@@ -565,14 +574,17 @@ float Viz2D::getYPixelRatio() {
 }
 
 void Viz2D::setWindowSize(const cv::Size &sz) {
+    makeCurrent();
     screen().set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
 }
 
 bool Viz2D::isFullscreen() {
+    makeCurrent();
     return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
 }
 
 void Viz2D::setFullscreen(bool f) {
+    makeCurrent();
     auto monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
     if (f) {
@@ -585,6 +597,7 @@ void Viz2D::setFullscreen(bool f) {
 }
 
 bool Viz2D::isResizable() {
+    makeCurrent();
     return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
 }
 
@@ -597,6 +610,7 @@ bool Viz2D::isVisible() {
 }
 
 void Viz2D::setVisible(bool v) {
+    makeCurrent();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
     screen().set_visible(v);
 //    setSize(size_);
