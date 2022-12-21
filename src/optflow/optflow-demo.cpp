@@ -58,7 +58,7 @@ float point_loss = 25;
 // of tracked points and therefor is usually much smaller.
 int max_stroke = 14;
 // Keep alpha separate for the GUI
-float alpha = 0.5f;
+float alpha = 0.07f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
@@ -258,7 +258,6 @@ kb::viz2d::Viz2DWindow* effectWindow;
 kb::viz2d::Viz2DWindow* settingsWindow;
 kb::viz2d::Viz2DWindow* menuWindow;
 
-
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
     effectWindow = v2d->makeWindow(5, 30, "Effects");
     v2d->makeGroup("Foreground");
@@ -343,7 +342,6 @@ int main(int argc, char **argv) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
-
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
     cv::Ptr<Viz2D> v2dMenu = new Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
