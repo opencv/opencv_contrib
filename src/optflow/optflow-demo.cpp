@@ -58,7 +58,7 @@ float point_loss = 25;
 // of tracked points and therefor is usually much smaller.
 int max_stroke = 14;
 // Keep alpha separate for the GUI
-float alpha = 0.085f;
+float alpha = 0.1f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
