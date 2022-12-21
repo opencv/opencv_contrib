@@ -268,12 +268,9 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
     cv::add(background, post, dst);
 }
 
-kb::viz2d::Viz2DWindow* effectWindow;
-kb::viz2d::Viz2DWindow* settingsWindow;
-kb::viz2d::Viz2DWindow* menuWindow;
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
-    effectWindow = v2d->makeWindow(5, 30, "Effects");
+    v2d->makeWindow(5, 30, "Effects");
     v2d->makeGroup("Foreground");
     v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
@@ -331,7 +328,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
         post_proc_mode = static_cast<PostProcModes>(m);
     });
 
-    settingsWindow = v2d->makeWindow(220, 320, "Settings");
+    v2d->makeWindow(220, 320, "Settings");
     v2d->makeGroup("Hardware Acceleration");
     v2d->makeFormVariable("Enable", use_acceleration, "Enable or disable libva and OpenCL acceleration");
 
@@ -339,7 +336,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
     v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
 
-    menuWindow = v2dMenu->makeWindow(0, 0, "Display");
+    v2dMenu->makeWindow(8, 16, "Display");
     v2dMenu->makeGroup("Display");
     v2dMenu->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
@@ -353,8 +350,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2dMenu->makeButton("Offscreen", [=]() {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
-
-    menuWindow->center();
 }
 
 int main(int argc, char **argv) {
