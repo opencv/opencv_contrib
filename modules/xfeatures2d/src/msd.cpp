@@ -135,6 +135,72 @@ namespace cv
             {
             }
 
+            void setPatchRadius(int patch_radius)  CV_OVERRIDE { m_patch_radius = patch_radius; }
+            int getPatchRadius() const CV_OVERRIDE { return m_patch_radius; }
+
+            void setSearchAreaRadius(int search_area_radius)  CV_OVERRIDE { m_search_area_radius = search_area_radius; }
+            int getSearchAreaRadius() const CV_OVERRIDE { return m_search_area_radius; }
+
+            void setNmsRadius(int nms_radius)  CV_OVERRIDE { m_nms_radius = nms_radius; }
+            int getNmsRadius() const CV_OVERRIDE { return m_nms_radius; }
+
+            void setNmsScaleRadius(int nms_scale_radius)  CV_OVERRIDE { m_nms_scale_radius = nms_scale_radius; }
+            int getNmsScaleRadius() const CV_OVERRIDE { return m_nms_scale_radius; }
+
+            void setThSaliency(float th_saliency)  CV_OVERRIDE { m_th_saliency = th_saliency; }
+            float getThSaliency() const CV_OVERRIDE { return m_th_saliency; }
+
+            void setKNN(int kNN)  CV_OVERRIDE { m_kNN = kNN; }
+            int getKNN() const CV_OVERRIDE { return m_kNN; }
+
+            void setScaleFactor(float scale_factor)  CV_OVERRIDE { m_scale_factor = scale_factor; }
+            float getScaleFactor() const CV_OVERRIDE { return m_scale_factor; }
+
+            void setNScales(int n_scales)  CV_OVERRIDE { m_n_scales = n_scales; }
+            int getNScales() const CV_OVERRIDE { return m_n_scales; }
+
+            void setComputeOrientation(bool compute_orientation)  CV_OVERRIDE { m_compute_orientation = compute_orientation; }
+            bool getComputeOrientation() const CV_OVERRIDE { return m_compute_orientation; }
+
+            void read( const FileNode& fn) CV_OVERRIDE
+            {
+              // if node is empty, keep previous value
+              if (!fn["patch_radius"].empty())
+                fn["patch_radius"] >> m_patch_radius;
+              if (!fn["search_area_radius"].empty())
+                fn["search_area_radius"] >> m_search_area_radius;
+              if (!fn["nms_radius"].empty())
+                fn["nms_radius"] >> m_nms_radius;
+              if (!fn["nms_scale_radius"].empty())
+                fn["nms_scale_radius"] >> m_nms_scale_radius;
+              if (!fn["th_saliency"].empty())
+                fn["th_saliency"] >> m_th_saliency;
+              if (!fn["kNN"].empty())
+                fn["kNN"] >> m_kNN;
+              if (!fn["scale_factor"].empty())
+                fn["scale_factor"] >> m_scale_factor;
+              if (!fn["n_scales"].empty())
+                fn["n_scales"] >> m_n_scales;
+              if (!fn["compute_orientation"].empty())
+                fn["compute_orientation"] >> m_compute_orientation;
+            }
+            void write( FileStorage& fs) const CV_OVERRIDE
+            {
+              if(fs.isOpened())
+              {
+                fs << "name" << getDefaultName();
+                fs << "patch_radius" << m_patch_radius;
+                fs << "search_area_radius" << m_search_area_radius;
+                fs << "nms_radius" << m_nms_radius;
+                fs << "nms_scale_radius" << m_nms_scale_radius;
+                fs << "th_saliency" << m_th_saliency;
+                fs << "kNN" << m_kNN;
+                fs << "scale_factor" << m_scale_factor;
+                fs << "n_scales" << m_n_scales;
+                fs << "compute_orientation" << m_compute_orientation;
+              }
+            }
+
             void detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask) CV_OVERRIDE
             {
                 m_mask = _mask.getMat();
@@ -711,6 +777,11 @@ namespace cv
             return makePtr<MSDDetector_Impl>(m_patch_radius, m_search_area_radius,
                     m_nms_radius, m_nms_scale_radius, m_th_saliency, m_kNN, m_scale_factor,
                     m_n_scales, m_compute_orientation);
+        }
+
+        String MSDDetector::getDefaultName() const
+        {
+            return (Feature2D::getDefaultName() + ".MSD");
         }
 
     }

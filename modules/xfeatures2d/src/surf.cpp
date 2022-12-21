@@ -1020,6 +1020,11 @@ Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, boo
     return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
 
+String SURF::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".SURF");
+}
+
 
 #else // ! #ifdef OPENCV_ENABLE_NONFREE
 Ptr<SURF> SURF::create(double, int, int, bool, bool)

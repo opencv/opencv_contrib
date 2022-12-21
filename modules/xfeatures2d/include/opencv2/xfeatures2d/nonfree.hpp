@@ -109,6 +109,8 @@ public:
 
     CV_WRAP virtual void setUpright(bool upright) = 0;
     CV_WRAP virtual bool getUpright() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 typedef SURF SurfFeatureDetector;

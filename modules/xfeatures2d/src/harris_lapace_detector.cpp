@@ -325,8 +325,23 @@ public:
         int maxCorners=5000,
         int num_layers=4
     );
-    virtual void read( const FileNode& fn ) CV_OVERRIDE;
-    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
+
+    void setNumOctaves(int numOctaves_) CV_OVERRIDE {numOctaves = numOctaves_;}
+    int getNumOctaves() const CV_OVERRIDE {return numOctaves;}
+
+    void setCornThresh(float corn_thresh_) CV_OVERRIDE {corn_thresh = corn_thresh_;}
+    float getCornThresh() const CV_OVERRIDE {return corn_thresh;}
+
+    void setDOGThresh(float DOG_thresh_) CV_OVERRIDE {DOG_thresh = DOG_thresh_;}
+    float getDOGThresh() const CV_OVERRIDE {return DOG_thresh;}
+
+    void setMaxCorners(int maxCorners_) CV_OVERRIDE {maxCorners = maxCorners_;}
+    int getMaxCorners() const CV_OVERRIDE {return maxCorners;}
+
+    void setNumLayers(int num_layers_) CV_OVERRIDE {num_layers = num_layers_; CV_Assert(num_layers == 2 || num_layers==4);}
+    int getNumLayers() const CV_OVERRIDE {return num_layers;}
 
 protected:
     void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() ) CV_OVERRIDE;
@@ -348,6 +363,11 @@ Ptr<HarrisLaplaceFeatureDetector> HarrisLaplaceFeatureDetector::create(
     return makePtr<HarrisLaplaceFeatureDetector_Impl>(numOctaves, corn_thresh, DOG_thresh, maxCorners, num_layers);
 }
 
+CV_WRAP String HarrisLaplaceFeatureDetector::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".HARRIS-LAPLACE");
+}
+
 HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl(
     int _numOctaves,
     float _corn_thresh,
@@ -366,20 +386,30 @@ HarrisLaplaceFeatureDetector_Impl::HarrisLaplaceFeatureDetector_Impl(
 
 void HarrisLaplaceFeatureDetector_Impl::read (const FileNode& fn)
 {
-    numOctaves = fn["numOctaves"];
-    corn_thresh = fn["corn_thresh"];
-    DOG_thresh = fn["DOG_thresh"];
-    maxCorners = fn["maxCorners"];
-    num_layers = fn["num_layers"];
+    // if node is empty, keep previous value
+    if (!fn["numOctaves"].empty())
+        fn["numOctaves"] >> numOctaves;
+    if (!fn["corn_thresh"].empty())
+        fn["corn_thresh"] >> corn_thresh;
+    if (!fn["corn_thresh"].empty())
+        fn["DOG_thresh"] >> DOG_thresh;
+    if (!fn["maxCorners"].empty())
+        fn["maxCorners"] >> maxCorners;
+    if (!fn["num_layers"].empty())
+        fn["num_layers"] >> num_layers;
 }
 
 void HarrisLaplaceFeatureDetector_Impl::write (FileStorage& fs) const
 {
-    fs << "numOctaves" << numOctaves;
-    fs << "corn_thresh" << corn_thresh;
-    fs << "DOG_thresh" << DOG_thresh;
-    fs << "maxCorners" << maxCorners;
-    fs << "num_layers" << num_layers;
+    if ( fs.isOpened() )
+    {
+        fs << "name" << getDefaultName();
+        fs << "numOctaves" << numOctaves;
+        fs << "corn_thresh" << corn_thresh;
+        fs << "DOG_thresh" << DOG_thresh;
+        fs << "maxCorners" << maxCorners;
+        fs << "num_layers" << num_layers;
+    }
 }
 
 /*
