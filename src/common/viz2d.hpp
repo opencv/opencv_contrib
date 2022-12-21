@@ -54,7 +54,7 @@ public:
 
 class NVG;
 
-class Viz2D: public nanogui::Screen {
+class Viz2D {
     friend class NanoVGContext;
     const cv::Size initialSize_;
     cv::Size frameBufferSize_;
@@ -68,6 +68,8 @@ class Viz2D: public nanogui::Screen {
     int minor_;
     int samples_;
     bool debug_;
+    std::filesystem::path capturePath_;
+    std::filesystem::path writerPath_;
     GLFWwindow* glfwWindow_ = nullptr;
     CLGLContext* clglContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
@@ -77,15 +79,14 @@ class Viz2D: public nanogui::Screen {
     nanogui::FormHelper* form_ = nullptr;
     bool closed_ = false;
     cv::Size videoFrameSize_ = cv::Size(0,0);
-    std::filesystem::path capturePath_;
-    std::filesystem::path writerPath_;
-    int vaCaptureDeviceIndex_;
-    int vaWriterDeviceIndex_;
+    int vaCaptureDeviceIndex_ = 0;
+    int vaWriterDeviceIndex_ = 0;
     bool mouseDrag_ = false;
+    nanogui::Screen* screen_ = nullptr;
 public:
     Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
-    void initializeWindowing();
+    bool initializeWindowing();
     void makeCurrent();
 
     cv::ogl::Texture2D& texture();
@@ -159,7 +160,7 @@ public:
 
     nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
 private:
-    virtual bool keyboard_event(int key, int scancode, int action, int modifiers) override;
+    virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
     nanogui::FormHelper* form();
     CLGLContext& clgl();

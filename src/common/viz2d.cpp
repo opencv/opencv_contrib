@@ -150,13 +150,16 @@ bool Viz2DWindow::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Ve
 }
 
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug), vaCaptureDeviceIndex_(0), vaWriterDeviceIndex_(0) {
+        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
     assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
+
     initializeWindowing();
 }
 
 Viz2D::~Viz2D() {
     //don't delete form_. it is autmatically cleaned up by the base class (nanogui::Screen)
+    if(screen_)
+        delete screen_;
     if (writer_)
         delete writer_;
     if (capture_)
@@ -169,7 +172,7 @@ Viz2D::~Viz2D() {
         delete clglContext_;
 }
 
-void Viz2D::initializeWindowing() {
+bool Viz2D::initializeWindowing() {
     assert(glfwInit() == GLFW_TRUE);
     glfwSetErrorCallback(kb::viz2d::error_callback);
 
@@ -209,14 +212,14 @@ void Viz2D::initializeWindowing() {
 
     glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr, nullptr);
     if (glfwWindow_ == NULL) {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        exit(-1);
+        return false;
     }
     glfwMakeContextCurrent(getGLFWWindow());
 
+    screen_ = new nanogui::Screen();
     screen().initialize(getGLFWWindow(), false);
-    form_ = new nanogui::FormHelper(this);
+    form_ = new nanogui::FormHelper(&screen());
+
     this->setWindowSize(initialSize_);
 
     glfwSetWindowUserPointer(getGLFWWindow(), this);
@@ -286,6 +289,7 @@ void Viz2D::initializeWindowing() {
     clglContext_ = new detail::CLGLContext(this->getFrameBufferSize());
     clvaContext_ = new detail::CLVAContext(*clglContext_);
     nvgContext_ = new detail::NanoVGContext(*this, getNVGcontext(), *clglContext_);
+    return true;
 }
 
 cv::ogl::Texture2D& Viz2D::texture() {
@@ -297,13 +301,13 @@ nanogui::FormHelper* Viz2D::form() {
 }
 
 bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
-    if (nanogui::Screen::keyboard_event(key, scancode, action, modifiers))
+    if (screen().keyboard_event(key, scancode, action, modifiers))
         return true;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         setOffscreen(!isOffscreen());
         return true;
     } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-        auto children = nanogui::Screen::children();
+        auto children = screen().children();
         for(auto* child : children) {
             child->set_visible(!child->visible());
         }
@@ -314,19 +318,23 @@ bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
 }
 
 CLGLContext& Viz2D::clgl() {
+    assert(clglContext_ != nullptr);
     return *clglContext_;
 }
 
 CLVAContext& Viz2D::clva() {
+    assert(clvaContext_ != nullptr);
     return *clvaContext_;
 }
 
 NanoVGContext& Viz2D::nvg() {
+    assert(nvgContext_ != nullptr);
     return *nvgContext_;
 }
 
 nanogui::Screen& Viz2D::screen() {
-    return *dynamic_cast<nanogui::Screen*>(this);
+    assert(screen_ != nullptr);
+    return *screen_;
 }
 
 cv::Size Viz2D::getVideoFrameSize() {
@@ -557,7 +565,7 @@ float Viz2D::getYPixelRatio() {
 }
 
 void Viz2D::setWindowSize(const cv::Size &sz) {
-    set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
+    screen().set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
 }
 
 bool Viz2D::isFullscreen() {
@@ -614,7 +622,7 @@ bool Viz2D::isStretching() {
 
 Viz2DWindow* Viz2D::makeWindow(int x, int y, const string &title) {
     this->makeCurrent();
-    auto* win = new kb::viz2d::Viz2DWindow(this, x, y, title);
+    auto* win = new kb::viz2d::Viz2DWindow(&screen(), x, y, title);
     this->form()->set_window(win);
     return win;
 }
