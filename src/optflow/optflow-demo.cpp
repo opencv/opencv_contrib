@@ -58,7 +58,7 @@ float point_loss = 25;
 // of tracked points and therefor is usually much smaller.
 int max_stroke = 14;
 // Keep alpha separate for the GUI
-float alpha = 0.07f;
+float alpha = 0.085f;
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
@@ -74,7 +74,7 @@ int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 13
 //The lightness selection threshold
 int bloom_thresh = 235;
 //The intensity of the bloom filter
-float bloom_gain = 1;
+float bloom_gain = 2;
 
 void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
