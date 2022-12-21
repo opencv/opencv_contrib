@@ -68,154 +68,194 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 
     GpuMat dst = getOutputMat(_dst, src.cols, src.rows, src.type(), stream);
 
-    const bool isNppiNativelySupported =
-      (srcType == CV_8UC1)  || (srcType == CV_8UC3)  || (srcType == CV_8UC4)  ||
-      (srcType == CV_16UC1) || (srcType == CV_16UC3) || (srcType == CV_16UC4) ||
-      (srcType == CV_16SC1) || (srcType == CV_16SC3) || (srcType == CV_16SC4) ||
-      (srcType == CV_32SC1) || (srcType == CV_32SC3) || (srcType == CV_32SC4) ||
-      (srcType == CV_32FC1) || (srcType == CV_32FC3) || (srcType == CV_32FC4);
-    const bool isElemSizeSupportedByNppi =
-      (!(elemSize%1) && ((elemSize/1)<=4)) ||
-      (!(elemSize%2) && ((elemSize/2)<=4)) ||
-      (!(elemSize%4) && ((elemSize/4)<=4)) ||
-      (!(elemSize%8) && ((elemSize/8)<=2));
-    const bool isElemSizeSupportedByGridTranspose =
-      (elemSize == 1) || (elemSize == 2) || (elemSize == 4) || (elemSize == 8);
-    const bool isSupported = isNppiNativelySupported || isElemSizeSupportedByNppi || isElemSizeSupportedByGridTranspose;
+    const bool isSupported =
+      (elemSize == 1) || (elemSize == 2) || (elemSize == 3) || (elemSize == 4) ||
+      (elemSize == 6) || (elemSize == 8) || (elemSize == 12) || (elemSize == 16);
 
     if (!isSupported)
-      CV_Error(Error::StsUnsupportedFormat, "");
+        CV_Error(Error::StsUnsupportedFormat, "");
     else if (src.empty())
-      CV_Error(Error::StsBadArg,"image is empty");
+        CV_Error(Error::StsBadArg,"image is empty");
 
     if ((src.rows == 1) && (src.cols == 1))
-      src.copyTo(dst, stream);
+        src.copyTo(dst, stream);
     else if (src.rows == 1)
-      src.reshape(0, src.cols).copyTo(dst, stream);
-    else if ((src.cols == 1) && (src.cols*src.elemSize() == src.step))
-      src.reshape(0, src.cols).copyTo(dst, stream);
-    else if (isNppiNativelySupported)
+        src.reshape(0, src.cols).copyTo(dst, stream);
+    else if ((src.cols == 1) && src.isContinuous())
+        src.reshape(0, src.cols).copyTo(dst, stream);
+    else
     {
-        NppStreamHandler h(StreamAccessor::getStream(stream));
-
         NppiSize sz;
         sz.width  = src.cols;
         sz.height = src.rows;
 
-        if (srcType == CV_8UC1)
-          nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+        if (!stream)
+        {
+          //native implementation
+          if (srcType == CV_8UC1)
+            nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+                dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_8UC3)
+            nppSafeCall( nppiTranspose_8u_C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
               dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_8UC3)
-          nppSafeCall( nppiTranspose_8u_C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-            dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_8UC4)
-          nppSafeCall( nppiTranspose_8u_C4R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-            dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_16UC1)
-          nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-            dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_16UC3)
-          nppSafeCall( nppiTranspose_16u_C3R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-            dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_16UC4)
-          nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-            dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_16SC1)
-          nppSafeCall( nppiTranspose_16s_C1R(src.ptr<Npp16s>(), static_cast<int>(src.step),
-            dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_16SC3)
-          nppSafeCall( nppiTranspose_16s_C3R(src.ptr<Npp16s>(), static_cast<int>(src.step),
-            dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_16SC4)
-          nppSafeCall( nppiTranspose_16s_C4R(src.ptr<Npp16s>(), static_cast<int>(src.step),
-            dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_32SC1)
-          nppSafeCall( nppiTranspose_32s_C1R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-            dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_32SC3)
-          nppSafeCall( nppiTranspose_32s_C3R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-            dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_32SC4)
-          nppSafeCall( nppiTranspose_32s_C4R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-            dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_32FC1)
-          nppSafeCall( nppiTranspose_32f_C1R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-            dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_32FC3)
-          nppSafeCall( nppiTranspose_32f_C3R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-            dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-        else if (srcType == CV_32FC4)
-          nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-            dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_8UC4)
+            nppSafeCall( nppiTranspose_8u_C4R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_16UC1)
+            nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_16UC3)
+            nppSafeCall( nppiTranspose_16u_C3R(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_16UC4)
+            nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_16SC1)
+            nppSafeCall( nppiTranspose_16s_C1R(src.ptr<Npp16s>(), static_cast<int>(src.step),
+              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_16SC3)
+            nppSafeCall( nppiTranspose_16s_C3R(src.ptr<Npp16s>(), static_cast<int>(src.step),
+              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_16SC4)
+            nppSafeCall( nppiTranspose_16s_C4R(src.ptr<Npp16s>(), static_cast<int>(src.step),
+              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_32SC1)
+            nppSafeCall( nppiTranspose_32s_C1R(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_32SC3)
+            nppSafeCall( nppiTranspose_32s_C3R(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_32SC4)
+            nppSafeCall( nppiTranspose_32s_C4R(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_32FC1)
+            nppSafeCall( nppiTranspose_32f_C1R(src.ptr<Npp32f>(), static_cast<int>(src.step),
+              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_32FC3)
+            nppSafeCall( nppiTranspose_32f_C3R(src.ptr<Npp32f>(), static_cast<int>(src.step),
+              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
+          else if (srcType == CV_32FC4)
+            nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
+              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
+          //reinterpretation
+          else if (elemSize == 1)
+            nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 2)
+            nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 3)
+            nppSafeCall( nppiTranspose_8u_C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 4)
+            nppSafeCall( nppiTranspose_32s_C1R(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 6)
+            nppSafeCall( nppiTranspose_16u_C3R(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 8)
+            nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 12)
+            nppSafeCall( nppiTranspose_32s_C3R(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
+          else if (elemSize == 16)
+            nppSafeCall( nppiTranspose_32s_C4R(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
+        }//end if (!stream)
+        else//if (stream != 0)
+        {
+          NppStreamContext ctx;
+          nppSafeCall( nppGetStreamContext(&ctx) );
+          ctx.hStream = StreamAccessor::getStream(stream);
+
+          //native implementation
+          if (srcType == CV_8UC1)
+            nppSafeCall( nppiTranspose_8u_C1R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_8UC3)
+            nppSafeCall( nppiTranspose_8u_C3R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_8UC4)
+            nppSafeCall( nppiTranspose_8u_C4R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_16UC1)
+            nppSafeCall( nppiTranspose_16u_C1R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_16UC3)
+            nppSafeCall( nppiTranspose_16u_C3R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_16UC4)
+            nppSafeCall( nppiTranspose_16u_C4R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_16SC1)
+            nppSafeCall( nppiTranspose_16s_C1R_Ctx(src.ptr<Npp16s>(), static_cast<int>(src.step),
+              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_16SC3)
+            nppSafeCall( nppiTranspose_16s_C3R_Ctx(src.ptr<Npp16s>(), static_cast<int>(src.step),
+              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_16SC4)
+            nppSafeCall( nppiTranspose_16s_C4R_Ctx(src.ptr<Npp16s>(), static_cast<int>(src.step),
+              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_32SC1)
+            nppSafeCall( nppiTranspose_32s_C1R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_32SC3)
+            nppSafeCall( nppiTranspose_32s_C3R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_32SC4)
+            nppSafeCall( nppiTranspose_32s_C4R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_32FC1)
+            nppSafeCall( nppiTranspose_32f_C1R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
+              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_32FC3)
+            nppSafeCall( nppiTranspose_32f_C3R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
+              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (srcType == CV_32FC4)
+            nppSafeCall( nppiTranspose_32f_C4R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
+              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, ctx) );
+          //reinterpretation
+          else if (elemSize == 1)
+            nppSafeCall( nppiTranspose_8u_C1R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 2)
+            nppSafeCall( nppiTranspose_16u_C1R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 3)
+            nppSafeCall( nppiTranspose_8u_C3R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
+              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 4)
+            nppSafeCall( nppiTranspose_32s_C1R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 6)
+            nppSafeCall( nppiTranspose_16u_C3R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 8)
+            nppSafeCall( nppiTranspose_16u_C4R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
+              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 12)
+            nppSafeCall( nppiTranspose_32s_C3R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+          else if (elemSize == 16)
+            nppSafeCall( nppiTranspose_32s_C4R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
+              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+        }//end if (stream != 0)
 
         if (!stream)
-            CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
-    }//end if (isNppiNativelySupported)
-    else if (isElemSizeSupportedByNppi)
-    {
-      NppStreamHandler h(StreamAccessor::getStream(stream));
+          CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+    }//end if
 
-      NppiSize sz;
-      sz.width  = src.cols;
-      sz.height = src.rows;
-
-      if (!(elemSize%1) && ((elemSize/1)==1))
-        nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-          dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%1) && ((elemSize/1)==2))
-        nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-          dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%1) && ((elemSize/1)==3))
-        nppSafeCall( nppiTranspose_8u_C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-          dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%1) && ((elemSize/1)==4))
-        nppSafeCall( nppiTranspose_8u_C4R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-          dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%2) && ((elemSize/2)==1))
-        nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-          dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%2) && ((elemSize/2)==2))
-        nppSafeCall( nppiTranspose_8u_C4R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-          dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%2) && ((elemSize/2)==3))
-        nppSafeCall( nppiTranspose_16u_C3R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-          dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%2) && ((elemSize/2)==4))
-        nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-          dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%4) && ((elemSize/4)==1))
-        nppSafeCall( nppiTranspose_32f_C1R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-          dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%4) && ((elemSize/4)==2))
-        nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-          dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%4) && ((elemSize/4)==3))
-        nppSafeCall( nppiTranspose_32f_C3R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-          dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%4) && ((elemSize/4)==4))
-        nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-          dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%8) && ((elemSize/8)==1))
-        nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-          dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-      else if (!(elemSize%8) && ((elemSize/8)==2))
-        nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-          dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-
-      if (!stream)
-        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
-    }//end if (isElemSizeSupportedByNppi)
-    else if (isElemSizeSupportedByGridTranspose)
-    {
-      if (elemSize == 1)
-        gridTranspose(globPtr<unsigned char>(src), globPtr<unsigned char>(dst), stream);
-      else if (elemSize == 2)
-        gridTranspose(globPtr<unsigned short>(src), globPtr<unsigned short>(dst), stream);
-      else if (elemSize == 4)
-        gridTranspose(globPtr<signed int>(src), globPtr<signed int>(dst), stream);
-      else if (elemSize == 8)
-        gridTranspose(globPtr<double>(src), globPtr<double>(dst), stream);
-    }//end if (isElemSizeSupportedByGridTranspose)
+    /*
+    if (elemSize == 1)
+      gridTranspose(globPtr<unsigned char>(src), globPtr<unsigned char>(dst), stream);
+    else if (elemSize == 2)
+      gridTranspose(globPtr<unsigned short>(src), globPtr<unsigned short>(dst), stream);
+    else if (elemSize == 4)
+      gridTranspose(globPtr<signed int>(src), globPtr<signed int>(dst), stream);
+    else if (elemSize == 8)
+      gridTranspose(globPtr<double>(src), globPtr<double>(dst), stream);
+    */
 
     syncOutput(dst, _dst, stream);
 }
