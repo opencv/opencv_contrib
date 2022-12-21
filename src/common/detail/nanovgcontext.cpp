@@ -7,8 +7,6 @@ namespace viz2d {
 namespace detail {
 NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbContext) :
         v2d_(v2d), context_(context), clglContext_(fbContext) {
-    nvgCreateFont(context_, "libertine", "assets/LinLibertine_RB.ttf");
-
     //FIXME workaround for first frame color glitch
     cv::UMat tmp;
     CLGLContext::FrameBufferScope fbScope(clglContext_, tmp);

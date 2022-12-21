@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
             v2d->clear();
 
             fontSize(FONT_SIZE);
-            fontFace("libertine");
+            fontFace("sans-bold");
             fillColor(color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
             textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
