@@ -36,6 +36,12 @@ enum BackgroundModes {
     GREY,
     COLOR,
     VALUE,
+    BLACK
+};
+
+enum PostProcModes {
+    GLOW,
+    BLOOM,
     NONE
 };
 
@@ -67,14 +73,14 @@ bool show_fps = true;
 bool stretch = false;
 //Use OpenCL or not
 bool use_acceleration = true;
-//Use the bloom effect
-bool use_bloom = false;
+//The post processing mode
+PostProcModes post_proc_mode = GLOW;
 // Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
 int kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 //The lightness selection threshold
-int bloom_thresh = 235;
+int bloom_thresh = 210;
 //The intensity of the bloom filter
-float bloom_gain = 2;
+float bloom_gain = 3;
 
 void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
@@ -216,7 +222,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes mode, bool useBloom) {
+void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
     static cv::UMat tmp;
     static cv::UMat post;
     static cv::UMat backgroundGrey;
@@ -225,7 +231,7 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
     cv::add(foreground, frameBuffer, foreground);
 
-    switch (mode) {
+    switch (bgMode) {
     case GREY:
         cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
         cv::cvtColor(backgroundGrey, background, cv::COLOR_GRAY2BGRA);
@@ -238,17 +244,25 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
         break;
     case COLOR:
         break;
-    case NONE:
+    case BLACK:
         background = cv::Scalar::all(0);
         break;
     default:
         break;
     }
 
-    if(useBloom) {
-        bloom(foreground, post, kernelSize, bloom_thresh, bloom_gain);
-    } else {
+    switch (ppMode) {
+    case GLOW:
         glow_effect(foreground, post, kernelSize);
+        break;
+    case BLOOM:
+        bloom(foreground, post, kernelSize, bloom_thresh, bloom_gain);
+        break;
+    case NONE:
+        foreground.copyTo(post);
+        break;
+    default:
+        break;
     }
 
     cv::add(background, post, dst);
@@ -265,7 +279,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     v2d->makeGroup("Background");
-    v2d->makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "None"});
+    v2d->makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
     v2d->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
@@ -280,7 +294,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
     v2d->makeGroup("Post Processing");
-    auto* enableBloom = v2d->makeFormVariable("Enable Bloom", use_bloom, "Enable or disable the bloom effect");
+    auto* enableBloom = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
     auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     kernelSize->set_callback([=](const int& k) {
         static int lastKernelSize = kernel_size;
@@ -299,15 +313,22 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
 
     auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
     auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
-    enableBloom->set_callback([&,thresh, gain](const bool& b) {
-        if(b) {
+    enableBloom->set_callback([&,kernelSize, thresh, gain](const int& m) {
+        if(m == BLOOM) {
             thresh->set_enabled(true);
             gain->set_enabled(true);
         } else {
             thresh->set_enabled(false);
             gain->set_enabled(false);
         }
-        use_bloom = b;
+
+        if(m == NONE) {
+            kernelSize->set_enabled(false);
+        } else {
+            kernelSize->set_enabled(true);
+        }
+        //FIXME why is this required?
+        post_proc_mode = static_cast<PostProcModes>(m);
     });
 
     settingsWindow = v2d->makeWindow(220, 320, "Settings");
@@ -405,7 +426,7 @@ int main(int argc, char **argv) {
 
         v2d->opencl([&](cv::UMat& frameBuffer){
             //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, use_bloom);
+            composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, post_proc_mode);
         });
 
         update_fps(v2d, show_fps);
