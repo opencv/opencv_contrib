@@ -16,9 +16,7 @@ the possibility of applying error detection and correction techniques.
 The aruco module is based on the [ArUco library](http://www.uco.es/investiga/grupos/ava/node/26),
 a popular library for detection of square fiducial markers developed by Rafael Muñoz and Sergio Garrido:
 
-> S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
-> "Automatic generation and detection of highly reliable fiducial markers under occlusion".
-> Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
+@sa @cite Aruco2014
 
 The aruco functionalities are included in:
 @code{.cpp}
