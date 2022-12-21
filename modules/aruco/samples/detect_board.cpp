@@ -177,8 +177,16 @@ int main(int argc, char *argv[]) {
 
         // estimate board pose
         int markersOfBoardDetected = 0;
-        if(ids.size() > 0)
-            markersOfBoardDetected = estimatePoseBoard(corners, ids, board, camMatrix, distCoeffs, rvec, tvec);
+        if(ids.size() > 0) {
+            // Get object and image points for the solvePnP function
+            cv::Mat objPoints, imgPoints;
+            board->matchImagePoints(corners, ids, objPoints, imgPoints);
+
+            // Find pose
+            cv::solvePnP(objPoints, imgPoints, camMatrix, distCoeffs, rvec, tvec);
+
+            markersOfBoardDetected = (int)objPoints.total() / 4;
+        }
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;

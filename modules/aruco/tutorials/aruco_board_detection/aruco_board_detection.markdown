@@ -27,38 +27,13 @@ Thus, the pose can be calculated even in the presence of occlusions or partial v
 - The obtained pose is usually more accurate since a higher amount of point correspondences (marker
 corners) are employed.
 
-The aruco module allows the use of Boards. The main class is the ```cv::aruco::Board``` class which defines the Board layout:
-
-@code{.cpp}
-struct BoardImpl;
-Ptr<BoardImpl> boardImpl;
-
-struct Board::BoardImpl {
-    std::vector<std::vector<cv::Point3f> > objPoints;
-    cv::aruco::Dictionary dictionary;
-    cv::Point3f rightBottomBorder;
-    std::vector<int> ids;
-
-    ...
-};
-@endcode
-
-A object of type ```Board``` has three parameters:
-- The ```objPoints``` structure is the list of corner positions in the 3d Board reference system, i.e. its layout.
-For each marker, its four corners are stored in the standard order, i.e. in clockwise order and starting
-with the top left corner.
-- The ```dictionary``` parameter indicates to which marker dictionary the Board markers belong to.
-- The ```rightBottomBorder``` parameter is the coordinate of the bottom right corner of the board. It is set when calling the function create().
-- Finally, the ```ids``` structure indicates the identifiers of each of the markers in ```objPoints``` respect to the specified  ```dictionary```.
-
-
 Board Detection
 -----
 
 A Board detection is similar to the standard marker detection. The only difference is in the pose estimation step.
 In fact, to use marker boards, a standard marker detection should be done before estimating the Board pose.
 
-The aruco module provides a specific function, ```estimatePoseBoard()```, to perform pose estimation for boards:
+To perform pose estimation for boards, you should use ```cv::solvePnP``` function, as shown below:
 
 @code{.cpp}
 cv::Mat inputImage;
@@ -86,21 +61,23 @@ cv::Vec3d rvec, tvec;
 
 // If at least one marker detected
 if(markerIds.size() > 0) {
-    int valid = cv::aruco::estimatePoseBoard(markerCorners, markerIds, board, cameraMatrix, distCoeffs, rvec, tvec);
-}
+    // Get object and image points for the solvePnP function
+    cv::Mat objPoints, imgPoints;
+    board->matchImagePoints(markerCorners, markerIds, objPoints, imgPoints);
 
+    // Find pose
+    cv::solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvec, tvec);
+}
 
 @endcode
 
-The parameters of estimatePoseBoard are:
+The parameters are:
 
-- ```markerCorners``` and ```markerIds```: structures of detected markers from ```detectMarkers()``` function.
+- ```objPoints```, ```imgPoints```: object and image points, matched with ```matchImagePoints```, which, in turn, takes as input ```markerCorners``` and ```markerIds```: structures of detected markers from ```detectMarkers()``` function).
 - ```board```: the ```Board``` object that defines the board layout and its ids
 - ```cameraMatrix``` and ```distCoeffs```: camera calibration parameters necessary for pose estimation.
 - ```rvec``` and ```tvec```: estimated pose of the Board. If not empty then treated as initial guess.
-- The function returns the total number of markers employed for estimating the board pose. Note that not all the
- markers provided in ```markerCorners``` and ```markerIds``` should be used, since only the markers whose ids are
-listed in the ```Board::BoardImpl::ids``` structure are considered.
+- The function returns the total number of markers employed for estimating the board pose.
 
 The ```drawFrameAxes()``` function can be used to check the obtained pose. For instance:
 
@@ -218,7 +195,13 @@ Finally, a full example of board detection:
             cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             cv::Vec3d rvec, tvec;
-            int valid = estimatePoseBoard(corners, ids, board, cameraMatrix, distCoeffs, rvec, tvec);
+
+            // Get object and image points for the solvePnP function
+            cv::Mat objPoints, imgPoints;
+            board->matchImagePoints(corners, ids, objPoints, imgPoints);
+
+            // Find pose
+            cv::solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvec, tvec);
 
             // If at least one board marker detected
             if(valid > 0)
