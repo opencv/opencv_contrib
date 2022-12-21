@@ -70,7 +70,7 @@ bool use_acceleration = true;
 //Use the bloom effect
 bool use_bloom = false;
 // Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
-int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138  + 1 : DIAG / 138), 1);
+int kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 //The lightness selection threshold
 int bloom_thresh = 235;
 //The intensity of the bloom filter
