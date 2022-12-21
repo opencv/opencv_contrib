@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 
     if (!outputFile.empty() && nMarkers > 0 && markerSize > 0)
     {
-        Ptr<FileStorage> fs = makePtr<FileStorage>(outputFile, FileStorage::WRITE);
+        FileStorage fs(outputFile, FileStorage::WRITE);
         if (checkFlippedMarkers)
             dictionary = generateCustomAsymmetricDictionary(nMarkers, markerSize, aruco::Dictionary(), 0);
         else
