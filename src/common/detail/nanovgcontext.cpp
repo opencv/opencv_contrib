@@ -13,14 +13,18 @@ NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbCon
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
+#ifndef __EMSCRIPTEN__
     CLExecScope_t scope(clglContext_.getCLExecContext());
+#endif
     CLGLContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
     kb::viz2d::nvg::detail::NVG::setCurrentContext(context_),
     fn(clglContext_.getSize());
 }
 
+
 void push() {
+#ifndef __EMSCRIPTEN__
     GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
     GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
     GL_CHECK(glMatrixMode(GL_MODELVIEW));
@@ -29,9 +33,11 @@ void push() {
     GL_CHECK(glPushMatrix());
     GL_CHECK(glMatrixMode(GL_TEXTURE));
     GL_CHECK(glPushMatrix());
+#endif
 }
 
 void pop() {
+#ifndef __EMSCRIPTEN__
     GL_CHECK(glMatrixMode(GL_TEXTURE));
     GL_CHECK(glPopMatrix());
     GL_CHECK(glMatrixMode(GL_PROJECTION));
@@ -40,6 +46,7 @@ void pop() {
     GL_CHECK(glPopMatrix());
     GL_CHECK(glPopClientAttrib());
     GL_CHECK(glPopAttrib());
+#endif
 }
 
 void NanoVGContext::begin() {

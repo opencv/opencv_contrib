@@ -25,7 +25,9 @@ cv::Size CLVAContext::getVideoFrameSize() {
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
     {
         if(!context_ .empty()) {
+#ifndef __EMSCRIPTEN__
             CLExecScope_t scope(context_);
+#endif
             fn(videoFrame_);
             videoFrameSize_ = videoFrame_.size();
         } else {
@@ -34,7 +36,9 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
         }
     }
     {
+#ifndef __EMSCRIPTEN__
         CLExecScope_t scope(clglContext_.getCLExecContext());
+#endif
         CLGLContext::GLScope glScope(clglContext_);
         CLGLContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
         if (videoFrame_.empty())
@@ -51,7 +55,9 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
 
 void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
     {
+#ifndef __EMSCRIPTEN__
         CLExecScope_t scope(clglContext_.getCLExecContext());
+#endif
         CLGLContext::GLScope glScope(clglContext_);
         CLGLContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
 
@@ -60,7 +66,9 @@ void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
     }
     assert(videoFrame_.size() == videoFrameSize_);
     {
+#ifndef __EMSCRIPTEN__
         CLExecScope_t scope(context_);
+#endif
         fn(videoFrame_);
     }
 }
@@ -70,7 +78,9 @@ bool CLVAContext::hasContext() {
 }
 
 void CLVAContext::copyContext() {
+#ifndef __EMSCRIPTEN__
     context_ = CLExecContext_t::getCurrent();
+#endif
 }
 
 CLExecContext_t CLVAContext::getCLExecContext() {

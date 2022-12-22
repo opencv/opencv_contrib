@@ -1,4 +1,8 @@
+ifdef EMSDK
 TARGET := libviz2d.so
+else
+TARGET := libviz2d.so
+endif
 
 SRCS    := detail/clglcontext.cpp detail/clvacontext.cpp detail/nanovgcontext.cpp viz2d.cpp util.cpp nvg.cpp
 
@@ -8,8 +12,8 @@ OBJS    := ${SRCS:.cpp=.o}
 DEPS    := ${SRCS:.cpp=.dep} 
 
 CXXFLAGS += -fpic
-LDFLAGS += -shared 
-LIBS += -lm -lOpenCL
+LDFLAGS += -shared
+LIBS += -lm
 .PHONY: all release debug clean distclean 
 
 all: release
@@ -23,7 +27,7 @@ asan: ${TARGET}
 ${TARGET}: ${OBJS}
 	${CXX} ${LDFLAGS} -o $@ $^ ${LIBS}
 
-${OBJS}: %.o: %.cpp %.dep ${GCH}
+${OBJS}: %.o: %.cpp %.dep ${GCH} 
 	${CXX} ${CXXFLAGS} -o $@ -c $<
 
 ${DEPS}: %.dep: %.cpp Makefile 

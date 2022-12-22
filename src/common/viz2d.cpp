@@ -3,6 +3,10 @@
 #include "detail/clvacontext.hpp"
 #include "detail/nanovgcontext.hpp"
 
+#ifdef __EMSCRIPTEN__
+#  include <emscripten.h>
+#endif
+
 namespace kb {
 namespace viz2d {
 namespace detail {
@@ -350,7 +354,9 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
 }
 
 void Viz2D::opengl(std::function<void(const cv::Size&)> fn) {
+#ifndef __EMSCRIPTEN__
     detail::CLExecScope_t scope(clgl().getCLExecContext());
+#endif
     detail::CLGLContext::GLScope glScope(clgl());
     fn(getFrameBufferSize());
 }
@@ -386,7 +392,7 @@ void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
 void Viz2D::makeCurrent() {
     glfwMakeContextCurrent(getGLFWWindow());
 }
-
+#ifndef __EMSCRIPTEN__
 cv::VideoWriter& Viz2D::makeVAWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     writerPath_ = outputFilename;
     vaWriterDeviceIndex_ = vaDeviceIndex;
@@ -432,6 +438,7 @@ cv::VideoCapture& Viz2D::makeCapture(const string &inputFilename) {
 
     return *capture_;
 }
+#endif
 
 void Viz2D::clear(const cv::Scalar &rgba) {
     const float &r = rgba[0] / 255.0f;
@@ -439,7 +446,7 @@ void Viz2D::clear(const cv::Scalar &rgba) {
     const float &b = rgba[2] / 255.0f;
     const float &a = rgba[3] / 255.0f;
     GL_CHECK(glClearColor(r, g, b, a));
-    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
 }
 
 void Viz2D::setMouseDrag(bool d) {
@@ -561,8 +568,8 @@ cv::Size Viz2D::getInitialSize() {
 
 float Viz2D::getXPixelRatio() {
     makeCurrent();
-#if defined(EMSCRIPTEN)
-        return emscripten_get_device_pixel_ratio();
+#ifdef __EMSCRIPTEN__
+    return emscripten_get_device_pixel_ratio();
 #else
     float xscale, yscale;
     glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
@@ -572,8 +579,8 @@ float Viz2D::getXPixelRatio() {
 
 float Viz2D::getYPixelRatio() {
     makeCurrent();
-#if defined(EMSCRIPTEN)
-        return emscripten_get_device_pixel_ratio();
+#ifdef __EMSCRIPTEN__
+    return emscripten_get_device_pixel_ratio();
 #else
     float xscale, yscale;
     glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
@@ -682,6 +689,7 @@ bool Viz2D::isAccelerated() {
 }
 
 void Viz2D::setAccelerated(bool a) {
+#ifndef __EMSCRIPTEN__
     if(a != cv::ocl::useOpenCL()) {
         clglContext_->getCLExecContext().setUseOpenCL(a);
         clvaContext_->getCLExecContext().setUseOpenCL(a);
@@ -719,6 +727,7 @@ void Viz2D::setAccelerated(bool a) {
             }
         }
     }
+#endif
 }
 
 bool Viz2D::display() {

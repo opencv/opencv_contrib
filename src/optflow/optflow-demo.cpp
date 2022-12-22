@@ -181,7 +181,6 @@ void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 
     static cv::UMat hls;
     static cv::UMat ls16;
     static cv::UMat ls;
-    static cv::UMat threshGrey;
     static cv::UMat blur;
     static std::vector<cv::UMat> hlsChannels;
 
@@ -192,9 +191,9 @@ void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 
 
     cv::multiply(hlsChannels[1], hlsChannels[2], ls16, 1, CV_16U);
     cv::divide(ls16, cv::Scalar(255.0), ls, 1, CV_8U);
-    cv::threshold(ls, threshGrey, threshValue, 255, cv::THRESH_BINARY);
+    cv::threshold(ls, blur, threshValue, 255, cv::THRESH_BINARY);
 
-    cv::boxFilter(threshGrey, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+    cv::boxFilter(blur, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     cv::cvtColor(blur, blur, cv::COLOR_GRAY2BGRA);
 
     addWeighted(src, 1.0, blur, gain, 0, dst);
@@ -271,25 +270,27 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
     v2d->makeWindow(5, 30, "Effects");
+
     v2d->makeGroup("Foreground");
     v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
     v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
     v2d->makeGroup("Background");
     v2d->makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
+
     v2d->makeGroup("Points");
     v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
     v2d->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
 
     v2d->makeGroup("Optical flow");
     v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-
     v2d->makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
         effect_color[0] = c[0];
         effect_color[1] = c[1];
         effect_color[2] = c[2];
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
+
     v2d->makeGroup("Post Processing");
     auto* postPocMode = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
     auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
@@ -307,7 +308,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
         lastKernelSize = k;
         kernelSize->set_value(kernel_size);
     });
-
     auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
     auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
     postPocMode->set_callback([&,kernelSize, thresh, gain](const int& m) {
@@ -329,6 +329,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     });
 
     v2d->makeWindow(220, 320, "Settings");
+
     v2d->makeGroup("Hardware Acceleration");
     v2d->makeFormVariable("Enable", use_acceleration, "Enable or disable libva and OpenCL acceleration");
 
@@ -337,16 +338,15 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
 
     v2dMenu->makeWindow(8, 16, "Display");
+
     v2dMenu->makeGroup("Display");
     v2dMenu->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
         v2d->setStretching(s);
     });
-
     v2dMenu->makeButton("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
-
     v2dMenu->makeButton("Offscreen", [=]() {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
         if(!v2d->capture())
             break;
 
-        v2d->opencl([&](cv::UMat& frameBuffer){
+        v2d->opencl([&](cv::UMat& frameBuffer) {
             cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
             frameBuffer.copyTo(background);
         });
@@ -431,7 +431,7 @@ int main(int argc, char **argv) {
 
         v2d->write();
 
-        v2dMenu->capture([=](cv::UMat& videoFrame) {
+        v2dMenu->capture([&](cv::UMat& videoFrame) {
             menuFrame.copyTo(videoFrame);
         });
 

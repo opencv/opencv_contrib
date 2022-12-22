@@ -12,6 +12,7 @@ std::string get_gl_info() {
 
 std::string get_cl_info() {
     std::stringstream ss;
+#ifndef __EMSCRIPTEN__
     std::vector<cv::ocl::PlatformInfo> plt_info;
     cv::ocl::getPlatfomsInfo(plt_info);
     const cv::ocl::Device &defaultDevice = cv::ocl::Device::getDefault();
@@ -30,7 +31,7 @@ std::string get_cl_info() {
             ss << "\t\t  VAAPI media sharing: " << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
         }
     }
-
+#endif
     return ss.str();
 }
 

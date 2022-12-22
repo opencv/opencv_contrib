@@ -1,5 +1,8 @@
+ifdef EMSDK
+TARGET := font-demo.html
+else
 TARGET := font-demo
-
+endif
 SRCS    := font-demo.cpp
 
 #precompiled headers
@@ -9,7 +12,12 @@ DEPS    := ${SRCS:.cpp=.dep}
 
 CXXFLAGS += -fpic
 LDFLAGS +=  
-LIBS += -lm
+ifdef EMSDK
+LDFLAGS += -sFULL_ES3
+LIBS += -lm -lviz2d
+else
+LIBS += -lm -lviz2d
+endif
 .PHONY: all release debug clean distclean 
 
 all: release

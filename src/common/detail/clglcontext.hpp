@@ -5,11 +5,17 @@
 
 #include <GL/glew.h>
 #include <GL/gl.h>
+#ifndef __EMSCRIPTEN__
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
+#endif
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
-#define GLFW_INCLUDE_GLCOREARB
+#ifndef __EMSCRIPTEN__
+#  define GLFW_INCLUDE_GLCOREARB
+#else
+#  define GLFW_INCLUDE_ES3
+#endif
 #include <GLFW/glfw3.h>
 #include <iostream>
 
@@ -27,14 +33,20 @@ class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
     friend class kb::viz2d::Viz2D;
-    cv::ogl::Texture2D *frameBufferTex_;
-    GLuint frameBufferID;
-    GLuint renderBufferID;
+    GLuint upPboID = 0;
+    GLuint downPboID = 0;
+    GLuint frameBufferID_ = 0;
+    GLuint textureID_ = 0;
+    GLuint renderBufferID_ = 0;
     GLint viewport_[4];
+#ifndef __EMSCRIPTEN__
     CLExecContext_t context_;
+#endif
     cv::Size frameBufferSize_;
     cv::ogl::Texture2D& getTexture2D();
+#ifndef __EMSCRIPTEN__
     CLExecContext_t& getCLExecContext();
+#endif
     void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch = false);
 public:
     class FrameBufferScope {
@@ -70,9 +82,12 @@ public:
 protected:
     void begin();
     void end();
+    void download(cv::UMat& m);
+    void upload(const cv::UMat& m);
     void acquireFromGL(cv::UMat &m);
     void releaseToGL(cv::UMat &m);
     cv::UMat frameBuffer_;
+    cv::ogl::Texture2D* texture_ = nullptr;
 };
 }
 }

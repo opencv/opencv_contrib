@@ -2,6 +2,8 @@
 #define SRC_COMMON_VIZ2D_HPP_
 
 #include <filesystem>
+#include <iostream>
+#include <set>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
