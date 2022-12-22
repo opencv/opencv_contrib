@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
         // detect markers and estimate pose
         detector.detectMarkers(image, corners, ids, rejected);
 
-        int nMarkers = corners.size();
+        int nMarkers = (int)corners.size();
         vector<Vec3d> rvecs(nMarkers), tvecs(nMarkers);
 
         if(estimatePose && ids.size() > 0) {
@@ -199,10 +199,10 @@ int main(int argc, char *argv[]) {
         if(showRejected && rejected.size() > 0)
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
-        // imshow("out", imageCopy);
-        // char key = (char)waitKey(waitTime);
-        // if(key == 27) break;
-        imwrite("out.png", imageCopy);
+        imshow("out", imageCopy);
+        char key = (char)waitKey(waitTime);
+        if(key == 27) break;
+        // imwrite("out.png", imageCopy);
     }
 
     return 0;

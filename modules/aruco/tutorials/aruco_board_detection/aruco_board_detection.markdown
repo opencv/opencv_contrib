@@ -33,7 +33,7 @@ Board Detection
 A Board detection is similar to the standard marker detection. The only difference is in the pose estimation step.
 In fact, to use marker boards, a standard marker detection should be done before estimating the Board pose.
 
-To perform pose estimation for boards, you should use ```cv::solvePnP``` function, as shown below:
+To perform pose estimation for boards, you should use ```#cv::solvePnP``` function, as shown below:
 
 @code{.cpp}
 cv::Mat inputImage;
