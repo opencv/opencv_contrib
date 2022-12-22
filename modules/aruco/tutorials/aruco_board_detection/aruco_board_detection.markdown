@@ -204,7 +204,8 @@ Finally, a full example of board detection:
             cv::solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvec, tvec);
 
             // If at least one board marker detected
-            if(valid > 0)
+            markersOfBoardDetected = (int)objPoints.total() / 4;
+            if(markersOfBoardDetected > 0)
                 cv::drawFrameAxes(imageCopy, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
         }
 
