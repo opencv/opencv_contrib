@@ -148,6 +148,13 @@ int main(int argc, char *argv[]) {
     double totalTime = 0;
     int totalIterations = 0;
 
+    // Set coordinate system
+    cv::Mat objPoints(4, 1, CV_32FC3);
+    objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+
     while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -164,15 +171,6 @@ int main(int argc, char *argv[]) {
         vector<Vec3d> rvecs(nMarkers), tvecs(nMarkers);
 
         if(estimatePose && ids.size() > 0) {
-            // float markerLength = 0.05;
-
-            // Set coordinate system
-            cv::Mat objPoints(4, 1, CV_32FC3);
-            objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
-            objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
-            objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
-            objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
-
             // Calculate pose for each marker
             for (int i = 0; i < nMarkers; i++) {
                 solvePnP(objPoints, corners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
@@ -201,9 +199,10 @@ int main(int argc, char *argv[]) {
         if(showRejected && rejected.size() > 0)
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
-        imshow("out", imageCopy);
-        char key = (char)waitKey(waitTime);
-        if(key == 27) break;
+        // imshow("out", imageCopy);
+        // char key = (char)waitKey(waitTime);
+        // if(key == 27) break;
+        imwrite("out.png", imageCopy);
     }
 
     return 0;
