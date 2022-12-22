@@ -128,7 +128,7 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
 
     for(unsigned int i = 0; i < nCharucoCorners; i++) {
         if(charucoCorners.getMat().at< Point2f >(i) == Point2f(-1, -1)) continue;
-        if(board->getNearestMarkerIdx()[i].size() == 0) continue;
+        if(board->getNearestMarkerIdx()[i].empty()) continue;
 
         double minDist = -1;
         int counter = 0;
@@ -459,48 +459,6 @@ void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int square
     Ptr<CharucoBoard> board = CharucoBoard::create(3, 3, (float)squareLength, (float)markerLength, *dictionary, tmpIds);
     Size outSize(3 * squareLength + 2 * marginSize, 3 * squareLength + 2 * marginSize);
     board->generateImage(outSize, _img, marginSize, borderBits);
-}
-
-
-void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners, InputArray _ids, Scalar borderColor) {
-    CV_Assert(_image.getMat().total() != 0 &&
-              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
-    CV_Assert((_corners.total() == _ids.total()) || _ids.total() == 0);
-
-    // calculate colors
-    Scalar textColor, cornerColor;
-    textColor = cornerColor = borderColor;
-    swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
-    swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
-
-    int nMarkers = (int)_corners.total();
-    for(int i = 0; i < nMarkers; i++) {
-        Mat currentMarker = _corners.getMat(i);
-        CV_Assert(currentMarker.total() == 4 && currentMarker.type() == CV_32FC2);
-
-        // draw marker sides
-        for(int j = 0; j < 4; j++) {
-            Point2f p0, p1;
-            p0 = currentMarker.at< Point2f >(j);
-            p1 = currentMarker.at< Point2f >((j + 1) % 4);
-            line(_image, p0, p1, borderColor, 1);
-        }
-
-        // draw first corner mark
-        rectangle(_image, currentMarker.at< Point2f >(0) - Point2f(3, 3),
-                  currentMarker.at< Point2f >(0) + Point2f(3, 3), cornerColor, 1, LINE_AA);
-
-        // draw id composed by four numbers
-        if(_ids.total() != 0) {
-            Point2f cent(0, 0);
-            for(int p = 0; p < 4; p++)
-                cent += currentMarker.at< Point2f >(p);
-            cent = cent / 4.;
-            stringstream s;
-            s << "id=" << _ids.getMat().at< Vec4i >(i);
-            putText(_image, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
-        }
-    }
 }
 
 }

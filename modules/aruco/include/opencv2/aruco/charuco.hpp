@@ -68,7 +68,7 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  * This function detects Diamond markers from the previous detected ArUco markers. The diamonds
  * are returned in the diamondCorners and diamondIds parameters. If camera calibration parameters
  * are provided, the diamond search is based on reprojection. If not, diamond search is based on
- * homography. Homography is faster than reprojection but can slightly reduce the detection rate.
+ * homography. Homography is faster than reprojection, but less accurate.
  */
 CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays markerCorners,
                                        InputArray markerIds, float squareMarkerLengthRate,
@@ -77,32 +77,6 @@ CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays mark
                                        InputArray distCoeffs = noArray(),
                                        Ptr<Dictionary> dictionary = makePtr<Dictionary>
                                                (getPredefinedDictionary(PredefinedDictionaryType::DICT_4X4_50)));
-
-
-
-/**
- * @brief Draw a set of detected ChArUco Diamond markers
- *
- * @param image input/output image. It must have 1 or 3 channels. The number of channels is not
- * altered.
- * @param diamondCorners positions of diamond corners in the same format returned by
- * detectCharucoDiamond(). (e.g std::vector<std::vector<cv::Point2f> > ). For N detected markers,
- * the dimensions of this array should be Nx4. The order of the corners should be clockwise.
- * @param diamondIds vector of identifiers for diamonds in diamondCorners, in the same format
- * returned by detectCharucoDiamond() (e.g. std::vector<Vec4i>).
- * Optional, if not provided, ids are not painted.
- * @param borderColor color of marker borders. Rest of colors (text color and first corner color)
- * are calculated based on this one.
- *
- * Given an array of detected diamonds, this functions draws them in the image. The marker borders
- * are painted and the markers identifiers if provided.
- * Useful for debugging purposes.
- */
-CV_EXPORTS_W void drawDetectedDiamonds(InputOutputArray image, InputArrayOfArrays diamondCorners,
-                                       InputArray diamondIds = noArray(),
-                                       Scalar borderColor = Scalar(0, 0, 255));
-
-
 
 
 /**
