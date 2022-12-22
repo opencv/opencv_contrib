@@ -40,6 +40,8 @@ namespace aruco {
  * Only visible corners are returned. For each corner, its corresponding identifier is
  * also returned in charucoIds.
  * The function returns the number of interpolated corners.
+ *
+ * @deprecated Use CharucoDetector::detectBoard
  */
 CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, InputArray markerIds,
                                            InputArray image, const Ptr<CharucoBoard> &board,
@@ -69,6 +71,8 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  * are returned in the diamondCorners and diamondIds parameters. If camera calibration parameters
  * are provided, the diamond search is based on reprojection. If not, diamond search is based on
  * homography. Homography is faster than reprojection, but less accurate.
+ *
+ * @deprecated Use CharucoDetector::detectDiamonds
  */
 CV_EXPORTS_W void detectCharucoDiamond(InputArray image, InputArrayOfArrays markerCorners,
                                        InputArray markerIds, float squareMarkerLengthRate,
