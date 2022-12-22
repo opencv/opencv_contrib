@@ -61,10 +61,7 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
     GpuMat src = getInputMat(_src, stream);
 
     const int srcType = src.type();
-    const int srcDepth = src.depth();
-    const int srcCn = src.channels();
     const size_t elemSize = src.elemSize();
-    const size_t elemSize1 = src.elemSize1();
 
     GpuMat dst = getOutputMat(_dst, src.cols, src.rows, src.type(), stream);
 
@@ -75,7 +72,7 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
     if (!isSupported)
         CV_Error(Error::StsUnsupportedFormat, "");
     else if (src.empty())
-        CV_Error(Error::StsBadArg,"image is empty");
+        CV_Error(Error::StsBadArg, "image is empty");
 
     if ((src.rows == 1) && (src.cols == 1))
         src.copyTo(dst, stream);
@@ -241,23 +238,7 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
             nppSafeCall( nppiTranspose_32s_C4R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
               dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
         }//end if (stream != 0)
-
-        if (!stream)
-          CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
     }//end if
-
-    /*
-    if (elemSize == 1)
-      gridTranspose(globPtr<unsigned char>(src), globPtr<unsigned char>(dst), stream);
-    else if (elemSize == 2)
-      gridTranspose(globPtr<unsigned short>(src), globPtr<unsigned short>(dst), stream);
-    else if (elemSize == 4)
-      gridTranspose(globPtr<signed int>(src), globPtr<signed int>(dst), stream);
-    else if (elemSize == 8)
-      gridTranspose(globPtr<double>(src), globPtr<double>(dst), stream);
-    */
-
-    syncOutput(dst, _dst, stream);
 }
 
 #endif
