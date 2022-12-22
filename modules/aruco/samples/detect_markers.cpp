@@ -167,12 +167,12 @@ int main(int argc, char *argv[]) {
         // detect markers and estimate pose
         detector.detectMarkers(image, corners, ids, rejected);
 
-        int nMarkers = (int)corners.size();
+        size_t  nMarkers = corners.size();
         vector<Vec3d> rvecs(nMarkers), tvecs(nMarkers);
 
-        if(estimatePose && ids.size() > 0) {
+        if(estimatePose && !ids.empty()) {
             // Calculate pose for each marker
-            for (int i = 0; i < nMarkers; i++) {
+            for (size_t  i = 0; i < nMarkers; i++) {
                 solvePnP(objPoints, corners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
             }
         }
@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) {
+        if(!ids.empty()) {
             aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             if(estimatePose) {
@@ -196,13 +196,12 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if(showRejected && rejected.size() > 0)
+        if(showRejected && !rejected.empty())
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         imshow("out", imageCopy);
         char key = (char)waitKey(waitTime);
         if(key == 27) break;
-        // imwrite("out.png", imageCopy);
     }
 
     return 0;

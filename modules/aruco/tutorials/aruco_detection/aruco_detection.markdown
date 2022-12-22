@@ -75,12 +75,12 @@ cv::imwrite("marker23.png", markerImage);
 @endcode
 
 First, the `Dictionary` object is created by choosing one of the predefined dictionaries in the aruco module.
-Concretely, this dictionary is composed of 250 markers and a marker size of 6x6 bits (`#DICT_6X6_250`).
+Concretely, this dictionary is composed of 250 markers and a marker size of 6x6 bits (`#cv::aruco::DICT_6X6_250`).
 
 The parameters of `generateImageMarker` are:
 
 - The first parameter is the `Dictionary` object previously created.
-- The second parameter is the marker id, in this case the marker 23 of the dictionary `#DICT_6X6_250`.
+- The second parameter is the marker id, in this case the marker 23 of the dictionary `#cv::aruco::DICT_6X6_250`.
 Note that each dictionary is composed of a different number of markers. In this case, the valid ids
 go from 0 to 249. Any specific id out of the valid range will produce an exception.
 - The third parameter, 200, is the size of the output marker image. In this case, the output image
@@ -171,8 +171,8 @@ detector.detectMarkers(inputImage, markerCorners, markerIds, rejectedCandidates)
 
 When you create an `ArucoDetector` object, you need to pass the following parameters to the constructor:
 
-- A dictionary object, in this case one of the predefined dictionaries (`#DICT_6X6_250`).
-- Object of type `#aruco::DetectionParameters`. This object includes all parameters that can be customized during the detection process. These parameters will be explained in the next section.
+- A dictionary object, in this case one of the predefined dictionaries (`#cv::aruco::DICT_6X6_250`).
+- Object of type `#cv::aruco::DetectionParameters`. This object includes all parameters that can be customized during the detection process. These parameters will be explained in the next section.
 
 The parameters of `detectMarkers` are:
 
@@ -426,11 +426,11 @@ dictionaries in a variety of marker sizes and number of markers. For instance:
 cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 @endcode
 
-`#DICT_6X6_250` is an example of predefined dictionary of markers with 6x6 bits and a total of 250
+`#cv::aruco::DICT_6X6_250` is an example of predefined dictionary of markers with 6x6 bits and a total of 250
 markers.
 
 From all the provided dictionaries, it is recommended to choose the smallest one that fits your application.
-For instance, if you need 200 markers of 6x6 bits, it is better to use `#DICT_6X6_250` than `DICT_6X6_1000`.
+For instance, if you need 200 markers of 6x6 bits, it is better to use `#cv::aruco::DICT_6X6_250` than `cv::aruco::DICT_6X6_1000`.
 The smaller the dictionary, the higher the inter-marker distance.
 
 The list of available predefined dictionaries can be found in the documentation for the `PredefinedDictionaryType` enum.

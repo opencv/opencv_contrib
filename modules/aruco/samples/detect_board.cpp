@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
 
         // estimate board pose
         int markersOfBoardDetected = 0;
-        if(ids.size() > 0) {
+        if(!ids.empty()) {
             // Get object and image points for the solvePnP function
             cv::Mat objPoints, imgPoints;
             board->matchImagePoints(corners, ids, objPoints, imgPoints);
@@ -198,11 +198,11 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) {
+        if(!ids.empty()) {
             aruco::drawDetectedMarkers(imageCopy, corners, ids);
         }
 
-        if(showRejected && rejected.size() > 0)
+        if(showRejected && !rejected.empty())
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         if(markersOfBoardDetected > 0)
