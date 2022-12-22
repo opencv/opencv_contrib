@@ -169,10 +169,10 @@ cv::aruco::ArucoDetector detector(dictionary, detectorParams);
 detector.detectMarkers(inputImage, markerCorners, markerIds, rejectedCandidates);
 @endcode
 
-When you create an `ArucoDetector` object, you need to pass the following parameters to the constructor:
+When you create an `#cv::aruco::ArucoDetector` object, you need to pass the following parameters to the constructor:
 
 - A dictionary object, in this case one of the predefined dictionaries (`#cv::aruco::DICT_6X6_250`).
-- Object of type `#cv::aruco::DetectionParameters`. This object includes all parameters that can be customized during the detection process. These parameters will be explained in the next section.
+- Object of type `#cv::aruco::DetectorParameters`. This object includes all parameters that can be customized during the detection process. These parameters will be explained in the next section.
 
 The parameters of `detectMarkers` are:
 
