@@ -98,15 +98,12 @@ void CLGLContext::end() {
 }
 
 void CLGLContext::download(cv::UMat& m) {
-//    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
-    cerr << frameBuffer_.size() << endl;
     cv::Mat tmp = m.getMat(cv::ACCESS_RW);
     assert(tmp.data != nullptr);
-    GL_CHECK(glReadPixels(0, 0, frameBufferSize_.width, frameBufferSize_.height, GL_RGBA, GL_UNSIGNED_BYTE, tmp.ptr<uchar>(0)));
+    GL_CHECK(glReadPixels(0, 0, frameBufferSize_.width, frameBufferSize_.height, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
 }
 
 void CLGLContext::upload(const cv::UMat& m) {
-//    GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID));
     cv::Mat tmp = m.getMat(cv::ACCESS_RW);
     assert(tmp.data != nullptr);
 
@@ -119,8 +116,8 @@ void CLGLContext::upload(const cv::UMat& m) {
         frameBufferSize_.height,
         GL_RGBA,
         GL_UNSIGNED_BYTE,
-        tmp.ptr<uchar>(0)
-    ));
+        tmp.data)
+    );
 }
 
 void CLGLContext::acquireFromGL(cv::UMat &m) {

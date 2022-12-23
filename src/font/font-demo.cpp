@@ -23,17 +23,22 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
-
+const cv::Scalar_<float> INITIAL_COLOR = kb::viz2d::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 /** Visualization parameters **/
 
-constexpr float FONT_SIZE = 40.0f;
-constexpr float MAX_STAR_SIZE = 1.0f;
-constexpr int MIN_STAR_COUNT = 1000;
-constexpr int MAX_STAR_COUNT = 3000;
-constexpr float MIN_STAR_LIGHTNESS = 1.0f;
-constexpr int MIN_STAR_ALPHA = 5;
-// Intensity of bloom effect defined by kernel size. The default scales with the image diagonal.
-const int bloom_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200  + 1 : DIAG / 200), 1);
+
+float min_star_size = 0.5f;
+float max_star_size = 1.0f;
+int min_star_count = 1000;
+int max_star_count = 3000;
+float star_alpha = 0.2;
+
+float font_size = 40.0f;
+nanogui::Color text_color = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
+float text_alpha = 1.0;
+float warp_ratio = 1.0f/3.0f;
+
+bool show_fps = true;
 
 using std::cerr;
 using std::endl;
@@ -43,24 +48,97 @@ using std::istringstream;
 
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
 vector<string> lines;
-//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
-vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-vector<cv::Point2f> quad2 = {{WIDTH/3,0},{WIDTH/1.5,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-cv::Mat tm = cv::getPerspectiveTransform(quad1, quad2);
-//BGRA
-cv::UMat stars, warped;
+bool update_stars = true;
+
+void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
+    v2d->makeWindow(5, 30, "Effect");
+    v2d->makeGroup("Text Crawl");
+    v2d->makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
+    v2d->makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line");
+
+    v2d->makeColorPicker("Text Color", text_color, "The text color",[&](const nanogui::Color &c) {
+        text_color[0] = c[0];
+        text_color[1] = c[1];
+        text_color[2] = c[2];
+    });
+    v2d->makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
+
+    v2d->makeGroup("Stars");
+    v2d->makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")
+            ->set_callback([](const float& s){
+        update_stars = true;
+    });
+    v2d->makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")
+        ->set_callback([](const float& s){
+                update_stars = true;
+            });
+    v2d->makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")
+        ->set_callback([](const float& s){
+                update_stars = true;
+            });
+    v2d->makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")
+        ->set_callback([](const float& s){
+                update_stars = true;
+            });
+    v2d->makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")
+        ->set_callback([](const float& s){
+                update_stars = true;
+            });
+
+    v2d->makeWindow(8, 16, "Display");
+
+    v2d->makeGroup("Display");
+    v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+//    v2d->makeButton("Fullscreen", [=]() {
+//        v2d->setFullscreen(!v2d->isFullscreen());
+//    });
+    v2d->makeButton("Offscreen", [=]() {
+        v2d->setOffscreen(!v2d->isOffscreen());
+    });
+}
 
 void iteration() {
+    //BGRA
+    static cv::UMat stars, warped;
     static size_t cnt = 0;
-    int y = 0;
+    static cv::RNG rng(cv::getTickCount());
 
+    if(update_stars) {
+        v2d->nanovg([&](const cv::Size& sz) {
+            using namespace kb::viz2d::nvg;
+            v2d->clear();
+            //draw stars
+            int numStars = rng.uniform(min_star_count, max_star_count);
+            for(int i = 0; i < numStars; ++i) {
+                beginPath();
+                strokeWidth(rng.uniform(min_star_size, max_star_size));
+                strokeColor(cv::Scalar(255, 255, 255, star_alpha * 255.0f));
+                circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), 1);
+                stroke();
+            }
+        });
+        v2d->opencl([&](cv::UMat& frameBuffer){
+            frameBuffer.copyTo(stars);
+        });
+        update_stars = false;
+    }
+
+    //Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
+    vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
+    float l = std::round((WIDTH - (WIDTH * warp_ratio)) / 2.0);
+    float r = WIDTH - l;
+
+    vector<cv::Point2f> quad2 = {{l, 0.0f},{r, 0.0f},{WIDTH,HEIGHT},{0,HEIGHT}};
+    cv::Mat tm = cv::getPerspectiveTransform(quad1, quad2);
+
+    int y = 0;
     v2d->nanovg([&](const cv::Size& sz) {
         using namespace kb::viz2d::nvg;
         v2d->clear();
 
-        fontSize(FONT_SIZE);
+        fontSize(font_size);
         fontFace("sans-bold");
-        fillColor(kb::viz2d::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR));
+        fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
         textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
         /** only draw lines that are visible **/
@@ -68,7 +146,7 @@ void iteration() {
         //Total number of lines in the text
         off_t numLines = lines.size();
         //Height of the text in pixels
-        off_t textHeight = (numLines * FONT_SIZE);
+        off_t textHeight = (numLines * font_size);
         //How many pixels to translate the text up.
         off_t translateY = HEIGHT - cnt;
         translate(0, translateY);
@@ -76,7 +154,7 @@ void iteration() {
         for (const auto &line : lines) {
             if (translateY + y > -textHeight && translateY + y <= HEIGHT) {
                 text(WIDTH / 2.0, y, line.c_str(), line.c_str() + line.size());
-                y += FONT_SIZE;
+                y += font_size;
             } else {
                 //We can stop reading lines if the current line exceeds the page.
                 break;
@@ -86,7 +164,7 @@ void iteration() {
 
     if(y == 0) {
         //Nothing drawn, exit.
-        exit(0);
+//        exit(0);
     }
 
     v2d->opencl([&](cv::UMat& frameBuffer){
@@ -96,7 +174,7 @@ void iteration() {
         cv::add(stars, warped, frameBuffer);
     });
 
-    update_fps(v2d, true);
+    update_fps(v2d, show_fps);
 
 #ifndef __EMSCRIPTEN__
     v2d->write();
@@ -118,6 +196,7 @@ int main(int argc, char **argv) {
 
     print_system_info();
     if(!v2d->isOffscreen()) {
+        setup_gui(v2d);
         v2d->setVisible(true);
     }
 #ifndef __EMSCRIPTEN__
@@ -132,26 +211,6 @@ int main(int argc, char **argv) {
     for (std::string line; std::getline(iss, line); ) {
         lines.push_back(line);
     }
-
-    cv::RNG rng(cv::getTickCount());
-
-    v2d->nanovg([&](const cv::Size& sz) {
-        using namespace kb::viz2d::nvg;
-        v2d->clear();
-        //draw stars
-        int numStars = rng.uniform(MIN_STAR_COUNT, MAX_STAR_COUNT);
-        for(int i = 0; i < numStars; ++i) {
-            beginPath();
-            strokeWidth(rng.uniform(0.5f, MAX_STAR_SIZE));
-            strokeColor(color_convert(cv::Scalar(0, rng.uniform(MIN_STAR_LIGHTNESS, 1.0f) * 255, 255, rng.uniform(MIN_STAR_ALPHA, 255)), cv::COLOR_HLS2BGR));
-            circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), MAX_STAR_SIZE);
-            stroke();
-        }
-    });
-
-    v2d->opencl([&](cv::UMat& frameBuffer){
-        frameBuffer.copyTo(stars);
-    });
 
     //Frame count.
 #ifndef __EMSCRIPTEN__
