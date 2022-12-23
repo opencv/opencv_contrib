@@ -148,6 +148,13 @@ int main(int argc, char *argv[]) {
     double totalTime = 0;
     int totalIterations = 0;
 
+    // Set coordinate system
+    cv::Mat objPoints(4, 1, CV_32FC3);
+    objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+
     while(inputVideo.grab()) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -156,13 +163,19 @@ int main(int argc, char *argv[]) {
 
         vector< int > ids;
         vector< vector< Point2f > > corners, rejected;
-        vector< Vec3d > rvecs, tvecs;
 
         // detect markers and estimate pose
         detector.detectMarkers(image, corners, ids, rejected);
-        if(estimatePose && ids.size() > 0)
-            aruco::estimatePoseSingleMarkers(corners, markerLength, camMatrix, distCoeffs, rvecs,
-                                             tvecs);
+
+        size_t  nMarkers = corners.size();
+        vector<Vec3d> rvecs(nMarkers), tvecs(nMarkers);
+
+        if(estimatePose && !ids.empty()) {
+            // Calculate pose for each marker
+            for (size_t  i = 0; i < nMarkers; i++) {
+                solvePnP(objPoints, corners.at(i), camMatrix, distCoeffs, rvecs.at(i), tvecs.at(i));
+            }
+        }
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;
@@ -174,7 +187,7 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) {
+        if(!ids.empty()) {
             aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
             if(estimatePose) {
@@ -183,7 +196,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        if(showRejected && rejected.size() > 0)
+        if(showRejected && !rejected.empty())
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         imshow("out", imageCopy);
