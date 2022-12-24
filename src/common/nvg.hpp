@@ -2,7 +2,12 @@
 #define SRC_COMMON_NVG_HPP_
 
 #include "viz2d.hpp"
+#ifndef __EMSCRIPTEN__
 #define NANOGUI_USE_OPENGL
+#else
+#define NANOGUI_USE_GLES
+#define NANOGUI_GLES_VERSION 3
+#endif
 #include <nanogui/opengl.h>
 
 namespace kb {

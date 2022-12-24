@@ -177,7 +177,9 @@ Viz2D::~Viz2D() {
 }
 
 bool Viz2D::initializeWindowing() {
-    assert(glfwInit() == GLFW_TRUE);
+    if(glfwInit() != GLFW_TRUE)
+        return false;
+
     glfwSetErrorCallback(kb::viz2d::error_callback);
 
     if (debug_)
@@ -186,13 +188,18 @@ bool Viz2D::initializeWindowing() {
     if (offscreen_)
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-//    glfwSetTime(0);
+    glfwSetTime(0);
 
 #ifdef __APPLE__
-        glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
-        glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#elif __EMSCRIPTEN__
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API) ;
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);

@@ -17,9 +17,8 @@ endif
 
 ifdef EMSDK
 CXX     := em++
-EMCXXFLAGS += -flto -sDISABLE_EXCEPTION_CATCHING=0 -sDISABLE_EXCEPTION_THROWING=0 -fexceptions
-EMLDFLAGS += -s USE_GLFW=3 -s WASM=1 -s -s WASM_BIGINT -s LLD_REPORT_UNDEFINED=1 -s ALLOW_MEMORY_GROWTH=1 -sDISABLE_EXCEPTION_CATCHING=0 -sDISABLE_EXCEPTION_THROWING=0 -sEXCEPTION_DEBUG=1 -fexceptions
-#LIBS += -lzlib -lopencv_calib3d -lopencv_core -lopencv_dnn -lopencv_features2d -lopencv_flann -lopencv_imgproc -lopencv_objdetect -lopencv_photo -lopencv_video -lopencv_objdetect -lopencv_face
+EMCXXFLAGS += -flto -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -s USE_PTHREADS=1 -pthread
+EMLDFLAGS += -sUSE_GLFW=3 -sWASM=1 -sWASM_BIGINT -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH=1 -sUSE_PTHREADS=1 -pthread -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency
 EMCXXFLAGS += -msimd128
 CXXFLAGS += $(EMCXXFLAGS) -c
 LDFLAGS += $(EMLDFLAGS)
@@ -27,24 +26,69 @@ endif
 
 all: release
 
-release: CXXFLAGS += -g0 -O3
+ifneq ($(UNAME_S), Darwin)
+release: LDFLAGS += -s
+endif
+ifdef EMSDK
+release: CXXFLAGS += -DNDEBUG -g0 -O3
+release: LDFLAGS += -s STACK_OVERFLOW_CHECK=0 -s ASSERTIONS=0 -s SAFE_HEAP=0
+endif
+release: CXXFLAGS += -g0 -O3 -c
 release: dirs
 
+shrink: CXXFLAGS += -Os -w
+shrink: LDFLAGS += -s
+shrink: dirs
+
 info: CXXFLAGS += -g3 -O0
+info: LDFLAGS += -Wl,--export-dynamic -rdynamic
 info: dirs
 
-debug: CXXFLAGS += -g3 -O0 -rdynamic
+ifndef EMSDK
+debug: CXXFLAGS += -rdynamic
+debug: LDFLAGS += -rdynamic
+else
+debug: CXXFLAGS += -sDISABLE_EXCEPTION_CATCHING=0 -sDISABLE_EXCEPTION_THROWING=0 -fexceptions
+debug: LDFLAGS += -s ASSERTIONS=2 -sLLD_REPORT_UNDEFINED=1 -sDISABLE_EXCEPTION_CATCHING=0 -sDISABLE_EXCEPTION_THROWING=0 -sEXCEPTION_DEBUG=1 -fexceptions
+endif
+debug: CXXFLAGS += -g3 -O0
+debug: LDFLAGS += -Wl,--export-dynamic
 debug: dirs
 
-profile: CXXFLAGS += -g3 -O1
+profile: CXXFLAGS += -g3 -O3
+profile: LDFLAGS += -Wl,--export-dynamic
+ifdef EMSDK
+profile: LDFLAGS += --profiling
+profile: CXXFLAGS += --profiling
+endif
+ifndef EMSDK
+profile: CXXFLAGS += -rdynamic
+endif
 profile: dirs
 
-unsafe: CXXFLAGS += -g0 -Ofast -DNDEBUG -ffast-math -ftree-vectorizer-verbose=1 -funroll-loops -ftree-vectorize -fno-signed-zeros -fno-trapping-math -frename-registers
+ifdef EMSDK
+unsafe: CXXFLAGS += -DNDEBUG -g0 -O3  --closure 1 -ffp-contract=fast -freciprocal-math -fno-signed-zeros
+unsafe: LDFLAGS += -s STACK_OVERFLOW_CHECK=0 -s ASSERTIONS=0 -s SAFE_HEAP=0 --closure 1 -menable-unsafe-fp-math
+else
+unsafe: CXXFLAGS += -DNDEBUG -g0 -Ofast
+endif
+#ifeq ($(UNAME_S), Darwin)
+unsafe: LDFLAGS += -s
+#endif
 unsafe: dirs
 
-asan: CXXFLAGS += -g3 -O0 -fno-omit-frame-pointer -fsanitize=address
-asan: LDFLAGS += -fsanitize=address
+ifdef EMSDK
+asan: CXXFLAGS += -fsanitize=address
+asan: LDFLAGS += -s STACK_OVERFLOW_CHECK=2 -s ASSERTIONS=2 -s NO_DISABLE_EXCEPTION_CATCHING=1 -s EXCEPTION_DEBUG=1 -fsanitize=address
+else
+asan: CXXFLAGS += -rdynamic -fsanitize=address
+asan: LDFLAGS += -rdynamic -fsanitize=address
+endif
+asan: CXXFLAGS += -g3 -O0 -fno-omit-frame-pointer
+asan: LDFLAGS += -Wl,--export-dynamic -rdynamic
+ifndef EMSDK
 asan: LIBS+= -lbfd -ldw
+endif
 asan: dirs
 
 clean: dirs

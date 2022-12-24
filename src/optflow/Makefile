@@ -1,15 +1,24 @@
+ifdef EMSDK
+TARGET := optflow-demo.js
+else
 TARGET := optflow-demo
+endif
 
-SRCS    := optflow-demo.cpp
+SRCS := optflow-demo.cpp
 
 #precompiled headers
 HEADERS := 
-OBJS    := ${SRCS:.cpp=.o}
-DEPS    := ${SRCS:.cpp=.dep} 
+OBJS := ${SRCS:.cpp=.o}
+DEPS := ${SRCS:.cpp=.dep} 
 
 CXXFLAGS += -fpic
-LDFLAGS +=  
-LIBS += -lm -lopencv_optflow -lOpenCL -lviz2d
+LIBS += -lm -lopencv_optflow -lopencv_video -lopencv_features2d -lviz2d -lz
+ifndef EMSDK
+LIBS += -lOpenCL
+else
+LDFLAGS += -sFULL_ES3 -sUSE_ZLIB=1 --bind
+endif
+
 .PHONY: all release debug clean distclean 
 
 all: release

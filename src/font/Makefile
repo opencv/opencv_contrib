@@ -6,7 +6,7 @@ endif
 SRCS    := font-demo.cpp
 
 #precompiled headers
-HEADERS := ../common/subsystems.hpp 
+HEADERS := 
 OBJS    := ${SRCS:.cpp=.o}
 DEPS    := ${SRCS:.cpp=.dep} 
 

@@ -9,9 +9,11 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <random>
 
 #include <opencv2/features2d.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/optflow.hpp>
 #include <opencv2/core/ocl.hpp>
 
@@ -38,17 +40,67 @@ enum PostProcModes {
 
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
-constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
 constexpr int VA_HW_DEVICE_INDEX = 0;
 
+static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+#ifndef __EMSCRIPTEN__
+static cv::Ptr<kb::viz2d::Viz2D> v2dMenu = new kb::viz2d::Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+#else
+#  include <emscripten.h>
+#  include <emscripten/bind.h>
+#  include <fstream>
+
+using namespace emscripten;
+
+
+unsigned char buffer[HEIGHT * WIDTH * 4];
+
+std::string pushImage(std::string filename){
+
+    try {
+        std::ifstream fs(filename, std::fstream::in | std::fstream::binary);
+        fs.seekg (0, std::ios::end);
+        auto length = fs.tellg();
+        fs.seekg (0, std::ios::beg);
+        fs.read (reinterpret_cast<char*>(buffer),length);
+
+        cv::Mat tmp(HEIGHT, WIDTH, CV_8UC4, buffer);
+
+        v2d->capture([&](cv::UMat &videoFrame) {
+            tmp.copyTo(videoFrame);
+        });
+
+        tmp.release();
+
+        return "success";
+    } catch(std::exception& ex) {
+        return string(ex.what());
+    }
+}
+
+EMSCRIPTEN_BINDINGS(my_module)
+{
+    function("push_image", &pushImage);
+}
+#endif
+
 /** Visualization parameters **/
 
 // Generate the foreground at this scale.
+#ifndef __EMSCRIPTEN__
 float fg_scale = 0.5f;
+#else
+float fg_scale = 0.5f;
+#endif
 // On every frame the foreground loses on brightness. specifies the loss in percent.
+#ifndef __EMSCRIPTEN__
 float fg_loss = 2.5;
+#else
+float fg_loss = 10.0;
+#endif
 //Convert the background to greyscale
 BackgroundModes background_mode = GREY;
 // Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
@@ -57,14 +109,31 @@ float scene_change_thresh = 0.29f;
 float scene_change_thresh_diff = 0.1f;
 // The theoretical maximum number of points to track which is scaled by the density of detected points
 // and therefor is usually much smaller.
+#ifndef __EMSCRIPTEN__
 int max_points = 250000;
+#else
+int max_points = 10000;
+#endif
 // How many of the tracked points to lose intentionally, in percent.
+#ifndef __EMSCRIPTEN__
 float point_loss = 25;
+#else
+float point_loss = 10;
+#endif
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
+#ifndef __EMSCRIPTEN__
 int max_stroke = 14;
+#else
+int max_stroke = 2;
+#endif
 // Keep alpha separate for the GUI
+#ifndef __EMSCRIPTEN__
 float alpha = 0.1f;
+#else
+float alpha = 1.0f;
+#endif
+
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
@@ -74,7 +143,11 @@ bool stretch = false;
 //Use OpenCL or not
 bool use_acceleration = true;
 //The post processing mode
+#ifndef __EMSCRIPTEN__
 PostProcModes post_proc_mode = GLOW;
+#else
+PostProcModes post_proc_mode = NONE;
+#endif
 // Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
 int kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 //The lightness selection threshold
@@ -84,11 +157,10 @@ float bloom_gain = 3;
 
 void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
+    static int morph_size = 1;
+    static cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
 
     bg_subtrator->apply(srcGrey, motionMaskGrey);
-
-    int morph_size = 1;
-    cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
     cv::morphologyEx(motionMaskGrey, motionMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 }
 
@@ -124,6 +196,8 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
     static std::vector<uchar> status;
     static std::vector<float> err;
+    static std::random_device rd;
+    static std::mt19937 g(rd());
 
     if (detectedPoints.size() > 4) {
         cv::convexHull(detectedPoints, hull);
@@ -133,7 +207,7 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
             float strokeSize = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
             size_t currentMaxPoints = ceil(density * maxPoints);
 
-            std::random_shuffle(prevPoints.begin(), prevPoints.end());
+            std::shuffle(prevPoints.begin(), prevPoints.end(), g);
             prevPoints.resize(ceil(prevPoints.size() * (1.0f - (pointLossPercent / 100.0f))));
 
             size_t copyn = std::min(detectedPoints.size(), (size_t(std::ceil(currentMaxPoints)) - prevPoints.size()));
@@ -267,7 +341,6 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
     cv::add(background, post, dst);
 }
 
-
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
     v2d->makeWindow(5, 30, "Effects");
 
@@ -344,30 +417,105 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
         v2d->setStretching(s);
     });
+#ifndef __EMSCRIPTEN__
     v2dMenu->makeButton("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
     v2dMenu->makeButton("Offscreen", [=]() {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
+#endif
 }
 
+void iteration() {
+    //BGRA
+    static cv::UMat background, down;
+    static cv::UMat foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
+    //RGB
+    static cv::UMat menuFrame;
+    //GREY
+    static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
+    static vector<cv::Point2f> detectedPoints;
+
+    if(v2d->isAccelerated() != use_acceleration)
+        v2d->setAccelerated(use_acceleration);
+
+#ifndef __EMSCRIPTEN__
+    if(!v2d->capture())
+        exit(0);
+#endif
+
+    v2d->opencl([&](cv::UMat& frameBuffer) {
+        cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
+        frameBuffer.copyTo(background);
+    });
+
+    cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
+    //Subtract the background to create a motion mask
+    prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+    //Detect trackable points in the motion mask
+    detect_points(downMotionMaskGrey, detectedPoints);
+
+    v2d->nanovg([&](const cv::Size& sz) {
+        v2d->clear();
+        if (!downPrevGrey.empty()) {
+            //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+            if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
+                //Visualize the sparse optical flow using nanovg
+                cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, alpha * 255.0f);
+                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
+            }
+        }
+    });
+
+    downPrevGrey = downNextGrey.clone();
+
+    v2d->opencl([&](cv::UMat& frameBuffer){
+        //Put it all together (OpenCL)
+        composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, post_proc_mode);
+#ifndef __EMSCRIPTEN__
+        cvtColor(frameBuffer, menuFrame, cv::COLOR_BGRA2RGB);
+#endif
+    });
+
+    update_fps(v2d, show_fps);
+
+#ifndef __EMSCRIPTEN__
+    v2d->write();
+
+    v2dMenu->capture([&](cv::UMat& videoFrame) {
+        menuFrame.copyTo(videoFrame);
+    });
+
+    if(!v2dMenu->display())
+        exit(0);
+#endif
+
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    if(!v2d->display())
+        exit(0);
+}
 int main(int argc, char **argv) {
     using namespace kb::viz2d;
+#ifndef __EMSCRIPTEN__
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
-
-    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
-    cv::Ptr<Viz2D> v2dMenu = new Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+#endif
     print_system_info();
+
     if(!v2d->isOffscreen()) {
+#ifndef __EMSCRIPTEN__
         setup_gui(v2d, v2dMenu);
-        v2d->setVisible(true);
         v2dMenu->setVisible(true);
+#else
+        setup_gui(v2d, v2d);
+#endif
+        v2d->setVisible(true);
     }
 
+#ifndef __EMSCRIPTEN__
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
 
     if (!capture.isOpened()) {
@@ -378,70 +526,15 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
-
-    //BGRA
-    cv::UMat background, down;
-    cv::UMat foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
-    //RGB
-    cv::UMat menuFrame;
-    //GREY
-    cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
-    vector<cv::Point2f> detectedPoints;
-
     while (true) {
-        if(v2d->isAccelerated() != use_acceleration)
-            v2d->setAccelerated(use_acceleration);
-
-        if(!v2d->capture())
-            break;
-
-        v2d->opencl([&](cv::UMat& frameBuffer) {
-            cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
-            frameBuffer.copyTo(background);
-        });
-
-        cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
-        //Subtract the background to create a motion mask
-        prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-        //Detect trackable points in the motion mask
-        detect_points(downMotionMaskGrey, detectedPoints);
-
-        v2d->nanovg([&](const cv::Size& sz) {
-            v2d->clear();
-            if (!downPrevGrey.empty()) {
-                //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-                if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
-                    //Visualize the sparse optical flow using nanovg
-                    cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, alpha * 255.0f);
-                    visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
-                }
-            }
-        });
-
-        downPrevGrey = downNextGrey.clone();
-
-        v2d->opencl([&](cv::UMat& frameBuffer){
-            //Put it all together (OpenCL)
-            composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, post_proc_mode);
-            cvtColor(frameBuffer, menuFrame, cv::COLOR_BGRA2RGB);
-        });
-
-        update_fps(v2d, show_fps);
-
-        v2d->write();
-
-        v2dMenu->capture([&](cv::UMat& videoFrame) {
-            menuFrame.copyTo(videoFrame);
-        });
-
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!v2d->display())
-            break;
-
-        if(!v2dMenu->display())
-            break;
+        iteration();
     }
+#else
+    emscripten_set_main_loop(iteration, -1, false);
+#endif
+
 
     return 0;
 }

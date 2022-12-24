@@ -100,8 +100,8 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 void iteration() {
     //BGRA
     static cv::UMat stars, warped;
-    static size_t cnt = 0;
     static cv::RNG rng(cv::getTickCount());
+    static size_t cnt = 0;
 
     if(update_stars) {
         v2d->nanovg([&](const cv::Size& sz) {

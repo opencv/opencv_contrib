@@ -1,7 +1,12 @@
 #ifndef SRC_COMMON_NANOVGCONTEXT_HPP_
 #define SRC_COMMON_NANOVGCONTEXT_HPP_
 
+#ifndef __EMSCRIPTEN__
 #define NANOGUI_USE_OPENGL
+#else
+#define NANOGUI_USE_GLES
+#define NANOGUI_GLES_VERSION 3
+#endif
 #include "clglcontext.hpp"
 #include <nanogui/nanogui.h>
 #include <nanogui/opengl.h>
