@@ -12,12 +12,8 @@ DEPS    := ${SRCS:.cpp=.dep}
 
 CXXFLAGS += -fpic
 LDFLAGS +=  
-ifdef EMSDK
-LDFLAGS += -sFULL_ES3
 LIBS += -lm -lviz2d
-else
-LIBS += -lm -lviz2d
-endif
+
 .PHONY: all release debug clean distclean 
 
 all: release

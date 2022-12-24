@@ -15,8 +15,6 @@ CXXFLAGS += -fpic
 LIBS += -lm -lopencv_optflow -lopencv_video -lopencv_features2d -lviz2d -lz
 ifndef EMSDK
 LIBS += -lOpenCL
-else
-LDFLAGS += -sFULL_ES3 -sUSE_ZLIB=1 --bind
 endif
 
 .PHONY: all release debug clean distclean 
