@@ -108,7 +108,7 @@ Viz2DWindow::Viz2DWindow(nanogui::Screen *screen, int x, int y, const string &ti
                     this->set_position({lastX, screen_->height() - this->height()});
                     break;
                 }
-                lastX = x + win->width();
+                lastX = x + win->width() + 1;
             }
         }
         if(gap < w) {
