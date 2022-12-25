@@ -1,9 +1,9 @@
 ifndef EMSDK
-TARGET := tetra-demo
+TARGET := quad-demo
 else
-TARGET := tetra-demo.html
+TARGET := quad-demo.html
 endif
-SRCS    := tetra-demo.cpp
+SRCS    := quad-demo.cpp
 
 #precompiled headers
 HEADERS := 
