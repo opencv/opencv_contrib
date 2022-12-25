@@ -364,7 +364,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
-    v2d->makeGroup("Post Processing");
+    v2d->makeWindow(220, 30, "Post Processing");
     auto* postPocMode = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
     auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
     kernelSize->set_callback([=](const int& k) {
@@ -401,7 +401,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
         post_proc_mode = static_cast<PostProcModes>(m);
     });
 
-    v2d->makeWindow(220, 320, "Settings");
+    v2d->makeWindow(220, 175, "Settings");
 
     v2d->makeGroup("Hardware Acceleration");
     v2d->makeFormVariable("Enable", use_acceleration, "Enable or disable libva and OpenCL acceleration");
