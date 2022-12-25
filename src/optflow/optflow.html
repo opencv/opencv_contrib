@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=2.0, user-scalable=no">
     <title>Sparse Optical Flow Demo</title>
     <style>
       body {
@@ -78,13 +78,13 @@
         width: 300px;
       }
 
-      #controls {
+     /* #controls {
         display: inline-block;
         float: right;
         vertical-align: top;
         margin-top: 30px;
         margin-right: 20px;
-      }
+      }*/
 
       #output {
         width: 100%;
@@ -104,14 +104,14 @@
     </style>
   </head>
   <body>
+      <span id='controls'>
+  <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
+  </span>
+</span>
   		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
 		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
-<span id='controls'>
-  <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
-  </span>
-</span>
 
     <div class="emscripten">
       <progress value="0" max="100" id="progress" hidden=1></progress>
