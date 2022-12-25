@@ -6,7 +6,6 @@ experiments/
 src/*/*.o
 src/*/*.dep
 src/*/*.d
-src/*/*.html
 src/*/*.js
 src/*/*.wasm
 src/*/*/*.o
