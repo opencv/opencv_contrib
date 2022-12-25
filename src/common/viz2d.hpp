@@ -8,7 +8,13 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <nanogui/nanogui.h>
+#ifndef __EMSCRIPTEN__
 #include <GL/glew.h>
+#else
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+#include <emscripten.h>
+#endif
 
 using std::cout;
 using std::cerr;

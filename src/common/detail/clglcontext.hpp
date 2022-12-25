@@ -3,24 +3,23 @@
 
 #define CL_TARGET_OPENCL_VERSION 120
 
-#include <GL/glew.h>
-#include <GL/gl.h>
 #ifndef __EMSCRIPTEN__
+#include <GL/glew.h>
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
 #endif
-#include <opencv2/core/ocl.hpp>
-#include <opencv2/core/opengl.hpp>
 #ifndef __EMSCRIPTEN__
 #  define GLFW_INCLUDE_GLCOREARB
 #else
 #  define GLFW_INCLUDE_ES3
+#  define GLFW_INCLUDE_GLEXT
 #endif
 #include <GLFW/glfw3.h>
+#include <opencv2/core/ocl.hpp>
+#include <opencv2/core/opengl.hpp>
 #include <iostream>
 
 #include "../util.hpp"
-
 
 namespace kb {
 namespace viz2d {

@@ -49,7 +49,12 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphically) {
         tick.stop();
 
         if (tick.getTimeMilli() > 50) {
-            cerr << "FPS : " << (fps = tick.getFPS()) << '\r';
+            cerr << "FPS : " << (fps = tick.getFPS());
+#ifndef __EMSCRIPTEN__
+            cerr << '\r';
+#else
+            cerr << endl;
+#endif
             cnt = 0;
             tick.reset();
         }

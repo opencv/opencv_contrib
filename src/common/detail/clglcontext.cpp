@@ -9,9 +9,9 @@ namespace detail {
 //FIXME use cv::ogl
 CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
+#ifndef __EMSCRIPTEN__
     glewExperimental = true;
     glewInit();
-#ifndef __EMSCRIPTEN__
     cv::ogl::ocl::initializeContextFromGL();
 #endif
     glGenBuffers(1, &upPboID);

@@ -1,5 +1,8 @@
+ifndef EMSDK
 TARGET := tetra-demo
-
+else
+TARGET := tetra-demo.html
+endif
 SRCS    := tetra-demo.cpp
 
 #precompiled headers
