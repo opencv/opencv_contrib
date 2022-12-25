@@ -6,6 +6,9 @@ experiments/
 src/*/*.o
 src/*/*.dep
 src/*/*.d
+src/*/*.html
+src/*/*.js
+src/*/*.wasm
 src/*/*/*.o
 src/*/*/*.dep
 src/*/*/*.d
@@ -19,3 +22,7 @@ src/font/font-demo
 src/pedestrian/pedestrian-demo
 *.webm
 *.mkv
+apidoc/
+docbook/
+latex/
+
