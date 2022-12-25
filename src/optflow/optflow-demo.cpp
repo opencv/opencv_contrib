@@ -38,8 +38,13 @@ enum PostProcModes {
 
 /** Application parameters **/
 
+#ifndef __EMSCRIPTEN__
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
+#else
+constexpr unsigned int WIDTH = 1280;
+constexpr unsigned int HEIGHT = 720;
+#endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
@@ -316,6 +321,7 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
         cv::cvtColor(channels[2], background, cv::COLOR_GRAY2BGRA);
         break;
     case COLOR:
+        cv::cvtColor(background, background, cv::COLOR_BGRA2RGBA);
         break;
     case BLACK:
         background = cv::Scalar::all(0);
@@ -417,10 +423,12 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
         v2d->setStretching(s);
     });
+
 #ifndef __EMSCRIPTEN__
     v2dMenu->makeButton("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
+
     v2dMenu->makeButton("Offscreen", [=]() {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
