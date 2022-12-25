@@ -60,26 +60,20 @@ static cv::Ptr<kb::viz2d::Viz2D> v2dMenu = new kb::viz2d::Viz2D(cv::Size(240, 36
 
 using namespace emscripten;
 
-
-unsigned char buffer[HEIGHT * WIDTH * 4];
-
 std::string pushImage(std::string filename){
-
     try {
         std::ifstream fs(filename, std::fstream::in | std::fstream::binary);
         fs.seekg (0, std::ios::end);
         auto length = fs.tellg();
         fs.seekg (0, std::ios::beg);
-        fs.read (reinterpret_cast<char*>(buffer),length);
-
-        cv::Mat tmp(HEIGHT, WIDTH, CV_8UC4, buffer);
 
         v2d->capture([&](cv::UMat &videoFrame) {
-            tmp.copyTo(videoFrame);
+            if(videoFrame.empty())
+                videoFrame.create(HEIGHT, WIDTH, CV_8UC4);
+            cv::Mat tmp = videoFrame.getMat(cv::ACCESS_WRITE);
+            fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
+            tmp.release();
         });
-
-        tmp.release();
-
         return "success";
     } catch(std::exception& ex) {
         return string(ex.what());
@@ -390,7 +384,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
     auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
     auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
     postPocMode->set_callback([&,kernelSize, thresh, gain](const int& m) {
-        if(m == BLOOM) {
+        if(post_proc_mode == BLOOM) {
             thresh->set_enabled(true);
             gain->set_enabled(true);
         } else {
@@ -398,7 +392,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
             gain->set_enabled(false);
         }
 
-        if(m == NONE) {
+        if(post_proc_mode == NONE) {
             kernelSize->set_enabled(false);
         } else {
             kernelSize->set_enabled(true);
