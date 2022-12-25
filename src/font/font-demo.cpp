@@ -49,14 +49,18 @@ using std::istringstream;
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
 vector<string> lines;
 bool update_stars = true;
+bool update_perspective = true;
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeWindow(5, 30, "Effect");
     v2d->makeGroup("Text Crawl");
     v2d->makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
-    v2d->makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line");
+    v2d->makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line")->set_callback([&](const float &w) {
+        update_perspective = true;
+        warp_ratio = w;
+    });
 
-    v2d->makeColorPicker("Text Color", text_color, "The text color",[&](const nanogui::Color &c) {
+    v2d->makeColorPicker("Text Color", text_color, "The text color", [&](const nanogui::Color &c) {
         text_color[0] = c[0];
         text_color[1] = c[1];
         text_color[2] = c[2];
@@ -64,26 +68,26 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
 
     v2d->makeGroup("Stars");
-    v2d->makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")
-            ->set_callback([](const float& s){
+    v2d->makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")->set_callback([](const float &s) {
         update_stars = true;
+        min_star_size = s;
     });
-    v2d->makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")
-        ->set_callback([](const float& s){
-                update_stars = true;
-            });
-    v2d->makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")
-        ->set_callback([](const float& s){
-                update_stars = true;
-            });
-    v2d->makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")
-        ->set_callback([](const float& s){
-                update_stars = true;
-            });
-    v2d->makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")
-        ->set_callback([](const float& s){
-                update_stars = true;
-            });
+    v2d->makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")->set_callback([](const float &s) {
+        update_stars = true;
+        max_star_size = s;
+    });
+    v2d->makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")->set_callback([](const int &cnt) {
+        update_stars = true;
+        min_star_count = cnt;
+    });
+    v2d->makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")->set_callback([](const int &cnt) {
+        update_stars = true;
+        max_star_count = cnt;
+    });
+    v2d->makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")->set_callback([](const float &a) {
+        update_stars = true;
+        star_alpha = a;
+    });
 
     v2d->makeWindow(8, 16, "Display");
 
@@ -100,6 +104,8 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 void iteration() {
     //BGRA
     static cv::UMat stars, warped;
+    //transformation matrix
+    static cv::Mat tm;
     static cv::RNG rng(cv::getTickCount());
     static size_t cnt = 0;
 
@@ -123,57 +129,66 @@ void iteration() {
         update_stars = false;
     }
 
-    //Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
-    vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-    float l = std::round((WIDTH - (WIDTH * warp_ratio)) / 2.0);
-    float r = WIDTH - l;
+    if(update_perspective) {
+        //Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
+        vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
+        float l = (WIDTH - (WIDTH * warp_ratio)) / 2.0;
+        float r = WIDTH - l;
 
-    vector<cv::Point2f> quad2 = {{l, 0.0f},{r, 0.0f},{WIDTH,HEIGHT},{0,HEIGHT}};
-    cv::Mat tm = cv::getPerspectiveTransform(quad1, quad2);
-
-    int y = 0;
-    v2d->nanovg([&](const cv::Size& sz) {
-        using namespace kb::viz2d::nvg;
-        v2d->clear();
-
-        fontSize(font_size);
-        fontFace("sans-bold");
-        fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
-        textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-
-        /** only draw lines that are visible **/
-
-        //Total number of lines in the text
-        off_t numLines = lines.size();
-        //Height of the text in pixels
-        off_t textHeight = (numLines * font_size);
-        //How many pixels to translate the text up.
-        off_t translateY = HEIGHT - cnt;
-        translate(0, translateY);
-
-        for (const auto &line : lines) {
-            if (translateY + y > -textHeight && translateY + y <= HEIGHT) {
-                text(WIDTH / 2.0, y, line.c_str(), line.c_str() + line.size());
-                y += font_size;
-            } else {
-                //We can stop reading lines if the current line exceeds the page.
-                break;
-            }
-        }
-    });
-
-    if(y == 0) {
-        //Nothing drawn, exit.
-//        exit(0);
+        vector<cv::Point2f> quad2 = {{l, 0.0f},{r, 0.0f},{WIDTH,HEIGHT},{0,HEIGHT}};
+        tm = cv::getPerspectiveTransform(quad1, quad2);
+        update_perspective = false;
     }
 
-    v2d->opencl([&](cv::UMat& frameBuffer){
-        //Pseudo 3D text effect.
-        cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
-        //Combine layers
-        cv::add(stars, warped, frameBuffer);
-    });
+    int32_t y = 0;
+    //Total number of lines in the text
+    int32_t numLines = lines.size();
+    //Height of the text in pixels
+    int32_t textHeight = (numLines * font_size);
+    //How many pixels to translate the text up.
+    int32_t translateY = HEIGHT - cnt;
+    bool textVisible = false;
+    for (int32_t i = 0; i < lines.size(); ++i) {
+        y = (i * font_size);
+        if (y + translateY < textHeight && y + translateY > 0) {
+            textVisible = true;
+            break;
+        }
+    }
 
+    y = 0;
+    if(textVisible) {
+        v2d->nanovg([&](const cv::Size& sz) {
+            using namespace kb::viz2d::nvg;
+            v2d->clear();
+
+            fontSize(font_size);
+            fontFace("sans-bold");
+            fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+            textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+
+            /** only draw lines that are visible **/
+            translate(0, translateY);
+
+            for (int32_t i = 0; i < lines.size(); ++i) {
+                y = (i * font_size);
+                if (y + translateY < textHeight && y + translateY > 0) {
+                    text(WIDTH / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
+                }
+            }
+        });
+
+        v2d->opencl([&](cv::UMat& frameBuffer){
+            //Pseudo 3D text effect.
+            cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+            //Combine layers
+            cv::add(stars, warped, frameBuffer);
+        });
+    } else {
+        if(-translateY > textHeight) {
+            cnt = 0;
+        }
+    }
     update_fps(v2d, show_fps);
 
 #ifndef __EMSCRIPTEN__
