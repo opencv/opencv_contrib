@@ -210,10 +210,10 @@ cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv
 
 void iteration() {
     //Render using OpenGL
-    v2d->opengl(render_scene);
+    v2d->gl(render_scene);
 
     //Aquire the frame buffer for use by OpenCL
-    v2d->opencl([](cv::UMat &frameBuffer) {
+    v2d->clgl([](cv::UMat &frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, kernel_size);
     });
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 #endif
 
-    v2d->opengl(init_scene);
+    v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
     while(true)

@@ -32,8 +32,6 @@ class CLGLContext {
     friend class CLVAContext;
     friend class NanoVGContext;
     friend class kb::viz2d::Viz2D;
-    GLuint upPboID = 0;
-    GLuint downPboID = 0;
     GLuint frameBufferID_ = 0;
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
@@ -75,9 +73,8 @@ public:
 
     CLGLContext(const cv::Size& frameBufferSize);
     virtual ~CLGLContext();
-    cv::ogl::Texture2D& getFrameBufferTexture();
     cv::Size getSize();
-    void opencl(std::function<void(cv::UMat&)> fn);
+    void execute(std::function<void(cv::UMat&)> fn);
 protected:
     void begin();
     void end();

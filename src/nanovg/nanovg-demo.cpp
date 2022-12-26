@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
         if (!v2d->capture())
             break;
 
-        v2d->opencl([&](cv::UMat &frameBuffer) {
+        v2d->clgl([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
             //Color-conversion from RGB to HSV. (OpenCL)
             cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
         });
 
         //Render using nanovg
-        v2d->nanovg([&](const cv::Size &sz) {
+        v2d->nvg([&](const cv::Size &sz) {
             hue = ((170 + uint8_t(255 - hue))) % 255;
             drawColorwheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
         });

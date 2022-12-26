@@ -103,18 +103,16 @@ export EMSDK
 dirs: docs
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/quad/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-ifndef EMSDK
-	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-endif
+#ifndef EMSDK
+#	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+#	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+#endif
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-ifndef EMSDK
-	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-endif
-	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-ifndef EMSDK
-	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-endif
+#	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+#	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+#ifndef EMSDK
+#	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+#endif
 
 debian-release:
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} release

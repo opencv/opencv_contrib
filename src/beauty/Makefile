@@ -1,4 +1,8 @@
+ifdef EMSDK
+TARGET := beauty-demo.js
+else
 TARGET := beauty-demo
+endif
 
 SRCS    := beauty-demo.cpp
 
@@ -8,8 +12,16 @@ OBJS    := ${SRCS:.cpp=.o}
 DEPS    := ${SRCS:.cpp=.dep} 
 
 CXXFLAGS += -fpic
-LDFLAGS +=  
-LIBS += -lm -lopencv_dnn -lOpenCL -lviz2d
+ifdef EMSDK
+LDFLAGS += --preload-file assets/
+endif
+LIBS += -lm -lopencv_dnn -lopencv_face -lopencv_objdetect -lopencv_stitching -lviz2d
+ifndef EMSDK
+LIBS += -lOpenCL
+else
+LIBS += -llibprotobuf
+endif
+
 .PHONY: all release debug clean distclean 
 
 all: release

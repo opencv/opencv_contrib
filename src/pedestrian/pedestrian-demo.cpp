@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
             if(!v2d->capture())
                        break;
 
-            v2d->opencl([&](cv::UMat& frameBuffer){
+            v2d->clgl([&](cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,videoFrameUp,cv::COLOR_BGRA2RGB);
                 cv::resize(frameBuffer, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
             });
@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            v2d->nanovg([&](const cv::Size& sz) {
+            v2d->nvg([&](const cv::Size& sz) {
                 using namespace kb::viz2d::nvg;
 
                 v2d->clear();
@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
                 stroke();
             });
 
-            v2d->opencl([&](cv::UMat& frameBuffer){
+            v2d->clgl([&](cv::UMat& frameBuffer){
                 //Put it all together
                 composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, fg_loss);
             });

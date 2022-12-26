@@ -35,6 +35,53 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     kb::viz2d::gl_check_error(__FILE__, __LINE__, #expr);
 
 void error_callback(int error, const char *description);
+
+class BufferStore {
+    std::map<size_t, std::map<string, cv::UMat>> bufMap_;
+    std::map<size_t, std::map<string, void*>> varMap_;
+    std::map<string, cv::UMat>& getBufMap(const size_t& i) {
+        return bufMap_[i];
+    }
+
+    std::map<string, void*>& getVarMap(const size_t& i) {
+        return varMap_[i];
+    }
+
+public:
+    void allocate(const size_t& i, const string& name, const cv::Size& sz, int type, const cv::Scalar& defaultValue, cv::UMatUsageFlags usageFlags = cv::USAGE_DEFAULT) {
+        getBufMap(i)[name].create(sz, type, usageFlags);
+    }
+
+    cv::UMat& buf(const size_t& i, const string& name) {
+        std::stringstream ss;
+        return getBufMap(i)[name];
+    }
+
+    template <typename T> T& var(const size_t& i, const string& name) {
+        auto it = getVarMap(i).find(name);
+        if(it != getVarMap(i).end()) {
+            return *static_cast<T*>((*it).second);
+        } else {
+            auto* p = new T();
+            getVarMap(i)[name] = p;
+            return *p;
+        }
+    }
+};
+
+static BufferStore store;
+}
+
+static void allocate(const size_t& i, const string& name, const cv::Size& sz, int type, const cv::Scalar& defaultValue, cv::UMatUsageFlags usageFlags = cv::USAGE_DEFAULT) {
+    detail::store.allocate(i, name, sz, type, defaultValue, usageFlags);
+}
+
+static cv::UMat& buf(const size_t& i, const string& name) {
+    return detail::store.buf(i, name);
+}
+
+template <typename T> T& var(const size_t& i, const string& name) {
+    return detail::store.var<T>(i, name);
 }
 
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
@@ -98,11 +145,14 @@ public:
     void makeCurrent();
 
     cv::ogl::Texture2D& texture();
-    void opengl(std::function<void(const cv::Size&)> fn);
-    void opencl(std::function<void(cv::UMat&)> fn);
-    void nanovg(std::function<void(const cv::Size&)> fn);
-    void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
 
+    void gl(std::function<void(const cv::Size&)> fn);
+    void cl(std::function<void()> fn);
+    void cpu(std::function<void()> fn);
+    void clgl(std::function<void(cv::UMat&)> fn);
+    void nvg(std::function<void(const cv::Size&)> fn);
+
+    void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
     bool capture();
     bool capture(std::function<void(cv::UMat&)> fn);
     void write();
@@ -163,7 +213,7 @@ public:
 
     nanogui::ColorPicker* makeColorPicker(const string& label, nanogui::Color& color, const string& tooltip = "", std::function<void(const nanogui::Color)> fn = nullptr, bool visible = true, bool enabled = true);
     template<typename T> nanogui::ComboBox* makeComboBox(const string &label, T& e, const std::vector<string>& items) {
-        auto* var = form()->add_variable("Mode", e, true);
+        auto* var = form()->add_variable(label, e, true);
         var->set_items(items);
         return var;
     }

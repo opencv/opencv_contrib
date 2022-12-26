@@ -447,18 +447,20 @@ void iteration() {
         exit(0);
 #endif
 
-    v2d->opencl([&](cv::UMat& frameBuffer) {
+    v2d->clgl([&](cv::UMat& frameBuffer) {
         cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
         frameBuffer.copyTo(background);
     });
 
-    cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
-    //Subtract the background to create a motion mask
-    prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-    //Detect trackable points in the motion mask
-    detect_points(downMotionMaskGrey, detectedPoints);
+    v2d->cl([&]() {
+        cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
+        //Subtract the background to create a motion mask
+        prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+        //Detect trackable points in the motion mask
+        detect_points(downMotionMaskGrey, detectedPoints);
+    });
 
-    v2d->nanovg([&](const cv::Size& sz) {
+    v2d->nvg([&](const cv::Size& sz) {
         v2d->clear();
         if (!downPrevGrey.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
@@ -472,7 +474,7 @@ void iteration() {
 
     downPrevGrey = downNextGrey.clone();
 
-    v2d->opencl([&](cv::UMat& frameBuffer){
+    v2d->clgl([&](cv::UMat& frameBuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, post_proc_mode);
 #ifndef __EMSCRIPTEN__

@@ -40,7 +40,7 @@ void print_system_info() {
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
 }
 
-void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphically) {
+void update_fps(cv::Ptr<kb::viz2d::Viz2D> v2d, bool graphically) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     static float fps;
@@ -60,7 +60,7 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> window, bool graphically) {
         }
 
         if (graphically) {
-            window->nanovg([&](const cv::Size &size) {
+            v2d->nvg([&](const cv::Size &size) {
                 using namespace kb;
                 string text = "FPS: " + std::to_string(fps);
                 nvg::beginPath();

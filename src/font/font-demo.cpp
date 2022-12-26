@@ -110,7 +110,7 @@ void iteration() {
     static size_t cnt = 0;
 
     if(update_stars) {
-        v2d->nanovg([&](const cv::Size& sz) {
+        v2d->nvg([&](const cv::Size& sz) {
             using namespace kb::viz2d::nvg;
             v2d->clear();
             //draw stars
@@ -123,7 +123,7 @@ void iteration() {
                 stroke();
             }
         });
-        v2d->opencl([&](cv::UMat& frameBuffer){
+        v2d->clgl([&](cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
         update_stars = false;
@@ -158,7 +158,7 @@ void iteration() {
 
     y = 0;
     if(textVisible) {
-        v2d->nanovg([&](const cv::Size& sz) {
+        v2d->nvg([&](const cv::Size& sz) {
             using namespace kb::viz2d::nvg;
             v2d->clear();
 
@@ -178,7 +178,7 @@ void iteration() {
             }
         });
 
-        v2d->opencl([&](cv::UMat& frameBuffer){
+        v2d->clgl([&](cv::UMat& frameBuffer){
             //Pseudo 3D text effect.
             cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
             //Combine layers

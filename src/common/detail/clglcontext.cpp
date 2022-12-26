@@ -14,8 +14,6 @@ CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
     glewInit();
     cv::ogl::ocl::initializeContextFromGL();
 #endif
-    glGenBuffers(1, &upPboID);
-    glGenBuffers(1, &downPboID);
     frameBufferID_ = 0;
     GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
@@ -49,7 +47,7 @@ cv::Size CLGLContext::getSize() {
     return frameBufferSize_;
 }
 
-void CLGLContext::opencl(std::function<void(cv::UMat&)> fn) {
+void CLGLContext::execute(std::function<void(cv::UMat&)> fn) {
 #ifndef __EMSCRIPTEN__
     CLExecScope_t clExecScope(getCLExecContext());
 #endif

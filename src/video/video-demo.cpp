@@ -104,15 +104,15 @@ int main(int argc, char **argv) {
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
 
-    v2d->opengl(init_scene);
+    v2d->gl(init_scene);
 
     while (true) {
         if(!v2d->capture())
             break;
 
-        v2d->opengl(render_scene);
+        v2d->gl(render_scene);
 
-        v2d->opencl([&](cv::UMat& frameBuffer){
+        v2d->clgl([&](cv::UMat& frameBuffer){
             //Glow effect (OpenCL)
             glow_effect(frameBuffer, frameBuffer, kernel_size);
         });

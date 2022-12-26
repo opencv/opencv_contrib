@@ -360,19 +360,33 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
     clva().setVideoFrameSize(sz);
 }
 
-void Viz2D::opengl(std::function<void(const cv::Size&)> fn) {
+void Viz2D::gl(std::function<void(const cv::Size&)> fn) {
+    auto fbSize = getFrameBufferSize();
 #ifndef __EMSCRIPTEN__
     detail::CLExecScope_t scope(clgl().getCLExecContext());
 #endif
     detail::CLGLContext::GLScope glScope(clgl());
-    fn(getFrameBufferSize());
+    fn(fbSize);
 }
 
-void Viz2D::opencl(std::function<void(cv::UMat&)> fn) {
-    clgl().opencl(fn);
+void Viz2D::cl(std::function<void()> fn) {
+#ifndef __EMSCRIPTEN__
+    detail::CLExecScope_t scope(clgl().getCLExecContext());
+#endif
+    fn();
 }
 
-void Viz2D::nanovg(std::function<void(const cv::Size&)> fn) {
+void Viz2D::cpu(std::function<void()> fn) {
+    cv::ocl::setUseOpenCL(false);
+    fn();
+    cv::ocl::setUseOpenCL(true);
+}
+
+void Viz2D::clgl(std::function<void(cv::UMat&)> fn) {
+    clgl().execute(fn);
+}
+
+void Viz2D::nvg(std::function<void(const cv::Size&)> fn) {
     nvg().render(fn);
 }
 
@@ -470,7 +484,7 @@ void Viz2D::pan(int x, int y) {
 }
 
 void Viz2D::zoom(float factor) {
-    if(scale_ == 1 && viewport_.x == 0 && viewport_.y && factor > 1)
+    if(scale_ == 1 && viewport_.x == 0 && viewport_.y == 0 && factor > 1)
         return;
 
     double oldScale = scale_;
