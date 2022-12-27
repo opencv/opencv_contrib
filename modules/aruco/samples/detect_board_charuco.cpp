@@ -145,8 +145,7 @@ int main(int argc, char *argv[]) {
     float axisLength = 0.5f * ((float)min(squaresX, squaresY) * (squareLength));
 
     // create charuco board object
-    Ptr<aruco::CharucoBoard> charucoboard =
-        aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
+    Ptr<aruco::CharucoBoard> charucoboard = new aruco::CharucoBoard(Size(squaresX, squaresY), squareLength, markerLength, dictionary);
     Ptr<aruco::Board> board = charucoboard.staticCast<aruco::Board>();
 
     double totalTime = 0;

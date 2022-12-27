@@ -115,12 +115,11 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::GridBoard> board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
-                                                           float(markerSeparation), dictionary);
+    aruco::GridBoard board(Size(markersX, markersY), float(markerLength), float(markerSeparation), dictionary);
 
     // show created board
     Mat boardImage;
-    board->generateImage(imageSize, boardImage, margins, borderBits);
+    board.generateImage(imageSize, boardImage, margins, borderBits);
 
     if(showImage) {
         imshow("board", boardImage);

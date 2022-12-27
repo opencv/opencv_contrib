@@ -154,8 +154,7 @@ int main(int argc, char *argv[]) {
     }
 
     // create charuco board object
-    Ptr<aruco::CharucoBoard> charucoboard =
-            aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
+    Ptr<aruco::CharucoBoard> charucoboard = new aruco::CharucoBoard(Size(squaresX, squaresY), squareLength, markerLength, dictionary);
     Ptr<aruco::Board> board = charucoboard.staticCast<aruco::Board>();
 
     // collect data from each frame
