@@ -107,8 +107,6 @@ GLuint initShader(const char* vShader, const char* fShader, const char* outputAt
 void loadShader(){
 #ifndef __EMSCRIPTEN__
     const char *  vert = R"(#version 150
-    uniform vec2 offset;
-
     in vec4 position;
     in vec4 color;
     
@@ -121,8 +119,6 @@ void loadShader(){
     })";
 #else
     const char *  vert = R"(#version 100
-    uniform vec2 offset;
-
     attribute vec4 position;
     attribute vec4 color;
     
@@ -179,7 +175,6 @@ void render_scene(const cv::Size& sz) {
     glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
 
     glUseProgram(shaderProgram);
-    glUniform2f(glGetUniformLocation(shaderProgram, "offset"), -0.5, -0.5);
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
@@ -209,16 +204,21 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
 
 void iteration() {
+    //Reinitialize the scene on every frame because nvg interfers
+    v2d->gl(init_scene);
+
     //Render using OpenGL
     v2d->gl(render_scene);
 
+//To slow for wasm
+#ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
     v2d->clgl([](cv::UMat &frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, kernel_size);
     });
-
-    update_fps(v2d, false);
+#endif
+    update_fps(v2d, true);
 #ifndef __EMSCRIPTEN__
     v2d->write();
 #endif
@@ -236,8 +236,6 @@ int main(int argc, char **argv) {
 #ifndef __EMSCRIPTEN__
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 #endif
-
-    v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
     while(true)
