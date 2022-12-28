@@ -150,8 +150,7 @@ int main(int argc, char *argv[]) {
                                markerSeparation);
 
     // create board object
-    Ptr<aruco::GridBoard> gridboard =
-        aruco::GridBoard::create(markersX, markersY, markerLength, markerSeparation, dictionary);
+    Ptr<aruco::GridBoard> gridboard = new aruco::GridBoard(Size(markersX, markersY), markerLength, markerSeparation, dictionary);
     Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
 
     double totalTime = 0;
@@ -172,7 +171,7 @@ int main(int argc, char *argv[]) {
 
         // refind strategy to detect more markers
         if(refindStrategy)
-            detector.refineDetectedMarkers(image, board, corners, ids, rejected, camMatrix,
+            detector.refineDetectedMarkers(image, *board, corners, ids, rejected, camMatrix,
                                            distCoeffs);
 
         // estimate board pose

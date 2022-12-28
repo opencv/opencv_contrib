@@ -15,9 +15,9 @@ static inline void createBoard()
 {
     cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     //! [createBoard]
-    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
+    cv::aruco::CharucoBoard board(cv::Size(5, 7), 0.04f, 0.02f, dictionary);
     cv::Mat boardImage;
-    board->generateImage(cv::Size(600, 500), boardImage, 10, 1);
+    board.generateImage(cv::Size(600, 500), boardImage, 10, 1);
     //! [createBoard]
     cv::imwrite("BoardImage.jpg", boardImage);
 }
@@ -37,7 +37,7 @@ static inline void detectCharucoBoardWithCalibrationPose()
     } else {
         //! [dictboard]
         cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-        cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
+        cv::Ptr<cv::aruco::CharucoBoard> board = new cv::aruco::CharucoBoard(cv::Size(5, 7), 0.04f, 0.02f, dictionary);
         cv::Ptr<cv::aruco::DetectorParameters> params = cv::makePtr<cv::aruco::DetectorParameters>();
         //! [dictboard]
         while (inputVideo.grab()) {
@@ -90,7 +90,7 @@ static inline void detectCharucoBoardWithoutCalibration()
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
     cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04f, 0.02f, dictionary);
+    cv::Ptr<cv::aruco::CharucoBoard> board = new cv::aruco::CharucoBoard(cv::Size(5, 7), 0.04f, 0.02f, dictionary);
 
     cv::Ptr<cv::aruco::DetectorParameters> params = cv::makePtr<cv::aruco::DetectorParameters>();
     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;

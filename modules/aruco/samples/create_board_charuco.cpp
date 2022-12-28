@@ -115,12 +115,11 @@ int main(int argc, char *argv[]) {
     imageSize.width = squaresX * squareLength + 2 * margins;
     imageSize.height = squaresY * squareLength + 2 * margins;
 
-    Ptr<aruco::CharucoBoard> board = aruco::CharucoBoard::create(squaresX, squaresY, (float)squareLength,
-                                                            (float)markerLength, dictionary);
+    aruco::CharucoBoard board(Size(squaresX, squaresY), (float)squareLength, (float)markerLength, dictionary);
 
     // show created board
     Mat boardImage;
-    board->generateImage(imageSize, boardImage, margins, borderBits);
+    board.generateImage(imageSize, boardImage, margins, borderBits);
 
     if(showImage) {
         imshow("board", boardImage);

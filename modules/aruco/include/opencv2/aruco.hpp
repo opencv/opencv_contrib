@@ -11,13 +11,24 @@ namespace cv {
 namespace aruco {
 
 /**
+ * @defgroup aruco Aruco markers, module functionality was moved to objdetect module
+ * @{
+ * ArUco Marker Detection, module functionality was moved to objdetect module
+ * @sa ArucoDetector, CharucoDetector, Board, GridBoard, CharucoBoard
+ * @}
+ */
+
+//! @addtogroup aruco
+//! @{
+
+/** @brief detect markers
 @deprecated Use class ArucoDetector::detectMarkers
 */
 CV_EXPORTS_W void detectMarkers(InputArray image, const Ptr<Dictionary> &dictionary, OutputArrayOfArrays corners,
                                 OutputArray ids, const Ptr<DetectorParameters> &parameters = makePtr<DetectorParameters>(),
                                 OutputArrayOfArrays rejectedImgPoints = noArray());
 
-/**
+/** @brief refine detected markers
 @deprecated Use class ArucoDetector::refineDetectedMarkers
 */
 CV_EXPORTS_W void refineDetectedMarkers(InputArray image,const  Ptr<Board> &board,
@@ -28,13 +39,13 @@ CV_EXPORTS_W void refineDetectedMarkers(InputArray image,const  Ptr<Board> &boar
                                         bool checkAllOrders = true, OutputArray recoveredIdxs = noArray(),
                                         const Ptr<DetectorParameters> &parameters = makePtr<DetectorParameters>());
 
-/**
-@deprecated Use Board::draw
+/** @brief draw planar board
+@deprecated Use Board::generateImage
 */
 CV_EXPORTS_W void drawPlanarBoard(const Ptr<Board> &board, Size outSize, OutputArray img, int marginSize,
                                   int borderBits);
 
-/**
+/** @brief get board object and image points
 @deprecated Use Board::matchImagePoints
 */
 CV_EXPORTS_W void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
@@ -82,6 +93,8 @@ CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float ma
 /** @deprecated Use CharucoBoard::checkCharucoCornersCollinear
  */
 CV_EXPORTS_W bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &board, InputArray charucoIds);
+
+//! @}
 
 }
 }

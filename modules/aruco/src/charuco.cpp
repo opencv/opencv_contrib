@@ -128,7 +128,7 @@ static void _getMaximumSubPixWindowSizes(InputArrayOfArrays markerCorners, Input
 
     for(unsigned int i = 0; i < nCharucoCorners; i++) {
         if(charucoCorners.getMat().at< Point2f >(i) == Point2f(-1, -1)) continue;
-        if(board->getNearestMarkerIdx()[i].size() == 0) continue;
+        if(board->getNearestMarkerIdx()[i].empty()) continue;
 
         double minDist = -1;
         int counter = 0;
@@ -321,33 +321,6 @@ int interpolateCornersCharuco(InputArrayOfArrays _markerCorners, InputArray _mar
 }
 
 
-void drawDetectedCornersCharuco(InputOutputArray _image, InputArray _charucoCorners,
-                                InputArray _charucoIds, Scalar cornerColor) {
-
-    CV_Assert(_image.getMat().total() != 0 &&
-              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
-    CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()) ||
-              _charucoIds.getMat().total() == 0);
-
-    unsigned int nCorners = (unsigned int)_charucoCorners.getMat().total();
-    for(unsigned int i = 0; i < nCorners; i++) {
-        Point2f corner = _charucoCorners.getMat().at< Point2f >(i);
-
-        // draw first corner mark
-        rectangle(_image, corner - Point2f(3, 3), corner + Point2f(3, 3), cornerColor, 1, LINE_AA);
-
-        // draw ID
-        if(_charucoIds.total() != 0) {
-            int id = _charucoIds.getMat().at< int >(i);
-            stringstream s;
-            s << "id=" << id;
-            putText(_image, s.str(), corner + Point2f(5, -5), FONT_HERSHEY_SIMPLEX, 0.5,
-                    cornerColor, 2);
-        }
-    }
-}
-
-
 void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners, InputArray _markerIds,
                           float squareMarkerLengthRate, OutputArrayOfArrays _diamondCorners, OutputArray _diamondIds,
                           InputArray _cameraMatrix, InputArray _distCoeffs, Ptr<Dictionary> dictionary) {
@@ -410,14 +383,13 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners, 
         // current id is assigned to [0], so it is the marker on the top
         tmpIds[0] = currentId;
         // create Charuco board layout for diamond (3x3 layout)
-        Ptr<CharucoBoard> _charucoDiamondLayout = CharucoBoard::create(3, 3, squareMarkerLengthRate, 1., *dictionary,
-                                                                       tmpIds);
+        Ptr<CharucoBoard> _charucoDiamondLayout = new CharucoBoard(Size(3, 3), squareMarkerLengthRate, 1., *dictionary, tmpIds);
 
         // try to find the rest of markers in the diamond
         vector< int > acceptedIdxs;
         RefineParameters refineParameters(minRepDistance, -1.f, false);
         ArucoDetector detector(*dictionary, DetectorParameters(), refineParameters);
-        detector.refineDetectedMarkers(grey, _charucoDiamondLayout, currentMarker, currentMarkerId, candidates,
+        detector.refineDetectedMarkers(grey, *_charucoDiamondLayout, currentMarker, currentMarkerId, candidates,
                                        noArray(), noArray(), acceptedIdxs);
 
         // if found, we have a diamond
@@ -483,51 +455,9 @@ void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int square
     for(int i = 0; i < 4; i++)
        tmpIds[i] = ids[i];
     // create a charuco board similar to a charuco marker and print it
-    Ptr<CharucoBoard> board = CharucoBoard::create(3, 3, (float)squareLength, (float)markerLength, *dictionary, tmpIds);
+    CharucoBoard board(Size(3, 3), (float)squareLength, (float)markerLength, *dictionary, tmpIds);
     Size outSize(3 * squareLength + 2 * marginSize, 3 * squareLength + 2 * marginSize);
-    board->generateImage(outSize, _img, marginSize, borderBits);
-}
-
-
-void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners, InputArray _ids, Scalar borderColor) {
-    CV_Assert(_image.getMat().total() != 0 &&
-              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
-    CV_Assert((_corners.total() == _ids.total()) || _ids.total() == 0);
-
-    // calculate colors
-    Scalar textColor, cornerColor;
-    textColor = cornerColor = borderColor;
-    swap(textColor.val[0], textColor.val[1]);     // text color just sawp G and R
-    swap(cornerColor.val[1], cornerColor.val[2]); // corner color just sawp G and B
-
-    int nMarkers = (int)_corners.total();
-    for(int i = 0; i < nMarkers; i++) {
-        Mat currentMarker = _corners.getMat(i);
-        CV_Assert(currentMarker.total() == 4 && currentMarker.type() == CV_32FC2);
-
-        // draw marker sides
-        for(int j = 0; j < 4; j++) {
-            Point2f p0, p1;
-            p0 = currentMarker.at< Point2f >(j);
-            p1 = currentMarker.at< Point2f >((j + 1) % 4);
-            line(_image, p0, p1, borderColor, 1);
-        }
-
-        // draw first corner mark
-        rectangle(_image, currentMarker.at< Point2f >(0) - Point2f(3, 3),
-                  currentMarker.at< Point2f >(0) + Point2f(3, 3), cornerColor, 1, LINE_AA);
-
-        // draw id composed by four numbers
-        if(_ids.total() != 0) {
-            Point2f cent(0, 0);
-            for(int p = 0; p < 4; p++)
-                cent += currentMarker.at< Point2f >(p);
-            cent = cent / 4.;
-            stringstream s;
-            s << "id=" << _ids.getMat().at< Vec4i >(i);
-            putText(_image, s.str(), cent, FONT_HERSHEY_SIMPLEX, 0.5, textColor, 2);
-        }
-    }
+    board.generateImage(outSize, _img, marginSize, borderBits);
 }
 
 }

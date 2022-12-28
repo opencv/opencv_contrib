@@ -26,7 +26,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
                            const Ptr<DetectorParameters> &_params) {
     RefineParameters refineParams(minRepDistance, errorCorrectionRate, checkAllOrders);
     ArucoDetector detector(_board->getDictionary(), *_params, refineParams);
-    detector.refineDetectedMarkers(_image, _board, _detectedCorners, _detectedIds, _rejectedCorners, _cameraMatrix,
+    detector.refineDetectedMarkers(_image, *_board, _detectedCorners, _detectedIds, _rejectedCorners, _cameraMatrix,
                                    _distCoeffs, _recoveredIdxs);
 }
 
