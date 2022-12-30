@@ -44,7 +44,7 @@ Here's a sample code of how to achieve all the stuff enumerated at the goal list
 ChArUco Board Creation
 ------
 
-The aruco module provides the #`cv::aruco::CharucoBoard` class that represents a Charuco Board and which inherits from the `Board` class.
+The aruco module provides the `cv::aruco::CharucoBoard` class that represents a Charuco Board and which inherits from the `cv::aruco::Board` class.
 
 This class, as the rest of ChArUco functionalities, are defined in:
 
@@ -71,8 +71,7 @@ in any unit, having in mind that the estimated pose for this board would be meas
 - Finally, the dictionary of the markers is provided.
 - If you don't provide ids of the markerr, they are assigned by default in ascending order and starting on 0.
 
-Once we have our `CharucoBoard` object, we can create an image to print it. This can be done with the
-#`aruco::CharucoBoard::generateImage()` method:
+Once we have our `CharucoBoard` object, we can create an image to print it. This can be done with the `aruco::CharucoBoard::generateImage` method:
 
 @snippet samples/tutorial_charuco_create_detect.cpp charuco_create_board
 
@@ -81,7 +80,7 @@ to the board dimensions, it will be centered on the image.
 - `boardImage`: the output image with the board.
 - The third parameter is the (optional) margin in pixels, so none of the markers are touching the image border.
 In this case the margin is 10.
-- Finally, the size of the marker border, similarly to `generateImageMarker()` function. The default value is 1.
+- Finally, the size of the marker border, similarly to `generateImageMarker` function. The default value is 1.
 
 The output image will be something like this:
 

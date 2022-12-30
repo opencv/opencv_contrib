@@ -38,13 +38,13 @@ the samples folder of the module.
 
 Furthermore, as its corners are chessboard corners, they can be used for accurate pose estimation.
 
-The diamond functionalities are included in #<opencv2/objdetect.hpp>
+The diamond functionalities are included in `<opencv2/objdetect.hpp>`
 
 
 ChArUco Diamond Creation
 ------
 
-The image of a diamond marker can be easily created using the CharucoBoard `generateImage()` method.
+The image of a diamond marker can be easily created using the CharucoBoard `generateImage` method.
 For instance:
 
 @code{.cpp}
