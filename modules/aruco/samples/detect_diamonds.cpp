@@ -1,46 +1,7 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-*/
-
-
-#include <opencv2/highgui.hpp>
-#include <opencv2/aruco/charuco.hpp>
-#include <vector>
 #include <iostream>
+#include <vector>
+#include <opencv2/highgui.hpp>
+#include <opencv2/objdetect.hpp>
 #include "aruco_samples_utility.hpp"
 
 using namespace std;
@@ -58,13 +19,9 @@ const char* keys  =
         "DICT_7X7_100=13, DICT_7X7_250=14, DICT_7X7_1000=15, DICT_ARUCO_ORIGINAL = 16}"
         "{cd       |       | Input file with custom dictionary }"
         "{c        |       | Output file with calibrated camera parameters }"
-        "{as       |       | Automatic scale. The provided number is multiplied by the last"
-        "diamond id becoming an indicator of the square length. In this case, the -sl and "
-        "-ml are only used to know the relative length relation between squares and markers }"
         "{v        |       | Input from video file, if ommited, input comes from camera }"
         "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
         "{dp       |       | File of marker detector parameters }"
-        "{rs       |       | Apply refind strategy }"
         "{refine   |       | Corner refinement: CORNER_REFINE_NONE=0, CORNER_REFINE_SUBPIX=1,"
         "CORNER_REFINE_CONTOUR=2, CORNER_REFINE_APRILTAG=3}"
         "{r        |       | show rejected candidates too }";
@@ -84,23 +41,23 @@ int main(int argc, char *argv[]) {
     float markerLength = parser.get<float>("ml");
     bool showRejected = parser.has("r");
     bool estimatePose = parser.has("c");
-    bool autoScale = parser.has("as");
-    float autoScaleFactor = autoScale ? parser.get<float>("as") : 1.f;
 
-    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
+    aruco::DetectorParameters detectorParams = aruco::DetectorParameters();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
         }
     }
+
     if (parser.has("refine")) {
         //override cornerRefinementMethod read from config file
-        detectorParams->cornerRefinementMethod = parser.get<aruco::CornerRefineMethod>("refine");
+        detectorParams.cornerRefinementMethod = parser.get<aruco::CornerRefineMethod>("refine");
     }
-    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << (int)detectorParams->cornerRefinementMethod << std::endl;
+    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): "
+              << (int)detectorParams.cornerRefinementMethod << std::endl;
 
     int camId = parser.get<int>("ci");
     String video;
@@ -132,9 +89,9 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Mat camMatrix, distCoeffs;
+    Mat cameraMatrix, distCoeffs;
     if(estimatePose) {
-        bool readOk = readCameraParameters(parser.get<string>("c"), camMatrix, distCoeffs);
+        bool readOk = readCameraParameters(parser.get<string>("c"), cameraMatrix, distCoeffs);
         if(!readOk) {
             cerr << "Invalid camera file" << endl;
             return 0;
@@ -151,6 +108,20 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
+    aruco::CharucoParameters charucoParams;
+    charucoParams.cameraMatrix = cameraMatrix;
+    charucoParams.distCoeffs = distCoeffs;
+
+    aruco::CharucoBoard board(Size(3, 3), squareLength, markerLength, dictionary);
+    aruco::CharucoDetector detector(board, charucoParams, detectorParams);
+
+    // Set coordinate system
+    cv::Mat objPoints(4, 1, CV_32FC3);
+    objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+    objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+
     double totalTime = 0;
     int totalIterations = 0;
 
@@ -160,67 +131,54 @@ int main(int argc, char *argv[]) {
 
         double tick = (double)getTickCount();
 
-        vector< int > markerIds;
-        vector< Vec4i > diamondIds;
-        vector< vector< Point2f > > markerCorners, rejectedMarkers, diamondCorners;
-        vector< Vec3d > rvecs, tvecs;
+        vector<vector<Point2f>> markerCorners, rejectedMarkers;
+        vector<int> markerIds;
+        vector<vector<Point2f>> diamondCorners;
+        vector<Vec4i> diamondIds;
 
-        // detect markers
-        aruco::detectMarkers(image, makePtr<aruco::Dictionary>(dictionary), markerCorners, markerIds, detectorParams,
-                             rejectedMarkers);
+        // Detect diamonds and markers
+        detector.detectDiamonds(image, diamondCorners, diamondIds,
+            markerCorners, markerIds);
 
-        // detect diamonds
-        if(markerIds.size() > 0)
-            aruco::detectCharucoDiamond(image, markerCorners, markerIds,
-                                        squareLength / markerLength, diamondCorners, diamondIds,
-                                        camMatrix, distCoeffs);
+        size_t nDiamonds = diamondCorners.size();
+        vector<Vec3d> rvecs(nDiamonds), tvecs(nDiamonds);
 
-        // estimate diamond pose
-        if(estimatePose && diamondIds.size() > 0) {
-            if(!autoScale) {
-                aruco::estimatePoseSingleMarkers(diamondCorners, squareLength, camMatrix,
-                                                 distCoeffs, rvecs, tvecs);
-            } else {
-                // if autoscale, extract square size from last diamond id
-                for(unsigned int i = 0; i < diamondCorners.size(); i++) {
-                    float autoSquareLength = autoScaleFactor * float(diamondIds[i].val[3]);
-                    vector< vector< Point2f > > currentCorners;
-                    vector< Vec3d > currentRvec, currentTvec;
-                    currentCorners.push_back(diamondCorners[i]);
-                    aruco::estimatePoseSingleMarkers(currentCorners, autoSquareLength, camMatrix,
-                                                     distCoeffs, currentRvec, currentTvec);
-                    rvecs.push_back(currentRvec[0]);
-                    tvecs.push_back(currentTvec[0]);
-                }
+        // Estimate diamond poses
+        if(estimatePose && !markerCorners.empty()) {
+            for(size_t i = 0; i < nDiamonds; i++) {
+                solvePnP(objPoints, diamondCorners[i], cameraMatrix,
+                    distCoeffs, rvecs[i], tvecs[i]);
             }
         }
-
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;
         totalIterations++;
         if(totalIterations % 30 == 0) {
             cout << "Detection Time = " << currentTime * 1000 << " ms "
-                 << "(Mean = " << 1000 * totalTime / double(totalIterations) << " ms)" << endl;
+                 << "(Mean = " << 1000 * totalTime / double(totalIterations)
+                 << " ms)" << endl;
         }
 
-
-        // draw results
+        // Draw results
         image.copyTo(imageCopy);
-        if(markerIds.size() > 0)
+
+        if(!markerIds.empty()) {
             aruco::drawDetectedMarkers(imageCopy, markerCorners);
+        }
 
-
-        if(showRejected && rejectedMarkers.size() > 0)
+        if(showRejected && !rejectedMarkers.empty()) {
             aruco::drawDetectedMarkers(imageCopy, rejectedMarkers, noArray(), Scalar(100, 0, 255));
+        }
 
-        if(diamondIds.size() > 0) {
+        if(!diamondIds.empty()) {
             aruco::drawDetectedDiamonds(imageCopy, diamondCorners, diamondIds);
+        }
 
-            if(estimatePose) {
-                for(unsigned int i = 0; i < diamondIds.size(); i++)
-                    cv::drawFrameAxes(imageCopy, camMatrix, distCoeffs, rvecs[i], tvecs[i],
-                                      squareLength * 1.1f);
+        if(estimatePose) {
+            for(unsigned int i = 0; i < diamondIds.size(); i++) {
+                drawFrameAxes(imageCopy, cameraMatrix, distCoeffs,
+                              rvecs[i], tvecs[i], squareLength * 1.1f);
             }
         }
 
