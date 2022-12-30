@@ -118,12 +118,9 @@ static inline void detectCharucoBoardWithoutCalibration()
     std::vector<std::vector<cv::Point2f>> markerCorners;
     std::vector<cv::Point2f> charucoCorners;
 
-    cv::aruco::DetectorParameters detectorParams = cv::aruco::DetectorParameters();
     cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::CharucoBoard board(cv::Size(5, 7), 0.04f, 0.02f, dictionary);
     cv::aruco::CharucoDetector detector(board);
-
-    detectorParams.cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;

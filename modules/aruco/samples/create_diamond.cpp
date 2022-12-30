@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
         ids[i] = atoi(splittedIds[i].c_str());
 
     cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(dictionaryId);
-    cv::aruco::CharucoBoard board(cv::Size(3, 3), squareLength, markerLength, dictionary, ids);
+    cv::aruco::CharucoBoard board(cv::Size(3, 3), (float)squareLength, (float)markerLength, dictionary, ids);
 
     cv::Mat diamondImage;
     cv::Size imageSize(3 * squareLength, 3 * squareLength);
