@@ -56,6 +56,8 @@ using namespace cv;
 using namespace cv::cuda;
 using namespace cv::cudev;
 
+#define USE_NPP_STREAM_CONTEXT (NPP_VERSION >= (10 * 1000 + 1 * 100 + 0))
+
 void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 {
     GpuMat src = getInputMat(_src, stream);
@@ -86,8 +88,17 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
         sz.width  = src.cols;
         sz.height = src.rows;
 
-        if (!stream)
+        #if USE_NPP_STREAM_CONTEXT
+        constexpr const bool useLegacyStream = false;
+        #else
+        constexpr const bool useLegacyStream = true;
+        #endif
+        cudaStream_t _stream = StreamAccessor::getStream(stream);
+
+        if (!_stream || useLegacyStream)
         {
+          NppStreamHandler h(_stream);
+
           //native implementation
           if (srcType == CV_8UC1)
             nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
@@ -159,12 +170,16 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
           else if (elemSize == 16)
             nppSafeCall( nppiTranspose_32s_C4R(src.ptr<Npp32s>(), static_cast<int>(src.step),
               dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-        }//end if (!stream)
-        else//if (stream != 0)
+
+          if (_stream == 0)
+            cudaSafeCall( cudaDeviceSynchronize() );
+        }//end if (!_stream || useLegacyStream)
+        else//if ((_stream != 0) && !useLegacyStream)
         {
+          #if USE_NPP_STREAM_CONTEXT
           NppStreamContext ctx;
           nppSafeCall( nppGetStreamContext(&ctx) );
-          ctx.hStream = StreamAccessor::getStream(stream);
+          ctx.hStream = _stream;
 
           //native implementation
           if (srcType == CV_8UC1)
@@ -237,7 +252,8 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
           else if (elemSize == 16)
             nppSafeCall( nppiTranspose_32s_C4R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
               dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
-        }//end if (stream != 0)
+          #endif
+        }//end if ((_stream != 0) && !useLegacyStream)
     }//end if
 }
 
