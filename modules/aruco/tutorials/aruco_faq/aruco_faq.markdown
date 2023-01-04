@@ -128,7 +128,7 @@ If you are using one of the predefined dictionaries, it is not necessary. Otherw
 
 - Do I need to store the Board information in a file so I can use it in different executions?
 
-If you are using a ```GridBoard``` or a ```ChArUco``` board you only need to store the board measurements that are provided to the ```GridBoard::create()``` or ```ChArUco::create()``` functions.
+If you are using a ```GridBoard``` or a ```ChArUco``` board you only need to store the board measurements that are provided to the ```GridBoard::create()``` function or in or `ChArUco` constructor.
 If you manually modify the marker ids of the boards, or if you use a different type of board, you should save your board object to file.
 
 - Does the aruco module provide functions to save the Dictionary or Board to file?
@@ -158,6 +158,5 @@ It is important to remark that the estimation of the pose using only 4 coplanar 
 In general, the ambiguity can be solved, if the camera is near to the marker.
 However, as the marker becomes small, the errors in the corner estimation grows and ambiguity comes as a problem.
 Try increasing the size of the marker you're using, and you can also try non-symmetrical (aruco_dict_utils.cpp) markers to avoid collisions.
-Use multiple markers (ArUco/ChArUco/Diamonds boards) and pose estimation with estimatePoseBoard(), estimatePoseCharucoBoard().
-Use solvePnP() with the ```SOLVEPNP_IPPE_SQUARE``` option.
+Use multiple markers (ArUco/ChArUco/Diamonds boards) and pose estimation with solvePnP() with the ```SOLVEPNP_IPPE_SQUARE``` option.
 More in [this issue](https://github.com/opencv/opencv/issues/8813).
