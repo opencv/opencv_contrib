@@ -58,6 +58,58 @@ using namespace cv::cudev;
 
 #define USE_NPP_STREAM_CONTEXT (NPP_VERSION >= (10 * 1000 + 1 * 100 + 0))
 
+namespace
+{
+  template <int DEPTH> struct NppTransposeFunc
+  {
+    typedef typename NPPTypeTraits<DEPTH>::npp_type npp_type;
+
+    typedef NppStatus (*func_t)(const npp_type* pSrc, int srcStep, npp_type* pDst, int dstStep, NppiSize srcSize);
+    #if USE_NPP_STREAM_CONTEXT
+    typedef NppStatus (*func_ctx_t)(const npp_type* pSrc, int srcStep, npp_type* pDst, int dstStep, NppiSize srcSize, NppStreamContext stream);
+    #endif
+  };
+
+  template <int DEPTH, typename NppTransposeFunc<DEPTH>::func_t func> struct NppTranspose
+  {
+    typedef typename NppTransposeFunc<DEPTH>::npp_type npp_type;
+
+    static void call(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream)
+    {
+      NppiSize srcsz;
+      srcsz.height = src.rows;
+      srcsz.width = src.cols;
+
+      cv::cuda::NppStreamHandler h(stream);
+
+      nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), dst.ptr<npp_type>(), static_cast<int>(dst.step), srcsz) );
+
+      if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+    }
+  };
+
+  #if USE_NPP_STREAM_CONTEXT
+  template <int DEPTH, typename NppTransposeFunc<DEPTH>::func_ctx_t func> struct NppTransposeCtx
+  {
+    typedef typename NppTransposeFunc<DEPTH>::npp_type npp_type;
+
+    static void call(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream)
+    {
+      NppiSize srcsz;
+      srcsz.height = src.rows;
+      srcsz.width = src.cols;
+
+      NppStreamContext ctx;
+      nppSafeCall( nppGetStreamContext(&ctx) );
+      ctx.hStream = stream;
+
+      nppSafeCall( func(src.ptr<npp_type>(), static_cast<int>(src.step), dst.ptr<npp_type>(), static_cast<int>(dst.step), srcsz, ctx) );
+    }
+  };
+  #endif
+}
+
 void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
 {
     GpuMat src = getInputMat(_src, stream);
@@ -84,176 +136,55 @@ void cv::cuda::transpose(InputArray _src, OutputArray _dst, Stream& stream)
         src.reshape(0, src.cols).copyTo(dst, stream);
     else
     {
-        NppiSize sz;
-        sz.width  = src.cols;
-        sz.height = src.rows;
-
         #if USE_NPP_STREAM_CONTEXT
-        constexpr const bool useLegacyStream = false;
+        constexpr const bool useNppStreamCtx = true;
         #else
-        constexpr const bool useLegacyStream = true;
+        constexpr const bool useNppStreamCtx = false;
         #endif
         cudaStream_t _stream = StreamAccessor::getStream(stream);
 
-        if (!_stream || useLegacyStream)
+        if (!_stream || !useNppStreamCtx)
         {
-          NppStreamHandler h(_stream);
+          typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream);
+          //if no direct mapping exists between DEPTH+CHANNELS and the nppiTranspose supported type, we use a nppiTranspose of a similar elemSize
+          static const func_t funcs[8][4] = {
+            {NppTranspose<CV_8U,  nppiTranspose_8u_C1R>::call,  NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_8U, nppiTranspose_8u_C3R>::call,   NppTranspose<CV_8U, nppiTranspose_8u_C4R>::call},
+            {NppTranspose<CV_8U,  nppiTranspose_8u_C1R>::call,  NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_8U, nppiTranspose_8u_C3R>::call,   NppTranspose<CV_8U, nppiTranspose_8u_C4R>::call},
+            {NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C3R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C4R>::call},
+            {NppTranspose<CV_16S, nppiTranspose_16s_C1R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C3R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call},
+            {NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C3R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C4R>::call},
+            {NppTranspose<CV_32F, nppiTranspose_32f_C1R>::call, NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call, NppTranspose<CV_32F, nppiTranspose_32f_C3R>::call, NppTranspose<CV_32F, nppiTranspose_32f_C4R>::call},
+            {NppTranspose<CV_16S, nppiTranspose_16s_C4R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C4R>::call, nullptr, nullptr},
+            {NppTranspose<CV_16U, nppiTranspose_16u_C1R>::call, NppTranspose<CV_32S, nppiTranspose_32s_C1R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C3R>::call, NppTranspose<CV_16U, nppiTranspose_16u_C4R>::call}
+          };
+          
+          const func_t func = funcs[src.depth()][src.channels() - 1];
+          CV_Assert(func != nullptr);
 
-          //native implementation
-          if (srcType == CV_8UC1)
-            nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-                dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_8UC3)
-            nppSafeCall( nppiTranspose_8u_C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_8UC4)
-            nppSafeCall( nppiTranspose_8u_C4R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_16UC1)
-            nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_16UC3)
-            nppSafeCall( nppiTranspose_16u_C3R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_16UC4)
-            nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_16SC1)
-            nppSafeCall( nppiTranspose_16s_C1R(src.ptr<Npp16s>(), static_cast<int>(src.step),
-              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_16SC3)
-            nppSafeCall( nppiTranspose_16s_C3R(src.ptr<Npp16s>(), static_cast<int>(src.step),
-              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_16SC4)
-            nppSafeCall( nppiTranspose_16s_C4R(src.ptr<Npp16s>(), static_cast<int>(src.step),
-              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_32SC1)
-            nppSafeCall( nppiTranspose_32s_C1R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_32SC3)
-            nppSafeCall( nppiTranspose_32s_C3R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_32SC4)
-            nppSafeCall( nppiTranspose_32s_C4R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_32FC1)
-            nppSafeCall( nppiTranspose_32f_C1R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_32FC3)
-            nppSafeCall( nppiTranspose_32f_C3R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-          else if (srcType == CV_32FC4)
-            nppSafeCall( nppiTranspose_32f_C4R(src.ptr<Npp32f>(), static_cast<int>(src.step),
-              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz) );
-          //reinterpretation
-          else if (elemSize == 1)
-            nppSafeCall( nppiTranspose_8u_C1R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 2)
-            nppSafeCall( nppiTranspose_16u_C1R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 3)
-            nppSafeCall( nppiTranspose_8u_C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 4)
-            nppSafeCall( nppiTranspose_32s_C1R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 6)
-            nppSafeCall( nppiTranspose_16u_C3R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 8)
-            nppSafeCall( nppiTranspose_16u_C4R(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 12)
-            nppSafeCall( nppiTranspose_32s_C3R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-          else if (elemSize == 16)
-            nppSafeCall( nppiTranspose_32s_C4R(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz) );
-
-          if (_stream == 0)
-            cudaSafeCall( cudaDeviceSynchronize() );
-        }//end if (!_stream || useLegacyStream)
-        else//if ((_stream != 0) && !useLegacyStream)
+          func(src, dst, _stream);
+        }//end if (!_stream || !useNppStreamCtx)
+        else//if ((_stream != 0) && useNppStreamCtx)
         {
           #if USE_NPP_STREAM_CONTEXT
-          NppStreamContext ctx;
-          nppSafeCall( nppGetStreamContext(&ctx) );
-          ctx.hStream = _stream;
+          typedef void (*func_t)(const cv::cuda::GpuMat& src, cv::cuda::GpuMat& dst, cudaStream_t stream);
+          //if no direct mapping exists between DEPTH+CHANNELS and the nppiTranspose supported type, we use a nppiTranspose of a similar elemSize
+          static const func_t funcs[8][4] = {
+            {NppTransposeCtx<CV_8U,  nppiTranspose_8u_C1R_Ctx>::call,  NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_8U,  nppiTranspose_8u_C3R_Ctx>::call,  NppTransposeCtx<CV_8U, nppiTranspose_8u_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_8U,  nppiTranspose_8u_C1R_Ctx>::call,  NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_8U,  nppiTranspose_8u_C3R_Ctx>::call,  NppTransposeCtx<CV_8U, nppiTranspose_8u_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C3R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_16S, nppiTranspose_16s_C1R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C3R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C3R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_32F, nppiTranspose_32f_C1R_Ctx>::call, NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call, NppTransposeCtx<CV_32F, nppiTranspose_32f_C3R_Ctx>::call, NppTransposeCtx<CV_32F, nppiTranspose_32f_C4R_Ctx>::call},
+            {NppTransposeCtx<CV_16S, nppiTranspose_16s_C4R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C4R_Ctx>::call, nullptr, nullptr},
+            {NppTransposeCtx<CV_16U, nppiTranspose_16u_C1R_Ctx>::call, NppTransposeCtx<CV_32S, nppiTranspose_32s_C1R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C3R_Ctx>::call, NppTransposeCtx<CV_16U, nppiTranspose_16u_C4R_Ctx>::call}
+          };
 
-          //native implementation
-          if (srcType == CV_8UC1)
-            nppSafeCall( nppiTranspose_8u_C1R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_8UC3)
-            nppSafeCall( nppiTranspose_8u_C3R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_8UC4)
-            nppSafeCall( nppiTranspose_8u_C4R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_16UC1)
-            nppSafeCall( nppiTranspose_16u_C1R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_16UC3)
-            nppSafeCall( nppiTranspose_16u_C3R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_16UC4)
-            nppSafeCall( nppiTranspose_16u_C4R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_16SC1)
-            nppSafeCall( nppiTranspose_16s_C1R_Ctx(src.ptr<Npp16s>(), static_cast<int>(src.step),
-              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_16SC3)
-            nppSafeCall( nppiTranspose_16s_C3R_Ctx(src.ptr<Npp16s>(), static_cast<int>(src.step),
-              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_16SC4)
-            nppSafeCall( nppiTranspose_16s_C4R_Ctx(src.ptr<Npp16s>(), static_cast<int>(src.step),
-              dst.ptr<Npp16s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_32SC1)
-            nppSafeCall( nppiTranspose_32s_C1R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_32SC3)
-            nppSafeCall( nppiTranspose_32s_C3R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_32SC4)
-            nppSafeCall( nppiTranspose_32s_C4R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_32FC1)
-            nppSafeCall( nppiTranspose_32f_C1R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
-              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_32FC3)
-            nppSafeCall( nppiTranspose_32f_C3R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
-              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (srcType == CV_32FC4)
-            nppSafeCall( nppiTranspose_32f_C4R_Ctx(src.ptr<Npp32f>(), static_cast<int>(src.step),
-              dst.ptr<Npp32f>(), static_cast<int>(dst.step), sz, ctx) );
-          //reinterpretation
-          else if (elemSize == 1)
-            nppSafeCall( nppiTranspose_8u_C1R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 2)
-            nppSafeCall( nppiTranspose_16u_C1R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 3)
-            nppSafeCall( nppiTranspose_8u_C3R_Ctx(src.ptr<Npp8u>(), static_cast<int>(src.step),
-              dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 4)
-            nppSafeCall( nppiTranspose_32s_C1R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 6)
-            nppSafeCall( nppiTranspose_16u_C3R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 8)
-            nppSafeCall( nppiTranspose_16u_C4R_Ctx(src.ptr<Npp16u>(), static_cast<int>(src.step),
-              dst.ptr<Npp16u>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 12)
-            nppSafeCall( nppiTranspose_32s_C3R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
-          else if (elemSize == 16)
-            nppSafeCall( nppiTranspose_32s_C4R_Ctx(src.ptr<Npp32s>(), static_cast<int>(src.step),
-              dst.ptr<Npp32s>(), static_cast<int>(dst.step), sz, ctx) );
+          const func_t func = funcs[src.depth()][src.channels() - 1];
+          CV_Assert(func != nullptr);
+
+          func(src, dst, _stream);
           #endif
-        }//end if ((_stream != 0) && !useLegacyStream)
+        }//end if ((_stream != 0) && useNppStreamCtx)
     }//end if
 }
 
