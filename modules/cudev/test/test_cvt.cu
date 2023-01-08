@@ -101,10 +101,10 @@ public:
         GpuMat g_dst;
 
         // Fp32 -> Fp16
-        cuda::convertFp16(g_src, g_dst);
+        cv::cuda::convertFp16(g_src, g_dst);
         cv::convertFp16(src, dst);
         // Fp16 -> Fp32
-        cuda::convertFp16(g_dst.clone(), g_dst);
+        cv::cuda::convertFp16(g_dst.clone(), g_dst);
         cv::convertFp16(dst, ref);
 
         g_dst.download(dst);
@@ -127,7 +127,7 @@ public:
         GpuMat g_dst;
 
         // Fp32 -> Fp16
-        cuda::convertFp16(g_src, g_dst);
+        cv::cuda::convertFp16(g_src, g_dst);
         cv::convertFp16(src, ref);
 
         g_dst.download(dst);

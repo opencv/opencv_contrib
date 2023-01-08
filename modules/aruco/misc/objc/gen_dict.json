@@ -1,12 +1,10 @@
 {
     "AdditionalImports" : {
-        "*" : [ "\"aruco.hpp\"" ],
-        "CharucoBoard" : [ "\"aruco/charuco.hpp\"" ],
-        "Dictionary" : [ "\"aruco/dictionary.hpp\"" ]
+        "*" : [ "\"aruco.hpp\"", "\"aruco/charuco.hpp\"" ]
     },
     "func_arg_fix" : {
-        "Board" : {
-            "(void)setIds:(Mat*)ids" : { "setIds" : {"name" : "setIdsMat"} }
+        "Aruco" : {
+            "estimatePoseSingleMarkers" : { "estimateParameters" : {"defval" : "cv::makePtr<cv::aruco::EstimateParameters>()"} }
         }
     }
 }

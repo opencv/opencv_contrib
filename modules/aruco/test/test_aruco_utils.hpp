@@ -65,14 +65,14 @@ static inline void projectMarker(Mat& img, Ptr<aruco::Board> board, int markerIn
     // canonical image
     Mat markerImg;
     const int markerSizePixels = 100;
-    aruco::drawMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
+    aruco::generateImageMarker(board->getDictionary(), board->getIds()[markerIndex], markerSizePixels, markerImg, markerBorder);
 
     // projected corners
     Mat distCoeffs(5, 1, CV_64FC1, Scalar::all(0));
     vector<Point2f> corners;
 
     // get max coordinate of board
-    Point3f maxCoord = board->getRightBottomBorder();
+    Point3f maxCoord = board->getRightBottomCorner();
     // copy objPoints
     vector<Point3f> objPoints = board->getObjPoints()[markerIndex];
     // move the marker to the origin
@@ -120,6 +120,117 @@ static inline Mat projectBoard(Ptr<aruco::GridBoard>& board, Mat cameraMatrix, d
     }
 
     return img;
+}
+
+int getBoardPose(InputArrayOfArrays corners, InputArray ids, const Ptr<aruco::Board> &board,
+                 InputArray cameraMatrix, InputArray distCoeffs, InputOutputArray rvec,
+                 InputOutputArray tvec, bool useExtrinsicGuess = false) {
+    CV_Assert(corners.total() == ids.total());
+    Mat objPoints, imgPoints; // get object and image points for the solvePnP function
+    board->matchImagePoints(corners, ids, objPoints, imgPoints);
+    CV_Assert(imgPoints.total() == objPoints.total());
+
+    if(objPoints.total() == 0) // 0 of the detected markers in board
+        return 0;
+    solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess);
+
+    // divide by four since all the four corners are concatenated in the array for each marker
+    return (int)objPoints.total() / 4;
+}
+
+/** Check if a set of 3d points are enough for calibration. Z coordinate is ignored. Only axis parallel lines are considered */
+static bool _arePointsEnoughForPoseEstimation(const std::vector<Point3f> &points) {
+    if(points.size() < 4) return false;
+
+    std::vector<double> sameXValue; // different x values in points
+    std::vector<int> sameXCounter;  // number of points with the x value in sameXValue
+    for(unsigned int i = 0; i < points.size(); i++) {
+        bool found = false;
+        for(unsigned int j = 0; j < sameXValue.size(); j++) {
+            if(sameXValue[j] == points[i].x) {
+                found = true;
+                sameXCounter[j]++;
+            }
+        }
+        if(!found) {
+            sameXValue.push_back(points[i].x);
+            sameXCounter.push_back(1);
+        }
+    }
+
+    // count how many x values has more than 2 points
+    int moreThan2 = 0;
+    for(unsigned int i = 0; i < sameXCounter.size(); i++) {
+        if(sameXCounter[i] >= 2) moreThan2++;
+    }
+
+    // if we have more than 1 two xvalues with more than 2 points, calibration is ok
+    if(moreThan2 > 1)
+        return true;
+    return false;
+}
+
+bool getCharucoBoardPose(InputArray charucoCorners, InputArray charucoIds,  const Ptr<aruco::CharucoBoard> &board,
+                         InputArray cameraMatrix, InputArray distCoeffs, InputOutputArray rvec, InputOutputArray tvec,
+                         bool useExtrinsicGuess = false) {
+    CV_Assert((charucoCorners.getMat().total() == charucoIds.getMat().total()));
+    if(charucoIds.getMat().total() < 4) return false; // need, at least, 4 corners
+
+    std::vector<Point3f> objPoints;
+    objPoints.reserve(charucoIds.getMat().total());
+    for(unsigned int i = 0; i < charucoIds.getMat().total(); i++) {
+        int currId = charucoIds.getMat().at< int >(i);
+        CV_Assert(currId >= 0 && currId < (int)board->getChessboardCorners().size());
+        objPoints.push_back(board->getChessboardCorners()[currId]);
+    }
+
+    // points need to be in different lines, check if detected points are enough
+    if(!_arePointsEnoughForPoseEstimation(objPoints)) return false;
+
+    solvePnP(objPoints, charucoCorners, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess);
+    return true;
+}
+
+
+/**
+  * @brief Return object points for the system centered in a middle (by default) or in a top left corner of single
+  * marker, given the marker length
+  */
+static Mat _getSingleMarkerObjectPoints(float markerLength, bool use_aruco_ccw_center) {
+    CV_Assert(markerLength > 0);
+    Mat objPoints(4, 1, CV_32FC3);
+    // set coordinate system in the top-left corner of the marker, with Z pointing out
+    if (use_aruco_ccw_center) {
+        objPoints.ptr<Vec3f>(0)[0] = Vec3f(-markerLength/2.f, markerLength/2.f, 0);
+        objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength/2.f, markerLength/2.f, 0);
+        objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength/2.f, -markerLength/2.f, 0);
+        objPoints.ptr<Vec3f>(0)[3] = Vec3f(-markerLength/2.f, -markerLength/2.f, 0);
+    }
+    else {
+        objPoints.ptr<Vec3f>(0)[0] = Vec3f(0.f, 0.f, 0);
+        objPoints.ptr<Vec3f>(0)[1] = Vec3f(markerLength, 0.f, 0);
+        objPoints.ptr<Vec3f>(0)[2] = Vec3f(markerLength, markerLength, 0);
+        objPoints.ptr<Vec3f>(0)[3] = Vec3f(0.f, markerLength, 0);
+    }
+    return objPoints;
+}
+
+void getMarkersPoses(InputArrayOfArrays corners, float markerLength, InputArray cameraMatrix, InputArray distCoeffs,
+                     OutputArray _rvecs, OutputArray _tvecs, OutputArray objPoints = noArray(),
+                     bool use_aruco_ccw_center = true, SolvePnPMethod solvePnPMethod = SolvePnPMethod::SOLVEPNP_ITERATIVE) {
+    CV_Assert(markerLength > 0);
+    Mat markerObjPoints = _getSingleMarkerObjectPoints(markerLength, use_aruco_ccw_center);
+    int nMarkers = (int)corners.total();
+    _rvecs.create(nMarkers, 1, CV_64FC3);
+    _tvecs.create(nMarkers, 1, CV_64FC3);
+
+    Mat rvecs = _rvecs.getMat(), tvecs = _tvecs.getMat();
+    for (int i = 0; i < nMarkers; i++)
+        solvePnP(markerObjPoints, corners.getMat(i), cameraMatrix, distCoeffs, rvecs.at<Vec3d>(i), tvecs.at<Vec3d>(i),
+                solvePnPMethod);
+
+    if(objPoints.needed())
+        markerObjPoints.convertTo(objPoints, -1);
 }
 
 }

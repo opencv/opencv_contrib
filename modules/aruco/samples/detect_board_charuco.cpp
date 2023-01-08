@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = detectorParams->readDetectorParameters(fs.root());
@@ -114,14 +114,14 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        bool readOk = dictionary.aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             cerr << "Invalid dictionary file" << endl;
             return 0;
@@ -145,8 +145,7 @@ int main(int argc, char *argv[]) {
     float axisLength = 0.5f * ((float)min(squaresX, squaresY) * (squareLength));
 
     // create charuco board object
-    Ptr<aruco::CharucoBoard> charucoboard =
-        aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
+    Ptr<aruco::CharucoBoard> charucoboard = new aruco::CharucoBoard(Size(squaresX, squaresY), squareLength, markerLength, dictionary);
     Ptr<aruco::Board> board = charucoboard.staticCast<aruco::Board>();
 
     double totalTime = 0;
@@ -164,7 +163,7 @@ int main(int argc, char *argv[]) {
         Vec3d rvec, tvec;
 
         // detect markers
-        aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
+        aruco::detectMarkers(image, makePtr<aruco::Dictionary>(dictionary), markerCorners, markerIds, detectorParams,
                              rejectedMarkers);
 
         // refind strategy to detect more markers
@@ -182,8 +181,8 @@ int main(int argc, char *argv[]) {
         // estimate charuco board pose
         bool validPose = false;
         if(camMatrix.total() != 0)
-            validPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, charucoboard,
-                                                        camMatrix, distCoeffs, rvec, tvec);
+            validPose = estimatePoseCharucoBoard(charucoCorners, charucoIds, charucoboard,
+                                                 camMatrix, distCoeffs, rvec, tvec);
 
 
 

@@ -222,7 +222,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_ObjDetect, HOG, ALL_DEVICES);
 */
 //============== caltech hog tests =====================//
 
-struct CalTech : public ::testing::TestWithParam<tuple<cv::cuda::DeviceInfo, std::string> >
+struct CalTech : public ::testing::TestWithParam<tuple<cv::cuda::DeviceInfo, std::string, bool>>
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Mat img;
@@ -232,7 +232,13 @@ struct CalTech : public ::testing::TestWithParam<tuple<cv::cuda::DeviceInfo, std
         devInfo = GET_PARAM(0);
         cv::cuda::setDevice(devInfo.deviceID());
 
-        img = readImage(GET_PARAM(1), cv::IMREAD_GRAYSCALE);
+        const bool grayScale = GET_PARAM(2);
+        if(grayScale)
+            img = readImage(GET_PARAM(1), IMREAD_GRAYSCALE);
+        else {
+            Mat imgBgr = readImage(GET_PARAM(1));
+            cv::cvtColor(imgBgr, img, COLOR_BGR2BGRA);
+        }
         ASSERT_FALSE(img.empty());
     }
 };
@@ -263,10 +269,11 @@ CUDA_TEST_P(CalTech, HOG)
 #endif
 }
 
+#define GREYSCALE true, false
 INSTANTIATE_TEST_CASE_P(detect, CalTech, testing::Combine(ALL_DEVICES,
     ::testing::Values<std::string>("caltech/image_00000009_0.png", "caltech/image_00000032_0.png",
         "caltech/image_00000165_0.png", "caltech/image_00000261_0.png", "caltech/image_00000469_0.png",
-        "caltech/image_00000527_0.png", "caltech/image_00000574_0.png")));
+        "caltech/image_00000527_0.png", "caltech/image_00000574_0.png"), testing::Values(GREYSCALE)));
 
 
 //------------------------variable GPU HOG Tests------------------------//

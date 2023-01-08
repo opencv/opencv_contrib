@@ -61,6 +61,27 @@ namespace cv {
                  */
                 LUCIDImpl(const int lucid_kernel = 1, const int blur_kernel = 2);
 
+                void read( const FileNode& fn) CV_OVERRIDE;
+                void write( FileStorage& fs) const CV_OVERRIDE;
+
+                /**
+                 * @param lucid_kernel kernel for descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+                 */
+                void setLucidKernel(int lucid_kernel) CV_OVERRIDE { l_kernel = lucid_kernel; }
+                /**
+                 * @return lucid kernel, where 1=3x3, 2=5x5, 3=7x7 and so forth
+                 */
+                int getLucidKernel() const CV_OVERRIDE { return l_kernel; }
+
+                /**
+                 * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
+                 */
+                void setBlurKernel(int blur_kernel) CV_OVERRIDE { b_kernel = blur_kernel*2+1; }
+                /**
+                 * @return blur kernel, where 1=3x3, 2=5x5, 3=7x7 and so forth
+                 */
+                int getBlurKernel() const CV_OVERRIDE { return (b_kernel-1)/2; }
+
                 /** returns the descriptor length */
                 virtual int descriptorSize() const CV_OVERRIDE;
 
@@ -83,6 +104,28 @@ namespace cv {
         LUCIDImpl::LUCIDImpl(const int lucid_kernel, const int blur_kernel) {
             l_kernel = lucid_kernel;
             b_kernel = blur_kernel*2+1;
+        }
+
+        void LUCIDImpl::read( const FileNode& fn)
+        {
+          // if node is empty, keep previous value
+          if (!fn["lucid_kernel"].empty())
+              fn["lucid_kernel"] >> l_kernel;
+          if (!fn["blur_kernel"].empty())
+          {
+              int _b_kernel;
+              fn["blur_kernel"] >> _b_kernel;
+              b_kernel = _b_kernel*2+1;
+          }
+        }
+        void LUCIDImpl::write( FileStorage& fs) const
+        {
+            if(fs.isOpened())
+            {
+                fs << "name" << getDefaultName();
+                fs << "lucid_kernel" << l_kernel;
+                fs << "blur_kernel" << (b_kernel-1)/2;
+            }
         }
 
         int LUCIDImpl::descriptorSize() const {
@@ -142,6 +185,11 @@ namespace cv {
 
             if (_desc.needed())
                 sort(desc, _desc, SORT_EVERY_ROW | SORT_ASCENDING);
+        }
+
+        String LUCID::getDefaultName() const
+        {
+          return (Feature2D::getDefaultName() + ".LUCID");
         }
     }
 } // END NAMESPACE CV

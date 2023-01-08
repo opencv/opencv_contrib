@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     bool autoScale = parser.has("as");
     float autoScaleFactor = autoScale ? parser.get<float>("as") : 1.f;
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    Ptr<aruco::DetectorParameters> detectorParams = makePtr<aruco::DetectorParameters>();
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
         bool readOk = detectorParams->readDetectorParameters(fs.root());
@@ -98,9 +98,9 @@ int main(int argc, char *argv[]) {
     }
     if (parser.has("refine")) {
         //override cornerRefinementMethod read from config file
-        detectorParams->cornerRefinementMethod = parser.get<int>("refine");
+        detectorParams->cornerRefinementMethod = parser.get<aruco::CornerRefineMethod>("refine");
     }
-    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << detectorParams->cornerRefinementMethod << std::endl;
+    std::cout << "Corner refinement method (0: None, 1: Subpixel, 2:contour, 3: AprilTag 2): " << (int)detectorParams->cornerRefinementMethod << std::endl;
 
     int camId = parser.get<int>("ci");
     String video;
@@ -114,14 +114,14 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        bool readOk = dictionary.aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             cerr << "Invalid dictionary file" << endl;
             return 0;
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
         vector< Vec3d > rvecs, tvecs;
 
         // detect markers
-        aruco::detectMarkers(image, dictionary, markerCorners, markerIds, detectorParams,
+        aruco::detectMarkers(image, makePtr<aruco::Dictionary>(dictionary), markerCorners, markerIds, detectorParams,
                              rejectedMarkers);
 
         // detect diamonds

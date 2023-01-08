@@ -63,14 +63,20 @@ public:
     // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
     BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false );
 
-    virtual void read( const FileNode& ) CV_OVERRIDE;
-    virtual void write( FileStorage& ) const CV_OVERRIDE;
+    void read( const FileNode& ) CV_OVERRIDE;
+    void write( FileStorage& ) const CV_OVERRIDE;
 
-    virtual int descriptorSize() const CV_OVERRIDE;
-    virtual int descriptorType() const CV_OVERRIDE;
-    virtual int defaultNorm() const CV_OVERRIDE;
+    int descriptorSize() const CV_OVERRIDE;
+    int descriptorType() const CV_OVERRIDE;
+    int defaultNorm() const CV_OVERRIDE;
 
-    virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
+    void setDescriptorSize(int bytes) CV_OVERRIDE;
+    int getDescriptorSize() const CV_OVERRIDE { return bytes_;}
+
+    void setUseOrientation(bool use_orientation) CV_OVERRIDE { use_orientation_ = use_orientation; }
+    bool getUseOrientation() const CV_OVERRIDE { return use_orientation_; };
+
+    void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
 
 protected:
     typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation );
@@ -83,6 +89,11 @@ protected:
 Ptr<BriefDescriptorExtractor> BriefDescriptorExtractor::create( int bytes, bool use_orientation )
 {
     return makePtr<BriefDescriptorExtractorImpl>(bytes, use_orientation );
+}
+
+String BriefDescriptorExtractor::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".BRIEF");
 }
 
 inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool use_orientation, Matx21f R)
@@ -168,10 +179,27 @@ static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints
 }
 
 BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes, bool use_orientation) :
-    bytes_(bytes), test_fn_(NULL)
+    bytes_(bytes), use_orientation_(use_orientation), test_fn_(NULL)
 {
-    use_orientation_ = use_orientation;
+    switch (bytes)
+    {
+        case 16:
+            test_fn_ = pixelTests16;
+            break;
+        case 32:
+            test_fn_ = pixelTests32;
+            break;
+        case 64:
+            test_fn_ = pixelTests64;
+            break;
+        default:
+            CV_Error(Error::StsBadArg, "bytes must be 16, 32, or 64");
+    }
+}
 
+void BriefDescriptorExtractorImpl::setDescriptorSize(int bytes)
+{
+    bytes_ = bytes;
     switch (bytes)
     {
         case 16:
@@ -205,27 +233,38 @@ int BriefDescriptorExtractorImpl::defaultNorm() const
 
 void BriefDescriptorExtractorImpl::read( const FileNode& fn)
 {
-    int dSize = fn["descriptorSize"];
-    switch (dSize)
+    // if node is empty, keep previous value
+    if (!fn["descriptorSize"].empty())
     {
-        case 16:
-            test_fn_ = pixelTests16;
-            break;
-        case 32:
-            test_fn_ = pixelTests32;
-            break;
-        case 64:
-            test_fn_ = pixelTests64;
-            break;
-        default:
-            CV_Error(Error::StsBadArg, "descriptorSize must be 16, 32, or 64");
+        int dSize = fn["descriptorSize"];
+        switch (dSize)
+        {
+            case 16:
+                test_fn_ = pixelTests16;
+                break;
+            case 32:
+                test_fn_ = pixelTests32;
+                break;
+            case 64:
+                test_fn_ = pixelTests64;
+                break;
+            default:
+                CV_Error(Error::StsBadArg, "descriptorSize must be 16, 32, or 64");
+        }
+        bytes_ = dSize;
     }
-    bytes_ = dSize;
+    if (!fn["use_orientation"].empty())
+        fn["use_orientation"] >> use_orientation_;
 }
 
 void BriefDescriptorExtractorImpl::write( FileStorage& fs) const
 {
-    fs << "descriptorSize" << bytes_;
+    if ( fs.isOpened() )
+    {
+        fs << "name" << getDefaultName();
+        fs << "descriptorSize" << bytes_;
+        fs << "use_orientation" << use_orientation_;
+    }
 }
 
 void BriefDescriptorExtractorImpl::compute(InputArray image,

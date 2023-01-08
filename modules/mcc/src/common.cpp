@@ -86,5 +86,30 @@ mace_center(const std::vector<cv::Point2f> &ps)
     return center;
 }
 
+void polyanticlockwise(std::vector<cv::Point2f> &points)
+{
+    // Sort the points in anti-clockwise order
+    // Trace a line between the first and second point.
+    // If the third point is at the right side, then the points are anti-clockwise
+    cv::Point2f v1 = points[1] - points[0];
+    cv::Point2f v2 = points[2] - points[0];
+
+    //if the third point is in the left side, then sort in anti-clockwise order
+    if ((v1.x * v2.y) - (v1.y * v2.x) < 0.0)
+        std::swap(points[1], points[3]);
+}
+void polyclockwise(std::vector<cv::Point2f> &points)
+{
+    // Sort the points in clockwise order
+    // Trace a line between the first and second point.
+    // If the third point is at the right side, then the points are clockwise
+    cv::Point2f v1 = points[1] - points[0];
+    cv::Point2f v2 = points[2] - points[0];
+
+    //if the third point is in the left side, then sort in clockwise order
+    if ((v1.x * v2.y) - (v1.y * v2.x) > 0.0)
+        std::swap(points[1], points[3]);
+}
+
 } // namespace mcc
 } // namespace cv

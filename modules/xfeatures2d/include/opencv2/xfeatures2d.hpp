@@ -102,6 +102,20 @@ public:
                              float patternScale = 22.0f,
                              int nOctaves = 4,
                              const std::vector<int>& selectedPairs = std::vector<int>());
+
+    CV_WRAP virtual void setOrientationNormalized(bool orientationNormalized) = 0;
+    CV_WRAP virtual bool getOrientationNormalized() const = 0;
+
+    CV_WRAP virtual void setScaleNormalized(bool scaleNormalized) = 0;
+    CV_WRAP virtual bool getScaleNormalized() const = 0;
+
+    CV_WRAP virtual void setPatternScale(double patternScale) = 0;
+    CV_WRAP virtual double getPatternScale() const = 0;
+
+    CV_WRAP virtual void setNOctaves(int nOctaves) = 0;
+    CV_WRAP virtual int getNOctaves() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 
@@ -115,6 +129,23 @@ public:
                          int lineThresholdProjected=10,
                          int lineThresholdBinarized=8,
                          int suppressNonmaxSize=5);
+
+    CV_WRAP virtual void setMaxSize(int _maxSize) = 0;
+    CV_WRAP virtual int getMaxSize() const = 0;
+
+    CV_WRAP virtual void setResponseThreshold(int _responseThreshold) = 0;
+    CV_WRAP virtual int getResponseThreshold() const = 0;
+
+    CV_WRAP virtual void setLineThresholdProjected(int _lineThresholdProjected) = 0;
+    CV_WRAP virtual int getLineThresholdProjected() const = 0;
+
+    CV_WRAP virtual void setLineThresholdBinarized(int _lineThresholdBinarized) = 0;
+    CV_WRAP virtual int getLineThresholdBinarized() const = 0;
+
+    CV_WRAP virtual void setSuppressNonmaxSize(int _suppressNonmaxSize) = 0;
+    CV_WRAP virtual int getSuppressNonmaxSize() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /*
@@ -131,6 +162,14 @@ class CV_EXPORTS_W BriefDescriptorExtractor : public Feature2D
 {
 public:
     CV_WRAP static Ptr<BriefDescriptorExtractor> create( int bytes = 32, bool use_orientation = false );
+
+    CV_WRAP virtual void setDescriptorSize(int bytes) = 0;
+    CV_WRAP virtual int getDescriptorSize() const = 0;
+
+    CV_WRAP virtual void setUseOrientation(bool use_orientation) = 0;
+    CV_WRAP virtual bool getUseOrientation() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /** @brief Class implementing the locally uniform comparison image descriptor, described in @cite LUCID
@@ -148,6 +187,14 @@ public:
      * @param blur_kernel kernel for blurring image prior to descriptor construction, where 1=3x3, 2=5x5, 3=7x7 and so forth
      */
     CV_WRAP static Ptr<LUCID> create(const int lucid_kernel = 1, const int blur_kernel = 2);
+
+    CV_WRAP virtual void setLucidKernel(int lucid_kernel) = 0;
+    CV_WRAP virtual int getLucidKernel() const = 0;
+
+    CV_WRAP virtual void setBlurKernel(int blur_kernel) = 0;
+    CV_WRAP virtual int getBlurKernel() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 
@@ -177,6 +224,20 @@ class CV_EXPORTS_W LATCH : public Feature2D
 {
 public:
     CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
+
+    CV_WRAP virtual void setBytes(int bytes) = 0;
+    CV_WRAP virtual int getBytes() const = 0;
+
+    CV_WRAP virtual void setRotationInvariance(bool rotationInvariance) = 0;
+    CV_WRAP virtual bool getRotationInvariance() const = 0;
+
+    CV_WRAP virtual void setHalfSSDsize(int half_ssd_size) = 0;
+    CV_WRAP virtual int getHalfSSDsize() const = 0;
+
+    CV_WRAP virtual void setSigma(double sigma) = 0;
+    CV_WRAP virtual double getSigma() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /** @brief Class implementing BEBLID (Boosted Efficient Binary Local Image Descriptor),
@@ -222,6 +283,11 @@ public:
      BEBLID::SIZE_512_BITS or BEBLID::SIZE_256_BITS.
     */
     CV_WRAP static Ptr<BEBLID> create(float scale_factor, int n_bits = BEBLID::SIZE_512_BITS);
+
+    CV_WRAP virtual void setScaleFactor(float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /** @brief Class implementing TEBLID (Triplet-based Efficient Binary Local Image Descriptor),
@@ -265,6 +331,8 @@ public:
      TEBLID::SIZE_256_BITS or TEBLID::SIZE_512_BITS.
     */
     CV_WRAP static Ptr<TEBLID> create(float scale_factor, int n_bits = TEBLID::SIZE_256_BITS);
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
@@ -293,6 +361,32 @@ public:
     CV_WRAP static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
                 int q_hist = 8, DAISY::NormalizationType norm = DAISY::NRM_NONE, InputArray H = noArray(),
                 bool interpolation = true, bool use_orientation = false );
+
+    CV_WRAP virtual void setRadius(float radius) = 0;
+    CV_WRAP virtual float getRadius() const = 0;
+
+    CV_WRAP virtual void setQRadius(int q_radius) = 0;
+    CV_WRAP virtual int getQRadius() const = 0;
+
+    CV_WRAP virtual void setQTheta(int q_theta) = 0;
+    CV_WRAP virtual int getQTheta() const = 0;
+
+    CV_WRAP virtual void setQHist(int q_hist) = 0;
+    CV_WRAP virtual int getQHist() const = 0;
+
+    CV_WRAP virtual void setNorm(int norm) = 0;
+    CV_WRAP virtual int getNorm() const = 0;
+
+    CV_WRAP virtual void setH(InputArray H) = 0;
+    CV_WRAP virtual cv::Mat getH() const = 0;
+
+    CV_WRAP virtual void setInterpolation(bool interpolation) = 0;
+    CV_WRAP virtual bool getInterpolation() const = 0;
+
+    CV_WRAP virtual void setUseOrientation(bool use_orientation) = 0;
+    CV_WRAP virtual bool getUseOrientation() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 
     /** @overload
      * @param image image to extract descriptors
@@ -371,9 +465,38 @@ class CV_EXPORTS_W MSDDetector : public Feature2D {
 
 public:
 
-    static Ptr<MSDDetector> create(int m_patch_radius = 3, int m_search_area_radius = 5,
+    CV_WRAP static Ptr<MSDDetector> create(int m_patch_radius = 3, int m_search_area_radius = 5,
             int m_nms_radius = 5, int m_nms_scale_radius = 0, float m_th_saliency = 250.0f, int m_kNN = 4,
             float m_scale_factor = 1.25f, int m_n_scales = -1, bool m_compute_orientation = false);
+
+    CV_WRAP virtual void setPatchRadius(int patch_radius) = 0;
+    CV_WRAP virtual int getPatchRadius() const = 0;
+
+    CV_WRAP virtual void setSearchAreaRadius(int use_orientation) = 0;
+    CV_WRAP virtual int getSearchAreaRadius() const = 0;
+
+    CV_WRAP virtual void setNmsRadius(int nms_radius) = 0;
+    CV_WRAP virtual int getNmsRadius() const = 0;
+
+    CV_WRAP virtual void setNmsScaleRadius(int nms_scale_radius) = 0;
+    CV_WRAP virtual int getNmsScaleRadius() const = 0;
+
+    CV_WRAP virtual void setThSaliency(float th_saliency) = 0;
+    CV_WRAP virtual float getThSaliency() const = 0;
+
+    CV_WRAP virtual void setKNN(int kNN) = 0;
+    CV_WRAP virtual int getKNN() const = 0;
+
+    CV_WRAP virtual void setScaleFactor(float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
+
+    CV_WRAP virtual void setNScales(int use_orientation) = 0;
+    CV_WRAP virtual int getNScales() const = 0;
+
+    CV_WRAP virtual void setComputeOrientation(bool compute_orientation) = 0;
+    CV_WRAP virtual bool getComputeOrientation() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /** @brief Class implementing VGG (Oxford Visual Geometry Group) descriptor trained end to end
@@ -405,6 +528,8 @@ public:
     CV_WRAP static Ptr<VGG> create( int desc = VGG::VGG_120, float isigma = 1.4f,
                                     bool img_normalize = true, bool use_scale_orientation = true,
                                     float scale_factor = 6.25f, bool dsc_normalize = false );
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 
     CV_WRAP virtual void setSigma(const float isigma) = 0;
     CV_WRAP virtual float getSigma() const = 0;
@@ -461,6 +586,8 @@ public:
 
     CV_WRAP static Ptr<BoostDesc> create( int desc = BoostDesc::BINBOOST_256,
                     bool use_scale_orientation = true, float scale_factor = 6.25f );
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 
     CV_WRAP virtual void setUseScaleOrientation(const bool use_scale_orientation) = 0;
     CV_WRAP virtual bool getUseScaleOrientation() const = 0;
@@ -977,6 +1104,23 @@ public:
             float DOG_thresh=0.01f,
             int maxCorners=5000,
             int num_layers=4);
+
+    CV_WRAP virtual void setNumOctaves(int numOctaves_) = 0;
+    CV_WRAP virtual int getNumOctaves() const = 0;
+
+    CV_WRAP virtual void setCornThresh(float corn_thresh_) = 0;
+    CV_WRAP virtual float getCornThresh() const = 0;
+
+    CV_WRAP virtual void setDOGThresh(float DOG_thresh_) = 0;
+    CV_WRAP virtual float getDOGThresh() const = 0;
+
+    CV_WRAP virtual void setMaxCorners(int maxCorners_) = 0;
+    CV_WRAP virtual int getMaxCorners() const = 0;
+
+    CV_WRAP virtual void setNumLayers(int num_layers_) = 0;
+    CV_WRAP virtual int getNumLayers() const = 0;
+
+    CV_WRAP String getDefaultName() const CV_OVERRIDE;
 };
 
 /**

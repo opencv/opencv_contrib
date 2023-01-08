@@ -26,7 +26,7 @@ public:
     DecoderMgr() { reader_ = new zxing::qrcode::QRCodeReader(); };
     ~DecoderMgr(){};
 
-    int decodeImage(cv::Mat src, bool use_nn_detector, string& result);
+    int decodeImage(cv::Mat src, bool use_nn_detector, vector<string>& result, vector<vector<Point2f>>& zxing_points);
 
 private:
     zxing::Ref<zxing::UnicomBlock> qbarUicomBlock_;
@@ -35,10 +35,10 @@ private:
     zxing::Ref<zxing::qrcode::QRCodeReader> reader_;
     BinarizerMgr binarizer_mgr_;
 
-    zxing::Ref<zxing::Result> Decode(zxing::Ref<zxing::BinaryBitmap> image,
+    vector<zxing::Ref<zxing::Result>> Decode(zxing::Ref<zxing::BinaryBitmap> image,
                                      zxing::DecodeHints hints);
 
-    int TryDecode(zxing::Ref<zxing::LuminanceSource> source, zxing::Ref<zxing::Result>& result);
+    int TryDecode(zxing::Ref<zxing::LuminanceSource> source, vector<zxing::Ref<zxing::Result>>& result);
 };
 
 }  // namespace wechat_qrcode

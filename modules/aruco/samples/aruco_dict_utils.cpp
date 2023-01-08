@@ -1,5 +1,5 @@
 #include <opencv2/core/hal/hal.hpp>
-#include <opencv2/aruco_detector.hpp>
+#include <opencv2/objdetect/aruco_detector.hpp>
 #include <iostream>
 
 using namespace cv;
@@ -28,8 +28,8 @@ static inline int _getSelfDistance(const Mat &marker) {
     return minHamming;
 }
 
-static inline int getFlipDistanceToId(Ptr<aruco::Dictionary> dict, InputArray bits, int id, bool allRotations = true) {
-    Mat bytesList = dict->bytesList;
+static inline int getFlipDistanceToId(const aruco::Dictionary& dict, InputArray bits, int id, bool allRotations = true) {
+    Mat bytesList = dict.bytesList;
     CV_Assert(id >= 0 && id < bytesList.rows);
 
     unsigned int nRotations = 4;
@@ -74,12 +74,13 @@ static inline int getFlipDistanceToId(Ptr<aruco::Dictionary> dict, InputArray bi
     return currentMinDistance;
 }
 
-static inline Ptr<aruco::Dictionary> generateCustomAsymmetricDictionary(int nMarkers, int markerSize,
-                                                const Ptr<aruco::Dictionary> &baseDictionary, int randomSeed) {
+static inline aruco::Dictionary generateCustomAsymmetricDictionary(int nMarkers, int markerSize,
+                                                                        const aruco::Dictionary &baseDictionary,
+                                                                        int randomSeed) {
     RNG rng((uint64)(randomSeed));
 
-    Ptr<aruco::Dictionary> out = makePtr<aruco::Dictionary>();
-    out->markerSize = markerSize;
+    aruco::Dictionary out;
+    out.markerSize = markerSize;
 
     // theoretical maximum intermarker distance
     // See S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
@@ -89,16 +90,16 @@ static inline Ptr<aruco::Dictionary> generateCustomAsymmetricDictionary(int nMar
     int tau = 2 * (int)std::floor(float(C) * 4.f / 3.f);
 
     // if baseDictionary is provided, calculate its intermarker distance
-    if(baseDictionary->bytesList.rows > 0) {
-        CV_Assert(baseDictionary->markerSize == markerSize);
-        out->bytesList = baseDictionary->bytesList.clone();
+    if(baseDictionary.bytesList.rows > 0) {
+        CV_Assert(baseDictionary.markerSize == markerSize);
+        out.bytesList = baseDictionary.bytesList.clone();
 
         int minDistance = markerSize * markerSize + 1;
-        for(int i = 0; i < out->bytesList.rows; i++) {
-            Mat markerBytes = out->bytesList.rowRange(i, i + 1);
+        for(int i = 0; i < out.bytesList.rows; i++) {
+            Mat markerBytes = out.bytesList.rowRange(i, i + 1);
             Mat markerBits = aruco::Dictionary::getBitsFromByteList(markerBytes, markerSize);
             minDistance = min(minDistance, _getSelfDistance(markerBits));
-            for(int j = i + 1; j < out->bytesList.rows; j++) {
+            for(int j = i + 1; j < out.bytesList.rows; j++) {
                 minDistance = min(minDistance, getFlipDistanceToId(out, markerBits, j));
             }
         }
@@ -113,7 +114,7 @@ static inline Ptr<aruco::Dictionary> generateCustomAsymmetricDictionary(int nMar
     const int maxUnproductiveIterations = 5000;
     int unproductiveIterations = 0;
 
-    while(out->bytesList.rows < nMarkers) {
+    while(out.bytesList.rows < nMarkers) {
         Mat currentMarker(markerSize, markerSize, CV_8UC1, Scalar::all(0));
         rng.fill(currentMarker, RNG::UNIFORM, 0, 2);
 
@@ -123,7 +124,7 @@ static inline Ptr<aruco::Dictionary> generateCustomAsymmetricDictionary(int nMar
         // if self distance is better or equal than current best option, calculate distance
         // to previous accepted markers
         if(selfDistance >= bestTau) {
-            for(int i = 0; i < out->bytesList.rows; i++) {
+            for(int i = 0; i < out.bytesList.rows; i++) {
                 int currentDistance = getFlipDistanceToId(out, currentMarker, i);
                 minDistance = min(currentDistance, minDistance);
                 if(minDistance <= bestTau) {
@@ -137,7 +138,7 @@ static inline Ptr<aruco::Dictionary> generateCustomAsymmetricDictionary(int nMar
             unproductiveIterations = 0;
             bestTau = 0;
             Mat bytes = aruco::Dictionary::getByteListFromBits(currentMarker);
-            out->bytesList.push_back(bytes);
+            out.bytesList.push_back(bytes);
         } else {
             unproductiveIterations++;
 
@@ -153,41 +154,41 @@ static inline Ptr<aruco::Dictionary> generateCustomAsymmetricDictionary(int nMar
                 tau = bestTau;
                 bestTau = 0;
                 Mat bytes = aruco::Dictionary::getByteListFromBits(bestMarker);
-                out->bytesList.push_back(bytes);
+                out.bytesList.push_back(bytes);
             }
         }
     }
 
     // update the maximum number of correction bits for the generated dictionary
-    out->maxCorrectionBits = (tau - 1) / 2;
+    out.maxCorrectionBits = (tau - 1) / 2;
 
     return out;
 }
 
-static inline int getMinDistForDict(const Ptr<aruco::Dictionary>& dict) {
-    const int dict_size = dict->bytesList.rows;
-    const int marker_size = dict->markerSize;
+static inline int getMinDistForDict(const aruco::Dictionary& dict) {
+    const int dict_size = dict.bytesList.rows;
+    const int marker_size = dict.markerSize;
     int minDist = marker_size * marker_size;
     for (int i = 0; i < dict_size; i++) {
-        Mat row = dict->bytesList.row(i);
-        Mat marker = dict->getBitsFromByteList(row, marker_size);
+        Mat row = dict.bytesList.row(i);
+        Mat marker = dict.getBitsFromByteList(row, marker_size);
         for (int j = 0; j < dict_size; j++) {
             if (j != i) {
-                minDist = min(dict->getDistanceToId(marker, j), minDist);
+                minDist = min(dict.getDistanceToId(marker, j), minDist);
             }
         }
     }
     return minDist;
 }
 
-static inline int getMinAsymDistForDict(const Ptr<aruco::Dictionary>& dict) {
-    const int dict_size = dict->bytesList.rows;
-    const int marker_size = dict->markerSize;
+static inline int getMinAsymDistForDict(const aruco::Dictionary& dict) {
+    const int dict_size = dict.bytesList.rows;
+    const int marker_size = dict.markerSize;
     int minDist = marker_size * marker_size;
     for (int i = 0; i < dict_size; i++)
     {
-        Mat row = dict->bytesList.row(i);
-        Mat marker = dict->getBitsFromByteList(row, marker_size);
+        Mat row = dict.bytesList.row(i);
+        Mat marker = dict.getBitsFromByteList(row, marker_size);
         for (int j = 0; j < dict_size; j++)
         {
             if (j != i)
@@ -229,14 +230,14 @@ int main(int argc, char *argv[])
     int markerSize = parser.get<int>("markerSize");
     bool checkFlippedMarkers = parser.get<bool>("r");
 
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        bool readOk = dictionary.aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             cerr << "Invalid dictionary file" << endl;
             return 0;
@@ -249,12 +250,12 @@ int main(int argc, char *argv[])
 
     if (!outputFile.empty() && nMarkers > 0 && markerSize > 0)
     {
-        Ptr<FileStorage> fs = makePtr<FileStorage>(outputFile, FileStorage::WRITE);
+        FileStorage fs(outputFile, FileStorage::WRITE);
         if (checkFlippedMarkers)
-            dictionary = generateCustomAsymmetricDictionary(nMarkers, markerSize, makePtr<aruco::Dictionary>(), 0);
+            dictionary = generateCustomAsymmetricDictionary(nMarkers, markerSize, aruco::Dictionary(), 0);
         else
-            dictionary = aruco::generateCustomDictionary(nMarkers, markerSize, makePtr<aruco::Dictionary>(), 0);
-        dictionary->writeDictionary(fs);
+            dictionary = aruco::extendDictionary(nMarkers, markerSize, aruco::Dictionary(), 0);
+        dictionary.writeDictionary(fs);
     }
 
     if (checkFlippedMarkers) {

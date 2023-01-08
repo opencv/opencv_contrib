@@ -72,6 +72,7 @@
 #include "opencv2/cudalegacy/NCV.hpp"
 #include "opencv2/cudalegacy/NPP_staging.hpp"
 #include "opencv2/cudalegacy/NCVHaarObjectDetection.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 #include "NCVRuntimeTemplates.hpp"
 #include "NCVAlg.hpp"
@@ -94,24 +95,6 @@ const Ncv32u NUM_THREADS_ANCHORSPARALLEL = 64;
 #define NUM_THREADS_CLASSIFIERPARALLEL          (1 << NUM_THREADS_CLASSIFIERPARALLEL_LOG2)
 
 
-/** \internal
-* Haar features solid array.
-*/
-texture<uint2, 1, cudaReadModeElementType> texHaarFeatures;
-
-
-/** \internal
-* Haar classifiers flattened trees container.
-* Two parts: first contains root nodes, second - nodes that are referred by root nodes.
-* Drawback: breaks tree locality (might cause more cache misses
-* Advantage: No need to introduce additional 32-bit field to index root nodes offsets
-*/
-texture<uint4, 1, cudaReadModeElementType> texHaarClassifierNodes;
-
-
-texture<Ncv32u, 1, cudaReadModeElementType> texIImage;
-
-
 __device__ HaarStage64 getStage(Ncv32u iStage, HaarStage64 *d_Stages)
 {
     return d_Stages[iStage];
@@ -119,51 +102,37 @@ __device__ HaarStage64 getStage(Ncv32u iStage, HaarStage64 *d_Stages)
 
 
 template <NcvBool tbCacheTextureCascade>
-__device__ HaarClassifierNode128 getClassifierNode(Ncv32u iNode, HaarClassifierNode128 *d_ClassifierNodes)
+__device__ HaarClassifierNode128 getClassifierNode(cv::cudev::TexturePtr<uint4> texHaarClassifierNodes, Ncv32u iNode, HaarClassifierNode128 *d_ClassifierNodes)
 {
     HaarClassifierNode128 tmpNode;
     if (tbCacheTextureCascade)
-    {
-        tmpNode._ui4 = tex1Dfetch(texHaarClassifierNodes, iNode);
-    }
+        tmpNode._ui4 = texHaarClassifierNodes(iNode);
     else
-    {
         tmpNode = d_ClassifierNodes[iNode];
-    }
     return tmpNode;
 }
 
 
 template <NcvBool tbCacheTextureCascade>
-__device__ void getFeature(Ncv32u iFeature, HaarFeature64 *d_Features,
-                           Ncv32f *weight,
-                           Ncv32u *rectX, Ncv32u *rectY, Ncv32u *rectWidth, Ncv32u *rectHeight)
+__device__ void getFeature(cv::cudev::TexturePtr<uint2> texHaarFeatures, Ncv32u iFeature, HaarFeature64* d_Features, Ncv32f* weight, Ncv32u* rectX, Ncv32u* rectY, Ncv32u* rectWidth, Ncv32u* rectHeight)
 {
     HaarFeature64 feature;
     if (tbCacheTextureCascade)
-    {
-        feature._ui2 = tex1Dfetch(texHaarFeatures, iFeature);
-    }
+        feature._ui2 = texHaarFeatures(iFeature);
     else
-    {
         feature = d_Features[iFeature];
-    }
     feature.getRect(rectX, rectY, rectWidth, rectHeight);
     *weight = feature.getWeight();
 }
 
 
 template <NcvBool tbCacheTextureIImg>
-__device__ Ncv32u getElemIImg(Ncv32u x, Ncv32u *d_IImg)
+__device__ Ncv32u getElemIImg(cv::cudev::TexturePtr<Ncv32u> texImg, Ncv32u x, Ncv32u *d_IImg)
 {
     if (tbCacheTextureIImg)
-    {
-        return tex1Dfetch(texIImage, x);
-    }
+        return texImg(x);
     else
-    {
         return d_IImg[x];
-    }
 }
 
 
@@ -203,17 +172,10 @@ __device__ void compactBlockWriteOutAnchorParallel(Ncv32u threadPassFlag, Ncv32u
 }
 
 
-template <NcvBool tbInitMaskPositively,
-          NcvBool tbCacheTextureIImg,
-          NcvBool tbCacheTextureCascade,
-          NcvBool tbReadPixelIndexFromVector,
-          NcvBool tbDoAtomicCompaction>
-__global__ void applyHaarClassifierAnchorParallel(Ncv32u *d_IImg, Ncv32u IImgStride,
-                                                  Ncv32f *d_weights, Ncv32u weightsStride,
-                                                  HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages,
-                                                  Ncv32u *d_inMask, Ncv32u *d_outMask,
-                                                  Ncv32u mask1Dlen, Ncv32u mask2Dstride,
-                                                  NcvSize32u anchorsRoi, Ncv32u startStageInc, Ncv32u endStageExc, Ncv32f scaleArea)
+template <NcvBool tbInitMaskPositively, NcvBool tbCacheTextureIImg, NcvBool tbCacheTextureCascade, NcvBool tbReadPixelIndexFromVector, NcvBool tbDoAtomicCompaction>
+__global__ void applyHaarClassifierAnchorParallel(cv::cudev::TexturePtr<Ncv32u> texImg, cv::cudev::TexturePtr<uint2> texHaarFeatures, cv::cudev::TexturePtr<uint4> texHaarClassifierNodes,
+    Ncv32u *d_IImg, Ncv32u IImgStride, Ncv32f *d_weights, Ncv32u weightsStride, HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages, Ncv32u *d_inMask,
+    Ncv32u *d_outMask, Ncv32u mask1Dlen, Ncv32u mask2Dstride,  NcvSize32u anchorsRoi, Ncv32u startStageInc, Ncv32u endStageExc, Ncv32f scaleArea)
 {
     Ncv32u y_offs;
     Ncv32u x_offs;
@@ -299,7 +261,7 @@ __global__ void applyHaarClassifierAnchorParallel(Ncv32u *d_IImg, Ncv32u IImgStr
                 {
                     while (bMoreNodesToTraverse)
                     {
-                        HaarClassifierNode128 curNode = getClassifierNode<tbCacheTextureCascade>(iNode, d_ClassifierNodes);
+                        HaarClassifierNode128 curNode = getClassifierNode<tbCacheTextureCascade>(texHaarClassifierNodes, iNode, d_ClassifierNodes);
                         HaarFeatureDescriptor32 featuresDesc = curNode.getFeatureDesc();
                         Ncv32u curNodeFeaturesNum = featuresDesc.getNumFeatures();
                         Ncv32u iFeature = featuresDesc.getFeaturesOffset();
@@ -310,19 +272,17 @@ __global__ void applyHaarClassifierAnchorParallel(Ncv32u *d_IImg, Ncv32u IImgStr
                         {
                             Ncv32f rectWeight;
                             Ncv32u rectX, rectY, rectWidth, rectHeight;
-                            getFeature<tbCacheTextureCascade>
-                                (iFeature + iRect, d_Features,
-                                &rectWeight, &rectX, &rectY, &rectWidth, &rectHeight);
+                            getFeature<tbCacheTextureCascade> (texHaarFeatures, iFeature + iRect, d_Features, &rectWeight, &rectX, &rectY, &rectWidth, &rectHeight);
 
                             Ncv32u iioffsTL = (y_offs + rectY) * IImgStride + (x_offs + rectX);
                             Ncv32u iioffsTR = iioffsTL + rectWidth;
                             Ncv32u iioffsBL = iioffsTL + rectHeight * IImgStride;
                             Ncv32u iioffsBR = iioffsBL + rectWidth;
 
-                            Ncv32u rectSum = getElemIImg<tbCacheTextureIImg>(iioffsBR, d_IImg) -
-                                             getElemIImg<tbCacheTextureIImg>(iioffsBL, d_IImg) +
-                                             getElemIImg<tbCacheTextureIImg>(iioffsTL, d_IImg) -
-                                             getElemIImg<tbCacheTextureIImg>(iioffsTR, d_IImg);
+                            Ncv32u rectSum = getElemIImg<tbCacheTextureIImg>(texImg, iioffsBR, d_IImg) -
+                                             getElemIImg<tbCacheTextureIImg>(texImg, iioffsBL, d_IImg) +
+                                             getElemIImg<tbCacheTextureIImg>(texImg, iioffsTL, d_IImg) -
+                                             getElemIImg<tbCacheTextureIImg>(texImg, iioffsTR, d_IImg);
 
     #if defined CPU_FP_COMPLIANCE || defined DISABLE_MAD_SELECTIVELY
                         curNodeVal += __fmul_rn((Ncv32f)rectSum, rectWeight);
@@ -393,15 +353,10 @@ __global__ void applyHaarClassifierAnchorParallel(Ncv32u *d_IImg, Ncv32u IImgStr
 }
 
 
-template <NcvBool tbCacheTextureIImg,
-          NcvBool tbCacheTextureCascade,
-          NcvBool tbDoAtomicCompaction>
-__global__ void applyHaarClassifierClassifierParallel(Ncv32u *d_IImg, Ncv32u IImgStride,
-                                                      Ncv32f *d_weights, Ncv32u weightsStride,
-                                                      HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages,
-                                                      Ncv32u *d_inMask, Ncv32u *d_outMask,
-                                                      Ncv32u mask1Dlen, Ncv32u mask2Dstride,
-                                                      NcvSize32u anchorsRoi, Ncv32u startStageInc, Ncv32u endStageExc, Ncv32f scaleArea)
+template <NcvBool tbCacheTextureIImg, NcvBool tbCacheTextureCascade, NcvBool tbDoAtomicCompaction>
+__global__ void applyHaarClassifierClassifierParallel(cv::cudev::TexturePtr<Ncv32u> texImg, cv::cudev::TexturePtr<uint2> texHaarFeatures, cv::cudev::TexturePtr<uint4> texHaarClassifierNodes, Ncv32u *d_IImg,
+    Ncv32u IImgStride, Ncv32f *d_weights, Ncv32u weightsStride, HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages, Ncv32u *d_inMask, Ncv32u *d_outMask,
+    Ncv32u mask1Dlen, Ncv32u mask2Dstride, NcvSize32u anchorsRoi, Ncv32u startStageInc, Ncv32u endStageExc, Ncv32f scaleArea)
 {
     Ncv32u maskOffset = MAX_GRID_DIM * blockIdx.y + blockIdx.x;
 
@@ -439,7 +394,7 @@ __global__ void applyHaarClassifierClassifierParallel(Ncv32u *d_IImg, Ncv32u IIm
 
                 while (bMoreNodesToTraverse)
                 {
-                    HaarClassifierNode128 curNode = getClassifierNode<tbCacheTextureCascade>(iNode, d_ClassifierNodes);
+                    HaarClassifierNode128 curNode = getClassifierNode<tbCacheTextureCascade>(texHaarClassifierNodes, iNode, d_ClassifierNodes);
                     HaarFeatureDescriptor32 featuresDesc = curNode.getFeatureDesc();
                     Ncv32u curNodeFeaturesNum = featuresDesc.getNumFeatures();
                     Ncv32u iFeature = featuresDesc.getFeaturesOffset();
@@ -450,19 +405,17 @@ __global__ void applyHaarClassifierClassifierParallel(Ncv32u *d_IImg, Ncv32u IIm
                     {
                         Ncv32f rectWeight;
                         Ncv32u rectX, rectY, rectWidth, rectHeight;
-                        getFeature<tbCacheTextureCascade>
-                            (iFeature + iRect, d_Features,
-                            &rectWeight, &rectX, &rectY, &rectWidth, &rectHeight);
+                        getFeature<tbCacheTextureCascade> (texHaarFeatures, iFeature + iRect, d_Features, &rectWeight, &rectX, &rectY, &rectWidth, &rectHeight);
 
                         Ncv32u iioffsTL = (y_offs + rectY) * IImgStride + (x_offs + rectX);
                         Ncv32u iioffsTR = iioffsTL + rectWidth;
                         Ncv32u iioffsBL = iioffsTL + rectHeight * IImgStride;
                         Ncv32u iioffsBR = iioffsBL + rectWidth;
 
-                        Ncv32u rectSum = getElemIImg<tbCacheTextureIImg>(iioffsBR, d_IImg) -
-                                         getElemIImg<tbCacheTextureIImg>(iioffsBL, d_IImg) +
-                                         getElemIImg<tbCacheTextureIImg>(iioffsTL, d_IImg) -
-                                         getElemIImg<tbCacheTextureIImg>(iioffsTR, d_IImg);
+                        Ncv32u rectSum = getElemIImg<tbCacheTextureIImg>(texImg, iioffsBR, d_IImg) -
+                                         getElemIImg<tbCacheTextureIImg>(texImg, iioffsBL, d_IImg) +
+                                         getElemIImg<tbCacheTextureIImg>(texImg, iioffsTL, d_IImg) -
+                                         getElemIImg<tbCacheTextureIImg>(texImg, iioffsTR, d_IImg);
 
 #if defined CPU_FP_COMPLIANCE || defined DISABLE_MAD_SELECTIVELY
                         curNodeVal += __fmul_rn((Ncv32f)rectSum, rectWeight);
@@ -578,8 +531,9 @@ struct applyHaarClassifierAnchorParallelFunctor
 {
     dim3 gridConf, blockConf;
     cudaStream_t cuStream;
-
-    //Kernel arguments are stored as members;
+    cv::cudev::TexturePtr<Ncv32u> texImg;
+    cv::cudev::TexturePtr<uint2> texHaarFeatures;
+    cv::cudev::TexturePtr<uint4> texHaarClassifierNodes;
     Ncv32u *d_IImg;
     Ncv32u IImgStride;
     Ncv32f *d_weights;
@@ -597,32 +551,12 @@ struct applyHaarClassifierAnchorParallelFunctor
     Ncv32f scaleArea;
 
     //Arguments are passed through the constructor
-    applyHaarClassifierAnchorParallelFunctor(dim3 _gridConf, dim3 _blockConf, cudaStream_t _cuStream,
-                                             Ncv32u *_d_IImg, Ncv32u _IImgStride,
-                                             Ncv32f *_d_weights, Ncv32u _weightsStride,
-                                             HaarFeature64 *_d_Features, HaarClassifierNode128 *_d_ClassifierNodes, HaarStage64 *_d_Stages,
-                                             Ncv32u *_d_inMask, Ncv32u *_d_outMask,
-                                             Ncv32u _mask1Dlen, Ncv32u _mask2Dstride,
-                                             NcvSize32u _anchorsRoi, Ncv32u _startStageInc,
-                                             Ncv32u _endStageExc, Ncv32f _scaleArea) :
-    gridConf(_gridConf),
-    blockConf(_blockConf),
-    cuStream(_cuStream),
-    d_IImg(_d_IImg),
-    IImgStride(_IImgStride),
-    d_weights(_d_weights),
-    weightsStride(_weightsStride),
-    d_Features(_d_Features),
-    d_ClassifierNodes(_d_ClassifierNodes),
-    d_Stages(_d_Stages),
-    d_inMask(_d_inMask),
-    d_outMask(_d_outMask),
-    mask1Dlen(_mask1Dlen),
-    mask2Dstride(_mask2Dstride),
-    anchorsRoi(_anchorsRoi),
-    startStageInc(_startStageInc),
-    endStageExc(_endStageExc),
-    scaleArea(_scaleArea)
+    applyHaarClassifierAnchorParallelFunctor(cv::cudev::TexturePtr<Ncv32u> texImg_, cv::cudev::TexturePtr<uint2> texHaarFeatures_, cv::cudev::TexturePtr<uint4> texHaarClassifierNodes_, dim3 _gridConf,
+        dim3 _blockConf, cudaStream_t _cuStream, Ncv32u *_d_IImg, Ncv32u _IImgStride, Ncv32f *_d_weights, Ncv32u _weightsStride, HaarFeature64 *_d_Features, HaarClassifierNode128 *_d_ClassifierNodes,
+        HaarStage64 *_d_Stages, Ncv32u *_d_inMask, Ncv32u *_d_outMask, Ncv32u _mask1Dlen, Ncv32u _mask2Dstride, NcvSize32u _anchorsRoi, Ncv32u _startStageInc, Ncv32u _endStageExc, Ncv32f _scaleArea) :
+        gridConf(_gridConf), blockConf(_blockConf), cuStream(_cuStream), texImg(texImg_), texHaarFeatures(texHaarFeatures_), texHaarClassifierNodes(texHaarClassifierNodes_), d_IImg(_d_IImg), IImgStride(_IImgStride),
+        d_weights(_d_weights), weightsStride(_weightsStride), d_Features(_d_Features), d_ClassifierNodes(_d_ClassifierNodes), d_Stages(_d_Stages), d_inMask(_d_inMask), d_outMask(_d_outMask), mask1Dlen(_mask1Dlen),
+        mask2Dstride(_mask2Dstride), anchorsRoi(_anchorsRoi), startStageInc(_startStageInc), endStageExc(_endStageExc), scaleArea(_scaleArea)
     {}
 
     template<class TList>
@@ -635,43 +569,19 @@ struct applyHaarClassifierAnchorParallelFunctor
             Loki::TL::TypeAt<TList, 2>::Result::value,
             Loki::TL::TypeAt<TList, 3>::Result::value,
             Loki::TL::TypeAt<TList, 4>::Result::value >
-            <<<gridConf, blockConf, 0, cuStream>>>
-            (d_IImg, IImgStride,
-            d_weights, weightsStride,
-            d_Features, d_ClassifierNodes, d_Stages,
-            d_inMask, d_outMask,
-            mask1Dlen, mask2Dstride,
-            anchorsRoi, startStageInc,
-            endStageExc, scaleArea);
+            <<<gridConf, blockConf, 0, cuStream>>> (texImg, texHaarFeatures, texHaarClassifierNodes, d_IImg, IImgStride, d_weights, weightsStride, d_Features, d_ClassifierNodes, d_Stages, d_inMask,
+                d_outMask, mask1Dlen, mask2Dstride, anchorsRoi, startStageInc, endStageExc, scaleArea);
     }
 };
 
 
-void applyHaarClassifierAnchorParallelDynTemplate(NcvBool tbInitMaskPositively,
-                                                  NcvBool tbCacheTextureIImg,
-                                                  NcvBool tbCacheTextureCascade,
-                                                  NcvBool tbReadPixelIndexFromVector,
-                                                  NcvBool tbDoAtomicCompaction,
-
-                                                  dim3 gridConf, dim3 blockConf, cudaStream_t cuStream,
-
-                                                  Ncv32u *d_IImg, Ncv32u IImgStride,
-                                                  Ncv32f *d_weights, Ncv32u weightsStride,
-                                                  HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages,
-                                                  Ncv32u *d_inMask, Ncv32u *d_outMask,
-                                                  Ncv32u mask1Dlen, Ncv32u mask2Dstride,
-                                                  NcvSize32u anchorsRoi, Ncv32u startStageInc,
-                                                  Ncv32u endStageExc, Ncv32f scaleArea)
+void applyHaarClassifierAnchorParallelDynTemplate(NcvBool tbInitMaskPositively, NcvBool tbCacheTextureIImg, NcvBool tbCacheTextureCascade, NcvBool tbReadPixelIndexFromVector, NcvBool tbDoAtomicCompaction,
+    dim3 gridConf, dim3 blockConf, cudaStream_t cuStream, cv::cudev::TexturePtr<Ncv32u> texImg, cv::cudev::TexturePtr<uint2> texHaarFeatures, cv::cudev::TexturePtr<uint4> texHaarClassifierNodes, Ncv32u *d_IImg,
+    Ncv32u IImgStride, Ncv32f *d_weights, Ncv32u weightsStride, HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages, Ncv32u *d_inMask, Ncv32u *d_outMask,
+    Ncv32u mask1Dlen, Ncv32u mask2Dstride, NcvSize32u anchorsRoi, Ncv32u startStageInc, Ncv32u endStageExc, Ncv32f scaleArea)
 {
-
-    applyHaarClassifierAnchorParallelFunctor functor(gridConf, blockConf, cuStream,
-                                                     d_IImg, IImgStride,
-                                                     d_weights, weightsStride,
-                                                     d_Features, d_ClassifierNodes, d_Stages,
-                                                     d_inMask, d_outMask,
-                                                     mask1Dlen, mask2Dstride,
-                                                     anchorsRoi, startStageInc,
-                                                     endStageExc, scaleArea);
+    applyHaarClassifierAnchorParallelFunctor functor(texImg, texHaarFeatures, texHaarClassifierNodes, gridConf, blockConf, cuStream, d_IImg, IImgStride, d_weights, weightsStride, d_Features, d_ClassifierNodes, d_Stages,
+                                                     d_inMask, d_outMask, mask1Dlen, mask2Dstride, anchorsRoi, startStageInc, endStageExc, scaleArea);
 
     //Second parameter is the number of "dynamic" template parameters
     NCVRuntimeTemplateBool::KernelCaller<Loki::NullType, 5, applyHaarClassifierAnchorParallelFunctor>
@@ -688,8 +598,9 @@ struct applyHaarClassifierClassifierParallelFunctor
 {
     dim3 gridConf, blockConf;
     cudaStream_t cuStream;
-
-    //Kernel arguments are stored as members;
+    cv::cudev::TexturePtr<Ncv32u> texImg;
+    cv::cudev::TexturePtr<uint2> texHaarFeatures;
+    cv::cudev::TexturePtr<uint4> texHaarClassifierNodes;
     Ncv32u *d_IImg;
     Ncv32u IImgStride;
     Ncv32f *d_weights;
@@ -707,32 +618,13 @@ struct applyHaarClassifierClassifierParallelFunctor
     Ncv32f scaleArea;
 
     //Arguments are passed through the constructor
-    applyHaarClassifierClassifierParallelFunctor(dim3 _gridConf, dim3 _blockConf, cudaStream_t _cuStream,
-                                                 Ncv32u *_d_IImg, Ncv32u _IImgStride,
-                                                 Ncv32f *_d_weights, Ncv32u _weightsStride,
-                                                 HaarFeature64 *_d_Features, HaarClassifierNode128 *_d_ClassifierNodes, HaarStage64 *_d_Stages,
-                                                 Ncv32u *_d_inMask, Ncv32u *_d_outMask,
-                                                 Ncv32u _mask1Dlen, Ncv32u _mask2Dstride,
-                                                 NcvSize32u _anchorsRoi, Ncv32u _startStageInc,
-                                                 Ncv32u _endStageExc, Ncv32f _scaleArea) :
-    gridConf(_gridConf),
-    blockConf(_blockConf),
-    cuStream(_cuStream),
-    d_IImg(_d_IImg),
-    IImgStride(_IImgStride),
-    d_weights(_d_weights),
-    weightsStride(_weightsStride),
-    d_Features(_d_Features),
-    d_ClassifierNodes(_d_ClassifierNodes),
-    d_Stages(_d_Stages),
-    d_inMask(_d_inMask),
-    d_outMask(_d_outMask),
-    mask1Dlen(_mask1Dlen),
-    mask2Dstride(_mask2Dstride),
-    anchorsRoi(_anchorsRoi),
-    startStageInc(_startStageInc),
-    endStageExc(_endStageExc),
-    scaleArea(_scaleArea)
+    applyHaarClassifierClassifierParallelFunctor(dim3 _gridConf, dim3 _blockConf, cudaStream_t _cuStream, cv::cudev::TexturePtr<Ncv32u> texImg_, cv::cudev::TexturePtr<uint2> texHaarFeatures_,
+        cv::cudev::TexturePtr<uint4> texHaarClassifierNodes_, Ncv32u *_d_IImg, Ncv32u _IImgStride, Ncv32f *_d_weights, Ncv32u _weightsStride, HaarFeature64 *_d_Features,
+        HaarClassifierNode128 *_d_ClassifierNodes, HaarStage64 *_d_Stages, Ncv32u *_d_inMask, Ncv32u *_d_outMask, Ncv32u _mask1Dlen, Ncv32u _mask2Dstride, NcvSize32u _anchorsRoi,
+        Ncv32u _startStageInc, Ncv32u _endStageExc, Ncv32f _scaleArea) : gridConf(_gridConf), blockConf(_blockConf), cuStream(_cuStream), texImg(texImg_), texHaarFeatures(texHaarFeatures_),
+        texHaarClassifierNodes(texHaarClassifierNodes_), d_IImg(_d_IImg), IImgStride(_IImgStride), d_weights(_d_weights), weightsStride(_weightsStride), d_Features(_d_Features),
+        d_ClassifierNodes(_d_ClassifierNodes), d_Stages(_d_Stages), d_inMask(_d_inMask), d_outMask(_d_outMask), mask1Dlen(_mask1Dlen), mask2Dstride(_mask2Dstride), anchorsRoi(_anchorsRoi),
+        startStageInc(_startStageInc), endStageExc(_endStageExc), scaleArea(_scaleArea)
     {}
 
     template<class TList>
@@ -743,40 +635,19 @@ struct applyHaarClassifierClassifierParallelFunctor
             Loki::TL::TypeAt<TList, 0>::Result::value,
             Loki::TL::TypeAt<TList, 1>::Result::value,
             Loki::TL::TypeAt<TList, 2>::Result::value >
-            <<<gridConf, blockConf, 0, cuStream>>>
-            (d_IImg, IImgStride,
-            d_weights, weightsStride,
-            d_Features, d_ClassifierNodes, d_Stages,
-            d_inMask, d_outMask,
-            mask1Dlen, mask2Dstride,
-            anchorsRoi, startStageInc,
-            endStageExc, scaleArea);
+            <<<gridConf, blockConf, 0, cuStream>>> (texImg, texHaarFeatures, texHaarClassifierNodes, d_IImg, IImgStride, d_weights, weightsStride, d_Features, d_ClassifierNodes, d_Stages, d_inMask,
+                d_outMask, mask1Dlen, mask2Dstride, anchorsRoi, startStageInc, endStageExc, scaleArea);
     }
 };
 
 
-void applyHaarClassifierClassifierParallelDynTemplate(NcvBool tbCacheTextureIImg,
-                                                      NcvBool tbCacheTextureCascade,
-                                                      NcvBool tbDoAtomicCompaction,
-
-                                                      dim3 gridConf, dim3 blockConf, cudaStream_t cuStream,
-
-                                                      Ncv32u *d_IImg, Ncv32u IImgStride,
-                                                      Ncv32f *d_weights, Ncv32u weightsStride,
-                                                      HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages,
-                                                      Ncv32u *d_inMask, Ncv32u *d_outMask,
-                                                      Ncv32u mask1Dlen, Ncv32u mask2Dstride,
-                                                      NcvSize32u anchorsRoi, Ncv32u startStageInc,
-                                                      Ncv32u endStageExc, Ncv32f scaleArea)
+void applyHaarClassifierClassifierParallelDynTemplate(NcvBool tbCacheTextureIImg, NcvBool tbCacheTextureCascade, NcvBool tbDoAtomicCompaction, dim3 gridConf, dim3 blockConf, cudaStream_t cuStream,
+    cv::cudev::TexturePtr<Ncv32u> texImg, cv::cudev::TexturePtr<uint2> texHaarFeatures, cv::cudev::TexturePtr<uint4> texHaarClassifierNodes, Ncv32u *d_IImg, Ncv32u IImgStride, Ncv32f *d_weights,
+    Ncv32u weightsStride, HaarFeature64 *d_Features, HaarClassifierNode128 *d_ClassifierNodes, HaarStage64 *d_Stages, Ncv32u *d_inMask, Ncv32u *d_outMask, Ncv32u mask1Dlen, Ncv32u mask2Dstride,
+    NcvSize32u anchorsRoi, Ncv32u startStageInc, Ncv32u endStageExc, Ncv32f scaleArea)
 {
-    applyHaarClassifierClassifierParallelFunctor functor(gridConf, blockConf, cuStream,
-                                                         d_IImg, IImgStride,
-                                                         d_weights, weightsStride,
-                                                         d_Features, d_ClassifierNodes, d_Stages,
-                                                         d_inMask, d_outMask,
-                                                         mask1Dlen, mask2Dstride,
-                                                         anchorsRoi, startStageInc,
-                                                         endStageExc, scaleArea);
+    applyHaarClassifierClassifierParallelFunctor functor(gridConf, blockConf, cuStream, texImg, texHaarFeatures, texHaarClassifierNodes, d_IImg, IImgStride, d_weights, weightsStride, d_Features,
+        d_ClassifierNodes, d_Stages, d_inMask, d_outMask, mask1Dlen, mask2Dstride, anchorsRoi, startStageInc, endStageExc, scaleArea);
 
     //Second parameter is the number of "dynamic" template parameters
     NCVRuntimeTemplateBool::KernelCaller<Loki::NullType, 3, applyHaarClassifierClassifierParallelFunctor>
@@ -1015,31 +886,15 @@ NCVStatus ncvApplyHaarClassifierCascade_device(NCVMatrix<Ncv32u> &integral,
 
     NCV_SKIP_COND_BEGIN
 
+    cv::cudev::Texture<Ncv32u> texImg;
     if (bTexCacheIImg)
-    {
-        cudaChannelFormatDesc cfdTexIImage;
-        cfdTexIImage = cudaCreateChannelDesc<Ncv32u>();
+        texImg = cv::cudev::Texture<Ncv32u>((anchorsRoi.height + haar.ClassifierSize.height) * integral.pitch(), integral.ptr());
 
-        size_t alignmentOffset;
-        ncvAssertCUDAReturn(cudaBindTexture(&alignmentOffset, texIImage, integral.ptr(), cfdTexIImage,
-            (anchorsRoi.height + haar.ClassifierSize.height) * integral.pitch()), NCV_CUDA_ERROR);
-        ncvAssertReturn(alignmentOffset==0, NCV_TEXTURE_BIND_ERROR);
-    }
-
-    if (bTexCacheCascade)
-    {
-        cudaChannelFormatDesc cfdTexHaarFeatures;
-        cudaChannelFormatDesc cfdTexHaarClassifierNodes;
-        cfdTexHaarFeatures = cudaCreateChannelDesc<uint2>();
-        cfdTexHaarClassifierNodes = cudaCreateChannelDesc<uint4>();
-
-        size_t alignmentOffset;
-        ncvAssertCUDAReturn(cudaBindTexture(&alignmentOffset, texHaarFeatures,
-            d_HaarFeatures.ptr(), cfdTexHaarFeatures,sizeof(HaarFeature64) * haar.NumFeatures), NCV_CUDA_ERROR);
-        ncvAssertReturn(alignmentOffset==0, NCV_TEXTURE_BIND_ERROR);
-        ncvAssertCUDAReturn(cudaBindTexture(&alignmentOffset, texHaarClassifierNodes,
-            d_HaarNodes.ptr(), cfdTexHaarClassifierNodes, sizeof(HaarClassifierNode128) * haar.NumClassifierTotalNodes), NCV_CUDA_ERROR);
-        ncvAssertReturn(alignmentOffset==0, NCV_TEXTURE_BIND_ERROR);
+    cv::cudev::Texture<uint2> texHaarFeatures;
+    cv::cudev::Texture<uint4> texHaarClassifierNodes;
+    if (bTexCacheCascade) {
+        texHaarFeatures = cv::cudev::Texture<uint2>(sizeof(HaarFeature64) * haar.NumFeatures, reinterpret_cast<uint2*>(d_HaarFeatures.ptr()));
+        texHaarClassifierNodes = cv::cudev::Texture<uint4>(sizeof(HaarClassifierNode128) * haar.NumClassifierTotalNodes, reinterpret_cast<uint4*>(d_HaarNodes.ptr()));
     }
 
     Ncv32u stageStartAnchorParallel = 0;
@@ -1130,26 +985,10 @@ NCVStatus ncvApplyHaarClassifierCascade_device(NCVMatrix<Ncv32u> &integral,
         dim3 grid1(((d_pixelMask.stride() + NUM_THREADS_ANCHORSPARALLEL - 1) / NUM_THREADS_ANCHORSPARALLEL),
                    anchorsRoi.height);
         dim3 block1(NUM_THREADS_ANCHORSPARALLEL);
-        applyHaarClassifierAnchorParallelDynTemplate(
-            true,                         //tbInitMaskPositively
-            bTexCacheIImg,                //tbCacheTextureIImg
-            bTexCacheCascade,             //tbCacheTextureCascade
-            pixParallelStageStops[pixParallelStageStopsIndex] != 0,//tbReadPixelIndexFromVector
-            bDoAtomicCompaction,          //tbDoAtomicCompaction
-            grid1,
-            block1,
-            cuStream,
-            integral.ptr(), integral.stride(),
-            d_weights.ptr(), d_weights.stride(),
-            d_HaarFeatures.ptr(), d_HaarNodes.ptr(), d_HaarStages.ptr(),
-            d_ptrNowData->ptr(),
-            bDoAtomicCompaction ? d_ptrNowTmp->ptr() : d_ptrNowData->ptr(),
-            0,
-            d_pixelMask.stride(),
-            anchorsRoi,
-            pixParallelStageStops[pixParallelStageStopsIndex],
-            pixParallelStageStops[pixParallelStageStopsIndex+1],
-            scaleAreaPixels);
+        applyHaarClassifierAnchorParallelDynTemplate( true, bTexCacheIImg, bTexCacheCascade,  pixParallelStageStops[pixParallelStageStopsIndex] != 0, bDoAtomicCompaction, grid1, block1, cuStream,
+            texImg, texHaarFeatures, texHaarClassifierNodes, integral.ptr(), integral.stride(), d_weights.ptr(), d_weights.stride(), d_HaarFeatures.ptr(), d_HaarNodes.ptr(), d_HaarStages.ptr(),
+            d_ptrNowData->ptr(), bDoAtomicCompaction ? d_ptrNowTmp->ptr() : d_ptrNowData->ptr(), 0, d_pixelMask.stride(), anchorsRoi, pixParallelStageStops[pixParallelStageStopsIndex],
+            pixParallelStageStops[pixParallelStageStopsIndex+1], scaleAreaPixels);
         ncvAssertCUDAReturn(cudaGetLastError(), NCV_CUDA_ERROR);
 
         if (bDoAtomicCompaction)
@@ -1200,26 +1039,10 @@ NCVStatus ncvApplyHaarClassifierCascade_device(NCVMatrix<Ncv32u> &integral,
         }
         dim3 block2(NUM_THREADS_ANCHORSPARALLEL);
 
-        applyHaarClassifierAnchorParallelDynTemplate(
-            false,                        //tbInitMaskPositively
-            bTexCacheIImg,                //tbCacheTextureIImg
-            bTexCacheCascade,             //tbCacheTextureCascade
-            pixParallelStageStops[pixParallelStageStopsIndex] != 0 || pixelStep != 1 || bMaskElements,//tbReadPixelIndexFromVector
-            bDoAtomicCompaction,          //tbDoAtomicCompaction
-            grid2,
-            block2,
-            cuStream,
-            integral.ptr(), integral.stride(),
-            d_weights.ptr(), d_weights.stride(),
-            d_HaarFeatures.ptr(), d_HaarNodes.ptr(), d_HaarStages.ptr(),
-            d_ptrNowData->ptr(),
-            bDoAtomicCompaction ? d_ptrNowTmp->ptr() : d_ptrNowData->ptr(),
-            numDetections,
-            d_pixelMask.stride(),
-            anchorsRoi,
-            pixParallelStageStops[pixParallelStageStopsIndex],
-            pixParallelStageStops[pixParallelStageStopsIndex+1],
-            scaleAreaPixels);
+        applyHaarClassifierAnchorParallelDynTemplate( false, bTexCacheIImg, bTexCacheCascade, pixParallelStageStops[pixParallelStageStopsIndex] != 0 || pixelStep != 1 || bMaskElements, bDoAtomicCompaction,
+            grid2, block2, cuStream, texImg, texHaarFeatures, texHaarClassifierNodes, integral.ptr(), integral.stride(), d_weights.ptr(), d_weights.stride(), d_HaarFeatures.ptr(), d_HaarNodes.ptr(),
+            d_HaarStages.ptr(), d_ptrNowData->ptr(), bDoAtomicCompaction ? d_ptrNowTmp->ptr() : d_ptrNowData->ptr(), numDetections, d_pixelMask.stride(), anchorsRoi,
+            pixParallelStageStops[pixParallelStageStopsIndex], pixParallelStageStops[pixParallelStageStopsIndex+1], scaleAreaPixels);
         ncvAssertCUDAReturn(cudaGetLastError(), NCV_CUDA_ERROR);
 
         if (bDoAtomicCompaction)
@@ -1263,24 +1086,9 @@ NCVStatus ncvApplyHaarClassifierCascade_device(NCVMatrix<Ncv32u> &integral,
         }
         dim3 block3(NUM_THREADS_CLASSIFIERPARALLEL);
 
-        applyHaarClassifierClassifierParallelDynTemplate(
-            bTexCacheIImg,                //tbCacheTextureIImg
-            bTexCacheCascade,             //tbCacheTextureCascade
-            bDoAtomicCompaction,          //tbDoAtomicCompaction
-            grid3,
-            block3,
-            cuStream,
-            integral.ptr(), integral.stride(),
-            d_weights.ptr(), d_weights.stride(),
-            d_HaarFeatures.ptr(), d_HaarNodes.ptr(), d_HaarStages.ptr(),
-            d_ptrNowData->ptr(),
-            bDoAtomicCompaction ? d_ptrNowTmp->ptr() : d_ptrNowData->ptr(),
-            numDetections,
-            d_pixelMask.stride(),
-            anchorsRoi,
-            stageMiddleSwitch,
-            stageEndClassifierParallel,
-            scaleAreaPixels);
+        applyHaarClassifierClassifierParallelDynTemplate(bTexCacheIImg, bTexCacheCascade, bDoAtomicCompaction, grid3, block3, cuStream, texImg, texHaarFeatures, texHaarClassifierNodes, integral.ptr(), integral.stride(),
+            d_weights.ptr(), d_weights.stride(), d_HaarFeatures.ptr(), d_HaarNodes.ptr(), d_HaarStages.ptr(), d_ptrNowData->ptr(), bDoAtomicCompaction ? d_ptrNowTmp->ptr() : d_ptrNowData->ptr(), numDetections,
+            d_pixelMask.stride(), anchorsRoi, stageMiddleSwitch, stageEndClassifierParallel, scaleAreaPixels);
         ncvAssertCUDAReturn(cudaGetLastError(), NCV_CUDA_ERROR);
 
         if (bDoAtomicCompaction)

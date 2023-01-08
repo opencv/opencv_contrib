@@ -62,6 +62,7 @@
 #include "ximgproc/edgepreserving_filter.hpp"
 #include "ximgproc/color_match.hpp"
 #include "ximgproc/radon_transform.hpp"
+#include "ximgproc/find_ellipses.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing

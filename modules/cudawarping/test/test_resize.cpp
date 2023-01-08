@@ -206,6 +206,60 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeSameAsHost, testing::Combine(
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_AREA)),
     WHOLE_SUBMAT));
 
+PARAM_TEST_CASE(ResizeTextures, cv::cuda::DeviceInfo, Interpolation)
+{
+    cv::cuda::DeviceInfo devInfo;
+    Interpolation interpolation;
+
+    virtual void SetUp()
+    {
+        devInfo = GET_PARAM(0);
+        interpolation = GET_PARAM(1);
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+void ResizeThread(const Interpolation interp, const GpuMat& imgIn, const std::vector<GpuMat>& imgsOut, Stream& stream) {
+    for (auto& imgOut : imgsOut)
+        cv::cuda::resize(imgIn, imgOut, imgOut.size(), 0, 0, interp, stream);
+}
+
+CUDA_TEST_P(ResizeTextures, Accuracy)
+{
+    constexpr int nThreads = 5;
+    constexpr int nIters = 5;
+    const Size szIn(100, 100);
+    const Size szOut(200, 200);
+    vector<Stream> streams(nThreads, cv::cuda::Stream::Null());
+    vector<GpuMat> imgsIn;
+    vector<vector<GpuMat>> imgsOut;
+    for (int i = 0; i < nThreads; i++) {
+        imgsIn.push_back(GpuMat(szIn, CV_8UC1, i));
+        vector<GpuMat> imgsOutPerThread;
+        for (int j = 0; j < nIters; j++)
+            imgsOutPerThread.push_back(GpuMat(szOut, CV_8UC1));
+        imgsOut.push_back(imgsOutPerThread);
+    }
+
+    vector<std::thread> thread(nThreads);
+    for (int i = 0; i < nThreads; i++) thread.at(i) = std::thread(ResizeThread, interpolation, std::ref(imgsIn.at(i)), std::ref(imgsOut.at(i)), std::ref(streams.at(i)));
+    for (int i = 0; i < nThreads; i++) thread.at(i).join();
+
+    for (int i = 0; i < nThreads; i++) {
+        GpuMat imgOutGs;
+        cv::cuda::resize(imgsIn.at(i), imgOutGs, szOut, 0, 0, interpolation, streams.at(i));
+        Mat imgOutGsHost; imgOutGs.download(imgOutGsHost);
+        for (const auto& imgOut : imgsOut.at(i)) {
+            Mat imgOutHost; imgOut.download(imgOutHost);
+            ASSERT_TRUE(cv::norm(imgOutHost, imgOutGsHost, NORM_INF) == 0);
+        }
+    }
+}
+
+INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeTextures, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))));
+
 
 }} // namespace
 #endif // HAVE_CUDA

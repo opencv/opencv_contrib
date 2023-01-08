@@ -120,7 +120,7 @@ execute_process(COMMAND git log -1 --pretty=%H OUTPUT_VARIABLE GIT_COMMIT ERROR_
 string(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 
 # set the path to the C++ header and doc parser, and template engine
-set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2)
+set(HDR_PARSER_PATH ${OpenCV_SOURCE_DIR}/modules/python/src2)
 
 # set mex compiler options
 prepend("-I" MEX_INCLUDE_DIRS ${CMAKE_BINARY_DIR})
@@ -234,7 +234,7 @@ add_custom_command(
     COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
             --hdrparser  ${HDR_PARSER_PATH}
-            --moduleroot ${CMAKE_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
+            --moduleroot ${OpenCV_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
             --modules    ${opencv_modules}
             --extra      ${opencv_extra_hdrs}
             --outdir     ${CMAKE_CURRENT_BINARY_DIR}

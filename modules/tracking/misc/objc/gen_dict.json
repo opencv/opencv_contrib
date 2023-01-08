@@ -1,7 +1,4 @@
 {
-    "const_fix" : {
-        "TrackerKCF" : { "MODE": { "CUSTOM": "MODE_CUSTOM" } }
-    },
     "AdditionalImports" : {
         "*" : [ "\"tracking.hpp\"" ]
     },

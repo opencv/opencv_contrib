@@ -45,10 +45,8 @@
 
 #ifdef HAVE_NVCUVID
 
-RawPacket::RawPacket(const unsigned char* _data, const size_t _size, const bool _containsKeyFrame) : size(_size), containsKeyFrame(_containsKeyFrame) {
-    data = cv::makePtr<unsigned char*>(new unsigned char[size]);
-    memcpy(*data, _data, size);
-};
+RawPacket::RawPacket(const unsigned char* data_, const size_t size, const bool containsKeyFrame_) :
+    data(data_,data_ + size), containsKeyFrame(containsKeyFrame_) {};
 
 cv::cudacodec::detail::FrameQueue::~FrameQueue() {
     if (isFrameInUse_)

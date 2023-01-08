@@ -748,7 +748,7 @@ icvDetermineProcessingOrder(
 
 
 static
-void inpaint_fsr(const Mat &src, const Mat &mask, Mat &dst, const int algorithmType)
+void inpaint_fsr(Mat src, const Mat &mask, Mat &dst, const int algorithmType)
 {
     CV_Assert(algorithmType == xphoto::INPAINT_FSR_BEST || algorithmType == xphoto::INPAINT_FSR_FAST);
     CV_Check(src.channels(), src.channels() == 1 || src.channels() == 3, "");
@@ -767,7 +767,7 @@ void inpaint_fsr(const Mat &src, const Mat &mask, Mat &dst, const int algorithmT
                 CV_Error(Error::StsUnsupportedFormat, "Unsupported source image format!");
                 break;
             }
-            src.convertTo(src, CV_8U, 1/257.0);
+            src.convertTo(src, CV_8U, 1/256.0);
             break;
         }
         case CV_32FC1:

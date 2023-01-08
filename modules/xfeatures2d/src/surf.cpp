@@ -1020,7 +1020,6 @@ Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, boo
     return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
 
-
 #else // ! #ifdef OPENCV_ENABLE_NONFREE
 Ptr<SURF> SURF::create(double, int, int, bool, bool)
 {
@@ -1029,6 +1028,11 @@ Ptr<SURF> SURF::create(double, int, int, bool, bool)
         "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
 }
 #endif
+
+String SURF::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".SURF");
+}
 
 }
 }

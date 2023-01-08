@@ -54,6 +54,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, co
 #else // HAVE_NVCUVID
 
 void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream);
+bool ValidColorFormat(const ColorFormat colorFormat);
 
 void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat,
     Stream stream)
@@ -74,7 +75,7 @@ void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int 
         outFrame.create(height, width, CV_8UC1);
         cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, StreamAccessor::getStream(stream));
     }
-    else if (colorFormat == ColorFormat::YUV) {
+    else if (colorFormat == ColorFormat::NV_NV12) {
         decodedFrame.copyTo(outFrame, stream);
     }
 }
@@ -86,7 +87,8 @@ namespace
     class VideoReaderImpl : public VideoReader
     {
     public:
-        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop = false , const bool udpSource = false);
+        explicit VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop = false , const bool udpSource = false,
+            const Size targetSz = Size(), const Rect srcRoi = Rect(), const Rect targetRoi = Rect());
         ~VideoReaderImpl();
 
         bool nextFrame(GpuMat& frame, Stream& stream) CV_OVERRIDE;
@@ -99,7 +101,7 @@ namespace
 
         bool set(const VideoReaderProps propertyId, const double propertyVal) CV_OVERRIDE;
 
-        void set(const ColorFormat _colorFormat) CV_OVERRIDE;
+        bool set(const ColorFormat colorFormat_) CV_OVERRIDE;
 
         bool get(const VideoReaderProps propertyId, double& propertyVal) const CV_OVERRIDE;
         bool getVideoReaderProps(const VideoReaderProps propertyId, double& propertyValOut, double propertyValIn) const CV_OVERRIDE;
@@ -131,7 +133,8 @@ namespace
         return videoSource_->format();
     }
 
-    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop, const bool udpSource) :
+    VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop, const bool udpSource,
+        const Size targetSz, const Rect srcRoi, const Rect targetRoi) :
         videoSource_(source),
         lock_(0)
     {
@@ -143,7 +146,7 @@ namespace
         cuSafeCall( cuCtxGetCurrent(&ctx) );
         cuSafeCall( cuvidCtxLockCreate(&lock_, ctx) );
         frameQueue_.reset(new FrameQueue());
-        videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, minNumDecodeSurfaces, ctx, lock_));
+        videoDecoder_.reset(new VideoDecoder(videoSource_->format().codec, minNumDecodeSurfaces, targetSz, srcRoi, targetRoi, ctx, lock_));
         videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_, allowFrameDrop, udpSource));
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
@@ -254,7 +257,8 @@ namespace
             if (idx >= rawPacketsBaseIdx && idx < rawPacketsBaseIdx + rawPackets.size()) {
                 if (!frame.isMat())
                     CV_Error(Error::StsUnsupportedFormat, "Raw data is stored on the host and must be retrieved using a cv::Mat");
-                Mat tmp(1, rawPackets.at(idx - rawPacketsBaseIdx).size, CV_8UC1, rawPackets.at(idx - rawPacketsBaseIdx).Data(), rawPackets.at(idx - rawPacketsBaseIdx).size);
+                const size_t i = idx - rawPacketsBaseIdx;
+                Mat tmp(1, rawPackets.at(i).Size(), CV_8UC1, const_cast<unsigned char*>(rawPackets.at(i).Data()), rawPackets.at(i).Size());
                 frame.getMatRef() = tmp;
             }
         }
@@ -270,8 +274,16 @@ namespace
         return false;
     }
 
-    void VideoReaderImpl::set(const ColorFormat _colorFormat) {
-        colorFormat = _colorFormat;
+    bool ValidColorFormat(const ColorFormat colorFormat) {
+        if (colorFormat == ColorFormat::BGRA || colorFormat == ColorFormat::BGR || colorFormat == ColorFormat::GRAY || colorFormat == ColorFormat::NV_NV12)
+            return true;
+        return false;
+    }
+
+    bool VideoReaderImpl::set(const ColorFormat colorFormat_) {
+        if (!ValidColorFormat(colorFormat_)) return false;
+        colorFormat = colorFormat_;
+        return true;
     }
 
     bool VideoReaderImpl::get(const VideoReaderProps propertyId, double& propertyVal) const {
@@ -299,7 +311,7 @@ namespace
         case VideoReaderProps::PROP_LRF_HAS_KEY_FRAME: {
             const int iPacket = propertyVal - rawPacketsBaseIdx;
             if (videoSource_->RawModeEnabled() && iPacket >= 0 && iPacket < rawPackets.size()) {
-                propertyVal = rawPackets.at(iPacket).containsKeyFrame;
+                propertyVal = rawPackets.at(iPacket).ContainsKeyFrame();
                 return true;
             }
             else
@@ -357,13 +369,15 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename, const 
         videoSource.reset(new CuvidVideoSource(filename));
     }
 
-    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.allowFrameDrop, params.udpSource);
+    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.allowFrameDrop, params.udpSource, params.targetSz,
+        params.srcRoi, params.targetRoi);
 }
 
 Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>& source, const VideoReaderInitParams params)
 {
     Ptr<VideoSource> videoSource(new RawVideoSourceWrapper(source, params.rawMode));
-    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces);
+    return makePtr<VideoReaderImpl>(videoSource, params.minNumDecodeSurfaces, params.allowFrameDrop, params.udpSource, params.targetSz,
+        params.srcRoi, params.targetRoi);
 }
 
 #endif // HAVE_NVCUVID

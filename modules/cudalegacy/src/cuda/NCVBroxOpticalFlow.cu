@@ -65,9 +65,12 @@
 
 #include "opencv2/cudalegacy/NPP_staging.hpp"
 #include "opencv2/cudalegacy/NCVBroxOpticalFlow.hpp"
+#include <opencv2/cudev/ptr2d/texture.hpp>
 
 
 typedef NCVVectorAlloc<Ncv32f> FloatVector;
+typedef cv::cudev::TexturePtr<float> Ptr2D;
+typedef cv::cudev::Texture<float> Texture;
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Implementation specific constants
@@ -83,39 +86,6 @@ inline int iDivUp(int a, int b)
 {
     return (a + b - 1)/b;
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////
-// Texture references
-/////////////////////////////////////////////////////////////////////////////////////////
-
-texture<float, 2, cudaReadModeElementType> tex_coarse;
-texture<float, 2, cudaReadModeElementType> tex_fine;
-
-texture<float, 2, cudaReadModeElementType> tex_I1;
-texture<float, 2, cudaReadModeElementType> tex_I0;
-
-texture<float, 2, cudaReadModeElementType> tex_Ix;
-texture<float, 2, cudaReadModeElementType> tex_Ixx;
-texture<float, 2, cudaReadModeElementType> tex_Ix0;
-
-texture<float, 2, cudaReadModeElementType> tex_Iy;
-texture<float, 2, cudaReadModeElementType> tex_Iyy;
-texture<float, 2, cudaReadModeElementType> tex_Iy0;
-
-texture<float, 2, cudaReadModeElementType> tex_Ixy;
-
-texture<float, 1, cudaReadModeElementType> tex_u;
-texture<float, 1, cudaReadModeElementType> tex_v;
-texture<float, 1, cudaReadModeElementType> tex_du;
-texture<float, 1, cudaReadModeElementType> tex_dv;
-texture<float, 1, cudaReadModeElementType> tex_numerator_dudv;
-texture<float, 1, cudaReadModeElementType> tex_numerator_u;
-texture<float, 1, cudaReadModeElementType> tex_numerator_v;
-texture<float, 1, cudaReadModeElementType> tex_inv_denominator_u;
-texture<float, 1, cudaReadModeElementType> tex_inv_denominator_v;
-texture<float, 1, cudaReadModeElementType> tex_diffusivity_x;
-texture<float, 1, cudaReadModeElementType> tex_diffusivity_y;
-
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // SUPPLEMENTARY FUNCTIONS
@@ -265,8 +235,7 @@ __forceinline__ __device__ void diffusivity_along_y(float *s, int pos, const flo
 ///\param h number of rows in global memory array
 ///\param p global memory array pitch in floats
 ///////////////////////////////////////////////////////////////////////////////
-template<int tex_id>
-__forceinline__ __device__ void load_array_element(float *smem, int is, int js, int i, int j, int w, int h, int p)
+__forceinline__ __device__ void load_array_element(Ptr2D texSrc, float *smem, int is, int js, int i, int j, int w, int h, int p)
 {
     //position within shared memory array
     const int ijs = js * PSOR_PITCH + is;
@@ -276,20 +245,7 @@ __forceinline__ __device__ void load_array_element(float *smem, int is, int js, 
     j = max(j, -j-1);
     j = min(j, h-j+h-1);
     const int pos = j * p + i;
-    switch(tex_id){
-        case 0:
-            smem[ijs] = tex1Dfetch(tex_u, pos);
-            break;
-        case 1:
-            smem[ijs] = tex1Dfetch(tex_v, pos);
-            break;
-        case 2:
-            smem[ijs] = tex1Dfetch(tex_du, pos);
-            break;
-        case 3:
-            smem[ijs] = tex1Dfetch(tex_dv, pos);
-            break;
-    }
+    smem[ijs] = texSrc(pos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -301,49 +257,48 @@ __forceinline__ __device__ void load_array_element(float *smem, int is, int js, 
 ///\param h number of rows in global memory array
 ///\param p global memory array pitch in floats
 ///////////////////////////////////////////////////////////////////////////////
-template<int tex>
-__forceinline__ __device__ void load_array(float *smem, int ig, int jg, int w, int h, int p)
+__forceinline__ __device__ void load_array(Ptr2D texSrc, float *smem, int ig, int jg, int w, int h, int p)
 {
     const int i = threadIdx.x + 2;
     const int j = threadIdx.y + 2;
-    load_array_element<tex>(smem, i, j, ig, jg, w, h, p);//load current pixel
+    load_array_element(texSrc, smem, i, j, ig, jg, w, h, p);//load current pixel
     __syncthreads();
     if(threadIdx.y < 2)
     {
         //load bottom shadow elements
-        load_array_element<tex>(smem, i, j-2, ig, jg-2, w, h, p);
+        load_array_element(texSrc, smem, i, j-2, ig, jg-2, w, h, p);
         if(threadIdx.x < 2)
         {
             //load bottom right shadow elements
-            load_array_element<tex>(smem, i+PSOR_TILE_WIDTH, j-2, ig+PSOR_TILE_WIDTH, jg-2, w, h, p);
+            load_array_element(texSrc, smem, i+PSOR_TILE_WIDTH, j-2, ig+PSOR_TILE_WIDTH, jg-2, w, h, p);
             //load middle right shadow elements
-            load_array_element<tex>(smem, i+PSOR_TILE_WIDTH, j, ig+PSOR_TILE_WIDTH, jg, w, h, p);
+            load_array_element(texSrc, smem, i+PSOR_TILE_WIDTH, j, ig+PSOR_TILE_WIDTH, jg, w, h, p);
         }
         else if(threadIdx.x >= PSOR_TILE_WIDTH-2)
         {
             //load bottom left shadow elements
-            load_array_element<tex>(smem, i-PSOR_TILE_WIDTH, j-2, ig-PSOR_TILE_WIDTH, jg-2, w, h, p);
+            load_array_element(texSrc, smem, i-PSOR_TILE_WIDTH, j-2, ig-PSOR_TILE_WIDTH, jg-2, w, h, p);
             //load middle left shadow elements
-            load_array_element<tex>(smem, i-PSOR_TILE_WIDTH, j, ig-PSOR_TILE_WIDTH, jg, w, h, p);
+            load_array_element(texSrc, smem, i-PSOR_TILE_WIDTH, j, ig-PSOR_TILE_WIDTH, jg, w, h, p);
         }
     }
     else if(threadIdx.y >= PSOR_TILE_HEIGHT-2)
     {
         //load upper shadow elements
-        load_array_element<tex>(smem, i, j+2, ig, jg+2, w, h, p);
+        load_array_element(texSrc, smem, i, j+2, ig, jg+2, w, h, p);
         if(threadIdx.x < 2)
         {
             //load upper right shadow elements
-            load_array_element<tex>(smem, i+PSOR_TILE_WIDTH, j+2, ig+PSOR_TILE_WIDTH, jg+2, w, h, p);
+            load_array_element(texSrc, smem, i+PSOR_TILE_WIDTH, j+2, ig+PSOR_TILE_WIDTH, jg+2, w, h, p);
             //load middle right shadow elements
-            load_array_element<tex>(smem, i+PSOR_TILE_WIDTH, j, ig+PSOR_TILE_WIDTH, jg, w, h, p);
+            load_array_element(texSrc, smem, i+PSOR_TILE_WIDTH, j, ig+PSOR_TILE_WIDTH, jg, w, h, p);
         }
         else if(threadIdx.x >= PSOR_TILE_WIDTH-2)
         {
             //load upper left shadow elements
-            load_array_element<tex>(smem, i-PSOR_TILE_WIDTH, j+2, ig-PSOR_TILE_WIDTH, jg+2, w, h, p);
+            load_array_element(texSrc, smem, i-PSOR_TILE_WIDTH, j+2, ig-PSOR_TILE_WIDTH, jg+2, w, h, p);
             //load middle left shadow elements
-            load_array_element<tex>(smem, i-PSOR_TILE_WIDTH, j, ig-PSOR_TILE_WIDTH, jg, w, h, p);
+            load_array_element(texSrc, smem, i-PSOR_TILE_WIDTH, j, ig-PSOR_TILE_WIDTH, jg, w, h, p);
         }
     }
     else
@@ -352,12 +307,12 @@ __forceinline__ __device__ void load_array(float *smem, int ig, int jg, int w, i
         if(threadIdx.x < 2)
         {
             //load middle right shadow elements
-            load_array_element<tex>(smem, i+PSOR_TILE_WIDTH, j, ig+PSOR_TILE_WIDTH, jg, w, h, p);
+            load_array_element(texSrc, smem, i+PSOR_TILE_WIDTH, j, ig+PSOR_TILE_WIDTH, jg, w, h, p);
         }
         else if(threadIdx.x >= PSOR_TILE_WIDTH-2)
         {
             //load middle left shadow elements
-            load_array_element<tex>(smem, i-PSOR_TILE_WIDTH, j, ig-PSOR_TILE_WIDTH, jg, w, h, p);
+            load_array_element(texSrc, smem, i-PSOR_TILE_WIDTH, j, ig-PSOR_TILE_WIDTH, jg, w, h, p);
         }
     }
     __syncthreads();
@@ -382,13 +337,9 @@ __forceinline__ __device__ void load_array(float *smem, int ig, int jg, int w, i
 /// \param alpha (in) alpha in Brox model (flow smoothness)
 /// \param gamma (in) gamma in Brox model (edge importance)
 ///////////////////////////////////////////////////////////////////////////////
-
-__global__ void prepare_sor_stage_1_tex(float *diffusivity_x, float *diffusivity_y,
-                                                        float *denominator_u, float *denominator_v,
-                                                        float *numerator_dudv,
-                                                        float *numerator_u, float *numerator_v,
-                                                        int w, int h, int s,
-                                                        float alpha, float gamma)
+__global__ void prepare_sor_stage_1_tex(Ptr2D texU, Ptr2D texV, Ptr2D texDu, Ptr2D texDv, Ptr2D texI0, Ptr2D texI1, Ptr2D texIx, Ptr2D texIxx, Ptr2D texIx0, Ptr2D texIy, Ptr2D texIyy,
+    Ptr2D texIy0, Ptr2D texIxy, float *diffusivity_x, float *diffusivity_y, float *denominator_u, float *denominator_v, float *numerator_dudv, float *numerator_u, float *numerator_v,
+    int w, int h, int s, float alpha, float gamma)
 {
     __shared__ float u[PSOR_PITCH * PSOR_HEIGHT];
     __shared__ float v[PSOR_PITCH * PSOR_HEIGHT];
@@ -408,24 +359,24 @@ __global__ void prepare_sor_stage_1_tex(float *diffusivity_x, float *diffusivity
     float x = (float)ig + 0.5f;
     float y = (float)jg + 0.5f;
     //load u  and v to smem
-    load_array<0>(u, ig, jg, w, h, s);
-    load_array<1>(v, ig, jg, w, h, s);
-    load_array<2>(du, ig, jg, w, h, s);
-    load_array<3>(dv, ig, jg, w, h, s);
+    load_array(texU, u, ig, jg, w, h, s);
+    load_array(texV, v, ig, jg, w, h, s);
+    load_array(texDu, du, ig, jg, w, h, s);
+    load_array(texDv, dv, ig, jg, w, h, s);
     //warped position
     float wx = (x + u[ijs])/(float)w;
     float wy = (y + v[ijs])/(float)h;
     x /= (float)w;
     y /= (float)h;
     //compute image derivatives
-    const float Iz  = tex2D(tex_I1, wx, wy) - tex2D(tex_I0, x, y);
-    const float Ix  = tex2D(tex_Ix, wx, wy);
-    const float Ixz = Ix - tex2D(tex_Ix0, x, y);
-    const float Ixy = tex2D(tex_Ixy, wx, wy);
-    const float Ixx = tex2D(tex_Ixx, wx, wy);
-    const float Iy  = tex2D(tex_Iy, wx, wy);
-    const float Iyz = Iy - tex2D(tex_Iy0, x, y);
-    const float Iyy = tex2D(tex_Iyy, wx, wy);
+    const float Iz = texI1(wy, wx) - texI0(y,x);
+    const float Ix  = texIx(wy, wx);
+    const float Ixz = Ix - texIx0(y, x);
+    const float Ixy = texIxy(wy, wx);
+    const float Ixx = texIxx(wy, wx);
+    const float Iy = texIy(wy, wx);
+    const float Iyz = Iy - texIy0(y, x);
+    const float Iyy = texIyy(wy, wx);
     //compute data term
     float q0, q1, q2;
     q0 = Iz  + Ix  * du[ijs] + Iy  * dv[ijs];
@@ -462,8 +413,7 @@ __global__ void prepare_sor_stage_1_tex(float *diffusivity_x, float *diffusivity
 ///\param h
 ///\param s
 ///////////////////////////////////////////////////////////////////////////////
-__global__ void prepare_sor_stage_2(float *inv_denominator_u, float *inv_denominator_v,
-                                    int w, int h, int s)
+__global__ void prepare_sor_stage_2(Ptr2D texDiffX, Ptr2D texDiffY, float *inv_denominator_u, float *inv_denominator_v, int w, int h, int s)
 {
     __shared__ float sx[(PSOR_TILE_WIDTH+1) * (PSOR_TILE_HEIGHT+1)];
     __shared__ float sy[(PSOR_TILE_WIDTH+1) * (PSOR_TILE_HEIGHT+1)];
@@ -486,8 +436,8 @@ __global__ void prepare_sor_stage_2(float *inv_denominator_u, float *inv_denomin
     }
     if(inside)
     {
-        sx[ijs] = tex1Dfetch(tex_diffusivity_x, ijg);
-        sy[ijs] = tex1Dfetch(tex_diffusivity_y, ijg);
+        sx[ijs] = texDiffX(ijg);
+        sy[ijs] = texDiffY(ijg);
     }
     else
     {
@@ -498,25 +448,17 @@ __global__ void prepare_sor_stage_2(float *inv_denominator_u, float *inv_denomin
     if(j == PSOR_TILE_HEIGHT-1)
     {
         if(jg < h-1 && inside)
-        {
-            sy[up] = tex1Dfetch(tex_diffusivity_y, ijg + s);
-        }
+            sy[up] = texDiffY(ijg + s);
         else
-        {
             sy[up] = 0.0f;
-        }
     }
     int right = ijs + 1;
     if(threadIdx.x == PSOR_TILE_WIDTH-1)
     {
         if(ig < w-1 && inside)
-        {
-            sx[right] = tex1Dfetch(tex_diffusivity_x, ijg + 1);
-        }
+            sx[right] = texDiffX(ijg + 1);
         else
-        {
             sx[right] = 0.0f;
-        }
     }
     __syncthreads();
     float diffusivity_sum;
@@ -534,17 +476,8 @@ __global__ void prepare_sor_stage_2(float *inv_denominator_u, float *inv_denomin
 // Red-Black SOR
 /////////////////////////////////////////////////////////////////////////////////////////
 
-template<int isBlack> __global__ void sor_pass(float *new_du,
-                                               float *new_dv,
-                                               const float *g_inv_denominator_u,
-                                               const float *g_inv_denominator_v,
-                                               const float *g_numerator_u,
-                                               const float *g_numerator_v,
-                                               const float *g_numerator_dudv,
-                                               float omega,
-                                               int width,
-                                               int height,
-                                               int stride)
+template<int isBlack> __global__ void sor_pass(Ptr2D texU, Ptr2D texV, Ptr2D texDu, Ptr2D texDv, Ptr2D texDiffX, Ptr2D texDiffY, float *new_du, float *new_dv, const float *g_inv_denominator_u,
+    const float *g_inv_denominator_v, const float *g_numerator_u, const float *g_numerator_v, const float *g_numerator_dudv, float omega, int width, int height, int stride)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -560,14 +493,14 @@ template<int isBlack> __global__ void sor_pass(float *new_du,
 
     //load smooth term
     float s_up, s_left, s_right, s_down;
-    s_left = tex1Dfetch(tex_diffusivity_x, pos);
-    s_down = tex1Dfetch(tex_diffusivity_y, pos);
+    s_left = texDiffX(pos);
+    s_down = texDiffY(pos);
     if(i < width-1)
-        s_right = tex1Dfetch(tex_diffusivity_x, pos_r);
+        s_right = texDiffX(pos_r);
     else
         s_right = 0.0f; //Neumann BC
     if(j < height-1)
-        s_up = tex1Dfetch(tex_diffusivity_y, pos_u);
+        s_up = texDiffY(pos_u);
     else
         s_up = 0.0f; //Neumann BC
 
@@ -577,30 +510,29 @@ template<int isBlack> __global__ void sor_pass(float *new_du,
     float du_up, du_left, du_right, du_down, du;
     float dv_up, dv_left, dv_right, dv_down, dv;
 
-    u_left  = tex1Dfetch(tex_u, pos_l);
-    u_right = tex1Dfetch(tex_u, pos_r);
-    u_down  = tex1Dfetch(tex_u, pos_d);
-    u_up    = tex1Dfetch(tex_u, pos_u);
-    u       = tex1Dfetch(tex_u, pos);
+    u_left = texU(pos_l);
+    u_right = texU(pos_r);
+    u_down = texU(pos_d);
+    u_up = texU(pos_u);
+    u = texU(pos);
 
-    v_left  = tex1Dfetch(tex_v, pos_l);
-    v_right = tex1Dfetch(tex_v, pos_r);
-    v_down  = tex1Dfetch(tex_v, pos_d);
-    v       = tex1Dfetch(tex_v, pos);
-    v_up    = tex1Dfetch(tex_v, pos_u);
+    v_left = texV(pos_l);
+    v_right = texV(pos_r);
+    v_down = texV(pos_d);
+    v = texV(pos);
+    v_up = texV(pos_u);
 
-    du       = tex1Dfetch(tex_du, pos);
-    du_left  = tex1Dfetch(tex_du, pos_l);
-    du_right = tex1Dfetch(tex_du, pos_r);
-    du_down  = tex1Dfetch(tex_du, pos_d);
-    du_up    = tex1Dfetch(tex_du, pos_u);
+    du =  texDu(pos);
+    du_left = texDu(pos_l);
+    du_right = texDu(pos_r);
+    du_down = texDu(pos_d);
+    du_up = texDu(pos_u);
 
-    dv       = tex1Dfetch(tex_dv, pos);
-    dv_left  = tex1Dfetch(tex_dv, pos_l);
-    dv_right = tex1Dfetch(tex_dv, pos_r);
-    dv_down  = tex1Dfetch(tex_dv, pos_d);
-    dv_up    = tex1Dfetch(tex_dv, pos_u);
-
+    dv = texDv(pos);
+    dv_left = texDv(pos_l);
+    dv_right = texDv(pos_r);
+    dv_down = texDv(pos_d);
+    dv_up = texDv(pos_u);
     float numerator_dudv    = g_numerator_dudv[pos];
 
     if((i+j)%2 == isBlack)
@@ -624,52 +556,6 @@ template<int isBlack> __global__ void sor_pass(float *new_du,
 ///////////////////////////////////////////////////////////////////////////////
 // utility functions
 ///////////////////////////////////////////////////////////////////////////////
-
-void initTexture1D(texture<float, 1, cudaReadModeElementType> &tex)
-{
-    tex.addressMode[0] = cudaAddressModeClamp;
-    tex.filterMode = cudaFilterModePoint;
-    tex.normalized = false;
-}
-
-void initTexture2D(texture<float, 2, cudaReadModeElementType> &tex)
-{
-    tex.addressMode[0] = cudaAddressModeMirror;
-    tex.addressMode[1] = cudaAddressModeMirror;
-    tex.filterMode = cudaFilterModeLinear;
-    tex.normalized = true;
-}
-
-void InitTextures()
-{
-    initTexture2D(tex_I0);
-    initTexture2D(tex_I1);
-    initTexture2D(tex_fine);      // for downsampling
-    initTexture2D(tex_coarse);    // for prolongation
-
-    initTexture2D(tex_Ix);
-    initTexture2D(tex_Ixx);
-    initTexture2D(tex_Ix0);
-
-    initTexture2D(tex_Iy);
-    initTexture2D(tex_Iyy);
-    initTexture2D(tex_Iy0);
-
-    initTexture2D(tex_Ixy);
-
-    initTexture1D(tex_u);
-    initTexture1D(tex_v);
-    initTexture1D(tex_du);
-    initTexture1D(tex_dv);
-    initTexture1D(tex_diffusivity_x);
-    initTexture1D(tex_diffusivity_y);
-    initTexture1D(tex_inv_denominator_u);
-    initTexture1D(tex_inv_denominator_v);
-    initTexture1D(tex_numerator_dudv);
-    initTexture1D(tex_numerator_u);
-    initTexture1D(tex_numerator_v);
-}
-
 namespace
 {
     struct ImagePyramid
@@ -804,8 +690,6 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
 
         ncvAssertCUDAReturn(cudaMemcpy(derivativeFilter.ptr(), derivativeFilterHost, sizeof(float) * kDFilterSize,
             cudaMemcpyHostToDevice), NCV_CUDA_ERROR);
-
-        InitTextures();
     }
 
     //prepare image pyramid
@@ -909,9 +793,6 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
         ncvAssertCUDAReturn(cudaMemsetAsync(v.ptr(), 0, kSizeInPixelsAligned * sizeof(float), stream), NCV_CUDA_ERROR);
 
         //select images with lowest resolution
-        size_t pitch = alignUp(pyr.w.back(), kStrideAlignmentFloat) * sizeof(float);
-        ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_I0, pyr.img0.back()->ptr(), channel_desc, pyr.w.back(), pyr.h.back(), pitch), NCV_CUDA_ERROR);
-        ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_I1, pyr.img1.back()->ptr(), channel_desc, pyr.w.back(), pyr.h.back(), pitch), NCV_CUDA_ERROR);
         ncvAssertCUDAReturn(cudaStreamSynchronize(stream), NCV_CUDA_ERROR);
 
         FloatVector* ptrU = &u;
@@ -941,17 +822,14 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
             ncvAssertCUDAReturn(cudaMemsetAsync(du.ptr(), 0, kLevelSizeInBytes, stream), NCV_CUDA_ERROR);
             ncvAssertCUDAReturn(cudaMemsetAsync(dv.ptr(), 0, kLevelSizeInBytes, stream), NCV_CUDA_ERROR);
 
-            //texture format descriptor
-            cudaChannelFormatDesc ch_desc = cudaCreateChannelDesc<float>();
-
             I0 = *img0Iter;
             I1 = *img1Iter;
 
             ++img0Iter;
             ++img1Iter;
 
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_I0, I0->ptr(), ch_desc, kLevelWidth, kLevelHeight, kLevelStride*sizeof(float)), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_I1, I1->ptr(), ch_desc, kLevelWidth, kLevelHeight, kLevelStride*sizeof(float)), NCV_CUDA_ERROR);
+            Texture texI0(kLevelHeight, kLevelWidth, I0->ptr(), kLevelStride * sizeof(float), true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texI1(kLevelHeight, kLevelWidth, I1->ptr(), kLevelStride * sizeof(float), true, cudaFilterModeLinear, cudaAddressModeMirror);
 
             //compute derivatives
             dim3 dBlocks(iDivUp(kLevelWidth, 32), iDivUp(kLevelHeight, 6));
@@ -991,20 +869,24 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
             ncvAssertReturnNcvStat( nppiStFilterRowBorder_32f_C1R (Iy.ptr(), srcSize, nSrcStep, Ixy.ptr(), srcSize, nSrcStep, oROI,
                 nppStBorderMirror, derivativeFilter.ptr(), kDFilterSize, kDFilterSize/2, 1.0f/12.0f) );
 
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Ix,  Ix.ptr(),  ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Ixx, Ixx.ptr(), ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Ix0, Ix0.ptr(), ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Iy,  Iy.ptr(),  ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Iyy, Iyy.ptr(), ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Iy0, Iy0.ptr(), ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture2D(0, tex_Ixy, Ixy.ptr(), ch_desc, kLevelWidth, kLevelHeight, kPitchTex), NCV_CUDA_ERROR);
+            Texture texIx(kLevelHeight, kLevelWidth, Ix.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texIxx(kLevelHeight, kLevelWidth, Ixx.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texIx0(kLevelHeight, kLevelWidth, Ix0.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texIy(kLevelHeight, kLevelWidth, Iy.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texIyy(kLevelHeight, kLevelWidth, Iyy.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texIy0(kLevelHeight, kLevelWidth, Iy0.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texIxy(kLevelHeight, kLevelWidth, Ixy.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
+            Texture texDiffX(1, kLevelSizeInBytes / sizeof(float), diffusivity_x.ptr(), kLevelSizeInBytes);
+            Texture texDiffY(1, kLevelSizeInBytes / sizeof(float), diffusivity_y.ptr(), kLevelSizeInBytes);
 
             //    flow
-            ncvAssertCUDAReturn(cudaBindTexture(0, tex_u, ptrU->ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture(0, tex_v, ptrV->ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
+            Texture texU(1, kLevelSizeInBytes / sizeof(float), ptrU->ptr(), kLevelSizeInBytes);
+            Texture texV(1, kLevelSizeInBytes / sizeof(float), ptrV->ptr(), kLevelSizeInBytes);
             //    flow increments
-            ncvAssertCUDAReturn(cudaBindTexture(0, tex_du, du.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-            ncvAssertCUDAReturn(cudaBindTexture(0, tex_dv, dv.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
+            Texture texDu(1, kLevelSizeInBytes / sizeof(float), du.ptr(), kLevelSizeInBytes);
+            Texture texDv(1, kLevelSizeInBytes / sizeof(float), dv.ptr(), kLevelSizeInBytes);
+            Texture texDuNew(1, kLevelSizeInBytes / sizeof(float), du_new.ptr(), kLevelSizeInBytes);
+            Texture texDvNew(1, kLevelSizeInBytes / sizeof(float), dv_new.ptr(), kLevelSizeInBytes);
 
             dim3 psor_blocks(iDivUp(kLevelWidth, PSOR_TILE_WIDTH), iDivUp(kLevelHeight, PSOR_TILE_HEIGHT));
             dim3 psor_threads(PSOR_TILE_WIDTH, PSOR_TILE_HEIGHT);
@@ -1018,89 +900,30 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
             for (Ncv32u current_inner_iteration = 0; current_inner_iteration < desc.number_of_inner_iterations; ++current_inner_iteration)
             {
                 //compute coefficients
-                prepare_sor_stage_1_tex<<<psor_blocks, psor_threads, 0, stream>>>
-                    (diffusivity_x.ptr(),
-                     diffusivity_y.ptr(),
-                     denom_u.ptr(),
-                     denom_v.ptr(),
-                     num_dudv.ptr(),
-                     num_u.ptr(),
-                     num_v.ptr(),
-                     kLevelWidth,
-                     kLevelHeight,
-                     kLevelStride,
-                     alpha,
-                     gamma);
+                prepare_sor_stage_1_tex<<<psor_blocks, psor_threads, 0, stream>>> (texU, texV, texDu, texDv, texI0, texI1, texIx, texIxx, texIx0, texIy, texIyy, texIy0, texIxy,
+                    diffusivity_x.ptr(), diffusivity_y.ptr(), denom_u.ptr(), denom_v.ptr(), num_dudv.ptr(), num_u.ptr(), num_v.ptr(), kLevelWidth, kLevelHeight, kLevelStride, alpha, gamma);
 
                 ncvAssertCUDALastErrorReturn(NCV_CUDA_ERROR);
 
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_diffusivity_x, diffusivity_x.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_diffusivity_y, diffusivity_y.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_numerator_dudv, num_dudv.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_numerator_u, num_u.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_numerator_v, num_v.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                prepare_sor_stage_2<<<psor_blocks, psor_threads, 0, stream>>>(denom_u.ptr(), denom_v.ptr(), kLevelWidth, kLevelHeight, kLevelStride);
+                prepare_sor_stage_2<<<psor_blocks, psor_threads, 0, stream>>>(texDiffX, texDiffY, denom_u.ptr(), denom_v.ptr(), kLevelWidth, kLevelHeight, kLevelStride);
 
                 ncvAssertCUDALastErrorReturn(NCV_CUDA_ERROR);
 
-                //    linear system coefficients
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_diffusivity_x, diffusivity_x.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_diffusivity_y, diffusivity_y.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_numerator_dudv, num_dudv.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_numerator_u, num_u.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_numerator_v, num_v.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_inv_denominator_u, denom_u.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                ncvAssertCUDAReturn(cudaBindTexture(0, tex_inv_denominator_v, denom_v.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
 
                 //solve linear system
                 for (Ncv32u solver_iteration = 0; solver_iteration < desc.number_of_solver_iterations; ++solver_iteration)
                 {
                     float omega = 1.99f;
-
-                    ncvAssertCUDAReturn(cudaBindTexture(0, tex_du, du.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                    ncvAssertCUDAReturn(cudaBindTexture(0, tex_dv, dv.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-
-                    sor_pass<0><<<sor_blocks, sor_threads, 0, stream>>>
-                        (du_new.ptr(),
-                        dv_new.ptr(),
-                        denom_u.ptr(),
-                        denom_v.ptr(),
-                        num_u.ptr(),
-                        num_v.ptr(),
-                        num_dudv.ptr(),
-                        omega,
-                        kLevelWidth,
-                        kLevelHeight,
-                        kLevelStride);
+                    sor_pass<0><<<sor_blocks, sor_threads, 0, stream>>>(texU, texV, texDu, texDv, texDiffX, texDiffY, du_new.ptr(), dv_new.ptr(), denom_u.ptr(), denom_v.ptr(),
+                        num_u.ptr(), num_v.ptr(), num_dudv.ptr(), omega, kLevelWidth, kLevelHeight, kLevelStride);
 
                     ncvAssertCUDALastErrorReturn(NCV_CUDA_ERROR);
 
-                    ncvAssertCUDAReturn(cudaBindTexture(0, tex_du, du_new.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                    ncvAssertCUDAReturn(cudaBindTexture(0, tex_dv, dv_new.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
 
-                    sor_pass<1><<<sor_blocks, sor_threads, 0, stream>>>
-                        (du.ptr(),
-                        dv.ptr(),
-                        denom_u.ptr(),
-                        denom_v.ptr(),
-                        num_u.ptr(),
-                        num_v.ptr(),
-                        num_dudv.ptr(),
-                        omega,
-                        kLevelWidth,
-                        kLevelHeight,
-                        kLevelStride);
+                    sor_pass<1><<<sor_blocks, sor_threads, 0, stream>>>(texU, texV, texDuNew, texDvNew, texDiffX, texDiffY, du.ptr(), dv.ptr(), denom_u.ptr(), denom_v.ptr(), num_u.ptr(),
+                        num_v.ptr(),num_dudv.ptr(), omega, kLevelWidth, kLevelHeight, kLevelStride);
 
                     ncvAssertCUDALastErrorReturn(NCV_CUDA_ERROR);
-
-                    ncvAssertCUDAReturn(cudaBindTexture(0, tex_du, du.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
-                    ncvAssertCUDAReturn(cudaBindTexture(0, tex_dv, dv.ptr(), ch_desc, kLevelSizeInBytes), NCV_CUDA_ERROR);
                 }//end of solver loop
             }// end of inner loop
 

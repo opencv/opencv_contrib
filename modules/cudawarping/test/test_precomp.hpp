@@ -42,6 +42,8 @@
 #ifndef __OPENCV_TEST_PRECOMP_HPP__
 #define __OPENCV_TEST_PRECOMP_HPP__
 
+#include <thread>
+
 #include "opencv2/ts.hpp"
 #include "opencv2/ts/cuda_test.hpp"
 

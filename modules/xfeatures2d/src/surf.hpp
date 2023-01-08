@@ -23,6 +23,33 @@ public:
                                int nOctaves = 4, int nOctaveLayers = 2,
                                bool extended = true, bool upright = false);
 
+    void read( const FileNode& fn)
+    {
+      // if node is empty, keep previous value
+      if (!fn["hessianThreshold"].empty())
+        fn["hessianThreshold"] >> hessianThreshold;
+      if (!fn["extended"].empty())
+        fn["extended"] >> extended;
+      if (!fn["upright"].empty())
+        fn["upright"] >> upright;
+      if (!fn["nOctaves"].empty())
+        fn["nOctaves"] >> nOctaves;
+      if (!fn["nOctaveLayers"].empty())
+        fn["nOctaveLayers"] >> nOctaveLayers;
+    }
+    void write( FileStorage& fs) const
+    {
+      if(fs.isOpened())
+      {
+        fs << "name" << getDefaultName();
+        fs << "hessianThreshold" << hessianThreshold;
+        fs << "extended" << extended;
+        fs << "upright" << upright;
+        fs << "nOctaves" << nOctaves;
+        fs << "nOctaveLayers" << nOctaveLayers;
+      }
+    }
+
     //! returns the descriptor size in float's (64 or 128)
     CV_WRAP int descriptorSize() const CV_OVERRIDE;
 

@@ -84,6 +84,9 @@ public:
     // destructor
     virtual ~VGG_Impl() CV_OVERRIDE;
 
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
+
     // returns the descriptor length in bytes
     virtual int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
 
@@ -527,6 +530,38 @@ VGG_Impl::VGG_Impl( int _desc, float _isigma, bool _img_normalize,
 // destructor
 VGG_Impl::~VGG_Impl()
 {
+}
+
+void VGG_Impl::read (const FileNode& fn)
+{
+    // if node is empty, keep previous value
+    if (!fn["isigma"].empty())
+      fn["isigma"] >> m_isigma;
+    if (!fn["scale_factor"].empty())
+      fn["scale_factor"] >> m_scale_factor;
+    if (!fn["img_normalize"].empty())
+      fn["img_normalize"] >> m_img_normalize;
+    if (!fn["use_scale_orientation"].empty())
+      fn["use_scale_orientation"] >> m_use_scale_orientation;
+    if (!fn["dsc_normalize"].empty())
+      fn["dsc_normalize"] >> m_dsc_normalize;
+}
+
+void VGG_Impl::write (FileStorage& fs) const
+{
+    if ( fs.isOpened() )
+    {
+        fs << "isigma" << m_isigma;
+        fs << "scale_factor" << m_scale_factor;
+        fs << "img_normalize" << m_img_normalize;
+        fs << "use_scale_orientation" << m_use_scale_orientation;
+        fs << "dsc_normalize" << m_dsc_normalize;
+    }
+}
+
+String VGG::getDefaultName() const
+{
+    return (Feature2D::getDefaultName() + ".VGG");
 }
 
 #endif

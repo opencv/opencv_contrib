@@ -38,8 +38,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/aruco_detector.hpp>
-#include <opencv2/aruco/aruco_calib_pose.hpp>
+#include <opencv2/aruco.hpp>
 #include <vector>
 #include <iostream>
 #include "aruco_samples_utility.hpp"
@@ -98,16 +97,16 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
+    aruco::DetectorParameters detectorParams;
     if(parser.has("dp")) {
         FileStorage fs(parser.get<string>("dp"), FileStorage::READ);
-        bool readOk = detectorParams->readDetectorParameters(fs.root());
+        bool readOk = detectorParams.readDetectorParameters(fs.root());
         if(!readOk) {
             cerr << "Invalid detector parameters file" << endl;
             return 0;
         }
     }
-    detectorParams->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX; // do corner refinement in markers
+    detectorParams.cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX; // do corner refinement in markers
 
     String video;
     if(parser.has("v")) {
@@ -119,14 +118,14 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(0);
+    aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
-        bool readOk = dictionary->aruco::Dictionary::readDictionary(fs.root());
+        bool readOk = dictionary.aruco::Dictionary::readDictionary(fs.root());
         if(!readOk) {
             cerr << "Invalid dictionary file" << endl;
             return 0;
@@ -151,8 +150,7 @@ int main(int argc, char *argv[]) {
                                markerSeparation);
 
     // create board object
-    Ptr<aruco::GridBoard> gridboard =
-        aruco::GridBoard::create(markersX, markersY, markerLength, markerSeparation, dictionary);
+    Ptr<aruco::GridBoard> gridboard = new aruco::GridBoard(Size(markersX, markersY), markerLength, markerSeparation, dictionary);
     Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
 
     double totalTime = 0;
@@ -173,14 +171,21 @@ int main(int argc, char *argv[]) {
 
         // refind strategy to detect more markers
         if(refindStrategy)
-            detector.refineDetectedMarkers(image, board, corners, ids, rejected, camMatrix,
+            detector.refineDetectedMarkers(image, *board, corners, ids, rejected, camMatrix,
                                            distCoeffs);
 
         // estimate board pose
         int markersOfBoardDetected = 0;
-        if(ids.size() > 0)
-            markersOfBoardDetected =
-                aruco::estimatePoseBoard(corners, ids, board, camMatrix, distCoeffs, rvec, tvec);
+        if(!ids.empty()) {
+            // Get object and image points for the solvePnP function
+            cv::Mat objPoints, imgPoints;
+            board->matchImagePoints(corners, ids, objPoints, imgPoints);
+
+            // Find pose
+            cv::solvePnP(objPoints, imgPoints, camMatrix, distCoeffs, rvec, tvec);
+
+            markersOfBoardDetected = (int)objPoints.total() / 4;
+        }
 
         double currentTime = ((double)getTickCount() - tick) / getTickFrequency();
         totalTime += currentTime;
@@ -192,11 +197,11 @@ int main(int argc, char *argv[]) {
 
         // draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) {
+        if(!ids.empty()) {
             aruco::drawDetectedMarkers(imageCopy, corners, ids);
         }
 
-        if(showRejected && rejected.size() > 0)
+        if(showRejected && !rejected.empty())
             aruco::drawDetectedMarkers(imageCopy, rejected, noArray(), Scalar(100, 0, 255));
 
         if(markersOfBoardDetected > 0)

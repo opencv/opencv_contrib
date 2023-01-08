@@ -39,7 +39,7 @@ def SaveArucoDictBytesList(filePath = "arucoDictBytesList.npz"):
 
         arucoDictBytesList = {}
         for name, flag in dictInfo:
-            arucoDict = aruco.Dictionary_get(flag)
+            arucoDict = aruco.getPredefinedDictionary(flag)
             arucoDictBytesList[name] = arucoDict.bytesList
 
         np.savez_compressed(filePath, **arucoDictBytesList)
@@ -409,8 +409,8 @@ class MarkerPrinter:
             subChessboardBlockX = np.clip ( np.arange(0, subSize[0] * subDivide[0] + 1, subSize[0]), 0, chessboardSize[0])
             subChessboardBlockY = np.clip ( np.arange(0, subSize[1] * subDivide[1] + 1, subSize[1]), 0, chessboardSize[1])
 
-            subChessboardSliceX = subChessboardBlockX.astype(np.float) * squareLength
-            subChessboardSliceY = subChessboardBlockY.astype(np.float) * squareLength
+            subChessboardSliceX = subChessboardBlockX.astype(float) * squareLength
+            subChessboardSliceY = subChessboardBlockY.astype(float) * squareLength
 
             for subXID in range(subDivide[0]):
                 for subYID in range(subDivide[1]):
@@ -722,8 +722,8 @@ class MarkerPrinter:
             subChessboardBlockX = np.clip ( np.arange(0, subSize[0] * subDivide[0] + 1, subSize[0]), 0, chessboardSize[0])
             subChessboardBlockY = np.clip ( np.arange(0, subSize[1] * subDivide[1] + 1, subSize[1]), 0, chessboardSize[1])
 
-            subChessboardSliceX = subChessboardBlockX.astype(np.float) * squareLength
-            subChessboardSliceY = subChessboardBlockY.astype(np.float) * squareLength
+            subChessboardSliceX = subChessboardBlockX.astype(float) * squareLength
+            subChessboardSliceY = subChessboardBlockY.astype(float) * squareLength
 
             for subXID in range(subDivide[0]):
                 for subYID in range(subDivide[1]):
@@ -922,8 +922,8 @@ class MarkerPrinter:
             subChessboardBlockX = np.clip ( np.arange(0, subSize[0] * subDivide[0] + 1, subSize[0]), 0, chessboardSize[0])
             subChessboardBlockY = np.clip ( np.arange(0, subSize[1] * subDivide[1] + 1, subSize[1]), 0, chessboardSize[1])
 
-            subChessboardSliceX = subChessboardBlockX.astype(np.float) * (markerLength + markerSeparation)
-            subChessboardSliceY = subChessboardBlockY.astype(np.float) * (markerLength + markerSeparation)
+            subChessboardSliceX = subChessboardBlockX.astype(float) * (markerLength + markerSeparation)
+            subChessboardSliceY = subChessboardBlockY.astype(float) * (markerLength + markerSeparation)
 
             subChessboardSliceX[-1] -= markerSeparation
             subChessboardSliceY[-1] -= markerSeparation
