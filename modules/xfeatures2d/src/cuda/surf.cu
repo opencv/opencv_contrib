@@ -233,17 +233,21 @@ namespace cv { namespace cuda { namespace device
             __host__ Mask(cudev::TexturePtr<unsigned int> tex_): tex(tex_) {};
             __device__ bool check(int sum_i, int sum_j, int size)
             {
-                if (!useMask) return true;
-                float ratio = (float)size / 9.0f;
-
+                int dx1 = 0;
+                int dy1 = 0;
+                int dx2 = 0;
+                int dy2 = 0;
+                float ratio = 0;
                 float d = 0;
-
-                int dx1 = __float2int_rn(ratio * c_DM[0]);
-                int dy1 = __float2int_rn(ratio * c_DM[1]);
-                int dx2 = __float2int_rn(ratio * c_DM[2]);
-                int dy2 = __float2int_rn(ratio * c_DM[3]);
-
                 float t = 0;
+
+                if (!useMask) return true;
+                ratio = (float)size / 9.0f;
+                dx1 = __float2int_rn(ratio * c_DM[0]);
+                dy1 = __float2int_rn(ratio * c_DM[1]);
+                dx2 = __float2int_rn(ratio * c_DM[2]);
+                dy2 = __float2int_rn(ratio * c_DM[3]);
+
                 t += tex(sum_i + dy1, sum_j + dx1);
                 t -= tex(sum_i + dy2, sum_j + dx1);
                 t -= tex(sum_i + dy1, sum_j + dx2);
