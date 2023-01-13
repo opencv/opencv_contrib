@@ -275,9 +275,9 @@ namespace cv {  namespace cudev {
         {
         }
 
-        __host__ TextureOff(PtrStepSz<T> src, const int yoff = 0, const int xoff = 0, const bool normalizedCoords = false, const cudaTextureFilterMode filterMode = cudaFilterModePoint,
+        __host__ TextureOff(PtrStepSz<T> src, const int yoff_ = 0, const int xoff_ = 0, const bool normalizedCoords = false, const cudaTextureFilterMode filterMode = cudaFilterModePoint,
             const cudaTextureAddressMode addressMode = cudaAddressModeClamp, const cudaTextureReadMode readMode = cudaReadModeElementType) :
-            TextureOff(src.rows, src.cols, src.data, src.step, yoff, xoff, normalizedCoords, filterMode, addressMode, readMode)
+            TextureOff(src.rows, src.cols, src.data, src.step, yoff_, xoff_, normalizedCoords, filterMode, addressMode, readMode)
         {
         }
 
