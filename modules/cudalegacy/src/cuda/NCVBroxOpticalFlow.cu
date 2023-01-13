@@ -876,17 +876,17 @@ NCVStatus NCVBroxOpticalFlow(const NCVBroxOpticalFlowDescriptor desc,
             Texture texIyy(kLevelHeight, kLevelWidth, Iyy.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
             Texture texIy0(kLevelHeight, kLevelWidth, Iy0.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
             Texture texIxy(kLevelHeight, kLevelWidth, Ixy.ptr(), kPitchTex, true, cudaFilterModeLinear, cudaAddressModeMirror);
-            Texture texDiffX(1, kLevelSizeInBytes / sizeof(float), diffusivity_x.ptr(), kLevelSizeInBytes);
-            Texture texDiffY(1, kLevelSizeInBytes / sizeof(float), diffusivity_y.ptr(), kLevelSizeInBytes);
+            Texture texDiffX(kLevelSizeInBytes, diffusivity_x.ptr());
+            Texture texDiffY(kLevelSizeInBytes, diffusivity_y.ptr());
 
             //    flow
-            Texture texU(1, kLevelSizeInBytes / sizeof(float), ptrU->ptr(), kLevelSizeInBytes);
-            Texture texV(1, kLevelSizeInBytes / sizeof(float), ptrV->ptr(), kLevelSizeInBytes);
+            Texture texU(kLevelSizeInBytes, ptrU->ptr());
+            Texture texV(kLevelSizeInBytes, ptrV->ptr());
             //    flow increments
-            Texture texDu(1, kLevelSizeInBytes / sizeof(float), du.ptr(), kLevelSizeInBytes);
-            Texture texDv(1, kLevelSizeInBytes / sizeof(float), dv.ptr(), kLevelSizeInBytes);
-            Texture texDuNew(1, kLevelSizeInBytes / sizeof(float), du_new.ptr(), kLevelSizeInBytes);
-            Texture texDvNew(1, kLevelSizeInBytes / sizeof(float), dv_new.ptr(), kLevelSizeInBytes);
+            Texture texDu(kLevelSizeInBytes, du.ptr());
+            Texture texDv(kLevelSizeInBytes, dv.ptr());
+            Texture texDuNew(kLevelSizeInBytes, du_new.ptr());
+            Texture texDvNew(kLevelSizeInBytes, dv_new.ptr());
 
             dim3 psor_blocks(iDivUp(kLevelWidth, PSOR_TILE_WIDTH), iDivUp(kLevelHeight, PSOR_TILE_HEIGHT));
             dim3 psor_threads(PSOR_TILE_WIDTH, PSOR_TILE_HEIGHT);
