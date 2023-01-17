@@ -409,7 +409,7 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
         if (forwardBackwardThreshold > 0)
         {
             // use temp variable to properly initialize refPoints 
-            // inside 'calcLocalOpticalFlow' when 'use_initial_flow' and 'forward_backward_threshold' parameters are used
+            // inside 'calcLocalOpticalFlow' when 'use_init_flow' and 'fwd_bwd_thresh' parameters are used
             bool temp_param = param->getUseInitialFlow();
             param->setUseInitialFlow(false);
             // reuse image pyramids
