@@ -408,7 +408,7 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
         cv::Mat(1,npoints , CV_32FC2, &nextPoints[0]).copyTo(nextPtsMat);
         if (forwardBackwardThreshold > 0)
         {
-            // use temp variable to properly initialize refPoints 
+            // use temp variable to properly initialize refPoints
             // inside 'calcLocalOpticalFlow' when 'use_init_flow' and 'fwd_bwd_thresh' parameters are used
             bool temp_param = param->getUseInitialFlow();
             param->setUseInitialFlow(false);
