@@ -94,13 +94,14 @@ namespace cv {  namespace cudev {
         __host__ UniqueTexture(const size_t sizeInBytes, T* data, const bool normalizedCoords = false, const cudaTextureFilterMode filterMode = cudaFilterModePoint,
             const cudaTextureAddressMode addressMode = cudaAddressModeClamp, const cudaTextureReadMode readMode = cudaReadModeElementType)
         {
-            create(1, static_cast<int>(sizeInBytes/sizeof(T)), data, sizeInBytes, normalizedCoords, filterMode, addressMode, readMode);
+            create(sizeInBytes, data, normalizedCoords, filterMode, addressMode, readMode);
         }
 
         __host__ ~UniqueTexture() {
             if (tex != cudaTextureObject_t()) {
                 try {
                     CV_CUDEV_SAFE_CALL(cudaDestroyTextureObject(tex));
+                    CV_CUDEV_SAFE_CALL(cudaFree(internalSrc));
                 }
                 catch (const cv::Exception& ex) {
                     std::ostringstream os;
@@ -132,29 +133,9 @@ namespace cv {  namespace cudev {
         __host__ explicit operator bool() const noexcept { return tex != cudaTextureObject_t(); }
 
     private:
-
-        template <class T1>
-        __host__ void create(const int rows, const int cols, T1* data, const size_t step, const bool normalizedCoords, const cudaTextureFilterMode filterMode,
+        __host__ void createTextureObject(cudaResourceDesc texRes, const bool normalizedCoords, const cudaTextureFilterMode filterMode,
             const cudaTextureAddressMode addressMode, const cudaTextureReadMode readMode)
         {
-            cudaResourceDesc texRes;
-            std::memset(&texRes, 0, sizeof(texRes));
-            if (rows == 1) {
-                CV_Assert(rows == 1 && cols*sizeof(T) == step);
-                texRes.resType = cudaResourceTypeLinear;
-                texRes.res.linear.devPtr = data;
-                texRes.res.linear.sizeInBytes = step;
-                texRes.res.linear.desc = cudaCreateChannelDesc<T1>();
-            }
-            else {
-                texRes.resType = cudaResourceTypePitch2D;
-                texRes.res.pitch2D.devPtr = data;
-                texRes.res.pitch2D.height = rows;
-                texRes.res.pitch2D.width = cols;
-                texRes.res.pitch2D.pitchInBytes = step;
-                texRes.res.pitch2D.desc = cudaCreateChannelDesc<T1>();
-            }
-
             cudaTextureDesc texDescr;
             std::memset(&texDescr, 0, sizeof(texDescr));
             texDescr.normalizedCoords = normalizedCoords;
@@ -163,8 +144,51 @@ namespace cv {  namespace cudev {
             texDescr.addressMode[1] = addressMode;
             texDescr.addressMode[2] = addressMode;
             texDescr.readMode = readMode;
-
             CV_CUDEV_SAFE_CALL(cudaCreateTextureObject(&tex, &texRes, &texDescr, 0));
+        }
+
+        template <class T1>
+        __host__ void create(const size_t sizeInBytes, T1* data, const bool normalizedCoords, const cudaTextureFilterMode filterMode,
+            const cudaTextureAddressMode addressMode, const cudaTextureReadMode readMode)
+        {
+            cudaResourceDesc texRes;
+            std::memset(&texRes, 0, sizeof(texRes));
+            texRes.resType = cudaResourceTypeLinear;
+            texRes.res.linear.devPtr = data;
+            texRes.res.linear.sizeInBytes = sizeInBytes;
+            texRes.res.linear.desc = cudaCreateChannelDesc<T1>();
+            createTextureObject(texRes, normalizedCoords, filterMode, addressMode, readMode);
+        }
+
+        __host__ void create(const size_t sizeInBytes, uint64* data, const bool normalizedCoords, const cudaTextureFilterMode filterMode,
+            const cudaTextureAddressMode addressMode, const cudaTextureReadMode readMode)
+        {
+            create<uint2>(sizeInBytes, (uint2*)data, normalizedCoords, filterMode, addressMode, readMode);
+        }
+
+        template <class T1>
+        __host__ void create(const int rows, const int cols, T1* data, const size_t step, const bool normalizedCoords, const cudaTextureFilterMode filterMode,
+            const cudaTextureAddressMode addressMode, const cudaTextureReadMode readMode)
+        {
+            cudaResourceDesc texRes;
+            std::memset(&texRes, 0, sizeof(texRes));
+            texRes.resType = cudaResourceTypePitch2D;
+            texRes.res.pitch2D.height = rows;
+            texRes.res.pitch2D.width = cols;
+            // temporary fix for single row/columns until TexturePtr is reworked
+            if (rows == 1 || cols == 1) {
+                size_t dStep = 0;
+                CV_CUDEV_SAFE_CALL(cudaMallocPitch(&internalSrc, &dStep, cols * sizeof(T1), rows));
+                CV_CUDEV_SAFE_CALL(cudaMemcpy2D(internalSrc, dStep, data, step, cols * sizeof(T1), rows, cudaMemcpyDeviceToDevice));
+                texRes.res.pitch2D.devPtr = internalSrc;
+                texRes.res.pitch2D.pitchInBytes = dStep;
+            }
+            else {
+                texRes.res.pitch2D.devPtr = data;
+                texRes.res.pitch2D.pitchInBytes = step;
+            }
+            texRes.res.pitch2D.desc = cudaCreateChannelDesc<T1>();
+            createTextureObject(texRes, normalizedCoords, filterMode, addressMode, readMode);
         }
 
         __host__ void create(const int rows, const int cols, uint64* data, const size_t step, const bool normalizedCoords, const cudaTextureFilterMode filterMode,
@@ -175,6 +199,7 @@ namespace cv {  namespace cudev {
 
     private:
         cudaTextureObject_t tex;
+        T* internalSrc = 0;
     };
 
     /** @brief sharable smart CUDA texture object
@@ -250,9 +275,9 @@ namespace cv {  namespace cudev {
         {
         }
 
-        __host__ TextureOff(PtrStepSz<T> src, const int yoff = 0, const int xoff = 0, const bool normalizedCoords = false, const cudaTextureFilterMode filterMode = cudaFilterModePoint,
+        __host__ TextureOff(PtrStepSz<T> src, const int yoff_ = 0, const int xoff_ = 0, const bool normalizedCoords = false, const cudaTextureFilterMode filterMode = cudaFilterModePoint,
             const cudaTextureAddressMode addressMode = cudaAddressModeClamp, const cudaTextureReadMode readMode = cudaReadModeElementType) :
-            TextureOff(src.rows, src.cols, src.data, src.step, yoff, xoff, normalizedCoords, filterMode, addressMode, readMode)
+            TextureOff(src.rows, src.cols, src.data, src.step, yoff_, xoff_, normalizedCoords, filterMode, addressMode, readMode)
         {
         }
 

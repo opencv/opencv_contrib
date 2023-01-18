@@ -173,7 +173,7 @@ CUDA_TEST_P(Remap, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, Remap, testing::Combine(
     ALL_DEVICES,
-    DIFFERENT_SIZES,
+    DIFFERENT_SIZES_EXTRA,
     testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_CONSTANT), BorderType(cv::BORDER_REFLECT), BorderType(cv::BORDER_WRAP)),
@@ -198,7 +198,7 @@ CUDA_TEST_P(RemapOutOfScope, Regression_18224)
 
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, RemapOutOfScope, testing::Combine(
         ALL_DEVICES,
-        DIFFERENT_SIZES,
+        DIFFERENT_SIZES_EXTRA,
         testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
         testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR)),
         testing::Values(BorderType(cv::BORDER_CONSTANT)),
