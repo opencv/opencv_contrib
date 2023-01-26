@@ -5,6 +5,7 @@
 #include "precomp.hpp"
 #include "opencv2/aruco.hpp"
 #include <opencv2/calib3d.hpp>
+#include <opencv2/core/utils/logger.hpp>
 
 namespace cv {
 namespace aruco {
@@ -59,64 +60,25 @@ int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Boar
     return (int)objPoints.total() / 4;
 }
 
-
-/**
-  * Check if a set of 3d points are enough for calibration. Z coordinate is ignored.
-  * Only axis parallel lines are considered
-  */
-static bool _arePointsEnoughForPoseEstimation(const vector<Point3f> &points) {
-    if(points.size() < 4) return false;
-
-    vector<double> sameXValue; // different x values in points
-    vector<int> sameXCounter;  // number of points with the x value in sameXValue
-    for(unsigned int i = 0; i < points.size(); i++) {
-        bool found = false;
-        for(unsigned int j = 0; j < sameXValue.size(); j++) {
-            if(sameXValue[j] == points[i].x) {
-                found = true;
-                sameXCounter[j]++;
-            }
-        }
-        if(!found) {
-            sameXValue.push_back(points[i].x);
-            sameXCounter.push_back(1);
-        }
-    }
-
-    // count how many x values has more than 2 points
-    int moreThan2 = 0;
-    for(unsigned int i = 0; i < sameXCounter.size(); i++) {
-        if(sameXCounter[i] >= 2) moreThan2++;
-    }
-
-    // if we have more than 1 two xvalues with more than 2 points, calibration is ok
-    if(moreThan2 > 1)
-        return true;
-    return false;
-}
-
 bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
-                                           const Ptr<CharucoBoard> &board, InputArray cameraMatrix,
-                                           InputArray distCoeffs, InputOutputArray rvec,
-                                           InputOutputArray tvec, bool useExtrinsicGuess) {
+                              const Ptr<CharucoBoard> &board, InputArray cameraMatrix,
+                              InputArray distCoeffs, InputOutputArray rvec,
+                              InputOutputArray tvec, bool useExtrinsicGuess) {
     CV_Assert((charucoCorners.getMat().total() == charucoIds.getMat().total()));
-
-    // need, at least, 4 corners
     if(charucoIds.getMat().total() < 4) return false;
 
-    vector<Point3f> objPoints;
-    objPoints.reserve(charucoIds.getMat().total());
-    for(unsigned int i = 0; i < charucoIds.getMat().total(); i++) {
-        int currId = charucoIds.getMat().at< int >(i);
-        CV_Assert(currId >= 0 && currId < (int)board->getChessboardCorners().size());
-        objPoints.push_back(board->getChessboardCorners()[currId]);
+    // get object and image points for the solvePnP function
+    Mat objPoints, imgPoints;
+    board->matchImagePoints(charucoCorners, charucoIds, objPoints, imgPoints);
+    try {
+        solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess);
+    }
+    catch (const cv::Exception& e) {
+        CV_LOG_WARNING(NULL, "estimatePoseCharucoBoard: " << std::endl << e.what());
+        return false;
     }
 
-    // points need to be in different lines, check if detected points are enough
-    if(!_arePointsEnoughForPoseEstimation(objPoints)) return false;
-
-    solvePnP(objPoints, charucoCorners, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess);
-    return true;
+    return objPoints.total() > 0ull;
 }
 
 bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &board, InputArray charucoIds) {
