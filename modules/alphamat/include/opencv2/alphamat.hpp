@@ -7,6 +7,8 @@
 #ifndef _OPENCV_ALPHAMAT_HPP_
 #define _OPENCV_ALPHAMAT_HPP_
 
+#include <opencv2/core.hpp>
+
 /**
  * @defgroup alphamat Alpha Matting
  * Alpha matting is used to extract a foreground object with soft boundaries from a background image.
