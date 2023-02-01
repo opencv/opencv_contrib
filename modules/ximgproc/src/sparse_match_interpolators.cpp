@@ -1765,7 +1765,6 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
     {
         parallel_for_(Range(0, spCnt), [&](const Range& range)
         {
-            int averInlier = 0;
             int minPtCnt = 30;
             for (int i = range.start; i < range.end; i++)
             {
@@ -1795,7 +1794,6 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                     fitModel.reshape(1, 1).copyTo(outModels.row(i));
 
                 }
-                averInlier += inlierCnt;
             }
         }
         );

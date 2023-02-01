@@ -246,23 +246,14 @@ void CustomPattern::check_matches(vector<Point2f>& matched, const vector<Point2f
     vector<Point2f> proj;
     perspectiveTransform(pattern, proj, H);
 
-    int deleted = 0;
-    double error_sum = 0;
-    double error_sum_filtered = 0;
     for (uint i = 0; i < proj.size(); ++i)
     {
         double error = norm(matched[i] - proj[i]);
-        error_sum += error;
         if (error >= MAX_PROJ_ERROR_PX)
         {
             deleteStdVecElem(good, i);
             deleteStdVecElem(matched, i);
             deleteStdVecElem(pattern_3d, i);
-            ++deleted;
-        }
-        else
-        {
-            error_sum_filtered += error;
         }
     }
 }
