@@ -27,7 +27,6 @@ Result Ean8Decoder::decode(const vector<uchar> &data) const
     uint start = pattern.second;
     Counter counter(vector<int>{0, 0, 0, 0});
     size_t end = data.size();
-    int first_char_bit = 0;
     for (int i = 0; i < 4 && start < end; ++i)
     {
         int bestMatch = decodeDigit(data, counter, start, get_A_or_C_Patterns());
@@ -37,7 +36,6 @@ Result Ean8Decoder::decode(const vector<uchar> &data) const
         }
         decode_result[i] = static_cast<char>('0' + bestMatch % 10);
         start = counter.sum + start;
-        first_char_bit += (bestMatch >= 10) << i;
     }
 
     Counter middle_counter(vector<int>(MIDDLE_PATTERN().size()));
