@@ -639,9 +639,6 @@ void BinaryDescriptorMatcher::Mihasher::query( UINT32* results, UINT32* numres, 
   /* number of results so far obtained (up to a distance of s per chunk) */
   UINT32 n = 0;
 
-  /* number of candidates tested with full codes (not counting duplicates) */
-  UINT32 nc = 0;
-
   UINT32 *arr;
   int size = 0;
   UINT32 index;
@@ -707,7 +704,6 @@ void BinaryDescriptorMatcher::Mihasher::query( UINT32* results, UINT32* numres, 
                 counter->set( index );
                 hammd = cv::line_descriptor::match( codes.ptr() + (UINT64) index * ( B_over_8 ), Query, B_over_8 );
 
-                nc++;
                 if( hammd <= D && numres[hammd] < maxres )
                   res[hammd * K + numres[hammd]] = index + 1;
 

@@ -12,14 +12,10 @@ static float disparity_MAE(const Mat &reference, const Mat &estimation)
 {
     int elems=0;
     float error=0;
-    float ref_invalid=0;
     for (int row=0; row< reference.rows; row++){
         for (int col=0; col<reference.cols; col++){
             float ref_val = reference.at<float>(row, col);
             float estimated_val = estimation.at<float>(row, col);
-            if (ref_val == 0){
-                ref_invalid++;
-            }
             // filter out pixels with unknown reference value and pixels whose disparity did not get estimated.
             if (estimated_val == 0 || ref_val == 0 || std::isnan(estimated_val)){
                 continue;

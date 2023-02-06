@@ -297,15 +297,12 @@ Mat interpolate_irregular_knn(
         }
     }
 
-    int global_time = 0;
-
     bool done = false;
     while (!done) {
         if (my_agents.size() == 0) {
             done = true;
             break;
         }
-        global_time++;
 
         std::multimap<float, Vec2i >::iterator current_it = my_agents.begin();
         std::pair<float, Vec2i > current_p = *current_it;

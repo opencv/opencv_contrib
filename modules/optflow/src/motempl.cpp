@@ -157,8 +157,6 @@ void calcMotionGradient( InputArray _mhi, OutputArray _mask,
                              double delta1, double delta2,
                              int aperture_size )
 {
-    static int runcase = 0; runcase++;
-
     Mat mhi = _mhi.getMat();
     Size size = mhi.size();
 
