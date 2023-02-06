@@ -266,7 +266,6 @@ namespace cv
 		Mat tmp;
 		int dx = initSize.width / 10, dy = initSize.height / 10;
 		Size2d size = img.size();
-		double scale = 1.0;
 		int npos = 0, nneg = 0;
 		double maxSc = -5.0;
 		Rect2d maxScRect;
@@ -335,7 +334,6 @@ namespace cv
 			scaleID++;
 			size.width /= tld::SCALE_STEP;
 			size.height /= tld::SCALE_STEP;
-			scale *= tld::SCALE_STEP;
 			resize(img, tmp, size, 0, 0, tld::DOWNSCALE_MODE);
 			resized_imgs.push_back(tmp);
 			GaussianBlur(resized_imgs[scaleID], tmp, tld::GaussBlurKernelSize, 0.0f);
