@@ -367,7 +367,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
         if (node)
         {
           // select the first node
-          size_t idx = reinterpret_cast<size_t>(node->data)-1, dn=0;
+          size_t idx = reinterpret_cast<size_t>(node->data)-1;
           int dup = (int)node->key-1;
           size_t minIdxD = idx;
           float minDist = distances[idx];
@@ -383,7 +383,6 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
             }
 
             node = node->next;
-            dn++;
           }
 
           indicesModel[ selInd ] = newI[ minIdxD ];

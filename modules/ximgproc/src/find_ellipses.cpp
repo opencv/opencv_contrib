@@ -723,7 +723,6 @@ void EllipseDetectorImpl::labeling(Mat1b &image, VVP &segments, int minLength) {
 void EllipseDetectorImpl::detectEdges13(Mat1b &DP, VVP &points_1, VVP &points_3) {
     // vector of connected edge points
     VVP contours;
-    int countEdges = 0;
     // labeling 8-connected edge points, discarding edge too small
     labeling(DP, contours, _minEdgeLength); // label point on the same arc
     int contourSize = int(contours.size());
@@ -737,7 +736,6 @@ void EllipseDetectorImpl::detectEdges13(Mat1b &DP, VVP &points_1, VVP &points_3)
         float orMin = min(oriented.size.width, oriented.size.height);
 
         if (orMin < _minOrientedRectSide) {
-            countEdges++;
             continue;
         }
 
@@ -773,7 +771,6 @@ void EllipseDetectorImpl::detectEdges13(Mat1b &DP, VVP &points_1, VVP &points_3)
 void EllipseDetectorImpl::detectEdges24(Mat1b &DN, VVP &points_2, VVP &points_4) {
     // vector of connected edge points
     VVP contours;
-    int countEdges = 0;
     // labeling 8-connected edge points, discarding edge too small
     labeling(DN, contours, _minEdgeLength); // label point on the same arc
     int contourSize = int(contours.size());
@@ -787,7 +784,6 @@ void EllipseDetectorImpl::detectEdges24(Mat1b &DN, VVP &points_2, VVP &points_4)
         float orMin = min(oriented.size.width, oriented.size.height);
 
         if (orMin < _minOrientedRectSide) {
-            countEdges++;
             continue;
         }
 

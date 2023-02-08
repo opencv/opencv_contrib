@@ -172,7 +172,6 @@ void FR_adienceImp::cv5ToSplits(vector< Ptr<FR_adienceObj> > fileList[5])
 void FR_adienceImp::loadDataset(const string &path)
 {
     // collect real image names
-    unsigned int num = 0;
     vector<string> userNames;
     getDirList(path+"faces/", userNames);
     for (vector<string>::iterator itU=userNames.begin(); itU!=userNames.end(); ++itU)
@@ -185,11 +184,9 @@ void FR_adienceImp::loadDataset(const string &path)
             if (name.length()>3 && name.substr(name.length()-4) == ".jpg")
             {
                 realNames[*itU].push_back(name);
-                num++;
             }
         }
     }
-    //printf("total images number: %u\n", num);
 
     vector< Ptr<FR_adienceObj> > fileList[5];
     for (unsigned int i=0; i<5; ++i)

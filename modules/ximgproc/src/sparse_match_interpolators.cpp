@@ -1812,7 +1812,6 @@ float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int *
     float errTh = 5.;
 
     // find inliers
-    int inLierCnt = 0;
     float cost = 0;
     for (int k = 0; k < matCnt; k++) {
         int matId = matNodes[k];
@@ -1836,7 +1835,6 @@ float RICInterpolatorImpl::HypothesisEvaluation(const Mat & inModel, const int *
         float dis = sqrt((tu - pu)*(tu - pu) + (tv - pv)*(tv - pv));
         if (dis < errTh) {
             outInLier.at<int>(k) = 1;
-            inLierCnt++;
             cost += wt * dis;
         }
         else {
