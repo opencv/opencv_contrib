@@ -757,7 +757,11 @@ bool Viz2D::display() {
         makeCurrent();
         glfwPollEvents();
         screen().draw_contents();
+#ifndef __EMSCRIPTEN__
+        clglContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());
+#else
         clglContext_->blitFrameBufferToScreen(getViewport(), getInitialSize(), isStretching());
+#endif
         screen().draw_widgets();
         glfwSwapBuffers(glfwWindow_);
         result = !glfwWindowShouldClose(glfwWindow_);
