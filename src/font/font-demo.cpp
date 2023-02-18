@@ -147,47 +147,35 @@ void iteration() {
     int32_t textHeight = (numLines * font_size);
     //How many pixels to translate the text up.
     int32_t translateY = HEIGHT - cnt;
-    bool textVisible = false;
-    for (int32_t i = 0; i < lines.size(); ++i) {
-        y = (i * font_size);
-        if (y + translateY < textHeight && y + translateY > 0) {
-            textVisible = true;
-            break;
-        }
-    }
 
-    y = 0;
-    if(textVisible) {
-        v2d->nvg([&](const cv::Size& sz) {
-            using namespace kb::viz2d::nvg;
-            v2d->clear();
+    v2d->nvg([&](const cv::Size& sz) {
+        using namespace kb::viz2d::nvg;
+        v2d->clear();
 
-            fontSize(font_size);
-            fontFace("sans-bold");
-            fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
-            textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+        fontSize(font_size);
+        fontFace("sans-bold");
+        fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+        textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
-            /** only draw lines that are visible **/
-            translate(0, translateY);
+        /** only draw lines that are visible **/
+        translate(0, translateY);
 
-            for (int32_t i = 0; i < lines.size(); ++i) {
-                y = (i * font_size);
-                if (y + translateY < textHeight && y + translateY > 0) {
-                    text(WIDTH / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
-                }
+        for (int32_t i = 0; i < lines.size(); ++i) {
+            y = (i * font_size);
+            if (y + translateY < textHeight && y + translateY > 0) {
+                text(WIDTH / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
             }
-        });
-
-        v2d->clgl([&](cv::UMat& frameBuffer){
-            //Pseudo 3D text effect.
-            cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
-            //Combine layers
-            cv::add(stars, warped, frameBuffer);
-        });
-    } else {
-        if(-translateY > textHeight) {
-            cnt = 0;
         }
+    });
+
+    v2d->clgl([&](cv::UMat& frameBuffer){
+        //Pseudo 3D text effect.
+        cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        //Combine layers
+        cv::add(stars, warped, frameBuffer);
+    });
+    if(-translateY > textHeight) {
+        cnt = 0;
     }
     update_fps(v2d, show_fps);
 
