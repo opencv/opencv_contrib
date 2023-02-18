@@ -63,16 +63,25 @@ using namespace emscripten;
 std::string pushImage(std::string filename){
     try {
         std::ifstream fs(filename, std::fstream::in | std::fstream::binary);
-        fs.seekg (0, std::ios::end);
+        fs.seekg(0, std::ios::end);
         auto length = fs.tellg();
-        fs.seekg (0, std::ios::beg);
+        fs.seekg(0, std::ios::beg);
 
         v2d->capture([&](cv::UMat &videoFrame) {
             if(videoFrame.empty())
-                videoFrame.create(HEIGHT, WIDTH, CV_8UC4);
-            cv::Mat tmp = videoFrame.getMat(cv::ACCESS_WRITE);
-            fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
-            tmp.release();
+                videoFrame.create(HEIGHT, WIDTH, CV_8UC3);
+            if (length == (videoFrame.elemSize() + 1) * videoFrame.total()) {
+                cv::Mat tmp;
+                cv::Mat v = videoFrame.getMat(cv::ACCESS_RW);
+                cvtColor(v, tmp, cv::COLOR_RGB2BGRA);
+                fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
+                cvtColor(tmp, v, cv::COLOR_RGBA2BGR);
+                v.release();
+                tmp.release();
+                cerr << "match" << endl;
+            } else {
+                cerr << "mismatch" << endl;
+            }
         });
         return "success";
     } catch(std::exception& ex) {
