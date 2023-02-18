@@ -67,6 +67,7 @@ CLExecContext_t& CLGLContext::getCLExecContext() {
 #endif
 
 void CLGLContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch) {
+    cerr << viewport << " " << windowSize << endl;
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
