@@ -162,7 +162,7 @@ void iteration() {
 
         for (int32_t i = 0; i < lines.size(); ++i) {
             y = (i * font_size);
-            if (y + translateY < textHeight && y + translateY > 0) {
+            if (y + translateY < textHeight && y + translateY + font_size > 0) {
                 text(WIDTH / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
             }
         }
@@ -174,9 +174,11 @@ void iteration() {
         //Combine layers
         cv::add(stars, warped, frameBuffer);
     });
+
     if(-translateY > textHeight) {
         cnt = 0;
     }
+
     update_fps(v2d, show_fps);
 
 #ifndef __EMSCRIPTEN__
