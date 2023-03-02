@@ -14,6 +14,7 @@ src/*/*/*.d
 src/common/libviz2d.so
 src/tetra/tetra-demo
 src/video/video-demo
+src/shader/shader-demo
 src/nanovg/nanovg-demo
 src/optflow/optflow-demo
 src/beauty/beauty-demo

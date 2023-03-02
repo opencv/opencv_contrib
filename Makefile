@@ -102,8 +102,9 @@ export EMSDK
 
 dirs: docs
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-	${MAKE} -C src/quad/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+	${MAKE} -C src/shader/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 #ifndef EMSDK
+	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 #endif
@@ -116,7 +117,7 @@ dirs: docs
 
 debian-release:
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} release
-	${MAKE} -C src/quad/ ${MAKEFLAGS} CXX=${CXX} release
+	${MAKE} -C src/shader/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} release
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} release
@@ -126,7 +127,7 @@ debian-release:
 
 debian-clean:
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} clean
-	${MAKE} -C src/quad/ ${MAKEFLAGS} CXX=${CXX} clean
+	${MAKE} -C src/shader/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} clean
 	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} clean

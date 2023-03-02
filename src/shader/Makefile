@@ -1,9 +1,9 @@
 ifndef EMSDK
-TARGET := quad-demo
+TARGET := shader-demo
 else
-TARGET := quad-demo.html
+TARGET := shader-demo.html
 endif
-SRCS    := quad-demo.cpp
+SRCS    := shader-demo.cpp
 
 #precompiled headers
 HEADERS := 
