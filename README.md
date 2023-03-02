@@ -21,7 +21,7 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 There are currently eight demos.
 
 ## shader-demo
-Renders a rainbow colored quad on blue background. Uses shaders, OpenCL and VAAPI together.
+Renders a rainbow colored rectangle on blue background. Uses shaders, OpenCL and VAAPI together.
 
 https://user-images.githubusercontent.com/287266/222376479-9b7809c2-8a1a-4973-a047-0a0df883f96d.mp4
 
