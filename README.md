@@ -18,7 +18,13 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
-There are currently seven demos (**the preview videos are scaled down and compressed**):
+There are currently eight demos.
+
+## shader-demo
+Renders a rainbow colored quad on blue background. Uses shaders, OpenCL and VAAPI together.
+
+https://user-images.githubusercontent.com/287266/222376479-9b7809c2-8a1a-4973-a047-0a0df883f96d.mp4
+
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
@@ -45,7 +51,7 @@ My take on a optical flow visualization on top of a video. Uses background subtr
 https://user-images.githubusercontent.com/287266/208234553-3669df17-dbea-4166-aaf1-e2d5c447e9f0.mp4
 
 ## pedestrian-demo
-Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI). 
+Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI).
 Note: Detection rate is not very impressive and depends highly on the video.
 
 https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a280-aab57a2fbae3.mp4
@@ -54,7 +60,13 @@ https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a2
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
 
 # Instructions
-You need to build my 4.x branch of OpenCV, nanovg and nanogui.
+You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
+
+## Install build dependencies
+
+```bash
+apt install libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev
+```
 
 ## Build nanovg
 
@@ -70,7 +82,7 @@ sudo make install
 ## Build nanogui
 
 ```bash
-git clone https://github.com/mitsuba-renderer/nanogui.git
+git clone --recursive https://github.com/mitsuba-renderer/nanogui.git
 mkdir nanogui/build
 cd nanogui/build
 cmake -DCMAKE_BUILD_TYPE=Release -DNANOGUI_BACKEND=OpenGL -DNANOGUI_BUILD_EXAMPLES=OFF -DNANOGUI_BUILD_GLFW=OFF -DNANOGUI_BUILD_PYTHON=OFF ..
@@ -78,14 +90,14 @@ make -j8
 sudo make install
 ```
 
-## Build OpenCV
+## Build OpenCV-fork with OpenCV-contrib
 
 ```bash
+git clone --branch 4.x https://github.com/opencv/opencv_contrib.git
 git clone --branch GCV https://github.com/kallaballa/opencv.git
-cd opencv
-mkdir build
-cd build
-ccmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_GLX=ON -DOPENCV_ENABLE_EGL=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF ..
+mkdir opencv/build
+cd opencv/build
+cmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_GLX=ON -DOPENCV_ENABLE_EGL=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules/ ..
 make -j8
 sudo make install
 ```
@@ -95,12 +107,18 @@ sudo make install
 ```bash
 git clone https://github.com/kallaballa/GCV.git
 cd GCV
-make
+make -j8
 ```
 ## Download the example file
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
+## Run the shader-demo:
+
+```bash
+src/tetra/shader-demo
+```
+
 ## Run the tetra-demo:
 
 ```bash
