@@ -65,6 +65,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         text_color[1] = c[1];
         text_color[2] = c[2];
     });
+
     v2d->makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
 
     v2d->makeGroup("Stars");
@@ -93,9 +94,11 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 
     v2d->makeGroup("Display");
     v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-//    v2d->makeButton("Fullscreen", [=]() {
-//        v2d->setFullscreen(!v2d->isFullscreen());
-//    });
+#ifndef __EMSCRIPTEN__
+    v2d->makeButton("Fullscreen", [=]() {
+        v2d->setFullscreen(!v2d->isFullscreen());
+    });
+#endif
     v2d->makeButton("Offscreen", [=]() {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
