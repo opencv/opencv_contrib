@@ -116,7 +116,7 @@ wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f
 ## Run the shader-demo:
 
 ```bash
-src/tetra/shader-demo
+src/shader/shader-demo
 ```
 
 ## Run the tetra-demo:
