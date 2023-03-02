@@ -26,7 +26,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 constexpr int BLUR_DIV = 400;
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-constexpr float UNSHARP_STRENGTH = 3.0f;
+constexpr float UNSHARP_STRENGTH = 0.2f;
 constexpr int REDUCE_SHADOW = 5; //percent
 constexpr int DILATE_ITERATIONS = 1;
 
@@ -299,23 +299,23 @@ void iteration() {
         blender.blend(frameOutFloat, cv::UMat());
         frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
-//        cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
-//        cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
-//
-//        frameOut = cv::Scalar::all(0);
-//        lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-//        rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
+        cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
+        cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
+
+        frameOut = cv::Scalar::all(0);
+        lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+        rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
 
         v2d->clgl([&](cv::UMat &frameBuffer) {
             cvtColor(frameOut, frameBuffer, cv::COLOR_RGB2BGRA);
         });
     } else {
         v2d->clgl([&](cv::UMat &frameBuffer) {
-//            frameOut = cv::Scalar::all(0);
-//            cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
-//            lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-//            lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
-            cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
+            frameOut = cv::Scalar::all(0);
+            cv::resize(rgb, lhalf, cv::Size(0, 0), 0.5, 0.5);
+            lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
+            lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
+            cvtColor(frameOut, frameBuffer, cv::COLOR_RGB2BGRA);
         });
     }
 
