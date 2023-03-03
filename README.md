@@ -65,7 +65,7 @@ You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
 ## Install build dependencies
 
 ```bash
-apt install ubuntu-restricted-extras libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
+apt install ubuntu-restricted-extras libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
 ```
 
 ## Build nanovg
