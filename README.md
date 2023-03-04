@@ -20,11 +20,6 @@ The goal of the demos is to show how to use OpenCL interop in conjunction with O
 
 There are currently eight demos.
 
-## shader-demo
-Renders a rainbow colored rectangle on blue background. Uses shaders, OpenCL and VAAPI together.
-
-https://user-images.githubusercontent.com/287266/222376479-9b7809c2-8a1a-4973-a047-0a0df883f96d.mp4
-
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
@@ -34,6 +29,11 @@ https://user-images.githubusercontent.com/287266/208234618-49284df0-5fc7-4381-8c
 Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7f6-3532d5464248.mp4
+
+## shader-demo
+Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
+
+https://user-images.githubusercontent.com/287266/222869435-9247ff68-8da1-4a44-bd92-cca98b882b4f.mp4
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
