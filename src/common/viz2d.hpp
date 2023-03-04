@@ -35,53 +35,6 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
     kb::viz2d::gl_check_error(__FILE__, __LINE__, #expr);
 
 void error_callback(int error, const char *description);
-
-class BufferStore {
-    std::map<size_t, std::map<string, cv::UMat>> bufMap_;
-    std::map<size_t, std::map<string, void*>> varMap_;
-    std::map<string, cv::UMat>& getBufMap(const size_t& i) {
-        return bufMap_[i];
-    }
-
-    std::map<string, void*>& getVarMap(const size_t& i) {
-        return varMap_[i];
-    }
-
-public:
-    void allocate(const size_t& i, const string& name, const cv::Size& sz, int type, const cv::Scalar& defaultValue, cv::UMatUsageFlags usageFlags = cv::USAGE_DEFAULT) {
-        getBufMap(i)[name].create(sz, type, usageFlags);
-    }
-
-    cv::UMat& buf(const size_t& i, const string& name) {
-        std::stringstream ss;
-        return getBufMap(i)[name];
-    }
-
-    template <typename T> T& var(const size_t& i, const string& name) {
-        auto it = getVarMap(i).find(name);
-        if(it != getVarMap(i).end()) {
-            return *static_cast<T*>((*it).second);
-        } else {
-            auto* p = new T();
-            getVarMap(i)[name] = p;
-            return *p;
-        }
-    }
-};
-
-static BufferStore store;
-}
-
-static void allocate(const size_t& i, const string& name, const cv::Size& sz, int type, const cv::Scalar& defaultValue, cv::UMatUsageFlags usageFlags = cv::USAGE_DEFAULT) {
-    detail::store.allocate(i, name, sz, type, defaultValue, usageFlags);
-}
-
-static cv::UMat& buf(const size_t& i, const string& name) {
-    return detail::store.buf(i, name);
-}
-
-template <typename T> T& var(const size_t& i, const string& name) {
-    return detail::store.var<T>(i, name);
 }
 
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
