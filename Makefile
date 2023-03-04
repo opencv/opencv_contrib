@@ -18,7 +18,7 @@ endif
 ifdef EMSDK
 CXX     := em++
 EMCXXFLAGS += -flto -s USE_PTHREADS=1 -pthread -msimd128
-EMLDFLAGS += -sUSE_GLFW=3 -sMAX_WEBGL_VERSION=2 -sUSE_ZLIB=1 -sWASM=1 -sWASM_BIGINT -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_PTHREADS=1 -pthread -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency -sLLD_REPORT_UNDEFINED --bind
+EMLDFLAGS += -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sUSE_ZLIB=1 -sWASM=1 -sWASM_BIGINT -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_PTHREADS=1 -pthread -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency -sLLD_REPORT_UNDEFINED --bind
 CXXFLAGS += $(EMCXXFLAGS) -c
 LDFLAGS += $(EMLDFLAGS)
 endif
@@ -103,17 +103,17 @@ export EMSDK
 dirs: docs
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/shader/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-#ifndef EMSDK
+ifndef EMSDK
 	${MAKE} -C src/tetra/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/video/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/nanovg/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-#endif
-	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/beauty/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
+endif
+	${MAKE} -C src/optflow/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 	${MAKE} -C src/font/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-#ifndef EMSDK
+ifndef EMSDK
 	${MAKE} -C src/pedestrian/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
-#endif
+endif
 
 debian-release:
 	${MAKE} -C src/common/ ${MAKEFLAGS} CXX=${CXX} release
