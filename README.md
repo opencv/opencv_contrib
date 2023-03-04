@@ -38,7 +38,7 @@ https://user-images.githubusercontent.com/287266/222869740-07461be3-0477-4396-b8
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/222869978-630d7318-450f-4c8e-a0ca-2e7e79b98b1a.mp4
+https://user-images.githubusercontent.com/287266/222870115-389f9561-79f6-4a4f-a798-dfc0e3680369.mp4
 
 ## font-demo
 Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
