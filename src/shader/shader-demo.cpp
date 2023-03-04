@@ -16,32 +16,52 @@ const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG
 using std::cerr;
 using std::endl;
 
-GLuint vertexBuffer, vertexArrayObject, shaderProgram;
+GLuint vertexBuffer, VAO, shaderProgram;
 GLint positionAttribute, colorAttribute;
 
 void loadBufferData(){
     // vertex position, color
-    float vertexData[32] = {
-         -0.5, -0.5, 0.0, 1.0 ,  1.0, 0.0, 0.0, 1.0  ,
-         -0.5,  0.5, 0.0, 1.0 ,  0.0, 1.0, 0.0, 1.0  ,
-          0.5,  0.5, 0.0, 1.0 ,  0.0, 0.0, 1.0, 1.0  ,
-          0.5, -0.5, 0.0, 1.0 ,  1.0, 1.0, 1.0, 1.0
+    float vertices[] =
+    {
+    //    x      y      z
+        -1.0f, -1.0f, -0.0f,
+         1.0f,  1.0f, -0.0f,
+        -1.0f,  1.0f, -0.0f,
+         1.0f, -1.0f, -0.0f
     };
 
+    unsigned int indices[] =
+    {
+    //  2---,1
+    //  | .' |
+    //  0'---3
+        0, 1, 2,
+        0, 3, 1
+    };
+
+    unsigned int VBO, EBO;
+
 #ifndef __EMSCRIPTEN__
-    glGenVertexArrays(1, &vertexArrayObject);
-    glBindVertexArray(vertexArrayObject);
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
 #endif
 
-    glGenBuffers(1, &vertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, 32 * sizeof(float), vertexData, GL_STATIC_DRAW);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
-    glEnableVertexAttribArray(positionAttribute);
-    glEnableVertexAttribArray(colorAttribute);
-    int vertexSize =sizeof(float)*8;
-    glVertexAttribPointer(positionAttribute, 4, GL_FLOAT, GL_FALSE,vertexSize , (const GLvoid *)0);
-    glVertexAttribPointer(colorAttribute  , 4, GL_FLOAT, GL_FALSE, vertexSize, (const GLvoid *)(sizeof(float)*4));
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+#ifndef __EMSCRIPTEN__
+    glBindVertexArray(0);
+#endif
 }
 
 GLuint initShader(const char* vShader, const char* fShader, const char* outputAttributeName) {
@@ -104,79 +124,182 @@ GLuint initShader(const char* vShader, const char* fShader, const char* outputAt
     return program;
 }
 
+//mandelbrot shader code adapted from https://physicspython.wordpress.com/2020/02/16/visualizing-the-mandelbrot-set-using-opengl-part-1/
 void loadShader(){
 #ifndef __EMSCRIPTEN__
     const char *  vert = R"(#version 150
-    in vec4 position;
-    in vec4 color;
-    
-    out vec4 colorV;
-    
-    void main (void)
-    {
-        colorV = color;
-        gl_Position = position;
-    })";
+in vec4 position;
+
+void main()
+{
+    gl_Position = vec4(position.xyz, 1.0);
+})";
 #else
-    const char *  vert = R"(#version 100
-    attribute vec4 position;
-    attribute vec4 color;
-    
-    varying vec4 colorV;
-    
+    const char *  vert = R"(#version 300 es
+    in vec4 position;
+
     void main (void)
     {
-        colorV = color;
-        gl_Position = position / vec4(2.0, 2.0, 1.0, 1.0) - vec4(0.4, 0.4, 0.0, 0.0);
+        gl_Position = vec4(position.xyz, 1.0);
     })";
 #endif
 #ifndef __EMSCRIPTEN__
     const char *  frag = R"(#version 150
-    
-    in vec4 colorV;
-    out vec4 fragColor;
-    
-    void main(void)
+in vec4 gl_FragCoord;
+
+out vec4 outColor;
+
+uniform float zoom;
+uniform float center_x;
+uniform float center_y;
+
+#define MAX_ITERATIONS 500
+ 
+int get_iterations()
+{
+    float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
+    float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
+ 
+    int iterations = 0;
+    float const_real = real;
+    float const_imag = imag;
+ 
+    while (iterations < MAX_ITERATIONS)
     {
-        fragColor = colorV;
-    })";
+        float tmp_real = real;
+        real = (real * real - imag * imag) + const_real;
+        imag = (2.0 * tmp_real * imag) + const_imag;
+         
+        float dist = real * real + imag * imag;
+         
+        if (dist > 4.0)
+        break;
+ 
+        ++iterations;
+    }
+    return iterations;
+}
+ 
+vec4 return_color()
+{
+    int iter = get_iterations();
+    if (iter == MAX_ITERATIONS)
+    {   
+        gl_FragDepth = 0.0f;
+        return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+    float r = 0.225;
+    float g = 0.45;
+    float b = 0.9;
+    float lightness = 4.0;
+    float iterations = float(iter) / MAX_ITERATIONS;
+    return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
+}
+ 
+void main()
+{
+    outColor = return_color();
+})";
 #else
-    const char *  frag = R"(#version 100
-    precision mediump float;
+    const char *  frag = R"(#version 300 es
+precision mediump float;
 
-    varying vec4 colorV;
+out vec4 outColor;
 
-    void main(void)
+uniform float zoom;
+uniform float center_x;
+uniform float center_y;
+
+#define MAX_ITERATIONS 500
+ 
+int get_iterations()
+{
+    float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
+    float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
+ 
+    int iterations = 0;
+    float const_real = real;
+    float const_imag = imag;
+ 
+    while (iterations < MAX_ITERATIONS)
     {
-        gl_FragColor = colorV;
-    })";
+        float tmp_real = real;
+        real = (real * real - imag * imag) + const_real;
+        imag = (2.0 * tmp_real * imag) + const_imag;
+         
+        float dist = real * real + imag * imag;
+         
+        if (dist > 4.0)
+        break;
+ 
+        ++iterations;
+    }
+    return iterations;
+}
+ 
+vec4 return_color()
+{
+    int iter = get_iterations();
+    if (iter == MAX_ITERATIONS)
+    {   
+        gl_FragDepth = 0.0f;
+        return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+    float r = 0.225;
+    float g = 0.45;
+    float b = 0.9;
+    float lightness = 4.0;
+    float iterations = float(iter) / float(MAX_ITERATIONS);
+    return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
+}
+ 
+void main()
+{
+    outColor = return_color();
+})";
 #endif
     shaderProgram = initShader(vert,  frag, "fragColor");
-
-    colorAttribute = glGetAttribLocation(shaderProgram, "color");
-    if (colorAttribute < 0) {
-        std::cerr << "Shader did not contain the 'color' attribute." << std::endl;
-    }
-    positionAttribute = glGetAttribLocation(shaderProgram, "position");
-    if (positionAttribute < 0) {
-        std::cerr << "Shader did not contain the 'position' attribute." << std::endl;
-    }
 }
 
+GLint centerX;
+GLint centerY;
+GLint zoom;
+
+float zoomLevel = 1.0;
+float centerXVal = -0.5;
+float centerYVal = 0;
+
+long iterations = 0;
 void init_scene(const cv::Size& sz) {
     loadShader();
     loadBufferData();
+    zoom = glGetUniformLocation(shaderProgram, "zoom");
+    centerX = glGetUniformLocation(shaderProgram, "center_x");
+    centerY = glGetUniformLocation(shaderProgram, "center_y");
 
+    glViewport(0, 0, WIDTH, HEIGHT);
     glEnable(GL_DEPTH_TEST);
 }
 
+
 void render_scene(const cv::Size& sz) {
-    glClearColor( 0.0f, 0.0f, 1.0f, 1.0f );
-    glClear( GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
-
+    glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if(iterations > 700) {
+        centerXVal = -0.5;
+        zoomLevel = 1.0;
+        iterations = 0;
+    }
     glUseProgram(shaderProgram);
+    glUniform1f(centerY, centerYVal);
+    glUniform1f(centerX, centerXVal*=0.9992);
+    glUniform1f(zoom, zoomLevel*=0.99);
 
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+#ifndef __EMSCRIPTEN__
+    glBindVertexArray(VAO);
+#endif
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    ++iterations;
 }
 
 void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
@@ -204,9 +327,6 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
 
 void iteration() {
-    //Reinitialize the scene on every frame because nvg interfers
-    v2d->gl(init_scene);
-
     //Render using OpenGL
     v2d->gl(render_scene);
 
@@ -217,8 +337,10 @@ void iteration() {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, kernel_size);
     });
-#endif
+
     update_fps(v2d, true);
+#endif
+
 #ifndef __EMSCRIPTEN__
     v2d->write();
 #endif
@@ -236,6 +358,8 @@ int main(int argc, char **argv) {
 #ifndef __EMSCRIPTEN__
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 #endif
+
+    v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
     while(true)
