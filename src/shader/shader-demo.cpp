@@ -13,6 +13,15 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
+//mandelbrot control parameters
+GLint centerX;
+GLint centerY;
+GLint zoom;
+
+float zoomLevel = 1.0;
+float centerXVal = -0.5;
+float centerYVal = 0;
+
 using std::cerr;
 using std::endl;
 
@@ -260,14 +269,6 @@ void main()
 #endif
     shaderProgram = initShader(vert,  frag, "fragColor");
 }
-
-GLint centerX;
-GLint centerY;
-GLint zoom;
-
-float zoomLevel = 1.0;
-float centerXVal = -0.5;
-float centerYVal = 0;
 
 long iterations = 0;
 void init_scene(const cv::Size& sz) {
