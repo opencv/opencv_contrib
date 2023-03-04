@@ -21,7 +21,7 @@ The goal of the demos is to show how to use Viz2d in conjunction with interop op
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
-There are currently eight demos.
+There are currently eight demos. The shader-demo, font-demo and optflow-demo can be compiled using emscripten but for now you have to figure out  how to do it yourself :).
 
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
