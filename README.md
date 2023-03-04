@@ -107,8 +107,8 @@ sudo make install
 ## Build demo code
 
 ```bash
-git clone https://github.com/kallaballa/GCV.git
-cd GCV
+git clone https://github.com/kallaballa/Viz2D.git
+cd Viz2D
 make -j8
 ```
 ## Download the example file
