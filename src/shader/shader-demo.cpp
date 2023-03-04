@@ -6,7 +6,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -27,7 +27,7 @@ using std::endl;
 GLuint vertexBuffer, VAO, shaderProgram;
 GLint positionAttribute, colorAttribute;
 
-void loadBufferData(){
+void load_buffer_data(){
     // vertex position, color
     float vertices[] =
     {
@@ -72,7 +72,7 @@ void loadBufferData(){
 #endif
 }
 
-GLuint initShader(const char* vShader, const char* fShader, const char* outputAttributeName) {
+GLuint init_shader(const char* vShader, const char* fShader, const char* outputAttributeName) {
     struct Shader {
         GLenum       type;
         const char*      source;
@@ -133,15 +133,15 @@ GLuint initShader(const char* vShader, const char* fShader, const char* outputAt
 }
 
 //mandelbrot shader code adapted from https://physicspython.wordpress.com/2020/02/16/visualizing-the-mandelbrot-set-using-opengl-part-1/
-void loadShader(){
+void load_shader(){
 #ifndef __EMSCRIPTEN__
     const char *  vert = R"(#version 150
-in vec4 position;
-
-void main()
-{
-    gl_Position = vec4(position.xyz, 1.0);
-})";
+    in vec4 position;
+    
+    void main()
+    {
+        gl_Position = vec4(position.xyz, 1.0);
+    })";
 #else
     const char *  vert = R"(#version 300 es
     in vec4 position;
@@ -153,126 +153,126 @@ void main()
 #endif
 #ifndef __EMSCRIPTEN__
     const char *  frag = R"(#version 150
-in vec4 gl_FragCoord;
-
-out vec4 outColor;
-
-uniform float zoom;
-uniform float center_x;
-uniform float center_y;
-
-#define MAX_ITERATIONS 500
- 
-int get_iterations()
-{
-    float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
-    float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
- 
-    int iterations = 0;
-    float const_real = real;
-    float const_imag = imag;
- 
-    while (iterations < MAX_ITERATIONS)
+    in vec4 gl_FragCoord;
+    
+    out vec4 outColor;
+    
+    uniform float zoom;
+    uniform float center_x;
+    uniform float center_y;
+    
+    #define MAX_ITERATIONS 500
+     
+    int get_iterations()
     {
-        float tmp_real = real;
-        real = (real * real - imag * imag) + const_real;
-        imag = (2.0 * tmp_real * imag) + const_imag;
-         
-        float dist = real * real + imag * imag;
-         
-        if (dist > 4.0)
-        break;
- 
-        ++iterations;
+        float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
+        float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
+     
+        int iterations = 0;
+        float const_real = real;
+        float const_imag = imag;
+     
+        while (iterations < MAX_ITERATIONS)
+        {
+            float tmp_real = real;
+            real = (real * real - imag * imag) + const_real;
+            imag = (2.0 * tmp_real * imag) + const_imag;
+             
+            float dist = real * real + imag * imag;
+             
+            if (dist > 4.0)
+            break;
+     
+            ++iterations;
+        }
+        return iterations;
     }
-    return iterations;
-}
- 
-vec4 return_color()
-{
-    int iter = get_iterations();
-    if (iter == MAX_ITERATIONS)
-    {   
-        gl_FragDepth = 0.0f;
-        return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+     
+    vec4 return_color()
+    {
+        int iter = get_iterations();
+        if (iter == MAX_ITERATIONS)
+        {   
+            gl_FragDepth = 0.0f;
+            return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+        float r = 0.225;
+        float g = 0.45;
+        float b = 0.9;
+        float lightness = 4.0;
+        float iterations = float(iter) / MAX_ITERATIONS;
+        return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
     }
-    float r = 0.225;
-    float g = 0.45;
-    float b = 0.9;
-    float lightness = 4.0;
-    float iterations = float(iter) / MAX_ITERATIONS;
-    return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
-}
- 
-void main()
-{
-    outColor = return_color();
-})";
+     
+    void main()
+    {
+        outColor = return_color();
+    })";
 #else
     const char *  frag = R"(#version 300 es
-precision mediump float;
-
-out vec4 outColor;
-
-uniform float zoom;
-uniform float center_x;
-uniform float center_y;
-
-#define MAX_ITERATIONS 500
- 
-int get_iterations()
-{
-    float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
-    float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
- 
-    int iterations = 0;
-    float const_real = real;
-    float const_imag = imag;
- 
-    while (iterations < MAX_ITERATIONS)
+    precision mediump float;
+    
+    out vec4 outColor;
+    
+    uniform float zoom;
+    uniform float center_x;
+    uniform float center_y;
+    
+    #define MAX_ITERATIONS 500
+     
+    int get_iterations()
     {
-        float tmp_real = real;
-        real = (real * real - imag * imag) + const_real;
-        imag = (2.0 * tmp_real * imag) + const_imag;
-         
-        float dist = real * real + imag * imag;
-         
-        if (dist > 4.0)
-        break;
- 
-        ++iterations;
+        float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
+        float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
+     
+        int iterations = 0;
+        float const_real = real;
+        float const_imag = imag;
+     
+        while (iterations < MAX_ITERATIONS)
+        {
+            float tmp_real = real;
+            real = (real * real - imag * imag) + const_real;
+            imag = (2.0 * tmp_real * imag) + const_imag;
+             
+            float dist = real * real + imag * imag;
+             
+            if (dist > 4.0)
+            break;
+     
+            ++iterations;
+        }
+        return iterations;
     }
-    return iterations;
-}
- 
-vec4 return_color()
-{
-    int iter = get_iterations();
-    if (iter == MAX_ITERATIONS)
-    {   
-        gl_FragDepth = 0.0f;
-        return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+     
+    vec4 return_color()
+    {
+        int iter = get_iterations();
+        if (iter == MAX_ITERATIONS)
+        {   
+            gl_FragDepth = 0.0f;
+            return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+        float r = 0.225;
+        float g = 0.45;
+        float b = 0.9;
+        float lightness = 4.0;
+        float iterations = float(iter) / float(MAX_ITERATIONS);
+        return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
     }
-    float r = 0.225;
-    float g = 0.45;
-    float b = 0.9;
-    float lightness = 4.0;
-    float iterations = float(iter) / float(MAX_ITERATIONS);
-    return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
-}
- 
-void main()
-{
-    outColor = return_color();
-})";
+     
+    void main()
+    {
+        outColor = return_color();
+    })";
 #endif
-    shaderProgram = initShader(vert,  frag, "fragColor");
+    shaderProgram = init_shader(vert,  frag, "fragColor");
 }
 
 long iterations = 0;
 void init_scene(const cv::Size& sz) {
-    loadShader();
-    loadBufferData();
+    load_shader();
+    load_buffer_data();
     zoom = glGetUniformLocation(shaderProgram, "zoom");
     centerX = glGetUniformLocation(shaderProgram, "center_x");
     centerY = glGetUniformLocation(shaderProgram, "center_y");
