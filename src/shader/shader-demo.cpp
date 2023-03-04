@@ -352,22 +352,21 @@ void iteration() {
 int main(int argc, char **argv) {
     using namespace kb::viz2d;
     try {
-    print_system_info();
-    if(!v2d->isOffscreen())
-        v2d->setVisible(true);
+        print_system_info();
+        if(!v2d->isOffscreen())
+            v2d->setVisible(true);
 #ifndef __EMSCRIPTEN__
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
+        v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 #endif
 
-    v2d->gl(init_scene);
+        v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
-    while(true)
-        iteration();
+        while(true)
+            iteration();
 #else
-    emscripten_set_main_loop(iteration, -1, false);
+        emscripten_set_main_loop(iteration, -1, false);
 #endif
-
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }
