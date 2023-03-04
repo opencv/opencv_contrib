@@ -1,5 +1,5 @@
 # Viz2D
-Viz2d is a 2D visualization library based on OpenCV.
+Viz2D is a 2D visualization library based on OpenCV.
 It features OpenGL/OpenCL/VAAPI interoperability.
 
 # Demos
