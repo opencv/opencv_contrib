@@ -17,10 +17,9 @@ const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG
 GLint centerX;
 GLint centerY;
 GLint zoom;
-
-float zoomLevel = 1.0;
 float centerXVal = -0.5;
 float centerYVal = 0;
+float zoomLevel = 1.0;
 
 using std::cerr;
 using std::endl;
