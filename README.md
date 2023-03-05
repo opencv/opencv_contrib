@@ -8,6 +8,7 @@ The goal of the demos is to show how to use Viz2d in conjunction with interop op
 
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
+* The author of the video used by the beauty-demo is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
 
 # Requirements
 * Support for OpenCL 1.2
@@ -21,7 +22,7 @@ The goal of the demos is to show how to use Viz2d in conjunction with interop op
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
-There are currently eight demos.
+There are currently eight demos. The shader-demo, font-demo and optflow-demo can be compiled using emscripten but for now you have to figure out  how to do it yourself :).
 
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
@@ -36,7 +37,7 @@ https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7
 ## shader-demo
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
-https://user-images.githubusercontent.com/287266/222869740-07461be3-0477-4396-b83b-b57d1382ec7d.mp4
+https://user-images.githubusercontent.com/287266/222886064-a95c96f2-d0e1-424d-9da6-6b3b68bd56df.mp4
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
@@ -61,6 +62,8 @@ https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a2
 
 ## beauty-demo
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
+
+https://user-images.githubusercontent.com/287266/222894043-5a00d631-b4e1-4e7d-8297-cb23d33d1ed0.mp4
 
 # Instructions
 You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
