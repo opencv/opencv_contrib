@@ -24,12 +24,22 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /** Effect parameters **/
 
-constexpr int BLUR_DIV = 400;
+#ifndef __EMSCRIPTEN__
+constexpr int BLUR_DIV = 200;
+#else
+constexpr int BLUR_DIV = 1000;
+#endif
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-constexpr int REDUCE_SHADOW = 5; //percent
-constexpr uchar BOOST_LIP_SATURATION = 25; //0-255
+constexpr int REDUCE_SHADOW = 10; //percent
+constexpr uchar BOOST_LIP_SATURATION = 10; //0-255
 constexpr int DILATE_ITERATIONS = 1;
+#ifndef __EMSCRIPTEN__
+constexpr bool SIDE_BY_SIDE = true;
+constexpr bool STRETCH = true;
+#else
 constexpr bool SIDE_BY_SIDE = false;
+constexpr bool STRETCH = false;
+#endif
 
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 
@@ -48,17 +58,24 @@ using namespace emscripten;
 std::string pushImage(std::string filename){
     try {
         std::ifstream fs(filename, std::fstream::in | std::fstream::binary);
-        fs.seekg (0, std::ios::end);
-        auto size = fs.tellg();
-        fs.seekg (0, std::ios::beg);
+        fs.seekg(0, std::ios::end);
+        auto length = fs.tellg();
+        fs.seekg(0, std::ios::beg);
+
         v2d->capture([&](cv::UMat &videoFrame) {
             if(videoFrame.empty())
-                videoFrame.create(v2d->getFrameBufferSize(), CV_8UC4);
-            cv::Mat tmp = videoFrame.getMat(cv::ACCESS_WRITE);
-            assert(size == (tmp.elemSize() * tmp.total()));
-            fs.read(reinterpret_cast<char*>(tmp.data), tmp.elemSize() * tmp.total());
-            cvtColor(tmp, tmp, cv::COLOR_RGBA2BGRA);
-            tmp.release();
+                videoFrame.create(HEIGHT, WIDTH, CV_8UC3);
+            if (length == (videoFrame.elemSize() + 1) * videoFrame.total()) {
+                cv::Mat tmp;
+                cv::Mat v = videoFrame.getMat(cv::ACCESS_RW);
+                cvtColor(v, tmp, cv::COLOR_RGB2BGRA);
+                fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
+                cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
+                v.release();
+                tmp.release();
+            } else {
+                cerr << "mismatch" << endl;
+            }
         });
         return "success";
     } catch(std::exception& ex) {
@@ -357,8 +374,6 @@ void iteration() {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         }
-        cv::waitKey(1);
-
         update_fps(v2d, true);
 
 #ifndef __EMSCRIPTEN__
@@ -385,6 +400,9 @@ int main(int argc, char **argv) {
     facemark->loadModel("assets/lbfmodel.yaml");
 
     print_system_info();
+
+    v2d->setStretching(STRETCH);
+
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
 
