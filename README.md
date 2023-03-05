@@ -37,7 +37,7 @@ https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7
 ## shader-demo
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
-https://user-images.githubusercontent.com/287266/222944648-05774cc6-24ed-4d3d-ac19-53d60fe21db2.mp4
+https://user-images.githubusercontent.com/287266/222971445-13b75aee-f190-419d-9772-404d32ff61f2.mp4
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
@@ -63,7 +63,7 @@ https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a2
 ## beauty-demo
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
 
-https://user-images.githubusercontent.com/287266/222969723-cc7652d8-0e2f-4235-9006-9c029b9f4450.mp4
+https://user-images.githubusercontent.com/287266/222971754-f1fc141f-453e-408e-ae35-addeeba625e6.mp4
 
 # Instructions
 You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
