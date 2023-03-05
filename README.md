@@ -37,14 +37,12 @@ https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7
 ## shader-demo
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
-
-https://user-images.githubusercontent.com/287266/222944352-31271211-66c5-4fb6-9dc0-4696531107e0.mp4
-
+https://user-images.githubusercontent.com/287266/222944648-05774cc6-24ed-4d3d-ac19-53d60fe21db2.mp4
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/222943596-1aa1c77c-6e4e-4023-870f-7ed42ec42ae5.mp4
+https://user-images.githubusercontent.com/287266/222944416-624c2d07-352f-407a-8cfc-b2bd21142b26.mp4
 
 ## font-demo
 Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
