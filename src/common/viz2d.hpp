@@ -100,8 +100,6 @@ public:
     cv::ogl::Texture2D& texture();
 
     void gl(std::function<void(const cv::Size&)> fn);
-    void cl(std::function<void()> fn);
-    void cpu(std::function<void()> fn);
     void clgl(std::function<void(cv::UMat&)> fn);
     void nvg(std::function<void(const cv::Size&)> fn);
 

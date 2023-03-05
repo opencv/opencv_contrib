@@ -374,19 +374,6 @@ void Viz2D::gl(std::function<void(const cv::Size&)> fn) {
     fn(fbSize);
 }
 
-void Viz2D::cl(std::function<void()> fn) {
-#ifndef __EMSCRIPTEN__
-    detail::CLExecScope_t scope(clgl().getCLExecContext());
-#endif
-    fn();
-}
-
-void Viz2D::cpu(std::function<void()> fn) {
-    cv::ocl::setUseOpenCL(false);
-    fn();
-    cv::ocl::setUseOpenCL(true);
-}
-
 void Viz2D::clgl(std::function<void(cv::UMat&)> fn) {
     clgl().execute(fn);
 }

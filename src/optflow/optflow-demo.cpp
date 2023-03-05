@@ -462,13 +462,11 @@ void iteration() {
         frameBuffer.copyTo(background);
     });
 
-    v2d->cl([&]() {
-        cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
-        //Subtract the background to create a motion mask
-        prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-        //Detect trackable points in the motion mask
-        detect_points(downMotionMaskGrey, detectedPoints);
-    });
+    cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
+    //Subtract the background to create a motion mask
+    prepare_motion_mask(downNextGrey, downMotionMaskGrey);
+    //Detect trackable points in the motion mask
+    detect_points(downMotionMaskGrey, detectedPoints);
 
     v2d->nvg([&](const cv::Size& sz) {
         v2d->clear();
