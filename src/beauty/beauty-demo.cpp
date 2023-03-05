@@ -24,14 +24,10 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /** Effect parameters **/
 
-#ifndef __EMSCRIPTEN__
 constexpr int BLUR_DIV = 200;
-#else
-constexpr int BLUR_DIV = 1000;
-#endif
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
 constexpr int REDUCE_SHADOW = 10; //percent
-constexpr uchar BOOST_LIP_SATURATION = 10; //0-255
+constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
 constexpr int DILATE_ITERATIONS = 1;
 #ifndef __EMSCRIPTEN__
 constexpr bool SIDE_BY_SIDE = true;
@@ -179,21 +175,6 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
     }
 }
 
-void draw_lips_mask(const vector<FaceFeatures> &lm) {
-    using namespace kb::viz2d::nvg;
-    for (size_t i = 0; i < lm.size(); i++) {
-        vector<vector<cv::Point2f>> features = lm[i].features();
-        beginPath();
-        fillColor(cv::Scalar(255, 255, 255, 255));
-        moveTo(features[7][0].x, features[7][0].y);
-        for (size_t k = 1; k < features[7].size(); ++k) {
-            lineTo(features[7][k].x, features[7][k].y);
-        }
-        closePath();
-        fill();
-    }
-}
-
 void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
     using namespace kb::viz2d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
@@ -222,7 +203,7 @@ void boost_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, uchar by) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
-void reduce_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double to_percent) {
+void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double to_percent) {
     assert(srcBGR.type() == CV_8UC3);
     static cv::UMat hsv;
     static vector<cv::UMat> hsvChannels;
@@ -253,12 +234,12 @@ void iteration() {
         //TODO try FeatherBlender
         static cv::detail::MultiBandBlender blender(true);
         //BGR
-        static cv::UMat bgr, down, lipsMask, faceBgMask, blurred, reduced, red;
+        static cv::UMat bgr, down, faceBgMask, blurred, reduced, saturated;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
         //GREY
-        static cv::UMat downGrey, faceBgMaskGrey, faceFgMaskGrey, lipsMaskGrey, lipsMaskInvGrey;
+        static cv::UMat downGrey, faceBgMaskGrey, faceFgMaskGrey, faceFgMaskInvGrey;
         //BGR-Float
         static cv::UMat frameOutFloat;
 
@@ -316,17 +297,6 @@ void iteration() {
                 cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
             });
 
-            v2d->nvg([&](const cv::Size &sz) {
-                v2d->clear();
-                //Draw outer lip mask
-                draw_lips_mask(featuresList);
-            });
-
-            v2d->clgl([&](cv::UMat &frameBuffer) {
-                //Convert/Copy the mask
-                cvtColor(frameBuffer, lipsMask, cv::COLOR_BGRA2BGR);
-            });
-
             //Dilate the face forground mask to make eyes and mouth areas wider
             int morph_size = 1;
             cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
@@ -334,17 +304,16 @@ void iteration() {
 
             cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
 
-            cvtColor(lipsMask, lipsMaskGrey, cv::COLOR_BGR2GRAY);
-            cv::bitwise_not(lipsMaskGrey,lipsMaskInvGrey);
+            cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
-            boost_saturation(bgr,red,BOOST_LIP_SATURATION);
-            reduce_shadows(bgr, reduced, REDUCE_SHADOW);
+            boost_saturation(bgr,saturated,BOOST_LIP_AND_EYE_SATURATION);
+            lighten_shadows(bgr, reduced, REDUCE_SHADOW);
 
             cv::boxFilter(reduced, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
             blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
-            blender.feed(bgr, lipsMaskInvGrey, cv::Point(0, 0));
-            blender.feed(red, lipsMaskGrey, cv::Point(0, 0));
+            blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
+            blender.feed(saturated, faceFgMaskGrey, cv::Point(0, 0));
             blender.blend(frameOutFloat, cv::UMat());
             frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
