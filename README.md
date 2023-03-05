@@ -56,9 +56,8 @@ https://user-images.githubusercontent.com/287266/208234553-3669df17-dbea-4166-aa
 
 ## pedestrian-demo
 Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI).
-Note: Detection rate is not very impressive and depends highly on the video.
 
-https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a280-aab57a2fbae3.mp4
+https://user-images.githubusercontent.com/287266/222980241-d631f7e5-e7a3-446e-937e-bce34e194bd1.mp4
 
 ## beauty-demo
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
