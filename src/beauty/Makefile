@@ -15,11 +15,11 @@ CXXFLAGS += -fpic
 ifdef EMSDK
 LDFLAGS += --preload-file assets/
 endif
-LIBS += -lm -lopencv_dnn -lopencv_face -lopencv_objdetect -lopencv_stitching -lopencv_tracking -lviz2d
+LIBS += -lm -lopencv_dnn -lopencv_face -lopencv_objdetect -lopencv_stitching -lviz2d
 ifndef EMSDK
 LIBS += -lOpenCL
 else
-LIBS += -llibprotobuf
+LIBS += -lopencv_video -lopencv_tracking -llibprotobuf
 endif
 
 .PHONY: all release debug clean distclean 

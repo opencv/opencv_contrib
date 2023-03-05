@@ -14,8 +14,11 @@
 #include <opencv2/tracking.hpp>
 
 /** Application parameters **/
-//uncomment to enable KCF tracking instead of continuous detection.
-//#define USE_TRACKER 1;
+#ifdef __EMSCRIPTEN__
+//enables KCF tracking instead of continuous detection.
+#define USE_TRACKER 1;
+#endif
+
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125;
@@ -207,28 +210,28 @@ void boost_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, uchar by) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
-void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
-    assert(srcBGR.type() == CV_8UC3);
-    static cv::UMat hsv;
-    static vector<cv::UMat> hsvChannels;
-    static cv::UMat valueFloat;
-
-    cvtColor(srcBGR, hsv, cv::COLOR_BGR2HSV);
-    cv::split(hsv, hsvChannels);
-    hsvChannels[2].convertTo(valueFloat, CV_32F, 1.0 / 255.0);
-
-    double minIn, maxIn;
-    cv::minMaxLoc(valueFloat, &minIn, &maxIn);
-    cv::subtract(valueFloat, minIn, valueFloat);
-    cv::divide(valueFloat, cv::Scalar::all(maxIn - minIn), valueFloat);
-    double minOut = (minIn + (1.0 * (percent / 100.0)));
-    cv::multiply(valueFloat, cv::Scalar::all(1.0 - minOut), valueFloat);
-    cv::add(valueFloat, cv::Scalar::all(minOut), valueFloat);
-
-    valueFloat.convertTo(hsvChannels[2], CV_8U, 255.0);
-    cv::merge(hsvChannels, hsv);
-    cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
-}
+//void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
+//    assert(srcBGR.type() == CV_8UC3);
+//    static cv::UMat hsv;
+//    static vector<cv::UMat> hsvChannels;
+//    static cv::UMat valueFloat;
+//
+//    cvtColor(srcBGR, hsv, cv::COLOR_BGR2HSV);
+//    cv::split(hsv, hsvChannels);
+//    hsvChannels[2].convertTo(valueFloat, CV_32F, 1.0 / 255.0);
+//
+//    double minIn, maxIn;
+//    cv::minMaxLoc(valueFloat, &minIn, &maxIn);
+//    cv::subtract(valueFloat, minIn, valueFloat);
+//    cv::divide(valueFloat, cv::Scalar::all(maxIn - minIn), valueFloat);
+//    double minOut = (minIn + (1.0 * (percent / 100.0)));
+//    cv::multiply(valueFloat, cv::Scalar::all(1.0 - minOut), valueFloat);
+//    cv::add(valueFloat, cv::Scalar::all(minOut), valueFloat);
+//
+//    valueFloat.convertTo(hsvChannels[2], CV_8U, 255.0);
+//    cv::merge(hsvChannels, hsv);
+//    cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
+//}
 
 void iteration() {
     try {
@@ -239,7 +242,7 @@ void iteration() {
         //TODO try FeatherBlender
         static cv::detail::MultiBandBlender blender(true);
         //BGR
-        static cv::UMat bgr, down, faceBgMask, blurred, lightened, saturated;
+        static cv::UMat bgr, down, faceBgMask, blurred, reduced_contrast, saturated;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -325,9 +328,12 @@ void iteration() {
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
             boost_saturation(bgr,saturated,BOOST_LIP_AND_EYE_SATURATION);
-            lighten_shadows(bgr, lightened, REDUCE_SHADOW);
+            //reduce contrast
+            multiply(bgr, cv::Scalar(0.8, 0.8, 0.8), reduced_contrast);
+            //fix brightness
+            add(bgr, cv::Scalar(0.1, 0.1, 0.1), reduced_contrast);
 
-            cv::boxFilter(lightened, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            cv::boxFilter(reduced_contrast, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
             blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
             blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
