@@ -100,7 +100,6 @@ std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> > *box
 
 void composite_layers(const cv::UMat background, const cv::UMat frameBuffer, cv::UMat dst, int blurKernelSize) {
     static cv::UMat blur;
-    static cv::UMat backgroundGrey;
 
     cv::boxFilter(frameBuffer, blur, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     cv::add(background, blur, dst);
