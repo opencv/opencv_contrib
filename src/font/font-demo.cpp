@@ -26,12 +26,11 @@ constexpr double FPS = 60;
 const cv::Scalar_<float> INITIAL_COLOR = kb::viz2d::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 /** Visualization parameters **/
 
-
 float min_star_size = 0.5f;
 float max_star_size = 1.0f;
 int min_star_count = 1000;
 int max_star_count = 3000;
-float star_alpha = 0.2;
+float star_alpha = 0.3;
 
 float font_size = 40.0f;
 nanogui::Color text_color = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
@@ -120,9 +119,10 @@ void iteration() {
             int numStars = rng.uniform(min_star_count, max_star_count);
             for(int i = 0; i < numStars; ++i) {
                 beginPath();
-                strokeWidth(rng.uniform(min_star_size, max_star_size));
+                const auto& size = rng.uniform(min_star_size, max_star_size);
+                strokeWidth(size);
                 strokeColor(cv::Scalar(255, 255, 255, star_alpha * 255.0f));
-                circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), 1);
+                circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), size / 2.0);
                 stroke();
             }
         });
