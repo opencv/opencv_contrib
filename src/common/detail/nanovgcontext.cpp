@@ -22,7 +22,6 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
     fn(clglContext_.getSize());
 }
 
-
 void push() {
 #ifndef __EMSCRIPTEN__
     GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
@@ -62,7 +61,6 @@ void NanoVGContext::begin() {
 //    nvgScale(context_, 1, -1);
     GL_CHECK(glViewport(0, 0, w, h));
 }
-
 
 void NanoVGContext::end() {
     //FIXME make nvgCancelFrame possible
