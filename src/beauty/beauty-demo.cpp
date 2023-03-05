@@ -14,7 +14,8 @@
 #include <opencv2/tracking.hpp>
 
 /** Application parameters **/
-
+//uncomment to enable KCF tracking instead of continuous detection.
+//#define USE_TRACKER 1;
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125;
@@ -22,7 +23,6 @@ constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 constexpr int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-
 /** Effect parameters **/
 
 constexpr int BLUR_DIV = 200;
@@ -40,8 +40,9 @@ constexpr bool STRETCH = false;
 
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
-static cv::Ptr<cv::Tracker> tracker;
-
+#ifdef USE_TRACKER
+static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
+#endif
 using std::cerr;
 using std::endl;
 using std::vector;
@@ -231,7 +232,9 @@ void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
 
 void iteration() {
     try {
+#ifdef USE_TRACKER
         static bool trackerInitalized = false;
+#endif
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         //TODO try FeatherBlender
         static cv::detail::MultiBandBlender blender(true);
@@ -265,23 +268,26 @@ void iteration() {
 
         shapes.clear();
         faceRects.clear();
-
-        if (trackerInitalized && tracker->update(downGrey, trackedFace)) {
+#ifdef USE_TRACKER
+        if (trackerInitalized && tracker->update(down, trackedFace)) {
             faceRects.push_back(trackedFace);
         } else {
+#endif
             detector->detect(down, faces);
 
             for (int i = 0; i < faces.rows; i++) {
                 faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
             }
+#ifdef USE_TRACKER
         }
-
+#endif
         if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
+#ifdef USE_TRACKER
             if(!trackerInitalized) {
-                tracker->init(downGrey, faceRects[0]);
+                tracker->init(down, faceRects[0]);
                 trackerInitalized = true;
             }
-
+#endif
             featuresList.clear();
             for (size_t i = 0; i < faceRects.size(); ++i) {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
@@ -379,7 +385,6 @@ int main(int argc, char **argv) {
     }
 #endif
     facemark->loadModel("assets/lbfmodel.yaml");
-    tracker = cv::TrackerKCF::create();
 
     print_system_info();
 
