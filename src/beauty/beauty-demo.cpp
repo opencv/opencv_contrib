@@ -203,7 +203,7 @@ void boost_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, uchar by) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
-void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double to_percent) {
+void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
     assert(srcBGR.type() == CV_8UC3);
     static cv::UMat hsv;
     static vector<cv::UMat> hsvChannels;
@@ -217,7 +217,7 @@ void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double to_percent
     cv::minMaxLoc(valueFloat, &minIn, &maxIn);
     cv::subtract(valueFloat, minIn, valueFloat);
     cv::divide(valueFloat, cv::Scalar::all(maxIn - minIn), valueFloat);
-    double minOut = (minIn + (1.0 * (to_percent / 100.0)));
+    double minOut = (minIn + (1.0 * (percent / 100.0)));
     cv::multiply(valueFloat, cv::Scalar::all(1.0 - minOut), valueFloat);
     cv::add(valueFloat, cv::Scalar::all(minOut), valueFloat);
 
@@ -234,7 +234,7 @@ void iteration() {
         //TODO try FeatherBlender
         static cv::detail::MultiBandBlender blender(true);
         //BGR
-        static cv::UMat bgr, down, faceBgMask, blurred, reduced, saturated;
+        static cv::UMat bgr, down, faceBgMask, blurred, lightened, saturated;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -307,9 +307,9 @@ void iteration() {
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
             boost_saturation(bgr,saturated,BOOST_LIP_AND_EYE_SATURATION);
-            lighten_shadows(bgr, reduced, REDUCE_SHADOW);
+            lighten_shadows(bgr, lightened, REDUCE_SHADOW);
 
-            cv::boxFilter(reduced, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            cv::boxFilter(lightened, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
             blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
             blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
