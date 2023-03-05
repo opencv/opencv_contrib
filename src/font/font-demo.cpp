@@ -109,7 +109,15 @@ void iteration() {
     //transformation matrix
     static cv::Mat tm;
     static cv::RNG rng(cv::getTickCount());
-    static size_t cnt = 0;
+    static uint32_t cnt = 0;
+    //Total number of lines in the text
+    static int32_t numLines = lines.size();
+    //Height of the text in pixels
+    static int32_t textHeight = (numLines * font_size);
+    //y-value of the current line
+    static int32_t y = 0;
+    //How many pixels to translate the text up.
+    int32_t translateY = HEIGHT - cnt;
 
     if(update_stars) {
         v2d->nvg([&](const cv::Size& sz) {
@@ -142,14 +150,6 @@ void iteration() {
         tm = cv::getPerspectiveTransform(quad1, quad2);
         update_perspective = false;
     }
-
-    int32_t y = 0;
-    //Total number of lines in the text
-    int32_t numLines = lines.size();
-    //Height of the text in pixels
-    int32_t textHeight = (numLines * font_size);
-    //How many pixels to translate the text up.
-    int32_t translateY = HEIGHT - cnt;
 
     v2d->nvg([&](const cv::Size& sz) {
         using namespace kb::viz2d::nvg;
