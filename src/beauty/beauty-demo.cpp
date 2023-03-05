@@ -29,17 +29,18 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 /** Effect parameters **/
 
 constexpr int BLUR_DIV = 500;
-const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
-constexpr uchar BOOST_SKIN_SATURATION = 5; //0-255
-constexpr float FACE_BG_CONTRAST = 0.6;
-constexpr float FACE_BG_BRIGHTNESS = 0.2;
+
+int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
+int boost_eyes_and_lips_saturation = 40; //0-255
+int boost_skin_saturation = 5; //0-255
+float skin_contrast = 0.6; //0.0-1.0
+float skin_brightness = 0.2; //should be equal to ((1.0 - skin_contrast) / 2.0)
 #ifndef __EMSCRIPTEN__
-constexpr bool SIDE_BY_SIDE = true;
-constexpr bool STRETCH = true;
+bool side_by_side = true;
+bool stretch = true;
 #else
-constexpr bool SIDE_BY_SIDE = false;
-constexpr bool STRETCH = false;
+bool side_by_side = false;
+bool stretch = false;
 #endif
 
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
@@ -211,6 +212,46 @@ void boost_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, uchar by) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
+void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
+    int boost_eyes_and_lips_saturation = 40; //0-255
+
+    v2d->makeWindow(5, 30, "Effect");
+
+    v2d->makeGroup("Display");
+    v2d->makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
+    v2d->makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
+    v2d->makeButton("Fullscreen", [=]() {
+        v2d->setFullscreen(!v2d->isFullscreen());
+    });
+
+    v2d->makeButton("Offscreen", [=]() {
+        v2d->setOffscreen(!v2d->isOffscreen());
+    });
+
+    v2d->makeGroup("Skin");
+    auto* kernelSize = v2d->makeFormVariable("Blur", blur_skin_kernel_size, 1, 256, true, "", "use this kernel size to blur the face skin");
+    kernelSize->set_callback([=](const int& k) {
+        static int lastKernelSize = blur_skin_kernel_size;
+
+        if(k == lastKernelSize)
+            return;
+
+        if(k <= lastKernelSize) {
+            blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+        } else if(k > lastKernelSize)
+            blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+
+        lastKernelSize = k;
+        kernelSize->set_value(blur_skin_kernel_size);
+    });
+    v2d->makeFormVariable("Saturation boost", boost_skin_saturation, 0, 255, true, "", "boost the skin saturation by this amount");
+    v2d->makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
+    v2d->makeFormVariable("Brightness", skin_brightness, 0.0f, 1.0f, true, "", "brightness amount of the face skin. should be equal to ((1.0 - skin_contrast) / 2.0)");
+
+    v2d->makeGroup("Eyes and Lips");
+    v2d->makeFormVariable("Saturation boost", boost_eyes_and_lips_saturation, 0, 255, true, "", "boost the saturation of the eyes and the lips by this amount");
+}
+
 void iteration() {
     try {
 #ifdef USE_TRACKER
@@ -298,15 +339,15 @@ void iteration() {
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
             //boost saturation of eyes and lips
-            boost_saturation(bgr,saturated, BOOST_LIP_AND_EYE_SATURATION);
+            boost_saturation(bgr,saturated, boost_eyes_and_lips_saturation);
             //reduce skin contrast
-            multiply(bgr, cv::Scalar::all(FACE_BG_CONTRAST), adjusted);
+            multiply(bgr, cv::Scalar::all(skin_contrast), adjusted);
             //fix skin brightness
-            add(adjusted, cv::Scalar::all(FACE_BG_BRIGHTNESS) * 255.0, adjusted);
+            add(adjusted, cv::Scalar::all(skin_brightness) * 255.0, adjusted);
             //blur the skin
-            cv::boxFilter(adjusted, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            cv::boxFilter(adjusted, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             //boost skin saturation
-            boost_saturation(blurred,skin, BOOST_SKIN_SATURATION);
+            boost_saturation(blurred,skin, boost_skin_saturation);
 
             //piece it all together
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
@@ -316,7 +357,7 @@ void iteration() {
             blender.blend(frameOutFloat, cv::UMat());
             frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
-            if (SIDE_BY_SIDE) {
+            if (side_by_side) {
                 cv::resize(bgr, lhalf, cv::Size(0, 0), 0.5, 0.5);
                 cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
@@ -329,7 +370,7 @@ void iteration() {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         } else {
-            if (SIDE_BY_SIDE) {
+            if (side_by_side) {
                 frameOut = cv::Scalar::all(0);
                 cv::resize(bgr, lhalf, cv::Size(0, 0), 0.5, 0.5);
                 lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
@@ -369,10 +410,12 @@ int main(int argc, char **argv) {
 
     print_system_info();
 
-    v2d->setStretching(STRETCH);
+    v2d->setStretching(stretch);
 
-    if (!v2d->isOffscreen())
+    if (!v2d->isOffscreen()) {
+        setup_gui(v2d);
         v2d->setVisible(true);
+    }
 
 #ifndef __EMSCRIPTEN__
     auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
