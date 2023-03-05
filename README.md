@@ -52,7 +52,7 @@ https://user-images.githubusercontent.com/287266/208361370-229b46f6-83c5-4587-96
 ## optflow-demo
 My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208234553-3669df17-dbea-4166-aaf1-e2d5c447e9f0.mp4
+https://user-images.githubusercontent.com/287266/222980868-e032bc80-0a2a-4406-b64e-7b2acdc22416.mp4
 
 ## pedestrian-demo
 Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI).
