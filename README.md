@@ -119,12 +119,6 @@ make -j8
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
-## Run the shader-demo:
-
-```bash
-src/shader/shader-demo
-```
-
 ## Run the tetra-demo:
 
 ```bash
@@ -135,6 +129,12 @@ src/tetra/tetra-demo
 
 ```bash
 src/video/video-demo bunny.webm
+```
+
+## Run the shader-demo:
+
+```bash
+src/shader/shader-demo
 ```
 
 ## Run the nanovg-demo:
