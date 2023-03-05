@@ -138,6 +138,7 @@ int main(int argc, char **argv) {
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
 
+    std::vector<cv::UMat> hsvChannels;
     cv::UMat rgb;
     cv::UMat bgra;
     cv::UMat hsv;
@@ -154,17 +155,23 @@ int main(int argc, char **argv) {
 
         v2d->clgl([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
-            //Color-conversion from RGB to HSV. (OpenCL)
-            cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
-            //Extract the hue channel
-            cv::extractChannel(hsv, hueChannel, 0);
-            //Set the current hue
-            hueChannel.setTo(hue);
-            //Insert the hue channel
-            cv::insertChannel(hueChannel, hsv, 0);
-            //Color-conversion from HSV to RGB. (OpenCL)
-            cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
-            //Color-conversion from RGB to BGRA. (OpenCL)
+        });
+
+        //Color-conversion from RGB to HSV. (OpenCL)
+        cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+
+        //split the channels
+        split(hsv,hsvChannels);
+        //Set the current hue
+        hsvChannels[0].setTo(hue);
+        //merge the channels back
+        merge(hsvChannels,hsv);
+
+        //Color-conversion from HSV to RGB. (OpenCL)
+        cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+
+        //Color-conversion from RGB to BGRA. (OpenCL)
+        v2d->clgl([&](cv::UMat &frameBuffer) {
             cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
         });
 
