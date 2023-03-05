@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include <opencv2/tracking.hpp>
 #include <opencv2/objdetect/objdetect.hpp>
 
 constexpr unsigned int WIDTH = 1920;
@@ -23,6 +24,8 @@ constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 constexpr float fg_loss = 3;
 // Intensity of blur defined by kernel size. The default scales with the image diagonal.
 constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
+
+static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
 
 using std::cerr;
 using std::endl;
@@ -103,9 +106,9 @@ void composite_layers(const cv::UMat background, const cv::UMat foreground, cons
     static cv::UMat blur;
     static cv::UMat backgroundGrey;
 
-    cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
-    cv::add(foreground, frameBuffer, foreground);
-    cv::boxFilter(foreground, blur, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+//    cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
+//    cv::add(foreground, frameBuffer, foreground);
+    cv::boxFilter(frameBuffer, blur, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     cv::add(background, blur, dst);
 }
 
@@ -143,37 +146,64 @@ int main(int argc, char **argv) {
         cv::HOGDescriptor hog;
         hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
         std::vector<cv::Rect> locations;
-        std::vector<cv::Rect> maxLocations;
         vector<vector<double>> boxes;
         vector<double> probs;
+        bool trackerInitalized = false;
+        cv::Rect trackedFace;
+        cv::Rect lastTracked(0,0,1,1);
 
+        bool redetect = true;
         while (true) {
             if(!v2d->capture())
                        break;
 
             v2d->clgl([&](cv::UMat& frameBuffer){
                 cvtColor(frameBuffer,videoFrameUp,cv::COLOR_BGRA2RGB);
-                cv::resize(frameBuffer, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+                cv::resize(videoFrameUp, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
             });
 
             cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
             cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
-            hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
 
-            maxLocations.clear();
-            if (!locations.empty()) {
-                boxes.clear();
-                probs.clear();
-                for (const auto &rect : locations) {
-                    boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
-                    probs.push_back(1.0);
-                }
+            cv::Rect tracked = cv::Rect(0,0,1,1);
 
-                vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
+            if (!trackerInitalized || redetect || !tracker->update(videoFrameDown, tracked)) {
+                redetect = false;
+                tracked = cv::Rect(0,0,1,1);
+                hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
 
-                for (size_t i = 0; i < keep.size(); ++i) {
-                    if (keep[i])
-                        maxLocations.push_back(locations[i]);
+                if (!locations.empty()) {
+                    boxes.clear();
+                    probs.clear();
+                    for (const auto &rect : locations) {
+                        boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
+                        probs.push_back(1.0);
+                    }
+
+                    vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
+                    for (size_t i = 0; i < keep.size(); ++i) {
+                        if (keep[i]) {
+                            if(tracked.width * tracked.height < locations[i].width * locations[i].height) {
+                                tracked = locations[i];
+                            }
+                        }
+                    }
+
+                    if(!(lastTracked.width == 1 && lastTracked.height == 1)) {
+                       tracked = lastTracked;
+                    }
+
+                    if(!trackerInitalized) {
+                        tracker->init(videoFrameDown, tracked);
+                        trackerInitalized = true;
+                    }
+
+                    if(tracked.width == 1 && tracked.height == 1) {
+                        redetect = true;
+                        cerr << "redetect" << endl;
+                    } else {
+                        lastTracked = tracked;
+                    }
                 }
             }
 
@@ -184,9 +214,7 @@ int main(int argc, char **argv) {
                 beginPath();
                 strokeWidth(std::fmax(2.0, WIDTH / 960.0));
                 strokeColor(kb::viz2d::color_convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
-                for (size_t i = 0; i < maxLocations.size(); i++) {
-                    rect(maxLocations[i].x * WIDTH_FACTOR, maxLocations[i].y * HEIGHT_FACTOR, maxLocations[i].width * WIDTH_FACTOR, maxLocations[i].height * HEIGHT_FACTOR);
-                }
+                rect(tracked.x * WIDTH_FACTOR, tracked.y * HEIGHT_FACTOR, tracked.width * WIDTH_FACTOR, tracked.height * HEIGHT_FACTOR);
                 stroke();
             });
 
@@ -195,7 +223,7 @@ int main(int argc, char **argv) {
                 composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, fg_loss);
             });
 
-            update_fps(v2d, true);
+//            update_fps(v2d, true);
 
             v2d->write();
 
