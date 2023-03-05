@@ -37,12 +37,14 @@ https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7
 ## shader-demo
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
-https://user-images.githubusercontent.com/287266/222886064-a95c96f2-d0e1-424d-9da6-6b3b68bd56df.mp4
+
+https://user-images.githubusercontent.com/287266/222943989-7f06406c-9ab2-4d8d-860e-4f93ea106a3d.mp4
+
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/222870115-389f9561-79f6-4a4f-a798-dfc0e3680369.mp4
+https://user-images.githubusercontent.com/287266/222943596-1aa1c77c-6e4e-4023-870f-7ed42ec42ae5.mp4
 
 ## font-demo
 Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
@@ -71,7 +73,7 @@ You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
 ## Install build dependencies
 
 ```bash
-apt install ubuntu-restricted-extras libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
+apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
 ```
 
 ## Build nanovg
@@ -119,12 +121,6 @@ make -j8
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
-## Run the shader-demo:
-
-```bash
-src/shader/shader-demo
-```
-
 ## Run the tetra-demo:
 
 ```bash
@@ -135,6 +131,12 @@ src/tetra/tetra-demo
 
 ```bash
 src/video/video-demo bunny.webm
+```
+
+## Run the shader-demo:
+
+```bash
+src/shader/shader-demo
 ```
 
 ## Run the nanovg-demo:
