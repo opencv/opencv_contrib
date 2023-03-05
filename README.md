@@ -37,7 +37,9 @@ https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7
 ## shader-demo
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
-https://user-images.githubusercontent.com/287266/222943924-e5f56b2c-357c-4dbd-a147-f0c11b572bff.mp4
+
+https://user-images.githubusercontent.com/287266/222943989-7f06406c-9ab2-4d8d-860e-4f93ea106a3d.mp4
+
 
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
