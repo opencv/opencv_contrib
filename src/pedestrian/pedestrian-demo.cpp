@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
                 composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, fg_loss);
             });
 
-//            update_fps(v2d, true);
+            update_fps(v2d, true);
 
             v2d->write();
 
