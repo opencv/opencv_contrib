@@ -96,14 +96,14 @@ void CLGLContext::end() {
 }
 
 void CLGLContext::download(cv::UMat& m) {
-    cv::Mat tmp = m.getMat(cv::ACCESS_RW);
+    cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
     tmp.release();
 }
 
 void CLGLContext::upload(const cv::UMat& m) {
-    cv::Mat tmp = m.getMat(cv::ACCESS_RW);
+    cv::Mat tmp = m.getMat(cv::ACCESS_READ);
     assert(tmp.data != nullptr);
     GL_CHECK(glTexSubImage2D(
         GL_TEXTURE_2D,
