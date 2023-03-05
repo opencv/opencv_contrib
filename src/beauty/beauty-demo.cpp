@@ -228,7 +228,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
 
-    v2d->makeGroup("Skin");
+    v2d->makeGroup("Face Skin");
     auto* kernelSize = v2d->makeFormVariable("Blur", blur_skin_kernel_size, 1, 256, true, "", "use this kernel size to blur the face skin");
     kernelSize->set_callback([=](const int& k) {
         static int lastKernelSize = blur_skin_kernel_size;
