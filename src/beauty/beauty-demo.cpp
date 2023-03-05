@@ -31,6 +31,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr int BLUR_DIV = 500;
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
 constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
+constexpr uchar BOOST_SKIN_SATURATION = 5; //0-255
 constexpr float FACE_BG_CONTRAST = 0.7;
 constexpr float FACE_BG_BRIGHTNESS = 0.15;
 #ifndef __EMSCRIPTEN__
@@ -218,7 +219,7 @@ void iteration() {
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         static cv::detail::MultiBandBlender blender(false, 5);
         //BGR
-        static cv::UMat bgr, down, faceBgMask, blurred, adjusted, saturated;
+        static cv::UMat bgr, down, faceBgMask, blurred, adjusted, saturated, skin;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -304,10 +305,12 @@ void iteration() {
             add(adjusted, cv::Scalar::all(FACE_BG_BRIGHTNESS) * 255.0, adjusted);
             //blur the skin
             cv::boxFilter(adjusted, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            //boost skin saturation
+            boost_saturation(blurred,skin, BOOST_SKIN_SATURATION);
 
             //piece it all together
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
-            blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
+            blender.feed(skin, faceBgMaskGrey, cv::Point(0, 0));
             blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
             blender.feed(saturated, faceFgMaskGrey, cv::Point(0, 0));
             blender.blend(frameOutFloat, cv::UMat());
@@ -382,7 +385,7 @@ int main(int argc, char **argv) {
     float fps = capture.get(cv::CAP_PROP_FPS);
     float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, v2d->getFrameBufferSize(), VA_HW_DEVICE_INDEX);
+    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
 
     while (true)
         iteration();
