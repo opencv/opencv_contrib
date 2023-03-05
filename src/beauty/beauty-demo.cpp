@@ -30,7 +30,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 constexpr int BLUR_DIV = 500;
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
+constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 50; //0-255
 constexpr float FACE_BG_CONTRAST = 0.7;
 constexpr float FACE_BG_BRIGHTNESS = 0.15;
 #ifndef __EMSCRIPTEN__
