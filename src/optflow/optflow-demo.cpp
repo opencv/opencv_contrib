@@ -188,7 +188,7 @@ void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& point
 bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
     static float last_movement = 0;
 
-    float movement = cv::countNonZero(srcMotionMaskGrey) / double(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
+    float movement = cv::countNonZero(srcMotionMaskGrey) / float(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
     float relation = movement > 0 && last_movement > 0 ? std::max(movement, last_movement) / std::min(movement, last_movement) : 0;
     float relM = relation * log10(1.0f + (movement * 9.0));
     float relLM = relation * log10(1.0f + (last_movement * 9.0));
