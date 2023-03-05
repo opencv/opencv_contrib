@@ -38,7 +38,7 @@ https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
 
-https://user-images.githubusercontent.com/287266/222943989-7f06406c-9ab2-4d8d-860e-4f93ea106a3d.mp4
+https://user-images.githubusercontent.com/287266/222944352-31271211-66c5-4fb6-9dc0-4696531107e0.mp4
 
 
 ## nanovg-demo
