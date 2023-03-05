@@ -19,9 +19,9 @@ GLint center_y;
 GLint zoom;
 
 //mandelbrot control parameters
-float center_xval = -0.5;
-float center_yval = 0.0;
-float zoom_level = 1.0;
+float center_x_val = -0.5;
+float center_y_val = 0.0;
+float zoom_val = 1.0;
 long iterations = 0;
 
 using std::cerr;
@@ -289,14 +289,14 @@ void render_scene(const cv::Size& sz) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(iterations > 1900) {
-        center_xval = -0.5;
-        zoom_level = 1.0;
+        center_x_val = -0.5;
+        zoom_val = 1.0;
         iterations = 0;
     }
     glUseProgram(shaderProgram);
-    glUniform1f(center_y, center_yval);
-    glUniform1f(center_x, center_xval*=0.9997);
-    glUniform1f(zoom, zoom_level*=0.995);
+    glUniform1f(center_y, center_y_val);
+    glUniform1f(center_x, center_x_val*=0.9997);
+    glUniform1f(zoom, zoom_val*=0.995);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
