@@ -8,7 +8,7 @@ The goal of the demos is to show how to use Viz2d in conjunction with interop op
 
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
-* The author of the video used int the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
+* The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
 
 # Requirements
 * Support for OpenCL 1.2
