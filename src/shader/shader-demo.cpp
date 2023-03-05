@@ -13,13 +13,15 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
-//mandelbrot control parameters
-GLint centerX;
-GLint centerY;
+//WebGL uniforms
+GLint center_x;
+GLint center_y;
 GLint zoom;
-float centerXVal = -0.5;
-float centerYVal = 0.0;
-float zoomLevel = 1.0;
+
+//mandelbrot control parameters
+float center_xval = -0.5;
+float center_yval = 0.0;
+float zoom_level = 1.0;
 long iterations = 0;
 
 using std::cerr;
@@ -148,7 +150,7 @@ void load_shader(){
     const char *  vert = R"(#version 300 es
     in vec4 position;
 
-    void main( )
+    void main()
     {
         gl_Position = vec4(position.xyz, 1.0);
     })";
@@ -275,8 +277,8 @@ void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
     zoom = glGetUniformLocation(shaderProgram, "zoom");
-    centerX = glGetUniformLocation(shaderProgram, "center_x");
-    centerY = glGetUniformLocation(shaderProgram, "center_y");
+    center_x = glGetUniformLocation(shaderProgram, "center_x");
+    center_y = glGetUniformLocation(shaderProgram, "center_y");
 
     glViewport(0, 0, WIDTH, HEIGHT);
     glEnable(GL_DEPTH_TEST);
@@ -287,14 +289,14 @@ void render_scene(const cv::Size& sz) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(iterations > 1900) {
-        centerXVal = -0.5;
-        zoomLevel = 1.0;
+        center_xval = -0.5;
+        zoom_level = 1.0;
         iterations = 0;
     }
     glUseProgram(shaderProgram);
-    glUniform1f(centerY, centerYVal);
-    glUniform1f(centerX, centerXVal*=0.9997);
-    glUniform1f(zoom, zoomLevel*=0.995);
+    glUniform1f(center_y, center_yval);
+    glUniform1f(center_x, center_xval*=0.9997);
+    glUniform1f(zoom, zoom_level*=0.995);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
