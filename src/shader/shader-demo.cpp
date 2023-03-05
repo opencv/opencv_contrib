@@ -3,6 +3,9 @@
 #include "../common/viz2d.hpp"
 #include "../common/util.hpp"
 
+using std::cerr;
+using std::endl;
+
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
@@ -13,24 +16,25 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
-//WebGL uniforms
-GLint center_x;
-GLint center_y;
-GLint zoom;
-
 //mandelbrot control parameters
 float center_x_val = -0.5;
 float center_y_val = 0.0;
 float zoom_val = 1.0;
 long iterations = 0;
 
-using std::cerr;
-using std::endl;
+//WebGL uniforms
+GLint center_x;
+GLint center_y;
+GLint zoom;
 
-GLuint shaderProgram;
+//shader handle
+GLuint shader_program;
+
 #ifndef __EMSCRIPTEN__
+//vertex array
 GLuint VAO;
 #endif
+
 void load_buffer_data(){
     // vertex position, color
     float vertices[] =
@@ -270,15 +274,15 @@ void load_shader(){
         outColor = return_color();
     })";
 #endif
-    shaderProgram = init_shader(vert,  frag, "fragColor");
+    shader_program = init_shader(vert,  frag, "fragColor");
 }
 
 void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
-    zoom = glGetUniformLocation(shaderProgram, "zoom");
-    center_x = glGetUniformLocation(shaderProgram, "center_x");
-    center_y = glGetUniformLocation(shaderProgram, "center_y");
+    zoom = glGetUniformLocation(shader_program, "zoom");
+    center_x = glGetUniformLocation(shader_program, "center_x");
+    center_y = glGetUniformLocation(shader_program, "center_y");
 
     glViewport(0, 0, WIDTH, HEIGHT);
     glEnable(GL_DEPTH_TEST);
@@ -293,7 +297,7 @@ void render_scene(const cv::Size& sz) {
         zoom_val = 1.0;
         iterations = 0;
     }
-    glUseProgram(shaderProgram);
+    glUseProgram(shader_program);
     glUniform1f(center_y, center_y_val);
     glUniform1f(center_x, center_x_val*=0.9997);
     glUniform1f(zoom, zoom_val*=0.995);
