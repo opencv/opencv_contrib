@@ -242,7 +242,7 @@ void iteration() {
         //TODO try FeatherBlender
         static cv::detail::MultiBandBlender blender(true);
         //BGR
-        static cv::UMat bgr, down, faceBgMask, blurred, reduced_contrast, saturated;
+        static cv::UMat bgr, down, faceBgMask, blurred, adjusted, saturated;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -329,11 +329,11 @@ void iteration() {
 
             boost_saturation(bgr,saturated,BOOST_LIP_AND_EYE_SATURATION);
             //reduce contrast
-            multiply(bgr, cv::Scalar(0.8, 0.8, 0.8), reduced_contrast);
+            multiply(bgr, cv::Scalar(0.8, 0.8, 0.8), adjusted);
             //fix brightness
-            add(bgr, cv::Scalar(0.1, 0.1, 0.1), reduced_contrast);
+            add(bgr, cv::Scalar(0.1, 0.1, 0.1), adjusted);
 
-            cv::boxFilter(reduced_contrast, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            cv::boxFilter(adjusted, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
             blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
             blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
