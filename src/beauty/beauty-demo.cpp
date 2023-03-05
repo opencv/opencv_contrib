@@ -28,14 +28,14 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 /** Effect parameters **/
 
-constexpr int BLUR_DIV = 200;
+constexpr int BLUR_DIV = 500;
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-constexpr int REDUCE_SHADOW = 10; //percent
 constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
-constexpr int DILATE_ITERATIONS = 1;
+constexpr float FACE_BG_CONTRAST = 0.7;
+constexpr float FACE_BG_BRIGHTNESS = 0.15;
 #ifndef __EMSCRIPTEN__
 constexpr bool SIDE_BY_SIDE = true;
-constexpr bool STRETCH = false;
+constexpr bool STRETCH = true;
 #else
 constexpr bool SIDE_BY_SIDE = false;
 constexpr bool STRETCH = false;
@@ -210,50 +210,26 @@ void boost_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, uchar by) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
-//void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
-//    assert(srcBGR.type() == CV_8UC3);
-//    static cv::UMat hsv;
-//    static vector<cv::UMat> hsvChannels;
-//    static cv::UMat valueFloat;
-//
-//    cvtColor(srcBGR, hsv, cv::COLOR_BGR2HSV);
-//    cv::split(hsv, hsvChannels);
-//    hsvChannels[2].convertTo(valueFloat, CV_32F, 1.0 / 255.0);
-//
-//    double minIn, maxIn;
-//    cv::minMaxLoc(valueFloat, &minIn, &maxIn);
-//    cv::subtract(valueFloat, minIn, valueFloat);
-//    cv::divide(valueFloat, cv::Scalar::all(maxIn - minIn), valueFloat);
-//    double minOut = (minIn + (1.0 * (percent / 100.0)));
-//    cv::multiply(valueFloat, cv::Scalar::all(1.0 - minOut), valueFloat);
-//    cv::add(valueFloat, cv::Scalar::all(minOut), valueFloat);
-//
-//    valueFloat.convertTo(hsvChannels[2], CV_8U, 255.0);
-//    cv::merge(hsvChannels, hsv);
-//    cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
-//}
-
 void iteration() {
     try {
 #ifdef USE_TRACKER
         static bool trackerInitalized = false;
 #endif
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-        //TODO try FeatherBlender
-        static cv::detail::MultiBandBlender blender(true);
+        static cv::detail::MultiBandBlender blender(false, 5);
         //BGR
         static cv::UMat bgr, down, faceBgMask, blurred, adjusted, saturated;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
         //GREY
-        static cv::UMat downGrey, faceBgMaskGrey, faceFgMaskGrey, faceFgMaskInvGrey;
+        static cv::UMat faceBgMaskGrey, faceFgMaskGrey, faceFgMaskInvGrey;
         //BGR-Float
         static cv::UMat frameOutFloat;
 
         static cv::Mat faces;
-        static vector<cv::Rect> faceRects;
         static cv::Rect trackedFace;
+        static vector<cv::Rect> faceRects;
         static vector<vector<cv::Point2f>> shapes;
         static vector<FaceFeatures> featuresList;
 
@@ -267,7 +243,6 @@ void iteration() {
         });
 
         cv::resize(bgr, down, cv::Size(0, 0), SCALE, SCALE);
-        cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
 
         shapes.clear();
         faceRects.clear();
@@ -284,7 +259,7 @@ void iteration() {
 #ifdef USE_TRACKER
         }
 #endif
-        if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
+        if (!faceRects.empty() && facemark->fit(down, faceRects, shapes)) {
 #ifdef USE_TRACKER
             if(!trackerInitalized) {
                 tracker->init(down, faceRects[0]);
@@ -319,21 +294,19 @@ void iteration() {
                 cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
             });
 
-            //Dilate the face forground mask to make eyes and mouth areas wider
-            int morph_size = 1;
-            cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
-            cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
-
             cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
-            boost_saturation(bgr,saturated,BOOST_LIP_AND_EYE_SATURATION);
-            //reduce contrast
-            multiply(bgr, cv::Scalar(0.8, 0.8, 0.8), adjusted);
-            //fix brightness
-            add(bgr, cv::Scalar(0.1, 0.1, 0.1), adjusted);
-
+            //boost saturation of eyes and lips
+            boost_saturation(bgr,saturated, BOOST_LIP_AND_EYE_SATURATION);
+            //reduce skin contrast
+            multiply(bgr, cv::Scalar::all(FACE_BG_CONTRAST), adjusted);
+            //fix skin brightness
+            add(adjusted, cv::Scalar::all(FACE_BG_BRIGHTNESS) * 255.0, adjusted);
+            //blur the skin
             cv::boxFilter(adjusted, blurred, -1, cv::Size(BLUR_KERNEL_SIZE, BLUR_KERNEL_SIZE), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+
+            //piece it all together
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
             blender.feed(blurred, faceBgMaskGrey, cv::Point(0, 0));
             blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
