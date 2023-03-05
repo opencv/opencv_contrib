@@ -14,7 +14,7 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+const int kernel_size = std::max(int(DIAG / 300 % 2 == 0 ? DIAG / 300 + 1 : DIAG / 300), 1);
 
 //mandelbrot control parameters
 float center_x_val = -0.4;
