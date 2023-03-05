@@ -32,10 +32,10 @@ constexpr int BLUR_DIV = 500;
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
 constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
 constexpr uchar BOOST_SKIN_SATURATION = 5; //0-255
-constexpr float FACE_BG_CONTRAST = 0.7;
-constexpr float FACE_BG_BRIGHTNESS = 0.15;
+constexpr float FACE_BG_CONTRAST = 0.6;
+constexpr float FACE_BG_BRIGHTNESS = 0.2;
 #ifndef __EMSCRIPTEN__
-constexpr bool SIDE_BY_SIDE = true;
+constexpr bool SIDE_BY_SIDE = false;
 constexpr bool STRETCH = true;
 #else
 constexpr bool SIDE_BY_SIDE = false;
