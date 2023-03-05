@@ -55,7 +55,7 @@ My take on a optical flow visualization on top of a video. Uses background subtr
 https://user-images.githubusercontent.com/287266/222980868-e032bc80-0a2a-4406-b64e-7b2acdc22416.mp4
 
 ## pedestrian-demo
-Pedestrian detection using HOG with a linear SVM and non-maximal suppression. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU). Decodes/encodes on the GPU (VAAPI).
+Pedestrian detection using HOG with a linear SVM and non-maximal suppression and tracking using KCF. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU), tracks using KCF (CPU). Decodes/encodes on the GPU (VAAPI).
 
 https://user-images.githubusercontent.com/287266/222980241-d631f7e5-e7a3-446e-937e-bce34e194bd1.mp4
 
