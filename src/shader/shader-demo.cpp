@@ -17,7 +17,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 const int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 //mandelbrot control parameters
-float center_x_val = -0.5;
+float center_x_val = -0.4;
 float center_y_val = 0.0;
 float zoom_val = 1.0;
 long iterations = 0;
@@ -288,19 +288,19 @@ void init_scene(const cv::Size& sz) {
     glEnable(GL_DEPTH_TEST);
 }
 
-
 void render_scene(const cv::Size& sz) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if(iterations > 1900) {
-        center_x_val = -0.5;
+        center_x_val = -0.4;
         zoom_val = 1.0;
         iterations = 0;
     }
+
     glUseProgram(shader_program);
     glUniform1f(center_y, center_y_val);
-    glUniform1f(center_x, center_x_val*=0.9997);
-    glUniform1f(zoom, zoom_val*=0.995);
+    glUniform1f(center_x, center_x_val*=0.99999);
+    glUniform1f(zoom, zoom_val*=0.996);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
@@ -344,9 +344,12 @@ void iteration() {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, kernel_size);
     });
-#endif
+
+    update_fps(v2d, true);
+#else
     //in WASM the shaders and nanovg don't work together
     update_fps(v2d, false);
+#endif
 
 #ifndef __EMSCRIPTEN__
     v2d->write();
