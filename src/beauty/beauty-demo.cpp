@@ -31,13 +31,14 @@ constexpr uchar BOOST_LIP_AND_EYE_SATURATION = 40; //0-255
 constexpr int DILATE_ITERATIONS = 1;
 #ifndef __EMSCRIPTEN__
 constexpr bool SIDE_BY_SIDE = true;
-constexpr bool STRETCH = true;
+constexpr bool STRETCH = false;
 #else
 constexpr bool SIDE_BY_SIDE = false;
 constexpr bool STRETCH = false;
 #endif
 
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
 
 using std::cerr;
 using std::endl;
@@ -226,8 +227,6 @@ void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
     cvtColor(hsv, dstBGR, cv::COLOR_HSV2BGR);
 }
 
-static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
-
 void iteration() {
     try {
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
@@ -303,7 +302,6 @@ void iteration() {
             cv::morphologyEx(faceFgMaskGrey, faceFgMaskGrey, cv::MORPH_DILATE, element, cv::Point(element.cols >> 1, element.rows >> 1), DILATE_ITERATIONS, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 
             cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
-
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
             boost_saturation(bgr,saturated,BOOST_LIP_AND_EYE_SATURATION);
