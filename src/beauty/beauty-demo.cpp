@@ -314,7 +314,7 @@ void iteration() {
 
             v2d->nvg([&](const cv::Size &sz) {
                 v2d->clear();
-                //Draw the face background mask (= face oval)
+                //Draw the face background mask -> face oval
                 draw_face_bg_mask(featuresList);
             });
 
