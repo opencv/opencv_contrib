@@ -108,6 +108,7 @@ void iteration() {
     //transformation matrix
     static cv::Mat tm;
     static cv::RNG rng(cv::getTickCount());
+    //line count
     static uint32_t cnt = 0;
     //Total number of lines in the text
     static int32_t numLines = lines.size();
@@ -178,6 +179,7 @@ void iteration() {
     });
 
     if(-translateY > textHeight) {
+        //reset the scroll once the text is out of the picture
         cnt = 0;
     }
 
@@ -219,7 +221,6 @@ int main(int argc, char **argv) {
         lines.push_back(line);
     }
 
-    //Frame count.
 #ifndef __EMSCRIPTEN__
     while(true)
         iteration();
