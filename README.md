@@ -27,12 +27,12 @@ There are currently eight demos. The shader-demo, font-demo and optflow-demo can
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208234618-49284df0-5fc7-4381-8c9a-063df7400a88.mp4
+https://user-images.githubusercontent.com/287266/222984424-e0914bd4-72f3-4777-8a61-28dee6dd3573.mp4
 
 ## video-demo
 Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/208234606-ce0babf0-69ae-4482-b7f6-3532d5464248.mp4
+https://user-images.githubusercontent.com/287266/222984530-c8c39997-ed3c-4675-92c9-40e4a7ea306a.mp4
 
 ## shader-demo
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
@@ -42,7 +42,7 @@ https://user-images.githubusercontent.com/287266/222971445-13b75aee-f190-419d-97
 ## nanovg-demo
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-https://user-images.githubusercontent.com/287266/222944749-f55114b4-6a92-44a9-8230-b15d1e2470f8.mp4
+https://user-images.githubusercontent.com/287266/222984631-a7e3522a-8713-4413-ab5e-e6b55cd52ce8.mp4
 
 ## font-demo
 Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
