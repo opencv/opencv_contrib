@@ -63,7 +63,7 @@ https://user-images.githubusercontent.com/287266/208234590-f76bc0ef-f356-4d8d-a2
 ## beauty-demo
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band (OpenCV/OpenCL) blending to put it all together. Note: There are sometimes little glitches because face landmark detection is not very accurate and has rather few points.
 
-https://user-images.githubusercontent.com/287266/222950512-8b8f76c0-9f24-4eb1-98d2-cfb07055e3b3.mp4
+https://user-images.githubusercontent.com/287266/222969723-cc7652d8-0e2f-4235-9006-9c029b9f4450.mp4
 
 # Instructions
 You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
