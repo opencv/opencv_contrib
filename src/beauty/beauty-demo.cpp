@@ -237,7 +237,6 @@ void iteration() {
         if (!v2d->capture())
             exit(0);
 #endif
-
         v2d->clgl([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2BGR);
         });
