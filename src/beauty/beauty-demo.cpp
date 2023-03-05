@@ -11,6 +11,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/face.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
+#include <opencv2/tracking.hpp>
 
 /** Application parameters **/
 
@@ -39,6 +40,7 @@ constexpr bool STRETCH = false;
 
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
+static cv::Ptr<cv::Tracker> tracker;
 
 using std::cerr;
 using std::endl;
@@ -229,6 +231,7 @@ void lighten_shadows(const cv::UMat &srcBGR, cv::UMat &dstBGR, double percent) {
 
 void iteration() {
     try {
+        static bool trackerInitalized = false;
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         //TODO try FeatherBlender
         static cv::detail::MultiBandBlender blender(true);
@@ -244,6 +247,7 @@ void iteration() {
 
         static cv::Mat faces;
         static vector<cv::Rect> faceRects;
+        static cv::Rect trackedFace;
         static vector<vector<cv::Point2f>> shapes;
         static vector<FaceFeatures> featuresList;
 
@@ -258,16 +262,26 @@ void iteration() {
 
         cv::resize(bgr, down, cv::Size(0, 0), SCALE, SCALE);
         cvtColor(down, downGrey, cv::COLOR_BGRA2GRAY);
-        detector->detect(down, faces);
-
-        faceRects.clear();
-        for (int i = 0; i < faces.rows; i++) {
-            faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
-        }
 
         shapes.clear();
+        faceRects.clear();
+
+        if (trackerInitalized && tracker->update(downGrey, trackedFace)) {
+            faceRects.push_back(trackedFace);
+        } else {
+            detector->detect(down, faces);
+
+            for (int i = 0; i < faces.rows; i++) {
+                faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
+            }
+        }
 
         if (!faceRects.empty() && facemark->fit(downGrey, faceRects, shapes)) {
+            if(!trackerInitalized) {
+                tracker->init(downGrey, faceRects[0]);
+                trackerInitalized = true;
+            }
+
             featuresList.clear();
             for (size_t i = 0; i < faceRects.size(); ++i) {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
@@ -365,6 +379,7 @@ int main(int argc, char **argv) {
     }
 #endif
     facemark->loadModel("assets/lbfmodel.yaml");
+    tracker = cv::TrackerKCF::create();
 
     print_system_info();
 
