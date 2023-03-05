@@ -1,7 +1,7 @@
 ifndef EMSDK
 TARGET := shader-demo
 else
-TARGET := shader-demo.html
+TARGET := shader-demo.js
 endif
 SRCS    := shader-demo.cpp
 

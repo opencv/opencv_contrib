@@ -6,7 +6,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = true;
+constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -18,15 +18,17 @@ GLint centerX;
 GLint centerY;
 GLint zoom;
 float centerXVal = -0.5;
-float centerYVal = 0;
+float centerYVal = 0.0;
 float zoomLevel = 1.0;
+long iterations = 0;
 
 using std::cerr;
 using std::endl;
 
-GLuint vertexBuffer, VAO, shaderProgram;
-GLint positionAttribute, colorAttribute;
-
+GLuint shaderProgram;
+#ifndef __EMSCRIPTEN__
+GLuint VAO;
+#endif
 void load_buffer_data(){
     // vertex position, color
     float vertices[] =
@@ -137,7 +139,7 @@ void load_shader(){
 #ifndef __EMSCRIPTEN__
     const char *  vert = R"(#version 150
     in vec4 position;
-    
+
     void main()
     {
         gl_Position = vec4(position.xyz, 1.0);
@@ -146,7 +148,7 @@ void load_shader(){
     const char *  vert = R"(#version 300 es
     in vec4 position;
 
-    void main (void)
+    void main( )
     {
         gl_Position = vec4(position.xyz, 1.0);
     })";
@@ -161,7 +163,7 @@ void load_shader(){
     uniform float center_x;
     uniform float center_y;
     
-    #define MAX_ITERATIONS 500
+    const int MAX_ITERATIONS=500;
      
     int get_iterations()
     {
@@ -196,11 +198,11 @@ void load_shader(){
             gl_FragDepth = 0.0f;
             return vec4(0.0f, 0.0f, 0.0f, 1.0f);
         }
-        float r = 0.225;
-        float g = 0.45;
-        float b = 0.9;
-        float lightness = 4.0;
-        float iterations = float(iter) / MAX_ITERATIONS;
+        float r = 0.2;
+        float g = 0.6;
+        float b = 1;
+        float lightness = 15.0;
+        float iterations = float(iter) / float(MAX_ITERATIONS);
         return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
     }
      
@@ -218,7 +220,7 @@ void load_shader(){
     uniform float center_x;
     uniform float center_y;
     
-    #define MAX_ITERATIONS 500
+    const int MAX_ITERATIONS=500;
      
     int get_iterations()
     {
@@ -253,10 +255,10 @@ void load_shader(){
             gl_FragDepth = 0.0f;
             return vec4(0.0f, 0.0f, 0.0f, 1.0f);
         }
-        float r = 0.225;
-        float g = 0.45;
-        float b = 0.9;
-        float lightness = 4.0;
+        float r = 0.2;
+        float g = 0.6;
+        float b = 1.0;
+        float lightness = 15.0;
         float iterations = float(iter) / float(MAX_ITERATIONS);
         return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
     }
@@ -269,7 +271,6 @@ void load_shader(){
     shaderProgram = init_shader(vert,  frag, "fragColor");
 }
 
-long iterations = 0;
 void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
@@ -285,15 +286,15 @@ void init_scene(const cv::Size& sz) {
 void render_scene(const cv::Size& sz) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if(iterations > 700) {
+    if(iterations > 1900) {
         centerXVal = -0.5;
         zoomLevel = 1.0;
         iterations = 0;
     }
     glUseProgram(shaderProgram);
     glUniform1f(centerY, centerYVal);
-    glUniform1f(centerX, centerXVal*=0.9992);
-    glUniform1f(zoom, zoomLevel*=0.99);
+    glUniform1f(centerX, centerXVal*=0.9997);
+    glUniform1f(zoom, zoomLevel*=0.995);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
@@ -337,9 +338,9 @@ void iteration() {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, kernel_size);
     });
-
-    update_fps(v2d, true);
 #endif
+    //in WASM the shaders and nanovg don't work together
+    update_fps(v2d, false);
 
 #ifndef __EMSCRIPTEN__
     v2d->write();
@@ -358,7 +359,6 @@ int main(int argc, char **argv) {
 #ifndef __EMSCRIPTEN__
         v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 #endif
-
         v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
