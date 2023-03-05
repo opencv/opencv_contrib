@@ -194,7 +194,6 @@ int main(int argc, char **argv) {
 
                 if(tracked.width == 1 && tracked.height == 1) {
                     redetect = true;
-                    cerr << "redetect" << endl;
                 } else {
                     lastTracked = tracked;
                 }
