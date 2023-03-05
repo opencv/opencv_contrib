@@ -15,7 +15,6 @@
 #endif
 
 /** Application parameters **/
-
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -24,8 +23,8 @@ constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
 const cv::Scalar_<float> INITIAL_COLOR = kb::viz2d::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
-/** Visualization parameters **/
 
+/** Visualization parameters **/
 float min_star_size = 0.5f;
 float max_star_size = 1.0f;
 int min_star_count = 1000;
