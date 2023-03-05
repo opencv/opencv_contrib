@@ -20,8 +20,6 @@ constexpr bool OFFSCREEN = false;
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
-// On every frame the foreground loses on brightness. Specifies the loss in percent.
-constexpr float fg_loss = 3;
 // Intensity of blur defined by kernel size. The default scales with the image diagonal.
 constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
@@ -100,7 +98,7 @@ std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> > *box
     return keep;
 }
 
-void composite_layers(const cv::UMat background, const cv::UMat foreground, const cv::UMat frameBuffer, cv::UMat dst, int blurKernelSize, float fgLossPercent) {
+void composite_layers(const cv::UMat background, const cv::UMat frameBuffer, cv::UMat dst, int blurKernelSize) {
     static cv::UMat blur;
     static cv::UMat backgroundGrey;
 
@@ -133,7 +131,7 @@ int main(int argc, char **argv) {
     float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
     v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
     //BGRA
-    cv::UMat background, foreground(HEIGHT, WIDTH, CV_8UC4, cv::Scalar::all(0));
+    cv::UMat background;
     //RGB
     cv::UMat rgb, videoFrameUp, videoFrameDown;
     //GREY
@@ -213,7 +211,7 @@ int main(int argc, char **argv) {
 
         v2d->clgl([&](cv::UMat& frameBuffer){
             //Put it all together
-            composite_layers(background, foreground, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE, fg_loss);
+            composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
         });
 
         update_fps(v2d, true);
