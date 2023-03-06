@@ -75,7 +75,7 @@ std::string pushImage(std::string filename){
                 cv::Mat v = videoFrame.getMat(cv::ACCESS_RW);
                 cvtColor(v, tmp, cv::COLOR_RGB2BGRA);
                 fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
-                cvtColor(tmp, v, cv::COLOR_BGRA2BGR);
+                cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
                 v.release();
                 tmp.release();
 //                cerr << "match" << endl;
