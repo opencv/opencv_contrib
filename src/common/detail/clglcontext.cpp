@@ -90,7 +90,6 @@ void CLGLContext::end() {
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     //glFlush seems enough but i wanna make sure that there won't be race conditions.
     //At least on TigerLake/Iris it doesn't make a difference in performance.
-//    GL_CHECK(glViewport(viewport_[0], viewport_[1], viewport_[2], viewport_[3]));
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
 }
@@ -124,7 +123,7 @@ void CLGLContext::acquireFromGL(cv::UMat &m) {
     GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
 #else
     if(m.empty())
-        m.create(frameBufferSize_, CV_8UC4);
+        m.create(getSize(), CV_8UC4);
     download(m);
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
@@ -140,7 +139,7 @@ void CLGLContext::releaseToGL(cv::UMat &m) {
     GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
 #else
     if(m.empty())
-        m.create(frameBufferSize_, CV_8UC4);
+        m.create(getSize(), CV_8UC4);
     upload(m);
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
