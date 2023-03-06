@@ -118,6 +118,13 @@ make -j8
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
+## Point to libviz2d.so
+Before you can run the demos you have to point to ```libviz2d.so```
+```bash
+cd Viz2D
+export LD_LIBRARY_PATH=src/common:$LD_LIBRARY_PATH
+```
+
 ## Run the tetra-demo:
 
 ```bash
