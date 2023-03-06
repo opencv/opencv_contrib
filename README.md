@@ -4,7 +4,7 @@ It features OpenGL/OpenCL/VAAPI interoperability.
 It should be included in OpenCV-contrib once it is ready.
 
 # Demos
-The goal of the demos is to show how to use Viz2d in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
+The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
 
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
