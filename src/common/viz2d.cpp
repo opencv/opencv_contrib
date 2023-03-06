@@ -405,6 +405,11 @@ void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
 void Viz2D::makeCurrent() {
     glfwMakeContextCurrent(getGLFWWindow());
 }
+
+void Viz2D::makeUncurrent() {
+    glfwMakeContextCurrent(nullptr);
+}
+
 #ifndef __EMSCRIPTEN__
 cv::VideoWriter& Viz2D::makeVAWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     writerPath_ = outputFilename;
