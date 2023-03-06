@@ -18,8 +18,8 @@ const int kernel_size = std::max(int(DIAG / 300 % 2 == 0 ? DIAG / 300 + 1 : DIAG
 
 //mandelbrot control parameters
 int max_iterations_val = 500;
-float center_x_val = -0.32485;
-float center_y_val = 0.00001;
+float center_x_val = -0.32487;
+float center_y_val = 0.0;
 float zoom_val = 1.0;
 long iterations = 0;
 
@@ -142,7 +142,7 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
     return program;
 }
 
-//mandelbrot shader code adapted from https://physicspython.wordpress.com/2020/02/16/visualizing-the-mandelbrot-set-using-opengl-part-1/
+//mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
 void load_shader(){
 #ifndef __EMSCRIPTEN__
     const string vertHeader = R"(
@@ -166,7 +166,7 @@ void load_shader(){
 )";
 #endif
 
-    const string  vert = vertHeader + R"(
+    const string vert = vertHeader + R"(
 
     in vec4 position;
 
@@ -176,7 +176,7 @@ void load_shader(){
     })";
 
     const string frag = fragHeader + R"(
-    precision highp float;
+    precision mediump float;
 
     out vec4 outColor;
     
@@ -189,9 +189,9 @@ void load_shader(){
     {
         float pointr = ((gl_FragCoord.x / 1080.0f - 0.5f) * zoom + center_x) * 5.0f;
         float pointi = ((gl_FragCoord.y / 1080.0f - 0.5f) * zoom + center_y) * 5.0f;
-     
+        const float four = 4.0f;
+
         int iterations = 0;
-        float four = 4.0f;
         float zi = 0;
         float zr = 0;
         float zrsqr = 0;
@@ -219,10 +219,10 @@ void load_shader(){
             gl_FragDepth = 0.0f;
             return vec4(0.0f, 0.0f, 0.0f, 1.0f);
         }
-        float r = 0.2;
-        float g = 0.6;
-        float b = 1.0;
-        float contrast = 15.0;
+        const float r = 0.2;
+        const float g = 0.6;
+        const float b = 1.0;
+        const float contrast = 15.0;
         float iterations = float(iter) / float(max_iterations);
         return vec4(r * iterations * contrast, g * iterations * contrast, b * iterations * contrast, 1.0f);
     }
@@ -250,9 +250,9 @@ void init_scene(const cv::Size& sz) {
 void render_scene(const cv::Size& sz) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if(zoom_val < 1.0e-07) {
-        center_x_val = -0.32485;
-        center_y_val = 0.00001;
+    if(zoom_val < 2.5e-06) {
+        center_x_val = -0.32487;
+        center_y_val = 0.0;
         zoom_val = 1.0;
         iterations = 0;
     }
@@ -261,7 +261,7 @@ void render_scene(const cv::Size& sz) {
     glUniform1i(max_iterations, max_iterations_val);
     glUniform1f(center_y, center_y_val);
     glUniform1f(center_x, center_x_val);
-    glUniform1f(zoom, zoom_val*=0.95);
+    glUniform1f(zoom, zoom_val*=0.992);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
