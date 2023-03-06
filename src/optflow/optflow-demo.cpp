@@ -73,7 +73,7 @@ std::string pushImage(std::string filename){
             if (length == (videoFrame.elemSize() + 1) * videoFrame.total()) {
                 cv::Mat tmp;
                 cv::Mat v = videoFrame.getMat(cv::ACCESS_RW);
-                cvtColor(v, tmp, cv::COLOR_RGB2BGRA);
+                cvtColor(v, tmp, cv::COLOR_BGR2BGRA);
                 fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
                 cvtColor(tmp, v, cv::COLOR_BGRA2BGR);
                 v.release();
@@ -324,7 +324,6 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
         cv::cvtColor(channels[2], background, cv::COLOR_GRAY2BGRA);
         break;
     case COLOR:
-        cv::cvtColor(background, background, cv::COLOR_BGRA2RGBA);
         break;
     case BLACK:
         background = cv::Scalar::all(0);
