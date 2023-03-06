@@ -118,7 +118,7 @@ make -j8
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
-## Setup libviz2d.so
+## Point to libviz2d.so
 Before you can run the demos you have to point to ```libviz2d.so```
 ```bash
 cd Viz2D
