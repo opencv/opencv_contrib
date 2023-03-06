@@ -13,12 +13,12 @@
 #include <opencv2/stitching/detail/blenders.hpp>
 #include <opencv2/tracking.hpp>
 
-/** Application parameters **/
 #ifdef __EMSCRIPTEN__
 //enables KCF tracking instead of continuous detection.
 #define USE_TRACKER 1;
 #endif
 
+/** Application parameters **/
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125;
@@ -26,15 +26,13 @@ constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 constexpr int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+
 /** Effect parameters **/
-
 constexpr int BLUR_DIV = 500;
-
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-float eyes_and_lips_saturation = 2.0f; //0-255
-float skin_saturation = 0.5f; //0-255
+float eyes_and_lips_saturation = 1.5f; //multiplier
+float skin_saturation = 1.2f; //multiplier
 float skin_contrast = 0.6f; //0.0-1.0
-
 #ifndef __EMSCRIPTEN__
 bool side_by_side = true;
 bool stretch = true;
