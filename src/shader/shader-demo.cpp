@@ -17,12 +17,14 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 const int kernel_size = std::max(int(DIAG / 300 % 2 == 0 ? DIAG / 300 + 1 : DIAG / 300), 1);
 
 //mandelbrot control parameters
-float center_x_val = -0.4;
-float center_y_val = 0.0;
+int max_iterations_val = 500;
+float center_x_val = -0.32485;
+float center_y_val = 0.00001;
 float zoom_val = 1.0;
 long iterations = 0;
 
 //WebGL uniforms
+GLint max_iterations;
 GLint center_x;
 GLint center_y;
 GLint zoom;
@@ -143,111 +145,67 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
 //mandelbrot shader code adapted from https://physicspython.wordpress.com/2020/02/16/visualizing-the-mandelbrot-set-using-opengl-part-1/
 void load_shader(){
 #ifndef __EMSCRIPTEN__
-    const char *  vert = R"(#version 150
-    in vec4 position;
-
-    void main()
-    {
-        gl_Position = vec4(position.xyz, 1.0);
-    })";
+    const string vertHeader = R"(
+    #version 150
+)";
 #else
-    const char *  vert = R"(#version 300 es
-    in vec4 position;
-
-    void main()
-    {
-        gl_Position = vec4(position.xyz, 1.0);
-    })";
+    const string vertHeader = R"(
+    #version 300 es
+)";
 #endif
+
 #ifndef __EMSCRIPTEN__
-    const char *  frag = R"(#version 150
+    const string fragHeader = R"(
+    #version 150
     in vec4 gl_FragCoord;
-    
-    out vec4 outColor;
-    
-    uniform float zoom;
-    uniform float center_x;
-    uniform float center_y;
-    
-    const int MAX_ITERATIONS=500;
-     
-    int get_iterations()
-    {
-        float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
-        float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
-     
-        int iterations = 0;
-        float const_real = real;
-        float const_imag = imag;
-     
-        while (iterations < MAX_ITERATIONS)
-        {
-            float tmp_real = real;
-            real = (real * real - imag * imag) + const_real;
-            imag = (2.0 * tmp_real * imag) + const_imag;
-             
-            float dist = real * real + imag * imag;
-             
-            if (dist > 4.0)
-            break;
-     
-            ++iterations;
-        }
-        return iterations;
-    }
-     
-    vec4 return_color()
-    {
-        int iter = get_iterations();
-        if (iter == MAX_ITERATIONS)
-        {   
-            gl_FragDepth = 0.0f;
-            return vec4(0.0f, 0.0f, 0.0f, 1.0f);
-        }
-        float r = 0.2;
-        float g = 0.6;
-        float b = 1;
-        float lightness = 15.0;
-        float iterations = float(iter) / float(MAX_ITERATIONS);
-        return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
-    }
-     
+)";
+
+#else
+    const string fragHeader = R"(
+    #version 300 es
+)";
+#endif
+
+    const string  vert = vertHeader + R"(
+
+    in vec4 position;
+
     void main()
     {
-        outColor = return_color();
+        gl_Position = vec4(position.xyz, 1.0);
     })";
-#else
-    const char *  frag = R"(#version 300 es
-    precision mediump float;
-    
+
+    const string frag = fragHeader + R"(
+    precision highp float;
+
     out vec4 outColor;
     
+    uniform int max_iterations;
     uniform float zoom;
     uniform float center_x;
     uniform float center_y;
     
-    const int MAX_ITERATIONS=500;
-     
     int get_iterations()
     {
-        float real = ((gl_FragCoord.x / 1080.0 - 0.5) * zoom + center_x) * 5.0;
-        float imag = ((gl_FragCoord.y / 1080.0 - 0.5) * zoom + center_y) * 5.0;
+        float pointr = ((gl_FragCoord.x / 1080.0f - 0.5f) * zoom + center_x) * 5.0f;
+        float pointi = ((gl_FragCoord.y / 1080.0f - 0.5f) * zoom + center_y) * 5.0f;
      
         int iterations = 0;
-        float const_real = real;
-        float const_imag = imag;
-     
-        while (iterations < MAX_ITERATIONS)
+        float four = 4.0f;
+        float zi = 0;
+        float zr = 0;
+        float zrsqr = 0;
+        float zisqr = 0;
+
+        while (iterations < max_iterations && zrsqr + zisqr <= four)
         {
-            float tmp_real = real;
-            real = (real * real - imag * imag) + const_real;
-            imag = (2.0 * tmp_real * imag) + const_imag;
-             
-            float dist = real * real + imag * imag;
-             
-            if (dist > 4.0)
-            break;
-     
+            //equals line below as a consequence of binomial expansion: zi = (square(zr + zi) - zrsqr) - zisqr
+            zi = (zr + zr) * zi;
+            zi += pointi;
+            zr = (zrsqr - zisqr) + pointr;
+    
+            zrsqr = zr * zr;
+            zisqr = zi * zi;
             ++iterations;
         }
         return iterations;
@@ -256,7 +214,7 @@ void load_shader(){
     vec4 return_color()
     {
         int iter = get_iterations();
-        if (iter == MAX_ITERATIONS)
+        if (iter == max_iterations)
         {   
             gl_FragDepth = 0.0f;
             return vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -264,22 +222,23 @@ void load_shader(){
         float r = 0.2;
         float g = 0.6;
         float b = 1.0;
-        float lightness = 15.0;
-        float iterations = float(iter) / float(MAX_ITERATIONS);
-        return vec4(r * iterations * lightness, g * iterations * lightness, b * iterations * lightness, 1.0f);
+        float contrast = 15.0;
+        float iterations = float(iter) / float(max_iterations);
+        return vec4(r * iterations * contrast, g * iterations * contrast, b * iterations * contrast, 1.0f);
     }
      
     void main()
     {
         outColor = return_color();
     })";
-#endif
-    shader_program = init_shader(vert,  frag, "fragColor");
+
+    shader_program = init_shader(vert.c_str(),  frag.c_str(), "fragColor");
 }
 
 void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
+    max_iterations = glGetUniformLocation(shader_program, "max_iterations");
     zoom = glGetUniformLocation(shader_program, "zoom");
     center_x = glGetUniformLocation(shader_program, "center_x");
     center_y = glGetUniformLocation(shader_program, "center_y");
@@ -291,16 +250,18 @@ void init_scene(const cv::Size& sz) {
 void render_scene(const cv::Size& sz) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if(iterations > 1900) {
-        center_x_val = -0.4;
+    if(zoom_val < 1.0e-07) {
+        center_x_val = -0.32485;
+        center_y_val = 0.00001;
         zoom_val = 1.0;
         iterations = 0;
     }
 
     glUseProgram(shader_program);
+    glUniform1i(max_iterations, max_iterations_val);
     glUniform1f(center_y, center_y_val);
-    glUniform1f(center_x, center_x_val*=0.99999);
-    glUniform1f(zoom, zoom_val*=0.996);
+    glUniform1f(center_x, center_x_val);
+    glUniform1f(zoom, zoom_val*=0.95);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
