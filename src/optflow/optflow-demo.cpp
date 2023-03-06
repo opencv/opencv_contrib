@@ -411,10 +411,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
 
     v2d->makeWindow(220, 175, "Settings");
 
-#ifndef __EMSCRIPTEN__
-    v2d->makeGroup("Hardware Acceleration");
-    v2d->makeFormVariable("Enable", use_acceleration, "Enable or disable libva and OpenCL acceleration");
-#endif
     v2d->makeGroup("Scene Change Detection");
     v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
     v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
@@ -423,11 +419,11 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
 
     v2dMenu->makeGroup("Display");
     v2dMenu->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-#ifndef __EMSCRIPTEN__
     v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
         v2d->setStretching(s);
     });
 
+#ifndef __EMSCRIPTEN__
     v2dMenu->makeButton("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
@@ -447,9 +443,6 @@ void iteration() {
     //GREY
     static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static vector<cv::Point2f> detectedPoints;
-
-    if(v2d->isAccelerated() != use_acceleration)
-        v2d->setAccelerated(use_acceleration);
 
 #ifndef __EMSCRIPTEN__
     if(!v2d->capture())
