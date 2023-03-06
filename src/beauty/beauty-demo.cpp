@@ -31,10 +31,10 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr int BLUR_DIV = 500;
 
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-int boost_eyes_and_lips_saturation = 40; //0-255
-int boost_skin_saturation = 5; //0-255
-float skin_contrast = 0.6; //0.0-1.0
-float skin_brightness = 0.2; //should be equal to ((1.0 - skin_contrast) / 2.0)
+float eyes_and_lips_saturation = 2.0f; //0-255
+float skin_saturation = 0.5f; //0-255
+float skin_contrast = 0.6f; //0.0-1.0
+
 #ifndef __EMSCRIPTEN__
 bool side_by_side = true;
 bool stretch = true;
@@ -201,29 +201,28 @@ void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
     }
 }
 
-void boost_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, uchar by) {
+void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float by) {
     static vector<cv::UMat> channels;
     static cv::UMat hls;
 
     cvtColor(srcBGR, hls, cv::COLOR_BGR2HLS);
     split(hls, channels);
-    cv::add(channels[2], by, channels[2]);
+    cv::multiply(channels[2], by, channels[2]);
     merge(channels, hls);
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    int boost_eyes_and_lips_saturation = 40; //0-255
-
     v2d->makeWindow(5, 30, "Effect");
 
     v2d->makeGroup("Display");
     v2d->makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
     v2d->makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
+#ifndef __EMSCRIPTEN__
     v2d->makeButton("Fullscreen", [=]() {
         v2d->setFullscreen(!v2d->isFullscreen());
     });
-
+#endif
     v2d->makeButton("Offscreen", [=]() {
         v2d->setOffscreen(!v2d->isOffscreen());
     });
@@ -244,12 +243,11 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         lastKernelSize = k;
         kernelSize->set_value(blur_skin_kernel_size);
     });
-    v2d->makeFormVariable("Saturation boost", boost_skin_saturation, 0, 255, true, "", "boost the skin saturation by this amount");
+    v2d->makeFormVariable("Saturation", skin_saturation, 0.0f, 100.0f, true, "", "adjust the skin saturation by this amount");
     v2d->makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
-    v2d->makeFormVariable("Brightness", skin_brightness, 0.0f, 1.0f, true, "", "brightness amount of the face skin. should be equal to ((1.0 - skin_contrast) / 2.0)");
 
     v2d->makeGroup("Eyes and Lips");
-    v2d->makeFormVariable("Saturation boost", boost_eyes_and_lips_saturation, 0, 255, true, "", "boost the saturation of the eyes and the lips by this amount");
+    v2d->makeFormVariable("Saturation", eyes_and_lips_saturation, 0.0f, 100.0f, true, "", "adjust the saturation of the eyes and the lips by this amount");
 }
 
 void iteration() {
@@ -290,16 +288,16 @@ void iteration() {
 #ifdef USE_TRACKER
         if (trackerInitalized && tracker->update(down, trackedFace)) {
             faceRects.push_back(trackedFace);
-        } else {
+        } else
 #endif
+        {
             detector->detect(down, faces);
 
             for (int i = 0; i < faces.rows; i++) {
                 faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
             }
-#ifdef USE_TRACKER
         }
-#endif
+
         if (!faceRects.empty() && facemark->fit(down, faceRects, shapes)) {
 #ifdef USE_TRACKER
             if(!trackerInitalized) {
@@ -339,15 +337,15 @@ void iteration() {
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
             //boost saturation of eyes and lips
-            boost_saturation(bgr,saturated, boost_eyes_and_lips_saturation);
+            adjust_saturation(bgr,saturated, eyes_and_lips_saturation);
             //reduce skin contrast
             multiply(bgr, cv::Scalar::all(skin_contrast), adjusted);
             //fix skin brightness
-            add(adjusted, cv::Scalar::all(skin_brightness) * 255.0, adjusted);
+            add(adjusted, cv::Scalar::all((1.0 - skin_contrast) / 2.0) * 255.0, adjusted);
             //blur the skin
             cv::boxFilter(adjusted, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             //boost skin saturation
-            boost_saturation(blurred,skin, boost_skin_saturation);
+            adjust_saturation(blurred,skin, skin_saturation);
 
             //piece it all together
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
