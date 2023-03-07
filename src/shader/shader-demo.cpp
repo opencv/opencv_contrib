@@ -25,7 +25,7 @@ float alpha = 1.0f; //0.0-1.0
 int contrast_boost = 15; //0.0-255
 int max_iterations = 500;
 float center_x = -0.32487;
-float center_y = 0.000001;
+float center_y = 0.000002;
 float zoom = 1.0;
 float zoom_add = 0.99;
 long iterations = 0;
@@ -174,11 +174,12 @@ void load_shader(){
 #endif
 
     const string vert = "    #version " + shaderVersion + R"(
+    precision highp float;
     in vec4 position;
-
+    
     void main()
     {
-        gl_Position = vec4(position.xyz, 1.0);
+        gl_Position = vec4(position.x, position.y, position.z, 1.0);
     })";
 
     const string frag = "    #version " + shaderVersion + R"(
@@ -192,11 +193,11 @@ void load_shader(){
     uniform float zoom;
     uniform float center_x;
     uniform float center_y;
-    
+
     int get_iterations()
     {
-        float pointr = ((gl_FragCoord.x / 1080.0f - 0.5f) * zoom + center_x) * 5.0f;
-        float pointi = ((gl_FragCoord.y / 1080.0f - 0.5f) * zoom + center_y) * 5.0f;
+        float pointr = (((gl_FragCoord.x / 1080.0f) - 0.5f) * zoom + center_x) * 5.0f;
+        float pointi = (((gl_FragCoord.y / 1080.0f) - 0.5f) * zoom + center_y) * 5.0f;
         const float four = 4.0f;
 
         int iterations = 0;
