@@ -174,12 +174,11 @@ void load_shader(){
 #endif
 
     const string vert = "    #version " + shaderVersion + R"(
-    precision highp float;
     in vec4 position;
     
     void main()
     {
-        gl_Position = vec4(position.x, position.y, position.z, 1.0);
+        gl_Position = vec4(position.xyz, 1.0);
     })";
 
     const string frag = "    #version " + shaderVersion + R"(
@@ -233,7 +232,7 @@ void load_shader(){
 
         return vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
     }
-     
+
     void main()
     {
         outColor = return_color();
@@ -250,6 +249,9 @@ void load_shader(){
 
 float easeInOutQubic(float x) {
     return x < 0.5f ? 4.0f * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 3.0f) / 2.0f;
+}
+float easeInOutSine(float x) {
+    return -(cos(M_PI * x) - 1) / 2;
 }
 
 void init_scene(const cv::Size& sz) {
@@ -283,7 +285,7 @@ void render_scene(const cv::Size& sz) {
     glUniform1i(max_iterations_hdl, max_iterations);
     glUniform1f(center_y_hdl, center_y);
     glUniform1f(center_x_hdl, center_x);
-    glUniform1f(zoom_hdl, easeInOutQubic(zoom+=zoom_add));
+    glUniform1f(zoom_hdl, easeInOutSine(zoom+=zoom_add));
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
