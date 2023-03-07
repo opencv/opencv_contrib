@@ -390,7 +390,7 @@ void Viz2D::setSource(const Source &src) {
 bool Viz2D::capture() {
     return this->capture([&](cv::UMat &videoFrame) {
         if(source_.isReady())
-            videoFrame = source_().second;
+            source_().second.copyTo(videoFrame);
     });
 }
 
@@ -608,10 +608,12 @@ bool Viz2D::isResizable() {
 }
 
 void Viz2D::setResizable(bool r) {
+    makeCurrent();
     glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
 }
 
 bool Viz2D::isVisible() {
+    makeCurrent();
     return glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;
 }
 
@@ -619,7 +621,6 @@ void Viz2D::setVisible(bool v) {
     makeCurrent();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
     screen().set_visible(v);
-//    setSize(size_);
     screen().perform_layout();
 }
 
