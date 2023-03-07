@@ -23,10 +23,10 @@ The goal of the demos is to show how to use Viz2D in conjunction with interop op
 There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
 
 ## Online Demos
-https://viel-zu.org/opencv/shader
-https://viel-zu.org/opencv/font
-https://viel-zu.org/opencv/optflow
-https://viel-zu.org/opencv/beauty
+* https://viel-zu.org/opencv/shader
+* https://viel-zu.org/opencv/font
+* https://viel-zu.org/opencv/optflow
+* https://viel-zu.org/opencv/beauty
 
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
