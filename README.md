@@ -1,7 +1,5 @@
 # Viz2D
-Viz2D is a 2D visualization library based on OpenCV.
-It features OpenGL/OpenCL/VAAPI interoperability. 
-It should be included in OpenCV-contrib once it is ready.
+Viz2D is a 2D visualization library based on OpenCV. It features OpenCL/ OpenGL and OpenCL/API interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
 
 # Demos
 The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
