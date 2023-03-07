@@ -14,50 +14,59 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-const int kernel_size = std::max(int(DIAG / 300 % 2 == 0 ? DIAG / 300 + 1 : DIAG / 300), 1);
+int glow_kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 
-//mandelbrot control parameters
-int max_iterations_val = 500;
-float center_x_val = -0.32487;
-float center_y_val = 0.0;
-float zoom_val = 1.0;
+/** mandelbrot control parameters **/
+// Red, green, blue and alpha. All from 0.0f to 1.0f
+nanogui::Color base_color_val(0.2f, 0.6f, 1.0f, 1.0f);
+// Keep alpha separate for the GUI
+float alpha = 1.0f; //0.0-1.0
+//contrast boost
+int contrast_boost = 15; //0.0-255
+int max_iterations = 500;
+float center_x = -0.32487;
+float center_y = 0.000001;
+float zoom = 1.0;
+float zoom_multiplier = 0.99;
 long iterations = 0;
 
-//WebGL uniforms
-GLint max_iterations;
-GLint center_x;
-GLint center_y;
-GLint zoom;
+/** GL uniform handles **/
+GLint base_color_hdl;
+GLint contrast_boost_hdl;
+GLint max_iterations_hdl;
+GLint center_x_hdl;
+GLint center_y_hdl;
+GLint zoom_hdl;
 
-//shader handle
-GLuint shader_program;
+/** shader and program handle **/
+GLuint shader_program_hdl;
 
 #ifndef __EMSCRIPTEN__
 //vertex array
 GLuint VAO;
 #endif
+GLuint VBO, EBO;
+
+// vertex position, color
+float vertices[] =
+{
+//    x      y      z
+    -1.0f, -1.0f, -0.0f,
+     1.0f,  1.0f, -0.0f,
+    -1.0f,  1.0f, -0.0f,
+     1.0f, -1.0f, -0.0f
+};
+
+unsigned int indices[] =
+{
+//  2---,1
+//  | .' |
+//  0'---3
+    0, 1, 2,
+    0, 3, 1
+};
 
 void load_buffer_data(){
-    // vertex position, color
-    float vertices[] =
-    {
-    //    x      y      z
-        -1.0f, -1.0f, -0.0f,
-         1.0f,  1.0f, -0.0f,
-        -1.0f,  1.0f, -0.0f,
-         1.0f, -1.0f, -0.0f
-    };
-
-    unsigned int indices[] =
-    {
-    //  2---,1
-    //  | .' |
-    //  0'---3
-        0, 1, 2,
-        0, 3, 1
-    };
-
-    unsigned int VBO, EBO;
 
 #ifndef __EMSCRIPTEN__
     glGenVertexArrays(1, &VAO);
@@ -80,6 +89,20 @@ void load_buffer_data(){
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(0);
 #endif
+}
+
+//workaround: required with emscripten + nanogui on every iteration before renderin
+void rebind_buffers() {
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 GLuint init_shader(const char* vShader, const char* fShader, const char* outputAttributeName) {
@@ -145,29 +168,18 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
 //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
 void load_shader(){
 #ifndef __EMSCRIPTEN__
-    const string vertHeader = R"(
-    #version 150
-)";
+    const string shaderVersion = "330";
 #else
-    const string vertHeader = R"(
-    #version 300 es
-)";
+    const string shaderVersion = "300 es";
 #endif
 
 #ifndef __EMSCRIPTEN__
-    const string fragHeader = R"(
-    #version 150
-    in vec4 gl_FragCoord;
-)";
-
+    const string fragHeader = "330";
 #else
-    const string fragHeader = R"(
-    #version 300 es
-)";
+    const string fragHeader = "300 es";
 #endif
 
-    const string vert = vertHeader + R"(
-
+    const string vert = "    #version " + shaderVersion + R"(
     in vec4 position;
 
     void main()
@@ -175,11 +187,13 @@ void load_shader(){
         gl_Position = vec4(position.xyz, 1.0);
     })";
 
-    const string frag = fragHeader + R"(
-    precision mediump float;
+    const string frag = "#version " + fragHeader + R"(
+    precision highp float;
 
     out vec4 outColor;
     
+    uniform vec4 base_color;
+    uniform int contrast_boost;
     uniform int max_iterations;
     uniform float zoom;
     uniform float center_x;
@@ -192,15 +206,15 @@ void load_shader(){
         const float four = 4.0f;
 
         int iterations = 0;
-        float zi = 0;
-        float zr = 0;
-        float zrsqr = 0;
-        float zisqr = 0;
+        float zi = 0.0f;
+        float zr = 0.0f;
+        float zrsqr = 0.0f;
+        float zisqr = 0.0f;
 
-        while (iterations < max_iterations && zrsqr + zisqr <= four)
-        {
-            //equals line below as a consequence of binomial expansion: zi = (square(zr + zi) - zrsqr) - zisqr
+        while (iterations < max_iterations && zrsqr + zisqr < four) {
+           //equals following line as a consequence of binomial expansion: zi = (((zr + zi)*(zr + zi)) - zrsqr) - zisqr
             zi = (zr + zr) * zi;
+
             zi += pointi;
             zr = (zrsqr - zisqr) + pointr;
     
@@ -214,17 +228,15 @@ void load_shader(){
     vec4 return_color()
     {
         int iter = get_iterations();
-        if (iter == max_iterations)
-        {   
-            gl_FragDepth = 0.0f;
+        if (iter == max_iterations) {   
             return vec4(0.0f, 0.0f, 0.0f, 1.0f);
         }
-        const float r = 0.2;
-        const float g = 0.6;
-        const float b = 1.0;
-        const float contrast = 15.0;
+
         float iterations = float(iter) / float(max_iterations);
-        return vec4(r * iterations * contrast, g * iterations * contrast, b * iterations * contrast, 1.0f);
+        //convert to float
+        float cb = float(contrast_boost);
+
+        return vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
     }
      
     void main()
@@ -232,42 +244,53 @@ void load_shader(){
         outColor = return_color();
     })";
 
-    shader_program = init_shader(vert.c_str(),  frag.c_str(), "fragColor");
+    cerr << "##### Vertex Shader #####" << endl;
+    cerr << vert << endl;
+
+    cerr << "##### Fragment Shader #####" << endl;
+    cerr << frag << endl;
+
+    shader_program_hdl = init_shader(vert.c_str(),  frag.c_str(), "fragColor");
 }
 
 void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
-    max_iterations = glGetUniformLocation(shader_program, "max_iterations");
-    zoom = glGetUniformLocation(shader_program, "zoom");
-    center_x = glGetUniformLocation(shader_program, "center_x");
-    center_y = glGetUniformLocation(shader_program, "center_y");
+
+    base_color_hdl = glGetUniformLocation(shader_program_hdl, "base_color");
+    contrast_boost_hdl = glGetUniformLocation(shader_program_hdl, "contrast_boost");
+    max_iterations_hdl = glGetUniformLocation(shader_program_hdl, "max_iterations");
+    zoom_hdl = glGetUniformLocation(shader_program_hdl, "zoom");
+    center_x_hdl = glGetUniformLocation(shader_program_hdl, "center_x");
+    center_y_hdl = glGetUniformLocation(shader_program_hdl, "center_y");
 
     glViewport(0, 0, WIDTH, HEIGHT);
     glEnable(GL_DEPTH_TEST);
 }
 
 void render_scene(const cv::Size& sz) {
-    glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if(zoom_val < 2.5e-06) {
-        center_x_val = -0.32487;
-        center_y_val = 0.0;
-        zoom_val = 1.0;
+    if(zoom > 1) {
+        zoom_multiplier = 0.99;
+        iterations = 0;
+    } else if(zoom < 2.5e-06) {
+        zoom_multiplier = 1.01;
         iterations = 0;
     }
 
-    glUseProgram(shader_program);
-    glUniform1i(max_iterations, max_iterations_val);
-    glUniform1f(center_y, center_y_val);
-    glUniform1f(center_x, center_x_val);
-    glUniform1f(zoom, zoom_val*=0.992);
+    glUseProgram(shader_program_hdl);
+    glUniform4f(base_color_hdl, base_color_val[0], base_color_val[1], base_color_val[2], alpha);
+    glUniform1i(contrast_boost_hdl, contrast_boost);
+    glUniform1i(max_iterations_hdl, max_iterations);
+    glUniform1f(center_y_hdl, center_y);
+    glUniform1f(center_x_hdl, center_x);
+    glUniform1f(zoom_hdl, zoom*=zoom_multiplier);
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
 #endif
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    ++iterations;
 }
 
 void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
@@ -294,23 +317,55 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
+void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
+    v2d->makeWindow(5, 30, "Effect");
+#ifndef __EMSCRIPTEN__
+    v2d->makeGroup("Glow");
+    auto* kernelSize = v2d->makeFormVariable("Kernel Size", glow_kernel_size, 1, 127, true, "", "Intensity of glow defined by kernel size");
+    kernelSize->set_callback([=](const int& k) {
+        static int lastKernelSize = glow_kernel_size;
+
+        if(k == lastKernelSize)
+            return;
+
+        if(k <= lastKernelSize) {
+            glow_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+        } else if(k > lastKernelSize)
+            glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+
+        lastKernelSize = k;
+        kernelSize->set_value(glow_kernel_size);
+    });
+#endif
+    v2d->makeGroup("Color");
+    v2d->makeColorPicker("Color", base_color_val, "The base color of the fractal visualization",[&](const nanogui::Color &c) {
+        base_color_val[0] = c[0];
+        base_color_val[1] = c[1];
+        base_color_val[2] = c[2];
+    });
+    v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the fractal visualization");
+    v2d->makeFormVariable("Contrast boost", contrast_boost, 1, 255, true, "", "Boost contrast by this factor");
+
+}
+
 void iteration() {
+#ifdef __EMSCRIPTEN__
+    //required in conjunction with emscripten + nanovg
+    rebind_buffers();
+#endif
     //Render using OpenGL
     v2d->gl(render_scene);
 
-//To slow for wasm
+//To slow for WASM but works
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
     v2d->clgl([](cv::UMat &frameBuffer) {
         //Glow effect (OpenCL)
-        glow_effect(frameBuffer, frameBuffer, kernel_size);
+        glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
+#endif
 
     update_fps(v2d, true);
-#else
-    //in WASM the shaders and nanovg don't work together
-    update_fps(v2d, false);
-#endif
 
 #ifndef __EMSCRIPTEN__
     v2d->write();
@@ -318,14 +373,18 @@ void iteration() {
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     if (!v2d->display())
         exit(0);
+
+    ++iterations;
 }
 
 int main(int argc, char **argv) {
     using namespace kb::viz2d;
     try {
         print_system_info();
-        if(!v2d->isOffscreen())
+        if(!v2d->isOffscreen()) {
+            setup_gui(v2d);
             v2d->setVisible(true);
+        }
 #ifndef __EMSCRIPTEN__
         v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
 #endif
