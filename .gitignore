@@ -27,10 +27,5 @@ docbook/
 latex/
 src/beauty/assets
 src/beauty/beauty-demo.data
-src/beauty/beauty.html
-src/font/font-demo.html
-src/optflow/optflow2.html
 src/quad/quad-demo
-src/quad/quad-demo.html
-src/quad/tetra-demo.html
 
