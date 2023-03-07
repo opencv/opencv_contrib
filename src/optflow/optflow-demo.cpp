@@ -404,10 +404,8 @@ void iteration() {
     static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static vector<cv::Point2f> detectedPoints;
 
-#ifndef __EMSCRIPTEN__
     if(!v2d->capture())
         exit(0);
-#endif
 
     v2d->clgl([&](cv::UMat& frameBuffer) {
         cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));

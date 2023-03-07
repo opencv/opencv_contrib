@@ -214,12 +214,11 @@
           let ctx = cameraCanvas.getContext('2d', { willReadFrequently: true });
           ctx.drawImage(videoElement, 0, 0, cameraCanvas.width, cameraCanvas.height);
           var imageData = ctx.getImageData(0, 0, cameraCanvas.width, cameraCanvas.height);
-          let filename = 'temp.raw';
+          let filename = 'viz2d_rgba_canvas.raw';
           let stream = FS.open(filename, 'w+');
           if(imageData) {
               FS.write(stream, imageData.data, 0, imageData.data.length, 0);
               FS.close(stream);
-              Module.push_image(filename);
           }
       }
 
