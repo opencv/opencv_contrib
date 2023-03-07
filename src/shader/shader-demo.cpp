@@ -259,12 +259,12 @@ void init_scene(const cv::Size& sz) {
     center_y_hdl = glGetUniformLocation(shader_program_hdl, "center_y");
 
     glViewport(0, 0, WIDTH, HEIGHT);
-    glEnable(GL_DEPTH_TEST);
+//    glEnable(GL_DEPTH_TEST);
 }
 
 void render_scene(const cv::Size& sz) {
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
     if(zoom > 1) {
         zoom_multiplier = 0.99;
         iterations = 0;
