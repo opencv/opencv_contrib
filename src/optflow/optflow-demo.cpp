@@ -53,46 +53,6 @@ constexpr int VA_HW_DEVICE_INDEX = 0;
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 #ifndef __EMSCRIPTEN__
 static cv::Ptr<kb::viz2d::Viz2D> v2dMenu = new kb::viz2d::Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
-#else
-#  include <emscripten.h>
-#  include <emscripten/bind.h>
-#  include <fstream>
-
-using namespace emscripten;
-
-std::string pushImage(std::string filename){
-    try {
-        std::ifstream fs(filename, std::fstream::in | std::fstream::binary);
-        fs.seekg(0, std::ios::end);
-        auto length = fs.tellg();
-        fs.seekg(0, std::ios::beg);
-
-        v2d->capture([&](cv::UMat &videoFrame) {
-            if(videoFrame.empty())
-                videoFrame.create(HEIGHT, WIDTH, CV_8UC3);
-            if (length == (videoFrame.elemSize() + 1) * videoFrame.total()) {
-                cv::Mat tmp;
-                cv::Mat v = videoFrame.getMat(cv::ACCESS_RW);
-                cvtColor(v, tmp, cv::COLOR_RGB2BGRA);
-                fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
-                cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
-                v.release();
-                tmp.release();
-//                cerr << "match" << endl;
-            } else {
-                cerr << "mismatch" << endl;
-            }
-        });
-        return "success";
-    } catch(std::exception& ex) {
-        return string(ex.what());
-    }
-}
-
-EMSCRIPTEN_BINDINGS(my_module)
-{
-    function("push_image", &pushImage);
-}
 #endif
 
 /** Visualization parameters **/
