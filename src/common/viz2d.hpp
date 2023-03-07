@@ -8,11 +8,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <nanogui/nanogui.h>
-#ifndef __EMSCRIPTEN__
 #include <GL/glew.h>
-#else
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
+#ifdef __EMSCRIPTEN__
+#include <GLES3/gl3.h>
 #include <emscripten.h>
 #endif
 
@@ -96,6 +94,7 @@ public:
     virtual ~Viz2D();
     bool initializeWindowing();
     void makeCurrent();
+    void makeUncurrent();
 
     cv::ogl::Texture2D& texture();
 
