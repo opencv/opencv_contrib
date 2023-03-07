@@ -181,7 +181,7 @@ void load_shader(){
         gl_Position = vec4(position.xyz, 1.0);
     })";
 
-    const string frag = "#version " + shaderVersion + R"(
+    const string frag = "    #version " + shaderVersion + R"(
     precision highp float;
 
     out vec4 outColor;
