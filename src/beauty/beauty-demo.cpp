@@ -231,10 +231,9 @@ void iteration() {
         static vector<vector<cv::Point2f>> shapes;
         static vector<FaceFeatures> featuresList;
 
-#ifndef __EMSCRIPTEN__
         if (!v2d->capture())
             exit(0);
-#endif
+
         v2d->clgl([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
         });
