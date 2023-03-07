@@ -259,7 +259,6 @@ void init_scene(const cv::Size& sz) {
     center_y_hdl = glGetUniformLocation(shader_program_hdl, "center_y");
 
     glViewport(0, 0, WIDTH, HEIGHT);
-//    glEnable(GL_DEPTH_TEST);
 }
 
 void render_scene(const cv::Size& sz) {
