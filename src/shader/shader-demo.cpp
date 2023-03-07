@@ -173,12 +173,6 @@ void load_shader(){
     const string shaderVersion = "300 es";
 #endif
 
-#ifndef __EMSCRIPTEN__
-    const string fragHeader = "330";
-#else
-    const string fragHeader = "300 es";
-#endif
-
     const string vert = "    #version " + shaderVersion + R"(
     in vec4 position;
 
@@ -187,7 +181,7 @@ void load_shader(){
         gl_Position = vec4(position.xyz, 1.0);
     })";
 
-    const string frag = "#version " + fragHeader + R"(
+    const string frag = "#version " + shaderVersion + R"(
     precision highp float;
 
     out vec4 outColor;
