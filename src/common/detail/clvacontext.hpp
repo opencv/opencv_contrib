@@ -24,6 +24,7 @@ public:
     void setVideoFrameSize(const cv::Size& sz);
     bool capture(std::function<void(cv::UMat&)> fn);
     void write(std::function<void(const cv::UMat&)> fn);
+
     /*FIXME only public till https://github.com/opencv/opencv/pull/22780 is resolved.
      * required for manual initialization of VideoCapture/VideoWriter
      */
