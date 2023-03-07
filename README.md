@@ -1,12 +1,23 @@
 # Viz2D
 Viz2D is a 2D visualization library based on OpenCV. It features OpenCL/ OpenGL and OpenCL/API interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
 
-# Demos
-The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
-
+# Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
 * The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
+
+# Demos
+The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
+
+There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
+
+## Online Demos
+
+Please note that the following online demos are slower and/or have less features than the native versions.
+* https://viel-zu.org/opencv/shader
+* https://viel-zu.org/opencv/font
+* https://viel-zu.org/opencv/optflow
+* https://viel-zu.org/opencv/beauty
 
 # Requirements
 * Support for OpenCL 1.2
@@ -19,15 +30,6 @@ The goal of the demos is to show how to use Viz2D in conjunction with interop op
 * GLFW3
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
-
-There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
-
-## Online Demos
-Please note that the following online demos are slower and/or have less features than the native versions.
-* https://viel-zu.org/opencv/shader
-* https://viel-zu.org/opencv/font
-* https://viel-zu.org/opencv/optflow
-* https://viel-zu.org/opencv/beauty
 
 ## tetra-demo
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
