@@ -139,11 +139,10 @@ Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height) {
     static cv::Mat tmp(height, width, CV_8UC4);
 
     return Source([=](cv::UMat& frame) {
-
         try {
             if (frame.empty())
                 frame.create(v2d->getInitialSize(), CV_8UC3);
-            std::ifstream fs("canvas.raw", std::fstream::in | std::fstream::binary);
+            std::ifstream fs("viz2d_rgba_canvas.raw", std::fstream::in | std::fstream::binary);
             fs.seekg(0, std::ios::end);
             auto length = fs.tellg();
             fs.seekg(0, std::ios::beg);
@@ -153,6 +152,10 @@ Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height) {
                 fs.read((char*) (tmp.data), tmp.elemSize() * tmp.total());
                 cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
                 v.release();
+            } else if(length == 0) {
+                std::cerr << "Error: empty webcam frame received!" << endl;
+            } else {
+                std::cerr << "Error: webcam frame size mismatch!" << endl;
             }
         } catch(std::exception& ex) {
             cerr << ex.what() << endl;
