@@ -157,7 +157,7 @@ PostProcModes post_proc_mode = GLOW;
 PostProcModes post_proc_mode = NONE;
 #endif
 // Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
-int kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
+int GLOW_KERNEL_SIZE = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 //The lightness selection threshold
 int bloom_thresh = 210;
 //The intensity of the bloom filter
@@ -374,20 +374,20 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
 
     v2d->makeWindow(220, 30, "Post Processing");
     auto* postPocMode = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
-    auto* kernelSize = v2d->makeFormVariable("Kernel Size", kernel_size, 1, 63, true, "", "Intensity of glow defined by kernel size");
+    auto* kernelSize = v2d->makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
     kernelSize->set_callback([=](const int& k) {
-        static int lastKernelSize = kernel_size;
+        static int lastKernelSize = GLOW_KERNEL_SIZE;
 
         if(k == lastKernelSize)
             return;
 
         if(k <= lastKernelSize) {
-            kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+            GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
         } else if(k > lastKernelSize)
-            kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+            GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
 
         lastKernelSize = k;
-        kernelSize->set_value(kernel_size);
+        kernelSize->set_value(GLOW_KERNEL_SIZE);
     });
     auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
     auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
@@ -476,7 +476,7 @@ void iteration() {
 
     v2d->clgl([&](cv::UMat& frameBuffer){
         //Put it all together (OpenCL)
-        composite_layers(background, foreground, frameBuffer, frameBuffer, kernel_size, fg_loss, background_mode, post_proc_mode);
+        composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
 #ifndef __EMSCRIPTEN__
         cvtColor(frameBuffer, menuFrame, cv::COLOR_BGRA2RGB);
 #endif
@@ -520,23 +520,18 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    v2d->setSource(src);
 
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        exit(-1);
-    }
+    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    v2d->setSink(sink);
 
-    float fps = capture.get(cv::CAP_PROP_FPS);
-    float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
-    float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
-    while (true) {
+    while (true)
         iteration();
-    }
 #else
-    emscripten_set_main_loop(iteration, -1, false);
+    Source src = make_webcam_source(v2d, WIDTH, HEIGHT);
+    v2d->setSource(src);
+    emscripten_set_main_loop(iteration, -1, true);
 #endif
 
 

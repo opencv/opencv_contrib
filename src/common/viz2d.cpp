@@ -381,20 +381,37 @@ void Viz2D::clgl(std::function<void(cv::UMat&)> fn) {
 void Viz2D::nvg(std::function<void(const cv::Size&)> fn) {
     nvg().render(fn);
 }
+void Viz2D::setSource(const Source &src) {
+    if (!clva().hasContext())
+        clva().copyContext();
+    source_ = src;
+}
 
 bool Viz2D::capture() {
-    return clva().capture([=, this](cv::UMat &videoFrame) {
-        *(this->capture_) >> videoFrame;
+    return this->capture([&](cv::UMat &videoFrame) {
+        if(source_.isReady())
+            videoFrame = source_().second;
     });
 }
 
 bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
-    return clva().capture(fn);
+    return  clva().capture(fn);
+}
+
+bool Viz2D::isSourceReady() {
+    return source_.isReady();
+}
+
+void Viz2D::setSink(const Sink &sink) {
+    if (!clva().hasContext())
+        clva().copyContext();
+    sink_ = sink;
 }
 
 void Viz2D::write() {
-    clva().write([=, this](const cv::UMat &videoFrame) {
-        *(this->writer_) << videoFrame;
+    this->write([&](const cv::UMat &videoFrame) {
+        if(sink_.isReady())
+            sink_(videoFrame);
     });
 }
 
@@ -402,61 +419,17 @@ void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
     clva().write(fn);
 }
 
+bool Viz2D::isSinkReady() {
+    return sink_.isReady();
+}
+
 void Viz2D::makeCurrent() {
     glfwMakeContextCurrent(getGLFWWindow());
 }
 
-void Viz2D::makeUncurrent() {
+void Viz2D::makeNoneCurrent() {
     glfwMakeContextCurrent(nullptr);
 }
-
-#ifndef __EMSCRIPTEN__
-cv::VideoWriter& Viz2D::makeVAWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
-    writerPath_ = outputFilename;
-    vaWriterDeviceIndex_ = vaDeviceIndex;
-
-    writer_ = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
-    setVideoFrameSize(frameSize);
-
-    if (!clva().hasContext()) {
-        clva().copyContext();
-    }
-    return *writer_;
-}
-
-cv::VideoCapture& Viz2D::makeVACapture(const string &inputFilename, const int vaDeviceIndex) {
-    capturePath_ = inputFilename;
-    vaCaptureDeviceIndex_ = vaDeviceIndex;
-    capture_ = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
-    float w = capture_->get(cv::CAP_PROP_FRAME_WIDTH);
-    float h = capture_->get(cv::CAP_PROP_FRAME_HEIGHT);
-    setVideoFrameSize(cv::Size(w,h));
-
-    if (!clva().hasContext()) {
-        clva().copyContext();
-    }
-
-    return *capture_;
-}
-
-cv::VideoWriter& Viz2D::makeWriter(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize) {
-    writerPath_ = outputFilename;
-    writer_ = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, {});
-    setVideoFrameSize(frameSize);
-
-    return *writer_;
-}
-
-cv::VideoCapture& Viz2D::makeCapture(const string &inputFilename) {
-    capturePath_ = inputFilename;
-    capture_ = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {});
-    float w = capture_->get(cv::CAP_PROP_FRAME_WIDTH);
-    float h = capture_->get(cv::CAP_PROP_FRAME_HEIGHT);
-    setVideoFrameSize(cv::Size(w,h));
-
-    return *capture_;
-}
-#endif
 
 void Viz2D::clear(const cv::Scalar &rgba) {
     const float &r = rgba[0] / 255.0f;
@@ -701,51 +674,6 @@ nanogui::ColorPicker* Viz2D::makeColorPicker(const string& label, nanogui::Color
 
 nanogui::Button* Viz2D::makeButton(const string& caption, std::function<void()> fn) {
     return this->form()->add_button(caption, fn);
-}
-bool Viz2D::isAccelerated() {
-    return cv::ocl::useOpenCL();
-}
-
-void Viz2D::setAccelerated(bool a) {
-#ifndef __EMSCRIPTEN__
-    if(a != cv::ocl::useOpenCL()) {
-        clglContext_->getCLExecContext().setUseOpenCL(a);
-        clvaContext_->getCLExecContext().setUseOpenCL(a);
-        cv::ocl::setUseOpenCL(a);
-        double w = 0;
-        double h = 0;
-        double fps = 0;
-        double fourcc = 0;
-
-        if(writer_) {
-            w = writer_->get(cv::CAP_PROP_FRAME_WIDTH);
-            h = writer_->get(cv::CAP_PROP_FRAME_HEIGHT);
-            fps = writer_->get(cv::CAP_PROP_FPS);
-            fourcc = writer_->get(cv::CAP_PROP_FOURCC);
-        }
-
-        if(a) {
-            if(capture_) {
-                delete capture_;
-                makeVACapture(capturePath_, vaCaptureDeviceIndex_);
-            }
-
-            if(writer_) {
-                delete writer_;
-                makeVAWriter(writerPath_, fourcc, fps, cv::Size(w, h), vaWriterDeviceIndex_);
-            }
-        } else {
-            if(capture_) {
-                delete capture_;
-                makeCapture(capturePath_);
-            }
-            if(writer_) {
-                delete writer_;
-                makeWriter(writerPath_, fourcc, fps, cv::Size(w, h));
-            }
-        }
-    }
-#endif
 }
 
 bool Viz2D::display() {

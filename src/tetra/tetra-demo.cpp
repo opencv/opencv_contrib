@@ -6,12 +6,12 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;
@@ -88,7 +88,8 @@ int main(int argc, char **argv) {
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
+    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    v2d->setSink(sink);
 
     v2d->gl(init_scene);
 
@@ -97,14 +98,14 @@ int main(int argc, char **argv) {
         v2d->gl(render_scene);
 
         //Aquire the frame buffer for use by OpenCL
-        v2d->clgl([](cv::UMat &frameBuffer) {
+        v2d->clgl([&](cv::UMat &frameBuffer) {
             //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, kernel_size);
+            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
         });
 
-        update_fps(v2d, true);
-
         v2d->write();
+
+        update_fps(v2d, true);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if (!v2d->display())

@@ -13,6 +13,11 @@
 #include <opencv2/stitching/detail/blenders.hpp>
 #include <opencv2/tracking.hpp>
 
+using std::cerr;
+using std::endl;
+using std::vector;
+using std::string;
+
 #ifdef __EMSCRIPTEN__
 //enables KCF tracking instead of continuous detection.
 #define USE_TRACKER 1;
@@ -45,51 +50,6 @@ static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIG
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
 #ifdef USE_TRACKER
 static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
-#endif
-using std::cerr;
-using std::endl;
-using std::vector;
-using std::string;
-
-#ifdef __EMSCRIPTEN__
-#  include <emscripten.h>
-#  include <emscripten/bind.h>
-#  include <fstream>
-
-using namespace emscripten;
-
-std::string pushImage(std::string filename){
-    try {
-        std::ifstream fs(filename, std::fstream::in | std::fstream::binary);
-        fs.seekg(0, std::ios::end);
-        auto length = fs.tellg();
-        fs.seekg(0, std::ios::beg);
-
-        v2d->capture([&](cv::UMat &videoFrame) {
-            if(videoFrame.empty())
-                videoFrame.create(HEIGHT, WIDTH, CV_8UC3);
-            if (length == (videoFrame.elemSize() + 1) * videoFrame.total()) {
-                cv::Mat tmp;
-                cv::Mat v = videoFrame.getMat(cv::ACCESS_RW);
-                cvtColor(v, tmp, cv::COLOR_RGB2BGRA);
-                fs.read((char*)(tmp.data), tmp.elemSize() * tmp.total());
-                cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
-                v.release();
-                tmp.release();
-            } else {
-                cerr << "mismatch" << endl;
-            }
-        });
-        return "success";
-    } catch(std::exception& ex) {
-        return string(ex.what());
-    }
-}
-
-EMSCRIPTEN_BINDINGS(my_module)
-{
-    function("push_image", &pushImage);
-}
 #endif
 
 struct FaceFeatures {
@@ -199,13 +159,13 @@ void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
     }
 }
 
-void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float by) {
+void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float multiplier) {
     static vector<cv::UMat> channels;
     static cv::UMat hls;
 
     cvtColor(srcBGR, hls, cv::COLOR_BGR2HLS);
     split(hls, channels);
-    cv::multiply(channels[2], by, channels[2]);
+    cv::multiply(channels[2], multiplier, channels[2]);
     merge(channels, hls);
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
@@ -256,7 +216,7 @@ void iteration() {
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         static cv::detail::MultiBandBlender blender(false, 5);
         //BGR
-        static cv::UMat bgr, down, faceBgMask, blurred, adjusted, saturated, skin;
+        static cv::UMat input, down, faceBgMask, blurred, contrast, eyesAndLips, skin;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
@@ -276,10 +236,10 @@ void iteration() {
             exit(0);
 #endif
         v2d->clgl([&](cv::UMat &frameBuffer) {
-            cvtColor(frameBuffer, bgr, cv::COLOR_BGRA2BGR);
+            cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
         });
 
-        cv::resize(bgr, down, cv::Size(0, 0), SCALE, SCALE);
+        cv::resize(input, down, cv::Size(0, 0), SCALE, SCALE);
 
         shapes.clear();
         faceRects.clear();
@@ -335,26 +295,26 @@ void iteration() {
             cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
 
             //boost saturation of eyes and lips
-            adjust_saturation(bgr,saturated, eyes_and_lips_saturation);
+            adjust_saturation(input,eyesAndLips, eyes_and_lips_saturation);
             //reduce skin contrast
-            multiply(bgr, cv::Scalar::all(skin_contrast), adjusted);
+            multiply(input, cv::Scalar::all(skin_contrast), contrast);
             //fix skin brightness
-            add(adjusted, cv::Scalar::all((1.0 - skin_contrast) / 2.0) * 255.0, adjusted);
+            add(contrast, cv::Scalar::all((1.0 - skin_contrast) / 2.0) * 255.0, contrast);
             //blur the skin
-            cv::boxFilter(adjusted, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+            cv::boxFilter(contrast, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             //boost skin saturation
             adjust_saturation(blurred,skin, skin_saturation);
 
             //piece it all together
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
             blender.feed(skin, faceBgMaskGrey, cv::Point(0, 0));
-            blender.feed(bgr, faceFgMaskInvGrey, cv::Point(0, 0));
-            blender.feed(saturated, faceFgMaskGrey, cv::Point(0, 0));
+            blender.feed(input, faceFgMaskInvGrey, cv::Point(0, 0));
+            blender.feed(eyesAndLips, faceFgMaskGrey, cv::Point(0, 0));
             blender.blend(frameOutFloat, cv::UMat());
             frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
             if (side_by_side) {
-                cv::resize(bgr, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
                 cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
                 frameOut = cv::Scalar::all(0);
@@ -368,11 +328,11 @@ void iteration() {
         } else {
             if (side_by_side) {
                 frameOut = cv::Scalar::all(0);
-                cv::resize(bgr, lhalf, cv::Size(0, 0), 0.5, 0.5);
+                cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
                 lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
                 lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
             } else {
-                bgr.copyTo(frameOut);
+                input.copyTo(frameOut);
             }
 
             v2d->clgl([&](cv::UMat &frameBuffer) {
@@ -414,22 +374,18 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    v2d->setSource(src);
 
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        exit(-1);
-    }
-
-    float fps = capture.get(cv::CAP_PROP_FPS);
-    float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
-    float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
+    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    v2d->setSink(sink);
 
     while (true)
         iteration();
 #else
-    emscripten_set_main_loop(iteration, -1, false);
+    Source src = make_webcam_source(v2d, WIDTH, HEIGHT);
+    v2d->setSource(src);
+    emscripten_set_main_loop(iteration, -1, true);
 #endif
     return 0;
 }

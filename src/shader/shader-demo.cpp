@@ -27,7 +27,7 @@ int max_iterations = 500;
 float center_x = -0.32487;
 float center_y = 0.000001;
 float zoom = 1.0;
-float zoom_multiplier = 0.99;
+float zoom_add = 0.99;
 long iterations = 0;
 
 /** GL uniform handles **/
@@ -91,7 +91,7 @@ void load_buffer_data(){
 #endif
 }
 
-//workaround: required with emscripten + nanogui on every iteration before renderin
+//workaround: required with emscripten + nanogui on every iteration before rendering
 void rebind_buffers() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -247,6 +247,10 @@ void load_shader(){
     shader_program_hdl = init_shader(vert.c_str(),  frag.c_str(), "fragColor");
 }
 
+float easeInOutQubic(float x) {
+    return x < 0.5f ? 4.0f * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 3.0f) / 2.0f;
+}
+
 void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
@@ -264,11 +268,11 @@ void init_scene(const cv::Size& sz) {
 void render_scene(const cv::Size& sz) {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    if(zoom > 1) {
-        zoom_multiplier = 0.99;
+    if(zoom >= 1) {
+        zoom_add = -0.01;
         iterations = 0;
     } else if(zoom < 2.5e-06) {
-        zoom_multiplier = 1.01;
+        zoom_add = +0.01;
         iterations = 0;
     }
 
@@ -278,7 +282,7 @@ void render_scene(const cv::Size& sz) {
     glUniform1i(max_iterations_hdl, max_iterations);
     glUniform1f(center_y_hdl, center_y);
     glUniform1f(center_x_hdl, center_x);
-    glUniform1f(zoom_hdl, zoom*=zoom_multiplier);
+    glUniform1f(zoom_hdl, easeInOutQubic(zoom+=zoom_add));
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
@@ -338,7 +342,6 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     });
     v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the fractal visualization");
     v2d->makeFormVariable("Contrast boost", contrast_boost, 1, 255, true, "", "Boost contrast by this factor");
-
 }
 
 void iteration() {
@@ -378,16 +381,18 @@ int main(int argc, char **argv) {
             setup_gui(v2d);
             v2d->setVisible(true);
         }
-#ifndef __EMSCRIPTEN__
-        v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), 0);
-#endif
         v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
+        Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+        v2d->setSink(sink);
+
         while(true)
             iteration();
 #else
-        emscripten_set_main_loop(iteration, -1, false);
+        Source src = make_webcam_source(v2d, WIDTH, HEIGHT);
+        v2d->setSource(src);
+        emscripten_set_main_loop(iteration, -1, true);
 #endif
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;

@@ -208,9 +208,6 @@ int main(int argc, char **argv) {
         setup_gui(v2d);
         v2d->setVisible(true);
     }
-#ifndef __EMSCRIPTEN__
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, v2d->getFrameBufferSize(), VA_HW_DEVICE_INDEX);
-#endif
 
     //The text to display
     string txt = cv::getBuildInformation();
@@ -222,10 +219,12 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
+    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    v2d->setSink(sink);
     while(true)
         iteration();
 #else
-    emscripten_set_main_loop(iteration, -1, false);
+    emscripten_set_main_loop(iteration, -1, true);
 #endif
 
     } catch(std::exception& ex) {

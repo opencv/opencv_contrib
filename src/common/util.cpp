@@ -3,6 +3,11 @@
 #include "viz2d.hpp"
 #include "nvg.hpp"
 
+#ifdef __EMSCRIPTEN__
+#  include <emscripten.h>
+#  include <fstream>
+#endif
+
 namespace kb {
 namespace viz2d {
 
@@ -81,5 +86,80 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> v2d, bool graphically) {
     ++cnt;
 }
 
+#ifndef __EMSCRIPTEN__
+Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    v2d->setVideoFrameSize(frameSize);
+
+    return Sink([=](const cv::UMat& frame){
+        (*writer) << frame;
+        return writer->isOpened();
+    });
+}
+
+Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex) {
+    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    float fps = capture->get(cv::CAP_PROP_FPS);
+    float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
+    float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
+    v2d->setVideoFrameSize(cv::Size(w,h));
+
+    return Source([=](cv::UMat& frame){
+        (*capture) >> frame;
+        return !frame.empty();
+    }, fps);
+}
+
+Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    v2d->setVideoFrameSize(frameSize);
+
+    return Sink([=](const cv::UMat& frame){
+        (*writer) << frame;
+        return writer->isOpened();
+    });
+}
+
+Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex) {
+    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    float fps = capture->get(cv::CAP_PROP_FPS);
+    float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
+    float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
+    v2d->setVideoFrameSize(cv::Size(w,h));
+
+    return Source([=](cv::UMat& frame){
+        (*capture) >> frame;
+        return !frame.empty();
+    }, fps);
+}
+
+#else
+Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height) {
+    using namespace std;
+    static cv::Mat tmp(height, width, CV_8UC4);
+
+    return Source([=](cv::UMat& frame) {
+
+        try {
+            if (frame.empty())
+                frame.create(v2d->getInitialSize(), CV_8UC3);
+            std::ifstream fs("canvas.raw", std::fstream::in | std::fstream::binary);
+            fs.seekg(0, std::ios::end);
+            auto length = fs.tellg();
+            fs.seekg(0, std::ios::beg);
+
+            if (length == (frame.elemSize() + 1) * frame.total()) {
+                cv::Mat v = frame.getMat(cv::ACCESS_WRITE);
+                fs.read((char*) (tmp.data), tmp.elemSize() * tmp.total());
+                cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
+                v.release();
+            }
+        } catch(std::exception& ex) {
+            cerr << ex.what() << endl;
+        }
+        return true;
+    }, 0);
+}
+#endif
 }
 }

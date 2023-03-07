@@ -1,18 +1,35 @@
 #ifndef SRC_COMMON_UTIL_HPP_
 #define SRC_COMMON_UTIL_HPP_
 
+#include "source.hpp"
+#include "sink.hpp"
+
 #include <string>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/ocl.hpp>
+#ifdef __EMSCRIPTEN__
+#  include <emscripten.h>
+#  include <emscripten/bind.h>
+#  include <fstream>
+#endif
 
 namespace kb {
 namespace viz2d {
+using std::string;
 class Viz2D;
 std::string get_gl_info();
 std::string get_cl_info();
 void print_system_info();
 void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
+#ifndef __EMSCRIPTEN__
+Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex);
+Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex);
+Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex);
+Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex);
+#else
+Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height);
+#endif
 }
 }
 

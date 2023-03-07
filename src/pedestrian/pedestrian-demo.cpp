@@ -118,17 +118,12 @@ int main(int argc, char **argv) {
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    auto capture = v2d->makeVACapture(argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    v2d->setSource(src);
 
-    if (!capture.isOpened()) {
-        cerr << "ERROR! Unable to open video input" << endl;
-        exit(-1);
-    }
+    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    v2d->setSink(sink);
 
-    float fps = capture.get(cv::CAP_PROP_FPS);
-    float width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
-    float height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->makeVAWriter(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, cv::Size(width, height), VA_HW_DEVICE_INDEX);
     //BGRA
     cv::UMat background;
     //RGB

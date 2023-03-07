@@ -1,6 +1,9 @@
 #ifndef SRC_COMMON_VIZ2D_HPP_
 #define SRC_COMMON_VIZ2D_HPP_
 
+#include "source.hpp"
+#include "sink.hpp"
+
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -89,12 +92,14 @@ class Viz2D {
     int vaWriterDeviceIndex_ = 0;
     bool mouseDrag_ = false;
     nanogui::Screen* screen_ = nullptr;
+    Source source_;
+    Sink sink_;
 public:
     Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
     bool initializeWindowing();
     void makeCurrent();
-    void makeUncurrent();
+    void makeNoneCurrent();
 
     cv::ogl::Texture2D& texture();
 
@@ -103,14 +108,16 @@ public:
     void nvg(std::function<void(const cv::Size&)> fn);
 
     void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
+
     bool capture();
     bool capture(std::function<void(cv::UMat&)> fn);
     void write();
     void write(std::function<void(const cv::UMat&)> fn);
-    cv::VideoWriter& makeVAWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize, const int vaDeviceIndex);
-    cv::VideoCapture& makeVACapture(const string& intputFilename, const int vaDeviceIndex);
-    cv::VideoWriter& makeWriter(const string& outputFilename, const int fourcc, const float fps, const cv::Size& frameSize);
-    cv::VideoCapture& makeCapture(const string& intputFilename);
+    virtual void setSource(const Source& src);
+    virtual bool isSourceReady();
+    virtual void setSink(const Sink& sink);
+    virtual bool isSinkReady();
+
     void setMouseDrag(bool d);
     bool isMouseDrag();
     void pan(int x, int y);
@@ -139,8 +146,6 @@ public:
     void setStretching(bool s);
     bool isStretching();
     bool isClosed();
-    bool isAccelerated();
-    void setAccelerated(bool u);
     void close();
     bool display();
 
