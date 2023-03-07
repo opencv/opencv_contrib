@@ -23,6 +23,7 @@ The goal of the demos is to show how to use Viz2D in conjunction with interop op
 There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
 
 ## Online Demos
+Please note that the following online demos are slower and/or have less features than the native versions.
 * https://viel-zu.org/opencv/shader
 * https://viel-zu.org/opencv/font
 * https://viel-zu.org/opencv/optflow
