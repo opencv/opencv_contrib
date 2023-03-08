@@ -108,8 +108,8 @@
   <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
-  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
-		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
+  		<canvas id="cameraCanvas" width="1920" height="1080" style="display: none;"></canvas>
+		<video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -209,6 +209,7 @@
       let cameraBtn = document.querySelector("#captureBtn");
       let videoElement = document.querySelector("#video");
       let cameraCanvas = document.querySelector("#cameraCanvas");
+
 
       function capture() {
           let ctx = cameraCanvas.getContext('2d', { willReadFrequently: true });
