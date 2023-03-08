@@ -25,6 +25,8 @@ Please note that the following online demos are slower and/or have less features
 * If you are on a recent Intel Platform (Gen8 - Gen12) you **need to install** an [**alternative compute-runtime**](https://github.com/kallaballa/compute-runtime)
 
 # Dependencies
+* [My OpenCV fork](https://github.com/kallaballa/opencv)
+* [OpenCV contrib](https://github.com/opencv/opencv_contrib)
 * EGL
 * GLEW
 * GLFW3
@@ -74,7 +76,7 @@ https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9e
 # Instructions for Ubuntu 22.04.2 LTS
 You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
 
-## Install build dependencies
+## Install required packages
 
 ```bash
 apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
@@ -129,7 +131,7 @@ wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f
 Before you can run the demos you have to point to ```libviz2d.so```
 ```bash
 cd Viz2D
-export LD_LIBRARY_PATH=src/common:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=`pwd`/src/common:$LD_LIBRARY_PATH
 ```
 
 ## Run the tetra-demo:
