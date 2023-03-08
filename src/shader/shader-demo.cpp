@@ -335,7 +335,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     v2d->makeGroup("Navigation");
     v2d->makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "", "How deeply to calculate the fractal.");
     auto* cxVar = v2d->makeFormVariable("X", center_x, -1.0f, 1.0f, true, "", "The x location from -1.0 to 1.0");
-    cxVar->number_format("%.8g");
+    cxVar->number_format("%.7g");
     cxVar->set_value_increment(0.0000001);
     cxVar->set_callback([&, cxVar](const float& value){
         manual_navigation = true;
@@ -344,7 +344,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     });
 
     auto* cyVar = v2d->makeFormVariable("Y", center_y, -1.0f, 1.0f, true, "", "The y location from -1.0 to 1.0");
-    cyVar->number_format("%.8g");
+    cyVar->number_format("%.7g");
     cyVar->set_value_increment(0.0000001);
     cyVar->set_callback([&,cyVar](const float &value) {
         manual_navigation = true;
