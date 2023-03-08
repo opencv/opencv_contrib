@@ -254,7 +254,7 @@ bool Viz2D::initializeWindowing() {
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().mouse_button_callback_event(button, action, modifiers);
-        if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
             v2d->setMouseDrag(action == GLFW_PRESS);
         }
     }
@@ -319,14 +319,6 @@ nanogui::FormHelper* Viz2D::form() {
 bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
     if (screen().keyboard_event(key, scancode, action, modifiers))
         return true;
-//    if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-//        auto children = screen().children();
-//        for(auto* child : children) {
-//            child->set_visible(!child->visible());
-//        }
-//
-//        return true;
-//    }
     return false;
 }
 

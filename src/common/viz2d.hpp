@@ -113,10 +113,13 @@ public:
     bool capture(std::function<void(cv::UMat&)> fn);
     void write();
     void write(std::function<void(const cv::UMat&)> fn);
-    virtual void setSource(const Source& src);
-    virtual bool isSourceReady();
-    virtual void setSink(const Sink& sink);
-    virtual bool isSinkReady();
+
+    void setSource(const Source& src);
+    bool isSourceReady();
+    void setSink(const Sink& sink);
+    bool isSinkReady();
+
+    void showGui(bool s);
 
     void setMouseDrag(bool d);
     bool isMouseDrag();
