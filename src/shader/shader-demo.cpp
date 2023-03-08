@@ -24,8 +24,8 @@ float alpha = 1.0f; //0.0-1.0
 //contrast boost
 int contrast_boost = 15; //0.0-255
 int max_iterations = 500;
-float center_x = -0.32487;
-float center_y = 0.000002;
+float center_x = -0.12;
+float center_y = 0.132;
 float zoom = 1.0;
 float zoom_add = 0.99;
 long iterations = 0;
