@@ -222,7 +222,7 @@ bool Viz2D::initializeWindowing() {
 
     /* I figure we don't need double buffering because the FBO (and the bound texture) is our backbuffer that
      * we blit to the front on every iteration.
-     * On wayland and in WASM it works.
+     * On X11, wayland and in WASM it works and boosts performance a bit.
      */
     glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
