@@ -38,13 +38,8 @@ enum PostProcModes {
 
 /** Application parameters **/
 
-#ifndef __EMSCRIPTEN__
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
-#else
-constexpr unsigned int WIDTH = 1280;
-constexpr unsigned int HEIGHT = 720;
-#endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
