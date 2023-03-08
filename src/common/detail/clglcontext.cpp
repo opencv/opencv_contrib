@@ -70,8 +70,12 @@ void CLGLContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Si
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(viewport.x, viewport.y, viewport.x + viewport.width, viewport.y + viewport.height,
-            0, stretch ? 0 : windowSize.height - frameBufferSize_.height, stretch ? windowSize.width : frameBufferSize_.width, windowSize.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    GL_CHECK(glBlitFramebuffer(
+            viewport.x, viewport.y, viewport.x + viewport.width, viewport.y + viewport.height,
+            stretch ? 0 : windowSize.width - frameBufferSize_.width,
+            stretch ? 0 : windowSize.height - frameBufferSize_.height,
+            stretch ? windowSize.width : frameBufferSize_.width,
+            stretch ? windowSize.height : frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
 void CLGLContext::begin() {
