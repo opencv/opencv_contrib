@@ -222,9 +222,8 @@ bool Viz2D::initializeWindowing() {
 
     /* I figure we don't need double buffering because the texture is our backbuffer
      * But EGL/X11 anyway doesn't support rendering to the front buffer, yet. But on wayland it should work.
-     * And I am not sure about vsync on other platforms.
      */
-    //    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
     glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr, nullptr);
     if (glfwWindow_ == NULL) {
