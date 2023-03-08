@@ -678,7 +678,6 @@ bool Viz2D::display() {
     bool result = true;
     if (!offscreen_) {
         makeCurrent();
-        glfwPollEvents();
         screen().draw_contents();
 #ifndef __EMSCRIPTEN__
         clglContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());
@@ -687,6 +686,7 @@ bool Viz2D::display() {
 #endif
         screen().draw_widgets();
         glfwSwapBuffers(glfwWindow_);
+        glfwPollEvents();
         result = !glfwWindowShouldClose(glfwWindow_);
     }
 
