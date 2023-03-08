@@ -14,7 +14,7 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 constexpr const int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-int glow_kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
+int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
 /** mandelbrot control parameters **/
 // Red, green, blue and alpha. All from 0.0f to 1.0f
