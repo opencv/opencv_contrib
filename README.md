@@ -71,7 +71,7 @@ Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenG
 
 https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9eef-378f6b10d773.mp4
 
-# Instructions
+# Instructions for Ubuntu 22.04.2 LTS
 You need to build my 4.x branch of OpenCV, OpenCV-contrib, nanovg and nanogui.
 
 ## Install build dependencies
