@@ -182,7 +182,7 @@ void load_shader(){
     })";
 
     const string frag = "    #version " + shaderVersion + R"(
-    precision highp float;
+    precision lowp float;
 
     out vec4 outColor;
     
