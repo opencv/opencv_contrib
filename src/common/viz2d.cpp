@@ -220,8 +220,9 @@ bool Viz2D::initializeWindowing() {
 #endif
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    /* I figure we don't need double buffering because the texture is our backbuffer
-     * But EGL/X11 anyway doesn't support rendering to the front buffer, yet. But on wayland it should work.
+    /* I figure we don't need double buffering because the FBO (and the bound texture) is our backbuffer that
+     * we blit to the front on every iteration.
+     * On wayland and in WASM it works.
      */
     glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
@@ -253,7 +254,7 @@ bool Viz2D::initializeWindowing() {
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().mouse_button_callback_event(button, action, modifiers);
-        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (button == GLFW_MOUSE_BUTTON_RIGHT) {
             v2d->setMouseDrag(action == GLFW_PRESS);
         }
     }
