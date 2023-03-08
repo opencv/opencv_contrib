@@ -99,10 +99,11 @@ void CLGLContext::end() {
 void CLGLContext::download(cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
-    //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl
+    //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl at the same time
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
     tmp.release();
 }
+
 void CLGLContext::upload(const cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_READ);
     assert(tmp.data != nullptr);
