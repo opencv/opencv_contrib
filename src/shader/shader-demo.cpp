@@ -253,13 +253,6 @@ float easeInOutQuint(float x) {
     return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
 }
 
-float easeInOutQubic(float x) {
-    return x < 0.5f ? 4.0f * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 3.0f) / 2.0f;
-}
-float easeInOutSine(float x) {
-    return -(cos(M_PI * x) - 1) / 2;
-}
-
 void init_scene(const cv::Size& sz) {
     load_shader();
     load_buffer_data();
