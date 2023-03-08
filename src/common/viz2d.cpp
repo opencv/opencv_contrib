@@ -319,17 +319,14 @@ nanogui::FormHelper* Viz2D::form() {
 bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
     if (screen().keyboard_event(key, scancode, action, modifiers))
         return true;
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        setOffscreen(!isOffscreen());
-        return true;
-    } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
-        auto children = screen().children();
-        for(auto* child : children) {
-            child->set_visible(!child->visible());
-        }
-
-        return true;
-    }
+//    if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+//        auto children = screen().children();
+//        for(auto* child : children) {
+//            child->set_visible(!child->visible());
+//        }
+//
+//        return true;
+//    }
     return false;
 }
 
