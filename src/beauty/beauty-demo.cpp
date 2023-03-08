@@ -35,8 +35,8 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 /** Effect parameters **/
 constexpr int BLUR_DIV = 500;
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-float eyes_and_lips_saturation = 1.5f; //multiplier
-float skin_saturation = 1.2f; //multiplier
+float eyes_and_lips_saturation = 1.5f; //factor
+float skin_saturation = 1.2f; //factor
 float skin_contrast = 0.6f; //0.0-1.0
 #ifndef __EMSCRIPTEN__
 bool side_by_side = true;
