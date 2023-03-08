@@ -115,6 +115,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         format->min_num_decode_surfaces != thiz->videoDecoder_->nDecodeSurfaces())
     {
         FormatInfo newFormat;
+        newFormat.videoFullRangeFlag = format->video_signal_description.video_full_range_flag;
         newFormat.codec = static_cast<Codec>(format->codec);
         newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
         newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;

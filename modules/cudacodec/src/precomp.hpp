@@ -82,6 +82,7 @@
         #include "frame_queue.hpp"
         #include "video_decoder.hpp"
         #include "video_parser.hpp"
+        #include <opencv2/cudaarithm.hpp>
     #endif
     #if defined(HAVE_NVCUVENC)
         #include <fstream>
