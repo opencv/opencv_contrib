@@ -437,6 +437,13 @@ void Viz2D::clear(const cv::Scalar &rgba) {
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
 }
 
+void Viz2D::showGui(bool s) {
+    auto children = screen().children();
+    for(auto* child : children) {
+        child->set_visible(s);
+    }
+}
+
 void Viz2D::setMouseDrag(bool d) {
     mouseDrag_ = d;
 }
