@@ -92,8 +92,6 @@ void CLGLContext::end() {
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-    //glFlush seems enough but i wanna make sure that there won't be race conditions.
-    //At least on TigerLake/Iris it doesn't make a difference in performance.
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
 }
@@ -101,10 +99,10 @@ void CLGLContext::end() {
 void CLGLContext::download(cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
+    //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
     tmp.release();
 }
-
 void CLGLContext::upload(const cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_READ);
     assert(tmp.data != nullptr);
