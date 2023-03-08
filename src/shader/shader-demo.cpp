@@ -28,7 +28,7 @@ float center_x = -0.119609;
 float center_y = 0.13262;
 float zoom_factor = 1.0;
 float zoom = 1.0;
-float zoom_add = 0.99;
+float zoom_incr = 0.99;
 long iterations = 0;
 bool manual_navigation = false;
 
@@ -271,10 +271,10 @@ void render_scene(const cv::Size& sz) {
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     if(zoom >= 1) {
-        zoom_add = -0.01;
+        zoom_incr = -0.01;
         iterations = 0;
     } else if(zoom < 2.5e-06) {
-        zoom_add = +0.01;
+        zoom_incr = +0.01;
         iterations = 0;
     }
 
@@ -285,7 +285,7 @@ void render_scene(const cv::Size& sz) {
     glUniform1f(center_y_hdl, center_y);
     glUniform1f(center_x_hdl, center_x);
     if(!manual_navigation) {
-        zoom+=zoom_add;
+        zoom+=zoom_incr;
         glUniform1f(zoom_hdl, easeInOutQuint(zoom));
     } else {
         zoom = 1.0 / pow(zoom_factor,5.0f);
