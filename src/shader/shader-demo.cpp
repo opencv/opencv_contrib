@@ -24,11 +24,13 @@ float alpha = 1.0f; //0.0-1.0
 //contrast boost
 int contrast_boost = 15; //0.0-255
 int max_iterations = 500;
-float center_x = -0.1196;
-float center_y = 0.1325;
+float center_x = -0.119609;
+float center_y = 0.13262;
+float zoom_factor = 1.0;
 float zoom = 1.0;
 float zoom_add = 0.99;
 long iterations = 0;
+bool manual_navigation = false;
 
 /** GL uniform handles **/
 GLint base_color_hdl;
@@ -289,7 +291,13 @@ void render_scene(const cv::Size& sz) {
     glUniform1i(max_iterations_hdl, max_iterations);
     glUniform1f(center_y_hdl, center_y);
     glUniform1f(center_x_hdl, center_x);
-    glUniform1f(zoom_hdl, easeInOutQuint(zoom+=zoom_add));
+    if(!manual_navigation) {
+        zoom+=zoom_add;
+        glUniform1f(zoom_hdl, easeInOutQuint(zoom));
+    } else {
+        zoom = 1.0 / pow(zoom_factor,5.0f);
+        glUniform1f(zoom_hdl, zoom);
+    }
 
 #ifndef __EMSCRIPTEN__
     glBindVertexArray(VAO);
@@ -322,7 +330,35 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->makeWindow(5, 30, "Effect");
+    v2d->makeWindow(5, 30, "Fractal");
+
+    v2d->makeGroup("Navigation");
+    v2d->makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "", "How deeply to calculate the fractal.");
+    auto* cxVar = v2d->makeFormVariable("X", center_x, -1.0f, 1.0f, true, "", "The x location from -1.0 to 1.0");
+    cxVar->number_format("%.8g");
+    cxVar->set_value_increment(0.0000001);
+    cxVar->set_callback([&, cxVar](const float& value){
+        manual_navigation = true;
+        cxVar->set_value(value);
+        center_x = value;
+    });
+
+    auto* cyVar = v2d->makeFormVariable("Y", center_y, -1.0f, 1.0f, true, "", "The y location from -1.0 to 1.0");
+    cyVar->number_format("%.8g");
+    cyVar->set_value_increment(0.0000001);
+    cyVar->set_callback([&,cyVar](const float &value) {
+        manual_navigation = true;
+        cyVar->set_value(value);
+        center_y = value;
+    });
+
+    auto* czVar = v2d->makeFormVariable("Zoom factor", zoom_factor, 1.0f, 1000000.0f, true, "", "How much to zoom in on the fractal");
+    czVar->set_callback([&,czVar](const float &value) {
+        manual_navigation = true;
+        czVar->set_value(value);
+        zoom_factor = value;
+    });
+
 #ifndef __EMSCRIPTEN__
     v2d->makeGroup("Glow");
     auto* kernelSize = v2d->makeFormVariable("Kernel Size", glow_kernel_size, 1, 127, true, "", "Intensity of glow defined by kernel size");
