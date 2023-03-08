@@ -352,7 +352,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         center_y = value;
     });
 
-    auto* czVar = v2d->makeFormVariable("Zoom factor", zoom_factor, 1.0f, 1000000.0f, true, "", "How much to zoom in on the fractal");
+    auto* czVar = v2d->makeFormVariable("Zoom", zoom_factor, 1.0f, 1000000.0f, true, "", "How much to zoom in on the fractal");
     czVar->set_callback([&,czVar](const float &value) {
         manual_navigation = true;
         czVar->set_value(value);
