@@ -22,6 +22,7 @@ std::string get_gl_info();
 std::string get_cl_info();
 void print_system_info();
 void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
+
 #ifndef __EMSCRIPTEN__
 Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex);
 Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex);
@@ -30,6 +31,7 @@ Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, cons
 #else
 Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height);
 #endif
+
 }
 }
 

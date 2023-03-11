@@ -50,55 +50,57 @@ bool update_stars = true;
 bool update_perspective = true;
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->makeWindow(5, 30, "Effect");
-    v2d->makeGroup("Text Crawl");
-    v2d->makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
-    v2d->makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line")->set_callback([&](const float &w) {
-        update_perspective = true;
-        warp_ratio = w;
-    });
+    v2d->nanogui([&](kb::viz2d::FormHelper& form){
+        form.makeWindow(5, 30, "Effect");
+        form.makeGroup("Text Crawl");
+        form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
+        form.makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line")->set_callback([&](const float &w) {
+            update_perspective = true;
+            warp_ratio = w;
+        });
 
-    v2d->makeColorPicker("Text Color", text_color, "The text color", [&](const nanogui::Color &c) {
-        text_color[0] = c[0];
-        text_color[1] = c[1];
-        text_color[2] = c[2];
-    });
+        form.makeColorPicker("Text Color", text_color, "The text color", [&](const nanogui::Color &c) {
+            text_color[0] = c[0];
+            text_color[1] = c[1];
+            text_color[2] = c[2];
+        });
 
-    v2d->makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
+        form.makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
 
-    v2d->makeGroup("Stars");
-    v2d->makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")->set_callback([](const float &s) {
-        update_stars = true;
-        min_star_size = s;
-    });
-    v2d->makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")->set_callback([](const float &s) {
-        update_stars = true;
-        max_star_size = s;
-    });
-    v2d->makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")->set_callback([](const int &cnt) {
-        update_stars = true;
-        min_star_count = cnt;
-    });
-    v2d->makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")->set_callback([](const int &cnt) {
-        update_stars = true;
-        max_star_count = cnt;
-    });
-    v2d->makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")->set_callback([](const float &a) {
-        update_stars = true;
-        star_alpha = a;
-    });
+        form.makeGroup("Stars");
+        form.makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")->set_callback([](const float &s) {
+            update_stars = true;
+            min_star_size = s;
+        });
+        form.makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")->set_callback([](const float &s) {
+            update_stars = true;
+            max_star_size = s;
+        });
+        form.makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")->set_callback([](const int &cnt) {
+            update_stars = true;
+            min_star_count = cnt;
+        });
+        form.makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")->set_callback([](const int &cnt) {
+            update_stars = true;
+            max_star_count = cnt;
+        });
+        form.makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")->set_callback([](const float &a) {
+            update_stars = true;
+            star_alpha = a;
+        });
 
-    v2d->makeWindow(8, 16, "Display");
+        form.makeWindow(8, 16, "Display");
 
-    v2d->makeGroup("Display");
-    v2d->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-#ifndef __EMSCRIPTEN__
-    v2d->makeButton("Fullscreen", [=]() {
-        v2d->setFullscreen(!v2d->isFullscreen());
-    });
-#endif
-    v2d->makeButton("Offscreen", [=]() {
-        v2d->setOffscreen(!v2d->isOffscreen());
+        form.makeGroup("Display");
+        form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+    #ifndef __EMSCRIPTEN__
+        form.makeButton("Fullscreen", [=]() {
+            v2d->setFullscreen(!v2d->isFullscreen());
+        });
+    #endif
+        form.makeButton("Offscreen", [=]() {
+            v2d->setOffscreen(!v2d->isOffscreen());
+        });
     });
 }
 

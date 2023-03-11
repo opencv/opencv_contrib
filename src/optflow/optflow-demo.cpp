@@ -305,88 +305,96 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
 }
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
-    v2d->makeWindow(5, 30, "Effects");
+    v2d->nanogui([&](kb::viz2d::FormHelper& form){
+        form.makeWindow(5, 30, "Effects");
 
-    v2d->makeGroup("Foreground");
-    v2d->makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
-    v2d->makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
+        form.makeGroup("Foreground");
+        form.makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
+        form.makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
 
-    v2d->makeGroup("Background");
-    v2d->makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
+        form.makeGroup("Background");
+        form.makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
 
-    v2d->makeGroup("Points");
-    v2d->makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
-    v2d->makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
+        form.makeGroup("Points");
+        form.makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
+        form.makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
 
-    v2d->makeGroup("Optical flow");
-    v2d->makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-    v2d->makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
-        effect_color[0] = c[0];
-        effect_color[1] = c[1];
-        effect_color[2] = c[2];
+        form.makeGroup("Optical flow");
+        form.makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
+        form.makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
+            effect_color[0] = c[0];
+            effect_color[1] = c[1];
+            effect_color[2] = c[2];
+        });
+        form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
+
+        form.makeWindow(220, 30, "Post Processing");
+        auto* postPocMode = form.makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
+        auto* kernelSize = form.makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
+        kernelSize->set_callback([=](const int& k) {
+            static int lastKernelSize = GLOW_KERNEL_SIZE;
+
+            if(k == lastKernelSize)
+                return;
+
+            if(k <= lastKernelSize) {
+                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+            } else if(k > lastKernelSize)
+                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+
+            lastKernelSize = k;
+            kernelSize->set_value(GLOW_KERNEL_SIZE);
+        });
+        auto* thresh = form.makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
+        auto* gain = form.makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
+        postPocMode->set_callback([=](const int& m) {
+            switch(m) {
+            case GLOW:
+                kernelSize->set_enabled(true);
+                thresh->set_enabled(false);
+                gain->set_enabled(false);
+            break;
+            case BLOOM:
+                kernelSize->set_enabled(true);
+                thresh->set_enabled(true);
+                gain->set_enabled(true);
+            break;
+            case NONE:
+                kernelSize->set_enabled(false);
+                thresh->set_enabled(false);
+                gain->set_enabled(false);
+            break;
+
+            }
+            postPocMode->set_selected_index(m);
+        });
+
+        form.makeWindow(220, 175, "Settings");
+
+        form.makeGroup("Scene Change Detection");
+        form.makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+        form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
     });
-    v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
-    v2d->makeWindow(220, 30, "Post Processing");
-    auto* postPocMode = v2d->makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
-    auto* kernelSize = v2d->makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
-    kernelSize->set_callback([=](const int& k) {
-        static int lastKernelSize = GLOW_KERNEL_SIZE;
+    v2dMenu->nanogui([&](kb::viz2d::FormHelper& form){
+        form.makeWindow(8, 16, "Display");
 
-        if(k == lastKernelSize)
-            return;
-
-        if(k <= lastKernelSize) {
-            GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-        } else if(k > lastKernelSize)
-            GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-
-        lastKernelSize = k;
-        kernelSize->set_value(GLOW_KERNEL_SIZE);
-    });
-    auto* thresh = v2d->makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
-    auto* gain = v2d->makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
-    postPocMode->set_callback([&,kernelSize, thresh, gain](const int& m) {
-        if(post_proc_mode == BLOOM) {
-            thresh->set_enabled(true);
-            gain->set_enabled(true);
-        } else {
-            thresh->set_enabled(false);
-            gain->set_enabled(false);
-        }
-
-        if(post_proc_mode == NONE) {
-            kernelSize->set_enabled(false);
-        } else {
-            kernelSize->set_enabled(true);
-        }
-        //FIXME why is this required?
-        post_proc_mode = static_cast<PostProcModes>(m);
-    });
-
-    v2d->makeWindow(220, 175, "Settings");
-
-    v2d->makeGroup("Scene Change Detection");
-    v2d->makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-    v2d->makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
-
-    v2dMenu->makeWindow(8, 16, "Display");
-
-    v2dMenu->makeGroup("Display");
-    v2dMenu->makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-    v2dMenu->makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
-        v2d->setStretching(s);
-    });
+        form.makeGroup("Display");
+        form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+        form.makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
+            v2d->setStretching(s);
+        });
 
 #ifndef __EMSCRIPTEN__
-    v2dMenu->makeButton("Fullscreen", [=]() {
-        v2d->setFullscreen(!v2d->isFullscreen());
-    });
+        form.makeButton("Fullscreen", [=]() {
+            v2d->setFullscreen(!v2d->isFullscreen());
+        });
 
-    v2dMenu->makeButton("Offscreen", [=]() {
-        v2d->setOffscreen(!v2d->isOffscreen());
-    });
+        form.makeButton("Offscreen", [=]() {
+            v2d->setOffscreen(!v2d->isOffscreen());
+        });
 #endif
+    });
 }
 
 void iteration() {
@@ -465,6 +473,7 @@ int main(int argc, char **argv) {
     if(!v2d->isOffscreen()) {
 #ifndef __EMSCRIPTEN__
         setup_gui(v2d, v2dMenu);
+        v2dMenu->setResizable(false);
         v2dMenu->setVisible(true);
 #else
         setup_gui(v2d, v2d);

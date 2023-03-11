@@ -3,6 +3,9 @@
 
 #include "source.hpp"
 #include "sink.hpp"
+#include "dialog.hpp"
+#include "formhelper.hpp"
+
 
 #include <filesystem>
 #include <iostream>
@@ -40,26 +43,9 @@ void error_callback(int error, const char *description);
 
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
-using namespace kb::viz2d::detail;
+std::function<bool(int, int, int, int)> make_default_keyboard_event_callback();
 
-class Viz2DWindow : public nanogui::Window {
-private:
-    static std::function<bool(Viz2DWindow*, Viz2DWindow*)> viz2DWin_Xcomparator;
-    static std::set<Viz2DWindow*, decltype(viz2DWin_Xcomparator)> all_windows_xsorted_;
-    nanogui::Screen* screen_;
-    nanogui::Vector2i lastDragPos_;
-    nanogui::Vector2i maximizedPos_;
-    nanogui::Button* minBtn_;
-    nanogui::Button* maxBtn_;
-    nanogui::ref<nanogui::AdvancedGridLayout> oldLayout_;
-    nanogui::ref<nanogui::AdvancedGridLayout> newLayout_;
-    bool minimized_ = false;
-public:
-    Viz2DWindow(nanogui::Screen* screen, int x, int y, const string& title);
-    virtual ~Viz2DWindow();
-    bool isMinimized();
-    bool mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) override;
-};
+using namespace kb::viz2d::detail;
 
 class NVG;
 
@@ -85,7 +71,7 @@ class Viz2D {
     NanoVGContext* nvgContext_ = nullptr;
     cv::VideoCapture* capture_ = nullptr;
     cv::VideoWriter* writer_ = nullptr;
-    nanogui::FormHelper* form_ = nullptr;
+    FormHelper* form_ = nullptr;
     bool closed_ = false;
     cv::Size videoFrameSize_ = cv::Size(0,0);
     int vaCaptureDeviceIndex_ = 0;
@@ -94,6 +80,7 @@ class Viz2D {
     nanogui::Screen* screen_ = nullptr;
     Source source_;
     Sink sink_;
+    std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
     Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
@@ -106,6 +93,7 @@ public:
     void gl(std::function<void(const cv::Size&)> fn);
     void clgl(std::function<void(cv::UMat&)> fn);
     void nvg(std::function<void(const cv::Size&)> fn);
+    void nanogui(std::function<void(FormHelper& form)>);
 
     void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
 
@@ -152,39 +140,16 @@ public:
     void close();
     bool display();
 
-    Viz2DWindow* makeWindow(int x, int y, const string& title);
-    nanogui::Label* makeGroup(const string& label);
-    nanogui::detail::FormWidget<bool>* makeFormVariable(const string &name, bool &v, const string &tooltip = "", bool visible = true, bool enabled = true);
-    template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string &name, T &v, const T &min, const T &max, bool spinnable, const string &unit, const string tooltip, bool visible = true, bool enabled = true) {
-        auto var = form()->add_variable(name, v);
-        var->set_enabled(enabled);
-        var->set_visible(visible);
-        var->set_spinnable(spinnable);
-        var->set_min_value(min);
-        var->set_max_value(max);
-        if (!unit.empty())
-            var->set_units(unit);
-        if (!tooltip.empty())
-            var->set_tooltip(tooltip);
-        return var;
-    }
-
-    nanogui::ColorPicker* makeColorPicker(const string& label, nanogui::Color& color, const string& tooltip = "", std::function<void(const nanogui::Color)> fn = nullptr, bool visible = true, bool enabled = true);
-    template<typename T> nanogui::ComboBox* makeComboBox(const string &label, T& e, const std::vector<string>& items) {
-        auto* var = form()->add_variable(label, e, true);
-        var->set_items(items);
-        return var;
-    }
-
-    nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
+    void setDefaultKeyboardEventCallback();
+    void setKeyboardEventCallback(std::function<bool(int key, int scancode, int action, int modifiers)> fn);
 private:
-    virtual bool keyboard_event(int key, int scancode, int action, int modifiers);
+    bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
-    nanogui::FormHelper* form();
+    nanogui::Screen& screen();
+    FormHelper& form();
     CLGLContext& clgl();
     CLVAContext& clva();
     NanoVGContext& nvg();
-    nanogui::Screen& screen();
     GLFWwindow* getGLFWWindow();
     NVGcontext* getNVGcontext();
 };

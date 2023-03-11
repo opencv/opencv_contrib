@@ -171,41 +171,43 @@ void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float multiplie
 }
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->makeWindow(5, 30, "Effect");
+    v2d->nanogui([&](kb::viz2d::FormHelper& form){
+        form.makeWindow(5, 30, "Effect");
 
-    v2d->makeGroup("Display");
-    v2d->makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
-    v2d->makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
-#ifndef __EMSCRIPTEN__
-    v2d->makeButton("Fullscreen", [=]() {
-        v2d->setFullscreen(!v2d->isFullscreen());
+        form.makeGroup("Display");
+        form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
+        form.makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
+    #ifndef __EMSCRIPTEN__
+        form.makeButton("Fullscreen", [=]() {
+            v2d->setFullscreen(!v2d->isFullscreen());
+        });
+    #endif
+        form.makeButton("Offscreen", [=]() {
+            v2d->setOffscreen(!v2d->isOffscreen());
+        });
+
+        form.makeGroup("Face Skin");
+        auto* kernelSize = form.makeFormVariable("Blur", blur_skin_kernel_size, 1, 256, true, "", "use this kernel size to blur the face skin");
+        kernelSize->set_callback([=](const int& k) {
+            static int lastKernelSize = blur_skin_kernel_size;
+
+            if(k == lastKernelSize)
+                return;
+
+            if(k <= lastKernelSize) {
+                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+            } else if(k > lastKernelSize)
+                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+
+            lastKernelSize = k;
+            kernelSize->set_value(blur_skin_kernel_size);
+        });
+        form.makeFormVariable("Saturation", skin_saturation, 0.0f, 100.0f, true, "", "adjust the skin saturation by this amount");
+        form.makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
+
+        form.makeGroup("Eyes and Lips");
+        form.makeFormVariable("Saturation", eyes_and_lips_saturation, 0.0f, 100.0f, true, "", "adjust the saturation of the eyes and the lips by this amount");
     });
-#endif
-    v2d->makeButton("Offscreen", [=]() {
-        v2d->setOffscreen(!v2d->isOffscreen());
-    });
-
-    v2d->makeGroup("Face Skin");
-    auto* kernelSize = v2d->makeFormVariable("Blur", blur_skin_kernel_size, 1, 256, true, "", "use this kernel size to blur the face skin");
-    kernelSize->set_callback([=](const int& k) {
-        static int lastKernelSize = blur_skin_kernel_size;
-
-        if(k == lastKernelSize)
-            return;
-
-        if(k <= lastKernelSize) {
-            blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-        } else if(k > lastKernelSize)
-            blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-
-        lastKernelSize = k;
-        kernelSize->set_value(blur_skin_kernel_size);
-    });
-    v2d->makeFormVariable("Saturation", skin_saturation, 0.0f, 100.0f, true, "", "adjust the skin saturation by this amount");
-    v2d->makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
-
-    v2d->makeGroup("Eyes and Lips");
-    v2d->makeFormVariable("Saturation", eyes_and_lips_saturation, 0.0f, 100.0f, true, "", "adjust the saturation of the eyes and the lips by this amount");
 }
 
 void iteration() {

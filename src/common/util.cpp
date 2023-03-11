@@ -164,5 +164,7 @@ Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height) {
     }, 0);
 }
 #endif
+
 }
 }
+

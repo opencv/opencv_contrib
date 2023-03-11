@@ -323,11 +323,12 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
 void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->makeWindow(5, 30, "Fractal");
+    v2d->nanogui([](kb::viz2d::FormHelper& form){
+    form.makeWindow(5, 30, "Fractal");
 
-    v2d->makeGroup("Navigation");
-    v2d->makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "", "How deeply to calculate the fractal.");
-    auto* cxVar = v2d->makeFormVariable("X", center_x, -1.0f, 1.0f, true, "", "The x location from -1.0 to 1.0");
+    form.makeGroup("Navigation");
+    form.makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "", "How deeply to calculate the fractal.");
+    auto* cxVar = form.makeFormVariable("X", center_x, -1.0f, 1.0f, true, "", "The x location from -1.0 to 1.0");
     cxVar->number_format("%.7g");
     cxVar->set_value_increment(0.0000001);
     cxVar->set_callback([&, cxVar](const float& value){
@@ -336,7 +337,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         center_x = value;
     });
 
-    auto* cyVar = v2d->makeFormVariable("Y", center_y, -1.0f, 1.0f, true, "", "The y location from -1.0 to 1.0");
+    auto* cyVar = form.makeFormVariable("Y", center_y, -1.0f, 1.0f, true, "", "The y location from -1.0 to 1.0");
     cyVar->number_format("%.7g");
     cyVar->set_value_increment(0.0000001);
     cyVar->set_callback([&,cyVar](const float &value) {
@@ -345,7 +346,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         center_y = value;
     });
 
-    auto* czVar = v2d->makeFormVariable("Zoom", zoom_factor, 1.0f, 1000000.0f, true, "", "How much to zoom in on the fractal");
+    auto* czVar = form.makeFormVariable("Zoom", zoom_factor, 1.0f, 1000000.0f, true, "", "How much to zoom in on the fractal");
     czVar->set_callback([&,czVar](const float &value) {
         manual_navigation = true;
         czVar->set_value(value);
@@ -353,8 +354,8 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
     });
 
 #ifndef __EMSCRIPTEN__
-    v2d->makeGroup("Glow");
-    auto* kernelSize = v2d->makeFormVariable("Kernel Size", glow_kernel_size, 1, 127, true, "", "Intensity of glow defined by kernel size");
+    form.makeGroup("Glow");
+    auto* kernelSize = form.makeFormVariable("Kernel Size", glow_kernel_size, 1, 127, true, "", "Intensity of glow defined by kernel size");
     kernelSize->set_callback([=](const int& k) {
         static int lastKernelSize = glow_kernel_size;
 
@@ -370,14 +371,15 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         kernelSize->set_value(glow_kernel_size);
     });
 #endif
-    v2d->makeGroup("Color");
-    v2d->makeColorPicker("Color", base_color_val, "The base color of the fractal visualization",[&](const nanogui::Color &c) {
+    form.makeGroup("Color");
+    form.makeColorPicker("Color", base_color_val, "The base color of the fractal visualization",[&](const nanogui::Color &c) {
         base_color_val[0] = c[0];
         base_color_val[1] = c[1];
         base_color_val[2] = c[2];
     });
-    v2d->makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the fractal visualization");
-    v2d->makeFormVariable("Contrast boost", contrast_boost, 1, 255, true, "", "Boost contrast by this factor");
+    form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the fractal visualization");
+    form.makeFormVariable("Contrast boost", contrast_boost, 1, 255, true, "", "Boost contrast by this factor");
+    });
 }
 
 void iteration() {

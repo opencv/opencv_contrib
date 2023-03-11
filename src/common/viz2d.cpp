@@ -51,108 +51,6 @@ cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
-std::function<bool(Viz2DWindow*, Viz2DWindow*)> Viz2DWindow::viz2DWin_Xcomparator([](Viz2DWindow* lhs, Viz2DWindow* rhs){ return lhs->position()[0] < rhs->position()[0]; });
-std::set<Viz2DWindow*, decltype(Viz2DWindow::viz2DWin_Xcomparator)> Viz2DWindow::all_windows_xsorted_(viz2DWin_Xcomparator);
-
-Viz2DWindow::Viz2DWindow(nanogui::Screen *screen, int x, int y, const string &title) :
-        Window(screen, title), screen_(screen), lastDragPos_(x, y) {
-    all_windows_xsorted_.insert(this);
-    oldLayout_ = new nanogui::AdvancedGridLayout( { 10, 0, 10, 0 }, { });
-    oldLayout_->set_margin(10);
-    oldLayout_->set_col_stretch(2, 1);
-    this->set_position( { x, y });
-    this->set_layout(oldLayout_);
-    this->set_visible(true);
-
-    minBtn_ = this->button_panel()->add<nanogui::Button>("_");
-    maxBtn_ = this->button_panel()->add<nanogui::Button>("+");
-    newLayout_ = new nanogui::AdvancedGridLayout( { 10, 0, 10, 0 }, { });
-
-    maxBtn_->set_visible(false);
-
-    maxBtn_->set_callback([&, this]() {
-        this->minBtn_->set_visible(true);
-        this->maxBtn_->set_visible(false);
-
-        for (auto *child : this->children()) {
-            child->set_visible(true);
-        }
-
-        this->set_layout(oldLayout_);
-        this->set_position(maximizedPos_);
-        this->screen_->perform_layout();
-        this->minimized_ = false;
-    });
-
-    minBtn_->set_callback([&, this]() {
-        this->minBtn_->set_visible(false);
-        this->maxBtn_->set_visible(true);
-
-        for (auto *child : this->children()) {
-            child->set_visible(false);
-        }
-        this->set_size( { 0, 0 });
-        this->set_layout(newLayout_);
-        this->screen_->perform_layout();
-        int gap = 0;
-        int x = 0;
-        int w = width();
-        int lastX = 0;
-        this->maximizedPos_ = this->position();
-
-        for (Viz2DWindow* win : all_windows_xsorted_) {
-            if(win != this && win->isMinimized()) {
-                x = win->position()[0];
-                gap = lastX + x;
-                if(gap >= w) {
-                    this->set_position({lastX, screen_->height() - this->height()});
-                    break;
-                }
-                lastX = x + win->width() + 1;
-            }
-        }
-        if(gap < w) {
-            this->set_position({lastX, screen_->height() - this->height()});
-        }
-        this->minimized_ = true;
-    });
-}
-
-Viz2DWindow::~Viz2DWindow() {
-    all_windows_xsorted_.erase(this);
-}
-
-bool Viz2DWindow::isMinimized() {
-    return minimized_;
-}
-
-bool Viz2DWindow::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) {
-    if (m_drag && (button & (1 << GLFW_MOUSE_BUTTON_1)) != 0) {
-        if(maxBtn_->visible()) {
-            for (auto *win : all_windows_xsorted_) {
-                if (win != this) {
-                    if (win->contains(this->position())
-                            || win->contains( { this->position()[0] + this->size()[0], this->position()[1] + this->size()[1] })
-                            || win->contains( { this->position()[0], this->position()[1] + this->size()[1] })
-                            || win->contains( { this->position()[0] + this->size()[0], this->position()[1] })
-                            || this->contains(win->position())
-                            || this->contains( { win->position()[0] + win->size()[0], win->position()[1] + win->size()[1] })
-                            || this->contains( { win->position()[0], win->position()[1] + win->size()[1] })
-                            || this->contains( { win->position()[0] + win->size()[0], win->position()[1] })) {
-                        this->set_position(lastDragPos_);
-                        return true;
-                    }
-                }
-            }
-        }
-        lastDragPos_ = m_pos;
-        bool result = nanogui::Window::mouse_drag_event(p, rel, button, mods);
-
-        return result;
-    }
-    return false;
-}
-
 Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
         initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
     assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
@@ -234,7 +132,7 @@ bool Viz2D::initializeWindowing() {
 
     screen_ = new nanogui::Screen();
     screen().initialize(getGLFWWindow(), false);
-    form_ = new nanogui::FormHelper(&screen());
+    form_ = new FormHelper(&screen());
 
     this->setWindowSize(initialSize_);
 
@@ -312,11 +210,18 @@ cv::ogl::Texture2D& Viz2D::texture() {
     return clglContext_->getTexture2D();
 }
 
-nanogui::FormHelper* Viz2D::form() {
-    return form_;
+FormHelper& Viz2D::form() {
+    return *form_;
+}
+
+void Viz2D::setKeyboardEventCallback(std::function<bool(int key, int scancode, int action, int modifiers)> fn) {
+    keyEventCb_ = fn;
 }
 
 bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
+    if(keyEventCb_)
+        return keyEventCb_(key, scancode, action, modifiers);
+
     if (screen().keyboard_event(key, scancode, action, modifiers))
         return true;
     return false;
@@ -370,6 +275,11 @@ void Viz2D::clgl(std::function<void(cv::UMat&)> fn) {
 void Viz2D::nvg(std::function<void(const cv::Size&)> fn) {
     nvg().render(fn);
 }
+
+void Viz2D::nanogui(std::function<void(FormHelper& form)> fn) {
+    fn(form());
+}
+
 void Viz2D::setSource(const Source &src) {
     if (!clva().hasContext())
         clva().copyContext();
@@ -637,40 +547,21 @@ bool Viz2D::isStretching() {
     return stretch_;
 }
 
-Viz2DWindow* Viz2D::makeWindow(int x, int y, const string &title) {
-    this->makeCurrent();
-    auto* win = new kb::viz2d::Viz2DWindow(&screen(), x, y, title);
-    this->form()->set_window(win);
-    return win;
-}
+void Viz2D::setDefaultKeyboardEventCallback() {
+    setKeyboardEventCallback([&](int key, int scancode, int action, int modifiers) {
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+            setOffscreen(!isOffscreen());
+            return true;
+        } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+            auto children = screen().children();
+            for(auto* child : children) {
+                child->set_visible(!child->visible());
+            }
 
-nanogui::Label* Viz2D::makeGroup(const string &label) {
-    return form()->add_group(label);
-}
-
-nanogui::detail::FormWidget<bool>* Viz2D::makeFormVariable(const string &name, bool &v, const string &tooltip, bool visible, bool enabled) {
-    auto var = form()->add_variable(name, v);
-    var->set_enabled(enabled);
-    var->set_visible(visible);
-    if (!tooltip.empty())
-        var->set_tooltip(tooltip);
-    return var;
-}
-
-nanogui::ColorPicker* Viz2D::makeColorPicker(const string& label, nanogui::Color& color, const string& tooltip, std::function<void(const nanogui::Color)> fn, bool visible, bool enabled) {
-    auto* colorPicker = form()->add_variable(label, color);
-    colorPicker->set_enabled(enabled);
-    colorPicker->set_visible(visible);
-    if (!tooltip.empty())
-    colorPicker->set_tooltip(tooltip);
-    if(fn)
-        colorPicker->set_final_callback(fn);
-
-    return colorPicker;
-}
-
-nanogui::Button* Viz2D::makeButton(const string& caption, std::function<void()> fn) {
-    return this->form()->add_button(caption, fn);
+            return true;
+        }
+        return false;
+    });
 }
 
 bool Viz2D::display() {
