@@ -128,7 +128,7 @@ struct FaceFeatures {
     }
 };
 
-void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
+void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
     using namespace kb::viz2d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
@@ -142,7 +142,7 @@ void draw_face_bg_mask(const vector<FaceFeatures> &lm) {
     }
 }
 
-void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
+void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
     using namespace kb::viz2d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
@@ -156,16 +156,25 @@ void draw_face_fg_mask(const vector<FaceFeatures> &lm) {
             closePath();
             fill();
         }
+
+        beginPath();
+        fillColor(cv::Scalar(0, 0, 0, 255));
+        moveTo(features[8][0].x, features[8][0].y);
+        for (size_t k = 1; k < features[8].size(); ++k) {
+            lineTo(features[8][k].x, features[8][k].y);
+        }
+        closePath();
+        fill();
     }
 }
 
-void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float multiplier) {
+void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
     static vector<cv::UMat> channels;
     static cv::UMat hls;
 
     cvtColor(srcBGR, hls, cv::COLOR_BGR2HLS);
     split(hls, channels);
-    cv::multiply(channels[2], multiplier, channels[2]);
+    cv::multiply(channels[2], factor, channels[2]);
     merge(channels, hls);
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
@@ -187,7 +196,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
         });
 
         form.makeGroup("Face Skin");
-        auto* kernelSize = form.makeFormVariable("Blur", blur_skin_kernel_size, 1, 256, true, "", "use this kernel size to blur the face skin");
+        auto* kernelSize = form.makeFormVariable("Blur", blur_skin_kernel_size, 0, 256, true, "", "use this kernel size to blur the face skin");
         kernelSize->set_callback([=](const int& k) {
             static int lastKernelSize = blur_skin_kernel_size;
 
@@ -217,13 +226,14 @@ void iteration() {
 #endif
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         static cv::detail::MultiBandBlender blender(false, 5);
+        blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
         //BGR
-        static cv::UMat input, down, faceBgMask, blurred, contrast, eyesAndLips, skin;
+        static cv::UMat input, down, blurred, contrast, faceOval, eyesAndLips, skin;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
         static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
         //GREY
-        static cv::UMat faceBgMaskGrey, faceFgMaskGrey, faceFgMaskInvGrey;
+        static cv::UMat faceSkinMaskGrey, eyesAndLipsMaskGrey, backgroundMaskGrey;
         //BGR-Float
         static cv::UMat frameOutFloat;
 
@@ -271,29 +281,28 @@ void iteration() {
 
             v2d->nvg([&](const cv::Size &sz) {
                 v2d->clear();
-                //Draw the face background mask -> face oval
-                draw_face_bg_mask(featuresList);
+                //Draw the face oval
+                draw_face_oval_mask(featuresList);
             });
 
             v2d->clgl([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
-                cvtColor(frameBuffer, faceBgMask, cv::COLOR_BGRA2BGR);
-                cvtColor(frameBuffer, faceBgMaskGrey, cv::COLOR_BGRA2GRAY);
+                cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
             });
 
             v2d->nvg([&](const cv::Size &sz) {
                 v2d->clear();
-                //Draw the face forground mask -> eyes and outer lips
-                draw_face_fg_mask(featuresList);
+                //Draw eyes eyes and lips
+                draw_face_eyes_and_lips_mask(featuresList);
             });
 
             v2d->clgl([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
-                cvtColor(frameBuffer, faceFgMaskGrey, cv::COLOR_BGRA2GRAY);
+                cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
             });
 
-            cv::subtract(faceBgMaskGrey, faceFgMaskGrey, faceBgMaskGrey);
-            cv::bitwise_not(faceFgMaskGrey,faceFgMaskInvGrey);
+            cv::subtract(faceOval, eyesAndLipsMaskGrey, faceSkinMaskGrey);
+            cv::bitwise_not(eyesAndLipsMaskGrey,backgroundMaskGrey);
 
             //boost saturation of eyes and lips
             adjust_saturation(input,eyesAndLips, eyes_and_lips_saturation);
@@ -307,10 +316,9 @@ void iteration() {
             adjust_saturation(blurred,skin, skin_saturation);
 
             //piece it all together
-            blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
-            blender.feed(skin, faceBgMaskGrey, cv::Point(0, 0));
-            blender.feed(input, faceFgMaskInvGrey, cv::Point(0, 0));
-            blender.feed(eyesAndLips, faceFgMaskGrey, cv::Point(0, 0));
+            blender.feed(skin, faceSkinMaskGrey, cv::Point(0, 0));
+            blender.feed(input, backgroundMaskGrey, cv::Point(0, 0));
+            blender.feed(eyesAndLips, eyesAndLipsMaskGrey, cv::Point(0, 0));
             blender.blend(frameOutFloat, cv::UMat());
             frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
