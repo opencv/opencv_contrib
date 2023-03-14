@@ -199,7 +199,11 @@ int main(int argc, char **argv) {
             beginPath();
             strokeWidth(std::fmax(2.0, WIDTH / 960.0));
             strokeColor(kb::viz2d::color_convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
-            rect(tracked.x * WIDTH_FACTOR, tracked.y * HEIGHT_FACTOR, tracked.width * WIDTH_FACTOR, tracked.height * HEIGHT_FACTOR);
+            float width = tracked.width * WIDTH_FACTOR;
+            float height = tracked.height * HEIGHT_FACTOR;
+            float cx = tracked.x * WIDTH_FACTOR + (width / 2.0f);
+            float cy = tracked.y * HEIGHT_FACTOR + (height / 2.0f);
+            ellipse(cx, cy, width / 2.0f, height / 2.0f);
             stroke();
         });
 
