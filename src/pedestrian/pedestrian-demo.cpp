@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
     //BGRA
     cv::UMat background;
     //RGB
-    cv::UMat rgb, videoFrameUp, videoFrameDown;
+    cv::UMat videoFrame, videoFrameDown;
     //GREY
     cv::UMat videoFrameDownGrey;
 
@@ -148,12 +148,12 @@ int main(int argc, char **argv) {
             break;
 
         v2d->clgl([&](cv::UMat& frameBuffer){
-            cvtColor(frameBuffer,videoFrameUp,cv::COLOR_BGRA2RGB);
-            cv::resize(videoFrameUp, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+            cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
+            cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
         });
 
         cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
-        cv::cvtColor(videoFrameUp, background, cv::COLOR_RGB2BGRA);
+        cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
 
         cv::Rect tracked = cv::Rect(0,0,1,1);
 
