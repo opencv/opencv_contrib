@@ -163,10 +163,12 @@ public:
         tesseract::PageSegMode pagesegmode = (tesseract::PageSegMode)psmode;
         tess.SetPageSegMode(pagesegmode);
 
+        // tessedit_whitelist default changes from [0-9a-zA-Z] to "".
+        // See https://github.com/opencv/opencv_contrib/issues/3457
         if(char_whitelist != NULL)
             tess.SetVariable("tessedit_char_whitelist", char_whitelist);
         else
-            tess.SetVariable("tessedit_char_whitelist", "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+            tess.SetVariable("tessedit_char_whitelist", "");
 
         tess.SetVariable("save_best_choices", "T");
 #else
