@@ -134,51 +134,29 @@ cd Viz2D
 export LD_LIBRARY_PATH=`pwd`/src/common:$LD_LIBRARY_PATH
 ```
 
-## Run the tetra-demo:
+## Run the demos:
 
 ```bash
 src/tetra/tetra-demo
 ```
-
-## Run the video-demo:
-
 ```bash
 src/video/video-demo bunny.webm
 ```
-
-## Run the shader-demo:
-
 ```bash
 src/shader/shader-demo
 ```
-
-## Run the nanovg-demo:
-
 ```bash
 src/nanovg/nanovg-demo bunny.webm
 ```
-
-## Run the font-demo:
-
 ```bash
 src/font/font-demo
 ```
-
-## Run the optflow-demo:
-
 ```bash
 src/optflow/optflow-demo bunny.webm
 ```
-
-## Run the pedestrian-demo:
-
 ```bash
 src/pedestrian/pedestrian-demo bunny.webm
 ```
-
-## Run the beauty-demo:
-
 ```bash
 src/beauty/beauty-demo bunny.webm
 ```
-
