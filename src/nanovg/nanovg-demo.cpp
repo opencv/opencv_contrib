@@ -13,7 +13,7 @@ constexpr const int VA_HW_DEVICE_INDEX = 0;
 using std::cerr;
 using std::endl;
 
-void drawColorwheel(float x, float y, float w, float h, float hue) {
+void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
     using namespace kb::viz2d::nvg;
     int i;
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
         //Render using nanovg
         v2d->nvg([&](const cv::Size &sz) {
             hue = ((170 + uint8_t(255 - hue))) % 255;
-            drawColorwheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
+            draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
         });
 
         update_fps(v2d, true);
