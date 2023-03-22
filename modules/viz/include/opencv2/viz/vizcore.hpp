@@ -180,7 +180,7 @@ namespace cv
          */
         CV_EXPORTS void writePose(const String& file, const Affine3d& pose, const String& tag = "pose");
 
-        /** takes vector<Affine3<T>> with T = float/dobule and writes to a sequence of files with given filename format
+        /** takes vector<Affine3<T>> with T = float/double and writes to a sequence of files with given filename format
          * @param traj Trajectory containing a list of poses. It can be
          *          - std::vector<cv::Mat>, each cv::Mat is of type CV_32F16 or CV_64FC16
          *          - std::vector<cv::Affine3f>, std::vector<cv::Affine3d>
@@ -192,7 +192,7 @@ namespace cv
          */
         CV_EXPORTS void writeTrajectory(InputArray traj, const String& files_format = "pose%05d.xml", int start = 0, const String& tag = "pose");
 
-        /** takes vector<Affine3<T>> with T = float/dobule and loads poses from sequence of files
+        /** takes vector<Affine3<T>> with T = float/double and loads poses from sequence of files
          *
          * @param traj Output array containing a lists of poses. It can be
          *             - std::vector<cv::Affine3f>, std::vector<cv::Affine3d>
