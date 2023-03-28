@@ -47,7 +47,7 @@ using namespace cv::cuda;
 
 #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
 
-Ptr<cuda::HoughSegmentDetector> cv::cuda::createHoughSegmentDetector(float, float, int, int, int) { throw_no_cuda(); return Ptr<HoughSegmentDetector>(); }
+Ptr<cuda::HoughSegmentDetector> cv::cuda::createHoughSegmentDetector(float, float, int, int, int, int) { throw_no_cuda(); return Ptr<HoughSegmentDetector>(); }
 
 #else /* !defined (HAVE_CUDA) */
 
@@ -65,7 +65,7 @@ namespace cv { namespace cuda { namespace device
 
     namespace hough_segments
     {
-        int houghLinesProbabilistic_gpu(GpuMat &mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int* counterPtr, cudaStream_t stream);
+        int houghLinesProbabilistic_gpu(GpuMat &mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int threshold, int* counterPtr, cudaStream_t stream);
     }
 }}}
 
@@ -74,7 +74,7 @@ namespace
     class HoughSegmentDetectorImpl : public HoughSegmentDetector
     {
     public:
-        HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines);
+        HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines, int threshold);
         ~HoughSegmentDetectorImpl();
 
         void detect(InputArray src, OutputArray lines, Stream& stream);
@@ -94,6 +94,9 @@ namespace
         void setMaxLines(int maxLines) { maxLines_ = maxLines; }
         int getMaxLines() const { return maxLines_; }
 
+        void setThreshold(int threshold) { threshold_ = threshold; }
+        int getThreshold() const { return threshold_; }
+
         void write(FileStorage& fs) const
         {
             writeFormat(fs);
@@ -102,7 +105,8 @@ namespace
             << "theta" << theta_
             << "minLineLength" << minLineLength_
             << "maxLineGap" << maxLineGap_
-            << "maxLines" << maxLines_;
+            << "maxLines" << maxLines_
+            << "threshold" << threshold_;
         }
 
         void read(const FileNode& fn)
@@ -113,6 +117,7 @@ namespace
             minLineLength_ = (int)fn["minLineLength"];
             maxLineGap_ = (int)fn["maxLineGap"];
             maxLines_ = (int)fn["maxLines"];
+            threshold_ = (int)fn["threshold"];
         }
 
     private:
@@ -121,6 +126,7 @@ namespace
         int minLineLength_;
         int maxLineGap_;
         int maxLines_;
+        int threshold_;
 
         GpuMat accum_;
         GpuMat list_;
@@ -129,8 +135,8 @@ namespace
         int* counterPtr_;
     };
 
-    HoughSegmentDetectorImpl::HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines) :
-        rho_(rho), theta_(theta), minLineLength_(minLineLength), maxLineGap_(maxLineGap), maxLines_(maxLines)
+    HoughSegmentDetectorImpl::HoughSegmentDetectorImpl(float rho, float theta, int minLineLength, int maxLineGap, int maxLines, int threshold) :
+        rho_(rho), theta_(theta), minLineLength_(minLineLength), maxLineGap_(maxLineGap), maxLines_(maxLines), threshold_(threshold)
     {
         cudaSafeCall(cudaMalloc(&counterPtr_, sizeof(int)));
     }
@@ -178,7 +184,7 @@ namespace
 
         ensureSizeIsEnough(1, maxLines_, CV_32SC4, result_);
 
-        int linesCount = houghLinesProbabilistic_gpu(src, accum_, result_.ptr<int4>(), maxLines_, rho_, theta_, maxLineGap_, minLineLength_, counterPtr_, cudaStream);
+        int linesCount = houghLinesProbabilistic_gpu(src, accum_, result_.ptr<int4>(), maxLines_, rho_, theta_, maxLineGap_, minLineLength_, threshold_, counterPtr_, cudaStream);
 
         if (linesCount == 0)
         {
@@ -191,9 +197,9 @@ namespace
     }
 }
 
-Ptr<HoughSegmentDetector> cv::cuda::createHoughSegmentDetector(float rho, float theta, int minLineLength, int maxLineGap, int maxLines)
+Ptr<HoughSegmentDetector> cv::cuda::createHoughSegmentDetector(float rho, float theta, int minLineLength, int maxLineGap, int maxLines, int threshold)
 {
-    return makePtr<HoughSegmentDetectorImpl>(rho, theta, minLineLength, maxLineGap, maxLines);
+    return makePtr<HoughSegmentDetectorImpl>(rho, theta, minLineLength, maxLineGap, maxLines, threshold);
 }
 
 #endif /* !defined (HAVE_CUDA) */
