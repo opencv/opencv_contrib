@@ -224,8 +224,6 @@ Source make_va_source(const string& inputFilename, const int vaDeviceIndex) {
             cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION,
             cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
-    float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
-    float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
 
     return Source([=](cv::UMat& frame) {
         (*capture) >> frame;
@@ -268,8 +266,6 @@ Source make_capture_source(const string& inputFilename) {
 
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
     float fps = capture->get(cv::CAP_PROP_FPS);
-    float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
-    float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
 
     return Source([=](cv::UMat& frame) {
         (*capture) >> frame;
