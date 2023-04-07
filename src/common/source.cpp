@@ -13,7 +13,7 @@ Source::Source(std::function<bool(cv::UMat&)> generator, float fps) :
 }
 
 Source::Source() :
-        fps_(0) {
+        open_(false), fps_(0) {
 }
 
 Source::~Source() {

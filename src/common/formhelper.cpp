@@ -15,7 +15,7 @@ FormHelper::FormHelper(nanogui::Screen* screen) :
 FormHelper::~FormHelper() {
 }
 
-Dialog* FormHelper::makeWindow(int x, int y, const string& title) {
+Dialog* FormHelper::makeDialog(int x, int y, const string& title) {
     auto* win = new cv::viz::Dialog(m_screen, x, y, title);
     this->set_window(win);
     return win;

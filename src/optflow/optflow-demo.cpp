@@ -308,7 +308,7 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
 
 void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d, cv::Ptr<cv::viz::Viz2D> v2dMenu) {
     v2d->nanogui([&](cv::viz::FormHelper& form){
-        form.makeWindow(5, 30, "Effects");
+        form.makeDialog(5, 30, "Effects");
 
         form.makeGroup("Foreground");
         form.makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
@@ -330,7 +330,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d, cv::Ptr<cv::viz::Viz2D> v2dMenu) {
         });
         form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
 
-        form.makeWindow(220, 30, "Post Processing");
+        form.makeDialog(220, 30, "Post Processing");
         auto* postPocMode = form.makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
         auto* kernelSize = form.makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
         kernelSize->set_callback([=](const int& k) {
@@ -371,7 +371,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d, cv::Ptr<cv::viz::Viz2D> v2dMenu) {
             postPocMode->set_selected_index(m);
         });
 
-        form.makeWindow(220, 175, "Settings");
+        form.makeDialog(220, 175, "Settings");
 
         form.makeGroup("Scene Change Detection");
         form.makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
@@ -379,7 +379,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d, cv::Ptr<cv::viz::Viz2D> v2dMenu) {
     });
 
     v2dMenu->nanogui([&](cv::viz::FormHelper& form){
-        form.makeWindow(8, 16, "Display");
+        form.makeDialog(8, 16, "Display");
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");

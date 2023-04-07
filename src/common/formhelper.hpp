@@ -15,15 +15,61 @@
 namespace cv {
 namespace viz {
 using std::string;
+
+/*!
+ * Ansub-class of nanogui::FormHelper adding convenience calls not unlike highgui offers.
+ */
 class FormHelper: public nanogui::FormHelper {
 public:
+    /*!
+     * Creates a FormHelper.
+     * @param screen The parent nanogui::screen.
+     */
     FormHelper(nanogui::Screen* screen);
+    /*!
+     * Default destructor.
+     */
     virtual ~FormHelper();
-
-    Dialog* makeWindow(int x, int y, const string& title);
+    /*!
+     * Creates a dialog held by this form helper.
+     * @param x The x position.
+     * @param y The y position.
+     * @param title The title.
+     * @return A pointer to the newly created Dialog.
+     */
+    Dialog* makeDialog(int x, int y, const string& title);
+    /*!
+     * Create a grouping label.
+     * @param label The label text.
+     * @return A pointer to the newly created Label.
+     */
     nanogui::Label* makeGroup(const string& label);
+    /*!
+     * Make a boolean form widget.
+     * @param name The widget name.
+     * @param v The state of the widget.
+     * @param tooltip The tooltip.
+     * @param visible The initial visibility.
+     * @param enabled Indicates if the widget is initially enabled.
+     * @return A pointer to the newly created boolean form widget.
+     */
     nanogui::detail::FormWidget<bool>* makeFormVariable(const string& name, bool& v,
             const string& tooltip = "", bool visible = true, bool enabled = true);
+
+    /*!
+     * Creates a form widget and deduces the type of widget by template parameter T.
+     * @tparam T The underlying type of the form widget.
+     * @param name The name of the widget.
+     * @param v The current value.
+     * @param min The minimum value.
+     * @param max The maximum value.
+     * @param spinnable Indicates if the widget is spinnable.
+     * @param unit A string denoting a unit..
+     * @param tooltip The tooltip.
+     * @param visible The initial visibility.
+     * @param enabled Indicates if the widget is initially enabled.
+     * @return A pointer to the newly created form widget representing type T.
+     */
     template<typename T> nanogui::detail::FormWidget<T>* makeFormVariable(const string& name, T& v,
             const T& min, const T& max, bool spinnable, const string& unit, const string tooltip,
             bool visible = true, bool enabled = true) {
@@ -40,6 +86,16 @@ public:
         return var;
     }
 
+    /*!
+     * Creates a color picker widget
+     * @param label The label of the widget
+     * @param color The initial color
+     * @param tooltip The widget tooltip
+     * @param fn Custom color selection callback
+     * @param visible Indicates if the widget is initially visible
+     * @param enabled Indicates if the widget is initially enabled
+     * @return A pointer to the newly created ColorPicker
+     */
     nanogui::ColorPicker* makeColorPicker(const string& label, nanogui::Color& color,
             const string& tooltip = "", std::function<void(const nanogui::Color)> fn = nullptr,
             bool visible = true, bool enabled = true);
@@ -50,6 +106,12 @@ public:
         return var;
     }
 
+    /*!
+     * Create a Button Widget.
+     * @param caption The caption
+     * @param fn Button press callback
+     * @return A pointer to the newly created Button
+     */
     nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
 };
 

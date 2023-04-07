@@ -13,7 +13,7 @@ class NVG;
 
 NVG* NVG::nvg_instance_ = nullptr;
 
-void NVG::setCurrentContext(NVGcontext* ctx) {
+void NVG::initializeContext(NVGcontext* ctx) {
     if (nvg_instance_ != nullptr)
         delete nvg_instance_;
     nvg_instance_ = new NVG(ctx);

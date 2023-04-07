@@ -326,7 +326,7 @@ cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Si
 
 void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     v2d->nanogui([](cv::viz::FormHelper& form){
-    form.makeWindow(5, 30, "Fractal");
+    form.makeDialog(5, 30, "Fractal");
 
     form.makeGroup("Navigation");
     form.makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "", "How deeply to calculate the fractal.");

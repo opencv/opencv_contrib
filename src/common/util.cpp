@@ -19,17 +19,10 @@
 
 namespace cv {
 namespace viz {
-/*!
- * Returns the OpenGL Version information.
- * @return a string object with the OpenGL version information
- */
 std::string get_gl_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
-/*!
- * Returns the OpenCL Version information.
- * @return a string object with the OpenCL version information
- */
+
 std::string get_cl_info() {
     std::stringstream ss;
 #ifndef __EMSCRIPTEN__
@@ -59,10 +52,6 @@ std::string get_cl_info() {
     return ss.str();
 }
 
-/*!
- * Determines if Intel VAAPI is supported
- * @return true if it is supported
- */
 bool is_intel_va_supported() {
 #ifndef __EMSCRIPTEN__
     try {
@@ -84,10 +73,6 @@ bool is_intel_va_supported() {
     return false;
 }
 
-/*!
- * Determines if cl_khr_gl_sharing is supported
- * @return true if it is supported
- */
 bool is_cl_gl_sharing_supported() {
 #ifndef __EMSCRIPTEN__
     try {
@@ -109,15 +94,18 @@ bool is_cl_gl_sharing_supported() {
     return false;
 }
 
-/*!
- * Pretty prints system information.
- */
 void print_system_info() {
     cerr << "OpenGL Version: " << get_gl_info() << endl;
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
 }
 
+/*!
+ * Internal variable that signals that finishing all operation is requested
+ */
 static bool finish_requested = false;
+/*!
+ * Internal variable that tracks if signal handlers have already been installed
+ */
 static bool signal_handlers_installed = false;
 
 /*!
@@ -136,12 +124,6 @@ static void install_signal_handlers() {
     signal(SIGTERM, request_finish);
 }
 
-/*!
- * Tells the application if it's alright to keep on running.
- * Note: If you use this mechanism signal handlers are installed
- * using #install_signal_handlers()
- * @return true if the program should keep on running
- */
 bool keep_running() {
     if (!signal_handlers_installed) {
         install_signal_handlers();
@@ -149,11 +131,6 @@ bool keep_running() {
     return !finish_requested;
 }
 
-/*!
- * Little helper program to keep track of FPS and optionally display it using NanoVG
- * @param v2d The Viz2D object to operate on
- * @param graphically if this parameter is true the FPS drawn on display
- */
 void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
@@ -196,15 +173,7 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
 }
 
 #ifndef __EMSCRIPTEN__
-/*!
- *
- * @param outputFilename
- * @param fourcc
- * @param fps
- * @param frameSize
- * @param vaDeviceIndex
- * @return
- */
+
 Sink make_va_sink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,

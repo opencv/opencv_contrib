@@ -28,8 +28,13 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
-
+/*!
+ * OpenCV namespace
+ */
 namespace cv {
+/*!
+ * Visualization namespace
+ */
 namespace viz {
 namespace detail {
 class FrameBufferContext;

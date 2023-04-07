@@ -16,6 +16,10 @@ namespace viz {
 
 using std::string;
 
+/*!
+ * A class for light-weight dialog (a dialog renderered inside a window) derived from nanogui::Window.
+ * It keeps track of which dialogs are presented and which are lowered and is responsible for layout of lowered dialog-bars.
+ */
 class Dialog: public nanogui::Window {
 private:
     static std::function<bool(Dialog*, Dialog*)> viz2DWin_Xcomparator;
@@ -28,12 +32,26 @@ private:
     nanogui::ref<nanogui::AdvancedGridLayout> oldLayout_;
     nanogui::ref<nanogui::AdvancedGridLayout> newLayout_;
     bool minimized_ = false;
-public:
-    Dialog(nanogui::Screen* screen, int x, int y, const string& title);
-    virtual ~Dialog();
-    bool isMinimized();
     bool mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button,
             int mods) override;
+public:
+    /*!
+     * Creates a Dialog.
+     * @param screen The parent nanogui screen
+     * @param x The x position of the dialog
+     * @param y The y position of the dialog
+     * @param title The title of the dialog
+     */
+    Dialog(nanogui::Screen* screen, int x, int y, const string& title);
+    /*!
+     * Default destructor
+     */
+    virtual ~Dialog();
+    /*!
+     * Checks if a dialog is minimized.
+     * @return true if the dialog is minimized.
+     */
+    bool isMinimized();
 };
 
 } /* namespace viz2d */

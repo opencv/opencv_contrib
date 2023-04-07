@@ -183,7 +183,7 @@ void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
 
 void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     v2d->nanogui([&](cv::viz::FormHelper& form){
-        form.makeWindow(5, 30, "Effect");
+        form.makeDialog(5, 30, "Effect");
 
         form.makeGroup("Display");
         form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");

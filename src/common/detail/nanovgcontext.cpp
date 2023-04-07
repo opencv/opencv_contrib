@@ -23,7 +23,7 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
     FrameBufferContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
-    cv::viz::nvg::detail::NVG::setCurrentContext(context_), fn(clglContext_.getSize());
+    cv::viz::nvg::detail::NVG::initializeContext(context_), fn(clglContext_.getSize());
 }
 
 void push() {

@@ -53,7 +53,7 @@ bool update_perspective = true;
 
 void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     v2d->nanogui([&](cv::viz::FormHelper& form){
-        form.makeWindow(5, 30, "Effect");
+        form.makeDialog(5, 30, "Effect");
         form.makeGroup("Text Crawl");
         form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
         form.makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line")->set_callback([&](const float &w) {
@@ -91,7 +91,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
             star_alpha = a;
         });
 
-        form.makeWindow(8, 16, "Display");
+        form.makeDialog(8, 16, "Display");
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
