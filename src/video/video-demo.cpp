@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 120
-
 #include "../common/viz2d.hpp"
 #include "../common/util.hpp"
 
@@ -7,7 +5,6 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -92,21 +89,21 @@ int main(int argc, char **argv) {
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_capture_source(v2d, argv[1]);
     v2d->setSource(src);
 
-    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
     v2d->gl(init_scene);
 
-    while (true) {
+    while (keep_running()) {
         if(!v2d->capture())
             break;
 
         v2d->gl(render_scene);
 
-        v2d->clgl([&](cv::UMat& frameBuffer){
+        v2d->fb([&](cv::UMat& frameBuffer){
             //Glow effect (OpenCL)
             glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
         });

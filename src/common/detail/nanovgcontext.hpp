@@ -7,7 +7,7 @@
 #define NANOGUI_USE_GLES
 #define NANOGUI_GLES_VERSION 3
 #endif
-#include "clglcontext.hpp"
+#include "framebuffercontext.hpp"
 #include <nanogui/nanogui.h>
 #include <nanogui/opengl.h>
 #include "../util.hpp"
@@ -19,7 +19,7 @@ namespace detail {
 class NanoVGContext {
     Viz2D& v2d_;
     NVGcontext *context_;
-    CLGLContext &clglContext_;
+    FrameBufferContext &clglContext_;
 public:
     class Scope {
         NanoVGContext& ctx_;
@@ -32,7 +32,7 @@ public:
             ctx_.end();
         }
     };
-    NanoVGContext(Viz2D& v2d, NVGcontext *context, CLGLContext &fbContext);
+    NanoVGContext(Viz2D& v2d, NVGcontext *context, FrameBufferContext &fbContext);
     void render(std::function<void(const cv::Size&)> fn);
 private:
     void begin();

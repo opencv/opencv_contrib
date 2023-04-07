@@ -28,10 +28,11 @@ namespace detail {
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
 typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
 
-class CLGLContext {
+class FrameBufferContext {
     friend class CLVAContext;
     friend class NanoVGContext;
     friend class kb::viz2d::Viz2D;
+    bool clglSharing_ = true;
     GLuint frameBufferID_ = 0;
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
@@ -47,10 +48,10 @@ class CLGLContext {
     void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch = false);
 public:
     class FrameBufferScope {
-        CLGLContext& ctx_;
+        FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
-        FrameBufferScope(CLGLContext& ctx, cv::UMat& m) : ctx_(ctx), m_(m) {
+        FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) : ctx_(ctx), m_(m) {
             ctx_.acquireFromGL(m_);
         }
 
@@ -60,9 +61,9 @@ public:
     };
 
     class GLScope {
-        CLGLContext& ctx_;
+        FrameBufferContext& ctx_;
     public:
-        GLScope(CLGLContext& ctx) : ctx_(ctx) {
+        GLScope(FrameBufferContext& ctx) : ctx_(ctx) {
             ctx_.begin();
         }
 
@@ -71,8 +72,8 @@ public:
         }
     };
 
-    CLGLContext(const cv::Size& frameBufferSize);
-    virtual ~CLGLContext();
+    FrameBufferContext(const cv::Size& frameBufferSize);
+    virtual ~FrameBufferContext();
     cv::Size getSize();
     void execute(std::function<void(cv::UMat&)> fn);
 protected:

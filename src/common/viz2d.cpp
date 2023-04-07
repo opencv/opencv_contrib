@@ -1,6 +1,6 @@
 #include "viz2d.hpp"
-#include "detail/clglcontext.hpp"
 #include "detail/clvacontext.hpp"
+#include "detail/framebuffercontext.hpp"
 #include "detail/nanovgcontext.hpp"
 
 #ifdef __EMSCRIPTEN__
@@ -200,7 +200,7 @@ bool Viz2D::initializeWindowing() {
     }
     );
 
-    clglContext_ = new detail::CLGLContext(this->getFrameBufferSize());
+    clglContext_ = new detail::FrameBufferContext(this->getFrameBufferSize());
     clvaContext_ = new detail::CLVAContext(*clglContext_);
     nvgContext_ = new detail::NanoVGContext(*this, getNVGcontext(), *clglContext_);
     return true;
@@ -227,7 +227,7 @@ bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
     return false;
 }
 
-CLGLContext& Viz2D::clgl() {
+FrameBufferContext& Viz2D::fb() {
     assert(clglContext_ != nullptr);
     makeCurrent();
     return *clglContext_;
@@ -262,14 +262,14 @@ void Viz2D::setVideoFrameSize(const cv::Size& sz) {
 void Viz2D::gl(std::function<void(const cv::Size&)> fn) {
     auto fbSize = getFrameBufferSize();
 #ifndef __EMSCRIPTEN__
-    detail::CLExecScope_t scope(clgl().getCLExecContext());
+    detail::CLExecScope_t scope(fb().getCLExecContext());
 #endif
-    detail::CLGLContext::GLScope glScope(clgl());
+    detail::FrameBufferContext::GLScope glScope(fb());
     fn(fbSize);
 }
 
-void Viz2D::clgl(std::function<void(cv::UMat&)> fn) {
-    clgl().execute(fn);
+void Viz2D::fb(std::function<void(cv::UMat&)> fn) {
+    fb().execute(fn);
 }
 
 void Viz2D::nvg(std::function<void(const cv::Size&)> fn) {

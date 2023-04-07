@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 120
-
 #include "../common/viz2d.hpp"
 #include "../common/nvg.hpp"
 #include "../common/util.hpp"
@@ -17,7 +15,6 @@ constexpr unsigned int DOWNSIZE_HEIGHT = 360;
 constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
 constexpr double HEIGHT_FACTOR = double(HEIGHT) / DOWNSIZE_HEIGHT;
 constexpr bool OFFSCREEN = false;
-constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
 // Intensity of blur defined by kernel size. The default scales with the image diagonal.
@@ -118,10 +115,10 @@ int main(int argc, char **argv) {
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_capture_source(v2d, argv[1]);
     v2d->setSource(src);
 
-    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
     //BGRA
@@ -143,11 +140,11 @@ int main(int argc, char **argv) {
     cv::Rect lastTracked(0,0,1,1);
 
     bool redetect = true;
-    while (true) {
+    while (keep_running()) {
         if(!v2d->capture())
             break;
 
-        v2d->clgl([&](cv::UMat& frameBuffer){
+        v2d->fb([&](cv::UMat& frameBuffer){
             cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
             cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
         });
@@ -207,7 +204,7 @@ int main(int argc, char **argv) {
             stroke();
         });
 
-        v2d->clgl([&](cv::UMat& frameBuffer){
+        v2d->fb([&](cv::UMat& frameBuffer){
             //Put it all together
             composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
         });

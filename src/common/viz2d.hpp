@@ -28,7 +28,7 @@ using std::string;
 namespace kb {
 namespace viz2d {
 namespace detail {
-class CLGLContext;
+class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
 
@@ -66,7 +66,7 @@ class Viz2D {
     std::filesystem::path capturePath_;
     std::filesystem::path writerPath_;
     GLFWwindow* glfwWindow_ = nullptr;
-    CLGLContext* clglContext_ = nullptr;
+    FrameBufferContext* clglContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
     cv::VideoCapture* capture_ = nullptr;
@@ -91,7 +91,7 @@ public:
     cv::ogl::Texture2D& texture();
 
     void gl(std::function<void(const cv::Size&)> fn);
-    void clgl(std::function<void(cv::UMat&)> fn);
+    void fb(std::function<void(cv::UMat&)> fn);
     void nvg(std::function<void(const cv::Size&)> fn);
     void nanogui(std::function<void(FormHelper& form)>);
 
@@ -147,7 +147,7 @@ private:
     void setMousePosition(int x, int y);
     nanogui::Screen& screen();
     FormHelper& form();
-    CLGLContext& clgl();
+    FrameBufferContext& fb();
     CLVAContext& clva();
     NanoVGContext& nvg();
     GLFWwindow* getGLFWWindow();

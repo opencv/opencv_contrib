@@ -6,7 +6,7 @@ namespace kb {
 namespace viz2d {
 namespace detail {
 
-CLVAContext::CLVAContext(CLGLContext &clglContext) :
+CLVAContext::CLVAContext(FrameBufferContext &clglContext) :
         clglContext_(clglContext) {
 }
 
@@ -39,8 +39,8 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(clglContext_.getCLExecContext());
 #endif
-        CLGLContext::GLScope glScope(clglContext_);
-        CLGLContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
+        FrameBufferContext::GLScope glScope(clglContext_);
+        FrameBufferContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
         if (videoFrame_.empty())
             return false;
 
@@ -58,8 +58,8 @@ void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(clglContext_.getCLExecContext());
 #endif
-        CLGLContext::GLScope glScope(clglContext_);
-        CLGLContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
+        FrameBufferContext::GLScope glScope(clglContext_);
+        FrameBufferContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
 
         cv::cvtColor(frameBuffer_, rgbBuffer_, cv::COLOR_BGRA2RGB);
         cv::resize(rgbBuffer_, videoFrame_, videoFrameSize_);

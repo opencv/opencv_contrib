@@ -1,4 +1,5 @@
-#include "clglcontext.hpp"
+#include "framebuffercontext.hpp"
+
 #include "../util.hpp"
 #include "../viz2d.hpp"
 
@@ -7,12 +8,22 @@ namespace viz2d {
 namespace detail {
 
 //FIXME use cv::ogl
-CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
+FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
 #ifndef __EMSCRIPTEN__
     glewExperimental = true;
     glewInit();
-    cv::ogl::ocl::initializeContextFromGL();
+    try {
+        if(is_cl_gl_sharing_supported())
+            cv::ogl::ocl::initializeContextFromGL();
+        else
+            clglSharing_ = false;
+    } catch (...) {
+        cerr << "CL-GL sharing failed." << endl;
+        clglSharing_ = false;
+    }
+#else
+    clglSharing_ = false;
 #endif
     frameBufferID_ = 0;
     GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
@@ -36,37 +47,37 @@ CLGLContext::CLGLContext(const cv::Size& frameBufferSize) :
 #endif
 }
 
-CLGLContext::~CLGLContext() {
+FrameBufferContext::~FrameBufferContext() {
     end();
     glDeleteTextures(1, &textureID_);
     glDeleteRenderbuffers( 1, &renderBufferID_);
     glDeleteFramebuffers( 1, &frameBufferID_);
 }
 
-cv::Size CLGLContext::getSize() {
+cv::Size FrameBufferContext::getSize() {
     return frameBufferSize_;
 }
 
-void CLGLContext::execute(std::function<void(cv::UMat&)> fn) {
+void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 #ifndef __EMSCRIPTEN__
     CLExecScope_t clExecScope(getCLExecContext());
 #endif
-    CLGLContext::GLScope glScope(*this);
-    CLGLContext::FrameBufferScope fbScope(*this, frameBuffer_);
+    FrameBufferContext::GLScope glScope(*this);
+    FrameBufferContext::FrameBufferScope fbScope(*this, frameBuffer_);
     fn(frameBuffer_);
 }
 
-cv::ogl::Texture2D& CLGLContext::getTexture2D() {
+cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
     return *texture_;
 }
 
 #ifndef __EMSCRIPTEN__
-CLExecContext_t& CLGLContext::getCLExecContext() {
+CLExecContext_t& FrameBufferContext::getCLExecContext() {
     return context_;
 }
 #endif
 
-void CLGLContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch) {
+void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch) {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
@@ -78,7 +89,7 @@ void CLGLContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Si
             stretch ? windowSize.height : frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
-void CLGLContext::begin() {
+void FrameBufferContext::begin() {
     GL_CHECK(glGetIntegerv( GL_VIEWPORT, viewport_ ));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -88,7 +99,7 @@ void CLGLContext::begin() {
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 }
 
-void CLGLContext::end() {
+void FrameBufferContext::end() {
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, 0));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -96,7 +107,7 @@ void CLGLContext::end() {
     GL_CHECK(glFinish());
 }
 
-void CLGLContext::download(cv::UMat& m) {
+void FrameBufferContext::download(cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
     //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl at the same time
@@ -104,7 +115,7 @@ void CLGLContext::download(cv::UMat& m) {
     tmp.release();
 }
 
-void CLGLContext::upload(const cv::UMat& m) {
+void FrameBufferContext::upload(const cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_READ);
     assert(tmp.data != nullptr);
     GL_CHECK(glTexSubImage2D(
@@ -121,34 +132,33 @@ void CLGLContext::upload(const cv::UMat& m) {
     tmp.release();
 }
 
-void CLGLContext::acquireFromGL(cv::UMat &m) {
-#ifndef __EMSCRIPTEN__
-    GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
-#else
-    if(m.empty())
-        m.create(getSize(), CV_8UC4);
-    download(m);
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
-#endif
+void FrameBufferContext::acquireFromGL(cv::UMat &m) {
+    if(clglSharing_) {
+        GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
+    } else {
+        if(m.empty())
+            m.create(getSize(), CV_8UC4);
+        download(m);
+        GL_CHECK(glFlush());
+        GL_CHECK(glFinish());
+    }
     //FIXME
     cv::flip(m, m, 0);
 }
 
-void CLGLContext::releaseToGL(cv::UMat &m) {
+void FrameBufferContext::releaseToGL(cv::UMat &m) {
     //FIXME
     cv::flip(m, m, 0);
-#ifndef __EMSCRIPTEN__
-    GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
-#else
-    if(m.empty())
-        m.create(getSize(), CV_8UC4);
-    upload(m);
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
-#endif
+    if(clglSharing_) {
+        GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
+    } else {
+        if(m.empty())
+            m.create(getSize(), CV_8UC4);
+        upload(m);
+        GL_CHECK(glFlush());
+        GL_CHECK(glFinish());
+    }
 }
-
 }
 }
 }

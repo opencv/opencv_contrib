@@ -5,18 +5,18 @@
 namespace kb {
 namespace viz2d {
 namespace detail {
-NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, CLGLContext &fbContext) :
+NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, FrameBufferContext &fbContext) :
         v2d_(v2d), context_(context), clglContext_(fbContext) {
     //FIXME workaround for first frame color glitch
     cv::UMat tmp;
-    CLGLContext::FrameBufferScope fbScope(clglContext_, tmp);
+    FrameBufferContext::FrameBufferScope fbScope(clglContext_, tmp);
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #ifndef __EMSCRIPTEN__
     CLExecScope_t scope(clglContext_.getCLExecContext());
 #endif
-    CLGLContext::GLScope glScope(clglContext_);
+    FrameBufferContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
     kb::viz2d::nvg::detail::NVG::setCurrentContext(context_),
     fn(clglContext_.getSize());

@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 120
-
 #include "../common/viz2d.hpp"
 #include "../common/nvg.hpp"
 #include "../common/util.hpp"
@@ -43,7 +41,6 @@ constexpr unsigned int HEIGHT = 1080;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
-constexpr int VA_HW_DEVICE_INDEX = 0;
 
 static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 #ifndef __EMSCRIPTEN__
@@ -410,7 +407,7 @@ void iteration() {
     if(!v2d->capture())
         exit(0);
 
-    v2d->clgl([=](cv::UMat& frameBuffer) {
+    v2d->fb([=](cv::UMat& frameBuffer) {
         cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
         frameBuffer.copyTo(background);
     });
@@ -435,7 +432,7 @@ void iteration() {
 
     downPrevGrey = downNextGrey.clone();
 
-    v2d->clgl([=](cv::UMat& frameBuffer){
+    v2d->fb([=](cv::UMat& frameBuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
 #ifndef __EMSCRIPTEN__
@@ -482,16 +479,16 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_capture_source(v2d, argv[1]);
     v2d->setSource(src);
 
-    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
-    while (true)
+    while (keep_running())
         iteration();
 #else
-    Source src = make_webcam_source(v2d, WIDTH, HEIGHT);
+    Source src = make_capture_source(v2d, WIDTH, HEIGHT);
     v2d->setSource(src);
     emscripten_set_main_loop(iteration, -1, true);
 #endif

@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 120
-
 #include "../common/viz2d.hpp"
 #include "../common/nvg.hpp"
 #include "../common/util.hpp"
@@ -20,7 +18,6 @@ constexpr unsigned int HEIGHT = 1080;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
-constexpr const int VA_HW_DEVICE_INDEX = 0;
 constexpr double FPS = 60;
 const cv::Scalar_<float> INITIAL_COLOR = kb::viz2d::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 
@@ -136,7 +133,7 @@ void iteration() {
                 stroke();
             }
         });
-        v2d->clgl([&](cv::UMat& frameBuffer){
+        v2d->fb([&](cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
         update_stars = false;
@@ -165,7 +162,7 @@ void iteration() {
         /** only draw lines that are visible **/
         translate(0, translateY);
 
-        for (int32_t i = 0; i < lines.size(); ++i) {
+        for (size_t i = 0; i < lines.size(); ++i) {
             y = (i * font_size);
             if (y + translateY < textHeight && y + translateY + font_size > 0) {
                 text(WIDTH / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
@@ -173,7 +170,7 @@ void iteration() {
         }
     });
 
-    v2d->clgl([&](cv::UMat& frameBuffer){
+    v2d->fb([&](cv::UMat& frameBuffer){
         //Pseudo 3D text effect.
         cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
@@ -221,9 +218,9 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
-    while(true)
+    while(keep_running())
         iteration();
 #else
     emscripten_set_main_loop(iteration, -1, true);

@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 120
-
 #include "../common/viz2d.hpp"
 #include "../common/util.hpp"
 
@@ -11,7 +9,6 @@ constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
-constexpr const int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
@@ -225,7 +222,7 @@ void load_shader(){
     {
         int iter = get_iterations();
         if (iter == max_iterations) {   
-            return vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            return vec4(0.0f, 0.0f, 0.0f, 0.0f);
         }
 
         float iterations = float(iter) / float(max_iterations);
@@ -268,8 +265,8 @@ void init_scene(const cv::Size& sz) {
 }
 
 void render_scene(const cv::Size& sz) {
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+//    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+//    glClear(GL_COLOR_BUFFER_BIT);
     if(zoom >= 1) {
         zoom_incr = -0.01;
         iterations = 0;
@@ -383,6 +380,9 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
 }
 
 void iteration() {
+    //ignore failed capture attempts
+    v2d->capture();
+
 #ifdef __EMSCRIPTEN__
     //required in conjunction with emscripten + nanovg
     rebind_buffers();
@@ -393,7 +393,7 @@ void iteration() {
 //To slow for WASM but works
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
-    v2d->clgl([](cv::UMat &frameBuffer) {
+    v2d->fb([](cv::UMat &frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
@@ -414,6 +414,11 @@ void iteration() {
 int main(int argc, char **argv) {
     using namespace kb::viz2d;
     try {
+        if(argc != 2) {
+            cerr << "Usage: shader-demo <video-file>" << endl;
+            exit(1);
+        }
+
         print_system_info();
         if(!v2d->isOffscreen()) {
             setup_gui(v2d);
@@ -422,13 +427,15 @@ int main(int argc, char **argv) {
         v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
-        Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+        Source src = make_capture_source(v2d, argv[1]);
+        v2d->setSource(src);
+        Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
         v2d->setSink(sink);
 
-        while(true)
+        while(keep_running())
             iteration();
 #else
-        Source src = make_webcam_source(v2d, WIDTH, HEIGHT);
+        Source src = make_capture_source(v2d, WIDTH, HEIGHT);
         v2d->setSource(src);
         emscripten_set_main_loop(iteration, -1, true);
 #endif

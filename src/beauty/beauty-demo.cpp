@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 120
-
 #include "../common/viz2d.hpp"
 #include "../common/nvg.hpp"
 #include "../common/util.hpp"
@@ -29,7 +27,6 @@ constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125;
 constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
-constexpr int VA_HW_DEVICE_INDEX = 0;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /** Effect parameters **/
@@ -246,7 +243,7 @@ void iteration() {
         if (!v2d->capture())
             exit(0);
 
-        v2d->clgl([&](cv::UMat &frameBuffer) {
+        v2d->fb([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
         });
 
@@ -285,7 +282,7 @@ void iteration() {
                 draw_face_oval_mask(featuresList);
             });
 
-            v2d->clgl([&](cv::UMat &frameBuffer) {
+            v2d->fb([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
                 cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
             });
@@ -296,7 +293,7 @@ void iteration() {
                 draw_face_eyes_and_lips_mask(featuresList);
             });
 
-            v2d->clgl([&](cv::UMat &frameBuffer) {
+            v2d->fb([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
                 cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
             });
@@ -331,7 +328,7 @@ void iteration() {
                 rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
             }
 
-            v2d->clgl([&](cv::UMat &frameBuffer) {
+            v2d->fb([&](cv::UMat &frameBuffer) {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         } else {
@@ -344,7 +341,7 @@ void iteration() {
                 input.copyTo(frameOut);
             }
 
-            v2d->clgl([&](cv::UMat &frameBuffer) {
+            v2d->fb([&](cv::UMat &frameBuffer) {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         }
@@ -383,16 +380,16 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    Source src = make_va_source(v2d, argv[1], VA_HW_DEVICE_INDEX);
+    Source src = make_capture_source(v2d, argv[1]);
     v2d->setSource(src);
 
-    Sink sink = make_va_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT), VA_HW_DEVICE_INDEX);
+    Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
-    while (true)
+    while (keep_running())
         iteration();
 #else
-    Source src = make_webcam_source(v2d, WIDTH, HEIGHT);
+    Source src = make_capture_source(v2d, WIDTH, HEIGHT);
     v2d->setSource(src);
     emscripten_set_main_loop(iteration, -1, true);
 #endif

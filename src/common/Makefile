@@ -4,7 +4,7 @@ else
 TARGET := libviz2d.so
 endif
 
-SRCS    := detail/clglcontext.cpp detail/clvacontext.cpp detail/nanovgcontext.cpp viz2d.cpp util.cpp nvg.cpp source.cpp sink.cpp formhelper.cpp dialog.cpp
+SRCS    := detail/framebuffercontext.cpp detail/clvacontext.cpp detail/nanovgcontext.cpp viz2d.cpp util.cpp nvg.cpp source.cpp sink.cpp formhelper.cpp dialog.cpp
 
 #precompiled headers
 HEADERS := 

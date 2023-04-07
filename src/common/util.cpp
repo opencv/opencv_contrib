@@ -6,6 +6,10 @@
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
 #  include <fstream>
+#else
+# include <opencv2/core/ocl.hpp>
+# include <va/va.h>
+# include <csignal>
 #endif
 
 namespace kb {
@@ -40,9 +44,70 @@ std::string get_cl_info() {
     return ss.str();
 }
 
+bool is_intel_va_supported() {
+#ifndef __EMSCRIPTEN__
+    try {
+        std::vector<cv::ocl::PlatformInfo> plt_info;
+        cv::ocl::getPlatfomsInfo(plt_info);
+        cv::ocl::Device current;
+        for (const auto &info : plt_info) {
+            for (int i = 0; i < info.deviceNumber(); ++i) {
+                info.getDevice(current, i);
+                return current.isExtensionSupported("cl_intel_va_api_media_sharing");
+            }
+        }
+    } catch (std::exception& ex) {
+        cerr << "Intel VAAPI query failed: " << ex. what() << endl;
+    } catch (...) {
+        cerr << "Intel VAAPI query failed" << endl;
+    }
+#endif
+    return false;
+}
+
+bool is_cl_gl_sharing_supported() {
+#ifndef __EMSCRIPTEN__
+    try {
+        std::vector<cv::ocl::PlatformInfo> plt_info;
+        cv::ocl::getPlatfomsInfo(plt_info);
+        cv::ocl::Device current;
+        for (const auto &info : plt_info) {
+            for (int i = 0; i < info.deviceNumber(); ++i) {
+                info.getDevice(current, i);
+                return current.isExtensionSupported("cl_khr_gl_sharing");
+            }
+        }
+    } catch (std::exception& ex) {
+        cerr << "CL-GL sharing query failed: " << ex. what() << endl;
+    } catch (...) {
+        cerr << "CL-GL sharing query failed" << endl;
+    }
+#endif
+    return false;
+}
+
 void print_system_info() {
     cerr << "OpenGL Version: " << get_gl_info() << endl;
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
+}
+
+static bool finish_requested = false;
+static bool signal_handlers_installed = false;
+
+static void request_finish(int ignore) {
+    finish_requested = true;
+}
+
+static void install_signal_handlers() {
+    signal(SIGINT, request_finish);
+    signal(SIGTERM, request_finish);
+}
+
+bool keep_running() {
+    if(!signal_handlers_installed) {
+        install_signal_handlers();
+    }
+    return !finish_requested;
 }
 
 void update_fps(cv::Ptr<kb::viz2d::Viz2D> v2d, bool graphically) {
@@ -109,9 +174,26 @@ Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int
         return !frame.empty();
     }, fps);
 }
+#else
+Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+    return Sink([=](const cv::UMat& frame){
+        return false;
+    });
+}
 
-Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
-    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex) {
+    return Source([=](cv::UMat& frame){
+        return false;
+    }, fps);
+#endif
+
+#ifndef __EMSCRIPTEN__
+Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize) {
+    if(is_intel_va_supported()) {
+        return make_va_sink(v2d, outputFilename, fourcc, fps, frameSize, 0);
+    }
+
+    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
     v2d->setVideoFrameSize(frameSize);
 
     return Sink([=](const cv::UMat& frame){
@@ -120,8 +202,12 @@ Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const in
     });
 }
 
-Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex) {
-    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename) {
+    if(is_intel_va_supported()) {
+        return make_va_source(v2d, inputFilename, 0);
+    }
+
+    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
     float fps = capture->get(cv::CAP_PROP_FPS);
     float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
     float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -134,7 +220,7 @@ Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, cons
 }
 
 #else
-Source make_webcam_source(cv::Ptr<Viz2D> v2d, int width, int height) {
+Source make_capture_source(cv::Ptr<Viz2D> v2d, int width, int height) {
     using namespace std;
     static cv::Mat tmp(height, width, CV_8UC4);
 

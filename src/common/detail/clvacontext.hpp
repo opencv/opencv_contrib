@@ -1,7 +1,7 @@
 #ifndef SRC_COMMON_CLVACONTEXT_HPP_
 #define SRC_COMMON_CLVACONTEXT_HPP_
 
-#include "clglcontext.hpp"
+#include "framebuffercontext.hpp"
 
 namespace kb {
 namespace viz2d {
@@ -11,7 +11,7 @@ namespace detail {
 class CLVAContext {
     friend class kb::viz2d::Viz2D;
     CLExecContext_t context_;
-    CLGLContext &clglContext_;
+    FrameBufferContext &clglContext_;
     cv::UMat frameBuffer_;
     cv::UMat videoFrame_;
     cv::UMat rgbBuffer_;
@@ -19,7 +19,7 @@ class CLVAContext {
     cv::Size videoFrameSize_;
     CLExecContext_t getCLExecContext();
 public:
-    CLVAContext(CLGLContext &fbContext);
+    CLVAContext(FrameBufferContext &fbContext);
     cv::Size getVideoFrameSize();
     void setVideoFrameSize(const cv::Size& sz);
     bool capture(std::function<void(cv::UMat&)> fn);
