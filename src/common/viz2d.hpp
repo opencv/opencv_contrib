@@ -62,6 +62,28 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
  * @param description Error description
  */
 void glfw_error_callback(int error, const char* description);
+/*!
+ * Checks if a widget contains an absolute point.
+ * @param w The widget.
+ * @param p The point.
+ * @return true if the points is inside the widget
+ */
+bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p);
+/*!
+ * Find widgets that are of type T.
+ * @tparam T The type of widget to find
+ * @param parent The parent widget
+ * @param widgets A vector of widgets of type T to append newly found widgets to.
+ */
+template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& widgets) {
+    T w;
+    for (auto* child : parent->children()) {
+        find_widgets(child, widgets);
+        if ((w = dynamic_cast<T>(child)) != nullptr) {
+            widgets.push_back(w);
+        }
+    }
+}
 }
 
 /*!
@@ -109,36 +131,124 @@ class Viz2D {
     Sink sink_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
+    /*!
+     * Creates a Viz2D object which is the central object to perform visualizations with.
+     * @param initialSize The initial size of the heavy-weight window.
+     * @param frameBufferSize The initial size of the framebuffer backing the window (needs to be equal or greate then initial size).
+     * @param offscreen Don't create a window and rather render offscreen.
+     * @param title The window title.
+     * @param major The OpenGL major version to request.
+     * @param minor The OpenGL minor version to request.
+     * @param samples MSAA samples.
+     * @param debug Create a debug OpenGL context.
+     */
     Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+    /*!
+     * Default destructor
+     */
     virtual ~Viz2D();
-    bool initializeWindowing();
+    /*!
+     * In case several Viz2D objects are in use all objects not in use have to
+     * call #makeNoneCurrent() and only the one to be active call #makeCurrent().
+     */
     void makeCurrent();
+    /*!
+     * To make it possible for other Viz2D objects to become current all other
+     * Viz2d instances have to become non-current.
+     */
     void makeNoneCurrent();
 
+    /*!
+     * The internal framebuffer exposed as OpenGL Texture2D.
+     * @return The texture object.
+     */
     cv::ogl::Texture2D& texture();
 
+    /*!
+     * Execute function object fn inside an opengl scope.
+     * This is how all OpenGL operations should be executed.
+     * @param fn A function object that is passed the size of the framebuffer
+     */
     void gl(std::function<void(const cv::Size&)> fn);
+    /*!
+     * Execute function object fn inside a framebuffer scope.
+     * The scope acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
+     * and provides it to the functon object. This is a good place to use OpenCL
+     * directly on the framebuffer.
+     * @param fn A function object that is passed the framebuffer to be read/manipulated.
+     */
     void fb(std::function<void(cv::UMat&)> fn);
+    /*!
+     * Execute function object fn inside a nanovg scope.
+     * The scope takes care of setting up opengl and nanovg states.
+     * A function object passed like that can use the functions in cv::viz::nvg.
+     * @param fn A function that is passed the size of the framebuffer
+     * and performs drawing using cv::viz::nvg
+     */
     void nvg(std::function<void(const cv::Size&)> fn);
+    /*!
+       * Execute function object fn inside a nanogui scope.
+       * The scope provides a #cv::viz::FormHelper instance to the function object
+       * which can be used to build a gui.
+       * @param fn A function that is passed the size of the framebuffer
+       * and performs drawing using cv::viz::nvg.
+       */
     void nanogui(std::function<void(FormHelper& form)>);
 
-    void clear(const cv::Scalar& rgba = cv::Scalar(0, 0, 0, 255));
-
+    /*!
+     * Clear the framebuffer.
+     * @param bgra The color to use for clearing.
+     */
+    void clear(const cv::Scalar& bgra = cv::Scalar(0, 0, 0, 255));
+    /*!
+     * Called to capture to the framebuffer from a #cv::viz::Source object provided via #Viz2D::setSource().
+     * @return true if successful.
+     */
     bool capture();
+    /*!
+     * Called to capture from a function object.
+     * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.
+     * @param fn The functor that provides the data.
+     * @return true if successful-
+     */
     bool capture(std::function<void(cv::UMat&)> fn);
+    /*!
+     * Called to write the framebuffer to a #cv::viz::Sink object provided via #Viz2D::setSink()
+     */
     void write();
+    /*!
+     * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
+     * @param fn The functor that consumes the data,
+     */
     void write(std::function<void(const cv::UMat&)> fn);
 
+    /*!
+     * Set the current #cv::viz::Source object. Usually created using #make_capture_source().
+     * @param src A #cv::viz::Source object.
+     */
     void setSource(const Source& src);
+    /*!
+     * Checks if the current #cv::viz::Source is ready.
+     * @return true if it is ready.
+     */
     bool isSourceReady();
+    /*!
+     * Set the current #cv::viz::Sink object. Usually created using #make_writer_sink().
+     * @param sink A #cv::viz::Sink object.
+     */
     void setSink(const Sink& sink);
+    /*!
+     * Checks if the current #cv::viz::Sink is ready.
+     * @return true if it is ready.
+     */
     bool isSinkReady();
-
+    /*!
+     * Shows or hides the GUI.
+     * @param s if true show the GUI.
+     */
     void showGui(bool s);
 
-    void setMouseDrag(bool d);
-    bool isMouseDrag();
     void pan(int x, int y);
     void zoom(float factor);
     cv::Vec2f getPosition();
@@ -172,6 +282,9 @@ public:
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
 private:
+    bool initializeWindowing();
+    void setMouseDrag(bool d);
+    bool isMouseDrag();
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
     nanogui::Screen& screen();

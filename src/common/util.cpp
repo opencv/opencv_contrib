@@ -131,7 +131,12 @@ bool keep_running() {
     return !finish_requested;
 }
 
-void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
+/*!
+ * Little helper function to keep track of FPS and optionally display it using NanoVG
+ * @param v2d The Viz2D object to operate on
+ * @param graphical if this parameter is true the FPS drawn on display
+ */
+void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphical) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     static float fps;
@@ -150,7 +155,7 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
             tick.reset();
         }
 
-        if (graphically) {
+        if (graphical) {
             v2d->nvg([&](const cv::Size& size) {
                 using namespace cv;
                 string text = "FPS: " + std::to_string(fps);

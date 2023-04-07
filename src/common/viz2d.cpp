@@ -29,21 +29,11 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
 void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: %s\n", description);
 }
-}
-
-template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& widgets) {
-    T w;
-    for (auto* child : parent->children()) {
-        find_widgets(child, widgets);
-        if ((w = dynamic_cast<T>(child)) != nullptr) {
-            widgets.push_back(w);
-        }
-    }
-}
 
 bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
     nanogui::Vector2i d = p - w->absolute_position();
     return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
+}
 }
 
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
@@ -346,11 +336,11 @@ void Viz2D::makeNoneCurrent() {
     glfwMakeContextCurrent(nullptr);
 }
 
-void Viz2D::clear(const cv::Scalar& rgba) {
-    const float& r = rgba[0] / 255.0f;
-    const float& g = rgba[1] / 255.0f;
-    const float& b = rgba[2] / 255.0f;
-    const float& a = rgba[3] / 255.0f;
+void Viz2D::clear(const cv::Scalar& bgra) {
+    const float& b = bgra[0] / 255.0f;
+    const float& g = bgra[1] / 255.0f;
+    const float& r = bgra[2] / 255.0f;
+    const float& a = bgra[3] / 255.0f;
     GL_CHECK(glClearColor(r, g, b, a));
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
 }

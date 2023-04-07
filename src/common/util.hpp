@@ -54,10 +54,11 @@ void print_system_info();
  * @return true if the program should keep on running
  */
 bool keep_running();
+
 /*!
- * Little helper program to keep track of FPS and optionally display it using NanoVG
+ * Little helper function to keep track of FPS and optionally display it using NanoVG
  * @param v2d The Viz2D object to operate on
- * @param graphically if this parameter is true the FPS drawn on display
+ * @param graphical if this parameter is true the FPS drawn on display
  */
 void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
 
@@ -101,6 +102,13 @@ Sink make_writer_sink(const string& outputFilename, const int fourcc, const floa
  */
 Source make_capture_source(const string& inputFilename);
 #else
+/*!
+ * Creates a WebCam source object to use in conjunction with #Viz2D::setSource().
+ * In the background it uses emscripten's file system implementation to transfer frames from the camera to the source object
+ * @param width The frame width to capture (usually the initial width of the Viz2D object)
+ * @param height The frame height to capture (usually the initial height of the Viz2D object)
+ * @return A WebCam source object.
+ */
 Source make_capture_source(int width, int height);
 #endif
 
