@@ -26,7 +26,7 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
     }
 }
 
-void error_callback(int error, const char* description) {
+void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: %s\n", description);
 }
 }
@@ -90,7 +90,7 @@ bool Viz2D::initializeWindowing() {
     if (glfwInit() != GLFW_TRUE)
         return false;
 
-    glfwSetErrorCallback(cv::viz::error_callback);
+    glfwSetErrorCallback(cv::viz::glfw_error_callback);
 
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);

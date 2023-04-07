@@ -41,18 +41,36 @@ class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
 
+/*!
+ * Convenience function to check for OpenGL errors. Should only be used via the macro #GL_CHECK.
+ * @param file The file path of the error.
+ * @param line The file line of the error.
+ * @param expression The expression that failed.
+ */
 void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression);
 
+/*!
+ * Convenience macro to check for OpenGL errors.
+ */
 #define GL_CHECK(expr)                            \
     expr;                                        \
     cv::viz::gl_check_error(__FILE__, __LINE__, #expr);
 
-void error_callback(int error, const char* description);
+/*!
+ * The GFLW error callback.
+ * @param error Error number
+ * @param description Error description
+ */
+void glfw_error_callback(int error, const char* description);
 }
 
+/*!
+ * Convenience function to color convert from Scalar to Scalar
+ * @param src The scalar to color convert
+ * @param code The color converions code
+ * @return The color converted scalar
+ */
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
-
-std::function<bool(int, int, int, int)> make_default_keyboard_event_callback();
 
 using namespace cv::viz::detail;
 

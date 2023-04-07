@@ -99,6 +99,14 @@ public:
     nanogui::ColorPicker* makeColorPicker(const string& label, nanogui::Color& color,
             const string& tooltip = "", std::function<void(const nanogui::Color)> fn = nullptr,
             bool visible = true, bool enabled = true);
+    /*!
+     * Create a ComboBox from an enumaration type T
+     * @tparam T The enumation type to create the widget from
+     * @param label The label text
+     * @param e The value
+     * @param items A vector of strings with one string per enumeration value
+     * @return A pointer to the newly created ComboBox
+     */
     template<typename T> nanogui::ComboBox* makeComboBox(const string& label, T& e,
             const std::vector<string>& items) {
         auto* var = this->add_variable(label, e, true);
