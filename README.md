@@ -145,7 +145,7 @@ src/tetra/tetra-demo
 src/video/video-demo bunny.webm
 ```
 ```bash
-src/shader/shader-demo
+src/shader/shader-demo bunny.webm
 ```
 ```bash
 src/nanovg/nanovg-demo bunny.webm
