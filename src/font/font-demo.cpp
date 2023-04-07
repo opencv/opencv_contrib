@@ -1,3 +1,8 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+// Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
+
 #include "../common/viz2d.hpp"
 #include "../common/nvg.hpp"
 #include "../common/util.hpp"
@@ -218,7 +223,7 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    Sink sink = make_writer_sink(v2d, OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
+    Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
     while(keep_running())
         iteration();
