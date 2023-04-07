@@ -14,11 +14,17 @@
 
 namespace cv {
 namespace viz {
-
+/*!
+ * Returns the OpenGL Version information.
+ * @return a string object with the OpenGL version information
+ */
 std::string get_gl_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
-
+/*!
+ * Returns the OpenCL Version information.
+ * @return a string object with the OpenCL version information
+ */
 std::string get_cl_info() {
     std::stringstream ss;
 #ifndef __EMSCRIPTEN__
@@ -44,6 +50,10 @@ std::string get_cl_info() {
     return ss.str();
 }
 
+/*!
+ * Determines if Intel VAAPI is supported
+ * @return true if it is supported
+ */
 bool is_intel_va_supported() {
 #ifndef __EMSCRIPTEN__
     try {
@@ -65,6 +75,10 @@ bool is_intel_va_supported() {
     return false;
 }
 
+/*!
+ * Determines if cl_khr_gl_sharing is supported
+ * @return true if it is supported
+ */
 bool is_cl_gl_sharing_supported() {
 #ifndef __EMSCRIPTEN__
     try {
@@ -86,6 +100,9 @@ bool is_cl_gl_sharing_supported() {
     return false;
 }
 
+/*!
+ * Pretty prints system information.
+ */
 void print_system_info() {
     cerr << "OpenGL Version: " << get_gl_info() << endl;
     cerr << "OpenCL Platforms: " << get_cl_info() << endl;
@@ -94,15 +111,28 @@ void print_system_info() {
 static bool finish_requested = false;
 static bool signal_handlers_installed = false;
 
+/*!
+ * Signal handler callback that signals the application to terminate.
+ * @param ignore We ignore the signal number
+ */
 static void request_finish(int ignore) {
     finish_requested = true;
 }
 
+/*!
+ * Installs #request_finish() as signal handler for SIGINT and SIGTERM
+ */
 static void install_signal_handlers() {
     signal(SIGINT, request_finish);
     signal(SIGTERM, request_finish);
 }
 
+/*!
+ * Tells the application if it's alright to keep on running.
+ * Note: If you use this mechanism signal handlers are installed
+ * using #install_signal_handlers()
+ * @return true if the program should keep on running
+ */
 bool keep_running() {
     if(!signal_handlers_installed) {
         install_signal_handlers();
@@ -110,6 +140,11 @@ bool keep_running() {
     return !finish_requested;
 }
 
+/*!
+ * Little helper program to keep track of FPS and optionally display it using NanoVG
+ * @param v2d The Viz2D object to operate on
+ * @param graphically if this parameter is true the FPS drawn on display
+ */
 void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
@@ -152,9 +187,17 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
 }
 
 #ifndef __EMSCRIPTEN__
-Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+/*!
+ *
+ * @param outputFilename
+ * @param fourcc
+ * @param fps
+ * @param frameSize
+ * @param vaDeviceIndex
+ * @return
+ */
+Sink make_va_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
-    v2d->setVideoFrameSize(frameSize);
 
     return Sink([=](const cv::UMat& frame){
         (*writer) << frame;
@@ -162,12 +205,11 @@ Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fo
     });
 }
 
-Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex) {
+Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
     float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
     float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->setVideoFrameSize(cv::Size(w,h));
 
     return Source([=](cv::UMat& frame){
         (*capture) >> frame;
@@ -175,26 +217,25 @@ Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int
     }, fps);
 }
 #else
-Sink make_va_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+Sink make_va_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     return Sink([=](const cv::UMat& frame){
         return false;
     });
 }
 
-Source make_va_source(cv::Ptr<Viz2D> v2d, const string &inputFilename, const int vaDeviceIndex) {
+Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
     return Source([=](cv::UMat& frame){
         return false;
     }, fps);
 #endif
 
 #ifndef __EMSCRIPTEN__
-Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize) {
+Sink make_writer_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize) {
     if(is_intel_va_supported()) {
-        return make_va_sink(v2d, outputFilename, fourcc, fps, frameSize, 0);
+        return make_va_sink(outputFilename, fourcc, fps, frameSize, 0);
     }
 
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
-    v2d->setVideoFrameSize(frameSize);
 
     return Sink([=](const cv::UMat& frame){
         (*writer) << frame;
@@ -202,16 +243,15 @@ Sink make_writer_sink(cv::Ptr<Viz2D> v2d, const string &outputFilename, const in
     });
 }
 
-Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename) {
+Source make_capture_source(const string &inputFilename) {
     if(is_intel_va_supported()) {
-        return make_va_source(v2d, inputFilename, 0);
+        return make_va_source(inputFilename, 0);
     }
 
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
     float fps = capture->get(cv::CAP_PROP_FPS);
     float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
     float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
-    v2d->setVideoFrameSize(cv::Size(w,h));
 
     return Source([=](cv::UMat& frame){
         (*capture) >> frame;
@@ -220,14 +260,14 @@ Source make_capture_source(cv::Ptr<Viz2D> v2d, const string &inputFilename) {
 }
 
 #else
-Source make_capture_source(cv::Ptr<Viz2D> v2d, int width, int height) {
+Source make_capture_source(int width, int height) {
     using namespace std;
     static cv::Mat tmp(height, width, CV_8UC4);
 
     return Source([=](cv::UMat& frame) {
         try {
             if (frame.empty())
-                frame.create(v2d->getInitialSize(), CV_8UC3);
+                frame.create(cv::Size(width, height), CV_8UC3);
             std::ifstream fs("viz2d_rgba_canvas.raw", std::fstream::in | std::fstream::binary);
             fs.seekg(0, std::ios::end);
             auto length = fs.tellg();

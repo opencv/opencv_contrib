@@ -36,7 +36,7 @@ void gl_check_error(const std::filesystem::path &file, unsigned int line, const 
 
 #define GL_CHECK(expr)                            \
     expr;                                        \
-    kb::viz2d::gl_check_error(__FILE__, __LINE__, #expr);
+    cv::viz::gl_check_error(__FILE__, __LINE__, #expr);
 
 void error_callback(int error, const char *description);
 }
