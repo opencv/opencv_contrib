@@ -20,7 +20,7 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/beauty
 
 # Requirements
-* OpenGL 4
+* OpenGL 4/OpenGL ES 3.0
 
 # Optional requirements
 * Support for OpenCL 1.2
