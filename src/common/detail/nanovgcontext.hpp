@@ -21,11 +21,17 @@
 namespace cv {
 namespace viz {
 namespace detail {
+/*!
+ * Used to setup a nanovg context
+ */
 class NanoVGContext {
     Viz2D& v2d_;
     NVGcontext* context_;
     FrameBufferContext& clglContext_;
 public:
+    /*!
+     * Makes sure #NanoVGContext::begin and #NanoVGContext::end are both called
+     */
     class Scope {
         NanoVGContext& ctx_;
     public:
@@ -38,10 +44,29 @@ public:
             ctx_.end();
         }
     };
+    /*!
+     * Creates a NanoVGContext
+     * @param v2d The Viz2D object used in conjunction with this context
+     * @param context The native NVGContext
+     * @param fbContext The framebuffer context
+     */
     NanoVGContext(Viz2D& v2d, NVGcontext* context, FrameBufferContext& fbContext);
+    /*!
+     * Execute function object fn inside a nanovg context.
+     * The context takes care of setting up opengl and nanovg states.
+     * A function object passed like that can use the functions in cv::viz::nvg.
+     * @param fn A function that is passed the size of the framebuffer
+     * and performs drawing using cv::viz::nvg
+     */
     void render(std::function<void(const cv::Size&)> fn);
 private:
+    /*!
+     * Setup NanoVG context
+     */
     void begin();
+    /*!
+     * Tear down NanoVG context
+     */
     void end();
 };
 }

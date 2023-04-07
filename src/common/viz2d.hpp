@@ -36,6 +36,9 @@ namespace cv {
  * Visualization namespace
  */
 namespace viz {
+/*!
+ * Private namespace
+ */
 namespace detail {
 class FrameBufferContext;
 class CLVAContext;
@@ -166,30 +169,30 @@ public:
     cv::ogl::Texture2D& texture();
 
     /*!
-     * Execute function object fn inside an opengl scope.
+     * Execute function object fn inside an opengl context.
      * This is how all OpenGL operations should be executed.
      * @param fn A function object that is passed the size of the framebuffer
      */
     void gl(std::function<void(const cv::Size&)> fn);
     /*!
-     * Execute function object fn inside a framebuffer scope.
-     * The scope acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
+     * Execute function object fn inside a framebuffer context.
+     * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
      * and provides it to the functon object. This is a good place to use OpenCL
      * directly on the framebuffer.
      * @param fn A function object that is passed the framebuffer to be read/manipulated.
      */
     void fb(std::function<void(cv::UMat&)> fn);
     /*!
-     * Execute function object fn inside a nanovg scope.
-     * The scope takes care of setting up opengl and nanovg states.
+     * Execute function object fn inside a nanovg context.
+     * The context takes care of setting up opengl and nanovg states.
      * A function object passed like that can use the functions in cv::viz::nvg.
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using cv::viz::nvg
      */
     void nvg(std::function<void(const cv::Size&)> fn);
     /*!
-       * Execute function object fn inside a nanogui scope.
-       * The scope provides a #cv::viz::FormHelper instance to the function object
+       * Execute function object fn inside a nanogui context.
+       * The context provides a #cv::viz::FormHelper instance to the function object
        * which can be used to build a gui.
        * @param fn A function that is passed the size of the framebuffer
        * and performs drawing using cv::viz::nvg.

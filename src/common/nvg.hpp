@@ -75,6 +75,9 @@ struct Paint {
     int image = 0;
 };
 
+/*!
+ * Internals of the NanoVG wrapper
+ */
 namespace detail {
 /*!
  * Internal NanoVG singleton that wraps all NanoVG functions.

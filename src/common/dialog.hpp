@@ -13,6 +13,7 @@
 
 namespace cv {
 namespace viz {
+namespace detail {
 
 using std::string;
 
@@ -54,7 +55,8 @@ public:
     bool isMinimized();
 };
 
-} /* namespace viz2d */
-} /* namespace kb */
+} /* namespace detail */
+} /* namespace viz */
+} /* namespace cv */
 
 #endif /* SRC_COMMON_DIALOG_HPP_ */

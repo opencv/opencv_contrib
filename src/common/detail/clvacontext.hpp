@@ -13,6 +13,9 @@ namespace viz {
 class Viz2D;
 namespace detail {
 
+/*!
+ * Provides a context for OpenCL-VAAPI sharing
+ */
 class CLVAContext {
     friend class cv::viz::Viz2D;
     CLExecContext_t context_;
@@ -24,9 +27,27 @@ class CLVAContext {
     cv::Size videoFrameSize_;
     CLExecContext_t getCLExecContext();
 public:
+    /*!
+     * Create the CLVAContext
+     * @param fbContext The corresponding framebuffer context
+     */
     CLVAContext(FrameBufferContext& fbContext);
+    /*!
+     * Get the current video frame size
+     * @return The current video frame size
+     */
     cv::Size getVideoFrameSize();
+    /*!
+     * Called to capture from a function object.
+     * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.
+     * @param fn The functor that provides the data.
+     * @return true if successful-
+     */
     bool capture(std::function<void(cv::UMat&)> fn);
+    /*!
+     * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
+     * @param fn The functor that consumes the data,
+     */
     void write(std::function<void(const cv::UMat&)> fn);
 
     /*FIXME only public till https://github.com/opencv/opencv/pull/22780 is resolved.
