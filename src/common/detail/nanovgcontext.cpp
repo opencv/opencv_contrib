@@ -10,7 +10,7 @@
 namespace cv {
 namespace viz {
 namespace detail {
-NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, FrameBufferContext &fbContext) :
+NanoVGContext::NanoVGContext(Viz2D& v2d, NVGcontext* context, FrameBufferContext& fbContext) :
         v2d_(v2d), context_(context), clglContext_(fbContext) {
     //FIXME workaround for first frame color glitch
     cv::UMat tmp;
@@ -23,8 +23,7 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
     FrameBufferContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
-    cv::viz::nvg::detail::NVG::setCurrentContext(context_),
-    fn(clglContext_.getSize());
+    cv::viz::nvg::detail::NVG::setCurrentContext(context_), fn(clglContext_.getSize());
 }
 
 void push() {

@@ -16,7 +16,7 @@ namespace detail {
 class CLVAContext {
     friend class cv::viz::Viz2D;
     CLExecContext_t context_;
-    FrameBufferContext &clglContext_;
+    FrameBufferContext& clglContext_;
     cv::UMat frameBuffer_;
     cv::UMat videoFrame_;
     cv::UMat rgbBuffer_;
@@ -24,7 +24,7 @@ class CLVAContext {
     cv::Size videoFrameSize_;
     CLExecContext_t getCLExecContext();
 public:
-    CLVAContext(FrameBufferContext &fbContext);
+    CLVAContext(FrameBufferContext& fbContext);
     cv::Size getVideoFrameSize();
     void setVideoFrameSize(const cv::Size& sz);
     bool capture(std::function<void(cv::UMat&)> fn);

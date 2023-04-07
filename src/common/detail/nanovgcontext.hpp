@@ -23,13 +23,14 @@ namespace viz {
 namespace detail {
 class NanoVGContext {
     Viz2D& v2d_;
-    NVGcontext *context_;
-    FrameBufferContext &clglContext_;
+    NVGcontext* context_;
+    FrameBufferContext& clglContext_;
 public:
     class Scope {
         NanoVGContext& ctx_;
     public:
-        Scope(NanoVGContext& ctx) : ctx_(ctx) {
+        Scope(NanoVGContext& ctx) :
+                ctx_(ctx) {
             ctx_.begin();
         }
 
@@ -37,7 +38,7 @@ public:
             ctx_.end();
         }
     };
-    NanoVGContext(Viz2D& v2d, NVGcontext *context, FrameBufferContext &fbContext);
+    NanoVGContext(Viz2D& v2d, NVGcontext* context, FrameBufferContext& fbContext);
     void render(std::function<void(const cv::Size&)> fn);
 private:
     void begin();

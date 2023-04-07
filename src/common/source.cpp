@@ -8,17 +8,19 @@
 namespace cv {
 namespace viz {
 
-Source::Source(std::function<bool(cv::UMat&)> generator, float fps) : generator_(generator), fps_(fps) {
+Source::Source(std::function<bool(cv::UMat&)> generator, float fps) :
+        generator_(generator), fps_(fps) {
 }
 
-Source::Source() : fps_(0) {
+Source::Source() :
+        fps_(0) {
 }
 
 Source::~Source() {
 }
 
 bool Source::isReady() {
-    if(generator_)
+    if (generator_)
         return true;
     else
         return false;

@@ -16,7 +16,7 @@ namespace viz {
 
 using std::string;
 
-class Dialog : public nanogui::Window {
+class Dialog: public nanogui::Window {
 private:
     static std::function<bool(Dialog*, Dialog*)> viz2DWin_Xcomparator;
     static std::set<Dialog*, decltype(viz2DWin_Xcomparator)> all_windows_xsorted_;
@@ -32,7 +32,8 @@ public:
     Dialog(nanogui::Screen* screen, int x, int y, const string& title);
     virtual ~Dialog();
     bool isMinimized();
-    bool mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) override;
+    bool mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button,
+            int mods) override;
 };
 
 } /* namespace viz2d */

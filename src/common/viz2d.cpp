@@ -15,57 +15,64 @@
 namespace cv {
 namespace viz {
 namespace detail {
-void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
+void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
     int errorCode = glGetError();
 
     if (errorCode != 0) {
-        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode << "\n   " << std::endl;
+        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : "
+                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode
+                << "\n   " << std::endl;
         assert(false);
     }
 }
 
-void error_callback(int error, const char *description) {
+void error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: %s\n", description);
 }
 }
 
-template <typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& widgets) {
+template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& widgets) {
     T w;
-    for(auto* child: parent->children()) {
+    for (auto* child : parent->children()) {
         find_widgets(child, widgets);
-        if((w = dynamic_cast<T>(child)) != nullptr) {
+        if ((w = dynamic_cast<T>(child)) != nullptr) {
             widgets.push_back(w);
         }
     }
 }
 
-bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i &p) {
+bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
     nanogui::Vector2i d = p - w->absolute_position();
-    return d.x() >= 0 && d.y() >= 0 &&
-           d.x() < w->size().x() && d.y() < w->size().y();
+    return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
 }
 
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
-    cv::Mat tmpIn(1,1,CV_8UC3);
-    cv::Mat tmpOut(1,1,CV_8UC3);
+    cv::Mat tmpIn(1, 1, CV_8UC3);
+    cv::Mat tmpOut(1, 1, CV_8UC3);
 
-    tmpIn.at<cv::Vec3b>(0,0) = cv::Vec3b(src[0], src[1], src[2]);
+    tmpIn.at<cv::Vec3b>(0, 0) = cv::Vec3b(src[0], src[1], src[2]);
     cvtColor(tmpIn, tmpOut, code);
-    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0,0);
-    cv::Scalar dst(vdst[0],vdst[1],vdst[2], src[3]);
+    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0, 0);
+    cv::Scalar dst(vdst[0], vdst[1], vdst[2], src[3]);
     return dst;
 }
 
-Viz2D::Viz2D(const cv::Size &size, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major, int minor, int samples, bool debug) :
-        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0,0), offscreen_(offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(samples), debug_(debug) {
-    assert(frameBufferSize_.width >= initialSize_.width && frameBufferSize_.height >= initialSize_.height);
+Viz2D::Viz2D(const cv::Size& size, const cv::Size& frameBufferSize, bool offscreen,
+        const string& title, int major, int minor, int samples, bool debug) :
+        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0,
+                frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0, 0), offscreen_(
+                offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(
+                samples), debug_(debug) {
+    assert(
+            frameBufferSize_.width >= initialSize_.width
+                    && frameBufferSize_.height >= initialSize_.height);
 
     initializeWindowing();
 }
 
 Viz2D::~Viz2D() {
     //don't delete form_. it is autmatically cleaned up by the base class (nanogui::Screen)
-    if(screen_)
+    if (screen_)
         delete screen_;
     if (writer_)
         delete writer_;
@@ -80,7 +87,7 @@ Viz2D::~Viz2D() {
 }
 
 bool Viz2D::initializeWindowing() {
-    if(glfwInit() != GLFW_TRUE)
+    if (glfwInit() != GLFW_TRUE)
         return false;
 
     glfwSetErrorCallback(cv::viz::error_callback);
@@ -129,7 +136,8 @@ bool Viz2D::initializeWindowing() {
      */
     glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
-    glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr, nullptr);
+    glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr,
+            nullptr);
     if (glfwWindow_ == NULL) {
         return false;
     }
@@ -143,51 +151,54 @@ bool Viz2D::initializeWindowing() {
 
     glfwSetWindowUserPointer(getGLFWWindow(), this);
 
-    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
+    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().cursor_pos_callback_event(x, y);
         auto cursor = v2d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
-        if(v2d->isMouseDrag()) {
+        if (v2d->isMouseDrag()) {
             v2d->pan(diff[0], -diff[1]);
         }
         v2d->setMousePosition(x, y);
     }
     );
-    glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int button, int action, int modifiers) {
-        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().mouse_button_callback_event(button, action, modifiers);
-        if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-            v2d->setMouseDrag(action == GLFW_PRESS);
-        }
-    }
+    glfwSetMouseButtonCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+                Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+                v2d->screen().mouse_button_callback_event(button, action, modifiers);
+                if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+                    v2d->setMouseDrag(action == GLFW_PRESS);
+                }
+            }
     );
-    glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int key, int scancode, int action, int mods) {
-        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().key_callback_event(key, scancode, action, mods);
-    }
+    glfwSetKeyCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
+                Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+                v2d->screen().key_callback_event(key, scancode, action, mods);
+            }
     );
-    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, unsigned int codepoint) {
+    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().char_callback_event(codepoint);
     }
     );
-    glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int count, const char **filenames) {
-        Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().drop_callback_event(count, filenames);
-    }
+    glfwSetDropCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int count, const char** filenames) {
+                Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
+                v2d->screen().drop_callback_event(count, filenames);
+            }
     );
-    glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, double x, double y) {
+    glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         std::vector<nanogui::Widget*> widgets;
         find_widgets(&v2d->screen(), widgets);
-        for(auto* w : widgets) {
+        for (auto* w : widgets) {
             auto mousePos = nanogui::Vector2i(v2d->getMousePosition()[0] / v2d->getXPixelRatio(), v2d->getMousePosition()[1] / v2d->getYPixelRatio());
-            if(contains_absolute(w, mousePos)) {
-                v2d->screen().scroll_callback_event(x, y);
-                return;
-            }
-        }
+    if(contains_absolute(w, mousePos)) {
+        v2d->screen().scroll_callback_event(x, y);
+        return;
+    }
+}
 
         v2d->zoom(y < 0 ? 1.1 : 0.9);
     }
@@ -199,11 +210,10 @@ bool Viz2D::initializeWindowing() {
 //        }
 //    );
 
-    glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow *glfwWin, int width, int height) {
+    glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
         Viz2D* v2d = reinterpret_cast<Viz2D*>(glfwGetWindowUserPointer(glfwWin));
         v2d->screen().resize_callback_event(width, height);
-    }
-    );
+    });
 
     clglContext_ = new detail::FrameBufferContext(this->getFrameBufferSize());
     clvaContext_ = new detail::CLVAContext(*clglContext_);
@@ -219,12 +229,13 @@ FormHelper& Viz2D::form() {
     return *form_;
 }
 
-void Viz2D::setKeyboardEventCallback(std::function<bool(int key, int scancode, int action, int modifiers)> fn) {
+void Viz2D::setKeyboardEventCallback(
+        std::function<bool(int key, int scancode, int action, int modifiers)> fn) {
     keyEventCb_ = fn;
 }
 
 bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
-    if(keyEventCb_)
+    if (keyEventCb_)
         return keyEventCb_(key, scancode, action, modifiers);
 
     if (screen().keyboard_event(key, scancode, action, modifiers))
@@ -285,36 +296,36 @@ void Viz2D::nanogui(std::function<void(FormHelper& form)> fn) {
     fn(form());
 }
 
-void Viz2D::setSource(const Source &src) {
+void Viz2D::setSource(const Source& src) {
     if (!clva().hasContext())
         clva().copyContext();
     source_ = src;
 }
 
 bool Viz2D::capture() {
-    return this->capture([&](cv::UMat &videoFrame) {
-        if(source_.isReady())
+    return this->capture([&](cv::UMat& videoFrame) {
+        if (source_.isReady())
             source_().second.copyTo(videoFrame);
     });
 }
 
 bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
-    return  clva().capture(fn);
+    return clva().capture(fn);
 }
 
 bool Viz2D::isSourceReady() {
     return source_.isReady();
 }
 
-void Viz2D::setSink(const Sink &sink) {
+void Viz2D::setSink(const Sink& sink) {
     if (!clva().hasContext())
         clva().copyContext();
     sink_ = sink;
 }
 
 void Viz2D::write() {
-    this->write([&](const cv::UMat &videoFrame) {
-        if(sink_.isReady())
+    this->write([&](const cv::UMat& videoFrame) {
+        if (sink_.isReady())
             sink_(videoFrame);
     });
 }
@@ -335,18 +346,18 @@ void Viz2D::makeNoneCurrent() {
     glfwMakeContextCurrent(nullptr);
 }
 
-void Viz2D::clear(const cv::Scalar &rgba) {
-    const float &r = rgba[0] / 255.0f;
-    const float &g = rgba[1] / 255.0f;
-    const float &b = rgba[2] / 255.0f;
-    const float &a = rgba[3] / 255.0f;
+void Viz2D::clear(const cv::Scalar& rgba) {
+    const float& r = rgba[0] / 255.0f;
+    const float& g = rgba[1] / 255.0f;
+    const float& b = rgba[2] / 255.0f;
+    const float& a = rgba[3] / 255.0f;
     GL_CHECK(glClearColor(r, g, b, a));
     GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
 }
 
 void Viz2D::showGui(bool s) {
     auto children = screen().children();
-    for(auto* child : children) {
+    for (auto* child : children) {
         child->set_visible(s);
     }
 }
@@ -365,7 +376,7 @@ void Viz2D::pan(int x, int y) {
 }
 
 void Viz2D::zoom(float factor) {
-    if(scale_ == 1 && viewport_.x == 0 && viewport_.y == 0 && factor > 1)
+    if (scale_ == 1 && viewport_.x == 0 && viewport_.y == 0 && factor > 1)
         return;
 
     double oldScale = scale_;
@@ -373,19 +384,23 @@ void Viz2D::zoom(float factor) {
     double origH = getFrameBufferSize().height;
 
     scale_ *= factor;
-    if(scale_ <= 0.025) {
+    if (scale_ <= 0.025) {
         scale_ = 0.025;
         return;
-    } else if(scale_ > 1) {
+    } else if (scale_ > 1) {
         scale_ = 1;
         viewport_.width = origW;
         viewport_.height = origH;
-        if(factor > 1) {
-            viewport_.x += log10(((viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0) * viewport_.width;
-            viewport_.y += log10(((viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0) * viewport_.height;
+        if (factor > 1) {
+            viewport_.x += log10(((viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0)
+                    * viewport_.width;
+            viewport_.y += log10(((viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0)
+                    * viewport_.height;
         } else {
-            viewport_.x += log10(((-viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0) * viewport_.width;
-            viewport_.y += log10(((-viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0) * viewport_.height;
+            viewport_.x += log10(((-viewport_.x * (1.0 - factor)) / viewport_.width) * 9 + 1.0)
+                    * viewport_.width;
+            viewport_.y += log10(((-viewport_.y * (1.0 - factor)) / viewport_.height) * 9 + 1.0)
+                    * viewport_.height;
         }
         return;
     }
@@ -399,20 +414,22 @@ void Viz2D::zoom(float factor) {
     float delta_x;
     float delta_y;
 
-    if(factor < 1.0) {
-        offset = cv::Vec2f(viewport_.x, viewport_.y) - cv::Vec2f(mousePos_[0], origH - mousePos_[1]);
+    if (factor < 1.0) {
+        offset = cv::Vec2f(viewport_.x, viewport_.y)
+                - cv::Vec2f(mousePos_[0], origH - mousePos_[1]);
         delta_x = offset[0] / oldW;
         delta_y = offset[1] / oldH;
     } else {
-        offset = cv::Vec2f(viewport_.x - (viewport_.width / 2.0), viewport_.y - (viewport_.height / 2.0)) - cv::Vec2f(viewport_.x, viewport_.y);
+        offset = cv::Vec2f(viewport_.x - (viewport_.width / 2.0),
+                viewport_.y - (viewport_.height / 2.0)) - cv::Vec2f(viewport_.x, viewport_.y);
         delta_x = offset[0] / oldW;
         delta_y = offset[1] / oldH;
     }
 
     float x_offset;
     float y_offset;
-        x_offset = delta_x * (viewport_.width - oldW);
-        y_offset = delta_y * (viewport_.height - oldH);
+    x_offset = delta_x * (viewport_.width - oldW);
+    y_offset = delta_y * (viewport_.height - oldH);
 
     if (factor < 1.0) {
         viewport_.x += x_offset;
@@ -435,7 +452,7 @@ cv::Vec2f Viz2D::getMousePosition() {
 }
 
 void Viz2D::setMousePosition(int x, int y) {
-    mousePos_ = {float(x), float(y)};
+    mousePos_ = { float(x), float(y) };
 }
 
 float Viz2D::getScale() {
@@ -490,7 +507,7 @@ float Viz2D::getYPixelRatio() {
 #endif
 }
 
-void Viz2D::setWindowSize(const cv::Size &sz) {
+void Viz2D::setWindowSize(const cv::Size& sz) {
     makeCurrent();
     screen().set_size(nanogui::Vector2i(sz.width / getXPixelRatio(), sz.height / getYPixelRatio()));
 }
@@ -503,12 +520,14 @@ bool Viz2D::isFullscreen() {
 void Viz2D::setFullscreen(bool f) {
     makeCurrent();
     auto monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     if (f) {
-        glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+        glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height,
+                mode->refreshRate);
         setWindowSize(getNativeFrameBufferSize());
     } else {
-        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getInitialSize().width, getInitialSize().height, 0);
+        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getInitialSize().width,
+                getInitialSize().height, 0);
         setWindowSize(getInitialSize());
     }
 }
@@ -559,7 +578,7 @@ void Viz2D::setDefaultKeyboardEventCallback() {
             return true;
         } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
             auto children = screen().children();
-            for(auto* child : children) {
+            for (auto* child : children) {
                 child->set_visible(!child->visible());
             }
 

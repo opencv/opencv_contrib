@@ -14,7 +14,7 @@ class NVG;
 NVG* NVG::nvg_instance_ = nullptr;
 
 void NVG::setCurrentContext(NVGcontext* ctx) {
-    if(nvg_instance_ != nullptr)
+    if (nvg_instance_ != nullptr)
         delete nvg_instance_;
     nvg_instance_ = new NVG(ctx);
 }
@@ -84,11 +84,13 @@ float NVG::textBounds(float x, float y, const char* string, const char* end, flo
     return nvgTextBounds(getContext(), x, y, string, end, bounds);
 }
 
-void NVG::textBoxBounds(float x, float y, float breakRowWidth, const char* string, const char* end, float* bounds) {
+void NVG::textBoxBounds(float x, float y, float breakRowWidth, const char* string, const char* end,
+        float* bounds) {
     nvgTextBoxBounds(getContext(), x, y, breakRowWidth, string, end, bounds);
 }
 
-int NVG::textGlyphPositions(float x, float y, const char* string, const char* end, GlyphPosition* positions, int maxPositions) {
+int NVG::textGlyphPositions(float x, float y, const char* string, const char* end,
+        GlyphPosition* positions, int maxPositions) {
     return nvgTextGlyphPositions(getContext(), x, y, string, end, positions, maxPositions);
 }
 
@@ -96,8 +98,9 @@ void NVG::textMetrics(float* ascender, float* descender, float* lineh) {
     nvgTextMetrics(getContext(), ascender, descender, lineh);
 }
 
-int NVG::textBreakLines(const char* string, const char* end, float breakRowWidth, TextRow* rows, int maxRows) {
-    return nvgTextBreakLines(getContext(),string, end, breakRowWidth, rows, maxRows);
+int NVG::textBreakLines(const char* string, const char* end, float breakRowWidth, TextRow* rows,
+        int maxRows) {
+    return nvgTextBreakLines(getContext(), string, end, breakRowWidth, rows, maxRows);
 }
 
 void NVG::save() {
@@ -117,7 +120,7 @@ void NVG::shapeAntiAlias(int enabled) {
 }
 
 void NVG::strokeColor(const cv::Scalar& bgra) {
-    nvgStrokeColor(getContext(), nvgRGBA(bgra[2],bgra[1],bgra[0],bgra[3]));
+    nvgStrokeColor(getContext(), nvgRGBA(bgra[2], bgra[1], bgra[0], bgra[3]));
 }
 
 void NVG::strokePaint(Paint paint) {
@@ -126,7 +129,7 @@ void NVG::strokePaint(Paint paint) {
 }
 
 void NVG::fillColor(const cv::Scalar& bgra) {
-    nvgFillColor(getContext(), nvgRGBA(bgra[2],bgra[1],bgra[0],bgra[3]));
+    nvgFillColor(getContext(), nvgRGBA(bgra[2], bgra[1], bgra[0], bgra[3]));
 }
 
 void NVG::fillPaint(Paint paint) {
@@ -278,8 +281,10 @@ void NVG::roundedRect(float x, float y, float w, float h, float r) {
     nvgRoundedRect(getContext(), x, y, w, h, r);
 }
 
-void NVG::roundedRectVarying(float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft) {
-    nvgRoundedRectVarying(getContext(), x, y, w, h, radTopLeft, radTopRight, radBottomRight, radBottomLeft);
+void NVG::roundedRectVarying(float x, float y, float w, float h, float radTopLeft,
+        float radTopRight, float radBottomRight, float radBottomLeft) {
+    nvgRoundedRectVarying(getContext(), x, y, w, h, radTopLeft, radTopRight, radBottomRight,
+            radBottomLeft);
 }
 
 void NVG::ellipse(float cx, float cy, float rx, float ry) {
@@ -298,22 +303,32 @@ void NVG::stroke() {
     nvgStroke(getContext());
 }
 
-Paint NVG::linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol) {
-    NVGpaint np = nvgLinearGradient(getContext(), sx, sy, ex, ey, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
+Paint NVG::linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol,
+        const cv::Scalar& ocol) {
+    NVGpaint np = nvgLinearGradient(getContext(), sx, sy, ex, ey,
+            nvgRGBA(icol[2], icol[1], icol[0], icol[3]),
+            nvgRGBA(ocol[2], ocol[1], ocol[0], ocol[3]));
     return Paint(np);
 }
 
-Paint NVG::boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol) {
-    NVGpaint np = nvgBoxGradient(getContext(), x, y, w, h, r, f, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
+Paint NVG::boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol,
+        const cv::Scalar& ocol) {
+    NVGpaint np = nvgBoxGradient(getContext(), x, y, w, h, r, f,
+            nvgRGBA(icol[2], icol[1], icol[0], icol[3]),
+            nvgRGBA(ocol[2], ocol[1], ocol[0], ocol[3]));
     return Paint(np);
 }
 
-Paint NVG::radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol) {
-    NVGpaint np = nvgRadialGradient(getContext(), cx, cy, inr, outr, nvgRGBA(icol[2],icol[1],icol[0],icol[3]), nvgRGBA(ocol[2],ocol[1],ocol[0],ocol[3]));
+Paint NVG::radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol,
+        const cv::Scalar& ocol) {
+    NVGpaint np = nvgRadialGradient(getContext(), cx, cy, inr, outr,
+            nvgRGBA(icol[2], icol[1], icol[0], icol[3]),
+            nvgRGBA(ocol[2], ocol[1], ocol[0], ocol[3]));
     return Paint(np);
 }
 
-Paint NVG::imagePattern(float ox, float oy, float ex, float ey, float angle, int image, float alpha) {
+Paint NVG::imagePattern(float ox, float oy, float ex, float ey, float angle, int image,
+        float alpha) {
     NVGpaint np = nvgImagePattern(getContext(), ox, oy, ex, ey, angle, image, alpha);
     return Paint(np);
 }
@@ -332,7 +347,7 @@ void NVG::resetScissor() {
 }
 
 int createFont(const char* name, const char* filename) {
-    return detail::NVG::getCurrentContext()->createFont(name,filename);
+    return detail::NVG::getCurrentContext()->createFont(name, filename);
 }
 
 int createFontMem(const char* name, unsigned char* data, int ndata, int freeData) {
@@ -390,20 +405,25 @@ float textBounds(float x, float y, const char* string, const char* end, float* b
     return detail::NVG::getCurrentContext()->textBounds(x, y, string, end, bounds);
 }
 
-void textBoxBounds(float x, float y, float breakRowWidth, const char* string, const char* end, float* bounds) {
+void textBoxBounds(float x, float y, float breakRowWidth, const char* string, const char* end,
+        float* bounds) {
     detail::NVG::getCurrentContext()->textBoxBounds(x, y, breakRowWidth, string, end, bounds);
 }
 
-int textGlyphPositions(float x, float y, const char* string, const char* end, GlyphPosition* positions, int maxPositions) {
-    return detail::NVG::getCurrentContext()->textGlyphPositions(x, y, string, end, positions, maxPositions);
+int textGlyphPositions(float x, float y, const char* string, const char* end,
+        GlyphPosition* positions, int maxPositions) {
+    return detail::NVG::getCurrentContext()->textGlyphPositions(x, y, string, end, positions,
+            maxPositions);
 }
 
 void textMetrics(float* ascender, float* descender, float* lineh) {
     detail::NVG::getCurrentContext()->textMetrics(ascender, descender, lineh);
 }
 
-int textBreakLines(const char* string, const char* end, float breakRowWidth, TextRow* rows, int maxRows) {
-    return detail::NVG::getCurrentContext()->textBreakLines(string, end, breakRowWidth, rows, maxRows);
+int textBreakLines(const char* string, const char* end, float breakRowWidth, TextRow* rows,
+        int maxRows) {
+    return detail::NVG::getCurrentContext()->textBreakLines(string, end, breakRowWidth, rows,
+            maxRows);
 }
 
 void save() {
@@ -581,8 +601,10 @@ void roundedRect(float x, float y, float w, float h, float r) {
     detail::NVG::getCurrentContext()->roundedRect(x, y, w, h, r);
 }
 
-void roundedRectVarying(float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft) {
-    detail::NVG::getCurrentContext()->roundedRectVarying(x, y, w, h, radTopLeft, radTopRight, radBottomRight, radBottomLeft);
+void roundedRectVarying(float x, float y, float w, float h, float radTopLeft, float radTopRight,
+        float radBottomRight, float radBottomLeft) {
+    detail::NVG::getCurrentContext()->roundedRectVarying(x, y, w, h, radTopLeft, radTopRight,
+            radBottomRight, radBottomLeft);
 }
 
 void ellipse(float cx, float cy, float rx, float ry) {
@@ -601,15 +623,18 @@ void stroke() {
     detail::NVG::getCurrentContext()->stroke();
 }
 
-Paint linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol, const cv::Scalar& ocol) {
+Paint linearGradient(float sx, float sy, float ex, float ey, const cv::Scalar& icol,
+        const cv::Scalar& ocol) {
     return detail::NVG::getCurrentContext()->linearGradient(sx, sy, ex, ey, icol, ocol);
 }
 
-Paint boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol, const cv::Scalar& ocol) {
+Paint boxGradient(float x, float y, float w, float h, float r, float f, const cv::Scalar& icol,
+        const cv::Scalar& ocol) {
     return detail::NVG::getCurrentContext()->boxGradient(x, y, w, h, r, f, icol, ocol);
 }
 
-Paint radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol, const cv::Scalar& ocol) {
+Paint radialGradient(float cx, float cy, float inr, float outr, const cv::Scalar& icol,
+        const cv::Scalar& ocol) {
     return detail::NVG::getCurrentContext()->radialGradient(cx, cy, inr, outr, icol, ocol);
 }
 

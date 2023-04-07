@@ -10,11 +10,13 @@
 namespace cv {
 namespace viz {
 
+std::function<bool(Dialog*, Dialog*)> Dialog::viz2DWin_Xcomparator([](Dialog* lhs, Dialog* rhs) {
+    return lhs->position()[0] < rhs->position()[0];
+});
+std::set<Dialog*, decltype(Dialog::viz2DWin_Xcomparator)> Dialog::all_windows_xsorted_(
+        viz2DWin_Xcomparator);
 
-std::function<bool(Dialog*, Dialog*)> Dialog::viz2DWin_Xcomparator([](Dialog* lhs, Dialog* rhs){ return lhs->position()[0] < rhs->position()[0]; });
-std::set<Dialog*, decltype(Dialog::viz2DWin_Xcomparator)> Dialog::all_windows_xsorted_(viz2DWin_Xcomparator);
-
-Dialog::Dialog(nanogui::Screen *screen, int x, int y, const string &title) :
+Dialog::Dialog(nanogui::Screen* screen, int x, int y, const string& title) :
         Window(screen, title), screen_(screen), lastDragPos_(x, y) {
     all_windows_xsorted_.insert(this);
     oldLayout_ = new nanogui::AdvancedGridLayout( { 10, 0, 10, 0 }, { });
@@ -34,7 +36,7 @@ Dialog::Dialog(nanogui::Screen *screen, int x, int y, const string &title) :
         this->minBtn_->set_visible(true);
         this->maxBtn_->set_visible(false);
 
-        for (auto *child : this->children()) {
+        for (auto* child : this->children()) {
             child->set_visible(true);
         }
 
@@ -48,7 +50,7 @@ Dialog::Dialog(nanogui::Screen *screen, int x, int y, const string &title) :
         this->minBtn_->set_visible(false);
         this->maxBtn_->set_visible(true);
 
-        for (auto *child : this->children()) {
+        for (auto* child : this->children()) {
             child->set_visible(false);
         }
         this->set_size( { 0, 0 });
@@ -61,18 +63,18 @@ Dialog::Dialog(nanogui::Screen *screen, int x, int y, const string &title) :
         this->maximizedPos_ = this->position();
 
         for (Dialog* win : all_windows_xsorted_) {
-            if(win != this && win->isMinimized()) {
+            if (win != this && win->isMinimized()) {
                 x = win->position()[0];
                 gap = lastX + x;
-                if(gap >= w) {
-                    this->set_position({lastX, screen_->height() - this->height()});
+                if (gap >= w) {
+                    this->set_position( { lastX, screen_->height() - this->height() });
                     break;
                 }
                 lastX = x + win->width() + 1;
             }
         }
-        if(gap < w) {
-            this->set_position({lastX, screen_->height() - this->height()});
+        if (gap < w) {
+            this->set_position( { lastX, screen_->height() - this->height() });
         }
         this->minimized_ = true;
     });
@@ -86,19 +88,26 @@ bool Dialog::isMinimized() {
     return minimized_;
 }
 
-bool Dialog::mouse_drag_event(const nanogui::Vector2i &p, const nanogui::Vector2i &rel, int button, int mods) {
+bool Dialog::mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button,
+        int mods) {
     if (m_drag && (button & (1 << GLFW_MOUSE_BUTTON_1)) != 0) {
-        if(maxBtn_->visible()) {
-            for (auto *win : all_windows_xsorted_) {
+        if (maxBtn_->visible()) {
+            for (auto* win : all_windows_xsorted_) {
                 if (win != this) {
                     if (win->contains(this->position())
-                            || win->contains( { this->position()[0] + this->size()[0], this->position()[1] + this->size()[1] })
-                            || win->contains( { this->position()[0], this->position()[1] + this->size()[1] })
-                            || win->contains( { this->position()[0] + this->size()[0], this->position()[1] })
+                            || win->contains(
+                                    { this->position()[0] + this->size()[0], this->position()[1]
+                                            + this->size()[1] }) || win->contains( {
+                                    this->position()[0], this->position()[1] + this->size()[1] })
+                            || win->contains(
+                                    { this->position()[0] + this->size()[0], this->position()[1] })
                             || this->contains(win->position())
-                            || this->contains( { win->position()[0] + win->size()[0], win->position()[1] + win->size()[1] })
-                            || this->contains( { win->position()[0], win->position()[1] + win->size()[1] })
-                            || this->contains( { win->position()[0] + win->size()[0], win->position()[1] })) {
+                            || this->contains(
+                                    { win->position()[0] + win->size()[0], win->position()[1]
+                                            + win->size()[1] }) || this->contains( {
+                                    win->position()[0], win->position()[1] + win->size()[1] })
+                            || this->contains( { win->position()[0] + win->size()[0],
+                                    win->position()[1] })) {
                         this->set_position(lastDragPos_);
                         return true;
                     }

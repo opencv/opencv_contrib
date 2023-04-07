@@ -11,25 +11,25 @@ namespace cv {
 namespace viz {
 namespace detail {
 
-CLVAContext::CLVAContext(FrameBufferContext &clglContext) :
+CLVAContext::CLVAContext(FrameBufferContext& clglContext) :
         clglContext_(clglContext) {
 }
 
 void CLVAContext::setVideoFrameSize(const cv::Size& sz) {
-    if(videoFrameSize_ != cv::Size(0,0))
+    if (videoFrameSize_ != cv::Size(0, 0))
         assert(videoFrameSize_ == sz || "Input and output video sizes don't match");
 
     videoFrameSize_ = sz;
 }
 
 cv::Size CLVAContext::getVideoFrameSize() {
-    assert(videoFrameSize_ == cv::Size(0,0) || "Video frame size not initialized");
+    assert(videoFrameSize_ == cv::Size(0, 0) || "Video frame size not initialized");
     return videoFrameSize_;
 }
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
     {
-        if(!context_ .empty()) {
+        if (!context_.empty()) {
 #ifndef __EMSCRIPTEN__
             CLExecScope_t scope(context_);
 #endif

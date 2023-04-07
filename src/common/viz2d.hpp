@@ -11,7 +11,6 @@
 #include "dialog.hpp"
 #include "formhelper.hpp"
 
-
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -37,13 +36,13 @@ class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
 
-void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression);
+void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression);
 
 #define GL_CHECK(expr)                            \
     expr;                                        \
     cv::viz::gl_check_error(__FILE__, __LINE__, #expr);
 
-void error_callback(int error, const char *description);
+void error_callback(int error, const char* description);
 }
 
 cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
@@ -78,7 +77,7 @@ class Viz2D {
     cv::VideoWriter* writer_ = nullptr;
     FormHelper* form_ = nullptr;
     bool closed_ = false;
-    cv::Size videoFrameSize_ = cv::Size(0,0);
+    cv::Size videoFrameSize_ = cv::Size(0, 0);
     int vaCaptureDeviceIndex_ = 0;
     int vaWriterDeviceIndex_ = 0;
     bool mouseDrag_ = false;
@@ -87,7 +86,8 @@ class Viz2D {
     Sink sink_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
-    Viz2D(const cv::Size &initialSize, const cv::Size& frameBufferSize, bool offscreen, const string &title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+    Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
+            const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     virtual ~Viz2D();
     bool initializeWindowing();
     void makeCurrent();
@@ -100,7 +100,7 @@ public:
     void nvg(std::function<void(const cv::Size&)> fn);
     void nanogui(std::function<void(FormHelper& form)>);
 
-    void clear(const cv::Scalar& rgba = cv::Scalar(0,0,0,255));
+    void clear(const cv::Scalar& rgba = cv::Scalar(0, 0, 0, 255));
 
     bool capture();
     bool capture(std::function<void(cv::UMat&)> fn);
@@ -146,7 +146,8 @@ public:
     bool display();
 
     void setDefaultKeyboardEventCallback();
-    void setKeyboardEventCallback(std::function<bool(int key, int scancode, int action, int modifiers)> fn);
+    void setKeyboardEventCallback(
+            std::function<bool(int key, int scancode, int action, int modifiers)> fn);
 private:
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);

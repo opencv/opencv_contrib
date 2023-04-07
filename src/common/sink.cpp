@@ -8,7 +8,8 @@
 namespace cv {
 namespace viz {
 
-Sink::Sink(std::function<bool(const cv::UMat&)> consumer) : consumer_(consumer) {
+Sink::Sink(std::function<bool(const cv::UMat&)> consumer) :
+        consumer_(consumer) {
 }
 
 Sink::Sink() {
@@ -18,7 +19,7 @@ Sink::~Sink() {
 }
 
 bool Sink::isReady() {
-    if(consumer_)
+    if (consumer_)
         return true;
     else
         return false;

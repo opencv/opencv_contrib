@@ -35,10 +35,10 @@ std::string get_cl_info() {
 #ifndef __EMSCRIPTEN__
     std::vector<cv::ocl::PlatformInfo> plt_info;
     cv::ocl::getPlatfomsInfo(plt_info);
-    const cv::ocl::Device &defaultDevice = cv::ocl::Device::getDefault();
+    const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
     cv::ocl::Device current;
     ss << endl;
-    for (const auto &info : plt_info) {
+    for (const auto& info : plt_info) {
         for (int i = 0; i < info.deviceNumber(); ++i) {
             ss << "\t";
             info.getDevice(current, i);
@@ -47,8 +47,12 @@ std::string get_cl_info() {
             else
                 ss << "  ";
             ss << info.version() << " = " << info.name() << endl;
-            ss << "\t\t  GL sharing: " << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false") << endl;
-            ss << "\t\t  VAAPI media sharing: " << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ? "true" : "false") << endl;
+            ss << "\t\t  GL sharing: "
+                    << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
+                    << endl;
+            ss << "\t\t  VAAPI media sharing: "
+                    << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
+                            "true" : "false") << endl;
         }
     }
 #endif
@@ -65,14 +69,14 @@ bool is_intel_va_supported() {
         std::vector<cv::ocl::PlatformInfo> plt_info;
         cv::ocl::getPlatfomsInfo(plt_info);
         cv::ocl::Device current;
-        for (const auto &info : plt_info) {
+        for (const auto& info : plt_info) {
             for (int i = 0; i < info.deviceNumber(); ++i) {
                 info.getDevice(current, i);
                 return current.isExtensionSupported("cl_intel_va_api_media_sharing");
             }
         }
     } catch (std::exception& ex) {
-        cerr << "Intel VAAPI query failed: " << ex. what() << endl;
+        cerr << "Intel VAAPI query failed: " << ex.what() << endl;
     } catch (...) {
         cerr << "Intel VAAPI query failed" << endl;
     }
@@ -90,14 +94,14 @@ bool is_cl_gl_sharing_supported() {
         std::vector<cv::ocl::PlatformInfo> plt_info;
         cv::ocl::getPlatfomsInfo(plt_info);
         cv::ocl::Device current;
-        for (const auto &info : plt_info) {
+        for (const auto& info : plt_info) {
             for (int i = 0; i < info.deviceNumber(); ++i) {
                 info.getDevice(current, i);
                 return current.isExtensionSupported("cl_khr_gl_sharing");
             }
         }
     } catch (std::exception& ex) {
-        cerr << "CL-GL sharing query failed: " << ex. what() << endl;
+        cerr << "CL-GL sharing query failed: " << ex.what() << endl;
     } catch (...) {
         cerr << "CL-GL sharing query failed" << endl;
     }
@@ -139,7 +143,7 @@ static void install_signal_handlers() {
  * @return true if the program should keep on running
  */
 bool keep_running() {
-    if(!signal_handlers_installed) {
+    if (!signal_handlers_installed) {
         install_signal_handlers();
     }
     return !finish_requested;
@@ -170,7 +174,7 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
         }
 
         if (graphically) {
-            v2d->nvg([&](const cv::Size &size) {
+            v2d->nvg([&](const cv::Size& size) {
                 using namespace cv;
                 string text = "FPS: " + std::to_string(fps);
                 nvg::beginPath();
@@ -201,22 +205,29 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
  * @param vaDeviceIndex
  * @return
  */
-Sink make_va_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
-    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, { cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex, cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+Sink make_va_sink(const string& outputFilename, const int fourcc, const float fps,
+        const cv::Size& frameSize, const int vaDeviceIndex) {
+    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
+            cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, {
+                    cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex,
+                    cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
+                    cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
-    return Sink([=](const cv::UMat& frame){
+    return Sink([=](const cv::UMat& frame) {
         (*writer) << frame;
         return writer->isOpened();
     });
 }
 
-Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
-    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, { cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+Source make_va_source(const string& inputFilename, const int vaDeviceIndex) {
+    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
+            cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION,
+            cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
     float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
     float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
 
-    return Source([=](cv::UMat& frame){
+    return Source([=](cv::UMat& frame) {
         (*capture) >> frame;
         return !frame.empty();
     }, fps);
@@ -235,21 +246,23 @@ Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
 #endif
 
 #ifndef __EMSCRIPTEN__
-Sink make_writer_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize) {
-    if(is_intel_va_supported()) {
+Sink make_writer_sink(const string& outputFilename, const int fourcc, const float fps,
+        const cv::Size& frameSize) {
+    if (is_intel_va_supported()) {
         return make_va_sink(outputFilename, fourcc, fps, frameSize, 0);
     }
 
-    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG, cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
+    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
+            cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
 
-    return Sink([=](const cv::UMat& frame){
+    return Sink([=](const cv::UMat& frame) {
         (*writer) << frame;
         return writer->isOpened();
     });
 }
 
-Source make_capture_source(const string &inputFilename) {
-    if(is_intel_va_supported()) {
+Source make_capture_source(const string& inputFilename) {
+    if (is_intel_va_supported()) {
         return make_va_source(inputFilename, 0);
     }
 
@@ -258,7 +271,7 @@ Source make_capture_source(const string &inputFilename) {
     float w = capture->get(cv::CAP_PROP_FRAME_WIDTH);
     float h = capture->get(cv::CAP_PROP_FRAME_HEIGHT);
 
-    return Source([=](cv::UMat& frame){
+    return Source([=](cv::UMat& frame) {
         (*capture) >> frame;
         return !frame.empty();
     }, fps);

@@ -19,7 +19,7 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
     glewExperimental = true;
     glewInit();
     try {
-        if(is_cl_gl_sharing_supported())
+        if (is_cl_gl_sharing_supported())
             cv::ogl::ocl::initializeContextFromGL();
         else
             clglSharing_ = false;
@@ -39,13 +39,17 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     texture_ = new cv::ogl::Texture2D(frameBufferSize_, cv::ogl::Texture2D::RGBA, textureID_);
     GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-    GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
+    GL_CHECK(
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
 
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
-    GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frameBufferSize_.width, frameBufferSize_.height));
-    GL_CHECK(glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+    GL_CHECK(
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frameBufferSize_.width, frameBufferSize_.height));
+    GL_CHECK(
+            glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
 
-    GL_CHECK(glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+    GL_CHECK(
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
     assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 #ifndef __EMSCRIPTEN__
     context_ = CLExecContext_t::getCurrent();
@@ -55,8 +59,8 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
 FrameBufferContext::~FrameBufferContext() {
     end();
     glDeleteTextures(1, &textureID_);
-    glDeleteRenderbuffers( 1, &renderBufferID_);
-    glDeleteFramebuffers( 1, &frameBufferID_);
+    glDeleteRenderbuffers(1, &renderBufferID_);
+    glDeleteFramebuffers(1, &frameBufferID_);
 }
 
 cv::Size FrameBufferContext::getSize() {
@@ -82,25 +86,24 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 }
 #endif
 
-void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch) {
+void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
+        const cv::Size& windowSize, bool stretch) {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GL_CHECK(glBlitFramebuffer(
-            viewport.x, viewport.y, viewport.x + viewport.width, viewport.y + viewport.height,
-            stretch ? 0 : windowSize.width - frameBufferSize_.width,
-            stretch ? 0 : windowSize.height - frameBufferSize_.height,
-            stretch ? windowSize.width : frameBufferSize_.width,
-            stretch ? windowSize.height : frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    GL_CHECK(
+            glBlitFramebuffer( viewport.x, viewport.y, viewport.x + viewport.width, viewport.y + viewport.height, stretch ? 0 : windowSize.width - frameBufferSize_.width, stretch ? 0 : windowSize.height - frameBufferSize_.height, stretch ? windowSize.width : frameBufferSize_.width, stretch ? windowSize.height : frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
 void FrameBufferContext::begin() {
     GL_CHECK(glGetIntegerv( GL_VIEWPORT, viewport_ ));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
-    GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+    GL_CHECK(
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
-    GL_CHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+    GL_CHECK(
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 }
 
@@ -123,25 +126,16 @@ void FrameBufferContext::download(cv::UMat& m) {
 void FrameBufferContext::upload(const cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_READ);
     assert(tmp.data != nullptr);
-    GL_CHECK(glTexSubImage2D(
-        GL_TEXTURE_2D,
-        0,
-        0,
-        0,
-        tmp.cols,
-        tmp.rows,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        tmp.data)
-    );
+    GL_CHECK(
+            glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
     tmp.release();
 }
 
-void FrameBufferContext::acquireFromGL(cv::UMat &m) {
-    if(clglSharing_) {
+void FrameBufferContext::acquireFromGL(cv::UMat& m) {
+    if (clglSharing_) {
         GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
     } else {
-        if(m.empty())
+        if (m.empty())
             m.create(getSize(), CV_8UC4);
         download(m);
         GL_CHECK(glFlush());
@@ -151,13 +145,13 @@ void FrameBufferContext::acquireFromGL(cv::UMat &m) {
     cv::flip(m, m, 0);
 }
 
-void FrameBufferContext::releaseToGL(cv::UMat &m) {
+void FrameBufferContext::releaseToGL(cv::UMat& m) {
     //FIXME
     cv::flip(m, m, 0);
-    if(clglSharing_) {
+    if (clglSharing_) {
         GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
     } else {
-        if(m.empty())
+        if (m.empty())
             m.create(getSize(), CV_8UC4);
         upload(m);
         GL_CHECK(glFlush());

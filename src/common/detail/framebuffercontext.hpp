@@ -50,13 +50,15 @@ class FrameBufferContext {
 #ifndef __EMSCRIPTEN__
     CLExecContext_t& getCLExecContext();
 #endif
-    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize, bool stretch = false);
+    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
+            bool stretch = false);
 public:
     class FrameBufferScope {
         FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
-        FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) : ctx_(ctx), m_(m) {
+        FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
+                ctx_(ctx), m_(m) {
             ctx_.acquireFromGL(m_);
         }
 
@@ -68,7 +70,8 @@ public:
     class GLScope {
         FrameBufferContext& ctx_;
     public:
-        GLScope(FrameBufferContext& ctx) : ctx_(ctx) {
+        GLScope(FrameBufferContext& ctx) :
+                ctx_(ctx) {
             ctx_.begin();
         }
 
@@ -86,8 +89,8 @@ protected:
     void end();
     void download(cv::UMat& m);
     void upload(const cv::UMat& m);
-    void acquireFromGL(cv::UMat &m);
-    void releaseToGL(cv::UMat &m);
+    void acquireFromGL(cv::UMat& m);
+    void releaseToGL(cv::UMat& m);
     cv::UMat frameBuffer_;
     cv::ogl::Texture2D* texture_ = nullptr;
 };
