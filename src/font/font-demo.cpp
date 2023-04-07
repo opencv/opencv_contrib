@@ -19,7 +19,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr double FPS = 60;
-const cv::Scalar_<float> INITIAL_COLOR = kb::viz2d::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
+const cv::Scalar_<float> INITIAL_COLOR = cv::viz::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 
 /** Visualization parameters **/
 float min_star_size = 0.5f;
@@ -41,13 +41,13 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
+cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
 vector<string> lines;
 bool update_stars = true;
 bool update_perspective = true;
 
-void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->nanogui([&](kb::viz2d::FormHelper& form){
+void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
+    v2d->nanogui([&](cv::viz::FormHelper& form){
         form.makeWindow(5, 30, "Effect");
         form.makeGroup("Text Crawl");
         form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
@@ -120,7 +120,7 @@ void iteration() {
 
     if(update_stars) {
         v2d->nvg([&](const cv::Size& sz) {
-            using namespace kb::viz2d::nvg;
+            using namespace cv::viz::nvg;
             v2d->clear();
             //draw stars
             int numStars = rng.uniform(min_star_count, max_star_count);
@@ -151,7 +151,7 @@ void iteration() {
     }
 
     v2d->nvg([&](const cv::Size& sz) {
-        using namespace kb::viz2d::nvg;
+        using namespace cv::viz::nvg;
         v2d->clear();
 
         fontSize(font_size);
@@ -200,7 +200,7 @@ void iteration() {
 
 int main(int argc, char **argv) {
     try {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
 
     print_system_info();
     if(!v2d->isOffscreen()) {

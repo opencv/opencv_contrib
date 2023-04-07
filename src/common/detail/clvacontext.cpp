@@ -2,8 +2,8 @@
 
 #include "../viz2d.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace detail {
 
 CLVAContext::CLVAContext(FrameBufferContext &clglContext) :

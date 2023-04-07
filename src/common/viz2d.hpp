@@ -25,8 +25,8 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace detail {
 class FrameBufferContext;
 class CLVAContext;
@@ -45,7 +45,7 @@ cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
 std::function<bool(int, int, int, int)> make_default_keyboard_event_callback();
 
-using namespace kb::viz2d::detail;
+using namespace cv::viz::detail;
 
 class NVG;
 

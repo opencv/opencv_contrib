@@ -9,8 +9,8 @@
 #include <nanogui/layout.h>
 #include <GLFW/glfw3.h>
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 
 
 std::function<bool(Dialog*, Dialog*)> Dialog::viz2DWin_Xcomparator([](Dialog* lhs, Dialog* rhs){ return lhs->position()[0] < rhs->position()[0]; });

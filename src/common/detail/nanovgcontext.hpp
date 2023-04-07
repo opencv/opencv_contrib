@@ -13,8 +13,8 @@
 #include "../util.hpp"
 #include "../nvg.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace detail {
 class NanoVGContext {
     Viz2D& v2d_;

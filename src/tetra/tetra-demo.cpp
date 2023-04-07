@@ -78,7 +78,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
 
     cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
     print_system_info();

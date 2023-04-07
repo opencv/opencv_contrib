@@ -1,7 +1,7 @@
 #include "formhelper.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 
 FormHelper::FormHelper(nanogui::Screen* screen) : nanogui::FormHelper(screen) {
 }
@@ -10,7 +10,7 @@ FormHelper::~FormHelper() {
 }
 
 Dialog* FormHelper::makeWindow(int x, int y, const string &title) {
-    auto* win = new kb::viz2d::Dialog(m_screen, x, y, title);
+    auto* win = new cv::viz::Dialog(m_screen, x, y, title);
     this->set_window(win);
     return win;
 }

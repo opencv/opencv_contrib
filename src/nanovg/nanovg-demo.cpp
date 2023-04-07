@@ -12,7 +12,7 @@ using std::endl;
 
 void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
-    using namespace kb::viz2d::nvg;
+    using namespace cv::viz::nvg;
     int i;
     float r0, r1, ax, ay, bx, by, cx, cy, aeps, r;
     Paint paint;
@@ -37,8 +37,8 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
         bx = cx + cosf(a1) * (r0 + r1) * 0.5f;
         by = cy + sinf(a1) * (r0 + r1) * 0.5f;
         paint = linearGradient(ax, ay, bx, by,
-                kb::viz2d::color_convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
-                kb::viz2d::color_convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
+                cv::viz::color_convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
+                cv::viz::color_convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
         fillPaint(paint);
         fill();
     }
@@ -81,7 +81,7 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
     lineTo(ax, ay);
     lineTo(bx, by);
     closePath();
-    paint = linearGradient(r, 0, ax, ay, kb::viz2d::color_convert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
+    paint = linearGradient(r, 0, ax, ay, cv::viz::color_convert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
     fillPaint(paint);
     fill();
     paint = linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));
@@ -113,7 +113,7 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
     if (argc != 2) {
         cerr << "Usage: nanovg-demo <video-file>" << endl;
         exit(1);

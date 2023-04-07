@@ -43,7 +43,7 @@ bool side_by_side = false;
 bool stretch = false;
 #endif
 
-static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
 #ifdef USE_TRACKER
 static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
@@ -126,7 +126,7 @@ struct FaceFeatures {
 };
 
 void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
-    using namespace kb::viz2d::nvg;
+    using namespace cv::viz::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
@@ -140,7 +140,7 @@ void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
 }
 
 void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
-    using namespace kb::viz2d::nvg;
+    using namespace cv::viz::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         for (size_t j = 5; j < 8; ++j) {
@@ -176,8 +176,8 @@ void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
-void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->nanogui([&](kb::viz2d::FormHelper& form){
+void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
+    v2d->nanogui([&](cv::viz::FormHelper& form){
         form.makeWindow(5, 30, "Effect");
 
         form.makeGroup("Display");
@@ -361,7 +361,7 @@ void iteration() {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
 #ifndef __EMSCRIPTEN__
     if (argc != 2) {
         std::cerr << "Usage: beauty-demo <input-video-file>" << endl;

@@ -1,7 +1,7 @@
 #include "source.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 
 Source::Source(std::function<bool(cv::UMat&)> generator, float fps) : generator_(generator), fps_(fps) {
 }

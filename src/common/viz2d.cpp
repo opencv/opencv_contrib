@@ -7,8 +7,8 @@
 #  include <emscripten.h>
 #endif
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace detail {
 void gl_check_error(const std::filesystem::path &file, unsigned int line, const char *expression) {
     int errorCode = glGetError();
@@ -78,7 +78,7 @@ bool Viz2D::initializeWindowing() {
     if(glfwInit() != GLFW_TRUE)
         return false;
 
-    glfwSetErrorCallback(kb::viz2d::error_callback);
+    glfwSetErrorCallback(cv::viz::error_callback);
 
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);

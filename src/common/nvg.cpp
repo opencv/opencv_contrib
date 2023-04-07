@@ -1,7 +1,7 @@
 #include "nvg.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace nvg {
 namespace detail {
 class NVG;

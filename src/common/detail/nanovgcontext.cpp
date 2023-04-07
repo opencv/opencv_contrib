@@ -2,8 +2,8 @@
 
 #include "../viz2d.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace detail {
 NanoVGContext::NanoVGContext(Viz2D &v2d, NVGcontext *context, FrameBufferContext &fbContext) :
         v2d_(v2d), context_(context), clglContext_(fbContext) {
@@ -18,7 +18,7 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
     FrameBufferContext::GLScope glScope(clglContext_);
     NanoVGContext::Scope nvgScope(*this);
-    kb::viz2d::nvg::detail::NVG::setCurrentContext(context_),
+    cv::viz::nvg::detail::NVG::setCurrentContext(context_),
     fn(clglContext_.getSize());
 }
 

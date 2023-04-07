@@ -78,7 +78,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
 
     if(argc != 2) {
         cerr << "Usage: video-demo <video-file>" << endl;

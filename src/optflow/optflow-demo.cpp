@@ -42,9 +42,9 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
 
-static cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+static cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 #ifndef __EMSCRIPTEN__
-static cv::Ptr<kb::viz2d::Viz2D> v2dMenu = new kb::viz2d::Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+static cv::Ptr<cv::viz::Viz2D> v2dMenu = new cv::viz::Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
 #endif
 
 /** Visualization parameters **/
@@ -188,7 +188,7 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
                     upNextPoints.push_back(pt /= scaleFactor);
                 }
 
-                using namespace kb::viz2d::nvg;
+                using namespace cv::viz::nvg;
                 beginPath();
                 strokeWidth(strokeSize);
                 strokeColor(color);
@@ -301,8 +301,8 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
     cv::add(background, post, dst);
 }
 
-void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu) {
-    v2d->nanogui([&](kb::viz2d::FormHelper& form){
+void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d, cv::Ptr<cv::viz::Viz2D> v2dMenu) {
+    v2d->nanogui([&](cv::viz::FormHelper& form){
         form.makeWindow(5, 30, "Effects");
 
         form.makeGroup("Foreground");
@@ -373,7 +373,7 @@ void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d, cv::Ptr<kb::viz2d::Viz2D> v2dMenu)
         form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
     });
 
-    v2dMenu->nanogui([&](kb::viz2d::FormHelper& form){
+    v2dMenu->nanogui([&](cv::viz::FormHelper& form){
         form.makeWindow(8, 16, "Display");
 
         form.makeGroup("Display");
@@ -458,7 +458,7 @@ void iteration() {
         exit(0);
 }
 int main(int argc, char **argv) {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
 #ifndef __EMSCRIPTEN__
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;

@@ -4,8 +4,8 @@
 #include <functional>
 #include <opencv2/opencv.hpp>
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 
 class Sink {
     bool open_ = true;

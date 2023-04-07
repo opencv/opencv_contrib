@@ -3,13 +3,13 @@
 
 #include "framebuffercontext.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 class Viz2D;
 namespace detail {
 
 class CLVAContext {
-    friend class kb::viz2d::Viz2D;
+    friend class cv::viz::Viz2D;
     CLExecContext_t context_;
     FrameBufferContext &clglContext_;
     cv::UMat frameBuffer_;

@@ -3,8 +3,8 @@
 #include "../util.hpp"
 #include "../viz2d.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace detail {
 
 //FIXME use cv::ogl

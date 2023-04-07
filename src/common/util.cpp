@@ -12,8 +12,8 @@
 # include <csignal>
 #endif
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 
 std::string get_gl_info() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
@@ -110,7 +110,7 @@ bool keep_running() {
     return !finish_requested;
 }
 
-void update_fps(cv::Ptr<kb::viz2d::Viz2D> v2d, bool graphically) {
+void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphically) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     static float fps;
@@ -131,7 +131,7 @@ void update_fps(cv::Ptr<kb::viz2d::Viz2D> v2d, bool graphically) {
 
         if (graphically) {
             v2d->nvg([&](const cv::Size &size) {
-                using namespace kb;
+                using namespace cv;
                 string text = "FPS: " + std::to_string(fps);
                 nvg::beginPath();
                 nvg::roundedRect(5, 5, 15 * text.size() + 5, 30, 5);

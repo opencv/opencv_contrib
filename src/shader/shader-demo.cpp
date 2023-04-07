@@ -317,10 +317,10 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-cv::Ptr<kb::viz2d::Viz2D> v2d = new kb::viz2d::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
+cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
-void setup_gui(cv::Ptr<kb::viz2d::Viz2D> v2d) {
-    v2d->nanogui([](kb::viz2d::FormHelper& form){
+void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
+    v2d->nanogui([](cv::viz::FormHelper& form){
     form.makeWindow(5, 30, "Fractal");
 
     form.makeGroup("Navigation");
@@ -412,7 +412,7 @@ void iteration() {
 }
 
 int main(int argc, char **argv) {
-    using namespace kb::viz2d;
+    using namespace cv::viz;
     try {
         if(argc != 2) {
             cerr << "Usage: shader-demo <video-file>" << endl;

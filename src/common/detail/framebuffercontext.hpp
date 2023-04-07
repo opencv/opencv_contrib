@@ -21,8 +21,8 @@
 
 #include "../util.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 class Viz2D;
 namespace detail {
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
@@ -31,7 +31,7 @@ typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
 class FrameBufferContext {
     friend class CLVAContext;
     friend class NanoVGContext;
-    friend class kb::viz2d::Viz2D;
+    friend class cv::viz::Viz2D;
     bool clglSharing_ = true;
     GLuint frameBufferID_ = 0;
     GLuint textureID_ = 0;

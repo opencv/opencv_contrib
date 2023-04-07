@@ -9,8 +9,8 @@
 #include <string>
 
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 using std::string;
 class FormHelper: public nanogui::FormHelper {
 public:

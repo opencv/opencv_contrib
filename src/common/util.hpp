@@ -14,8 +14,8 @@
 #  include <fstream>
 #endif
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 using std::string;
 class Viz2D;
 std::string get_gl_info();

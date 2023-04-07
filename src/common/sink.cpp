@@ -1,7 +1,7 @@
 #include "sink.hpp"
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 
 Sink::Sink(std::function<bool(const cv::UMat&)> consumer) : consumer_(consumer) {
 }

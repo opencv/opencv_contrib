@@ -10,8 +10,8 @@
 #endif
 #include <nanogui/opengl.h>
 
-namespace kb {
-namespace viz2d {
+namespace cv {
+namespace viz {
 namespace nvg {
 
 struct TextRow : public NVGtextRow {
