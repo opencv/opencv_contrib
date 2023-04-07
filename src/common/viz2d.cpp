@@ -261,10 +261,6 @@ cv::Size Viz2D::getVideoFrameSize() {
     return clva().getVideoFrameSize();
 }
 
-void Viz2D::setVideoFrameSize(const cv::Size& sz) {
-    clva().setVideoFrameSize(sz);
-}
-
 void Viz2D::gl(std::function<void(const cv::Size&)> fn) {
     auto fbSize = getFrameBufferSize();
 #ifndef __EMSCRIPTEN__

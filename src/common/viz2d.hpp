@@ -248,43 +248,144 @@ public:
      * @param s if true show the GUI.
      */
     void showGui(bool s);
-
+    /*!
+     * if zoomed in, move the content by x and y
+     * @param x The amount on the x-axis to move
+     * @param y The amount on the y-axis to move
+     */
     void pan(int x, int y);
+    /*!
+     * Zoom by factor.
+     * @param factor The zoom factor.
+     */
     void zoom(float factor);
+    /*!
+     * Get the window position.
+     * @return The window position.
+     */
     cv::Vec2f getPosition();
-    cv::Vec2f getMousePosition();
+    /*!
+     * Get current zoom scale.
+     * @return The zoom scale.
+     */
     float getScale();
+    /*!
+     * Get the current viewport.
+     * @return The current viewport.
+     */
     cv::Rect getViewport();
+    /*!
+     * Set the window size.
+     * @param sz The new window size.
+     */
     void setWindowSize(const cv::Size& sz);
+    /*!
+     * Get the window size
+     * @return The current window size.
+     */
     cv::Size getWindowSize();
+    /*!
+     * Get the initial size.
+     * @return The initial size.
+     */
     cv::Size getInitialSize();
-    void setVideoFrameSize(const cv::Size& sz);
+    /*!
+     * Get the video frame size
+     * @return The current video frame size.
+     */
     cv::Size getVideoFrameSize();
+    /*!
+     * Get the frambuffer size.
+     * @return The framebuffer size.
+     */
     cv::Size getFrameBufferSize();
+    /*!
+     * Get the frambuffer size of the native window.
+     * @return The framebuffer size of the native window.
+     */
     cv::Size getNativeFrameBufferSize();
+    /*!
+     * Get the pixel ratio of the display x-axis.
+     * @return The pixel ratio of the display x-axis.
+     */
     float getXPixelRatio();
+    /*!
+     * Get the pixel ratio of the display y-axis.
+     * @return The pixel ratio of the display y-axis.
+     */
     float getYPixelRatio();
+    /*!
+     * Determine if the window is in fullscreen mode.
+     * @return true if in fullscreen mode.
+     */
     bool isFullscreen();
+    /*!
+     * Enable or disable fullscreen mode.
+     * @param f if true enable fullscreen mode else disable.
+     */
     void setFullscreen(bool f);
+    /*!
+     * Determines if the window is resizeable.
+     * @return true if the window is resizeable.
+     */
     bool isResizable();
+    /*!
+     * Set the window resizable.
+     * @param r if r is true set the window resizable.
+     */
     void setResizable(bool r);
+    /*!
+     * Determine if the window is visible.
+     * @return true if the window is visible.
+     */
     bool isVisible();
+    /*!
+     * Set the window visible or invisible.
+     * @param v if v is true set the window visible.
+     */
     void setVisible(bool v);
+    /*!
+     * Determine if offscreen rendering is enabled.
+     * @return true if offscreen rendering is enabled.
+     */
     bool isOffscreen();
+    /*!
+     * Enable or disable offscreen rendering.
+     * @param o if o is true enable offscreen rendering.
+     */
     void setOffscreen(bool o);
+    /*!
+     * Enable or disable stretching of the framebuffer to window size during blitting.
+     * @param s if s is true enable stretching.
+     */
     void setStretching(bool s);
+    /*!
+     * Determine if framebuffer stretching during blitting is enabled.
+     * @return true if framebuffer stretching during blitting is enabled.
+     */
     bool isStretching();
+    /*!
+     * Determine if the window is closed.
+     * @return true if the window is closed.
+     */
     bool isClosed();
+    /*!
+     * Close the window.
+     */
     void close();
+    /*!
+     * Display the framebuffer in the native window by blitting.
+     * @return false if the window is closed.
+     */
     bool display();
-
+private:
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
-private:
     bool initializeWindowing();
     void setMouseDrag(bool d);
     bool isMouseDrag();
+    cv::Vec2f getMousePosition();
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
     nanogui::Screen& screen();
