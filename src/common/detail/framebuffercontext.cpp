@@ -8,6 +8,10 @@
 #include "../util.hpp"
 #include "../viz2d.hpp"
 
+#ifndef VIZ2D_USE_ES3
+#include <GL/glew.h>
+#endif
+
 namespace cv {
 namespace viz {
 namespace detail {
@@ -15,7 +19,7 @@ namespace detail {
 //FIXME use cv::ogl
 FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     glewExperimental = true;
     glewInit();
     try {

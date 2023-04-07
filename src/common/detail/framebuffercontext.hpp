@@ -6,14 +6,14 @@
 #ifndef SRC_COMMON_CLGLCONTEXT_HPP_
 #define SRC_COMMON_CLGLCONTEXT_HPP_
 
-#define CL_TARGET_OPENCL_VERSION 120
-
 #ifndef __EMSCRIPTEN__
-#include <GL/glew.h>
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
+#else
+#define VIZ2D_USE_ES3 1
 #endif
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
+#  include <GL/glew.h>
 #  define GLFW_INCLUDE_GLCOREARB
 #else
 #  define GLFW_INCLUDE_ES3

@@ -19,6 +19,7 @@ using std::cerr;
 using std::endl;
 
 void init_scene(const cv::Size& sz) {
+#ifndef VIZ2D_USE_ES3
     //Initialize the OpenGL scene
     glViewport(0, 0, sz.width, sz.height);
     glColor3f(1.0, 1.0, 1.0);
@@ -35,9 +36,11 @@ void init_scene(const cv::Size& sz) {
     glTranslatef(0, 0, -3);
     glRotatef(50, 1, 0, 0);
     glRotatef(70, 0, 1, 0);
+#endif
 }
 
 void render_scene(const cv::Size& sz) {
+#ifndef VIZ2D_USE_ES3
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glViewport(0, 0, sz.width, sz.height);
     glRotatef(1, 0, 1, 0);
@@ -58,6 +61,7 @@ void render_scene(const cv::Size& sz) {
         glColor3f(1, 0, 0);
         glVertex3f(-1, 0, 1);
     glEnd();
+#endif
 }
 
 void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {

@@ -15,6 +15,7 @@ ifndef EMSDK
 LIBS += `pkg-config --libs glfw3 glew` -lopencv_face -lopencv_gapi -lopencv_ml -lopencv_objdetect -lopencv_shape -lopencv_stitching -lopencv_superres -lopencv_optflow -lopencv_tracking -lopencv_highgui -lopencv_plot -lopencv_videostab -lopencv_videoio -lopencv_photo -lopencv_ximgproc -lopencv_video -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_dnn -lopencv_imgproc -lopencv_flann -lopencv_core -lGL -lOpenCL
 endif
 CXXFLAGS += -DCL_TARGET_OPENCL_VERSION=120
+# -DVIZ2D_USE_ES3=1
 ifdef EMSDK
 CXX     := em++
 EMCXXFLAGS += -flto -s USE_PTHREADS=1 -pthread -msimd128

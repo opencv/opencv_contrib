@@ -27,7 +27,7 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 }
 
 void push() {
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     GL_CHECK(glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS));
     GL_CHECK(glPushAttrib(GL_ALL_ATTRIB_BITS));
     GL_CHECK(glMatrixMode(GL_MODELVIEW));
@@ -40,7 +40,7 @@ void push() {
 }
 
 void pop() {
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     GL_CHECK(glMatrixMode(GL_TEXTURE));
     GL_CHECK(glPopMatrix());
     GL_CHECK(glMatrixMode(GL_PROJECTION));

@@ -142,7 +142,7 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
 
         glAttachShader( program, shader );
     }
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     /* Link output */
     glBindFragDataLocation(program, 0, outputAttributeName);
 #endif
@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
         while(keep_running())
             iteration();
 #else
-        Source src = make_capture_source(v2d, WIDTH, HEIGHT);
+        Source src = make_capture_source(WIDTH, HEIGHT);
         v2d->setSource(src);
         emscripten_set_main_loop(iteration, -1, true);
 #endif

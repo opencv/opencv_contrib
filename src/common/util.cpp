@@ -14,8 +14,9 @@
 #else
 # include <opencv2/core/ocl.hpp>
 # include <va/va.h>
-# include <csignal>
 #endif
+
+#include <csignal>
 
 namespace cv {
 namespace viz {
@@ -178,7 +179,6 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphical) {
 }
 
 #ifndef __EMSCRIPTEN__
-
 Sink make_va_sink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
@@ -214,7 +214,8 @@ Sink make_va_sink(const string &outputFilename, const int fourcc, const float fp
 Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
     return Source([=](cv::UMat& frame){
         return false;
-    }, fps);
+    }, 0);
+}
 #endif
 
 #ifndef __EMSCRIPTEN__

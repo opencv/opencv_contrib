@@ -10,7 +10,6 @@
 #include "sink.hpp"
 #include "dialog.hpp"
 #include "formhelper.hpp"
-
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -18,11 +17,16 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include <nanogui/nanogui.h>
-#include <GL/glew.h>
 #ifdef __EMSCRIPTEN__
-#include <GLES3/gl3.h>
+#define VIZ2D_USE_ES3 1
 #include <emscripten.h>
 #endif
+#ifndef VIZ2D_USE_ES3
+#include <GL/glew.h>
+#else
+#include <GLES3/gl3.h>
+#endif
+
 
 using std::cout;
 using std::cerr;

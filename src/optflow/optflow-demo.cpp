@@ -493,7 +493,7 @@ int main(int argc, char **argv) {
     while (keep_running())
         iteration();
 #else
-    Source src = make_capture_source(v2d, WIDTH, HEIGHT);
+    Source src = make_capture_source(WIDTH, HEIGHT);
     v2d->setSource(src);
     emscripten_set_main_loop(iteration, -1, true);
 #endif

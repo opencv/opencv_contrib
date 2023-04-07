@@ -5,8 +5,11 @@
 
 #ifndef SRC_COMMON_NANOVGCONTEXT_HPP_
 #define SRC_COMMON_NANOVGCONTEXT_HPP_
+#ifdef __EMSCRIPTEN__
+#define VIZ2D_USE_ES3 1
+#endif
 
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
 #define NANOGUI_USE_OPENGL
 #else
 #define NANOGUI_USE_GLES
