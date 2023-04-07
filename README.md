@@ -7,7 +7,7 @@ Viz2D is a 2D visualization library based on OpenCV. It features OpenCL/ OpenGL,
 * The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
 
 # Demos
-The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. Until the [necessary changes](https://github.com/opencv/opencv/pulls/kallaballa) are pulled into the official repository you need to build my fork of OpenCV 4.x.
+The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms.
 
 There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
 
@@ -20,12 +20,14 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/beauty
 
 # Requirements
+* OpenGL 4
+
+# Optional requirements
 * Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
-* If you are on a recent Intel Platform (Gen8 - Gen12) you **need to install** an [**alternative compute-runtime**](https://github.com/kallaballa/compute-runtime)
+* If you want cl-gl sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to install** [compute-runtime](https://github.com/intel/compute-runtime) from source and [my OpenCV fork](https://github.com/kallaballa/opencv) 
 
 # Dependencies
-* [My OpenCV fork](https://github.com/kallaballa/opencv)
 * [OpenCV contrib](https://github.com/opencv/opencv_contrib)
 * EGL
 * GLEW
@@ -74,7 +76,7 @@ Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenG
 https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9eef-378f6b10d773.mp4
 
 # Instructions for Ubuntu 22.04.2 LTS
-You need to build my 4.x fork of OpenCV, OpenCV-contrib, nanovg and nanogui.
+You need to build nanovg and nanogui (optionally my 4.x fork of OpenCV with OpenCV-contrib).
 
 ## Install required packages
 
@@ -104,7 +106,7 @@ make -j8
 sudo make install
 ```
 
-## Build OpenCV-fork with OpenCV-contrib
+## Optionally build OpenCV-fork with OpenCV-contrib
 
 ```bash
 git clone --branch 4.x https://github.com/opencv/opencv_contrib.git
