@@ -1,5 +1,5 @@
 # Viz2D
-Viz2D is a 2D visualization library based on OpenCV. It features OpenCL/ OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
+Viz2D is a 2D visualization library based on OpenCV. It features OpenCL/ OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready. Currently work happens in [this branch](https://github.com/kallaballa/Viz2D/tree/opencv-module) where you'll find a version namespaced "cv::viz" and using Apache 2 license, that will gradually become an OpenCV module.
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
