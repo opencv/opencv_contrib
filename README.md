@@ -1,5 +1,5 @@
 # Viz2D
-Viz2D is a 2D visualization library based on OpenCV. It features OpenCL/ OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready. Currently work happens in [this branch](https://github.com/kallaballa/Viz2D/tree/opencv-module) where you'll find a version namespaced "cv::viz" and using Apache 2 license, that will gradually become an OpenCV module.
+Viz2D is a 2D visualization module based for OpenCV. It features OpenCL/ OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
@@ -20,6 +20,7 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/beauty
 
 # Requirements
+* C++20 (at the moment)
 * OpenGL 4/OpenGL ES 3.0
 
 # Optional requirements
@@ -28,7 +29,7 @@ Please note that the following online demos are slower and/or have less features
 * If you want cl-gl sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to install** [compute-runtime](https://github.com/intel/compute-runtime) from source and [my OpenCV fork](https://github.com/kallaballa/opencv) 
 
 # Dependencies
-* [OpenCV contrib](https://github.com/opencv/opencv_contrib)
+* [OpenCV 4.x](https://github.com/opencv/opencv)
 * EGL
 * GLEW
 * GLFW3
@@ -76,7 +77,7 @@ Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenG
 https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9eef-378f6b10d773.mp4
 
 # Instructions for Ubuntu 22.04.2 LTS
-You need to build nanovg and nanogui (optionally my 4.x fork of OpenCV with OpenCV-contrib).
+You need to build nanovg, nanogui and OpenCV with Viz2D
 
 ## Install required packages
 
@@ -106,37 +107,24 @@ make -j8
 sudo make install
 ```
 
-## Optionally build OpenCV-fork with OpenCV-contrib
+## Build OpenCV with Viz2D using C++20
 
 ```bash
-git clone --branch 4.x https://github.com/opencv/opencv_contrib.git
-git clone --branch GCV https://github.com/kallaballa/opencv.git
+git clone --branch 4.x https://github.com/kallaballa/opencv.git
+git clone https://github.com/kallaballa/Viz2D.git
 mkdir opencv/build
 cd opencv/build
-cmake -DCMAKE_BUILD_TYPE=Release -DOPENCV_ENABLE_GLX=ON -DOPENCV_ENABLE_EGL=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules/ -D BUILD_opencv_aruco=OFF ..
+cmake -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_viz2d=ON -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../Viz2D/modules/ ..
 make -j8
 sudo make install
 ```
 
-## Build demo code
-
-```bash
-git clone https://github.com/kallaballa/Viz2D.git
-cd Viz2D
-make -j8
-```
 ## Download the example file
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
-## Point to libviz2d.so
-Before you can run the demos you have to point to ```libviz2d.so```
-```bash
-cd Viz2D
-export LD_LIBRARY_PATH=`pwd`/src/common:$LD_LIBRARY_PATH
-```
 
-## Run the demos:
+## Run the demos
 
 ```bash
 src/tetra/tetra-demo
