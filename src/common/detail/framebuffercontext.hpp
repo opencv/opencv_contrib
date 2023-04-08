@@ -77,44 +77,57 @@ public:
         FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
+        /*!
+         * Aquires the framebuffer via cl-gl sharing.
+         * @param ctx The corresponding #FrameBufferContext.
+         * @param m The UMat to bind the OpenGL framebuffer to.
+         */
         FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m) {
             ctx_.acquireFromGL(m_);
         }
-
+        /*!
+         * Releases the framebuffer via cl-gl sharing.
+         */
         ~FrameBufferScope() {
             ctx_.releaseToGL(m_);
         }
     };
 
     /*!
-     * Setups and tears-down OpenGL states
+     * Setups and tears-down OpenGL states.
      */
     class GLScope {
         FrameBufferContext& ctx_;
     public:
+        /*!
+         * Setup OpenGL states.
+         * @param ctx The corresponding #FrameBufferContext.
+         */
         GLScope(FrameBufferContext& ctx) :
                 ctx_(ctx) {
             ctx_.begin();
         }
-
+        /*!
+         * Tear-down OpenGL states.
+         */
         ~GLScope() {
             ctx_.end();
         }
     };
 
     /*!
-     * Create a FrameBufferContext with given size
-     * @param frameBufferSize The frame buffer size
+     * Create a FrameBufferContext with given size.
+     * @param frameBufferSize The frame buffer size.
      */
     FrameBufferContext(const cv::Size& frameBufferSize);
     /*!
-     * Default destructor
+     * Default destructor.
      */
     virtual ~FrameBufferContext();
     /*!
-     * Get the framebuffer size
-     * @return The framebuffer size
+     * Get the framebuffer size.
+     * @return The framebuffer size.
      */
     cv::Size getSize();
     /*!
@@ -126,13 +139,41 @@ public:
       */
     void execute(std::function<void(cv::UMat&)> fn);
 protected:
+    /*!
+     * Setup OpenGL states.
+     */
     void begin();
+    /*!
+     * Tear-down OpenGL states.
+     */
     void end();
+    /*!
+     * Download the framebuffer to UMat m.
+     * @param m The target UMat.
+     */
     void download(cv::UMat& m);
+    /*!
+     * Uploat UMat m to the framebuffer.
+     * @param m The UMat to upload.
+     */
     void upload(const cv::UMat& m);
+    /*!
+     * Acquire the framebuffer using cl-gl sharing.
+     * @param m The UMat the framebuffer will be bound to.
+     */
     void acquireFromGL(cv::UMat& m);
+    /*!
+     * Release the framebuffer using cl-gl sharing.
+     * @param m The UMat the framebuffer is bound to.
+     */
     void releaseToGL(cv::UMat& m);
+    /*!
+     * The UMat used to copy or bind (depending on cl-gl sharing capability) the OpenGL framebuffer.
+     */
     cv::UMat frameBuffer_;
+    /*!
+     * The texture bound to the OpenGL framebuffer.
+     */
     cv::ogl::Texture2D* texture_ = nullptr;
 };
 }

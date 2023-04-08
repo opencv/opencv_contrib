@@ -38,11 +38,17 @@ public:
     class Scope {
         NanoVGContext& ctx_;
     public:
+        /*!
+         * Setup NanoVG rendering
+         * @param ctx The corresponding #NanoVGContext
+         */
         Scope(NanoVGContext& ctx) :
                 ctx_(ctx) {
             ctx_.begin();
         }
-
+        /*!
+         * Tear-down NanoVG rendering
+         */
         ~Scope() {
             ctx_.end();
         }
