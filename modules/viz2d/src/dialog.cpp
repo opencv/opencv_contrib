@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "dialog.hpp"
+#include "opencv2/dialog.hpp"
 #include <nanogui/layout.h>
 #include <GLFW/glfw3.h>
 
