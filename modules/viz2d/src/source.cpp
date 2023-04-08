@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/source.hpp"
+#include "opencv2/viz2d/source.hpp"
 
 namespace cv {
 namespace viz {

@@ -18,8 +18,8 @@
 #include "framebuffercontext.hpp"
 #include <nanogui/nanogui.h>
 #include <nanogui/opengl.h>
-#include "opencv2/util.hpp"
-#include "opencv2/nvg.hpp"
+#include "opencv2/viz2d/util.hpp"
+#include "opencv2/viz2d/nvg.hpp"
 
 namespace cv {
 namespace viz {

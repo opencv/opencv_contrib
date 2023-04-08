@@ -5,7 +5,7 @@
 
 #include "nanovgcontext.hpp"
 
-#include "opencv2/viz2d.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
 
 namespace cv {
 namespace viz {

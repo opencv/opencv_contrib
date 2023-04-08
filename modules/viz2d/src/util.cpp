@@ -3,10 +3,10 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/util.hpp"
+#include "opencv2/viz2d/util.hpp"
 
-#include "opencv2/viz2d.hpp"
-#include "opencv2/nvg.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
+#include "opencv2/viz2d/nvg.hpp"
 
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>

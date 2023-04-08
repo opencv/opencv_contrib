@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/viz2d.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
 #include "detail/clvacontext.hpp"
 #include "detail/framebuffercontext.hpp"
 #include "detail/nanovgcontext.hpp"

@@ -5,8 +5,8 @@
 
 #include "framebuffercontext.hpp"
 
-#include "opencv2/util.hpp"
-#include "opencv2/viz2d.hpp"
+#include "opencv2/viz2d/util.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
 
 #ifndef VIZ2D_USE_ES3
 #include <GL/glew.h>
