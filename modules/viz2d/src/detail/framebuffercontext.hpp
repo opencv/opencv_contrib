@@ -24,7 +24,7 @@
 #include <opencv2/core/opengl.hpp>
 #include <iostream>
 
-#include "../util.hpp"
+#include "opencv2/util.hpp"
 
 namespace cv {
 namespace viz {
