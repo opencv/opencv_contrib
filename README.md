@@ -110,7 +110,7 @@ sudo make install
 ## Build OpenCV with Viz2D using C++20
 
 ```bash
-git clone --branch 4.x https://github.com/kallaballa/opencv.git
+git clone --branch 4.x https://github.com/opencv/opencv.git
 git clone https://github.com/kallaballa/Viz2D.git
 mkdir opencv/build
 cd opencv/build
