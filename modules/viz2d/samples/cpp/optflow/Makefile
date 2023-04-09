@@ -12,7 +12,7 @@ OBJS := ${SRCS:.cpp=.o}
 DEPS := ${SRCS:.cpp=.dep} 
 
 CXXFLAGS += -fpic
-LIBS += -lm -lopencv_optflow -lopencv_video -lopencv_features2d -lviz2d -lz
+LIBS += -lm -lopencv_optflow -lopencv_video -lopencv_features2d -lopencv_viz2d -lz
 ifndef EMSDK
 LIBS += -lOpenCL
 endif

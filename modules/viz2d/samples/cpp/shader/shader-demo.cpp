@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "../common/viz2d.hpp"
-#include "../common/util.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
+#include "opencv2/viz2d/util.hpp"
 
 using std::cerr;
 using std::endl;

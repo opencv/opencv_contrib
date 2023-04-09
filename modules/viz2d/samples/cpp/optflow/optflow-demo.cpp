@@ -3,9 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "../common/viz2d.hpp"
-#include "../common/nvg.hpp"
-#include "../common/util.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
+#include "opencv2/viz2d/nvg.hpp"
+#include "opencv2/viz2d/util.hpp"
 
 #include <cmath>
 #include <vector>
@@ -450,8 +450,9 @@ void iteration() {
 #ifndef __EMSCRIPTEN__
     v2d->write();
 
-    v2dMenu->capture([=](cv::UMat& videoFrame) {
-        menuFrame.copyTo(videoFrame);
+    v2dMenu->capture([=](cv::OutputArray& videoFrame) {
+        cv::UMat m = videoFrame.getUMat();
+        menuFrame.copyTo(m);
     });
 
     if(!v2dMenu->display())

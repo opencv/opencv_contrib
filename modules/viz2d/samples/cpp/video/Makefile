@@ -9,7 +9,7 @@ DEPS    := ${SRCS:.cpp=.dep}
 
 CXXFLAGS += -fpic
 LDFLAGS +=  
-LIBS += -lm -lviz2d -lviz2d
+LIBS += -lm -lopencv_viz2d -lopencv_viz2d
 .PHONY: all release debug clean distclean 
 
 all: release

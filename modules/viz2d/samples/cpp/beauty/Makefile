@@ -15,7 +15,7 @@ CXXFLAGS += -fpic
 ifdef EMSDK
 LDFLAGS += --preload-file assets/
 endif
-LIBS += -lm -lopencv_dnn -lopencv_face -lopencv_objdetect -lopencv_stitching -lviz2d
+LIBS += -lm -lopencv_dnn -lopencv_face -lopencv_objdetect -lopencv_stitching -lopencv_viz2d
 ifndef EMSDK
 LIBS += -lOpenCL
 else

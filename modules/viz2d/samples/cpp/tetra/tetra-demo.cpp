@@ -3,11 +3,11 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "../common/viz2d.hpp"
-#include "../common/util.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
+#include "opencv2/viz2d/util.hpp"
 
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
+constexpr long unsigned int WIDTH = 1920;
+constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";

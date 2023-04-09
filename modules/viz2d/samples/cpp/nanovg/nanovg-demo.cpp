@@ -3,9 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "../common/viz2d.hpp"
-#include "../common/util.hpp"
-#include "../common/nvg.hpp"
+#include "opencv2/viz2d/viz2d.hpp"
+#include "opencv2/viz2d/util.hpp"
+#include "opencv2/viz2d/nvg.hpp"
 
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
