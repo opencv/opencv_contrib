@@ -44,16 +44,16 @@ public:
      * @param y The y position of the dialog
      * @param title The title of the dialog
      */
-    Dialog(nanogui::Screen* screen, int x, int y, const string& title);
+    CV_EXPORTS Dialog(nanogui::Screen* screen, int x, int y, const string& title);
     /*!
      * Default destructor
      */
-    virtual ~Dialog();
+    CV_EXPORTS virtual ~Dialog();
     /*!
      * Checks if a dialog is minimized.
      * @return true if the dialog is minimized.
      */
-    bool isMinimized();
+    CV_EXPORTS bool isMinimized();
 };
 
 } /* namespace detail */

@@ -26,11 +26,11 @@ public:
      * Creates a FormHelper.
      * @param screen The parent nanogui::screen.
      */
-    FormHelper(nanogui::Screen* screen);
+    CV_EXPORTS FormHelper(nanogui::Screen* screen);
     /*!
      * Default destructor.
      */
-    virtual ~FormHelper();
+    CV_EXPORTS virtual ~FormHelper();
     /*!
      * Creates a dialog held by this form helper.
      * @param x The x position.
@@ -38,13 +38,13 @@ public:
      * @param title The title.
      * @return A pointer to the newly created Dialog.
      */
-    Dialog* makeDialog(int x, int y, const string& title);
+    CV_EXPORTS Dialog* makeDialog(int x, int y, const string& title);
     /*!
      * Create a grouping label.
      * @param label The label text.
      * @return A pointer to the newly created Label.
      */
-    nanogui::Label* makeGroup(const string& label);
+    CV_EXPORTS nanogui::Label* makeGroup(const string& label);
     /*!
      * Make a boolean form widget.
      * @param name The widget name.
@@ -54,7 +54,7 @@ public:
      * @param enabled Indicates if the widget is initially enabled.
      * @return A pointer to the newly created boolean form widget.
      */
-    nanogui::detail::FormWidget<bool>* makeFormVariable(const string& name, bool& v,
+    CV_EXPORTS nanogui::detail::FormWidget<bool>* makeFormVariable(const string& name, bool& v,
             const string& tooltip = "", bool visible = true, bool enabled = true);
 
     /*!
@@ -97,7 +97,7 @@ public:
      * @param enabled Indicates if the widget is initially enabled
      * @return A pointer to the newly created ColorPicker
      */
-    nanogui::ColorPicker* makeColorPicker(const string& label, nanogui::Color& color,
+    CV_EXPORTS nanogui::ColorPicker* makeColorPicker(const string& label, nanogui::Color& color,
             const string& tooltip = "", std::function<void(const nanogui::Color)> fn = nullptr,
             bool visible = true, bool enabled = true);
     /*!
@@ -121,7 +121,7 @@ public:
      * @param fn Button press callback
      * @return A pointer to the newly created Button
      */
-    nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
+    CV_EXPORTS nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
 };
 
 } /* namespace detail */

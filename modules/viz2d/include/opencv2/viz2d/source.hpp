@@ -29,36 +29,36 @@ public:
      * that it manipulates. This is ultimatively used to provide video data to #Viz2D
      * @param fps The fps the Source object provides data with.
      */
-    Source(std::function<bool(cv::OutputArray&)> generator, float fps);
+    CV_EXPORTS Source(std::function<bool(cv::OutputArray&)> generator, float fps);
     /*!
      * Constructs a null Source that is never open or ready.
      */
-    Source();
+    CV_EXPORTS Source();
     /*!
      * Default destructor.
      */
-    virtual ~Source();
+    CV_EXPORTS virtual ~Source();
     /*!
      * Signals if the source is ready to provide data.
      * @return true if the source is ready.
      */
-    bool isReady();
+    CV_EXPORTS bool isReady();
     /*!
      * Determines if the source is open.
      * @return true if the source is open.
      */
-    bool isOpen();
+    CV_EXPORTS bool isOpen();
     /*!
      * Returns the fps the underlying generator provides data with.
      * @return The fps of the Source object.
      */
-    float fps();
+    CV_EXPORTS float fps();
     /*!
      * The source operator. It returns the frame count and the frame generated
      * (e.g. by VideoCapture)in a pair.
      * @return A pair containing the frame count and the frame generated.
      */
-    std::pair<uint64_t, cv::InputOutputArray&> operator()();
+    CV_EXPORTS std::pair<uint64_t, cv::InputOutputArray&> operator()();
 };
 
 } /* namespace viz2d */

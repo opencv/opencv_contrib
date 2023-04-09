@@ -149,35 +149,35 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
+    CV_EXPORTS Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     /*!
      * Default destructor
      */
-    virtual ~Viz2D();
+    CV_EXPORTS virtual ~Viz2D();
     /*!
      * In case several Viz2D objects are in use all objects not in use have to
      * call #makeNoneCurrent() and only the one to be active call #makeCurrent().
      */
-    void makeCurrent();
+    CV_EXPORTS void makeCurrent();
     /*!
      * To make it possible for other Viz2D objects to become current all other
      * Viz2d instances have to become non-current.
      */
-    void makeNoneCurrent();
+    CV_EXPORTS void makeNoneCurrent();
 
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
      */
-    cv::ogl::Texture2D& texture();
+    CV_EXPORTS cv::ogl::Texture2D& texture();
 
     /*!
      * Execute function object fn inside an opengl context.
      * This is how all OpenGL operations should be executed.
      * @param fn A function object that is passed the size of the framebuffer
      */
-    void gl(std::function<void(const cv::Size&)> fn);
+    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
     /*!
      * Execute function object fn inside a framebuffer context.
      * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -185,7 +185,7 @@ public:
      * directly on the framebuffer.
      * @param fn A function object that is passed the framebuffer to be read/manipulated.
      */
-    void fb(std::function<void(cv::InputOutputArray&)> fn);
+    CV_EXPORTS void fb(std::function<void(cv::UMat&)> fn);
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.
@@ -193,7 +193,7 @@ public:
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using cv::viz::nvg
      */
-    void nvg(std::function<void(const cv::Size&)> fn);
+    CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     /*!
        * Execute function object fn inside a nanogui context.
        * The context provides a #cv::viz::FormHelper instance to the function object
@@ -201,190 +201,190 @@ public:
        * @param fn A function that is passed the size of the framebuffer
        * and performs drawing using cv::viz::nvg.
        */
-    void nanogui(std::function<void(FormHelper& form)>);
+    CV_EXPORTS void nanogui(std::function<void(FormHelper& form)>);
 
     /*!
      * Clear the framebuffer.
      * @param bgra The color to use for clearing.
      */
-    void clear(const cv::Scalar& bgra = cv::Scalar(0, 0, 0, 255));
+    CV_EXPORTS void clear(const cv::Scalar& bgra = cv::Scalar(0, 0, 0, 255));
     /*!
      * Called to capture to the framebuffer from a #cv::viz::Source object provided via #Viz2D::setSource().
      * @return true if successful.
      */
-    bool capture();
+    CV_EXPORTS bool capture();
     /*!
      * Called to capture from a function object.
      * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.
      * @param fn The functor that provides the data.
      * @return true if successful-
      */
-    bool capture(std::function<void(cv::OutputArray&)> fn);
+    CV_EXPORTS bool capture(std::function<void(cv::OutputArray&)> fn);
     /*!
      * Called to write the framebuffer to a #cv::viz::Sink object provided via #Viz2D::setSink()
      */
-    void write();
+    CV_EXPORTS void write();
     /*!
      * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
      * @param fn The functor that consumes the data,
      */
-    void write(std::function<void(const cv::InputArray&)> fn);
+    CV_EXPORTS void write(std::function<void(const cv::InputArray&)> fn);
 
     /*!
      * Set the current #cv::viz::Source object. Usually created using #make_capture_source().
      * @param src A #cv::viz::Source object.
      */
-    void setSource(const Source& src);
+    CV_EXPORTS void setSource(const Source& src);
     /*!
      * Checks if the current #cv::viz::Source is ready.
      * @return true if it is ready.
      */
-    bool isSourceReady();
+    CV_EXPORTS bool isSourceReady();
     /*!
      * Set the current #cv::viz::Sink object. Usually created using #make_writer_sink().
      * @param sink A #cv::viz::Sink object.
      */
-    void setSink(const Sink& sink);
+    CV_EXPORTS void setSink(const Sink& sink);
     /*!
      * Checks if the current #cv::viz::Sink is ready.
      * @return true if it is ready.
      */
-    bool isSinkReady();
+    CV_EXPORTS bool isSinkReady();
     /*!
      * Shows or hides the GUI.
      * @param s if true show the GUI.
      */
-    void showGui(bool s);
+    CV_EXPORTS void showGui(bool s);
     /*!
      * if zoomed in, move the content by x and y
      * @param x The amount on the x-axis to move
      * @param y The amount on the y-axis to move
      */
-    void pan(int x, int y);
+    CV_EXPORTS void pan(int x, int y);
     /*!
      * Zoom by factor.
      * @param factor The zoom factor.
      */
-    void zoom(float factor);
+    CV_EXPORTS void zoom(float factor);
     /*!
      * Get the window position.
      * @return The window position.
      */
-    cv::Vec2f getPosition();
+    CV_EXPORTS cv::Vec2f getPosition();
     /*!
      * Get current zoom scale.
      * @return The zoom scale.
      */
-    float getScale();
+    CV_EXPORTS float getScale();
     /*!
      * Get the current viewport.
      * @return The current viewport.
      */
-    cv::Rect getViewport();
+    CV_EXPORTS cv::Rect getViewport();
     /*!
      * Set the window size.
      * @param sz The new window size.
      */
-    void setWindowSize(const cv::Size& sz);
+    CV_EXPORTS void setWindowSize(const cv::Size& sz);
     /*!
      * Get the window size
      * @return The current window size.
      */
-    cv::Size getWindowSize();
+    CV_EXPORTS cv::Size getWindowSize();
     /*!
      * Get the initial size.
      * @return The initial size.
      */
-    cv::Size getInitialSize();
+    CV_EXPORTS cv::Size getInitialSize();
     /*!
      * Get the video frame size
      * @return The current video frame size.
      */
-    cv::Size getVideoFrameSize();
+    CV_EXPORTS cv::Size getVideoFrameSize();
     /*!
      * Get the frambuffer size.
      * @return The framebuffer size.
      */
-    cv::Size getFrameBufferSize();
+    CV_EXPORTS cv::Size getFrameBufferSize();
     /*!
      * Get the frambuffer size of the native window.
      * @return The framebuffer size of the native window.
      */
-    cv::Size getNativeFrameBufferSize();
+    CV_EXPORTS cv::Size getNativeFrameBufferSize();
     /*!
      * Get the pixel ratio of the display x-axis.
      * @return The pixel ratio of the display x-axis.
      */
-    float getXPixelRatio();
+    CV_EXPORTS float getXPixelRatio();
     /*!
      * Get the pixel ratio of the display y-axis.
      * @return The pixel ratio of the display y-axis.
      */
-    float getYPixelRatio();
+    CV_EXPORTS float getYPixelRatio();
     /*!
      * Determine if the window is in fullscreen mode.
      * @return true if in fullscreen mode.
      */
-    bool isFullscreen();
+    CV_EXPORTS bool isFullscreen();
     /*!
      * Enable or disable fullscreen mode.
      * @param f if true enable fullscreen mode else disable.
      */
-    void setFullscreen(bool f);
+    CV_EXPORTS void setFullscreen(bool f);
     /*!
      * Determines if the window is resizeable.
      * @return true if the window is resizeable.
      */
-    bool isResizable();
+    CV_EXPORTS bool isResizable();
     /*!
      * Set the window resizable.
      * @param r if r is true set the window resizable.
      */
-    void setResizable(bool r);
+    CV_EXPORTS void setResizable(bool r);
     /*!
      * Determine if the window is visible.
      * @return true if the window is visible.
      */
-    bool isVisible();
+    CV_EXPORTS bool isVisible();
     /*!
      * Set the window visible or invisible.
      * @param v if v is true set the window visible.
      */
-    void setVisible(bool v);
+    CV_EXPORTS void setVisible(bool v);
     /*!
      * Determine if offscreen rendering is enabled.
      * @return true if offscreen rendering is enabled.
      */
-    bool isOffscreen();
+    CV_EXPORTS bool isOffscreen();
     /*!
      * Enable or disable offscreen rendering.
      * @param o if o is true enable offscreen rendering.
      */
-    void setOffscreen(bool o);
+    CV_EXPORTS void setOffscreen(bool o);
     /*!
      * Enable or disable stretching of the framebuffer to window size during blitting.
      * @param s if s is true enable stretching.
      */
-    void setStretching(bool s);
+    CV_EXPORTS void setStretching(bool s);
     /*!
      * Determine if framebuffer stretching during blitting is enabled.
      * @return true if framebuffer stretching during blitting is enabled.
      */
-    bool isStretching();
+    CV_EXPORTS bool isStretching();
     /*!
      * Determine if the window is closed.
      * @return true if the window is closed.
      */
-    bool isClosed();
+    CV_EXPORTS bool isClosed();
     /*!
      * Close the window.
      */
-    void close();
+    CV_EXPORTS void close();
     /*!
      * Display the framebuffer in the native window by blitting.
      * @return false if the window is closed.
      */
-    bool display();
+    CV_EXPORTS bool display();
 private:
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(

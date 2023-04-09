@@ -270,7 +270,7 @@ void Viz2D::gl(std::function<void(const cv::Size&)> fn) {
     fn(fbSize);
 }
 
-void Viz2D::fb(std::function<void(cv::InputOutputArray&)> fn) {
+void Viz2D::fb(std::function<void(cv::UMat&)> fn) {
     fb().execute(fn);
 }
 

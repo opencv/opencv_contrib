@@ -23,30 +23,30 @@ public:
      * Consturcts the Sink object from a consumer functor.
      * @param consumer A function object that consumes a UMat frame (e.g. writes it to a video file).
      */
-    Sink(std::function<bool(const cv::InputArray&)> consumer);
+    CV_EXPORTS Sink(std::function<bool(const cv::InputArray&)> consumer);
     /*!
      * Constucts a null Sink that is never open or ready
      */
-    Sink();
+    CV_EXPORTS Sink();
     /*!
      * Default destructor
      */
-    virtual ~Sink();
+    CV_EXPORTS virtual ~Sink();
     /*!
      * Signals if the sink is ready to consume data.
      * @return true if the sink is ready.
      */
-    bool isReady();
+    CV_EXPORTS bool isReady();
     /*!
      * Determines if the sink is open.
      * @return true if the sink is open.
      */
-    bool isOpen();
+    CV_EXPORTS bool isOpen();
     /*!
      * The sink operator. It accepts a UMat frame to pass to the consumer
      * @param frame The frame to pass to the consumer. (e.g. VideoWriter)
      */
-    void operator()(const cv::InputArray& frame);
+    CV_EXPORTS void operator()(const cv::InputArray& frame);
 };
 
 } /* namespace viz2d */

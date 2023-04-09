@@ -60,6 +60,8 @@ void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
         FrameBufferContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
 
         cv::cvtColor(frameBuffer_, rgbBuffer_, cv::COLOR_BGRA2RGB);
+        if(videoFrameSize_ == cv::Size(0,0))
+            videoFrameSize_ = rgbBuffer_.size();
         cv::resize(rgbBuffer_, videoFrame_, videoFrameSize_);
     }
     assert(videoFrame_.size() == videoFrameSize_);
