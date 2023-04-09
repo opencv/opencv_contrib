@@ -18,7 +18,7 @@ namespace viz {
  */
 CV_EXPORTS class Source {
     bool open_ = true;
-    std::function<bool(cv::UMat&)> generator_;
+    std::function<bool(cv::OutputArray&)> generator_;
     cv::UMat frame_;
     uint64_t count_ = 0;
     float fps_;
@@ -29,7 +29,7 @@ public:
      * that it manipulates. This is ultimatively used to provide video data to #Viz2D
      * @param fps The fps the Source object provides data with.
      */
-    Source(std::function<bool(cv::UMat&)> generator, float fps);
+    Source(std::function<bool(cv::OutputArray&)> generator, float fps);
     /*!
      * Constructs a null Source that is never open or ready.
      */
@@ -58,7 +58,7 @@ public:
      * (e.g. by VideoCapture)in a pair.
      * @return A pair containing the frame count and the frame generated.
      */
-    std::pair<uint64_t, cv::UMat&> operator()();
+    std::pair<uint64_t, cv::InputOutputArray&> operator()();
 };
 
 } /* namespace viz2d */

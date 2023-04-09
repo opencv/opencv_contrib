@@ -187,8 +187,9 @@ Sink make_va_sink(const string& outputFilename, const int fourcc, const float fp
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
-    return Sink([=](const cv::UMat& frame) {
-        (*writer) << frame;
+    return Sink([=](const cv::InputArray& frame) {
+        cv::UMat m = frame.getUMat();
+        (*writer) << m;
         return writer->isOpened();
     });
 }
@@ -199,20 +200,21 @@ Source make_va_source(const string& inputFilename, const int vaDeviceIndex) {
             cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
 
-    return Source([=](cv::UMat& frame) {
-        (*capture) >> frame;
-        return !frame.empty();
+    return Source([=](cv::OutputArray& frame) {
+        cv::UMat m = frame.getUMat();
+        (*capture) >> m;
+        return !m.empty();
     }, fps);
 }
 #else
 Sink make_va_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
-    return Sink([=](const cv::UMat& frame){
+    return Sink([=](const cv::InputArray& frame){
         return false;
     });
 }
 
 Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
-    return Source([=](cv::UMat& frame){
+    return Source([=](cv::OutputArray& frame){
         return false;
     }, 0);
 }
@@ -228,8 +230,9 @@ Sink make_writer_sink(const string& outputFilename, const int fourcc, const floa
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
 
-    return Sink([=](const cv::UMat& frame) {
-        (*writer) << frame;
+    return Sink([=](const cv::InputArray& frame) {
+        Mat m = frame.getMat();
+        (*writer) << m;
         return writer->isOpened();
     });
 }
@@ -242,9 +245,10 @@ Source make_capture_source(const string& inputFilename) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
     float fps = capture->get(cv::CAP_PROP_FPS);
 
-    return Source([=](cv::UMat& frame) {
-        (*capture) >> frame;
-        return !frame.empty();
+    return Source([=](cv::OutputArray& frame) {
+        Mat m = frame.getMat();
+        (*capture) >> m;
+        return !m.empty();
     }, fps);
 }
 
@@ -253,8 +257,9 @@ Source make_capture_source(int width, int height) {
     using namespace std;
     static cv::Mat tmp(height, width, CV_8UC4);
 
-    return Source([=](cv::UMat& frame) {
+    return Source([=](cv::OutputArray& array) {
         try {
+            cv::UMat frame = array.getUMat();
             if (frame.empty())
                 frame.create(cv::Size(width, height), CV_8UC3);
             std::ifstream fs("viz2d_rgba_canvas.raw", std::fstream::in | std::fstream::binary);

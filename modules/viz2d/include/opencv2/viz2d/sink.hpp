@@ -17,13 +17,13 @@ namespace viz {
  */
 CV_EXPORTS class Sink {
     bool open_ = true;
-    std::function<bool(const cv::UMat&)> consumer_;
+    std::function<bool(const cv::InputArray&)> consumer_;
 public:
     /*!
      * Consturcts the Sink object from a consumer functor.
      * @param consumer A function object that consumes a UMat frame (e.g. writes it to a video file).
      */
-    Sink(std::function<bool(const cv::UMat&)> consumer);
+    Sink(std::function<bool(const cv::InputArray&)> consumer);
     /*!
      * Constucts a null Sink that is never open or ready
      */
@@ -46,7 +46,7 @@ public:
      * The sink operator. It accepts a UMat frame to pass to the consumer
      * @param frame The frame to pass to the consumer. (e.g. VideoWriter)
      */
-    void operator()(const cv::UMat& frame);
+    void operator()(const cv::InputArray& frame);
 };
 
 } /* namespace viz2d */

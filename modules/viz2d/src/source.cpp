@@ -8,7 +8,7 @@
 namespace cv {
 namespace viz {
 
-Source::Source(std::function<bool(cv::UMat&)> generator, float fps) :
+Source::Source(std::function<bool(cv::OutputArray&)> generator, float fps) :
         generator_(generator), fps_(fps) {
 }
 
@@ -34,7 +34,7 @@ float Source::fps() {
     return fps_;
 }
 
-std::pair<uint64_t, cv::UMat&> Source::operator()() {
+std::pair<uint64_t, cv::InputOutputArray&> Source::operator()() {
     open_ = generator_(frame_);
     return {count_++, frame_};
 }

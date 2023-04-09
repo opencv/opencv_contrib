@@ -8,7 +8,7 @@
 namespace cv {
 namespace viz {
 
-Sink::Sink(std::function<bool(const cv::UMat&)> consumer) :
+Sink::Sink(std::function<bool(const cv::InputArray&)> consumer) :
         consumer_(consumer) {
 }
 
@@ -29,7 +29,7 @@ bool Sink::isOpen() {
     return open_;
 }
 
-void Sink::operator()(const cv::UMat& frame) {
+void Sink::operator()(const cv::InputArray& frame) {
     open_ = consumer_(frame);
 }
 } /* namespace viz2d */

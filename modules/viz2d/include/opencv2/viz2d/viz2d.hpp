@@ -185,7 +185,7 @@ public:
      * directly on the framebuffer.
      * @param fn A function object that is passed the framebuffer to be read/manipulated.
      */
-    void fb(std::function<void(cv::UMat&)> fn);
+    void fb(std::function<void(cv::InputOutputArray&)> fn);
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.
@@ -219,7 +219,7 @@ public:
      * @param fn The functor that provides the data.
      * @return true if successful-
      */
-    bool capture(std::function<void(cv::UMat&)> fn);
+    bool capture(std::function<void(cv::OutputArray&)> fn);
     /*!
      * Called to write the framebuffer to a #cv::viz::Sink object provided via #Viz2D::setSink()
      */
@@ -228,7 +228,7 @@ public:
      * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
      * @param fn The functor that consumes the data,
      */
-    void write(std::function<void(const cv::UMat&)> fn);
+    void write(std::function<void(const cv::InputArray&)> fn);
 
     /*!
      * Set the current #cv::viz::Source object. Usually created using #make_capture_source().
