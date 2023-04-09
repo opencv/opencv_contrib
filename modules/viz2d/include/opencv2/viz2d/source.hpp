@@ -16,7 +16,7 @@ namespace viz {
  * A Source object represents a way to provide data to Viz2D by using
  * a generator functor.
  */
-class Source {
+CV_EXPORTS class Source {
     bool open_ = true;
     std::function<bool(cv::UMat&)> generator_;
     cv::UMat frame_;

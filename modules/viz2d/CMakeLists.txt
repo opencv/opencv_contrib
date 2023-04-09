@@ -26,11 +26,11 @@ else() # we need C++20
   endif()
 endif()
 
-include_directories(${GLFW_INCLUDE_DIRS})
+include_directories(${glfw3_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${nanovg_INCLUDE_DIRS})
 include_directories(${nanogui_INCLUDE_DIRS})
-link_directories(${GLFW_LIBRARY_DIRS})
+link_directories(${glfw3_LIBRARY_DIRS})
 link_directories(${GLEW_LIBRARY_DIRS})
 link_directories(${nanovg_LIBRARY_DIRS})
 link_directories(${nanogui_LIBRARY_DIRS})
@@ -43,4 +43,6 @@ ocv_create_module()
 #ocv_add_samples(opencv_aruco)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
-ocv_target_link_libraries(${the_module} ${GLFW_LIBRARIES} ${GLEW_LIBRARIES} ${nanovg_LIBRARIES} ${nanogui_LIBRARIES})
+message(STATUS "viz2d: ${nanovg_LIBRARIES}")
+#For some reasone glfw3_LIBRARIES is empty although it is found by find_package
+ocv_target_link_libraries(${the_module} glfw ${GLEW_LIBRARIES} ${nanovg_LIBRARIES} ${nanogui_LIBRARIES})

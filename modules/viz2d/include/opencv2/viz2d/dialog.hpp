@@ -7,6 +7,7 @@
 #define SRC_COMMON_DIALOG_HPP_
 
 #include <nanogui/nanogui.h>
+#include <opencv2/opencv.hpp>
 
 #include <set>
 #include <string>
@@ -21,7 +22,7 @@ using std::string;
  * A class for light-weight dialog (a dialog renderered inside a window) derived from nanogui::Window.
  * It keeps track of which dialogs are presented and which are lowered and is responsible for layout of lowered dialog-bars.
  */
-class Dialog: public nanogui::Window {
+CV_EXPORTS class Dialog: public nanogui::Window {
 private:
     static std::function<bool(Dialog*, Dialog*)> viz2DWin_Xcomparator;
     static std::set<Dialog*, decltype(viz2DWin_Xcomparator)> all_windows_xsorted_;

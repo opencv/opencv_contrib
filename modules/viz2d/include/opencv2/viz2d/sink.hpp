@@ -15,7 +15,7 @@ namespace viz {
 /*!
  * A Sink object represents a way to write data produced by Viz2D (e.g. a video-file).
  */
-class Sink {
+CV_EXPORTS class Sink {
     bool open_ = true;
     std::function<bool(const cv::UMat&)> consumer_;
 public:

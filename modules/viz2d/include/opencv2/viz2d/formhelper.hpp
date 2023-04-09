@@ -20,7 +20,7 @@ using std::string;
 /*!
  * Ansub-class of nanogui::FormHelper adding convenience calls not unlike highgui offers.
  */
-class FormHelper: public nanogui::FormHelper {
+CV_EXPORTS class FormHelper: public nanogui::FormHelper {
 public:
     /*!
      * Creates a FormHelper.

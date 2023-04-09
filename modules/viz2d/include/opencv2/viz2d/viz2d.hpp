@@ -99,13 +99,13 @@ template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& 
  * @param code The color converions code
  * @return The color converted scalar
  */
-cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
+CV_EXPORTS cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
 using namespace cv::viz::detail;
 
 class NVG;
 
-class Viz2D {
+CV_EXPORTS class Viz2D {
     friend class NanoVGContext;
     const cv::Size initialSize_;
     cv::Size frameBufferSize_;
