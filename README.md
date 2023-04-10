@@ -22,11 +22,89 @@ Viz2D is a new way of writing graphical (on- and offscreen) applications with Op
 For example, to create an OpenGL context and set the GL viewport:
 ```C++
 Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "GL viewport");
+v2d->setVisible(true);
 //takes care of OpenGL states in the background
 v2d->gl([](const cv::Size sz) {
     glViewPort(0, 0, sz.width, sz.height);
 });
 ```
+
+## Examples
+
+### Display an images
+Actually there are several ways to display an image but for now we focus on the most convinient way.
+
+```C++
+//An image
+cv::UMat image;
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Show image");
+v2d->setVisible(true);
+//Feeds the image to the video pipeline
+v2d->feed(image);
+//Display the framebuffer in the native window
+v2d->display();
+```
+
+This will create a window with size WIDTHxHEIGHT for on-screen rendering with the title "Show Image" and display the image (using the video pipeline, but more about that later).
+
+### Render OpenGL
+
+This demo renders a rotating tetrahedron using legacy OpenGL for brevity.
+```C++
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "GL viewport");
+v2d->setVisible(true);
+
+v2d->gl([](const cv::Size sz) {
+    //Initialize the OpenGL scene
+    glViewport(0, 0, sz.width, sz.height);
+    glColor3f(1.0, 1.0, 1.0);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glFrustum(-2, 2, -1.5, 1.5, 1, 40);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glTranslatef(0, 0, -3);
+    glRotatef(50, 1, 0, 0);
+    glRotatef(70, 0, 1, 0);
+});
+
+while (keepRunning()) {
+    v2d->gl([](const cv::Size sz) {
+        //Render a tetrahedron using immediate mode because the code is more concise
+        glViewport(0, 0, sz.width, sz.height);
+        glRotatef(1, 0, 1, 0);
+        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glBegin(GL_TRIANGLE_STRIP);
+            glColor3f(1, 1, 1);
+            glVertex3f(0, 2, 0);
+            glColor3f(1, 0, 0);
+            glVertex3f(-1, 0, 1);
+            glColor3f(0, 1, 0);
+            glVertex3f(1, 0, 1);
+            glColor3f(0, 0, 1);
+            glVertex3f(0, 0, -1.4);
+            glColor3f(1, 1, 1);
+            glVertex3f(0, 2, 0);
+            glColor3f(1, 0, 0);
+            glVertex3f(-1, 0, 1);
+        glEnd();
+    });
+
+    //If onscreen rendering is enabled it displays the framebuffer in the native window.
+    //Returns false if the window was closed.
+    if (!v2d->display())
+        break;
+}
+```
+
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
