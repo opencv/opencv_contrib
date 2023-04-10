@@ -31,7 +31,7 @@ v2d->gl([](const cv::Size sz) {
 ```
 
 ## Examples
-
+Those are minimal examples, full samples below.
 ### Display an images
 Actually there are several ways to display an image but for now we focus on the most convinient way.
 
