@@ -353,6 +353,12 @@ make -j8
 sudo make install
 ```
 
+## Build the samples
+```bash
+cd Viz2D/modules/viz2d/samples/cpp
+make -j
+```
+
 ## Download the example file
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
@@ -361,28 +367,28 @@ wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f
 ## Run the demos
 
 ```bash
-src/tetra/tetra-demo
+Viz2D/modules/viz2d/samples/cpp/tetra/tetra-demo
 ```
 ```bash
-src/video/video-demo bunny.webm
+Viz2D/modules/viz2d/samples/cpp/video/video-demo bunny.webm
 ```
 ```bash
-src/shader/shader-demo bunny.webm
+Viz2D/modules/viz2d/samples/cpp/shader/shader-demo bunny.webm
 ```
 ```bash
-src/nanovg/nanovg-demo bunny.webm
+Viz2D/modules/viz2d/samples/cpp/nanovg/nanovg-demo bunny.webm
 ```
 ```bash
-src/font/font-demo
+Viz2D/modules/viz2d/samples/cpp/font/font-demo
 ```
 ```bash
-src/optflow/optflow-demo bunny.webm
+Viz2D/modules/viz2d/samples/cpp/optflow/optflow-demo bunny.webm
 ```
 ```bash
-src/pedestrian/pedestrian-demo bunny.webm
+Viz2D/modules/viz2d/samples/cpp/pedestrian/pedestrian-demo bunny.webm
 ```
 ```bash
-src/beauty/beauty-demo bunny.webm
+Viz2D/modules/viz2d/samples/cpp/beauty/beauty-demo bunny.webm
 ```
 
 # Attribution
