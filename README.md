@@ -15,6 +15,7 @@ Viz2D is a new way of writing graphical (on- and offscreen) applications with Op
 * WebAssembly
 
 # Documentation
+API documentation is available [here](https://viel-zu.org/opencv/apidoc/)
 
 ## Basics
 * Viz2D is not thread safe. Though it is possible to have several Viz2D objects in one or more threads and synchronize them using ```Viz2D::makeNonCurrent()``` and ```Viz2D::makeCurrent()```. This is a limitation of GLFW3. That said, OpenCV algorithms are multi-threaded as usual.
