@@ -32,7 +32,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = "A 2D visualization module with CL-interop capabilities and a GUI based on NanoGUI"
+PROJECT_NAME           = "A visualization module with vector graphics, a GUI system and CL-interop capabilities"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version

@@ -223,10 +223,10 @@ int main(int argc, char **argv) {
             lines.push_back(line);
         }
 
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
         Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
         v2d->setSink(sink);
-    #endif
+#endif
 
         v2d->run(iteration);
     } catch(std::exception& ex) {
