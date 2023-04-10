@@ -19,6 +19,7 @@ Viz2D is a new way of writing graphical (on- and offscreen) applications with Op
 * Viz2D is not thread safe. Though it is possible to have several Viz2D objects in one or more threads and synchronize them using ```Viz2D::makeNonCurrent()``` and ```Viz2D::makeCurrent()```. This is a limitation of GLFW3. That said, OpenCV algorithms are multi-threaded as usual.
 * Viz2D uses InputArray/OutputArray/InputOutputArray which gives you the option to work with cv::Mat, std::vector and cv::UMat. Anyway, you should prefer to use cv::UMat whenever possible to automatically use hardware capabilities where available.
 * Access to different subsystems (opengl, opencl, nanovg and nanogui) is provided through "contexts". A context is simply a function that takes a functor, sets up the subsystem, executes the functor and tears-down the subsystem.
+* Contexts ***may not*** be nested.
 
 For example, to create an OpenGL context and set the GL viewport:
 ```C++
@@ -31,7 +32,7 @@ v2d->gl([](const cv::Size sz) {
 ```
 
 ## Examples
-
+Those are minimal examples, full samples below.
 ### Display an images
 Actually there are several ways to display an image but for now we focus on the most convinient way.
 
