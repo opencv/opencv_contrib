@@ -230,11 +230,6 @@ v2d->nvg([&](const cv::Size& sz) {
 });
 ```
 
-# Attribution
-* The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
-* The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
-* The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
-
 # Samples
 The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms (Gen8 - Gen12).
 
@@ -379,3 +374,8 @@ src/pedestrian/pedestrian-demo bunny.webm
 ```bash
 src/beauty/beauty-demo bunny.webm
 ```
+
+# Attribution
+* The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
+* The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
+* The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
