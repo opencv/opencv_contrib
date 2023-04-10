@@ -1,5 +1,15 @@
 # Viz2D
-Viz2D is a 2D visualization module for OpenCV. It features OpenCL/ OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
+Viz2D is a visualization module for OpenCV. It features OpenCL/OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
+
+# What is Viz2D?
+Viz2D is a new way of writing graphical (on- and offscreen) applications with OpenCV. It is light-weight and unencumbered by problematic licenses.
+
+# Why Viz2D?
+* OpenGL: Easy access to OpenGL
+* GUI: Simple yet powerful user interfaces through NanoGUI
+* Vector graphics: Elegant and fast vector graphics through NanoVG
+* Video pipeline: Through a simple Source/Sink system videos can be displayed, edited and saved.
+* Hardware acceleration: Automatic hardware acceleration usage where possible. (e.g. cl-gl sharing and VAAPI). Actually it is possible to write programs to run almost entirely on the GPU, given driver-features are available.
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
@@ -7,7 +17,7 @@ Viz2D is a 2D visualization module for OpenCV. It features OpenCL/ OpenGL, OpenC
 * The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
 
 # Demos
-The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms.
+The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms (Gen8 - Gen12).
 
 There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
 
