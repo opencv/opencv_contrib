@@ -198,9 +198,9 @@ v2d->nvg([&](const cv::Size& sz) {
 
     fontSize(font_size);
     fontFace("sans-bold");
-    fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+    fillColor(cv::Scalar(255, 0, 0, 255));
     textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-    text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
+    text(WIDTH / 2.0, HEIGHT / 2.0, hw.c_str(), hw.c_str() + hw.size());
 });
 ```
 
@@ -225,7 +225,7 @@ v2d->nvg([&](const cv::Size& sz) {
 
     fontSize(font_size);
     fontFace("sans-bold");
-    fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+    fillColor(cv::Scalar(255, 0, 0, 255));
     textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
     text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
 });
