@@ -12,6 +12,7 @@ Viz2D is a new way of writing graphical (on- and offscreen) applications with Op
 * Video pipeline: Through a simple Source/Sink system videos can be displayed, edited and saved.
 * Hardware acceleration: Automatic hardware acceleration usage where possible. (e.g. cl-gl sharing and VAAPI). Actually it is possible to write programs to run almost entirely on the GPU, given driver-features are available.
 * No more highgui with it's heavy dependencies, licenses and limitations.
+* WebAssembly
 
 # Documentation
 
@@ -33,6 +34,7 @@ v2d->gl([](const cv::Size sz) {
 
 ## Examples
 Those are minimal examples, full samples below.
+
 ### Display an images
 Actually there are several ways to display an image but for now we focus on the most convinient way.
 
@@ -51,8 +53,8 @@ v2d->display();
 This will create a window with size WIDTHxHEIGHT for on-screen rendering with the title "Show Image" and display the image (using the video pipeline, but more about that later).
 
 ### Render OpenGL
+This example renders a rotating tetrahedron using legacy OpenGL for brevity.
 
-This demo renders a rotating tetrahedron using legacy OpenGL for brevity.
 ```C++
 Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "GL Tetrahedron");
 v2d->setVisible(true);
@@ -129,6 +131,7 @@ v2d->display();
 ```
 
 ### Vector graphics
+Through the nvg context javascript-like canvas-rendering is possible.
 ```C++
 //Create a Viz2D object for on screen rendering
 Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Vector Graphics");
@@ -150,6 +153,8 @@ v2d->nvg([](const cv::Size sz) {
 
 ```
 ### Vector graphics and framebuffer manipulation
+The framebuffer can be accessed directly to manipulate data created in other contexts.
+
 ```C++
 //Create a Viz2D object for on screen rendering
 Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Vector Graphics");
@@ -177,15 +182,63 @@ v2d->fb([](cv::UMat& framebuffer) {
 
 ```
 
+### Font rendering
+Draws "hello world" to the screen.
+```C++
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Vector Graphics");
+v2d->setVisible(true);
+v2d->clear();
+
+string hw = "hello world";
+
+v2d->nvg([&](const cv::Size& sz) {
+    using namespace cv::viz::nvg;
+
+    fontSize(font_size);
+    fontFace("sans-bold");
+    fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+    textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+    text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
+});
+```
+
+### Video editing
+Through adding a Source and a Sink v2d becomes capable of video editing.
+
+```C++
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Video Editing");
+v2d->setVisible(true);
+
+//Setup video source and sink
+Source src = make_capture_source("input.webm");
+v2d->setSource(src);
+Sink sink = make_writer_sink("output.webm", VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
+v2d->setSink(sink);
+
+string hw = "hello video!";
+
+v2d->nvg([&](const cv::Size& sz) {
+    using namespace cv::viz::nvg;
+
+    fontSize(font_size);
+    fontFace("sans-bold");
+    fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+    textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+    text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
+});
+```
+
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
 * The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
 
-# Demos
-The goal of the demos is to show how to use Viz2D in conjunction with interop options on Linux to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms (Gen8 - Gen12).
+# Samples
+The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms (Gen8 - Gen12).
 
-There are currently eight demos. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
+There are currently eight sampes. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
 
 ## Online Demos
 
