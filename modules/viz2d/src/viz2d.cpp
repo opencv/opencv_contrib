@@ -293,10 +293,9 @@ void Viz2D::nanogui(std::function<void(FormHelper& form)> fn) {
     fn(form());
 }
 
-void Viz2D::run(std::function<void()> fn) {
+void Viz2D::run(std::function<bool()> fn) {
 #ifndef __EMSCRIPTEN__
-    while(keepRunning())
-        fn();
+    while(keepRunning() && fn());
 #else
     emscripten_set_main_loop(fn, -1, true);
 #endif

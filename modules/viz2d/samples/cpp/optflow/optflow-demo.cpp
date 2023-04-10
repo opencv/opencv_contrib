@@ -399,7 +399,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d, cv::Ptr<cv::viz::Viz2D> v2dMenu) {
     });
 }
 
-void iteration() {
+bool iteration() {
     //BGRA
     static cv::UMat background, down;
     static cv::UMat foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
@@ -410,7 +410,7 @@ void iteration() {
     static vector<cv::Point2f> detectedPoints;
 
     if(!v2d->capture())
-        exit(0);
+        return false;
 
     v2d->fb([=](cv::UMat& frameBuffer) {
         cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
@@ -456,12 +456,14 @@ void iteration() {
     });
 
     if(!v2dMenu->display())
-        exit(0);
+        return false;
 #endif
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     if(!v2d->display())
-        exit(0);
+        return false;
+
+    return true;
 }
 int main(int argc, char **argv) {
     using namespace cv::viz;

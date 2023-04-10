@@ -18,6 +18,8 @@ constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 +
 using std::cerr;
 using std::endl;
 
+static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+
 void init_scene(const cv::Size& sz) {
 #ifndef VIZ2D_USE_ES3
     //Initialize the OpenGL scene
@@ -86,10 +88,31 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
+bool iteration() {
+    using namespace cv::viz;
+    //Render using OpenGL
+    v2d->gl(render_scene);
+
+    //Aquire the frame buffer for use by OpenCL
+    v2d->fb([&](cv::UMat& frameBuffer) {
+        //Glow effect (OpenCL)
+        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+    });
+
+    v2d->write();
+
+    updateFps(v2d, true);
+
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    if (!v2d->display())
+        return false;
+
+    return true;
+}
+
 int main(int argc, char **argv) {
     using namespace cv::viz;
 
-    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
     printSystemInfo();
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
@@ -98,25 +121,7 @@ int main(int argc, char **argv) {
     v2d->setSink(sink);
 
     v2d->gl(init_scene);
-
-    while (keepRunning()) {
-        //Render using OpenGL
-        v2d->gl(render_scene);
-
-        //Aquire the frame buffer for use by OpenCL
-        v2d->fb([&](cv::UMat &frameBuffer) {
-            //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-        });
-
-        v2d->write();
-
-        updateFps(v2d, true);
-
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if (!v2d->display())
-            break;
-    }
+    v2d->run(iteration);
 
     return 0;
 }

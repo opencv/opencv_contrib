@@ -19,6 +19,8 @@ using std::cerr;
 using std::endl;
 using std::string;
 
+static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+
 void init_scene(const cv::Size& sz) {
 #ifndef VIZ2D_USE_ES3
     //Initialize the OpenGL scene
@@ -86,6 +88,27 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
+bool iteration() {
+    if(!v2d->capture())
+        return false;
+
+    v2d->gl(render_scene);
+
+    v2d->fb([&](cv::UMat& frameBuffer){
+        //Glow effect (OpenCL)
+        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+    });
+
+    updateFps(v2d, true);
+
+    v2d->write();
+
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    if(!v2d->display())
+        return false;
+    return true;
+}
+
 int main(int argc, char **argv) {
     using namespace cv::viz;
 
@@ -93,7 +116,7 @@ int main(int argc, char **argv) {
         cerr << "Usage: video-demo <video-file>" << endl;
         exit(1);
     }
-    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+
     printSystemInfo();
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
@@ -106,25 +129,7 @@ int main(int argc, char **argv) {
 
     v2d->gl(init_scene);
 
-    while (keepRunning()) {
-        if(!v2d->capture())
-            break;
-
-        v2d->gl(render_scene);
-
-        v2d->fb([&](cv::UMat& frameBuffer){
-            //Glow effect (OpenCL)
-            glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-        });
-
-        updateFps(v2d, true);
-
-        v2d->write();
-
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!v2d->display())
-            break;
-    }
+    v2d->run(iteration);
 
     return 0;
 }

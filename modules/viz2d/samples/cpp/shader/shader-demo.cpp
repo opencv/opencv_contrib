@@ -384,7 +384,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     });
 }
 
-void iteration() {
+bool iteration() {
     //ignore failed capture attempts
     v2d->capture();
 
@@ -411,9 +411,10 @@ void iteration() {
 #endif
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     if (!v2d->display())
-        exit(0);
+        return false;
 
     ++iterations;
+    return true;
 }
 
 int main(int argc, char **argv) {

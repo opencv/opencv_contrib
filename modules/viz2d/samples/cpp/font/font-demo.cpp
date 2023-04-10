@@ -106,7 +106,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     });
 }
 
-void iteration() {
+bool iteration() {
     //BGRA
     static cv::UMat stars, warped;
     //transformation matrix
@@ -195,12 +195,14 @@ void iteration() {
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     if(!v2d->display())
-        exit(0);
+        return false;
 
     ++cnt;
     //Wrap the cnt around if it becomes to big.
     if(cnt > std::numeric_limits<size_t>().max() / 2.0)
         cnt = 0;
+
+    return true;
 }
 
 int main(int argc, char **argv) {

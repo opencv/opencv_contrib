@@ -212,10 +212,10 @@ public:
     CV_EXPORTS void nanogui(std::function<void(FormHelper& form)> fn);
     /*!
        * Execute function object fn in a loop.
-       * This function main purpose is to abstract the run loop for native and webassembly.
-       * @param fn A function that will be called repeatetly until the application terminates.
+       * This function main purpose is to abstract the run loop for portability reasons.
+       * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
        */
-    CV_EXPORTS void run(std::function<void()> fn);
+    CV_EXPORTS void run(std::function<bool()> fn);
 
     /*!
      * Clear the framebuffer.

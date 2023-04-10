@@ -30,6 +30,9 @@ using std::endl;
 using std::vector;
 using std::string;
 
+static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::HOGDescriptor hog;
+
 //adapted from cv::dnn_objdetect::InferBbox
 static inline bool pair_comparator(std::pair<double, size_t> l1, std::pair<double, size_t> l2) {
     return l1.first > l2.first;
@@ -107,6 +110,104 @@ void composite_layers(const cv::UMat background, const cv::UMat frameBuffer, cv:
     cv::add(background, blur, dst);
 }
 
+bool iteration() {
+    //BGRA
+    static cv::UMat background;
+    //RGB
+    static cv::UMat videoFrame, videoFrameDown;
+    //GREY
+    static cv::UMat videoFrameDownGrey;
+
+    static std::vector<cv::Rect> locations;
+    static vector<vector<double>> boxes;
+    static vector<double> probs;
+
+    static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
+    static bool trackerInitalized = false;
+    static cv::Rect trackedFace;
+    static cv::Rect lastTracked(0,0,1,1);
+
+    static bool redetect = true;
+
+    if(!v2d->capture())
+        return false;
+
+    v2d->fb([&](cv::UMat& frameBuffer){
+        cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
+        cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+    });
+
+    cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
+    cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
+
+    cv::Rect tracked = cv::Rect(0,0,1,1);
+
+    if (!trackerInitalized || redetect || !tracker->update(videoFrameDown, tracked)) {
+        redetect = false;
+        tracked = cv::Rect(0,0,1,1);
+        hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
+
+        if (!locations.empty()) {
+            boxes.clear();
+            probs.clear();
+            for (const auto &rect : locations) {
+                boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
+                probs.push_back(1.0);
+            }
+
+            vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
+            for (size_t i = 0; i < keep.size(); ++i) {
+                if (keep[i]) {
+                    if(tracked.width * tracked.height < locations[i].width * locations[i].height) {
+                        tracked = locations[i];
+                    }
+                }
+            }
+
+            if(!trackerInitalized) {
+                tracker->init(videoFrameDown, tracked);
+                trackerInitalized = true;
+            }
+
+            if(tracked.width == 1 && tracked.height == 1) {
+                redetect = true;
+            } else {
+                lastTracked = tracked;
+            }
+        }
+    }
+
+    v2d->nvg([&](const cv::Size& sz) {
+        using namespace cv::viz::nvg;
+
+        v2d->clear();
+        beginPath();
+        strokeWidth(std::fmax(2.0, WIDTH / 960.0));
+        strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
+        float width = tracked.width * WIDTH_FACTOR;
+        float height = tracked.height * HEIGHT_FACTOR;
+        float cx = tracked.x * WIDTH_FACTOR + (width / 2.0f);
+        float cy = tracked.y * HEIGHT_FACTOR + (height / 2.0f);
+        ellipse(cx, cy, width / 2.0f, height / 2.0f);
+        stroke();
+    });
+
+    v2d->fb([&](cv::UMat& frameBuffer){
+        //Put it all together
+        composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
+    });
+
+    updateFps(v2d, true);
+
+    v2d->write();
+
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    if(!v2d->display())
+        return false;
+
+    return true;
+
+}
 int main(int argc, char **argv) {
     using namespace cv::viz;
 
@@ -115,8 +216,10 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
     printSystemInfo();
+
+    hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
 
@@ -126,102 +229,7 @@ int main(int argc, char **argv) {
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
-    //BGRA
-    cv::UMat background;
-    //RGB
-    cv::UMat videoFrame, videoFrameDown;
-    //GREY
-    cv::UMat videoFrameDownGrey;
-
-    cv::HOGDescriptor hog;
-    hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
-    std::vector<cv::Rect> locations;
-    vector<vector<double>> boxes;
-    vector<double> probs;
-
-    cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
-    bool trackerInitalized = false;
-    cv::Rect trackedFace;
-    cv::Rect lastTracked(0,0,1,1);
-
-    bool redetect = true;
-    while (keepRunning()) {
-        if(!v2d->capture())
-            break;
-
-        v2d->fb([&](cv::UMat& frameBuffer){
-            cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
-            cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
-        });
-
-        cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
-        cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
-
-        cv::Rect tracked = cv::Rect(0,0,1,1);
-
-        if (!trackerInitalized || redetect || !tracker->update(videoFrameDown, tracked)) {
-            redetect = false;
-            tracked = cv::Rect(0,0,1,1);
-            hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
-
-            if (!locations.empty()) {
-                boxes.clear();
-                probs.clear();
-                for (const auto &rect : locations) {
-                    boxes.push_back( { double(rect.x), double(rect.y), double(rect.x + rect.width), double(rect.y + rect.height) });
-                    probs.push_back(1.0);
-                }
-
-                vector<bool> keep = non_maximal_suppression(&boxes, &probs, 0.1);
-                for (size_t i = 0; i < keep.size(); ++i) {
-                    if (keep[i]) {
-                        if(tracked.width * tracked.height < locations[i].width * locations[i].height) {
-                            tracked = locations[i];
-                        }
-                    }
-                }
-
-                if(!trackerInitalized) {
-                    tracker->init(videoFrameDown, tracked);
-                    trackerInitalized = true;
-                }
-
-                if(tracked.width == 1 && tracked.height == 1) {
-                    redetect = true;
-                } else {
-                    lastTracked = tracked;
-                }
-            }
-        }
-
-        v2d->nvg([&](const cv::Size& sz) {
-            using namespace cv::viz::nvg;
-
-            v2d->clear();
-            beginPath();
-            strokeWidth(std::fmax(2.0, WIDTH / 960.0));
-            strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
-            float width = tracked.width * WIDTH_FACTOR;
-            float height = tracked.height * HEIGHT_FACTOR;
-            float cx = tracked.x * WIDTH_FACTOR + (width / 2.0f);
-            float cy = tracked.y * HEIGHT_FACTOR + (height / 2.0f);
-            ellipse(cx, cy, width / 2.0f, height / 2.0f);
-            stroke();
-        });
-
-        v2d->fb([&](cv::UMat& frameBuffer){
-            //Put it all together
-            composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
-        });
-
-        updateFps(v2d, true);
-
-        v2d->write();
-
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!v2d->display())
-            break;
-    }
+    v2d->run(iteration);
 
     return 0;
 }

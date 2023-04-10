@@ -221,7 +221,7 @@ void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     });
 }
 
-void iteration() {
+bool iteration() {
     try {
 #ifdef USE_TRACKER
         static bool trackerInitalized = false;
@@ -246,7 +246,7 @@ void iteration() {
         static vector<FaceFeatures> featuresList;
 
         if (!v2d->capture())
-            exit(0);
+            return false;
 
         v2d->fb([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
@@ -358,11 +358,12 @@ void iteration() {
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if (!v2d->display())
-            exit(0);
+            return false;
     } catch (std::exception &ex) {
         cerr << ex.what() << endl;
-        exit(1);
+        return false;
     }
+    return true;
 }
 
 int main(int argc, char **argv) {

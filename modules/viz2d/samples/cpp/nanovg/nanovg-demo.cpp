@@ -15,6 +15,8 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 using std::cerr;
 using std::endl;
 
+static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
+
 void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
     using namespace cv::viz::nvg;
@@ -117,6 +119,59 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
     restore();
 }
 
+bool iteration() {
+    static std::vector<cv::UMat> hsvChannels;
+    static cv::UMat rgb;
+    static cv::UMat bgra;
+    static cv::UMat hsv;
+    static cv::UMat hueChannel;
+
+    //we use time to calculated the current hue
+    float time = cv::getTickCount() / cv::getTickFrequency();
+    //nanovg hue fading between 0.0f and 255.0f
+    float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
+
+    if (!v2d->capture())
+        return false;
+
+    v2d->fb([&](cv::UMat &frameBuffer) {
+        cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
+    });
+
+    //Color-conversion from RGB to HSV. (OpenCL)
+    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+
+    //split the channels
+    split(hsv,hsvChannels);
+    //Set the current hue
+    hsvChannels[0].setTo(hue);
+    //merge the channels back
+    merge(hsvChannels,hsv);
+
+    //Color-conversion from HSV to RGB. (OpenCL)
+    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+
+    //Color-conversion from RGB to BGRA. (OpenCL)
+    v2d->fb([&](cv::UMat &frameBuffer) {
+        cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
+    });
+
+    //Render using nanovg
+    v2d->nvg([&](const cv::Size &sz) {
+        hue = ((170 + uint8_t(255 - hue))) % 255;
+        draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
+    });
+
+    updateFps(v2d, true);
+
+    v2d->write();
+
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    if(!v2d->display())
+        return false;
+    return true;
+}
+
 int main(int argc, char **argv) {
     using namespace cv::viz;
     if (argc != 2) {
@@ -124,7 +179,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
     printSystemInfo();
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
@@ -135,57 +189,7 @@ int main(int argc, char **argv) {
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
-    std::vector<cv::UMat> hsvChannels;
-    cv::UMat rgb;
-    cv::UMat bgra;
-    cv::UMat hsv;
-    cv::UMat hueChannel;
-
-    while (true) {
-        //we use time to calculated the current hue
-        float time = cv::getTickCount() / cv::getTickFrequency();
-        //nanovg hue fading between 0.0f and 255.0f
-        float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
-
-        if (!v2d->capture())
-            break;
-
-        v2d->fb([&](cv::UMat &frameBuffer) {
-            cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
-        });
-
-        //Color-conversion from RGB to HSV. (OpenCL)
-        cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
-
-        //split the channels
-        split(hsv,hsvChannels);
-        //Set the current hue
-        hsvChannels[0].setTo(hue);
-        //merge the channels back
-        merge(hsvChannels,hsv);
-
-        //Color-conversion from HSV to RGB. (OpenCL)
-        cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
-
-        //Color-conversion from RGB to BGRA. (OpenCL)
-        v2d->fb([&](cv::UMat &frameBuffer) {
-            cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
-        });
-
-        //Render using nanovg
-        v2d->nvg([&](const cv::Size &sz) {
-            hue = ((170 + uint8_t(255 - hue))) % 255;
-            draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
-        });
-
-        updateFps(v2d, true);
-
-        v2d->write();
-
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if(!v2d->display())
-            break;
-    }
+    v2d->run(iteration);
 
     return 0;
 }
