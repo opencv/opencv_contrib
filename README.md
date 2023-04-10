@@ -208,9 +208,9 @@ string hw = "hello video!";
 Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Video Editing");
 //Setup source and sink
 //Input file
-Source src = make_capture_source("input.webm");
+Source src = makeCaptureSource("input.webm");
 //Output file
-Sink sink = make_writer_sink("output.webm", VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), Size(WIDTH, HEIGHT));
+Sink sink = makeWriterSink("output.webm", VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), Size(WIDTH, HEIGHT));
 
 //Attach source and sink
 v2d->setSource(src);
