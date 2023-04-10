@@ -10,6 +10,7 @@
 #include "sink.hpp"
 #include "dialog.hpp"
 #include "formhelper.hpp"
+#include "util.hpp"
 #include <filesystem>
 #include <iostream>
 #include <set>

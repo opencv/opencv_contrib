@@ -5,7 +5,6 @@
 
 #include "opencv2/viz2d/viz2d.hpp"
 #include "opencv2/viz2d/nvg.hpp"
-#include "opencv2/viz2d/util.hpp"
 
 #include <string>
 #include <algorithm>

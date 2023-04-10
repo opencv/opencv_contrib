@@ -4,7 +4,6 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/viz2d/viz2d.hpp"
-#include "opencv2/viz2d/util.hpp"
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
