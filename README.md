@@ -209,26 +209,31 @@ Through adding a Source and a Sink v2d becomes capable of video editing.
 
 ```C++
 //Create a Viz2D object for on screen rendering
-Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Video Editing");
+Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), Size(WIDTH, HEIGHT), false, "Video Editing");
 v2d->setVisible(true);
 
 //Setup video source and sink
 Source src = make_capture_source("input.webm");
 v2d->setSource(src);
-Sink sink = make_writer_sink("output.webm", VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
+Sink sink = make_writer_sink("output.webm", VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), Size(WIDTH, HEIGHT));
 v2d->setSink(sink);
 
-string hw = "hello video!";
+std::string hw = "hello video!";
 
-v2d->nvg([&](const cv::Size& sz) {
-    using namespace cv::viz::nvg;
+while(keepRunning()) {
+    if(!v2d->capture())
+        break;
+    v2d->nvg([&](const cv::Size& sz) {
+        using namespace cv::viz::nvg;
 
-    fontSize(font_size);
-    fontFace("sans-bold");
-    fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
-    textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-    text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
-});
+        fontSize(font_size);
+        fontFace("sans-bold");
+        fillColor(cv::Scalar(255, 0, 0, 255));
+        textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+        text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
+    });
+    v2d->write();
+}
 ```
 
 # Samples
