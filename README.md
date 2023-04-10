@@ -36,7 +36,7 @@ v2d->gl([](const Size sz) {
 ```
 
 ## Examples
-Those are minimal examples, full samples below.
+Those are minimal examples, full samples below. Note that the examples for simplicity use their own run loops calling ```keepRunning()``` when in fact they should use ```Viz2D::run()``` (for portability reasons). The samples do use ```Viz2D::run()```.
 
 ### Display an images
 Actually there are several ways to display an image but for now we focus on the most convinient way.
