@@ -99,7 +99,7 @@ template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& 
  * @param code The color converions code
  * @return The color converted scalar
  */
-CV_EXPORTS cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code);
+CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
 using namespace cv::viz::detail;
 

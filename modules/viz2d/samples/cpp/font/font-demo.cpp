@@ -24,7 +24,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr double FPS = 60;
-const cv::Scalar_<float> INITIAL_COLOR = cv::viz::color_convert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
+const cv::Scalar_<float> INITIAL_COLOR = cv::viz::colorConvert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 
 /** Visualization parameters **/
 float min_star_size = 0.5f;

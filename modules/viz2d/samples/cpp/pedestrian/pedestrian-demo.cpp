@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
             v2d->clear();
             beginPath();
             strokeWidth(std::fmax(2.0, WIDTH / 960.0));
-            strokeColor(cv::viz::color_convert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
+            strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
             float width = tracked.width * WIDTH_FACTOR;
             float height = tracked.height * HEIGHT_FACTOR;
             float cx = tracked.x * WIDTH_FACTOR + (width / 2.0f);

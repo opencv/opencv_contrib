@@ -42,8 +42,8 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
         bx = cx + cosf(a1) * (r0 + r1) * 0.5f;
         by = cy + sinf(a1) * (r0 + r1) * 0.5f;
         paint = linearGradient(ax, ay, bx, by,
-                cv::viz::color_convert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
-                cv::viz::color_convert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
+                cv::viz::colorConvert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
+                cv::viz::colorConvert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
         fillPaint(paint);
         fill();
     }
@@ -86,7 +86,7 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
     lineTo(ax, ay);
     lineTo(bx, by);
     closePath();
-    paint = linearGradient(r, 0, ax, ay, cv::viz::color_convert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
+    paint = linearGradient(r, 0, ax, ay, cv::viz::colorConvert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
     fillPaint(paint);
     fill();
     paint = linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));

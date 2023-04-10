@@ -36,7 +36,7 @@ bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
 }
 }
 
-cv::Scalar color_convert(const cv::Scalar& src, cv::ColorConversionCodes code) {
+cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Mat tmpIn(1, 1, CV_8UC3);
     cv::Mat tmpOut(1, 1, CV_8UC3);
 
@@ -184,11 +184,11 @@ bool Viz2D::initializeWindowing() {
         find_widgets(&v2d->screen(), widgets);
         for (auto* w : widgets) {
             auto mousePos = nanogui::Vector2i(v2d->getMousePosition()[0] / v2d->getXPixelRatio(), v2d->getMousePosition()[1] / v2d->getYPixelRatio());
-    if(contains_absolute(w, mousePos)) {
-        v2d->screen().scroll_callback_event(x, y);
-        return;
-    }
-}
+            if(contains_absolute(w, mousePos)) {
+                v2d->screen().scroll_callback_event(x, y);
+                return;
+            }
+        }
 
         v2d->zoom(y < 0 ? 1.1 : 0.9);
     }
