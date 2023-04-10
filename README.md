@@ -333,16 +333,16 @@ https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9e
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
-# Instructions for Ubuntu 22.04.2 LTS
+## Instructions for Ubuntu 22.04.2 LTS
 You need to build nanovg, nanogui and OpenCV with Viz2D
 
-## Install required packages
+### Install required packages
 
 ```bash
 apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
 ```
 
-## Build nanovg
+### Build nanovg
 
 ```bash
 git clone https://github.com/inniyah/nanovg.git
@@ -353,7 +353,7 @@ make -j8
 sudo make install
 ```
 
-## Build nanogui
+### Build nanogui
 
 ```bash
 git clone --recursive https://github.com/mitsuba-renderer/nanogui.git
@@ -364,7 +364,7 @@ make -j8
 sudo make install
 ```
 
-## Build OpenCV with Viz2D using C++20
+### Build OpenCV with Viz2D using C++20
 
 ```bash
 git clone --branch 4.x https://github.com/opencv/opencv.git
@@ -376,18 +376,18 @@ make -j8
 sudo make install
 ```
 
-## Build the samples
+### Build the samples
 ```bash
 cd Viz2D/modules/viz2d/samples/cpp
 make -j
 ```
 
-## Download the example file
+### Download the example file
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
 
-## Run the demos
+### Run the demos
 
 ```bash
 Viz2D/modules/viz2d/samples/cpp/tetra/tetra-demo
