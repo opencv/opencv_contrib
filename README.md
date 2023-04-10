@@ -234,6 +234,46 @@ while(keepRunning()) {
 }
 ```
 
+### Font rendering with form based GUI
+Draws "hello world" to the screen and let's you control the font size and color with a GUI based on FormHelper.
+
+```C++
+//The text color. NanoGUI uses rgba with floating point
+nanogui::Color textColor = {0.0, 0.0, 1.0, 1.0};
+//The font size
+float fontSize = 40.0f;
+//The text
+string hw = "hello world";
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Vector Graphics");
+//Setup the GUI
+v2d->nanogui([&](FormHelper& form) {
+    //Create a light-weight dialog
+    form.makeDialog(5, 30, "Settings");
+    //Create a group
+    form.makeGroup("Font");
+    //Create a from variable. The type of widget is deduced from the variable type.
+    form.makeFormVariable("Font Size", fontSize, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
+    //Create a color picker
+    form.makeColorPicker("Text Color", textColor, "The text color");
+});
+
+while(keepRunning()) {
+    //Clear with black
+    v2d->clear();
+    //render the text at the center of the screen
+    v2d->nvg([&](const Size& sz) {
+        using namespace viz::nvg;
+        fontSize(fontSize);
+        fontFace("sans-bold");
+        fillColor(Scalar(textColor.b() * 255, textColor.g() * 255, textColor.r() * 255, 255));
+        textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+        text(WIDTH / 2.0, HEIGHT / 2.0, hw.c_str(), hw.c_str() + hw.size());
+    });
+    //display
+    v2d->display()
+}
+```
 # Samples
 The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms (Gen8 - Gen12).
 
