@@ -89,7 +89,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 int main(int argc, char **argv) {
     using namespace cv::viz;
 
-    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
+    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
     print_system_info();
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
 
     v2d->gl(init_scene);
 
-    while (keep_running()) {
+    while (keepRunning()) {
         //Render using OpenGL
         v2d->gl(render_scene);
 

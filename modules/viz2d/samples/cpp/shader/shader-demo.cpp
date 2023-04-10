@@ -322,7 +322,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
+cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
 void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     v2d->nanogui([](cv::viz::FormHelper& form){
@@ -437,7 +437,7 @@ int main(int argc, char **argv) {
         Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
         v2d->setSink(sink);
 
-        while(keep_running())
+        while(keepRunning())
             iteration();
 #else
         Source src = make_capture_source(WIDTH, HEIGHT);

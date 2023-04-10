@@ -48,7 +48,7 @@ bool side_by_side = false;
 bool stretch = false;
 #endif
 
-static cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
 #ifdef USE_TRACKER
 static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
@@ -391,7 +391,7 @@ int main(int argc, char **argv) {
     Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
-    while (keep_running())
+    while (keepRunning())
         iteration();
 #else
     Source src = make_capture_source(WIDTH, HEIGHT);

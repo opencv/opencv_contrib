@@ -53,7 +53,7 @@ CV_EXPORTS void print_system_info();
  * using #install_signal_handlers()
  * @return true if the program should keep on running
  */
-CV_EXPORTS bool keep_running();
+CV_EXPORTS bool keepRunning();
 
 /*!
  * Little helper function to keep track of FPS and optionally display it using NanoVG

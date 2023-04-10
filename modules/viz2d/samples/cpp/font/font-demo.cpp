@@ -46,7 +46,7 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
+cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
 vector<string> lines;
 bool update_stars = true;
 bool update_perspective = true;
@@ -225,7 +225,7 @@ int main(int argc, char **argv) {
 #ifndef __EMSCRIPTEN__
     Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
-    while(keep_running())
+    while(keepRunning())
         iteration();
 #else
     emscripten_set_main_loop(iteration, -1, true);

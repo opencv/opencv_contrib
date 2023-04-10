@@ -149,7 +149,7 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
+    CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     /*!
      * Default destructor
@@ -386,6 +386,19 @@ public:
      */
     CV_EXPORTS bool display();
 private:
+    /*!
+     * Creates a Viz2D object which is the central object to perform visualizations with.
+     * @param initialSize The initial size of the heavy-weight window.
+     * @param frameBufferSize The initial size of the framebuffer backing the window (needs to be equal or greate then initial size).
+     * @param offscreen Don't create a window and rather render offscreen.
+     * @param title The window title.
+     * @param major The OpenGL major version to request.
+     * @param minor The OpenGL minor version to request.
+     * @param samples MSAA samples.
+     * @param debug Create a debug OpenGL context.
+     */
+    CV_EXPORTS Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
+            const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);

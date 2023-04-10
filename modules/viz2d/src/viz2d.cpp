@@ -47,6 +47,11 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
+cv::Ptr<Viz2D> Viz2D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
+            const string& title, int major, int minor, int samples, bool debug) {
+    return new Viz2D(initialSize, frameBufferSize, offscreen, title, major, minor, samples, debug);
+}
+
 Viz2D::Viz2D(const cv::Size& size, const cv::Size& frameBufferSize, bool offscreen,
         const string& title, int major, int minor, int samples, bool debug) :
         initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0,

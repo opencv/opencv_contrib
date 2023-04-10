@@ -47,9 +47,9 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
 
-static cv::Ptr<cv::viz::Viz2D> v2d = new cv::viz::Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 #ifndef __EMSCRIPTEN__
-static cv::Ptr<cv::viz::Viz2D> v2dMenu = new cv::viz::Viz2D(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+static cv::Ptr<cv::viz::Viz2D> v2dMenu = cv::viz::Viz2D::make(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
 #endif
 
 /** Visualization parameters **/
@@ -491,7 +491,7 @@ int main(int argc, char **argv) {
     Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
-    while (keep_running())
+    while (keepRunning())
         iteration();
 #else
     Source src = make_capture_source(WIDTH, HEIGHT);

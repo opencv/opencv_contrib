@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
+    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
     print_system_info();
     if (!v2d->isOffscreen())
         v2d->setVisible(true);

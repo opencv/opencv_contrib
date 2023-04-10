@@ -125,7 +125,7 @@ static void install_signal_handlers() {
     signal(SIGTERM, request_finish);
 }
 
-bool keep_running() {
+bool keepRunning() {
     if (!signal_handlers_installed) {
         install_signal_handlers();
     }

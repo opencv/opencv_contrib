@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    cv::Ptr<Viz2D> v2d = new Viz2D(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+    cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
     print_system_info();
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
     cv::Rect lastTracked(0,0,1,1);
 
     bool redetect = true;
-    while (keep_running()) {
+    while (keepRunning()) {
         if(!v2d->capture())
             break;
 
