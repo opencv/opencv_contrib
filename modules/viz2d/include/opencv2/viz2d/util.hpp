@@ -27,26 +27,26 @@ class Viz2D;
  * Returns the OpenGL Version information.
  * @return a string object with the OpenGL version information
  */
-CV_EXPORTS std::string get_gl_info();
+CV_EXPORTS std::string getGlInfo();
 /*!
  * Returns the OpenCL Version information.
  * @return a string object with the OpenCL version information
  */
-CV_EXPORTS std::string get_cl_info();
+CV_EXPORTS std::string getClInfo();
 /*!
  * Determines if Intel VAAPI is supported
  * @return true if it is supported
  */
-CV_EXPORTS bool is_intel_va_supported();
+CV_EXPORTS bool isIntelVaSupported();
 /*!
  * Determines if cl_khr_gl_sharing is supported
  * @return true if it is supported
  */
-CV_EXPORTS bool is_cl_gl_sharing_supported();
+CV_EXPORTS bool isClGlSharingSupported();
 /*!
  * Pretty prints system information.
  */
-CV_EXPORTS void print_system_info();
+CV_EXPORTS void printSystemInfo();
 /*!
  * Tells the application if it's alright to keep on running.
  * Note: If you use this mechanism signal handlers are installed
@@ -60,7 +60,7 @@ CV_EXPORTS bool keepRunning();
  * @param v2d The Viz2D object to operate on
  * @param graphical if this parameter is true the FPS drawn on display
  */
-CV_EXPORTS void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
+CV_EXPORTS void updateFps(cv::Ptr<Viz2D> viz2d, bool graphical);
 
 #ifndef __EMSCRIPTEN__
 /*!
@@ -73,7 +73,7 @@ CV_EXPORTS void update_fps(cv::Ptr<Viz2D> viz2d, bool graphical);
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled sink object.
  */
-CV_EXPORTS Sink make_va_sink(const string& outputFilename, const int fourcc, const float fps,
+CV_EXPORTS Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex);
 /*!
  * Creates an Intel VAAPI enabled VideoCapture source object to use in conjunction with #Viz2D::setSource().
@@ -82,7 +82,7 @@ CV_EXPORTS Sink make_va_sink(const string& outputFilename, const int fourcc, con
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled source object.
  */
-CV_EXPORTS Source make_va_source(const string& inputFilename, const int vaDeviceIndex);
+CV_EXPORTS Source makeVaSource(const string& inputFilename, const int vaDeviceIndex);
 /*!
  * Creates a VideoWriter sink object to use in conjunction with #Viz2D::setSink().
  * This function automatically determines if Intel VAAPI is available and enables it if so.
@@ -92,7 +92,7 @@ CV_EXPORTS Source make_va_source(const string& inputFilename, const int vaDevice
  * @param frameSize The frame size of the target video.
   * @return A (optionally VAAPI enabled) VideoWriter sink object.
  */
-CV_EXPORTS Sink make_writer_sink(const string& outputFilename, const int fourcc, const float fps,
+CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize);
 /*!
  * Creates a VideoCapture source object to use in conjunction with #Viz2D::setSource().
@@ -100,7 +100,7 @@ CV_EXPORTS Sink make_writer_sink(const string& outputFilename, const int fourcc,
  * @param inputFilename The file to read from.
  * @return A (optionally VAAPI enabled) VideoCapture enabled source object.
  */
-CV_EXPORTS Source make_capture_source(const string& inputFilename);
+CV_EXPORTS Source makeCaptureSource(const string& inputFilename);
 #else
 /*!
  * Creates a WebCam source object to use in conjunction with #Viz2D::setSource().
@@ -109,7 +109,7 @@ CV_EXPORTS Source make_capture_source(const string& inputFilename);
  * @param height The frame height to capture (usually the initial height of the Viz2D object)
  * @return A WebCam source object.
  */
-CV_EXPORTS Source make_capture_source(int width, int height);
+CV_EXPORTS Source makeCaptureSource(int width, int height);
 #endif
 
 }

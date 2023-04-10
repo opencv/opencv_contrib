@@ -125,14 +125,14 @@ int main(int argc, char **argv) {
     }
 
     cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
-    print_system_info();
+    printSystemInfo();
     if (!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    Source src = make_capture_source(argv[1]);
+    Source src = makeCaptureSource(argv[1]);
     v2d->setSource(src);
 
-    Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
     std::vector<cv::UMat> hsvChannels;
@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
             draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
         });
 
-        update_fps(v2d, true);
+        updateFps(v2d, true);
 
         v2d->write();
 

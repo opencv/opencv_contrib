@@ -90,11 +90,11 @@ int main(int argc, char **argv) {
     using namespace cv::viz;
 
     cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
-    print_system_info();
+    printSystemInfo();
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
     v2d->gl(init_scene);
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
 
         v2d->write();
 
-        update_fps(v2d, true);
+        updateFps(v2d, true);
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         if (!v2d->display())

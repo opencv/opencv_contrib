@@ -94,14 +94,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
     cv::Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
-    print_system_info();
+    printSystemInfo();
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
-    Source src = make_capture_source(argv[1]);
+    Source src = makeCaptureSource(argv[1]);
     v2d->setSource(src);
 
-    Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
 
     v2d->gl(init_scene);
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
             glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
         });
 
-        update_fps(v2d, true);
+        updateFps(v2d, true);
 
         v2d->write();
 

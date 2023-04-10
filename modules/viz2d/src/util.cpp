@@ -20,11 +20,11 @@
 
 namespace cv {
 namespace viz {
-std::string get_gl_info() {
+std::string getGlInfo() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
 
-std::string get_cl_info() {
+std::string getClInfo() {
     std::stringstream ss;
 #ifndef __EMSCRIPTEN__
     std::vector<cv::ocl::PlatformInfo> plt_info;
@@ -53,7 +53,7 @@ std::string get_cl_info() {
     return ss.str();
 }
 
-bool is_intel_va_supported() {
+bool isIntelVaSupported() {
 #ifndef __EMSCRIPTEN__
     try {
         std::vector<cv::ocl::PlatformInfo> plt_info;
@@ -74,7 +74,7 @@ bool is_intel_va_supported() {
     return false;
 }
 
-bool is_cl_gl_sharing_supported() {
+bool isClGlSharingSupported() {
 #ifndef __EMSCRIPTEN__
     try {
         std::vector<cv::ocl::PlatformInfo> plt_info;
@@ -95,9 +95,9 @@ bool is_cl_gl_sharing_supported() {
     return false;
 }
 
-void print_system_info() {
-    cerr << "OpenGL Version: " << get_gl_info() << endl;
-    cerr << "OpenCL Platforms: " << get_cl_info() << endl;
+void printSystemInfo() {
+    cerr << "OpenGL Version: " << getGlInfo() << endl;
+    cerr << "OpenCL Platforms: " << getClInfo() << endl;
 }
 
 /*!
@@ -137,7 +137,7 @@ bool keepRunning() {
  * @param v2d The Viz2D object to operate on
  * @param graphical if this parameter is true the FPS drawn on display
  */
-void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphical) {
+void updateFps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphical) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     static float fps;
@@ -179,7 +179,7 @@ void update_fps(cv::Ptr<cv::viz::Viz2D> v2d, bool graphical) {
 }
 
 #ifndef __EMSCRIPTEN__
-Sink make_va_sink(const string& outputFilename, const int fourcc, const float fps,
+Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize, {
@@ -194,7 +194,7 @@ Sink make_va_sink(const string& outputFilename, const int fourcc, const float fp
     });
 }
 
-Source make_va_source(const string& inputFilename, const int vaDeviceIndex) {
+Source makeVaSource(const string& inputFilename, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION,
             cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
@@ -207,13 +207,13 @@ Source make_va_source(const string& inputFilename, const int vaDeviceIndex) {
     }, fps);
 }
 #else
-Sink make_va_sink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
+Sink makeVaSink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
     return Sink([=](const cv::InputArray& frame){
         return false;
     });
 }
 
-Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
+Source makeVaSource(const string &inputFilename, const int vaDeviceIndex) {
     return Source([=](cv::OutputArray& frame){
         return false;
     }, 0);
@@ -221,10 +221,10 @@ Source make_va_source(const string &inputFilename, const int vaDeviceIndex) {
 #endif
 
 #ifndef __EMSCRIPTEN__
-Sink make_writer_sink(const string& outputFilename, const int fourcc, const float fps,
+Sink makeWriterSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize) {
-    if (is_intel_va_supported()) {
-        return make_va_sink(outputFilename, fourcc, fps, frameSize, 0);
+    if (isIntelVaSupported()) {
+        return makeVaSink(outputFilename, fourcc, fps, frameSize, 0);
     }
 
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
@@ -237,9 +237,9 @@ Sink make_writer_sink(const string& outputFilename, const int fourcc, const floa
     });
 }
 
-Source make_capture_source(const string& inputFilename) {
-    if (is_intel_va_supported()) {
-        return make_va_source(inputFilename, 0);
+Source makeCaptureSource(const string& inputFilename) {
+    if (isIntelVaSupported()) {
+        return makeVaSource(inputFilename, 0);
     }
 
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
@@ -253,7 +253,7 @@ Source make_capture_source(const string& inputFilename) {
 }
 
 #else
-Source make_capture_source(int width, int height) {
+Source makeCaptureSource(int width, int height) {
     using namespace std;
     static cv::Mat tmp(height, width, CV_8UC4);
 

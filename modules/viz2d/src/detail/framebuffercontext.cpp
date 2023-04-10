@@ -23,7 +23,7 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
     glewExperimental = true;
     glewInit();
     try {
-        if (is_cl_gl_sharing_supported())
+        if (isClGlSharingSupported())
             cv::ogl::ocl::initializeContextFromGL();
         else
             clglSharing_ = false;

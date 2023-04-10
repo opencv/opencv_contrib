@@ -140,6 +140,14 @@ CV_EXPORTS class Viz2D {
 public:
     /*!
      * Creates a Viz2D object which is the central object to perform visualizations with.
+     * @param size The window and framebuffer size
+     * @param title The window title.
+     * @param debug Create a debug OpenGL context.
+     */
+    CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& size, const string& title, bool debug = false);
+
+    /*!
+     * Creates a Viz2D object which is the central object to perform visualizations with.
      * @param initialSize The initial size of the heavy-weight window.
      * @param frameBufferSize The initial size of the framebuffer backing the window (needs to be equal or greate then initial size).
      * @param offscreen Don't create a window and rather render offscreen.

@@ -187,7 +187,7 @@ void iteration() {
         cnt = 0;
     }
 
-    update_fps(v2d, show_fps);
+    updateFps(v2d, show_fps);
 
 #ifndef __EMSCRIPTEN__
     v2d->write();
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
     try {
     using namespace cv::viz;
 
-    print_system_info();
+    printSystemInfo();
     if(!v2d->isOffscreen()) {
         setup_gui(v2d);
         v2d->setVisible(true);
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
     }
 
 #ifndef __EMSCRIPTEN__
-    Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
     v2d->setSink(sink);
     while(keepRunning())
         iteration();

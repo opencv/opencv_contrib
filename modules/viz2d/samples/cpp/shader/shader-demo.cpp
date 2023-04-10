@@ -404,7 +404,7 @@ void iteration() {
     });
 #endif
 
-    update_fps(v2d, true);
+    updateFps(v2d, true);
 
 #ifndef __EMSCRIPTEN__
     v2d->write();
@@ -424,7 +424,7 @@ int main(int argc, char **argv) {
             exit(1);
         }
 
-        print_system_info();
+        printSystemInfo();
         if(!v2d->isOffscreen()) {
             setup_gui(v2d);
             v2d->setVisible(true);
@@ -432,15 +432,15 @@ int main(int argc, char **argv) {
         v2d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
-        Source src = make_capture_source(argv[1]);
+        Source src = makeCaptureSource(argv[1]);
         v2d->setSource(src);
-        Sink sink = make_writer_sink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
+        Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
         v2d->setSink(sink);
 
         while(keepRunning())
             iteration();
 #else
-        Source src = make_capture_source(WIDTH, HEIGHT);
+        Source src = makeCaptureSource(WIDTH, HEIGHT);
         v2d->setSource(src);
         emscripten_set_main_loop(iteration, -1, true);
 #endif
