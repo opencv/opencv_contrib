@@ -147,7 +147,8 @@ v2d->nvg([](const Size sz) {
     lineTo(HEIGHT/2.0, WIDTH);
     stroke();
 });
-
+//display
+v2d->display()
 ```
 ### Vector graphics and framebuffer manipulation
 The framebuffer can be accessed directly to manipulate data created in other contexts.
@@ -173,7 +174,8 @@ v2d->fb([](UMat& framebuffer) {
     //blurs the crosshair using a cheap boxFilter
     boxFilter(framebuffer, framebuffer, -1, Size(5, 5), Point(-1,-1), true, BORDER_REPLICATE);
 });
-
+//display
+v2d->display()
 ```
 
 ### Font rendering
@@ -193,6 +195,8 @@ v2d->nvg([&](const Size& sz) {
     textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
     text(WIDTH / 2.0, HEIGHT / 2.0, hw.c_str(), hw.c_str() + hw.size());
 });
+//display
+v2d->display()
 ```
 
 ### Video editing
@@ -225,6 +229,8 @@ while(keepRunning()) {
         text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
     });
     v2d->write();
+    if(!v2d->display())
+        break;
 }
 ```
 
