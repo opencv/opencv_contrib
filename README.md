@@ -5,9 +5,10 @@ Viz2D is a visualization module for OpenCV. It features OpenCL/OpenGL, OpenCL/VA
 Viz2D is a new way of writing graphical (on- and offscreen) applications with OpenCV. It is light-weight and unencumbered by problematic licenses.
 
 # Why Viz2D?
-* OpenGL: Easy access to OpenGL
-* GUI: Simple yet powerful user interfaces through NanoGUI
-* Vector graphics: Elegant and fast vector graphics through NanoVG
+* OpenGL: Easy access to OpenGL.
+* GUI: Simple yet powerful user interfaces through NanoGUI.
+* Vector graphics: Elegant and fast vector graphics through NanoVG.
+* Font rendering: Loading of TTF-fonts and sophisticated rendering options.
 * Video pipeline: Through a simple Source/Sink system videos can be displayed, edited and saved.
 * Hardware acceleration: Automatic hardware acceleration usage where possible. (e.g. cl-gl sharing and VAAPI). Actually it is possible to write programs to run almost entirely on the GPU, given driver-features are available.
 * No more highgui with it's heavy dependencies, licenses and limitations.
@@ -35,10 +36,10 @@ v2d->gl([](const cv::Size sz) {
 Actually there are several ways to display an image but for now we focus on the most convinient way.
 
 ```C++
-//An image
-cv::UMat image;
 //Create a Viz2D object for on screen rendering
 Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Show image");
+//An image
+cv::UMat image = cv::imread("sample.png");
 v2d->setVisible(true);
 //Feeds the image to the video pipeline
 v2d->feed(image);
@@ -52,7 +53,7 @@ This will create a window with size WIDTHxHEIGHT for on-screen rendering with th
 
 This demo renders a rotating tetrahedron using legacy OpenGL for brevity.
 ```C++
-Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "GL viewport");
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "GL Tetrahedron");
 v2d->setVisible(true);
 
 v2d->gl([](const cv::Size sz) {
@@ -105,6 +106,75 @@ while (keepRunning()) {
 }
 ```
 
+### Manipulate the framebuffer using OpenCV/OpenCL
+All contexts operate on the same framebuffer through different means. That means that OpenCV can manipulate results of other contexts throught the ```fb``` context.
+
+```C++
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Manipulate Framebuffer");
+v2d->setVisible(true);
+//An image
+cv::UMat image = cv::imread("sample.png");
+//Feeds the image to the video pipeline
+v2d->feed(image);
+
+//directly accesses the framebuffer using OpenCV (and using OpenCL if available)
+v2d->fb([](cv::UMat& framebuffer) {
+    cv::flip(framebuffer,framebuffer,0); //Flip the framebuffer
+});
+//Display the upside-down image in the native window
+v2d->display();
+
+```
+
+### Vector graphics
+```C++
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Vector Graphics");
+v2d->setVisible(true);
+
+//create a NanoVG context and draws a cross-hair on the framebuffer
+v2d->nvg([](const cv::Size sz) {
+    //calls from this namespace may only be used inside a nvg context
+    namespace cv::viz::nvg;
+    beginPath();
+    strokeWidth(3.0);
+    strokeColor(cv::Scalar(0,0,255,255)); //BGRA
+    moveTo(0, WIDTH/2.0);
+    lineTo(HEIGHT, WIDTH/2.0);
+    moveTo(HEIGHT/2.0, 0);
+    lineTo(HEIGHT/2.0, WIDTH);
+    stroke();
+});
+
+```
+### Vector graphics and framebuffer manipulation
+```C++
+//Create a Viz2D object for on screen rendering
+Ptr<Viz2D> v2d = Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), false, "Vector Graphics");
+v2d->setVisible(true);
+
+//create a NanoVG context and draws a cross-hair on the framebuffer
+v2d->nvg([](const cv::Size sz) {
+    //calls from this namespace may only be used inside a nvg context
+    namespace cv::viz::nvg;
+    beginPath();
+    strokeWidth(3.0);
+    strokeColor(cv::Scalar(0,0,255,255)); //BGRA
+    moveTo(0, WIDTH/2.0);
+    lineTo(HEIGHT, WIDTH/2.0);
+    moveTo(HEIGHT/2.0, 0);
+    lineTo(HEIGHT/2.0, WIDTH);
+    stroke();
+});
+
+//directly accesses the framebuffer using OpenCV (and using OpenCL if available)
+v2d->fb([](cv::UMat& framebuffer) {
+    //blurs the crosshair using a cheap boxFilter
+    cv::boxFilter(framebuffer, framebuffer, -1, cv::Size(5, 5), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+});
+
+```
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
