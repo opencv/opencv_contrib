@@ -235,6 +235,7 @@ while(keepRunning()) {
         text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
     });
     v2d->write();
+}
 ```
 
 # Samples
