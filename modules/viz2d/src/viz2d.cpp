@@ -293,6 +293,16 @@ void Viz2D::nanogui(std::function<void(FormHelper& form)> fn) {
     fn(form());
 }
 
+void Viz2D::run(std::function<void()> fn) {
+#ifndef __EMSCRIPTEN__
+    while(keepRunning())
+        fn();
+#else
+    emscripten_set_main_loop(fn, -1, true);
+#endif
+}
+
+
 void Viz2D::setSource(const Source& src) {
     if (!clva().hasContext())
         clva().copyContext();

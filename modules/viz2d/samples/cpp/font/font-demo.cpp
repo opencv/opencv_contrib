@@ -205,32 +205,29 @@ void iteration() {
 
 int main(int argc, char **argv) {
     try {
-    using namespace cv::viz;
+        using namespace cv::viz;
 
-    printSystemInfo();
-    if(!v2d->isOffscreen()) {
-        setup_gui(v2d);
-        v2d->setVisible(true);
-    }
+        printSystemInfo();
+        if(!v2d->isOffscreen()) {
+            setup_gui(v2d);
+            v2d->setVisible(true);
+        }
 
-    //The text to display
-    string txt = cv::getBuildInformation();
-    //Save the text to a vector
-    std::istringstream iss(txt);
+        //The text to display
+        string txt = cv::getBuildInformation();
+        //Save the text to a vector
+        std::istringstream iss(txt);
 
-    for (std::string line; std::getline(iss, line); ) {
-        lines.push_back(line);
-    }
+        for (std::string line; std::getline(iss, line); ) {
+            lines.push_back(line);
+        }
 
-#ifndef __EMSCRIPTEN__
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
-    v2d->setSink(sink);
-    while(keepRunning())
-        iteration();
-#else
-    emscripten_set_main_loop(iteration, -1, true);
-#endif
+    #ifndef __EMSCRIPTEN__
+        Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
+        v2d->setSink(sink);
+    #endif
 
+        v2d->run(iteration);
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

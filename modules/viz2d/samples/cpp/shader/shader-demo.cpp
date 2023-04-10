@@ -436,14 +436,12 @@ int main(int argc, char **argv) {
         v2d->setSource(src);
         Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
         v2d->setSink(sink);
-
-        while(keepRunning())
-            iteration();
 #else
         Source src = makeCaptureSource(WIDTH, HEIGHT);
         v2d->setSource(src);
-        emscripten_set_main_loop(iteration, -1, true);
 #endif
+
+        v2d->run(iteration);
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

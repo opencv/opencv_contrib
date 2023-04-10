@@ -209,7 +209,13 @@ public:
        * @param fn A function that is passed the size of the framebuffer
        * and performs drawing using cv::viz::nvg.
        */
-    CV_EXPORTS void nanogui(std::function<void(FormHelper& form)>);
+    CV_EXPORTS void nanogui(std::function<void(FormHelper& form)> fn);
+    /*!
+       * Execute function object fn in a loop.
+       * This function main purpose is to abstract the run loop for native and webassembly.
+       * @param fn A function that will be called repeatetly until the application terminates.
+       */
+    CV_EXPORTS void run(std::function<void()> fn);
 
     /*!
      * Clear the framebuffer.
