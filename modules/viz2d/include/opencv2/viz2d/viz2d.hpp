@@ -209,10 +209,15 @@ public:
      */
     CV_EXPORTS void clear(const cv::Scalar& bgra = cv::Scalar(0, 0, 0, 255));
     /*!
+     * Called to feed an image directly to the framebuffer
+     */
+    CV_EXPORTS void feed(cv::InputArray& in);
+    /*!
      * Called to capture to the framebuffer from a #cv::viz::Source object provided via #Viz2D::setSource().
      * @return true if successful.
      */
     CV_EXPORTS bool capture();
+
     /*!
      * Called to capture from a function object.
      * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.

@@ -5,6 +5,8 @@ Viz2D is a visualization module for OpenCV. It features OpenCL/OpenGL, OpenCL/VA
 Viz2D is a new way of writing graphical (on- and offscreen) applications with OpenCV. It is light-weight and unencumbered by problematic licenses.
 
 # Why Viz2D?
+Please refere to the [online demos](https://github.com/kallaballa/Viz2D/blob/main/README.md#online-demos) to see at a glance what it can do for you.
+
 * OpenGL: Easy access to OpenGL.
 * GUI: Simple yet powerful user interfaces through NanoGUI.
 * Vector graphics: Elegant and fast vector graphics through NanoVG.
@@ -198,9 +200,9 @@ v2d->nvg([&](const cv::Size& sz) {
 
     fontSize(font_size);
     fontFace("sans-bold");
-    fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
+    fillColor(cv::Scalar(255, 0, 0, 255));
     textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-    text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
+    text(WIDTH / 2.0, HEIGHT / 2.0, hw.c_str(), hw.c_str() + hw.size());
 });
 ```
 
@@ -233,7 +235,6 @@ while(keepRunning()) {
         text(WIDTH / 2.0, y, hw.c_str(), hw.c_str() + hw.size());
     });
     v2d->write();
-}
 ```
 
 # Samples
@@ -249,62 +250,64 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/optflow
 * https://viel-zu.org/opencv/beauty
 
-# Requirements
+## [tetra-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/tetra/tetra-demo.cpp)
+Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
+
+https://user-images.githubusercontent.com/287266/222984424-e0914bd4-72f3-4777-8a61-28dee6dd3573.mp4
+
+## [video-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/video/video-demo.cpp)
+Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
+
+https://user-images.githubusercontent.com/287266/222984530-c8c39997-ed3c-4675-92c9-40e4a7ea306a.mp4
+
+## [shader-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/shader/shader-demo.cpp)
+Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
+
+https://user-images.githubusercontent.com/287266/222971445-13b75aee-f190-419d-9772-404d32ff61f2.mp4
+
+## [nanovg-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/nanovg/nanovg-demo.cpp)
+Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
+
+https://user-images.githubusercontent.com/287266/222984631-a7e3522a-8713-4413-ab5e-e6b55cd52ce8.mp4
+
+## [font-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/font/font-demo.cpp)
+Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
+
+https://user-images.githubusercontent.com/287266/222984217-50af8dc1-72cb-4998-babe-53a2114745cf.mp4
+
+## [optflow-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/optflow/optflow-demo.cpp)
+My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
+
+https://user-images.githubusercontent.com/287266/222980868-e032bc80-0a2a-4406-b64e-7b2acdc22416.mp4
+
+## [pedestrian-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/pedestrian/pedestrian-demo.cpp)
+Pedestrian detection using HOG with a linear SVM, non-maximal suppression and tracking using KCF. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU) and tracks using KCF (CPU). Decodes/encodes on the GPU (VAAPI).
+
+https://user-images.githubusercontent.com/287266/222980241-d631f7e5-e7a3-446e-937e-bce34e194bd1.mp4
+
+## [beauty-demo](https://github.com/kallaballa/Viz2D/blob/main/modules/viz2d/samples/cpp/beauty/beauty-demo.cpp)
+Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band blending (CPU) to put it all together.
+
+https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9eef-378f6b10d773.mp4
+
+# Build
+
+## Requirements
 * C++20 (at the moment)
 * OpenGL 4/OpenGL ES 3.0
 
-# Optional requirements
+## Optional requirements
 * Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
 * If you want cl-gl sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to install** [compute-runtime](https://github.com/intel/compute-runtime) from source and [my OpenCV fork](https://github.com/kallaballa/opencv) 
 
-# Dependencies
+## Dependencies
 * [OpenCV 4.x](https://github.com/opencv/opencv)
 * EGL
 * GLEW
 * GLFW3
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
-
-## tetra-demo
-Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/222984424-e0914bd4-72f3-4777-8a61-28dee6dd3573.mp4
-
-## video-demo
-Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a glow effect using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/222984530-c8c39997-ed3c-4675-92c9-40e4a7ea306a.mp4
-
-## shader-demo
-Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
-
-https://user-images.githubusercontent.com/287266/222971445-13b75aee-f190-419d-9772-404d32ff61f2.mp4
-
-## nanovg-demo
-Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/222984631-a7e3522a-8713-4413-ab5e-e6b55cd52ce8.mp4
-
-## font-demo
-Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/222984217-50af8dc1-72cb-4998-babe-53a2114745cf.mp4
-
-## optflow-demo
-My take on a optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/222980868-e032bc80-0a2a-4406-b64e-7b2acdc22416.mp4
-
-## pedestrian-demo
-Pedestrian detection using HOG with a linear SVM, non-maximal suppression and tracking using KCF. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU) and tracks using KCF (CPU). Decodes/encodes on the GPU (VAAPI).
-
-https://user-images.githubusercontent.com/287266/222980241-d631f7e5-e7a3-446e-937e-bce34e194bd1.mp4
-
-## beauty-demo
-Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band blending (CPU) to put it all together.
-
-https://user-images.githubusercontent.com/287266/222982914-ff5be485-4aec-4d6b-9eef-378f6b10d773.mp4
 
 # Instructions for Ubuntu 22.04.2 LTS
 You need to build nanovg, nanogui and OpenCV with Viz2D

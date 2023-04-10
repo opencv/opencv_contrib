@@ -293,6 +293,12 @@ void Viz2D::setSource(const Source& src) {
     source_ = src;
 }
 
+void Viz2D::feed(cv::InputArray& in) {
+    this->capture([&](cv::OutputArray& videoFrame) {
+        in.getUMat().copyTo(videoFrame);
+    });
+}
+
 bool Viz2D::capture() {
     return this->capture([&](cv::OutputArray& videoFrame) {
         if (source_.isReady())
