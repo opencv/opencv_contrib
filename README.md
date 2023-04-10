@@ -1,5 +1,5 @@
 # Viz2D
-Viz2D is a visualization module for OpenCV. It features OpenCL/OpenGL, OpenCL/VAAPI interoperability and a GUI based on nanogui. It should be included in OpenCV-contrib once it is ready.
+Viz2D is a visualization module for OpenCV. It features OpenCL/OpenGL, OpenCL/VAAPI interoperability, vector graphics using NanoVG and a GUI based on NanoGUI. It should be included in OpenCV-contrib once it is ready.
 
 # What is Viz2D?
 Viz2D is a new way of writing graphical (on- and offscreen) applications with OpenCV. It is light-weight and unencumbered by problematic licenses.
@@ -10,11 +10,13 @@ Viz2D is a new way of writing graphical (on- and offscreen) applications with Op
 * Vector graphics: Elegant and fast vector graphics through NanoVG
 * Video pipeline: Through a simple Source/Sink system videos can be displayed, edited and saved.
 * Hardware acceleration: Automatic hardware acceleration usage where possible. (e.g. cl-gl sharing and VAAPI). Actually it is possible to write programs to run almost entirely on the GPU, given driver-features are available.
+* No more highgui with it's heavy dependencies, licenses and limitations.
 
 # Documentation
 
 ## Basics
 * Viz2D is not thread safe. Though it is possible to have several Viz2D objects in one or more threads and synchronize them using ```Viz2D::makeNonCurrent()``` and ```Viz2D::makeCurrent()```. This is a limitation of GLFW3. That said, OpenCV algorithms are multi-threaded as usual.
+* Viz2D uses InputArray/OutputArray/InputOutputArray which gives you the option to work with cv::Mat, std::vector and cv::UMat. Anyway, you should prefer to use cv::UMat whenever possible to automatically use hardware capabilities where available.
 * Access to different subsystems (opengl, opencl, nanovg and nanogui) is provided through "contexts". A context is simply a function that takes a functor, sets up the subsystem, executes the functor and tears-down the subsystem.
 
 For example, to create an OpenGL context and set the GL viewport:
@@ -25,7 +27,6 @@ v2d->gl([](const cv::Size sz) {
     glViewPort(0, 0, sz.width, sz.height);
 });
 ```
-* Viz2D uses InputArray/OutputArray/InputOutputArray which gives you the option to work with cv::Mat, std::vector and cv::UMat. Anyway, you should prefer to use cv::UMat whenever possible to automatically use hardware capabilities where available.
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
