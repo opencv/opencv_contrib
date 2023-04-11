@@ -187,7 +187,7 @@ v2d->nvg([](const Size sz) {
     stroke();
 });
 v2d->fb([](UMat& framebuffer) {
-    //blurs the crosshair using a cheap boxFilter
+    //Blurs the crosshair using a cheap boxFilter
     boxFilter(framebuffer, framebuffer, -1, Size(5, 5), Point(-1,-1), true, BORDER_REPLICATE);
 });
 v2d->display()
@@ -230,7 +230,7 @@ v2d->setSink(sink);
 
 v2d->run([]() {
     if(!v2d->capture())
-        break;
+        return false;
     v2d->nvg([&](const Size& sz) {
         using namespace cv::viz::nvg;
 
@@ -279,7 +279,7 @@ v2d->run([]() {
         textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
         text(WIDTH / 2.0, HEIGHT / 2.0, hw.c_str(), hw.c_str() + hw.size());
     });
-    v2d->display()
+    return v2d->display()
 });
 @endcode
 
