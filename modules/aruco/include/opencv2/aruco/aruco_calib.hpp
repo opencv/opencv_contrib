@@ -26,7 +26,7 @@ enum PatternPositionType {
      * (markerLength/2, -markerLength/2, 0), (-markerLength/2, -markerLength/2, 0).
      *
      * These pattern points define this coordinate system:
-     * ![Image with axes drawn](tutorials/images/singlemarkersaxes.jpg)
+     * ![Image with axes drawn](tutorials/images/singlemarkersaxes2.jpg)
      */
     ARUCO_CCW_CENTER,
     /** @brief The marker coordinate system is centered on the top-left corner of the marker.
@@ -36,7 +36,7 @@ enum PatternPositionType {
      * (markerLength, markerLength, 0), (0, markerLength, 0).
      *
      * These pattern points define this coordinate system:
-     * ![Image with axes drawn](tutorials/images/singlemarkersaxes2.jpg)
+     * ![Image with axes drawn](tutorials/images/singlemarkersaxes.jpg)
      *
      * These pattern dots are convenient to use with a chessboard/ChArUco board.
      */
