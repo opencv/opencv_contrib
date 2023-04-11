@@ -14,7 +14,7 @@ int main() {
 	Mat image = imread(samples::findFile("lena.jpg"));
 	//Feeds the image to the video pipeline
 	v2d->feed(image);
-	//Display the framebuffer in the native window
-	while(v2d->display());
+    //Display the framebuffer in the native window in an endless loop
+    v2d->run(v2d->display);
 }
 

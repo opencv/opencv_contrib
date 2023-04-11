@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
 		stroke();
 	});
 
-	while(v2d->display());
+    //Display the framebuffer in the native window in an endless loop
+    v2d->run(v2d->display);
 }
 

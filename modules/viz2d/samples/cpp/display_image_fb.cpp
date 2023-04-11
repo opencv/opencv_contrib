@@ -19,7 +19,7 @@ int main() {
 		//Color convert the resized UMat. The framebuffer has alpha.
 		cvtColor(resized, framebuffer, COLOR_RGB2BGRA);
 	});
-	//Display the framebuffer in the native window
-	while(v2d->display());
+	//Display the framebuffer in the native window in an endless loop
+	v2d->run(v2d->display);
 }
 

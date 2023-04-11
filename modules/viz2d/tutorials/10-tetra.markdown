@@ -5,7 +5,7 @@
 
 |    |    |
 | -: | :- |
-| Original author | Amir Hassan |
+| Original author | Amir Hassan (kallaballa) <amir@viel-zu.org> |
 | Compatibility | OpenCV >= 4.7 |
 
 Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).

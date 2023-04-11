@@ -2,20 +2,25 @@
 
 [TOC]
 
+|    |    |
+| -: | :- |
+| Original author | Amir Hassan (kallaballa) <amir@viel-zu.org> |
+| Compatibility | OpenCV >= 4.7 |
+
 # What is Viz2D?
 Viz2D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
 # Why Viz2D?
 Please refer to the following online demos to see at a glance what it can do for you.
 
-* OpenGL: Easy access to OpenGL.
-* GUI: Simple yet powerful user interfaces through NanoGUI.
-* Vector graphics: Elegant and fast vector graphics through NanoVG.
-* Font rendering: Loading of TTF-fonts and sophisticated rendering options.
-* Video pipeline: Through a simple Source/Sink system videos can be displayed, edited and saved.
-* Hardware acceleration: Automatic hardware acceleration usage where possible. (e.g. cl-gl sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
-* No more highgui with it's heavy dependencies, licenses and limitations.
-* WebAssembly support.
+* **OpenGL**: Easy access to OpenGL.
+* **GUI**: Simple yet powerful user interfaces through NanoGUI.
+* **Vector graphics**: Elegant and fast vector graphics through NanoVG.
+* **Font rendering**: Loading of TTF-fonts and sophisticated rendering options.
+* **Video pipeline**: Through a simple Source/Sink system videos can be displayed, edited and saved.
+* **Hardware acceleration**: Automatic hardware acceleration usage where possible. (e.g. CL-GL sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
+* **No more highgui** with it's heavy dependencies, licenses and limitations.
+* **WebAssembly support**.
 
 # Online Demos
 
@@ -49,7 +54,7 @@ v2d->gl([](const Size sz) {
 # Optional requirements
 * Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
-* If you want cl-gl sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to install** [compute-runtime](https://github.com/intel/compute-runtime) from source and [my OpenCV fork](https://github.com/kallaballa/opencv)
+* If you want CL-GL sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to install** [compute-runtime](https://github.com/intel/compute-runtime) from source and [my OpenCV fork](https://github.com/kallaballa/opencv)
 
 # Dependencies
 * [OpenCV 4.x](https://github.com/opencv/opencv)

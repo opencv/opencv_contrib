@@ -5,7 +5,7 @@
 
 |    |    |
 | -: | :- |
-| Original author | Amir Hassan |
+| Original author | Amir Hassan (kallaballa) <amir@viel-zu.org> |
 | Compatibility | OpenCV >= 4.7 |
 
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
