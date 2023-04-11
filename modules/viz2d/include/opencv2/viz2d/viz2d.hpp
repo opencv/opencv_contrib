@@ -17,11 +17,18 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
-#include <nanogui/nanogui.h>
 #ifdef __EMSCRIPTEN__
 #define VIZ2D_USE_ES3 1
 #include <emscripten.h>
 #endif
+
+#ifndef VIZ2D_USE_ES3
+#define NANOGUI_USE_OPENGL
+#else
+#define NANOGUI_USE_GLES
+#define NANOGUI_GLES_VERSION 3
+#endif
+#include <nanogui/nanogui.h>
 #ifndef VIZ2D_USE_ES3
 #include <GL/glew.h>
 #else

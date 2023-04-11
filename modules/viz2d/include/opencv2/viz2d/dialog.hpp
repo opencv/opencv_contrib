@@ -5,7 +5,16 @@
 
 #ifndef SRC_COMMON_DIALOG_HPP_
 #define SRC_COMMON_DIALOG_HPP_
+#ifdef __EMSCRIPTEN__
+#define VIZ2D_USE_ES3 1
+#endif
 
+#ifndef VIZ2D_USE_ES3
+#define NANOGUI_USE_OPENGL
+#else
+#define NANOGUI_USE_GLES
+#define NANOGUI_GLES_VERSION 3
+#endif
 #include <nanogui/nanogui.h>
 #include <opencv2/opencv.hpp>
 

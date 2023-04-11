@@ -5,6 +5,16 @@
 
 #include "opencv2/viz2d/dialog.hpp"
 #include <nanogui/layout.h>
+#ifdef __EMSCRIPTEN__
+#define VIZ2D_USE_ES3 1
+#endif
+#ifndef VIZ2D_USE_ES3
+#  include <GL/glew.h>
+#  define GLFW_INCLUDE_GLCOREARB
+#else
+#  define GLFW_INCLUDE_ES3
+#  define GLFW_INCLUDE_GLEXT
+#endif
 #include <GLFW/glfw3.h>
 
 namespace cv {

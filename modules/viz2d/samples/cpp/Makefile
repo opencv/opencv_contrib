@@ -4,6 +4,7 @@ ifdef EMSDK
 LDFLAGS  := -flto -L/usr/local/lib/ -L../common
 LIBS     := -lopencv_core -lopencv_imgproc -lnanogui
 else
+#CXXFLAGS += -DVIZ2D_USE_ES3=1
 LDFLAGS  := -L/opt/local/lib -flto -L/usr/local/lib64 -L../common/ -L/usr/local/lib
 LIBS     := -lnanogui
 endif
