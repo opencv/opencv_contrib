@@ -16,9 +16,6 @@ Please refer to the [online demos](https://github.com/kallaballa/Viz2D/blob/main
 * No more highgui with it's heavy dependencies, licenses and limitations.
 * WebAssembly
 
-# Documentation
-OpenCV module documentation with tutorials and samples is available [here](https://viel-zu.org/opencv/doxygen/html/dc/d7b/viz2d.html)
-
 ## Online Demos
 
 Please note that the following online demos are slower and/or have less features than the native versions.
@@ -26,6 +23,9 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/font
 * https://viel-zu.org/opencv/optflow
 * https://viel-zu.org/opencv/beauty
+
+# Documentation
+OpenCV module documentation with tutorials and samples is available [here](https://viel-zu.org/opencv/doxygen/html/dc/d7b/viz2d.html)
 
 # Build
 
