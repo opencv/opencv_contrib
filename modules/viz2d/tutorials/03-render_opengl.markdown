@@ -1,5 +1,13 @@
 # Render OpenGL using Viz2D {#viz2d_render_opengl}
 
+@prev_tutorial{viz2d_vector_graphics}
+@next_tutorial{viz2d_font_rendering}
+
+|    |    |
+| -: | :- |
+| Original author | Amir Hassan |
+| Compatibility | OpenCV >= 4.7 |
+
 ## Render a rotating tetrahedron
 This example renders a rotating tetrahedron using legacy OpenGL for brevity.
 

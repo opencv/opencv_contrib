@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 	float size = 40.0f;
 	//The text
 	string hw = "hello world";
-	//Setup the GUI
+	//Setup the GUI ***before*** making Viz2D visible.
 	v2d->nanogui([&](FormHelper& form) {
 		//Create a light-weight dialog
 		form.makeDialog(5, 30, "Settings");
@@ -26,6 +26,8 @@ int main(int argc, char** argv) {
 		//Create a color picker
 		form.makeColorPicker("Text Color", textColor, "The text color");
 	});
+
+	v2d->setVisible(true);
 
 	v2d->run([&]() {
 		v2d->clear();

@@ -64,18 +64,22 @@ v2d->gl([](const Size sz) {
 * \ref viz2d_vector_graphics
 * \ref viz2d_render_opengl
 * \ref viz2d_font_rendering
-
-## Video editing
-Through adding a Source and a Sink v2d becomes capable of video editing. Reads a video, renders text on top and writes the result.
-
-@include samples/cpp/video_editing.cpp
-
-## Font rendering with form based GUI
-Draws "Hello World" to the screen and let's you control the font size and color with a GUI based on FormHelper.
-
-@include samples/cpp/font_with_gui.cpp
+* \ref viz2d_video_editing
+* \ref viz2d_font_with_gui
 
 # Samples
-The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU. You ***only*** need to build my fork of OpenCV 4.x if you want to use cl-gl sharing on recent Intel platforms (Gen8 - Gen12).
+The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU.
 
-There are currently eight sampes. The shader-demo, font-demo, optflow-demo and beauty-demo can be compiled to WebAssembly using Emscripten but for now you have to figure out how to do it yourself :).
+* \ref viz2d_tetra
+* \ref viz2d_video
+* \ref viz2d_nanovg
+* \ref viz2d_shader
+* \ref viz2d_font
+* \ref viz2d_pedestrian
+* \ref viz2d_optflow
+* \ref viz2d_beauty
+
+# Attribution
+* The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
+* The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
+* The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))

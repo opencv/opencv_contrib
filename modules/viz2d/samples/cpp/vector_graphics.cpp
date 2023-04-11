@@ -9,6 +9,7 @@ constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Vector Graphics");
+	v2d->setVisible(true);
 	//Creates a NanoVG context and draws a cross-hair on the framebuffer
 	v2d->nvg([](const Size& sz) {
 		//Calls from this namespace may only be used inside a nvg context

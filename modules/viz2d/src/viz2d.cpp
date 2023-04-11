@@ -67,7 +67,6 @@ void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size
 
 cv::Ptr<Viz2D> Viz2D::make(const cv::Size& size, const string& title, bool debug) {
     cv::Ptr<Viz2D> v2d = new Viz2D(size, size, false, title, 4, 6, 0, debug);
-    v2d->setVisible(true);
     return v2d;
 }
 

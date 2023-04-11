@@ -8,6 +8,7 @@ constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "GL Tetrahedron");
+	v2d->setVisible(true);
 	v2d->gl([](const Size sz) {
 		//Initialize the OpenGL scene
 		glViewport(0, 0, sz.width, sz.height);

@@ -9,6 +9,7 @@ constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Font Rendering");
+	v2d->setVisible(true);
 	//The text to render
 	string hw = "Hello World";
 	//Clear with black

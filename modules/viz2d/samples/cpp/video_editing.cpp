@@ -10,6 +10,7 @@ constexpr int HEIGHT = 720;
 int main(int argc, char** argv) {
 	string hv = "Hello Video!";
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Video Editing");
+	v2d->setVisible(true);
 	//Make the video source
 	Source src = makeCaptureSource(argv[1]);
 	//Make the video sink

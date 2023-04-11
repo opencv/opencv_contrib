@@ -1,5 +1,13 @@
 # Render vector graphics using Viz2D {#viz2d_vector_graphics}
 
+@prev_tutorial{viz2d_display_image}
+@next_tutorial{viz2d_render_opengl}
+
+|    |    |
+| -: | :- |
+| Original author | Amir Hassan |
+| Compatibility | OpenCV >= 4.7 |
+
 ## Vector graphics
 Through the nvg context javascript-canvas-like rendering is possible.
 
