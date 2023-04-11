@@ -14,7 +14,6 @@
 
 namespace cv {
 namespace viz {
-namespace detail {
 using std::string;
 
 /*!
@@ -124,7 +123,6 @@ public:
     CV_EXPORTS nanogui::Button* makeButton(const string& caption, std::function<void()> fn);
 };
 
-} /* namespace detail */
 } /* namespace viz */
 } /* namespace cv */
 

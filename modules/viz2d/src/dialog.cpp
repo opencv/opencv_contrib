@@ -9,7 +9,6 @@
 
 namespace cv {
 namespace viz {
-namespace detail {
 
 std::function<bool(Dialog*, Dialog*)> Dialog::viz2DWin_Xcomparator([](Dialog* lhs, Dialog* rhs) {
     return lhs->position()[0] < rhs->position()[0];
@@ -123,6 +122,5 @@ bool Dialog::mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2
     return false;
 }
 
-} /* namespace detail */
 } /* namespace viz */
 } /* namespace cv */

@@ -251,7 +251,7 @@ public:
     CV_EXPORTS void write(std::function<void(const cv::InputArray&)> fn);
 
     /*!
-     * Set the current #cv::viz::Source object. Usually created using #make_capture_source().
+     * Set the current #cv::viz::Source object. Usually created using #makeCaptureSource().
      * @param src A #cv::viz::Source object.
      */
     CV_EXPORTS void setSource(const Source& src);
@@ -261,7 +261,7 @@ public:
      */
     CV_EXPORTS bool isSourceReady();
     /*!
-     * Set the current #cv::viz::Sink object. Usually created using #make_writer_sink().
+     * Set the current #cv::viz::Sink object. Usually created using #makeWriterSink().
      * @param sink A #cv::viz::Sink object.
      */
     CV_EXPORTS void setSink(const Sink& sink);

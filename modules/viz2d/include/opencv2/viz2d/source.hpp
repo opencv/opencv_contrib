@@ -26,7 +26,7 @@ public:
     /*!
      * Constructs the Source object from a generator functor.
      * @param generator A function object that accepts a reference to a UMat frame
-     * that it manipulates. This is ultimatively used to provide video data to #Viz2D
+     * that it manipulates. This is ultimatively used to provide video data to #cv::viz::Viz2D
      * @param fps The fps the Source object provides data with.
      */
     CV_EXPORTS Source(std::function<bool(cv::OutputArray&)> generator, float fps);

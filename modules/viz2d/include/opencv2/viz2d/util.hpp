@@ -50,7 +50,6 @@ CV_EXPORTS void printSystemInfo();
 /*!
  * Tells the application if it's alright to keep on running.
  * Note: If you use this mechanism signal handlers are installed
- * using #install_signal_handlers()
  * @return true if the program should keep on running
  */
 CV_EXPORTS bool keepRunning();
@@ -60,12 +59,12 @@ CV_EXPORTS bool keepRunning();
  * @param v2d The Viz2D object to operate on
  * @param graphical if this parameter is true the FPS drawn on display
  */
-CV_EXPORTS void updateFps(cv::Ptr<Viz2D> viz2d, bool graphical);
+CV_EXPORTS void updateFps(cv::Ptr<Viz2D> v2d, bool graphical);
 
 #ifndef __EMSCRIPTEN__
 /*!
  * Creates an Intel VAAPI enabled VideoWriter sink object to use in conjunction with #Viz2D::setSink().
- * Usually you would call #make_writer_sink() and let it automatically decide if VAAPI is available.
+ * Usually you would call #makeWriterSink() and let it automatically decide if VAAPI is available.
  * @param outputFilename The filename to write the video to.
  * @param fourcc    The fourcc code of the codec to use.
  * @param fps       The fps of the target video.
@@ -77,7 +76,7 @@ CV_EXPORTS Sink makeVaSink(const string& outputFilename, const int fourcc, const
         const cv::Size& frameSize, const int vaDeviceIndex);
 /*!
  * Creates an Intel VAAPI enabled VideoCapture source object to use in conjunction with #Viz2D::setSource().
- * Usually you would call #make_capture_source() and let it automatically decide if VAAPI is available.
+ * Usually you would call #makeCaptureSource() and let it automatically decide if VAAPI is available.
  * @param inputFilename The file to read from.
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled source object.

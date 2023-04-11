@@ -7,7 +7,6 @@
 
 namespace cv {
 namespace viz {
-namespace detail {
 
 FormHelper::FormHelper(nanogui::Screen* screen) :
         nanogui::FormHelper(screen) {
@@ -17,7 +16,7 @@ FormHelper::~FormHelper() {
 }
 
 Dialog* FormHelper::makeDialog(int x, int y, const string& title) {
-    auto* win = new cv::viz::detail::Dialog(m_screen, x, y, title);
+    auto* win = new cv::viz::Dialog(m_screen, x, y, title);
     this->set_window(win);
     return win;
 }
@@ -54,6 +53,5 @@ nanogui::Button* FormHelper::makeButton(const string& caption, std::function<voi
     return add_button(caption, fn);
 }
 
-} /* namespace detail */
 } /* namespace viz */
 } /* namespace cv */
