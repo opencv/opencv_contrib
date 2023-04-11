@@ -64,6 +64,7 @@ v2d->gl([](const Size sz) {
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
 # Tutorials
+The tutorials are designed to be read one after the other to give you a good overview over the key concepts of Viz2D. After that you can move on to the samples.
 
 * \ref viz2d_display_image
 * \ref viz2d_vector_graphics
@@ -73,7 +74,7 @@ v2d->gl([](const Size sz) {
 * \ref viz2d_font_with_gui
 
 # Samples
-The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU.
+The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU. They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
 
 * \ref viz2d_tetra
 * \ref viz2d_video
