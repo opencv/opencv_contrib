@@ -45,4 +45,4 @@ ocv_create_module()
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
 message(STATUS "viz2d: ${nangui_LIBRARIES}")
 #For some reasone glfw3_LIBRARIES is empty although it is found by find_package
-ocv_target_link_libraries(${the_module} glfw ${GLEW_LIBRARIES} ${nanovg_LIBRARIES} nanogui)
+ocv_target_link_libraries(${the_module} glfw ${GLEW_LIBRARIES} ${nanovg_LIBRARIES} nanogui OpenCL)
