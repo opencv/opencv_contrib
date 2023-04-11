@@ -83,9 +83,9 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     if (clImage_ == nullptr) {
         clImage_ = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
-    if (status != CL_SUCCESS)
-        CV_Error_(cv::Error::OpenCLApiCallError,
-                ("OpenCL: clCreateFromGLTexture failed: %d", status));
+        if (status != CL_SUCCESS)
+            CV_Error_(cv::Error::OpenCLApiCallError,
+                    ("OpenCL: clCreateFromGLTexture failed: %d", status));
 
         status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
         if (status != CL_SUCCESS)
@@ -99,7 +99,7 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     size_t dst_origin[3] = { 0, 0, 0 };
     size_t region[3] = { (size_t) u.cols, (size_t) u.rows, 1 };
     status = clEnqueueCopyBufferToImage(q, clBuffer, clImage_, offset, dst_origin, region, 0, NULL,
-            NULL);
+    NULL);
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyBufferToImage failed: %d", status));
@@ -120,13 +120,12 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
 
     cl_int status = 0;
-    if(clImage_ == nullptr) {
-    clImage_ = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0,
-            texture.texId(), &status);
-    if (status != CL_SUCCESS)
-        CV_Error_(cv::Error::OpenCLApiCallError,
-                ("OpenCL: clCreateFromGLTexture failed: %d", status));
-
+    if (clImage_ == nullptr) {
+        clImage_ = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0, texture.texId(),
+                &status);
+        if (status != CL_SUCCESS)
+            CV_Error_(cv::Error::OpenCLApiCallError,
+                    ("OpenCL: clCreateFromGLTexture failed: %d", status));
 
         status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
         if (status != CL_SUCCESS)
@@ -140,7 +139,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     size_t src_origin[3] = { 0, 0, 0 };
     size_t region[3] = { (size_t) u.cols, (size_t) u.rows, 1 };
     status = clEnqueueCopyImageToBuffer(q, clImage_, clBuffer, src_origin, region, offset, 0, NULL,
-            NULL);
+    NULL);
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyImageToBuffer failed: %d", status));
