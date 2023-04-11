@@ -187,9 +187,8 @@ Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
-    return Sink([=](const cv::InputArray& frame) {
-        cv::UMat m = frame.getUMat();
-        (*writer) << m;
+    return Sink([=](const cv::UMat& frame) {
+        (*writer) << frame;
         return writer->isOpened();
     });
 }
@@ -200,10 +199,9 @@ Source makeVaSource(const string& inputFilename, const int vaDeviceIndex) {
             cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
 
-    return Source([=](cv::OutputArray& frame) {
-        cv::UMat m = frame.getUMat();
-        (*capture) >> m;
-        return !m.empty();
+    return Source([=](cv::UMat& frame) {
+        (*capture) >> frame;
+        return !frame.empty();
     }, fps);
 }
 #else
@@ -230,9 +228,8 @@ Sink makeWriterSink(const string& outputFilename, const int fourcc, const float 
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
 
-    return Sink([=](const cv::InputArray& frame) {
-        Mat m = frame.getMat();
-        (*writer) << m;
+    return Sink([=](const cv::UMat& frame) {
+        (*writer) << frame;
         return writer->isOpened();
     });
 }
@@ -245,10 +242,9 @@ Source makeCaptureSource(const string& inputFilename) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
     float fps = capture->get(cv::CAP_PROP_FPS);
 
-    return Source([=](cv::OutputArray& frame) {
-        Mat m = frame.getMat();
-        (*capture) >> m;
-        return !m.empty();
+    return Source([=](cv::UMat& frame) {
+        (*capture) >> frame;
+        return !frame.empty();
     }, fps);
 }
 

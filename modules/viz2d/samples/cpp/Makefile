@@ -92,15 +92,12 @@ asan: dirs
 
 clean: dirs
 
-docs:
-	doxygen Doxyfile
-
 export LDFLAGS
 export CXXFLAGS
 export LIBS
 export EMSDK
 
-dirs: docs
+dirs:
 	${MAKE} -C shader/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}
 ifndef EMSDK
 	${MAKE} -C tetra/ ${MAKEFLAGS} CXX=${CXX} ${MAKECMDGOALS}

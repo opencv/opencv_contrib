@@ -28,7 +28,6 @@
 #include <GLES3/gl3.h>
 #endif
 
-
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -239,7 +238,7 @@ public:
      * @param fn The functor that provides the data.
      * @return true if successful-
      */
-    CV_EXPORTS bool capture(std::function<void(cv::OutputArray&)> fn);
+    CV_EXPORTS bool capture(std::function<void(cv::UMat&)> fn);
     /*!
      * Called to write the framebuffer to a #cv::viz::Sink object provided via #Viz2D::setSink()
      */
@@ -248,7 +247,7 @@ public:
      * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
      * @param fn The functor that consumes the data,
      */
-    CV_EXPORTS void write(std::function<void(const cv::InputArray&)> fn);
+    CV_EXPORTS void write(std::function<void(const cv::UMat&)> fn);
 
     /*!
      * Set the current #cv::viz::Source object. Usually created using #makeCaptureSource().

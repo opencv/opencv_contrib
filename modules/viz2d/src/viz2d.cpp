@@ -315,13 +315,13 @@ void Viz2D::feed(cv::InputArray& in) {
 }
 
 bool Viz2D::capture() {
-    return this->capture([&](cv::OutputArray& videoFrame) {
+    return this->capture([&](cv::UMat& videoFrame) {
         if (source_.isReady())
             source_().second.copyTo(videoFrame);
     });
 }
 
-bool Viz2D::capture(std::function<void(cv::OutputArray&)> fn) {
+bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
     return clva().capture(fn);
 }
 
@@ -336,13 +336,13 @@ void Viz2D::setSink(const Sink& sink) {
 }
 
 void Viz2D::write() {
-    this->write([&](const cv::InputArray& videoFrame) {
+    this->write([&](const cv::UMat& videoFrame) {
         if (sink_.isReady())
             sink_(videoFrame);
     });
 }
 
-void Viz2D::write(std::function<void(const cv::InputArray&)> fn) {
+void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
     clva().write(fn);
 }
 
