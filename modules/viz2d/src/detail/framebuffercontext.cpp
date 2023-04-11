@@ -78,27 +78,27 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     cl_context context = (cl_context) ctx.ptr();
 
     cl_int status = 0;
-    static bool first = true;
-    static cl_mem clImage = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0,
-            texture.texId(), &status);
+    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
+
+    if (clImage_ == nullptr) {
+        clImage_ = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0, texture.texId(),
+                &status);
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clCreateFromGLTexture failed: %d", status));
 
-    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
-    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
-    if (first) {
-        first = false;
-        status = clEnqueueAcquireGLObjects(q, 1, &clImage, 0, NULL, NULL);
+        status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
         if (status != CL_SUCCESS)
             CV_Error_(cv::Error::OpenCLApiCallError,
                     ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
     }
 
-    size_t offset = 0; // TODO
+    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
+
+    size_t offset = 0;
     size_t dst_origin[3] = { 0, 0, 0 };
     size_t region[3] = { (size_t) u.cols, (size_t) u.rows, 1 };
-    status = clEnqueueCopyBufferToImage(q, clBuffer, clImage, offset, dst_origin, region, 0, NULL,
+    status = clEnqueueCopyBufferToImage(q, clBuffer, clImage_, offset, dst_origin, region, 0, NULL,
             NULL);
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
@@ -117,28 +117,29 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
         u.create(texture.size(), textureType);
     }
 
+    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
+
     cl_int status = 0;
-    static bool first = true;
-    static cl_mem clImage = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0,
+    if(clImage_ == nullptr) {
+    clImage_ = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0,
             texture.texId(), &status);
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clCreateFromGLTexture failed: %d", status));
 
-    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
-    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
-    if (first) {
-        first = false;
-        status = clEnqueueAcquireGLObjects(q, 1, &clImage, 0, NULL, NULL);
+
+        status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
         if (status != CL_SUCCESS)
             CV_Error_(cv::Error::OpenCLApiCallError,
                     ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
     }
 
-    size_t offset = 0; // TODO
+    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
+
+    size_t offset = 0;
     size_t src_origin[3] = { 0, 0, 0 };
     size_t region[3] = { (size_t) u.cols, (size_t) u.rows, 1 };
-    status = clEnqueueCopyImageToBuffer(q, clImage, clBuffer, src_origin, region, offset, 0, NULL,
+    status = clEnqueueCopyImageToBuffer(q, clImage_, clBuffer, src_origin, region, offset, 0, NULL,
             NULL);
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,

@@ -45,6 +45,7 @@ class FrameBufferContext {
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
     GLint viewport_[4];
+    cl_mem clImage_ = nullptr;
 #ifndef __EMSCRIPTEN__
     CLExecContext_t context_;
 #endif
