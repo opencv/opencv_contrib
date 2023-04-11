@@ -449,9 +449,8 @@ bool iteration() {
 #ifndef __EMSCRIPTEN__
     v2d->write();
 
-    v2dMenu->capture([=](cv::OutputArray& videoFrame) {
-        cv::UMat m = videoFrame.getUMat();
-        menuFrame.copyTo(m);
+    v2dMenu->capture([=](cv::UMat& videoFrame) {
+        menuFrame.copyTo(videoFrame);
     });
 
     if(!v2dMenu->display())
