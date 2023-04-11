@@ -9,7 +9,7 @@ constexpr int HEIGHT = 720;
 int main() {
 	//Creates a Viz2D object for on screen rendering
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Show image");
-	v2d->setVisible(true);
+
 	//An image
 	Mat image = imread(samples::findFile("lena.jpg"));
 	//Feeds the image to the video pipeline

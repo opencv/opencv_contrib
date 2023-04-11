@@ -67,6 +67,7 @@ void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size
 
 cv::Ptr<Viz2D> Viz2D::make(const cv::Size& size, const string& title, bool debug) {
     cv::Ptr<Viz2D> v2d = new Viz2D(size, size, false, title, 4, 6, 0, debug);
+    v2d->setVisible(true);
     return v2d;
 }
 
@@ -308,6 +309,8 @@ void Viz2D::nvg(std::function<void(const cv::Size&)> fn) {
 
 void Viz2D::nanogui(std::function<void(FormHelper& form)> fn) {
     fn(form());
+    screen().set_visible(true);
+    screen().perform_layout();
 }
 
 void Viz2D::run(std::function<bool()> fn) {
@@ -579,8 +582,6 @@ bool Viz2D::isVisible() {
 void Viz2D::setVisible(bool v) {
     makeCurrent();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
-    screen().set_visible(v);
-    screen().perform_layout();
 }
 
 bool Viz2D::isOffscreen() {
