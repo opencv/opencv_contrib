@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
     using namespace cv::viz;
 
     printSystemInfo();
+
     if(!v2d->isOffscreen())
         v2d->setVisible(true);
 
