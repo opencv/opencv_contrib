@@ -3,7 +3,7 @@
 [TOC]
 
 # What is Viz2D?
-Viz2D is a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
+Viz2D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
 # Why Viz2D?
 Please refer to the following online demos to see at a glance what it can do for you.
@@ -15,7 +15,7 @@ Please refer to the following online demos to see at a glance what it can do for
 * Video pipeline: Through a simple Source/Sink system videos can be displayed, edited and saved.
 * Hardware acceleration: Automatic hardware acceleration usage where possible. (e.g. cl-gl sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
 * No more highgui with it's heavy dependencies, licenses and limitations.
-* WebAssembly support
+* WebAssembly support.
 
 # Online Demos
 
@@ -58,40 +58,12 @@ v2d->gl([](const Size sz) {
 * [nanovg](https://github.com/inniyah/nanovg)
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
-# Examples
-Those are minimal examples, full samples below.
+# Tutorials
 
-## Display an image
-Actually there are several ways to display an image but for now we focus on the most convinient way.
-
-@include samples/cpp/display_image.cpp
-
-This will create a window with size WIDTHxHEIGHT for on-screen rendering with the title "Show Image" and display the image (using the video pipeline which resizes the image to framebuffer size, but more about that later).
-
-## Render OpenGL
-This example renders a rotating tetrahedron using legacy OpenGL for brevity.
-
-@include samples/cpp/render_opengl.cpp
-
-## Manipulate the framebuffer using OpenCV/OpenCL
-All contexts operate on the same framebuffer through different means. OpenCV (using OpenCL where available) can manipulate results of other contexts throught the ```fb``` context.
-
-@include samples/cpp/manipulate_fb.cpp
-
-## Vector graphics
-Through the nvg context javascript-like canvas-rendering is possible.
-
-@include samples/cpp/vector_graphics.cpp
-
-## Vector graphics and framebuffer manipulation
-The framebuffer can be accessed directly to manipulate data created in other contexts.
-
-@include samples/cpp/vector_graphics_and_fb.cpp
-
-## Font rendering
-Draws "hello world" to the screen.
-
-@include samples/cpp/font_rendering.cpp
+* \ref viz2d_display_image
+* \ref viz2d_vector_graphics
+* \ref viz2d_render_opengl
+* \ref viz2d_font_rendering
 
 ## Video editing
 Through adding a Source and a Sink v2d becomes capable of video editing. Reads a video, renders text on top and writes the result.
