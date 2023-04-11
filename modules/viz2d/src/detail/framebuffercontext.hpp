@@ -69,6 +69,9 @@ class FrameBufferContext {
      */
     void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
             bool stretch = false);
+
+    void toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture);
+    void fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u);
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.

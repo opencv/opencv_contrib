@@ -27,8 +27,11 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
             cv::ogl::ocl::initializeContextFromGL();
         else
             clglSharing_ = false;
+    } catch (std::exception& ex) {
+        cerr << "CL-GL sharing failed: " << ex.what() << endl;
+        clglSharing_ = false;
     } catch (...) {
-        cerr << "CL-GL sharing failed." << endl;
+        cerr << "CL-GL sharing failed with unknown error." << endl;
         clglSharing_ = false;
     }
 #else
@@ -65,6 +68,81 @@ FrameBufferContext::~FrameBufferContext() {
     glDeleteTextures(1, &textureID_);
     glDeleteRenderbuffers(1, &renderBufferID_);
     glDeleteFramebuffers(1, &frameBufferID_);
+}
+
+void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
+    using namespace cv::ocl;
+
+    Size srcSize = u.size();
+    Context& ctx = Context::getDefault();
+    cl_context context = (cl_context) ctx.ptr();
+
+    cl_int status = 0;
+    static bool first = true;
+    static cl_mem clImage = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0,
+            texture.texId(), &status);
+    if (status != CL_SUCCESS)
+        CV_Error_(cv::Error::OpenCLApiCallError,
+                ("OpenCL: clCreateFromGLTexture failed: %d", status));
+
+    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
+    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
+    if (first) {
+        first = false;
+        status = clEnqueueAcquireGLObjects(q, 1, &clImage, 0, NULL, NULL);
+        if (status != CL_SUCCESS)
+            CV_Error_(cv::Error::OpenCLApiCallError,
+                    ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
+    }
+
+    size_t offset = 0; // TODO
+    size_t dst_origin[3] = { 0, 0, 0 };
+    size_t region[3] = { (size_t) u.cols, (size_t) u.rows, 1 };
+    status = clEnqueueCopyBufferToImage(q, clBuffer, clImage, offset, dst_origin, region, 0, NULL,
+            NULL);
+    if (status != CL_SUCCESS)
+        CV_Error_(cv::Error::OpenCLApiCallError,
+                ("OpenCL: clEnqueueCopyBufferToImage failed: %d", status));
+}
+
+void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u) {
+    using namespace cv::ocl;
+
+    const int dtype = CV_8UC4;
+    int textureType = dtype;
+    Context& ctx = Context::getDefault();
+    cl_context context = (cl_context) ctx.ptr();
+
+    if (u.size() != texture.size() || u.type() != textureType) {
+        u.create(texture.size(), textureType);
+    }
+
+    cl_int status = 0;
+    static bool first = true;
+    static cl_mem clImage = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0,
+            texture.texId(), &status);
+    if (status != CL_SUCCESS)
+        CV_Error_(cv::Error::OpenCLApiCallError,
+                ("OpenCL: clCreateFromGLTexture failed: %d", status));
+
+    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
+    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
+    if (first) {
+        first = false;
+        status = clEnqueueAcquireGLObjects(q, 1, &clImage, 0, NULL, NULL);
+        if (status != CL_SUCCESS)
+            CV_Error_(cv::Error::OpenCLApiCallError,
+                    ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
+    }
+
+    size_t offset = 0; // TODO
+    size_t src_origin[3] = { 0, 0, 0 };
+    size_t region[3] = { (size_t) u.cols, (size_t) u.rows, 1 };
+    status = clEnqueueCopyImageToBuffer(q, clImage, clBuffer, src_origin, region, offset, 0, NULL,
+            NULL);
+    if (status != CL_SUCCESS)
+        CV_Error_(cv::Error::OpenCLApiCallError,
+                ("OpenCL: clEnqueueCopyImageToBuffer failed: %d", status));
 }
 
 cv::Size FrameBufferContext::getSize() {
@@ -137,7 +215,7 @@ void FrameBufferContext::upload(const cv::UMat& m) {
 
 void FrameBufferContext::acquireFromGL(cv::UMat& m) {
     if (clglSharing_) {
-        GL_CHECK(cv::ogl::convertFromGLTexture2D(getTexture2D(), m));
+        GL_CHECK(fromGLTexture2D(getTexture2D(), m));
     } else {
         if (m.empty())
             m.create(getSize(), CV_8UC4);
@@ -153,7 +231,7 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
     //FIXME
     cv::flip(m, m, 0);
     if (clglSharing_) {
-        GL_CHECK(cv::ogl::convertToGLTexture2D(m, getTexture2D()));
+        GL_CHECK(toGLTexture2D(m, getTexture2D()));
     } else {
         if (m.empty())
             m.create(getSize(), CV_8UC4);
