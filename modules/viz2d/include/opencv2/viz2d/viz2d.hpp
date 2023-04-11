@@ -101,6 +101,9 @@ template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& 
  */
 CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
+CV_EXPORTS void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
+        const cv::Scalar& bgcolor = {0,0,0,255});
+
 using namespace cv::viz::detail;
 
 class NVG;
@@ -119,8 +122,6 @@ CV_EXPORTS class Viz2D {
     int minor_;
     int samples_;
     bool debug_;
-    std::filesystem::path capturePath_;
-    std::filesystem::path writerPath_;
     GLFWwindow* glfwWindow_ = nullptr;
     FrameBufferContext* clglContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
@@ -144,7 +145,8 @@ public:
      * @param title The window title.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& size, const string& title, bool debug = false);
+    CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& size, const string& title, bool debug =
+            false);
 
     /*!
      * Creates a Viz2D object which is the central object to perform visualizations with.
@@ -157,8 +159,9 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+    CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& initialSize,
+            const cv::Size& frameBufferSize, bool offscreen, const string& title, int major = 4,
+            int minor = 6, int samples = 0, bool debug = false);
     /*!
      * Default destructor
      */
@@ -203,18 +206,18 @@ public:
      */
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     /*!
-       * Execute function object fn inside a nanogui context.
-       * The context provides a #cv::viz::FormHelper instance to the function object
-       * which can be used to build a gui.
-       * @param fn A function that is passed the size of the framebuffer
-       * and performs drawing using cv::viz::nvg.
-       */
+     * Execute function object fn inside a nanogui context.
+     * The context provides a #cv::viz::FormHelper instance to the function object
+     * which can be used to build a gui.
+     * @param fn A function that is passed the size of the framebuffer
+     * and performs drawing using cv::viz::nvg.
+     */
     CV_EXPORTS void nanogui(std::function<void(FormHelper& form)> fn);
     /*!
-       * Execute function object fn in a loop.
-       * This function main purpose is to abstract the run loop for portability reasons.
-       * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
-       */
+     * Execute function object fn in a loop.
+     * This function main purpose is to abstract the run loop for portability reasons.
+     * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
+     */
     CV_EXPORTS void run(std::function<bool()> fn);
 
     /*!

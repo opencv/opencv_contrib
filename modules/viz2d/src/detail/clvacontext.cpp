@@ -43,7 +43,7 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
             return false;
 
         cv::Size fbSize = clglContext_.getSize();
-        cv::resize(videoFrame_, rgbBuffer_, fbSize);
+        resizeKeepAspectRatio(videoFrame_, rgbBuffer_, fbSize);
         cv::cvtColor(rgbBuffer_, frameBuffer_, cv::COLOR_RGB2BGRA);
 
         assert(frameBuffer_.size() == fbSize);

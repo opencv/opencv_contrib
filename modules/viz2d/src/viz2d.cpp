@@ -47,14 +47,32 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
+void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
+        const cv::Scalar& bgcolor) {
+    double h1 = dstSize.width * (src.rows / (double) src.cols);
+    double w2 = dstSize.height * (src.cols / (double) src.rows);
+    if (h1 <= dstSize.height) {
+        cv::resize(src, output, cv::Size(dstSize.width, h1));
+    } else {
+        cv::resize(src, output, cv::Size(w2, dstSize.height));
+    }
+
+    int top = (dstSize.height - output.rows) / 2;
+    int down = (dstSize.height - output.rows + 1) / 2;
+    int left = (dstSize.width - output.cols) / 2;
+    int right = (dstSize.width - output.cols + 1) / 2;
+
+    cv::copyMakeBorder(output, output, top, down, left, right, cv::BORDER_CONSTANT, bgcolor);
+}
+
 cv::Ptr<Viz2D> Viz2D::make(const cv::Size& size, const string& title, bool debug) {
     cv::Ptr<Viz2D> v2d = new Viz2D(size, size, false, title, 4, 6, 0, debug);
     v2d->setVisible(true);
     return v2d;
 }
 
-cv::Ptr<Viz2D> Viz2D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major, int minor, int samples, bool debug) {
+cv::Ptr<Viz2D> Viz2D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize,
+        bool offscreen, const string& title, int major, int minor, int samples, bool debug) {
     return new Viz2D(initialSize, frameBufferSize, offscreen, title, major, minor, samples, debug);
 }
 
@@ -195,11 +213,11 @@ bool Viz2D::initializeWindowing() {
         find_widgets(&v2d->screen(), widgets);
         for (auto* w : widgets) {
             auto mousePos = nanogui::Vector2i(v2d->getMousePosition()[0] / v2d->getXPixelRatio(), v2d->getMousePosition()[1] / v2d->getYPixelRatio());
-            if(contains_absolute(w, mousePos)) {
-                v2d->screen().scroll_callback_event(x, y);
-                return;
-            }
-        }
+    if(contains_absolute(w, mousePos)) {
+        v2d->screen().scroll_callback_event(x, y);
+        return;
+    }
+}
 
         v2d->zoom(y < 0 ? 1.1 : 0.9);
     }
@@ -295,12 +313,12 @@ void Viz2D::nanogui(std::function<void(FormHelper& form)> fn) {
 
 void Viz2D::run(std::function<bool()> fn) {
 #ifndef __EMSCRIPTEN__
-    while(keepRunning() && fn());
+    while (keepRunning() && fn())
+        ;
 #else
     emscripten_set_main_loop(fn, -1, true);
 #endif
 }
-
 
 void Viz2D::setSource(const Source& src) {
     if (!clva().hasContext())
