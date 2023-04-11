@@ -17,7 +17,7 @@ Please refer to the [online demos](https://github.com/kallaballa/Viz2D/blob/main
 * WebAssembly
 
 # Documentation
-OpenCV module documentation with tutorials and samples is available [here](https://viel-zu.org/opencv/apidoc/)
+OpenCV module documentation with tutorials and samples is available [here](https://viel-zu.org/opencv/doxygen/html/dc/d7b/viz2d.html)
 
 ## Online Demos
 
