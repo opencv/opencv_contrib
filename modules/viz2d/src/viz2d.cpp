@@ -582,6 +582,8 @@ bool Viz2D::isVisible() {
 void Viz2D::setVisible(bool v) {
     makeCurrent();
     glfwWindowHint(GLFW_VISIBLE, v ? GLFW_TRUE : GLFW_FALSE);
+    screen().set_visible(v);
+    screen().perform_layout();
 }
 
 bool Viz2D::isOffscreen() {
