@@ -110,6 +110,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     int textureType = dtype;
 
     if (u.size() != texture.size() || u.type() != textureType) {
+        cerr << "create" << endl;
         u.create(texture.size(), textureType);
     }
 
