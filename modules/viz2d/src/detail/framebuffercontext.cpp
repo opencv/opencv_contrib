@@ -73,14 +73,12 @@ FrameBufferContext::~FrameBufferContext() {
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
     using namespace cv::ocl;
 
-    Size srcSize = u.size();
-    Context& ctx = Context::getDefault();
-    cl_context context = (cl_context) ctx.ptr();
-
     cl_int status = 0;
     cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
 
     if (clImage_ == nullptr) {
+        Context& ctx = Context::getDefault();
+        cl_context context = (cl_context) ctx.ptr();
         clImage_ = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
         if (status != CL_SUCCESS)
@@ -110,8 +108,6 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
 
     const int dtype = CV_8UC4;
     int textureType = dtype;
-    Context& ctx = Context::getDefault();
-    cl_context context = (cl_context) ctx.ptr();
 
     if (u.size() != texture.size() || u.type() != textureType) {
         u.create(texture.size(), textureType);
@@ -121,6 +117,8 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
 
     cl_int status = 0;
     if (clImage_ == nullptr) {
+        Context& ctx = Context::getDefault();
+        cl_context context = (cl_context) ctx.ptr();
         clImage_ = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
         if (status != CL_SUCCESS)
@@ -133,7 +131,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
                     ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
     }
 
-    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
+    cl_mem clBuffer = (cl_mem) u.handle(ACCESS_WRITE);
 
     size_t offset = 0;
     size_t src_origin[3] = { 0, 0, 0 };
