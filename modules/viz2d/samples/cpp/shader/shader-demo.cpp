@@ -44,7 +44,7 @@ GLint zoom_hdl;
 /** shader and program handle **/
 GLuint shader_program_hdl;
 
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
 //vertex array
 GLuint VAO;
 #endif
@@ -71,7 +71,7 @@ unsigned int indices[] =
 
 void load_buffer_data(){
 
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 #endif
@@ -89,7 +89,7 @@ void load_buffer_data(){
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     glBindVertexArray(0);
 #endif
 }
@@ -170,7 +170,7 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
 
 //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
 void load_shader(){
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     const string shaderVersion = "330";
 #else
     const string shaderVersion = "300 es";
@@ -293,7 +293,7 @@ void render_scene(const cv::Size& sz) {
         glUniform1f(zoom_hdl, zoom);
     }
 
-#ifndef __EMSCRIPTEN__
+#ifndef VIZ2D_USE_ES3
     glBindVertexArray(VAO);
 #endif
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
