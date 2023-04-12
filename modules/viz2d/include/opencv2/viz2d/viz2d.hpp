@@ -15,6 +15,7 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <thread>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #ifdef __EMSCRIPTEN__
@@ -144,6 +145,7 @@ CV_EXPORTS class Viz2D {
     nanogui::Screen* screen_ = nullptr;
     Source source_;
     Sink sink_;
+    std::thread* writerThread_ = new std::thread();
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
     /*!
