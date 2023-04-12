@@ -89,7 +89,7 @@ bool isClGlSharingSupported() {
     } catch (std::exception& ex) {
         cerr << "CL-GL sharing query failed: " << ex.what() << endl;
     } catch (...) {
-        cerr << "CL-GL sharing query failed" << endl;
+        cerr << "CL-GL sharing query failed with unknown error." << endl;
     }
 #endif
     return false;
