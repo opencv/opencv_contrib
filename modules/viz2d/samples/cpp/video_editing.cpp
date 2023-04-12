@@ -21,7 +21,8 @@ int main(int argc, char** argv) {
 
 	v2d->run([=]() {
 		if(!v2d->capture())
-			return false;
+			return false; //end of input video
+
 		v2d->nvg([=](const Size& sz) {
 			using namespace cv::viz::nvg;
 
@@ -29,10 +30,10 @@ int main(int argc, char** argv) {
 			fontFace("sans-bold");
 			fillColor(Scalar(255, 0, 0, 255));
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-			text(WIDTH / 2.0, HEIGHT / 2.0, hv.c_str(), hv.c_str() + hv.size());
+			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
 		});
-		v2d->write();
-		return v2d->display();
+		v2d->write(); //write the output video
+		return v2d->display(); //display the framebuffer in the native window
 	});
 }
 

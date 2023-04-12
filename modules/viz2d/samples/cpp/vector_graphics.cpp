@@ -16,10 +16,10 @@ int main(int argc, char** argv) {
 		beginPath();
 		strokeWidth(3.0);
 		strokeColor(Scalar(0,0,255,255)); //BGRA
-		moveTo(WIDTH/2.0, 0);
-		lineTo(WIDTH/2.0, HEIGHT);
-		moveTo(0, HEIGHT/2.0);
-		lineTo(WIDTH, HEIGHT/2.0);
+		moveTo(sz.width/2.0, 0);
+		lineTo(sz.width/2.0, sz.height);
+		moveTo(0, sz.height/2.0);
+		lineTo(sz.width, sz.height/2.0);
 		stroke();
 	});
 
