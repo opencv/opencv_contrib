@@ -146,6 +146,9 @@ CV_EXPORTS class Viz2D {
     Source source_;
     Sink sink_;
     std::thread* writerThread_ = new std::thread();
+    std::thread* readerThread_ = new std::thread();
+    cv::UMat currentFrame_;
+    cv::UMat nextFrame_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
     /*!

@@ -20,7 +20,6 @@ class CLVAContext {
     friend class cv::viz::Viz2D;
     CLExecContext_t context_;
     FrameBufferContext& clglContext_;
-    cv::UMat frameBuffer_;
     cv::UMat videoFrame_;
     cv::UMat rgbBuffer_;
     bool hasContext_ = false;
@@ -43,12 +42,12 @@ public:
      * @param fn The functor that provides the data.
      * @return true if successful-
      */
-    bool capture(std::function<void(cv::UMat&)> fn);
+    bool capture(std::function<void(cv::UMat&)> fn, cv::UMat& framebuffer);
     /*!
      * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
      * @param fn The functor that consumes the data,
      */
-    void write(std::function<void(const cv::UMat&)> fn, const cv::UMat& frame);
+    void write(std::function<void(const cv::UMat&)> fn, const cv::UMat& framebuffer);
 
     /*FIXME only public till https://github.com/opencv/opencv/pull/22780 is resolved.
      * required for manual initialization of VideoCapture/VideoWriter

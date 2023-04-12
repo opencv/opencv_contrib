@@ -20,7 +20,7 @@ cv::Size CLVAContext::getVideoFrameSize() {
     return videoFrameSize_;
 }
 
-bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
+bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& frameBuffer) {
     {
         if (!context_.empty()) {
 #ifndef __EMSCRIPTEN__
@@ -37,16 +37,14 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(clglContext_.getCLExecContext());
 #endif
-        FrameBufferContext::GLScope glScope(clglContext_);
-        FrameBufferContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
         if (videoFrame_.empty())
             return false;
 
         cv::Size fbSize = clglContext_.getSize();
         resizeKeepAspectRatio(videoFrame_, rgbBuffer_, fbSize);
-        cv::cvtColor(rgbBuffer_, frameBuffer_, cv::COLOR_RGB2BGRA);
+        cv::cvtColor(rgbBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
 
-        assert(frameBuffer_.size() == fbSize);
+        assert(frameBuffer.size() == fbSize);
     }
     return true;
 }

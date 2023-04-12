@@ -342,7 +342,27 @@ bool Viz2D::capture() {
 }
 
 bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
-    return clva().capture(fn);
+    if(readerThread_->joinable())
+        readerThread_->join();
+    delete readerThread_;
+
+    if(nextFrame_.empty()) {
+        if(!clva().capture(fn, nextFrame_))
+            return false;
+    }
+
+    currentFrame_ = nextFrame_;
+
+    cv::UMat frameBuffer;
+    FrameBufferContext::GLScope glScope(*clglContext_);
+    FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
+
+    currentFrame_.copyTo(frameBuffer);
+
+    readerThread_ = new std::thread([=,this](){
+        clva().capture(fn, nextFrame_);
+    });
+    return true;
 }
 
 bool Viz2D::isSourceReady() {
