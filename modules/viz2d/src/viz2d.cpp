@@ -363,12 +363,14 @@ void Viz2D::write() {
 }
 
 void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
+    //FIXME use a thread pool
     if(writerThread_->joinable())
         writerThread_->join();
+    delete writerThread_;
+
     cv::UMat frameBuffer;
     FrameBufferContext::GLScope glScope(*clglContext_);
     FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
-
     writerThread_ = new std::thread([=,this](){
         clva().write(fn, frameBuffer);
     });
