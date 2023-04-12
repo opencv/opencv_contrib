@@ -51,15 +51,12 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
     return true;
 }
 
-void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
+void CLVAContext::write(std::function<void(const cv::UMat&)> fn, const cv::UMat& frameBuffer) {
     {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(clglContext_.getCLExecContext());
 #endif
-        FrameBufferContext::GLScope glScope(clglContext_);
-        FrameBufferContext::FrameBufferScope fbScope(clglContext_, frameBuffer_);
-
-        cv::cvtColor(frameBuffer_, rgbBuffer_, cv::COLOR_BGRA2RGB);
+        cv::cvtColor(frameBuffer, rgbBuffer_, cv::COLOR_BGRA2RGB);
         if(videoFrameSize_ == cv::Size(0,0))
             videoFrameSize_ = rgbBuffer_.size();
         cv::resize(rgbBuffer_, videoFrame_, videoFrameSize_);

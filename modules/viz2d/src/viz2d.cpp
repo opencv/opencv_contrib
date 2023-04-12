@@ -271,7 +271,6 @@ FrameBufferContext& Viz2D::fb() {
 
 CLVAContext& Viz2D::clva() {
     assert(clvaContext_ != nullptr);
-    makeCurrent();
     return *clvaContext_;
 }
 
@@ -364,7 +363,15 @@ void Viz2D::write() {
 }
 
 void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
-    clva().write(fn);
+    if(writerThread_->joinable())
+        writerThread_->join();
+    cv::UMat frameBuffer;
+    FrameBufferContext::GLScope glScope(*clglContext_);
+    FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
+
+    writerThread_ = new std::thread([=,this](){
+        clva().write(fn, frameBuffer);
+    });
 }
 
 bool Viz2D::isSinkReady() {
