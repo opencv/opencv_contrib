@@ -353,11 +353,10 @@ bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
 
     currentReaderFrame_ = nextReaderFrame_;
     {
-        cv::UMat frameBuffer;
         FrameBufferContext::GLScope glScope(*clglContext_);
-        FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
+        FrameBufferContext::FrameBufferScope fbScope(*clglContext_, readerFrameBuffer_);
 
-        currentReaderFrame_.copyTo(frameBuffer);
+        currentReaderFrame_.copyTo(readerFrameBuffer_);
     }
     readerThread_ = new std::thread([=,this](){
         captureSuccessful_ = clva().capture(fn, nextReaderFrame_);
@@ -388,11 +387,10 @@ void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
         writerThread_->join();
     delete writerThread_;
     {
-        cv::UMat frameBuffer;
         FrameBufferContext::GLScope glScope(*clglContext_);
-        FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
+        FrameBufferContext::FrameBufferScope fbScope(*clglContext_, writerFrameBuffer_);
 
-        frameBuffer.copyTo(currentWriterFrame_);
+        writerFrameBuffer_.copyTo(currentWriterFrame_);
     }
     writerThread_ = new std::thread([=,this](){
         clva().write(fn, currentWriterFrame_);

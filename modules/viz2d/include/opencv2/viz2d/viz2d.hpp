@@ -151,6 +151,8 @@ CV_EXPORTS class Viz2D {
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
     cv::UMat currentWriterFrame_;
+    cv::UMat readerFrameBuffer_;
+    cv::UMat writerFrameBuffer_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
     /*!
