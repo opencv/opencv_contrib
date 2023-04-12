@@ -133,6 +133,7 @@ bool Viz2D::initializeWindowing() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
 #endif
     glfwWindowHint(GLFW_SAMPLES, samples_);
