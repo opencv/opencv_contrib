@@ -13,11 +13,13 @@
 #include "util.hpp"
 #include <filesystem>
 #include <iostream>
+#include <future>
 #include <set>
 #include <string>
-#include <thread>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
+
+#include "cxxpool.hpp"
 #ifdef __EMSCRIPTEN__
 #define VIZ2D_USE_ES3 1
 #include <emscripten.h>
@@ -145,14 +147,15 @@ CV_EXPORTS class Viz2D {
     nanogui::Screen* screen_ = nullptr;
     Source source_;
     Sink sink_;
-    std::thread* writerThread_ = new std::thread();
-    std::thread* readerThread_ = new std::thread();
+    cxxpool::thread_pool pool{2}; //two threads. one for reading and one for writing
     bool captureSuccessful_ = true;
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
     cv::UMat currentWriterFrame_;
     cv::UMat readerFrameBuffer_;
     cv::UMat writerFrameBuffer_;
+    std::future<bool> futureReader_;
+    std::future<void> futureWriter_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
 public:
     /*!

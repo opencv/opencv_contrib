@@ -342,9 +342,9 @@ bool Viz2D::capture() {
 }
 
 bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
-    if(readerThread_->joinable())
-        readerThread_->join();
-    delete readerThread_;
+    if(futureReader_.valid())
+        if(!futureReader_.get())
+            return false;
 
     if(nextReaderFrame_.empty()) {
         if(!clva().capture(fn, nextReaderFrame_))
@@ -358,8 +358,9 @@ bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
 
         currentReaderFrame_.copyTo(readerFrameBuffer_);
     }
-    readerThread_ = new std::thread([=,this](){
-        captureSuccessful_ = clva().capture(fn, nextReaderFrame_);
+
+    futureReader_ = pool.push([=,this](){
+        return clva().capture(fn, nextReaderFrame_);
     });
     return captureSuccessful_;
 }
@@ -382,17 +383,16 @@ void Viz2D::write() {
 }
 
 void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
-    //FIXME use a thread pool
-    if(writerThread_->joinable())
-        writerThread_->join();
-    delete writerThread_;
+    if(futureWriter_.valid())
+        futureWriter_.get();
+
     {
         FrameBufferContext::GLScope glScope(*clglContext_);
         FrameBufferContext::FrameBufferScope fbScope(*clglContext_, writerFrameBuffer_);
 
         writerFrameBuffer_.copyTo(currentWriterFrame_);
     }
-    writerThread_ = new std::thread([=,this](){
+    futureWriter_ = pool.push([=,this](){
         clva().write(fn, currentWriterFrame_);
     });
 }
