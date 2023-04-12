@@ -167,8 +167,8 @@ public:
      * @param debug Create a debug OpenGL context.
      */
     CV_EXPORTS static cv::Ptr<Viz2D> make(const cv::Size& initialSize,
-            const cv::Size& frameBufferSize, bool offscreen, const string& title, int major = 4,
-            int minor = 6, int samples = 0, bool debug = false);
+            const cv::Size& frameBufferSize, bool offscreen, const string& title, int major = 3,
+            int minor = 0, int samples = 0, bool debug = false);
     /*!
      * Default destructor
      */
@@ -427,7 +427,7 @@ private:
      * @param debug Create a debug OpenGL context.
      */
     CV_EXPORTS Viz2D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major = 4, int minor = 6, int samples = 0, bool debug = false);
+            const string& title, int major = 3, int minor = 0, int samples = 0, bool debug = false);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);

@@ -10,8 +10,11 @@
 # What is Viz2D?
 Viz2D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
+# Showcase
+@youtube{yYnWkkZSK7Q}
+
 # Why Viz2D?
-Please refer to the following online demos to see at a glance what it can do for you.
+Please refer to the online demos in the following section to see at a glance what it can do for you.
 
 * **OpenGL**: Easy access to OpenGL.
 * **GUI**: Simple yet powerful user interfaces through NanoGUI.
@@ -49,7 +52,7 @@ v2d->gl([](const Size sz) {
 
 # Requirements
 * C++20 (at the moment)
-* OpenGL 4/OpenGL ES 3.0
+* OpenGL 3.0/OpenGL ES 3.0
 
 # Optional requirements
 * Support for OpenCL 1.2
@@ -86,6 +89,6 @@ The goal of the samples is to show how to use Viz2D to the fullest. Also they sh
 * \ref viz2d_beauty
 
 # Attribution
-* The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
-* The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8))
-* The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s))
+* The author of the bunny video is the **Blender Foundation** ([Original video](https://www.bigbuckbunny.org)).
+* The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8)).
+* The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s)).
