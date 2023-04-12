@@ -11,6 +11,8 @@
 Viz2D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
 # Showcase
+Please note that all renderings and videos were created on an Intel Tigerlake CPU and an Intel Iris Xe iGPU. Also the demos in the videos might run slower for various reasons (better implementation by now, screen capturing, etc.) than they would normally do.
+
 @youtube{yYnWkkZSK7Q}
 
 # Why Viz2D?
