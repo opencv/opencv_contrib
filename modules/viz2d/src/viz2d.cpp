@@ -346,23 +346,23 @@ bool Viz2D::capture(std::function<void(cv::UMat&)> fn) {
         readerThread_->join();
     delete readerThread_;
 
-    if(nextFrame_.empty()) {
-        if(!clva().capture(fn, nextFrame_))
+    if(nextReaderFrame_.empty()) {
+        if(!clva().capture(fn, nextReaderFrame_))
             return false;
     }
 
-    currentFrame_ = nextFrame_;
+    currentReaderFrame_ = nextReaderFrame_;
+    {
+        cv::UMat frameBuffer;
+        FrameBufferContext::GLScope glScope(*clglContext_);
+        FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
 
-    cv::UMat frameBuffer;
-    FrameBufferContext::GLScope glScope(*clglContext_);
-    FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
-
-    currentFrame_.copyTo(frameBuffer);
-
+        currentReaderFrame_.copyTo(frameBuffer);
+    }
     readerThread_ = new std::thread([=,this](){
-        clva().capture(fn, nextFrame_);
+        captureSuccessful_ = clva().capture(fn, nextReaderFrame_);
     });
-    return true;
+    return captureSuccessful_;
 }
 
 bool Viz2D::isSourceReady() {
@@ -387,12 +387,15 @@ void Viz2D::write(std::function<void(const cv::UMat&)> fn) {
     if(writerThread_->joinable())
         writerThread_->join();
     delete writerThread_;
+    {
+        cv::UMat frameBuffer;
+        FrameBufferContext::GLScope glScope(*clglContext_);
+        FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
 
-    cv::UMat frameBuffer;
-    FrameBufferContext::GLScope glScope(*clglContext_);
-    FrameBufferContext::FrameBufferScope fbScope(*clglContext_, frameBuffer);
+        frameBuffer.copyTo(currentWriterFrame_);
+    }
     writerThread_ = new std::thread([=,this](){
-        clva().write(fn, frameBuffer);
+        clva().write(fn, currentWriterFrame_);
     });
 }
 
