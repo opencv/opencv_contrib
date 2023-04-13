@@ -9,7 +9,6 @@ constexpr int HEIGHT = 720;
 int main() {
 	//Creates a Viz2D object for on screen rendering
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Show image");
-
 	//Read an image as UMat
 	UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 	UMat resized;

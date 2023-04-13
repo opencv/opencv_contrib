@@ -27,9 +27,7 @@ int main(int argc, char** argv) {
 		glRotatef(50, 1, 0, 0);
 		glRotatef(70, 0, 1, 0);
 	});
-	//Viz2D::run() though it takes a functor is not a context. It is simply an abstraction
-	//of a run loop for portability reasons and executes the functor until the application
-	//terminates or the functor returns false.
+
 	v2d->run([=]() {
 		v2d->gl([](const Size& sz) {
 			//Render a tetrahedron using immediate mode because the code is more concise

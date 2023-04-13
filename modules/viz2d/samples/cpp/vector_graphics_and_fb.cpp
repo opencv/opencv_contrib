@@ -13,6 +13,8 @@ int main(int argc, char** argv) {
 	v2d->nvg([](const Size& sz) {
 		//Calls from this namespace may only be used inside a nvg context
 		using namespace cv::viz::nvg;
+
+		//Draws a cross-hair
 		beginPath();
 		strokeWidth(3.0);
 		strokeColor(Scalar(0,0,255,255)); //BGRA

@@ -21,9 +21,9 @@ Please refer to the online demos in the following section to see at a glance wha
 * **OpenGL**: Easy access to OpenGL.
 * **GUI**: Simple yet powerful user interfaces through NanoGUI.
 * **Vector graphics**: Elegant and fast vector graphics through NanoVG.
-* **Font rendering**: Loading of TTF-fonts and sophisticated rendering options.
-* **Video pipeline**: Through a simple Source/Sink system videos can be displayed, edited and saved.
-* **Hardware acceleration**: Automatic hardware acceleration usage where possible. (e.g. CL-GL sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
+* **Font rendering**: Loading of fonts and sophisticated rendering options.
+* **Video pipeline**: Through a simple Source/Sink system videos can be efficently displayed, edited and saved.
+* **Hardware acceleration**: Transparent hardware acceleration usage where possible. (e.g. CL-GL sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
 * **No more highgui** with it's heavy dependencies, licenses and limitations.
 * **WebAssembly support**.
 
@@ -39,6 +39,7 @@ Please note that the following online demos are slower and/or have less features
 * Viz2D is not thread safe. Though it is possible to have several Viz2D objects in one or more threads and synchronize them using ```Viz2D::makeNonCurrent()``` and ```Viz2D::makeCurrent()```. This is a limitation of GLFW3. That said, OpenCV algorithms are multi-threaded as usual.
 * Viz2D uses InputArray/OutputArray/InputOutputArray which gives you the option to work with Mat, std::vector and UMat. Anyway, you should prefer to use UMat whenever possible to automatically use hardware capabilities where available.
 * Access to different subsystems (opengl, framebuffer, nanovg and nanogui) is provided through "contexts". A context is simply a function that takes a functor, sets up the subsystem, executes the functor and tears-down the subsystem.
+* ```Viz2D::run``` is not a context. It is an abstraction of a run loop that takes a functor and runs until the application terminates or the functor returns false. This is necessary for portability reasons.
 * Contexts ***may not*** be nested.
 
 For example, to create an OpenGL context and set the GL viewport:
@@ -79,7 +80,7 @@ The tutorials are designed to be read one after the other to give you a good ove
 * \ref viz2d_font_with_gui
 
 # Samples
-The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D in conjunction with interop options to create programs that run mostly (the part the matters) on the GPU. They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
+The goal of the samples is to show how to use Viz2D to the fullest. Also they show how to use Viz2D to create programs that run mostly (the part the matters) on the GPU (when driver capabilities allow). They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
 
 * \ref viz2d_tetra
 * \ref viz2d_video

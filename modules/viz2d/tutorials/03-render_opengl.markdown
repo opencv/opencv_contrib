@@ -1,4 +1,4 @@
-# Render OpenGL using Viz2D {#viz2d_render_opengl}
+# OpenGL Rendering {#viz2d_render_opengl}
 
 @prev_tutorial{viz2d_vector_graphics}
 @next_tutorial{viz2d_font_rendering}

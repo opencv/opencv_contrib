@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
 	v2d->setSink(sink);
 
 	v2d->run([=]() {
+	    //Capture video from the Source
 		if(!v2d->capture())
 			return false; //end of input video
 
@@ -32,8 +33,8 @@ int main(int argc, char** argv) {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
 		});
-		v2d->write(); //write the output video
-		return v2d->display(); //display the framebuffer in the native window
+		v2d->write(); //Write video to the Sink
+		return v2d->display(); //Display the framebuffer in the native window
 	});
 }
 
