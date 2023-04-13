@@ -30,6 +30,25 @@ endif()
 
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVIZ2D_USE_ES3=1")
 
+find_package(Git QUIET)
+if(GIT_FOUND)
+# Update submodules as needed
+        message(STATUS "Submodule update")
+        execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                        RESULT_VARIABLE GIT_SUBMOD_RESULT)
+        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+        endif()
+endif()
+
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third/nanovg/CMakeLists.txt" AND NOT EXISTS "${PROJECT_SOURCE_DIR}/third/nanogui/CMakeLists.txt")
+    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+endif()
+
+add_subdirectory(third/nanovg)
+add_subdirectory(third/nanogui)
+
 include_directories(${glfw3_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${nanovg_INCLUDE_DIRS})
