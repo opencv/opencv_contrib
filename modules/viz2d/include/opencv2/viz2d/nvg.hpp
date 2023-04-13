@@ -25,19 +25,19 @@ namespace nvg {
 /*!
  * Equivalent of a NVGtextRow.
  */
-CV_EXPORTS struct TextRow: public NVGtextRow {
+struct CV_EXPORTS TextRow: public NVGtextRow {
 };
 
 /*!
  * Equivalent of a NVGglyphPosition.
  */
-CV_EXPORTS struct GlyphPosition: public NVGglyphPosition {
+struct CV_EXPORTS GlyphPosition: public NVGglyphPosition {
 };
 
 /*!
  * Equivalent of a NVGPaint. Converts back and forth between the two representations (Paint/NVGPaint).
  */
-CV_EXPORTS struct Paint {
+struct CV_EXPORTS Paint {
     Paint() {
     }
     Paint(const NVGpaint& np) {
