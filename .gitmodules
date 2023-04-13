@@ -1,9 +1,3 @@
-[submodule "modules/viz2d/third/nanovg"]
-	path = modules/viz2d/third/nanovg
-	url = git@github.com:kallaballa/nanovg.git
 [submodule "modules/viz2d/third/nanogui"]
 	path = modules/viz2d/third/nanogui
 	url = git@github.com:kallaballa/nanogui.git
-[submodule "modules/viz2d/third/nanovg/cython/tmp/py-sdl2"]
-	path = modules/viz2d/third/nanovg/cython/tmp/py-sdl2
-	url = https://github.com/py-sdl/py-sdl2.git
