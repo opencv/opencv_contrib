@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_DIALOG_HPP_
-#define SRC_COMMON_DIALOG_HPP_
+#ifndef SRC_OPENCV_VIZ2D_DIALOG_HPP_
+#define SRC_OPENCV_VIZ2D_DIALOG_HPP_
 #ifdef __EMSCRIPTEN__
 #define VIZ2D_USE_ES3 1
 #endif
@@ -30,7 +30,7 @@ using std::string;
  * A class for light-weight dialog (a dialog renderered inside a window) derived from nanogui::Window.
  * It keeps track of which dialogs are presented and which are lowered and is responsible for layout of lowered dialog-bars.
  */
-CV_EXPORTS class Dialog: public nanogui::Window {
+class CV_EXPORTS Dialog: public nanogui::Window {
 private:
     static std::function<bool(Dialog*, Dialog*)> viz2DWin_Xcomparator;
     static std::set<Dialog*, decltype(viz2DWin_Xcomparator)> all_windows_xsorted_;
@@ -67,4 +67,4 @@ public:
 } /* namespace viz */
 } /* namespace cv */
 
-#endif /* SRC_COMMON_DIALOG_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_DIALOG_HPP_ */

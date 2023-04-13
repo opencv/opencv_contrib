@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_NVG_HPP_
-#define SRC_COMMON_NVG_HPP_
+#ifndef SRC_OPENCV_VIZ2D_NVG_HPP_
+#define SRC_OPENCV_VIZ2D_NVG_HPP_
 
 #include "viz2d.hpp"
 #ifndef __EMSCRIPTEN__
@@ -517,4 +517,4 @@ CV_EXPORTS void resetScissor();
 }
 }
 
-#endif /* SRC_COMMON_NVG_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_NVG_HPP_ */

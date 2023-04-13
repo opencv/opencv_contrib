@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_FORMHELPER_HPP_
-#define SRC_COMMON_FORMHELPER_HPP_
+#ifndef SRC_OPENCV_VIZ2D_FORMHELPER_HPP_
+#define SRC_OPENCV_VIZ2D_FORMHELPER_HPP_
 #include "dialog.hpp"
 
 #include <nanogui/screen.h>
@@ -19,7 +19,7 @@ using std::string;
 /*!
  * Ansub-class of nanogui::FormHelper adding convenience calls not unlike highgui offers.
  */
-CV_EXPORTS class FormHelper: public nanogui::FormHelper {
+class CV_EXPORTS FormHelper: public nanogui::FormHelper {
 public:
     /*!
      * Creates a FormHelper.
@@ -126,4 +126,4 @@ public:
 } /* namespace viz */
 } /* namespace cv */
 
-#endif /* SRC_COMMON_FORMHELPER_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_FORMHELPER_HPP_ */

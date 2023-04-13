@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_UTIL_HPP_
-#define SRC_COMMON_UTIL_HPP_
+#ifndef SRC_OPENCV_VIZ2D_UTIL_HPP_
+#define SRC_OPENCV_VIZ2D_UTIL_HPP_
 
 #include "source.hpp"
 #include "sink.hpp"
@@ -114,4 +114,4 @@ CV_EXPORTS Source makeCaptureSource(int width, int height);
 }
 }
 
-#endif /* SRC_COMMON_UTIL_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_UTIL_HPP_ */

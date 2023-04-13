@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_SOURCE_HPP_
-#define SRC_COMMON_SOURCE_HPP_
+#ifndef SRC_OPENCV_VIZ2D_SOURCE_HPP_
+#define SRC_OPENCV_VIZ2D_SOURCE_HPP_
 
 #include <functional>
 #include <opencv2/opencv.hpp>
@@ -16,7 +16,7 @@ namespace viz {
  * A Source object represents a way to provide data to Viz2D by using
  * a generator functor.
  */
-CV_EXPORTS class Source {
+class CV_EXPORTS Source {
     bool open_ = true;
     std::function<bool(cv::UMat&)> generator_;
     cv::UMat frame_;
@@ -64,4 +64,4 @@ public:
 } /* namespace viz2d */
 } /* namespace kb */
 
-#endif /* SRC_COMMON_SOURCE_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_SOURCE_HPP_ */

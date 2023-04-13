@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_VIZ2D_HPP_
-#define SRC_COMMON_VIZ2D_HPP_
+#ifndef SRC_OPENCV_VIZ2D_VIZ2D_HPP_
+#define SRC_OPENCV_VIZ2D_VIZ2D_HPP_
 
 #include "source.hpp"
 #include "sink.hpp"
@@ -118,7 +118,7 @@ using namespace cv::viz::detail;
 
 class NVG;
 
-CV_EXPORTS class Viz2D {
+class CV_EXPORTS Viz2D {
     friend class NanoVGContext;
     const cv::Size initialSize_;
     cv::Size frameBufferSize_;
@@ -460,4 +460,4 @@ private:
 }
 } /* namespace kb */
 
-#endif /* SRC_COMMON_VIZ2D_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_VIZ2D_HPP_ */

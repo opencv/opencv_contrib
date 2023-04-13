@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_SINK_HPP_
-#define SRC_COMMON_SINK_HPP_
+#ifndef SRC_OPENCV_VIZ2D_SINK_HPP_
+#define SRC_OPENCV_VIZ2D_SINK_HPP_
 
 #include <functional>
 #include <opencv2/opencv.hpp>
@@ -15,7 +15,7 @@ namespace viz {
 /*!
  * A Sink object represents a way to write data produced by Viz2D (e.g. a video-file).
  */
-CV_EXPORTS class Sink {
+class CV_EXPORTS Sink {
     bool open_ = true;
     std::function<bool(const cv::UMat&)> consumer_;
 public:
@@ -52,4 +52,4 @@ public:
 } /* namespace viz2d */
 } /* namespace kb */
 
-#endif /* SRC_COMMON_SINK_HPP_ */
+#endif /* SRC_OPENCV_VIZ2D_SINK_HPP_ */
