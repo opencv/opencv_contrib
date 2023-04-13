@@ -2,7 +2,6 @@ include("FindGLEW")
 include("FindPkgConfig")
 
 set(the_description "Viz2D Visualization Module")
-
 if(NOT GLEW_FOUND)
   message(STATUS "Module opencv_viz2d disabled because GLEW was not found")
   ocv_module_disable(viz2d)
@@ -14,9 +13,26 @@ if (${idx} LESS 0)
   message(STATUS "Module opencv_viz2d disabled because it requires C++20")
   ocv_module_disable(viz2d)
 endif()
-
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVIZ2D_USE_ES3=1")
 
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../.git")
+# Update submodules as needed
+  message(STATUS "Submodule update")
+  execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+                  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../../"
+                  RESULT_VARIABLE GIT_SUBMOD_RESULT)
+  if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+    message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+  endif()
+endif()
+
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/CMakeLists.txt")
+    message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+endif()
+
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/nanovg/src/")
 include_directories(${GLEW_INCLUDE_DIRS})
 link_directories(${GLEW_LIBRARY_DIRS})
 
@@ -26,11 +42,10 @@ ocv_module_include_directories()
 ocv_create_module()
 
 #ocv_add_samples(opencv_aruco)
-
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
-message(STATUS "viz2d: ${nangui_LIBRARIES}")
 ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES} OpenCL)
 target_compile_features(opencv_viz2d PRIVATE cxx_std_20)
 set_target_properties(opencv_viz2d PROPERTIES OUTPUT_NAME "viz2d")
-
+set(NANOGUI_BUILD_SHARED ON)
+set(NANOGUI_BUILD_PYTHON OFF)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
