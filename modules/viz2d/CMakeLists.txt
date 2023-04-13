@@ -21,6 +21,13 @@ elseif(NOT nanogui_FOUND)
   ocv_module_disable(viz2d)
 endif()
 
+get_property(known_features GLOBAL PROPERTY CMAKE_CXX_KNOWN_FEATURES)
+list (FIND known_features "cxx_std_20" idx)
+if (${idx} LESS 0)
+  message(STATUS "Module opencv_viz2d disabled because it requires C++20")
+  ocv_module_disable(viz2d)
+endif()
+
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVIZ2D_USE_ES3=1")
 
 include_directories(${glfw3_INCLUDE_DIRS})
