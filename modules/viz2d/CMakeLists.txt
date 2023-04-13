@@ -2,6 +2,7 @@ include("FindGLEW")
 include("FindPkgConfig")
 
 set(the_description "Viz2D Visualization Module")
+
 find_package(nanogui CONFIG)
 find_package(glfw3 CONFIG)
 pkg_check_modules(nanovg nanovg)
@@ -47,3 +48,4 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
 message(STATUS "viz2d: ${nangui_LIBRARIES}")
 #For some reasone glfw3_LIBRARIES is empty although it is found by find_package
 ocv_target_link_libraries(${the_module} glfw ${GLEW_LIBRARIES} ${nanovg_LIBRARIES} nanogui OpenCL)
+target_compile_features(opencv_viz2d PRIVATE cxx_std_20)
