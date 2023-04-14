@@ -44,8 +44,9 @@ set(NANOGUI_BUILD_SHARED ON)
 set(NANOGUI_BUILD_PYTHON OFF)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
 
+add_library(nanovg "third/nanogui/ext/nanovg/src/nanovg.c")
+
 target_compile_features(opencv_viz2d PRIVATE cxx_std_20)
-set_target_properties(opencv_viz2d PROPERTIES OUTPUT_NAME "viz2d")
 
 #ocv_add_samples(opencv_aruco)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter -Wdeprecated-enum-enum-conversion)
