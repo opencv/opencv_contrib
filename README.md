@@ -47,36 +47,13 @@ OpenCV module documentation with tutorials and samples is available [here](https
 * [nanogui](https://github.com/mitsuba-renderer/nanogui)
 
 ## Instructions for Ubuntu 22.04.2 LTS
-You need to build nanovg, nanogui and OpenCV with Viz2D
+You need to build OpenCV with Viz2D
 
 ### Install required packages
 
 ```bash
 apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen
 ```
-
-### Build nanovg
-
-```bash
-git clone https://github.com/inniyah/nanovg.git
-mkdir nanovg/build
-cd nanovg/build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j8
-sudo make install
-```
-
-### Build nanogui
-
-```bash
-git clone --recursive https://github.com/mitsuba-renderer/nanogui.git
-mkdir nanogui/build
-cd nanogui/build
-cmake -DCMAKE_BUILD_TYPE=Release -DNANOGUI_BACKEND=OpenGL -DNANOGUI_BUILD_EXAMPLES=OFF -DNANOGUI_BUILD_GLFW=OFF -DNANOGUI_BUILD_PYTHON=OFF ..
-make -j8
-sudo make install
-```
-
 ### Build OpenCV with Viz2D using C++20
 
 ```bash
@@ -84,7 +61,7 @@ git clone --branch 4.x https://github.com/opencv/opencv.git
 git clone https://github.com/kallaballa/Viz2D.git
 mkdir opencv/build
 cd opencv/build
-cmake -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_viz2d=ON -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../Viz2D/modules/ ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_viz2d=ON -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../Viz2D/modules/ ..
 make -j8
 sudo make install
 ```
