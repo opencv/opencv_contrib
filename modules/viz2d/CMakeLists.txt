@@ -1,5 +1,4 @@
 include("FindGLEW")
-include("FindPkgConfig")
 
 set(the_description "Viz2D Visualization Module")
 if(NOT GLEW_FOUND)
@@ -41,11 +40,15 @@ ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_create_module()
 
-#ocv_add_samples(opencv_aruco)
-ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
-ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES} OpenCL)
-target_compile_features(opencv_viz2d PRIVATE cxx_std_20)
-set_target_properties(opencv_viz2d PROPERTIES OUTPUT_NAME "viz2d")
 set(NANOGUI_BUILD_SHARED ON)
 set(NANOGUI_BUILD_PYTHON OFF)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
+
+target_compile_features(opencv_viz2d PRIVATE cxx_std_20)
+set_target_properties(opencv_viz2d PROPERTIES OUTPUT_NAME "viz2d")
+
+#ocv_add_samples(opencv_aruco)
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
+ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES} OpenCL -lnanogui -lGL)
+
+
