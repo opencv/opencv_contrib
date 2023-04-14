@@ -115,9 +115,9 @@ void NVG::reset() {
     nvgReset(getContext());
 }
 
-void NVG::shapeAntiAlias(int enabled) {
-    nvgShapeAntiAlias(getContext(), enabled);
-}
+//void NVG::shapeAntiAlias(int enabled) {
+//    nvgShapeAntiAlias(getContext(), enabled);
+//}
 
 void NVG::strokeColor(const cv::Scalar& bgra) {
     nvgStrokeColor(getContext(), nvgRGBA(bgra[2], bgra[1], bgra[0], bgra[3]));
@@ -438,9 +438,9 @@ void reset() {
     detail::NVG::getCurrentContext()->reset();
 }
 
-void shapeAntiAlias(int enabled) {
-    detail::NVG::getCurrentContext()->strokeColor(enabled);
-}
+//void shapeAntiAlias(int enabled) {
+//    detail::NVG::getCurrentContext()->strokeColor(enabled);
+//}
 
 void strokeColor(const cv::Scalar& bgra) {
     detail::NVG::getCurrentContext()->strokeColor(bgra);

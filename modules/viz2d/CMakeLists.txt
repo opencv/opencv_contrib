@@ -12,7 +12,7 @@ if (${idx} LESS 0)
   message(STATUS "Module opencv_viz2d disabled because it requires C++20")
   ocv_module_disable(viz2d)
 endif()
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVIZ2D_USE_ES3=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_LD_FLAGS} -L../../lib")
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../.git")
@@ -48,7 +48,8 @@ target_compile_features(opencv_viz2d PRIVATE cxx_std_20)
 set_target_properties(opencv_viz2d PROPERTIES OUTPUT_NAME "viz2d")
 
 #ocv_add_samples(opencv_aruco)
-ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
-ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES} OpenCL -lnanogui -lGL)
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter -Wdeprecated-enum-enum-conversion)
+ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES} OpenCL -lnanovg -lnanogui -lGL)
+
 
 

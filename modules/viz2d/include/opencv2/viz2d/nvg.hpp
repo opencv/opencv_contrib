@@ -138,7 +138,7 @@ public:
     void restore();
     void reset();
 
-    void shapeAntiAlias(int enabled);
+//    void shapeAntiAlias(int enabled);
     void strokeColor(const cv::Scalar& bgra);
     void strokePaint(Paint paint);
     void fillColor(const cv::Scalar& bgra);
@@ -293,10 +293,10 @@ CV_EXPORTS void restore();
  * A forward to nvgReset. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
  */
 CV_EXPORTS void reset();
-/*!
- * A forward to nvgShapeAntiAlias. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
- */
-CV_EXPORTS void shapeAntiAlias(int enabled);
+///*!
+// * A forward to nvgShapeAntiAlias. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
+// */
+//CV_EXPORTS void shapeAntiAlias(int enabled);
 /*!
  * A forward to nvgStrokeColor. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
  */
