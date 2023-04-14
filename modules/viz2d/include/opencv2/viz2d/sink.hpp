@@ -7,7 +7,8 @@
 #define SRC_OPENCV_VIZ2D_SINK_HPP_
 
 #include <functional>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/cvdef.h>
+#include <opencv2/core/mat.hpp>
 
 namespace cv {
 namespace viz {

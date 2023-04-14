@@ -16,7 +16,8 @@
 #define NANOGUI_GLES_VERSION 3
 #endif
 #include <nanogui/nanogui.h>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/cvdef.h>
+#include <opencv2/core/mat.hpp>
 
 #include <set>
 #include <string>
