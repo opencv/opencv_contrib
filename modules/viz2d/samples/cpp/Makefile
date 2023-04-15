@@ -13,7 +13,7 @@ DESTDIR := /
 PREFIX := /usr/local
 
 ifndef EMSDK
-LIBS += `pkg-config --libs glfw3 glew` -lopencv_face -lopencv_gapi -lopencv_ml -lopencv_objdetect -lopencv_shape -lopencv_stitching -lopencv_superres -lopencv_optflow -lopencv_tracking -lopencv_highgui -lopencv_plot -lopencv_videostab -lopencv_videoio -lopencv_photo -lopencv_ximgproc -lopencv_video -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_dnn -lopencv_imgproc -lopencv_flann -lopencv_core -lGL
+LIBS += `pkg-config --libs glfw3 glew` -lopencv_face -lopencv_tracking -lopencv_objdetect -lopencv_stitching -lopencv_optflow -lopencv_videostab -lopencv_videoio -lopencv_photo -lopencv_ximgproc -lopencv_video -lopencv_calib3d -lopencv_imgcodecs -lopencv_features2d -lopencv_dnn -lopencv_imgproc -lopencv_core -lGL
 endif
 
 ifdef EMSDK
