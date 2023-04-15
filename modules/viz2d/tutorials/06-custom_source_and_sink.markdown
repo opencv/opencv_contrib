@@ -1,4 +1,4 @@
-# Video editing {#viz2d_custom_source_and_sink}
+# Custom Source and Sink {#viz2d_custom_source_and_sink}
 
 @prev_tutorial{viz2d_video_editing}
 @next_tutorial{viz2d_font_with_gui}

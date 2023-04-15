@@ -55,7 +55,7 @@ v2d->gl([](const Size sz) {
 
 # Requirements
 * C++20 (at the moment)
-* OpenGL 3.2 Compat/OpenGL ES 3.0 Core
+* OpenGL 3.2 Core (optionally Compat)/OpenGL ES 3.0 Core
 
 # Optional requirements
 * Support for OpenCL 1.2

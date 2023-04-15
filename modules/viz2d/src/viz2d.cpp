@@ -66,21 +66,21 @@ void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size
 }
 
 cv::Ptr<Viz2D> Viz2D::make(const cv::Size& size, const string& title, bool debug) {
-    cv::Ptr<Viz2D> v2d = new Viz2D(size, size, false, title, 4, 6, 0, debug);
+    cv::Ptr<Viz2D> v2d = new Viz2D(size, size, false, title, 4, 6, true, 0, debug);
     v2d->setVisible(true);
     return v2d;
 }
 
 cv::Ptr<Viz2D> Viz2D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize,
-        bool offscreen, const string& title, int major, int minor, int samples, bool debug) {
-    return new Viz2D(initialSize, frameBufferSize, offscreen, title, major, minor, samples, debug);
+        bool offscreen, const string& title, int major, int minor, bool compat, int samples, bool debug) {
+    return new Viz2D(initialSize, frameBufferSize, offscreen, title, major, minor, compat, samples, debug);
 }
 
 Viz2D::Viz2D(const cv::Size& size, const cv::Size& frameBufferSize, bool offscreen,
-        const string& title, int major, int minor, int samples, bool debug) :
+        const string& title, int major, int minor, bool compat, int samples, bool debug) :
         initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0,
                 frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0, 0), offscreen_(
-                offscreen), stretch_(false), title_(title), major_(major), minor_(minor), samples_(
+                offscreen), stretch_(false), title_(title), major_(major), minor_(minor), compat_(compat), samples_(
                 samples), debug_(debug) {
     assert(
             frameBufferSize_.width >= initialSize_.width
@@ -132,7 +132,7 @@ bool Viz2D::initializeWindowing() {
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, compat_ ? GLFW_OPENGL_COMPAT_PROFILE : GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
 #endif
