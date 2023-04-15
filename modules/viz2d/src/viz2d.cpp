@@ -258,9 +258,7 @@ bool Viz2D::keyboard_event(int key, int scancode, int action, int modifiers) {
     if (keyEventCb_)
         return keyEventCb_(key, scancode, action, modifiers);
 
-    if (screen().keyboard_event(key, scancode, action, modifiers))
-        return true;
-    return false;
+    return screen().keyboard_event(key, scancode, action, modifiers);
 }
 
 FrameBufferContext& Viz2D::fb() {
