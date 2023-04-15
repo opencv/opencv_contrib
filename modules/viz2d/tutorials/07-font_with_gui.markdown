@@ -1,6 +1,6 @@
 # Form based GUI {#viz2d_font_with_gui}
 
-@prev_tutorial{viz2d_video_editing}
+@prev_tutorial{viz2d_custom_source_and_sink}
 
 |    |    |
 | -: | :- |

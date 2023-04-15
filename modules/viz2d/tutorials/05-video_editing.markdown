@@ -1,7 +1,7 @@
 # Video editing {#viz2d_video_editing}
 
 @prev_tutorial{viz2d_font_rendering}
-@next_tutorial{viz2d_font_with_gui}
+@next_tutorial{viz2d_custom_source_and_sink}
 
 |    |    |
 | -: | :- |
