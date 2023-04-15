@@ -60,14 +60,17 @@ v2d->gl([](const Size sz) {
 # Optional requirements
 * Support for OpenCL 1.2
 * Support for cl_khr_gl_sharing and cl_intel_va_api_media_sharing OpenCL extensions.
-* If you want CL-GL sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to install** [compute-runtime](https://github.com/intel/compute-runtime) from source and [my OpenCV fork](https://github.com/kallaballa/opencv)
+
 
 # Dependencies
 * [OpenCV 4.x](https://github.com/opencv/opencv)
 * GLEW
 * GLFW3
-* [nanovg](https://github.com/inniyah/nanovg)
-* [nanogui](https://github.com/mitsuba-renderer/nanogui)
+* [NanoGUI](https://github.com/mitsuba-renderer/nanogui) (includes NanoVG)
+
+# Optional: Dependencies for samples
+* [OpenCV Contrib 4.x](https://github.com/opencv/opencv_contrib)
+* If you want CL-GL sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to build** [compute-runtime](https://github.com/intel/compute-runtime) and [my OpenCV 4.x fork](https://github.com/kallaballa/opencv/tree/GCV)
 
 # Tutorials
 The tutorials are designed to be read one after the other to give you a good overview over the key concepts of Viz2D. After that you can move on to the samples.
@@ -77,6 +80,7 @@ The tutorials are designed to be read one after the other to give you a good ove
 * \ref viz2d_render_opengl
 * \ref viz2d_font_rendering
 * \ref viz2d_video_editing
+* \ref viz2d_custom_source_and_sink
 * \ref viz2d_font_with_gui
 
 # Samples
@@ -91,7 +95,79 @@ The goal of the samples is to show how to use Viz2D to the fullest. Also they sh
 * \ref viz2d_optflow
 * \ref viz2d_beauty
 
+
+# Instructions for Ubuntu 22.04.2 LTS
+You need to build OpenCV with Viz2D
+
+## Install required packages
+
+```bash
+apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen libxinerama-dev libxcursor-dev libxi-dev libva-dev
+```
+## Build OpenCV with Viz2D
+
+```bash
+git clone --branch 4.x https://github.com/opencv/opencv.git
+git clone https://github.com/kallaballa/Viz2D.git
+mkdir opencv/build
+cd opencv/build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_viz2d=ON -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../Viz2D/modules/ ..
+make -j8
+sudo make install
+```
+
+## Optional: Build the samples
+
+### Build OpenCV with OpenCV contrib
+```bash
+git clone --branch 4.x https://github.com/opencv/opencv_contrib.git
+cd opencv/build
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules/ ..
+make -j8
+sudo make install
+```
+
+### Make the samples
+
+```bash
+cd Viz2D/modules/viz2d/samples/cpp
+make -j
+```
+
+### Download the example file
+```bash
+wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
+```
+
+#### Run the samples
+
+```bash
+modules/viz2d/samples/cpp/tetra/tetra-demo
+```
+```bash
+modules/viz2d/samples/cpp/video/video-demo bunny.webm
+```
+```bash
+modules/viz2d/samples/cpp/shader/shader-demo bunny.webm
+```
+```bash
+modules/viz2d/samples/cpp/nanovg/nanovg-demo bunny.webm
+```
+```bash
+modules/viz2d/samples/cpp/font/font-demo
+```
+```bash
+modules/viz2d/samples/cpp/optflow/optflow-demo bunny.webm
+```
+```bash
+modules/viz2d/samples/cpp/pedestrian/pedestrian-demo bunny.webm
+```
+```bash
+modules/viz2d/samples/cpp/beauty/beauty-demo bunny.webm
+```
+
 # Attribution
 * The author of the bunny video is the **Blender Foundation** ([Original video](https://www.bigbuckbunny.org)).
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8)).
 * The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s)).
+* The author of cxxpool is **Copyright (c) 2022 Christian Blume**: ([LICENSE](https://github.com/bloomen/cxxpool/blob/master/LICENSE))
