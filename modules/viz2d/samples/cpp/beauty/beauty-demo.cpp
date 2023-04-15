@@ -28,7 +28,7 @@ using std::string;
 /** Application parameters **/
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
-constexpr double SCALE = 0.125;
+constexpr double SCALE = 0.125; //Scale at which face detection is performed
 constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
@@ -36,23 +36,26 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 /** Effect parameters **/
 constexpr int BLUR_DIV = 500;
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-float eyes_and_lips_saturation = 1.5f; //factor
-float skin_saturation = 1.2f; //factor
-float skin_contrast = 0.6f; //0.0-1.0
+float eyes_and_lips_saturation = 1.5f; //Saturation boost factor for eyes and lips
+float skin_saturation = 1.2f; //Saturation boost factor for skin
+float skin_contrast = 0.6f; //Contrast factor skin
 #ifndef __EMSCRIPTEN__
-bool side_by_side = true;
-bool stretch = true;
+bool side_by_side = true; //Show input and output side by side
+bool stretch = true; //Stretch the video to the window size
 #else
 bool side_by_side = false;
 bool stretch = false;
 #endif
 
 static cv::Ptr<cv::viz::Viz2D> v2d = cv::viz::Viz2D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
-static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
+static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
 #ifdef USE_TRACKER
-static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
+static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(); //Instead of continues face detection we can use a tracker
 #endif
 
+/*!
+ * Data structure holding the points for all face landmarks
+ */
 struct FaceFeatures {
     cv::Rect faceRect_;
     vector<cv::Point2f> chin_;
@@ -66,7 +69,10 @@ struct FaceFeatures {
     vector<cv::Point2f> inside_lips_;
 
     FaceFeatures(const cv::Rect &faceRect, const vector<cv::Point2f> &shape, double scale) {
+        //calculate the face rectangle
         faceRect_ = cv::Rect(faceRect.x / scale, faceRect.y / scale, faceRect.width / scale, faceRect.height / scale);
+
+        /** Copy all features **/
         size_t i = 0;
         // Around Chin. Ear to Ear
         for (i = 0; i <= 16; ++i)
@@ -97,6 +103,7 @@ struct FaceFeatures {
             inside_lips_.push_back(shape[i] / scale);
     }
 
+    //concatinates all feature points
     vector<cv::Point2f> points() const {
         vector<cv::Point2f> allPoints;
         allPoints.insert(allPoints.begin(), chin_.begin(), chin_.end());
@@ -112,6 +119,7 @@ struct FaceFeatures {
         return allPoints;
     }
 
+    //returns all face features points in fixed order
     vector<vector<cv::Point2f>> features() const {
         return {chin_,
             top_nose_,
@@ -129,6 +137,7 @@ struct FaceFeatures {
     }
 };
 
+//based on the detected FaceFeatures guesses a decent face oval and draws a mask.
 void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::viz::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
@@ -143,6 +152,7 @@ void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
     }
 }
 
+//Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
 void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::viz::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
@@ -169,6 +179,7 @@ void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
     }
 }
 
+//adjusts the saturation of a UMat
 void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
     static vector<cv::UMat> channels;
     static cv::UMat hls;
@@ -180,6 +191,7 @@ void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
+//Setup the gui
 void setup_gui(cv::Ptr<cv::viz::Viz2D> v2d) {
     v2d->nanogui([&](cv::viz::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
@@ -225,7 +237,9 @@ bool iteration() {
 #ifdef USE_TRACKER
         static bool trackerInitalized = false;
 #endif
+        //Face detector
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v2d->getFrameBufferSize().width * SCALE, v2d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+        //Blender (used to put the different face parts back together)
         static cv::detail::MultiBandBlender blender(false, 5);
         blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
         //BGR
@@ -238,10 +252,15 @@ bool iteration() {
         //BGR-Float
         static cv::UMat frameOutFloat;
 
+        //detected faces
         static cv::Mat faces;
+        //the rectangle of the tracked face
         static cv::Rect trackedFace;
+        //rectangles of all faces found
         static vector<cv::Rect> faceRects;
+        //list all of shapes (face features) found
         static vector<vector<cv::Point2f>> shapes;
+        //FaceFeatures of all faces found
         static vector<FaceFeatures> featuresList;
 
         if (!v2d->capture())
@@ -251,38 +270,45 @@ bool iteration() {
             cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
         });
 
+        //Downscale the input for face detection
         cv::resize(input, down, cv::Size(0, 0), SCALE, SCALE);
 
         shapes.clear();
         faceRects.clear();
 #ifdef USE_TRACKER
+        //Use the KCF tracker to track the face "on past experience"
         if (trackerInitalized && tracker->update(down, trackedFace)) {
             faceRects.push_back(trackedFace);
         } else
 #endif
         {
+            //Detect faces in the down-scaled image
             detector->detect(down, faces);
 
+            //Collect face bounding rectangles thought we will only use the first
             for (int i = 0; i < faces.rows; i++) {
                 faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
             }
         }
 
+        //find landmarks if faces have been detected
         if (!faceRects.empty() && facemark->fit(down, faceRects, shapes)) {
 #ifdef USE_TRACKER
             if(!trackerInitalized) {
+                //on first time init the tracker
                 tracker->init(down, faceRects[0]);
                 trackerInitalized = true;
             }
 #endif
             featuresList.clear();
+            //a FaceFeatures instance for each face
             for (size_t i = 0; i < faceRects.size(); ++i) {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
             }
 
             v2d->nvg([&](const cv::Size &sz) {
                 v2d->clear();
-                //Draw the face oval
+                //Draw the face oval of the first face
                 draw_face_oval_mask(featuresList);
             });
 
@@ -293,7 +319,7 @@ bool iteration() {
 
             v2d->nvg([&](const cv::Size &sz) {
                 v2d->clear();
-                //Draw eyes eyes and lips
+                //Draw eyes eyes and lips areas of the first face
                 draw_face_eyes_and_lips_mask(featuresList);
             });
 
@@ -302,7 +328,9 @@ bool iteration() {
                 cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
             });
 
+            //Create the skin mask
             cv::subtract(faceOval, eyesAndLipsMaskGrey, faceSkinMaskGrey);
+            //Create the background mask
             cv::bitwise_not(eyesAndLipsMaskGrey,backgroundMaskGrey);
 
             //boost saturation of eyes and lips
