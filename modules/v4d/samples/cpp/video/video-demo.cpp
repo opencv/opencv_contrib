@@ -18,7 +18,7 @@ using std::cerr;
 using std::endl;
 using std::string;
 
-static cv::Ptr<cv::viz::V4D> v2d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
 
 void init_scene(const cv::Size& sz) {
 #ifndef V4D_USE_ES3
@@ -88,22 +88,22 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 bool iteration() {
-    if(!v2d->capture())
+    if(!v4d->capture())
         return false;
 
-    v2d->gl(render_scene);
+    v4d->gl(render_scene);
 
-    v2d->fb([&](cv::UMat& frameBuffer){
+    v4d->fb([&](cv::UMat& frameBuffer){
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
 
-    updateFps(v2d, true);
+    updateFps(v4d, true);
 
-    v2d->write();
+    v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v2d->display())
+    if(!v4d->display())
         return false;
     return true;
 }
@@ -117,18 +117,18 @@ int main(int argc, char **argv) {
     }
 
     printSystemInfo();
-    if(!v2d->isOffscreen())
-        v2d->setVisible(true);
+    if(!v4d->isOffscreen())
+        v4d->setVisible(true);
 
     Source src = makeCaptureSource(argv[1]);
-    v2d->setSource(src);
+    v4d->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
-    v2d->setSink(sink);
+    v4d->setSink(sink);
 
-    v2d->gl(init_scene);
+    v4d->gl(init_scene);
 
-    v2d->run(iteration);
+    v4d->run(iteration);
 
     return 0;
 }

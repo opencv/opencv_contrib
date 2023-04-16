@@ -8,14 +8,14 @@ constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
-	Ptr<V4D> v2d = V4D::make(Size(WIDTH, HEIGHT), "Font Rendering");
+	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Font Rendering");
 
 	//The text to render
 	string hw = "Hello World";
 	//Clear with black
-	v2d->clear();
+	v4d->clear();
 	//Render the text at the center of the screen
-	v2d->nvg([&](const Size& sz) {
+	v4d->nvg([&](const Size& sz) {
 		using namespace cv::viz::nvg;
 		fontSize(40.0f);
 		fontFace("sans-bold");
@@ -25,6 +25,6 @@ int main(int argc, char** argv) {
 	});
 
     //Display the framebuffer in the native window in an endless loop
-    v2d->run(v2d->display);
+    v4d->run(v4d->display);
 }
 

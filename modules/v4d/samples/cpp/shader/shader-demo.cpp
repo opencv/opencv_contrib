@@ -321,10 +321,10 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-cv::Ptr<cv::viz::V4D> v2d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
+cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
-void setup_gui(cv::Ptr<cv::viz::V4D> v2d) {
-    v2d->nanogui([](cv::viz::FormHelper& form){
+void setup_gui(cv::Ptr<cv::viz::V4D> v4d) {
+    v4d->nanogui([](cv::viz::FormHelper& form){
     form.makeDialog(5, 30, "Fractal");
 
     form.makeGroup("Navigation");
@@ -385,31 +385,31 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v2d) {
 
 bool iteration() {
     //ignore failed capture attempts
-    v2d->capture();
+    v4d->capture();
 
 #ifdef __EMSCRIPTEN__
     //required in conjunction with emscripten + nanovg
     rebind_buffers();
 #endif
     //Render using OpenGL
-    v2d->gl(render_scene);
+    v4d->gl(render_scene);
 
 //To slow for WASM but works
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
-    v2d->fb([](cv::UMat &frameBuffer) {
+    v4d->fb([](cv::UMat &frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
 #endif
 
-    updateFps(v2d, true);
+    updateFps(v4d, true);
 
 #ifndef __EMSCRIPTEN__
-    v2d->write();
+    v4d->write();
 #endif
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if (!v2d->display())
+    if (!v4d->display())
         return false;
 
     ++iterations;
@@ -425,23 +425,23 @@ int main(int argc, char **argv) {
         }
 
         printSystemInfo();
-        if(!v2d->isOffscreen()) {
-            setup_gui(v2d);
-            v2d->setVisible(true);
+        if(!v4d->isOffscreen()) {
+            setup_gui(v4d);
+            v4d->setVisible(true);
         }
-        v2d->gl(init_scene);
+        v4d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
         Source src = makeCaptureSource(argv[1]);
-        v2d->setSource(src);
+        v4d->setSource(src);
         Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
-        v2d->setSink(sink);
+        v4d->setSink(sink);
 #else
         Source src = makeCaptureSource(WIDTH, HEIGHT);
-        v2d->setSource(src);
+        v4d->setSource(src);
 #endif
 
-        v2d->run(iteration);
+        v4d->run(iteration);
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

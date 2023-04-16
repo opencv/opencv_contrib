@@ -8,7 +8,7 @@ constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
-	Ptr<V4D> v2d = V4D::make(Size(WIDTH, HEIGHT), "Font Rendering with GUI");
+	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Font Rendering with GUI");
 	//The text color. NanoGUI uses rgba with floating point
 	nanogui::Color textColor = {0.0f, 0.0f, 1.0f, 1.0f};
 	//The font size
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 	//The text
 	string hw = "hello world";
 	//Setup the GUI
-	v2d->nanogui([&](FormHelper& form) {
+	v4d->nanogui([&](FormHelper& form) {
 		//Create a light-weight dialog
 		form.makeDialog(5, 30, "Settings");
 		//Create a group
@@ -27,10 +27,10 @@ int main(int argc, char** argv) {
 		form.makeColorPicker("Text Color", textColor, "The text color");
 	});
 
-	v2d->run([&]() {
-		v2d->clear();
+	v4d->run([&]() {
+		v4d->clear();
 		//Render the text at the center of the screen
-		v2d->nvg([&](const Size& sz) {
+		v4d->nvg([&](const Size& sz) {
 			using namespace cv::viz::nvg;
 			fontSize(size);
 			fontFace("sans-bold");
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 			text(sz.width / 2.0, sz.height / 2.0, hw.c_str(), hw.c_str() + hw.size());
 		});
 		//Display the framebuffer in the native window
-		return v2d->display();
+		return v4d->display();
 	});
 }
 

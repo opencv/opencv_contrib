@@ -8,9 +8,9 @@ constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
-	Ptr<V4D> v2d = V4D::make(Size(WIDTH, HEIGHT), "Vector Graphics");
+	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Vector Graphics");
 	//Creates a NanoVG context and draws a cross-hair on the framebuffer
-	v2d->nvg([](const Size& sz) {
+	v4d->nvg([](const Size& sz) {
 		//Calls from this namespace may only be used inside a nvg context
 		using namespace cv::viz::nvg;
 
@@ -26,6 +26,6 @@ int main(int argc, char** argv) {
 	});
 
     //Display the framebuffer in the native window in an endless loop
-    v2d->run(v2d->display);
+    v4d->run(v4d->display);
 }
 

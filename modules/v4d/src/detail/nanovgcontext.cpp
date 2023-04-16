@@ -10,8 +10,8 @@
 namespace cv {
 namespace viz {
 namespace detail {
-NanoVGContext::NanoVGContext(V4D& v2d, NVGcontext* context, FrameBufferContext& fbContext) :
-        v2d_(v2d), context_(context), clglContext_(fbContext) {
+NanoVGContext::NanoVGContext(V4D& v4d, NVGcontext* context, FrameBufferContext& fbContext) :
+        v4d_(v4d), context_(context), clglContext_(fbContext) {
     //FIXME workaround for first frame color glitch
     cv::UMat tmp;
     FrameBufferContext::FrameBufferScope fbScope(clglContext_, tmp);
@@ -54,9 +54,9 @@ void pop() {
 
 void NanoVGContext::begin() {
     push();
-    float w = v2d_.getFrameBufferSize().width;
-    float h = v2d_.getFrameBufferSize().height;
-    float r = v2d_.getXPixelRatio();
+    float w = v4d_.getFrameBufferSize().width;
+    float h = v4d_.getFrameBufferSize().height;
+    float r = v4d_.getXPixelRatio();
 
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);

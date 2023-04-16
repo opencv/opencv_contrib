@@ -14,7 +14,7 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 using std::cerr;
 using std::endl;
 
-static cv::Ptr<cv::viz::V4D> v2d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
 
 void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
@@ -130,10 +130,10 @@ bool iteration() {
     //nanovg hue fading between 0.0f and 255.0f
     float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
 
-    if (!v2d->capture())
+    if (!v4d->capture())
         return false;
 
-    v2d->fb([&](cv::UMat &frameBuffer) {
+    v4d->fb([&](cv::UMat &frameBuffer) {
         cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
     });
 
@@ -151,22 +151,22 @@ bool iteration() {
     cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
 
     //Color-conversion from RGB to BGRA. (OpenCL)
-    v2d->fb([&](cv::UMat &frameBuffer) {
+    v4d->fb([&](cv::UMat &frameBuffer) {
         cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
     });
 
     //Render using nanovg
-    v2d->nvg([&](const cv::Size &sz) {
+    v4d->nvg([&](const cv::Size &sz) {
         hue = ((170 + uint8_t(255 - hue))) % 255;
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 
-    updateFps(v2d, true);
+    updateFps(v4d, true);
 
-    v2d->write();
+    v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v2d->display())
+    if(!v4d->display())
         return false;
     return true;
 }
@@ -179,16 +179,16 @@ int main(int argc, char **argv) {
     }
 
     printSystemInfo();
-    if (!v2d->isOffscreen())
-        v2d->setVisible(true);
+    if (!v4d->isOffscreen())
+        v4d->setVisible(true);
 
     Source src = makeCaptureSource(argv[1]);
-    v2d->setSource(src);
+    v4d->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
-    v2d->setSink(sink);
+    v4d->setSink(sink);
 
-    v2d->run(iteration);
+    v4d->run(iteration);
 
     return 0;
 }

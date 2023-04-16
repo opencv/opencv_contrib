@@ -10,13 +10,13 @@ constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
 	string hr = "Hello Rainbow!";
-	Ptr<V4D> v2d = V4D::make(Size(WIDTH, HEIGHT), "Video Editing");
+	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Video Editing");
 	//Make a Source that generates rainbow frames.
 	Source src([=](cv::UMat& frame){
         static long cnt = 0;
 
 	    if(frame.empty())
-	        frame.create(v2d->getFrameBufferSize(), CV_8UC3);
+	        frame.create(v4d->getFrameBufferSize(), CV_8UC3);
 	    frame = colorConvert(Scalar(cnt % 180, 128, 128, 255), COLOR_HLS2BGR);
 
 	    ++cnt;
@@ -44,16 +44,16 @@ int main(int argc, char** argv) {
 	});
 
 	//Attach source and sink
-	v2d->setSource(src);
-	v2d->setSink(sink);
+	v4d->setSource(src);
+	v4d->setSink(sink);
 
-	v2d->run([=]() {
+	v4d->run([=]() {
 	    //Capture video from the Source
-		if(!v2d->capture())
+		if(!v4d->capture())
 			return false; //end of input video
 
 		//Render "Hello Rainbow!" over the frame
-		v2d->nvg([=](const Size& sz) {
+		v4d->nvg([=](const Size& sz) {
 			using namespace cv::viz::nvg;
 
 			fontSize(40.0f);
@@ -62,8 +62,8 @@ int main(int argc, char** argv) {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
-		v2d->write(); //Write video to the Sink
-		return v2d->display(); //Display the framebuffer in the native window
+		v4d->write(); //Write video to the Sink
+		return v4d->display(); //Display the framebuffer in the native window
 	});
 }
 

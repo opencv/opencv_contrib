@@ -8,9 +8,9 @@ constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
-	Ptr<V4D> v2d = V4D::make(Size(WIDTH, HEIGHT), "Vector Graphics and Framebuffer");
+	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Vector Graphics and Framebuffer");
 	//Creates a NanoVG context and draws a cross-hair on the framebuffer
-	v2d->nvg([](const Size& sz) {
+	v4d->nvg([](const Size& sz) {
 		//Calls from this namespace may only be used inside a nvg context
 		using namespace cv::viz::nvg;
 
@@ -25,11 +25,11 @@ int main(int argc, char** argv) {
 		stroke();
 	});
 
-	v2d->fb([](UMat& framebuffer) {
+	v4d->fb([](UMat& framebuffer) {
 		//Heavily blurs the crosshair using a cheap boxFilter
 		boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
 	});
     //Display the framebuffer in the native window in an endless loop
-    v2d->run(v2d->display);
+    v4d->run(v4d->display);
 }
 

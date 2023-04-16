@@ -134,10 +134,10 @@ bool keepRunning() {
 
 /*!
  * Little helper function to keep track of FPS and optionally display it using NanoVG
- * @param v2d The V4D object to operate on
+ * @param v4d The V4D object to operate on
  * @param graphical if this parameter is true the FPS drawn on display
  */
-void updateFps(cv::Ptr<cv::viz::V4D> v2d, bool graphical) {
+void updateFps(cv::Ptr<cv::viz::V4D> v4d, bool graphical) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     static float fps;
@@ -157,7 +157,7 @@ void updateFps(cv::Ptr<cv::viz::V4D> v2d, bool graphical) {
         }
 
         if (graphical) {
-            v2d->nvg([&](const cv::Size& size) {
+            v4d->nvg([&](const cv::Size& size) {
                 using namespace cv;
                 string text = "FPS: " + std::to_string(fps);
                 nvg::beginPath();

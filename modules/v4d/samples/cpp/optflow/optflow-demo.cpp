@@ -46,9 +46,9 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
 
-static cv::Ptr<cv::viz::V4D> v2d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 #ifndef __EMSCRIPTEN__
-static cv::Ptr<cv::viz::V4D> v2dMenu = cv::viz::V4D::make(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+static cv::Ptr<cv::viz::V4D> v4dMenu = cv::viz::V4D::make(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
 #endif
 
 /** Visualization parameters **/
@@ -305,8 +305,8 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
     cv::add(background, post, dst);
 }
 
-void setup_gui(cv::Ptr<cv::viz::V4D> v2d, cv::Ptr<cv::viz::V4D> v2dMenu) {
-    v2d->nanogui([&](cv::viz::FormHelper& form){
+void setup_gui(cv::Ptr<cv::viz::V4D> v4d, cv::Ptr<cv::viz::V4D> v4dMenu) {
+    v4d->nanogui([&](cv::viz::FormHelper& form){
         form.makeDialog(5, 30, "Effects");
 
         form.makeGroup("Foreground");
@@ -377,22 +377,22 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v2d, cv::Ptr<cv::viz::V4D> v2dMenu) {
         form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
     });
 
-    v2dMenu->nanogui([&](cv::viz::FormHelper& form){
+    v4dMenu->nanogui([&](cv::viz::FormHelper& form){
         form.makeDialog(8, 16, "Display");
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
         form.makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
-            v2d->setStretching(s);
+            v4d->setStretching(s);
         });
 
 #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            v2d->setFullscreen(!v2d->isFullscreen());
+            v4d->setFullscreen(!v4d->isFullscreen());
         });
 
         form.makeButton("Offscreen", [=]() {
-            v2d->setOffscreen(!v2d->isOffscreen());
+            v4d->setOffscreen(!v4d->isOffscreen());
         });
 #endif
     });
@@ -401,18 +401,18 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v2d, cv::Ptr<cv::viz::V4D> v2dMenu) {
 bool iteration() {
     //BGRA
     static cv::UMat background, down;
-    static cv::UMat foreground(v2d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
+    static cv::UMat foreground(v4d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
     //RGB
     static cv::UMat menuFrame;
     //GREY
     static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static vector<cv::Point2f> detectedPoints;
 
-    if(!v2d->capture())
+    if(!v4d->capture())
         return false;
 
-    v2d->fb([=](cv::UMat& frameBuffer) {
-        cv::resize(frameBuffer, down, cv::Size(v2d->getFrameBufferSize().width * fg_scale, v2d->getFrameBufferSize().height * fg_scale));
+    v4d->fb([=](cv::UMat& frameBuffer) {
+        cv::resize(frameBuffer, down, cv::Size(v4d->getFrameBufferSize().width * fg_scale, v4d->getFrameBufferSize().height * fg_scale));
         frameBuffer.copyTo(background);
     });
 
@@ -422,8 +422,8 @@ bool iteration() {
     //Detect trackable points in the motion mask
     detect_points(downMotionMaskGrey, detectedPoints);
 
-    v2d->nvg([=](const cv::Size& sz) {
-        v2d->clear();
+    v4d->nvg([=](const cv::Size& sz) {
+        v4d->clear();
         if (!downPrevGrey.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
             if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
@@ -436,7 +436,7 @@ bool iteration() {
 
     downPrevGrey = downNextGrey.clone();
 
-    v2d->fb([=](cv::UMat& frameBuffer){
+    v4d->fb([=](cv::UMat& frameBuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
 #ifndef __EMSCRIPTEN__
@@ -444,21 +444,21 @@ bool iteration() {
 #endif
     });
 
-    updateFps(v2d, show_fps);
+    updateFps(v4d, show_fps);
 
 #ifndef __EMSCRIPTEN__
-    v2d->write();
+    v4d->write();
 
-    v2dMenu->capture([=](cv::UMat& videoFrame) {
+    v4dMenu->capture([=](cv::UMat& videoFrame) {
         menuFrame.copyTo(videoFrame);
     });
 
-    if(!v2dMenu->display())
+    if(!v4dMenu->display())
         return false;
 #endif
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v2d->display())
+    if(!v4d->display())
         return false;
 
     return true;
@@ -473,29 +473,29 @@ int main(int argc, char **argv) {
 #endif
     printSystemInfo();
 
-    if(!v2d->isOffscreen()) {
+    if(!v4d->isOffscreen()) {
 #ifndef __EMSCRIPTEN__
-        setup_gui(v2d, v2dMenu);
-        v2dMenu->setResizable(false);
-        v2dMenu->setVisible(true);
+        setup_gui(v4d, v4dMenu);
+        v4dMenu->setResizable(false);
+        v4dMenu->setVisible(true);
 #else
-        setup_gui(v2d, v2d);
+        setup_gui(v4d, v4d);
 #endif
-        v2d->setVisible(true);
+        v4d->setVisible(true);
     }
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
-    v2d->setSource(src);
+    v4d->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
-    v2d->setSink(sink);
+    v4d->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT);
-    v2d->setSource(src);
+    v4d->setSource(src);
 #endif
 
-    v2d->run(iteration);
+    v4d->run(iteration);
 
     return 0;
 }

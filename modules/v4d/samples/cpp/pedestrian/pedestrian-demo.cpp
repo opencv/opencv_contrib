@@ -30,7 +30,7 @@ using std::endl;
 using std::vector;
 using std::string;
 
-static cv::Ptr<cv::viz::V4D> v2d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 static cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
@@ -129,10 +129,10 @@ bool iteration() {
 
     static bool redetect = true;
 
-    if(!v2d->capture())
+    if(!v4d->capture())
         return false;
 
-    v2d->fb([&](cv::UMat& frameBuffer){
+    v4d->fb([&](cv::UMat& frameBuffer){
         cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
         cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
     });
@@ -177,10 +177,10 @@ bool iteration() {
         }
     }
 
-    v2d->nvg([&](const cv::Size& sz) {
+    v4d->nvg([&](const cv::Size& sz) {
         using namespace cv::viz::nvg;
 
-        v2d->clear();
+        v4d->clear();
         beginPath();
         strokeWidth(std::fmax(2.0, WIDTH / 960.0));
         strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
@@ -192,17 +192,17 @@ bool iteration() {
         stroke();
     });
 
-    v2d->fb([&](cv::UMat& frameBuffer){
+    v4d->fb([&](cv::UMat& frameBuffer){
         //Put it all together
         composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
     });
 
-    updateFps(v2d, true);
+    updateFps(v4d, true);
 
-    v2d->write();
+    v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v2d->display())
+    if(!v4d->display())
         return false;
 
     return true;
@@ -220,16 +220,16 @@ int main(int argc, char **argv) {
 
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
-    if (!v2d->isOffscreen())
-        v2d->setVisible(true);
+    if (!v4d->isOffscreen())
+        v4d->setVisible(true);
 
     Source src = makeCaptureSource(argv[1]);
-    v2d->setSource(src);
+    v4d->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
-    v2d->setSink(sink);
+    v4d->setSink(sink);
 
-    v2d->run(iteration);
+    v4d->run(iteration);
 
     return 0;
 }

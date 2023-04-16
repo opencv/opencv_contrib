@@ -66,9 +66,9 @@ void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size
 }
 
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, bool debug) {
-    cv::Ptr<V4D> v2d = new V4D(size, size, false, title, 4, 6, true, 0, debug);
-    v2d->setVisible(true);
-    return v2d;
+    cv::Ptr<V4D> v4d = new V4D(size, size, false, title, 4, 6, true, 0, debug);
+    v4d->setVisible(true);
+    return v4d;
 }
 
 cv::Ptr<V4D> V4D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize,
@@ -172,55 +172,55 @@ bool V4D::initializeWindowing() {
     glfwSetWindowUserPointer(getGLFWWindow(), this);
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().cursor_pos_callback_event(x, y);
-        auto cursor = v2d->getMousePosition();
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        v4d->screen().cursor_pos_callback_event(x, y);
+        auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
-        if (v2d->isMouseDrag()) {
-            v2d->pan(diff[0], -diff[1]);
+        if (v4d->isMouseDrag()) {
+            v4d->pan(diff[0], -diff[1]);
         }
-        v2d->setMousePosition(x, y);
+        v4d->setMousePosition(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-                V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v2d->screen().mouse_button_callback_event(button, action, modifiers);
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                v4d->screen().mouse_button_callback_event(button, action, modifiers);
                 if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-                    v2d->setMouseDrag(action == GLFW_PRESS);
+                    v4d->setMouseDrag(action == GLFW_PRESS);
                 }
             }
     );
     glfwSetKeyCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
-                V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v2d->screen().key_callback_event(key, scancode, action, mods);
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                v4d->screen().key_callback_event(key, scancode, action, mods);
             }
     );
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
-        V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().char_callback_event(codepoint);
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        v4d->screen().char_callback_event(codepoint);
     }
     );
     glfwSetDropCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int count, const char** filenames) {
-                V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v2d->screen().drop_callback_event(count, filenames);
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                v4d->screen().drop_callback_event(count, filenames);
             }
     );
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
         std::vector<nanogui::Widget*> widgets;
-        find_widgets(&v2d->screen(), widgets);
+        find_widgets(&v4d->screen(), widgets);
         for (auto* w : widgets) {
-            auto mousePos = nanogui::Vector2i(v2d->getMousePosition()[0] / v2d->getXPixelRatio(), v2d->getMousePosition()[1] / v2d->getYPixelRatio());
+            auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
     if(contains_absolute(w, mousePos)) {
-        v2d->screen().scroll_callback_event(x, y);
+        v4d->screen().scroll_callback_event(x, y);
         return;
     }
 }
 
-        v2d->zoom(y < 0 ? 1.1 : 0.9);
+        v4d->zoom(y < 0 ? 1.1 : 0.9);
     }
     );
 
@@ -231,8 +231,8 @@ bool V4D::initializeWindowing() {
 //    );
 
     glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
-        V4D* v2d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v2d->screen().resize_callback_event(width, height);
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        v4d->screen().resize_callback_event(width, height);
     });
 
     clglContext_ = new detail::FrameBufferContext(this->getFrameBufferSize());
