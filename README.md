@@ -1,5 +1,5 @@
 # V4D
-V4D is a visualization module for [OpenCV](https://github.com/opencv/opencv). It features vector graphics using [NanoVG](https://github.com/memononen/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
+V4D is a high performance visualization module for [OpenCV](https://github.com/opencv/opencv). It features vector graphics using [NanoVG](https://github.com/memononen/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
 # What is V4D?
 V4D is a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses.
