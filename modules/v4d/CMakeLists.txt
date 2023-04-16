@@ -39,16 +39,25 @@ ocv_add_module(v4d opencv_core opencv_imgproc opencv_videoio opencv_video)
 ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_create_module()
+ocv_add_samples(opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn)
+target_compile_features(example_v4d_display_image PRIVATE cxx_std_20)
+target_compile_features(example_v4d_custom_source_and_sink PRIVATE cxx_std_20)
+target_compile_features(example_v4d_display_image PRIVATE cxx_std_20)
+target_compile_features(example_v4d_display_image_fb PRIVATE cxx_std_20)
+target_compile_features(example_v4d_font_rendering PRIVATE cxx_std_20)
+target_compile_features(example_v4d_font_with_gui PRIVATE cxx_std_20)
+target_compile_features(example_v4d_render_opengl PRIVATE cxx_std_20)
+target_compile_features(example_v4d_vector_graphics_and_fb PRIVATE cxx_std_20)
+target_compile_features(example_v4d_vector_graphics PRIVATE cxx_std_20)
+target_compile_features(example_v4d_video_editing PRIVATE cxx_std_20)
 
 set(NANOGUI_BUILD_SHARED ON)
 set(NANOGUI_BUILD_PYTHON OFF)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
 
 add_library(nanovg "third/nanogui/ext/nanovg/src/nanovg.c")
-
 target_compile_features(opencv_v4d PRIVATE cxx_std_20)
 
-#ocv_add_samples(opencv_aruco)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter -Wdeprecated-enum-enum-conversion)
 ocv_target_link_libraries(${the_module} ${GLEW_LIBRARIES} OpenCL -lnanovg -lnanogui -lGL)
 
