@@ -116,18 +116,7 @@ make -j8
 sudo make install
 ```
 
-## Optional: Build the samples
-
-### Build OpenCV with OpenCV contrib
-```bash
-git clone --branch 4.x https://github.com/opencv/opencv_contrib.git
-cd opencv/build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib/modules/ ..
-make -j8
-sudo make install
-```
-
-### Make the samples
+## Optional: Make the samples
 
 ```bash
 cd V4D/modules/v4d/samples/cpp
