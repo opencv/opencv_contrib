@@ -8,7 +8,7 @@
 #include "opencv2/v4d/util.hpp"
 #include "opencv2/v4d/v4d.hpp"
 
-#ifndef OPENCV_V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES2
 #include <GL/glew.h>
 #endif
 
@@ -19,7 +19,7 @@ namespace detail {
 //FIXME use cv::ogl
 FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
-#ifndef OPENCV_V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES2
     glewExperimental = true;
     glewInit();
     try {

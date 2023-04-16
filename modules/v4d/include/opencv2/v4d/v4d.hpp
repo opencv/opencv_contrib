@@ -21,12 +21,12 @@
 
 #include "cxxpool.hpp"
 #ifdef __EMSCRIPTEN__
-#define OPENCV_V4D_USE_ES3 1
+#define OPENCV_V4D_USE_ES2 1
 #include <emscripten.h>
 #endif
 
 #include <nanogui/nanogui.h>
-#ifndef OPENCV_V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES2
 #include <GL/glew.h>
 #else
 #include <GLES3/gl3.h>

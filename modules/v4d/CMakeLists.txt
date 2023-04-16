@@ -12,9 +12,9 @@ if (${idx} LESS 0)
   message(STATUS "Module opencv_v4d disabled because it requires C++20")
   ocv_module_disable(v4d)
 endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_LD_FLAGS} -L../../lib")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L../../lib")
 
-OCV_OPTION(OPENCV_V4D_ENABLE_ES3 "Enable OpenGL ES 3.0 backend for V4D" OFF
+OCV_OPTION(OPENCV_V4D_ENABLE_ES2 "Enable OpenGL ES 2.0 backend for V4D" OFF
   VERIFY HAVE_OPENGL)
 
 find_package(Git QUIET)
@@ -60,6 +60,15 @@ endif()
 
 set(NANOGUI_BUILD_SHARED ON)
 set(NANOGUI_BUILD_PYTHON OFF)
+set(NANOGUI_BUILD_EXAMPLES OFF)
+
+if(OPENCV_V4D_ENABLE_ES2)
+  set(NANOGUI_BACKEND "GLES 2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV_V4D_USE_ES2=1")
+else()
+  set(NANOGUI_BACKEND "OpenGL")
+endif()
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
 
 add_library(nanovg "third/nanogui/ext/nanovg/src/nanovg.c")

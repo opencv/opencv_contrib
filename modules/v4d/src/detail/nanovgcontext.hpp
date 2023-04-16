@@ -8,11 +8,11 @@
 
 #include "framebuffercontext.hpp"
 #include <nanogui/nanogui.h>
-#ifndef OPENCV_V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES2
 #define NANOGUI_USE_OPENGL
 #else
 #define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION 3
+#define NANOGUI_GLES_VERSION 2
 #endif
 
 #include <nanogui/opengl.h>
