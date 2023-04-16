@@ -1,11 +1,11 @@
-# Viz2D
-Viz2D is a visualization module for [OpenCV](https://github.com/opencv/opencv). It features vector graphics using [NanoVG](https://github.com/memononen/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
+# V4D
+V4D is a visualization module for [OpenCV](https://github.com/opencv/opencv). It features vector graphics using [NanoVG](https://github.com/memononen/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
-# What is Viz2D?
-Viz2D is a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses.
+# What is V4D?
+V4D is a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses.
 
-# Why Viz2D?
-Please refer to the [online demos](https://github.com/kallaballa/Viz2D/blob/main/README.md#online-demos) to see at a glance what it can do for you.
+# Why V4D?
+Please refer to the [online demos](https://github.com/kallaballa/V4D/blob/main/README.md#online-demos) to see at a glance what it can do for you.
 
 * OpenGL: Easy access to OpenGL.
 * GUI: Simple yet powerful user interfaces through NanoGUI.
@@ -25,7 +25,7 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/beauty
 
 # Documentation
-OpenCV module documentation with tutorials, samples and build instructions is available [here](https://viel-zu.org/opencv/doxygen/html/dc/d7b/viz2d.html)
+OpenCV module documentation with tutorials, samples and build instructions is available [here](https://viel-zu.org/opencv/doxygen/html/dc/d7b/v4d.html)
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.

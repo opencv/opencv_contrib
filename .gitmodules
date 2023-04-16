@@ -1,3 +1,3 @@
-[submodule "modules/viz2d/third/nanogui"]
-	path = modules/viz2d/third/nanogui
+[submodule "modules/v4d/third/nanogui"]
+	path = modules/v4d/third/nanogui
 	url = https://github.com/kallaballa/nanogui.git
