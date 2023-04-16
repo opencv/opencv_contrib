@@ -45,10 +45,10 @@ Please note that the following online demos are slower and/or have less features
 For example, to create an OpenGL context and set the GL viewport:
 @code{.cpp}
 //Creates a V4D object for on screen rendering
-Ptr<V4D> v2d = V4D::make(Size(WIDTH, HEIGHT), "GL viewport");
+Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "GL viewport");
 
 //Takes care of OpenGL states in the background
-v2d->gl([](const Size sz) {
+v4d->gl([](const Size sz) {
     glViewPort(0, 0, sz.width, sz.height);
 });
 @endcode
