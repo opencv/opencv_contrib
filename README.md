@@ -25,7 +25,7 @@ Please note that the following online demos are slower and/or have less features
 * https://viel-zu.org/opencv/beauty
 
 # Documentation
-OpenCV module documentation with tutorials, samples and build instructions is available [here](https://viel-zu.org/opencv/doxygen/html/dc/d7b/v4d.html)
+OpenCV module documentation with tutorials, samples and build instructions is available [here](https://viel-zu.org/opencv/doxygen/html/d7/dfc/v4d.html)
 
 # Attribution
 * The author of the bunny video is **(c) copyright Blender Foundation | www.bigbuckbunny.org**.
