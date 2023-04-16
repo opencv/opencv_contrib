@@ -7,11 +7,15 @@
 #define SRC_OPENCV_V4D_NVG_HPP_
 
 #include "v4d.hpp"
-#ifndef __EMSCRIPTEN__
-#define NANOGUI_USE_OPENGL
+#ifndef OPENCV_V4D_USE_ES3
+#  ifndef NANOGUI_USE_OPENGL
+#    define NANOGUI_USE_OPENGL
+#  endif
 #else
-#define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION 3
+#  ifndef NANOGUI_USE_GLES
+#    define NANOGUI_USE_GLES
+#    define NANOGUI_GLES_VERSION 3
+#  endif
 #endif
 #include <nanogui/opengl.h>
 

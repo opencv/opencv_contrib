@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_CLVACONTEXT_HPP_
-#define SRC_COMMON_CLVACONTEXT_HPP_
+#ifndef SRC_OPENCV_CLVACONTEXT_HPP_
+#define SRC_OPENCV_CLVACONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
 
@@ -59,4 +59,4 @@ public:
 }
 }
 
-#endif /* SRC_COMMON_CLVACONTEXT_HPP_ */
+#endif /* SRC_OPENCV_CLVACONTEXT_HPP_ */

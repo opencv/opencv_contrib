@@ -21,18 +21,12 @@
 
 #include "cxxpool.hpp"
 #ifdef __EMSCRIPTEN__
-#define V4D_USE_ES3 1
+#define OPENCV_V4D_USE_ES3 1
 #include <emscripten.h>
 #endif
 
-#ifndef V4D_USE_ES3
-#define NANOGUI_USE_OPENGL
-#else
-#define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION 3
-#endif
 #include <nanogui/nanogui.h>
-#ifndef V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES3
 #include <GL/glew.h>
 #else
 #include <GLES3/gl3.h>

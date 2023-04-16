@@ -3,20 +3,18 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_NANOVGCONTEXT_HPP_
-#define SRC_COMMON_NANOVGCONTEXT_HPP_
-#ifdef __EMSCRIPTEN__
-#define V4D_USE_ES3 1
-#endif
+#ifndef SRC_OPENCV_NANOVGCONTEXT_HPP_
+#define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
-#ifndef V4D_USE_ES3
+#include "framebuffercontext.hpp"
+#include <nanogui/nanogui.h>
+#ifndef OPENCV_V4D_USE_ES3
 #define NANOGUI_USE_OPENGL
 #else
 #define NANOGUI_USE_GLES
 #define NANOGUI_GLES_VERSION 3
 #endif
-#include "framebuffercontext.hpp"
-#include <nanogui/nanogui.h>
+
 #include <nanogui/opengl.h>
 #include "opencv2/v4d/util.hpp"
 #include "opencv2/v4d/nvg.hpp"
@@ -82,4 +80,4 @@ private:
 }
 }
 
-#endif /* SRC_COMMON_NANOVGCONTEXT_HPP_ */
+#endif /* SRC_OPENCV_NANOVGCONTEXT_HPP_ */

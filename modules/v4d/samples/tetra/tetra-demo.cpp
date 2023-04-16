@@ -8,7 +8,7 @@
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
-constexpr bool OFFSCREEN = false;
+constexpr bool OFFSCREEN = true;
 constexpr const char* OUTPUT_FILENAME = "tetra-demo.mkv";
 constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
@@ -20,7 +20,7 @@ using std::endl;
 static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Tetra Demo");
 
 void init_scene(const cv::Size& sz) {
-#ifndef V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES3
     //Initialize the OpenGL scene
     glViewport(0, 0, sz.width, sz.height);
     glColor3f(1.0, 1.0, 1.0);
@@ -41,7 +41,7 @@ void init_scene(const cv::Size& sz) {
 }
 
 void render_scene(const cv::Size& sz) {
-#ifndef V4D_USE_ES3
+#ifndef OPENCV_V4D_USE_ES3
     //Render a tetrahedron using immediate mode because the code is more concise for a demo
     glViewport(0, 0, sz.width, sz.height);
     glRotatef(1, 0, 1, 0);

@@ -6,15 +6,9 @@
 #ifndef SRC_OPENCV_V4D_DIALOG_HPP_
 #define SRC_OPENCV_V4D_DIALOG_HPP_
 #ifdef __EMSCRIPTEN__
-#define V4D_USE_ES3 1
+#define OPENCV_V4D_USE_ES3 1
 #endif
 
-#ifndef V4D_USE_ES3
-#define NANOGUI_USE_OPENGL
-#else
-#define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION 3
-#endif
 #include <nanogui/nanogui.h>
 #include <opencv2/core/cvdef.h>
 #include <opencv2/core/mat.hpp>

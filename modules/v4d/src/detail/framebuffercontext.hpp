@@ -3,22 +3,27 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#ifndef SRC_COMMON_CLGLCONTEXT_HPP_
-#define SRC_COMMON_CLGLCONTEXT_HPP_
+#ifndef SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_
+#define SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_
 
 #ifndef __EMSCRIPTEN__
-#include <CL/cl.h>
-#include <CL/cl_gl.h>
+#  ifndef CL_TARGET_OPENCL_VERSION
+#    define CL_TARGET_OPENCL_VERSION 120
+#  endif
+#  include <CL/cl.h>
+#  include <CL/cl_gl.h>
 #else
-#define V4D_USE_ES3 1
+#  define OPENCV_V4D_USE_ES3 1
 #endif
-#ifndef V4D_USE_ES3
+
+#ifndef OPENCV_V4D_USE_ES3
 #  include <GL/glew.h>
 #  define GLFW_INCLUDE_GLCOREARB
 #else
 #  define GLFW_INCLUDE_ES3
 #  define GLFW_INCLUDE_GLEXT
 #endif
+
 #include <GLFW/glfw3.h>
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/opengl.hpp>
@@ -184,4 +189,4 @@ protected:
 }
 }
 
-#endif /* SRC_COMMON_CLGLCONTEXT_HPP_ */
+#endif /* SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_ */
