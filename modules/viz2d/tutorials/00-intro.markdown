@@ -139,7 +139,7 @@ make -j
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
 
-#### Run the samples
+### Run the samples
 
 ```bash
 modules/viz2d/samples/cpp/tetra/tetra-demo

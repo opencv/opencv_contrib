@@ -9,7 +9,7 @@ constexpr int WIDTH = 1280;
 constexpr int HEIGHT = 720;
 
 int main(int argc, char** argv) {
-	string hv = "Hello Rainbow!";
+	string hr = "Hello Rainbow!";
 	Ptr<Viz2D> v2d = Viz2D::make(Size(WIDTH, HEIGHT), "Video Editing");
 	//Make a Source that generates rainbow frames.
 	Source src([=](cv::UMat& frame){
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
 			fontFace("sans-bold");
 			fillColor(Scalar(255, 0, 0, 255));
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
+			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
 		v2d->write(); //Write video to the Sink
 		return v2d->display(); //Display the framebuffer in the native window
