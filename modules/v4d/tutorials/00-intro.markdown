@@ -131,28 +131,28 @@ wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f
 ### Run the samples
 
 ```bash
-modules/v4d/samples/cpp/tetra/tetra-demo
+modules/v4d/samples/tetra/tetra-demo
 ```
 ```bash
-modules/v4d/samples/cpp/video/video-demo bunny.webm
+modules/v4d/samples/video/video-demo bunny.webm
 ```
 ```bash
-modules/v4d/samples/cpp/shader/shader-demo bunny.webm
+modules/v4d/samples/shader/shader-demo bunny.webm
 ```
 ```bash
-modules/v4d/samples/cpp/nanovg/nanovg-demo bunny.webm
+modules/v4d/samples/nanovg/nanovg-demo bunny.webm
 ```
 ```bash
-modules/v4d/samples/cpp/font/font-demo
+modules/v4d/samples/font/font-demo
 ```
 ```bash
-modules/v4d/samples/cpp/optflow/optflow-demo bunny.webm
+modules/v4d/samples/optflow/optflow-demo bunny.webm
 ```
 ```bash
-modules/v4d/samples/cpp/pedestrian/pedestrian-demo bunny.webm
+modules/v4d/samples/pedestrian/pedestrian-demo bunny.webm
 ```
 ```bash
-modules/v4d/samples/cpp/beauty/beauty-demo bunny.webm
+modules/v4d/samples/beauty/beauty-demo bunny.webm
 ```
 
 # Attribution
