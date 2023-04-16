@@ -10,7 +10,7 @@
 #include <string>
 
 #include <opencv2/tracking.hpp>
-#include <opencv2/objdetect/objdetect.hpp>
+#include <opencv2/objdetect.hpp>
 
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
