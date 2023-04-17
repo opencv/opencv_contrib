@@ -22,7 +22,7 @@ Please refer to the online demos in the following section to see at a glance wha
 * **GUI**: Simple yet powerful user interfaces through NanoGUI.
 * **Vector graphics**: Elegant and fast vector graphics through NanoVG.
 * **Font rendering**: Loading of fonts and sophisticated rendering options.
-* **Video pipeline**: Through a simple Source/Sink system videos can be efficently displayed, edited and saved.
+* **Video pipeline**: Through a simple Source/Sink system videos can be efficently read, displayed, edited and saved.
 * **Hardware acceleration**: Transparent hardware acceleration usage where possible. (e.g. CL-GL sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
 * **No more highgui** with it's heavy dependencies, licenses and limitations.
 * **WebAssembly support**.
