@@ -153,14 +153,16 @@ public:
     @param datapath the name of the parent directory of tessdata ended with "/", or NULL to use the
     system's default directory.
     @param language an ISO 639-3 code or NULL will default to "eng".
-    @param char_whitelist specifies the list of characters used for recognition. NULL defaults to
-    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".
+    @param char_whitelist specifies the list of characters used for recognition. NULL defaults to ""
+    (All characters will be used for recognition).
     @param oem tesseract-ocr offers different OCR Engine Modes (OEM), by default
     tesseract::OEM_DEFAULT is used. See the tesseract-ocr API documentation for other possible
     values.
     @param psmode tesseract-ocr offers different Page Segmentation Modes (PSM) tesseract::PSM_AUTO
     (fully automatic layout analysis) is used. See the tesseract-ocr API documentation for other
     possible values.
+
+    @note The char_whitelist default is changed after OpenCV 4.7.0/3.19.0 from "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" to "".
      */
     CV_WRAP static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
                                     const char* char_whitelist=NULL, int oem=OEM_DEFAULT, int psmode=PSM_AUTO);
