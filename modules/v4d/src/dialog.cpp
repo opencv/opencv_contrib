@@ -5,7 +5,7 @@
 
 #include "opencv2/v4d/dialog.hpp"
 #include <nanogui/layout.h>
-#ifndef OPENCV_V4D_USE_ES2
+#ifndef OPENCV_V4D_USE_ES3
 #  include <GL/glew.h>
 #  define GLFW_INCLUDE_GLCOREARB
 #else
