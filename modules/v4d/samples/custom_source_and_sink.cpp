@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
     using namespace cv::viz;
 
     string hr = "Hello Rainbow!";
-	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Video Editing");
+	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Custom Source/Sink");
 	//Make a Source that generates rainbow frames.
 	Source src([=](cv::UMat& frame){
         static long cnt = 0;
