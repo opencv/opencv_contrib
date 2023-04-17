@@ -1,14 +1,12 @@
 #include <opencv2/v4d/v4d.hpp>
 #include <opencv2/imgcodecs.hpp>
-using namespace cv;
-using namespace cv::viz;
-
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
 
 int main() {
-	//Creates a V4D object for on screen rendering
-	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Show image");
+    using namespace cv;
+    using namespace cv::viz;
+
+    //Creates a V4D object for on screen rendering
+	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Show image");
 	//Read an image as UMat
 	UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 	UMat resized;
@@ -19,6 +17,6 @@ int main() {
 		cvtColor(resized, framebuffer, COLOR_RGB2BGRA);
 	});
 	//Display the framebuffer in the native window in an endless loop
-        v4d->run([=](){ return v4d->display(); });
+	v4d->run([=](){ return v4d->display(); });
 }
 

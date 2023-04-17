@@ -2,15 +2,12 @@
 #include <opencv2/v4d/nvg.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-using namespace cv;
-using namespace cv::viz;
-
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
-
 int main(int argc, char** argv) {
-	string hr = "Hello Rainbow!";
-	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Video Editing");
+    using namespace cv;
+    using namespace cv::viz;
+
+    string hr = "Hello Rainbow!";
+	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Video Editing");
 	//Make a Source that generates rainbow frames.
 	Source src([=](cv::UMat& frame){
         static long cnt = 0;

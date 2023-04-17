@@ -1,13 +1,10 @@
 #include <opencv2/v4d/v4d.hpp>
 
-using namespace cv;
-using namespace cv::viz;
-
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
-
 int main(int argc, char** argv) {
-	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "GL Tetrahedron");
+    using namespace cv;
+    using namespace cv::viz;
+
+    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Tetrahedron");
 
 	v4d->gl([](const Size sz) {
 		//Initialize the OpenGL scene

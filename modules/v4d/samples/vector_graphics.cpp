@@ -1,14 +1,11 @@
 #include <opencv2/v4d/v4d.hpp>
 #include <opencv2/v4d/nvg.hpp>
 
-using namespace cv;
-using namespace cv::viz;
-
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
-
 int main(int argc, char** argv) {
-	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Vector Graphics");
+    using namespace cv;
+    using namespace cv::viz;
+
+	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Vector Graphics");
 	//Creates a NanoVG context and draws a cross-hair on the framebuffer
 	v4d->nvg([](const Size& sz) {
 		//Calls from this namespace may only be used inside a nvg context
@@ -25,7 +22,7 @@ int main(int argc, char** argv) {
 		stroke();
 	});
 
-        //Display the framebuffer in the native window in an endless loop
-        v4d->run([=](){ return v4d->display(); });
+    //Display the framebuffer in the native window in an endless loop
+    v4d->run([=](){ return v4d->display(); });
 }
 

@@ -1,19 +1,16 @@
 #include <opencv2/v4d/v4d.hpp>
 #include <opencv2/v4d/nvg.hpp>
 
-using namespace cv;
-using namespace cv::viz;
-
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
-
 int main(int argc, char** argv) {
-	string hv = "Hello Video!";
-	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Video Editing");
+    using namespace cv;
+    using namespace cv::viz;
+
+    string hv = "Hello Video!";
+	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Video Editing");
 	//Make the video source
 	Source src = makeCaptureSource(argv[1]);
 	//Make the video sink
-	Sink sink = makeWriterSink(argv[2], VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), Size(WIDTH, HEIGHT));
+	Sink sink = makeWriterSink(argv[2], VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), v4d->getFrameBufferSize());
 
 	//Attach source and sink
 	v4d->setSource(src);

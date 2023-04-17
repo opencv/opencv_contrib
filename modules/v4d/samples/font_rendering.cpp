@@ -1,14 +1,11 @@
 #include <opencv2/v4d/v4d.hpp>
 #include <opencv2/v4d/nvg.hpp>
 
-using namespace cv;
-using namespace cv::viz;
-
-constexpr int WIDTH = 1280;
-constexpr int HEIGHT = 720;
-
 int main(int argc, char** argv) {
-	Ptr<V4D> v4d = V4D::make(Size(WIDTH, HEIGHT), "Font Rendering");
+    using namespace cv;
+    using namespace cv::viz;
+
+    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Font Rendering");
 
 	//The text to render
 	string hw = "Hello World";
