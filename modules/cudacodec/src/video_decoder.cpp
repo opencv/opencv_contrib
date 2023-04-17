@@ -124,8 +124,8 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     cuSafeCall(cuvidGetDecoderCaps(&decodeCaps));
     cuSafeCall(cuCtxPopCurrent(NULL));
     if (!(decodeCaps.bIsSupported && (decodeCaps.nOutputFormatMask & (1 << cudaVideoSurfaceFormat_NV12)))){
-        CV_Error(Error::StsUnsupportedFormat, "Video source is not supported by hardware video decoder");
         CV_LOG_ERROR(NULL, "Video source is not supported by hardware video decoder.");
+        CV_Error(Error::StsUnsupportedFormat, "Video source is not supported by hardware video decoder");
     }
     CV_Assert(videoFormat.ulWidth >= decodeCaps.nMinWidth &&
         videoFormat.ulHeight >= decodeCaps.nMinHeight &&
@@ -162,6 +162,61 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     cuSafeCall(cuCtxPushCurrent(ctx_));
     cuSafeCall(cuvidCreateDecoder(&decoder_, &createInfo_));
     cuSafeCall(cuCtxPopCurrent(NULL));
+    inited_ = true;
+}
+
+int cv::cudacodec::detail::VideoDecoder::reconfigure(const FormatInfo& videoFormat) {
+    if (videoFormat.nBitDepthMinus8 != videoFormat_.nBitDepthMinus8 || videoFormat.nBitDepthChromaMinus8 != videoFormat_.nBitDepthChromaMinus8) {
+        CV_LOG_ERROR(NULL, "Reconfigure Not supported for bit depth change");
+        CV_Error(Error::StsUnsupportedFormat, "Reconfigure Not supported for bit depth change");
+    }
+
+    if (videoFormat.chromaFormat != videoFormat_.chromaFormat) {
+        CV_LOG_ERROR(NULL, "Reconfigure Not supported for chroma format change");
+        CV_Error(Error::StsUnsupportedFormat, "Reconfigure Not supported for chroma format change");
+    }
+
+    const bool decodeResChange = !(videoFormat.ulWidth == videoFormat_.ulWidth && videoFormat.ulHeight == videoFormat_.ulHeight);
+
+    if ((videoFormat.ulWidth > videoFormat_.ulMaxWidth) || (videoFormat.ulHeight > videoFormat_.ulMaxHeight)) {
+        // For VP9, let driver  handle the change if new width/height > maxwidth/maxheight
+        if (videoFormat.codec != Codec::VP9) {
+            CV_LOG_ERROR(NULL, "Reconfigure Not supported when width/height > maxwidth/maxheight");
+            CV_Error(Error::StsUnsupportedFormat, "Reconfigure Not supported when width/height > maxwidth/maxheight");
+        }
+    }
+
+    if (!decodeResChange)
+        return 1;
+
+    {
+        AutoLock autoLock(mtx_);
+        videoFormat_.ulNumDecodeSurfaces = videoFormat.ulNumDecodeSurfaces;
+        videoFormat_.ulWidth = videoFormat.ulWidth;
+        videoFormat_.ulHeight = videoFormat.ulHeight;
+        videoFormat_.targetRoi = videoFormat.targetRoi;
+    }
+
+    CUVIDRECONFIGUREDECODERINFO reconfigParams = { 0 };
+    reconfigParams.ulWidth = videoFormat_.ulWidth;
+    reconfigParams.ulHeight = videoFormat_.ulHeight;
+    reconfigParams.display_area.left = videoFormat_.displayArea.x;
+    reconfigParams.display_area.right = videoFormat_.displayArea.x + videoFormat_.displayArea.width;
+    reconfigParams.display_area.top = videoFormat_.displayArea.y;
+    reconfigParams.display_area.bottom = videoFormat_.displayArea.y + videoFormat_.displayArea.height;
+    reconfigParams.ulTargetWidth = videoFormat_.width;
+    reconfigParams.ulTargetHeight = videoFormat_.height;
+    reconfigParams.target_rect.left = videoFormat_.targetRoi.x;
+    reconfigParams.target_rect.right = videoFormat_.targetRoi.x + videoFormat_.targetRoi.width;
+    reconfigParams.target_rect.top = videoFormat_.targetRoi.y;
+    reconfigParams.target_rect.bottom = videoFormat_.targetRoi.y + videoFormat_.targetRoi.height;
+    reconfigParams.ulNumDecodeSurfaces = videoFormat_.ulNumDecodeSurfaces;
+
+    cuSafeCall(cuCtxPushCurrent(ctx_));
+    cuSafeCall(cuvidReconfigureDecoder(decoder_, &reconfigParams));
+    cuSafeCall(cuCtxPopCurrent(NULL));
+    CV_LOG_INFO(NULL, "Reconfiguring Decoder");
+    return videoFormat_.ulNumDecodeSurfaces;
 }
 
 void cv::cudacodec::detail::VideoDecoder::release()
