@@ -58,6 +58,10 @@ PARAM_TEST_CASE(Scaling, cv::cuda::DeviceInfo, std::string, Size2f, Rect2f, Rect
 {
 };
 
+struct DisplayResolution : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+};
+
 PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -226,6 +230,37 @@ CUDA_TEST_P(Scaling, Reader)
     // assert on mean absolute error due to different resize algorithms
     const double mae = cv::cuda::norm(frameGs, frame(targetRoiOut), NORM_L1)/frameGs.size().area();
     ASSERT_LT(mae, 2.75);
+}
+
+CUDA_TEST_P(DisplayResolution, Reader)
+{
+    cv::cuda::setDevice(GetParam().deviceID());
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../cv/video/1920x1080.avi";
+    const Rect displayArea(0, 0, 1920, 1080);
+    GpuMat frame;
+
+    {
+        // verify the output frame is the diplay size (1920x1080) and not the coded size (1920x1088)
+        cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+        reader->set(cudacodec::ColorFormat::GRAY);
+        ASSERT_TRUE(reader->nextFrame(frame));
+        const cudacodec::FormatInfo format = reader->format();
+        ASSERT_TRUE(format.displayArea == displayArea);
+        ASSERT_TRUE(frame.size() == displayArea.size() && frame.size() == format.targetSz);
+    }
+
+    {
+        // extra check to verify display frame has not been post-processed and is just a cropped version of the coded sized frame
+        cudacodec::VideoReaderInitParams params;
+        params.srcRoi = Rect(0, 0, 1920, 1088);
+        cv::Ptr<cv::cudacodec::VideoReader> readerCodedSz = cv::cudacodec::createVideoReader(inputFile, {}, params);
+        readerCodedSz->set(cudacodec::ColorFormat::GRAY);
+        GpuMat frameCodedSz;
+        ASSERT_TRUE(readerCodedSz->nextFrame(frameCodedSz));
+        const cudacodec::FormatInfo formatCodedSz = readerCodedSz->format();
+        const double err = cv::cuda::norm(frame, frameCodedSz(displayArea), NORM_INF);
+        ASSERT_TRUE(err == 0);
+    }
 }
 
 CUDA_TEST_P(Video, Reader)
@@ -695,6 +730,8 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckSet, testing::Combine(
 #define TARGET_ROI Rect2f(0,0,1,1), Rect2f(0.2f,0.3f,0.6f,0.7f)
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
     ALL_DEVICES, testing::Values(VIDEO_SRC_SCALING), testing::Values(TARGET_SZ), testing::Values(SRC_ROI), testing::Values(TARGET_ROI)));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, DisplayResolution, ALL_DEVICES);
 
 #define VIDEO_SRC_R "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
