@@ -7,6 +7,7 @@ int main(int argc, char** argv) {
     Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Tetrahedron");
 
 	v4d->gl([](const Size sz) {
+#ifndef OPENCV_V4D_ES_VERSION
 		//Initialize the OpenGL scene
 		glViewport(0, 0, sz.width, sz.height);
 		glColor3f(1.0, 1.0, 1.0);
@@ -23,10 +24,12 @@ int main(int argc, char** argv) {
 		glTranslatef(0, 0, -3);
 		glRotatef(50, 1, 0, 0);
 		glRotatef(70, 0, 1, 0);
+#endif
 	});
 
 	v4d->run([=]() {
 		v4d->gl([](const Size& sz) {
+#ifndef OPENCV_V4D_ES_VERSION
 			//Render a tetrahedron using immediate mode because the code is more concise
 			glViewport(0, 0, sz.width, sz.height);
 			glRotatef(1, 0, 1, 0);
@@ -47,6 +50,7 @@ int main(int argc, char** argv) {
 				glColor3f(1, 0, 0);
 				glVertex3f(-1, 0, 1);
 			glEnd();
+#endif
 		});
 
 		//If onscreen rendering is enabled it displays the framebuffer in the native window.

@@ -21,15 +21,19 @@
 
 #include "cxxpool.hpp"
 #ifdef __EMSCRIPTEN__
-#define OPENCV_V4D_USE_ES3 1
+#define OPENCV_V4D_ES_VERSION 3
 #include <emscripten.h>
 #endif
 
 #include <nanogui/nanogui.h>
-#ifndef OPENCV_V4D_USE_ES3
-#include <GL/glew.h>
+#ifndef OPENCV_V4D_ES_VERSION
+#  include <GL/glew.h>
 #else
-#include <GLES3/gl3.h>
+#  if(OPENCV_V4D_ES_VERSION == 3)
+#    include <GLES3/gl3.h>
+#  else
+#    include <GLES2/gl2.h>
+#  endif
 #endif
 
 using std::cout;

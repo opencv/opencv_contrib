@@ -13,14 +13,18 @@
 #  include <CL/cl.h>
 #  include <CL/cl_gl.h>
 #else
-#  define OPENCV_V4D_USE_ES3 1
+#  define OPENCV_V4D_ES_VERSION 3
 #endif
 
-#ifndef OPENCV_V4D_USE_ES3
+#ifndef OPENCV_V4D_ES_VERSION
 #  include <GL/glew.h>
 #  define GLFW_INCLUDE_GLCOREARB
 #else
-#  define GLFW_INCLUDE_ES3
+#  if(OPENCV_V4D_ES_VERSION == 3)
+#    define GLFW_INCLUDE_ES3
+#  else
+#    define GLFW_INCLUDE_ES3
+#  endif
 #  define GLFW_INCLUDE_GLEXT
 #endif
 
