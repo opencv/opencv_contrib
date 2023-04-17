@@ -83,8 +83,8 @@ The tutorials are designed to be read one after the other to give you a good ove
 * \ref v4d_custom_source_and_sink
 * \ref v4d_font_with_gui
 
-# Samples
-The goal of the samples is to show how to use V4D to the fullest. Also they show how to use V4D to create programs that run mostly (the part the matters) on the GPU (when driver capabilities allow). They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
+# Demos
+The goal of the demos is to show how to use V4D to the fullest. Also they show how to use V4D to create programs that run mostly (the part the matters) on the GPU (when driver capabilities allow). They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
 
 * \ref v4d_tetra
 * \ref v4d_video
@@ -95,16 +95,15 @@ The goal of the samples is to show how to use V4D to the fullest. Also they show
 * \ref v4d_optflow
 * \ref v4d_beauty
 
-
 # Instructions for Ubuntu 22.04.2 LTS
 You need to build OpenCV with V4D
 
 ## Install required packages
 
 ```bash
-apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen libxinerama-dev libxcursor-dev libxi-dev libva-dev
+apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen libxinerama-dev libxcursor-dev libxi-dev libva-dev yt-dlp wget
 ```
-## Build OpenCV with V4D and samples
+## Build OpenCV with V4D and examples
 
 ```bash
 git clone --branch 4.x https://github.com/opencv/opencv.git
@@ -116,9 +115,39 @@ make -j8
 sudo make install
 ```
 
-## Download the example video file
+## Download the example videos
 ```bash
+# big buck bunny video
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
+# dance video
+yt-dlp -o dance.webm "https://www.youtube.com/watch?v=yg6LZtNeO_8"
+# kristen video
+yt-dlp -o kristen.webm "https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s"
+```
+
+## Run the examples and demos
+```
+# Examples
+bin/example_v4d_display_image
+bin/example_v4d_display_image_fb
+bin/example_v4d_vector_graphics
+bin/example_v4d_vector_graphics_and_fb
+bin/example_v4d_render_opengl
+bin/example_v4d_font_rendering
+bin/example_v4d_video_editing
+bin/example_v4d_custom_source_and_sink
+bin/example_v4d_font_with_gui
+
+# Demos
+bin/example_v4d_tetra-demo
+bin/example_v4d_video-demo bunny.webm
+bin/example_v4d_nanovg-demo bunny.webm
+bin/example_v4d_shader-demo bunny.webm
+bin/example_v4d_font-demo
+bin/example_v4d_pedestrian-demo dance.webm
+bin/example_v4d_optflow-demo dance.webm
+bin/example_v4d_beauty-demo kristen.webm
+
 ```
 
 # Attribution
