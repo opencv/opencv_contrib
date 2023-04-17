@@ -116,7 +116,7 @@ make -j8
 sudo make install
 ```
 
-## Download the example file
+## Download the example video file
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
 ```
