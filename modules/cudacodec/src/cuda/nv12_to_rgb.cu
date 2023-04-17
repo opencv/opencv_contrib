@@ -66,14 +66,20 @@ namespace
 {
     __constant__ float constHueColorSpaceMat[9] = {1.1644f, 0.0f, 1.596f, 1.1644f, -0.3918f, -0.813f, 1.1644f, 2.0172f, 0.0f};
 
+    template<bool fullRange>
     __device__ static void YUV2RGB(const uint* yuvi, float* red, float* green, float* blue)
     {
         float luma, chromaCb, chromaCr;
-
-        // Prepare for hue adjustment
-        luma     = (float)yuvi[0];
-        chromaCb = (float)((int)yuvi[1] - 512.0f);
-        chromaCr = (float)((int)yuvi[2] - 512.0f);
+        if (fullRange) {
+            luma = (float)(((int)yuvi[0] * 219.0f / 255.0f));
+            chromaCb = (float)(((int)yuvi[1] - 512.0f) * 224.0f / 255.0f);
+            chromaCr = (float)(((int)yuvi[2] - 512.0f) * 224.0f / 255.0f);
+        }
+        else {
+            luma = (float)((int)yuvi[0] - 64.0f);
+            chromaCb = (float)((int)yuvi[1] - 512.0f);
+            chromaCr = (float)((int)yuvi[2] - 512.0f);
+        }
 
        // Convert YUV To RGB with hue adjustment
        *red   = (luma     * constHueColorSpaceMat[0]) +
@@ -112,6 +118,7 @@ namespace
     #define COLOR_COMPONENT_BIT_SIZE 10
     #define COLOR_COMPONENT_MASK     0x3FF
 
+    template<bool fullRange>
     __global__ void NV12_to_BGRA(const uchar* srcImage, size_t nSourcePitch,
                                   uint* dstImage, size_t nDestPitch,
                                   uint width, uint height)
@@ -135,31 +142,11 @@ namespace
 
         const int y_chroma = y >> 1;
 
-        if (y & 1)  // odd scanline ?
-        {
-            uint chromaCb = srcImage[chromaOffset + y_chroma * nSourcePitch + x    ];
-            uint chromaCr = srcImage[chromaOffset + y_chroma * nSourcePitch + x + 1];
+        yuv101010Pel[0] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x    ] << ( COLOR_COMPONENT_BIT_SIZE       + 2));
+        yuv101010Pel[0] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x + 1] << ((COLOR_COMPONENT_BIT_SIZE << 1) + 2));
 
-            if (y_chroma < ((height >> 1) - 1)) // interpolate chroma vertically
-            {
-                chromaCb = (chromaCb + srcImage[chromaOffset + (y_chroma + 1) * nSourcePitch + x    ] + 1) >> 1;
-                chromaCr = (chromaCr + srcImage[chromaOffset + (y_chroma + 1) * nSourcePitch + x + 1] + 1) >> 1;
-            }
-
-            yuv101010Pel[0] |= (chromaCb << ( COLOR_COMPONENT_BIT_SIZE       + 2));
-            yuv101010Pel[0] |= (chromaCr << ((COLOR_COMPONENT_BIT_SIZE << 1) + 2));
-
-            yuv101010Pel[1] |= (chromaCb << ( COLOR_COMPONENT_BIT_SIZE       + 2));
-            yuv101010Pel[1] |= (chromaCr << ((COLOR_COMPONENT_BIT_SIZE << 1) + 2));
-        }
-        else
-        {
-            yuv101010Pel[0] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x    ] << ( COLOR_COMPONENT_BIT_SIZE       + 2));
-            yuv101010Pel[0] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x + 1] << ((COLOR_COMPONENT_BIT_SIZE << 1) + 2));
-
-            yuv101010Pel[1] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x    ] << ( COLOR_COMPONENT_BIT_SIZE       + 2));
-            yuv101010Pel[1] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x + 1] << ((COLOR_COMPONENT_BIT_SIZE << 1) + 2));
-        }
+        yuv101010Pel[1] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x    ] << ( COLOR_COMPONENT_BIT_SIZE       + 2));
+        yuv101010Pel[1] |= ((uint)srcImage[chromaOffset + y_chroma * nSourcePitch + x + 1] << ((COLOR_COMPONENT_BIT_SIZE << 1) + 2));
 
         // this steps performs the color conversion
         uint yuvi[6];
@@ -174,8 +161,8 @@ namespace
         yuvi[5] = ((yuv101010Pel[1] >> (COLOR_COMPONENT_BIT_SIZE << 1)) & COLOR_COMPONENT_MASK);
 
         // YUV to RGB Transformation conversion
-        YUV2RGB(&yuvi[0], &red[0], &green[0], &blue[0]);
-        YUV2RGB(&yuvi[3], &red[1], &green[1], &blue[1]);
+        YUV2RGB<fullRange>(&yuvi[0], &red[0], &green[0], &blue[0]);
+        YUV2RGB<fullRange>(&yuvi[3], &red[1], &green[1], &blue[1]);
 
         // Clamp the results to RGBA
 
@@ -186,13 +173,15 @@ namespace
     }
 }
 
-void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream)
+void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream)
 {
     outFrame.create(height, width, CV_8UC4);
     dim3 block(32, 8);
     dim3 grid(divUp(width, 2 * block.x), divUp(height, block.y));
-    NV12_to_BGRA<< <grid, block, 0, stream >> > (decodedFrame.ptr<uchar>(), decodedFrame.step,
-        outFrame.ptr<uint>(), outFrame.step, width, height);
+    if (videoFullRangeFlag)
+        NV12_to_BGRA<true> << <grid, block, 0, stream >> > (decodedFrame.ptr<uchar>(), decodedFrame.step, outFrame.ptr<uint>(), outFrame.step, width, height);
+    else
+        NV12_to_BGRA<false> << <grid, block, 0, stream >> > (decodedFrame.ptr<uchar>(), decodedFrame.step, outFrame.ptr<uint>(), outFrame.step, width, height);
     CV_CUDEV_SAFE_CALL(cudaGetLastError());
     if (stream == 0)
         CV_CUDEV_SAFE_CALL(cudaDeviceSynchronize());
