@@ -104,55 +104,21 @@ You need to build OpenCV with V4D
 ```bash
 apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen libxinerama-dev libxcursor-dev libxi-dev libva-dev
 ```
-## Build OpenCV with V4D
+## Build OpenCV with V4D and samples
 
 ```bash
 git clone --branch 4.x https://github.com/opencv/opencv.git
 git clone https://github.com/kallaballa/V4D.git
 mkdir opencv/build
 cd opencv/build
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_v4d=ON -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DOPENCV_EXTRA_MODULES_PATH=../../V4D/modules/ ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_opencv_v4d=ON -DBUILD_opencv_python_tests=OFF -DBUILD_opencv_js_bindings_generator=OFF -DBUILD_opencv_python_bindings_generator=OFF -DBUILD_opencv_python3=OFF -DOPENCV_ENABLE_GLX=ON -DOPENCV_FFMPEG_ENABLE_LIBAVDEVICE=ON -DWITH_OPENGL=ON -DWITH_QT=ON -DWITH_FFMPEG=ON -DOPENCV_FFMPEG_SKIP_BUILD_CHECK=ON -DWITH_VA=ON -DWITH_VA_INTEL=ON -DBUILD_PERF_TESTS=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=ON -DOPENCV_EXTRA_MODULES_PATH=../../V4D/modules/ ..
 make -j8
 sudo make install
 ```
 
-## Optional: Make the samples
-
-```bash
-cd V4D/modules/v4d/samples/cpp
-make -j
-```
-
-### Download the example file
+## Download the example file
 ```bash
 wget -O bunny.webm https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f3/Big_Buck_Bunny_first_23_seconds_1080p.ogv/Big_Buck_Bunny_first_23_seconds_1080p.ogv.1080p.vp9.webm
-```
-
-### Run the samples
-
-```bash
-modules/v4d/samples/tetra/tetra-demo
-```
-```bash
-modules/v4d/samples/video/video-demo bunny.webm
-```
-```bash
-modules/v4d/samples/shader/shader-demo bunny.webm
-```
-```bash
-modules/v4d/samples/nanovg/nanovg-demo bunny.webm
-```
-```bash
-modules/v4d/samples/font/font-demo
-```
-```bash
-modules/v4d/samples/optflow/optflow-demo bunny.webm
-```
-```bash
-modules/v4d/samples/pedestrian/pedestrian-demo bunny.webm
-```
-```bash
-modules/v4d/samples/beauty/beauty-demo bunny.webm
 ```
 
 # Attribution
