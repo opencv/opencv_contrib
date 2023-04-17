@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 		//Heavily blurs the crosshair using a cheap boxFilter
 		boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
 	});
-        //Display the framebuffer in the native window in an endless loop
-        v4d->run([=](){ return v4d->display(); });
+    //Display the framebuffer in the native window in an endless loop
+	v4d->run([=](){ return v4d->display(); });
 }
 
