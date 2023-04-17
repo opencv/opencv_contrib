@@ -12,5 +12,5 @@ Renders a rainbow tetrahedron on blue background using OpenGL, applies a glow ef
 
 @youtube{ljV9FogPTpM}
 
-@include samples/cpp/tetra/tetra-demo.cpp
+@include samples/tetra-demo.cpp
 

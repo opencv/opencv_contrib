@@ -12,6 +12,6 @@ Pedestrian detection using HOG with a linear SVM, non-maximal suppression and tr
 
 @youtube{PIUQIG6Qlrw}
 
-@include samples/cpp/pedestrian/pedestrian-demo.cpp
+@include samples/pedestrian-demo.cpp
 
 

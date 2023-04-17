@@ -12,5 +12,5 @@ Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) 
 
 @youtube{KgH8R7fp9PI}
 
-@include samples/cpp/font/font-demo.cpp
+@include samples/font-demo.cpp
 

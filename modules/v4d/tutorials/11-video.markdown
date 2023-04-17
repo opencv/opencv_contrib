@@ -12,6 +12,6 @@ Renders a rainbow tetrahedron on top of a input-video using OpenGL, applies a gl
 
 @youtube{_FZlqui5DQA}
 
-@include samples/cpp/video/video-demo.cpp
+@include samples/video-demo.cpp
 
 

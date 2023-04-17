@@ -12,4 +12,4 @@ Renders a color wheel on top of an input-video using nanovg (OpenGL), does color
 
 @youtube{qVPQaftIGFE}
 
-@include samples/cpp/nanovg/nanovg-demo.cpp
+@include samples/nanovg-demo.cpp

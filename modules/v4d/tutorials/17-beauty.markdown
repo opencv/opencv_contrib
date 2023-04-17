@@ -11,4 +11,4 @@ Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenG
 
 @youtube{SWxDMkZGDCk}
 
-@include samples/cpp/beauty/beauty-demo.cpp
+@include samples/beauty-demo.cpp

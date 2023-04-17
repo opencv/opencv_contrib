@@ -11,7 +11,7 @@
 ## Render Hello World
 Draws "Hello World" to the screen.
 
-@include samples/cpp/font_rendering.cpp
+@include samples/font_rendering.cpp
 
 ![The result](doc/font_rendering.png)
 

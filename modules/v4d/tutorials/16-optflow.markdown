@@ -12,7 +12,7 @@ Optical flow visualization on top of a video. Uses background subtraction (OpenC
 
 @youtube{uPYTRPZnocw}
 
-@include samples/cpp/optflow/optflow-demo.cpp
+@include samples/optflow-demo.cpp
 
 
 
