@@ -170,6 +170,7 @@ public:
      * @param title The window title.
      * @param major The OpenGL major version to request.
      * @param minor The OpenGL minor version to request.
+     * @param compat Request a compatibility context.
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
@@ -430,6 +431,7 @@ private:
      * @param title The window title.
      * @param major The OpenGL major version to request.
      * @param minor The OpenGL minor version to request.
+     * @param compat Request a compatibility context.
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
