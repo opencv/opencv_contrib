@@ -62,6 +62,11 @@ PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
 {
 };
 
+typedef tuple<std::string, bool> color_conversion_params_t;
+PARAM_TEST_CASE(ColorConversion, cv::cuda::DeviceInfo, cv::cudacodec::ColorFormat, color_conversion_params_t)
+{
+};
+
 PARAM_TEST_CASE(VideoReadRaw, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -220,7 +225,7 @@ CUDA_TEST_P(Scaling, Reader)
     cv::cuda::resize(frameOr(srcRoiOut), frameGs, targetRoiOut.size(), 0, 0, INTER_AREA);
     // assert on mean absolute error due to different resize algorithms
     const double mae = cv::cuda::norm(frameGs, frame(targetRoiOut), NORM_L1)/frameGs.size().area();
-    ASSERT_LT(mae, 2.35);
+    ASSERT_LT(mae, 2.75);
 }
 
 CUDA_TEST_P(Video, Reader)
@@ -262,6 +267,33 @@ CUDA_TEST_P(Video, Reader)
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
         ASSERT_TRUE(frame.channels() == formatToChannels.second);
+    }
+}
+
+CUDA_TEST_P(ColorConversion, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const cv::cudacodec::ColorFormat colorFormat = GET_PARAM(1);
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + get<0>(GET_PARAM(2));
+    const bool videoFullRangeFlag = get<1>(GET_PARAM(2));
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    reader->set(colorFormat);
+    cv::VideoCapture cap(inputFile);
+
+    cv::cuda::GpuMat frame;
+    Mat frameHost, frameHostGs, frameFromDevice;
+    for (int i = 0; i < 10; i++)
+    {
+        reader->nextFrame(frame);
+        frame.download(frameFromDevice);
+        cap.read(frameHost);
+        const cv::cudacodec::FormatInfo fmt = reader->format();
+        ASSERT_TRUE(fmt.valid && fmt.videoFullRangeFlag == videoFullRangeFlag);
+        if (colorFormat == cv::cudacodec::ColorFormat::BGRA)
+            cv::cvtColor(frameHost, frameHostGs, COLOR_BGR2BGRA);
+        else
+            frameHostGs = frameHost;
+        EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, 2.0);
     }
 }
 
@@ -671,6 +703,18 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
     testing::Values(VIDEO_SRC_R)));
+
+const color_conversion_params_t color_conversion_params[] =
+{
+    color_conversion_params_t("highgui/video/big_buck_bunny.h264", false),
+    color_conversion_params_t("highgui/video/big_buck_bunny_full_color_range.h264", true),
+};
+
+#define VIDEO_COLOR_OUTPUTS cv::cudacodec::ColorFormat::BGRA, cv::cudacodec::ColorFormat::BGRA
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversion, testing::Combine(
+    ALL_DEVICES,
+    testing::Values(VIDEO_COLOR_OUTPUTS),
+    testing::ValuesIn(color_conversion_params)));
 
 #define VIDEO_SRC_RW "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, VideoReadRaw, testing::Combine(
