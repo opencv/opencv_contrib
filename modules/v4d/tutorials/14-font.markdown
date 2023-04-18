@@ -10,7 +10,7 @@
 
 Renders a Star Wars like text crawl using nanovg (OpenGL), uses OpenCV (OpenCL) for a pseudo 3D effect and encodes on the GPU (VAAPI).
 
-@youtube{KgH8R7fp9PI}
+@youtube{2H434WN_ID8}
 
 @include samples/font-demo.cpp
 

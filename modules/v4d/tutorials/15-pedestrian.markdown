@@ -10,7 +10,7 @@
 
 Pedestrian detection using HOG with a linear SVM, non-maximal suppression and tracking using KCF. Uses nanovg for rendering (OpenGL), detects using a linear SVM (OpenCV/OpenCL), filters resuls using NMS (CPU) and tracks using KCF (CPU). Decodes/encodes on the GPU (VAAPI).
 
-@youtube{PIUQIG6Qlrw}
+@youtube{tEKwpD1PwRI}
 
 @include samples/pedestrian-demo.cpp
 

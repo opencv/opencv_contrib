@@ -10,7 +10,7 @@
 
 Renders a mandelbrot fractal zoom. Uses shaders, OpenCL and VAAPI together.
 
-@youtube{2AhnolWRLBQ}
+@youtube{hx3TV80XpyE}
 
 @include samples/shader-demo.cpp
 

@@ -86,7 +86,7 @@ The tutorials are designed to be read one after the other to give you a good ove
 # Demos
 The goal of the demos is to show how to use V4D to the fullest. Also they show how to use V4D to create programs that run mostly (the part the matters) on the GPU (when driver capabilities allow). They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
 
-* \ref v4d_tetra
+* \ref v4d_cube
 * \ref v4d_video
 * \ref v4d_nanovg
 * \ref v4d_shader
@@ -139,7 +139,7 @@ bin/example_v4d_custom_source_and_sink
 bin/example_v4d_font_with_gui
 
 # Demos
-bin/example_v4d_tetra-demo
+bin/example_v4d_cube-demo
 bin/example_v4d_video-demo bunny.webm
 bin/example_v4d_nanovg-demo bunny.webm
 bin/example_v4d_shader-demo bunny.webm
