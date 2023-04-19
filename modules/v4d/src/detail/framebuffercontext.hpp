@@ -10,8 +10,11 @@
 #  ifndef CL_TARGET_OPENCL_VERSION
 #    define CL_TARGET_OPENCL_VERSION 120
 #  endif
-#  include <CL/cl.h>
-#  include <CL/cl_gl.h>
+#  ifdef __APPLE__
+#    include <OpenCL/cl_gl_ext.h>
+#  else
+#    include <CL/cl_gl_ext.h>
+#  endif
 #else
 #  define OPENCV_V4D_ES_VERSION 3
 #endif
