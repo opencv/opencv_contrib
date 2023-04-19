@@ -408,12 +408,9 @@ bool iteration() {
 #ifndef __EMSCRIPTEN__
     v4d->write();
 #endif
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if (!v4d->display())
-        return false;
-
     ++iterations;
-    return true;
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    return v4d->display();
 }
 
 int main(int argc, char **argv) {
