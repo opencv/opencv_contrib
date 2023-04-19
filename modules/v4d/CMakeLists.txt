@@ -1,5 +1,5 @@
 include("FindGLEW")
-find_package(glm REQUIRED)
+pkg_check_modules (glm glm)
 
 set(the_description "V4D Visualization Module")
 if(NOT GLEW_FOUND)
