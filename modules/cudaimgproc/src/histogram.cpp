@@ -68,8 +68,8 @@ void cv::cuda::histRange(InputArray, GpuMat*, const GpuMat*, Stream&) { throw_no
 
 namespace hist
 {
-    void histogram256(PtrStepSzb src, int* hist, cudaStream_t stream);
-    void histogram256(PtrStepSzb src, PtrStepSzb mask, int* hist, cudaStream_t stream);
+    void histogram256(PtrStepSzb src, int* hist, const int offsetX, cudaStream_t stream);
+    void histogram256(PtrStepSzb src, PtrStepSzb mask, int* hist, const int offsetX, cudaStream_t stream);
 }
 
 void cv::cuda::calcHist(InputArray _src, OutputArray _hist, Stream& stream)
@@ -91,10 +91,12 @@ void cv::cuda::calcHist(InputArray _src, InputArray _mask, OutputArray _hist, St
 
     hist.setTo(Scalar::all(0), stream);
 
+    Point ofs; Size wholeSize;
+    src.locateROI(wholeSize, ofs);
     if (mask.empty())
-        hist::histogram256(src, hist.ptr<int>(), StreamAccessor::getStream(stream));
+        hist::histogram256(src, hist.ptr<int>(), ofs.x, StreamAccessor::getStream(stream));
     else
-        hist::histogram256(src, mask, hist.ptr<int>(), StreamAccessor::getStream(stream));
+        hist::histogram256(src, mask, hist.ptr<int>(), ofs.x, StreamAccessor::getStream(stream));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -494,16 +496,18 @@ void cv::cuda::evenLevels(OutputArray _levels, int nLevels, int lowerLevel, int 
 
 namespace hist
 {
-    void histEven8u(PtrStepSzb src, int* hist, int binCount, int lowerLevel, int upperLevel, cudaStream_t stream);
+    void histEven8u(PtrStepSzb src, int* hist, int binCount, int lowerLevel, int upperLevel, const int offsetX, cudaStream_t stream);
 }
 
 namespace
 {
     void histEven8u(const GpuMat& src, GpuMat& hist, int histSize, int lowerLevel, int upperLevel, cudaStream_t stream)
     {
+        Point ofs; Size wholeSize;
+        src.locateROI(wholeSize, ofs);
         hist.create(1, histSize, CV_32S);
         cudaSafeCall( cudaMemsetAsync(hist.data, 0, histSize * sizeof(int), stream) );
-        hist::histEven8u(src, hist.ptr<int>(), histSize, lowerLevel, upperLevel, stream);
+        hist::histEven8u(src, hist.ptr<int>(), histSize, lowerLevel, upperLevel, ofs.x, stream);
     }
 }
 
