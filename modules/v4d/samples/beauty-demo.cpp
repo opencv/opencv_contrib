@@ -238,7 +238,7 @@ bool iteration() {
         static bool trackerInitalized = false;
 #endif
         //Face detector
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2022mar.onnx", "", cv::Size(v4d->getFrameBufferSize().width * SCALE, v4d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("face_detection_yunet_2022mar.onnx", "", cv::Size(v4d->getFrameBufferSize().width * SCALE, v4d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         //Blender (used to put the different face parts back together)
         static cv::detail::MultiBandBlender blender(false, 5);
         blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
@@ -401,7 +401,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 #endif
-    facemark->loadModel("assets/lbfmodel.yaml");
+    facemark->loadModel("lbfmodel.yaml");
 
     printSystemInfo();
 
