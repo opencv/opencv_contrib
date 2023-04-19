@@ -104,7 +104,7 @@ You need to build OpenCV with V4D
 ```bash
 apt install vainfo clinfo libqt5opengl5-dev freeglut3-dev ocl-icd-opencl-dev libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libpostproc-dev libswresample-dev libswscale-dev libglfw3-dev libstb-dev libglew-dev cmake make git-core build-essential opencl-clhpp-headers pkg-config zlib1g-dev doxygen libxinerama-dev libxcursor-dev libxi-dev libva-dev yt-dlp wget
 ```
-## EITHER: Minimal V4D build **without** examples and demos
+## EITHER: Minimal V4D build without examples and demos
 
 ```bash
 git clone --branch 4.x https://github.com/opencv/opencv.git
@@ -116,7 +116,7 @@ make -j8
 sudo make install
 ```
 
-# OR: Full V4D build **with** examples and demos (takes a while)
+## OR: Full V4D build with examples and demos (takes a while)
 
 ```bash
 git clone --branch 4.x https://github.com/opencv/opencv.git

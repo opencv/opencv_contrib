@@ -8,8 +8,8 @@
 | Original author | Amir Hassan (kallaballa) <amir@viel-zu.org> |
 | Compatibility | OpenCV >= 4.7 |
 
-## Render a rotating tetrahedron
-This example renders a rotating tetrahedron using legacy OpenGL for brevity.
+## Render a blue screen using OpenGL
+This example simply paints the screen blue using OpenGL without shaders for brevity.
 
 @include samples/render_opengl.cpp
 
