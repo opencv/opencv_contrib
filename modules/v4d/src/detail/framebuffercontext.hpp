@@ -13,7 +13,7 @@
 #  ifdef __APPLE__
 #    include <OpenCL/cl_gl_ext.h>
 #  else
-#    include <CL/cl_gl_ext.h>
+#    include <CL/cl_gl.h>
 #  endif
 #endif
 
