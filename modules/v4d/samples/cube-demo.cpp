@@ -301,8 +301,8 @@ bool iteration() {
 int main(int argc, char** argv) {
     using namespace cv::viz;
 
-//    if (!v4d->isOffscreen())
-//        v4d->setVisible(true);
+    if (!v4d->isOffscreen())
+        v4d->setVisible(true);
 
     printSystemInfo();
 
