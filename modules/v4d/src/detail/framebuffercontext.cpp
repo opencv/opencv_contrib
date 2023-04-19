@@ -8,10 +8,6 @@
 #include "opencv2/v4d/util.hpp"
 #include "opencv2/v4d/v4d.hpp"
 
-#ifndef OPENCV_V4D_ES_VERSION
-#include <GL/glew.h>
-#endif
-
 namespace cv {
 namespace viz {
 namespace detail {

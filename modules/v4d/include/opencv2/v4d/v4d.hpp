@@ -25,7 +25,6 @@
 #include <emscripten.h>
 #endif
 
-#include <nanogui/nanogui.h>
 #ifndef OPENCV_V4D_ES_VERSION
 #  include <GL/glew.h>
 #else
@@ -35,6 +34,8 @@
 #    include <GLES2/gl2.h>
 #  endif
 #endif
+
+#include <nanogui/nanogui.h>
 
 using std::cout;
 using std::cerr;
