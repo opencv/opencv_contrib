@@ -69,7 +69,6 @@ v4d->gl([](const Size sz) {
 * [NanoGUI](https://github.com/mitsuba-renderer/nanogui) (includes NanoVG)
 
 # Optional: Dependencies for demos
-* [My OpenCV 4.x fork](https://github.com/kallaballa/opencv/tree/GCV) instead of the official with improvements for V4D including **\ref v4d_webassembly_support**
 * [OpenCV Contrib 4.x](https://github.com/opencv/opencv_contrib)
 * If you want CL-GL sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to build** [compute-runtime](https://github.com/intel/compute-runtime) and [my OpenCV 4.x fork](https://github.com/kallaballa/opencv/tree/GCV)
 
