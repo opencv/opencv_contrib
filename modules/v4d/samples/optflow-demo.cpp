@@ -3,8 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
-#include "opencv2/v4d/nvg.hpp"
+#include <opencv2/v4d/v4d.hpp>
 
 #include <cmath>
 #include <vector>
@@ -471,9 +470,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
 #endif
-    printSystemInfo();
-
     if(!v4d->isOffscreen()) {
+        v4d->setVisible(true);
 #ifndef __EMSCRIPTEN__
         setup_gui(v4d, v4dMenu);
         v4dMenu->setResizable(false);
@@ -481,8 +479,10 @@ int main(int argc, char **argv) {
 #else
         setup_gui(v4d, v4d);
 #endif
-        v4d->setVisible(true);
     }
+
+    printSystemInfo();
+
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);

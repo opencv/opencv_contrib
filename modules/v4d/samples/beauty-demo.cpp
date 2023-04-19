@@ -3,8 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
-#include "opencv2/v4d/nvg.hpp"
+#include <opencv2/v4d/v4d.hpp>
 
 #include <vector>
 #include <string>
@@ -403,14 +402,15 @@ int main(int argc, char **argv) {
 #endif
     facemark->loadModel("lbfmodel.yaml");
 
-    printSystemInfo();
-
     v4d->setStretching(stretch);
 
     if (!v4d->isOffscreen()) {
         setup_gui(v4d);
         v4d->setVisible(true);
     }
+
+    printSystemInfo();
+
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);

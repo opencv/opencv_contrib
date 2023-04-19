@@ -9,11 +9,6 @@
 #include <cstdlib>
 #include <cmath>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
@@ -21,13 +16,13 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138),
+const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138),
         1);
 
 using std::cerr;
 using std::endl;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT),
+cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT),
         cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Video Demo");
 
 GLuint vbo_cube_vertices, vbo_cube_colors;
@@ -209,21 +204,10 @@ void init_scene(const cv::Size& sz) {
 }
 
 void render_scene(const cv::Size& sz) {
-    float angle = (cv::getTickCount() / cv::getTickFrequency()) * 45.0f;  // 45° per second
-    glm::vec3 axis_y(0, 1, 0);
-    glm::mat4 anim = glm::rotate(glm::mat4(1.0f), glm::radians(angle), axis_y);
-
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, -4.0));
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0, 2.0, 0.0), glm::vec3(0.0, 0.0, -4.0),
-            glm::vec3(0.0, 1.0, 0.0));
-    glm::mat4 projection = glm::perspective(45.0f, 1.0f * WIDTH / HEIGHT, 0.1f, 10.0f);
-
-    glm::mat4 mvp = projection * view * model * anim;
-
     glClear (GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(program);
-    glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+//    glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
 
     glEnableVertexAttribArray(attribute_coord3d);
     // Describe our vertices array to OpenGL (it can't guess its format automatically)
@@ -313,17 +297,23 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    printSystemInfo();
-
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
 
+    printSystemInfo();
+
+#ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
     v4d->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
             src.fps(), cv::Size(WIDTH, HEIGHT));
     v4d->setSink(sink);
+#else
+    Source src = makeCaptureSource(WIDTH, HEIGHT);
+    v4d->setSource(src);
+#endif
+
 
     v4d->gl(init_scene);
     v4d->run(iteration);

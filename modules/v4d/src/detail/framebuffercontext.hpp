@@ -15,8 +15,6 @@
 #  else
 #    include <CL/cl_gl_ext.h>
 #  endif
-#else
-#  define OPENCV_V4D_ES_VERSION 3
 #endif
 
 #ifndef OPENCV_V4D_ES_VERSION
@@ -26,7 +24,7 @@
 #  if(OPENCV_V4D_ES_VERSION == 3)
 #    define GLFW_INCLUDE_ES3
 #  else
-#    define GLFW_INCLUDE_ES3
+#    define GLFW_INCLUDE_ES2
 #  endif
 #  define GLFW_INCLUDE_GLEXT
 #endif
@@ -57,8 +55,8 @@ class FrameBufferContext {
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
     GLint viewport_[4];
-    cl_mem clImage_ = nullptr;
 #ifndef __EMSCRIPTEN__
+    cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
 #endif
     cv::Size frameBufferSize_;

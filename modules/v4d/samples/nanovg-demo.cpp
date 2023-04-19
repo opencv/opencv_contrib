@@ -3,8 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
-#include "opencv2/v4d/nvg.hpp"
+#include <opencv2/v4d/v4d.hpp>
 
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
@@ -178,15 +177,20 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    printSystemInfo();
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
+    printSystemInfo();
 
+#ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
-    v4d->setSource(src);
-
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
+    v4d->setSource(src);
     v4d->setSink(sink);
+#else
+    Source src = makeCaptureSource(WIDTH, HEIGHT);
+    v4d->setSource(src);
+#endif
+
 
     v4d->run(iteration);
 

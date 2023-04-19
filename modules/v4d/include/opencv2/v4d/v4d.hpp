@@ -20,22 +20,24 @@
 #include <opencv2/videoio.hpp>
 
 #include "cxxpool.hpp"
-#ifdef __EMSCRIPTEN__
-#define OPENCV_V4D_ES_VERSION 3
-#include <emscripten.h>
-#endif
 
 #ifndef OPENCV_V4D_ES_VERSION
 #  include <GL/glew.h>
+#  define GLFW_INCLUDE_GLCOREARB
 #else
 #  if(OPENCV_V4D_ES_VERSION == 3)
-#    include <GLES3/gl3.h>
+#    define GLFW_INCLUDE_ES3
 #  else
-#    include <GLES2/gl2.h>
+#    define GLFW_INCLUDE_ES2
 #  endif
+#  define GLFW_INCLUDE_GLEXT
 #endif
-
+#include <GLFW/glfw3.h>
 #include <nanogui/nanogui.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 using std::cout;
 using std::cerr;
@@ -461,5 +463,7 @@ private:
 };
 }
 } /* namespace kb */
+
+#include <opencv2/v4d/nvg.hpp>
 
 #endif /* SRC_OPENCV_V4D_V4D_HPP_ */

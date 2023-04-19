@@ -3,8 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
-#include "opencv2/v4d/nvg.hpp"
+#include <opencv2/v4d/v4d.hpp>
 
 #include <string>
 #include <algorithm>
@@ -208,11 +207,11 @@ int main(int argc, char **argv) {
     try {
         using namespace cv::viz;
 
-        printSystemInfo();
         if(!v4d->isOffscreen()) {
             setup_gui(v4d);
             v4d->setVisible(true);
         }
+        printSystemInfo();
 
         //The text to display
         string txt = cv::getBuildInformation();

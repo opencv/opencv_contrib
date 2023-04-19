@@ -7,6 +7,7 @@ int main() {
 
     //Creates a V4D object for on screen rendering
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Show image");
+    v4d->setVisible(true);
 	//Read an image as UMat
 	UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 	UMat resized;

@@ -5,9 +5,6 @@
 
 #ifndef SRC_OPENCV_V4D_DIALOG_HPP_
 #define SRC_OPENCV_V4D_DIALOG_HPP_
-#ifdef __EMSCRIPTEN__
-#define OPENCV_V4D_ES_VERSION 3
-#endif
 
 #include <nanogui/nanogui.h>
 #include <opencv2/core/cvdef.h>

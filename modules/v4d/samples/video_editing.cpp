@@ -1,5 +1,4 @@
 #include <opencv2/v4d/v4d.hpp>
-#include <opencv2/v4d/nvg.hpp>
 
 int main(int argc, char** argv) {
     using namespace cv;
@@ -7,14 +6,23 @@ int main(int argc, char** argv) {
 
     string hv = "Hello Video!";
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Video Editing");
-	//Make the video source
-	Source src = makeCaptureSource(argv[1]);
+    v4d->setVisible(true);
+#ifndef __EMSCRIPTEN__
+    //Make the video source
+    Source src = makeCaptureSource(argv[1]);
+
 	//Make the video sink
 	Sink sink = makeWriterSink(argv[2], VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), v4d->getFrameBufferSize());
 
-	//Attach source and sink
-	v4d->setSource(src);
-	v4d->setSink(sink);
+    //Attach source and sink
+    v4d->setSource(src);
+    v4d->setSink(sink);
+#else
+    //Make a webcam Source
+    Source src = makeCaptureSource(1280,720);
+    //Attach web source
+    v4d->setSource(src);
+#endif
 
 	v4d->run([=]() {
 	    //Capture video from the Source

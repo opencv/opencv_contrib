@@ -8,6 +8,11 @@
 
 #include "framebuffercontext.hpp"
 #include <nanogui/nanogui.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #ifndef OPENCV_V4D_ES_VERSION
 #define NANOGUI_USE_OPENGL
 #else

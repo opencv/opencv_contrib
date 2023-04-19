@@ -9,11 +9,6 @@
 #include <cstdlib>
 #include <cmath>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr double FPS = 60;
@@ -21,13 +16,13 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-constexpr int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138),
+const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138),
         1);
 
 using std::cerr;
 using std::endl;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT),
+cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT),
         cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Cube Demo");
 
 GLuint vbo_cube_vertices, vbo_cube_colors;
@@ -104,10 +99,12 @@ void load_shader() {
     const string vert =
             "    #version " + shaderVersion
                     + R"(
-    attribute vec3 coord3d;
-    attribute vec3 v_color;
+    precision lowp float;
+    layout(location = 0) in vec3 coord3d;
+    layout(location = 1) in vec3 v_color;
+    
     uniform mat4 mvp;
-    varying vec3 f_color;
+    out vec3 f_color;
     
     void main(void) {
       gl_Position = mvp * vec4(coord3d, 1.0);
@@ -118,10 +115,12 @@ void load_shader() {
     const string frag =
             "    #version " + shaderVersion
                     + R"(
-    varying vec3 f_color;
-    
+    precision lowp float;
+    in vec3 f_color;
+    out vec4 fragColor;
+
     void main(void) {
-      gl_FragColor = vec4(f_color.r, f_color.g, f_color.b, 1.0);
+      fragColor = vec4(f_color.r, f_color.g, f_color.b, 1.0);
     }
 )";
 
@@ -208,22 +207,20 @@ void init_scene(const cv::Size& sz) {
 }
 
 void render_scene(const cv::Size& sz) {
-    float angle = (cv::getTickCount() / cv::getTickFrequency()) * 45.0f;  // 45° per second
-    glm::vec3 axis_y(0, 1, 0);
-    glm::mat4 anim = glm::rotate(glm::mat4(1.0f), glm::radians(angle), axis_y);
-
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0, 0.0, -4.0));
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0, 2.0, 0.0), glm::vec3(0.0, 0.0, -4.0),
-            glm::vec3(0.0, 1.0, 0.0));
-    glm::mat4 projection = glm::perspective(45.0f, 1.0f * WIDTH / HEIGHT, 0.1f, 10.0f);
-
-    glm::mat4 mvp = projection * view * model * anim;
-
     glClearColor(1.0, 1.0, 1.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(program);
-    glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, glm::value_ptr(mvp));
+    float alpha = 45;
+    float slice = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
+    float scale = 1;
+    float mvp[16] = {
+            cos(slice) * scale,  -sin(slice),               0.0,    0.0,
+            sin(slice),          cos(slice) * scale,        0.0,    0.0,
+            0.0,                 0.0,                       scale,  0.0,
+            0.0,                 0.0,                       0.0,    1.0
+    };
+    glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, mvp);
 
     glEnableVertexAttribArray(attribute_coord3d);
     // Describe our vertices array to OpenGL (it can't guess its format automatically)
@@ -304,15 +301,16 @@ bool iteration() {
 int main(int argc, char** argv) {
     using namespace cv::viz;
 
+//    if (!v4d->isOffscreen())
+//        v4d->setVisible(true);
+
     printSystemInfo();
 
-    if (!v4d->isOffscreen())
-        v4d->setVisible(true);
-
+#ifndef __EMSCRIPTEN__
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
             cv::Size(WIDTH, HEIGHT));
     v4d->setSink(sink);
-
+#endif
     v4d->gl(init_scene);
     v4d->run(iteration);
 

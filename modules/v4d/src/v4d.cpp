@@ -8,10 +8,6 @@
 #include "detail/framebuffercontext.hpp"
 #include "detail/nanovgcontext.hpp"
 
-#ifdef __EMSCRIPTEN__
-#  include <emscripten.h>
-#endif
-
 namespace cv {
 namespace viz {
 namespace detail {
@@ -73,6 +69,7 @@ cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, bool debug) {
 
 cv::Ptr<V4D> V4D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize,
         bool offscreen, const string& title, int major, int minor, bool compat, int samples, bool debug) {
+    cerr << "make" << endl;
     return new V4D(initialSize, frameBufferSize, offscreen, title, major, minor, compat, samples, debug);
 }
 
@@ -85,11 +82,12 @@ V4D::V4D(const cv::Size& size, const cv::Size& frameBufferSize, bool offscreen,
     assert(
             frameBufferSize_.width >= initialSize_.width
                     && frameBufferSize_.height >= initialSize_.height);
-
-    initializeWindowing();
+    cerr << "init:" << initializeWindowing() << endl;
 }
 
 V4D::~V4D() {
+    cerr << "destroy" << endl;
+
     //don't delete form_. it is autmatically cleaned up by the base class (nanogui::Screen)
     if (screen_)
         delete screen_;
@@ -106,137 +104,143 @@ V4D::~V4D() {
 }
 
 bool V4D::initializeWindowing() {
-    if (glfwInit() != GLFW_TRUE)
-        return false;
+    try {
+        if (glfwInit() != GLFW_TRUE)
+            return false;
 
-    glfwSetErrorCallback(cv::viz::glfw_error_callback);
+        glfwSetErrorCallback(cv::viz::glfw_error_callback);
 
-    if (debug_)
-        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+        if (debug_)
+            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    if (offscreen_)
+        if (offscreen_)
+            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+        glfwSetTime(0);
+    #ifdef __APPLE__
+        glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    #elif defined(OPENCV_V4D_ES_VERSION)
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENCV_V4D_ES_VERSION);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    #else
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, compat_ ? GLFW_OPENGL_COMPAT_PROFILE : GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
+    #endif
+        glfwWindowHint(GLFW_SAMPLES, samples_);
+        glfwWindowHint(GLFW_RED_BITS, 8);
+        glfwWindowHint(GLFW_GREEN_BITS, 8);
+        glfwWindowHint(GLFW_BLUE_BITS, 8);
+        glfwWindowHint(GLFW_ALPHA_BITS, 8);
+        glfwWindowHint(GLFW_STENCIL_BITS, 8);
+        glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    #ifndef __EMSCRIPTEN__
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    #else
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    #endif
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    glfwSetTime(0);
-#ifdef __APPLE__
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#elif defined(OPENCV_V4D_ES_VERSION)
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENCV_V4D_ES_VERSION);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-#else
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, compat_ ? GLFW_OPENGL_COMPAT_PROFILE : GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
-#endif
-    glfwWindowHint(GLFW_SAMPLES, samples_);
-    glfwWindowHint(GLFW_RED_BITS, 8);
-    glfwWindowHint(GLFW_GREEN_BITS, 8);
-    glfwWindowHint(GLFW_BLUE_BITS, 8);
-    glfwWindowHint(GLFW_ALPHA_BITS, 8);
-    glfwWindowHint(GLFW_STENCIL_BITS, 8);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-#ifndef __EMSCRIPTEN__
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-#else
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-#endif
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        /* I figure we don't need double buffering because the FBO (and the bound texture) is our backbuffer that
+         * we blit to the front on every iteration.
+         * On X11, wayland and in WASM it works and boosts performance a bit.
+         */
+        glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
-    /* I figure we don't need double buffering because the FBO (and the bound texture) is our backbuffer that
-     * we blit to the front on every iteration.
-     * On X11, wayland and in WASM it works and boosts performance a bit.
-     */
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+        glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr,
+                nullptr);
+        if (glfwWindow_ == NULL) {
+            return false;
+        }
+        glfwMakeContextCurrent(getGLFWWindow());
 
-    glfwWindow_ = glfwCreateWindow(initialSize_.width, initialSize_.height, title_.c_str(), nullptr,
-            nullptr);
-    if (glfwWindow_ == NULL) {
+        screen_ = new nanogui::Screen();
+        screen().initialize(getGLFWWindow(), false);
+        form_ = new FormHelper(&screen());
+
+        this->setWindowSize(initialSize_);
+
+        glfwSetWindowUserPointer(getGLFWWindow(), this);
+
+        glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
+            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+            v4d->screen().cursor_pos_callback_event(x, y);
+            auto cursor = v4d->getMousePosition();
+            auto diff = cursor - cv::Vec2f(x, y);
+            if (v4d->isMouseDrag()) {
+                v4d->pan(diff[0], -diff[1]);
+            }
+            v4d->setMousePosition(x, y);
+        }
+        );
+        glfwSetMouseButtonCallback(getGLFWWindow(),
+                [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+                    V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                    v4d->screen().mouse_button_callback_event(button, action, modifiers);
+                    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+                        v4d->setMouseDrag(action == GLFW_PRESS);
+                    }
+                }
+        );
+        glfwSetKeyCallback(getGLFWWindow(),
+                [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
+                    V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                    v4d->screen().key_callback_event(key, scancode, action, mods);
+                }
+        );
+        glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
+            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+            v4d->screen().char_callback_event(codepoint);
+        }
+        );
+        glfwSetDropCallback(getGLFWWindow(),
+                [](GLFWwindow* glfwWin, int count, const char** filenames) {
+                    V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                    v4d->screen().drop_callback_event(count, filenames);
+                }
+        );
+        glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
+            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+            std::vector<nanogui::Widget*> widgets;
+            find_widgets(&v4d->screen(), widgets);
+            for (auto* w : widgets) {
+                auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
+        if(contains_absolute(w, mousePos)) {
+            v4d->screen().scroll_callback_event(x, y);
+            return;
+        }
+    }
+
+            v4d->zoom(y < 0 ? 1.1 : 0.9);
+        }
+        );
+
+    //FIXME resize internal buffers?
+    //    glfwSetWindowContentScaleCallback(getGLFWWindow(),
+    //        [](GLFWwindow* glfwWin, float xscale, float yscale) {
+    //        }
+    //    );
+
+        glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
+            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+            v4d->screen().resize_callback_event(width, height);
+        });
+
+        clglContext_ = new detail::FrameBufferContext(this->getFrameBufferSize());
+        clvaContext_ = new detail::CLVAContext(*clglContext_);
+        nvgContext_ = new detail::NanoVGContext(*this, getNVGcontext(), *clglContext_);
+        cerr << "end init" << endl;
+    } catch(std::exception& ex) {
+        cerr << "V4D initialization failed: " << ex.what() << endl;
         return false;
     }
-    glfwMakeContextCurrent(getGLFWWindow());
-
-    screen_ = new nanogui::Screen();
-    screen().initialize(getGLFWWindow(), false);
-    form_ = new FormHelper(&screen());
-
-    this->setWindowSize(initialSize_);
-
-    glfwSetWindowUserPointer(getGLFWWindow(), this);
-
-    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->screen().cursor_pos_callback_event(x, y);
-        auto cursor = v4d->getMousePosition();
-        auto diff = cursor - cv::Vec2f(x, y);
-        if (v4d->isMouseDrag()) {
-            v4d->pan(diff[0], -diff[1]);
-        }
-        v4d->setMousePosition(x, y);
-    }
-    );
-    glfwSetMouseButtonCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->screen().mouse_button_callback_event(button, action, modifiers);
-                if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-                    v4d->setMouseDrag(action == GLFW_PRESS);
-                }
-            }
-    );
-    glfwSetKeyCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->screen().key_callback_event(key, scancode, action, mods);
-            }
-    );
-    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->screen().char_callback_event(codepoint);
-    }
-    );
-    glfwSetDropCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int count, const char** filenames) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->screen().drop_callback_event(count, filenames);
-            }
-    );
-    glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        std::vector<nanogui::Widget*> widgets;
-        find_widgets(&v4d->screen(), widgets);
-        for (auto* w : widgets) {
-            auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
-    if(contains_absolute(w, mousePos)) {
-        v4d->screen().scroll_callback_event(x, y);
-        return;
-    }
-}
-
-        v4d->zoom(y < 0 ? 1.1 : 0.9);
-    }
-    );
-
-//FIXME resize internal buffers?
-//    glfwSetWindowContentScaleCallback(getGLFWWindow(),
-//        [](GLFWwindow* glfwWin, float xscale, float yscale) {
-//        }
-//    );
-
-    glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->screen().resize_callback_event(width, height);
-    });
-
-    clglContext_ = new detail::FrameBufferContext(this->getFrameBufferSize());
-    clvaContext_ = new detail::CLVAContext(*clglContext_);
-    nvgContext_ = new detail::NanoVGContext(*this, getNVGcontext(), *clglContext_);
     return true;
 }
 
@@ -310,12 +314,22 @@ void V4D::nanogui(std::function<void(FormHelper& form)> fn) {
     screen().perform_layout();
 }
 
+#ifdef __EMSCRIPTEN__
+void do_frame(void* void_fn_ptr) {
+     auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
+     if (fn_ptr) {
+         auto& fn = *fn_ptr;
+         fn();
+     }
+ }
+#endif
+
 void V4D::run(std::function<bool()> fn) {
 #ifndef __EMSCRIPTEN__
     while (keepRunning() && fn())
         ;
 #else
-    emscripten_set_main_loop(fn, -1, true);
+    emscripten_set_main_loop_arg(do_frame, &fn, -1, true);
 #endif
 }
 

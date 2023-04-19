@@ -4,7 +4,6 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/v4d.hpp"
-#include "opencv2/v4d/nvg.hpp"
 #include "opencv2/v4d/util.hpp"
 
 #include <string>
@@ -23,7 +22,7 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 
 // Intensity of blur defined by kernel size. The default scales with the image diagonal.
-constexpr int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
+const int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
 using std::cerr;
 using std::endl;
@@ -216,18 +215,24 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    printSystemInfo();
-
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
 
+    printSystemInfo();
+
+#ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
     v4d->setSource(src);
 
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
+            src.fps(), cv::Size(WIDTH, HEIGHT));
     v4d->setSink(sink);
+#else
+    Source src = makeCaptureSource(WIDTH, HEIGHT);
+    v4d->setSource(src);
+#endif
 
     v4d->run(iteration);
 

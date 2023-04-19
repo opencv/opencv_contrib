@@ -67,6 +67,7 @@ FrameBufferContext::~FrameBufferContext() {
 }
 
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
+#ifndef __EMSCRIPTEN__
     using namespace cv::ocl;
 
     cl_int status = 0;
@@ -97,9 +98,11 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyBufferToImage failed: %d", status));
+#endif
 }
 
 void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u) {
+#ifndef __EMSCRIPTEN__
     using namespace cv::ocl;
 
     const int dtype = CV_8UC4;
@@ -137,6 +140,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyImageToBuffer failed: %d", status));
+#endif
 }
 
 cv::Size FrameBufferContext::getSize() {

@@ -416,16 +416,19 @@ bool iteration() {
 int main(int argc, char **argv) {
     using namespace cv::viz;
     try {
+#ifndef __EMSCRIPTEN__
         if(argc != 2) {
             cerr << "Usage: shader-demo <video-file>" << endl;
             exit(1);
         }
+#endif
+        if(!v4d->isOffscreen()) {
+            v4d->setVisible(true);
+            setup_gui(v4d);
+        }
 
         printSystemInfo();
-        if(!v4d->isOffscreen()) {
-            setup_gui(v4d);
-            v4d->setVisible(true);
-        }
+
         v4d->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__

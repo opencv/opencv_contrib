@@ -1,11 +1,12 @@
 #include <opencv2/v4d/v4d.hpp>
-#include <opencv2/v4d/nvg.hpp>
 
 int main(int argc, char** argv) {
     using namespace cv;
     using namespace cv::viz;
 
     Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Font Rendering with GUI");
+    v4d->setVisible(true);
+
 	//The text color. NanoGUI uses rgba with floating point
 	nanogui::Color textColor = {0.0f, 0.0f, 1.0f, 1.0f};
 	//The font size

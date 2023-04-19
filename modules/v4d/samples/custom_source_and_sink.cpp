@@ -1,6 +1,7 @@
 #include <opencv2/v4d/v4d.hpp>
-#include <opencv2/v4d/nvg.hpp>
-#include <opencv2/imgcodecs.hpp>
+#ifndef __EMSCRIPTEN__
+#  include <opencv2/imgcodecs.hpp>
+#endif
 
 int main(int argc, char** argv) {
     using namespace cv;
@@ -8,6 +9,7 @@ int main(int argc, char** argv) {
 
     string hr = "Hello Rainbow!";
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Custom Source/Sink");
+    v4d->setVisible(true);
 	//Make a Source that generates rainbow frames.
 	Source src([=](cv::UMat& frame){
         static long cnt = 0;
@@ -27,7 +29,9 @@ int main(int argc, char** argv) {
         static long cnt = 0;
 
 	    try {
+#ifndef __EMSCRIPTEN__
 	        imwrite(std::to_string(cnt) + ".png", frame);
+#endif
 	    } catch(std::exception& ex) {
 	        cerr << "Unable to write frame: " << ex.what() << endl;
 	        return false;

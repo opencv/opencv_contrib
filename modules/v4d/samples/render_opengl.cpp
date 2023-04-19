@@ -5,6 +5,7 @@ int main(int argc, char** argv) {
     using namespace cv::viz;
 
     Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Tetrahedron");
+    v4d->setVisible(true);
 
 	v4d->gl([](const Size sz) {
 #ifndef OPENCV_V4D_ES_VERSION

@@ -7,6 +7,7 @@
 #define SRC_OPENCV_V4D_NVG_HPP_
 
 #include "v4d.hpp"
+
 #ifndef OPENCV_V4D_ES_VERSION
 #  ifndef NANOGUI_USE_OPENGL
 #    define NANOGUI_USE_OPENGL

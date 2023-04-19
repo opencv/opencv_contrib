@@ -5,17 +5,6 @@
 
 #include "opencv2/v4d/dialog.hpp"
 #include <nanogui/layout.h>
-#ifndef OPENCV_V4D_ES_VERSION
-#  include <GL/glew.h>
-#  define GLFW_INCLUDE_GLCOREARB
-#else
-#  if(OPENCV_V4D_ES_VERSION == 3)
-#    define GLFW_INCLUDE_ES3
-#  else
-#    define GLFW_INCLUDE_ES2
-#  endif
-#  define GLFW_INCLUDE_GLEXT
-#endif
 #include <GLFW/glfw3.h>
 
 namespace cv {

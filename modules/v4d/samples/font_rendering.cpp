@@ -1,11 +1,11 @@
 #include <opencv2/v4d/v4d.hpp>
-#include <opencv2/v4d/nvg.hpp>
 
 int main(int argc, char** argv) {
     using namespace cv;
     using namespace cv::viz;
 
     Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Font Rendering");
+    v4d->setVisible(true);
 
 	//The text to render
 	string hw = "Hello World";
