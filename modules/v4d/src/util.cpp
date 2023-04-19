@@ -13,7 +13,6 @@
 #  include <fstream>
 #else
 # include <opencv2/core/ocl.hpp>
-# include <va/va.h>
 #endif
 
 #include <csignal>
