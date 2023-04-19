@@ -202,7 +202,7 @@ void init_scene(const cv::Size& sz) {
     init_resources();
     glEnable (GL_BLEND);
     glEnable (GL_DEPTH_TEST);
-    //glDepthFunc(GL_LESS);
+//    glDepthFunc(GL_LESS);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
@@ -211,16 +211,39 @@ void render_scene(const cv::Size& sz) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(program);
-    float alpha = 45;
-    float slice = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
-    float scale = 1;
-    float mvp[16] = {
-            cos(slice) * scale,  -sin(slice),               0.0,    0.0,
-            sin(slice),          cos(slice) * scale,        0.0,    0.0,
-            0.0,                 0.0,                       scale,  0.0,
-            0.0,                 0.0,                       0.0,    1.0
-    };
-    glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, mvp);
+    float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
+    float scale = 0.25;
+
+    cv::Matx44f rotXMat(
+            1.0,        0.0,            0.0,    0.0,
+            0.0,    cos(angle), -sin(angle),    0.0,
+            0.0,    sin(angle), cos(angle),     0.0,
+            0.0,        0.0,            0.0,    1.0
+    );
+
+    cv::Matx44f rotYMat(
+            cos(angle),     0.0, sin(angle),    0.0,
+            0.0,            1.0, 0.0,           0.0,
+            -sin(angle),    0.0, cos(angle),    0.0,
+            0.0,            0.0, 0.0,           1.0
+    );
+
+    cv::Matx44f rotZMat(
+            cos(angle), -sin(angle),    0.0,    0.0,
+            sin(angle), cos(angle),     0.0,    0.0,
+            0.0,        0.0,            1.0,    0.0,
+            0.0,        0.0,            0.0,    1.0
+    );
+
+    cv::Matx44f scaleMat(
+            scale,  0.0,    0.0,    0.0,
+            0.0,    scale,  0.0,    0.0,
+            0.0,    0.0,    scale,  0.0,
+            0.0,    0.0,    0.0,    1.0
+    );
+
+    cv::Matx44f trans = scaleMat * rotXMat * rotYMat * rotZMat;
+    glUniformMatrix4fv(uniform_mvp, 1, GL_FALSE, trans.val);
 
     glEnableVertexAttribArray(attribute_coord3d);
     // Describe our vertices array to OpenGL (it can't guess its format automatically)
