@@ -124,14 +124,14 @@ void load_shader() {
     }
 )";
 
-    cerr << "##### Vertex Shader #####" << endl;
+    cerr << "##### Cube Vertex Shader #####" << endl;
     cerr << vert << endl;
-
-    cerr << "##### Fragment Shader #####" << endl;
+    cerr << "##### Cube Fragment Shader #####" << endl;
     cerr << frag << endl;
 
     program = init_shader(vert.c_str(), frag.c_str(), "fragColor");
 }
+
 int init_resources() {
     GLfloat cube_vertices[] = {
     // front
@@ -304,11 +304,15 @@ bool iteration() {
     //Render using OpenGL
     v4d->gl(render_scene);
 
+
+//If we have OpenCL and maybe even CL-GL sharing then this is faster than the glow shader. Without OpenCL this is very slow.
+#ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
     v4d->fb([&](cv::UMat& frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
+#endif
 
     v4d->write();
 
