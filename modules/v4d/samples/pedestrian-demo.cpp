@@ -14,7 +14,7 @@
 
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
-constexpr unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr unsigned int DOWNSIZE_WIDTH = 640;
 constexpr unsigned int DOWNSIZE_HEIGHT = 360;
 constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
