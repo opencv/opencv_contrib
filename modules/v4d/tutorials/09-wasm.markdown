@@ -78,9 +78,10 @@ sudo make -j8 install
 ```
 
 ## Run the examples and demos
-Though the examples and demos are compiled and come with an html file to run them, you can't just do so. Certain WebAssembly features require [special HTTP headers](https://emscripten.org/docs/porting/pthreads.html?highlight=pthreads). Anyway, emscripten provides a tool ([emrun](https://emscripten.org/docs/compiling/Running-html-files-with-emrun.html)) that serves a web server configure just the right way.
+Though the examples and demos are compiled and come with an html file to run them, you can't just do so. Certain WebAssembly features require [special HTTP headers](https://emscripten.org/docs/porting/pthreads.html?highlight=pthreads). Anyway, emscripten provides a tool ([emrun](https://emscripten.org/docs/compiling/Running-html-files-with-emrun.html)) that serves a web server configured just the right way.
 
 So to run cube-demo you have to do the following:
+
 ```
 emrun --browser=firefox-esr bin/example_v4d_cube-demo.html
 ```
