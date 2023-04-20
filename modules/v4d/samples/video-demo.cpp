@@ -61,7 +61,7 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
 
         glAttachShader(program, shader);
     }
-#ifndef OPENCV_V4D_ES_VERSION
+#ifndef OPENCV_V4D_USE_ES3
     /* Link output */
     glBindFragDataLocation(program, 0, outputAttributeName);
 #endif
@@ -90,7 +90,7 @@ GLuint init_shader(const char* vShader, const char* fShader, const char* outputA
 
 //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
 void load_shader() {
-#ifndef OPENCV_V4D_ES_VERSION
+#ifndef OPENCV_V4D_USE_ES3
     const string shaderVersion = "330";
 #else
     const string shaderVersion = "300 es";

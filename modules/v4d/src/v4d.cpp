@@ -11,16 +11,6 @@
 namespace cv {
 namespace viz {
 namespace detail {
-void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
-    int errorCode = glGetError();
-
-    if (errorCode != 0) {
-        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : "
-                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode
-                << "\n   " << std::endl;
-        assert(false);
-    }
-}
 
 void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: %s\n", description);
@@ -122,8 +112,8 @@ bool V4D::initializeWindowing() {
         glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
         glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
         glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    #elif defined(OPENCV_V4D_ES_VERSION)
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENCV_V4D_ES_VERSION);
+    #elif defined(OPENCV_V4D_USE_ES3)
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
         glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);

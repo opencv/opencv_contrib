@@ -15,7 +15,7 @@ namespace detail {
 //FIXME use cv::ogl
 FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
         frameBufferSize_(frameBufferSize) {
-#ifndef OPENCV_V4D_ES_VERSION
+#ifndef OPENCV_V4D_USE_ES3
     glewExperimental = true;
     glewInit();
     try {

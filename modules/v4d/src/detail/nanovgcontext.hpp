@@ -13,11 +13,11 @@
 #include <emscripten.h>
 #endif
 
-#ifndef OPENCV_V4D_ES_VERSION
+#ifndef OPENCV_V4D_USE_ES3
 #define NANOGUI_USE_OPENGL
 #else
 #define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION OPENCV_V4D_ES_VERSION
+#define NANOGUI_GLES_VERSION 3
 #endif
 
 #include <nanogui/opengl.h>

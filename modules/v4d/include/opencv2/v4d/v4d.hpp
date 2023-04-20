@@ -21,15 +21,11 @@
 
 #include "cxxpool.hpp"
 
-#ifndef OPENCV_V4D_ES_VERSION
+#ifndef OPENCV_V4D_USE_ES3
 #  include <GL/glew.h>
 #  define GLFW_INCLUDE_GLCOREARB
 #else
-#  if(OPENCV_V4D_ES_VERSION == 3)
-#    define GLFW_INCLUDE_ES3
-#  else
-#    define GLFW_INCLUDE_ES2
-#  endif
+#  define GLFW_INCLUDE_ES3
 #  define GLFW_INCLUDE_GLEXT
 #endif
 #include <GLFW/glfw3.h>
@@ -60,21 +56,6 @@ class CLVAContext;
 class NanoVGContext;
 
 /*!
- * Convenience function to check for OpenGL errors. Should only be used via the macro #GL_CHECK.
- * @param file The file path of the error.
- * @param line The file line of the error.
- * @param expression The expression that failed.
- */
-void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression);
-
-/*!
- * Convenience macro to check for OpenGL errors.
- */
-#define GL_CHECK(expr)                            \
-    expr;                                        \
-    cv::viz::gl_check_error(__FILE__, __LINE__, #expr);
-
-/*!
  * The GFLW error callback.
  * @param error Error number
  * @param description Error description
@@ -103,6 +84,29 @@ template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& 
     }
 }
 }
+
+/*!
+ * Convenience function to check for OpenGL errors. Should only be used via the macro #GL_CHECK.
+ * @param file The file path of the error.
+ * @param line The file line of the error.
+ * @param expression The expression that failed.
+ */
+static void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
+    int errorCode = glGetError();
+
+    if (errorCode != 0) {
+        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : "
+                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode
+                << "\n   " << std::endl;
+        assert(false);
+    }
+}
+/*!
+ * Convenience macro to check for OpenGL errors.
+ */
+#define GL_CHECK(expr)                            \
+    expr;                                        \
+    cv::viz::gl_check_error(__FILE__, __LINE__, #expr);
 
 /*!
  * Convenience function to color convert from Scalar to Scalar
@@ -183,7 +187,7 @@ public:
      */
     CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize,
             const cv::Size& frameBufferSize, bool offscreen, const string& title, int major = 3,
-            int minor = 2, bool compat = true, int samples = 0, bool debug = false);
+            int minor = 2, bool compat = false, int samples = 0, bool debug = false);
     /*!
      * Default destructor
      */
@@ -443,7 +447,7 @@ private:
      * @param debug Create a debug OpenGL context.
      */
     CV_EXPORTS V4D(const cv::Size& initialSize, const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major = 3, int minor = 2, bool compat = true, int samples = 0, bool debug = false);
+            const string& title, int major = 3, int minor = 2, bool compat = false, int samples = 0, bool debug = false);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);

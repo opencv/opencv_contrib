@@ -23,6 +23,8 @@ namespace cv {
 namespace viz {
 using std::string;
 class V4D;
+
+CV_EXPORTS unsigned int init_shader(const char* vShader, const char* fShader, const char* outputAttributeName);
 /*!
  * Returns the OpenGL Version information.
  * @return a string object with the OpenGL version information

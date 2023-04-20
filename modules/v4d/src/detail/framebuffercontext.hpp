@@ -17,15 +17,11 @@
 #  endif
 #endif
 
-#ifndef OPENCV_V4D_ES_VERSION
+#ifndef OPENCV_V4D_USE_ES3
 #  include <GL/glew.h>
 #  define GLFW_INCLUDE_GLCOREARB
 #else
-#  if(OPENCV_V4D_ES_VERSION == 3)
-#    define GLFW_INCLUDE_ES3
-#  else
-#    define GLFW_INCLUDE_ES2
-#  endif
+#  define GLFW_INCLUDE_ES3
 #  define GLFW_INCLUDE_GLEXT
 #endif
 

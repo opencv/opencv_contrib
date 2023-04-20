@@ -13,7 +13,14 @@ macro(add_emscripten_sample sample source)
     opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann nanogui ${GLEW_LIBRARIES})
     target_link_directories(${sample} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../lib")
     target_compile_features(${sample} PRIVATE cxx_std_20)
-    set_target_properties(${sample} PROPERTIES SUFFIX ".html")
+    set_target_properties(${sample} PROPERTIES SUFFIX ".js")
+    # configure_file("${CMAKE_CURRENT_LIST_DIR}/samples/${sample}.html" "${CMAKE_CURRENT_BINARY_DIR}/../../bin/${sample}.html" COPYONLY)
+
+add_custom_command(
+        TARGET ${sample} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                "${CMAKE_CURRENT_LIST_DIR}/samples/${sample}.html"
+                "${CMAKE_CURRENT_BINARY_DIR}/../../bin/${sample}.html")
 endmacro()
 
 macro(add_binary_sample sample)
@@ -40,11 +47,8 @@ if (${idx} LESS 0)
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L../../lib/")
 
-OCV_OPTION(OPENCV_V4D_ENABLE_ES "Enable OpenGL ES backend for V4D" OFF
+OCV_OPTION(OPENCV_V4D_ENABLE_ES3 "Enable OpenGL ES 3.0 backend for V4D" OFF
   VERIFY HAVE_OPENGL)
-OCV_OPTION(OPENCV_V4D_ES3 "Use OpenGL ES3 instead of ES2" OFF
-  VERIFY OPENCV_V4D_ENABLE_ES)
-
 
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../.git")
@@ -118,8 +122,7 @@ endif()
 
 if(EMSCRIPTEN)
   set(NANOGUI_BUILD_SHARED OFF)
-  set(OPENCV_V4D_ENABLE_ES ON)
-  set(OPENCV_V4D_ES3 ON)
+  set(OPENCV_V4D_ENABLE_ES3 ON)
 else()
   set(NANOGUI_BUILD_SHARED ON)
 endif()
@@ -127,14 +130,9 @@ set(NANOGUI_BUILD_PYTHON OFF)
 set(NANOGUI_BUILD_EXAMPLES OFF)
 set(NANOGUI_BACKEND "OpenGL" CACHE STRING "Choose the backend used for rendering (OpenGL/GLES 2/GLES 3/Metal)" FORCE)
 
-if(OPENCV_V4D_ENABLE_ES)
-  if(OPENCV_V4D_ES3)
+if(OPENCV_V4D_ENABLE_ES3)
     set(NANOGUI_BACKEND "GLES 3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV_V4D_ES_VERSION=3")
-  else()
-    set(NANOGUI_BACKEND "GLES 2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV_V4D_ES_VERSION=2")
-  endif()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV_V4D_USE_ES3=1")
 else()
   set(NANOGUI_BACKEND "OpenGL")
 endif()

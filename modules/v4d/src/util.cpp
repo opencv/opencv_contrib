@@ -19,6 +19,63 @@
 
 namespace cv {
 namespace viz {
+unsigned int init_shader(const char* vShader, const char* fShader, const char* outputAttributeName) {
+    struct Shader {
+        GLenum type;
+        const char* source;
+    } shaders[2] = { { GL_VERTEX_SHADER, vShader }, { GL_FRAGMENT_SHADER, fShader } };
+
+    GLuint program = glCreateProgram();
+
+    for (int i = 0; i < 2; ++i) {
+        Shader& s = shaders[i];
+        GLuint shader = glCreateShader(s.type);
+        glShaderSource(shader, 1, (const GLchar**) &s.source, NULL);
+        glCompileShader(shader);
+
+        GLint compiled;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+        if (!compiled) {
+            std::cerr << " failed to compile:" << std::endl;
+            GLint logSize;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logSize);
+            char* logMsg = new char[logSize];
+            glGetShaderInfoLog(shader, logSize, NULL, logMsg);
+            std::cerr << logMsg << std::endl;
+            delete[] logMsg;
+
+            exit (EXIT_FAILURE);
+        }
+
+        glAttachShader(program, shader);
+    }
+#ifndef OPENCV_V4D_USE_ES3
+    /* Link output */
+    glBindFragDataLocation(program, 0, outputAttributeName);
+#endif
+    /* link  and error check */
+    glLinkProgram(program);
+
+    GLint linked;
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+    if (!linked) {
+        std::cerr << "Shader program failed to link" << std::endl;
+        GLint logSize;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logSize);
+        char* logMsg = new char[logSize];
+        glGetProgramInfoLog(program, logSize, NULL, logMsg);
+        std::cerr << logMsg << std::endl;
+        delete[] logMsg;
+
+        exit (EXIT_FAILURE);
+    }
+
+    /* use program object */
+    glUseProgram(program);
+
+    return program;
+}
+
 std::string getGlInfo() {
     return reinterpret_cast<const char*>(glGetString(GL_VERSION));
 }
