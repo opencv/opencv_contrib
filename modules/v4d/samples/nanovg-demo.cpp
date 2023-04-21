@@ -8,14 +8,16 @@
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
+#ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
+#endif
 
 using std::cerr;
 using std::endl;
 
 static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
 
-void draw_color_wheel(float x, float y, float w, float h, float hue) {
+static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
     using namespace cv::viz::nvg;
     int i;
@@ -117,7 +119,7 @@ void draw_color_wheel(float x, float y, float w, float h, float hue) {
     restore();
 }
 
-bool iteration() {
+static bool iteration() {
     static std::vector<cv::UMat> hsvChannels;
     static cv::UMat rgb;
     static cv::UMat bgra;
@@ -170,12 +172,16 @@ bool iteration() {
     return true;
 }
 
+#ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
-    using namespace cv::viz;
     if (argc != 2) {
         cerr << "Usage: nanovg-demo <video-file>" << endl;
         exit(1);
     }
+#else
+int main() {
+#endif
+    using namespace cv::viz;
 
     if (!v4d->isOffscreen())
         v4d->setVisible(true);

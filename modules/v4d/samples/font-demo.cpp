@@ -18,10 +18,11 @@
 /** Application parameters **/
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr bool OFFSCREEN = false;
+#ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr double FPS = 60;
+#endif
 const cv::Scalar_<float> INITIAL_COLOR = cv::viz::colorConvert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 
 /** Visualization parameters **/
@@ -44,13 +45,13 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
 vector<string> lines;
-bool update_stars = true;
-bool update_perspective = true;
+static bool update_stars = true;
+static bool update_perspective = true;
 
-void setup_gui(cv::Ptr<cv::viz::V4D> v4d) {
-    v4d->nanogui([&](cv::viz::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain) {
+    v4dMain->nanogui([&](cv::viz::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
         form.makeGroup("Text Crawl");
         form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
@@ -95,16 +96,16 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v4d) {
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            v4d->setFullscreen(!v4d->isFullscreen());
+            v4dMain->setFullscreen(!v4dMain->isFullscreen());
         });
     #endif
         form.makeButton("Offscreen", [=]() {
-            v4d->setOffscreen(!v4d->isOffscreen());
+            v4dMain->setOffscreen(!v4dMain->isOffscreen());
         });
     });
 }
 
-bool iteration() {
+static bool iteration() {
     //BGRA
     static cv::UMat stars, warped;
     //transformation matrix
@@ -132,7 +133,7 @@ bool iteration() {
                 const auto& size = rng.uniform(min_star_size, max_star_size);
                 strokeWidth(size);
                 strokeColor(cv::Scalar(255, 255, 255, star_alpha * 255.0f));
-                circle(rng.uniform(0, WIDTH) , rng.uniform(0, HEIGHT), size / 2.0);
+                circle(rng.uniform(0, sz.width) , rng.uniform(0, sz.height), size / 2.0);
                 stroke();
             }
         });
@@ -168,7 +169,7 @@ bool iteration() {
         for (size_t i = 0; i < lines.size(); ++i) {
             y = (i * font_size);
             if (y + translateY < textHeight && y + translateY + font_size > 0) {
-                text(WIDTH / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
+                text(sz.width / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
             }
         }
     });
@@ -203,7 +204,7 @@ bool iteration() {
     return true;
 }
 
-int main(int argc, char **argv) {
+int main() {
     try {
         using namespace cv::viz;
 

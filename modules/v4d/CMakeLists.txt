@@ -11,12 +11,10 @@ macro(add_emscripten_sample sample source)
     ocv_target_include_modules(${sample} opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann)
     ocv_target_link_libraries(${sample} LINK_PRIVATE opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs
     opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann nanogui ${GLEW_LIBRARIES})
-    target_link_directories(${sample} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../lib")
+    target_link_directories(${sample} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
     target_compile_features(${sample} PRIVATE cxx_std_20)
     set_target_properties(${sample} PROPERTIES SUFFIX ".js")
-    # configure_file("${CMAKE_CURRENT_LIST_DIR}/samples/${sample}.html" "${CMAKE_CURRENT_BINARY_DIR}/../../bin/${sample}.html" COPYONLY)
-
-add_custom_command(
+    add_custom_command(
         TARGET ${sample} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 "${CMAKE_CURRENT_LIST_DIR}/samples/${sample}.html"
@@ -29,9 +27,9 @@ macro(add_binary_sample sample)
 endmacro()
 
 if(EMSCRIPTEN)
-  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
+  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_LD_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
 else()
   if(NOT GLEW_FOUND)
     message(STATUS "Module opencv_v4d disabled because GLEW was not found")
@@ -45,7 +43,6 @@ if (${idx} LESS 0)
   message(STATUS "Module opencv_v4d disabled because it requires C++20")
   ocv_module_disable(v4d)
 endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L../../lib/")
 
 OCV_OPTION(OPENCV_V4D_ENABLE_ES3 "Enable OpenGL ES 3.0 backend for V4D" OFF
   VERIFY HAVE_OPENGL)
@@ -144,11 +141,11 @@ target_compile_features(opencv_v4d PRIVATE cxx_std_20)
 target_compile_features(nanogui PRIVATE cxx_std_20)
 target_compile_features(nanovg PRIVATE cxx_std_20)
 
-ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter -Wdeprecated-enum-enum-conversion -Wformat-truncation)
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-enum-enum-conversion)
 target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../lib")
 
 if(EMSCRIPTEN)
   ocv_target_link_libraries(${the_module} -lnanogui)
 else()
-  ocv_target_link_libraries(${the_module} -lOpenCL -lnanogui -lnanovg OpenGL::OpenGL GLEW::glew)
+  ocv_target_link_libraries(${the_module} -lOpenCL -lnanogui OpenGL::OpenGL GLEW::glew)
 endif()

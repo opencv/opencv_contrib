@@ -1,6 +1,6 @@
 #include <opencv2/v4d/v4d.hpp>
 
-int main(int argc, char** argv) {
+int main() {
     using namespace cv;
     using namespace cv::viz;
 
@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
 	});
 
 	v4d->run([=]() {
-		v4d->gl([](const Size& sz) {
+		v4d->gl([]() {
 		    //Clears the screen blue
 		    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);

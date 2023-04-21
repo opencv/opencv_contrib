@@ -3,7 +3,7 @@
 #  include <opencv2/imgcodecs.hpp>
 #endif
 
-int main(int argc, char** argv) {
+int main() {
     using namespace cv;
     using namespace cv::viz;
 
@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
 	    try {
 #ifndef __EMSCRIPTEN__
 	        imwrite(std::to_string(cnt) + ".png", frame);
+#else
+	        CV_UNUSED(frame);
 #endif
 	    } catch(std::exception& ex) {
 	        cerr << "Unable to write frame: " << ex.what() << endl;
@@ -38,10 +40,11 @@ int main(int argc, char** argv) {
 	    }
 
         ++cnt;
-        if(cnt > std::numeric_limits<long>().max() / 2.0)
+        if(cnt > std::numeric_limits<long>().max() / 2.0) {
             cnt = 0;
+        }
 
-	    return true;
+        return true;
 	});
 
 	//Attach source and sink

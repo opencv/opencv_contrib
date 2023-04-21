@@ -91,16 +91,7 @@ template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& 
  * @param line The file line of the error.
  * @param expression The expression that failed.
  */
-static void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
-    int errorCode = glGetError();
-
-    if (errorCode != 0) {
-        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : "
-                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode
-                << "\n   " << std::endl;
-        assert(false);
-    }
-}
+void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression);
 /*!
  * Convenience macro to check for OpenGL errors.
  */
@@ -197,6 +188,8 @@ public:
      * @param fn A function object that is passed the size of the framebuffer
      */
     CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
+    CV_EXPORTS void gl(std::function<void()> fn);
+
     /*!
      * Execute function object fn inside a framebuffer context.
      * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -213,6 +206,8 @@ public:
      * and performs drawing using cv::viz::nvg
      */
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
+    CV_EXPORTS void nvg(std::function<void()> fn);
+
     /*!
      * Execute function object fn inside a nanogui context.
      * The context provides a #cv::viz::FormHelper instance to the function object

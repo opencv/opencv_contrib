@@ -19,4 +19,3 @@ int main() {
     //terminates or the functor returns false.
 	v4d->run([=](){ return v4d->display(); });
 }
-

@@ -29,7 +29,9 @@ constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 constexpr double SCALE = 0.125; //Scale at which face detection is performed
 constexpr bool OFFSCREEN = false;
+#ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
+#endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /** Effect parameters **/
@@ -137,7 +139,7 @@ struct FaceFeatures {
 };
 
 //based on the detected FaceFeatures guesses a decent face oval and draws a mask.
-void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
+static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::viz::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
@@ -152,7 +154,7 @@ void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
 }
 
 //Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
-void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
+static void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::viz::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
@@ -179,7 +181,7 @@ void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
 }
 
 //adjusts the saturation of a UMat
-void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
+static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
     static vector<cv::UMat> channels;
     static cv::UMat hls;
 
@@ -191,8 +193,8 @@ void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
 }
 
 //Setup the gui
-void setup_gui(cv::Ptr<cv::viz::V4D> v4d) {
-    v4d->nanogui([&](cv::viz::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::viz::V4D> v) {
+    v->nanogui([&](cv::viz::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
 
         form.makeGroup("Display");
@@ -200,11 +202,11 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v4d) {
         form.makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
     #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            v4d->setFullscreen(!v4d->isFullscreen());
+            v->setFullscreen(!v->isFullscreen());
         });
     #endif
         form.makeButton("Offscreen", [=]() {
-            v4d->setOffscreen(!v4d->isOffscreen());
+            v->setOffscreen(!v->isOffscreen());
         });
 
         form.makeGroup("Face Skin");
@@ -231,7 +233,7 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v4d) {
     });
 }
 
-bool iteration() {
+static bool iteration() {
     try {
 #ifdef USE_TRACKER
         static bool trackerInitalized = false;
@@ -305,8 +307,8 @@ bool iteration() {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
             }
 
-            v4d->nvg([&](const cv::Size &sz) {
-                v4d->clear();
+            v4d->clear();
+            v4d->nvg([&]() {
                 //Draw the face oval of the first face
                 draw_face_oval_mask(featuresList);
             });
@@ -316,8 +318,8 @@ bool iteration() {
                 cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
             });
 
-            v4d->nvg([&](const cv::Size &sz) {
-                v4d->clear();
+            v4d->clear();
+            v4d->nvg([&]() {
                 //Draw eyes eyes and lips areas of the first face
                 draw_face_eyes_and_lips_mask(featuresList);
             });
@@ -392,14 +394,17 @@ bool iteration() {
     return true;
 }
 
-int main(int argc, char **argv) {
-    using namespace cv::viz;
 #ifndef __EMSCRIPTEN__
+int main(int argc, char **argv) {
     if (argc != 2) {
         std::cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
+#else
+int main() {
 #endif
+    using namespace cv::viz;
+
     facemark->loadModel("lbfmodel.yaml");
 
     v4d->setStretching(stretch);

@@ -17,8 +17,8 @@ FrameBufferContext::FrameBufferContext(const FrameBufferContext& other) : FrameB
 
 FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
         const string& title, int major, int minor, bool compat, int samples, bool debug) :
-        frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug) {
+        offscreen_(offscreen), title_(title), major_(major), minor_(
+                minor), compat_(compat), samples_(samples), debug_(debug), frameBufferSize_(frameBufferSize) {
     if (glfwInit() != GLFW_TRUE)
         assert(false);
 
@@ -127,7 +127,10 @@ FrameBufferContext::~FrameBufferContext() {
 }
 
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+    CV_UNUSED(u);
+    CV_UNUSED(texture);
+#else
     using namespace cv::ocl;
 
     cl_int status = 0;
@@ -162,7 +165,10 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
 }
 
 void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u) {
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+    CV_UNUSED(u);
+    CV_UNUSED(texture);
+#else
     using namespace cv::ocl;
 
     const int dtype = CV_8UC4;

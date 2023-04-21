@@ -42,7 +42,9 @@ enum PostProcModes {
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+#ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
+#endif
 constexpr bool OFFSCREEN = false;
 
 static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
@@ -118,7 +120,7 @@ int bloom_thresh = 210;
 //The intensity of the bloom filter
 float bloom_gain = 3;
 
-void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
+static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
     static int morph_size = 1;
     static cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
@@ -127,7 +129,7 @@ void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     cv::morphologyEx(motionMaskGrey, motionMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 }
 
-void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& points) {
+static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& points) {
     static cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
     static vector<cv::KeyPoint> tmpKeyPoints;
 
@@ -140,7 +142,7 @@ void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& point
     }
 }
 
-bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
+static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
     static float last_movement = 0;
 
     float movement = cv::countNonZero(srcMotionMaskGrey) / float(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
@@ -154,7 +156,7 @@ bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, 
     return result;
 }
 
-void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, const vector<cv::Point2f> &detectedPoints, const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
+static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, const vector<cv::Point2f> &detectedPoints, const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
     static std::vector<uchar> status;
@@ -213,7 +215,7 @@ void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nex
     }
 }
 
-void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
+static void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
     static cv::UMat bgr;
     static cv::UMat hls;
     static cv::UMat ls16;
@@ -236,7 +238,7 @@ void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 
     addWeighted(src, 1.0, blur, gain, 0, dst);
 }
 
-void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
+static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
     static cv::UMat dst16;
@@ -258,7 +260,7 @@ void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
-void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
+static void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
     static cv::UMat tmp;
     static cv::UMat post;
     static cv::UMat backgroundGrey;
@@ -304,8 +306,8 @@ void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv
     cv::add(background, post, dst);
 }
 
-void setup_gui(cv::Ptr<cv::viz::V4D> v4d, cv::Ptr<cv::viz::V4D> v4dMenu) {
-    v4d->nanogui([&](cv::viz::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain, cv::Ptr<cv::viz::V4D> v4dMenu) {
+    v4dMain->nanogui([&](cv::viz::FormHelper& form){
         form.makeDialog(5, 30, "Effects");
 
         form.makeGroup("Foreground");
@@ -382,22 +384,22 @@ void setup_gui(cv::Ptr<cv::viz::V4D> v4d, cv::Ptr<cv::viz::V4D> v4dMenu) {
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
         form.makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
-            v4d->setStretching(s);
+            v4dMain->setStretching(s);
         });
 
 #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            v4d->setFullscreen(!v4d->isFullscreen());
+            v4dMain->setFullscreen(!v4dMain->isFullscreen());
         });
 
         form.makeButton("Offscreen", [=]() {
-            v4d->setOffscreen(!v4d->isOffscreen());
+            v4dMain->setOffscreen(!v4dMain->isOffscreen());
         });
 #endif
     });
 }
 
-bool iteration() {
+static bool iteration() {
     //BGRA
     static cv::UMat background, down;
     static cv::UMat foreground(v4d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
@@ -421,7 +423,7 @@ bool iteration() {
     //Detect trackable points in the motion mask
     detect_points(downMotionMaskGrey, detectedPoints);
 
-    v4d->nvg([=](const cv::Size& sz) {
+    v4d->nvg([=]() {
         v4d->clear();
         if (!downPrevGrey.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
@@ -462,14 +464,17 @@ bool iteration() {
 
     return true;
 }
-int main(int argc, char **argv) {
-    using namespace cv::viz;
 #ifndef __EMSCRIPTEN__
+int main(int argc, char **argv) {
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
+#else
+int main() {
 #endif
+    using namespace cv::viz;
+
     if(!v4d->isOffscreen()) {
         v4d->setVisible(true);
 #ifndef __EMSCRIPTEN__

@@ -19,7 +19,9 @@ constexpr unsigned int DOWNSIZE_HEIGHT = 360;
 constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
 constexpr double HEIGHT_FACTOR = double(HEIGHT) / DOWNSIZE_HEIGHT;
 constexpr bool OFFSCREEN = false;
+#ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
+#endif
 
 // Intensity of blur defined by kernel size. The default scales with the image diagonal.
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
@@ -38,7 +40,7 @@ static inline bool pair_comparator(std::pair<double, size_t> l1, std::pair<doubl
 }
 
 //adapted from cv::dnn_objdetect::InferBbox
-void intersection_over_union(std::vector<std::vector<double> > *boxes, std::vector<double> *base_box, std::vector<double> *iou) {
+static void intersection_over_union(std::vector<std::vector<double> > *boxes, std::vector<double> *base_box, std::vector<double> *iou) {
     double g_xmin = (*base_box)[0];
     double g_ymin = (*base_box)[1];
     double g_xmax = (*base_box)[2];
@@ -65,7 +67,7 @@ void intersection_over_union(std::vector<std::vector<double> > *boxes, std::vect
 }
 
 //adapted from cv::dnn_objdetect::InferBbox
-std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> > *boxes, std::vector<double> *probs, const double threshold = 0.1) {
+static std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> > *boxes, std::vector<double> *probs, const double threshold = 0.1) {
     std::vector<bool> keep(((*probs).size()));
     std::fill(keep.begin(), keep.end(), true);
     std::vector<size_t> prob_args_sorted((*probs).size());
@@ -102,14 +104,14 @@ std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> > *box
     return keep;
 }
 
-void composite_layers(const cv::UMat background, const cv::UMat frameBuffer, cv::UMat dst, int blurKernelSize) {
+static void composite_layers(const cv::UMat background, const cv::UMat frameBuffer, cv::UMat dst, int blurKernelSize) {
     static cv::UMat blur;
 
     cv::boxFilter(frameBuffer, blur, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     cv::add(background, blur, dst);
 }
 
-bool iteration() {
+static bool iteration() {
     //BGRA
     static cv::UMat background;
     //RGB
@@ -181,7 +183,7 @@ bool iteration() {
 
         v4d->clear();
         beginPath();
-        strokeWidth(std::fmax(2.0, WIDTH / 960.0));
+        strokeWidth(std::fmax(2.0, sz.width / 960.0));
         strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
         float width = tracked.width * WIDTH_FACTOR;
         float height = tracked.height * HEIGHT_FACTOR;
@@ -207,14 +209,16 @@ bool iteration() {
     return true;
 
 }
+#ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
-    using namespace cv::viz;
-
     if (argc != 2) {
         std::cerr << "Usage: pedestrian-demo <video-input>" << endl;
         exit(1);
     }
-
+#else
+int main() {
+#endif
+    using namespace cv::viz;
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     if (!v4d->isOffscreen())

@@ -11,9 +11,11 @@
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
-constexpr double FPS = 60;
 constexpr bool OFFSCREEN = false;
+#ifndef __EMSCRIPTEN__
+constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";
+#endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
@@ -28,10 +30,10 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
         OFFSCREEN, "Cube Demo");
 
-GLuint load_shader() {
+static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
     const string shaderVersion = "330";
 #else
@@ -70,7 +72,7 @@ GLuint load_shader() {
     return cv::viz::init_shader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
-void init_scene(const cv::Size& sz) {
+static void init_scene() {
     glEnable (GL_DEPTH_TEST);
 
     float vertices[] = {
@@ -137,7 +139,7 @@ void init_scene(const cv::Size& sz) {
     uniform_transform = glGetUniformLocation(shader_program, "transform");
 }
 
-void render_scene(const cv::Size& sz) {
+static void render_scene() {
     glClearColor(0.1, 0.12, 0.2, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -165,7 +167,8 @@ void render_scene(const cv::Size& sz) {
 
 }
 
-void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
+#ifndef __EMSCRIPTEN__
+static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
     static cv::UMat dst16;
@@ -187,8 +190,9 @@ void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
     cv::bitwise_not(dst, dst);
 }
+#endif
 
-bool iteration() {
+static bool iteration() {
     using namespace cv::viz;
 
     //Render using OpenGL
@@ -214,7 +218,11 @@ bool iteration() {
     return true;
 }
 
+#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
+#else
+int main() {
+#endif
     using namespace cv::viz;
 
     if (!v4d->isOffscreen())

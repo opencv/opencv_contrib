@@ -1,6 +1,10 @@
 #include <opencv2/v4d/v4d.hpp>
 
+#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
+#else
+int main() {
+#endif
     using namespace cv;
     using namespace cv::viz;
 

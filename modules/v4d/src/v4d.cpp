@@ -13,13 +13,24 @@ namespace viz {
 namespace detail {
 
 void glfw_error_callback(int error, const char* description) {
-    fprintf(stderr, "GLFW Error: %s\n", description);
+    fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
 }
 
 bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
     nanogui::Vector2i d = p - w->absolute_position();
     return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
 }
+}
+
+void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
+    int errorCode = glGetError();
+
+    if (errorCode != 0) {
+        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : "
+                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode
+                << "\n   " << std::endl;
+        assert(false);
+    }
 }
 
 cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
@@ -223,6 +234,14 @@ cv::Size V4D::getVideoFrameSize() {
     return clva().getVideoFrameSize();
 }
 
+void V4D::gl(std::function<void()> fn) {
+#ifndef __EMSCRIPTEN__
+    detail::CLExecScope_t scope(fb().getCLExecContext());
+#endif
+    detail::FrameBufferContext::GLScope glScope(fb());
+    fn();
+}
+
 void V4D::gl(std::function<void(const cv::Size&)> fn) {
     auto fbSize = getFrameBufferSize();
 #ifndef __EMSCRIPTEN__
@@ -236,6 +255,13 @@ void V4D::fb(std::function<void(cv::UMat&)> fn) {
     fb().execute(fn);
 }
 
+void V4D::nvg(std::function<void()> fn) {
+    nvg().render([=](const cv::Size& sz){
+        CV_UNUSED(sz);
+        fn();
+    });
+}
+
 void V4D::nvg(std::function<void(const cv::Size&)> fn) {
     nvg().render(fn);
 }
@@ -247,7 +273,7 @@ void V4D::nanogui(std::function<void(FormHelper& form)> fn) {
 }
 
 #ifdef __EMSCRIPTEN__
-void do_frame(void* void_fn_ptr) {
+static void do_frame(void* void_fn_ptr) {
      auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
      if (fn_ptr) {
          auto& fn = *fn_ptr;
@@ -549,6 +575,8 @@ bool V4D::isStretching() {
 
 void V4D::setDefaultKeyboardEventCallback() {
     setKeyboardEventCallback([&](int key, int scancode, int action, int modifiers) {
+        CV_UNUSED(scancode);
+        CV_UNUSED(modifiers);
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
             setOffscreen(!isOffscreen());
             return true;

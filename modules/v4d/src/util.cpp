@@ -52,6 +52,8 @@ unsigned int init_shader(const char* vShader, const char* fShader, const char* o
 #ifndef OPENCV_V4D_USE_ES3
     /* Link output */
     glBindFragDataLocation(program, 0, outputAttributeName);
+#else
+    CV_UNUSED(outputAttributeName);
 #endif
     /* link  and error check */
     glLinkProgram(program);
@@ -170,6 +172,7 @@ static bool signal_handlers_installed = false;
  * @param ignore We ignore the signal number
  */
 static void request_finish(int ignore) {
+    CV_UNUSED(ignore);
     finish_requested = true;
 }
 
@@ -213,7 +216,7 @@ void updateFps(cv::Ptr<cv::viz::V4D> v4d, bool graphical) {
         }
 
         if (graphical) {
-            v4d->nvg([&](const cv::Size& size) {
+            v4d->nvg([&]() {
                 using namespace cv;
                 string text = "FPS: " + std::to_string(fps);
                 nvg::beginPath();
@@ -259,18 +262,6 @@ Source makeVaSource(const string& inputFilename, const int vaDeviceIndex) {
         (*capture) >> frame;
         return !frame.empty();
     }, fps);
-}
-#else
-Sink makeVaSink(const string &outputFilename, const int fourcc, const float fps, const cv::Size &frameSize, const int vaDeviceIndex) {
-    return Sink([=](const cv::InputArray& frame){
-        return false;
-    });
-}
-
-Source makeVaSource(const string &inputFilename, const int vaDeviceIndex) {
-    return Source([=](cv::OutputArray& frame){
-        return false;
-    }, 0);
 }
 #endif
 

@@ -1,6 +1,6 @@
 #include <opencv2/v4d/v4d.hpp>
 
-int main(int argc, char** argv) {
+int main() {
     using namespace cv;
     using namespace cv::viz;
 
