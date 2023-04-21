@@ -5,32 +5,64 @@
 
 #include "nanovgcontext.hpp"
 
-#include "opencv2/v4d/v4d.hpp"
-
 namespace cv {
 namespace viz {
 namespace detail {
-NanoVGContext::NanoVGContext(V4D& v4d, NVGcontext* context, FrameBufferContext& fbContext) :
-        v4d_(v4d), context_(context), clglContext_(fbContext) {
+NanoVGContext::NanoVGContext(NVGcontext* context, FrameBufferContext& fbContext) :
+        context_(context), mainFbContext_(fbContext), nvgFbContext_(fbContext) {
     //FIXME workaround for first frame color glitch
-    cv::UMat tmp;
-    FrameBufferContext::FrameBufferScope fbScope(clglContext_, tmp);
+    FrameBufferContext::GLScope glScope(mainFbContext_);
+    FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
+    {
 #ifndef __EMSCRIPTEN__
-    CLExecScope_t scope(clglContext_.getCLExecContext());
+        CLExecScope_t scope(mainFbContext_.getCLExecContext());
 #endif
-    FrameBufferContext::GLScope glScope(clglContext_);
-    NanoVGContext::Scope nvgScope(*this);
-    cv::viz::nvg::detail::NVG::initializeContext(context_), fn(clglContext_.getSize());
+        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+        fb_.copyTo(preFB_);
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
+        preFB_.copyTo(fb_);
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        NanoVGContext::Scope nvgScope(*this);
+        cv::viz::nvg::detail::NVG::initializeContext(context_);
+        fn(nvgFbContext_.getSize());
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
+        fb_.copyTo(postFB_);
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(mainFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+        postFB_.copyTo(fb_);
+    }
 }
 
 void NanoVGContext::begin() {
-//    push();
-    float w = v4d_.getFrameBufferSize().width;
-    float h = v4d_.getFrameBufferSize().height;
-    float r = v4d_.getXPixelRatio();
+    float w = mainFbContext_.getSize().width;
+    float h = mainFbContext_.getSize().height;
+    float r = mainFbContext_.getXPixelRatio();
 
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
@@ -44,7 +76,6 @@ void NanoVGContext::end() {
     //FIXME make nvgCancelFrame possible
     nvgEndFrame(context_);
     nvgRestore(context_);
-//    pop();
 }
 }
 }

@@ -130,16 +130,9 @@ class CV_EXPORTS V4D {
     cv::Rect viewport_;
     float scale_;
     cv::Vec2f mousePos_;
-    bool offscreen_;
     bool stretch_;
-    string title_;
-    int major_;
-    int minor_;
-    bool compat_;
-    int samples_;
-    bool debug_;
-    GLFWwindow* glfwWindow_ = nullptr;
-    FrameBufferContext* clglContext_ = nullptr;
+    bool offscreen_;
+    FrameBufferContext* mainFramebufferContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
     cv::VideoCapture* capture_ = nullptr;
@@ -192,17 +185,6 @@ public:
      * Default destructor
      */
     CV_EXPORTS virtual ~V4D();
-    /*!
-     * In case several V4D objects are in use all objects not in use have to
-     * call #makeNoneCurrent() and only the one to be active call #makeCurrent().
-     */
-    CV_EXPORTS void makeCurrent();
-    /*!
-     * To make it possible for other V4D objects to become current all other
-     * V4D instances have to become non-current.
-     */
-    CV_EXPORTS void makeNoneCurrent();
-
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
@@ -360,16 +342,6 @@ public:
      */
     CV_EXPORTS cv::Size getNativeFrameBufferSize();
     /*!
-     * Get the pixel ratio of the display x-axis.
-     * @return The pixel ratio of the display x-axis.
-     */
-    CV_EXPORTS float getXPixelRatio();
-    /*!
-     * Get the pixel ratio of the display y-axis.
-     * @return The pixel ratio of the display y-axis.
-     */
-    CV_EXPORTS float getYPixelRatio();
-    /*!
      * Determine if the window is in fullscreen mode.
      * @return true if in fullscreen mode.
      */
@@ -451,7 +423,7 @@ private:
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
-    bool initializeWindowing();
+    bool initializeGUI();
     void setMouseDrag(bool d);
     bool isMouseDrag();
     cv::Vec2f getMousePosition();

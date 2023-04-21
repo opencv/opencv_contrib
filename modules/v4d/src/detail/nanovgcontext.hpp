@@ -31,9 +31,12 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class NanoVGContext {
-    V4D& v4d_;
     NVGcontext* context_;
-    FrameBufferContext& clglContext_;
+    FrameBufferContext& mainFbContext_;
+    FrameBufferContext& nvgFbContext_;
+    cv::UMat preFB_;
+    cv::UMat fb_;
+    cv::UMat postFB_;
 public:
     /*!
      * Makes sure #NanoVGContext::begin and #NanoVGContext::end are both called
@@ -62,7 +65,7 @@ public:
      * @param context The native NVGContext
      * @param fbContext The framebuffer context
      */
-    NanoVGContext(V4D& v4d, NVGcontext* context, FrameBufferContext& fbContext);
+    NanoVGContext(NVGcontext* context, FrameBufferContext& fbContext);
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.

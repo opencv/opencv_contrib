@@ -46,6 +46,14 @@ class FrameBufferContext {
     friend class CLVAContext;
     friend class NanoVGContext;
     friend class cv::viz::V4D;
+    bool offscreen_;
+    string title_;
+    int major_;
+    int minor_;
+    bool compat_;
+    int samples_;
+    bool debug_;
+    GLFWwindow* glfwWindow_ = nullptr;
     bool clglSharing_ = true;
     GLuint frameBufferID_ = 0;
     GLuint textureID_ = 0;
@@ -61,6 +69,8 @@ class FrameBufferContext {
      * @return The texture object.
      */
     cv::ogl::Texture2D& getTexture2D();
+    GLFWwindow* getGLFWWindow();
+
 #ifndef __EMSCRIPTEN__
     /*!
      * Get the current OpenCLExecutionContext
@@ -130,7 +140,11 @@ public:
      * Create a FrameBufferContext with given size.
      * @param frameBufferSize The frame buffer size.
      */
-    FrameBufferContext(const cv::Size& frameBufferSize);
+    FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
+            const string& title, int major, int minor, bool compat, int samples, bool debug);
+
+    FrameBufferContext(const FrameBufferContext& other);
+
     /*!
      * Default destructor.
      */
@@ -148,6 +162,27 @@ public:
       * @param fn A function object that is passed the framebuffer to be read/manipulated.
       */
     void execute(std::function<void(cv::UMat&)> fn);
+
+    /*!
+     * Get the pixel ratio of the display x-axis.
+     * @return The pixel ratio of the display x-axis.
+     */
+    CV_EXPORTS float getXPixelRatio();
+    /*!
+     * Get the pixel ratio of the display y-axis.
+     * @return The pixel ratio of the display y-axis.
+     */
+    CV_EXPORTS float getYPixelRatio();
+    /*!
+     * In case several V4D objects are in use all objects not in use have to
+     * call #makeNoneCurrent() and only the one to be active call #makeCurrent().
+     */
+    CV_EXPORTS void makeCurrent();
+    /*!
+     * To make it possible for other V4D objects to become current all other
+     * V4D instances have to become non-current.
+     */
+    CV_EXPORTS void makeNoneCurrent();
 protected:
     /*!
      * Setup OpenGL states.

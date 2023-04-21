@@ -12,9 +12,69 @@ namespace cv {
 namespace viz {
 namespace detail {
 
-//FIXME use cv::ogl
-FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize) :
-        frameBufferSize_(frameBufferSize) {
+FrameBufferContext::FrameBufferContext(const FrameBufferContext& other) : FrameBufferContext(other.frameBufferSize_, true, other.title_, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_) {
+}
+
+FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
+        const string& title, int major, int minor, bool compat, int samples, bool debug) :
+        frameBufferSize_(frameBufferSize), offscreen_(offscreen), title_(title), major_(major), minor_(
+                minor), compat_(compat), samples_(samples), debug_(debug) {
+    if (glfwInit() != GLFW_TRUE)
+        assert(false);
+
+    glfwSetErrorCallback(cv::viz::glfw_error_callback);
+
+    if (debug_)
+        glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+
+    if (offscreen_)
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+    glfwSetTime(0);
+#ifdef __APPLE__
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#elif defined(OPENCV_V4D_USE_ES3)
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#else
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, compat_ ? GLFW_OPENGL_COMPAT_PROFILE : GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
+#endif
+    glfwWindowHint(GLFW_SAMPLES, samples_);
+    glfwWindowHint(GLFW_RED_BITS, 8);
+    glfwWindowHint(GLFW_GREEN_BITS, 8);
+    glfwWindowHint(GLFW_BLUE_BITS, 8);
+    glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+#ifndef __EMSCRIPTEN__
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+#else
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+#endif
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+    /* I figure we don't need double buffering because the FBO (and the bound texture) is our backbuffer that
+     * we blit to the front on every iteration.
+     * On X11, wayland and in WASM it works and boosts performance a bit.
+     */
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+
+    glfwWindow_ = glfwCreateWindow(frameBufferSize.width, frameBufferSize.height, title_.c_str(), nullptr,
+            nullptr);
+    if (glfwWindow_ == NULL) {
+        assert(false);
+    }
+    glfwMakeContextCurrent(glfwWindow_);
+
 #ifndef OPENCV_V4D_USE_ES3
     glewExperimental = true;
     glewInit();
@@ -160,6 +220,10 @@ cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
     return *texture_;
 }
 
+GLFWwindow* FrameBufferContext::getGLFWWindow() {
+    return glfwWindow_;
+}
+
 #ifndef __EMSCRIPTEN__
 CLExecContext_t& FrameBufferContext::getCLExecContext() {
     return context_;
@@ -176,6 +240,7 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
 }
 
 void FrameBufferContext::begin() {
+    glfwMakeContextCurrent(getGLFWWindow());
     GL_CHECK(glGetIntegerv( GL_VIEWPORT, viewport_ ));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -193,6 +258,7 @@ void FrameBufferContext::end() {
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
+    glfwMakeContextCurrent(nullptr);
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
@@ -237,6 +303,35 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
         GL_CHECK(glFlush());
         GL_CHECK(glFinish());
     }
+}
+
+float FrameBufferContext::getXPixelRatio() {
+    makeCurrent();
+#ifdef __EMSCRIPTEN__
+    return emscripten_get_device_pixel_ratio();
+#else
+    float xscale, yscale;
+    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
+    return xscale;
+#endif
+}
+
+float FrameBufferContext::getYPixelRatio() {
+    makeCurrent();
+#ifdef __EMSCRIPTEN__
+    return emscripten_get_device_pixel_ratio();
+#else
+    float xscale, yscale;
+    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
+    return yscale;
+#endif
+}
+void FrameBufferContext::makeCurrent() {
+    glfwMakeContextCurrent(getGLFWWindow());
+}
+
+void FrameBufferContext::makeNoneCurrent() {
+    glfwMakeContextCurrent(nullptr);
 }
 }
 }
