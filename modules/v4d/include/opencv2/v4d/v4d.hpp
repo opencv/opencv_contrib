@@ -53,6 +53,7 @@ namespace viz {
 namespace detail {
 class FrameBufferContext;
 class CLVAContext;
+class GLContext;
 class NanoVGContext;
 
 /*!
@@ -125,6 +126,7 @@ class CV_EXPORTS V4D {
     bool offscreen_;
     FrameBufferContext* mainFramebufferContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
+    GLContext* glContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
     cv::VideoCapture* capture_ = nullptr;
     cv::VideoWriter* writer_ = nullptr;
@@ -426,11 +428,11 @@ private:
     void setMousePosition(int x, int y);
     nanogui::Screen& screen();
     FormHelper& form();
-    FrameBufferContext& fb();
-    CLVAContext& clva();
-    NanoVGContext& nvg();
+    FrameBufferContext& fbCtx();
+    CLVAContext& clvaCtx();
+    NanoVGContext& nvgCtx();
+    GLContext& glCtx();
     GLFWwindow* getGLFWWindow();
-    NVGcontext* getNVGcontext();
 };
 }
 } /* namespace kb */

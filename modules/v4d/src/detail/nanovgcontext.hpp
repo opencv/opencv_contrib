@@ -7,7 +7,6 @@
 #define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
-#include <nanogui/nanogui.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -31,9 +30,10 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class NanoVGContext {
+    nanogui::Screen* screen_;
     NVGcontext* context_;
     FrameBufferContext& mainFbContext_;
-    FrameBufferContext& nvgFbContext_;
+    FrameBufferContext nvgFbContext_;
     cv::UMat preFB_;
     cv::UMat fb_;
     cv::UMat postFB_;
@@ -65,7 +65,7 @@ public:
      * @param context The native NVGContext
      * @param fbContext The framebuffer context
      */
-    NanoVGContext(NVGcontext* context, FrameBufferContext& fbContext);
+    NanoVGContext(FrameBufferContext& fbContext);
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.
@@ -74,6 +74,8 @@ public:
      * and performs drawing using cv::viz::nvg
      */
     void render(std::function<void(const cv::Size&)> fn);
+
+    FrameBufferContext& fbCtx();
 private:
     /*!
      * Setup NanoVG context
@@ -83,6 +85,7 @@ private:
      * Tear down NanoVG context
      */
     void end();
+
 };
 }
 }

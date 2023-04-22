@@ -12,13 +12,13 @@ namespace cv {
 namespace viz {
 namespace detail {
 
-FrameBufferContext::FrameBufferContext(const FrameBufferContext& other) : FrameBufferContext(other.frameBufferSize_, true, other.title_, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_) {
+FrameBufferContext::FrameBufferContext(const FrameBufferContext& other) : FrameBufferContext(other.frameBufferSize_, true, other.title_, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, other.textureID_) {
 }
 
 FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
-        const string& title, int major, int minor, bool compat, int samples, bool debug) :
+        const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, GLuint sharedTexture) :
         offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug), frameBufferSize_(frameBufferSize) {
+                minor), compat_(compat), samples_(samples), debug_(debug), frameBufferSize_(frameBufferSize), textureID_(sharedTexture) {
     if (glfwInit() != GLFW_TRUE)
         assert(false);
 
@@ -62,14 +62,10 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool off
 #endif
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    /* I figure we don't need double buffering because the FBO (and the bound texture) is our backbuffer that
-     * we blit to the front on every iteration.
-     * On X11, wayland and in WASM it works and boosts performance a bit.
-     */
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+//    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
     glfwWindow_ = glfwCreateWindow(frameBufferSize.width, frameBufferSize.height, title_.c_str(), nullptr,
-            nullptr);
+            sharedWindow);
     if (glfwWindow_ == NULL) {
         assert(false);
     }
@@ -93,27 +89,48 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool off
 #else
     clglSharing_ = false;
 #endif
-    frameBufferID_ = 0;
-    GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
-    GL_CHECK(glGenRenderbuffers(1, &renderBufferID_));
-    textureID_ = 0;
-    GL_CHECK(glGenTextures(1, &textureID_));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
-    texture_ = new cv::ogl::Texture2D(frameBufferSize_, cv::ogl::Texture2D::RGBA, textureID_);
-    GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-    GL_CHECK(
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
+    if(sharedWindow == nullptr) {
+        GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
+        GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
+        GL_CHECK(glGenRenderbuffers(1, &renderBufferID_));
 
-    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
-    GL_CHECK(
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frameBufferSize_.width, frameBufferSize_.height));
-    GL_CHECK(
-            glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(glGenTextures(1, &textureID_));
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
+        texture_ = new cv::ogl::Texture2D(frameBufferSize_, cv::ogl::Texture2D::RGBA, textureID_);
+        GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
+        GL_CHECK(
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
 
-    GL_CHECK(
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
-    assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frameBufferSize_.width, frameBufferSize_.height));
+        GL_CHECK(
+                glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+
+        GL_CHECK(
+                glNamedFramebufferTexture(frameBufferID_, GL_COLOR_ATTACHMENT0, textureID_, 0));
+        assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    } else {
+        GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
+        GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
+
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
+        texture_ = new cv::ogl::Texture2D(frameBufferSize_, cv::ogl::Texture2D::RGBA, textureID_);
+        GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
+        GL_CHECK(
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
+
+        GL_CHECK(glGenRenderbuffers(1, &renderBufferID_));
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, frameBufferSize_.width, frameBufferSize_.height));
+        GL_CHECK(
+                glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+
+        GL_CHECK(
+                glNamedFramebufferTexture(frameBufferID_, GL_COLOR_ATTACHMENT1, textureID_, 0));
+        assert(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    }
 #ifndef __EMSCRIPTEN__
     context_ = CLExecContext_t::getCurrent();
 #endif

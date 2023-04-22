@@ -72,15 +72,15 @@ static GLuint load_shader() {
     return cv::viz::init_shader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
-static void init_scene() {
+static void init_scene(const cv::Size& sz) {
     glEnable (GL_DEPTH_TEST);
 
     float vertices[] = {
     // Front face
-            0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+            1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
 
             // Back face
-            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, };
+            1.0, 1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, };
 
     float vertex_colors[] = { 1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
 
@@ -137,6 +137,7 @@ static void init_scene() {
 
     shader_program = load_shader();
     uniform_transform = glGetUniformLocation(shader_program, "transform");
+    glViewport(0,0, sz.width, sz.height);
 }
 
 static void render_scene() {
@@ -148,19 +149,29 @@ static void render_scene() {
     float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
     float scale = 0.25;
 
-    cv::Matx44f scaleMat(scale, 0.0, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0, 0.0, scale, 0.0, 0.0, 0.0,
-            0.0, 1.0);
+    cv::Matx44f scaleMat(
+            scale, 0.0, 0.0, 0.0,
+            0.0, scale, 0.0, 0.0,
+            0.0, 0.0, scale, 0.0,
+            0.0, 0.0, 0.0, 1.0);
 
-    cv::Matx44f rotXMat(1.0, 0.0, 0.0, 0.0, 0.0, cos(angle), -sin(angle), 0.0, 0.0, sin(angle),
-            cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0);
+    cv::Matx44f rotXMat(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, cos(angle), -sin(angle), 0.0,
+            0.0, sin(angle), cos(angle), 0.0,
+            0.0, 0.0, 0.0, 1.0);
 
-    cv::Matx44f rotYMat(cos(angle), 0.0, sin(angle), 0.0, 0.0, 1.0, 0.0, 0.0, -sin(angle), 0.0,
-            cos(angle), 0.0, 0.0, 0.0, 0.0, 1.0);
+    cv::Matx44f rotYMat(
+            cos(angle), 0.0, sin(angle), 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            -sin(angle), 0.0,cos(angle), 0.0,
+            0.0, 0.0, 0.0, 1.0);
 
     cv::Matx44f rotZMat(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0,
             0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
     cv::Matx44f transform = scaleMat * rotXMat * rotYMat * rotZMat;
+
     glUniformMatrix4fv(uniform_transform, 1, GL_FALSE, transform.val);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);

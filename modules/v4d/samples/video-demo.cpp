@@ -140,8 +140,8 @@ static void init_scene() {
 }
 
 static void render_scene() {
-    glClearColor(0.1, 0.12, 0.2, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//    glClearColor(0.1, 0.12, 0.2, 1);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader_program);
 
@@ -194,6 +194,7 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 static bool iteration() {
     using namespace cv::viz;
+    v4d->capture();
 
     //Render using OpenGL
     v4d->gl(render_scene);

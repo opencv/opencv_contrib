@@ -44,6 +44,7 @@ typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
  */
 class FrameBufferContext {
     friend class CLVAContext;
+    friend class GLContext;
     friend class NanoVGContext;
     friend class cv::viz::V4D;
     bool offscreen_;
@@ -141,7 +142,7 @@ public:
      * @param frameBufferSize The frame buffer size.
      */
     FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major, int minor, bool compat, int samples, bool debug);
+            const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, GLuint sharedTexture);
 
     FrameBufferContext(const FrameBufferContext& other);
 

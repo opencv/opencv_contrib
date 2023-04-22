@@ -3,7 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
+#include <opencv2/v4d/v4d.hpp>
+#include <opencv2/highgui.hpp>
 
 using std::cerr;
 using std::endl;
@@ -49,10 +50,8 @@ GLint zoom_hdl;
 /** shader and program handle **/
 GLuint shader_program_hdl;
 
-#ifndef OPENCV_V4D_USE_ES3
 //vertex array
 GLuint VAO;
-#endif
 GLuint VBO, EBO;
 
 // vertex position, color
@@ -68,10 +67,8 @@ unsigned int indices[] = {
 
 static void load_buffer_data() {
 
-#ifndef OPENCV_V4D_USE_ES3
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
-#endif
 
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
@@ -86,12 +83,10 @@ static void load_buffer_data() {
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-#ifndef OPENCV_V4D_USE_ES3
     glBindVertexArray(0);
-#endif
 }
 
-//workaround: required with emscripten + nanogui on every iteration before rendering
+//workaround: required with emscripten on every iteration before rendering
 static void rebind_buffers() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -103,6 +98,7 @@ static void rebind_buffers() {
     glEnableVertexAttribArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
@@ -163,23 +159,21 @@ static void load_shader() {
         return iterations;
     }
      
-    vec4 return_color()
+    void determine_color()
     {
         int iter = get_iterations();
-        if (iter == max_iterations) {   
-            return vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        if (iter != max_iterations) {   
+            float iterations = float(iter) / float(max_iterations);
+            //convert to float
+            float cb = float(contrast_boost);
+    
+            outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
         }
-
-        float iterations = float(iter) / float(max_iterations);
-        //convert to float
-        float cb = float(contrast_boost);
-
-        return vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
     }
 
     void main()
     {
-        outColor = return_color();
+        determine_color();
     })";
 
     cerr << "##### Vertex Shader #####" << endl;
@@ -234,9 +228,7 @@ static void render_scene() {
         glUniform1f(zoom_hdl, zoom);
     }
 
-#ifndef OPENCV_V4D_USE_ES3
     glBindVertexArray(VAO);
-#endif
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
@@ -335,9 +327,12 @@ static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain) {
 static bool iteration() {
     //ignore failed capture attempts
     v4d->capture();
-
+    v4d->fb([](cv::UMat& frameBuffer) {
+        imshow("fb1", frameBuffer);
+        cv::waitKey(1);
+    });
 #ifdef __EMSCRIPTEN__
-    //required in conjunction with emscripten + nanovg
+    //required in conjunction with emscripten
     rebind_buffers();
 #endif
     //Render using OpenGL

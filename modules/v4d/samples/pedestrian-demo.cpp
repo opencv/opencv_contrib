@@ -3,13 +3,11 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
-#include "opencv2/v4d/util.hpp"
-
-#include <string>
-
+#include <opencv2/v4d/v4d.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/objdetect.hpp>
+
+#include <string>
 
 constexpr unsigned int WIDTH = 1920;
 constexpr unsigned int HEIGHT = 1080;
@@ -31,7 +29,7 @@ using std::endl;
 using std::vector;
 using std::string;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Pedestrian Demo");
 static cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
@@ -178,10 +176,11 @@ static bool iteration() {
         }
     }
 
+    v4d->clear();
+
     v4d->nvg([&](const cv::Size& sz) {
         using namespace cv::viz::nvg;
 
-        v4d->clear();
         beginPath();
         strokeWidth(std::fmax(2.0, sz.width / 960.0));
         strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
