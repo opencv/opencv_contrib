@@ -11,7 +11,7 @@
 #include <opencv2/core/mat.hpp>
 
 namespace cv {
-namespace viz {
+namespace v4d {
 
 /*!
  * A Source object represents a way to provide data to V4D by using

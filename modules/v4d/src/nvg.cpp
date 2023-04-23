@@ -6,7 +6,7 @@
 #include "opencv2/v4d/nvg.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 namespace nvg {
 namespace detail {
 class NVG;

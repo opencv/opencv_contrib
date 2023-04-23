@@ -33,7 +33,7 @@
 #include "opencv2/v4d/util.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 class V4D;
 namespace detail {
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
@@ -46,7 +46,7 @@ class FrameBufferContext {
     friend class CLVAContext;
     friend class GLContext;
     friend class NanoVGContext;
-    friend class cv::viz::V4D;
+    friend class cv::v4d::V4D;
     bool offscreen_;
     string title_;
     int major_;
@@ -65,6 +65,8 @@ class FrameBufferContext {
     CLExecContext_t context_;
 #endif
     cv::Size frameBufferSize_;
+    bool isShared_ = false;
+    const FrameBufferContext* parent_;
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
@@ -142,7 +144,7 @@ public:
      * @param frameBufferSize The frame buffer size.
      */
     FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, GLuint sharedTexture);
+            const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
 
     FrameBufferContext(const FrameBufferContext& other);
 
@@ -150,6 +152,9 @@ public:
      * Default destructor.
      */
     virtual ~FrameBufferContext();
+
+    void setup(const cv::Size& sz);
+    void teardown();
     /*!
      * Get the framebuffer size.
      * @return The framebuffer size.

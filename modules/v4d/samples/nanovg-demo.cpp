@@ -15,11 +15,11 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 using std::cerr;
 using std::endl;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
 
 static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
-    using namespace cv::viz::nvg;
+    using namespace cv::v4d::nvg;
     int i;
     float r0, r1, ax, ay, bx, by, cx, cy, aeps, r;
     Paint paint;
@@ -44,8 +44,8 @@ static void draw_color_wheel(float x, float y, float w, float h, float hue) {
         bx = cx + cosf(a1) * (r0 + r1) * 0.5f;
         by = cy + sinf(a1) * (r0 + r1) * 0.5f;
         paint = linearGradient(ax, ay, bx, by,
-                cv::viz::colorConvert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
-                cv::viz::colorConvert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
+                cv::v4d::colorConvert(cv::Scalar((a0 / (CV_PI * 2.0)) * 180.0, 0.55 * 255.0, 255.0, 255.0), cv::COLOR_HLS2BGR),
+                cv::v4d::colorConvert(cv::Scalar((a1 / (CV_PI * 2.0)) * 180.0, 0.55 * 255, 255, 255), cv::COLOR_HLS2BGR));
         fillPaint(paint);
         fill();
     }
@@ -88,7 +88,7 @@ static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     lineTo(ax, ay);
     lineTo(bx, by);
     closePath();
-    paint = linearGradient(r, 0, ax, ay, cv::viz::colorConvert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
+    paint = linearGradient(r, 0, ax, ay, cv::v4d::colorConvert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
     fillPaint(paint);
     fill();
     paint = linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));
@@ -181,11 +181,12 @@ int main(int argc, char **argv) {
 #else
 int main() {
 #endif
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
-    printSystemInfo();
+
+    v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);

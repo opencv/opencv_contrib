@@ -23,7 +23,7 @@ constexpr bool OFFSCREEN = false;
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";
 constexpr double FPS = 60;
 #endif
-const cv::Scalar_<float> INITIAL_COLOR = cv::viz::colorConvert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
+const cv::Scalar_<float> INITIAL_COLOR = cv::v4d::colorConvert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 
 /** Visualization parameters **/
 float min_star_size = 0.5f;
@@ -45,13 +45,13 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
 vector<string> lines;
 static bool update_stars = true;
 static bool update_perspective = true;
 
-static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain) {
-    v4dMain->nanogui([&](cv::viz::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
+    v4dMain->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
         form.makeGroup("Text Crawl");
         form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
@@ -123,9 +123,9 @@ static bool iteration() {
     int32_t translateY = HEIGHT - cnt;
 
     if(update_stars) {
+        v4d->clear();
         v4d->nvg([&](const cv::Size& sz) {
-            using namespace cv::viz::nvg;
-            v4d->clear();
+            using namespace cv::v4d::nvg;
             //draw stars
             int numStars = rng.uniform(min_star_count, max_star_count);
             for(int i = 0; i < numStars; ++i) {
@@ -154,9 +154,9 @@ static bool iteration() {
         update_perspective = false;
     }
 
+    v4d->clear();
     v4d->nvg([&](const cv::Size& sz) {
-        using namespace cv::viz::nvg;
-        v4d->clear();
+        using namespace cv::v4d::nvg;
 
         fontSize(font_size);
         fontFace("sans-bold");
@@ -177,6 +177,7 @@ static bool iteration() {
     v4d->fb([&](cv::UMat& frameBuffer){
         //Pseudo 3D text effect.
         cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        cv::resize(stars,stars,warped.size());
         //Combine layers
         cv::add(stars, warped, frameBuffer);
     });
@@ -206,13 +207,15 @@ static bool iteration() {
 
 int main() {
     try {
-        using namespace cv::viz;
+        using namespace cv::v4d;
 
         if(!v4d->isOffscreen()) {
             setup_gui(v4d);
             v4d->setVisible(true);
         }
-        printSystemInfo();
+
+        v4d->printSystemInfo();
+
 
         //The text to display
         string txt = cv::getBuildInformation();

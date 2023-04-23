@@ -2,14 +2,10 @@
 
 int main() {
     using namespace cv;
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
-    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Tetrahedron");
+    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Blue Screen");
     v4d->setVisible(true);
-
-	v4d->gl([](const Size sz) {
-		glViewport(0, 0, sz.width, sz.height);
-	});
 
 	v4d->run([=]() {
 		v4d->gl([]() {

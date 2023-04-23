@@ -30,7 +30,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
         OFFSCREEN, "Cube Demo");
 
 static GLuint load_shader() {
@@ -69,7 +69,7 @@ static GLuint load_shader() {
     }
 )";
 
-    return cv::viz::init_shader(vert.c_str(), frag.c_str(), "fragColor");
+    return cv::v4d::init_shader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
 static void init_scene(const cv::Size& sz) {
@@ -77,10 +77,10 @@ static void init_scene(const cv::Size& sz) {
 
     float vertices[] = {
     // Front face
-            1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0,
+            0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
 
             // Back face
-            1.0, 1.0, -1.0, -1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, };
+            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, };
 
     float vertex_colors[] = { 1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
 
@@ -204,19 +204,20 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 #endif
 
 static bool iteration() {
-    using namespace cv::viz;
+    using namespace cv::v4d;
+    v4d->gl(init_scene);
 
     //Render using OpenGL
     v4d->gl(render_scene);
 
-//If we have OpenCL and maybe even CL-GL sharing then this is faster than the glow shader. Without OpenCL this is very slow.
-#ifndef __EMSCRIPTEN__
-    //Aquire the frame buffer for use by OpenCL
-    v4d->fb([&](cv::UMat& frameBuffer) {
-        //Glow effect (OpenCL)
-        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-    });
-#endif
+////If we have OpenCL and maybe even CL-GL sharing then this is faster than the glow shader. Without OpenCL this is very slow.
+//#ifndef __EMSCRIPTEN__
+//    //Aquire the frame buffer for use by OpenCL
+//    v4d->fb([&](cv::UMat& frameBuffer) {
+//        //Glow effect (OpenCL)
+//        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+//    });
+//#endif
 
     updateFps(v4d, true);
 
@@ -234,12 +235,13 @@ int main(int argc, char** argv) {
 #else
 int main() {
 #endif
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
 
-    printSystemInfo();
+    v4d->printSystemInfo();
+
 
 #ifndef __EMSCRIPTEN__
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,

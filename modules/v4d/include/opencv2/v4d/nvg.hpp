@@ -21,7 +21,7 @@
 #include <nanogui/opengl.h>
 
 namespace cv {
-namespace viz {
+namespace v4d {
 /*!
  * In general please refere to https://github.com/memononen/nanovg/blob/master/src/nanovg.h for reference.
  */

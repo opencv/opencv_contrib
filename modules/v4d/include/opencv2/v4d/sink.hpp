@@ -11,7 +11,7 @@
 #include <opencv2/core/mat.hpp>
 
 namespace cv {
-namespace viz {
+namespace v4d {
 
 /*!
  * A Sink object represents a way to write data produced by V4D (e.g. a video-file).

@@ -20,7 +20,7 @@
 #endif
 
 namespace cv {
-namespace viz {
+namespace v4d {
 using std::string;
 class V4D;
 
@@ -45,10 +45,6 @@ CV_EXPORTS bool isIntelVaSupported();
  * @return true if it is supported
  */
 CV_EXPORTS bool isClGlSharingSupported();
-/*!
- * Pretty prints system information.
- */
-CV_EXPORTS void printSystemInfo();
 /*!
  * Tells the application if it's alright to keep on running.
  * Note: If you use this mechanism signal handlers are installed

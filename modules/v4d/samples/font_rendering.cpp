@@ -2,7 +2,7 @@
 
 int main() {
     using namespace cv;
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Font Rendering");
     v4d->setVisible(true);
@@ -13,7 +13,7 @@ int main() {
 	v4d->clear();
 	//Render the text at the center of the screen
 	v4d->nvg([&](const Size& sz) {
-		using namespace cv::viz::nvg;
+		using namespace cv::v4d::nvg;
 		fontSize(40.0f);
 		fontFace("sans-bold");
 		fillColor(Scalar(255, 0, 0, 255));

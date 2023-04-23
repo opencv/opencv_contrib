@@ -8,9 +8,10 @@
 #include "detail/framebuffercontext.hpp"
 #include "detail/glcontext.hpp"
 #include "detail/nanovgcontext.hpp"
+#include <sstream>
 
 namespace cv {
-namespace viz {
+namespace v4d {
 namespace detail {
 
 void glfw_error_callback(int error, const char* description) {
@@ -27,10 +28,10 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
     int errorCode = glGetError();
 
     if (errorCode != 0) {
-        std::cerr << "GL failed in " << file.filename() << " (" << line << ") : "
-                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode
-                << "\n   " << std::endl;
-        assert(false);
+        std::stringstream ss;
+        ss << "GL failed in " << file.filename() << " (" << line << ") : "
+                << "\nExpression:\n   " << expression << "\nError code:\n   " << errorCode;
+        throw std::runtime_error(ss.str());
     }
 }
 
@@ -81,7 +82,7 @@ V4D::V4D(const cv::Size& size, const cv::Size& frameBufferSize, bool offscreen,
     assert(
             frameBufferSize_.width >= initialSize_.width
                     && frameBufferSize_.height >= initialSize_.height);
-    mainFramebufferContext_ = new detail::FrameBufferContext(this->getFrameBufferSize(), offscreen, title, major, minor, compat, samples, debug, nullptr, 0);
+    mainFbContext_ = new detail::FrameBufferContext(this->getFrameBufferSize(), offscreen, title, major, minor, compat, samples, debug, nullptr, nullptr);
 
     if(!initializeGUI())
         assert(false);
@@ -101,14 +102,13 @@ V4D::~V4D() {
         delete nvgContext_;
     if (clvaContext_)
         delete clvaContext_;
-    if (mainFramebufferContext_)
-        delete mainFramebufferContext_;
+    if (mainFbContext_)
+        delete mainFbContext_;
 }
 
 bool V4D::initializeGUI() {
     try {
-        glfwMakeContextCurrent(getGLFWWindow());
-
+        FrameBufferContext::GLScope mainGlScope(*mainFbContext_);
         screen_ = new nanogui::Screen();
         screen().initialize(getGLFWWindow(), false);
         form_ = new FormHelper(&screen());
@@ -170,21 +170,40 @@ bool V4D::initializeGUI() {
         }
         );
 
-    //FIXME resize internal buffers?
-    //    glfwSetWindowContentScaleCallback(getGLFWWindow(),
-    //        [](GLFWwindow* glfwWin, float xscale, float yscale) {
-    //        }
-    //    );
-
-        glfwSetFramebufferSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
+        glfwSetWindowSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
             V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-            v4d->screen().resize_callback_event(width, height);
-        });
+            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            int w = mode->width;
+            int h = mode->height;
 
-        clvaContext_ = new detail::CLVAContext(*mainFramebufferContext_);
-        glContext_ = new detail::GLContext(*mainFramebufferContext_);
-        nvgContext_ = new detail::NanoVGContext(*mainFramebufferContext_);
-    } catch(std::exception& ex) {
+//                    v4d->screen().resize_callback_event(width, height);
+            if (width <= w && height <= h) {
+                cerr << "winsize: " << width << ":" << height << endl;
+                v4d->nvgCtx().fbCtx().teardown();
+                v4d->glCtx().fbCtx().teardown();
+                v4d->fbCtx().teardown();
+                v4d->fbCtx().setup(cv::Size(width, height));
+                v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+                v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+            }
+        });
+        glfwSetFramebufferSizeCallback(getGLFWWindow(),
+                [](GLFWwindow* glfwWin, int width, int height) {
+                    V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                    cerr << "fbsize: " << width << ":" << height << endl;
+                    v4d->screen().resize_callback_event(width, height);
+//                    v4d->nvgCtx().fbCtx().teardown();
+//                    v4d->glCtx().fbCtx().teardown();
+//                    v4d->fbCtx().teardown();
+//                    v4d->fbCtx().setup(cv::Size(width, height));
+//                    v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+//                    v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+                });
+        clvaContext_ = new detail::CLVAContext(*mainFbContext_);
+        glContext_ = new detail::GLContext(*mainFbContext_);
+        nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
+    } catch (std::exception& ex) {
         cerr << "V4D initialization failed: " << ex.what() << endl;
         return false;
     }
@@ -192,7 +211,7 @@ bool V4D::initializeGUI() {
 }
 
 cv::ogl::Texture2D& V4D::texture() {
-    return mainFramebufferContext_->getTexture2D();
+    return mainFbContext_->getTexture2D();
 }
 
 FormHelper& V4D::form() {
@@ -212,9 +231,9 @@ bool V4D::keyboard_event(int key, int scancode, int action, int modifiers) {
 }
 
 FrameBufferContext& V4D::fbCtx() {
-    assert(mainFramebufferContext_ != nullptr);
-    mainFramebufferContext_->makeCurrent();
-    return *mainFramebufferContext_;
+    assert(mainFbContext_ != nullptr);
+    mainFbContext_->makeCurrent();
+    return *mainFbContext_;
 }
 
 CLVAContext& V4D::clvaCtx() {
@@ -271,6 +290,7 @@ void V4D::nvg(std::function<void(const cv::Size&)> fn) {
 }
 
 void V4D::nanogui(std::function<void(FormHelper& form)> fn) {
+    FrameBufferContext::GLScope mainGlScope(*mainFbContext_);
     fn(form());
     screen().set_visible(true);
     screen().perform_layout();
@@ -288,8 +308,7 @@ static void do_frame(void* void_fn_ptr) {
 
 void V4D::run(std::function<bool()> fn) {
 #ifndef __EMSCRIPTEN__
-    while (keepRunning() && fn())
-        ;
+    while (keepRunning() && fn());
 #else
     emscripten_set_main_loop_arg(do_frame, &fn, -1, true);
 #endif
@@ -315,13 +334,24 @@ bool V4D::capture() {
 }
 
 bool V4D::capture(std::function<void(cv::UMat&)> fn) {
-    if(futureReader_.valid())
-        if(!futureReader_.get())
+    if(futureReader_.valid()) {
+        if(!futureReader_.get()) {
+#ifndef __EMSCRIPTEN__
             return false;
+#else
+            return true;
+#endif
+        }
+    }
 
     if(nextReaderFrame_.empty()) {
-        if(!clvaCtx().capture(fn, nextReaderFrame_))
+        if(!clvaCtx().capture(fn, nextReaderFrame_)) {
+#ifndef __EMSCRIPTEN__
             return false;
+#else
+            return true;
+#endif
+        }
     }
 
     currentReaderFrame_ = nextReaderFrame_;
@@ -332,7 +362,11 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
     futureReader_ = pool.push([=,this](){
         return clvaCtx().capture(fn, nextReaderFrame_);
     });
+#ifndef __EMSCRIPTEN__
     return captureSuccessful_;
+#else
+    return true;
+#endif
 }
 
 bool V4D::isSourceReady() {
@@ -598,9 +632,9 @@ bool V4D::display() {
         fbCtx().makeCurrent();
         screen().draw_contents();
 #ifndef __EMSCRIPTEN__
-        mainFramebufferContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());
+        mainFbContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());
 #else
-        mainFramebufferContext_->blitFrameBufferToScreen(getViewport(), getInitialSize(), isStretching());
+        mainFbContext_->blitFrameBufferToScreen(getViewport(), getInitialSize(), isStretching());
 #endif
         screen().draw_widgets();
         glfwSwapBuffers(getGLFWWindow());
@@ -622,6 +656,15 @@ void V4D::close() {
 }
 GLFWwindow* V4D::getGLFWWindow() {
     return fbCtx().getGLFWWindow();
+}
+
+void V4D::printSystemInfo() {
+#ifndef __EMSCRIPTEN__
+    CLExecScope_t scope(mainFbContext_->getCLExecContext());
+#endif
+    FrameBufferContext::GLScope mainGlScope(*mainFbContext_);
+    cerr << "OpenGL Version: " << getGlInfo() << endl;
+    cerr << "OpenCL Platforms: " << getClInfo() << endl;
 }
 }
 }

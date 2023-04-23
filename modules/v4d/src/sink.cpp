@@ -6,7 +6,7 @@
 #include "opencv2/v4d/sink.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 
 Sink::Sink(std::function<bool(const cv::UMat&)> consumer) :
         consumer_(consumer) {

@@ -46,7 +46,7 @@ namespace cv {
 /*!
  * Visualization namespace
  */
-namespace viz {
+namespace v4d {
 /*!
  * Private namespace
  */
@@ -98,7 +98,7 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
  */
 #define GL_CHECK(expr)                            \
     expr;                                        \
-    cv::viz::gl_check_error(__FILE__, __LINE__, #expr);
+    cv::v4d::gl_check_error(__FILE__, __LINE__, #expr);
 
 /*!
  * Convenience function to color convert from Scalar to Scalar
@@ -111,7 +111,7 @@ CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCod
 CV_EXPORTS void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
         const cv::Scalar& bgcolor = {0,0,0,255});
 
-using namespace cv::viz::detail;
+using namespace cv::v4d::detail;
 
 class NVG;
 
@@ -124,7 +124,7 @@ class CV_EXPORTS V4D {
     cv::Vec2f mousePos_;
     bool stretch_;
     bool offscreen_;
-    FrameBufferContext* mainFramebufferContext_ = nullptr;
+    FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     GLContext* glContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
@@ -402,6 +402,7 @@ public:
      * @return false if the window is closed.
      */
     CV_EXPORTS bool display();
+    CV_EXPORTS void printSystemInfo();
 private:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.

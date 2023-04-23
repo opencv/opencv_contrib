@@ -5,7 +5,7 @@
 
 int main() {
     using namespace cv;
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     string hr = "Hello Rainbow!";
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Custom Source/Sink");
@@ -58,7 +58,7 @@ int main() {
 
 		//Render "Hello Rainbow!" over the frame
 		v4d->nvg([=](const Size& sz) {
-			using namespace cv::viz::nvg;
+			using namespace cv::v4d::nvg;
 
 			fontSize(40.0f);
 			fontFace("sans-bold");

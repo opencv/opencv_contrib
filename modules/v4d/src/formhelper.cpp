@@ -6,7 +6,7 @@
 #include "opencv2/v4d/formhelper.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 
 FormHelper::FormHelper(nanogui::Screen* screen) :
         nanogui::FormHelper(screen) {
@@ -16,7 +16,7 @@ FormHelper::~FormHelper() {
 }
 
 Dialog* FormHelper::makeDialog(int x, int y, const string& title) {
-    auto* win = new cv::viz::Dialog(m_screen, x, y, title);
+    auto* win = new cv::v4d::Dialog(m_screen, x, y, title);
     this->set_window(win);
     return win;
 }

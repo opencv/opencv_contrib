@@ -6,7 +6,7 @@
 #include "nanovgcontext.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 namespace detail {
 NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), nvgFbContext_(fbContext) {
@@ -14,20 +14,54 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
     CLExecScope_t scope(nvgFbContext_.getCLExecContext());
 #endif
     FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
-    FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
     screen_ = new nanogui::Screen();
     screen_->initialize(nvgFbContext_.getGLFWWindow(), false);
     context_ = screen_->nvg_context();
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
+    {
 #ifndef __EMSCRIPTEN__
-    CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+        CLExecScope_t scope(mainFbContext_.getCLExecContext());
 #endif
-    FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
-    NanoVGContext::Scope nvgScope(*this);
-    cv::viz::nvg::detail::NVG::initializeContext(context_);
-    fn(nvgFbContext_.getSize());
+        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+        fb_.copyTo(preFB_);
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
+        preFB_.copyTo(fb_);
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        NanoVGContext::Scope nvgScope(*this);
+        cv::v4d::nvg::detail::NVG::initializeContext(context_);
+        fn(nvgFbContext_.getSize());
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
+        fb_.copyTo(postFB_);
+    }
+    {
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(mainFbContext_.getCLExecContext());
+#endif
+        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+        postFB_.copyTo(fb_);
+    }
+
 }
 
 void NanoVGContext::begin() {

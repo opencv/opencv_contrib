@@ -4,21 +4,16 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <opencv2/v4d/v4d.hpp>
-//adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
+const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 #endif
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-
-const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;
@@ -30,7 +25,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
         OFFSCREEN, "Cube Demo");
 
 static GLuint load_shader() {
@@ -69,14 +64,14 @@ static GLuint load_shader() {
     }
 )";
 
-    return cv::viz::init_shader(vert.c_str(), frag.c_str(), "fragColor");
+    return cv::v4d::init_shader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
 static void init_scene() {
     glEnable (GL_DEPTH_TEST);
 
     float vertices[] = {
-    // Front face
+            // Front face
             0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
 
             // Back face
@@ -87,7 +82,7 @@ static void init_scene() {
     0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8, };
 
     unsigned short triangle_indices[] = {
-    // Front
+            // Front
             0, 1, 2, 2, 3, 0,
 
             // Right
@@ -140,7 +135,6 @@ static void init_scene() {
 }
 
 static void render_scene() {
-//    glClearColor(0.1, 0.12, 0.2, 1);
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shader_program);
@@ -193,7 +187,8 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 #endif
 
 static bool iteration() {
-    using namespace cv::viz;
+    using namespace cv::v4d;
+
     v4d->capture();
 
     //Render using OpenGL
@@ -228,12 +223,12 @@ int main(int argc, char** argv) {
 #else
 int main() {
 #endif
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
 
-    printSystemInfo();
+    v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);

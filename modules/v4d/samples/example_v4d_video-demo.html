@@ -109,7 +109,11 @@
   </span>
 </span>
   		<canvas id="cameraCanvas" width="1920" height="1080" style="display: none;"></canvas>
-		<video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
+  		<canvas id="canvas1" width="1920" height="1080" ></canvas>
+        <canvas id="canvas2" width="1920" height="1080" ></canvas>
+        <canvas id="canvas3" width="1920" height="1080" ></canvas>
+        <canvas id="canvas4" width="1920" height="1080" ></canvas>
+        <video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -158,8 +162,38 @@
           if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
           console.error(text);
         },
-        canvas: (function() {
+       canvas: (function() {
           var canvas = document.getElementById('canvas');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        canvas1: (function() {
+          var canvas = document.getElementById('canvas1');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        canvas2: (function() {
+          var canvas = document.getElementById('canvas2');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        canvas3: (function() {
+          var canvas = document.getElementById('canvas3');
 
           // As a default initial behavior, pop up an alert when webgl context is lost. To make your
           // application robust, you may want to override this behavior before shipping!

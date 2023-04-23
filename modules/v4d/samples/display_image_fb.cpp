@@ -3,7 +3,7 @@
 
 int main() {
     using namespace cv;
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     //Creates a V4D object for on screen rendering
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Show image");

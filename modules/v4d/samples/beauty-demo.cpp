@@ -48,7 +48,7 @@ bool side_by_side = false;
 bool stretch = false;
 #endif
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
 #ifdef USE_TRACKER
 static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(); //Instead of continues face detection we can use a tracker
@@ -140,7 +140,7 @@ struct FaceFeatures {
 
 //based on the detected FaceFeatures guesses a decent face oval and draws a mask.
 static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
-    using namespace cv::viz::nvg;
+    using namespace cv::v4d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
@@ -155,7 +155,7 @@ static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
 
 //Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
 static void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
-    using namespace cv::viz::nvg;
+    using namespace cv::v4d::nvg;
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         for (size_t j = 5; j < 8; ++j) {
@@ -193,8 +193,8 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
 }
 
 //Setup the gui
-static void setup_gui(cv::Ptr<cv::viz::V4D> v) {
-    v->nanogui([&](cv::viz::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
+    v->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
 
         form.makeGroup("Display");
@@ -403,7 +403,7 @@ int main(int argc, char **argv) {
 #else
 int main() {
 #endif
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     facemark->loadModel("lbfmodel.yaml");
 
@@ -414,8 +414,7 @@ int main() {
         v4d->setVisible(true);
     }
 
-    printSystemInfo();
-
+    v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);

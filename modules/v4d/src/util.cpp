@@ -18,7 +18,7 @@
 #include <csignal>
 
 namespace cv {
-namespace viz {
+namespace v4d {
 unsigned int init_shader(const char* vShader, const char* fShader, const char* outputAttributeName) {
     struct Shader {
         GLenum type;
@@ -153,11 +153,6 @@ bool isClGlSharingSupported() {
     return false;
 }
 
-void printSystemInfo() {
-    cerr << "OpenGL Version: " << getGlInfo() << endl;
-    cerr << "OpenCL Platforms: " << getClInfo() << endl;
-}
-
 /*!
  * Internal variable that signals that finishing all operation is requested
  */
@@ -196,7 +191,7 @@ bool keepRunning() {
  * @param v4d The V4D object to operate on
  * @param graphical if this parameter is true the FPS drawn on display
  */
-void updateFps(cv::Ptr<cv::viz::V4D> v4d, bool graphical) {
+void updateFps(cv::Ptr<cv::v4d::V4D> v4d, bool graphical) {
     static uint64_t cnt = 0;
     static cv::TickMeter tick;
     static float fps;
@@ -316,8 +311,10 @@ Source makeCaptureSource(int width, int height) {
                 cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
                 v.release();
             } else if(length == 0) {
+                frame.setTo(cv::Scalar(255, 0, 0, 255));
                 std::cerr << "Error: empty webcam frame received!" << endl;
             } else {
+                frame.setTo(cv::Scalar(0, 0, 255, 255));
                 std::cerr << "Error: webcam frame size mismatch!" << endl;
             }
         } catch(std::exception& ex) {

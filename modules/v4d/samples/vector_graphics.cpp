@@ -2,14 +2,14 @@
 
 int main() {
     using namespace cv;
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Vector Graphics");
 	v4d->setVisible(true);
 	//Creates a NanoVG context and draws a cross-hair on the framebuffer
 	v4d->nvg([](const Size& sz) {
 		//Calls from this namespace may only be used inside a nvg context
-		using namespace cv::viz::nvg;
+		using namespace cv::v4d::nvg;
 
 		//Draws a cross hair
 		beginPath();

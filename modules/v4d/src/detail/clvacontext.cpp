@@ -8,11 +8,11 @@
 #include "opencv2/v4d/v4d.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 namespace detail {
 
 CLVAContext::CLVAContext(FrameBufferContext& clglContext) :
-        clglContext_(clglContext) {
+        mainFbContext_(clglContext) {
 }
 
 cv::Size CLVAContext::getVideoFrameSize() {
@@ -35,12 +35,12 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& frameBuff
     }
     {
 #ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(clglContext_.getCLExecContext());
+        CLExecScope_t scope(mainFbContext_.getCLExecContext());
 #endif
         if (videoFrame_.empty())
             return false;
 
-        cv::Size fbSize = clglContext_.getSize();
+        cv::Size fbSize = mainFbContext_.getSize();
         resizeKeepAspectRatio(videoFrame_, rgbBuffer_, fbSize);
         cv::cvtColor(rgbBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
 
@@ -52,7 +52,7 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& frameBuff
 void CLVAContext::write(std::function<void(const cv::UMat&)> fn, const cv::UMat& frameBuffer) {
     {
 #ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(clglContext_.getCLExecContext());
+        CLExecScope_t scope(mainFbContext_.getCLExecContext());
 #endif
         cv::cvtColor(frameBuffer, rgbBuffer_, cv::COLOR_BGRA2RGB);
         if(videoFrameSize_ == cv::Size(0,0))

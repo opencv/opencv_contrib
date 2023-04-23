@@ -4,7 +4,6 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <opencv2/v4d/v4d.hpp>
-#include <opencv2/highgui.hpp>
 
 using std::cerr;
 using std::endl;
@@ -18,7 +17,7 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT),
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT),
         cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
@@ -162,12 +161,14 @@ static void load_shader() {
     void determine_color()
     {
         int iter = get_iterations();
-        if (iter != max_iterations) {   
+        if (iter < max_iterations) {   
             float iterations = float(iter) / float(max_iterations);
             //convert to float
             float cb = float(contrast_boost);
     
             outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
+        } else {
+            //outColor = vec4(0,0,0,0);
         }
     }
 
@@ -182,7 +183,7 @@ static void load_shader() {
     cerr << "##### Fragment Shader #####" << endl;
     cerr << frag << endl;
 
-    shader_program_hdl = cv::viz::init_shader(vert.c_str(), frag.c_str(), "fragColor");
+    shader_program_hdl = cv::v4d::init_shader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
 static float easeInOutQuint(float x) {
@@ -204,8 +205,7 @@ static void init_scene(const cv::Size& sz) {
 }
 
 static void render_scene() {
-//    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-//    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
     if (zoom >= 1) {
         zoom_incr = -0.01;
         iterations = 0;
@@ -257,8 +257,8 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 }
 #endif
 
-static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain) {
-    v4dMain->nanogui([](cv::viz::FormHelper& form) {
+static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
+    v4dMain->nanogui([](cv::v4d::FormHelper& form) {
         form.makeDialog(5, 30, "Fractal");
 
         form.makeGroup("Navigation");
@@ -325,16 +325,9 @@ static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain) {
 }
 
 static bool iteration() {
-    //ignore failed capture attempts
     v4d->capture();
-    v4d->fb([](cv::UMat& frameBuffer) {
-        imshow("fb1", frameBuffer);
-        cv::waitKey(1);
-    });
-#ifdef __EMSCRIPTEN__
-    //required in conjunction with emscripten
-    rebind_buffers();
-#endif
+//        return false;
+
     //Render using OpenGL
     v4d->gl(render_scene);
 
@@ -367,14 +360,14 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     try {
-        using namespace cv::viz;
+        using namespace cv::v4d;
 
         if (!v4d->isOffscreen()) {
             v4d->setVisible(true);
             setup_gui(v4d);
         }
 
-        printSystemInfo();
+        v4d->printSystemInfo();
 
         v4d->gl(init_scene);
 
@@ -385,8 +378,8 @@ int main() {
                 FPS, cv::Size(WIDTH, HEIGHT));
         v4d->setSink(sink);
 #else
-        Source src = makeCaptureSource(WIDTH, HEIGHT);
-        v4d->setSource(src);
+//        Source src = makeCaptureSource(WIDTH, HEIGHT);
+//        v4d->setSource(src);
 #endif
 
         v4d->run(iteration);

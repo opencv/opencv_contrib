@@ -29,7 +29,7 @@ using std::endl;
 using std::vector;
 using std::string;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Pedestrian Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Pedestrian Demo");
 static cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
@@ -177,13 +177,12 @@ static bool iteration() {
     }
 
     v4d->clear();
-
     v4d->nvg([&](const cv::Size& sz) {
-        using namespace cv::viz::nvg;
+        using namespace cv::v4d::nvg;
 
         beginPath();
         strokeWidth(std::fmax(2.0, sz.width / 960.0));
-        strokeColor(cv::viz::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
+        strokeColor(cv::v4d::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
         float width = tracked.width * WIDTH_FACTOR;
         float height = tracked.height * HEIGHT_FACTOR;
         float cx = tracked.x * WIDTH_FACTOR + (width / 2.0f);
@@ -217,13 +216,13 @@ int main(int argc, char **argv) {
 #else
 int main() {
 #endif
-    using namespace cv::viz;
+    using namespace cv::v4d;
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     if (!v4d->isOffscreen())
         v4d->setVisible(true);
 
-    printSystemInfo();
+    v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);

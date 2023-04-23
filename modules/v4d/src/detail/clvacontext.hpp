@@ -9,7 +9,7 @@
 #include "framebuffercontext.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 class V4D;
 namespace detail {
 
@@ -17,9 +17,9 @@ namespace detail {
  * Provides a context for OpenCL-VAAPI sharing
  */
 class CLVAContext {
-    friend class cv::viz::V4D;
+    friend class cv::v4d::V4D;
     CLExecContext_t context_;
-    FrameBufferContext& clglContext_;
+    FrameBufferContext& mainFbContext_;
     cv::UMat videoFrame_;
     cv::UMat rgbBuffer_;
     bool hasContext_ = false;

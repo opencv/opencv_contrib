@@ -6,7 +6,7 @@
 #include "opencv2/v4d/source.hpp"
 
 namespace cv {
-namespace viz {
+namespace v4d {
 
 Source::Source(std::function<bool(cv::UMat&)> generator, float fps) :
         generator_(generator), fps_(fps) {

@@ -14,7 +14,7 @@
 #include <string>
 
 namespace cv {
-namespace viz {
+namespace v4d {
 
 using std::string;
 

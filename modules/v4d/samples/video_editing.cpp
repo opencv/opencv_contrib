@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv;
-    using namespace cv::viz;
+    using namespace cv::v4d;
 
     string hv = "Hello Video!";
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Video Editing");
@@ -34,7 +34,7 @@ int main() {
 			return false; //end of input video
 
 		v4d->nvg([=](const Size& sz) {
-			using namespace cv::viz::nvg;
+			using namespace cv::v4d::nvg;
 
 			fontSize(40.0f);
 			fontFace("sans-bold");

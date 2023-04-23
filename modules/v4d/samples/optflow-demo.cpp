@@ -47,9 +47,9 @@ constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
 
-static cv::Ptr<cv::viz::V4D> v4d = cv::viz::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Sparse Optical Flow Demo");
 #ifndef __EMSCRIPTEN__
-static cv::Ptr<cv::viz::V4D> v4dMenu = cv::viz::V4D::make(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
+static cv::Ptr<cv::v4d::V4D> v4d2 = cv::v4d::V4D::make(cv::Size(240, 360), cv::Size(240,360), false, "Display Settings");
 #endif
 
 /** Visualization parameters **/
@@ -193,7 +193,7 @@ static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UM
                     upNextPoints.push_back(pt /= scaleFactor);
                 }
 
-                using namespace cv::viz::nvg;
+                using namespace cv::v4d::nvg;
                 beginPath();
                 strokeWidth(strokeSize);
                 strokeColor(color);
@@ -306,8 +306,8 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
     cv::add(background, post, dst);
 }
 
-static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain, cv::Ptr<cv::viz::V4D> v4dMenu) {
-    v4dMain->nanogui([&](cv::viz::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain, cv::Ptr<cv::v4d::V4D> v4dMenu) {
+    v4dMain->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effects");
 
         form.makeGroup("Foreground");
@@ -378,7 +378,7 @@ static void setup_gui(cv::Ptr<cv::viz::V4D> v4dMain, cv::Ptr<cv::viz::V4D> v4dMe
         form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
     });
 
-    v4dMenu->nanogui([&](cv::viz::FormHelper& form){
+    v4dMenu->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(8, 16, "Display");
 
         form.makeGroup("Display");
@@ -438,6 +438,7 @@ static bool iteration() {
     downPrevGrey = downNextGrey.clone();
 
     v4d->fb([=](cv::UMat& frameBuffer){
+        cv::resize(foreground, foreground, frameBuffer.size());
         //Put it all together (OpenCL)
         composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
 #ifndef __EMSCRIPTEN__
@@ -450,11 +451,11 @@ static bool iteration() {
 #ifndef __EMSCRIPTEN__
     v4d->write();
 
-    v4dMenu->capture([=](cv::UMat& videoFrame) {
+    v4d2->capture([=](cv::UMat& videoFrame) {
         menuFrame.copyTo(videoFrame);
     });
 
-    if(!v4dMenu->display())
+    if(!v4d2->display())
         return false;
 #endif
 
@@ -473,34 +474,37 @@ int main(int argc, char **argv) {
 #else
 int main() {
 #endif
-    using namespace cv::viz;
+    try {
+        using namespace cv::v4d;
 
-    if(!v4d->isOffscreen()) {
-        v4d->setVisible(true);
+        if (!v4d->isOffscreen()) {
+            v4d->setVisible(true);
 #ifndef __EMSCRIPTEN__
-        setup_gui(v4d, v4dMenu);
-        v4dMenu->setResizable(false);
-        v4dMenu->setVisible(true);
+            setup_gui(v4d, v4d2);
+            v4d2->setResizable(false);
+            v4d2->setVisible(true);
 #else
         setup_gui(v4d, v4d);
 #endif
-    }
+        }
 
-    printSystemInfo();
-
+        v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
-    Source src = makeCaptureSource(argv[1]);
-    v4d->setSource(src);
+        Source src = makeCaptureSource(argv[1]);
+        v4d->setSource(src);
 
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
-    v4d->setSink(sink);
+        Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
+                src.fps(), cv::Size(WIDTH, HEIGHT));
+        v4d->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT);
     v4d->setSource(src);
 #endif
 
-    v4d->run(iteration);
-
+        v4d->run(iteration);
+    } catch (std::exception& ex) {
+        cerr << ex.what() << endl;
+    }
     return 0;
 }
