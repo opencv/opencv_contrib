@@ -196,7 +196,7 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
     int available = bits.available();
     // try to repair count data if count data is invalid
     if (count * 8 > available) {
-        count = (available + 7 / 8);
+        count = (available + 7) / 8;
     }
     // avoid reading invalid memory region when no data should be processed
     if (count <= 0) return;
