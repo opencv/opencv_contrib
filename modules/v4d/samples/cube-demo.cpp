@@ -5,9 +5,6 @@
 
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
-#include <cstdio>
-#include <cstdlib>
-#include <cmath>
 
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
@@ -30,7 +27,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT),
         OFFSCREEN, "Cube Demo");
 
 static GLuint load_shader() {
@@ -167,8 +164,11 @@ static void render_scene() {
             -sin(angle), 0.0,cos(angle), 0.0,
             0.0, 0.0, 0.0, 1.0);
 
-    cv::Matx44f rotZMat(cos(angle), -sin(angle), 0.0, 0.0, sin(angle), cos(angle), 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    cv::Matx44f rotZMat(
+            cos(angle), -sin(angle), 0.0, 0.0,
+            sin(angle), cos(angle), 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0);
 
     cv::Matx44f transform = scaleMat * rotXMat * rotYMat * rotZMat;
 
@@ -205,19 +205,18 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 static bool iteration() {
     using namespace cv::v4d;
-    v4d->gl(init_scene);
 
     //Render using OpenGL
     v4d->gl(render_scene);
 
-////If we have OpenCL and maybe even CL-GL sharing then this is faster than the glow shader. Without OpenCL this is very slow.
-//#ifndef __EMSCRIPTEN__
-//    //Aquire the frame buffer for use by OpenCL
-//    v4d->fb([&](cv::UMat& frameBuffer) {
-//        //Glow effect (OpenCL)
-//        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
-//    });
-//#endif
+    //To slow for WASM
+#ifndef __EMSCRIPTEN__
+    //Aquire the frame buffer for use by OpenCL
+    v4d->fb([&](cv::UMat& frameBuffer) {
+        //Glow effect (OpenCL)
+        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+    });
+#endif
 
     updateFps(v4d, true);
 

@@ -11,14 +11,14 @@ using std::endl;
 constexpr long unsigned int WIDTH = 1920;
 constexpr long unsigned int HEIGHT = 1080;
 constexpr bool OFFSCREEN = false;
+const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT),
-        cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Shader Demo");
 
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
@@ -72,21 +72,6 @@ static void load_buffer_data() {
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-//workaround: required with emscripten on every iteration before rendering
-static void rebind_buffers() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
@@ -168,7 +153,7 @@ static void load_shader() {
     
             outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
         } else {
-            //outColor = vec4(0,0,0,0);
+            outColor = vec4(0,0,0,0);
         }
     }
 
@@ -191,6 +176,8 @@ static float easeInOutQuint(float x) {
 }
 
 static void init_scene(const cv::Size& sz) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     load_shader();
     load_buffer_data();
 
@@ -325,8 +312,8 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
 }
 
 static bool iteration() {
-    v4d->capture();
-//        return false;
+    if(!v4d->capture())
+        return false;
 
     //Render using OpenGL
     v4d->gl(render_scene);
@@ -378,8 +365,8 @@ int main() {
                 FPS, cv::Size(WIDTH, HEIGHT));
         v4d->setSink(sink);
 #else
-//        Source src = makeCaptureSource(WIDTH, HEIGHT);
-//        v4d->setSource(src);
+        Source src = makeCaptureSource(WIDTH, HEIGHT);
+        v4d->setSource(src);
 #endif
 
         v4d->run(iteration);

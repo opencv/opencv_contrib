@@ -25,8 +25,8 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(WIDTH, HEIGHT),
-        OFFSCREEN, "Cube Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT),
+        OFFSCREEN, "Video Demo");
 
 static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
@@ -189,7 +189,8 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 static bool iteration() {
     using namespace cv::v4d;
 
-    v4d->capture();
+    if(!v4d->capture())
+        return false;
 
     //Render using OpenGL
     v4d->gl(render_scene);

@@ -25,7 +25,6 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool off
     if(parent_ != nullptr)
         textureID_ = parent_->textureID_;
 #else
-    CV_UNUSED(sharedTexture);
     isShared_ = false;
 #endif
     glfwSetErrorCallback(cv::v4d::glfw_error_callback);
@@ -285,6 +284,9 @@ cv::Size FrameBufferContext::getSize() {
 }
 
 void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
+    if(frameBuffer_.empty())
+        frameBuffer_.create(getSize(), CV_8UC4);
+    cv::resize(frameBuffer_,frameBuffer_, getSize());
 #ifndef __EMSCRIPTEN__
     CLExecScope_t clExecScope(getCLExecContext());
 #endif
@@ -336,7 +338,6 @@ void FrameBufferContext::begin() {
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     GL_CHECK(glViewport(0, 0, frameBufferSize_.width, frameBufferSize_.height));
-
 }
 
 void FrameBufferContext::end() {
@@ -369,8 +370,6 @@ void FrameBufferContext::acquireFromGL(cv::UMat& m) {
     if (clglSharing_) {
         GL_CHECK(fromGLTexture2D(getTexture2D(), m));
     } else {
-        if (m.empty())
-            m.create(getSize(), CV_8UC4);
         download(m);
         GL_CHECK(glFlush());
         GL_CHECK(glFinish());
@@ -385,8 +384,6 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
     if (clglSharing_) {
         GL_CHECK(toGLTexture2D(m, getTexture2D()));
     } else {
-        if (m.empty())
-            m.create(getSize(), CV_8UC4);
         upload(m);
         GL_CHECK(glFlush());
         GL_CHECK(glFinish());

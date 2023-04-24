@@ -1,10 +1,10 @@
 #include <opencv2/v4d/v4d.hpp>
 
-#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
-#else
-int main() {
-#endif
+    //In case of emscripten
+    CV_UNUSED(argc);
+    CV_UNUSED(argv);
+
     using namespace cv;
     using namespace cv::v4d;
 

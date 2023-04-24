@@ -65,26 +65,28 @@ void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size
 }
 
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, bool debug) {
-    cv::Ptr<V4D> v4d = new V4D(size, size, false, title, 4, 6, true, 0, debug);
+    cv::Ptr<V4D> v4d = new V4D(size, false, title, 4, 6, true, 0, debug);
     v4d->setVisible(true);
     return v4d;
 }
 
-cv::Ptr<V4D> V4D::make(const cv::Size& initialSize, const cv::Size& frameBufferSize,
-        bool offscreen, const string& title, int major, int minor, bool compat, int samples, bool debug) {
-    return new V4D(initialSize, frameBufferSize, offscreen, title, major, minor, compat, samples, debug);
+cv::Ptr<V4D> V4D::make(const cv::Size& initialSize, bool offscreen, const string& title, int major,
+        int minor, bool compat, int samples, bool debug) {
+    return new V4D(initialSize, offscreen, title, major, minor, compat, samples, debug);
 }
 
-V4D::V4D(const cv::Size& size, const cv::Size& frameBufferSize, bool offscreen,
-        const string& title, int major, int minor, bool compat, int samples, bool debug) :
-        initialSize_(size), frameBufferSize_(frameBufferSize), viewport_(0, 0,
-                frameBufferSize.width, frameBufferSize.height), scale_(1), mousePos_(0, 0), stretch_(false), offscreen_(offscreen) {
-    assert(
-            frameBufferSize_.width >= initialSize_.width
-                    && frameBufferSize_.height >= initialSize_.height);
-    mainFbContext_ = new detail::FrameBufferContext(this->getFrameBufferSize(), offscreen, title, major, minor, compat, samples, debug, nullptr, nullptr);
+V4D::V4D(const cv::Size& size, bool offscreen, const string& title, int major, int minor,
+        bool compat, int samples, bool debug) :
+        initialSize_(size), viewport_(0, 0, size.width, size.height), scale_(1), mousePos_(0, 0), stretch_(
+                false), offscreen_(offscreen) {
+    mainFbContext_ = new detail::FrameBufferContext(size, offscreen, title,
+            major, minor, compat, samples, debug, nullptr, nullptr);
 
-    if(!initializeGUI())
+    clvaContext_ = new detail::CLVAContext(*mainFbContext_);
+    glContext_ = new detail::GLContext(*mainFbContext_);
+    nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
+
+    if (!initializeGUI())
         assert(false);
 }
 
@@ -108,7 +110,6 @@ V4D::~V4D() {
 
 bool V4D::initializeGUI() {
     try {
-        FrameBufferContext::GLScope mainGlScope(*mainFbContext_);
         screen_ = new nanogui::Screen();
         screen().initialize(getGLFWWindow(), false);
         form_ = new FormHelper(&screen());
@@ -170,39 +171,42 @@ bool V4D::initializeGUI() {
         }
         );
 
-        glfwSetWindowSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
-            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-            int w = mode->width;
-            int h = mode->height;
-
-//                    v4d->screen().resize_callback_event(width, height);
-            if (width <= w && height <= h) {
-                cerr << "winsize: " << width << ":" << height << endl;
-                v4d->nvgCtx().fbCtx().teardown();
-                v4d->glCtx().fbCtx().teardown();
-                v4d->fbCtx().teardown();
-                v4d->fbCtx().setup(cv::Size(width, height));
-                v4d->glCtx().fbCtx().setup(cv::Size(width, height));
-                v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
-            }
-        });
+//        glfwSetWindowSizeCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int width, int height) {
+//            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//            GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+//            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+//            int w = mode->width;
+//            int h = mode->height;
+//
+////                    v4d->screen().resize_callback_event(width, height);
+//            if (width <= w && height <= h) {
+//                cerr << "winsize: " << width << ":" << height << endl;
+//                v4d->nvgCtx().fbCtx().teardown();
+//                v4d->glCtx().fbCtx().teardown();
+//                v4d->fbCtx().teardown();
+//                v4d->fbCtx().setup(cv::Size(width, height));
+//                v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+//                v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+//            }
+//        });
         glfwSetFramebufferSizeCallback(getGLFWWindow(),
                 [](GLFWwindow* glfwWin, int width, int height) {
                     V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                    cerr << "fbsize: " << width << ":" << height << endl;
                     v4d->screen().resize_callback_event(width, height);
-//                    v4d->nvgCtx().fbCtx().teardown();
-//                    v4d->glCtx().fbCtx().teardown();
-//                    v4d->fbCtx().teardown();
-//                    v4d->fbCtx().setup(cv::Size(width, height));
-//                    v4d->glCtx().fbCtx().setup(cv::Size(width, height));
-//                    v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+                    cv::Rect& vp = v4d->viewport();
+                    vp.x = 0;
+                    vp.y = 0;
+                    vp.width = width;
+                    vp.height = height;
+#ifndef __EMSCRIPTEN__
+                    v4d->nvgCtx().fbCtx().teardown();
+                    v4d->glCtx().fbCtx().teardown();
+                    v4d->fbCtx().teardown();
+                    v4d->fbCtx().setup(cv::Size(width, height));
+                    v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+                    v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+#endif
                 });
-        clvaContext_ = new detail::CLVAContext(*mainFbContext_);
-        glContext_ = new detail::GLContext(*mainFbContext_);
-        nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
     } catch (std::exception& ex) {
         cerr << "V4D initialization failed: " << ex.what() << endl;
         return false;
@@ -517,7 +521,7 @@ float V4D::getScale() {
     return scale_;
 }
 
-cv::Rect V4D::getViewport() {
+cv::Rect& V4D::viewport() {
     return viewport_;
 }
 
@@ -529,7 +533,7 @@ cv::Size V4D::getNativeFrameBufferSize() {
 }
 
 cv::Size V4D::getFrameBufferSize() {
-    return frameBufferSize_;
+    return fbCtx().getSize();
 }
 
 cv::Size V4D::getWindowSize() {
@@ -630,11 +634,12 @@ bool V4D::display() {
     bool result = true;
     if (!offscreen_) {
         fbCtx().makeCurrent();
+        GL_CHECK(glViewport(0, 0, getFrameBufferSize().width, getFrameBufferSize().height));
         screen().draw_contents();
 #ifndef __EMSCRIPTEN__
-        mainFbContext_->blitFrameBufferToScreen(getViewport(), getWindowSize(), isStretching());
+        mainFbContext_->blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
 #else
-        mainFbContext_->blitFrameBufferToScreen(getViewport(), getInitialSize(), isStretching());
+        mainFbContext_->blitFrameBufferToScreen(viewport(), getInitialSize(), isStretching());
 #endif
         screen().draw_widgets();
         glfwSwapBuffers(getGLFWWindow());

@@ -26,7 +26,7 @@ int main() {
 	});
 
 	v4d->run([&]() {
-		v4d->clear();
+        v4d->clear();
 		//Render the text at the center of the screen
 		v4d->nvg([&](const Size& sz) {
 			using namespace cv::v4d::nvg;

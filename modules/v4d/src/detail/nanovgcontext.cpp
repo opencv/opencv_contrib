@@ -10,32 +10,24 @@ namespace v4d {
 namespace detail {
 NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), nvgFbContext_(fbContext) {
-#ifndef __EMSCRIPTEN__
-    CLExecScope_t scope(nvgFbContext_.getCLExecContext());
-#endif
-    FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
     screen_ = new nanogui::Screen();
     screen_->initialize(nvgFbContext_.getGLFWWindow(), false);
     context_ = screen_->nvg_context();
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
+#ifdef __EMSCRIPTEN__
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
         fb_.copyTo(preFB_);
     }
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
         preFB_.copyTo(fb_);
     }
+#endif
     {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(nvgFbContext_.getCLExecContext());
@@ -45,23 +37,18 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
         fn(nvgFbContext_.getSize());
     }
+#ifdef __EMSCRIPTEN__
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
         fb_.copyTo(postFB_);
     }
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
         postFB_.copyTo(fb_);
     }
-
+#endif
 }
 
 void NanoVGContext::begin() {

@@ -109,10 +109,6 @@
   </span>
 </span>
   		<canvas id="cameraCanvas" width="1920" height="1080" style="display: none;"></canvas>
-        <canvas id="canvas1" width="1920" height="1080" style="display: none;"></canvas>
-        <canvas id="canvas2" width="1920" height="1080" style="display: none;"></canvas>
-        <canvas id="canvas3" width="1920" height="1080" style="display: none;"></canvas>
-        <canvas id="canvas4" width="1920" height="1080" style="display: none;"></canvas>
 		<video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
@@ -128,10 +124,6 @@
     <script type='text/javascript'>
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
-      var canvas1 = document.getElementById('canvas1');
-      var canvas2 = document.getElementById('canvas2');
-      var canvas3 = document.getElementById('canvas3');
-      var canvas4 = document.getElementById('canvas4');
 
       function fixCanvasSize() {
           Module.canvas.style.width = (1920 / window.devicePixelRatio)+ "px";
@@ -169,48 +161,6 @@
         },
         canvas: (function() {
           var canvas = document.getElementById('canvas');
-          canvas.addEventListener("resize", function(e) {
-            console.log(e);
-            var w = canvas.width;
-            var h = canvas.height;
-            canvas1.width = w;
-            canvas1.height = h;
-            canvas2.width = w;
-            canvas2.height = h;
-            canvas3.width = w;
-            canvas3.height = h;
-            canvas4.width = w;
-            canvas4.height = h;
-          }, false);
-          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-          // application robust, you may want to override this behavior before shipping!
-          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-
-          return canvas;
-        })(),
-        canvas1: (function() {
-          var canvas = document.getElementById('canvas1');
-
-          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-          // application robust, you may want to override this behavior before shipping!
-          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-
-          return canvas;
-        })(),
-        canvas2: (function() {
-          var canvas = document.getElementById('canvas2');
-
-          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-          // application robust, you may want to override this behavior before shipping!
-          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-
-          return canvas;
-        })(),
-        canvas3: (function() {
-          var canvas = document.getElementById('canvas3');
 
           // As a default initial behavior, pop up an alert when webgl context is lost. To make your
           // application robust, you may want to override this behavior before shipping!

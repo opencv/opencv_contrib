@@ -13,25 +13,18 @@ GLContext::GLContext(FrameBufferContext& fbContext) :
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {
-//    cv::UMat tmp;
+#ifdef __EMSCRIPTEN__
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
         fb_.copyTo(preFB_);
     }
-//        cvtColor(preFB_, tmp, cv::COLOR_BGRA2GRAY);
-//        cerr << "nz1: " << cv::countNonZero(tmp) << endl;
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(glFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope glGlScope(glFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(glFbContext_, fb_);
         preFB_.copyTo(fb_);
     }
+#endif
     {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(glFbContext_.getCLExecContext());
@@ -39,24 +32,18 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
         FrameBufferContext::GLScope glScope(glFbContext_);
         fn(glFbContext_.getSize());
     }
+#ifdef __EMSCRIPTEN__
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(glFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope glScope(glFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(glFbContext_, fb_);
         fb_.copyTo(postFB_);
     }
-//    cvtColor(postFB_, tmp, cv::COLOR_BGRA2GRAY);
-//    cerr << "nz2: " << cv::countNonZero(tmp) << endl;
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-#endif
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
         postFB_.copyTo(fb_);
     }
+#endif
 }
 
 FrameBufferContext& GLContext::fbCtx() {
