@@ -198,6 +198,8 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
     if (count * 8 > available) {
         count = (available + 7 / 8);
     }
+    // avoid reading invalid memory region when no data should be processed
+    if (count <= 0) return;
 
     ArrayRef<char> bytes_(count);
     char* readBytes = &(*bytes_)[0];
