@@ -60,11 +60,7 @@ FrameBufferContext::FrameBufferContext(const cv::Size& frameBufferSize, bool off
     glfwWindowHint(GLFW_ALPHA_BITS, 8);
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
-#ifndef __EMSCRIPTEN__
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-#else
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-#endif
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
 //    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);

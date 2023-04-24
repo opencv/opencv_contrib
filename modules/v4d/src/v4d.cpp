@@ -358,7 +358,7 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
         }
     }
 
-    currentReaderFrame_ = nextReaderFrame_;
+    currentReaderFrame_ = nextReaderFrame_.clone();
     fb([=,this](cv::UMat frameBuffer) {
         currentReaderFrame_.copyTo(frameBuffer);
     });

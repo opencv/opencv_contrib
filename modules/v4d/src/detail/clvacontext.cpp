@@ -64,7 +64,7 @@ void CLVAContext::write(std::function<void(const cv::UMat&)> fn, const cv::UMat&
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(context_);
 #endif
-        fn(videoFrame_);
+        fn(videoFrame_.clone());
     }
 }
 
