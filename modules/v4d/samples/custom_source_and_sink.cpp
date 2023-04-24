@@ -12,7 +12,7 @@ int main() {
     v4d->setVisible(true);
 	//Make a Source that generates rainbow frames.
 	Source src([](cv::UMat& frame){
-	    //The source is responsible for initializing the frame. The frame stays allocated, which make create have no effect in further iterations.
+	    //The source is responsible for initializing the frame. The frame stays allocated, which makes create() have no effect in further iterations.
 	    frame.create(Size(1280, 720), CV_8UC3);
 	    frame = colorConvert(Scalar(int((cv::getTickCount() / cv::getTickFrequency()) * 50)  % 180, 128, 128, 255), COLOR_HLS2BGR);
 	    return true;
