@@ -116,7 +116,8 @@ using namespace cv::v4d::detail;
 class NVG;
 
 class CV_EXPORTS V4D {
-    friend class NanoVGContext;
+    friend class detail::NanoVGContext;
+    friend class detail::FrameBufferContext;
     const cv::Size initialSize_;
     cv::Rect viewport_;
     float scale_;

@@ -41,7 +41,7 @@ public:
      * Creates a OpenGL Context
      * @param fbContext The framebuffer context
      */
-    GLContext(FrameBufferContext& fbContext);
+    GLContext(V4D& v4d, FrameBufferContext& fbContext);
     /*!
      * Execute function object fn inside a gl context.
      * The context takes care of setting up opengl states.

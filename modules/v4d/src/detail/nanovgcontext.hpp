@@ -65,7 +65,7 @@ public:
      * @param context The native NVGContext
      * @param fbContext The framebuffer context
      */
-    NanoVGContext(FrameBufferContext& fbContext);
+    NanoVGContext(V4D& v4d, FrameBufferContext& fbContext);
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.

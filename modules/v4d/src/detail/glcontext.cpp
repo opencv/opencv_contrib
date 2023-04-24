@@ -8,12 +8,15 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-GLContext::GLContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), glFbContext_(fbContext) {
+GLContext::GLContext(V4D& v4d, FrameBufferContext& fbContext) :
+        mainFbContext_(fbContext), glFbContext_(v4d, fbContext) {
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {
 #ifdef __EMSCRIPTEN__
+    fb_.create(mainFbContext_.getSize(), CV_8UC4);
+    preFB_.create(mainFbContext_.getSize(), CV_8UC4);
+    postFB_.create(mainFbContext_.getSize(), CV_8UC4);
     {
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);

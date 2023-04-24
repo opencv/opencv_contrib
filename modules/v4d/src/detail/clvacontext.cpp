@@ -11,8 +11,8 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-CLVAContext::CLVAContext(FrameBufferContext& clglContext) :
-        mainFbContext_(clglContext) {
+CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) :
+        mainFbContext_(mainFbContext) {
 }
 
 cv::Size CLVAContext::getVideoFrameSize() {

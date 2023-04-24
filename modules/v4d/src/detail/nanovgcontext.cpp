@@ -8,8 +8,8 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_(fbContext) {
+NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
+        mainFbContext_(fbContext), nvgFbContext_(v4d, fbContext) {
     screen_ = new nanogui::Screen();
     screen_->initialize(nvgFbContext_.getGLFWWindow(), false);
     context_ = screen_->nvg_context();

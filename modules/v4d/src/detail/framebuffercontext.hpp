@@ -143,10 +143,10 @@ public:
      * Create a FrameBufferContext with given size.
      * @param frameBufferSize The frame buffer size.
      */
-    FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
+    FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
 
-    FrameBufferContext(const FrameBufferContext& other);
+    FrameBufferContext(V4D& v4d, const FrameBufferContext& other);
 
     /*!
      * Default destructor.
