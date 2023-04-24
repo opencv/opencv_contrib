@@ -66,10 +66,11 @@ void DecodedBitStreamParser::append(std::string& result, string const& in,
 void DecodedBitStreamParser::append(std::string& result, const char* bufIn, size_t nIn,
                                     ErrorHandler& err_handler) {
     if (err_handler.ErrCode()) return;
-#ifndef NO_ICONV_INSIDE
-    if (nIn == 0) {
+    // avoid null pointer exception
+    if (nIn == 0 || bufIn == nullptr) {
         return;
     }
+#ifndef NO_ICONV_INSIDE
     iconv_t cd;
     // cout<<src<<endl;
     cd = iconv_open(StringUtils::UTF8, src);
