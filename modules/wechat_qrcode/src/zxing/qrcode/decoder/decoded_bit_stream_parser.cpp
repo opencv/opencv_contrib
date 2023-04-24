@@ -190,7 +190,6 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
                                                CharacterSetECI* currentCharacterSetECI,
                                                ArrayRef<ArrayRef<char> >& byteSegments,
                                                ErrorHandler& err_handler) {
-    int nBytes = count;
     BitSource& bits(*bits_);
     // Don't crash trying to read more bits than we have available.
     int available = bits.available();
@@ -198,8 +197,9 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
     if (count * 8 > available) {
         count = (available + 7 / 8);
     }
+    size_t nBytes = count;
 
-    ArrayRef<char> bytes_(count);
+    ArrayRef<char> bytes_(nBytes);
     char* readBytes = &(*bytes_)[0];
     for (int i = 0; i < count; i++) {
         //    readBytes[i] = (char) bits.readBits(8);
