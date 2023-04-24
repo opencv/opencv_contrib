@@ -13,5 +13,5 @@ In the previous tutorial we used a default video source and a video sink to stre
 
 @include samples/custom_source_and_sink.cpp
 
-![The result](doc/custom_source_and_sink.png)
+![The result](doc/custom_source_and_sink.gif)
 

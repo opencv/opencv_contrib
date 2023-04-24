@@ -11,26 +11,19 @@ int main() {
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Custom Source/Sink");
     v4d->setVisible(true);
 	//Make a Source that generates rainbow frames.
-	Source src([=](cv::UMat& frame){
-        static long cnt = 0;
-
-	    if(frame.empty())
-	        frame.create(v4d->getFrameBufferSize(), CV_8UC3);
-	    frame = colorConvert(Scalar(cnt % 180, 128, 128, 255), COLOR_HLS2BGR);
-
-	    ++cnt;
-	    if(cnt > std::numeric_limits<long>().max() / 2.0)
-	        cnt = 0;
+	Source src([](cv::UMat& frame){
+	    //The source is responsible for initializing the frame. The frame stays allocated, which make create have no effect in further iterations.
+	    frame.create(Size(1280, 720), CV_8UC3);
+	    frame = colorConvert(Scalar(int((cv::getTickCount() / cv::getTickFrequency()) * 50)  % 180, 128, 128, 255), COLOR_HLS2BGR);
 	    return true;
 	}, 60.0f);
 
 	//Make a Sink the saves each frame to a PNG file.
 	Sink sink([](const cv::UMat& frame){
         static long cnt = 0;
-
 	    try {
 #ifndef __EMSCRIPTEN__
-	        imwrite(std::to_string(cnt) + ".png", frame);
+	        imwrite(std::to_string(cnt++) + ".png", frame);
 #else
 	        CV_UNUSED(frame);
 #endif
@@ -38,12 +31,6 @@ int main() {
 	        cerr << "Unable to write frame: " << ex.what() << endl;
 	        return false;
 	    }
-
-        ++cnt;
-        if(cnt > std::numeric_limits<long>().max() / 2.0) {
-            cnt = 0;
-        }
-
         return true;
 	});
 
