@@ -65,12 +65,12 @@ void DecodedBitStreamParser::append(std::string& result, string const& in,
 
 void DecodedBitStreamParser::append(std::string& result, const char* bufIn, size_t nIn,
                                     ErrorHandler& err_handler) {
-    if (err_handler.ErrCode()) return;
     // avoid null pointer exception
-    if (nIn == 0 || bufIn == nullptr) {
+    if (err_handler.ErrCode() || bufIn == nullptr) return;
+#ifndef NO_ICONV_INSIDE
+    if (nIn == 0) {
         return;
     }
-#ifndef NO_ICONV_INSIDE
     iconv_t cd;
     // cout<<src<<endl;
     cd = iconv_open(StringUtils::UTF8, src);
@@ -201,6 +201,10 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
     size_t nBytes = count;
 
     ArrayRef<char> bytes_(nBytes);
+    // issue https://github.com/opencv/opencv_contrib/issues/3478
+    if (bytes_->empty())
+        return;
+
     char* readBytes = &(*bytes_)[0];
     for (int i = 0; i < count; i++) {
         //    readBytes[i] = (char) bits.readBits(8);
