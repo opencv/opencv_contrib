@@ -286,6 +286,17 @@ TEST_P(Objdetect_QRCode_Multi, regression) {
     }
 }
 
+TEST(Objdetect_QRCode_bug, issue_3478) {
+    auto detector = wechat_qrcode::WeChatQRCode();
+    std::string image_path = findDataFile("qrcode/issue_3478.png");
+    Mat src = imread(image_path, IMREAD_GRAYSCALE);
+    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
+    std::vector<std::string> outs = detector.detectAndDecode(src);
+    ASSERT_EQ(1, outs.size());
+    ASSERT_EQ(16, outs[0].size());
+    ASSERT_EQ("KFCVW50         ", outs[0]);
+}
+
 TEST(Objdetect_QRCode_points_position, rotate45) {
     string path_detect_prototxt, path_detect_caffemodel, path_sr_prototxt, path_sr_caffemodel;
     string model_version = "_2021-01";
