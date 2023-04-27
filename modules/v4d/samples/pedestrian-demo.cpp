@@ -9,8 +9,8 @@
 
 #include <string>
 
-constexpr unsigned int WIDTH = 1920;
-constexpr unsigned int HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1280;
+constexpr unsigned int HEIGHT = 720;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr unsigned int DOWNSIZE_WIDTH = 640;
 constexpr unsigned int DOWNSIZE_HEIGHT = 360;

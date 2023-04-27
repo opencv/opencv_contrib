@@ -10,7 +10,7 @@
 
 Optical flow visualization on top of a video. Uses background subtraction (OpenCV/OpenCL) to isolate areas with motion, detects features to track (OpenCV/OpenCL), calculates the optical flow (OpenCV/OpenCL), uses nanovg for rendering (OpenGL) and post-processes the video (OpenCL). Decodes/encodes on the GPU (VAAPI).
 
-@youtube{k-NA6R9SBvo}
+\htmlinclude "../samples/example_v4d_optflow-demo.html"
 
 @include samples/optflow-demo.cpp
 

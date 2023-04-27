@@ -5,8 +5,8 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
-constexpr unsigned int WIDTH = 1920;
-constexpr unsigned int HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1280;
+constexpr unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
@@ -134,27 +134,27 @@ static bool iteration() {
     if (!v4d->capture())
         return false;
 
-    v4d->fb([&](cv::UMat &frameBuffer) {
-        cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
-    });
-
-    //Color-conversion from RGB to HSV. (OpenCL)
-    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
-
-    //split the channels
-    split(hsv,hsvChannels);
-    //Set the current hue
-    hsvChannels[0].setTo(hue);
-    //merge the channels back
-    merge(hsvChannels,hsv);
-
-    //Color-conversion from HSV to RGB. (OpenCL)
-    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
-
-    //Color-conversion from RGB to BGRA. (OpenCL)
-    v4d->fb([&](cv::UMat &frameBuffer) {
-        cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
-    });
+//    v4d->fb([&](cv::UMat &frameBuffer) {
+//        cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
+//    });
+//
+//    //Color-conversion from RGB to HSV. (OpenCL)
+//    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+//
+//    //split the channels
+//    split(hsv,hsvChannels);
+//    //Set the current hue
+//    hsvChannels[0].setTo(hue);
+//    //merge the channels back
+//    merge(hsvChannels,hsv);
+//
+//    //Color-conversion from HSV to RGB. (OpenCL)
+//    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+//
+//    //Color-conversion from RGB to BGRA. (OpenCL)
+//    v4d->fb([&](cv::UMat &frameBuffer) {
+//        cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
+//    });
 
     //Render using nanovg
     v4d->nvg([&](const cv::Size &sz) {
@@ -167,9 +167,7 @@ static bool iteration() {
     v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v4d->display())
-        return false;
-    return true;
+    return v4d->display();
 }
 
 #ifndef __EMSCRIPTEN__

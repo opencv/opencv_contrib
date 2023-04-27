@@ -3,22 +3,94 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
+#include <opencv2/imgcodecs.hpp>
 #include "opencv2/v4d/util.hpp"
-
 #include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/nvg.hpp"
 
+
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
-#  include <fstream>
+#  include <SDL/SDL.h>
+#  include <SDL/SDL_image.h>
+#  include <SDL/SDL_stdinc.h>
 #else
 # include <opencv2/core/ocl.hpp>
 #endif
 
 #include <csignal>
+#include <thread>
 
 namespace cv {
 namespace v4d {
+namespace detail {
+    long proxy_to_mainl(std::function<long()> fn) {
+    #ifdef __EMSCRIPTEN__
+        long (*ptr)() = cv::v4d::detail::get_fn_ptr<0>(fn);
+
+        return emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_I, ptr);
+    #else
+        return fn();
+    #endif
+    }
+
+    void proxy_to_mainv(std::function<void()> fn) {
+    #ifdef __EMSCRIPTEN__
+        void (*ptr)() = cv::v4d::detail::get_fn_ptr<0>(fn);
+
+        emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, ptr);
+    #else
+        fn();
+    #endif
+    }
+
+    bool proxy_to_mainb(std::function<bool()> fn) {
+    #ifdef __EMSCRIPTEN__
+        bool (*ptr)() = cv::v4d::detail::get_fn_ptr<0>(fn);
+
+        return emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, ptr);
+    #else
+        return fn();
+    #endif
+    }
+}
+#ifdef __EMSCRIPTEN__
+Mat read_image(const string &path) {
+    SDL_Surface *loadedSurface = IMG_Load(path.c_str());
+    Mat result;
+    if (loadedSurface == NULL) {
+        printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(),
+        IMG_GetError());
+    } else {
+        if (loadedSurface->w == 0 && loadedSurface->h == 0) {
+            std::cerr << "Empty image loaded" << std::endl;
+            SDL_FreeSurface(loadedSurface);
+            return Mat();
+        }
+        if(loadedSurface->format->BytesPerPixel == 1) {
+            result = Mat(loadedSurface->h, loadedSurface->w, CV_8UC1, (unsigned char*) loadedSurface->pixels, loadedSurface->pitch).clone();
+            cvtColor(result,result, COLOR_GRAY2BGR);
+        } else if(loadedSurface->format->BytesPerPixel == 3) {
+            result = Mat(loadedSurface->h, loadedSurface->w, CV_8UC3, (unsigned char*) loadedSurface->pixels, loadedSurface->pitch).clone();
+            if(loadedSurface->format->Rmask == 0x0000ff)
+                cvtColor(result,result, COLOR_RGB2BGR);
+        } else if(loadedSurface->format->BytesPerPixel == 4) {
+            result = Mat(loadedSurface->h, loadedSurface->w, CV_8UC4, (unsigned char*) loadedSurface->pixels, loadedSurface->pitch).clone();
+            if(loadedSurface->format->Rmask == 0x000000ff)
+                cvtColor(result,result, COLOR_RGBA2BGR);
+            else
+                cvtColor(result,result, COLOR_RGBA2RGB);
+        } else {
+            std::cerr << "Unsupported image depth" << std::endl;
+            SDL_FreeSurface(loadedSurface);
+            return Mat();
+        }
+        SDL_FreeSurface(loadedSurface);
+    }
+    return result;
+}
+#endif
+
 unsigned int init_shader(const char* vShader, const char* fShader, const char* outputAttributeName) {
     struct Shader {
         GLenum type;
@@ -271,6 +343,7 @@ Sink makeWriterSink(const string& outputFilename, const int fourcc, const float 
             cv::VideoWriter::fourcc('V', 'P', '9', '0'), fps, frameSize);
 
     return Sink([=](const cv::UMat& frame) {
+        cv::resize(frame, frame, frameSize);
         (*writer) << frame;
         return writer->isOpened();
     });
@@ -295,11 +368,9 @@ Source makeCaptureSource(int width, int height) {
     using namespace std;
     static cv::Mat tmp(height, width, CV_8UC4);
 
-    return Source([=](cv::OutputArray& array) {
+    return Source([=](cv::UMat& frame) {
         try {
-            cv::UMat frame = array.getUMat();
-            if (frame.empty())
-                frame.create(cv::Size(width, height), CV_8UC3);
+            frame.create(cv::Size(width, height), CV_8UC3);
             std::ifstream fs("v4d_rgba_canvas.raw", std::fstream::in | std::fstream::binary);
             fs.seekg(0, std::ios::end);
             auto length = fs.tellg();
@@ -311,10 +382,10 @@ Source makeCaptureSource(int width, int height) {
                 cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
                 v.release();
             } else if(length == 0) {
-                frame.setTo(cv::Scalar(255, 0, 0, 255));
+//                frame.setTo(cv::Scalar(0, 0, 0, 255));
                 std::cerr << "Error: empty webcam frame received!" << endl;
             } else {
-                frame.setTo(cv::Scalar(0, 0, 255, 255));
+//                frame.setTo(cv::Scalar(0, 0, 0, 255));
                 std::cerr << "Error: webcam frame size mismatch!" << endl;
             }
         } catch(std::exception& ex) {

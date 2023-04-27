@@ -25,8 +25,8 @@ using std::string;
 #endif
 
 /** Application parameters **/
-constexpr unsigned int WIDTH = 1920;
-constexpr unsigned int HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1280;
+constexpr unsigned int HEIGHT = 720;
 constexpr double SCALE = 0.125; //Scale at which face detection is performed
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__

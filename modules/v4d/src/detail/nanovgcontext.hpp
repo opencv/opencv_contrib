@@ -12,17 +12,11 @@
 #include <emscripten.h>
 #endif
 
-#ifndef OPENCV_V4D_USE_ES3
-#define NANOGUI_USE_OPENGL
-#else
-#define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION 3
-#endif
+namespace nanogui {
+    class Screen;
+}
 
-#include <nanogui/opengl.h>
-#include "opencv2/v4d/util.hpp"
-#include "opencv2/v4d/nvg.hpp"
-
+struct NVGcontext;
 namespace cv {
 namespace v4d {
 namespace detail {
@@ -30,6 +24,7 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class NanoVGContext {
+    V4D& v4d_;
     nanogui::Screen* screen_;
     NVGcontext* context_;
     FrameBufferContext& mainFbContext_;
@@ -66,6 +61,8 @@ public:
      * @param fbContext The framebuffer context
      */
     NanoVGContext(V4D& v4d, FrameBufferContext& fbContext);
+    void init();
+
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=2.0, user-scalable=no">
-    <title>Video Editing</title>
+    <title>Video Editing Example</title>
     <style>
       body {
         font-family: arial;
@@ -108,8 +108,8 @@
   <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
-  		<canvas id="cameraCanvas" width="1920" height="1080" style="display: none;"></canvas>
-		<video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
+  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
+		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -119,24 +119,26 @@
 
     
     <div class="emscripten_border">
-      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+      <canvas class="emscripten" width="1280" height="720" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
     <script type='text/javascript'>
-
-      function fixCanvasSize() {
-          Module.canvas.style.width = (Module.canvas.width / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = (Module.canvas.height / window.devicePixelRatio) + "px";
-      }
-
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
 
+      function fixCanvasSize() {
+          Module.canvas.style.width = (1280 / window.devicePixelRatio)+ "px";
+          Module.canvas.style.height = (720 / window.devicePixelRatio) + "px";
+          Module.canvas.width = 1280;
+          Module.canvas.height = 720;
+      }
+
       var Module = {
         onRuntimeInitialized: function() {
-          fixCanvasSize();
         },
         preRun: [],
-        postRun: [],
+        postRun: function() {
+          fixCanvasSize();
+        },
         print: (function() {
           var element = document.getElementById('output');
           if (element) element.value = ''; // clear browser cache
@@ -238,6 +240,7 @@
         Module.requestFullscreen(false, false)
       });
 
+
        window.addEventListener('fullscreenchange', function (event) {
           if (document.fullscreenElement) {
               console.log(`Element: ${document.fullscreenElement.id} entered fullscreen mode.`);
@@ -247,6 +250,7 @@
           }
       });
     </script>
+    <script async type="text/javascript" src="/example_v4d_video_editing/get.php?res=example_v4d_video_editing.js"></script>
     <script async type="text/javascript" src="example_v4d_video_editing.js"></script>
   </body>
 </html>

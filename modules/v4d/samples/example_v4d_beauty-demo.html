@@ -122,14 +122,15 @@
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
     <script type='text/javascript'>
-
-      function fixCanvasSize() {
-          Module.canvas.style.width = (Module.canvas.width / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = (Module.canvas.height / window.devicePixelRatio) + "px";
-      }
-
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
+
+      function fixCanvasSize() {
+          Module.canvas.style.width = (1920 / window.devicePixelRatio)+ "px";
+          Module.canvas.style.height = (1080 / window.devicePixelRatio) + "px";
+          Module.canvas.width = 1920;
+          Module.canvas.height = 1080;
+      }
 
       var Module = {
         onRuntimeInitialized: function() {
@@ -247,6 +248,7 @@
           }
       });
     </script>
+    <script async type="text/javascript" src="/example_v4d_beauty-demo/get.php?res=example_v4d_beauty-demo.js"></script>
     <script async type="text/javascript" src="example_v4d_beauty-demo.js"></script>
   </body>
 </html>

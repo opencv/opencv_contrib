@@ -6,8 +6,8 @@
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
-constexpr long unsigned int WIDTH = 1920;
-constexpr long unsigned int HEIGHT = 1080;
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;

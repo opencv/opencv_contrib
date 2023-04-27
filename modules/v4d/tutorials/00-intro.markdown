@@ -75,8 +75,10 @@ v4d->gl([](const Size sz) {
 # Tutorials
 The tutorials are designed to be read one after the other to give you a good overview over the key concepts of V4D. After that you can move on to the samples.
 
-* \ref v4d_display_image
+* \ref v4d_display_image_pipeline
+* \ref v4d_display_image_fb
 * \ref v4d_vector_graphics
+* \ref v4d_vector_graphics_and_fb
 * \ref v4d_render_opengl
 * \ref v4d_font_rendering
 * \ref v4d_video_editing

@@ -9,15 +9,20 @@ int main() {
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Show image");
     v4d->setVisible(true);
 	//Read an image as UMat
-	UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
-	UMat resized;
-	//Resize the image to framebuffer size
-	resize(image, resized, v4d->getFrameBufferSize());
-	v4d->fb([&](const UMat& framebuffer) {
-		//Color convert the resized UMat. The framebuffer has alpha.
-		cvtColor(resized, framebuffer, COLOR_RGB2BGRA);
-	});
+#ifdef __EMSCRIPTEN__
+    UMat image = read_image("doc/lena.png").getUMat(ACCESS_READ);
+#else
+    UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
+#endif
+    UMat resized;
+	//Resize and color convert the image to framebuffer size
+    v4d->fb([&](const UMat& framebuffer) {
+        resize(image, resized, v4d->getFrameBufferSize());
+        cvtColor(resized, framebuffer, COLOR_RGB2BGRA);
+    });
 	//Display the framebuffer in the native window in an endless loop
-	v4d->run([=](){ return v4d->display(); });
+	v4d->run([=](){
+		return v4d->display();
+	});
 }
 

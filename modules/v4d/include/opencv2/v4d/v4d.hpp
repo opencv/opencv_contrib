@@ -6,6 +6,23 @@
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
 
+#define GL_GLEXT_PROTOTYPES 1
+#include <GLFW/glfw3.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
+#ifndef OPENCV_V4D_USE_ES3
+#  ifndef NANOGUI_USE_OPENGL
+#    define NANOGUI_USE_OPENGL
+#  endif
+#else
+#  ifndef NANOGUI_USE_GLES
+#    define NANOGUI_USE_GLES
+#    define NANOGUI_GLES_VERSION 3
+#  endif
+#endif
+
+#include <nanogui/opengl.h>
+
 #include "source.hpp"
 #include "sink.hpp"
 #include "dialog.hpp"
@@ -19,17 +36,9 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
-#include "cxxpool.hpp"
+#include "detail/threadpool.hpp"
 
-#ifndef OPENCV_V4D_USE_ES3
-#  include <GL/glew.h>
-#  define GLFW_INCLUDE_GLCOREARB
-#else
-#  define GLFW_INCLUDE_ES3
-#  define GLFW_INCLUDE_GLEXT
-#endif
-#include <GLFW/glfw3.h>
-#include <nanogui/nanogui.h>
+
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -55,6 +64,7 @@ class FrameBufferContext;
 class CLVAContext;
 class GLContext;
 class NanoVGContext;
+class NanoguiContext;
 
 /*!
  * The GFLW error callback.
@@ -75,7 +85,7 @@ bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p);
  * @param parent The parent widget
  * @param widgets A vector of widgets of type T to append newly found widgets to.
  */
-template<typename T> void find_widgets(nanogui::Widget* parent, std::vector<T>& widgets) {
+template<typename T> void find_widgets(const nanogui::Widget* parent, std::vector<T>& widgets) {
     T w;
     for (auto* child : parent->children()) {
         find_widgets(child, widgets);
@@ -108,7 +118,7 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
  */
 CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
 
-CV_EXPORTS void resizeKeepAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
+CV_EXPORTS void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
         const cv::Scalar& bgcolor = {0,0,0,255});
 
 using namespace cv::v4d::detail;
@@ -119,27 +129,27 @@ class CV_EXPORTS V4D {
     friend class detail::NanoVGContext;
     friend class detail::FrameBufferContext;
     const cv::Size initialSize_;
+    bool offscreen_;
+    const string& title_;
+    int major_;
+    int minor_;
+    bool compat_;
+    int samples_;
+    bool debug_;
     cv::Rect viewport_;
     float scale_;
     cv::Vec2f mousePos_;
     bool stretch_;
-    bool offscreen_;
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     GLContext* glContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
-    cv::VideoCapture* capture_ = nullptr;
-    cv::VideoWriter* writer_ = nullptr;
-    FormHelper* form_ = nullptr;
+    NanoguiContext* nguiContext_ = nullptr;
     bool closed_ = false;
-    cv::Size videoFrameSize_ = cv::Size(0, 0);
-    int vaCaptureDeviceIndex_ = 0;
-    int vaWriterDeviceIndex_ = 0;
     bool mouseDrag_ = false;
-    nanogui::Screen* screen_ = nullptr;
     Source source_;
     Sink sink_;
-    cxxpool::thread_pool pool{2}; //two threads. one for reading and one for writing
+    concurrent::threadpool pool_;
     bool captureSuccessful_ = true;
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
@@ -172,11 +182,12 @@ public:
      * @param debug Create a debug OpenGL context.
      */
     CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize, bool offscreen, const string& title, int major = 3,
-            int minor = 2, bool compat = false, int samples = 0, bool debug = false);
+            int minor = 2, bool compat = false, int samples = 0, bool debug = true);
     /*!
      * Default destructor
      */
     CV_EXPORTS virtual ~V4D();
+    CV_EXPORTS void init();
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
@@ -311,6 +322,7 @@ public:
      * Set the window size.
      * @param sz The new window size.
      */
+    CV_EXPORTS void resizeWindow(const cv::Size& sz);
     CV_EXPORTS void setWindowSize(const cv::Size& sz);
     /*!
      * Get the window size
@@ -414,11 +426,10 @@ private:
     cv::Vec2f getMousePosition();
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
-    nanogui::Screen& screen();
-    FormHelper& form();
     FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
+    NanoguiContext& nguiCtx();
     GLContext& glCtx();
     GLFWwindow* getGLFWWindow();
 };

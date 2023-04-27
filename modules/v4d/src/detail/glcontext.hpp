@@ -7,22 +7,10 @@
 #define SRC_OPENCV_GLCONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
-#include <nanogui/nanogui.h>
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
-
-#ifndef OPENCV_V4D_USE_ES3
-#define NANOGUI_USE_OPENGL
-#else
-#define NANOGUI_USE_GLES
-#define NANOGUI_GLES_VERSION 3
-#endif
-
-#include <nanogui/opengl.h>
-#include "opencv2/v4d/util.hpp"
-#include "opencv2/v4d/nvg.hpp"
 
 namespace cv {
 namespace v4d {

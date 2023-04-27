@@ -12,18 +12,19 @@ int main() {
     v4d->setVisible(true);
 	//Make a Source that generates rainbow frames.
 	Source src([](cv::UMat& frame){
+		static long cnt = 0;
 	    //The source is responsible for initializing the frame. The frame stays allocated, which makes create() have no effect in further iterations.
-	    frame.create(Size(1280, 720), CV_8UC3);
-	    frame = colorConvert(Scalar(int((cv::getTickCount() / cv::getTickFrequency()) * 50)  % 180, 128, 128, 255), COLOR_HLS2BGR);
+		frame.create(Size(1280, 720), CV_8UC3);
+	    frame = colorConvert(Scalar(++cnt % 180, 128, 128, 255), COLOR_HLS2BGR);
 	    return true;
 	}, 60.0f);
 
 	//Make a Sink the saves each frame to a PNG file.
 	Sink sink([](const cv::UMat& frame){
-        static long cnt = 0;
 	    try {
 #ifndef __EMSCRIPTEN__
-	        imwrite(std::to_string(cnt++) + ".png", frame);
+			static long cnt = 0;
+			imwrite(std::to_string(cnt++) + ".png", frame);
 #else
 	        CV_UNUSED(frame);
 #endif
@@ -53,6 +54,7 @@ int main() {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
+		updateFps(v4d,true);
 		v4d->write(); //Write video to the Sink
 		return v4d->display(); //Display the framebuffer in the native window
 	});

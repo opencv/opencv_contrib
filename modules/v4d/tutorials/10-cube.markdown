@@ -10,7 +10,7 @@
 
 Renders a rainbow cube on white background using OpenGL, applies a glow effect using OpenCV (OpenCL) and encodes on the GPU (VAAPI).
 
-@youtube{Q73CqfxU8KU}
+\htmlinclude "../samples/example_v4d_cube-demo.html"
 
 @include samples/cube-demo.cpp
 

@@ -10,7 +10,7 @@ macro(add_emscripten_sample sample source)
     ocv_add_executable(${sample} ${source})
     ocv_target_include_modules(${sample} opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann)
     ocv_target_link_libraries(${sample} LINK_PRIVATE opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs
-    opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann nanogui ${GLEW_LIBRARIES})
+    opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann nanogui)
     target_link_directories(${sample} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
     target_compile_features(${sample} PRIVATE cxx_std_20)
     set_target_properties(${sample} PROPERTIES SUFFIX ".js")
@@ -23,13 +23,25 @@ endmacro()
 
 macro(add_binary_sample sample)
     target_compile_features(${sample} PRIVATE cxx_std_20)
-    target_link_libraries(${sample} PRIVATE nanogui GLEW::glew OpenGL::GL)
+    target_link_directories(${sample} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
+    target_include_directories(${sample} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
+    target_link_libraries(${sample} PRIVATE nanogui OpenGL::GL)
 endmacro()
 
 if(EMSCRIPTEN)
-  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_LD_FLAGS} -sINITIAL_MEMORY=512MB -sTOTAL_MEMORY=512MB -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
+  set(EM_LINKER_FLAGS "-sPROXY_TO_PTHREAD=1 --use-preload-plugins --preload-file doc/lena.png -sINITIAL_MEMORY=128MB -sALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2")
+  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${EM_LINKER_FLAGS}")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${EM_LINKER_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EM_LINKER_FLAGS}")
+
+
+  # if(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  #   set(EM_DEBUG_FLAGS "-fsanitize=address -sSTACK_OVERFLOW_CHECK=2 -sASSERTIONS=2 -sNO_DISABLE_EXCEPTION_CATCHING -sEXCEPTION_DEBUG=1")
+  #   set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${EM_DEBUG_FLAGS}")
+  #   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${EM_DEBUG_FLAGS}")
+  #   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EM_DEBUG_FLAGS}")
+  #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+  # endif()
 else()
   if(NOT GLEW_FOUND)
     message(STATUS "Module opencv_v4d disabled because GLEW was not found")
@@ -65,14 +77,19 @@ endif()
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/nanovg/src/")
-# include_directories(${GLEW_INCLUDE_DIRS})
-# link_directories(${GLEW_LIBRARY_DIRS})
 
 ocv_add_module(v4d opencv_core opencv_imgproc opencv_videoio opencv_video)
 ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_create_module()
 ocv_add_samples(opencv_core opencv_imgproc opencv_videoio opencv_video opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn opencv_flann)
+
+add_custom_command(
+  TARGET ${the_module} POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy
+    "${CMAKE_CURRENT_LIST_DIR}/doc/lena.png"
+    "${CMAKE_CURRENT_BINARY_DIR}/doc/lena.png")
+
 
 if(BUILD_EXAMPLES)
   if(EMSCRIPTEN)
@@ -95,7 +112,7 @@ if(BUILD_EXAMPLES)
     add_emscripten_sample(example_v4d_shader-demo samples/shader-demo.cpp)
     add_emscripten_sample(example_v4d_pedestrian-demo samples/pedestrian-demo.cpp)
     add_emscripten_sample(example_v4d_optflow-demo samples/optflow-demo.cpp)
-    add_emscripten_sample(example_v4d_beauty-demo samples/beauty-demo.cpp)
+    # add_emscripten_sample(example_v4d_beauty-demo samples/beauty-demo.cpp)
   else()
     add_binary_sample(example_v4d_display_image)
     add_binary_sample(example_v4d_custom_source_and_sink)
@@ -135,17 +152,17 @@ else()
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
-
 add_library(nanovg "third/nanogui/ext/nanovg/src/nanovg.c")
 target_compile_features(opencv_v4d PRIVATE cxx_std_20)
 target_compile_features(nanogui PRIVATE cxx_std_20)
 target_compile_features(nanovg PRIVATE cxx_std_20)
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-enum-enum-conversion)
-target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../lib")
+target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
+target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
 
 if(EMSCRIPTEN)
   ocv_target_link_libraries(${the_module} -lnanogui)
 else()
-  ocv_target_link_libraries(${the_module} -lOpenCL -lnanogui OpenGL::OpenGL GLEW::glew)
+  ocv_target_link_libraries(${the_module} -lOpenCL -lnanogui OpenGL::OpenGL)
 endif()

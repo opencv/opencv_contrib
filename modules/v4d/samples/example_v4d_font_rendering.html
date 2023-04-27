@@ -105,11 +105,11 @@
   </head>
   <body>
       <span id='controls'>
-  <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
+  <span><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
-  		<canvas id="cameraCanvas" width="1920" height="1080" style="display: none;"></canvas>
-		<video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
+  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
+		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -122,21 +122,23 @@
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
     <script type='text/javascript'>
-
-      function fixCanvasSize() {
-          Module.canvas.style.width = (Module.canvas.width / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = (Module.canvas.height / window.devicePixelRatio) + "px";
-      }
-
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
 
+      function fixCanvasSize() {
+          Module.canvas.style.width = (1280 / window.devicePixelRatio)+ "px";
+          Module.canvas.style.height = (720 / window.devicePixelRatio) + "px";
+          Module.canvas.width = 1280;
+          Module.canvas.height = 720;
+      }
+
       var Module = {
         onRuntimeInitialized: function() {
-          fixCanvasSize();
         },
         preRun: [],
-        postRun: [],
+        postRun: function() {
+          fixCanvasSize();
+        },
         print: (function() {
           var element = document.getElementById('output');
           if (element) element.value = ''; // clear browser cache
@@ -206,7 +208,6 @@
       };
 
       let fsButton = document.querySelector("#fullscreenBtn");
-      let cameraBtn = document.querySelector("#captureBtn");
       let videoElement = document.querySelector("#video");
       let cameraCanvas = document.querySelector("#cameraCanvas");
 
@@ -228,12 +229,6 @@
           requestAnimationFrame(runCapture);
       }
 
-      cameraBtn.addEventListener('click', async function() {
-          let stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-          videoElement.srcObject = stream;
-          runCapture();
-      });
-
       fsButton.addEventListener('click', async function () {
         Module.requestFullscreen(false, false)
       });
@@ -247,6 +242,7 @@
           }
       });
     </script>
+    <script async type="text/javascript" src="/example_v4d_font_rendering/get.php?res=example_v4d_font_rendering.js"></script>
     <script async type="text/javascript" src="example_v4d_font_rendering.js"></script>
   </body>
 </html>

@@ -10,7 +10,8 @@
 ## Font rendering with form based GUI
 Draws "Hello World" to the screen and let's you control the font size and color with a GUI based on FormHelper.
 
+\htmlinclude "../samples/example_v4d_font_with_gui.html"
+
 @include samples/font_with_gui.cpp
 
-![The result](doc/font_with_gui.png)
 

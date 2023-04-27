@@ -1,6 +1,10 @@
 #include <opencv2/v4d/v4d.hpp>
 #include <opencv2/imgcodecs.hpp>
 
+#ifdef __EMSCRIPTEN__
+#  include <fstream>
+#endif
+
 int main() {
     using namespace cv;
     using namespace cv::v4d;
@@ -9,13 +13,18 @@ int main() {
 	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Show image");
     v4d->setVisible(true);
 	//An image
+#ifdef __EMSCRIPTEN__
+    Mat image = read_image("doc/lena.png");
+#else
 	Mat image = imread(samples::findFile("lena.jpg"));
-	//Feeds the image to the video pipeline
-	v4d->feed(image);
-
+#endif
 	//Display the framebuffer in the native window in an endless loop.
     //V4D::run() though it takes a functor is not a context. It is simply an abstraction
     //of a run loop for portability reasons and executes the functor until the application
     //terminates or the functor returns false.
-	v4d->run([=](){ return v4d->display(); });
+	v4d->run([=](){
+	    //Feeds the image to the video pipeline
+	    v4d->feed(image);
+	    return v4d->display();
+    });
 }

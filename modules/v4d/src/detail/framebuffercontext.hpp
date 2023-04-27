@@ -15,23 +15,16 @@
 #  else
 #    include <CL/cl_gl.h>
 #  endif
-#endif
-
-#ifndef OPENCV_V4D_USE_ES3
-#  include <GL/glew.h>
-#  define GLFW_INCLUDE_GLCOREARB
 #else
-#  define GLFW_INCLUDE_ES3
-#  define GLFW_INCLUDE_GLEXT
+#  include <emscripten/threading.h>
 #endif
 
-#include <GLFW/glfw3.h>
 #include <opencv2/core/ocl.hpp>
-#include <opencv2/core/opengl.hpp>
 #include <iostream>
 
 #include "opencv2/v4d/util.hpp"
 
+struct GLFWwindow;
 namespace cv {
 namespace v4d {
 class V4D;
@@ -43,10 +36,15 @@ typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
  * The FrameBufferContext acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
  */
 class FrameBufferContext {
+    typedef unsigned int GLuint;
+    typedef signed int GLint;
+
     friend class CLVAContext;
     friend class GLContext;
     friend class NanoVGContext;
+    friend class NanoguiContext;
     friend class cv::v4d::V4D;
+    V4D* v4d_ = nullptr;
     bool offscreen_;
     string title_;
     int major_;
@@ -64,8 +62,10 @@ class FrameBufferContext {
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
 #endif
+    cv::Size windowSize_;
     cv::Size frameBufferSize_;
     bool isShared_ = false;
+    GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
@@ -100,6 +100,15 @@ public:
         FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
+#ifdef __EMSCRIPTEN__
+    static void glacquire(FrameBufferContext* ctx, cv::UMat* m) {
+        ctx->acquireFromGL(*m);
+    }
+
+    static void glrelease(FrameBufferContext* ctx, cv::UMat* m) {
+        ctx->releaseToGL(*m);
+    }
+#endif
         /*!
          * Aquires the framebuffer via cl-gl sharing.
          * @param ctx The corresponding #FrameBufferContext.
@@ -107,15 +116,33 @@ public:
          */
         FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m) {
+#ifdef __EMSCRIPTEN__
+            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VII, glacquire, &ctx_, &m_);
+#else
             ctx_.acquireFromGL(m_);
+#endif
         }
         /*!
          * Releases the framebuffer via cl-gl sharing.
          */
         ~FrameBufferScope() {
+#ifdef __EMSCRIPTEN__
+            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VII, glrelease, &ctx_, &m_);
+#else
             ctx_.releaseToGL(m_);
+#endif
         }
     };
+
+#ifdef __EMSCRIPTEN__
+    static void glbegin(FrameBufferContext* ctx) {
+        ctx->begin();
+    }
+
+    static void glend(FrameBufferContext* ctx) {
+        ctx->end();
+    }
+#endif
 
     /*!
      * Setups and tears-down OpenGL states.
@@ -129,13 +156,21 @@ public:
          */
         GLScope(FrameBufferContext& ctx) :
                 ctx_(ctx) {
+#ifdef __EMSCRIPTEN__
+            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VI, glbegin, &ctx_);
+#else
             ctx_.begin();
+#endif
         }
         /*!
          * Tear-down OpenGL states.
          */
         ~GLScope() {
+#ifdef __EMSCRIPTEN__
+            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VI, glend, &ctx_);
+#else
             ctx_.end();
+#endif
         }
     };
 
@@ -146,13 +181,14 @@ public:
     FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
 
-    FrameBufferContext(V4D& v4d, const FrameBufferContext& other);
+    FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other);
 
     /*!
      * Default destructor.
      */
     virtual ~FrameBufferContext();
 
+    void init();
     void setup(const cv::Size& sz);
     void teardown();
     /*!
@@ -179,16 +215,23 @@ public:
      * @return The pixel ratio of the display y-axis.
      */
     CV_EXPORTS float getYPixelRatio();
-    /*!
-     * In case several V4D objects are in use all objects not in use have to
-     * call #makeNoneCurrent() and only the one to be active call #makeCurrent().
-     */
     CV_EXPORTS void makeCurrent();
+    CV_EXPORTS void makeNoneCurrent();
+    CV_EXPORTS bool isResizable();
+    CV_EXPORTS void setResizable(bool r);
     /*!
      * To make it possible for other V4D objects to become current all other
      * V4D instances have to become non-current.
      */
-    CV_EXPORTS void makeNoneCurrent();
+    CV_EXPORTS void setWindowSize(const cv::Size& sz);
+    CV_EXPORTS cv::Size getWindowSize();
+    CV_EXPORTS void resizeWindow(const cv::Size& sz);
+    CV_EXPORTS bool isFullscreen();
+    CV_EXPORTS void setFullscreen(bool f);
+    CV_EXPORTS cv::Size getNativeFrameBufferSize();
+    CV_EXPORTS void setVisible(bool v);
+    CV_EXPORTS bool isVisible();
+
 protected:
     /*!
      * Setup OpenGL states.
@@ -222,6 +265,7 @@ protected:
      * The UMat used to copy or bind (depending on cl-gl sharing capability) the OpenGL framebuffer.
      */
     cv::UMat frameBuffer_;
+    cv::UMat tmpBuffer_;
     /*!
      * The texture bound to the OpenGL framebuffer.
      */

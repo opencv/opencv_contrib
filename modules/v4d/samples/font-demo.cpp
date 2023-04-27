@@ -16,8 +16,8 @@
 #endif
 
 /** Application parameters **/
-constexpr unsigned int WIDTH = 1920;
-constexpr unsigned int HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1280;
+constexpr unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "font-demo.mkv";

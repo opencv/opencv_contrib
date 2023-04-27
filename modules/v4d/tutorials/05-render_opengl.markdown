@@ -11,7 +11,8 @@
 ## Render a blue screen using OpenGL
 This example simply paints the screen blue using OpenGL without shaders for brevity.
 
+\htmlinclude "../samples/example_v4d_render_opengl.html"
+
 @include samples/render_opengl.cpp
 
-![The result](doc/render_opengl.png)
 

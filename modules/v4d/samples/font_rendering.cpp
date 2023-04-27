@@ -22,6 +22,9 @@ int main() {
 	});
 
     //Display the framebuffer in the native window in an endless loop
-    v4d->run([=](){ return v4d->display(); });
+    v4d->run([=](){
+		updateFps(v4d,true);
+		return v4d->display();
+	});
 }
 

@@ -4,68 +4,61 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "clvacontext.hpp"
-
 #include "opencv2/v4d/v4d.hpp"
 
 namespace cv {
 namespace v4d {
 namespace detail {
 
-CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) :
-        mainFbContext_(mainFbContext) {
+CLVAContext::CLVAContext(V4D& v4d, FrameBufferContext& mainFbContext) :
+        mainFbContext_(mainFbContext), clvaFbContext_(v4d, "CLVA", mainFbContext) {
 }
 
 cv::Size CLVAContext::getVideoFrameSize() {
-    assert(videoFrameSize_ == cv::Size(0, 0) || "Video frame size not initialized");
-    return videoFrameSize_;
+    assert(inputVideoFrameSize_ == cv::Size(0, 0) || "Video frame size not initialized");
+    return inputVideoFrameSize_;
 }
 
-bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& frameBuffer) {
-    {
-        if (!context_.empty()) {
+cv::UMat CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
+    cv::Size fbSize = fbCtx().getSize();
+    if (!context_.empty()) {
+        {
 #ifndef __EMSCRIPTEN__
             CLExecScope_t scope(context_);
 #endif
-            fn(videoFrame_);
-            videoFrameSize_ = videoFrame_.size();
-        } else {
-            fn(videoFrame_);
-            videoFrameSize_ = videoFrame_.size();
+            fn(readFrame_);
         }
-    }
-    {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-#endif
-        if (videoFrame_.empty())
-            return false;
+        if (readFrame_.empty())
+            return {};
+        inputVideoFrameSize_ = readFrame_.size();
 
-        cv::Size fbSize = mainFbContext_.getSize();
-        resizeKeepAspectRatio(videoFrame_, rgbBuffer_, fbSize);
-        cv::cvtColor(rgbBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
-
-        assert(frameBuffer.size() == fbSize);
+        fbCtx().execute([this](cv::UMat& frameBuffer) {
+            resizePreserveAspectRatio(readFrame_, readRGBBuffer_, frameBuffer.size());
+            cv::cvtColor(readRGBBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
+        });
+    } else {
+        fn(readFrame_);
+        if (readFrame_.empty())
+            return {};
+        inputVideoFrameSize_ = readFrame_.size();
+        fbCtx().execute([this](cv::UMat& frameBuffer) {
+            resizePreserveAspectRatio(readFrame_, readRGBBuffer_, frameBuffer.size());
+            cv::cvtColor(readRGBBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
+        });
     }
-    return true;
+
+    return readRGBBuffer_;
 }
 
-void CLVAContext::write(std::function<void(const cv::UMat&)> fn, const cv::UMat& frameBuffer) {
-    {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-#endif
-        cv::cvtColor(frameBuffer, rgbBuffer_, cv::COLOR_BGRA2RGB);
-        if(videoFrameSize_ == cv::Size(0,0))
-            videoFrameSize_ = rgbBuffer_.size();
-        cv::resize(rgbBuffer_, videoFrame_, videoFrameSize_);
-    }
-    assert(videoFrame_.size() == videoFrameSize_);
-    {
+void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
+        fbCtx().execute([=,this](cv::UMat& frameBuffer) {
+            frameBuffer.copyTo(writeFrame_);
+        });
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(context_);
 #endif
-        fn(videoFrame_.clone());
-    }
+        cv::cvtColor(writeFrame_, writeRGBBuffer_, cv::COLOR_BGRA2RGB);
+        fn(writeRGBBuffer_);
 }
 
 bool CLVAContext::hasContext() {
@@ -80,6 +73,10 @@ void CLVAContext::copyContext() {
 
 CLExecContext_t CLVAContext::getCLExecContext() {
     return context_;
+}
+
+FrameBufferContext& CLVAContext::fbCtx() {
+    return clvaFbContext_;
 }
 }
 }

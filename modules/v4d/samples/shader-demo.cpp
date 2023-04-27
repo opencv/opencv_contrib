@@ -8,8 +8,8 @@
 using std::cerr;
 using std::endl;
 
-constexpr long unsigned int WIDTH = 1920;
-constexpr long unsigned int HEIGHT = 1080;
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
@@ -119,8 +119,8 @@ static void load_shader() {
 
     int get_iterations()
     {
-        float pointr = (((gl_FragCoord.x / 1080.0f) - 0.5f) * zoom + center_x) * 5.0f;
-        float pointi = (((gl_FragCoord.y / 1080.0f) - 0.5f) * zoom + center_y) * 5.0f;
+        float pointr = (((gl_FragCoord.x / 720.0f) - 0.5f) * zoom + center_x) * 5.0f;
+        float pointi = (((gl_FragCoord.y / 720.0f) - 0.5f) * zoom + center_y) * 5.0f;
         const float four = 4.0f;
 
         int iterations = 0;

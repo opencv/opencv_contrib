@@ -39,8 +39,8 @@ enum PostProcModes {
 
 /** Application parameters **/
 
-constexpr unsigned int WIDTH = 1920;
-constexpr unsigned int HEIGHT = 1080;
+constexpr unsigned int WIDTH = 1280;
+constexpr unsigned int HEIGHT = 720;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 #ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
@@ -477,6 +477,8 @@ int main() {
     try {
         using namespace cv::v4d;
 
+        v4d->printSystemInfo();
+
         if (!v4d->isOffscreen()) {
             v4d->setVisible(true);
 #ifndef __EMSCRIPTEN__
@@ -487,8 +489,6 @@ int main() {
         setup_gui(v4d, v4d);
 #endif
         }
-
-        v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
         Source src = makeCaptureSource(argv[1]);

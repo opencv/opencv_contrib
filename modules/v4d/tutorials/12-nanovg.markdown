@@ -10,6 +10,6 @@
 
 Renders a color wheel on top of an input-video using nanovg (OpenGL), does colorspace conversions using OpenCV (OpenCL) and decodes/encodes on the GPU (VAAPI).
 
-@youtube{tLI_DywdPM4}
+\htmlinclude "../samples/example_v4d_nanovg-demo.html"
 
 @include samples/nanovg-demo.cpp

@@ -1,6 +1,7 @@
 #include <opencv2/v4d/v4d.hpp>
 
 int main(int argc, char** argv) {
+    try {
     //In case of emscripten
     CV_UNUSED(argc);
     CV_UNUSED(argv);
@@ -15,8 +16,8 @@ int main(int argc, char** argv) {
     //Make the video source
     Source src = makeCaptureSource(argv[1]);
 
-	//Make the video sink
-	Sink sink = makeWriterSink(argv[2], VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), v4d->getFrameBufferSize());
+    //Make the video sink
+    Sink sink = makeWriterSink(argv[2], VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), v4d->getFrameBufferSize());
 
     //Attach source and sink
     v4d->setSource(src);
@@ -42,8 +43,14 @@ int main(int argc, char** argv) {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
 		});
+		updateFps(v4d,true);
+
 		v4d->write(); //Write video to the Sink
+
 		return v4d->display(); //Display the framebuffer in the native window
 	});
+    } catch(std::exception& ex) {
+        cerr << ex.what() << endl;
+    }
 }
 

@@ -4,15 +4,41 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "nanovgcontext.hpp"
+#include "opencv2/v4d/util.hpp"
+#include "opencv2/v4d/nvg.hpp"
 
 namespace cv {
 namespace v4d {
 namespace detail {
+#if !defined(GL_RGBA_FLOAT_MODE)
+#  define GL_RGBA_FLOAT_MODE 0x8820
+#endif
+
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten/threading.h>
+
+static void initmenvg(NanoVGContext* initiatenvg) {
+    initiatenvg->init();
+}
+#endif
+
 NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_(v4d, fbContext) {
+        v4d_(v4d), screen_(nullptr), context_(nullptr), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext) {
+#ifdef __EMSCRIPTEN__
+    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VI, initmenvg, this);
+#else
+    init();
+#endif
+}
+
+void NanoVGContext::init() {
+    fbCtx().makeCurrent();
     screen_ = new nanogui::Screen();
-    screen_->initialize(nvgFbContext_.getGLFWWindow(), false);
+    screen_->initialize(fbCtx().getGLFWWindow(), false);
     context_ = screen_->nvg_context();
+    fbCtx().resizeWindow(fbCtx().getSize());
+    fbCtx().makeNoneCurrent();
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
@@ -29,13 +55,13 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
     }
 #endif
     {
-#ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(nvgFbContext_.getCLExecContext());
-#endif
-        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+        FrameBufferContext::GLScope glScope(fbCtx());
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
-        fn(nvgFbContext_.getSize());
+        fn(fbCtx().getSize());
+//        fbCtx().makeCurrent();
+//        fbCtx().blitFrameBufferToScreen(cv::Rect(0,0, fbCtx().getSize().width, fbCtx().getSize().height), fbCtx().getSize(), false);
+//        glfwSwapBuffers(fbCtx().getGLFWWindow());
     }
 #ifdef __EMSCRIPTEN__
     {
@@ -61,7 +87,6 @@ void NanoVGContext::begin() {
 //FIXME mirroring with text somehow doesn't work
 //    nvgTranslate(context_, 0, h);
 //    nvgScale(context_, 1, -1);
-    GL_CHECK(glViewport(0, 0, w, h));
 }
 
 void NanoVGContext::end() {

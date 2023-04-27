@@ -8,18 +8,6 @@
 
 #include "v4d.hpp"
 
-#ifndef OPENCV_V4D_USE_ES3
-#  ifndef NANOGUI_USE_OPENGL
-#    define NANOGUI_USE_OPENGL
-#  endif
-#else
-#  ifndef NANOGUI_USE_GLES
-#    define NANOGUI_USE_GLES
-#    define NANOGUI_GLES_VERSION 3
-#  endif
-#endif
-#include <nanogui/opengl.h>
-
 namespace cv {
 namespace v4d {
 /*!

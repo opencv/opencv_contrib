@@ -5,8 +5,8 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
-constexpr long unsigned int WIDTH = 1920;
-constexpr long unsigned int HEIGHT = 1080;
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
@@ -206,11 +206,13 @@ static bool iteration() {
 
     updateFps(v4d, true);
 
-    v4d->write();
+
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     if (!v4d->display())
         return false;
+
+    v4d->write();
 
     return true;
 }

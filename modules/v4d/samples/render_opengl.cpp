@@ -4,7 +4,8 @@ int main() {
     using namespace cv;
     using namespace cv::v4d;
 
-    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Blue Screen");
+    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "GL Blue Screen", true);
+    v4d->printSystemInfo();
     v4d->setVisible(true);
 
 	v4d->run([=]() {
@@ -13,7 +14,7 @@ int main() {
 		    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 		});
-
+		updateFps(v4d,true);
 		//If onscreen rendering is enabled it displays the framebuffer in the native window.
 		//Returns false if the window was closed.
 		return v4d->display();
