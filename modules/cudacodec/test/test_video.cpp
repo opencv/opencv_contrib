@@ -230,14 +230,15 @@ CUDA_TEST_P(Scaling, Reader)
         static_cast<int>(params.targetSz.width * targetRoiIn.width), static_cast<int>(params.targetSz.height * targetRoiIn.height));
 
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
+    const cudacodec::FormatInfo format = reader->format();
+    ASSERT_TRUE(format.valid);
     ASSERT_TRUE(reader->set(cudacodec::ColorFormat::GRAY));
     GpuMat frame;
     ASSERT_TRUE(reader->nextFrame(frame));
-    const cudacodec::FormatInfo format = reader->format();
     Size targetSzOut = params.targetSz;
     Rect srcRoiOut = params.srcRoi, targetRoiOut = params.targetRoi;
     ForceAlignment(srcRoiOut, targetRoiOut, targetSzOut);
-    ASSERT_TRUE(format.valid && format.targetSz == targetSzOut && format.srcRoi == srcRoiOut && format.targetRoi == targetRoiOut);
+    ASSERT_TRUE(format.targetSz == targetSzOut && format.srcRoi == srcRoiOut && format.targetRoi == targetRoiOut);
     ASSERT_TRUE(frame.size() == targetSzOut);
     GpuMat frameGs;
     cv::cuda::resize(frameOr(srcRoiOut), frameGs, targetRoiOut.size(), 0, 0, INTER_AREA);
@@ -310,8 +311,6 @@ CUDA_TEST_P(Video, Reader)
         double colorFormat;
         ASSERT_TRUE(reader->get(cudacodec::VideoReaderProps::PROP_COLOR_FORMAT, colorFormat) && static_cast<cudacodec::ColorFormat>(colorFormat) == formatToChannels.first);
         ASSERT_TRUE(reader->nextFrame(frame));
-        if(!fmt.valid)
-            fmt = reader->format();
         const int height = formatToChannels.first == cudacodec::ColorFormat::NV_NV12 ? static_cast<int>(1.5 * fmt.height) : fmt.height;
         ASSERT_TRUE(frame.cols == fmt.width && frame.rows == height);
         ASSERT_FALSE(frame.empty());
@@ -326,6 +325,7 @@ CUDA_TEST_P(ColorConversion, Reader)
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + get<0>(GET_PARAM(2));
     const bool videoFullRangeFlag = get<1>(GET_PARAM(2));
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    cv::cudacodec::FormatInfo fmt = reader->format();
     reader->set(colorFormat);
     cv::VideoCapture cap(inputFile);
 
@@ -336,8 +336,8 @@ CUDA_TEST_P(ColorConversion, Reader)
         reader->nextFrame(frame);
         frame.download(frameFromDevice);
         cap.read(frameHost);
-        const cv::cudacodec::FormatInfo fmt = reader->format();
-        ASSERT_TRUE(fmt.valid && fmt.videoFullRangeFlag == videoFullRangeFlag);
+        fmt = reader->format();
+        ASSERT_TRUE(fmt.videoFullRangeFlag == videoFullRangeFlag);
         if (colorFormat == cv::cudacodec::ColorFormat::BGRA)
             cv::cvtColor(frameHost, frameHostGs, COLOR_BGR2BGRA);
         else
@@ -384,7 +384,7 @@ CUDA_TEST_P(ReconfigureDecoderWithScaling, Reader)
         if (nFrames++ == 0)
             initialSize = frame.size();
         fmt = reader->format();
-        ASSERT_TRUE(fmt.valid && (frame.size() == initialSize));
+        ASSERT_TRUE(frame.size() == initialSize);
         ASSERT_TRUE((frame.size() == targetSzOut) && (fmt.targetSz == targetSzOut) && (fmt.srcRoi == srcRoiOut) && (fmt.targetRoi == targetRoiOut));
         // simple check - zero borders, non zero contents
         ASSERT_TRUE(!cuda::absSum(frame, mask)[0] && cuda::sum(frame)[0]);
@@ -413,7 +413,7 @@ CUDA_TEST_P(ReconfigureDecoder, Reader)
             initialSize = frame.size();
             initialCodedSize = Size(fmt.ulWidth, fmt.ulHeight);
         }
-        ASSERT_TRUE(fmt.valid && (frame.size() == initialSize));
+        ASSERT_TRUE(frame.size() == initialSize);
         ASSERT_TRUE(fmt.srcRoi.empty());
         const bool resChanged = (initialCodedSize.width != fmt.ulWidth) || (initialCodedSize.height != fmt.ulHeight);
         if (resChanged)
@@ -541,11 +541,6 @@ CUDA_TEST_P(CheckDecodeSurfaces, Reader)
     {
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
         cv::cudacodec::FormatInfo fmt = reader->format();
-        if (!fmt.valid) {
-            reader->grab();
-            fmt = reader->format();
-            ASSERT_TRUE(fmt.valid);
-        }
         ulNumDecodeSurfaces = fmt.ulNumDecodeSurfaces;
     }
 
@@ -554,11 +549,6 @@ CUDA_TEST_P(CheckDecodeSurfaces, Reader)
         params.minNumDecodeSurfaces = ulNumDecodeSurfaces - 1;
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
         cv::cudacodec::FormatInfo fmt = reader->format();
-        if (!fmt.valid) {
-            reader->grab();
-            fmt = reader->format();
-            ASSERT_TRUE(fmt.valid);
-        }
         ASSERT_TRUE(fmt.ulNumDecodeSurfaces == ulNumDecodeSurfaces);
         for (int i = 0; i < 100; i++) ASSERT_TRUE(reader->grab());
     }
@@ -568,11 +558,6 @@ CUDA_TEST_P(CheckDecodeSurfaces, Reader)
         params.minNumDecodeSurfaces = ulNumDecodeSurfaces + 1;
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
         cv::cudacodec::FormatInfo fmt = reader->format();
-        if (!fmt.valid) {
-            reader->grab();
-            fmt = reader->format();
-            ASSERT_TRUE(fmt.valid);
-        }
         ASSERT_TRUE(fmt.ulNumDecodeSurfaces == ulNumDecodeSurfaces + 1);
         for (int i = 0; i < 100; i++) ASSERT_TRUE(reader->grab());
     }
@@ -626,10 +611,6 @@ CUDA_TEST_P(TransCode, H264ToH265)
         cv::cuda::Stream stream;
         for (int i = 0; i < nFrames; ++i) {
             ASSERT_TRUE(reader->nextFrame(frame, stream));
-            if (!fmt.valid) {
-                fmt = reader->format();
-                ASSERT_TRUE(fmt.valid);
-            }
             ASSERT_FALSE(frame.empty());
             Mat tst; frame.download(tst);
             if (writer.empty()) {
