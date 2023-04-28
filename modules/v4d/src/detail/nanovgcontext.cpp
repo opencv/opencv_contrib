@@ -4,44 +4,59 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "nanovgcontext.hpp"
-#include "opencv2/v4d/util.hpp"
-#include "opencv2/v4d/nvg.hpp"
+#include "opencv2/v4d/v4d.hpp"
+#include "nanovg.h"
+
+#ifdef OPENCV_V4D_USE_ES3
+#  define NANOVG_GLES3_IMPLEMENTATION 1
+#  define NANOVG_GLES3 1
+#else
+#  define NANOVG_GL3 1
+#  define NANOVG_GL3_IMPLEMENTATION 1
+#endif
+#define NANOVG_GL_USE_UNIFORMBUFFER 1
+#include "nanovg_gl.h"
 
 namespace cv {
 namespace v4d {
 namespace detail {
-#if !defined(GL_RGBA_FLOAT_MODE)
-#  define GL_RGBA_FLOAT_MODE 0x8820
-#endif
-
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten/threading.h>
-
-static void initmenvg(NanoVGContext* initiatenvg) {
-    initiatenvg->init();
-}
-#endif
 
 NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
-        v4d_(v4d), screen_(nullptr), context_(nullptr), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext) {
-#ifdef __EMSCRIPTEN__
-    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VI, initmenvg, this);
-#else
-    init();
-#endif
+        v4d_(v4d), context_(nullptr), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext) {
+    run_sync_on_main([this](){ init(); });
 }
 
 void NanoVGContext::init() {
-    fbCtx().makeCurrent();
+    FrameBufferContext::GLScope glScope(fbCtx());
     screen_ = new nanogui::Screen();
     screen_->initialize(fbCtx().getGLFWWindow(), false);
+//    fbCtx().resizeWindow(fbCtx().getSize());
     context_ = screen_->nvg_context();
-    fbCtx().resizeWindow(fbCtx().getSize());
-    fbCtx().makeNoneCurrent();
+
+//    FrameBufferContext::GLScope glScope(fbCtx());
+//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    glEnable(GL_BLEND);
+//    glEnable(GL_STENCIL_TEST);
+//    glEnable(GL_DEPTH_TEST);
+//    glDisable(GL_SCISSOR_TEST);
+//    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+//    glStencilMask(0xffffffff);
+//    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+//    glStencilFunc(GL_ALWAYS, 0, 0xffffffff);
+//    glStencilMask(0xFF);
+//
+//    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG;
+//#ifdef OPENCV_V4D_USE_ES3 || __EMSCRIPTEN__
+//    context_ = nvgCreateGLES3(flags);
+//#else
+//    context_ = nvgCreateGL3(flags);
+//#endif
+    if (!context_)
+        throw std::runtime_error("Could not initialize NanoVG!");
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
+    run_sync_on_main([&,this](){
 #ifdef __EMSCRIPTEN__
     {
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
@@ -56,12 +71,10 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
     {
         FrameBufferContext::GLScope glScope(fbCtx());
+        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
         fn(fbCtx().getSize());
-//        fbCtx().makeCurrent();
-//        fbCtx().blitFrameBufferToScreen(cv::Rect(0,0, fbCtx().getSize().width, fbCtx().getSize().height), fbCtx().getSize(), false);
-//        glfwSwapBuffers(fbCtx().getGLFWWindow());
     }
 #ifdef __EMSCRIPTEN__
     {
@@ -75,12 +88,13 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
         postFB_.copyTo(fb_);
     }
 #endif
+    });
 }
 
 void NanoVGContext::begin() {
-    float w = nvgFbContext_.getSize().width;
-    float h = nvgFbContext_.getSize().height;
-    float r = nvgFbContext_.getXPixelRatio();
+    float w = fbCtx().getSize().width;
+    float h = fbCtx().getSize().height;
+    float r = fbCtx().getXPixelRatio();
 
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);

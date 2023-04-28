@@ -12,10 +12,12 @@
 #include <emscripten.h>
 #endif
 
-#include <opencv2/v4d/formhelper.hpp>
-
+namespace nanogui {
+    class Screen;
+}
 namespace cv {
 namespace v4d {
+class FormHelper;
 namespace detail {
 /*!
  * Used to setup a nanogui context
@@ -30,6 +32,7 @@ class NanoguiContext {
     cv::UMat postFB_;
 public:
     NanoguiContext(V4D& v4d, FrameBufferContext& fbContext);
+    void init();
     void render();
     void build(std::function<void(cv::v4d::FormHelper&)> fn);
     nanogui::Screen& screen();

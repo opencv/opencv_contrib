@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "clvacontext.hpp"
-#include "opencv2/v4d/v4d.hpp"
+#include <opencv2/imgproc.hpp>
 
 namespace cv {
 namespace v4d {
@@ -19,7 +19,7 @@ cv::Size CLVAContext::getVideoFrameSize() {
     return inputVideoFrameSize_;
 }
 
-cv::UMat CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
+bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
     cv::Size fbSize = fbCtx().getSize();
     if (!context_.empty()) {
         {
@@ -29,35 +29,25 @@ cv::UMat CLVAContext::capture(std::function<void(cv::UMat&)> fn) {
             fn(readFrame_);
         }
         if (readFrame_.empty())
-            return {};
+            return false;
         inputVideoFrameSize_ = readFrame_.size();
-
-        fbCtx().execute([this](cv::UMat& frameBuffer) {
-            resizePreserveAspectRatio(readFrame_, readRGBBuffer_, frameBuffer.size());
-            cv::cvtColor(readRGBBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
-        });
+        resizePreserveAspectRatio(readFrame_, output, fbCtx().getSize());
     } else {
         fn(readFrame_);
         if (readFrame_.empty())
-            return {};
+            return false;
         inputVideoFrameSize_ = readFrame_.size();
-        fbCtx().execute([this](cv::UMat& frameBuffer) {
-            resizePreserveAspectRatio(readFrame_, readRGBBuffer_, frameBuffer.size());
-            cv::cvtColor(readRGBBuffer_, frameBuffer, cv::COLOR_RGB2BGRA);
-        });
+        resizePreserveAspectRatio(readFrame_, output, fbCtx().getSize());
     }
 
-    return readRGBBuffer_;
+    return true;
 }
 
-void CLVAContext::write(std::function<void(const cv::UMat&)> fn) {
-        fbCtx().execute([=,this](cv::UMat& frameBuffer) {
-            frameBuffer.copyTo(writeFrame_);
-        });
+void CLVAContext::write(std::function<void(const cv::UMat&)> fn, cv::UMat& input) {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(context_);
 #endif
-        cv::cvtColor(writeFrame_, writeRGBBuffer_, cv::COLOR_BGRA2RGB);
+        cv::cvtColor(input, writeRGBBuffer_, cv::COLOR_BGRA2RGB);
         fn(writeRGBBuffer_);
 }
 

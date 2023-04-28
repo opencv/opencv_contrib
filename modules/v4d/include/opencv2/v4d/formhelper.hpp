@@ -6,7 +6,9 @@
 #ifndef SRC_OPENCV_V4D_FORMHELPER_HPP_
 #define SRC_OPENCV_V4D_FORMHELPER_HPP_
 #include "dialog.hpp"
-
+#ifndef OPENCV_V4D_USE_ES3
+#include <glad/glad.h>
+#endif
 #include <nanogui/screen.h>
 #include <nanogui/formhelper.h>
 

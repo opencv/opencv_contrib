@@ -6,27 +6,23 @@
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
 
-#define GL_GLEXT_PROTOTYPES 1
-#include <GLFW/glfw3.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
 #ifndef OPENCV_V4D_USE_ES3
-#  ifndef NANOGUI_USE_OPENGL
-#    define NANOGUI_USE_OPENGL
-#  endif
-#else
-#  ifndef NANOGUI_USE_GLES
-#    define NANOGUI_USE_GLES
-#    define NANOGUI_GLES_VERSION 3
-#  endif
+#include <glad/glad.h>
 #endif
 
-#include <nanogui/opengl.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/threading.h>
+#endif
 
+#ifdef OPENCV_V4D_USE_ES3
+#define GLFW_INCLUDE_ES3
+#define GLFW_INCLUDE_GLEXT
+#endif
+
+#include <GLFW/glfw3.h>
 #include "source.hpp"
 #include "sink.hpp"
-#include "dialog.hpp"
-#include "formhelper.hpp"
 #include "util.hpp"
 #include <filesystem>
 #include <iostream>
@@ -35,19 +31,19 @@
 #include <string>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
-
+#include <opencv2/v4d/formhelper.hpp>
 #include "detail/threadpool.hpp"
-
-
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
 
 using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+
+struct GLFWwindow;
+
+namespace nanogui {
+    class Widget;
+}
 /*!
  * OpenCV namespace
  */
@@ -56,6 +52,7 @@ namespace cv {
  * Visualization namespace
  */
 namespace v4d {
+class FormHelper;
 /*!
  * Private namespace
  */
@@ -72,13 +69,6 @@ class NanoguiContext;
  * @param description Error description
  */
 void glfw_error_callback(int error, const char* description);
-/*!
- * Checks if a widget contains an absolute point.
- * @param w The widget.
- * @param p The point.
- * @return true if the points is inside the widget
- */
-bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p);
 /*!
  * Find widgets that are of type T.
  * @tparam T The type of widget to find
@@ -117,9 +107,6 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
  * @return The color converted scalar
  */
 CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
-
-CV_EXPORTS void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
-        const cv::Scalar& bgcolor = {0,0,0,255});
 
 using namespace cv::v4d::detail;
 
@@ -181,8 +168,8 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize, bool offscreen, const string& title, int major = 3,
-            int minor = 2, bool compat = false, int samples = 0, bool debug = true);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize, bool offscreen, const string& title, int major = 4,
+            int minor = 6, bool compat = true, int samples = 0, bool debug = true);
     /*!
      * Default destructor
      */
@@ -414,9 +401,10 @@ public:
      */
     CV_EXPORTS bool display();
     CV_EXPORTS void printSystemInfo();
+    bool display_impl();
 private:
     V4D(const cv::Size& initialSize, bool offscreen,
-            const string& title, int major = 3, int minor = 2, bool compat = false, int samples = 0, bool debug = false);
+            const string& title, int major = 4, int minor = 6, bool compat = true, int samples = 0, bool debug = true);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);

@@ -3,9 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
+#include "opencv2/v4d/v4d.hpp"
 #include <opencv2/imgcodecs.hpp>
 #include "opencv2/v4d/util.hpp"
-#include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/nvg.hpp"
 
 
@@ -20,39 +20,37 @@
 
 #include <csignal>
 #include <thread>
+#include <unistd.h>
+#include <chrono>
+#include <mutex>
+#include <functional>
+#include <iostream>
+#include <cmath>
 
 namespace cv {
 namespace v4d {
 namespace detail {
-    long proxy_to_mainl(std::function<long()> fn) {
-    #ifdef __EMSCRIPTEN__
-        long (*ptr)() = cv::v4d::detail::get_fn_ptr<0>(fn);
+void run_sync_on_main(std::function<void()> fn) {
+#ifdef __EMSCRIPTEN__
+    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<0>(fn));
+#else
+    fn();
+#endif
+}
 
-        return emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_I, ptr);
-    #else
-        return fn();
-    #endif
+size_t cnz(const cv::UMat& m) {
+    cv::UMat grey;
+    if(m.channels() == 1) {
+        grey = m;
+    } else if(m.channels() == 3) {
+        cvtColor(m, grey, cv::COLOR_BGR2GRAY);
+    } else if(m.channels() == 4) {
+        cvtColor(m, grey, cv::COLOR_BGRA2GRAY);
+    } else {
+        assert(false);
     }
-
-    void proxy_to_mainv(std::function<void()> fn) {
-    #ifdef __EMSCRIPTEN__
-        void (*ptr)() = cv::v4d::detail::get_fn_ptr<0>(fn);
-
-        emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, ptr);
-    #else
-        fn();
-    #endif
-    }
-
-    bool proxy_to_mainb(std::function<bool()> fn) {
-    #ifdef __EMSCRIPTEN__
-        bool (*ptr)() = cv::v4d::detail::get_fn_ptr<0>(fn);
-
-        return emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, ptr);
-    #else
-        return fn();
-    #endif
-    }
+    return cv::countNonZero(grey);
+}
 }
 #ifdef __EMSCRIPTEN__
 Mat read_image(const string &path) {
@@ -395,6 +393,24 @@ Source makeCaptureSource(int width, int height) {
     }, 0);
 }
 #endif
+
+void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor) {
+    cv::UMat tmp;
+    double hf = double(dstSize.height) / src.size().height;
+    double wf = double(dstSize.width) / src.size().width;
+    double f = std::min(hf, wf);
+    if (f < 0)
+        f = 1.0 / f;
+
+    cv::resize(src, tmp, cv::Size(), f, f);
+
+    int top = (dstSize.height - tmp.rows) / 2;
+    int down = (dstSize.height - tmp.rows + 1) / 2;
+    int left = (dstSize.width - tmp.cols) / 2;
+    int right = (dstSize.width - tmp.cols + 1) / 2;
+
+    cv::copyMakeBorder(tmp, output, top, down, left, right, cv::BORDER_CONSTANT, bgcolor);
+}
 
 }
 }

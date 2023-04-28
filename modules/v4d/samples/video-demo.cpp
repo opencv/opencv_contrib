@@ -195,7 +195,7 @@ static bool iteration() {
     //Render using OpenGL
     v4d->gl(render_scene);
 
-//If we have OpenCL and maybe even CL-GL sharing then this is faster than the glow shader. Without OpenCL this is very slow.
+//to slow for wasm
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
     v4d->fb([&](cv::UMat& frameBuffer) {
@@ -205,8 +205,6 @@ static bool iteration() {
 #endif
 
     updateFps(v4d, true);
-
-
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     if (!v4d->display())

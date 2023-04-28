@@ -1,10 +1,30 @@
 if(NOT EMSCRIPTEN)
+  find_package(glfw3 3 REQUIRED)
   include("FindGLEW")
+  include("FindOpenGL")
 else()
   pkg_check_modules (glew glew)
 endif()
 
 set(the_description "V4D Visualization Module")
+
+macro(configure_files srcDir destDir)
+    message(STATUS "Configuring directory ${destDir}")
+    make_directory(${destDir})
+
+    file(GLOB templateFiles RELATIVE ${srcDir} "${srcDir}/*")
+    foreach(templateFile ${templateFiles})
+        set(srcTemplatePath ${srcDir}/${templateFile})
+        if(NOT IS_DIRECTORY ${srcTemplatePath})
+            message(STATUS "Configuring file ${templateFile}")
+            configure_file(
+                    ${srcTemplatePath}
+                    ${destDir}/${templateFile}
+                    @ONLY)
+        endif(NOT IS_DIRECTORY ${srcTemplatePath})
+    endforeach(templateFile)
+endmacro(configure_files)
+
 
 macro(add_emscripten_sample sample source)
     ocv_add_executable(${sample} ${source})
@@ -15,7 +35,7 @@ macro(add_emscripten_sample sample source)
     target_compile_features(${sample} PRIVATE cxx_std_20)
     set_target_properties(${sample} PROPERTIES SUFFIX ".js")
     add_custom_command(
-        TARGET ${sample} POST_BUILD
+        TARGET ${sample} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 "${CMAKE_CURRENT_LIST_DIR}/samples/${sample}.html"
                 "${CMAKE_CURRENT_BINARY_DIR}/../../bin/${sample}.html")
@@ -25,7 +45,7 @@ macro(add_binary_sample sample)
     target_compile_features(${sample} PRIVATE cxx_std_20)
     target_link_directories(${sample} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
     target_include_directories(${sample} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
-    target_link_libraries(${sample} PRIVATE nanogui OpenGL::GL)
+    target_link_libraries(${sample} PRIVATE nanogui glfw OpenGL::GL GLEW::GLEW)
 endmacro()
 
 if(EMSCRIPTEN)
@@ -75,8 +95,7 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/nanovg/src/")
+cmake_policy(SET CMP0079 NEW)
 
 ocv_add_module(v4d opencv_core opencv_imgproc opencv_videoio opencv_video)
 ocv_glob_module_sources()
@@ -90,6 +109,9 @@ add_custom_command(
     "${CMAKE_CURRENT_LIST_DIR}/doc/lena.png"
     "${CMAKE_CURRENT_BINARY_DIR}/doc/lena.png")
 
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/nanovg/src/")
 
 if(BUILD_EXAMPLES)
   if(EMSCRIPTEN)
@@ -112,7 +134,7 @@ if(BUILD_EXAMPLES)
     add_emscripten_sample(example_v4d_shader-demo samples/shader-demo.cpp)
     add_emscripten_sample(example_v4d_pedestrian-demo samples/pedestrian-demo.cpp)
     add_emscripten_sample(example_v4d_optflow-demo samples/optflow-demo.cpp)
-    # add_emscripten_sample(example_v4d_beauty-demo samples/beauty-demo.cpp)
+    add_emscripten_sample(example_v4d_beauty-demo samples/beauty-demo.cpp)
   else()
     add_binary_sample(example_v4d_display_image)
     add_binary_sample(example_v4d_custom_source_and_sink)
@@ -146,23 +168,32 @@ set(NANOGUI_BACKEND "OpenGL" CACHE STRING "Choose the backend used for rendering
 
 if(OPENCV_V4D_ENABLE_ES3)
     set(NANOGUI_BACKEND "GLES 3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV_V4D_USE_ES3=1")
+    set(NANOGUI_BUILD_GLAD OFF)
+    set(NANOGUI_BUILD_GLFW OFF)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOPENCV_V4D_USE_ES3=1 -DNANOGUI_USE_GLES=1 -DNANOGUI_GLES_VERSION=3")
 else()
   set(NANOGUI_BACKEND "OpenGL")
+  set(NANOGUI_BUILD_GLAD ON)
+  set(NANOGUI_BUILD_GLFW OFF)
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
-add_library(nanovg "third/nanogui/ext/nanovg/src/nanovg.c")
+#add_library(nanovg STATIC "third/nanogui/ext/nanovg/src/nanovg.c")
 target_compile_features(opencv_v4d PRIVATE cxx_std_20)
 target_compile_features(nanogui PRIVATE cxx_std_20)
-target_compile_features(nanovg PRIVATE cxx_std_20)
+#target_compile_features(nanovg PRIVATE cxx_std_20)
+
+target_link_libraries(nanogui PRIVATE glfw)
+target_include_directories(nanogui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-enum-enum-conversion)
 target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
 target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
+target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
+target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}third/nanogui/ext/nanovg/src/")
 
 if(EMSCRIPTEN)
   ocv_target_link_libraries(${the_module} -lnanogui)
 else()
-  ocv_target_link_libraries(${the_module} -lOpenCL -lnanogui OpenGL::OpenGL)
+  ocv_target_link_libraries(${the_module} -lOpenCL -lnanogui glfw GLEW::GLEW OpenGL::GLU OpenGL::OpenGL)
 endif()

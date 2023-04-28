@@ -2,23 +2,26 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
-#define GL_GLEXT_PROTOTYPES 1
-#include <GLFW/glfw3.h>
-#include <GL/gl.h>
-#include <GL/glext.h>
-
-#include "framebuffercontext.hpp"
-
-#include "opencv2/v4d/util.hpp"
 #include "opencv2/v4d/v4d.hpp"
+#include "framebuffercontext.hpp"
+#include "opencv2/v4d/util.hpp"
 #include "glcontext.hpp"
 #include "nanovgcontext.hpp"
 #include "nanoguicontext.hpp"
-#include <opencv2/core/opengl.hpp>
+#include "opencv2/core/ocl.hpp"
+#include "opencv2/core/opengl.hpp"
+#include <exception>
+
+
 namespace cv {
 namespace v4d {
 namespace detail {
 long window_cnt = 0;
+
+static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
+    nanogui::Vector2i d = p - w->absolute_position();
+    return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
+}
 
 FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.frameBufferSize_, true, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
 }
@@ -27,11 +30,11 @@ FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
                 minor), compat_(compat), samples_(samples), debug_(debug), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), windowSize_(frameBufferSize), frameBufferSize_(frameBufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent) {
-        init();
+    run_sync_on_main([this](){ init(); });
 }
 
 FrameBufferContext::~FrameBufferContext() {
-    teardown();
+        teardown();
 }
 
 void FrameBufferContext::init() {
@@ -42,12 +45,15 @@ void FrameBufferContext::init() {
     }
 #else
     isShared_ = false;
+
 #endif
     if (glfwInit() != GLFW_TRUE)
-        assert(false);
-
+           assert(false);
+#ifndef __EMSCRIPTEN__
     glfwSetErrorCallback(cv::v4d::glfw_error_callback);
-
+    cerr << "after" << endl;
+    glfwDefaultWindowHints();
+#endif
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
@@ -57,10 +63,10 @@ void FrameBufferContext::init() {
         glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
     glfwSetTime(0);
 #ifdef __APPLE__
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint (GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint (GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #elif defined(OPENCV_V4D_USE_ES3)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -83,27 +89,24 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 //    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
-
     glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, std::to_string(++window_cnt).c_str(), nullptr,
             sharedWindow_);
 
     if (glfwWindow_ == NULL) {
         assert(false);
     }
-    cerr << "WINDOW: " << glfwWindow_ << "/" << frameBufferSize_ << endl;
-    this->resizeWindow(frameBufferSize_);
+    cerr << "win" << endl;
+    this->makeCurrent();
+    cerr << "current" << endl;
 #ifndef OPENCV_V4D_USE_ES3
-//    glewExperimental = true;
-//    glewInit();
-
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
+        throw std::runtime_error("Could not initialize GLAD!");
+    glGetError(); // pull and ignore unhandled errors like GL_INVALID_ENUM
     try {
-        this->makeCurrent();
         if (isClGlSharingSupported())
             cv::ogl::ocl::initializeContextFromGL();
         else
             clglSharing_ = false;
-        this->makeNoneCurrent();
-
     } catch (std::exception& ex) {
         cerr << "CL-GL sharing failed: " << ex.what() << endl;
         clglSharing_ = false;
@@ -159,8 +162,7 @@ void FrameBufferContext::init() {
             [](GLFWwindow* glfwWin, double x, double y) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
                 std::vector<nanogui::Widget*> widgets;
-                find_widgets(&v4d->nguiCtx().screen(), widgets);
-                for (auto* w : widgets) {
+                for (auto* w : v4d->nguiCtx().screen().children()) {
                     auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->fbCtx().getXPixelRatio(), v4d->getMousePosition()[1] / v4d->fbCtx().getYPixelRatio());
                     if(contains_absolute(w, mousePos)) {
                         v4d->nguiCtx().screen().scroll_callback_event(x, y);
@@ -214,8 +216,13 @@ void FrameBufferContext::setup(const cv::Size& sz) {
                 glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, sz.width, sz.height));
         GL_CHECK(
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+//#ifndef OPENCV_V4D_USE_ES3
+//        GL_CHECK(
+//                glNamedFramebufferTexture(frameBufferID_, GL_COLOR_ATTACHMENT0, textureID_, 0));
+//#else
         GL_CHECK(
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+//#endif
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     } else {
         assert(parent_ != nullptr);
@@ -235,11 +242,15 @@ void FrameBufferContext::setup(const cv::Size& sz) {
                 glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, sz.width, sz.height));
         GL_CHECK(
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+//#ifndef OPENCV_V4D_USE_ES3
+//        GL_CHECK(
+//                glNamedFramebufferTexture(frameBufferID_, GL_COLOR_ATTACHMENT0, textureID_, 0));
+//#else
         GL_CHECK(
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+//#endif
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
-    this->makeNoneCurrent();
 }
 
 void FrameBufferContext::teardown() {
@@ -278,7 +289,6 @@ void FrameBufferContext::teardown() {
     GL_CHECK(glDeleteTextures(1, &textureID_));
     GL_CHECK(glDeleteRenderbuffers(1, &renderBufferID_));
     GL_CHECK(glDeleteFramebuffers(1, &frameBufferID_));
-    this->makeNoneCurrent();
 }
 
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
@@ -317,7 +327,6 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyBufferToImage failed: %d", status));
 #endif
-    this->makeNoneCurrent();
 }
 
 void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u) {
@@ -370,15 +379,17 @@ cv::Size FrameBufferContext::getSize() {
 }
 
 void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
-    if(tmpBuffer_.empty())
-        tmpBuffer_.create(getSize(), CV_8UC4);
-    cv::resize(tmpBuffer_,frameBuffer_, getSize());
-#ifndef __EMSCRIPTEN__
-    CLExecScope_t clExecScope(getCLExecContext());
-#endif
-    FrameBufferContext::GLScope glScope(*this);
-    FrameBufferContext::FrameBufferScope fbScope(*this, frameBuffer_);
-    fn(frameBuffer_);
+    run_sync_on_main([&,this](){
+        if(tmpBuffer_.empty())
+            tmpBuffer_.create(getSize(), CV_8UC4);
+        cv::resize(tmpBuffer_,frameBuffer_, getSize());
+    #ifndef __EMSCRIPTEN__
+        CLExecScope_t clExecScope(getCLExecContext());
+    #endif
+        FrameBufferContext::GLScope glScope(*this);
+        FrameBufferContext::FrameBufferScope fbScope(*this, frameBuffer_);
+        fn(frameBuffer_);
+    });
 }
 
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
@@ -442,7 +453,6 @@ void FrameBufferContext::end() {
     glGetError();
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
-    this->makeNoneCurrent();
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
@@ -465,6 +475,8 @@ void FrameBufferContext::acquireFromGL(cv::UMat& m) {
     if (clglSharing_) {
         GL_CHECK(fromGLTexture2D(getTexture2D(), m));
     } else {
+        if(m.empty())
+            m.create(getSize(), CV_8UC4);
         download(m);
         GL_CHECK(glFlush());
         GL_CHECK(glFinish());
@@ -491,12 +503,12 @@ float FrameBufferContext::getXPixelRatio() {
     makeCurrent();
 #ifdef __EMSCRIPTEN__
     float r = emscripten_get_device_pixel_ratio();
-    makeNoneCurrent();
+
     return r;
 #else
     float xscale, yscale;
     glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
-    makeNoneCurrent();
+
     return xscale;
 #endif
 }
@@ -505,47 +517,29 @@ float FrameBufferContext::getYPixelRatio() {
     makeCurrent();
 #ifdef __EMSCRIPTEN__
     float r = emscripten_get_device_pixel_ratio();
-    makeNoneCurrent();
+
     return r;
 #else
     float xscale, yscale;
     glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
-    makeNoneCurrent();
+
     return yscale;
 #endif
 }
 
 void FrameBufferContext::makeCurrent() {
-    detail::proxy_to_mainv([this](){
         glfwMakeContextCurrent(getGLFWWindow());
-    });
-}
-
-void FrameBufferContext::makeNoneCurrent() {
-    detail::proxy_to_mainv([](){
-        glfwMakeContextCurrent(nullptr);
-    });
 }
 
 bool FrameBufferContext::isResizable() {
     makeCurrent();
 
-    return detail::proxy_to_mainb([this](){
-        return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
-    });
-
-    makeNoneCurrent();
+    return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
 }
 
 void FrameBufferContext::setResizable(bool r) {
     makeCurrent();
-
-    detail::proxy_to_mainv([r](){
-        glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
-
-    });
-
-    makeNoneCurrent();
+    glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
 }
 
 cv::Size FrameBufferContext::getWindowSize() {
@@ -558,71 +552,47 @@ void FrameBufferContext::setWindowSize(const cv::Size& sz) {
 
 void FrameBufferContext::resizeWindow(const cv::Size& sz) {
     makeCurrent();
-    detail::proxy_to_mainv([sz,this](){
-        glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
-    });
-    makeNoneCurrent();
+    glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
 }
 
 bool FrameBufferContext::isFullscreen() {
     makeCurrent();
-    return detail::proxy_to_mainb([this](){
-        return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
-    });
-    makeNoneCurrent();
+    return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
 }
 
 void FrameBufferContext::setFullscreen(bool f) {
     makeCurrent();
-
-    detail::proxy_to_mainv([f,this](){
-        auto monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-        if (f) {
-            glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height,
-                    mode->refreshRate);
-            resizeWindow(getNativeFrameBufferSize());
-        } else {
-            glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getSize().width,
-                    getSize().height, 0);
-            resizeWindow(getSize());
-        }
-
-    });
-    makeNoneCurrent();
+    auto monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    if (f) {
+        glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height,
+                mode->refreshRate);
+        resizeWindow(getNativeFrameBufferSize());
+    } else {
+        glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getSize().width,
+                getSize().height, 0);
+        resizeWindow(getSize());
+    }
 }
 
 cv::Size FrameBufferContext::getNativeFrameBufferSize() {
     makeCurrent();
-    cv::Size* sz = reinterpret_cast<cv::Size*>(detail::proxy_to_mainl([this](){
-        int w, h;
-        glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
-        return reinterpret_cast<long>(new cv::Size{w, h});
-    }));
-    makeNoneCurrent();
-    cv::Size copy = *sz;
-    delete sz;
-    return copy;
+    int w, h;
+    glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
+    return cv::Size{w, h};
 }
 
 bool FrameBufferContext::isVisible() {
     makeCurrent();
-    return detail::proxy_to_mainb([this]()-> bool {
-        return glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;
-    });
-    makeNoneCurrent();
+    return glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;
 }
 
 void FrameBufferContext::setVisible(bool v) {
     makeCurrent();
-    detail::proxy_to_mainv([v,this](){
-        if (v)
-            glfwShowWindow(getGLFWWindow());
-        else
-            glfwHideWindow(getGLFWWindow());
-
-    });
-    makeNoneCurrent();
+    if (v)
+        glfwShowWindow(getGLFWWindow());
+    else
+        glfwHideWindow(getGLFWWindow());
 }
 
 }

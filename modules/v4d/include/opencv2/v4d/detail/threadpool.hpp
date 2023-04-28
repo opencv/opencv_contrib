@@ -108,14 +108,10 @@ private:
 
     void worker_main() {
         while (true) {
-            std::cerr << "I" << std::endl;
             task t = poll_task();
-            std::cerr << "II" << std::endl;
             // The thread pool is going to shutdown
             if (t.first == nullptr) break;
-            std::cerr << "III" << std::endl;
             t.first();
-            std::cerr << "IIII" << std::endl;
         }
     }
 

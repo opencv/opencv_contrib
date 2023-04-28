@@ -6,7 +6,13 @@
 #ifndef SRC_OPENCV_V4D_NVG_HPP_
 #define SRC_OPENCV_V4D_NVG_HPP_
 
-#include "v4d.hpp"
+//#include "v4d.hpp"
+
+#include <stdio.h>
+#include <opencv2/core.hpp>
+#include "nanovg.h"
+
+struct NVGcontext;
 
 namespace cv {
 namespace v4d {
@@ -14,7 +20,6 @@ namespace v4d {
  * In general please refere to https://github.com/memononen/nanovg/blob/master/src/nanovg.h for reference.
  */
 namespace nvg {
-
 /*!
  * Equivalent of a NVGtextRow.
  */
@@ -33,31 +38,8 @@ struct CV_EXPORTS GlyphPosition: public NVGglyphPosition {
 struct CV_EXPORTS Paint {
     Paint() {
     }
-    Paint(const NVGpaint& np) {
-        memcpy(this->xform, np.xform, sizeof(this->xform));
-        memcpy(this->extent, np.extent, sizeof(this->extent));
-        this->radius = np.radius;
-        this->feather = np.feather;
-        this->innerColor = cv::Scalar(np.innerColor.rgba[2] * 255, np.innerColor.rgba[1] * 255,
-                np.innerColor.rgba[0] * 255, np.innerColor.rgba[3] * 255);
-        this->outerColor = cv::Scalar(np.outerColor.rgba[2] * 255, np.outerColor.rgba[1] * 255,
-                np.outerColor.rgba[0] * 255, np.outerColor.rgba[3] * 255);
-        this->image = np.image;
-    }
-
-    NVGpaint toNVGpaint() {
-        NVGpaint np;
-        memcpy(np.xform, this->xform, sizeof(this->xform));
-        memcpy(np.extent, this->extent, sizeof(this->extent));
-        np.radius = this->radius;
-        np.feather = this->feather;
-        np.innerColor = nvgRGBA(this->innerColor[2], this->innerColor[1], this->innerColor[0],
-                this->innerColor[3]);
-        np.outerColor = nvgRGBA(this->outerColor[2], this->outerColor[1], this->outerColor[0],
-                this->outerColor[3]);
-        np.image = this->image;
-        return np;
-    }
+    Paint(const NVGpaint& np);
+    NVGpaint toNVGpaint();
 
     float xform[6];
     float extent[2];

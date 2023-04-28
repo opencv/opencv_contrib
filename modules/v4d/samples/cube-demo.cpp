@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <opencv2/v4d/v4d.hpp>
-//adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
+//adapted from https://g#include "opencv2/v4d/nvg.hpp"itlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;

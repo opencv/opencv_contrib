@@ -4,8 +4,8 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/dialog.hpp"
+#include "opencv2/v4d/v4d.hpp"
 #include <nanogui/layout.h>
-#include <GLFW/glfw3.h>
 
 namespace cv {
 namespace v4d {

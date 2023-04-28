@@ -6,22 +6,13 @@
 #ifndef SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_
 #define SRC_OPENCV_FRAMEBUFFERCONTEXT_HPP_
 
-#ifndef __EMSCRIPTEN__
-#  ifndef CL_TARGET_OPENCL_VERSION
-#    define CL_TARGET_OPENCL_VERSION 120
-#  endif
-#  ifdef __APPLE__
-#    include <OpenCL/cl_gl_ext.h>
-#  else
-#    include <CL/cl_gl.h>
-#  endif
-#else
+#ifdef __EMSCRIPTEN__
 #  include <emscripten/threading.h>
 #endif
 
+#include "cl.hpp"
 #include <opencv2/core/ocl.hpp>
 #include <iostream>
-
 #include "opencv2/v4d/util.hpp"
 
 struct GLFWwindow;
@@ -100,15 +91,6 @@ public:
         FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
-#ifdef __EMSCRIPTEN__
-    static void glacquire(FrameBufferContext* ctx, cv::UMat* m) {
-        ctx->acquireFromGL(*m);
-    }
-
-    static void glrelease(FrameBufferContext* ctx, cv::UMat* m) {
-        ctx->releaseToGL(*m);
-    }
-#endif
         /*!
          * Aquires the framebuffer via cl-gl sharing.
          * @param ctx The corresponding #FrameBufferContext.
@@ -116,33 +98,15 @@ public:
          */
         FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m) {
-#ifdef __EMSCRIPTEN__
-            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VII, glacquire, &ctx_, &m_);
-#else
             ctx_.acquireFromGL(m_);
-#endif
         }
         /*!
          * Releases the framebuffer via cl-gl sharing.
          */
         ~FrameBufferScope() {
-#ifdef __EMSCRIPTEN__
-            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VII, glrelease, &ctx_, &m_);
-#else
             ctx_.releaseToGL(m_);
-#endif
         }
     };
-
-#ifdef __EMSCRIPTEN__
-    static void glbegin(FrameBufferContext* ctx) {
-        ctx->begin();
-    }
-
-    static void glend(FrameBufferContext* ctx) {
-        ctx->end();
-    }
-#endif
 
     /*!
      * Setups and tears-down OpenGL states.
@@ -156,21 +120,13 @@ public:
          */
         GLScope(FrameBufferContext& ctx) :
                 ctx_(ctx) {
-#ifdef __EMSCRIPTEN__
-            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VI, glbegin, &ctx_);
-#else
             ctx_.begin();
-#endif
         }
         /*!
          * Tear-down OpenGL states.
          */
         ~GLScope() {
-#ifdef __EMSCRIPTEN__
-            emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_VI, glend, &ctx_);
-#else
             ctx_.end();
-#endif
         }
     };
 
@@ -216,7 +172,6 @@ public:
      */
     CV_EXPORTS float getYPixelRatio();
     CV_EXPORTS void makeCurrent();
-    CV_EXPORTS void makeNoneCurrent();
     CV_EXPORTS bool isResizable();
     CV_EXPORTS void setResizable(bool r);
     /*!

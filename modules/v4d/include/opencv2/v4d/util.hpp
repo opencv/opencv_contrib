@@ -11,7 +11,6 @@
 
 #include <string>
 #include <iostream>
-//#include <opencv2/core/core.hpp>
 #include <opencv2/core/ocl.hpp>
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
@@ -30,8 +29,6 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-
-
 template <const size_t _UniqueId, typename _Res, typename... _ArgTypes>
 struct fun_ptr_helper
 {
@@ -78,9 +75,8 @@ make_function(T *t)
     return {t};
 }
 
-long proxy_to_mainl(std::function<long()> fn);
-void proxy_to_mainv(std::function<void()> fn);
-bool proxy_to_mainb(std::function<bool()> fn);
+void run_sync_on_main(std::function<void()> fn);
+size_t cnz(const cv::UMat& m);
 }
 using std::string;
 class V4D;
@@ -172,6 +168,8 @@ CV_EXPORTS Source makeCaptureSource(const string& inputFilename);
  */
 CV_EXPORTS Source makeCaptureSource(int width, int height);
 #endif
+
+void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor = {0,0,0,255});
 
 }
 }

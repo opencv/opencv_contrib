@@ -9,12 +9,9 @@
 #include "detail/glcontext.hpp"
 #include "detail/nanovgcontext.hpp"
 #include "detail/nanoguicontext.hpp"
+#include "opencv2/v4d/dialog.hpp"
+#include "opencv2/v4d/formhelper.hpp"
 #include <sstream>
-
-#ifdef __EMSCRIPTEN__
-#  include <emscripten/html5.h>
-#  include <emscripten/threading.h>
-#endif
 
 namespace cv {
 namespace v4d {
@@ -24,10 +21,6 @@ void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
 }
 
-bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
-    nanogui::Vector2i d = p - w->absolute_position();
-    return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
-}
 }
 
 void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
@@ -52,27 +45,8 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
-void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize,
-        const cv::Scalar& bgcolor) {
-    cv::UMat tmp;
-    double hf = double(dstSize.height) / src.size().height;
-    double wf = double(dstSize.width) / src.size().width;
-    double f = std::min(hf, wf);
-    if (f < 0)
-        f = 1.0 / f;
-
-    cv::resize(src, tmp, cv::Size(), f, f);
-
-    int top = (dstSize.height - tmp.rows) / 2;
-    int down = (dstSize.height - tmp.rows + 1) / 2;
-    int left = (dstSize.width - tmp.cols) / 2;
-    int right = (dstSize.width - tmp.cols + 1) / 2;
-
-    cv::copyMakeBorder(tmp, output, top, down, left, right, cv::BORDER_CONSTANT, bgcolor);
-}
-
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, bool debug) {
-    cv::Ptr<V4D> v4d = new V4D(size, false, title, 3, 2, false, 0, debug);
+    cv::Ptr<V4D> v4d = new V4D(size, false, title, 4, 6, true, 0, debug);
     v4d->setVisible(true);
     return v4d;
 }
@@ -90,16 +64,18 @@ V4D::V4D(const cv::Size& size, bool offscreen, const string& title, int major, i
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
-    detail::proxy_to_mainv([=, this]() {
         mainFbContext_ = new detail::FrameBufferContext(*this, initialSize_, offscreen_, title_, major_,
                 minor_, compat_, samples_, debug_, nullptr, nullptr);
 
-        this->resizeWindow(initialSize_);
-        clvaContext_ = new detail::CLVAContext(*this, *mainFbContext_);
-        glContext_ = new detail::GLContext(*this, *mainFbContext_);
         nvgContext_ = new detail::NanoVGContext(*this, *mainFbContext_);
         nguiContext_ = new detail::NanoguiContext(*this, *mainFbContext_);
-    });
+        clvaContext_ = new detail::CLVAContext(*this, *mainFbContext_);
+        glContext_ = new detail::GLContext(*this, *mainFbContext_);
+//        fbCtx().resizeWindow(initialSize_);
+//        clvaCtx().fbCtx().resizeWindow(initialSize_);
+//        glCtx().fbCtx().resizeWindow(initialSize_);
+//        nvgCtx().fbCtx().resizeWindow(initialSize_);
+//        nguiCtx().fbCtx().resizeWindow(initialSize_);
 }
 
 V4D::~V4D() {
@@ -162,43 +138,29 @@ cv::Size V4D::getVideoFrameSize() {
 }
 
 void V4D::gl(std::function<void()> fn) {
-    detail::proxy_to_mainv([fn, this]() {
-        glCtx().render([=](const cv::Size& sz) {
-            CV_UNUSED(sz);
-            fn();
-        });
+    glCtx().render([=](const cv::Size& sz) {
+        CV_UNUSED(sz);
+        fn();
     });
 }
 
 void V4D::gl(std::function<void(const cv::Size&)> fn) {
-    detail::proxy_to_mainv([fn, this](){
-        glCtx().render(fn);
-
-    });
+    glCtx().render(fn);
 }
 
 void V4D::fb(std::function<void(cv::UMat&)> fn) {
-    detail::proxy_to_mainv([fn, this](){
         fbCtx().execute(fn);
-
-    });
 }
 
 void V4D::nvg(std::function<void()> fn) {
-    detail::proxy_to_mainv([fn, this](){
         nvgCtx().render([fn](const cv::Size& sz) {
             CV_UNUSED(sz);
             fn();
         });
-
-    });
 }
 
 void V4D::nvg(std::function<void(const cv::Size&)> fn) {
-    detail::proxy_to_mainv([fn, this](){
-        nvgCtx().render(fn);
-
-    });
+    nvgCtx().render(fn);
 }
 
 void V4D::nanogui(std::function<void(cv::v4d::FormHelper& form)> fn) {
@@ -231,12 +193,14 @@ void V4D::setSource(const Source& src) {
 }
 
 void V4D::feed(cv::InputArray& in) {
-    detail::proxy_to_mainv([in,this]() {
+        cv::UMat frame;
         clvaCtx().capture([&](cv::UMat& videoFrame) {
             in.copyTo(videoFrame);
-        });
+        }, frame);
 
-    });
+        fb([frame](cv::UMat& frameBuffer){
+            cvtColor(frame,frameBuffer, cv::COLOR_BGR2BGRA);
+        });
 }
 
 bool V4D::capture() {
@@ -263,9 +227,9 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
 #endif
         }
     }
-    if (nextReaderFrame_.empty()) {
-        clvaCtx().capture(fn).copyTo(nextReaderFrame_);
-        if (nextReaderFrame_.empty()) {
+
+    if(nextReaderFrame_.empty()) {
+        if (!clvaCtx().capture(fn, nextReaderFrame_)) {
 #ifndef __EMSCRIPTEN__
             return false;
 #else
@@ -274,15 +238,14 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
         }
     }
     currentReaderFrame_ = nextReaderFrame_.clone();
-    fb([this](cv::UMat& frameBuffer){
-        currentReaderFrame_.copyTo(frameBuffer);
-    });
     futureReader_ = pool_.enqueue(
-            [](V4D* v, std::function<void(UMat&)> fn, cv::UMat& frame) {
-                v->clvaCtx().capture(fn).copyTo(frame);
-                return !frame.empty();
-            }, this, fn, nextReaderFrame_);
+        [](V4D* v, std::function<void(UMat&)> fn, cv::UMat& frame) {
+            return v->clvaCtx().capture(fn, frame);
+        }, this, fn, nextReaderFrame_);
 
+    fb([this](cv::UMat& frameBuffer){
+        cvtColor(currentReaderFrame_,frameBuffer, cv::COLOR_RGB2BGRA);
+    });
     return true;
 }
 
@@ -306,13 +269,17 @@ void V4D::write() {
 void V4D::write(std::function<void(const cv::UMat&)> fn) {
     if (!sink_.isReady() || !sink_.isOpen())
         return;
-//
-//    if (futureWriter_.valid())
-//        futureWriter_.get();
 
-//    futureWriter_ = pool_.enqueue([](V4D* v, std::function<void(const UMat&)> fn) {
-//    clvaCtx().write(fn);
-//    }, this, fn);
+    if (futureWriter_.valid())
+        futureWriter_.get();
+
+    fb([this](cv::UMat& frameBuffer){
+        frameBuffer.copyTo(currentWriterFrame_);
+    });
+
+    futureWriter_ = pool_.enqueue([](V4D* v, std::function<void(const UMat&)> fn, cv::UMat& frame) {
+        v->clvaCtx().write(fn, frame);
+    }, this, fn, currentWriterFrame_);
 }
 
 bool V4D::isSinkReady() {
@@ -417,18 +384,9 @@ void V4D::zoom(float factor) {
 
 cv::Vec2f V4D::getPosition() {
     fbCtx().makeCurrent();
-
-    cv::Vec2f* sz = reinterpret_cast<cv::Vec2f*>(detail::proxy_to_mainl([this]() {
-        int x, y;
-        glfwGetWindowPos(getGLFWWindow(), &x, &y);
-        return reinterpret_cast<long>(new cv::Vec2f(x, y));
-    }));
-
-    fbCtx().makeNoneCurrent();
-
-    cv::Vec2f copy = *sz;
-    delete sz;
-    return copy;
+    int x, y;
+    glfwGetWindowPos(getGLFWWindow(), &x, &y);
+    return cv::Vec2f(x, y);
 }
 
 cv::Vec2f V4D::getMousePosition() {
@@ -449,15 +407,9 @@ cv::Rect& V4D::viewport() {
 
 cv::Size V4D::getNativeFrameBufferSize() {
     fbCtx().makeCurrent();
-    cv::Size* sz = reinterpret_cast<cv::Size*>(detail::proxy_to_mainl([this](){
         int w, h;
         glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
-        return reinterpret_cast<long>(new cv::Size{w, h});
-    }));
-    fbCtx().makeNoneCurrent();
-    cv::Size copy = *sz;
-    delete sz;
-    return copy;
+        return cv::Size{w, h};
 }
 
 cv::Size V4D::getFrameBufferSize() {
@@ -486,15 +438,11 @@ void V4D::resizeWindow(const cv::Size& sz) {
 
 bool V4D::isFullscreen() {
     fbCtx().makeCurrent();
-    return detail::proxy_to_mainb([this](){
-        return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
-    });
-    fbCtx().makeNoneCurrent();
+    return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
 }
 
 void V4D::setFullscreen(bool f) {
     fbCtx().makeCurrent();
-    detail::proxy_to_mainv([f,this](){
         auto monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
         if (f) {
@@ -506,8 +454,6 @@ void V4D::setFullscreen(bool f) {
                     getInitialSize().height, 0);
             resizeWindow(getInitialSize());
         }
-    });
-    fbCtx().makeNoneCurrent();
 }
 
 bool V4D::isResizable() {
@@ -567,42 +513,32 @@ bool V4D::display() {
     if (!offscreen_) {
 //        {
 //            FrameBufferContext::GLScope glScope(clvaCtx().fbCtx());
-//            GL_CHECK(glViewport(0, 0, getFrameBufferSize().width, getFrameBufferSize().height));
 //            clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
-////            clvaCtx().fbCtx().makeCurrent();
-////            glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
+//            clvaCtx().fbCtx().makeCurrent();
+//            glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
 //        }
 //        {
 //            FrameBufferContext::GLScope glScope(glCtx().fbCtx());
-//            GL_CHECK(glViewport(0, 0, getFrameBufferSize().width, getFrameBufferSize().height));
 //            glCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
-////            glCtx().fbCtx().makeCurrent();
-////            glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
+//            glCtx().fbCtx().makeCurrent();
+//            glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
 //        }
 //        {
 //            FrameBufferContext::GLScope glScope(nvgCtx().fbCtx());
-//            GL_CHECK(glViewport(0, 0, getFrameBufferSize().width, getFrameBufferSize().height));
-////            nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
-////            nvgCtx().fbCtx().makeCurrent();
-////            glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
+//            nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+//            nvgCtx().fbCtx().makeCurrent();
+//            glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 //        }
-        {
-            FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
-//            GL_CHECK(glViewport(0, 0, getFrameBufferSize().width, getFrameBufferSize().height));
-//
+//        run_sync_on_main([this](){
+//            FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
 //            nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
 //            nguiCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
-        }
+//        });
 
-        detail::proxy_to_mainv([this](){
-            FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
-            nguiCtx().render();
-            nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+        nguiCtx().render();
 
-        });
-
-        result = detail::proxy_to_mainb([this](){
+        run_sync_on_main([this](){
             FrameBufferContext::GLScope glScope(fbCtx());
             fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
             glfwSwapBuffers(fbCtx().getGLFWWindow());
@@ -628,11 +564,10 @@ GLFWwindow* V4D::getGLFWWindow() {
 }
 
 void V4D::printSystemInfo() {
-    detail::proxy_to_mainv([this]() {
+    run_sync_on_main([this](){
         fbCtx().makeCurrent();
         cerr << "OpenGL Version: " << getGlInfo() << endl;
         cerr << "OpenCL Platforms: " << getClInfo() << endl;
-        fbCtx().makeNoneCurrent();
     });
 }
 }

@@ -13,6 +13,7 @@ GLContext::GLContext(V4D& v4d, FrameBufferContext& fbContext) :
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {
+    run_sync_on_main([&,this](){
 #ifdef __EMSCRIPTEN__
     fb_.create(mainFbContext_.getSize(), CV_8UC4);
     preFB_.create(mainFbContext_.getSize(), CV_8UC4);
@@ -29,8 +30,8 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
     }
 #endif
     {
-        FrameBufferContext::GLScope glScope(fbCtx());
-        fn(fbCtx().getSize());
+            FrameBufferContext::GLScope glScope(fbCtx());
+            fn(fbCtx().getSize());
     }
 #ifdef __EMSCRIPTEN__
     {
@@ -44,6 +45,7 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
         postFB_.copyTo(fb_);
     }
 #endif
+    });
 }
 
 FrameBufferContext& GLContext::fbCtx() {
