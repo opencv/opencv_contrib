@@ -123,11 +123,13 @@ void FrameBufferContext::init() {
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
         v4d->nguiCtx().screen().cursor_pos_callback_event(x * v4d->getXPixelRatio(), y * v4d->getXPixelRatio());
+#ifndef __EMSCRIPTEN__
         auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
         if (v4d->isMouseDrag()) {
-//            v4d->pan(diff[0], -diff[1]);
+            v4d->pan(diff[0], -diff[1]);
         }
+#endif
         v4d->setMousePosition(x, y);
     }
     );
@@ -169,7 +171,9 @@ void FrameBufferContext::init() {
                     }
                 }
 
-//                v4d->zoom(y < 0 ? 1.1 : 0.9);
+#ifndef __EMSCRIPTEN__
+                v4d->zoom(y < 0 ? 1.1 : 0.9);
+#endif
             }
     );
 
@@ -440,10 +444,7 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint dstY1 = stretch ? hn : frameBufferSize_.height;
     GL_CHECK(
             glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
-                    dstX0,
-                    dstY0,
-                    dstX1,
-                    dstY1,
+                    dstX0, dstY0, dstX1, dstY1,
                     GL_COLOR_BUFFER_BIT, GL_NEAREST)
     );
 }
