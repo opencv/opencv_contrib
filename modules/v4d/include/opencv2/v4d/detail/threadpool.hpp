@@ -29,7 +29,6 @@ public:
         }
 
         for (auto i = 0llu; i < threads; i++) {
-            std::cerr << "work" << std::endl;
             workers.emplace_back([this] { worker_main(); });
         }
     }

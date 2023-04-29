@@ -1,6 +1,6 @@
 # OpenGL Rendering {#v4d_render_opengl}
 
-@prev_tutorial{v4d_vector_graphics}
+@prev_tutorial{v4d_vector_graphics_and_fb}
 @next_tutorial{v4d_font_rendering}
 
 |    |    |

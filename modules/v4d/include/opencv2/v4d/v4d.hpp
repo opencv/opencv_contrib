@@ -115,7 +115,7 @@ class NVG;
 class CV_EXPORTS V4D {
     friend class detail::NanoVGContext;
     friend class detail::FrameBufferContext;
-    const cv::Size initialSize_;
+    cv::Size initialSize_;
     bool offscreen_;
     const string& title_;
     int major_;
@@ -305,17 +305,13 @@ public:
      * @return The current viewport.
      */
     CV_EXPORTS cv::Rect& viewport();
+    CV_EXPORTS float getXPixelRatio();
+    CV_EXPORTS float getYPixelRatio();
     /*!
      * Set the window size.
      * @param sz The new window size.
      */
     CV_EXPORTS void resizeWindow(const cv::Size& sz);
-    CV_EXPORTS void setWindowSize(const cv::Size& sz);
-    /*!
-     * Get the window size
-     * @return The current window size.
-     */
-    CV_EXPORTS cv::Size getWindowSize();
     /*!
      * Get the initial size.
      * @return The initial size.
@@ -404,7 +400,7 @@ public:
     bool display_impl();
 private:
     V4D(const cv::Size& initialSize, bool offscreen,
-            const string& title, int major = 4, int minor = 6, bool compat = true, int samples = 0, bool debug = true);
+            const string& title, int major = 4, int minor = 6, bool compat = true, int samples = 0, bool debug = false);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);

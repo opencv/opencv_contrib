@@ -135,10 +135,11 @@
 
       var Module = {
         onRuntimeInitialized: function() {
+          fixCanvasSize();
         },
         preRun: [],
         postRun: function() {
-          fixCanvasSize();
+
         },
         print: (function() {
           var element = document.getElementById('output');

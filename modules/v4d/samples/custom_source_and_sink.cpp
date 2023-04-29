@@ -3,13 +3,13 @@
 #  include <opencv2/imgcodecs.hpp>
 #endif
 
-int main() {
-    using namespace cv;
-    using namespace cv::v4d;
+using namespace cv;
+using namespace cv::v4d;
 
+static Ptr<V4D> window = V4D::make(Size(1280, 720), "Custom Source/Sink");
+
+int main() {
     string hr = "Hello Rainbow!";
-	Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Custom Source/Sink");
-    v4d->setVisible(true);
 	//Make a Source that generates rainbow frames.
 	Source src([](cv::UMat& frame){
 		static long cnt = 0;
@@ -36,16 +36,16 @@ int main() {
 	});
 
 	//Attach source and sink
-	v4d->setSource(src);
-	v4d->setSink(sink);
+	window->setSource(src);
+	window->setSink(sink);
 
-	v4d->run([=]() {
+	window->run([=]() {
 	    //Capture video from the Source
-		if(!v4d->capture())
+		if(!window->capture())
 			return false; //end of input video
 
 		//Render "Hello Rainbow!" over the frame
-		v4d->nvg([=](const Size& sz) {
+		window->nvg([=](const Size& sz) {
 			using namespace cv::v4d::nvg;
 
 			fontSize(40.0f);
@@ -54,9 +54,9 @@ int main() {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
-		updateFps(v4d,true);
-		v4d->write(); //Write video to the Sink
-		return v4d->display(); //Display the framebuffer in the native window
+		updateFps(window,true);
+		window->write(); //Write video to the Sink
+		return window->display(); //Display the framebuffer in the native window
 	});
 }
 

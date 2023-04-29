@@ -71,11 +71,6 @@ V4D::V4D(const cv::Size& size, bool offscreen, const string& title, int major, i
         nguiContext_ = new detail::NanoguiContext(*this, *mainFbContext_);
         clvaContext_ = new detail::CLVAContext(*this, *mainFbContext_);
         glContext_ = new detail::GLContext(*this, *mainFbContext_);
-//        fbCtx().resizeWindow(initialSize_);
-//        clvaCtx().fbCtx().resizeWindow(initialSize_);
-//        glCtx().fbCtx().resizeWindow(initialSize_);
-//        nvgCtx().fbCtx().resizeWindow(initialSize_);
-//        nguiCtx().fbCtx().resizeWindow(initialSize_);
 }
 
 V4D::~V4D() {
@@ -199,7 +194,7 @@ void V4D::feed(cv::InputArray& in) {
         }, frame);
 
         fb([frame](cv::UMat& frameBuffer){
-            cvtColor(frame,frameBuffer, cv::COLOR_BGR2BGRA);
+            cvtColor(frame,frameBuffer, cv::COLOR_RGB2BGRA);
         });
 }
 
@@ -405,6 +400,34 @@ cv::Rect& V4D::viewport() {
     return viewport_;
 }
 
+float V4D::getXPixelRatio() {
+    fbCtx().makeCurrent();
+#ifdef __EMSCRIPTEN__
+    float r = emscripten_get_device_pixel_ratio();
+
+    return r;
+#else
+    float xscale, yscale;
+    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
+
+    return xscale;
+#endif
+}
+
+float V4D::getYPixelRatio() {
+    fbCtx().makeCurrent();
+#ifdef __EMSCRIPTEN__
+    float r = emscripten_get_device_pixel_ratio();
+
+    return r;
+#else
+    float xscale, yscale;
+    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
+
+    return yscale;
+#endif
+}
+
 cv::Size V4D::getNativeFrameBufferSize() {
     fbCtx().makeCurrent();
         int w, h;
@@ -416,24 +439,12 @@ cv::Size V4D::getFrameBufferSize() {
     return fbCtx().getSize();
 }
 
-cv::Size V4D::getWindowSize() {
-    return fbCtx().getWindowSize();
-}
-
 cv::Size V4D::getInitialSize() {
     return initialSize_;
 }
 
-void V4D::setWindowSize(const cv::Size& sz) {
-    if(mainFbContext_ != nullptr)
-        fbCtx().setWindowSize(sz);
-    if(nguiContext_ != nullptr)
-        nguiCtx().screen().resize_callback_event(sz.width, sz.height);
-}
-
 void V4D::resizeWindow(const cv::Size& sz) {
     fbCtx().resizeWindow(sz);
-    fbCtx().setWindowSize(sz);
 }
 
 bool V4D::isFullscreen() {
@@ -538,12 +549,12 @@ bool V4D::display() {
 
         nguiCtx().render();
 
-        run_sync_on_main([this](){
+        run_sync_on_main([&, this](){
             FrameBufferContext::GLScope glScope(fbCtx());
-            fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+            fbCtx().blitFrameBufferToScreen(viewport(), getFrameBufferSize(), isStretching());
             glfwSwapBuffers(fbCtx().getGLFWWindow());
             glfwPollEvents();
-            return !glfwWindowShouldClose(getGLFWWindow());
+            result = !glfwWindowShouldClose(getGLFWWindow());
         });
     }
 

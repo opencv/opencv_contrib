@@ -19,7 +19,6 @@ void NanoguiContext::init() {
     screen_ = new nanogui::Screen();
     screen_->initialize(nguiFbContext_.getGLFWWindow(), false);
     form_ = new cv::v4d::FormHelper(screen_);
-    fbCtx().resizeWindow(fbCtx().getSize());
 }
 
 void NanoguiContext::render() {

@@ -1,4 +1,4 @@
-# Render vector graphics {#v4d_vector_graphics_and_fb}
+# Render vector graphics and manipulate the framebuffer {#v4d_vector_graphics_and_fb}
 
 @prev_tutorial{v4d_vector_graphics}
 @next_tutorial{v4d_render_opengl}

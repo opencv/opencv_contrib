@@ -49,11 +49,8 @@ void FrameBufferContext::init() {
 #endif
     if (glfwInit() != GLFW_TRUE)
            assert(false);
-#ifndef __EMSCRIPTEN__
     glfwSetErrorCallback(cv::v4d::glfw_error_callback);
-    cerr << "after" << endl;
-    glfwDefaultWindowHints();
-#endif
+
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
@@ -87,17 +84,16 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
 
-//    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
     glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, std::to_string(++window_cnt).c_str(), nullptr,
             sharedWindow_);
 
     if (glfwWindow_ == NULL) {
         assert(false);
     }
-    cerr << "win" << endl;
     this->makeCurrent();
-    cerr << "current" << endl;
+    glfwSwapInterval(0);
 #ifndef OPENCV_V4D_USE_ES3
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         throw std::runtime_error("Could not initialize GLAD!");
@@ -114,16 +110,19 @@ void FrameBufferContext::init() {
         cerr << "CL-GL sharing failed with unknown error." << endl;
         clglSharing_ = false;
     }
-    context_ = CLExecContext_t::getCurrent();
 #else
     clglSharing_ = false;
 #endif
+#ifndef __EMSCRIPTEN__
+    context_ = CLExecContext_t::getCurrent();
+#endif
+
     setup(frameBufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), v4d_);
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
+        v4d->nguiCtx().screen().cursor_pos_callback_event(x * v4d->getXPixelRatio(), y * v4d->getXPixelRatio());
         auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
         if (v4d->isMouseDrag()) {
@@ -163,7 +162,7 @@ void FrameBufferContext::init() {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
                 std::vector<nanogui::Widget*> widgets;
                 for (auto* w : v4d->nguiCtx().screen().children()) {
-                    auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->fbCtx().getXPixelRatio(), v4d->getMousePosition()[1] / v4d->fbCtx().getYPixelRatio());
+                    auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
                     if(contains_absolute(w, mousePos)) {
                         v4d->nguiCtx().screen().scroll_callback_event(x, y);
                         return;
@@ -174,15 +173,19 @@ void FrameBufferContext::init() {
             }
     );
 
+//    glfwSetWindowSizeCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int width, int height) {
+//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//                v4d->nguiCtx().screen().resize_callback_event(width, height);
+//            });
     glfwSetFramebufferSizeCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int width, int height) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->setWindowSize(cv::Size(width, height));
-                cv::Rect& vp = v4d->viewport();
-                vp.x = 0;
-                vp.y = 0;
-                vp.width = width;
-                vp.height = height;
+//                cv::Rect& vp = v4d->viewport();
+//                vp.x = 0;
+//                vp.y = 0;
+//                vp.width = width;
+//                vp.height = height;
 #ifndef __EMSCRIPTEN__
                 if(v4d->isResizable()) {
                     v4d->nvgCtx().fbCtx().teardown();
@@ -200,7 +203,6 @@ void FrameBufferContext::setup(const cv::Size& sz) {
     this->makeCurrent();
     if(!isShared_) {
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
-        cerr << "GENFB1: " << frameBufferID_ << "/" << getGLFWWindow() << endl;
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
         GL_CHECK(glGenRenderbuffers(1, &renderBufferID_));
 
@@ -227,7 +229,6 @@ void FrameBufferContext::setup(const cv::Size& sz) {
     } else {
         assert(parent_ != nullptr);
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
-        cerr << "GENFB2: " << frameBufferID_ << "/" << getGLFWWindow() << endl;
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
 
         GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
@@ -533,21 +534,12 @@ void FrameBufferContext::makeCurrent() {
 
 bool FrameBufferContext::isResizable() {
     makeCurrent();
-
     return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
 }
 
 void FrameBufferContext::setResizable(bool r) {
     makeCurrent();
-    glfwWindowHint(GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
-}
-
-cv::Size FrameBufferContext::getWindowSize() {
-    return windowSize_;
-}
-
-void FrameBufferContext::setWindowSize(const cv::Size& sz) {
-    windowSize_ = sz;
+    glfwSetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
 }
 
 void FrameBufferContext::resizeWindow(const cv::Size& sz) {

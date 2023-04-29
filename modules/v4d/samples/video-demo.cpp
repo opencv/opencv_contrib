@@ -206,13 +206,10 @@ static bool iteration() {
 
     updateFps(v4d, true);
 
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if (!v4d->display())
-        return false;
-
     v4d->write();
 
-    return true;
+    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
+    return v4d->display();
 }
 
 #ifndef __EMSCRIPTEN__

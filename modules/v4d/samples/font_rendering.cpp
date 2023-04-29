@@ -1,30 +1,28 @@
 #include <opencv2/v4d/v4d.hpp>
 
+using namespace cv;
+using namespace cv::v4d;
+
+static Ptr<V4D> window = V4D::make(Size(1280, 720), "Font Rendering");
+
 int main() {
-    using namespace cv;
-    using namespace cv::v4d;
-
-    Ptr<V4D> v4d = V4D::make(Size(1280, 720), "Font Rendering");
-    v4d->setVisible(true);
-
 	//The text to render
 	string hw = "Hello World";
-	//Clear with black
-	v4d->clear();
-	//Render the text at the center of the screen
-	v4d->nvg([&](const Size& sz) {
-		using namespace cv::v4d::nvg;
-		fontSize(40.0f);
-		fontFace("sans-bold");
-		fillColor(Scalar(255, 0, 0, 255));
-		textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-		text(sz.width / 2.0, sz.height / 2.0, hw.c_str(), hw.c_str() + hw.size());
-	});
 
     //Display the framebuffer in the native window in an endless loop
-    v4d->run([=](){
-		updateFps(v4d,true);
-		return v4d->display();
+    window->run([=](){
+        window->clear();
+        //Render the text at the center of the screen
+        window->nvg([&](const Size& sz) {
+            using namespace cv::v4d::nvg;
+            fontSize(40.0f);
+            fontFace("sans-bold");
+            fillColor(Scalar(255, 0, 0, 255));
+            textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+            text(sz.width / 2.0, sz.height / 2.0, hw.c_str(), hw.c_str() + hw.size());
+        });
+		updateFps(window,true);
+		return window->display();
 	});
 }
 
