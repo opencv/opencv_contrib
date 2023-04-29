@@ -83,7 +83,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_ALPHA_BITS, 8);
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
 
     glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, std::to_string(++window_cnt).c_str(), nullptr,
@@ -126,7 +126,7 @@ void FrameBufferContext::init() {
         auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
         if (v4d->isMouseDrag()) {
-            v4d->pan(diff[0], -diff[1]);
+//            v4d->pan(diff[0], -diff[1]);
         }
         v4d->setMousePosition(x, y);
     }
@@ -173,30 +173,37 @@ void FrameBufferContext::init() {
             }
     );
 
-//    glfwSetWindowSizeCallback(getGLFWWindow(),
-//            [](GLFWwindow* glfwWin, int width, int height) {
-//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-//                v4d->nguiCtx().screen().resize_callback_event(width, height);
-//            });
-    glfwSetFramebufferSizeCallback(getGLFWWindow(),
+    glfwSetWindowSizeCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int width, int height) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                v4d->nguiCtx().screen().resize_callback_event(width, height);
+                cv::Rect& vp = v4d->viewport();
+                cv::Size fbsz = v4d->getFrameBufferSize();
+                vp.x = 0;
+                vp.y = 0;
+                vp.width = fbsz.width;
+                vp.height = fbsz.height;
+            });
+
+//    glfwSetFramebufferSizeCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int width, int height) {
+//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
 //                cv::Rect& vp = v4d->viewport();
 //                vp.x = 0;
 //                vp.y = 0;
 //                vp.width = width;
 //                vp.height = height;
-#ifndef __EMSCRIPTEN__
-                if(v4d->isResizable()) {
-                    v4d->nvgCtx().fbCtx().teardown();
-                    v4d->glCtx().fbCtx().teardown();
-                    v4d->fbCtx().teardown();
-                    v4d->fbCtx().setup(cv::Size(width, height));
-                    v4d->glCtx().fbCtx().setup(cv::Size(width, height));
-                    v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
-                }
-#endif
-            });
+//#ifndef __EMSCRIPTEN__
+//                if(v4d->isResizable()) {
+//                    v4d->nvgCtx().fbCtx().teardown();
+//                    v4d->glCtx().fbCtx().teardown();
+//                    v4d->fbCtx().teardown();
+//                    v4d->fbCtx().setup(cv::Size(width, height));
+//                    v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+//                    v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+//                }
+//#endif
+//            });
 }
 void FrameBufferContext::setup(const cv::Size& sz) {
     frameBufferSize_ = sz;
@@ -410,14 +417,35 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
         const cv::Size& windowSize, bool stretch) {
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
-    if(!isShared_) {
-        GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
-    } else {
-        GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
-    }
+    GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+    double hf = double(windowSize.height) / frameBufferSize_.height;
+    double wf = double(windowSize.width) / frameBufferSize_.width;
+    double f = std::min(hf, wf);
+    if (f < 0)
+        f = 1.0 / f;
+
+    double wn = frameBufferSize_.width * f;
+    double hn = frameBufferSize_.height * f;
+    double xn = windowSize.width - wn;
+    double yn = windowSize.height - hn;
+
+    GLint srcX0 = viewport.x;
+    GLint srcY0 = viewport.y;
+    GLint srcX1 = viewport.x + viewport.width;
+    GLint srcY1 = viewport.y + viewport.height;
+    GLint dstX0 = stretch ? xn : windowSize.width - frameBufferSize_.width;
+    GLint dstY0 = stretch ? yn : windowSize.height - frameBufferSize_.height;
+    GLint dstX1 = stretch ? wn : frameBufferSize_.width;
+    GLint dstY1 = stretch ? hn : frameBufferSize_.height;
     GL_CHECK(
-            glBlitFramebuffer( viewport.x, viewport.y, viewport.x + viewport.width, viewport.y + viewport.height, stretch ? 0 : windowSize.width - frameBufferSize_.width, stretch ? 0 : windowSize.height - frameBufferSize_.height, stretch ? windowSize.width : frameBufferSize_.width, stretch ? windowSize.height : frameBufferSize_.height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
+                    dstX0,
+                    dstY0,
+                    dstX1,
+                    dstY1,
+                    GL_COLOR_BUFFER_BIT, GL_NEAREST)
+    );
 }
 
 void FrameBufferContext::begin() {
@@ -545,6 +573,13 @@ void FrameBufferContext::setResizable(bool r) {
 void FrameBufferContext::resizeWindow(const cv::Size& sz) {
     makeCurrent();
     glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
+}
+
+cv::Size FrameBufferContext::getWindowSize() {
+    makeCurrent();
+    cv::Size sz;
+    glfwGetWindowSize(getGLFWWindow(), &sz.width, &sz.height);
+    return sz;
 }
 
 bool FrameBufferContext::isFullscreen() {

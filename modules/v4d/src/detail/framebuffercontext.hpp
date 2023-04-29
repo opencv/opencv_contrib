@@ -179,6 +179,7 @@ public:
      * V4D instances have to become non-current.
      */
     CV_EXPORTS void resizeWindow(const cv::Size& sz);
+    CV_EXPORTS cv::Size getWindowSize();
     CV_EXPORTS bool isFullscreen();
     CV_EXPORTS void setFullscreen(bool f);
     CV_EXPORTS cv::Size getNativeFrameBufferSize();

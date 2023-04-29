@@ -60,7 +60,7 @@ V4D::V4D(const cv::Size& size, bool offscreen, const string& title, int major, i
         bool compat, int samples, bool debug) :
         initialSize_(size), offscreen_(offscreen), title_(title), major_(major), minor_(minor), compat_(
                 compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), scale_(
-                1), mousePos_(0, 0), stretch_(false), pool_(2) {
+                1), mousePos_(0, 0), stretch_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
@@ -551,7 +551,7 @@ bool V4D::display() {
 
         run_sync_on_main([&, this](){
             FrameBufferContext::GLScope glScope(fbCtx());
-            fbCtx().blitFrameBufferToScreen(viewport(), getFrameBufferSize(), isStretching());
+            fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isStretching());
             glfwSwapBuffers(fbCtx().getGLFWWindow());
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());
