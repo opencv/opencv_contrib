@@ -22,7 +22,7 @@ int main() {
     });
 	//Display the framebuffer in the native window in an endless loop
 	window->run([=](){
-	    updateFps(window, true);
+        window->updateFps();
 		return window->display();
 	});
 }

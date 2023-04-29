@@ -446,24 +446,19 @@ static bool iteration() {
 #endif
     });
 
-    updateFps(v4d, show_fps);
+    v4d->updateFps();
 
 #ifndef __EMSCRIPTEN__
     v4d->write();
 
-    v4d2->capture([=](cv::UMat& videoFrame) {
-        menuFrame.copyTo(videoFrame);
-    });
+    v4d2->feed(menuFrame);
 
     if(!v4d2->display())
         return false;
 #endif
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v4d->display())
-        return false;
-
-    return true;
+    return v4d->display();
 }
 #ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {

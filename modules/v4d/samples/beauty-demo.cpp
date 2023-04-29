@@ -378,15 +378,15 @@ static bool iteration() {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         }
-        updateFps(v4d, true);
+
+        v4d->updateFps();
 
 #ifndef __EMSCRIPTEN__
         v4d->write();
 #endif
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        if (!v4d->display())
-            return false;
+        return v4d->display();
     } catch (std::exception &ex) {
         cerr << ex.what() << endl;
         return false;

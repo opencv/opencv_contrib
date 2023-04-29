@@ -137,7 +137,6 @@ class CV_EXPORTS V4D {
     Source source_;
     Sink sink_;
     concurrent::threadpool pool_;
-    bool captureSuccessful_ = true;
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
     cv::UMat currentWriterFrame_;
@@ -146,6 +145,9 @@ class CV_EXPORTS V4D {
     std::future<bool> futureReader_;
     std::future<void> futureWriter_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
+    uint64_t frameCnt_ = 0;
+    cv::TickMeter tick_;
+    float fps_;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -382,6 +384,7 @@ public:
      * @return true if framebuffer stretching during blitting is enabled.
      */
     CV_EXPORTS bool isStretching();
+    CV_EXPORTS uint64_t frameCount();
     /*!
      * Determine if the window is closed.
      * @return true if the window is closed.
@@ -397,7 +400,7 @@ public:
      */
     CV_EXPORTS bool display();
     CV_EXPORTS void printSystemInfo();
-    bool display_impl();
+    CV_EXPORTS void updateFps(bool graphical = true);
 private:
     V4D(const cv::Size& initialSize, bool offscreen,
             const string& title, int major = 4, int minor = 6, bool compat = true, int samples = 0, bool debug = false);

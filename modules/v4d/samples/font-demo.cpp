@@ -187,15 +187,14 @@ static bool iteration() {
         cnt = 0;
     }
 
-    updateFps(v4d, show_fps);
+    v4d->updateFps();
 
 #ifndef __EMSCRIPTEN__
     v4d->write();
 #endif
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v4d->display())
-        return false;
+    return v4d->display();
 
     ++cnt;
     //Wrap the cnt around if it becomes to big.

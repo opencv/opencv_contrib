@@ -35,7 +35,8 @@ int main() {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hw.c_str(), hw.c_str() + hw.size());
 		});
-		updateFps(window,true);
+
+        window->updateFps();
 		//Display the framebuffer in the native window
 		return window->display();
 	});

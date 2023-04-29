@@ -54,7 +54,9 @@ int main() {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
-		updateFps(window,true);
+
+		window->updateFps();
+
 		window->write(); //Write video to the Sink
 		return window->display(); //Display the framebuffer in the native window
 	});

@@ -204,7 +204,7 @@ static bool iteration() {
     });
 #endif
 
-    updateFps(v4d, true);
+    v4d->updateFps();
 
     v4d->write();
 

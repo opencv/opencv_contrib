@@ -327,7 +327,7 @@ static bool iteration() {
     });
 #endif
 
-    updateFps(v4d, true);
+    v4d->updateFps();
 
 #ifndef __EMSCRIPTEN__
     v4d->write();

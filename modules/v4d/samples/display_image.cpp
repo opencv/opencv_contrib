@@ -21,7 +21,7 @@ int main() {
     //of a run loop for portability reasons and executes the functor until the application
     //terminates or the functor returns false.
 	window->run([=](){
-	    updateFps(window, true);
+	    window->updateFps();
 	    return window->display();
     });
 }

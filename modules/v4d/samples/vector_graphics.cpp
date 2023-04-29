@@ -25,8 +25,9 @@ int main() {
             stroke();
         });
 
-		updateFps(window,true);
-		return window->display();
+        window->updateFps();
+
+        return window->display();
 	});
 }
 

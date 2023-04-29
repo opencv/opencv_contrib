@@ -126,35 +126,35 @@ static bool iteration() {
     static cv::UMat hsv;
     static cv::UMat hueChannel;
 
-    //we use time to calculated the current hue
-    float time = cv::getTickCount() / cv::getTickFrequency();
+    //we use frame count to calculated the current hue
+    float time = v4d->frameCount() / 60.0;
     //nanovg hue fading between 0.0f and 255.0f
     float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
 
     if (!v4d->capture())
         return false;
 
-//    v4d->fb([&](cv::UMat &frameBuffer) {
-//        cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
-//    });
-//
-//    //Color-conversion from RGB to HSV. (OpenCL)
-//    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
-//
-//    //split the channels
-//    split(hsv,hsvChannels);
-//    //Set the current hue
-//    hsvChannels[0].setTo(hue);
-//    //merge the channels back
-//    merge(hsvChannels,hsv);
-//
-//    //Color-conversion from HSV to RGB. (OpenCL)
-//    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
-//
-//    //Color-conversion from RGB to BGRA. (OpenCL)
-//    v4d->fb([&](cv::UMat &frameBuffer) {
-//        cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
-//    });
+    v4d->fb([&](cv::UMat &frameBuffer) {
+        cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
+    });
+
+    //Color-conversion from RGB to HSV. (OpenCL)
+    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+
+    //split the channels
+    split(hsv,hsvChannels);
+    //Set the current hue
+    hsvChannels[0].setTo(hue);
+    //merge the channels back
+    merge(hsvChannels,hsv);
+
+    //Color-conversion from HSV to RGB. (OpenCL)
+    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+
+    //Color-conversion from RGB to BGRA. (OpenCL)
+    v4d->fb([&](cv::UMat &frameBuffer) {
+        cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
+    });
 
     //Render using nanovg
     v4d->nvg([&](const cv::Size &sz) {
@@ -162,7 +162,7 @@ static bool iteration() {
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 
-    updateFps(v4d, true);
+    v4d->updateFps();
 
     v4d->write();
 

@@ -557,8 +557,16 @@ bool V4D::display() {
             result = !glfwWindowShouldClose(getGLFWWindow());
         });
     }
+    if(frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
+        frameCnt_ = 0;
+    else
+        ++frameCnt_;
 
     return result;
+}
+
+uint64_t V4D::frameCount() {
+    return frameCnt_;
 }
 
 bool V4D::isClosed() {
@@ -580,6 +588,41 @@ void V4D::printSystemInfo() {
         cerr << "OpenGL Version: " << getGlInfo() << endl;
         cerr << "OpenCL Platforms: " << getClInfo() << endl;
     });
+}
+
+void V4D::updateFps(bool graphical) {
+    if (frameCount() > 0) {
+        tick_.stop();
+
+        if (tick_.getTimeMilli() > 50) {
+            cerr << "FPS : " << (fps_ = tick_.getFPS());
+#ifndef __EMSCRIPTEN__
+            cerr << '\r';
+#else
+            cerr << endl;
+#endif
+            tick_.reset();
+        }
+
+        if (graphical) {
+            this->nvg([this]() {
+                using namespace cv::v4d::nvg;
+                string txt = "FPS: " + std::to_string(fps_);
+                beginPath();
+                roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
+                fillColor(cv::Scalar(255, 255, 255, 180));
+                fill();
+
+                fontSize(30.0f);
+                fontFace("mono");
+                fillColor(cv::Scalar(90, 90, 90, 255));
+                textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                text(10, 20, txt.c_str(), nullptr);
+            });
+        }
+    }
+
+    tick_.start();
 }
 }
 }

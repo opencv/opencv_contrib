@@ -16,8 +16,6 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-long window_cnt = 0;
-
 static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
     nanogui::Vector2i d = p - w->absolute_position();
     return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
@@ -86,7 +84,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
 
-    glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, std::to_string(++window_cnt).c_str(), nullptr,
+    glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
 
     if (glfwWindow_ == NULL) {

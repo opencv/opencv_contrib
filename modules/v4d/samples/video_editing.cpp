@@ -44,8 +44,8 @@ int main(int argc, char** argv) {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
 		});
-		updateFps(window,true);
 
+		window->updateFps();
 		window->write(); //Write video to the Sink
 
 		return window->display(); //Display the framebuffer in the native window

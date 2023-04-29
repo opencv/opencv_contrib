@@ -112,12 +112,6 @@ CV_EXPORTS bool isClGlSharingSupported();
  */
 CV_EXPORTS bool keepRunning();
 
-/*!
- * Little helper function to keep track of FPS and optionally display it using NanoVG
- * @param v4d The V4D object to operate on
- * @param graphical if this parameter is true the FPS drawn on display
- */
-CV_EXPORTS void updateFps(cv::Ptr<V4D> v4d, bool graphical);
 
 #ifndef __EMSCRIPTEN__
 /*!

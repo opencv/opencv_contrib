@@ -243,52 +243,6 @@ bool keepRunning() {
     return !finish_requested;
 }
 
-/*!
- * Little helper function to keep track of FPS and optionally display it using NanoVG
- * @param v4d The V4D object to operate on
- * @param graphical if this parameter is true the FPS drawn on display
- */
-void updateFps(cv::Ptr<cv::v4d::V4D> v4d, bool graphical) {
-    static uint64_t cnt = 0;
-    static cv::TickMeter tick;
-    static float fps;
-
-    if (cnt > 0) {
-        tick.stop();
-
-        if (tick.getTimeMilli() > 50) {
-            cerr << "FPS : " << (fps = tick.getFPS());
-#ifndef __EMSCRIPTEN__
-            cerr << '\r';
-#else
-            cerr << endl;
-#endif
-            cnt = 0;
-            tick.reset();
-        }
-
-        if (graphical) {
-            v4d->nvg([&]() {
-                using namespace cv;
-                string text = "FPS: " + std::to_string(fps);
-                nvg::beginPath();
-                nvg::roundedRect(5, 5, 15 * text.size() + 5, 30, 5);
-                nvg::fillColor(cv::Scalar(255, 255, 255, 180));
-                nvg::fill();
-
-                nvg::fontSize(30.0f);
-                nvg::fontFace("mono");
-                nvg::fillColor(cv::Scalar(90, 90, 90, 255));
-                nvg::textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                nvg::text(10, 20, text.c_str(), nullptr);
-            });
-        }
-    }
-
-    tick.start();
-    ++cnt;
-}
-
 #ifndef __EMSCRIPTEN__
 Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex) {

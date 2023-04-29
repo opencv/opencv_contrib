@@ -196,17 +196,14 @@ static bool iteration() {
         composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
     });
 
-    updateFps(v4d, true);
+    v4d->updateFps();
 
     v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if(!v4d->display())
-        return false;
-
-    return true;
-
+    return v4d->display();
 }
+
 #ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
     if (argc != 2) {
