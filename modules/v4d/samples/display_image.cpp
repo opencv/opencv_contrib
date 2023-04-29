@@ -10,7 +10,7 @@ static Ptr<V4D> window = V4D::make(Size(1280, 720), "Show image");
 int main() {
 	//An image
 #ifdef __EMSCRIPTEN__
-    Mat image = read_image("doc/lena.png");
+    Mat image = read_embedded_image("doc/lena.png");
 #else
 	Mat image = imread(samples::findFile("lena.jpg"));
 #endif

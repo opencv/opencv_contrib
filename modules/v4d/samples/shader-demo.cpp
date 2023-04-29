@@ -168,7 +168,7 @@ static void load_shader() {
     cerr << "##### Fragment Shader #####" << endl;
     cerr << frag << endl;
 
-    shader_program_hdl = cv::v4d::init_shader(vert.c_str(), frag.c_str(), "fragColor");
+    shader_program_hdl = cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
 static float easeInOutQuint(float x) {

@@ -38,22 +38,9 @@ void run_sync_on_main(std::function<void()> fn) {
 #endif
 }
 
-size_t cnz(const cv::UMat& m) {
-    cv::UMat grey;
-    if(m.channels() == 1) {
-        grey = m;
-    } else if(m.channels() == 3) {
-        cvtColor(m, grey, cv::COLOR_BGR2GRAY);
-    } else if(m.channels() == 4) {
-        cvtColor(m, grey, cv::COLOR_BGRA2GRAY);
-    } else {
-        assert(false);
-    }
-    return cv::countNonZero(grey);
-}
 }
 #ifdef __EMSCRIPTEN__
-Mat read_image(const string &path) {
+Mat read_embedded_image(const string &path) {
     SDL_Surface *loadedSurface = IMG_Load(path.c_str());
     Mat result;
     if (loadedSurface == NULL) {
@@ -89,7 +76,7 @@ Mat read_image(const string &path) {
 }
 #endif
 
-unsigned int init_shader(const char* vShader, const char* fShader, const char* outputAttributeName) {
+unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName) {
     struct Shader {
         GLenum type;
         const char* source;

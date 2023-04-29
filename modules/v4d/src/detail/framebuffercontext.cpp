@@ -84,7 +84,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
 
     glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, std::to_string(++window_cnt).c_str(), nullptr,
             sharedWindow_);

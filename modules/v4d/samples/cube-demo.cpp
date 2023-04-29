@@ -66,7 +66,7 @@ static GLuint load_shader() {
     }
 )";
 
-    return cv::v4d::init_shader(vert.c_str(), frag.c_str(), "fragColor");
+    return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
 static void init_scene(const cv::Size& sz) {

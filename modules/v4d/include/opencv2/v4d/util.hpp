@@ -81,10 +81,10 @@ size_t cnz(const cv::UMat& m);
 using std::string;
 class V4D;
 #ifdef __EMSCRIPTEN__
-CV_EXPORTS Mat read_image(const string &path);
+CV_EXPORTS Mat read_embedded_image(const string &path);
 #endif
 
-CV_EXPORTS unsigned int init_shader(const char* vShader, const char* fShader, const char* outputAttributeName);
+CV_EXPORTS unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName);
 /*!
  * Returns the OpenGL Version information.
  * @return a string object with the OpenGL version information

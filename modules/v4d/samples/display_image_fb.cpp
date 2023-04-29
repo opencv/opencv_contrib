@@ -10,7 +10,7 @@ static Ptr<V4D> window = V4D::make(Size(1280, 720), "Show image");
 int main() {
 	//Read an image as UMat
 #ifdef __EMSCRIPTEN__
-    UMat image = read_image("doc/lena.png").getUMat(ACCESS_READ);
+    UMat image = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
 #else
     UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 #endif
