@@ -74,7 +74,7 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
-        fn(fbCtx().getSize());
+        fn(fbCtx().size());
     }
 #ifdef __EMSCRIPTEN__
     {
@@ -92,8 +92,8 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 }
 
 void NanoVGContext::begin() {
-    float w = fbCtx().getSize().width;
-    float h = fbCtx().getSize().height;
+    float w = fbCtx().size().width;
+    float h = fbCtx().size().height;
     float r = fbCtx().getXPixelRatio();
 
     nvgSave(context_);

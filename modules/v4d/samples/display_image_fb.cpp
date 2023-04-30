@@ -15,14 +15,16 @@ int main() {
     UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 #endif
     UMat resized;
-	//Resize and color convert the image to framebuffer size
-    window->fb([&](const UMat& framebuffer) {
-        resize(image, resized, window->getFrameBufferSize());
-        cvtColor(resized, framebuffer, COLOR_RGB2BGRA);
-    });
+    UMat converted;
+    resize(image, resized, window->getFrameBufferSize());
+    cvtColor(resized, converted, COLOR_RGB2BGRA);
+
 	//Display the framebuffer in the native window in an endless loop
 	window->run([=](){
-        window->updateFps();
+	    window->fb([&](UMat& framebuffer) {
+	        converted.copyTo(framebuffer);
+	    });
+	    window->updateFps();
 		return window->display();
 	});
 }

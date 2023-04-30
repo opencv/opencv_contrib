@@ -4,20 +4,20 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "glcontext.hpp"
-
+#include "opencv2/v4d/v4d.hpp"
 namespace cv {
 namespace v4d {
 namespace detail {
 GLContext::GLContext(V4D& v4d, FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), glFbContext_(v4d, "OpenGL", fbContext) {
+        v4d_(v4d), mainFbContext_(fbContext), glFbContext_(v4d, "OpenGL", fbContext) {
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {
     run_sync_on_main([&,this](){
 #ifdef __EMSCRIPTEN__
-    fb_.create(mainFbContext_.getSize(), CV_8UC4);
-    preFB_.create(mainFbContext_.getSize(), CV_8UC4);
-    postFB_.create(mainFbContext_.getSize(), CV_8UC4);
+    fb_.create(mainFbContext_.size(), CV_8UC4);
+    preFB_.create(mainFbContext_.size(), CV_8UC4);
+    postFB_.create(mainFbContext_.size(), CV_8UC4);
     {
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
@@ -31,12 +31,12 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
     {
             FrameBufferContext::GLScope glScope(fbCtx());
-            fn(fbCtx().getSize());
+            fn(fbCtx().size());
     }
 #ifdef __EMSCRIPTEN__
     {
-        FrameBufferContext::GLScope glScope(glFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(glFbContext_, fb_);
+        FrameBufferContext::GLScope glScope(fbCtx());
+        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
         fb_.copyTo(postFB_);
     }
     {

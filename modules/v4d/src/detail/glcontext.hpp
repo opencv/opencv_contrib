@@ -19,6 +19,7 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class GLContext {
+    V4D& v4d_;
     FrameBufferContext& mainFbContext_;
     FrameBufferContext glFbContext_;
     cv::UMat preFB_;

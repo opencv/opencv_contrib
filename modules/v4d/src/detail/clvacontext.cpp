@@ -20,7 +20,7 @@ cv::Size CLVAContext::getVideoFrameSize() {
 }
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
-    cv::Size fbSize = fbCtx().getSize();
+    cv::Size fbSize = fbCtx().size();
     if (!context_.empty()) {
         {
 #ifndef __EMSCRIPTEN__
@@ -31,13 +31,13 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
         if (readFrame_.empty())
             return false;
         inputVideoFrameSize_ = readFrame_.size();
-        resizePreserveAspectRatio(readFrame_, output, fbCtx().getSize());
+        resizePreserveAspectRatio(readFrame_, output, fbCtx().size());
     } else {
         fn(readFrame_);
         if (readFrame_.empty())
             return false;
         inputVideoFrameSize_ = readFrame_.size();
-        resizePreserveAspectRatio(readFrame_, output, fbCtx().getSize());
+        resizePreserveAspectRatio(readFrame_, output, fbCtx().size());
     }
 
     return true;

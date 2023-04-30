@@ -14,13 +14,13 @@ int main() {
 #else
 	Mat image = imread(samples::findFile("lena.jpg"));
 #endif
-    //Feeds the image to the video pipeline
-    window->feed(image);
 	//Display the framebuffer in the native window in an endless loop.
     //V4D::run() though it takes a functor is not a context. It is simply an abstraction
     //of a run loop for portability reasons and executes the functor until the application
     //terminates or the functor returns false.
 	window->run([=](){
+	    //Feeds the image to the video pipeline
+	    window->feed(image);
 	    window->updateFps();
 	    return window->display();
     });

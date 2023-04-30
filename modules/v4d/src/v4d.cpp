@@ -436,7 +436,7 @@ cv::Size V4D::getNativeFrameBufferSize() {
 }
 
 cv::Size V4D::getFrameBufferSize() {
-    return fbCtx().getSize();
+    return fbCtx().size();
 }
 
 cv::Size V4D::getInitialSize() {
@@ -444,7 +444,7 @@ cv::Size V4D::getInitialSize() {
 }
 
 void V4D::resizeWindow(const cv::Size& sz) {
-    fbCtx().resizeWindow(sz);
+    fbCtx().setWindowSize(sz);
 }
 
 bool V4D::isFullscreen() {

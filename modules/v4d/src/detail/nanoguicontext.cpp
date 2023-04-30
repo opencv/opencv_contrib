@@ -24,9 +24,9 @@ void NanoguiContext::init() {
 void NanoguiContext::render() {
     run_sync_on_main([&,this](){
 #ifdef __EMSCRIPTEN__
-    fb_.create(mainFbContext_.getSize(), CV_8UC4);
-    preFB_.create(mainFbContext_.getSize(), CV_8UC4);
-    postFB_.create(mainFbContext_.getSize(), CV_8UC4);
+    fb_.create(mainFbContext_.size(), CV_8UC4);
+    preFB_.create(mainFbContext_.size(), CV_8UC4);
+    postFB_.create(mainFbContext_.size(), CV_8UC4);
     {
         FrameBufferContext::GLScope mainGlScope(mainFbContext_);
         FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
@@ -58,11 +58,11 @@ void NanoguiContext::render() {
 }
 
 void NanoguiContext::build(std::function<void(cv::v4d::FormHelper&)> fn) {
-//    run_sync_on_main([fn,this](){
-//        FrameBufferContext::GLScope glScope(fbCtx());
+    run_sync_on_main([fn,this](){
+        FrameBufferContext::GLScope glScope(fbCtx());
         fn(form());
         screen().perform_layout();
-//    });
+    });
 }
 
 nanogui::Screen& NanoguiContext::screen() {

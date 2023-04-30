@@ -58,31 +58,6 @@ class FrameBufferContext {
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;
-    /*!
-     * The internal framebuffer exposed as OpenGL Texture2D.
-     * @return The texture object.
-     */
-    cv::ogl::Texture2D& getTexture2D();
-    GLFWwindow* getGLFWWindow();
-
-#ifndef __EMSCRIPTEN__
-    /*!
-     * Get the current OpenCLExecutionContext
-     * @return The current OpenCLExecutionContext
-     */
-    CLExecContext_t& getCLExecContext();
-#endif
-    /*!
-     * Blit the framebuffer to the screen
-     * @param viewport ROI to blit
-     * @param windowSize The size of the window to blit to
-     * @param stretch if true stretch the framebuffer to window size
-     */
-    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
-            bool stretch = false);
-
-    void toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture);
-    void fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u);
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.
@@ -144,14 +119,11 @@ public:
      */
     virtual ~FrameBufferContext();
 
-    void init();
-    void setup(const cv::Size& sz);
-    void teardown();
     /*!
      * Get the framebuffer size.
      * @return The framebuffer size.
      */
-    cv::Size getSize();
+    cv::Size size();
     /*!
       * Execute function object fn inside a framebuffer context.
       * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -165,28 +137,26 @@ public:
      * Get the pixel ratio of the display x-axis.
      * @return The pixel ratio of the display x-axis.
      */
-    CV_EXPORTS float getXPixelRatio();
+    float getXPixelRatio();
     /*!
      * Get the pixel ratio of the display y-axis.
      * @return The pixel ratio of the display y-axis.
      */
-    CV_EXPORTS float getYPixelRatio();
-    CV_EXPORTS void makeCurrent();
-    CV_EXPORTS bool isResizable();
-    CV_EXPORTS void setResizable(bool r);
-    /*!
-     * To make it possible for other V4D objects to become current all other
-     * V4D instances have to become non-current.
-     */
-    CV_EXPORTS void resizeWindow(const cv::Size& sz);
-    CV_EXPORTS cv::Size getWindowSize();
-    CV_EXPORTS bool isFullscreen();
-    CV_EXPORTS void setFullscreen(bool f);
-    CV_EXPORTS cv::Size getNativeFrameBufferSize();
-    CV_EXPORTS void setVisible(bool v);
-    CV_EXPORTS bool isVisible();
-
+    float getYPixelRatio();
+    void makeCurrent();
+    bool isResizable();
+    void setResizable(bool r);
+    void setWindowSize(const cv::Size& sz);
+    cv::Size getWindowSize();
+    bool isFullscreen();
+    void setFullscreen(bool f);
+    cv::Size getNativeFrameBufferSize();
+    void setVisible(bool v);
+    bool isVisible();
 protected:
+    void init();
+    void setup(const cv::Size& sz);
+    void teardown();
     /*!
      * Setup OpenGL states.
      */
@@ -218,8 +188,33 @@ protected:
     /*!
      * The UMat used to copy or bind (depending on cl-gl sharing capability) the OpenGL framebuffer.
      */
+    /*!
+     * The internal framebuffer exposed as OpenGL Texture2D.
+     * @return The texture object.
+     */
+    cv::ogl::Texture2D& getTexture2D();
+    GLFWwindow* getGLFWWindow();
+
+#ifndef __EMSCRIPTEN__
+    /*!
+     * Get the current OpenCLExecutionContext
+     * @return The current OpenCLExecutionContext
+     */
+    CLExecContext_t& getCLExecContext();
+#endif
+    /*!
+     * Blit the framebuffer to the screen
+     * @param viewport ROI to blit
+     * @param windowSize The size of the window to blit to
+     * @param stretch if true stretch the framebuffer to window size
+     */
+    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
+            bool stretch = false);
+
+    void toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture);
+    void fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u);
+
     cv::UMat frameBuffer_;
-    cv::UMat tmpBuffer_;
     /*!
      * The texture bound to the OpenGL framebuffer.
      */
