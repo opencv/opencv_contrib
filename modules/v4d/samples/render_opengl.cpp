@@ -12,10 +12,6 @@ int main() {
         glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     });
     window->run([=]() {
-        window->fb([](cv::UMat& framebuffer) {
-            framebuffer = cv::Scalar(0, 255, 0, 255);
-        });
-
         window->gl([]() {
 		    //Clears the screen
 			glClear(GL_COLOR_BUFFER_BIT);

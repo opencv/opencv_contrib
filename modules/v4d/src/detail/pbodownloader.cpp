@@ -7,6 +7,12 @@
 #include "pbodownloader.hpp"
 
 namespace poly {
+#ifdef __EMSCRIPTEN__
+#define USE_PBO 0
+#else
+#define USE_PBO 1
+#endif
+
 #ifdef OPENCV_V4D_USE_ES3
 #define GL_BGRA GL_RGBA
 #define GL_BGR GL_RGB
@@ -128,7 +134,6 @@ void myGetBufferSubData (GLenum theTarget, GLintptr theOffset, GLsizeiptr theSiz
     uint64_t end_ns = 0;
     uint64_t delta_ns = 0;
 
-#define USE_PBO 1
 #if USE_PBO
     cerr << "1" << endl;
     if (num_downloads < num_pbos) {
