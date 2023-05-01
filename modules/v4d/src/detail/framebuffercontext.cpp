@@ -12,6 +12,7 @@
 #include "opencv2/core/opengl.hpp"
 #include <exception>
 
+
 namespace cv {
 namespace v4d {
 namespace detail {
@@ -114,6 +115,11 @@ void FrameBufferContext::init() {
     context_ = CLExecContext_t::getCurrent();
 #endif
 
+#ifdef OPENCV_V4D_USE_ES3
+    downloader_.init(GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 3);
+#else
+    downloader_.init(GL_BGRA, frameBufferSize_.width, frameBufferSize_.height, 3);
+#endif
     setup(frameBufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), v4d_);
 
@@ -459,8 +465,11 @@ void FrameBufferContext::end() {
 void FrameBufferContext::download(cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
-    //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl at the same time
-    GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
+//    //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl at the same time
+//    GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
+
+    downloader_.download();
+    memcpy(tmp.data, downloader_.pixels, downloader_.nbytes);
     tmp.release();
 }
 

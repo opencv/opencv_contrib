@@ -12,8 +12,11 @@
 
 #include "cl.hpp"
 #include <opencv2/core/ocl.hpp>
-#include <iostream>
 #include "opencv2/v4d/util.hpp"
+#include "pbodownloader.hpp"
+#include <iostream>
+
+using namespace poly;
 
 struct GLFWwindow;
 namespace cv {
@@ -58,6 +61,7 @@ class FrameBufferContext {
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;
+    PboDownloader downloader_;
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.

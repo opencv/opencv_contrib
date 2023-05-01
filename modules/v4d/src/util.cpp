@@ -32,7 +32,7 @@ namespace v4d {
 namespace detail {
 void run_sync_on_main(std::function<void()> fn) {
 #ifdef __EMSCRIPTEN__
-    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<121>(fn));
+    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<__COUNTER__>(fn));
 #else
     fn();
 #endif
