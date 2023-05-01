@@ -164,6 +164,7 @@ void V4D::nanogui(std::function<void(cv::v4d::FormHelper& form)> fn) {
 
 #ifdef __EMSCRIPTEN__
 static void do_frame(void* void_fn_ptr) {
+     glfwSwapInterval(0);
      auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
      if (fn_ptr) {
          auto& fn = *fn_ptr;

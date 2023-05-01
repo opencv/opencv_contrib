@@ -147,7 +147,7 @@ class CV_EXPORTS V4D {
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
     uint64_t frameCnt_ = 0;
     cv::TickMeter tick_;
-    float fps_;
+    float fps_ = 0;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -170,8 +170,8 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize, bool offscreen, const string& title, int major = 4,
-            int minor = 6, bool compat = true, int samples = 0, bool debug = true);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize, bool offscreen, const string& title, int major = 3,
+            int minor = 2, bool compat = false, int samples = 0, bool debug = true);
     /*!
      * Default destructor
      */
@@ -403,7 +403,7 @@ public:
     CV_EXPORTS void updateFps(bool graphical = true);
 private:
     V4D(const cv::Size& initialSize, bool offscreen,
-            const string& title, int major = 4, int minor = 6, bool compat = true, int samples = 0, bool debug = false);
+            const string& title, int major = 3, int minor = 2, bool compat = false, int samples = 0, bool debug = false);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);

@@ -91,7 +91,6 @@ void FrameBufferContext::init() {
         assert(false);
     }
     this->makeCurrent();
-    glfwSwapInterval(0);
 #ifndef OPENCV_V4D_USE_ES3
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         throw std::runtime_error("Could not initialize GLAD!");
