@@ -4,7 +4,7 @@
 #include "perf_precomp.hpp"
 
 static
-void initTests()
+void initQRTests()
 {
 #ifdef HAVE_OPENCV_DNN
     const char* extraTestDataPath =
@@ -18,5 +18,4 @@ void initTests()
 #endif  // HAVE_OPENCV_DNN
 }
 
-CV_TEST_MAIN("cv", initTests())
-CV_PERF_TEST_MAIN(wechat_qrcode)
+CV_PERF_TEST_MAIN(wechat_qrcode, initQRTests())
