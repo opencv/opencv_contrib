@@ -33,40 +33,58 @@ visible in all the viewpoints.
 
 ![ChArUco calibration viewpoints](images/charucocalibration.png)
 
-The function to calibrate is ```calibrateCameraCharuco()```. Example:
+The function to calibrate is `cv::calibrateCamera()`. Example:
 
 @code{.cpp}
-    cv::Ptr<aruco::CharucoBoard> board = ... // create charuco board
-    cv::Size imgSize = ... // camera image size
+    Ptr<aruco::CharucoBoard> board = ... // create charuco board
+    Size imageSize = ... // camera image size
 
-    std::vector<std::vector<cv::Point2f>> allCharucoCorners;
-    std::vector<std::vector<int>> allCharucoIds;
-    // Detect charuco board from several viewpoints and fill allCharucoCorners and allCharucoIds
-    ...
-    ...
+    vector<vector<Point2f>> allCharucoCorners;
+    vector<vector<int>> allCharucoIds;
+    vector<vector<Point2f>> allImagePoints;
+    vector<vector<Point3f>> allObjectPoints;
+
+    // Detect charuco board from several viewpoints and fill
+    // allCharucoCorners, allCharucoIds, allImagePoints and allObjectPoints
+    while(inputVideo.grab()) {
+        detector.detectBoard(
+            image, currentCharucoCorners, currentCharucoIds
+        );
+        board.matchImagePoints(
+            currentCharucoCorners, currentCharucoIds,
+            currentObjectPoints, currentImagePoints
+        );
+
+        ...
+    }
 
     // After capturing in several viewpoints, start calibration
-    cv::Mat cameraMatrix, distCoeffs;
-    std::vector<cv::Mat> rvecs, tvecs;
-    int calibrationFlags = ... // Set calibration flags (same than in calibrateCamera() function)
+    Mat cameraMatrix, distCoeffs;
+    vector<Mat> rvecs, tvecs;
 
-    double repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
+    // Set calibration flags (same than in calibrateCamera() function)
+    int calibrationFlags = ...
+
+    double repError = calibrateCamera(
+        allObjectPoints, allImagePoints, imageSize,
+        cameraMatrix, distCoeffs, rvecs, tvecs, noArray(),
+        noArray(), noArray(), calibrationFlags
+    );
 @endcode
 
 The ChArUco corners and ChArUco identifiers captured on each viewpoint are stored in the vectors ```allCharucoCorners``` and ```allCharucoIds```, one element per viewpoint.
 
-The ```calibrateCameraCharuco()``` function will fill the ```cameraMatrix``` and ```distCoeffs``` arrays with the camera calibration parameters. It will return the reprojection
-error obtained from the calibration. The elements in ```rvecs``` and ```tvecs``` will be filled with the estimated pose of the camera (respect to the ChArUco board)
+The `calibrateCamera()` function will fill the `cameraMatrix` and `distCoeffs` arrays with the camera calibration parameters. It will return the reprojection
+error obtained from the calibration. The elements in `rvecs` and `tvecs` will be filled with the estimated pose of the camera (respect to the ChArUco board)
 in each of the viewpoints.
 
-Finally, the ```calibrationFlags``` parameter determines some of the options for the calibration. Its format is equivalent to the flags parameter in the OpenCV
-```calibrateCamera()``` function.
+Finally, the `calibrationFlags` parameter determines some of the options for the calibration.
 
-A full working example is included in the `calibrate_camera_charuco.cpp` inside the `modules/aruco/samples/`.
+A full working example is included in the `calibrate_camera_charuco.cpp` inside the `samples` folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    "output_path/camera_calib.txt" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
+    "camera_calib.txt" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
     -v="path_aruco/tutorials/aruco_calibration/images/img_%02d.jpg
     -c=path_aruco/samples/tutorial_camera_params.yml
 @endcode
@@ -78,40 +96,43 @@ Calibration with ArUco Boards
 
 As it has been stated, it is recommended the use of ChAruco boards instead of ArUco boards for camera calibration, since
 ChArUco corners are more accurate than marker corners. However, in some special cases it must be required to use calibration
-based on ArUco boards. For these cases, the ```calibrateCameraAruco()``` function is provided. As in the previous case, it
-requires the detections of an ArUco board from different viewpoints.
+based on ArUco boards. As in the previous case, it requires the detections of an ArUco board from different viewpoints.
 
 ![ArUco calibration viewpoints](images/arucocalibration.png)
 
 Example of ```calibrateCameraAruco()``` use:
 
 @code{.cpp}
-    cv::Ptr<aruco::Board> board = ... // create aruco board
-    cv::Size imgSize = ... // camera image size
+    Ptr<aruco::Board> board = ... // create aruco board
+    Size imgSize = ... // camera image size
 
-    std::vector<std::vector<cv::Point2f>> allCornersConcatenated;
-    std::vector<int> allIdsConcatenated;
-    std::vector<int> markerCounterPerFrame;
-    // Detect aruco board from several viewpoints and fill allCornersConcatenated, allIdsConcatenated and markerCounterPerFrame
-    ...
+    vector<vector<vector<Point2f>>> allMarkerCorners;
+    vector<vector<int>> allMarkerIds;
+
+    // Detect aruco board from several viewpoints and fill allMarkerCorners, allMarkerIds
+    detector.detectMarkers(image, markerCorners, markerIds, rejectedMarkers);
     ...
 
-    // After capturing in several viewpoints, start calibration
-    cv::Mat cameraMatrix, distCoeffs;
-    std::vector<cv::Mat> rvecs, tvecs;
+    // After capturing in several viewpoints, match image points and start calibration
+    board->matchImagePoints(
+        allMarkerCorners[frame], allMarkerIds[frame],
+        currentObjPoints, currentImgPoints
+    );
+
+    Mat cameraMatrix, distCoeffs;
+    vector<Mat> rvecs, tvecs;
     int calibrationFlags = ... // Set calibration flags (same than in calibrateCamera() function)
 
-    double repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
+    double repError = calibrateCamera(
+        processedObjectPoints, processedImagePoints, imageSize,
+        cameraMatrix, distCoeffs, rvecs, tvecs, noArray(),
+        noArray(), noArray(), calibrationFlags
+    );
 @endcode
 
-In this case, and contrary to the ```calibrateCameraCharuco()``` function, the detected markers on each viewpoint are concatenated in the arrays ```allCornersConcatenated``` and
-```allCornersConcatenated``` (the first two parameters). The third parameter, the array ```markerCounterPerFrame```, indicates the number of marker detected on each viewpoint.
-The rest of parameters are the same than in ```calibrateCameraCharuco()```, except the board layout object which does not need to be a ```CharucoBoard``` object, it can be
-any ```Board``` object.
-
-A full working example is included in the `calibrate_camera.cpp` inside the `modules/aruco/samples/`.
+A full working example is included in the `calibrate_camera.cpp` inside the `samples` folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
 @code{.cpp}
-    "_path_/calib.txt" -w=5 -h=7 -l=100 -s=10 -d=10
+    "camera_calib.txt" -w=5 -h=7 -l=100 -s=10 -d=10
 @endcode
