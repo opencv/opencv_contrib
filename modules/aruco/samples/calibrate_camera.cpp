@@ -1,3 +1,7 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
 #include <ctime>
 #include <iostream>
 #include <vector>
@@ -116,10 +120,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Create board object
-    Ptr<aruco::GridBoard> gridboard = new aruco::GridBoard(
-        Size(markersX, markersY), markerLength, markerSeparation, dictionary
-    );
-    Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
+    aruco::GridBoard gridboard(Size(markersX, markersY), markerLength, markerSeparation, dictionary);
 
     // Collected frames for calibration
     vector<vector<vector<Point2f>>> allMarkerCorners;
@@ -141,7 +142,7 @@ int main(int argc, char *argv[]) {
         // Refind strategy to detect more markers
         if(refindStrategy) {
             detector.refineDetectedMarkers(
-                image, *board, markerCorners, markerIds, rejectedMarkers
+                image, gridboard, markerCorners, markerIds, rejectedMarkers
             );
         }
 
@@ -194,7 +195,7 @@ int main(int argc, char *argv[]) {
     for(size_t frame = 0; frame < nFrames; frame++) {
         Mat currentImgPoints, currentObjPoints;
 
-        board->matchImagePoints(
+        gridboard.matchImagePoints(
             allMarkerCorners[frame], allMarkerIds[frame],
             currentObjPoints, currentImgPoints
         );
