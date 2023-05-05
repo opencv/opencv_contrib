@@ -128,6 +128,26 @@ GLContext& V4D::glCtx() {
     return *glContext_;
 }
 
+bool V4D::hasFbCtx() {
+    return mainFbContext_ != nullptr;
+}
+
+bool V4D::hasClvaCtx() {
+    return clvaContext_ != nullptr;
+}
+
+bool V4D::hasNvgCtx() {
+    return nvgContext_ != nullptr;
+}
+
+bool V4D::hasNguiCtx() {
+    return nguiContext_ != nullptr;
+}
+
+bool V4D::hasGlCtx() {
+    return glContext_ != nullptr;
+}
+
 cv::Size V4D::getVideoFrameSize() {
     return clvaCtx().getVideoFrameSize();
 }
@@ -164,7 +184,6 @@ void V4D::nanogui(std::function<void(cv::v4d::FormHelper& form)> fn) {
 
 #ifdef __EMSCRIPTEN__
 static void do_frame(void* void_fn_ptr) {
-     glfwSwapInterval(0);
      auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
      if (fn_ptr) {
          auto& fn = *fn_ptr;
@@ -523,27 +542,27 @@ void V4D::setDefaultKeyboardEventCallback() {
 bool V4D::display() {
     bool result = true;
     if (!offscreen_) {
-//        {
+//        run_sync_on_main([this](){
 //            FrameBufferContext::GLScope glScope(clvaCtx().fbCtx());
-//            clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+//            clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), clvaCtx().fbCtx().getWindowSize(), isStretching());
 //            clvaCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
-//        }
-//        {
+//        });
+//        run_sync_on_main([this](){
 //            FrameBufferContext::GLScope glScope(glCtx().fbCtx());
-//            glCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+//            glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isStretching());
 //            glCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
-//        }
-//        {
+//        });
+//        run_sync_on_main([this](){
 //            FrameBufferContext::GLScope glScope(nvgCtx().fbCtx());
-//            nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+//            nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isStretching());
 //            nvgCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
-//        }
+//        });
 //        run_sync_on_main([this](){
 //            FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
-//            nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), getWindowSize(), isStretching());
+//            nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isStretching());
 //            nguiCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
 //        });
@@ -553,10 +572,21 @@ bool V4D::display() {
         run_sync_on_main([&, this](){
             FrameBufferContext::GLScope glScope(fbCtx());
             fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isStretching());
+#ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
+#else
+            emscripten_webgl_commit_frame();
+#endif
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());
         });
+#ifdef __EMSCRIPTEN__
+        run_sync_on_main([this](){
+            cv::UMat tmp;
+            cv::v4d::detail::FrameBufferContext::GLScope glScope(fbCtx());
+            cv::v4d::detail::FrameBufferContext::FrameBufferScope fbScope(fbCtx(), tmp);
+        });
+#endif
     }
     if(frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
         frameCnt_ = 0;

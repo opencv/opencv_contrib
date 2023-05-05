@@ -30,7 +30,7 @@ void NanoVGContext::init() {
     FrameBufferContext::GLScope glScope(fbCtx());
     screen_ = new nanogui::Screen();
     screen_->initialize(fbCtx().getGLFWWindow(), false);
-//    fbCtx().resizeWindow(fbCtx().getSize());
+    fbCtx().setWindowSize(fbCtx().size());
     context_ = screen_->nvg_context();
 
 //    FrameBufferContext::GLScope glScope(fbCtx());
@@ -58,16 +58,16 @@ void NanoVGContext::init() {
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
     run_sync_on_main([&,this](){
 #ifdef __EMSCRIPTEN__
-    {
-        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-        fb_.copyTo(preFB_);
-    }
-    {
-        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
-        preFB_.copyTo(fb_);
-    }
+//    {
+//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+//        fb_.copyTo(preFB_);
+//    }
+//    {
+//        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+//        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
+//        preFB_.copyTo(fb_);
+//    }
 #endif
     {
         FrameBufferContext::GLScope glScope(fbCtx());
@@ -77,16 +77,16 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
         fn(fbCtx().size());
     }
 #ifdef __EMSCRIPTEN__
-    {
-        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
-        fb_.copyTo(postFB_);
-    }
-    {
-        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-        postFB_.copyTo(fb_);
-    }
+//    {
+//        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
+//        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
+//        fb_.copyTo(postFB_);
+//    }
+//    {
+//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+//        postFB_.copyTo(fb_);
+//    }
 #endif
     });
 }

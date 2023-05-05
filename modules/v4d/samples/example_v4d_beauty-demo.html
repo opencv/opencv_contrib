@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=2.0, user-scalable=no">
-    <title>Beauty Demo</title>
+    <title>Beautifcation Demo</title>
     <style>
       body {
         font-family: arial;
@@ -103,13 +103,14 @@
       }
     </style>
   </head>
-  <body>
+<body>
       <span id='controls'>
   <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
-  		<canvas id="cameraCanvas" width="1920" height="1080" style="display: none;"></canvas>
-		<video id="video" width="1920" height="1080" autoplay style="display: none;"></video>
+        <canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
+  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
+		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -121,20 +122,29 @@
     <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
+    <script type="text/javascript" src="/virtual-webgl2.js"></script>
+    <script type="text/javascript" src="virtual-webgl2.js"></script>
     <script type='text/javascript'>
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
+      var fsButton = document.querySelector("#fullscreenBtn");
+      var cameraBtn = document.querySelector("#captureBtn");
+      var videoElement = document.querySelector("#video");
+      var cameraCanvas = document.querySelector("#cameraCanvas");
 
       function fixCanvasSize() {
-          Module.canvas.style.width = (1920 / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = (1080 / window.devicePixelRatio) + "px";
-          Module.canvas.width = 1920;
-          Module.canvas.height = 1080;
+          Module.canvas.style.width = (1280 / window.devicePixelRatio)+ "px";
+          Module.canvas.style.height = (720 / window.devicePixelRatio) + "px";
+          Module.canvas.width = 1280;
+          Module.canvas.height = 720;
       }
 
       var Module = {
         onRuntimeInitialized: function() {
           fixCanvasSize();
+          Module.videoBuffer = Module._malloc(1280 * 720 * 4);
+          Module.cameraCtx = null;
+          Module.ccall('v4dSetVideoFramePointer', 'void', ['number', 'number', 'number'], [Module.videoBuffer, 1280, 720]);
         },
         preRun: [],
         postRun: [],
@@ -206,33 +216,34 @@
         };
       };
 
-      let fsButton = document.querySelector("#fullscreenBtn");
-      let cameraBtn = document.querySelector("#captureBtn");
-      let videoElement = document.querySelector("#video");
-      let cameraCanvas = document.querySelector("#cameraCanvas");
-
-
-      function capture() {
-          let ctx = cameraCanvas.getContext('2d', { willReadFrequently: true });
-          ctx.drawImage(videoElement, 0, 0, cameraCanvas.width, cameraCanvas.height);
-          var imageData = ctx.getImageData(0, 0, cameraCanvas.width, cameraCanvas.height);
-          let filename = 'v4d_rgba_canvas.raw';
-          let stream = FS.open(filename, 'w+');
-          if(imageData) {
-              FS.write(stream, imageData.data, 0, imageData.data.length, 0);
-              FS.close(stream);
-          }
-      }
-
-      function runCapture() {
-          capture();
-          requestAnimationFrame(runCapture);
+      var playing = false;
+      var timeupdate = false;
+      function checkReady() {
+        if (playing && timeupdate) {
+          Module.doCapture = true;
+        }
       }
 
       cameraBtn.addEventListener('click', async function() {
           let stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          videoElement.addEventListener(
+            "playing",
+            () => {
+              playing = true;
+              checkReady();
+            },
+            true
+          );
+
+          videoElement.addEventListener(
+            "timeupdate",
+            () => {
+              timeupdate = true;
+              checkReady();
+            },
+            true
+          );
           videoElement.srcObject = stream;
-          runCapture();
       });
 
       fsButton.addEventListener('click', async function () {
@@ -248,9 +259,7 @@
           }
       });
     </script>
-    <script async type="text/javascript" src="/example_v4d_beauty-demo/get.php?res=example_v4d_beauty-demo.js"></script>
     <script async type="text/javascript" src="example_v4d_beauty-demo.js"></script>
-  </body>
+    <script async type="text/javascript" src="/example_v4d_beauty-demo/get.php?res=example_v4d_beauty-demo.js"></script>
+</body>
 </html>
-
-

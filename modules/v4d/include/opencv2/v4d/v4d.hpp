@@ -407,7 +407,6 @@ private:
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
-    bool initializeGUI();
     void setMouseDrag(bool d);
     bool isMouseDrag();
     cv::Vec2f getMousePosition();
@@ -418,6 +417,13 @@ private:
     NanoVGContext& nvgCtx();
     NanoguiContext& nguiCtx();
     GLContext& glCtx();
+
+    bool hasFbCtx();
+    bool hasClvaCtx();
+    bool hasNvgCtx();
+    bool hasNguiCtx();
+    bool hasGlCtx();
+
     GLFWwindow* getGLFWWindow();
 };
 }

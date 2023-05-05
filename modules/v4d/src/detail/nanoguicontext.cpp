@@ -18,41 +18,42 @@ void NanoguiContext::init() {
     FrameBufferContext::GLScope glScope(fbCtx());
     screen_ = new nanogui::Screen();
     screen_->initialize(nguiFbContext_.getGLFWWindow(), false);
+    fbCtx().setWindowSize(fbCtx().size());
     form_ = new cv::v4d::FormHelper(screen_);
 }
 
 void NanoguiContext::render() {
     run_sync_on_main([&,this](){
 #ifdef __EMSCRIPTEN__
-    fb_.create(mainFbContext_.size(), CV_8UC4);
-    preFB_.create(mainFbContext_.size(), CV_8UC4);
-    postFB_.create(mainFbContext_.size(), CV_8UC4);
-    {
-        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-        fb_.copyTo(preFB_);
-    }
-    {
-        FrameBufferContext::GLScope glGlScope(fbCtx());
-        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
-        preFB_.copyTo(fb_);
-    }
+//    fb_.create(mainFbContext_.size(), CV_8UC4);
+//    preFB_.create(mainFbContext_.size(), CV_8UC4);
+//    postFB_.create(mainFbContext_.size(), CV_8UC4);
+//    {
+//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+//        fb_.copyTo(preFB_);
+//    }
+//    {
+//        FrameBufferContext::GLScope glGlScope(fbCtx());
+//        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
+//        preFB_.copyTo(fb_);
+//    }
 #endif
     {
         FrameBufferContext::GLScope glScope(fbCtx());
         screen().draw_widgets();
     }
 #ifdef __EMSCRIPTEN__
-    {
-        FrameBufferContext::GLScope glScope(fbCtx());
-        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
-        fb_.copyTo(postFB_);
-    }
-    {
-        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-        postFB_.copyTo(fb_);
-    }
+//    {
+//        FrameBufferContext::GLScope glScope(fbCtx());
+//        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
+//        fb_.copyTo(postFB_);
+//    }
+//    {
+//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
+//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
+//        postFB_.copyTo(fb_);
+//    }
 #endif
     });
 }

@@ -11,6 +11,7 @@
 
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
+#  include <emscripten/bind.h>
 #  include <SDL/SDL.h>
 #  include <SDL/SDL_image.h>
 #  include <SDL/SDL_stdinc.h>
@@ -38,6 +39,19 @@ void run_sync_on_main(std::function<void()> fn) {
 #endif
 }
 
+size_t cnz(const cv::UMat& m) {
+    cv::UMat grey;
+    if(m.channels() == 1) {
+        grey = m;
+    } else if(m.channels() == 3) {
+        cvtColor(m, grey, cv::COLOR_BGR2GRAY);
+    } else if(m.channels() == 4) {
+        cvtColor(m, grey, cv::COLOR_BGRA2GRAY);
+    } else {
+        assert(false);
+    }
+    return cv::countNonZero(grey);
+}
 }
 #ifdef __EMSCRIPTEN__
 Mat read_embedded_image(const string &path) {
@@ -303,29 +317,136 @@ Source makeCaptureSource(const string& inputFilename) {
 }
 
 #else
+
+using namespace emscripten;
+uint8_t* current_frame = nullptr;
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE
+void v4dSetVideoFramePointer(uint8_t* frame, int width, int height) {
+    assert(current_frame == nullptr);
+    current_frame = frame;
+//    memset(current_frame, 127, width * height * 4);
+}
+}
+
+//EM_JS(void,JScopyVideoFrameGPU,(int width, int height), {
+//
+//        function initFramebuffer(gl) {
+//          console.log("init fb: " + width + "/" + height);
+//            if(typeof globalThis.v4dVideoFrameBuffer === 'undefined' || globalThis.v4dVideoFrameBuffer === null) {
+//                console.log("CREATE FRAMEBUFFER");
+//                globalThis.v4dVideoFrameBuffer = gl.createFramebuffer();
+//            }
+//          if(typeof globalThis.v4dVideoFrameTexture === 'undefined' || globalThis.v4dVideoFrameTexture === null) {
+//              console.log("CREATE TEXTURE");
+//              globalThis.v4dVideoFrameTexture = gl.createTexture();
+//          }
+//
+//          if(typeof globalThis.v4dVideoElement === 'undefined' || globalThis.v4dVideoElement === null) {
+//              console.log("CREATE VIDEO ELEMENT");
+//              globalThis.v4dVideoElement = document.querySelector("#video");
+//          }
+//
+//          gl.bindFramebuffer(gl.READ_FRAMEBUFFER, globalThis.v4dVideoFrameBuffer);
+//          gl.bindTexture(gl.TEXTURE_2D, globalThis.v4dVideoFrameTexture);
+//          const level = 0;
+//          const internalFormat = gl.RGBA;
+//          const border = 0;
+//          const srcFormat = gl.RGBA;
+//          const srcType = gl.UNSIGNED_BYTE;
+//          gl.texImage2D(
+//            gl.TEXTURE_2D,
+//            level,
+//            internalFormat,
+//            srcFormat,
+//            srcType,
+//            globalThis.v4dVideoElement
+//          );
+//
+//          gl.framebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, globalThis.v4dVideoFrameTexture, 0);
+//          return gl.checkFramebufferStatus(gl.READ_FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE;
+//        }
+//
+//        function updateTexture(gl) {
+//          if(initFramebuffer(gl)) {
+//              console.log("video texture copy: " + globalThis.v4dVideoFrameTexture + " -> " + mainTexture);
+//              gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, mainFrameBuffer);
+//              gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+//              gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, mainTexture, 0);
+//
+//              gl.blitFramebuffer( 0, 0, globalThis.v4dVideoElement.width, globalThis.v4dVideoElement.height,
+//                      0, 0, width, height,
+//                      gl.COLOR_BUFFER_BIT, gl.NEAREST);
+////              gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl["RGBA"], 0, 0, width, height, 0);
+//          } else {
+//              console.log("frambuffer incomplete");
+//          }
+//        }
+//
+//        var ctx;
+//        if (typeof GL !== 'undefined' && typeof Module.ctx !== 'undefined') {
+//            gl = Module.ctx;
+//            mainFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+//            mainTexture = gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+//            console.log(mainFrameBuffer + ":" + mainTexture);
+//
+//            if(Module.doCapture) {
+//                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+//                updateTexture(gl, globalThis.v4dVideoFrameTexture, globalThis.v4dVideoElement);
+//            } else {
+//                console.log("video not playing");
+//            }
+//            console.log("6");
+//        } else {
+//            console.log("GL unavailable");
+//        }
+//
+//        gl.flush();
+//        gl.finish();
+//});
+
+EM_JS(void,copyVideoFrame,(int p), {
+        if(Module.doCapture) {
+            if(typeof Module.cameraCtx === 'undefined' || Module.cameraCtx === null)
+                Module.cameraCtx = document.querySelector("#cameraCanvas").getContext('2d', { willReadFrequently: true });
+            if(typeof Module.videoElement === 'undefined' || Module.videoElement === null)
+                Module.videoElement = document.querySelector("#video");
+
+            Module.cameraCtx.drawImage(Module.videoElement, 0, 0, 1280, 720);
+            var cameraArrayBuffer = Module.cameraCtx.getImageData(0, 0, 1280, 720);
+
+            if(typeof cameraArrayBuffer !== 'undefined') {
+                Module.HEAPU8.set(cameraArrayBuffer.data, p);
+            }
+        } else {
+            console.log("Camery not ready");
+        }
+});
+
+long acc = 0;
 Source makeCaptureSource(int width, int height) {
     using namespace std;
-    static cv::Mat tmp(height, width, CV_8UC4);
 
     return Source([=](cv::UMat& frame) {
         try {
             frame.create(cv::Size(width, height), CV_8UC3);
-            std::ifstream fs("v4d_rgba_canvas.raw", std::fstream::in | std::fstream::binary);
-            fs.seekg(0, std::ios::end);
-            auto length = fs.tellg();
-            fs.seekg(0, std::ios::beg);
 
-            if (length == (frame.elemSize() + 1) * frame.total()) {
+            if (current_frame != nullptr) {
+                cv::Mat tmp(cv::Size(width, height), CV_8UC4, current_frame);
+                //we have to read from the array to make sure the data "appears". this seems to be some kind of caching problem.
+                //i tried volatile statements but that didn't work.
+                cerr << tmp.data[0] << tmp.data[width * height - 1];
                 cv::Mat v = frame.getMat(cv::ACCESS_WRITE);
-                fs.read((char*) (tmp.data), tmp.elemSize() * tmp.total());
                 cvtColor(tmp, v, cv::COLOR_BGRA2RGB);
                 v.release();
-            } else if(length == 0) {
-//                frame.setTo(cv::Scalar(0, 0, 0, 255));
-                std::cerr << "Error: empty webcam frame received!" << endl;
+
+                run_sync_on_main([=](){
+                    copyVideoFrame(reinterpret_cast<int>(current_frame));
+                });
             } else {
-//                frame.setTo(cv::Scalar(0, 0, 0, 255));
-                std::cerr << "Error: webcam frame size mismatch!" << endl;
+                std::cerr << "Nothing captured" << endl;
             }
         } catch(std::exception& ex) {
             cerr << ex.what() << endl;
@@ -333,6 +454,7 @@ Source makeCaptureSource(int width, int height) {
         return true;
     }, 0);
 }
+
 #endif
 
 void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor) {

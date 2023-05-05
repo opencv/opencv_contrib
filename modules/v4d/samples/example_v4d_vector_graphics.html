@@ -108,6 +108,7 @@
   <span><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
+  		<canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
   		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
 		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
 
@@ -121,6 +122,8 @@
     <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
+    <script type="text/javascript" src="/virtual-webgl2.js"></script>
+    <script type="text/javascript" src="virtual-webgl2.js"></script>
     <script type='text/javascript'>
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');

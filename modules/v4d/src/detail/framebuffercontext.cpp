@@ -12,7 +12,6 @@
 #include "opencv2/core/opengl.hpp"
 #include <exception>
 
-
 namespace cv {
 namespace v4d {
 namespace detail {
@@ -36,9 +35,10 @@ FrameBufferContext::~FrameBufferContext() {
 }
 
 void FrameBufferContext::init() {
-#ifndef OPENCV_V4D_USE_ES3
+#if defined(__EMSCRIPTEN__) || !defined(OPENCV_V4D_USE_ES3)
     if(parent_ != nullptr) {
         textureID_ = parent_->textureID_;
+        renderBufferID_ = parent_->renderBufferID_;
         isShared_ = true;
     }
 #else
@@ -91,6 +91,7 @@ void FrameBufferContext::init() {
         assert(false);
     }
     this->makeCurrent();
+    glfwSwapInterval(0);
 #ifndef OPENCV_V4D_USE_ES3
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         throw std::runtime_error("Could not initialize GLAD!");
@@ -124,7 +125,8 @@ void FrameBufferContext::init() {
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->nguiCtx().screen().cursor_pos_callback_event(x * v4d->getXPixelRatio(), y * v4d->getXPixelRatio());
+        if(v4d->hasNguiCtx())
+            v4d->nguiCtx().screen().cursor_pos_callback_event(x * v4d->getXPixelRatio(), y * v4d->getXPixelRatio());
 #ifndef __EMSCRIPTEN__
         auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
@@ -138,7 +140,8 @@ void FrameBufferContext::init() {
     glfwSetMouseButtonCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
                 if (button == GLFW_MOUSE_BUTTON_RIGHT) {
                     v4d->setMouseDrag(action == GLFW_PRESS);
                 }
@@ -147,32 +150,36 @@ void FrameBufferContext::init() {
     glfwSetKeyCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->nguiCtx().screen().key_callback_event(key, scancode, action, mods);
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().key_callback_event(key, scancode, action, mods);
             }
     );
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->nguiCtx().screen().char_callback_event(codepoint);
+        if(v4d->hasNguiCtx())
+            v4d->nguiCtx().screen().char_callback_event(codepoint);
     }
     );
     glfwSetDropCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int count, const char** filenames) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->nguiCtx().screen().drop_callback_event(count, filenames);
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().drop_callback_event(count, filenames);
             }
     );
     glfwSetScrollCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, double x, double y) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
                 std::vector<nanogui::Widget*> widgets;
-                for (auto* w : v4d->nguiCtx().screen().children()) {
-                    auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
-                    if(contains_absolute(w, mousePos)) {
-                        v4d->nguiCtx().screen().scroll_callback_event(x, y);
-                        return;
+                if(v4d->hasNguiCtx()) {
+                    for (auto* w : v4d->nguiCtx().screen().children()) {
+                        auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
+                        if(contains_absolute(w, mousePos)) {
+                            v4d->nguiCtx().screen().scroll_callback_event(x, y);
+                            return;
+                        }
                     }
                 }
-
 #ifndef __EMSCRIPTEN__
                 v4d->zoom(y < 0 ? 1.1 : 0.9);
 #endif
@@ -182,7 +189,8 @@ void FrameBufferContext::init() {
     glfwSetWindowSizeCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int width, int height) {
                 V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->nguiCtx().screen().resize_callback_event(width, height);
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().resize_callback_event(width, height);
                 cv::Rect& vp = v4d->viewport();
                 cv::Size fbsz = v4d->getFrameBufferSize();
                 vp.x = 0;
@@ -222,7 +230,7 @@ void FrameBufferContext::setup(const cv::Size& sz) {
 
         GL_CHECK(glGenTextures(1, &textureID_));
         GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
-
+        cerr << "main: " << frameBufferID_ << ":" << textureID_ << endl;
         texture_ = new cv::ogl::Texture2D(sz, cv::ogl::Texture2D::RGBA, textureID_);
         GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
         GL_CHECK(
@@ -237,15 +245,23 @@ void FrameBufferContext::setup(const cv::Size& sz) {
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     } else {
+
         assert(parent_ != nullptr);
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
-
         GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
+
+        cerr << "leaf: " << frameBufferID_ << ":" << textureID_ << endl;
         texture_ = new cv::ogl::Texture2D(sz, cv::ogl::Texture2D::RGBA, textureID_);
         GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
         GL_CHECK(
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sz.width, sz.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
 }
 
@@ -402,9 +418,12 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
         const cv::Size& windowSize, bool stretch) {
+    glFinish();
     GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
     double hf = double(windowSize.height) / frameBufferSize_.height;
     double wf = double(windowSize.width) / frameBufferSize_.width;
     double f = std::min(hf, wf);
@@ -424,11 +443,9 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint dstY0 = stretch ? yn : windowSize.height - frameBufferSize_.height;
     GLint dstX1 = stretch ? wn : frameBufferSize_.width;
     GLint dstY1 = stretch ? hn : frameBufferSize_.height;
-    GL_CHECK(
             glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
                     dstX0, dstY0, dstX1, dstY1,
-                    GL_COLOR_BUFFER_BIT, GL_NEAREST)
-    );
+                    GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
 void FrameBufferContext::begin() {
@@ -437,10 +454,10 @@ void FrameBufferContext::begin() {
     glGetError();
 
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
+    GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
     GL_CHECK(
             glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
         GL_CHECK(
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
@@ -449,10 +466,6 @@ void FrameBufferContext::begin() {
 }
 
 void FrameBufferContext::end() {
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glGetError();
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glGetError();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glGetError();
     glViewport(viewport_[0], viewport_[1], viewport_[2], viewport_[3]);

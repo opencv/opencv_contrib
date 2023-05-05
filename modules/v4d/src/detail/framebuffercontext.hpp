@@ -10,7 +10,8 @@
 #  include <emscripten/threading.h>
 #endif
 
-#include "cl.hpp"
+//FIXME
+#include "opencv2/v4d/detail/cl.hpp"
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
 #include "pbodownloader.hpp"
