@@ -497,6 +497,7 @@ bool V4D::isVisible() {
 
 void V4D::setVisible(bool v) {
     fbCtx().setVisible(v);
+    nguiCtx().screen().perform_layout();
 }
 
 bool V4D::isOffscreen() {

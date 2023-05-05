@@ -5,17 +5,6 @@
 
 #include "nanovgcontext.hpp"
 #include "opencv2/v4d/v4d.hpp"
-#include "nanovg.h"
-
-#ifdef OPENCV_V4D_USE_ES3
-#  define NANOVG_GLES3_IMPLEMENTATION 1
-#  define NANOVG_GLES3 1
-#else
-#  define NANOVG_GL3 1
-#  define NANOVG_GL3_IMPLEMENTATION 1
-#endif
-#define NANOVG_GL_USE_UNIFORMBUFFER 1
-#include "nanovg_gl.h"
 
 namespace cv {
 namespace v4d {
@@ -27,30 +16,19 @@ NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
 }
 
 void NanoVGContext::init() {
+//    GL_CHECK(glEnable(GL_DEPTH_TEST));
+//    GL_CHECK(glDepthFunc(GL_LESS));
+//    GL_CHECK(glEnable(GL_STENCIL_TEST));
+//    GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+//    GL_CHECK(glStencilFunc(GL_ALWAYS, 0, 0xffffffff));
+//    GL_CHECK(glStencilMask(0x00));
     FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
+    glClear(GL_STENCIL_BUFFER_BIT);
     screen_ = new nanogui::Screen();
     screen_->initialize(fbCtx().getGLFWWindow(), false);
     fbCtx().setWindowSize(fbCtx().size());
     context_ = screen_->nvg_context();
 
-//    FrameBufferContext::GLScope glScope(fbCtx());
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//    glEnable(GL_BLEND);
-//    glEnable(GL_STENCIL_TEST);
-//    glEnable(GL_DEPTH_TEST);
-//    glDisable(GL_SCISSOR_TEST);
-//    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-//    glStencilMask(0xffffffff);
-//    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-//    glStencilFunc(GL_ALWAYS, 0, 0xffffffff);
-//    glStencilMask(0xFF);
-//
-//    int flags = NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG;
-//#ifdef OPENCV_V4D_USE_ES3 || __EMSCRIPTEN__
-//    context_ = nvgCreateGLES3(flags);
-//#else
-//    context_ = nvgCreateGL3(flags);
-//#endif
     if (!context_)
         throw std::runtime_error("Could not initialize NanoVG!");
 }
@@ -70,7 +48,16 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 //    }
 #endif
     {
+//        GL_CHECK(glEnable(GL_DEPTH_TEST));
+//        GL_CHECK(glDepthFunc(GL_LESS));
+//        GL_CHECK(glEnable(GL_STENCIL_TEST));
+//        GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
+//        GL_CHECK(glStencilFunc(GL_ALWAYS, 0, 0xffffffff));
+//        GL_CHECK(glStencilMask(0x00));
         FrameBufferContext::GLScope glScope(fbCtx());
+        glClear(GL_STENCIL_BUFFER_BIT);
+//        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
         fn(fbCtx().size());
@@ -96,6 +83,7 @@ void NanoVGContext::begin() {
     float r = fbCtx().getXPixelRatio();
 
     nvgSave(context_);
+//    glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
     nvgBeginFrame(context_, w, h, r);
 //FIXME mirroring with text somehow doesn't work
 //    nvgTranslate(context_, 0, h);

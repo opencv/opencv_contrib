@@ -415,7 +415,7 @@ EM_JS(void,copyVideoFrame,(int p), {
         }
 });
 
-Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
+Source makeCaptureSource(int width, int height) {
     using namespace std;
 
     return Source([=](cv::UMat& frame) {

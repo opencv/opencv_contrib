@@ -163,12 +163,11 @@ CV_EXPORTS Source makeCaptureSource(const string& inputFilename);
 #else
 /*!
  * Creates a WebCam source object to use in conjunction with #V4D::setSource().
- * In the background it uses emscripten's file system implementation to transfer frames from the camera to the source object
  * @param width The frame width to capture (usually the initial width of the V4D object)
  * @param height The frame height to capture (usually the initial height of the V4D object)
  * @return A WebCam source object.
  */
-CV_EXPORTS Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window);
+CV_EXPORTS Source makeCaptureSource(int width, int height);
 #endif
 
 void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor = {0,0,0,255});

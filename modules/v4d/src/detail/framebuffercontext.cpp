@@ -52,10 +52,6 @@ void FrameBufferContext::init() {
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
-    if (offscreen_)
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    else
-        glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
     glfwSetTime(0);
 #ifdef __APPLE__
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -82,7 +78,8 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 
     glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
@@ -92,6 +89,8 @@ void FrameBufferContext::init() {
     }
     this->makeCurrent();
     glfwSwapInterval(0);
+    if(!offscreen_)
+        this->setVisible(true);
 #ifndef OPENCV_V4D_USE_ES3
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
         throw std::runtime_error("Could not initialize GLAD!");
@@ -410,12 +409,20 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 
 cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
     double bs = 1.0 / blitScale();
-    return cv::Point2f((pt.x * bs) - blitOffsetX() * bs, (pt.y * bs) - blitOffsetY() * bs);
+#ifdef __EMSCRIPTEN__
+    return cv::Point2f(((pt.x * bs) - blitOffsetX()) * getXPixelRatio(), ((pt.y * bs) - blitOffsetY()) * getYPixelRatio());
+#else
+    return cv::Point2f(((pt.x * bs) - blitOffsetX()), ((pt.y * bs) - blitOffsetY()));
+#endif
 }
 
 cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
     double bs = 1.0 / blitScale();
-    return cv::Vec2f((pt[0] * bs) - (blitOffsetX()), (pt[1] * bs) - (blitOffsetY()));
+#ifdef __EMSCRIPTEN__
+    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()) * getXPixelRatio(), ((pt[1] * bs) - blitOffsetY()) * getYPixelRatio());
+#else
+    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()), ((pt[1] * bs) - blitOffsetY()));
+#endif
 }
 
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
@@ -470,7 +477,6 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
     glGetIntegerv( GL_VIEWPORT, viewport_ );
     glGetError();
-
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
