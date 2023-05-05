@@ -27,7 +27,7 @@ FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
                 minor), compat_(compat), samples_(samples), debug_(debug), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), windowSize_(frameBufferSize), frameBufferSize_(frameBufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent) {
-    run_sync_on_main([this](){ init(); });
+    run_sync_on_main<1>([this](){ init(); });
 }
 
 FrameBufferContext::~FrameBufferContext() {
@@ -126,7 +126,7 @@ void FrameBufferContext::init() {
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
         if(v4d->hasNguiCtx())
-            v4d->nguiCtx().screen().cursor_pos_callback_event(x * v4d->getXPixelRatio(), y * v4d->getXPixelRatio());
+            v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
 #ifndef __EMSCRIPTEN__
         auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
@@ -257,6 +257,8 @@ void FrameBufferContext::setup(const cv::Size& sz) {
         GL_CHECK(
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sz.width, sz.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
         GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, sz.width, sz.height));
         GL_CHECK(
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
         GL_CHECK(
@@ -391,7 +393,7 @@ cv::Size FrameBufferContext::size() {
 }
 
 void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
-    run_sync_on_main([&,this](){
+    run_sync_on_main<2>([&,this](){
         frameBuffer_.create(size(), CV_8UC4);
     #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
@@ -418,8 +420,6 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
         const cv::Size& windowSize, bool stretch) {
-    glFinish();
-    GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBufferID_));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT0));
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
     glClearColor(0, 0, 0, 0);
@@ -448,19 +448,21 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
                     GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void FrameBufferContext::begin() {
+void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
     glGetIntegerv( GL_VIEWPORT, viewport_ );
     glGetError();
 
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
+    GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
     GL_CHECK(
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size().width, size().height));
+    GL_CHECK(
+            glFramebufferRenderbuffer(framebufferTarget, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
         GL_CHECK(
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+                glFramebufferTexture2D(framebufferTarget, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+    assert(glCheckFramebufferStatus(framebufferTarget) == GL_FRAMEBUFFER_COMPLETE);
     glViewport(0, 0, frameBufferSize_.width, frameBufferSize_.height);
     glGetError();
 }

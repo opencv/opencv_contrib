@@ -45,7 +45,7 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Font Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), "Font Demo", OFFSCREEN);
 vector<string> lines;
 static bool update_stars = true;
 static bool update_perspective = true;

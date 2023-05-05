@@ -13,8 +13,9 @@ int main() {
 	//Make a Source that generates rainbow frames.
 	Source src([](cv::UMat& frame){
 		static long cnt = 0;
-	    //The source is responsible for initializing the frame. The frame stays allocated, which makes create() have no effect in further iterations.
-		frame.create(Size(1280, 720), CV_8UC3);
+	    //The source is responsible for initializing the frame..
+		if(frame.empty())
+		    frame.create(Size(1280, 720), CV_8UC3);
 	    frame = colorConvert(Scalar(++cnt % 180, 128, 128, 255), COLOR_HLS2BGR);
 	    return true;
 	}, 60.0f);

@@ -23,11 +23,11 @@ namespace detail {
 
 NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
         v4d_(v4d), context_(nullptr), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext) {
-    run_sync_on_main([this](){ init(); });
+    run_sync_on_main<13>([this](){ init(); });
 }
 
 void NanoVGContext::init() {
-    FrameBufferContext::GLScope glScope(fbCtx());
+    FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
     screen_ = new nanogui::Screen();
     screen_->initialize(fbCtx().getGLFWWindow(), false);
     fbCtx().setWindowSize(fbCtx().size());
@@ -56,7 +56,7 @@ void NanoVGContext::init() {
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
-    run_sync_on_main([&,this](){
+    run_sync_on_main<14>([&,this](){
 #ifdef __EMSCRIPTEN__
 //    {
 //        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
@@ -71,7 +71,6 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
     {
         FrameBufferContext::GLScope glScope(fbCtx());
-        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
         fn(fbCtx().size());

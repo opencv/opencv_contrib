@@ -151,15 +151,6 @@ class CV_EXPORTS V4D {
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
-     * @param size The window and framebuffer size
-     * @param title The window title.
-     * @param debug Create a debug OpenGL context.
-     */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const string& title, bool debug =
-            false);
-
-    /*!
-     * Creates a V4D object which is the central object to perform visualizations with.
      * @param initialSize The initial size of the heavy-weight window.
      * @param frameBufferSize The initial size of the framebuffer backing the window (needs to be equal or greate then initial size).
      * @param offscreen Don't create a window and rather render offscreen.
@@ -170,8 +161,8 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& initialSize, bool offscreen, const string& title, int major = 3,
-            int minor = 2, bool compat = false, int samples = 0, bool debug = true);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const string& title, bool offscreen = false, bool debug = false, int major = 3,
+            int minor = 2, bool compat = false, int samples = 0);
     /*!
      * Default destructor
      */
@@ -401,9 +392,10 @@ public:
     CV_EXPORTS bool display();
     CV_EXPORTS void printSystemInfo();
     CV_EXPORTS void updateFps(bool graphical = true);
+    FrameBufferContext& fbCtx();
 private:
-    V4D(const cv::Size& initialSize, bool offscreen,
-            const string& title, int major = 3, int minor = 2, bool compat = false, int samples = 0, bool debug = false);
+    V4D(const cv::Size& initialSize,
+            const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
@@ -412,7 +404,6 @@ private:
     cv::Vec2f getMousePosition();
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
-    FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
     NanoguiContext& nguiCtx();

@@ -15,7 +15,7 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 using std::cerr;
 using std::endl;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "NanoVG Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), "NanoVG Demo", OFFSCREEN);
 
 static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c

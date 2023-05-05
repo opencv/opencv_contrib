@@ -45,19 +45,15 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
-cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, bool debug) {
-    cv::Ptr<V4D> v4d = new V4D(size, false, title, 4, 6, true, 0, debug);
+cv::Ptr<V4D> V4D::make(const cv::Size& size, const string& title, bool offscreen, bool debug, int major,
+        int minor, bool compat, int samples) {
+    cv::Ptr<V4D> v4d = new V4D(size, title, offscreen, debug, major, minor, false, 0);
     v4d->setVisible(true);
     return v4d;
 }
 
-cv::Ptr<V4D> V4D::make(const cv::Size& initialSize, bool offscreen, const string& title, int major,
-        int minor, bool compat, int samples, bool debug) {
-    return new V4D(initialSize, offscreen, title, major, minor, compat, samples, debug);
-}
-
-V4D::V4D(const cv::Size& size, bool offscreen, const string& title, int major, int minor,
-        bool compat, int samples, bool debug) :
+V4D::V4D(const cv::Size& size, const string& title, bool offscreen, bool debug, int major, int minor,
+        bool compat, int samples) :
         initialSize_(size), offscreen_(offscreen), title_(title), major_(major), minor_(minor), compat_(
                 compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), scale_(
                 1), mousePos_(0, 0), stretch_(true), pool_(2) {
@@ -542,25 +538,25 @@ void V4D::setDefaultKeyboardEventCallback() {
 bool V4D::display() {
     bool result = true;
     if (!offscreen_) {
-//        run_sync_on_main([this](){
+//        run_sync_on_main<9>([this](){
 //            FrameBufferContext::GLScope glScope(clvaCtx().fbCtx());
 //            clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), clvaCtx().fbCtx().getWindowSize(), isStretching());
 //            clvaCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
 //        });
-//        run_sync_on_main([this](){
+//        run_sync_on_main<10>([this](){
 //            FrameBufferContext::GLScope glScope(glCtx().fbCtx());
 //            glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isStretching());
 //            glCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
 //        });
-//        run_sync_on_main([this](){
+//        run_sync_on_main<11>([this](){
 //            FrameBufferContext::GLScope glScope(nvgCtx().fbCtx());
 //            nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isStretching());
 //            nvgCtx().fbCtx().makeCurrent();
 //            glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 //        });
-//        run_sync_on_main([this](){
+//        run_sync_on_main<12>([this](){
 //            FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
 //            nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isStretching());
 //            nguiCtx().fbCtx().makeCurrent();
@@ -569,8 +565,8 @@ bool V4D::display() {
 
         nguiCtx().render();
 
-        run_sync_on_main([&, this](){
-            FrameBufferContext::GLScope glScope(fbCtx());
+        run_sync_on_main<6>([&, this](){
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
             fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isStretching());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
@@ -581,7 +577,7 @@ bool V4D::display() {
             result = !glfwWindowShouldClose(getGLFWWindow());
         });
 #ifdef __EMSCRIPTEN__
-        run_sync_on_main([this](){
+        run_sync_on_main<7>([this](){
             cv::UMat tmp;
             cv::v4d::detail::FrameBufferContext::GLScope glScope(fbCtx());
             cv::v4d::detail::FrameBufferContext::FrameBufferScope fbScope(fbCtx(), tmp);
@@ -614,7 +610,7 @@ GLFWwindow* V4D::getGLFWWindow() {
 }
 
 void V4D::printSystemInfo() {
-    run_sync_on_main([this](){
+    run_sync_on_main<8>([this](){
         fbCtx().makeCurrent();
         cerr << "OpenGL Version: " << getGlInfo() << endl;
         cerr << "OpenCL Platforms: " << getClInfo() << endl;
@@ -637,6 +633,7 @@ void V4D::updateFps(bool graphical) {
 
         if (graphical) {
             this->nvg([this]() {
+                glClear(GL_DEPTH_BUFFER_BIT);
                 using namespace cv::v4d::nvg;
                 string txt = "FPS: " + std::to_string(fps_);
                 beginPath();

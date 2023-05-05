@@ -48,7 +48,7 @@ bool side_by_side = false;
 bool stretch = false;
 #endif
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), OFFSCREEN, "Beauty Demo");
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), "Beauty Demo", OFFSCREEN);
 static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
 #ifdef USE_TRACKER
 static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(); //Instead of continues face detection we can use a tracker

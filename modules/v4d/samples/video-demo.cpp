@@ -26,7 +26,7 @@ unsigned int vao;
 unsigned int uniform_transform;
 
 static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT),
-        OFFSCREEN, "Video Demo");
+        "Video Demo", OFFSCREEN, true);
 
 static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
@@ -236,7 +236,7 @@ int main() {
             src.fps(), cv::Size(WIDTH, HEIGHT));
     v4d->setSink(sink);
 #else
-    Source src = makeCaptureSource(WIDTH, HEIGHT);
+    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
     v4d->setSource(src);
 #endif
 

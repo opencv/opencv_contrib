@@ -98,9 +98,9 @@ public:
          * Setup OpenGL states.
          * @param ctx The corresponding #FrameBufferContext.
          */
-        GLScope(FrameBufferContext& ctx) :
+        GLScope(FrameBufferContext& ctx, GLenum framebufferTarget = GL_FRAMEBUFFER) :
                 ctx_(ctx) {
-            ctx_.begin();
+            ctx_.begin(framebufferTarget);
         }
         /*!
          * Tear-down OpenGL states.
@@ -165,7 +165,7 @@ protected:
     /*!
      * Setup OpenGL states.
      */
-    void begin();
+    void begin(GLenum framebufferTarget);
     /*!
      * Tear-down OpenGL states.
      */

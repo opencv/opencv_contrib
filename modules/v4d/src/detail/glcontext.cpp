@@ -13,7 +13,7 @@ GLContext::GLContext(V4D& v4d, FrameBufferContext& fbContext) :
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {
-    run_sync_on_main([&,this](){
+    run_sync_on_main<15>([&,this](){
 #ifdef __EMSCRIPTEN__
 //    fb_.create(mainFbContext_.size(), CV_8UC4);
 //    preFB_.create(mainFbContext_.size(), CV_8UC4);
