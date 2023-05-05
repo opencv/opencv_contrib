@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), "Vector Graphics");
+static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics");
 
 int main() {
     //Display the framebuffer in the native window in an endless loop

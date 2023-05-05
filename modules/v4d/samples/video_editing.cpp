@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(cv::Size(1280, 720), "Video Editing");
+static Ptr<V4D> window = V4D::make(cv::Size(1280, 720), cv::Size(), "Video Editing");
 
 int main(int argc, char** argv) {
     try {

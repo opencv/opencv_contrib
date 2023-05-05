@@ -29,7 +29,7 @@ using std::endl;
 using std::vector;
 using std::string;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), "Pedestrian Demo", OFFSCREEN);
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
 static cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox

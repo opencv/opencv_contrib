@@ -5,7 +5,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 //Creates a V4D window for on screen rendering
-static Ptr<V4D> window = V4D::make(Size(1280, 720), "Show image");
+static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Show image");
 
 int main() {
 	//An image

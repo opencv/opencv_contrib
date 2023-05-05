@@ -125,8 +125,10 @@ void FrameBufferContext::init() {
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        if(v4d->hasNguiCtx())
-            v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
+        if(v4d->hasNguiCtx()) {
+            auto pt = v4d->fbCtx().toWindowCoord(cv::Point2f(x, y));
+            v4d->nguiCtx().screen().cursor_pos_callback_event(pt.x, pt.y);
+        }
 #ifndef __EMSCRIPTEN__
         auto cursor = v4d->getMousePosition();
         auto diff = cursor - cv::Vec2f(x, y);
@@ -173,7 +175,8 @@ void FrameBufferContext::init() {
                 std::vector<nanogui::Widget*> widgets;
                 if(v4d->hasNguiCtx()) {
                     for (auto* w : v4d->nguiCtx().screen().children()) {
-                        auto mousePos = nanogui::Vector2i(v4d->getMousePosition()[0] / v4d->getXPixelRatio(), v4d->getMousePosition()[1] / v4d->getYPixelRatio());
+                        auto pt = v4d->fbCtx().toWindowCoord(v4d->getMousePosition());
+                        auto mousePos = nanogui::Vector2i(pt[0] / v4d->getXPixelRatio(), pt[1] / v4d->getYPixelRatio());
                         if(contains_absolute(w, mousePos)) {
                             v4d->nguiCtx().screen().scroll_callback_event(x, y);
                             return;
@@ -266,6 +269,7 @@ void FrameBufferContext::setup(const cv::Size& sz) {
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
 }
+
 
 void FrameBufferContext::teardown() {
     using namespace cv::ocl;
@@ -404,6 +408,16 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
     });
 }
 
+cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
+    double bs = 1.0 / blitScale();
+    return cv::Point2f((pt.x * bs) - (blitOffsetX() / 2.0) * bs, (pt.y * bs) - (blitOffsetY() / 2.0) * bs);
+}
+
+cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
+    double bs = 1.0 / blitScale();
+    return cv::Vec2f((pt[0] * bs) - (blitOffsetX() / 2.0) * bs, (pt[1] * bs) - (blitOffsetY() / 2.0) * bs);
+}
+
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
     return *texture_;
 }
@@ -427,13 +441,13 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     double hf = double(windowSize.height) / frameBufferSize_.height;
     double wf = double(windowSize.width) / frameBufferSize_.width;
     double f = std::min(hf, wf);
-    if (f < 0)
-        f = 1.0 / f;
+    blitScaleX_ = f;
 
     double wn = frameBufferSize_.width * f;
     double hn = frameBufferSize_.height * f;
     double xn = windowSize.width - wn;
     double yn = windowSize.height - hn;
+
 
     GLint srcX0 = viewport.x;
     GLint srcY0 = viewport.y;
@@ -443,9 +457,14 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint dstY0 = stretch ? yn : windowSize.height - frameBufferSize_.height;
     GLint dstX1 = stretch ? wn : frameBufferSize_.width;
     GLint dstY1 = stretch ? hn : frameBufferSize_.height;
-            glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
-                    dstX0, dstY0, dstX1, dstY1,
-                    GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+
+    glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
+            dstX0, dstY0, dstX1, dstY1,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    blitOffsetX_ = xn;
+    blitOffsetY_ = yn;
 }
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
@@ -521,6 +540,18 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
         GL_CHECK(glFlush());
         GL_CHECK(glFinish());
     }
+}
+
+double FrameBufferContext::blitScale() {
+    return blitScaleX_;
+}
+
+GLint FrameBufferContext::blitOffsetX() {
+    return blitOffsetX_;
+}
+
+GLint FrameBufferContext::blitOffsetY() {
+    return blitOffsetY_;
 }
 
 float FrameBufferContext::getXPixelRatio() {

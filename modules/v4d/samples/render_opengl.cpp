@@ -4,7 +4,7 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), "GL Blue Screen");
+static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "GL Blue Screen");
 
 int main() {
     window->gl([](){

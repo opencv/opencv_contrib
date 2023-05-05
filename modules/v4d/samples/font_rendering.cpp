@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), "Font Rendering");
+static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Font Rendering");
 
 int main() {
 	//The text to render

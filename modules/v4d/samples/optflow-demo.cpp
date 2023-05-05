@@ -47,9 +47,9 @@ constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT) ,"Sparse Optical Flow Demo", OFFSCREEN);
+static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
 #ifndef __EMSCRIPTEN__
-static cv::Ptr<cv::v4d::V4D> v4d2 = cv::v4d::V4D::make(cv::Size(240, 360), "Display Settings", OFFSCREEN);
+static cv::Ptr<cv::v4d::V4D> v4d2 = cv::v4d::V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
 #endif
 
 /** Visualization parameters **/

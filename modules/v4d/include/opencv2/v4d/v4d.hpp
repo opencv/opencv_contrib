@@ -161,7 +161,7 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const string& title, bool offscreen = false, bool debug = false, int major = 3,
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, int major = 3,
             int minor = 2, bool compat = false, int samples = 0);
     /*!
      * Default destructor
@@ -394,7 +394,7 @@ public:
     CV_EXPORTS void updateFps(bool graphical = true);
     FrameBufferContext& fbCtx();
 private:
-    V4D(const cv::Size& initialSize,
+    V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(

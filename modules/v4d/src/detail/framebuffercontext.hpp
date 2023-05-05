@@ -53,6 +53,9 @@ class FrameBufferContext {
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
     GLint viewport_[4];
+    double blitScaleX_ = 1;
+    GLint blitOffsetX_;
+    GLint blitOffsetY_;
 #ifndef __EMSCRIPTEN__
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
@@ -138,6 +141,11 @@ public:
       */
     void execute(std::function<void(cv::UMat&)> fn);
 
+    double blitScale();
+
+    GLint blitOffsetX();
+    GLint blitOffsetY();
+
     /*!
      * Get the pixel ratio of the display x-axis.
      * @return The pixel ratio of the display x-axis.
@@ -198,6 +206,10 @@ protected:
      * @return The texture object.
      */
     cv::ogl::Texture2D& getTexture2D();
+
+    cv::Point2f toWindowCoord(const cv::Point2f& pt);
+    cv::Vec2f toWindowCoord(const cv::Vec2f& pt);
+
     GLFWwindow* getGLFWWindow();
 
 #ifndef __EMSCRIPTEN__

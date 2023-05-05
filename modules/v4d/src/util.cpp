@@ -415,7 +415,6 @@ EM_JS(void,copyVideoFrame,(int p), {
         }
 });
 
-long acc = 0;
 Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
     using namespace std;
 
@@ -425,13 +424,13 @@ Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
                 frame.create(cv::Size(width, height), CV_8UC3);
 
             if (current_frame != nullptr) {
-                run_sync_on_main<6>([&](){
+                run_sync_on_main<16>([&](){
+                    copyVideoFrame(reinterpret_cast<int>(current_frame));
                     cv::Mat tmp(cv::Size(width, height), CV_8UC4, current_frame);
                     cv::UMat utmp = tmp.getUMat(ACCESS_READ);
                     cvtColor(utmp, frame, cv::COLOR_BGRA2RGB);
                     utmp.release();
                     tmp.release();
-                    copyVideoFrame(reinterpret_cast<int>(current_frame));
                 });
             } else {
                 std::cerr << "Nothing captured" << endl;

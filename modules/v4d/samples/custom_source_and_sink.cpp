@@ -6,7 +6,7 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), "Custom Source/Sink");
+static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Custom Source/Sink");
 
 int main() {
     string hr = "Hello Rainbow!";
