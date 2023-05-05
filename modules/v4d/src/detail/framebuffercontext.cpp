@@ -410,12 +410,12 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 
 cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
     double bs = 1.0 / blitScale();
-    return cv::Point2f((pt.x * bs) - (blitOffsetX() / 2.0) * bs, (pt.y * bs) - (blitOffsetY() / 2.0) * bs);
+    return cv::Point2f((pt.x * bs) - blitOffsetX() * bs, (pt.y * bs) - blitOffsetY() * bs);
 }
 
 cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
     double bs = 1.0 / blitScale();
-    return cv::Vec2f((pt[0] * bs) - (blitOffsetX() / 2.0) * bs, (pt[1] * bs) - (blitOffsetY() / 2.0) * bs);
+    return cv::Vec2f((pt[0] * bs) - (blitOffsetX()), (pt[1] * bs) - (blitOffsetY()));
 }
 
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
@@ -447,7 +447,8 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     double hn = frameBufferSize_.height * f;
     double xn = windowSize.width - wn;
     double yn = windowSize.height - hn;
-
+    blitOffsetX_ = xn / 2.0;
+    blitOffsetY_ = yn / 2.0;
 
     GLint srcX0 = viewport.x;
     GLint srcY0 = viewport.y;
@@ -463,8 +464,6 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
             dstX0, dstY0, dstX1, dstY1,
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    blitOffsetX_ = xn;
-    blitOffsetY_ = yn;
 }
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
