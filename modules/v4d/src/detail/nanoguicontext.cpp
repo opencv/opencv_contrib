@@ -16,14 +16,8 @@ NanoguiContext::NanoguiContext(V4D& v4d, FrameBufferContext& fbContext) :
 }
 
 void NanoguiContext::init() {
-//    GL_CHECK(glEnable(GL_DEPTH_TEST));
-//    GL_CHECK(glDepthFunc(GL_LESS));
-//    GL_CHECK(glEnable(GL_STENCIL_TEST));
-//    GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
-//    GL_CHECK(glStencilFunc(GL_ALWAYS, 0, 0xffffffff));
     FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
     glClear(GL_STENCIL_BUFFER_BIT);
-//    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     screen_ = new nanogui::Screen();
     screen_->initialize(nguiFbContext_.getGLFWWindow(), false);
     fbCtx().setWindowSize(fbCtx().size());
@@ -48,29 +42,9 @@ void NanoguiContext::render() {
 //    }    glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 #endif
     {
-
-//        GL_CHECK(glEnable(GL_DEPTH_TEST));
-//        GL_CHECK(glDepthFunc(GL_LESS));
-//        GL_CHECK(glEnable(GL_STENCIL_TEST));
-//        GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
-//        GL_CHECK(glStencilFunc(GL_ALWAYS, 0, 0xffffffff));
         FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
         glClear(GL_STENCIL_BUFFER_BIT);
-//        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-//        float w = fbCtx().size().width;
-//        float h = fbCtx().size().height;
-//        float r = fbCtx().getXPixelRatio();
-
-//        nvgSave(context_);
-//        nvgBeginFrame(context_, w, h, r);
-
-//        screen().draw_setup();
         screen().draw_widgets();
-//        screen().nvg_flush();
-//        //FIXME make nvgCancelFrame possible
-//        nvgEndFrame(context_);
-//        nvgRestore(context_);
     }
 #ifdef __EMSCRIPTEN__
 //    {

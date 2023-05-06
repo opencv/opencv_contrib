@@ -56,7 +56,7 @@ int main() {
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
 
-		window->updateFps();
+		window->showFps();
 
 		window->write(); //Write video to the Sink
 		return window->display(); //Display the framebuffer in the native window

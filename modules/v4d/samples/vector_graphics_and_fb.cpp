@@ -93,7 +93,7 @@ int main() {
             //Heavily blurs the crosshair using a cheap boxFilter
             boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
         });
-        window->updateFps();
+        window->showFps();
 
         return window->display();
     });

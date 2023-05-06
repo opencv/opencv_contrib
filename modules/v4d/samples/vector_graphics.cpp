@@ -88,7 +88,7 @@ int main() {
             fill();
         });
 
-        window->updateFps();
+        window->showFps();
 
         return window->display();
     });

@@ -162,7 +162,7 @@ static bool iteration() {
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 
-    v4d->updateFps();
+    v4d->showFps();
 
     v4d->write();
 
@@ -180,9 +180,6 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-
-    if (!v4d->isOffscreen())
-        v4d->setVisible(true);
 
     v4d->printSystemInfo();
 

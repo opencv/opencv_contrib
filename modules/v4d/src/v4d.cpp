@@ -54,13 +54,13 @@ cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const strin
 
 V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int major, int minor,
         bool compat, int samples) :
-        initialSize_(size), offscreen_(offscreen), title_(title), major_(major), minor_(minor), compat_(
-                compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), scale_(
+        initialSize_(size), title_(title), major_(major), minor_(minor), compat_(
+                compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), zoomScale_(
                 1), mousePos_(0, 0), stretch_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
-        mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen_, title_, major_,
+        mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, major_,
                 minor_, compat_, samples_, debug_, nullptr, nullptr);
 
         nvgContext_ = new detail::NanoVGContext(*this, *mainFbContext_);
@@ -144,10 +144,6 @@ bool V4D::hasGlCtx() {
     return glContext_ != nullptr;
 }
 
-cv::Size V4D::getVideoFrameSize() {
-    return clvaCtx().getVideoFrameSize();
-}
-
 void V4D::gl(std::function<void()> fn) {
     glCtx().render([=](const cv::Size& sz) {
         CV_UNUSED(sz);
@@ -176,6 +172,16 @@ void V4D::nvg(std::function<void(const cv::Size&)> fn) {
 
 void V4D::nanogui(std::function<void(cv::v4d::FormHelper& form)> fn) {
     nguiCtx().build(fn);
+}
+
+void V4D::copyTo(cv::OutputArray m) {
+    UMat um = m.getUMat();
+    fbCtx().copyTo(um);
+}
+
+void V4D::copyFrom(cv::InputArray m) {
+    UMat um = m.getUMat();
+    fbCtx().copyFrom(um);
 }
 
 #ifdef __EMSCRIPTEN__
@@ -324,24 +330,24 @@ bool V4D::isMouseDrag() {
 }
 
 void V4D::pan(int x, int y) {
-    viewport_.x += x * scale_;
-    viewport_.y += y * scale_;
+    viewport_.x += x * zoomScale_;
+    viewport_.y += y * zoomScale_;
 }
 
 void V4D::zoom(float factor) {
-    if (scale_ == 1 && viewport_.x == 0 && viewport_.y == 0 && factor > 1)
+    if (zoomScale_ == 1 && viewport_.x == 0 && viewport_.y == 0 && factor > 1)
         return;
 
-    double oldScale = scale_;
-    double origW = getFrameBufferSize().width;
-    double origH = getFrameBufferSize().height;
+    double oldScale = zoomScale_;
+    double origW = framebufferSize().width;
+    double origH = framebufferSize().height;
 
-    scale_ *= factor;
-    if (scale_ <= 0.025) {
-        scale_ = 0.025;
+    zoomScale_ *= factor;
+    if (zoomScale_ <= 0.025) {
+        zoomScale_ = 0.025;
         return;
-    } else if (scale_ > 1) {
-        scale_ = 1;
+    } else if (zoomScale_ > 1) {
+        zoomScale_ = 1;
         viewport_.width = origW;
         viewport_.height = origH;
         if (factor > 1) {
@@ -361,8 +367,8 @@ void V4D::zoom(float factor) {
     cv::Vec2f offset;
     double oldW = (origW * oldScale);
     double oldH = (origH * oldScale);
-    viewport_.width = std::min(scale_ * origW, origW);
-    viewport_.height = std::min(scale_ * origH, origH);
+    viewport_.width = std::min(zoomScale_ * origW, origW);
+    viewport_.height = std::min(zoomScale_ * origH, origH);
 
     float delta_x;
     float delta_y;
@@ -393,11 +399,8 @@ void V4D::zoom(float factor) {
     }
 }
 
-cv::Vec2f V4D::getPosition() {
-    fbCtx().makeCurrent();
-    int x, y;
-    glfwGetWindowPos(getGLFWWindow(), &x, &y);
-    return cv::Vec2f(x, y);
+cv::Vec2f V4D::position() {
+    return fbCtx().position();
 }
 
 cv::Vec2f V4D::getMousePosition() {
@@ -408,79 +411,44 @@ void V4D::setMousePosition(int x, int y) {
     mousePos_ = { float(x), float(y) };
 }
 
-float V4D::getScale() {
-    return scale_;
+float V4D::zoomScale() {
+    return zoomScale_;
 }
 
 cv::Rect& V4D::viewport() {
     return viewport_;
 }
 
-float V4D::getXPixelRatio() {
-    fbCtx().makeCurrent();
-#ifdef __EMSCRIPTEN__
-    float r = emscripten_get_device_pixel_ratio();
-
-    return r;
-#else
-    float xscale, yscale;
-    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
-
-    return xscale;
-#endif
+float V4D::pixelRatioX() {
+    return fbCtx().pixelRatioX();
 }
 
-float V4D::getYPixelRatio() {
-    fbCtx().makeCurrent();
-#ifdef __EMSCRIPTEN__
-    float r = emscripten_get_device_pixel_ratio();
-
-    return r;
-#else
-    float xscale, yscale;
-    glfwGetWindowContentScale(getGLFWWindow(), &xscale, &yscale);
-
-    return yscale;
-#endif
+float V4D::pixelRatioY() {
+    return fbCtx().pixelRatioY();
 }
 
-cv::Size V4D::getNativeFrameBufferSize() {
-    fbCtx().makeCurrent();
-        int w, h;
-        glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
-        return cv::Size{w, h};
-}
-
-cv::Size V4D::getFrameBufferSize() {
+cv::Size V4D::framebufferSize() {
     return fbCtx().size();
 }
 
-cv::Size V4D::getInitialSize() {
+cv::Size V4D::initialSize() {
     return initialSize_;
 }
 
-void V4D::resizeWindow(const cv::Size& sz) {
+cv::Size V4D::getWindowSize() {
+    return fbCtx().getWindowSize();
+}
+
+void V4D::setWindowSize(const cv::Size& sz) {
     fbCtx().setWindowSize(sz);
 }
 
 bool V4D::isFullscreen() {
-    fbCtx().makeCurrent();
-    return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
+    return fbCtx().isFullscreen();
 }
 
 void V4D::setFullscreen(bool f) {
-    fbCtx().makeCurrent();
-        auto monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-        if (f) {
-            glfwSetWindowMonitor(getGLFWWindow(), monitor, 0, 0, mode->width, mode->height,
-                    mode->refreshRate);
-            resizeWindow(getNativeFrameBufferSize());
-        } else {
-            glfwSetWindowMonitor(getGLFWWindow(), nullptr, 0, 0, getInitialSize().width,
-                    getInitialSize().height, 0);
-            resizeWindow(getInitialSize());
-        }
+    fbCtx().setFullscreen(f);
 }
 
 bool V4D::isResizable() {
@@ -500,20 +468,11 @@ void V4D::setVisible(bool v) {
     nguiCtx().screen().perform_layout();
 }
 
-bool V4D::isOffscreen() {
-    return offscreen_;
-}
-
-void V4D::setOffscreen(bool o) {
-    offscreen_ = o;
-    setVisible(!o);
-}
-
-void V4D::setStretching(bool s) {
+void V4D::setFrameBufferScaling(bool s) {
     stretch_ = s;
 }
 
-bool V4D::isStretching() {
+bool V4D::isFrameBufferScaling() {
     return stretch_;
 }
 
@@ -522,7 +481,7 @@ void V4D::setDefaultKeyboardEventCallback() {
         CV_UNUSED(scancode);
         CV_UNUSED(modifiers);
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-            setOffscreen(!isOffscreen());
+            setVisible(!isVisible());
             return true;
         } else if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
             auto children = nguiCtx().screen().children();
@@ -536,39 +495,41 @@ void V4D::setDefaultKeyboardEventCallback() {
     });
 }
 
+void V4D::swapContextBuffers() {
+    run_sync_on_main<9>([this]() {
+        FrameBufferContext::GLScope glScope(clvaCtx().fbCtx());
+        clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), clvaCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        clvaCtx().fbCtx().makeCurrent();
+        glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
+    });
+    run_sync_on_main<10>([this]() {
+        FrameBufferContext::GLScope glScope(glCtx().fbCtx());
+        glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        glCtx().fbCtx().makeCurrent();
+        glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
+    });
+    run_sync_on_main<11>([this]() {
+        FrameBufferContext::GLScope glScope(nvgCtx().fbCtx());
+        nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        nvgCtx().fbCtx().makeCurrent();
+        glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
+    });
+    run_sync_on_main<12>([this]() {
+        FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
+        nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        nguiCtx().fbCtx().makeCurrent();
+        glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
+    });
+}
+
 bool V4D::display() {
     bool result = true;
-    if (!offscreen_) {
-//        run_sync_on_main<9>([this](){
-//            FrameBufferContext::GLScope glScope(clvaCtx().fbCtx());
-//            clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), clvaCtx().fbCtx().getWindowSize(), isStretching());
-//            clvaCtx().fbCtx().makeCurrent();
-//            glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
-//        });
-//        run_sync_on_main<10>([this](){
-//            FrameBufferContext::GLScope glScope(glCtx().fbCtx());
-//            glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isStretching());
-//            glCtx().fbCtx().makeCurrent();
-//            glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
-//        });
-//        run_sync_on_main<11>([this](){
-//            FrameBufferContext::GLScope glScope(nvgCtx().fbCtx());
-//            nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isStretching());
-//            nvgCtx().fbCtx().makeCurrent();
-//            glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
-//        });
-//        run_sync_on_main<12>([this](){
-//            FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
-//            nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isStretching());
-//            nguiCtx().fbCtx().makeCurrent();
-//            glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
-//        });
-
+    if (isVisible()) {
         nguiCtx().render();
 
         run_sync_on_main<6>([&, this](){
             FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-            fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isStretching());
+            fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isFrameBufferScaling());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
 #else
@@ -577,6 +538,7 @@ bool V4D::display() {
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());
         });
+        //FIXME
 #ifdef __EMSCRIPTEN__
         run_sync_on_main<7>([this](){
             cv::UMat tmp;
@@ -585,6 +547,7 @@ bool V4D::display() {
         });
 #endif
     }
+
     if(frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
         frameCnt_ = 0;
     else
@@ -598,12 +561,11 @@ uint64_t V4D::frameCount() {
 }
 
 bool V4D::isClosed() {
-    return closed_;
+    return fbCtx().isClosed();
 }
 
 void V4D::close() {
-    setVisible(false);
-    closed_ = true;
+    fbCtx().close();
 }
 
 GLFWwindow* V4D::getGLFWWindow() {
@@ -618,17 +580,19 @@ void V4D::printSystemInfo() {
     });
 }
 
-void V4D::updateFps(bool graphical) {
+void V4D::showFps(bool print, bool graphical) {
     if (frameCount() > 0) {
         tick_.stop();
 
         if (tick_.getTimeMilli() > 50) {
-            cerr << "FPS : " << (fps_ = tick_.getFPS());
+            if(print) {
+                cerr << "FPS : " << (fps_ = tick_.getFPS());
 #ifndef __EMSCRIPTEN__
-            cerr << '\r';
+                cerr << '\r';
 #else
-            cerr << endl;
+                cerr << endl;
 #endif
+            }
             tick_.reset();
         }
 

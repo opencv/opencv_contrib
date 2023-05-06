@@ -26,7 +26,7 @@ FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const Fram
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), windowSize_(frameBufferSize), frameBufferSize_(frameBufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent) {
+                minor), compat_(compat), samples_(samples), debug_(debug), viewport_(0, 0, frameBufferSize.width, frameBufferSize.height), frameBufferSize_(frameBufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent) {
     run_sync_on_main<1>([this](){ init(); });
 }
 
@@ -114,11 +114,6 @@ void FrameBufferContext::init() {
     context_ = CLExecContext_t::getCurrent();
 #endif
 
-#ifdef OPENCV_V4D_USE_ES3
-    downloader_.init(GL_RGBA, frameBufferSize_.width, frameBufferSize_.height, 3);
-#else
-    downloader_.init(GL_BGRA, frameBufferSize_.width, frameBufferSize_.height, 3);
-#endif
     setup(frameBufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), v4d_);
 
@@ -175,7 +170,7 @@ void FrameBufferContext::init() {
                 if(v4d->hasNguiCtx()) {
                     for (auto* w : v4d->nguiCtx().screen().children()) {
                         auto pt = v4d->fbCtx().toWindowCoord(v4d->getMousePosition());
-                        auto mousePos = nanogui::Vector2i(pt[0] / v4d->getXPixelRatio(), pt[1] / v4d->getYPixelRatio());
+                        auto mousePos = nanogui::Vector2i(pt[0] / v4d->pixelRatioX(), pt[1] / v4d->pixelRatioY());
                         if(contains_absolute(w, mousePos)) {
                             v4d->nguiCtx().screen().scroll_callback_event(x, y);
                             return;
@@ -194,7 +189,7 @@ void FrameBufferContext::init() {
                 if(v4d->hasNguiCtx())
                     v4d->nguiCtx().screen().resize_callback_event(width, height);
                 cv::Rect& vp = v4d->viewport();
-                cv::Size fbsz = v4d->getFrameBufferSize();
+                cv::Size fbsz = v4d->framebufferSize();
                 vp.x = 0;
                 vp.y = 0;
                 vp.width = fbsz.width;
@@ -408,9 +403,23 @@ void FrameBufferContext::copyTo(cv::UMat& dst) {
     });
 }
 
+void FrameBufferContext::copyFrom(const cv::UMat& src) {
+    run_sync_on_main<18>([&,this](){
+        if(framebuffer_.empty())
+            framebuffer_.create(size(), CV_8UC4);
+    #ifndef __EMSCRIPTEN__
+        CLExecScope_t clExecScope(getCLExecContext());
+    #endif
+        FrameBufferContext::GLScope glScope(*this);
+        FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+        src.copyTo(framebuffer_);
+    });
+}
+
 void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
     run_sync_on_main<2>([&,this](){
-        framebuffer_.create(size(), CV_8UC4);
+        if(framebuffer_.empty())
+            framebuffer_.create(size(), CV_8UC4);
     #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
     #endif
@@ -423,7 +432,7 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
     double bs = 1.0 / blitScale();
 #ifdef __EMSCRIPTEN__
-    return cv::Point2f(((pt.x * bs) - blitOffsetX()) * getXPixelRatio(), ((pt.y * bs) - blitOffsetY()) * getYPixelRatio());
+    return cv::Point2f(((pt.x * bs) - blitOffsetX()) * pixelRatioX(), ((pt.y * bs) - blitOffsetY()) * pixelRatioY());
 #else
     return cv::Point2f(((pt.x * bs) - blitOffsetX()), ((pt.y * bs) - blitOffsetY()));
 #endif
@@ -432,7 +441,7 @@ cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
 cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
     double bs = 1.0 / blitScale();
 #ifdef __EMSCRIPTEN__
-    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()) * getXPixelRatio(), ((pt[1] * bs) - blitOffsetY()) * getYPixelRatio());
+    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()) * pixelRatioX(), ((pt[1] * bs) - blitOffsetY()) * pixelRatioY());
 #else
     return cv::Vec2f(((pt[0] * bs) - blitOffsetX()), ((pt[1] * bs) - blitOffsetY()));
 #endif
@@ -483,7 +492,6 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,
             GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
 }
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
@@ -518,9 +526,6 @@ void FrameBufferContext::download(cv::UMat& m) {
     assert(tmp.data != nullptr);
     //this should use a PBO for the pixel transfer, but i couldn't get it to work for both opengl and webgl at the same time
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
-
-//    downloader_.download();
-//    memcpy(tmp.data, downloader_.pixels, downloader_.nbytes);
     tmp.release();
 }
 
@@ -572,7 +577,14 @@ GLint FrameBufferContext::blitOffsetY() {
     return blitOffsetY_;
 }
 
-float FrameBufferContext::getXPixelRatio() {
+cv::Vec2f FrameBufferContext::position() {
+    makeCurrent();
+    int x, y;
+    glfwGetWindowPos(getGLFWWindow(), &x, &y);
+    return cv::Vec2f(x, y);
+}
+
+float FrameBufferContext::pixelRatioX() {
     makeCurrent();
 #ifdef __EMSCRIPTEN__
     float r = emscripten_get_device_pixel_ratio();
@@ -586,7 +598,7 @@ float FrameBufferContext::getXPixelRatio() {
 #endif
 }
 
-float FrameBufferContext::getYPixelRatio() {
+float FrameBufferContext::pixelRatioY() {
     makeCurrent();
 #ifdef __EMSCRIPTEN__
     float r = emscripten_get_device_pixel_ratio();
@@ -601,7 +613,8 @@ float FrameBufferContext::getYPixelRatio() {
 }
 
 void FrameBufferContext::makeCurrent() {
-        glfwMakeContextCurrent(getGLFWWindow());
+    assert(getGLFWWindow() != nullptr);
+    glfwMakeContextCurrent(getGLFWWindow());
 }
 
 bool FrameBufferContext::isResizable() {
@@ -664,6 +677,17 @@ void FrameBufferContext::setVisible(bool v) {
         glfwShowWindow(getGLFWWindow());
     else
         glfwHideWindow(getGLFWWindow());
+}
+
+bool FrameBufferContext::isClosed() {
+    return glfwWindow_ == nullptr;
+}
+
+void FrameBufferContext::close() {
+    makeCurrent();
+    teardown();
+    glfwDestroyWindow(getGLFWWindow());
+    glfwWindow_ = nullptr;
 }
 
 }

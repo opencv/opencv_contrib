@@ -117,7 +117,6 @@ class CV_EXPORTS V4D {
     friend class detail::NanoVGContext;
     friend class detail::FrameBufferContext;
     cv::Size initialSize_;
-    bool offscreen_;
     const string& title_;
     int major_;
     int minor_;
@@ -125,7 +124,7 @@ class CV_EXPORTS V4D {
     int samples_;
     bool debug_;
     cv::Rect viewport_;
-    float scale_;
+    float zoomScale_;
     cv::Vec2f mousePos_;
     bool stretch_;
     FrameBufferContext* mainFbContext_ = nullptr;
@@ -141,8 +140,6 @@ class CV_EXPORTS V4D {
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
     cv::UMat currentWriterFrame_;
-    cv::UMat readerFrameBuffer_;
-    cv::UMat writerFrameBuffer_;
     std::future<bool> futureReader_;
     std::future<void> futureWriter_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
@@ -168,13 +165,11 @@ public:
      * Default destructor
      */
     CV_EXPORTS virtual ~V4D();
-    CV_EXPORTS void init();
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
      */
     CV_EXPORTS cv::ogl::Texture2D& texture();
-
     /*!
      * Execute function object fn inside an opengl context.
      * This is how all OpenGL operations should be executed.
@@ -182,7 +177,6 @@ public:
      */
     CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void gl(std::function<void()> fn);
-
     /*!
      * Execute function object fn inside a framebuffer context.
      * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -200,7 +194,6 @@ public:
      */
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void nvg(std::function<void()> fn);
-
     /*!
      * Execute function object fn inside a nanogui context.
      * The context provides a #cv::viz::FormHelper instance to the function object
@@ -210,12 +203,21 @@ public:
      */
     CV_EXPORTS void nanogui(std::function<void(FormHelper& form)> fn);
     /*!
+     * Copy the framebuffer contents to an OutputArray.
+     * @param arr The array to copy to.
+     */
+    CV_EXPORTS void copyTo(cv::OutputArray arr);
+    /*!
+     * Copy the InputArray contents to the framebuffer.
+     * @param arr The array to copy.
+     */
+    CV_EXPORTS void copyFrom(cv::InputArray arr);
+    /*!
      * Execute function object fn in a loop.
      * This function main purpose is to abstract the run loop for portability reasons.
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
     CV_EXPORTS void run(std::function<bool()> fn);
-
     /*!
      * Clear the framebuffer.
      * @param bgra The color to use for clearing.
@@ -230,7 +232,6 @@ public:
      * @return true if successful.
      */
     CV_EXPORTS bool capture();
-
     /*!
      * Called to capture from a function object.
      * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.
@@ -247,7 +248,6 @@ public:
      * @param fn The functor that consumes the data,
      */
     CV_EXPORTS void write(std::function<void(const cv::UMat&)> fn);
-
     /*!
      * Set the current #cv::viz::Source object. Usually created using #makeCaptureSource().
      * @param src A #cv::viz::Source object.
@@ -288,47 +288,50 @@ public:
      * Get the window position.
      * @return The window position.
      */
-    CV_EXPORTS cv::Vec2f getPosition();
+    CV_EXPORTS cv::Vec2f position();
     /*!
      * Get current zoom scale.
      * @return The zoom scale.
      */
-    CV_EXPORTS float getScale();
+    CV_EXPORTS float zoomScale();
     /*!
      * Get the current viewport.
      * @return The current viewport.
      */
     CV_EXPORTS cv::Rect& viewport();
-    CV_EXPORTS float getXPixelRatio();
-    CV_EXPORTS float getYPixelRatio();
+    /*!
+     * Get the pixel ratio of the display x-axis.
+     * @return The pixel ratio of the display x-axis.
+     */
+    CV_EXPORTS float pixelRatioX();
+    /*!
+     * Get the pixel ratio of the display y-axis.
+     * @return The pixel ratio of the display y-axis.
+     */
+    CV_EXPORTS float pixelRatioY();
     /*!
      * Set the window size.
      * @param sz The new window size.
      */
-    CV_EXPORTS void resizeWindow(const cv::Size& sz);
+    CV_EXPORTS cv::Size initialSize();
+    /*!
+     * Get the current size of the window
+     * @return The window size
+     */
+    CV_EXPORTS cv::Size framebufferSize();
+    /*!
+     * Determine if the window is in fullscreen mode.
+     * @return true if in fullscreen mode.
+     */
+    CV_EXPORTS void setWindowSize(const cv::Size& sz);
     /*!
      * Get the initial size.
      * @return The initial size.
      */
-    CV_EXPORTS cv::Size getInitialSize();
-    /*!
-     * Get the video frame size
-     * @return The current video frame size.
-     */
-    CV_EXPORTS cv::Size getVideoFrameSize();
+    CV_EXPORTS cv::Size getWindowSize();
     /*!
      * Get the frambuffer size.
      * @return The framebuffer size.
-     */
-    CV_EXPORTS cv::Size getFrameBufferSize();
-    /*!
-     * Get the frambuffer size of the native window.
-     * @return The framebuffer size of the native window.
-     */
-    CV_EXPORTS cv::Size getNativeFrameBufferSize();
-    /*!
-     * Determine if the window is in fullscreen mode.
-     * @return true if in fullscreen mode.
      */
     CV_EXPORTS bool isFullscreen();
     /*!
@@ -357,25 +360,19 @@ public:
      */
     CV_EXPORTS void setVisible(bool v);
     /*!
-     * Determine if offscreen rendering is enabled.
-     * @return true if offscreen rendering is enabled.
+     * Enable/Disable scaling the framebuffer during blitting.
+     * @param s if true enable scaling
      */
-    CV_EXPORTS bool isOffscreen();
+    CV_EXPORTS void setFrameBufferScaling(bool s);
     /*!
-     * Enable or disable offscreen rendering.
-     * @param o if o is true enable offscreen rendering.
+     * Determine if framebuffer is scaled during blitting.
+     * @return true if framebuffer is scaled during blitting.
      */
-    CV_EXPORTS void setOffscreen(bool o);
+    CV_EXPORTS bool isFrameBufferScaling();
     /*!
-     * Enable or disable stretching of the framebuffer to window size during blitting.
-     * @param s if s is true enable stretching.
+     * Everytime a frame is displayed this count is incremented
+     * @return the current frame count
      */
-    CV_EXPORTS void setStretching(bool s);
-    /*!
-     * Determine if framebuffer stretching during blitting is enabled.
-     * @return true if framebuffer stretching during blitting is enabled.
-     */
-    CV_EXPORTS bool isStretching();
     CV_EXPORTS uint64_t frameCount();
     /*!
      * Determine if the window is closed.
@@ -391,12 +388,21 @@ public:
      * @return false if the window is closed.
      */
     CV_EXPORTS bool display();
+    /*!
+     * Print basic system information to stderr
+     */
     CV_EXPORTS void printSystemInfo();
-    CV_EXPORTS void updateFps(bool graphical = true);
-    FrameBufferContext& fbCtx();
+    /*!
+     * Updates and prints the current fps to stderr and/or renders the fps on screen.
+     * @param print if true prints the current fps to stderr
+     * @param graphical if true renders the fps on screen
+     */
+    CV_EXPORTS void showFps(bool print = true, bool graphical = true);
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
+
+    void init();
     void setDefaultKeyboardEventCallback();
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
@@ -405,6 +411,8 @@ private:
     cv::Vec2f getMousePosition();
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
+
+    FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
     NanoguiContext& nguiCtx();
@@ -417,6 +425,7 @@ private:
     bool hasGlCtx();
 
     GLFWwindow* getGLFWWindow();
+    void swapContextBuffers();
 };
 }
 } /* namespace kb */

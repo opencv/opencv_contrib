@@ -187,7 +187,7 @@ static bool iteration() {
         cnt = 0;
     }
 
-    v4d->updateFps();
+    v4d->showFps();
 
 #ifndef __EMSCRIPTEN__
     v4d->write();
@@ -206,9 +206,8 @@ int main() {
     try {
         using namespace cv::v4d;
 
-        if(!v4d->isOffscreen()) {
+        if(!OFFSCREEN) {
             setup_gui(v4d);
-            v4d->setVisible(true);
         }
 
         v4d->printSystemInfo();

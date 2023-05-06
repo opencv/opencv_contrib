@@ -196,7 +196,7 @@ static bool iteration() {
         composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
     });
 
-    v4d->updateFps();
+    v4d->showFps();
 
     v4d->write();
 
@@ -215,9 +215,6 @@ int main() {
 #endif
     using namespace cv::v4d;
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
-
-    if (!v4d->isOffscreen())
-        v4d->setVisible(true);
 
     v4d->printSystemInfo();
 

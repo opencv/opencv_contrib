@@ -396,9 +396,7 @@ EM_JS(void,copyVideoFrameCPU,(int p), {
             Module.cameraCtx.drawImage(Module.videoElement, 0, 0, 1280, 720);
             var cameraArrayBuffer = Module.cameraCtx.getImageData(0, 0, 1280, 720);
 
-            if(typeof cameraArrayBuffer !== 'undefined') {
-                Module.HEAPU8.set(cameraArrayBuffer.data, p);
-            }
+            Module.HEAPU8.set(cameraArrayBuffer.data, p);
         }
 });
 

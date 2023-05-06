@@ -60,12 +60,10 @@ class FrameBufferContext {
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
 #endif
-    cv::Size windowSize_;
     cv::Size frameBufferSize_;
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;
-    PboDownloader downloader_;
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.
@@ -133,6 +131,8 @@ public:
      */
     cv::Size size();
     void copyTo(cv::UMat& dst);
+    void copyFrom(const cv::UMat& src);
+
     /*!
       * Execute function object fn inside a framebuffer context.
       * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -141,22 +141,9 @@ public:
       * @param fn A function object that is passed the framebuffer to be read/manipulated.
       */
     void execute(std::function<void(cv::UMat&)> fn);
-
-    double blitScale();
-
-    GLint blitOffsetX();
-    GLint blitOffsetY();
-
-    /*!
-     * Get the pixel ratio of the display x-axis.
-     * @return The pixel ratio of the display x-axis.
-     */
-    float getXPixelRatio();
-    /*!
-     * Get the pixel ratio of the display y-axis.
-     * @return The pixel ratio of the display y-axis.
-     */
-    float getYPixelRatio();
+    cv::Vec2f position();
+    float pixelRatioX();
+    float pixelRatioY();
     void makeCurrent();
     bool isResizable();
     void setResizable(bool r);
@@ -167,38 +154,11 @@ public:
     cv::Size getNativeFrameBufferSize();
     void setVisible(bool v);
     bool isVisible();
+    void close();
+    bool isClosed();
 protected:
-    void init();
     void setup(const cv::Size& sz);
     void teardown();
-    /*!
-     * Setup OpenGL states.
-     */
-    void begin(GLenum framebufferTarget);
-    /*!
-     * Tear-down OpenGL states.
-     */
-    void end();
-    /*!
-     * Download the framebuffer to UMat m.
-     * @param m The target UMat.
-     */
-    void download(cv::UMat& m);
-    /*!
-     * Uploat UMat m to the framebuffer.
-     * @param m The UMat to upload.
-     */
-    void upload(const cv::UMat& m);
-    /*!
-     * Acquire the framebuffer using cl-gl sharing.
-     * @param m The UMat the framebuffer will be bound to.
-     */
-    void acquireFromGL(cv::UMat& m);
-    /*!
-     * Release the framebuffer using cl-gl sharing.
-     * @param m The UMat the framebuffer is bound to.
-     */
-    void releaseToGL(cv::UMat& m);
     /*!
      * The UMat used to copy or bind (depending on cl-gl sharing capability) the OpenGL framebuffer.
      */
@@ -228,9 +188,42 @@ protected:
      */
     void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
             bool stretch = false);
-
+private:
+    void init();
+    /*!
+     * Setup OpenGL states.
+     */
+    void begin(GLenum framebufferTarget);
+    /*!
+     * Tear-down OpenGL states.
+     */
+    void end();
+    /*!
+     * Download the framebuffer to UMat m.
+     * @param m The target UMat.
+     */
+    void download(cv::UMat& m);
+    /*!
+     * Uploat UMat m to the framebuffer.
+     * @param m The UMat to upload.
+     */
+    void upload(const cv::UMat& m);
+    /*!
+     * Acquire the framebuffer using cl-gl sharing.
+     * @param m The UMat the framebuffer will be bound to.
+     */
+    void acquireFromGL(cv::UMat& m);
+    /*!
+     * Release the framebuffer using cl-gl sharing.
+     * @param m The UMat the framebuffer is bound to.
+     */
+    void releaseToGL(cv::UMat& m);
     void toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture);
     void fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u);
+
+    double blitScale();
+    GLint blitOffsetX();
+    GLint blitOffsetY();
 
     cv::UMat framebuffer_;
     /*!

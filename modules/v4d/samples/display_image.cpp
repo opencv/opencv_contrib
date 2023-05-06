@@ -21,7 +21,7 @@ int main() {
 	window->run([=](){
 	    //Feeds the image to the video pipeline
 	    window->feed(image);
-	    window->updateFps();
+	    window->showFps();
 	    return window->display();
     });
 }

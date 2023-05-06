@@ -17,7 +17,7 @@ int main() {
             glClear(GL_COLOR_BUFFER_BIT);
         });
 
-        window->updateFps(true);
+        window->showFps();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window.
         //Returns false if the window was closed.

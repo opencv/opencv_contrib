@@ -16,16 +16,13 @@ int main() {
 #endif
     UMat resized;
     UMat converted;
-    resize(image, resized, window->getFrameBufferSize());
+    resize(image, resized, window->framebufferSize());
     cvtColor(resized, converted, COLOR_RGB2BGRA);
 
 	//Display the framebuffer in the native window in an endless loop
 	window->run([=](){
-	    window->fb([&](UMat& framebuffer) {
-	        converted.copyTo(framebuffer);
-	    });
-	    window->updateFps();
+	    window->copyFrom(converted);
+	    window->showFps();
 		return window->display();
 	});
 }
-

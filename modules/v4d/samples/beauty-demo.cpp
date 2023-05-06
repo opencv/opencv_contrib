@@ -239,7 +239,7 @@ static bool iteration() {
         static bool trackerInitalized = false;
 #endif
         //Face detector
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("face_detection_yunet_2022mar.onnx", "", cv::Size(v4d->getFrameBufferSize().width * SCALE, v4d->getFrameBufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("face_detection_yunet_2022mar.onnx", "", cv::Size(v4d->framebufferSize().width * SCALE, v4d->framebufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
         //Blender (used to put the different face parts back together)
         static cv::detail::MultiBandBlender blender(false, 5);
         blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
@@ -379,7 +379,7 @@ static bool iteration() {
             });
         }
 
-        v4d->updateFps();
+        v4d->showFps();
 
 #ifndef __EMSCRIPTEN__
         v4d->write();
@@ -407,11 +407,10 @@ int main() {
 
     facemark->loadModel("lbfmodel.yaml");
 
-    v4d->setStretching(stretch);
+    v4d->setFrameBufferScaling(stretch);
 
-    if (!v4d->isOffscreen()) {
+    if (!OFFSCREEN) {
         setup_gui(v4d);
-        v4d->setVisible(true);
     }
 
     v4d->printSystemInfo();

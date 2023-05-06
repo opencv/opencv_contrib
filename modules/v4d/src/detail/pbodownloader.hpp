@@ -16,9 +16,8 @@ namespace poly {
 
   class PboDownloader {
   public:
-    PboDownloader();
+    PboDownloader(GLenum format, int w, int h, int num);
     ~PboDownloader();
-    int init(GLenum fmt, int w, int h, int num);
     void download();
 
   public:

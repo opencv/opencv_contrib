@@ -384,7 +384,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain, cv::Ptr<cv::v4d::V4D> v4dMe
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
         form.makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
-            v4dMain->setStretching(s);
+            v4dMain->setFrameBufferScaling(s);
         });
 
 #ifndef __EMSCRIPTEN__
@@ -402,7 +402,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain, cv::Ptr<cv::v4d::V4D> v4dMe
 static bool iteration() {
     //BGRA
     static cv::UMat background, down;
-    static cv::UMat foreground(v4d->getFrameBufferSize(), CV_8UC4, cv::Scalar::all(0));
+    static cv::UMat foreground(v4d->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
     //RGB
     static cv::UMat menuFrame;
     //GREY
@@ -413,7 +413,7 @@ static bool iteration() {
         return false;
 
     v4d->fb([=](cv::UMat& frameBuffer) {
-        cv::resize(frameBuffer, down, cv::Size(v4d->getFrameBufferSize().width * fg_scale, v4d->getFrameBufferSize().height * fg_scale));
+        cv::resize(frameBuffer, down, cv::Size(v4d->framebufferSize().width * fg_scale, v4d->framebufferSize().height * fg_scale));
         frameBuffer.copyTo(background);
     });
 
@@ -446,7 +446,7 @@ static bool iteration() {
 #endif
     });
 
-    v4d->updateFps();
+    v4d->showFps();
 
 #ifndef __EMSCRIPTEN__
     v4d->write();
@@ -474,14 +474,12 @@ int main() {
 
         v4d->printSystemInfo();
 
-        if (!v4d->isOffscreen()) {
-            v4d->setVisible(true);
+        if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
             setup_gui(v4d, v4d2);
             v4d2->setResizable(false);
-            v4d2->setVisible(true);
 #else
-        setup_gui(v4d, v4d);
+            setup_gui(v4d, v4d);
 #endif
         }
 

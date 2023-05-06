@@ -16,12 +16,6 @@ NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
 }
 
 void NanoVGContext::init() {
-//    GL_CHECK(glEnable(GL_DEPTH_TEST));
-//    GL_CHECK(glDepthFunc(GL_LESS));
-//    GL_CHECK(glEnable(GL_STENCIL_TEST));
-//    GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
-//    GL_CHECK(glStencilFunc(GL_ALWAYS, 0, 0xffffffff));
-//    GL_CHECK(glStencilMask(0x00));
     FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
     glClear(GL_STENCIL_BUFFER_BIT);
     screen_ = new nanogui::Screen();
@@ -48,16 +42,8 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 //    }
 #endif
     {
-//        GL_CHECK(glEnable(GL_DEPTH_TEST));
-//        GL_CHECK(glDepthFunc(GL_LESS));
-//        GL_CHECK(glEnable(GL_STENCIL_TEST));
-//        GL_CHECK(glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP));
-//        GL_CHECK(glStencilFunc(GL_ALWAYS, 0, 0xffffffff));
-//        GL_CHECK(glStencilMask(0x00));
         FrameBufferContext::GLScope glScope(fbCtx());
         glClear(GL_STENCIL_BUFFER_BIT);
-//        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-//        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
         fn(fbCtx().size());
@@ -80,10 +66,9 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 void NanoVGContext::begin() {
     float w = fbCtx().size().width;
     float h = fbCtx().size().height;
-    float r = fbCtx().getXPixelRatio();
+    float r = fbCtx().pixelRatioX();
 
     nvgSave(context_);
-//    glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
     nvgBeginFrame(context_, w, h, r);
 //FIXME mirroring with text somehow doesn't work
 //    nvgTranslate(context_, 0, h);

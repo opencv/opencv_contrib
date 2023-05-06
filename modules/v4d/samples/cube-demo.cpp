@@ -217,7 +217,7 @@ static bool iteration() {
     });
 #endif
 
-    v4d->updateFps();
+    v4d->showFps();
 
     v4d->write();
 
@@ -235,11 +235,7 @@ int main() {
 #endif
     using namespace cv::v4d;
 
-    if (!v4d->isOffscreen())
-        v4d->setVisible(true);
-
     v4d->printSystemInfo();
-
 
 #ifndef __EMSCRIPTEN__
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,

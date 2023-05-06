@@ -36,7 +36,7 @@ int main() {
 			text(sz.width / 2.0, sz.height / 2.0, hw.c_str(), hw.c_str() + hw.size());
 		});
 
-        window->updateFps();
+        window->showFps();
 		//Display the framebuffer in the native window
 		return window->display();
 	});

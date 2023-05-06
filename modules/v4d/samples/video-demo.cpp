@@ -204,7 +204,7 @@ static bool iteration() {
     });
 #endif
 
-    v4d->updateFps();
+    v4d->showFps();
 
     v4d->write();
 
@@ -222,9 +222,6 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-
-    if (!v4d->isOffscreen())
-        v4d->setVisible(true);
 
     v4d->printSystemInfo();
 
