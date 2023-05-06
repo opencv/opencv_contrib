@@ -47,7 +47,7 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
 
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int major,
         int minor, bool compat, int samples) {
-    cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, major, minor, false, 0);
+    cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, major, minor, compat, samples);
     v4d->setVisible(true);
     return v4d;
 }

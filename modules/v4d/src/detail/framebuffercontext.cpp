@@ -395,15 +395,28 @@ cv::Size FrameBufferContext::size() {
     return frameBufferSize_;
 }
 
-void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
-    run_sync_on_main<2>([&,this](){
-        frameBuffer_.create(size(), CV_8UC4);
+void FrameBufferContext::copyTo(cv::UMat& dst) {
+    run_sync_on_main<18>([&,this](){
+        if(framebuffer_.empty())
+            framebuffer_.create(size(), CV_8UC4);
     #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
     #endif
         FrameBufferContext::GLScope glScope(*this);
-        FrameBufferContext::FrameBufferScope fbScope(*this, frameBuffer_);
-        fn(frameBuffer_);
+        FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+        framebuffer_.copyTo(dst);
+    });
+}
+
+void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
+    run_sync_on_main<2>([&,this](){
+        framebuffer_.create(size(), CV_8UC4);
+    #ifndef __EMSCRIPTEN__
+        CLExecScope_t clExecScope(getCLExecContext());
+    #endif
+        FrameBufferContext::GLScope glScope(*this);
+        FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+        fn(framebuffer_);
     });
 }
 

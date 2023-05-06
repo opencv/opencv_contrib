@@ -365,7 +365,7 @@ int main() {
                 FPS, cv::Size(WIDTH, HEIGHT));
         v4d->setSink(sink);
 #else
-        Source src = makeCaptureSource(WIDTH, HEIGHT);
+        Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
         v4d->setSource(src);
 #endif
 

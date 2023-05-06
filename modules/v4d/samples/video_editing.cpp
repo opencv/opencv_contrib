@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     window->setSink(sink);
 #else
     //Make a webcam Source
-    Source src = makeCaptureSource(1280,720);
+    Source src = makeCaptureSource(1280, 720, window);
     //Attach web source
     window->setSource(src);
 #endif

@@ -225,7 +225,8 @@
       }
 
       cameraBtn.addEventListener('click', async function() {
-          let stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          let stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 }, audio: false});
+
           videoElement.addEventListener(
             "playing",
             () => {

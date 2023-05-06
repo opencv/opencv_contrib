@@ -7,6 +7,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include "opencv2/v4d/util.hpp"
 #include "opencv2/v4d/nvg.hpp"
+#include "detail/framebuffercontext.hpp"
 
 
 #ifdef __EMSCRIPTEN__
@@ -323,83 +324,69 @@ void v4dSetVideoFramePointer(uint8_t* frame, int width, int height) {
 }
 }
 
-//EM_JS(void,copyVideoFrameGPU,(int width, int height), {
-//        function initFramebuffer(gl) {
-//            console.error("init fb: " + width + "/" + height);
-//          if(typeof globalThis.v4dVideoFrameBuffer === 'undefined' || globalThis.v4dVideoFrameBuffer === null) {
-//              console.error("CREATE FRAMEBUFFER");
-//              globalThis.v4dVideoFrameBuffer = gl.createFramebuffer();
-//          }
-//          if(typeof globalThis.v4dVideoFrameTexture === 'undefined' || globalThis.v4dVideoFrameTexture === null) {
-//              console.error("CREATE TEXTURE");
-//              globalThis.v4dVideoFrameTexture = gl.createTexture();
-//          }
-//
-//          if(typeof globalThis.v4dVideoElement === 'undefined' || globalThis.v4dVideoElement === null) {
-//              console.error("CREATE VIDEO ELEMENT");
-//              globalThis.v4dVideoElement = document.querySelector("#video");
-//          }
-//
-//          gl.bindFramebuffer(gl.FRAMEBUFFER, globalThis.v4dVideoFrameBuffer);
-//          gl.bindTexture(gl.TEXTURE_2D, globalThis.v4dVideoFrameTexture);
-//          const level = 0;
-//          const internalFormat = gl.RGBA;
-//          const border = 0;
-//          const srcFormat = gl.RGBA;
-//          const srcType = gl.UNSIGNED_BYTE;
-//          gl.texImage2D(
-//            gl.TEXTURE_2D,
-//            level,
-//            internalFormat,
-//            srcFormat,
-//            srcType,
-//            globalThis.v4dVideoElement
-//          );
-//
-//          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, globalThis.v4dVideoFrameTexture, 0);
-//          return gl.checkFramebufferStatus(gl.FRAMEBUFFER) == gl.FRAMEBUFFER_COMPLETE;
-//        }
-//
-//        function updateTexture(gl) {
-//            if(initFramebuffer(gl)) {
-//              console.error("video texture copy: " + globalThis.v4dVideoFrameTexture + " -> " + mainTexture);
-////              gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, mainFrameBuffer);
-//              gl.bindTexture(gl.TEXTURE_2D, mainTexture);
-////              gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, mainTexture, 0);
-////              gl.blitFramebuffer( 0, 0, globalThis.v4dVideoElement.width, globalThis.v4dVideoElement.height,
-////                      0, 0, width, height,
-////                      gl.COLOR_BUFFER_BIT, gl.NEAREST);
-//              gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, globalThis.v4dVideoElement.width, globalThis.v4dVideoElement.height, 0);
-//          } else {
-//              console.error("frambuffer incomplete");
-//          }
-//        }
-//        var ctx;
-//        if (typeof GL !== 'undefined' && typeof Module.ctx !== 'undefined') {
-//            console.error("start");
-//
-//            gl = Module.ctx;
-//            mainFrameBuffer = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-//            mainTexture = gl.getFramebufferAttachmentParameter(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
-//            console.log(mainFrameBuffer + ":" + mainTexture);
-//
-//            if(Module.doCapture) {
-//                console.error("capture");
-//                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-//                updateTexture(gl, globalThis.v4dVideoFrameTexture, globalThis.v4dVideoElement);
-//            } else {
-//                console.error("video not playing");
-//            }
-//            console.error("6");
-//        } else {
-//            console.error("GL unavailable");
-//        }
-////
-////        gl.flush();
-////        gl.finish();
-//});
+GLuint framebuffer = 0;
+GLuint texture = 0;
 
-EM_JS(void,copyVideoFrame,(int p), {
+bool captureVideoFrameGPU(int width, int height) {
+    int ret = EM_ASM_INT(
+        if(typeof Module.ctx !== 'undefined' && Module.ctx !== null && Module.doCapture) {
+            globalThis.gl = Module.ctx;
+            globalThis.v4dMainFrameBuffer = globalThis.gl.getParameter(globalThis.gl.FRAMEBUFFER_BINDING);
+            globalThis.v4dMainTexture = globalThis.gl.getFramebufferAttachmentParameter(globalThis.gl.FRAMEBUFFER, globalThis.gl.COLOR_ATTACHMENT0, globalThis.gl.FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+            return 1;
+        } else {
+            return 0;
+        }
+    );
+
+    if(ret) {
+        EM_ASM(
+            if(typeof globalThis.v4dVideoElement === 'undefined' || globalThis.v4dVideoElement === null) {
+              globalThis.v4dVideoElement = document.querySelector("#video");
+            }
+        );
+
+        if(framebuffer == 0) {
+            GL_CHECK(glGenFramebuffers(1, &framebuffer));
+        }
+
+        GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer));
+
+        if(texture == 0) {
+            GL_CHECK(glGenTextures(1, &texture));
+        }
+
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, texture));
+
+        EM_ASM(
+            const level = 0;
+            const internalFormat = globalThis.gl.RGBA;
+            const border = 0;
+            const srcFormat = globalThis.gl.RGBA;
+            const srcType = globalThis.gl.UNSIGNED_BYTE;
+            globalThis.gl.texImage2D(
+            globalThis.gl.TEXTURE_2D,
+            level,
+            internalFormat,
+            srcFormat,
+            srcType,
+            globalThis.v4dVideoElement
+            );
+        );
+
+        GL_CHECK(glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
+        EM_ASM(
+            globalThis.gl.bindFramebuffer(globalThis.gl.DRAW_FRAMEBUFFER, globalThis.v4dMainFrameBuffer);
+            globalThis.gl.bindTexture(globalThis.gl.TEXTURE_2D, globalThis.v4dMainTexture);
+            globalThis.gl.pixelStorei(globalThis.gl.UNPACK_FLIP_Y_WEBGL, true);
+            globalThis.gl.framebufferTexture2D(globalThis.gl.DRAW_FRAMEBUFFER, globalThis.gl.COLOR_ATTACHMENT0, globalThis.gl.TEXTURE_2D, globalThis.v4dMainTexture, 0);
+        );
+        return true;
+    }
+    return false;
+}
+
+EM_JS(void,copyVideoFrameCPU,(int p), {
         if(Module.doCapture) {
             if(typeof Module.cameraCtx === 'undefined' || Module.cameraCtx === null)
                 Module.cameraCtx = document.querySelector("#cameraCanvas").getContext('2d', { willReadFrequently: true });
@@ -415,23 +402,33 @@ EM_JS(void,copyVideoFrame,(int p), {
         }
 });
 
-Source makeCaptureSource(int width, int height) {
+Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
     using namespace std;
 
     return Source([=](cv::UMat& frame) {
+        //FIXME
+        static cv::UMat tmp(cv::Size(width, height), CV_8UC4);
         try {
             if(frame.empty())
                 frame.create(cv::Size(width, height), CV_8UC3);
 
             if (current_frame != nullptr) {
-                run_sync_on_main<16>([&](){
-                    copyVideoFrame(reinterpret_cast<int>(current_frame));
-                    cv::Mat tmp(cv::Size(width, height), CV_8UC4, current_frame);
-                    cv::UMat utmp = tmp.getUMat(ACCESS_READ);
-                    cvtColor(utmp, frame, cv::COLOR_BGRA2RGB);
-                    utmp.release();
-                    tmp.release();
+                run_sync_on_main<17>([&](){
+                    FrameBufferContext::GLScope scope(window->fbCtx());
+                    if(captureVideoFrameGPU(width, height)) {
+                        FrameBufferContext::FrameBufferScope fbScope(window->fbCtx(), tmp);
+                        cvtColor(tmp, frame, COLOR_BGRA2RGB);
+                    }
                 });
+
+//                run_sync_on_main<16>([&](){
+//                    copyVideoFrameCPU(reinterpret_cast<int>(current_frame));
+//                    cv::Mat tmp(cv::Size(width, height), CV_8UC4, current_frame);
+//                    cv::UMat utmp = tmp.getUMat(ACCESS_READ);
+//                    cvtColor(utmp, frame, cv::COLOR_BGRA2RGB);
+//                    utmp.release();
+//                    tmp.release();
+//                });
             } else {
                 std::cerr << "Nothing captured" << endl;
             }

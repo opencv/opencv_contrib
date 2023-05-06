@@ -132,6 +132,7 @@ public:
      * @return The framebuffer size.
      */
     cv::Size size();
+    void copyTo(cv::UMat& dst);
     /*!
       * Execute function object fn inside a framebuffer context.
       * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -231,7 +232,7 @@ protected:
     void toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture);
     void fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u);
 
-    cv::UMat frameBuffer_;
+    cv::UMat framebuffer_;
     /*!
      * The texture bound to the OpenGL framebuffer.
      */
