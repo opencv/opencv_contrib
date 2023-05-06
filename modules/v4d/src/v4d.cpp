@@ -48,7 +48,7 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int major,
         int minor, bool compat, int samples) {
     cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, major, minor, compat, samples);
-    v4d->setVisible(true);
+    v4d->setVisible(!offscreen);
     return v4d;
 }
 
@@ -524,7 +524,11 @@ void V4D::swapContextBuffers() {
 
 bool V4D::display() {
     bool result = true;
+#ifndef __EMSCRIPTEN__
     if (isVisible()) {
+#else
+    if (true) {
+#endif
         nguiCtx().render();
 
         run_sync_on_main<6>([&, this](){
@@ -538,16 +542,7 @@ bool V4D::display() {
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());
         });
-        //FIXME
-#ifdef __EMSCRIPTEN__
-        run_sync_on_main<7>([this](){
-            cv::UMat tmp;
-            cv::v4d::detail::FrameBufferContext::GLScope glScope(fbCtx());
-            cv::v4d::detail::FrameBufferContext::FrameBufferScope fbScope(fbCtx(), tmp);
-        });
-#endif
     }
-
     if(frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
         frameCnt_ = 0;
     else
