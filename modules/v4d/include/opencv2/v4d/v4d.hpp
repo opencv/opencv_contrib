@@ -398,6 +398,7 @@ public:
      * @param graphical if true renders the fps on screen
      */
     CV_EXPORTS void showFps(bool print = true, bool graphical = true);
+    FrameBufferContext& fbCtx();
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
@@ -412,7 +413,6 @@ private:
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
 
-    FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
     NanoguiContext& nguiCtx();
