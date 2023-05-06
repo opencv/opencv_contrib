@@ -206,7 +206,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
         });
     #endif
         form.makeButton("Offscreen", [=]() {
-            v->setOffscreen(!v->isOffscreen());
+            v->setVisible(!v->isVisible());
         });
 
         form.makeGroup("Face Skin");

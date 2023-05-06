@@ -100,7 +100,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
         });
     #endif
         form.makeButton("Offscreen", [=]() {
-            v4dMain->setOffscreen(!v4dMain->isOffscreen());
+            v4dMain->setVisible(!v4dMain->isVisible());
         });
     });
 }
