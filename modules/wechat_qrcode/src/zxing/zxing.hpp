@@ -54,8 +54,14 @@ typedef unsigned char boolean;
 #include <cmath>
 
 namespace zxing {
-inline bool isnan(float v) { return std::isnan(v); }
-inline bool isnan(double v) { return std::isnan(v); }
+inline bool isnan(float v) { 
+    union { float v; uint32_t x; } u = { v };
+    return (u.x & 0x7fffffffu) > 0x7f800000u;
+}
+inline bool isnan(double v) { 
+    union { double v; uint64_t x; } u = { v };
+    return (u.x & ~0x8000000000000000uLL) > 0x7ff0000000000000uLL;
+}
 inline float nan() { return std::numeric_limits<float>::quiet_NaN(); }
 }  // namespace zxing
 
