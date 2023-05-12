@@ -1,50 +1,14 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
 
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-*/
-
-
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/objdetect/aruco_detector.hpp>
-#include <opencv2/aruco/aruco_calib.hpp>
-#include <opencv2/imgproc.hpp>
-#include <vector>
-#include <iostream>
 #include <ctime>
+#include <iostream>
+#include <vector>
+#include <opencv2/calib3d.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/objdetect.hpp>
 #include "aruco_samples_utility.hpp"
 
 using namespace std;
@@ -138,7 +102,9 @@ int main(int argc, char *argv[]) {
     aruco::Dictionary dictionary = aruco::getPredefinedDictionary(0);
     if (parser.has("d")) {
         int dictionaryId = parser.get<int>("d");
-        dictionary = aruco::getPredefinedDictionary(aruco::PredefinedDictionaryType(dictionaryId));
+        dictionary = aruco::getPredefinedDictionary(
+            aruco::PredefinedDictionaryType(dictionaryId)
+        );
     }
     else if (parser.has("cd")) {
         FileStorage fs(parser.get<std::string>("cd"), FileStorage::READ);
@@ -153,14 +119,13 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // create board object
-    Ptr<aruco::GridBoard> gridboard = new aruco::GridBoard(Size(markersX, markersY), markerLength, markerSeparation, dictionary);
-    Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
+    // Create board object
+    aruco::GridBoard gridboard(Size(markersX, markersY), markerLength, markerSeparation, dictionary);
 
-    // collected frames for calibration
-    vector< vector< vector< Point2f > > > allCorners;
-    vector< vector< int > > allIds;
-    Size imgSize;
+    // Collected frames for calibration
+    vector<vector<vector<Point2f>>> allMarkerCorners;
+    vector<vector<int>> allMarkerIds;
+    Size imageSize;
 
     aruco::ArucoDetector detector(dictionary, detectorParams);
 
@@ -168,65 +133,90 @@ int main(int argc, char *argv[]) {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        vector< int > ids;
-        vector< vector< Point2f > > corners, rejected;
+        vector<int> markerIds;
+        vector<vector<Point2f>> markerCorners, rejectedMarkers;
 
-        // detect markers
-        detector.detectMarkers(image, corners, ids, rejected);
+        // Detect markers
+        detector.detectMarkers(image, markerCorners, markerIds, rejectedMarkers);
 
-        // refind strategy to detect more markers
-        if(refindStrategy) detector.refineDetectedMarkers(image, *board, corners, ids, rejected);
+        // Refind strategy to detect more markers
+        if(refindStrategy) {
+            detector.refineDetectedMarkers(
+                image, gridboard, markerCorners, markerIds, rejectedMarkers
+            );
+        }
 
-        // draw results
+        // Draw results
         image.copyTo(imageCopy);
-        if(ids.size() > 0) aruco::drawDetectedMarkers(imageCopy, corners, ids);
-        putText(imageCopy, "Press 'c' to add current frame. 'ESC' to finish and calibrate",
-                Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 2);
 
+        if(!markerIds.empty()) {
+            aruco::drawDetectedMarkers(imageCopy, markerCorners, markerIds);
+        }
+
+        putText(
+            imageCopy, "Press 'c' to add current frame. 'ESC' to finish and calibrate",
+            Point(10, 20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 0, 0), 2
+        );
         imshow("out", imageCopy);
+
+        // Wait for key pressed
         char key = (char)waitKey(waitTime);
-        if(key == 27) break;
-        if(key == 'c' && ids.size() > 0) {
+
+        if(key == 27) {
+             break;
+        }
+
+        if(key == 'c' && !markerIds.empty()) {
             cout << "Frame captured" << endl;
-            allCorners.push_back(corners);
-            allIds.push_back(ids);
-            imgSize = image.size();
+            allMarkerCorners.push_back(markerCorners);
+            allMarkerIds.push_back(markerIds);
+            imageSize = image.size();
         }
     }
 
-    if(allIds.size() < 1) {
+    if(allMarkerIds.empty()) {
         cerr << "Not enough captures for calibration" << endl;
         return 0;
     }
 
     Mat cameraMatrix, distCoeffs;
-    vector< Mat > rvecs, tvecs;
-    double repError;
 
     if(calibrationFlags & CALIB_FIX_ASPECT_RATIO) {
         cameraMatrix = Mat::eye(3, 3, CV_64F);
-        cameraMatrix.at< double >(0, 0) = aspectRatio;
+        cameraMatrix.at<double>(0, 0) = aspectRatio;
     }
 
-    // prepare data for calibration
-    vector< vector< Point2f > > allCornersConcatenated;
-    vector< int > allIdsConcatenated;
-    vector< int > markerCounterPerFrame;
-    markerCounterPerFrame.reserve(allCorners.size());
-    for(unsigned int i = 0; i < allCorners.size(); i++) {
-        markerCounterPerFrame.push_back((int)allCorners[i].size());
-        for(unsigned int j = 0; j < allCorners[i].size(); j++) {
-            allCornersConcatenated.push_back(allCorners[i][j]);
-            allIdsConcatenated.push_back(allIds[i][j]);
+    // Prepare data for calibration
+    vector<Point3f> objectPoints;
+    vector<Point2f> imagePoints;
+    vector<Mat> processedObjectPoints, processedImagePoints;
+    size_t nFrames = allMarkerCorners.size();
+
+    for(size_t frame = 0; frame < nFrames; frame++) {
+        Mat currentImgPoints, currentObjPoints;
+
+        gridboard.matchImagePoints(
+            allMarkerCorners[frame], allMarkerIds[frame],
+            currentObjPoints, currentImgPoints
+        );
+
+        if(currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
+            processedImagePoints.push_back(currentImgPoints);
+            processedObjectPoints.push_back(currentObjPoints);
         }
     }
-    // calibrate camera
-    repError = aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated,
-                                           markerCounterPerFrame, board, imgSize, cameraMatrix,
-                                           distCoeffs, rvecs, tvecs, calibrationFlags);
 
-    bool saveOk = saveCameraParams(outputFile, imgSize, aspectRatio, calibrationFlags, cameraMatrix,
-                                   distCoeffs, repError);
+    // Calibrate camera
+    double repError = calibrateCamera(
+        processedObjectPoints, processedImagePoints, imageSize,
+        cameraMatrix, distCoeffs, noArray(), noArray(), noArray(),
+        noArray(), noArray(), calibrationFlags
+    );
+
+    bool saveOk = saveCameraParams(
+        outputFile, imageSize, aspectRatio, calibrationFlags, cameraMatrix,
+        distCoeffs, repError
+    );
 
     if(!saveOk) {
         cerr << "Cannot save output file" << endl;
