@@ -615,7 +615,7 @@ class MarkerPrinter:
             if(subSizeY < 0):
                 raise ValueError("subSizeY < 0")
 
-    def PreviewCharucoMarkerImage(dictionary, chessboardSize, squareLength, markerLength, borderBits=1, pageBorder=(0, 0), dpi=96):
+    def PreviewCharucoMarkerImage(dictionary, chessboardSize, squareLength, markerLength, firstMarker, borderBits=1, pageBorder=(0, 0), dpi=96):
         MarkerPrinter.__CheckCharucoMarkerImage(dictionary, chessboardSize, squareLength, markerLength, borderBits=borderBits, pageBorder=pageBorder)
 
         squareLength = squareLength * MarkerPrinter.ptPerMeter
@@ -648,6 +648,7 @@ class MarkerPrinter:
                             context = context,
                             dictionary = dictionary,
                             markerLength = markerLength,
+                            firstMarkerID=firstMarker,
                             borderBits = borderBits,
                             chessboardSize = chessboardSize,
                             squareLength = squareLength,
@@ -662,7 +663,7 @@ class MarkerPrinter:
 
         return prevImage
 
-    def GenCharucoMarkerImage(filePath, dictionary, chessboardSize, squareLength, markerLength, borderBits=1, subSize=None, pageBorder=(0, 0)):
+    def GenCharucoMarkerImage(filePath, dictionary, chessboardSize, squareLength, markerLength, firstMarker, borderBits=1, subSize=None, pageBorder=(0, 0)):
         MarkerPrinter.__CheckCharucoMarkerImage(dictionary, chessboardSize, squareLength, markerLength, borderBits=borderBits, subSize=subSize, pageBorder=pageBorder)
 
         squareLength = squareLength * MarkerPrinter.ptPerMeter
@@ -705,6 +706,7 @@ class MarkerPrinter:
                         context = context,
                         dictionary = dictionary,
                         markerLength = markerLength,
+                        firstMarkerID = firstMarker,
                         borderBits = borderBits,
                         chessboardSize = chessboardSize,
                         squareLength = squareLength,
@@ -755,6 +757,7 @@ class MarkerPrinter:
                                     context = context,
                                     dictionary = dictionary,
                                     markerLength = markerLength,
+                                    firstMarkerID = firstMarker,
                                     borderBits = borderBits,
                                     chessboardSize = chessboardSize,
                                     squareLength = squareLength,
@@ -1253,6 +1256,7 @@ if __name__ == '__main__':
             sizeY = int(args.sizeY)
             squareLength = float(args.squareLength)
             markerLength = float(args.markerLength)
+            firstMarker = int(args.markerID)
             borderBits = int(args.borderBits)
             subSizeX = int(args.subSizeX)
             subSizeY = int(args.subSizeY)
@@ -1267,6 +1271,7 @@ if __name__ == '__main__':
                         "dictionary": args.dictionary, \
                         "sizeX": sizeX, \
                         "sizeY": sizeY, \
+                        "firstMarker": firstMarker, \
                         "squareLength": squareLength, \
                         "markerLength": markerLength, \
                         "borderBits": borderBits, \
@@ -1290,7 +1295,7 @@ if __name__ == '__main__':
                     subSize = None
 
             # Gen
-            MarkerPrinter.GenCharucoMarkerImage(args.fileName, args.dictionary, (sizeX, sizeY), squareLength, markerLength, borderBits=borderBits, subSize=subSize, pageBorder = (pageBorderX, pageBorderY))
+            MarkerPrinter.GenCharucoMarkerImage(args.fileName, args.dictionary, (sizeX, sizeY), squareLength, markerLength, firstMarker, borderBits=borderBits, subSize=subSize, pageBorder = (pageBorderX, pageBorderY))
 
     else:
         parser.print_help()

@@ -76,6 +76,7 @@ class MarkerPrinterGUI:
             sizeY = int(self.charucoMarkerChessboardSizeYStr.get())
             squareLength = float(self.charucoMarkerSquareLengthStr.get())
             markerLength = float(self.charucoMarkerMarkerLengthStr.get())
+            firstMarker = int(self.charucoMarkerFirstMarkerStr.get())
             borderBits = int(self.charucoMarkerBorderBitsStr.get())
             dictionary = self.charucoMarkerDictionaryStr.get()
             subSizeX = int(self.charucoMarkerSaveSubSizeXStr.get())
@@ -94,7 +95,7 @@ class MarkerPrinterGUI:
         # Preview
         try:
             dpi = self.VisDPI(((sizeY * squareLength + pageBorderY * 2) * MarkerPrinter.ptPerMeter, (sizeX * squareLength + pageBorderX * 2) * MarkerPrinter.ptPerMeter))
-            tkImage = PIL.ImageTk.PhotoImage(image = MarkerPrinter.PreviewCharucoMarkerImage(dictionary, (sizeX, sizeY), squareLength, markerLength, borderBits=borderBits, pageBorder = (pageBorderX, pageBorderY), dpi=dpi))
+            tkImage = PIL.ImageTk.PhotoImage(image = MarkerPrinter.PreviewCharucoMarkerImage(dictionary, (sizeX, sizeY), squareLength, markerLength, firstMarker, borderBits=borderBits, pageBorder = (pageBorderX, pageBorderY), dpi=dpi))
             self.charucoMarkerImageLabel.imgtk = tkImage
             self.charucoMarkerImageLabel.config(image=tkImage)
         except Exception as e:
@@ -105,7 +106,7 @@ class MarkerPrinterGUI:
         # Save
         if(askSave):
             MarkerPrinterGUI.__SaveMarker(MarkerPrinter.GenCharucoMarkerImage, \
-                dictionary, (sizeX, sizeY), squareLength, markerLength, borderBits=borderBits, subSize = (subSizeX, subSizeY), pageBorder = (pageBorderX, pageBorderY))
+                dictionary, (sizeX, sizeY), squareLength, markerLength, firstMarker, borderBits=borderBits, subSize = (subSizeX, subSizeY), pageBorder = (pageBorderX, pageBorderY))
 
     def OnPreviewCharucoMarker(self):
         self.OnPreviewOrSaveCharucoMarker(askSave = False)
@@ -128,9 +129,10 @@ class MarkerPrinterGUI:
         tk.Label(self.charucoMarkerUIFrame, text="dictionary").grid(row=0, column=0, sticky = tk.NSEW)
         tk.Label(self.charucoMarkerUIFrame, text="chessboardSizeX").grid(row=0, column=1, sticky = tk.NSEW)
         tk.Label(self.charucoMarkerUIFrame, text="chessboardSizeY").grid(row=0, column=2, sticky = tk.NSEW)
-        tk.Label(self.charucoMarkerUIFrame, text="squareLength (Unit: Meter)").grid(row=0, column=3, sticky = tk.NSEW)
-        tk.Label(self.charucoMarkerUIFrame, text="markerLength (Unit: Meter)").grid(row=0, column=4, sticky = tk.NSEW)
-        tk.Label(self.charucoMarkerUIFrame, text="borderBits").grid(row=0, column=5, sticky = tk.NSEW)
+        tk.Label(self.charucoMarkerUIFrame, text="firstMarker").grid(row=0, column=3, sticky = tk.NSEW)
+        tk.Label(self.charucoMarkerUIFrame, text="squareLength (Unit: Meter)").grid(row=0, column=4, sticky = tk.NSEW)
+        tk.Label(self.charucoMarkerUIFrame, text="markerLength (Unit: Meter)").grid(row=0, column=5, sticky = tk.NSEW)
+        tk.Label(self.charucoMarkerUIFrame, text="borderBits").grid(row=0, column=6, sticky = tk.NSEW)
 
         self.charucoMarkerDictionaryStr = tk.StringVar()
         self.charucoMarkerChessboardSizeXStr = tk.StringVar()
@@ -141,6 +143,8 @@ class MarkerPrinterGUI:
         self.charucoMarkerSquareLengthStr.set("0.09")
         self.charucoMarkerMarkerLengthStr = tk.StringVar()
         self.charucoMarkerMarkerLengthStr.set("0.07")
+        self.charucoMarkerFirstMarkerStr = tk.StringVar()
+        self.charucoMarkerFirstMarkerStr.set("0")
         self.charucoMarkerBorderBitsStr = tk.StringVar()
         self.charucoMarkerBorderBitsStr.set("1")
 
@@ -148,9 +152,10 @@ class MarkerPrinterGUI:
         self.charucoMarkerDictionaryMenue.grid(row=1, column=0, sticky = tk.NSEW)
         tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerChessboardSizeXStr).grid(row=1, column=1, sticky = tk.NSEW)
         tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerChessboardSizeYStr).grid(row=1, column=2, sticky = tk.NSEW)
-        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerSquareLengthStr).grid(row=1, column=3, sticky = tk.NSEW)
-        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerMarkerLengthStr).grid(row=1, column=4, sticky = tk.NSEW)
-        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerBorderBitsStr).grid(row=1, column=5, sticky = tk.NSEW)
+        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerFirstMarkerStr).grid(row=1, column=3, sticky = tk.NSEW)
+        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerSquareLengthStr).grid(row=1, column=4, sticky = tk.NSEW)
+        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerMarkerLengthStr).grid(row=1, column=5, sticky = tk.NSEW)
+        tk.Entry(self.charucoMarkerUIFrame, textvariable=self.charucoMarkerBorderBitsStr).grid(row=1, column=6, sticky = tk.NSEW)
 
         tk.Button(self.charucoMarkerUIFrame2, text = "Preview", command = self.OnPreviewCharucoMarker).grid(row=1, column=0, sticky = tk.NSEW)
         tk.Button(self.charucoMarkerUIFrame2, text = "Save", command = self.OnSaveCharucoMarker).grid(row=1, column=1, sticky = tk.NSEW)

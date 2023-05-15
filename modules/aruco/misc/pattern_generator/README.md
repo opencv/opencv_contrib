@@ -54,6 +54,8 @@ python MarkerPrinter.py --aruco_grid --file "./aruco_grid.pdf" --dictionary DICT
 python MarkerPrinter.py --charuco --file "./charuco.pdf" --dictionary DICT_ARUCO_ORIGINAL --size_x 16 --size_y 9 --square_length 0.09 --marker_length 0.07 --border_bits 1
 ```
 
+`--marker_id` may be passed to MarkerPrinter when creating a ChArUco board to set the ID for the first marker, and defaults to 0 if not present.
+
 ## Useful Options:
 ### Divde output to chunks
 If you are using consumer level printer, you will suffer from not able printing too large marker, so just set chunks shape at the GUI subSize entry before saving the marker to files, it will divide output marker to chunks. If you are using command-line interface, just add --sub_size_x x --sub_size_y y as parameters.
