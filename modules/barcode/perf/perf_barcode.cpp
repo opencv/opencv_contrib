@@ -23,7 +23,7 @@ PERF_TEST_P_(Perf_Barcode_multi, detect)
     vector< Point > corners;
     auto bardet = barcode::BarcodeDetector();
     bool res = false;
-    TEST_CYCLE() 
+    TEST_CYCLE()
     {
         res = bardet.detect(src, corners);
     }
@@ -47,7 +47,7 @@ PERF_TEST_P_(Perf_Barcode_multi, detect_decode)
     vector< Point > corners;
     auto bardet = barcode::BarcodeDetector();
     bool res = false;
-    TEST_CYCLE() 
+    TEST_CYCLE()
     {
         res = bardet.detectAndDecode(src, decoded_info, decoded_type, corners);
     }
@@ -69,7 +69,7 @@ PERF_TEST_P_(Perf_Barcode_single, detect)
     vector< Point > corners;
     auto bardet = barcode::BarcodeDetector();
     bool res = false;
-    TEST_CYCLE() 
+    TEST_CYCLE()
     {
         res = bardet.detect(src, corners);
     }
@@ -93,7 +93,7 @@ PERF_TEST_P_(Perf_Barcode_single, detect_decode)
     vector< Point > corners;
     auto bardet = barcode::BarcodeDetector();
     bool res = false;
-    TEST_CYCLE() 
+    TEST_CYCLE()
     {
         res = bardet.detectAndDecode(src, decoded_info, decoded_type, corners);
     }
@@ -101,11 +101,11 @@ PERF_TEST_P_(Perf_Barcode_single, detect_decode)
     ASSERT_TRUE(res);
 }
 
-INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_multi, 
+INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_multi,
     testing::Combine(
         testing::Values("4_barcodes.jpg"),
         testing::Values(cv::Size(2041, 2722), cv::Size(1361, 1815), cv::Size(680, 907))));
-INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_single, 
+INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_single,
     testing::Combine(
         testing::Values("book.jpg", "bottle_1.jpg", "bottle_2.jpg"),
         testing::Values(cv::Size(480, 360), cv::Size(640, 480), cv::Size(800, 600))));
