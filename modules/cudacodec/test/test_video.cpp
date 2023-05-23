@@ -430,6 +430,19 @@ CUDA_TEST_P(CheckParams, Reader)
     }
 }
 
+CUDA_TEST_P(CheckParams, CaptureProps)
+{
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    double width, height, fps;
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FRAME_WIDTH, width));
+    ASSERT_EQ(672, width);
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT, height));
+    ASSERT_EQ(384, height);
+    ASSERT_TRUE(reader->get(cv::VideoCaptureProperties::CAP_PROP_FPS, fps));
+    ASSERT_EQ(24, fps);
+}
+
 CUDA_TEST_P(CheckDecodeSurfaces, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
@@ -554,6 +567,7 @@ CUDA_TEST_P(TransCode, H264ToH265)
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, TransCode, ALL_DEVICES);
+
 #endif
 
 #if defined(HAVE_NVCUVENC)
