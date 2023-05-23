@@ -6,84 +6,108 @@
 
 namespace opencv_test{namespace{
 
-typedef ::perf::TestBaseWithParam< string > Perf_Barcode_multi;
-typedef ::perf::TestBaseWithParam< string > Perf_Barcode_single;
+typedef ::perf::TestBaseWithParam< tuple<string, cv::Size> > Perf_Barcode_multi;
+typedef ::perf::TestBaseWithParam< tuple<string, cv::Size> > Perf_Barcode_single;
 
 PERF_TEST_P_(Perf_Barcode_multi, detect)
 {
-    const string name_current_image = GetParam();
     const string root = "cv/barcode/multiple/";
+    const string name_current_image = get<0>(GetParam());
+    const cv::Size sz = get<1>(GetParam());
+    const string image_path = findDataFile(root + name_current_image);
 
-    auto bardet = barcode::BarcodeDetector();
-    vector< Point > corners;
-    string image_path = findDataFile(root + name_current_image);
     Mat src = imread(image_path);
     ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
+    cv::resize(src, src, sz);
 
-    cout << src.size << endl;
-    TEST_CYCLE() ASSERT_TRUE(bardet.detect(src, corners));
-
+    vector< Point > corners;
+    auto bardet = barcode::BarcodeDetector();
+    bool res = false;
+    TEST_CYCLE() 
+    {
+        res = bardet.detect(src, corners);
+    }
     SANITY_CHECK_NOTHING();
+    ASSERT_TRUE(res);
 }
 
-PERF_TEST_P_(Perf_Barcode_multi, decode)
+PERF_TEST_P_(Perf_Barcode_multi, detect_decode)
 {
-    const string name_current_image = GetParam();
     const string root = "cv/barcode/multiple/";
+    const string name_current_image = get<0>(GetParam());
+    const cv::Size sz = get<1>(GetParam());
+    const string image_path = findDataFile(root + name_current_image);
 
-    auto bardet = barcode::BarcodeDetector();
+    Mat src = imread(image_path);
+    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
+    cv::resize(src, src, sz);
+
     vector<cv::String> decoded_info;
     vector<barcode::BarcodeType> decoded_type;
     vector< Point > corners;
-    string image_path = findDataFile(root + name_current_image);
-
-    Mat src = imread(image_path);
-    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
-
-    cout << src.size << endl;
-    bardet.detect(src, corners);
-
-    TEST_CYCLE() ASSERT_TRUE(bardet.decode(src, corners, decoded_info, decoded_type));
+    auto bardet = barcode::BarcodeDetector();
+    bool res = false;
+    TEST_CYCLE() 
+    {
+        res = bardet.detectAndDecode(src, decoded_info, decoded_type, corners);
+    }
     SANITY_CHECK_NOTHING();
+    ASSERT_TRUE(res);
 }
 
 PERF_TEST_P_(Perf_Barcode_single, detect)
 {
-    const string name_current_image = GetParam();
     const string root = "cv/barcode/single/";
-    auto bardet = barcode::BarcodeDetector();
-    vector< Point > corners;
-    string image_path = findDataFile(root + name_current_image);
+    const string name_current_image = get<0>(GetParam());
+    const cv::Size sz = get<1>(GetParam());
+    const string image_path = findDataFile(root + name_current_image);
+
     Mat src = imread(image_path);
     ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
+    cv::resize(src, src, sz);
 
-    cout << src.size << endl;
-    TEST_CYCLE() ASSERT_TRUE(bardet.detect(src, corners));
+    vector< Point > corners;
+    auto bardet = barcode::BarcodeDetector();
+    bool res = false;
+    TEST_CYCLE() 
+    {
+        res = bardet.detect(src, corners);
+    }
     SANITY_CHECK_NOTHING();
+    ASSERT_TRUE(res);
 }
 
-PERF_TEST_P_(Perf_Barcode_single, decode)
+PERF_TEST_P_(Perf_Barcode_single, detect_decode)
 {
-    const string name_current_image = GetParam();
     const string root = "cv/barcode/single/";
+    const string name_current_image = get<0>(GetParam());
+    const cv::Size sz = get<1>(GetParam());
+    const string image_path = findDataFile(root + name_current_image);
 
-    auto bardet = barcode::BarcodeDetector();
+    Mat src = imread(image_path);
+    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
+    cv::resize(src, src, sz);
+
     vector<cv::String> decoded_info;
     vector<barcode::BarcodeType> decoded_type;
-
-    string image_path = findDataFile(root + name_current_image);
-    Mat src = imread(image_path);
-    ASSERT_FALSE(src.empty()) << "Can't read image: " << image_path;
     vector< Point > corners;
-
-    cout << src.size << endl;
-    bardet.detect(src, corners);
-
-    TEST_CYCLE() ASSERT_TRUE(bardet.decode(src, corners, decoded_info, decoded_type));
+    auto bardet = barcode::BarcodeDetector();
+    bool res = false;
+    TEST_CYCLE() 
+    {
+        res = bardet.detectAndDecode(src, decoded_info, decoded_type, corners);
+    }
     SANITY_CHECK_NOTHING();
+    ASSERT_TRUE(res);
 }
 
-INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_multi, ::testing::Values("4_barcodes.jpg"));
-INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_single, ::testing::Values("book.jpg", "bottle_1.jpg", "bottle_2.jpg"));
+INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_multi, 
+    testing::Combine(
+        testing::Values("4_barcodes.jpg"),
+        testing::Values(cv::Size(2041, 2722), cv::Size(1361, 1815), cv::Size(680, 907))));
+INSTANTIATE_TEST_CASE_P(/*nothing*/, Perf_Barcode_single, 
+    testing::Combine(
+        testing::Values("book.jpg", "bottle_1.jpg", "bottle_2.jpg"),
+        testing::Values(cv::Size(480, 360), cv::Size(640, 480), cv::Size(800, 600))));
 
 }} //namespace
