@@ -27,7 +27,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Cube Demo", OFFSCREEN);
+cv::Ptr<cv::v4d::V4D> v4d;
 
 static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
@@ -205,6 +205,9 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 static bool iteration() {
     using namespace cv::v4d;
 
+//    if(!v4d->capture())
+//        return false;
+
     //Render using OpenGL
     v4d->gl(render_scene);
 
@@ -217,15 +220,10 @@ static bool iteration() {
     });
 #endif
 
-    v4d->showFps();
-
     v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    if (!v4d->display())
-        return false;
-
-    return true;
+    return v4d->display();
 }
 
 #ifndef __EMSCRIPTEN__
@@ -234,13 +232,16 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-
+    v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Cube Demo", OFFSCREEN);
     v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
             cv::Size(WIDTH, HEIGHT));
     v4d->setSink(sink);
+//#else
+//    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
+//    v4d->setSource(src);
 #endif
     v4d->gl(init_scene);
     v4d->run(iteration);

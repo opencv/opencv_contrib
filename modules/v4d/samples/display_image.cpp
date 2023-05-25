@@ -4,11 +4,11 @@
 using namespace cv;
 using namespace cv::v4d;
 
-//Creates a V4D window for on screen rendering
-static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Show image");
-
 int main() {
-	//An image
+    //Creates a V4D window for on screen rendering
+    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Display image");
+
+    //An image
 #ifdef __EMSCRIPTEN__
     Mat image = read_embedded_image("doc/lena.png");
 #else
@@ -21,7 +21,6 @@ int main() {
 	window->run([=](){
 	    //Feeds the image to the video pipeline
 	    window->feed(image);
-	    window->showFps();
 	    return window->display();
     });
 }

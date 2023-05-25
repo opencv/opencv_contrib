@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/nvg.hpp"
-
+#include "opencv2/v4d/v4d.hpp"
 namespace cv {
 namespace v4d {
 namespace nvg {
@@ -652,6 +652,15 @@ void intersectScissor(float x, float y, float w, float h) {
 
 void resetScissor() {
     detail::NVG::getCurrentContext()->resetScissor();
+}
+
+void clear(const cv::Scalar& bgra) {
+    const float& b = bgra[0] / 255.0f;
+    const float& g = bgra[1] / 255.0f;
+    const float& r = bgra[2] / 255.0f;
+    const float& a = bgra[3] / 255.0f;
+    GL_CHECK(glClearColor(r, g, b, a));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
 }
 }
 }

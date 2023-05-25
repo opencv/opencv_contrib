@@ -4,11 +4,11 @@
 using namespace cv;
 using namespace cv::v4d;
 
-//Creates a V4D object for on screen rendering
-static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Show image");
-
 int main() {
-	//Read an image as UMat
+    //Creates a V4D object for on screen rendering
+    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Display image and FB");
+
+    //Read an image as UMat
 #ifdef __EMSCRIPTEN__
     UMat image = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
 #else
@@ -21,8 +21,9 @@ int main() {
 
 	//Display the framebuffer in the native window in an endless loop
 	window->run([=](){
-	    window->copyFrom(converted);
-	    window->showFps();
+	    window->fb([&](UMat& framebuffer){
+	        converted.copyTo(framebuffer);
+	    });
 		return window->display();
 	});
 }

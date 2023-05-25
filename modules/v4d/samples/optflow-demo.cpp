@@ -47,9 +47,9 @@ constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
+cv::Ptr<cv::v4d::V4D> v4d;
 #ifndef __EMSCRIPTEN__
-static cv::Ptr<cv::v4d::V4D> v4d2 = cv::v4d::V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
+cv::Ptr<cv::v4d::V4D> v4d2;
 #endif
 
 /** Visualization parameters **/
@@ -423,8 +423,8 @@ static bool iteration() {
     //Detect trackable points in the motion mask
     detect_points(downMotionMaskGrey, detectedPoints);
 
-    v4d->clear();
     v4d->nvg([=]() {
+        cv::v4d::nvg::clear();
         if (!downPrevGrey.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
             if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
@@ -445,8 +445,6 @@ static bool iteration() {
         cvtColor(frameBuffer, menuFrame, cv::COLOR_BGRA2RGB);
 #endif
     });
-
-    v4d->showFps();
 
 #ifndef __EMSCRIPTEN__
     v4d->write();
@@ -471,6 +469,10 @@ int main() {
 #endif
     try {
         using namespace cv::v4d;
+        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
+#ifndef __EMSCRIPTEN__
+        v4d2 = V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
+#endif
 
         v4d->printSystemInfo();
 

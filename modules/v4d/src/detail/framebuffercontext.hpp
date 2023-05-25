@@ -14,10 +14,14 @@
 #include "opencv2/v4d/detail/cl.hpp"
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
-#include "pbodownloader.hpp"
 #include <iostream>
 
-using namespace poly;
+#ifdef OPENCV_V4D_USE_ES3
+#define GLFW_INCLUDE_ES3
+#define GLFW_INCLUDE_GLEXT
+#endif
+
+#include <GLFW/glfw3.h>
 
 struct GLFWwindow;
 namespace cv {
@@ -50,6 +54,7 @@ class FrameBufferContext {
     GLFWwindow* glfwWindow_ = nullptr;
     bool clglSharing_ = true;
     GLuint frameBufferID_ = 0;
+    GLuint onscreenTextureID_ = 0;
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
     GLint viewport_[4];
@@ -160,7 +165,7 @@ protected:
     void setup(const cv::Size& sz);
     void teardown();
     /*!
-     * The UMat used to copy or bind (depending on cl-gl sharing capability) the OpenGL framebuffer.
+     * The UMat used to copy or bind (depending on cl-gl interop capability) the OpenGL framebuffer.
      */
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.

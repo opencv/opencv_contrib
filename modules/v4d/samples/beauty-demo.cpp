@@ -27,7 +27,7 @@ using std::string;
 /** Application parameters **/
 constexpr unsigned int WIDTH = 1280;
 constexpr unsigned int HEIGHT = 720;
-constexpr double SCALE = 0.125; //Scale at which face detection is performed
+constexpr float SCALE = 0.125;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
@@ -48,10 +48,13 @@ bool side_by_side = false;
 bool stretch = false;
 #endif
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
-static cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
+cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
+cv::detail::MultiBandBlender blender(false, 5); //Blender (used to put the different face parts back together)
+
+
 #ifdef USE_TRACKER
-static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(); //Instead of continues face detection we can use a tracker
+cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(); //Instead of continues face detection we can use a tracker
 #endif
 
 /*!
@@ -141,6 +144,7 @@ struct FaceFeatures {
 //based on the detected FaceFeatures guesses a decent face oval and draws a mask.
 static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::v4d::nvg;
+    clear();
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
@@ -156,6 +160,7 @@ static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
 //Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
 static void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::v4d::nvg;
+    clear();
     for (size_t i = 0; i < lm.size(); i++) {
         vector<vector<cv::Point2f>> features = lm[i].features();
         for (size_t j = 5; j < 8; ++j) {
@@ -239,10 +244,11 @@ static bool iteration() {
         static bool trackerInitalized = false;
 #endif
         //Face detector
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("face_detection_yunet_2022mar.onnx", "", cv::Size(v4d->framebufferSize().width * SCALE, v4d->framebufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-        //Blender (used to put the different face parts back together)
-        static cv::detail::MultiBandBlender blender(false, 5);
-        blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+#ifndef __EMSCRIPTEN__
+        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(v4d->framebufferSize().width * SCALE, v4d->framebufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+#else
+        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(v4d->framebufferSize().width * SCALE, v4d->framebufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
+#endif
         //BGR
         static cv::UMat input, down, blurred, contrast, faceOval, eyesAndLips, skin;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
@@ -286,7 +292,7 @@ static bool iteration() {
             //Detect faces in the down-scaled image
             detector->detect(down, faces);
 
-            //Collect face bounding rectangles thought we will only use the first
+            //Collect face bounding rectangles though we will only use the first
             for (int i = 0; i < faces.rows; i++) {
                 faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
             }
@@ -307,7 +313,6 @@ static bool iteration() {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
             }
 
-            v4d->clear();
             v4d->nvg([&]() {
                 //Draw the face oval of the first face
                 draw_face_oval_mask(featuresList);
@@ -318,7 +323,6 @@ static bool iteration() {
                 cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
             });
 
-            v4d->clear();
             v4d->nvg([&]() {
                 //Draw eyes eyes and lips areas of the first face
                 draw_face_eyes_and_lips_mask(featuresList);
@@ -344,6 +348,8 @@ static bool iteration() {
             cv::boxFilter(contrast, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             //boost skin saturation
             adjust_saturation(blurred,skin, skin_saturation);
+
+            blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
 
             //piece it all together
             blender.feed(skin, faceSkinMaskGrey, cv::Point(0, 0));
@@ -379,8 +385,6 @@ static bool iteration() {
             });
         }
 
-        v4d->showFps();
-
 #ifndef __EMSCRIPTEN__
         v4d->write();
 #endif
@@ -404,8 +408,8 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-
-    facemark->loadModel("lbfmodel.yaml");
+    v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
+    facemark->loadModel("assets/lbfmodel.yaml");
 
     v4d->setFrameBufferScaling(stretch);
 
@@ -420,6 +424,9 @@ int main() {
     v4d->setSource(src);
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
     v4d->setSink(sink);
+#else
+    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
+    v4d->setSource(src);
 #endif
 
     v4d->run(iteration);

@@ -1,18 +1,19 @@
 #include <opencv2/v4d/v4d.hpp>
+#include <opencv2/v4d/util.hpp>
 
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics and Framebuffer");
-
 int main() {
+    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics and Framebuffer");
+
     //Display the framebuffer in the native window in an endless loop
     window->run([=]() {
-
         //Creates a NanoVG context and draws eyes
         window->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context
             using namespace cv::v4d::nvg;
+            clear();
             float t = cv::getTickCount();
             float x = 0;
             float y = 0;
@@ -90,10 +91,10 @@ int main() {
         });
 
         window->fb([](UMat& framebuffer) {
-            //Heavily blurs the crosshair using a cheap boxFilter
+//            cerr << "COUNT1:" << cv::v4d::detail::cnz(framebuffer) << endl;
+            //Heavily blurs the eyes using a cheap boxFilter
             boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
         });
-        window->showFps();
 
         return window->display();
     });

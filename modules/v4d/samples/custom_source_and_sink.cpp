@@ -6,9 +6,9 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Custom Source/Sink");
-
 int main() {
+    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Custom Source/Sink");
+
     string hr = "Hello Rainbow!";
 	//Make a Source that generates rainbow frames.
 	Source src([](cv::UMat& frame){
@@ -55,8 +55,6 @@ int main() {
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
-
-		window->showFps();
 
 		window->write(); //Write video to the Sink
 		return window->display(); //Display the framebuffer in the native window

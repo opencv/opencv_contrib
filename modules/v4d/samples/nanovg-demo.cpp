@@ -15,7 +15,7 @@ constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 using std::cerr;
 using std::endl;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "NanoVG Demo", OFFSCREEN);
+cv::Ptr<cv::v4d::V4D> v4d;
 
 static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
@@ -162,8 +162,6 @@ static bool iteration() {
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 
-    v4d->showFps();
-
     v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
@@ -180,7 +178,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-
+    v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "NanoVG Demo", OFFSCREEN);
     v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__

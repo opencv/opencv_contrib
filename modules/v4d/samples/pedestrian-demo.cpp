@@ -29,8 +29,8 @@ using std::endl;
 using std::vector;
 using std::string;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
-static cv::HOGDescriptor hog;
+cv::Ptr<cv::v4d::V4D> v4d;
+cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
 static inline bool pair_comparator(std::pair<double, size_t> l1, std::pair<double, size_t> l2) {
@@ -176,10 +176,9 @@ static bool iteration() {
         }
     }
 
-    v4d->clear();
     v4d->nvg([&](const cv::Size& sz) {
         using namespace cv::v4d::nvg;
-
+        clear();
         beginPath();
         strokeWidth(std::fmax(2.0, sz.width / 960.0));
         strokeColor(cv::v4d::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
@@ -195,8 +194,6 @@ static bool iteration() {
         //Put it all together
         composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
     });
-
-    v4d->showFps();
 
     v4d->write();
 
@@ -214,6 +211,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
+    v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     v4d->printSystemInfo();

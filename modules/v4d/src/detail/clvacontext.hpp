@@ -22,11 +22,9 @@ class CLVAContext {
     FrameBufferContext& mainFbContext_;
     FrameBufferContext clvaFbContext_;
     cv::UMat readFrame_;
-    cv::UMat writeFrame_;
     cv::UMat readRGBBuffer_;
     cv::UMat writeRGBBuffer_;
     bool hasContext_ = false;
-    cv::Size inputVideoFrameSize_;
     CLExecContext_t getCLExecContext();
     FrameBufferContext& fbCtx();
 public:
@@ -35,11 +33,6 @@ public:
      * @param fbContext The corresponding framebuffer context
      */
     CLVAContext(V4D& v4d, FrameBufferContext& fbContext);
-    /*!
-     * Get the current video frame size
-     * @return The current video frame size
-     */
-    cv::Size getVideoFrameSize();
     /*!
      * Called to capture from a function object.
      * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.

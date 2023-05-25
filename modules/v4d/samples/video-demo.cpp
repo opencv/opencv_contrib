@@ -25,8 +25,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(),
-        "Video Demo", OFFSCREEN, true);
+cv::Ptr<cv::v4d::V4D> v4d;
 
 static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
@@ -204,8 +203,6 @@ static bool iteration() {
     });
 #endif
 
-    v4d->showFps();
-
     v4d->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
@@ -222,7 +219,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-
+    v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Video Demo", OFFSCREEN);
     v4d->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__

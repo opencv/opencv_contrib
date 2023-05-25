@@ -25,7 +25,7 @@ void glfw_error_callback(int error, const char* description) {
 
 void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
     int errorCode = glGetError();
-
+    cerr << "TRACE: " << file.filename() << " (" << line << ") : " << expression << " => code: " << errorCode << endl;
     if (errorCode != 0) {
         std::stringstream ss;
         ss << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   "
@@ -185,7 +185,12 @@ void V4D::copyFrom(cv::InputArray m) {
 }
 
 #ifdef __EMSCRIPTEN__
+bool first = true;
 static void do_frame(void* void_fn_ptr) {
+     if(first) {
+         glfwSwapInterval(0);
+         first = false;
+     }
      auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
      if (fn_ptr) {
          auto& fn = *fn_ptr;
@@ -196,8 +201,8 @@ static void do_frame(void* void_fn_ptr) {
 
 void V4D::run(std::function<bool()> fn) {
 #ifndef __EMSCRIPTEN__
-    while (keepRunning() && fn())
-        ;
+    while (keepRunning() && fn()) {
+    }
 #else
     emscripten_set_main_loop_arg(do_frame, &fn, -1, true);
 #endif
@@ -216,7 +221,7 @@ void V4D::feed(cv::InputArray& in) {
         }, frame);
 
         fb([frame](cv::UMat& frameBuffer){
-            cvtColor(frame,frameBuffer, cv::COLOR_RGB2BGRA);
+            frame.copyTo(frameBuffer);
         });
 }
 
@@ -261,7 +266,7 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
         }, this, fn, nextReaderFrame_);
 
     fb([this](cv::UMat& frameBuffer){
-        cvtColor(currentReaderFrame_,frameBuffer, cv::COLOR_RGB2BGRA);
+        currentReaderFrame_.copyTo(frameBuffer);
     });
     return true;
 }
@@ -301,17 +306,6 @@ void V4D::write(std::function<void(const cv::UMat&)> fn) {
 
 bool V4D::isSinkReady() {
     return sink_.isReady();
-}
-
-void V4D::clear(const cv::Scalar& bgra) {
-    this->gl([&]() {
-        const float& b = bgra[0] / 255.0f;
-        const float& g = bgra[1] / 255.0f;
-        const float& r = bgra[2] / 255.0f;
-        const float& a = bgra[3] / 255.0f;
-        GL_CHECK(glClearColor(r, g, b, a));
-        GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
-    });
 }
 
 void V4D::showGui(bool s) {
@@ -443,6 +437,22 @@ void V4D::setWindowSize(const cv::Size& sz) {
     fbCtx().setWindowSize(sz);
 }
 
+bool V4D::getShowFPS() {
+    return showFPS_;
+}
+
+bool V4D::getPrintFPS() {
+    return printFPS_;
+}
+
+void V4D::setShowFPS(bool s) {
+    showFPS_ = s;
+}
+
+void V4D::setPrintFPS(bool p) {
+    printFPS_ = p;
+}
+
 bool V4D::isFullscreen() {
     return fbCtx().isFullscreen();
 }
@@ -497,28 +507,43 @@ void V4D::setDefaultKeyboardEventCallback() {
 
 void V4D::swapContextBuffers() {
     run_sync_on_main<9>([this]() {
-        FrameBufferContext::GLScope glScope(clvaCtx().fbCtx());
+        FrameBufferContext::GLScope glScope(clvaCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), clvaCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
-        clvaCtx().fbCtx().makeCurrent();
+#ifndef __EMSCRIPTEN__
         glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
+#else
+        emscripten_webgl_commit_frame();
+#endif
     });
+
     run_sync_on_main<10>([this]() {
-        FrameBufferContext::GLScope glScope(glCtx().fbCtx());
+        FrameBufferContext::GLScope glScope(glCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
-        glCtx().fbCtx().makeCurrent();
+#ifndef __EMSCRIPTEN__
         glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
+#else
+        emscripten_webgl_commit_frame();
+#endif
     });
+
     run_sync_on_main<11>([this]() {
-        FrameBufferContext::GLScope glScope(nvgCtx().fbCtx());
+        FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
-        nvgCtx().fbCtx().makeCurrent();
+#ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
+#else
+        emscripten_webgl_commit_frame();
+#endif
     });
+
     run_sync_on_main<12>([this]() {
-        FrameBufferContext::GLScope glScope(nguiCtx().fbCtx());
+        FrameBufferContext::GLScope glScope(nguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
-        nguiCtx().fbCtx().makeCurrent();
+#ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
+#else
+        emscripten_webgl_commit_frame();
+#endif
     });
 }
 
@@ -529,7 +554,10 @@ bool V4D::display() {
 #else
     if (true) {
 #endif
+        nguiCtx().updateFps(printFPS_, showFPS_);
         nguiCtx().render();
+
+//        swapContextBuffers();
 
         run_sync_on_main<6>([&, this](){
             FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
@@ -570,47 +598,14 @@ GLFWwindow* V4D::getGLFWWindow() {
 void V4D::printSystemInfo() {
     run_sync_on_main<8>([this](){
         fbCtx().makeCurrent();
-        cerr << "OpenGL Version: " << getGlInfo() << endl;
+        cerr << "OpenGL: " << getGlInfo() << endl;
         cerr << "OpenCL Platforms: " << getClInfo() << endl;
     });
 }
 
-void V4D::showFps(bool print, bool graphical) {
-    if (frameCount() > 0) {
-        tick_.stop();
-
-        if (tick_.getTimeMilli() > 50) {
-            if(print) {
-                cerr << "FPS : " << (fps_ = tick_.getFPS());
-#ifndef __EMSCRIPTEN__
-                cerr << '\r';
-#else
-                cerr << endl;
-#endif
-            }
-            tick_.reset();
-        }
-
-        if (graphical) {
-            this->nvg([this]() {
-                glClear(GL_DEPTH_BUFFER_BIT);
-                using namespace cv::v4d::nvg;
-                string txt = "FPS: " + std::to_string(fps_);
-                beginPath();
-                roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
-                fillColor(cv::Scalar(255, 255, 255, 180));
-                fill();
-
-                fontSize(30.0f);
-                fontFace("mono");
-                fillColor(cv::Scalar(90, 90, 90, 255));
-                textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                text(10, 20, txt.c_str(), nullptr);
-            });
-        }
-    }
-
-    tick_.start();
+void V4D::makeCurrent() {
+    fbCtx().makeCurrent();
 }
+
 }
 }

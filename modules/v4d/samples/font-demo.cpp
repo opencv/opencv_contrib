@@ -45,10 +45,10 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN);
+cv::Ptr<cv::v4d::V4D> v4d;
 vector<string> lines;
-static bool update_stars = true;
-static bool update_perspective = true;
+bool update_stars = true;
+bool update_perspective = true;
 
 static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
     v4dMain->nanogui([&](cv::v4d::FormHelper& form){
@@ -69,23 +69,23 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
         form.makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
 
         form.makeGroup("Stars");
-        form.makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")->set_callback([](const float &s) {
+        form.makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")->set_callback([&](const float &s) {
             update_stars = true;
             min_star_size = s;
         });
-        form.makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")->set_callback([](const float &s) {
+        form.makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")->set_callback([&](const float &s) {
             update_stars = true;
             max_star_size = s;
         });
-        form.makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")->set_callback([](const int &cnt) {
+        form.makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")->set_callback([&](const int &cnt) {
             update_stars = true;
             min_star_count = cnt;
         });
-        form.makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")->set_callback([](const int &cnt) {
+        form.makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")->set_callback([&](const int &cnt) {
             update_stars = true;
             max_star_count = cnt;
         });
-        form.makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")->set_callback([](const float &a) {
+        form.makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")->set_callback([&](const float &a) {
             update_stars = true;
             star_alpha = a;
         });
@@ -123,9 +123,10 @@ static bool iteration() {
     int32_t translateY = HEIGHT - cnt;
 
     if(update_stars) {
-        v4d->clear();
         v4d->nvg([&](const cv::Size& sz) {
             using namespace cv::v4d::nvg;
+            clear();
+
             //draw stars
             int numStars = rng.uniform(min_star_count, max_star_count);
             for(int i = 0; i < numStars; ++i) {
@@ -137,6 +138,7 @@ static bool iteration() {
                 stroke();
             }
         });
+
         v4d->fb([&](cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
@@ -154,10 +156,9 @@ static bool iteration() {
         update_perspective = false;
     }
 
-    v4d->clear();
     v4d->nvg([&](const cv::Size& sz) {
         using namespace cv::v4d::nvg;
-
+        clear();
         fontSize(font_size);
         fontFace("sans-bold");
         fillColor(cv::Scalar(text_color.b() * 255.0f, text_color.g() * 255.0f, text_color.r() * 255.0f, text_alpha * 255.0f));
@@ -174,12 +175,14 @@ static bool iteration() {
         }
     });
 
-    v4d->fb([&](cv::UMat& frameBuffer){
+    v4d->fb([&](cv::UMat& framebuffer){
         //Pseudo 3D text effect.
-        cv::warpPerspective(frameBuffer, warped, tm, frameBuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
-        cv::resize(stars,stars,warped.size());
+//        cerr << "fb:" << cv::v4d::detail::cnz(framebuffer) << endl;
+        cv::warpPerspective(framebuffer, warped, tm, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
-        cv::add(stars, warped, frameBuffer);
+//        cerr << "stars:" << cv::v4d::detail::cnz(stars) << endl;
+//        cerr << "warped:" << cv::v4d::detail::cnz(warped) << endl;
+        cv::add(stars, warped, framebuffer);
     });
 
     if(-translateY > textHeight) {
@@ -187,11 +190,7 @@ static bool iteration() {
         cnt = 0;
     }
 
-    v4d->showFps();
-
-#ifndef __EMSCRIPTEN__
     v4d->write();
-#endif
 
     ++cnt;
     //Wrap the cnt around if it becomes to big.
@@ -205,7 +204,7 @@ static bool iteration() {
 int main() {
     try {
         using namespace cv::v4d;
-
+        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN);
         if(!OFFSCREEN) {
             setup_gui(v4d);
         }

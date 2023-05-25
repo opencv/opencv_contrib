@@ -116,6 +116,7 @@ class NVG;
 class CV_EXPORTS V4D {
     friend class detail::NanoVGContext;
     friend class detail::FrameBufferContext;
+    friend class HTML5Capture;
     cv::Size initialSize_;
     const string& title_;
     int major_;
@@ -144,8 +145,8 @@ class CV_EXPORTS V4D {
     std::future<void> futureWriter_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
     uint64_t frameCnt_ = 0;
-    cv::TickMeter tick_;
-    float fps_ = 0;
+    bool showFPS_ = true;
+    bool printFPS_ = true;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -218,11 +219,6 @@ public:
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
     CV_EXPORTS void run(std::function<bool()> fn);
-    /*!
-     * Clear the framebuffer.
-     * @param bgra The color to use for clearing.
-     */
-    CV_EXPORTS void clear(const cv::Scalar& bgra = cv::Scalar(0, 0, 0, 255));
     /*!
      * Called to feed an image directly to the framebuffer
      */
@@ -333,6 +329,12 @@ public:
      * Get the frambuffer size.
      * @return The framebuffer size.
      */
+
+    CV_EXPORTS bool getShowFPS();
+    CV_EXPORTS void setShowFPS(bool s);
+    CV_EXPORTS bool getPrintFPS();
+    CV_EXPORTS void setPrintFPS(bool p);
+
     CV_EXPORTS bool isFullscreen();
     /*!
      * Enable or disable fullscreen mode.
@@ -392,13 +394,8 @@ public:
      * Print basic system information to stderr
      */
     CV_EXPORTS void printSystemInfo();
-    /*!
-     * Updates and prints the current fps to stderr and/or renders the fps on screen.
-     * @param print if true prints the current fps to stderr
-     * @param graphical if true renders the fps on screen
-     */
-    CV_EXPORTS void showFps(bool print = true, bool graphical = true);
-    FrameBufferContext& fbCtx();
+
+    CV_EXPORTS void makeCurrent();
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
@@ -413,6 +410,7 @@ private:
     bool keyboard_event(int key, int scancode, int action, int modifiers);
     void setMousePosition(int x, int y);
 
+    FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
     NanoguiContext& nguiCtx();

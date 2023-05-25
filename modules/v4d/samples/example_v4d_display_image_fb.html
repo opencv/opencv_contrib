@@ -212,26 +212,6 @@
       };
 
       let fsButton1 = document.querySelector("#fullscreenBtn");
-      let videoElement1 = document.querySelector("#video");
-      let cameraCanvas1 = document.querySelector("#cameraCanvas");
-
-
-      function capture() {
-          let ctx = cameraCanvas1.getContext('2d', { willReadFrequently: true });
-          ctx.drawImage(videoElement1, 0, 0, cameraCanvas1.width, cameraCanvas1.height);
-          var imageData = ctx.getImageData(0, 0, cameraCanvas1.width, cameraCanvas1.height);
-          let filename = 'v4d_rgba_canvas.raw';
-          let stream = FS.open(filename, 'w+');
-          if(imageData) {
-              FS.write(stream, imageData.data, 0, imageData.data.length, 0);
-              FS.close(stream);
-          }
-      }
-
-      function runCapture() {
-          capture();
-          requestAnimationFrame(runCapture);
-      }
 
       fsButton1.addEventListener('click', async function () {
         Module.requestFullscreen(false, false)

@@ -14,31 +14,21 @@ CLVAContext::CLVAContext(V4D& v4d, FrameBufferContext& mainFbContext) :
         mainFbContext_(mainFbContext), clvaFbContext_(v4d, "CLVA", mainFbContext) {
 }
 
-cv::Size CLVAContext::getVideoFrameSize() {
-    assert(inputVideoFrameSize_ == cv::Size(0, 0) || "Video frame size not initialized");
-    return inputVideoFrameSize_;
-}
-
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
     cv::Size fbSize = fbCtx().size();
     if (!context_.empty()) {
-        {
 #ifndef __EMSCRIPTEN__
-            CLExecScope_t scope(context_);
+        CLExecScope_t scope(context_);
 #endif
-            fn(readFrame_);
-        }
-        if (readFrame_.empty())
-            return false;
-        inputVideoFrameSize_ = readFrame_.size();
-        resizePreserveAspectRatio(readFrame_, output, fbCtx().size());
+        fn(readFrame_);
     } else {
         fn(readFrame_);
-        if (readFrame_.empty())
-            return false;
-        inputVideoFrameSize_ = readFrame_.size();
-        resizePreserveAspectRatio(readFrame_, output, fbCtx().size());
     }
+
+    if (readFrame_.empty())
+        return false;
+    resizePreserveAspectRatio(readFrame_, readRGBBuffer_, fbCtx().size());
+    cv::cvtColor(readRGBBuffer_, output, cv::COLOR_RGB2BGRA);
 
     return true;
 }

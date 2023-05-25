@@ -104,21 +104,14 @@
     </style>
   </head>
   <body>
-      <span id='controls'>
-  <span><button id="fullscreenBtn">Fullscreen</button>
-  </span>
-</span>
-  		<canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
-  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
-		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
-
+    <span id='controls'>
+      <span><button id="fullscreenBtn">Fullscreen</button></span>
+    </span>
+    <canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
     <div class="emscripten" id="status">Downloading...</div>
-
     <div class="emscripten">
       <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
-
-    
     <div class="emscripten_border">
       <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
     </div>
@@ -141,7 +134,6 @@
         },
         preRun: [],
         postRun: function() {
-
         },
         print: (function() {
           var element = document.getElementById('output');
@@ -212,26 +204,6 @@
       };
 
       let fsButton = document.querySelector("#fullscreenBtn");
-      let videoElement = document.querySelector("#video");
-      let cameraCanvas = document.querySelector("#cameraCanvas");
-
-
-      function capture() {
-          let ctx = cameraCanvas.getContext('2d', { willReadFrequently: true });
-          ctx.drawImage(videoElement, 0, 0, cameraCanvas.width, cameraCanvas.height);
-          var imageData = ctx.getImageData(0, 0, cameraCanvas.width, cameraCanvas.height);
-          let filename = 'v4d_rgba_canvas.raw';
-          let stream = FS.open(filename, 'w+');
-          if(imageData) {
-              FS.write(stream, imageData.data, 0, imageData.data.length, 0);
-              FS.close(stream);
-          }
-      }
-
-      function runCapture() {
-          capture();
-          requestAnimationFrame(runCapture);
-      }
 
       fsButton.addEventListener('click', async function () {
         Module.requestFullscreen(false, false)

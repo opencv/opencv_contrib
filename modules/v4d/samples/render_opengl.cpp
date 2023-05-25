@@ -4,9 +4,9 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "GL Blue Screen");
-
 int main() {
+    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "GL Blue Screen");
+
     window->gl([](){
         //Sets the clear color to blue
         glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -16,8 +16,6 @@ int main() {
             //Clears the screen
             glClear(GL_COLOR_BUFFER_BIT);
         });
-
-        window->showFps();
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window.
         //Returns false if the window was closed.

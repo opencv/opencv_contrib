@@ -10,13 +10,8 @@
 # What is V4D?
 V4D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
-# Showcase
-Please note that all renderings and videos were created on an Intel Tigerlake CPU and an Intel Iris Xe iGPU. Also the demos in the videos might run slower for various reasons (better implementation by now, screen capturing, etc.) than they would normally do.
-
-@youtube{yYnWkkZSK7Q}
-
 # Why V4D?
-Please refer to the online demos in the following section to see at a glance what it can do for you.
+Please refer to the online demos in the \ref v4d_tutorials and \ref v4d_demos section to see at a glance what it can do for you.
 
 * **OpenGL**: Easy access to OpenGL.
 * **GUI**: Simple yet powerful user interfaces through NanoGUI.
@@ -26,14 +21,6 @@ Please refer to the online demos in the following section to see at a glance wha
 * **Hardware acceleration**: Transparent hardware acceleration usage where possible. (e.g. CL-GL sharing and VAAPI). Actually it is possible to write programs that run almost entirely on the GPU, given driver-features are available.
 * **No more highgui** with it's heavy dependencies, licenses and limitations.
 * **\ref v4d_webassembly_support**.
-
-# Online Demos
-
-Please note that the following online demos are slower and/or have less features than the native versions.
-* https://viel-zu.org/opencv/shader
-* https://viel-zu.org/opencv/font
-* https://viel-zu.org/opencv/optflow
-* https://viel-zu.org/opencv/beauty
 
 # Design Notes
 * V4D is not thread safe. Though it is possible to have several V4D objects in one or more threads and synchronize them using ```V4D::makeNonCurrent()``` and ```V4D::makeCurrent()```. This is a limitation of GLFW3. That said, OpenCV algorithms are multi-threaded as usual.
@@ -72,7 +59,7 @@ v4d->gl([](const Size sz) {
 * [OpenCV Contrib 4.x](https://github.com/opencv/opencv_contrib)
 * If you want CL-GL sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to build** [compute-runtime](https://github.com/intel/compute-runtime) and [my OpenCV 4.x fork](https://github.com/kallaballa/opencv/tree/GCV)
 
-# Tutorials
+# Tutorials {#v4d_tutorials}
 The tutorials are designed to be read one after the other to give you a good overview over the key concepts of V4D. After that you can move on to the samples.
 
 * \ref v4d_display_image_pipeline
@@ -85,7 +72,7 @@ The tutorials are designed to be read one after the other to give you a good ove
 * \ref v4d_custom_source_and_sink
 * \ref v4d_font_with_gui
 
-# Demos
+# Demos {#v4d_demos}
 The goal of the demos is to show how to use V4D to the fullest. Also they show how to use V4D to create programs that run mostly (the part the matters) on the GPU (when driver capabilities allow). They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
 
 * \ref v4d_cube

@@ -110,7 +110,7 @@
 </span>
         <canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
   		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
-		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
+		<video id="v4dVideoElement" width="1280" height="720" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -128,8 +128,8 @@
       var statusElement = document.getElementById('status');
       var progressElement = document.getElementById('progress');
       var fsButton = document.querySelector("#fullscreenBtn");
-      var cameraBtn = document.querySelector("#captureBtn");
-      var videoElement = document.querySelector("#video");
+      var captureBtn = document.querySelector("#captureBtn");
+      var videoElement = document.querySelector("#v4dVideoElement");
       var cameraCanvas = document.querySelector("#cameraCanvas");
 
       function fixCanvasSize() {
@@ -142,9 +142,7 @@
       var Module = {
         onRuntimeInitialized: function() {
           fixCanvasSize();
-          Module.videoBuffer = Module._malloc(1280 * 720 * 4);
-          Module.cameraCtx = null;
-          Module.ccall('v4dSetVideoFramePointer', 'void', ['number', 'number', 'number'], [Module.videoBuffer, 1280, 720]);
+          Module._v4dInitCapture(1280, 720);
         },
         preRun: [],
         postRun: [],
@@ -207,25 +205,16 @@
       };
       Module.setStatus('Downloading...');
 
-      window.onerror = function(event) {
-        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
-        Module.setStatus('Exception thrown, see JavaScript console');
-        //spinnerElement.style.display = 'none';
-        Module.setStatus = function(text) {
-          if (text) Module.printErr('[post-exception status] ' + text);
-        };
-      };
-
       var playing = false;
       var timeupdate = false;
       function checkReady() {
         if (playing && timeupdate) {
-          Module.doCapture = true;
+          globalThis.doCapture = true;
         }
       }
 
-      cameraBtn.addEventListener('click', async function() {
-          let stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      captureBtn.addEventListener('click', async function() {
+          let stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } , audio: false });
           videoElement.addEventListener(
             "playing",
             () => {
@@ -245,6 +234,15 @@
           );
           videoElement.srcObject = stream;
       });
+
+      window.onerror = function(event) {
+        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+        Module.setStatus('Exception thrown, see JavaScript console');
+        //spinnerElement.style.display = 'none';
+        Module.setStatus = function(text) {
+          if (text) Module.printErr('[post-exception status] ' + text);
+        };
+      };
 
       fsButton.addEventListener('click', async function () {
         Module.requestFullscreen(false, false)

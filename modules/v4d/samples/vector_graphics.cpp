@@ -3,15 +3,16 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics");
-
 int main() {
+    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics");
+
     //Display the framebuffer in the native window in an endless loop
     window->run([=]() {
         //Creates a NanoVG context and draws eyes
         window->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context
             using namespace cv::v4d::nvg;
+            clear();
             float t = cv::getTickCount();
             float x = 0;
             float y = 0;
@@ -87,8 +88,6 @@ int main() {
             fillPaint(gloss);
             fill();
         });
-
-        window->showFps();
 
         return window->display();
     });

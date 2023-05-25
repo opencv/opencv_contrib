@@ -10,6 +10,7 @@ namespace v4d {
 
 FormHelper::FormHelper(nanogui::Screen* screen) :
         nanogui::FormHelper(screen) {
+    assert(screen != nullptr);
 }
 
 FormHelper::~FormHelper() {

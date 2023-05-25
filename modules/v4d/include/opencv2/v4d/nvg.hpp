@@ -488,6 +488,8 @@ CV_EXPORTS void intersectScissor(float x, float y, float w, float h);
  * A forward to nvgRresetScissor. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
  */
 CV_EXPORTS void resetScissor();
+
+CV_EXPORTS void clear(const cv::Scalar& bgra = cv::Scalar(0, 0, 0, 255));
 }
 }
 }

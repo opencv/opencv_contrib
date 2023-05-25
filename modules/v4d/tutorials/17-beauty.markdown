@@ -9,6 +9,6 @@
 
 Face beautification using face landmark detection (OpenCV/OpenCL), nanovg (OpenGL) for drawing masks and multi-band blending (CPU) to put it all together.
 
-@youtube{SWxDMkZGDCk}
+\htmlinclude "../samples/example_v4d_beauty-demo.html"
 
 @include samples/beauty-demo.cpp

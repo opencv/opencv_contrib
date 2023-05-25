@@ -4,62 +4,44 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "nanovgcontext.hpp"
-#include "opencv2/v4d/v4d.hpp"
+#include "opencv2/v4d/nvg.hpp"
 
 namespace cv {
 namespace v4d {
 namespace detail {
 
 NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
-        v4d_(v4d), context_(nullptr), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext) {
-    run_sync_on_main<13>([this](){ init(); });
-}
+        v4d_(v4d), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext), context_(
+                nullptr) {
+    UMat tmp(fbCtx().size(), CV_8UC4);
 
-void NanoVGContext::init() {
-    FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
-    glClear(GL_STENCIL_BUFFER_BIT);
-    screen_ = new nanogui::Screen();
-    screen_->initialize(fbCtx().getGLFWWindow(), false);
-    fbCtx().setWindowSize(fbCtx().size());
-    context_ = screen_->nvg_context();
+    run_sync_on_main<13>([this, &tmp]() {
+        {
+            //Workaround for first frame glitch
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(fbCtx(), tmp);
+        }
+        {
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            screen_ = new nanogui::Screen();
+            screen_->initialize(fbCtx().getGLFWWindow(), false);
+            fbCtx().setWindowSize(fbCtx().size());
+            context_ = screen_->nvg_context();
+            form_ = new cv::v4d::FormHelper(screen_);
+            if (!context_)
+                throw std::runtime_error("Could not initialize NanoVG!");
+       }
+    });
 
-    if (!context_)
-        throw std::runtime_error("Could not initialize NanoVG!");
+    tmp.release();
 }
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
-    run_sync_on_main<14>([&,this](){
-#ifdef __EMSCRIPTEN__
-//    {
-//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-//        fb_.copyTo(preFB_);
-//    }
-//    {
-//        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
-//        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
-//        preFB_.copyTo(fb_);
-//    }
-#endif
-    {
-        FrameBufferContext::GLScope glScope(fbCtx());
-        glClear(GL_STENCIL_BUFFER_BIT);
+    run_sync_on_main<14>([this, fn](){
+        FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
         NanoVGContext::Scope nvgScope(*this);
         cv::v4d::nvg::detail::NVG::initializeContext(context_);
         fn(fbCtx().size());
-    }
-#ifdef __EMSCRIPTEN__
-//    {
-//        FrameBufferContext::GLScope nvgGlScope(nvgFbContext_);
-//        FrameBufferContext::FrameBufferScope fbScope(nvgFbContext_, fb_);
-//        fb_.copyTo(postFB_);
-//    }
-//    {
-//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-//        postFB_.copyTo(fb_);
-//    }
-#endif
     });
 }
 

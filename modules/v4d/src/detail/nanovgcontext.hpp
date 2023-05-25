@@ -7,6 +7,7 @@
 #define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
+#include "../formhelper.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -25,13 +26,12 @@ namespace detail {
  */
 class NanoVGContext {
     V4D& v4d_;
+protected:
     nanogui::Screen* screen_;
-    NVGcontext* context_;
+    cv::v4d::FormHelper* form_;
     FrameBufferContext& mainFbContext_;
     FrameBufferContext nvgFbContext_;
-    cv::UMat preFB_;
-    cv::UMat fb_;
-    cv::UMat postFB_;
+    NVGcontext* context_;
 public:
     /*!
      * Makes sure #NanoVGContext::begin and #NanoVGContext::end are both called
@@ -54,6 +54,7 @@ public:
             ctx_.end();
         }
     };
+
     /*!
      * Creates a NanoVGContext
      * @param v4d The V4D object used in conjunction with this context
@@ -61,7 +62,6 @@ public:
      * @param fbContext The framebuffer context
      */
     NanoVGContext(V4D& v4d, FrameBufferContext& fbContext);
-    void init();
 
     /*!
      * Execute function object fn inside a nanovg context.

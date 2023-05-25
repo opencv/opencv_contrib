@@ -18,7 +18,7 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
 
-static cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
+cv::Ptr<cv::v4d::V4D> v4d;
 
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
@@ -327,8 +327,6 @@ static bool iteration() {
     });
 #endif
 
-    v4d->showFps();
-
 #ifndef __EMSCRIPTEN__
     v4d->write();
 #endif
@@ -348,6 +346,7 @@ int main() {
 #endif
     try {
         using namespace cv::v4d;
+        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
 
         if (!OFFSCREEN) {
             setup_gui(v4d);

@@ -11,59 +11,58 @@ namespace v4d {
 namespace detail {
 
 NanoguiContext::NanoguiContext(V4D& v4d, FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nguiFbContext_(v4d, "NanoGUI", fbContext) {
-    run_sync_on_main<3>([this](){ init(); });
-}
-
-void NanoguiContext::init() {
-    FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
-    glClear(GL_STENCIL_BUFFER_BIT);
-    screen_ = new nanogui::Screen();
-    screen_->initialize(nguiFbContext_.getGLFWWindow(), false);
-    fbCtx().setWindowSize(fbCtx().size());
-    form_ = new cv::v4d::FormHelper(screen_);
+        NanoVGContext(v4d, fbContext) {
 }
 
 void NanoguiContext::render() {
     run_sync_on_main<4>([&,this](){
-#ifdef __EMSCRIPTEN__
-//    fb_.create(mainFbContext_.size(), CV_8UC4);
-//    preFB_.create(mainFbContext_.size(), CV_8UC4);
-//    postFB_.create(mainFbContext_.size(), CV_8UC4);
-//    {
-//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-//        fb_.copyTo(preFB_);
-//    }
-//    {
-//        FrameBufferContext::GLScope glGlScope(fbCtx());
-//        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
-//        preFB_.copyTo(fb_);
-//    }    glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-#endif
-    {
-        FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-        glClear(GL_STENCIL_BUFFER_BIT);
+        FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
+//        glClear(GL_STENCIL_BUFFER_BIT);
         screen().draw_widgets();
-    }
-#ifdef __EMSCRIPTEN__
-//    {
-//        FrameBufferContext::GLScope glScope(fbCtx());
-//        FrameBufferContext::FrameBufferScope fbScope(fbCtx(), fb_);
-//        fb_.copyTo(postFB_);
-//    }
-//    {
-//        FrameBufferContext::GLScope mainGlScope(mainFbContext_);
-//        FrameBufferContext::FrameBufferScope fbScope(mainFbContext_, fb_);
-//        postFB_.copyTo(fb_);
-//    }
-#endif
     });
+}
+
+void NanoguiContext::updateFps(bool print, bool graphical) {
+    if (!first_) {
+        tick_.stop();
+
+        if (tick_.getTimeMilli() > 50) {
+            if(print) {
+                cerr << "FPS : " << (fps_ = tick_.getFPS());
+#ifndef __EMSCRIPTEN__
+                cerr << '\r';
+#else
+                cerr << endl;
+#endif
+            }
+            tick_.reset();
+        }
+
+        if (graphical) {
+            NanoVGContext::render([this](const Size sz){
+                CV_UNUSED(sz);
+                using namespace cv::v4d::nvg;
+                string txt = "FPS: " + std::to_string(fps_);
+                beginPath();
+                roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
+                fillColor(cv::Scalar(255, 255, 255, 180));
+                fill();
+
+                fontSize(30.0f);
+                fontFace("mono");
+                fillColor(cv::Scalar(90, 90, 90, 255));
+                textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                text(10, 20, txt.c_str(), nullptr);
+            });
+        }
+    }
+    first_ = false;
+    tick_.start();
 }
 
 void NanoguiContext::build(std::function<void(cv::v4d::FormHelper&)> fn) {
     run_sync_on_main<5>([fn,this](){
-        FrameBufferContext::GLScope glScope(fbCtx());
+        FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
         fn(form());
         screen().perform_layout();
     });
@@ -78,7 +77,7 @@ cv::v4d::FormHelper& NanoguiContext::form() {
 }
 
 FrameBufferContext& NanoguiContext::fbCtx() {
-    return nguiFbContext_;
+    return NanoVGContext::nvgFbContext_;
 }
 }
 }

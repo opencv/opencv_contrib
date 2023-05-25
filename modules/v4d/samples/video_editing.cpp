@@ -3,9 +3,9 @@
 using namespace cv;
 using namespace cv::v4d;
 
-static Ptr<V4D> window = V4D::make(cv::Size(1280, 720), cv::Size(), "Video Editing");
-
 int main(int argc, char** argv) {
+    Ptr<V4D> window = V4D::make(cv::Size(1280, 720), cv::Size(), "Video Editing");
+
     try {
     //In case of emscripten
     CV_UNUSED(argc);
@@ -45,7 +45,6 @@ int main(int argc, char** argv) {
 			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
 		});
 
-		window->showFps();
 		window->write(); //Write video to the Sink
 
 		return window->display(); //Display the framebuffer in the native window
