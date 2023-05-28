@@ -135,6 +135,17 @@ The function can do the following transformations:
  */
 CV_EXPORTS_W void demosaicing(InputArray src, OutputArray dst, int code, int dcn = -1, Stream& stream = Stream::Null());
 
+/** @brief Calculates all of the moments up to the third order of a rasterized shape.
+
+The function computes moments, up to the 3rd order, of a rasterized shape. The
+results are returned in the structure cv::Moments.
+
+@param array Raster image (single-channel, 8-bit).
+@param binaryImage If it is true, all non-zero image pixels are treated as 1's.
+@returns moments.
+ */
+CV_EXPORTS_W Moments moments( InputArray array, bool binaryImage = false );
+
 /** @brief Exchanges the color channels of an image in-place.
 
 @param image Source image. Supports only CV_8UC4 type.
