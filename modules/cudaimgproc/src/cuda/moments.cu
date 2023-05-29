@@ -17,11 +17,8 @@ using namespace cv::cuda::device;
 
 namespace cv { namespace cuda { namespace device { namespace imgproc {
 
-constexpr int blockSizeXBit = 4;
-constexpr int blockSizeYBit = 4;
-constexpr int blockSizeX = 1 << blockSizeXBit;
-constexpr int blockSizeY = 1 << blockSizeYBit;
-constexpr int reduceFolds = blockSizeXBit + blockSizeYBit;
+constexpr int blockSizeX = 16;
+constexpr int blockSizeY = 16;
 constexpr int momentsSize = sizeof(cv::Moments) / sizeof(double);
 
 constexpr int m00 = offsetof(cv::Moments, m00) / sizeof(double);
@@ -43,18 +40,7 @@ constexpr int mu21 = offsetof(cv::Moments, mu21) / sizeof(double);
 constexpr int mu12 = offsetof(cv::Moments, mu12) / sizeof(double);
 constexpr int mu03 = offsetof(cv::Moments, mu03) / sizeof(double);
 
-__global__ void ComputeSpatialMoments(const cuda::PtrStepSzb img, bool binary,
-                                      double* moments, double2* centroid) {
-    __shared__ volatile double smem[blockSizeX * blockSizeY][momentsSize];
-
-    // Prepare memory
-    const int tid = threadIdx.y * blockDim.x + threadIdx.x;
-    volatile double* curr_mem = smem[tid];
-    for (int j = 0; j < momentsSize; ++j) {
-      curr_mem[j] = 0;
-    }
-
-    // Compute moments
+__global__ void ComputeSpatialMoments(const cuda::PtrStepSzb img, bool binary, double* moments) {
     const unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (y < img.rows && x < img.cols) {
@@ -64,57 +50,27 @@ __global__ void ComputeSpatialMoments(const cuda::PtrStepSzb img, bool binary,
         const unsigned long x2 = x * x, x3 = x2 * x;
         const unsigned long y2 = y * y, y3 = y2 * y;
 
-        curr_mem[m00] =           val;
-        curr_mem[m10] = x       * val;
-        curr_mem[m01] =      y  * val;
-        curr_mem[m20] = x2      * val;
-        curr_mem[m11] = x  * y  * val;
-        curr_mem[m02] =      y2 * val;
-        curr_mem[m30] = x3      * val;
-        curr_mem[m21] = x2 * y  * val;
-        curr_mem[m12] = x  * y2 * val;
-        curr_mem[m03] =      y3 * val;
+        atomicAdd(&moments[m00],           val);
+        atomicAdd(&moments[m10], x       * val);
+        atomicAdd(&moments[m01],      y  * val);
+        atomicAdd(&moments[m20], x2      * val);
+        atomicAdd(&moments[m11], x  * y  * val);
+        atomicAdd(&moments[m02],      y2 * val);
+        atomicAdd(&moments[m30], x3      * val);
+        atomicAdd(&moments[m21], x2 * y  * val);
+        atomicAdd(&moments[m12], x  * y2 * val);
+        atomicAdd(&moments[m03],      y3 * val);
       }
     }
+}
 
-    // Reduce memory
-    for (int p = 0; p < reduceFolds; ++p) {
-      __syncthreads();
-      if (tid % (1 << (p + 1)) == 0) {
-        volatile double* dst_mem = smem[tid];
-        volatile double* src_mem = smem[tid + 1 << p];
-        for (int j = 0; j < momentsSize; ++j) {
-          dst_mem[j] += src_mem[j];
-        }
-      }
-    }
-
-    // Publish results
-    __syncthreads();
-    if (tid == 0) {
-      volatile double* curr_mem = smem[0];
-      for (int j = 0; j < momentsSize; ++j) {
-        atomicAdd(moments + j, curr_mem[j]);
-      }
-
-      __syncthreads();
-      centroid->x = moments[m10] / moments[m00];
-      centroid->y = moments[m01] / moments[m00];
-    }
+__global__ void ComputeCenteroid(const double* moments, double2* centroid) {
+    centroid->x = moments[m10] / moments[m00];
+    centroid->y = moments[m01] / moments[m00];
 }
 
 __global__ void ComputeCenteralMoments(const cuda::PtrStepSzb img, bool binary,
                                        const double2* centroid, double* moments) {
-    __shared__ volatile double smem[blockSizeX * blockSizeY][momentsSize];
-
-    // Prepare memory
-    const int tid = threadIdx.y * blockDim.x + threadIdx.x;
-    volatile double* curr_mem = smem[tid];
-    for (int j = 0; j < momentsSize; ++j) {
-      curr_mem[j] = 0;
-    }
-
-    // Compute moments
     const unsigned int x = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (y < img.rows && x < img.cols) {
@@ -124,34 +80,13 @@ __global__ void ComputeCenteralMoments(const cuda::PtrStepSzb img, bool binary,
         const double x1 = x - centroid->x, x2 = x1 * x1, x3 = x2 * x1;
         const double y1 = y - centroid->y, y2 = y1 * y1, y3 = y2 * y1;
 
-        curr_mem[mu20] = x2      * val;
-        curr_mem[mu11] = x1 * y1 * val;
-        curr_mem[mu02] =      y2 * val;
-        curr_mem[mu30] = x3      * val;
-        curr_mem[mu21] = x2 * y1 * val;
-        curr_mem[mu12] = x1 * y2 * val;
-        curr_mem[mu03] =      y3 * val;
-      }
-    }
-
-    // Reduce memory
-    for (int p = 0; p < reduceFolds; ++p) {
-      __syncthreads();
-      if (tid % (1 << (p + 1)) == 0) {
-        volatile double* dst_mem = smem[tid];
-        volatile double* src_mem = smem[tid + 1 << p];
-        for (int j = 0; j < momentsSize; ++j) {
-          dst_mem[j] += src_mem[j];
-        }
-      }
-    }
-
-    // Publish results
-    __syncthreads();
-    if (tid == 0) {
-      volatile double* curr_mem = smem[0];
-      for (int j = 0; j < momentsSize; ++j) {
-        atomicAdd(moments + j, curr_mem[j]);
+        atomicAdd(&moments[mu20], x2      * val);
+        atomicAdd(&moments[mu11], x1 * y1 * val);
+        atomicAdd(&moments[mu02],      y2 * val);
+        atomicAdd(&moments[mu30], x3      * val);
+        atomicAdd(&moments[mu21], x2 * y1 * val);
+        atomicAdd(&moments[mu12], x1 * y2 * val);
+        atomicAdd(&moments[mu03],      y3 * val);
       }
     }
 }
@@ -176,7 +111,10 @@ cv::Moments Moments(const cv::cuda::GpuMat& img, bool binary) {
     double2* centroid;
     cudaSafeCall(cudaMalloc(&centroid, sizeof(double2)));
     cv::cuda::GpuMat moments_gpu(1, momentsSize, CV_64F, cv::Scalar(0));
-    ComputeSpatialMoments <<<gridSize, blockSize>>>(img, binary, moments_gpu.ptr<double>(0), centroid);
+    ComputeSpatialMoments <<<gridSize, blockSize>>>(img, binary, moments_gpu.ptr<double>(0));
+    cudaSafeCall(cudaGetLastError());
+
+    ComputeCenteroid <<<dim3(1, 1, 1), dim3(1, 1, 1)>>>(moments_gpu.ptr<double>(0), centroid);
     cudaSafeCall(cudaGetLastError());
 
     ComputeCenteralMoments <<<gridSize, blockSize>>>(img, binary, centroid, moments_gpu.ptr<double>(0));
