@@ -310,7 +310,7 @@ enum DeinterlaceMode
 struct CV_EXPORTS_W_SIMPLE FormatInfo
 {
     CV_WRAP FormatInfo() : nBitDepthMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
-        fps(0), ulNumDecodeSurfaces(0) {};
+        fps(0), ulNumDecodeSurfaces(0), videoFullRangeFlag(false) {};
 
     CV_PROP_RW Codec codec;
     CV_PROP_RW ChromaFormat chromaFormat;
@@ -329,6 +329,7 @@ struct CV_EXPORTS_W_SIMPLE FormatInfo
     CV_PROP_RW cv::Size targetSz;//!< Post-processed size of the output frame.
     CV_PROP_RW cv::Rect srcRoi;//!< Region of interest decoded from video source.
     CV_PROP_RW cv::Rect targetRoi;//!< Region of interest in the output frame containing the decoded frame.
+    CV_PROP_RW bool videoFullRangeFlag;//!< Output value indicating if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.  Internally the conversion from NV12 to BGR obeys ITU 709.
 };
 
 /** @brief cv::cudacodec::VideoReader generic properties identifier.

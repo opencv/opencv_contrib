@@ -299,7 +299,7 @@ hard negative mining, and anchor swap to improve the image matching results.
 It is able to describe keypoints from any detector just by changing the scale_factor parameter.
 TEBLID is as efficient as ORB, BEBLID or BRISK, but the triplet-based training objective selected more
 discriminative features that explain the accuracy gain. It is also more compact than BEBLID,
-when running the [AKAZE example](https://github.com/opencv/opencv/blob/4.x/samples/cpp/tutorial_code/features2D/AKAZE_match.cpp)
+when running the [AKAZE example](https://github.com/opencv/opencv/blob/5.x/samples/cpp/tutorial_code/features2D/AKAZE_match.cpp)
 with 10000 keypoints detected by ORB, BEBLID obtains 561 inliers (75%) with 512 bits, whereas
 TEBLID obtains 621 (75.2%) with 256 bits. ORB obtains only 493 inliers (63%).
 

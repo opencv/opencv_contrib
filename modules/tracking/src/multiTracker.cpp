@@ -207,15 +207,12 @@ using namespace impl;
 				tld::TrackerTLDImpl::Nexpert nExpert(imageForDetector, boundingBoxes[k], tldModel->detector, tracker->params);
 				std::vector<Mat_<uchar> > examplesForModel, examplesForEnsemble;
 				examplesForModel.reserve(100); examplesForEnsemble.reserve(100);
-				int negRelabeled = 0;
 				for (int i = 0; i < (int)detectorResults[k].size(); i++)
 				{
 					bool expertResult;
 					if (detectorResults[k][i].isObject)
 					{
 						expertResult = nExpert(detectorResults[k][i].rect);
-						if (expertResult != detectorResults[k][i].isObject)
-							negRelabeled++;
 					}
 					else
 					{
@@ -279,8 +276,6 @@ namespace impl {
 		Mat tmp;
 		int dx = initSize.width / 10, dy = initSize.height / 10;
 		Size2d size = img.size();
-		double scale = 1.0;
-		int npos = 0, nneg = 0;
 		double maxSc = -5.0;
 		Rect2d maxScRect;
 		int scaleID;
@@ -348,7 +343,6 @@ namespace impl {
 			scaleID++;
 			size.width /= tld::SCALE_STEP;
 			size.height /= tld::SCALE_STEP;
-			scale *= tld::SCALE_STEP;
 			resize(img, tmp, size, 0, 0, tld::DOWNSCALE_MODE);
 			resized_imgs.push_back(tmp);
 			GaussianBlur(resized_imgs[scaleID], tmp, tld::GaussBlurKernelSize, 0.0f);
@@ -406,8 +400,6 @@ namespace impl {
 			//TLD Model Extraction
 			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
 
-			npos = 0;
-			nneg = 0;
 			maxSc = -5.0;
 
 			for (int i = 0; i < (int)ensBuffer[k].size(); i++)
@@ -429,12 +421,7 @@ namespace impl {
 
 				if (!labPatch.isObject)
 				{
-					nneg++;
 					continue;
-				}
-				else
-				{
-					npos++;
 				}
 				scValue = tldModel->detector->Sc(standardPatch);
 				if (scValue > maxSc)
@@ -474,8 +461,6 @@ namespace impl {
 		Mat tmp;
 		int dx = initSize.width / 10, dy = initSize.height / 10;
 		Size2d size = img.size();
-		double scale = 1.0;
-		int npos = 0, nneg = 0;
 		double maxSc = -5.0;
 		Rect2d maxScRect;
 		int scaleID;
@@ -543,7 +528,6 @@ namespace impl {
 			scaleID++;
 			size.width /= tld::SCALE_STEP;
 			size.height /= tld::SCALE_STEP;
-			scale *= tld::SCALE_STEP;
 			resize(img, tmp, size, 0, 0, tld::DOWNSCALE_MODE);
 			resized_imgs.push_back(tmp);
 			GaussianBlur(resized_imgs[scaleID], tmp, tld::GaussBlurKernelSize, 0.0f);
@@ -600,8 +584,6 @@ namespace impl {
 			tracker = static_cast<tld::TrackerTLDImpl*>(trackerPtr);
 			//TLD Model Extraction
 			tldModel = ((tld::TrackerTLDModel*)static_cast<TrackerModel*>(tracker->getModel()));
-			npos = 0;
-			nneg = 0;
 			maxSc = -5.0;
 
 			//Prepare batch of patches
@@ -641,12 +623,7 @@ namespace impl {
 
 				if (!labPatch.isObject)
 				{
-					nneg++;
 					continue;
-				}
-				else
-				{
-					npos++;
 				}
 				scValue = resultSc[i];
 				if (scValue > maxSc)

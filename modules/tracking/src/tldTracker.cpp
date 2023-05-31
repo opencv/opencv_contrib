@@ -207,15 +207,12 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 		Nexpert nExpert(imageForDetector, boundingBox, tldModel->detector, params);
         std::vector<Mat_<uchar> > examplesForModel, examplesForEnsemble;
         examplesForModel.reserve(100); examplesForEnsemble.reserve(100);
-        int negRelabeled = 0;
         for( int i = 0; i < (int)detectorResults.size(); i++ )
         {
             bool expertResult;
             if( detectorResults[i].isObject )
             {
                 expertResult = nExpert(detectorResults[i].rect);
-                if( expertResult != detectorResults[i].isObject )
-                    negRelabeled++;
             }
             else
             {

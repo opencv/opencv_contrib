@@ -65,7 +65,8 @@ void DecodedBitStreamParser::append(std::string& result, string const& in,
 
 void DecodedBitStreamParser::append(std::string& result, const char* bufIn, size_t nIn,
                                     ErrorHandler& err_handler) {
-    if (err_handler.ErrCode()) return;
+    // avoid null pointer exception
+    if (err_handler.ErrCode() || bufIn == nullptr) return;
 #ifndef NO_ICONV_INSIDE
     if (nIn == 0) {
         return;
@@ -126,7 +127,10 @@ void DecodedBitStreamParser::decodeHanziSegment(Ref<BitSource> bits_, string& re
     while (count > 0) {
         // Each 13 bits encodes a 2-byte character
         int twoBytes = bits.readBits(13, err_handler);
-        if (err_handler.ErrCode()) return;
+        if (err_handler.ErrCode()) {
+            delete[] buffer;
+            return;
+        }
         int assembledTwoBytes = ((twoBytes / 0x060) << 8) | (twoBytes % 0x060);
         if (assembledTwoBytes < 0x003BF) {
             // In the 0xA1A1 to 0xAAFE range
@@ -190,16 +194,20 @@ void DecodedBitStreamParser::decodeByteSegment(Ref<BitSource> bits_, string& res
                                                CharacterSetECI* currentCharacterSetECI,
                                                ArrayRef<ArrayRef<char> >& byteSegments,
                                                ErrorHandler& err_handler) {
-    int nBytes = count;
     BitSource& bits(*bits_);
     // Don't crash trying to read more bits than we have available.
     int available = bits.available();
     // try to repair count data if count data is invalid
     if (count * 8 > available) {
-        count = (available + 7 / 8);
+        count = (available + 7) / 8;
     }
+    size_t nBytes = count;
 
-    ArrayRef<char> bytes_(count);
+    ArrayRef<char> bytes_(nBytes);
+    // issue https://github.com/opencv/opencv_contrib/issues/3478
+    if (bytes_->empty())
+        return;
+
     char* readBytes = &(*bytes_)[0];
     for (int i = 0; i < count; i++) {
         //    readBytes[i] = (char) bits.readBits(8);

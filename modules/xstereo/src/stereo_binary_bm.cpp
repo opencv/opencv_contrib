@@ -341,15 +341,6 @@ namespace cv
                 }
 
                 Mat left = preFilteredImg0, right = preFilteredImg1;
-
-                int ndisp = params.numDisparities;
-
-                int wsz = params.kernelSize;
-                int bufSize0 = (int)((ndisp + 2)*sizeof(int));
-                bufSize0 += (int)((height + wsz + 2)*ndisp*sizeof(int));
-                bufSize0 += (int)((height + wsz + 2)*sizeof(int));
-                bufSize0 += (int)((height + wsz + 2)*ndisp*(wsz + 2)*sizeof(uchar) + 256);
-
                 int bufSize1 = (int)((width + params.preFilterSize + 2) * sizeof(int) + 256);
                 if(params.usePrefilter == true)
                 {

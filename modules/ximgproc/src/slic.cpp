@@ -772,7 +772,7 @@ inline void SuperpixelSLICImpl::GetChSeedsK()
 {
     int xoff = m_region_size / 2;
     int yoff = m_region_size / 2;
-    int n = 0; int r = 0;
+    int r = 0;
     for( int y = 0; y < m_height; y++ )
     {
         int Y = y*m_region_size + yoff;
@@ -827,8 +827,6 @@ inline void SuperpixelSLICImpl::GetChSeedsK()
 
             m_kseedsx.push_back((float)X);
             m_kseedsy.push_back((float)Y);
-
-            n++;
         }
         r++;
     }

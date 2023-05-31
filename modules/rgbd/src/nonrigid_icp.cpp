@@ -365,9 +365,6 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     std::cout << "median: " << med << " from " << residuals.size() << " residuals " << std::endl;
     float sigma = MAD_SCALE * median(residuals);
 
-    float total_error = 0;
-    int pix_count = 0;
-
     for(int y = 0; y < oldPoints.size().height; y++)
     {
         for(int x = 0; x < oldPoints.size().width; x++)
@@ -394,9 +391,6 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             Vec3f diff = oldPoints.at<Vec3f>(y, x) - Vc.at<Vec3f>(y, x);
 
             float rd = Nc.at<Vec3f>(y, x).dot(diff);
-
-            total_error += tukeyWeight(rd, sigma) * rd * rd;
-            pix_count++;
 
             int n;
             nodeNeighboursType neighbours = volume->getVoxelNeighbours(p, n);

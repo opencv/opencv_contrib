@@ -259,9 +259,6 @@ bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patter
     Mat& disparityMap_ = *( Mat* ) disparityMap.getObj();
     disparityMap_ = Mat( cam_height, cam_width, CV_64F, double( 0 ) );
 
-    double number_of_pixels_cam1 = 0;
-    double number_of_pixels_cam2 = 0;
-
     for( int i = 0; i < params.width; i++ )
     {
       for( int j = 0; j < params.height; j++ )
@@ -278,8 +275,6 @@ bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patter
         double sump1x = 0;
         double sump2x = 0;
 
-        number_of_pixels_cam1 += cam1Pixs.size();
-        number_of_pixels_cam2 += cam2Pixs.size();
         for( int c1 = 0; c1 < (int) cam1Pixs.size(); c1++ )
         {
           p1 = cam1Pixs[c1];

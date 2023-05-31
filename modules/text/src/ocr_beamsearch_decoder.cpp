@@ -611,7 +611,6 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
 
         img = src(Rect(Point(x_c,0),Size(window_size,window_size)));
 
-        int patch_count = 0;
         vector< vector<double> > data_pool(9);
 
 
@@ -652,7 +651,6 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
                             data_pool[7].insert(data_pool[7].end(),patch.begin(),patch.end());
                         if ((quad_id == 19)||(quad_id == 24)||(quad_id == 20)||(quad_id == 25))
                             data_pool[8].insert(data_pool[8].end(),patch.begin(),patch.end());
-                        patch_count++;
                     }
                 }
 

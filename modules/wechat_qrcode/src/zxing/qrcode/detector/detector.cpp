@@ -684,7 +684,7 @@ int Detector::fitLine(vector<Ref<ResultPoint> > &oldPoints, float &k, float &b, 
     int num = fitPoints.size();
     if (num < 2) return -1;
 
-    double x = 0, y = 0, xx = 0, xy = 0, yy = 0, tem = 0;
+    double x = 0, y = 0, xx = 0, xy = 0, tem = 0;
     for (int i = 0; i < num; i++) {
         int point_x = fitPoints[i]->getX();
         int point_y = fitPoints[i]->getY();
@@ -692,7 +692,6 @@ int Detector::fitLine(vector<Ref<ResultPoint> > &oldPoints, float &k, float &b, 
         y += point_y;
         xx += point_x * point_x;
         xy += point_x * point_y;
-        yy += point_y * point_y;
     }
 
     tem = xx * num - x * x;

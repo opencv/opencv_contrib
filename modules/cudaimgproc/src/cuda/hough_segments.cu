@@ -55,6 +55,7 @@ namespace cv { namespace cuda { namespace device
                                                 int4* out, const int maxSize,
                                                 const float rho, const float theta,
                                                 const int lineGap, const int lineLength,
+                                                const int threshold,
                                                 const int rows, const int cols,
                                                 int* counterPtr)
         {
@@ -65,8 +66,9 @@ namespace cv { namespace cuda { namespace device
                 return;
 
             const int curVotes = accum(n + 1, r + 1);
+            const int threshold_ = (threshold > 0) ? threshold : lineLength;
 
-            if (curVotes >= lineLength &&
+            if (curVotes >= threshold_ &&
                 curVotes > accum(n, r) &&
                 curVotes > accum(n, r + 1) &&
                 curVotes > accum(n, r + 2) &&
@@ -213,7 +215,7 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        int houghLinesProbabilistic_gpu(GpuMat &mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int* counterPtr, cudaStream_t stream)
+        int houghLinesProbabilistic_gpu(GpuMat &mask, PtrStepSzi accum, int4* out, int maxSize, float rho, float theta, int lineGap, int lineLength, int threshold, int* counterPtr, cudaStream_t stream)
         {
             cudaSafeCall( cudaMemsetAsync(counterPtr, 0, sizeof(int), stream) );
 
@@ -225,11 +227,11 @@ namespace cv { namespace cuda { namespace device
             mask.locateROI(wholeSize, ofs);
             if (ofs.x || ofs.y) {
                 cv::cudev::TextureOff<uchar> texMask(wholeSize.height, wholeSize.width, mask.datastart, mask.step, ofs.y, ofs.x);
-                houghLinesProbabilistic<cv::cudev::TextureOffPtr<uchar>><<<grid, block, 0, stream>>>(texMask, accum, out, maxSize, rho, theta, lineGap, lineLength, mask.rows, mask.cols, counterPtr);
+                houghLinesProbabilistic<cv::cudev::TextureOffPtr<uchar>><<<grid, block, 0, stream>>>(texMask, accum, out, maxSize, rho, theta, lineGap, lineLength, threshold, mask.rows, mask.cols, counterPtr);
             }
             else {
                 cv::cudev::Texture<uchar> texMask(mask);
-                houghLinesProbabilistic<cv::cudev::TexturePtr<uchar>><<<grid, block, 0, stream>>>(texMask, accum, out, maxSize, rho, theta, lineGap, lineLength, mask.rows, mask.cols, counterPtr);
+                houghLinesProbabilistic<cv::cudev::TexturePtr<uchar>><<<grid, block, 0, stream>>>(texMask, accum, out, maxSize, rho, theta, lineGap, lineLength, threshold, mask.rows, mask.cols, counterPtr);
             }
 
             cudaSafeCall( cudaGetLastError() );

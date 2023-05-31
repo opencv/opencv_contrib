@@ -349,20 +349,10 @@ std::vector<Mat> TrackerSamplerCS::patchesRegularScan( const Mat& image, Rect tr
     return sample;
   }
 
-  int numPatchesX;
-  int numPatchesY;
-
-  numPatchesX = 0;
-  numPatchesY = 0;
   for ( int curRow = 0; curRow < ROI.height - patchSize.height + 1; curRow += stepRow )
   {
-    numPatchesY++;
-
     for ( int curCol = 0; curCol < ROI.width - patchSize.width + 1; curCol += stepCol )
     {
-      if( curRow == 0 )
-        numPatchesX++;
-
       Mat singleSample = image( Rect( curCol + ROI.x, curRow + ROI.y, patchSize.width, patchSize.height ) );
       sample[curPatch] = singleSample;
       curPatch++;

@@ -189,9 +189,6 @@ public:
             int buffIdx = 0;
             cv::Mat GMc0, GMc1, GMc2, GMc3;
             cv::Vec2f Mc0, Mc1, Mc2, Mc3;
-            int noIteration = 0;
-            int noReusedIteration = 0;
-            int noSolvedIteration = 0;
             for( j = 0; j < criteria.maxCount; j++ )
             {
                 cv::Point2f delta(0,0);
@@ -536,7 +533,6 @@ public:
                             {
                                 nextPts[ptidx] = backUpNextPt;
                             }
-                            noIteration++;
                             break;
                         }
 
@@ -612,13 +608,10 @@ public:
                             delta.y = inextPt.y + b - nextPt.y;
                         } // isIn1 != isIn2
                     }
-                    if( hasSolved == false)
-                        noIteration++;
                 }
                 else
                 {
                     hasSolved = false;
-                    noReusedIteration++;
                 }
                 if( hasSolved == false )
                 {
@@ -635,7 +628,6 @@ public:
                 {
                     nextPt += delta;
                     nextPts[ptidx] = nextPt - halfWin;
-                    noSolvedIteration++;
                     break;
                 }
 
@@ -832,9 +824,6 @@ public:
             int buffIdx = 0;
             cv::Mat GMc0, GMc1, GMc2, GMc3;
             cv::Vec4f Mc0, Mc1, Mc2, Mc3;
-            int noIteration = 0;
-            int noReusedIteration = 0;
-            int noSolvedIteration = 0;
             for( j = 0; j < criteria.maxCount; j++ )
             {
                 cv::Point2f delta(0,0);
@@ -859,7 +848,6 @@ public:
                             nextPts[ptidx] = backUpNextPt;
                             gainVecs[ptidx] = backUpGain;
                         }
-                        noIteration++;
                         break;
                     }
 
@@ -1287,7 +1275,6 @@ public:
                             nextPts[ptidx] = backUpNextPt;
                             gainVecs[ptidx] = backUpGain;
                         }
-                        noIteration++;
                         break;
                     }
 
@@ -1399,13 +1386,10 @@ public:
 
                     } // isIn1 != isIn2
                 }
-                    if( hasSolved == false)
-                        noIteration++;
                 }
                 else
                 {
                     hasSolved = false;
-                    noReusedIteration++;
                 }
                 if( hasSolved == false )
                 {
@@ -1430,7 +1414,6 @@ public:
                     nextPt += delta;
                     nextPts[ptidx] = nextPt - halfWin;
                     gainVecs[ptidx]= gainVec + deltaGain;
-                    noSolvedIteration++;
                     break;
                 }
 
@@ -1998,9 +1981,6 @@ namespace radial {
                 int j;
                 cv::Mat GMc0, GMc1, GMc2, GMc3;
                 cv::Vec4f Mc0, Mc1, Mc2, Mc3;
-                int noIteration = 0;
-                int noReusedIteration = 0;
-                int noSolvedIteration = 0;
                 for (j = 0; j < criteria.maxCount; j++)
                 {
                     cv::Point2f delta(0, 0);
@@ -2025,7 +2005,6 @@ namespace radial {
                                 nextPts[ptidx] = backUpNextPt;
                                 gainVecs[ptidx] = backUpGain;
                             }
-                            noIteration++;
                             break;
                         }
 
@@ -2291,7 +2270,6 @@ namespace radial {
                                     nextPts[ptidx] = backUpNextPt;
                                     gainVecs[ptidx] = backUpGain;
                                 }
-                                noIteration++;
                                 break;
                             }
 
@@ -2403,13 +2381,10 @@ namespace radial {
 
                             } // isIn1 != isIn2
                         }
-                        if (hasSolved == false)
-                            noIteration++;
                     }
                     else
                     {
                         hasSolved = false;
-                        noReusedIteration++;
                     }
                     if (hasSolved == false)
                     {
@@ -2434,7 +2409,6 @@ namespace radial {
                         nextPt += delta;
                         nextPts[ptidx] = nextPt - halfWin;
                         gainVecs[ptidx] = gainVec + deltaGain;
-                        noSolvedIteration++;
                         break;
                     }
 

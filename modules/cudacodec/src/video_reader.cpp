@@ -53,27 +53,54 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&, co
 
 #else // HAVE_NVCUVID
 
-void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream);
+void nv12ToBgra(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const bool videoFullRangeFlag, cudaStream_t stream);
 bool ValidColorFormat(const ColorFormat colorFormat);
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat,
+void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, const ColorFormat colorFormat, const bool videoFullRangeFlag,
     Stream stream)
 {
+    CV_Assert(decodedFrame.cols == width && decodedFrame.rows == height * 1.5f);
     if (colorFormat == ColorFormat::BGRA) {
-        nv12ToBgra(decodedFrame, outFrame, width, height, StreamAccessor::getStream(stream));
+        nv12ToBgra(decodedFrame, outFrame, width, height, videoFullRangeFlag, StreamAccessor::getStream(stream));
     }
     else if (colorFormat == ColorFormat::BGR) {
         outFrame.create(height, width, CV_8UC3);
         Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
         NppiSize oSizeROI = { width,height };
+#if (CUDART_VERSION < 9200)
+        CV_Error(Error::StsUnsupportedFormat, "ColorFormat::BGR is not supported until CUDA 9.2, use default ColorFormat::BGRA.");
+#elif (CUDART_VERSION < 10100)
+        cv::cuda::NppStreamHandler h(stream);
+        if (videoFullRangeFlag)
+            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
+        else {
+            CV_LOG_DEBUG(NULL, "Color reproduction may be inaccurate due CUDA version <= 11.0, for better results upgrade CUDA runtime or try ColorFormat::BGRA.");
+            nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
+        }
+#elif (CUDART_VERSION >= 10100)
         NppStreamContext nppStreamCtx;
         nppSafeCall(nppGetStreamContext(&nppStreamCtx));
         nppStreamCtx.hStream = StreamAccessor::getStream(stream);
-        nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+        if (videoFullRangeFlag)
+            nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+        else {
+#if (CUDART_VERSION < 11000)
+            CV_LOG_DEBUG(NULL, "Color reproduction may be inaccurate due CUDA version <= 11.0, for better results upgrade CUDA runtime or try ColorFormat::BGRA.");
+            nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+#else
+            nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
+#endif
+        }
+#endif
     }
     else if (colorFormat == ColorFormat::GRAY) {
         outFrame.create(height, width, CV_8UC1);
-        cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, StreamAccessor::getStream(stream));
+        if(videoFullRangeFlag)
+            cudaSafeCall(cudaMemcpy2DAsync(outFrame.ptr(), outFrame.step, decodedFrame.ptr(), decodedFrame.step, width, height, cudaMemcpyDeviceToDevice, StreamAccessor::getStream(stream)));
+        else {
+            cv::cuda::subtract(decodedFrame(Rect(0,0,width,height)), 16, outFrame, noArray(), CV_8U, stream);
+            cv::cuda::multiply(outFrame, 255.0f / 219.0f, outFrame, 1.0, CV_8U, stream);
+        }
     }
     else if (colorFormat == ColorFormat::NV_NV12) {
         decodedFrame.copyTo(outFrame, stream);
@@ -222,9 +249,7 @@ namespace
             // map decoded video frame to CUDA surface
             GpuMat decodedFrame = videoDecoder_->mapFrame(frameInfo.first.picture_index, frameInfo.second);
 
-            // perform post processing on the CUDA surface (performs colors space conversion and post processing)
-            // comment this out if we include the line of code seen above
-            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), colorFormat, stream);
+            cvtFromNv12(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), colorFormat, videoDecoder_->format().videoFullRangeFlag, stream);
 
             // unmap video frame
             // unmapFrame() synchronizes with the VideoDecode API (ensures the frame has finished decoding)

@@ -597,7 +597,6 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
         avgCompi.Blue /= compi.points.size();
         colorAverages.push_back(avgCompi);
     }
-    int count = 0;
     std::vector<ChainedComponent> chains;
     for (size_t i = 0; i < components.size(); i++) {
         const Component& compi = components[i];
@@ -632,7 +631,6 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
                             dir.y = dy;
                             chain.dir = dir;
                             chains.push_back(chain);
-                            count++;
                         }
 
             }

@@ -345,7 +345,6 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
     double rat = 0.0, e = 0.0;
     double x = xf;
     double fx = -entropy(applyK(I, static_cast<float>(x)));
-    int num = 1;
     double fu = std::numeric_limits<double>::infinity();
 
     double ffulc = fx, fnfc = fx;
@@ -398,7 +397,6 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
         double si = sgn(rat) + (rat == 0);
         x = xf + si * std::max(std::abs(rat), tol1);
         fu = -entropy(applyK(I, static_cast<float>(x)));
-        num += 1;
 
         if (fu <= fx) {
             if (x >= xf) {
