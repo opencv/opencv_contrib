@@ -51,6 +51,8 @@ If you also want to build the samples from the "samples" folder of each module, 
 7. Build the `opencv` core with the method you chose (make and make install if you chose Unix makefile at step 6).
 
 8. To run, linker flags to contrib modules will need to be added to use them in your code/IDE. For example to use the aruco module, "-lopencv_aruco" flag will be added.
+  
+------
 
 ### Update the repository documentation
 
