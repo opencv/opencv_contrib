@@ -15,7 +15,7 @@ provides production-quality support for this module.
 
 You can build OpenCV, so it will include the modules from this repository. Contrib modules are under constant development and it is recommended to use them alongside the master branch or latest releases of OpenCV.
 
-  >Here is the CMake command line for you:
+  >***Here is the CMake command line for you:***
 
 ```bash
 cd <opencv_build_directory>
@@ -34,7 +34,7 @@ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<rep
 If you also want to build the samples from the "samples" folder of each module, also include the `-D BUILD_EXAMPLES=ON` option.  
   
 
-  >If you prefer using the GUI version of CMake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
+  >***If you prefer using the GUI version of CMake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:***
 
 1. Start cmake-gui.
 
