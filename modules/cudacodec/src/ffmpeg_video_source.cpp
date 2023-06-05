@@ -78,6 +78,7 @@ Codec FourccToCodec(int codec)
     case CV_FOURCC_MACRO('M', 'P', 'G', '2'): return MPEG2;
     case CV_FOURCC_MACRO('X', 'V', 'I', 'D'): // fallthru
     case CV_FOURCC_MACRO('m', 'p', '4', 'v'): // fallthru
+    case CV_FOURCC_MACRO('F', 'M', 'P', '4'): // fallthru
     case CV_FOURCC_MACRO('D', 'I', 'V', 'X'): return MPEG4;
     case CV_FOURCC_MACRO('W', 'V', 'C', '1'): return VC1;
     case CV_FOURCC_MACRO('H', '2', '6', '4'): // fallthru
