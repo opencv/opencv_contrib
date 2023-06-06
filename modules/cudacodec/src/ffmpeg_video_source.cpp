@@ -192,6 +192,10 @@ void cv::cudacodec::detail::FFmpegVideoSource::updateFormat(const FormatInfo& vi
 
 bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double& propertyVal) const
 {
+    propertyVal = cap.get(propertyId);
+    if (propertyVal != 0.)
+        return true;
+
     CV_Assert(videoCaptureParams.size() % 2 == 0);
     for (std::size_t i = 0; i < videoCaptureParams.size(); i += 2) {
         if (videoCaptureParams.at(i) == propertyId) {
@@ -199,6 +203,7 @@ bool cv::cudacodec::detail::FFmpegVideoSource::get(const int propertyId, double&
             return true;
         }
     }
+
     return false;
 }
 
