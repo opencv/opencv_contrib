@@ -660,7 +660,7 @@ void clear(const cv::Scalar& bgra) {
     const float& r = bgra[2] / 255.0f;
     const float& a = bgra[3] / 255.0f;
     GL_CHECK(glClearColor(r, g, b, a));
-    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
+    GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 }
 }
 }

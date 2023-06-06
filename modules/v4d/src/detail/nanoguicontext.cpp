@@ -15,10 +15,30 @@ NanoguiContext::NanoguiContext(V4D& v4d, FrameBufferContext& fbContext) :
 }
 
 void NanoguiContext::render() {
-    run_sync_on_main<4>([&,this](){
-        FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
-//        glClear(GL_STENCIL_BUFFER_BIT);
-        screen().draw_widgets();
+    run_sync_on_main<4>([this](){
+#ifndef __EMSCRIPTEN__
+        if(!fbCtx().isShared()) {
+            UMat tmp;
+            mainFbContext_.copyTo(tmp);
+            fbCtx().copyFrom(tmp);
+        }
+#endif
+        {
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            screen().draw_widgets();
+        }
+        {
+            if(!fbCtx().isShared()) {
+#ifdef __EMSCRIPTEN__
+                mainFbContext_.doWebGLCopy(fbCtx());
+#else
+                UMat tmp;
+                fbCtx().copyTo(tmp);
+                mainFbContext_.copyFrom(tmp);
+#endif
+            }
+        }
     });
 }
 
@@ -42,6 +62,9 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
             NanoVGContext::render([this](const Size sz){
                 CV_UNUSED(sz);
                 using namespace cv::v4d::nvg;
+#ifdef __EMSCRIPTEN__
+                clear({0.0,0.0,0.0,0.0});
+#endif
                 string txt = "FPS: " + std::to_string(fps_);
                 beginPath();
                 roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);

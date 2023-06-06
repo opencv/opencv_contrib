@@ -31,6 +31,9 @@ NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
             if (!context_)
                 throw std::runtime_error("Could not initialize NanoVG!");
        }
+#ifdef __EMSCRIPTEN__
+        mainFbContext_.initWebGLCopy(fbCtx());
+#endif
     });
 
     tmp.release();
@@ -38,10 +41,31 @@ NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
 
 void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
     run_sync_on_main<14>([this, fn](){
-        FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-        NanoVGContext::Scope nvgScope(*this);
-        cv::v4d::nvg::detail::NVG::initializeContext(context_);
-        fn(fbCtx().size());
+#ifndef __EMSCRIPTEN__
+        if(!fbCtx().isShared()) {
+            UMat tmp;
+            mainFbContext_.copyTo(tmp);
+            fbCtx().copyFrom(tmp);
+        }
+#endif
+        {
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            NanoVGContext::Scope nvgScope(*this);
+            cv::v4d::nvg::detail::NVG::initializeContext(context_);
+            fn(fbCtx().size());
+        }
+        {
+            if(!fbCtx().isShared()) {
+#ifdef __EMSCRIPTEN__
+                mainFbContext_.doWebGLCopy(fbCtx());
+#else
+                UMat tmp;
+                fbCtx().copyTo(tmp);
+                mainFbContext_.copyFrom(tmp);
+#endif
+            }
+        }
     });
 }
 
@@ -58,7 +82,9 @@ void NanoVGContext::begin() {
 }
 
 void NanoVGContext::end() {
+    fbCtx().makeCurrent();
     //FIXME make nvgCancelFrame possible
+
     nvgEndFrame(context_);
     nvgRestore(context_);
 }

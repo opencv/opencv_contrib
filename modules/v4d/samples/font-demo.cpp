@@ -27,10 +27,10 @@ const cv::Scalar_<float> INITIAL_COLOR = cv::v4d::colorConvert(cv::Scalar(0.15 *
 
 /** Visualization parameters **/
 float min_star_size = 0.5f;
-float max_star_size = 1.0f;
+float max_star_size = 1.5f;
 int min_star_count = 1000;
 int max_star_count = 3000;
-float star_alpha = 0.3;
+float star_alpha = 0.3f;
 
 float font_size = 40.0f;
 nanogui::Color text_color = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
@@ -175,13 +175,10 @@ static bool iteration() {
         }
     });
 
-    v4d->fb([&](cv::UMat& framebuffer){
+    v4d->fb([&](cv::UMat& framebuffer) {
         //Pseudo 3D text effect.
-//        cerr << "fb:" << cv::v4d::detail::cnz(framebuffer) << endl;
         cv::warpPerspective(framebuffer, warped, tm, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
-//        cerr << "stars:" << cv::v4d::detail::cnz(stars) << endl;
-//        cerr << "warped:" << cv::v4d::detail::cnz(warped) << endl;
         cv::add(stars, warped, framebuffer);
     });
 
@@ -204,7 +201,7 @@ static bool iteration() {
 int main() {
     try {
         using namespace cv::v4d;
-        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN);
+        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN, true);
         if(!OFFSCREEN) {
             setup_gui(v4d);
         }

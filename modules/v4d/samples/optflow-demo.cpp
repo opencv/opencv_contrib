@@ -412,7 +412,7 @@ static bool iteration() {
     if(!v4d->capture())
         return false;
 
-    v4d->fb([=](cv::UMat& frameBuffer) {
+    v4d->fb([&](cv::UMat& frameBuffer) {
         cv::resize(frameBuffer, down, cv::Size(v4d->framebufferSize().width * fg_scale, v4d->framebufferSize().height * fg_scale));
         frameBuffer.copyTo(background);
     });
@@ -423,7 +423,7 @@ static bool iteration() {
     //Detect trackable points in the motion mask
     detect_points(downMotionMaskGrey, detectedPoints);
 
-    v4d->nvg([=]() {
+    v4d->nvg([&]() {
         cv::v4d::nvg::clear();
         if (!downPrevGrey.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
@@ -437,7 +437,7 @@ static bool iteration() {
 
     downPrevGrey = downNextGrey.clone();
 
-    v4d->fb([=](cv::UMat& frameBuffer){
+    v4d->fb([&](cv::UMat& frameBuffer){
         cv::resize(foreground, foreground, frameBuffer.size());
         //Put it all together (OpenCL)
         composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);

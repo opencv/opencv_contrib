@@ -35,11 +35,11 @@ constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /** Effect parameters **/
-constexpr int BLUR_DIV = 500;
+constexpr int BLUR_DIV = 1000;
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-float eyes_and_lips_saturation = 1.5f; //Saturation boost factor for eyes and lips
-float skin_saturation = 1.2f; //Saturation boost factor for skin
-float skin_contrast = 0.6f; //Contrast factor skin
+float eyes_and_lips_saturation = 1.6f; //Saturation boost factor for eyes and lips
+float skin_saturation = 1.7f; //Saturation boost factor for skin
+float skin_contrast = 0.7f; //Contrast factor skin
 #ifndef __EMSCRIPTEN__
 bool side_by_side = true; //Show input and output side by side
 bool stretch = true; //Stretch the video to the window size

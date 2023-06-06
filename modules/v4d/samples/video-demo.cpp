@@ -134,8 +134,8 @@ static void init_scene() {
 }
 
 static void render_scene() {
-    glClear(GL_DEPTH_BUFFER_BIT);
-
+    glClearColor(0,0,0,0);
+    glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shader_program);
 
     float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);

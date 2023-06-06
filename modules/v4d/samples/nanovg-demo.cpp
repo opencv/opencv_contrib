@@ -20,6 +20,7 @@ cv::Ptr<cv::v4d::V4D> v4d;
 static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
     using namespace cv::v4d::nvg;
+    clear({0,0,0,0});
     int i;
     float r0, r1, ax, ay, bx, by, cx, cy, aeps, r;
     Paint paint;

@@ -83,6 +83,17 @@ Mat read_embedded_image(const string &path) {
 }
 #endif
 
+void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
+    int errorCode = glGetError();
+//    cerr << "TRACE: " << file.filename() << " (" << line << ") : " << expression << " => code: " << errorCode << endl;
+    if (errorCode != 0) {
+        std::stringstream ss;
+        ss << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   "
+                << expression << "\nError code:\n   " << errorCode;
+        throw std::runtime_error(ss.str());
+    }
+}
+
 unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName) {
     struct Shader {
         GLenum type;
@@ -327,7 +338,6 @@ private:
 public:
     HTML5Capture(cv::Ptr<V4D> window, int width, int height) :
         window_(window), width_(width), height_(height), fb_(cv::Size(width, height), CV_8UC4) {
-//        cerr << "start constr" << endl;
         EM_ASM({
             globalThis.playing = false;
             globalThis.timeupdate = false;
@@ -338,13 +348,10 @@ public:
             globalThis.v4dCopyCanvasElement.height = $1;
             globalThis.v4dCopyCanvasElement.style.display = "none";
         }, width, height);
-//        cerr << "end constr" << endl;
     }
 
     bool captureGPU(UMat& dst) {
-//        cerr << "start capture" << endl;
         FrameBufferContext::GLScope scope(window_->fbCtx());
-//        cerr << "start em" << endl;
 
         int ret = EM_ASM_INT(
             if(typeof Module.ctx !== 'undefined' && Module.ctx != null && globalThis.doCapture) {
@@ -356,21 +363,17 @@ public:
                 return 0;
             }
         );
-//        cerr << "en em: " << ret << endl;
         if(ret) {
-//            cerr << "1" << endl;
             if(framebuffer == 0) {
                 GL_CHECK(glGenFramebuffers(1, &framebuffer));
             }
 
             GL_CHECK(glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer));
-//            cerr << "2" << endl;
             if(texture == 0) {
                 GL_CHECK(glGenTextures(1, &texture));
             }
 
             GL_CHECK(glBindTexture(GL_TEXTURE_2D, texture));
-//            cerr << "3" << endl;
             EM_ASM(
                 const level = 0;
                 const internalFormat = globalThis.gl.RGBA;
@@ -386,20 +389,16 @@ public:
                 globalThis.v4dVideoElement
                 );
             );
-//            cerr << "4" << endl;
             GL_CHECK(glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
             EM_ASM(
                 globalThis.gl.bindFramebuffer(globalThis.gl.DRAW_FRAMEBUFFER, globalThis.v4dMainFrameBuffer);
                 globalThis.gl.bindTexture(globalThis.gl.TEXTURE_2D, globalThis.v4dMainTexture);
-//                globalThis.gl.pixelStorei(globalThis.gl.UNPACK_FLIP_Y_WEBGL, true);
                 globalThis.gl.framebufferTexture2D(globalThis.gl.DRAW_FRAMEBUFFER, globalThis.gl.COLOR_ATTACHMENT0, globalThis.gl.TEXTURE_2D, globalThis.v4dMainTexture, 0);
             );
-//            cerr << "5" << endl;
             FrameBufferContext::FrameBufferScope fbScope(window_->fbCtx(), fb_);
             flip(fb_, fb_, 0);
             cvtColor(fb_, dst, COLOR_BGRA2RGB);
 
-            cerr << "flipped" << endl;
             return true;
         }
 //        cerr << "not captured" << endl;

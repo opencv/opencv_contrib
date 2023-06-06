@@ -9,6 +9,7 @@
 #include "source.hpp"
 #include "sink.hpp"
 
+#include <filesystem>
 #include <string>
 #include <iostream>
 #include <opencv2/core/ocl.hpp>
@@ -84,13 +85,27 @@ void run_sync_on_main(std::function<void()> fn) {
 #endif
 }
 
-size_t cnz(const cv::UMat& m);
+CV_EXPORTS size_t cnz(const cv::UMat& m);
 }
 using std::string;
 class V4D;
 #ifdef __EMSCRIPTEN__
 CV_EXPORTS Mat read_embedded_image(const string &path);
 #endif
+
+/*!
+ * Convenience function to check for OpenGL errors. Should only be used via the macro #GL_CHECK.
+ * @param file The file path of the error.
+ * @param line The file line of the error.
+ * @param expression The expression that failed.
+ */
+CV_EXPORTS void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression);
+/*!
+ * Convenience macro to check for OpenGL errors.
+ */
+#define GL_CHECK(expr)                            \
+    expr;                                        \
+    cv::v4d::gl_check_error(__FILE__, __LINE__, #expr);
 
 CV_EXPORTS unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName);
 /*!

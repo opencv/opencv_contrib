@@ -9,12 +9,36 @@ namespace v4d {
 namespace detail {
 GLContext::GLContext(V4D& v4d, FrameBufferContext& fbContext) :
         v4d_(v4d), mainFbContext_(fbContext), glFbContext_(v4d, "OpenGL", fbContext) {
+    run_sync_on_main<19>([&,this](){
+#ifdef __EMSCRIPTEN__
+        mainFbContext_.initWebGLCopy(fbCtx());
+#endif
+    });
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {
     run_sync_on_main<15>([&,this](){
-        FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-        fn(fbCtx().size());
+#ifndef __EMSCRIPTEN__
+        if(!fbCtx().isShared()) {
+            UMat tmp;
+            mainFbContext_.copyTo(tmp);
+            fbCtx().copyFrom(tmp);
+        }
+#endif
+        {
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            fn(fbCtx().size());
+        }
+        if(!fbCtx().isShared()) {
+#ifdef __EMSCRIPTEN__
+            mainFbContext_.doWebGLCopy(fbCtx());
+#else
+            UMat tmp;
+            fbCtx().copyTo(tmp);
+            mainFbContext_.copyFrom(tmp);
+#endif
+        }
     });
 }
 

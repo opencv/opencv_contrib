@@ -25,7 +25,6 @@
 #include "source.hpp"
 #include "sink.hpp"
 #include "util.hpp"
-#include <filesystem>
 #include <iostream>
 #include <future>
 #include <set>
@@ -86,20 +85,6 @@ template<typename T> void find_widgets(const nanogui::Widget* parent, std::vecto
     }
 }
 }
-
-/*!
- * Convenience function to check for OpenGL errors. Should only be used via the macro #GL_CHECK.
- * @param file The file path of the error.
- * @param line The file line of the error.
- * @param expression The expression that failed.
- */
-void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression);
-/*!
- * Convenience macro to check for OpenGL errors.
- */
-#define GL_CHECK(expr)                            \
-    expr;                                        \
-    cv::v4d::gl_check_error(__FILE__, __LINE__, #expr);
 
 /*!
  * Convenience function to color convert from Scalar to Scalar
@@ -396,6 +381,7 @@ public:
     CV_EXPORTS void printSystemInfo();
 
     CV_EXPORTS void makeCurrent();
+    NanoguiContext& nguiCtx();
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
@@ -413,7 +399,6 @@ private:
     FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
-    NanoguiContext& nguiCtx();
     GLContext& glCtx();
 
     bool hasFbCtx();

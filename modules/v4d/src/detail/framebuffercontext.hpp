@@ -57,7 +57,14 @@ class FrameBufferContext {
     GLuint onscreenTextureID_ = 0;
     GLuint textureID_ = 0;
     GLuint renderBufferID_ = 0;
+    GLuint pboID_ = 0;
     GLint viewport_[4];
+    GLint maxAttach_;
+#ifdef __EMSCRIPTEN__
+    UMat preFB_;
+    UMat fb_;
+    UMat postFB_;
+#endif
     double blitScaleX_ = 1;
     GLint blitOffsetX_;
     GLint blitOffsetY_;
@@ -69,6 +76,33 @@ class FrameBufferContext {
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;
+
+    //data and handles for webgl copying
+    GLint image0_hdl;
+
+    GLuint shader_program_hdl;
+
+    //vertex array
+    GLuint copyVao;
+    GLuint copyVbo, copyEbo;
+
+    // vertex position, color
+    float copyVertices[12] = {
+    //    x      y      z
+    -1.0f, -1.0f, -0.0f,
+    1.0f, 1.0f, -0.0f,
+    -1.0f, 1.0f, -0.0f,
+    1.0f, -1.0f, -0.0f };
+
+    unsigned int copyIndices[6] = {
+    //  2---,1
+    //  | .' |
+    //  0'---3
+            0, 1, 2, 0, 3, 1 };
+
+    GLuint copyFramebuffer_;
+    GLuint copyTexture_;
+    int index_;
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.
@@ -130,6 +164,8 @@ public:
      */
     virtual ~FrameBufferContext();
 
+    GLuint getFramebufferID();
+    GLuint getTextureID();
     /*!
      * Get the framebuffer size.
      * @return The framebuffer size.
@@ -161,9 +197,13 @@ public:
     bool isVisible();
     void close();
     bool isClosed();
+    bool isShared();
 protected:
+    int getIndex();
     void setup(const cv::Size& sz);
     void teardown();
+    void initWebGLCopy(FrameBufferContext& dst);
+    void doWebGLCopy(FrameBufferContext& dst);
     /*!
      * The UMat used to copy or bind (depending on cl-gl interop capability) the OpenGL framebuffer.
      */
@@ -192,8 +232,10 @@ protected:
      * @param stretch if true stretch the framebuffer to window size
      */
     void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
-            bool stretch = false);
+            bool stretch = false, GLuint drawFramebufferID = 0);
 private:
+    void loadBuffers();
+    void loadShader();
     void init();
     /*!
      * Setup OpenGL states.

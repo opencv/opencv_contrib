@@ -138,7 +138,7 @@ static void init_scene(const cv::Size& sz) {
 
 static void render_scene() {
     glClearColor(0.1, 0.12, 0.2, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(shader_program);
 
@@ -221,7 +221,7 @@ static bool iteration() {
 #endif
 
     v4d->write();
-
+//    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return v4d->display();
 }

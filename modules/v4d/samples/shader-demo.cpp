@@ -192,7 +192,8 @@ static void init_scene(const cv::Size& sz) {
 }
 
 static void render_scene() {
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glClearColor(0,0,0,0);
+    glClear(GL_COLOR_BUFFER_BIT);
     if (zoom >= 1) {
         zoom_incr = -0.01;
         iterations = 0;

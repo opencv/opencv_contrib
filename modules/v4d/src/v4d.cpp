@@ -23,17 +23,6 @@ void glfw_error_callback(int error, const char* description) {
 
 }
 
-void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
-    int errorCode = glGetError();
-    cerr << "TRACE: " << file.filename() << " (" << line << ") : " << expression << " => code: " << errorCode << endl;
-    if (errorCode != 0) {
-        std::stringstream ss;
-        ss << "GL failed in " << file.filename() << " (" << line << ") : " << "\nExpression:\n   "
-                << expression << "\nError code:\n   " << errorCode;
-        throw std::runtime_error(ss.str());
-    }
-}
-
 cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Mat tmpIn(1, 1, CV_8UC3);
     cv::Mat tmpOut(1, 1, CV_8UC3);
@@ -156,14 +145,14 @@ void V4D::gl(std::function<void(const cv::Size&)> fn) {
 }
 
 void V4D::fb(std::function<void(cv::UMat&)> fn) {
-        fbCtx().execute(fn);
+    fbCtx().execute(fn);
 }
 
 void V4D::nvg(std::function<void()> fn) {
-        nvgCtx().render([fn](const cv::Size& sz) {
-            CV_UNUSED(sz);
-            fn();
-        });
+    nvgCtx().render([fn](const cv::Size& sz) {
+        CV_UNUSED(sz);
+        fn();
+    });
 }
 
 void V4D::nvg(std::function<void(const cv::Size&)> fn) {
@@ -261,8 +250,8 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
     }
     currentReaderFrame_ = nextReaderFrame_.clone();
     futureReader_ = pool_.enqueue(
-        [](V4D* v, std::function<void(UMat&)> fn, cv::UMat& frame) {
-            return v->clvaCtx().capture(fn, frame);
+        [](V4D* v, std::function<void(UMat&)> func, cv::UMat& frame) {
+            return v->clvaCtx().capture(func, frame);
         }, this, fn, nextReaderFrame_);
 
     fb([this](cv::UMat& frameBuffer){
@@ -299,8 +288,8 @@ void V4D::write(std::function<void(const cv::UMat&)> fn) {
         frameBuffer.copyTo(currentWriterFrame_);
     });
 
-    futureWriter_ = pool_.enqueue([](V4D* v, std::function<void(const UMat&)> fn, cv::UMat& frame) {
-        v->clvaCtx().write(fn, frame);
+    futureWriter_ = pool_.enqueue([](V4D* v, std::function<void(const UMat&)> func, cv::UMat& frame) {
+        v->clvaCtx().write(func, frame);
     }, this, fn, currentWriterFrame_);
 }
 
