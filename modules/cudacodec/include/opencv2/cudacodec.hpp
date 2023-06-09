@@ -309,12 +309,13 @@ enum DeinterlaceMode
  */
 struct CV_EXPORTS_W_SIMPLE FormatInfo
 {
-    CV_WRAP FormatInfo() : nBitDepthMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
+    CV_WRAP FormatInfo() : nBitDepthMinus8(-1), nBitDepthChromaMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
         fps(0), ulNumDecodeSurfaces(0), videoFullRangeFlag(false) {};
 
     CV_PROP_RW Codec codec;
     CV_PROP_RW ChromaFormat chromaFormat;
     CV_PROP_RW int nBitDepthMinus8;
+    CV_PROP_RW int nBitDepthChromaMinus8;
     CV_PROP_RW int ulWidth;//!< Coded sequence width in pixels.
     CV_PROP_RW int ulHeight;//!< Coded sequence height in pixels.
     CV_PROP_RW int width;//!< Width of the decoded frame returned by nextFrame(frame).
