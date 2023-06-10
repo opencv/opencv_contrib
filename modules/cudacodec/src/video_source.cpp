@@ -137,7 +137,8 @@ void cv::cudacodec::detail::RawVideoSourceWrapper::readLoop(void* userData)
             break;
     }
 
-    thiz->parseVideoData(0, 0, false, false, true);
+    if(!thiz->hasError_)
+        thiz->parseVideoData(0, 0, false, false, true);
 }
 
 #endif // HAVE_NVCUVID

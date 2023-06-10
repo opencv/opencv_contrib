@@ -78,9 +78,18 @@ bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* dat
     if (rawMode)
         currentFramePackets.push_back(RawPacket(data, size, containsKeyFrame));
 
-    if (cuvidParseVideoData(parser_, &packet) != CUDA_SUCCESS)
-    {
-        CV_LOG_ERROR(NULL, "Call to cuvidParseVideoData failed!");
+    CUresult retVal = CUDA_SUCCESS;
+    try {
+        retVal = cuvidParseVideoData(parser_, &packet);
+    }
+    catch(const cv::Exception& e) {
+        CV_LOG_ERROR(NULL, e.msg);
+        hasError_ = true;
+        frameQueue_->endDecode();
+        return false;
+    }
+
+    if (retVal != CUDA_SUCCESS) {
         hasError_ = true;
         frameQueue_->endDecode();
         return false;
@@ -149,26 +158,18 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         maxH = format->coded_height;
     newFormat.ulMaxWidth = maxW;
     newFormat.ulMaxHeight = maxH;
+    newFormat.enableHistogram = thiz->videoDecoder_->enableHistogram();
 
     thiz->frameQueue_->waitUntilEmpty();
     int retVal = newFormat.ulNumDecodeSurfaces;
-    try
-    {
-        if (thiz->videoDecoder_->inited()) {
-            retVal = thiz->videoDecoder_->reconfigure(newFormat);
-            if (retVal > 1 && newFormat.ulNumDecodeSurfaces != thiz->frameQueue_->getMaxSz())
-                thiz->frameQueue_->resize(newFormat.ulNumDecodeSurfaces);
-        }
-        else {
-            thiz->frameQueue_->init(newFormat.ulNumDecodeSurfaces);
-            thiz->videoDecoder_->create(newFormat);
-        }
+    if (thiz->videoDecoder_->inited()) {
+        retVal = thiz->videoDecoder_->reconfigure(newFormat);
+        if (retVal > 1 && newFormat.ulNumDecodeSurfaces != thiz->frameQueue_->getMaxSz())
+            thiz->frameQueue_->resize(newFormat.ulNumDecodeSurfaces);
     }
-    catch (const cv::Exception&)
-    {
-        CV_LOG_ERROR(NULL, "Attempt to configure Nvidia decoder failed!");
-        thiz->hasError_ = true;
-        retVal = 0;
+    else {
+        thiz->frameQueue_->init(newFormat.ulNumDecodeSurfaces);
+        thiz->videoDecoder_->create(newFormat);
     }
     return retVal;
 }

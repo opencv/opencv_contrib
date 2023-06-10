@@ -92,6 +92,11 @@ PARAM_TEST_CASE(VideoReadRaw, cv::cuda::DeviceInfo, std::string)
 {
 };
 
+typedef tuple<std::string, bool> histogram_params_t;
+PARAM_TEST_CASE(Histogram, cv::cuda::DeviceInfo, histogram_params_t)
+{
+};
+
 PARAM_TEST_CASE(CheckKeyFrame, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -480,6 +485,46 @@ CUDA_TEST_P(VideoReadRaw, Reader)
     ASSERT_EQ(0, remove(fileNameOut.c_str()));
 }
 
+CUDA_TEST_P(Histogram, Reader)
+{
+    cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + get<0>(GET_PARAM(1));
+    const bool histAvailable = get<1>(GET_PARAM(1));
+    cudacodec::VideoReaderInitParams params;
+    params.enableHistogram = histAvailable;
+    Ptr<cudacodec::VideoReader> reader;
+    try {
+        reader = cudacodec::createVideoReader(inputFile, {}, params);
+    }
+    catch (const cv::Exception& e) {
+        throw SkipTestException(e.msg);
+    }
+    const cudacodec::FormatInfo fmt = reader->format();
+    ASSERT_EQ(histAvailable, fmt.enableHistogram);
+    reader->set(cudacodec::ColorFormat::GRAY);
+    GpuMat frame, hist;
+    reader->nextFrame(frame, hist);
+    if (histAvailable) {
+        ASSERT_TRUE(!hist.empty());
+        Mat frameHost, histGsHostFloat, histGs, histHost;
+        frame.download(frameHost);
+        const int histSize = 256;
+        const float range[] = { 0, 256 };
+        const float* histRange[] = { range };
+        cv::calcHist(&frameHost, 1, 0, Mat(), histGsHostFloat, 1, &histSize, histRange);
+        histGsHostFloat.convertTo(histGs, CV_32S);
+        if (fmt.videoFullRangeFlag)
+            hist.download(histHost);
+        else
+            cudacodec::MapHist(hist, histHost);
+        const double err = cv::norm(histGs.t(), histHost, NORM_INF);
+        ASSERT_EQ(err, 0);
+    }
+    else {
+        ASSERT_TRUE(hist.empty());
+    }
+}
+
 CUDA_TEST_P(CheckParams, Reader)
 {
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
@@ -843,6 +888,15 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, ReconfigureDecoder, testing::Combine(ALL_DEV
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, VideoReadRaw, testing::Combine(
     ALL_DEVICES,
     testing::Values(VIDEO_SRC_RW)));
+
+const histogram_params_t histogram_params[] =
+{
+    histogram_params_t("highgui/video/big_buck_bunny.mp4", false),
+    histogram_params_t("highgui/video/big_buck_bunny.h264", true),
+    histogram_params_t("highgui/video/big_buck_bunny_full_color_range.h264", true),
+};
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, Histogram, testing::Combine(ALL_DEVICES,testing::ValuesIn(histogram_params)));
 
 const check_extra_data_params_t check_extra_data_params[] =
 {

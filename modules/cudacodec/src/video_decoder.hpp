@@ -49,11 +49,12 @@ namespace cv { namespace cudacodec { namespace detail {
 class VideoDecoder
 {
 public:
-    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, cv::Size targetSz, cv::Rect srcRoi, cv::Rect targetRoi, CUcontext ctx, CUvideoctxlock lock) :
+    VideoDecoder(const Codec& codec, const int minNumDecodeSurfaces, cv::Size targetSz, cv::Rect srcRoi, cv::Rect targetRoi, const bool enableHistogram, CUcontext ctx, CUvideoctxlock lock) :
         ctx_(ctx), lock_(lock), decoder_(0)
     {
         videoFormat_.codec = codec;
         videoFormat_.ulNumDecodeSurfaces = minNumDecodeSurfaces;
+        videoFormat_.enableHistogram = enableHistogram;
         // alignment enforced by nvcuvid, likely due to chroma subsampling
         videoFormat_.targetSz.width = targetSz.width - targetSz.width % 2; videoFormat_.targetSz.height = targetSz.height - targetSz.height % 2;
         videoFormat_.srcRoi.x = srcRoi.x - srcRoi.x % 4; videoFormat_.srcRoi.width = srcRoi.width - srcRoi.width % 4;
@@ -88,13 +89,14 @@ public:
 
     cudaVideoChromaFormat chromaFormat() const { return static_cast<cudaVideoChromaFormat>(videoFormat_.chromaFormat); }
     int nBitDepthMinus8() const { return videoFormat_.nBitDepthMinus8; }
+    bool enableHistogram() const { return videoFormat_.enableHistogram; }
 
     bool decodePicture(CUVIDPICPARAMS* picParams)
     {
         return cuvidDecodePicture(decoder_, picParams) == CUDA_SUCCESS;
     }
 
-    cuda::GpuMat mapFrame(int picIdx, CUVIDPROCPARAMS& videoProcParams)
+    GpuMat mapFrame(int picIdx, CUVIDPROCPARAMS& videoProcParams)
     {
         CUdeviceptr ptr;
         unsigned int pitch;
