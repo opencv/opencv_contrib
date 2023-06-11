@@ -10,7 +10,7 @@ int main() {
     //Render the framebuffer in the native window in an endless loop
     window->run([=]() {
         //Creates a NanoVG context and draws eyes
-        window->nvg([=](const Size& sz) {
+        window->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context
             using namespace cv::v4d::nvg;
             clear();
