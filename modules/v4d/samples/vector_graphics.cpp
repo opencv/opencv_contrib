@@ -13,7 +13,9 @@ int main() {
             //Calls from this namespace may only be used inside a nvg context
             using namespace cv::v4d::nvg;
             clear();
-            float t = cv::getTickCount() / cv::getTickFrequency();
+
+            static long start = cv::getTickCount() / cv::getTickFrequency();
+            float t = cv::getTickCount() / cv::getTickFrequency() - start;
             float x = 0;
             float y = 0;
             float w = sz.width / 4;
