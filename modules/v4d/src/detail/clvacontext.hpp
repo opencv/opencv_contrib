@@ -32,7 +32,7 @@ public:
      * Create the CLVAContext
      * @param fbContext The corresponding framebuffer context
      */
-    CLVAContext(V4D& v4d, FrameBufferContext& fbContext);
+    CLVAContext(FrameBufferContext& fbContext);
     /*!
      * Called to capture from a function object.
      * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.

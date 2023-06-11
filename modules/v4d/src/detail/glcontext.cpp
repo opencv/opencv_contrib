@@ -7,8 +7,8 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-GLContext::GLContext(V4D& v4d, FrameBufferContext& fbContext) :
-        v4d_(v4d), mainFbContext_(fbContext), glFbContext_(v4d, "OpenGL", fbContext) {
+GLContext::GLContext(FrameBufferContext& fbContext) :
+        mainFbContext_(fbContext), glFbContext_("OpenGL", fbContext) {
     run_sync_on_main<19>([&,this](){
 #ifdef __EMSCRIPTEN__
         mainFbContext_.initWebGLCopy(fbCtx());

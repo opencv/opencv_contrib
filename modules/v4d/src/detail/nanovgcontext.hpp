@@ -25,7 +25,6 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class NanoVGContext {
-    V4D& v4d_;
 protected:
     nanogui::Screen* screen_;
     cv::v4d::FormHelper* form_;
@@ -61,7 +60,7 @@ public:
      * @param context The native NVGContext
      * @param fbContext The framebuffer context
      */
-    NanoVGContext(V4D& v4d, FrameBufferContext& fbContext);
+    NanoVGContext(FrameBufferContext& fbContext);
 
     /*!
      * Execute function object fn inside a nanovg context.

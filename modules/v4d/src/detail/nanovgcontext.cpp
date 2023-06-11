@@ -10,8 +10,8 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-NanoVGContext::NanoVGContext(V4D& v4d, FrameBufferContext& fbContext) :
-        v4d_(v4d), mainFbContext_(fbContext), nvgFbContext_(v4d, "NanoVG", fbContext), context_(
+NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
+        mainFbContext_(fbContext), nvgFbContext_("NanoVG", fbContext), context_(
                 nullptr) {
     UMat tmp(fbCtx().size(), CV_8UC4);
 

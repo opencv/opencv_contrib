@@ -19,18 +19,14 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class GLContext {
-    V4D& v4d_;
     FrameBufferContext& mainFbContext_;
     FrameBufferContext glFbContext_;
-    cv::UMat preFB_;
-    cv::UMat fb_;
-    cv::UMat postFB_;
 public:
      /*!
      * Creates a OpenGL Context
      * @param fbContext The framebuffer context
      */
-    GLContext(V4D& v4d, FrameBufferContext& fbContext);
+    GLContext(FrameBufferContext& fbContext);
     /*!
      * Execute function object fn inside a gl context.
      * The context takes care of setting up opengl states.

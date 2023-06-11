@@ -29,7 +29,7 @@ class NanoguiContext  : public NanoVGContext {
     float fps_ = 0;
     bool first_ = true;
 public:
-    NanoguiContext(V4D& v4d, FrameBufferContext& fbContext);
+    NanoguiContext(FrameBufferContext& fbContext);
     void render();
     void updateFps(bool print, bool graphical);
     void build(std::function<void(cv::v4d::FormHelper&)> fn);

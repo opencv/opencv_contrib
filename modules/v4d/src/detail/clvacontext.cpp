@@ -10,8 +10,8 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-CLVAContext::CLVAContext(V4D& v4d, FrameBufferContext& mainFbContext) :
-        mainFbContext_(mainFbContext), clvaFbContext_(v4d, "CLVA", mainFbContext) {
+CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) :
+        mainFbContext_(mainFbContext), clvaFbContext_("CLVA", mainFbContext) {
 }
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {

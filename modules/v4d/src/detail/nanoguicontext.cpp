@@ -10,8 +10,8 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-NanoguiContext::NanoguiContext(V4D& v4d, FrameBufferContext& fbContext) :
-        NanoVGContext(v4d, fbContext) {
+NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
+        NanoVGContext(fbContext) {
 }
 
 void NanoguiContext::render() {
