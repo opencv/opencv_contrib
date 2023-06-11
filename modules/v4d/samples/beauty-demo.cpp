@@ -4,15 +4,14 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <opencv2/v4d/v4d.hpp>
-
-#include <vector>
-#include <string>
-
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/face.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
 #include <opencv2/tracking.hpp>
+
+#include <vector>
+#include <string>
 
 using std::cerr;
 using std::endl;
@@ -27,7 +26,8 @@ using std::string;
 /** Application parameters **/
 constexpr unsigned int WIDTH = 1280;
 constexpr unsigned int HEIGHT = 720;
-constexpr float SCALE = 0.125;
+constexpr unsigned int DOWNSIZE_WIDTH = 320;
+constexpr unsigned int DOWNSIZE_HEIGHT = 180;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
@@ -48,7 +48,7 @@ bool side_by_side = false;
 bool stretch = false;
 #endif
 
-cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::v4d::V4D> window;
 cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
 cv::detail::MultiBandBlender blender(false, 5); //Blender (used to put the different face parts back together)
 
@@ -204,12 +204,17 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
 
         form.makeGroup("Display");
         form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
-        form.makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
-    #ifndef __EMSCRIPTEN__
+        auto* stretchVar = form.makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
+        stretchVar->set_callback([=](const bool& b) {
+            v->setFrameBufferScaling(b);
+            stretch = b;
+        });
+
+#ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
             v->setFullscreen(!v->isFullscreen());
         });
-    #endif
+#endif
         form.makeButton("Offscreen", [=]() {
             v->setVisible(!v->isVisible());
         });
@@ -245,14 +250,14 @@ static bool iteration() {
 #endif
         //Face detector
 #ifndef __EMSCRIPTEN__
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(v4d->framebufferSize().width * SCALE, v4d->framebufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
 #else
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(v4d->framebufferSize().width * SCALE, v4d->framebufferSize().height * SCALE), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
+        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
 #endif
         //BGR
         static cv::UMat input, down, blurred, contrast, faceOval, eyesAndLips, skin;
         static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
-        static cv::UMat lhalf(HEIGHT * SCALE, WIDTH * SCALE, CV_8UC3);
+        static cv::UMat lhalf(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
         static cv::UMat rhalf(lhalf.size(), lhalf.type());
         //GREY
         static cv::UMat faceSkinMaskGrey, eyesAndLipsMaskGrey, backgroundMaskGrey;
@@ -270,15 +275,15 @@ static bool iteration() {
         //FaceFeatures of all faces found
         static vector<FaceFeatures> featuresList;
 
-        if (!v4d->capture())
+        if (!window->capture())
             return false;
 
-        v4d->fb([&](cv::UMat &frameBuffer) {
+        window->fb([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
         });
 
         //Downscale the input for face detection
-        cv::resize(input, down, cv::Size(0, 0), SCALE, SCALE);
+        cv::resize(input, down, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
 
         shapes.clear();
         faceRects.clear();
@@ -313,22 +318,22 @@ static bool iteration() {
                 featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
             }
 
-            v4d->nvg([&]() {
+            window->nvg([&]() {
                 //Draw the face oval of the first face
                 draw_face_oval_mask(featuresList);
             });
 
-            v4d->fb([&](cv::UMat &frameBuffer) {
+            window->fb([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
                 cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
             });
 
-            v4d->nvg([&]() {
+            window->nvg([&]() {
                 //Draw eyes eyes and lips areas of the first face
                 draw_face_eyes_and_lips_mask(featuresList);
             });
 
-            v4d->fb([&](cv::UMat &frameBuffer) {
+            window->fb([&](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
                 cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
             });
@@ -367,7 +372,7 @@ static bool iteration() {
                 rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
             }
 
-            v4d->fb([&](cv::UMat &frameBuffer) {
+            window->fb([&](cv::UMat &frameBuffer) {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         } else {
@@ -380,17 +385,17 @@ static bool iteration() {
                 input.copyTo(frameOut);
             }
 
-            v4d->fb([&](cv::UMat &frameBuffer) {
+            window->fb([&](cv::UMat &frameBuffer) {
                 cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
             });
         }
 
 #ifndef __EMSCRIPTEN__
-        v4d->write();
+        window->write();
 #endif
 
         //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-        return v4d->display();
+        return window->display();
     } catch (std::exception &ex) {
         cerr << ex.what() << endl;
         return false;
@@ -401,35 +406,35 @@ static bool iteration() {
 #ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
     if (argc != 2) {
-        std::cerr << "Usage: beauty-demo <input-video-file>" << endl;
+        cerr << "Usage: beauty-demo <input-video-file>" << endl;
         exit(1);
     }
 #else
 int main() {
 #endif
     using namespace cv::v4d;
-    v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
+    window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
     facemark->loadModel("assets/lbfmodel.yaml");
 
-    v4d->setFrameBufferScaling(stretch);
+    window->setFrameBufferScaling(stretch);
 
     if (!OFFSCREEN) {
-        setup_gui(v4d);
+        setup_gui(window);
     }
 
-    v4d->printSystemInfo();
+    window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
-    v4d->setSource(src);
+    window->setSource(src);
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), cv::Size(WIDTH, HEIGHT));
-    v4d->setSink(sink);
+    window->setSink(sink);
 #else
-    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
-    v4d->setSource(src);
+    Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+    window->setSource(src);
 #endif
 
-    v4d->run(iteration);
+    window->run(iteration);
 
     return 0;
 }

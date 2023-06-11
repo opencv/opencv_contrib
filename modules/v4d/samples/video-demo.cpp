@@ -25,7 +25,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::v4d::V4D> window;
 
 static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
@@ -134,8 +134,6 @@ static void init_scene() {
 }
 
 static void render_scene() {
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(shader_program);
 
     float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
@@ -188,25 +186,25 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 static bool iteration() {
     using namespace cv::v4d;
 
-    if(!v4d->capture())
+    if(!window->capture())
         return false;
 
     //Render using OpenGL
-    v4d->gl(render_scene);
+    window->gl(render_scene);
 
 //to slow for wasm
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
-    v4d->fb([&](cv::UMat& frameBuffer) {
+    window->fb([&](cv::UMat& frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
 #endif
 
-    v4d->write();
+    window->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    return v4d->display();
+    return window->display();
 }
 
 #ifndef __EMSCRIPTEN__
@@ -219,24 +217,24 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Video Demo", OFFSCREEN);
-    v4d->printSystemInfo();
+    window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Video Demo", OFFSCREEN);
+    window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
-    v4d->setSource(src);
+    window->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
             src.fps(), cv::Size(WIDTH, HEIGHT));
-    v4d->setSink(sink);
+    window->setSink(sink);
 #else
-    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
-    v4d->setSource(src);
+    Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+    window->setSource(src);
 #endif
 
 
-    v4d->gl(init_scene);
-    v4d->run(iteration);
+    window->gl(init_scene);
+    window->run(iteration);
 
     return 0;
 }

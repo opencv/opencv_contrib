@@ -45,13 +45,13 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::v4d::V4D> window;
 vector<string> lines;
 bool update_stars = true;
 bool update_perspective = true;
 
-static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
-    v4dMain->nanogui([&](cv::v4d::FormHelper& form){
+static void setup_gui(cv::Ptr<cv::v4d::V4D> main) {
+    main->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
         form.makeGroup("Text Crawl");
         form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
@@ -96,11 +96,11 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            v4dMain->setFullscreen(!v4dMain->isFullscreen());
+            main->setFullscreen(!main->isFullscreen());
         });
     #endif
         form.makeButton("Offscreen", [=]() {
-            v4dMain->setVisible(!v4dMain->isVisible());
+            main->setVisible(!main->isVisible());
         });
     });
 }
@@ -123,7 +123,7 @@ static bool iteration() {
     int32_t translateY = HEIGHT - cnt;
 
     if(update_stars) {
-        v4d->nvg([&](const cv::Size& sz) {
+        window->nvg([&](const cv::Size& sz) {
             using namespace cv::v4d::nvg;
             clear();
 
@@ -139,7 +139,7 @@ static bool iteration() {
             }
         });
 
-        v4d->fb([&](cv::UMat& frameBuffer){
+        window->fb([&](cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
         update_stars = false;
@@ -156,7 +156,7 @@ static bool iteration() {
         update_perspective = false;
     }
 
-    v4d->nvg([&](const cv::Size& sz) {
+    window->nvg([&](const cv::Size& sz) {
         using namespace cv::v4d::nvg;
         clear();
         fontSize(font_size);
@@ -175,7 +175,7 @@ static bool iteration() {
         }
     });
 
-    v4d->fb([&](cv::UMat& framebuffer) {
+    window->fb([&](cv::UMat& framebuffer) {
         //Pseudo 3D text effect.
         cv::warpPerspective(framebuffer, warped, tm, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
@@ -187,7 +187,7 @@ static bool iteration() {
         cnt = 0;
     }
 
-    v4d->write();
+    window->write();
 
     ++cnt;
     //Wrap the cnt around if it becomes to big.
@@ -195,18 +195,18 @@ static bool iteration() {
         cnt = 0;
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    return v4d->display();
+    return window->display();
 }
 
 int main() {
     try {
         using namespace cv::v4d;
-        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN, true);
+        window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN, true);
         if(!OFFSCREEN) {
-            setup_gui(v4d);
+            setup_gui(window);
         }
 
-        v4d->printSystemInfo();
+        window->printSystemInfo();
 
         //The text to display
         string txt = cv::getBuildInformation();
@@ -219,10 +219,10 @@ int main() {
 
 #ifndef __EMSCRIPTEN__
         Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS, cv::Size(WIDTH, HEIGHT));
-        v4d->setSink(sink);
+        window->setSink(sink);
 #endif
 
-        v4d->run(iteration);
+        window->run(iteration);
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

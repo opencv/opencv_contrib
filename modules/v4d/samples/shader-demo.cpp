@@ -18,7 +18,7 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
 
-cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::v4d::V4D> window;
 
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
@@ -153,6 +153,7 @@ static void load_shader() {
     
             outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
         } else {
+            gl_FragDepth = -1.0;
             outColor = vec4(0,0,0,0);
         }
     }
@@ -192,8 +193,6 @@ static void init_scene(const cv::Size& sz) {
 }
 
 static void render_scene() {
-    glClearColor(0,0,0,0);
-    glClear(GL_COLOR_BUFFER_BIT);
     if (zoom >= 1) {
         zoom_incr = -0.01;
         iterations = 0;
@@ -313,27 +312,27 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
 }
 
 static bool iteration() {
-    if(!v4d->capture())
+    if(!window->capture())
         return false;
 
     //Render using OpenGL
-    v4d->gl(render_scene);
+    window->gl(render_scene);
 
 //To slow for WASM but works
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
-    v4d->fb([](cv::UMat& frameBuffer) {
+    window->fb([](cv::UMat& frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
 #endif
 
 #ifndef __EMSCRIPTEN__
-    v4d->write();
+    window->write();
 #endif
     ++iterations;
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    return v4d->display();
+    return window->display();
 }
 
 #ifndef __EMSCRIPTEN__
@@ -347,28 +346,28 @@ int main() {
 #endif
     try {
         using namespace cv::v4d;
-        v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
+        window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
 
         if (!OFFSCREEN) {
-            setup_gui(v4d);
+            setup_gui(window);
         }
 
-        v4d->printSystemInfo();
+        window->printSystemInfo();
 
-        v4d->gl(init_scene);
+        window->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
         Source src = makeCaptureSource(argv[1]);
-        v4d->setSource(src);
+        window->setSource(src);
         Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
                 FPS, cv::Size(WIDTH, HEIGHT));
-        v4d->setSink(sink);
+        window->setSink(sink);
 #else
-        Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
-        v4d->setSource(src);
+        Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+        window->setSource(src);
 #endif
 
-        v4d->run(iteration);
+        window->run(iteration);
     } catch (std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

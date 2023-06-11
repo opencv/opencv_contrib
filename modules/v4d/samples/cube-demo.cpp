@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include <opencv2/v4d/v4d.hpp>
-//adapted from https://g#include "opencv2/v4d/nvg.hpp"itlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
+//adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
@@ -27,7 +27,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::v4d::V4D> window;
 
 static GLuint load_shader() {
 #ifndef OPENCV_V4D_USE_ES3
@@ -174,7 +174,6 @@ static void render_scene() {
     glUniformMatrix4fv(uniform_transform, 1, GL_FALSE, transform.val);
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
-
 }
 
 #ifndef __EMSCRIPTEN__
@@ -205,25 +204,22 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 static bool iteration() {
     using namespace cv::v4d;
 
-//    if(!v4d->capture())
-//        return false;
-
     //Render using OpenGL
-    v4d->gl(render_scene);
+    window->gl(render_scene);
 
     //To slow for WASM
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCL
-    v4d->fb([&](cv::UMat& frameBuffer) {
+    window->fb([&](cv::UMat& frameBuffer) {
         //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
 #endif
 
-    v4d->write();
-//    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    window->write();
+
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    return v4d->display();
+    return window->display();
 }
 
 #ifndef __EMSCRIPTEN__
@@ -232,19 +228,16 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    v4d = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Cube Demo", OFFSCREEN);
-    v4d->printSystemInfo();
+    window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Cube Demo", OFFSCREEN);
+    window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
             cv::Size(WIDTH, HEIGHT));
-    v4d->setSink(sink);
-//#else
-//    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
-//    v4d->setSource(src);
+    window->setSink(sink);
 #endif
-    v4d->gl(init_scene);
-    v4d->run(iteration);
+    window->gl(init_scene);
+    window->run(iteration);
 
     return 0;
 }

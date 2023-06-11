@@ -1,5 +1,4 @@
 #include <opencv2/v4d/v4d.hpp>
-#include "../src/detail/framebuffercontext.hpp"
 
 using namespace cv;
 using namespace cv::v4d;
@@ -13,7 +12,6 @@ int main() {
     });
     window->run([=]() {
         window->gl([]() {
-            glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
             //Clears the screen
             glClear(GL_COLOR_BUFFER_BIT);
         });

@@ -14,8 +14,8 @@ constexpr unsigned int HEIGHT = 720;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr unsigned int DOWNSIZE_WIDTH = 640;
 constexpr unsigned int DOWNSIZE_HEIGHT = 360;
-constexpr double WIDTH_FACTOR = double(WIDTH) / DOWNSIZE_WIDTH;
-constexpr double HEIGHT_FACTOR = double(HEIGHT) / DOWNSIZE_HEIGHT;
+constexpr double WIDTH_SCALE = double(WIDTH) / DOWNSIZE_WIDTH;
+constexpr double HEIGHT_SCALE = double(HEIGHT) / DOWNSIZE_HEIGHT;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
@@ -29,7 +29,7 @@ using std::endl;
 using std::vector;
 using std::string;
 
-cv::Ptr<cv::v4d::V4D> v4d;
+cv::Ptr<cv::v4d::V4D> window;
 cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
@@ -128,10 +128,10 @@ static bool iteration() {
 
     static bool redetect = true;
 
-    if(!v4d->capture())
+    if(!window->capture())
         return false;
 
-    v4d->fb([&](cv::UMat& frameBuffer){
+    window->fb([&](cv::UMat& frameBuffer){
         cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
         cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
     });
@@ -176,29 +176,29 @@ static bool iteration() {
         }
     }
 
-    v4d->nvg([&](const cv::Size& sz) {
+    window->nvg([&](const cv::Size& sz) {
         using namespace cv::v4d::nvg;
         clear();
         beginPath();
         strokeWidth(std::fmax(2.0, sz.width / 960.0));
         strokeColor(cv::v4d::colorConvert(cv::Scalar(0, 127, 255, 200), cv::COLOR_HLS2BGR));
-        float width = tracked.width * WIDTH_FACTOR;
-        float height = tracked.height * HEIGHT_FACTOR;
-        float cx = tracked.x * WIDTH_FACTOR + (width / 2.0f);
-        float cy = tracked.y * HEIGHT_FACTOR + (height / 2.0f);
+        float width = tracked.width * WIDTH_SCALE;
+        float height = tracked.height * HEIGHT_SCALE;
+        float cx = tracked.x * WIDTH_SCALE + (width / 2.0f);
+        float cy = tracked.y * HEIGHT_SCALE + (height / 2.0f);
         ellipse(cx, cy, width / 2.0f, height / 2.0f);
         stroke();
     });
 
-    v4d->fb([&](cv::UMat& frameBuffer){
+    window->fb([&](cv::UMat& frameBuffer){
         //Put it all together
         composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
     });
 
-    v4d->write();
+    window->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    return v4d->display();
+    return window->display();
 }
 
 #ifndef __EMSCRIPTEN__
@@ -211,24 +211,24 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    v4d = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
+    window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
-    v4d->printSystemInfo();
+    window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
-    v4d->setSource(src);
+    window->setSource(src);
 
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
             src.fps(), cv::Size(WIDTH, HEIGHT));
-    v4d->setSink(sink);
+    window->setSink(sink);
 #else
-    Source src = makeCaptureSource(WIDTH, HEIGHT, v4d);
-    v4d->setSource(src);
+    Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+    window->setSource(src);
 #endif
 
-    v4d->run(iteration);
+    window->run(iteration);
 
     return 0;
 }

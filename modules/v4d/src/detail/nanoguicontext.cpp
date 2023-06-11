@@ -26,6 +26,13 @@ void NanoguiContext::render() {
         {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
             glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+#ifdef __EMSCRIPTEN__
+            GLfloat cColor[4];
+            glGetFloatv(GL_COLOR_CLEAR_VALUE, cColor);
+            glClearColor(0,0,0,0);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]);
+#endif
             screen().draw_widgets();
         }
         {
@@ -62,9 +69,6 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
             NanoVGContext::render([this](const Size sz){
                 CV_UNUSED(sz);
                 using namespace cv::v4d::nvg;
-#ifdef __EMSCRIPTEN__
-                clear({0.0,0.0,0.0,0.0});
-#endif
                 string txt = "FPS: " + std::to_string(fps_);
                 beginPath();
                 roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);

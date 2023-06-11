@@ -7,18 +7,20 @@ using namespace cv::v4d;
 int main() {
     Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics and Framebuffer");
 
-    //Display the framebuffer in the native window in an endless loop
+    //Render the framebuffer in the native window in an endless loop
     window->run([=]() {
         //Creates a NanoVG context and draws eyes
         window->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context
             using namespace cv::v4d::nvg;
             clear();
-            float t = cv::getTickCount();
+
+            float t = cv::getTickCount() / cv::getTickFrequency();
             float x = 0;
             float y = 0;
             float w = sz.width / 4;
             float h = sz.height / 4;
+            translate((sz.width / 2.0f) - (w / 2.0f), (sz.height / 2.0f) - (h / 2.0f));
             float mx = w / 2.0;
             float my = h / 2.0;
             Paint gloss, bg;
@@ -91,7 +93,6 @@ int main() {
         });
 
         window->fb([](UMat& framebuffer) {
-//            cerr << "COUNT1:" << cv::v4d::detail::cnz(framebuffer) << endl;
             //Heavily blurs the eyes using a cheap boxFilter
             boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
         });
