@@ -57,20 +57,20 @@ Dialog::Dialog(nanogui::Screen* screen, int x, int y, const string& title) :
         this->set_layout(newLayout_);
         this->screen_->perform_layout();
         int gap = 0;
-        int x = 0;
+        int x0 = 0;
         int w = width();
         int lastX = 0;
         this->maximizedPos_ = this->position();
 
         for (Dialog* win : all_windows_xsorted_) {
             if (win != this && win->isMinimized()) {
-                x = win->position()[0];
-                gap = lastX + x;
+                x0 = win->position()[0];
+                gap = lastX + x0;
                 if (gap >= w) {
                     this->set_position( { lastX, screen_->height() - this->height() });
                     break;
                 }
-                lastX = x + win->width() + 1;
+                lastX = x0 + win->width() + 1;
             }
         }
         if (gap < w) {
