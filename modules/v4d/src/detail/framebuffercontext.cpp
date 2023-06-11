@@ -21,14 +21,19 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-int frameBufferContextCnt = 0;
-
-FrameBufferContext::FrameBufferContext(const string& title, const FrameBufferContext& other) : FrameBufferContext(other.frameBufferSize_, true, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
+static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
+    nanogui::Vector2i d = p - w->absolute_position();
+    return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
 }
 
-FrameBufferContext::FrameBufferContext(const cv::Size& framebufferSize, bool offscreen,
+int frameBufferContextCnt = 0;
+
+FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.frameBufferSize_, true, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
+}
+
+FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
-        offscreen_(offscreen), title_(title), major_(major), minor_(
+        v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
                 minor), compat_(compat), samples_(samples), debug_(debug), viewport_(0, 0, framebufferSize.width, framebufferSize.height), frameBufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_(framebufferSize, CV_8UC4) {
     run_sync_on_main<1>([this](){ init(); });
     index_ = ++frameBufferContextCnt;
@@ -253,9 +258,6 @@ void FrameBufferContext::init() {
         assert(false);
     }
     this->makeCurrent();
-#ifndef __EMSCRIPTEN__
-    glfwSwapInterval(0);
-#endif
 
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
@@ -281,6 +283,106 @@ void FrameBufferContext::init() {
 #endif
 
     setup(frameBufferSize_);
+    glfwSetWindowUserPointer(getGLFWWindow(), v4d_);
+
+    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        if(v4d->hasNguiCtx()) {
+            auto pt = v4d->fbCtx().toWindowCoord(cv::Point2f(x, y));
+            v4d->nguiCtx().screen().cursor_pos_callback_event(pt.x, pt.y);
+        }
+#ifndef __EMSCRIPTEN__
+        auto cursor = v4d->getMousePosition();
+        auto diff = cursor - cv::Vec2f(x, y);
+        if (v4d->isMouseDrag()) {
+            v4d->pan(diff[0], -diff[1]);
+        }
+#endif
+        v4d->setMousePosition(x, y);
+    }
+    );
+    glfwSetMouseButtonCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
+                if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+                    v4d->setMouseDrag(action == GLFW_PRESS);
+                }
+            }
+    );
+    glfwSetKeyCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().key_callback_event(key, scancode, action, mods);
+            }
+    );
+    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        if(v4d->hasNguiCtx())
+            v4d->nguiCtx().screen().char_callback_event(codepoint);
+    }
+    );
+    glfwSetDropCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int count, const char** filenames) {
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().drop_callback_event(count, filenames);
+            }
+    );
+    glfwSetScrollCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, double x, double y) {
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                std::vector<nanogui::Widget*> widgets;
+                if(v4d->hasNguiCtx()) {
+                    for (auto* w : v4d->nguiCtx().screen().children()) {
+                        auto pt = v4d->fbCtx().toWindowCoord(v4d->getMousePosition());
+                        auto mousePos = nanogui::Vector2i(pt[0] / v4d->pixelRatioX(), pt[1] / v4d->pixelRatioY());
+                        if(contains_absolute(w, mousePos)) {
+                            v4d->nguiCtx().screen().scroll_callback_event(x, y);
+                            return;
+                        }
+                    }
+                }
+#ifndef __EMSCRIPTEN__
+                v4d->zoom(y < 0 ? 1.1 : 0.9);
+#endif
+            }
+    );
+
+    glfwSetWindowSizeCallback(getGLFWWindow(),
+            [](GLFWwindow* glfwWin, int width, int height) {
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                if(v4d->hasNguiCtx())
+                    v4d->nguiCtx().screen().resize_callback_event(width, height);
+                cv::Rect& vp = v4d->viewport();
+                cv::Size fbsz = v4d->framebufferSize();
+                vp.x = 0;
+                vp.y = 0;
+                vp.width = fbsz.width;
+                vp.height = fbsz.height;
+            });
+
+//    glfwSetFramebufferSizeCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int width, int height) {
+//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//                cv::Rect& vp = v4d->viewport();
+//                vp.x = 0;
+//                vp.y = 0;
+//                vp.width = width;
+//                vp.height = height;
+//#ifndef __EMSCRIPTEN__
+//                if(v4d->isResizable()) {
+//                    v4d->nvgCtx().fbCtx().teardown();
+//                    v4d->glCtx().fbCtx().teardown();
+//                    v4d->fbCtx().teardown();
+//                    v4d->fbCtx().setup(cv::Size(width, height));
+//                    v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+//                    v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+//                }
+//#endif
+//            });
 }
 
 int FrameBufferContext::getIndex() {
@@ -497,20 +599,18 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 }
 
 cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
-    double bs = 1.0 / blitScale();
 #ifdef __EMSCRIPTEN__
-    return cv::Point2f(((pt.x * bs) - blitOffsetX()) * pixelRatioX(), ((pt.y * bs) - blitOffsetY()) * pixelRatioY());
+    return cv::Point2f(pt.x * pixelRatioX(), pt.y * pixelRatioY());
 #else
-    return cv::Point2f(((pt.x * bs) - blitOffsetX()), ((pt.y * bs) - blitOffsetY()));
+    return cv::Point2f(pt.x, pt.y);
 #endif
 }
 
 cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
-    double bs = 1.0 / blitScale();
 #ifdef __EMSCRIPTEN__
-    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()) * pixelRatioX(), ((pt[1] * bs) - blitOffsetY()) * pixelRatioY());
+    return cv::Point2f(pt[0] * pixelRatioX(), pt[1] * pixelRatioY());
 #else
-    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()), ((pt[1] * bs) - blitOffsetY()));
+    return cv::Point2f(pt[0], pt[1]);
 #endif
 }
 
@@ -561,15 +661,23 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
+    cerr << "bind: " << frameBufferID_ << endl;
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
-    GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
-    GL_CHECK(
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size().width, size().height));
-    GL_CHECK(
-            glFramebufferRenderbuffer(framebufferTarget, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
-    GL_CHECK(
-            glFramebufferTexture2D(framebufferTarget, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+    if(frameBufferID_ > 0) {
+        GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
+        GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, size().width, size().height));
+        GL_CHECK(
+                glFramebufferRenderbuffer(framebufferTarget, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
+        GL_CHECK(
+                glFramebufferTexture2D(framebufferTarget, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+    } else {
+//        GL_CHECK(
+//                glFramebufferRenderbuffer(framebufferTarget, GL_DEPTH_STENCIL, GL_RENDERBUFFER, renderBufferID_));
+//        GL_CHECK(
+//                glFramebufferTexture2D(framebufferTarget, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureID_, 0));
+    }
     assert(glCheckFramebufferStatus(framebufferTarget) == GL_FRAMEBUFFER_COMPLETE);
 }
 
@@ -747,6 +855,9 @@ bool FrameBufferContext::isShared() {
     return isShared_;
 }
 
+V4D& FrameBufferContext::getWindow() {
+    return *v4d_;
+}
 }
 }
 }

@@ -7,7 +7,6 @@
 #define SRC_OPENCV_NANOGUICONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
-#include "nanovgcontext.hpp"
 
 
 #ifdef __EMSCRIPTEN__
@@ -24,7 +23,13 @@ namespace detail {
 /*!
  * Used to setup a nanogui context
  */
-class NanoguiContext  : public NanoVGContext {
+class NanoguiContext {
+protected:
+    nanogui::Screen* screen_;
+    cv::v4d::FormHelper* form_;
+    NVGcontext* context_;
+private:
+    FrameBufferContext& mainFbContext_;
     cv::TickMeter tick_;
     float fps_ = 0;
     bool first_ = true;
@@ -35,8 +40,6 @@ public:
     void build(std::function<void(cv::v4d::FormHelper&)> fn);
     nanogui::Screen& screen();
     cv::v4d::FormHelper& form();
-
-    FrameBufferContext& fbCtx();
 };
 }
 }

@@ -43,6 +43,7 @@ class FrameBufferContext {
     friend class NanoVGContext;
     friend class NanoguiContext;
     friend class cv::v4d::V4D;
+    V4D* v4d_ = nullptr;
     bool offscreen_;
     string title_;
     int major_;
@@ -153,10 +154,10 @@ public:
      * Create a FrameBufferContext with given size.
      * @param frameBufferSize The frame buffer size.
      */
-    FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
+    FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
 
-    FrameBufferContext(const string& title, const FrameBufferContext& other);
+    FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other);
 
     /*!
      * Default destructor.
@@ -198,6 +199,7 @@ public:
     bool isClosed();
     bool isShared();
 protected:
+    V4D& getWindow();
     int getIndex();
     void setup(const cv::Size& sz);
     void teardown();

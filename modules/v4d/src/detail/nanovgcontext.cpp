@@ -11,7 +11,7 @@ namespace v4d {
 namespace detail {
 
 NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_("NanoVG", fbContext), context_(
+        mainFbContext_(fbContext), nvgFbContext_(mainFbContext_.getWindow(), "NanoVG", fbContext), context_(
                 nullptr) {
     UMat tmp(fbCtx().size(), CV_8UC4);
 
@@ -25,7 +25,6 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
             screen_ = new nanogui::Screen();
             screen_->initialize(fbCtx().getGLFWWindow(), false);
-            fbCtx().setWindowSize(fbCtx().size());
             context_ = screen_->nvg_context();
             form_ = new cv::v4d::FormHelper(screen_);
             if (!context_)
