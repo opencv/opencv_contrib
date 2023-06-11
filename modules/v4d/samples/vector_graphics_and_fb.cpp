@@ -6,9 +6,7 @@ using namespace cv::v4d;
 
 int main() {
     Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Vector Graphics and Framebuffer");
-#ifdef __EMSCRIPTEN__
-    float start = emscripten_get_now() / 1000.0f;
-#endif
+
     //Render the framebuffer in the native window in an endless loop
     window->run([=]() {
         //Creates a NanoVG context and draws eyes
