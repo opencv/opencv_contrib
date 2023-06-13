@@ -9,11 +9,11 @@ namespace v4d {
 namespace detail {
 GLContext::GLContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), glFbContext_("OpenGL", fbContext) {
-    run_sync_on_main<19>([&,this](){
 #ifdef __EMSCRIPTEN__
+    run_sync_on_main<19>([&,this](){
         mainFbContext_.initWebGLCopy(fbCtx());
-#endif
     });
+#endif
 }
 
 void GLContext::render(std::function<void(const cv::Size&)> fn) {

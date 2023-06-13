@@ -27,9 +27,12 @@
 #include <iostream>
 #include <cmath>
 
+const static std::thread::id MAIN_THREAD_ID = std::this_thread::get_id();
+
 namespace cv {
 namespace v4d {
 namespace detail {
+
 template <const size_t _UniqueId, typename _Res, typename... _ArgTypes>
 struct fun_ptr_helper
 {
@@ -79,6 +82,9 @@ make_function(T *t)
 template<std::size_t Tid>
 void run_sync_on_main(std::function<void()> fn) {
 #ifdef __EMSCRIPTEN__
+    if(MAIN_THREAD_ID == std::this_thread::get_id()) {
+        throw runtime_error("proxying from main thread");
+    }
     emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
 #else
     fn();

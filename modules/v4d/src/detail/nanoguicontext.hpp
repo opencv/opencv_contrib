@@ -24,10 +24,16 @@ namespace detail {
 /*!
  * Used to setup a nanogui context
  */
-class NanoguiContext  : public NanoVGContext {
+class NanoguiContext {
+    nanogui::Screen* screen_;
+    cv::v4d::FormHelper* form_;
+    FrameBufferContext& mainFbContext_;
+    FrameBufferContext nguiFbContext_;
+    NVGcontext* context_;
     cv::TickMeter tick_;
     float fps_ = 0;
     bool first_ = true;
+    cv::UMat copyBuffer_;
 public:
     NanoguiContext(FrameBufferContext& fbContext);
     void render();

@@ -116,7 +116,7 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 
     // lookup the sampler locations.
     image0_hdl = glGetUniformLocation(shader_program_hdl, "texture0");
-    dst.makeCurrent();
+//    dst.makeCurrent();
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
@@ -186,7 +186,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 
     GL_CHECK(glBindVertexArray(copyVao));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-    dst.makeCurrent();
+//    dst.makeCurrent();
     GL_CHECK(glFlush());
     GL_CHECK(glFinish());
 #else
@@ -196,7 +196,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 
 
 void FrameBufferContext::init() {
-#if !defined(OPENCV_V4D_USE_ES3)
+#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
     if(parent_ != nullptr) {
         textureID_ = parent_->textureID_;
         renderBufferID_ = parent_->renderBufferID_;
@@ -464,6 +464,7 @@ cv::Size FrameBufferContext::size() {
 }
 
 void FrameBufferContext::copyTo(cv::UMat& dst) {
+    cerr << "copyTo:" << getFramebufferID() << endl;
     run_sync_on_main<7>([&,this](){
 #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
@@ -475,6 +476,8 @@ void FrameBufferContext::copyTo(cv::UMat& dst) {
 }
 
 void FrameBufferContext::copyFrom(const cv::UMat& src) {
+    cerr << "copyFrom:" << getFramebufferID() << endl;
+
     run_sync_on_main<18>([&,this](){
 #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
@@ -497,21 +500,19 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 }
 
 cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
-    double bs = 1.0 / blitScale();
-#ifdef __EMSCRIPTEN__
-    return cv::Point2f(((pt.x * bs) - blitOffsetX()) * pixelRatioX(), ((pt.y * bs) - blitOffsetY()) * pixelRatioY());
-#else
-    return cv::Point2f(((pt.x * bs) - blitOffsetX()), ((pt.y * bs) - blitOffsetY()));
-#endif
+//#ifdef __EMSCRIPTEN__
+//    return cv::Vec2f(pt.x * pixelRatioX(), pt.y * pixelRatioY());
+//#else
+    return cv::Vec2f(pt.x, pt.y);
+//#endif
 }
 
 cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
-    double bs = 1.0 / blitScale();
-#ifdef __EMSCRIPTEN__
-    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()) * pixelRatioX(), ((pt[1] * bs) - blitOffsetY()) * pixelRatioY());
-#else
-    return cv::Vec2f(((pt[0] * bs) - blitOffsetX()), ((pt[1] * bs) - blitOffsetY()));
-#endif
+//#ifdef __EMSCRIPTEN__
+//    return cv::Vec2f(pt[0] * pixelRatioX(), pt[1] * pixelRatioY());
+//#else
+    return cv::Vec2f(pt[0], pt[1]);
+//#endif
 }
 
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {
