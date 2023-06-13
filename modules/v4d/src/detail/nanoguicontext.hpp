@@ -36,8 +36,7 @@ class NanoguiContext {
     cv::UMat copyBuffer_;
 public:
     NanoguiContext(FrameBufferContext& fbContext);
-    void render();
-    void updateFps(bool print, bool graphical);
+    void render(bool print, bool graphical);
     void build(std::function<void(cv::v4d::FormHelper&)> fn);
     nanogui::Screen& screen();
     cv::v4d::FormHelper& form();

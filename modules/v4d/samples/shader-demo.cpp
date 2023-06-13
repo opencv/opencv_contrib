@@ -214,7 +214,6 @@ static void render_scene() {
         zoom = 1.0 / pow(zoom_factor, 5.0f);
         glUniform1f(zoom_hdl, zoom);
     }
-    cerr << "zoom: " << zoom << endl;
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }

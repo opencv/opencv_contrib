@@ -10,12 +10,11 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) :
-        mainFbContext_(mainFbContext), clvaFbContext_("CLVA", mainFbContext) {
+CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) : mainFbContext_(mainFbContext) {
 }
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
-    cv::Size fbSize = fbCtx().size();
+    cv::Size fbSize = mainFbContext_.size();
     if (!context_.empty()) {
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(context_);
@@ -27,7 +26,7 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
 
     if (readFrame_.empty())
         return false;
-    resizePreserveAspectRatio(readFrame_, readRGBBuffer_, fbCtx().size());
+    resizePreserveAspectRatio(readFrame_, readRGBBuffer_, mainFbContext_.size());
     cv::cvtColor(readRGBBuffer_, output, cv::COLOR_RGB2BGRA);
 
     return true;
@@ -53,10 +52,6 @@ void CLVAContext::copyContext() {
 
 CLExecContext_t CLVAContext::getCLExecContext() {
     return context_;
-}
-
-FrameBufferContext& CLVAContext::fbCtx() {
-    return clvaFbContext_;
 }
 }
 }

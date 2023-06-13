@@ -13,16 +13,19 @@ namespace detail {
 NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), nguiFbContext_("NanoGUI", fbContext), context_(
                 nullptr), copyBuffer_(mainFbContext_.size(), CV_8UC4) {
-    run_sync_on_main<13>([this]() {
+    run_sync_on_main<25>([this]() {
         {
             //Workaround for first frame glitch
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
             FrameBufferContext::FrameBufferScope fbScope(fbCtx(), copyBuffer_);
         }
         {
+#ifndef __EMSCRIPTEN__
+            mainFbContext_.makeCurrent();
+            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+#else
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-            GL_CHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-            GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+#endif
             screen_ = new nanogui::Screen();
             screen_->initialize(fbCtx().getGLFWWindow(), false);
             fbCtx().setWindowSize(fbCtx().size());
@@ -37,38 +40,7 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
     });
 }
 
-void NanoguiContext::render() {
-#ifndef __EMSCRIPTEN__
-        if(!fbCtx().isShared()) {
-            mainFbContext_.copyTo(copyBuffer_);
-            fbCtx().copyFrom(copyBuffer_);
-        }
-#endif
-        {
-            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-            GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
-            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-#ifdef __EMSCRIPTEN__
-            GLfloat cColor[4];
-            glGetFloatv(GL_COLOR_CLEAR_VALUE, cColor);
-            glClearColor(0,0,0,0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]);
-#endif
-            screen().draw_widgets();
-        }
-
-        if(!fbCtx().isShared()) {
-#ifdef __EMSCRIPTEN__
-            mainFbContext_.doWebGLCopy(fbCtx());
-#else
-            fbCtx().copyTo(copyBuffer_);
-            mainFbContext_.copyFrom(copyBuffer_);
-#endif
-        }
-}
-
-void NanoguiContext::updateFps(bool print, bool graphical) {
+void NanoguiContext::render(bool print, bool graphical) {
     if (!first_) {
         tick_.stop();
 
@@ -85,7 +57,8 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
         }
 
         if (graphical) {
-            run_sync_on_main<24>([&, this](){
+            run_sync_on_main<4>([this](){
+                string txt = "FPS: " + std::to_string(fps_);
 #ifndef __EMSCRIPTEN__
                 if(!fbCtx().isShared()) {
                     mainFbContext_.copyTo(copyBuffer_);
@@ -93,10 +66,24 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
                 }
 #endif
                 {
-                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-                    GL_CHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+#ifndef __EMSCRIPTEN__
+                    mainFbContext_.makeCurrent();
+                    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
                     GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
-
+                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+#else
+                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+                    GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+//                    GLfloat cColor[4];
+//                    glGetFloatv(GL_COLOR_CLEAR_VALUE, cColor);
+                    glClearColor(0,0,0,0);
+                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//                    glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]);
+//                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+                }
+                {
+                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+#endif
                     float w = mainFbContext_.size().width;
                     float h = mainFbContext_.size().height;
                     float r = mainFbContext_.pixelRatioX();
@@ -106,12 +93,16 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
                     cv::v4d::nvg::detail::NVG::initializeContext(context_);
 
                     using namespace cv::v4d::nvg;
-                    string txt = "FPS: " + std::to_string(fps_);
                     beginPath();
                     roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
                     fillColor(cv::Scalar(255, 255, 255, 180));
                     fill();
-
+                }
+                {
+#ifdef __EMSCRIPTEN__
+                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+#endif
+                    using namespace cv::v4d::nvg;
                     fontSize(30.0f);
                     fontFace("mono");
                     fillColor(cv::Scalar(90, 90, 90, 255));
@@ -120,7 +111,11 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
 
                     nvgEndFrame(context_);
                     nvgRestore(context_);
+                    screen().draw_widgets();
+                    GL_CHECK(glFlush());
+                    GL_CHECK(glFinish());
                 }
+
                 if(!fbCtx().isShared()) {
 #ifdef __EMSCRIPTEN__
                     mainFbContext_.doWebGLCopy(fbCtx());
@@ -135,6 +130,103 @@ void NanoguiContext::updateFps(bool print, bool graphical) {
     first_ = false;
     tick_.start();
 }
+
+//void NanoguiContext::updateFps(bool print, bool graphical) {
+//    if (!first_) {
+//        tick_.stop();
+//
+//        if (tick_.getTimeMilli() > 50) {
+//            if(print) {
+//                cerr << "FPS : " << (fps_ = tick_.getFPS());
+//#ifndef __EMSCRIPTEN__
+//                cerr << '\r';
+//#else
+//                cerr << endl;
+//#endif
+//            }
+//            tick_.reset();
+//        }
+//
+//        if (graphical) {
+//            run_sync_on_main<24>([&, this](){
+//                string txt = "FPS: " + std::to_string(fps_);
+//#ifndef __EMSCRIPTEN__
+//                if(!fbCtx().isShared()) {
+//                    mainFbContext_.copyTo(copyBuffer_);
+//                    fbCtx().copyFrom(copyBuffer_);
+//                }
+//#endif
+//                {
+//        #ifndef __EMSCRIPTEN__
+//                    mainFbContext_.makeCurrent();
+//                    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+//                    GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+//                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//        #else
+//                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+//                    GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+////                    GLfloat cColor[4];
+////                    glGetFloatv(GL_COLOR_CLEAR_VALUE, cColor);
+////                    glClearColor(0,0,0,0);
+////                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+////                    glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]);
+//                    glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//                }
+//                {
+//                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+//        #endif
+//                    float w = mainFbContext_.size().width;
+//                    float h = mainFbContext_.size().height;
+//                    float r = mainFbContext_.pixelRatioX();
+//
+//                    nvgSave(context_);
+//                    nvgBeginFrame(context_, w, h, r);
+//                    cv::v4d::nvg::detail::NVG::initializeContext(context_);
+//
+//                    using namespace cv::v4d::nvg;
+//                    beginPath();
+//                    roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
+//                    fillColor(cv::Scalar(255, 255, 255, 180));
+//                    fill();
+//                }
+//                {
+//#ifdef __EMSCRIPTEN__
+//                    FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+//#endif
+//                    using namespace cv::v4d::nvg;
+//                    fontSize(30.0f);
+//                    fontFace("mono");
+//                    fillColor(cv::Scalar(90, 90, 90, 255));
+//                    textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+//                    text(10, 20, txt.c_str(), nullptr);
+//
+//                    nvgEndFrame(context_);
+//                    nvgRestore(context_);
+//                    GL_CHECK(glFlush());
+//                    GL_CHECK(glFinish());
+//                }
+//                if(!fbCtx().isShared()) {
+//#ifdef __EMSCRIPTEN__
+//                    mainFbContext_.doWebGLCopy(fbCtx());
+//#else
+//                    fbCtx().copyTo(copyBuffer_);
+//                    mainFbContext_.copyFrom(copyBuffer_);
+//#endif
+//                }
+//                fbCtx().makeCurrent();
+//                GL_CHECK(glFlush());
+//                GL_CHECK(glFinish());
+//                mainFbContext_.makeCurrent();
+//                GL_CHECK(glFlush());
+//                GL_CHECK(glFinish());
+//            });
+//
+//
+//        }
+//    }
+//    first_ = false;
+//    tick_.start();
+//}
 
 void NanoguiContext::build(std::function<void(cv::v4d::FormHelper&)> fn) {
     run_sync_on_main<5>([fn,this](){

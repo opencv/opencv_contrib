@@ -136,17 +136,17 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
                         cerr << "glfwSetWindowSizeCallback: " << width << endl;
                         run_sync_on_main<23>([glfwWin, width, height]() {
                             V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                            v4d->makeCurrent();
+//                            v4d->makeCurrent();
 
-                            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-                            GL_CHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+//                            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+//                            GL_CHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
                             cv::Rect& vp = v4d->viewport();
                             cv::Size fbsz = v4d->framebufferSize();
                             vp.x = 0;
                             vp.y = 0;
                             vp.width = fbsz.width;
                             vp.height = fbsz.height;
-                            GL_CHECK(glViewport(0, 0, v4d->getWindowSize().width, v4d->getWindowSize().height));
+//                            GL_CHECK(glViewport(0, 0, v4d->getWindowSize().width, v4d->getWindowSize().height));
 
                             if(v4d->hasNguiCtx())
                                 v4d->nguiCtx().screen().set_size({int(v4d->getWindowSize().width / v4d->pixelRatioX()), int(v4d->getWindowSize().height / v4d->pixelRatioY())});
@@ -621,16 +621,6 @@ void V4D::setDefaultKeyboardEventCallback() {
 }
 
 void V4D::swapContextBuffers() {
-    run_sync_on_main<9>([this]() {
-        FrameBufferContext::GLScope glScope(clvaCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        clvaCtx().fbCtx().blitFrameBufferToScreen(viewport(), clvaCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
-#ifndef __EMSCRIPTEN__
-        glfwSwapBuffers(clvaCtx().fbCtx().getGLFWWindow());
-#else
-        emscripten_webgl_commit_frame();
-#endif
-    });
-
     run_sync_on_main<10>([this]() {
         FrameBufferContext::GLScope glScope(glCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
@@ -670,20 +660,28 @@ bool V4D::display() {
     if (true) {
 #endif
 //        swapContextBuffers();
-//        nguiCtx().updateFps(printFPS_, showFPS_);
-        run_sync_on_main<6>([&, this](){
-            FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-            fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isFrameBufferScaling());
-            nguiCtx().render();
 
+#if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
+        nguiCtx().render(printFPS_, showFPS_);
+#endif
+        run_sync_on_main<6>([&, this](){
+            {
+                    FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
+                    fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isFrameBufferScaling());
+            }
+#ifndef __EMSCRIPTEN__
+            nguiCtx().render(printFPS_, showFPS_);
+#endif
+            fbCtx().makeCurrent();
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
+            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+            GL_CHECK(glClearColor(0, 0, 0, 1));
+            GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 #else
             emscripten_webgl_commit_frame();
 #endif
-//            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-//            GL_CHECK(glClearColor(0, 0, 0, 1));
-//            GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+
 
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());

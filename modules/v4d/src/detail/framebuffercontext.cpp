@@ -107,6 +107,8 @@ void FrameBufferContext::loadBuffers() {
 
 void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 #ifdef __EMSCRIPTEN__
+    cerr << "init: " << dst.getFramebufferID() << endl;
+
     this->makeCurrent();
     GL_CHECK(glGenFramebuffers(1, &copyFramebuffer_));
     GL_CHECK(glGenTextures(1, &copyTexture_));
@@ -124,7 +126,7 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 
 void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 #ifdef __EMSCRIPTEN__
-    dst.makeCurrent();
+    cerr << "copy: " << dst.getFramebufferID() << endl;
     int width = dst.getWindowSize().width;
     int height = dst.getWindowSize().height;
     {
@@ -135,8 +137,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
                 false);
         emscripten_webgl_commit_frame();
     }
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     this->makeCurrent();
     GL_CHECK(glEnable(GL_BLEND));
     GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
