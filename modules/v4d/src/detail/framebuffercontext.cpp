@@ -288,8 +288,7 @@ void FrameBufferContext::init() {
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
         if(v4d->hasNguiCtx()) {
-            auto pt = v4d->fbCtx().toWindowCoord(cv::Point2f(x, y));
-            v4d->nguiCtx().screen().cursor_pos_callback_event(pt.x, pt.y);
+            v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
         }
 #ifndef __EMSCRIPTEN__
         auto cursor = v4d->getMousePosition();
@@ -337,8 +336,8 @@ void FrameBufferContext::init() {
                 std::vector<nanogui::Widget*> widgets;
                 if(v4d->hasNguiCtx()) {
                     for (auto* w : v4d->nguiCtx().screen().children()) {
-                        auto pt = v4d->fbCtx().toWindowCoord(v4d->getMousePosition());
-                        auto mousePos = nanogui::Vector2i(pt[0] / v4d->pixelRatioX(), pt[1] / v4d->pixelRatioY());
+                        auto pt = v4d->getMousePosition();
+                        auto mousePos = nanogui::Vector2i(pt[0], pt[1]);
                         if(cv::v4d::detail::contains_absolute(w, mousePos)) {
                             v4d->nguiCtx().screen().scroll_callback_event(x, y);
                             return;
@@ -636,22 +635,6 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
         GL_CHECK(glFinish());
 #endif
     });
-}
-
-cv::Point2f FrameBufferContext::toWindowCoord(const cv::Point2f& pt) {
-#ifdef __EMSCRIPTEN__
-    return cv::Point2f(pt.x * pixelRatioX(), pt.y * pixelRatioY());
-#else
-    return cv::Point2f(pt.x, pt.y);
-#endif
-}
-
-cv::Vec2f FrameBufferContext::toWindowCoord(const cv::Vec2f& pt) {
-#ifdef __EMSCRIPTEN__
-    return cv::Point2f(pt[0] * pixelRatioX(), pt[1] * pixelRatioY());
-#else
-    return cv::Point2f(pt[0], pt[1]);
-#endif
 }
 
 cv::ogl::Texture2D& FrameBufferContext::getTexture2D() {

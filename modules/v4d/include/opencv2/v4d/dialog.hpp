@@ -22,7 +22,6 @@ using std::string;
 class CustomTheme : public nanogui::Theme {
 public:
     CustomTheme(NVGcontext *ctx) : nanogui::Theme(ctx) {
-        m_window_drop_shadow_size = 10;
     }
 
     virtual ~CustomTheme() {

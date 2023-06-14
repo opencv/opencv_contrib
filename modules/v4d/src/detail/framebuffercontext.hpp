@@ -211,9 +211,6 @@ protected:
      */
     cv::ogl::Texture2D& getTexture2D();
 
-    cv::Point2f toWindowCoord(const cv::Point2f& pt);
-    cv::Vec2f toWindowCoord(const cv::Vec2f& pt);
-
     GLFWwindow* getGLFWWindow();
 
 #ifndef __EMSCRIPTEN__
