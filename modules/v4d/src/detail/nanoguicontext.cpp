@@ -114,6 +114,9 @@ void NanoguiContext::render(bool print, bool graphical) {
                 GL_CHECK(glFinish());
 #endif
                 screen().draw_widgets();
+#ifndef __EMSCRIPTEN__
+                GL_CHECK(glFlush());
+#endif
             }
 
             if(!fbCtx().isShared()) {
