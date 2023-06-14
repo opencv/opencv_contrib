@@ -29,6 +29,7 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
             glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 #ifdef __EMSCRIPTEN__
+            //Preserve the clear color state though it is a bit costly. We don't want to interfere.
             GLfloat cColor[4];
             glGetFloatv(GL_COLOR_CLEAR_VALUE, cColor);
             glClearColor(0,0,0,0);
