@@ -77,7 +77,7 @@ float scene_change_thresh_diff = 0.1f;
 #ifndef __EMSCRIPTEN__
 int max_points = 250000;
 #else
-int max_points = 10000;
+int max_points = 100000;
 #endif
 // How many of the tracked points to lose intentionally, in percent.
 #ifndef __EMSCRIPTEN__
@@ -87,17 +87,9 @@ float point_loss = 10;
 #endif
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
-#ifndef __EMSCRIPTEN__
-int max_stroke = 14;
-#else
-int max_stroke = 2;
-#endif
+int max_stroke = 10;
 // Keep alpha separate for the GUI
-#ifndef __EMSCRIPTEN__
 float alpha = 0.1f;
-#else
-float alpha = 1.0f;
-#endif
 
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
