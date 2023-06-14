@@ -35,7 +35,7 @@ FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const Fram
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug), viewport_(0, 0, framebufferSize.width, framebufferSize.height), frameBufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_(framebufferSize, CV_8UC4) {
+                minor), compat_(compat), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), frameBufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_(framebufferSize, CV_8UC4) {
     run_sync_on_main<1>([this](){ init(); });
     index_ = ++frameBufferContextCnt;
 }
@@ -54,7 +54,7 @@ GLuint FrameBufferContext::getTextureID() {
 
 
 void FrameBufferContext::loadShader() {
-#ifndef OPENCV_V4D_USE_ES3
+#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
 #else
     const string shaderVersion = "300 es";
@@ -219,7 +219,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#elif defined(OPENCV_V4D_USE_ES3)
+#elif defined(OPENCV_V4D_USE_ES3) || defined(__EMSCRIPTEN__)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
@@ -284,7 +284,6 @@ void FrameBufferContext::init() {
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        cerr << "cursor" << endl;
         if(v4d->hasNguiCtx()) {
             auto pt = v4d->fbCtx().toWindowCoord(cv::Point2f(x, y));
             v4d->nguiCtx().screen().cursor_pos_callback_event(pt.x, pt.y);
@@ -831,14 +830,15 @@ cv::Size FrameBufferContext::getNativeFrameBufferSize() {
     return cv::Size{w, h};
 }
 
+//cache window visibility instead of performing a heavy window attrib query.
 bool FrameBufferContext::isVisible() {
-    makeCurrent();
-    return glfwGetWindowAttrib(getGLFWWindow(), GLFW_VISIBLE) == GLFW_TRUE;
+    return isVisible_;
 }
 
 void FrameBufferContext::setVisible(bool v) {
+    isVisible_ = v;
     makeCurrent();
-    if (v)
+    if (isVisible_)
         glfwShowWindow(getGLFWWindow());
     else
         glfwHideWindow(getGLFWWindow());

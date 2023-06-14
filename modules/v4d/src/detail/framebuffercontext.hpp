@@ -16,7 +16,7 @@
 #include "opencv2/v4d/util.hpp"
 #include <iostream>
 
-#ifdef OPENCV_V4D_USE_ES3
+#if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
 #define GLFW_INCLUDE_ES3
 #define GLFW_INCLUDE_GLEXT
 #endif
@@ -53,6 +53,7 @@ class FrameBufferContext {
     bool debug_;
     GLFWwindow* glfwWindow_ = nullptr;
     bool clglSharing_ = true;
+    bool isVisible_;
     GLuint frameBufferID_ = 0;
     GLuint onscreenTextureID_ = 0;
     GLuint textureID_ = 0;

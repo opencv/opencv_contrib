@@ -87,7 +87,7 @@ static void load_buffer_data() {
 
 //mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
 static void load_shader() {
-#ifndef OPENCV_V4D_USE_ES3
+#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
 #else
     const string shaderVersion = "300 es";

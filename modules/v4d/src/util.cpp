@@ -84,7 +84,7 @@ Mat read_embedded_image(const string &path) {
 #endif
 
 void gl_check_error(const std::filesystem::path& file, unsigned int line, const char* expression) {
-//#ifndef NDEBUG
+#ifndef NDEBUG
     int errorCode = glGetError();
 //    cerr << "TRACE: " << file.filename() << " (" << line << ") : " << expression << " => code: " << errorCode << endl;
     if (errorCode != 0) {
@@ -93,7 +93,7 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
                 << expression << "\nError code:\n   " << errorCode;
         throw std::runtime_error(ss.str());
     }
-//#endif
+#endif
 }
 
 unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName) {
@@ -126,7 +126,7 @@ unsigned int initShader(const char* vShader, const char* fShader, const char* ou
 
         glAttachShader(program, shader);
     }
-#ifndef OPENCV_V4D_USE_ES3
+#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     /* Link output */
     glBindFragDataLocation(program, 0, outputAttributeName);
 #else

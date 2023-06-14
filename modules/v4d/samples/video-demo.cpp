@@ -28,7 +28,7 @@ unsigned int uniform_transform;
 cv::Ptr<cv::v4d::V4D> window;
 
 static GLuint load_shader() {
-#ifndef OPENCV_V4D_USE_ES3
+#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
 #else
     const string shaderVersion = "300 es";
