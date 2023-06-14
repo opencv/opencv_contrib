@@ -437,12 +437,11 @@ static bool iteration() {
 
     downPrevGrey = downNextGrey.clone();
 
-    window->fb([&](cv::UMat& frameBuffer){
-        cv::resize(foreground, foreground, frameBuffer.size());
+    window->fb([&](cv::UMat& framebuffer){
         //Put it all together (OpenCL)
-        composite_layers(background, foreground, frameBuffer, frameBuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
+        composite_layers(background, foreground, framebuffer, framebuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
 #ifndef __EMSCRIPTEN__
-        cvtColor(frameBuffer, menuFrame, cv::COLOR_BGRA2RGB);
+        cvtColor(framebuffer, menuFrame, cv::COLOR_BGRA2RGB);
 #endif
     });
 
