@@ -460,7 +460,7 @@ void FrameBufferContext::teardown() {
     this->makeCurrent();
 
 #ifndef __EMSCRIPTEN__
-    if(clImage_ != nullptr) {
+    if(clImage_ != nullptr && !getCLExecContext().empty()) {
         CLExecScope_t clExecScope(getCLExecContext());
 
         cl_int status = 0;
@@ -583,34 +583,56 @@ cv::Size FrameBufferContext::size() {
 void FrameBufferContext::copyTo(cv::UMat& dst) {
     run_sync_on_main<7>([&,this](){
 #ifndef __EMSCRIPTEN__
-        CLExecScope_t clExecScope(getCLExecContext());
+        if(!getCLExecContext().empty()) {
+            CLExecScope_t clExecScope(getCLExecContext());
 #endif
-        FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-        FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-        framebuffer_.copyTo(dst);
+            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            framebuffer_.copyTo(dst);
+#ifndef __EMSCRIPTEN__
+        } else {
+            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            framebuffer_.copyTo(dst);
+        }
+#endif
     });
 }
 
 void FrameBufferContext::copyFrom(const cv::UMat& src) {
     run_sync_on_main<18>([&,this](){
 #ifndef __EMSCRIPTEN__
-        CLExecScope_t clExecScope(getCLExecContext());
+        if(!getCLExecContext().empty()) {
+            CLExecScope_t clExecScope(getCLExecContext());
 #endif
-        FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-        FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-        src.copyTo(framebuffer_);
+            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            src.copyTo(framebuffer_);
+#ifndef __EMSCRIPTEN__
+        } else {
+            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            src.copyTo(framebuffer_);
+        }
+#endif
     });
 }
 
 void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
     run_sync_on_main<2>([&,this](){
 #ifndef __EMSCRIPTEN__
-        CLExecScope_t clExecScope(getCLExecContext());
+        if(!getCLExecContext().empty()) {
+            CLExecScope_t clExecScope(getCLExecContext());
 #endif
-        FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-        FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-        fn(framebuffer_);
+            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            fn(framebuffer_);
 #ifndef __EMSCRIPTEN__
+        } else {
+            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            fn(framebuffer_);
+        }
         GL_CHECK(glFinish());
 #endif
     });

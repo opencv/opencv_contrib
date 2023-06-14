@@ -15,15 +15,16 @@ CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) : mainFbContext_(mai
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
     cv::Size fbSize = mainFbContext_.size();
-    if (!context_.empty()) {
 #ifndef __EMSCRIPTEN__
+    if (!context_.empty()) {
         CLExecScope_t scope(context_);
 #endif
         fn(readFrame_);
+#ifndef __EMSCRIPTEN__
     } else {
         fn(readFrame_);
     }
-
+#endif
     if (readFrame_.empty())
         return false;
     resizePreserveAspectRatio(readFrame_, readRGBBuffer_, mainFbContext_.size());
@@ -34,10 +35,17 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
 
 void CLVAContext::write(std::function<void(const cv::UMat&)> fn, cv::UMat& input) {
 #ifndef __EMSCRIPTEN__
+    if (!context_.empty()) {
         CLExecScope_t scope(context_);
 #endif
         cv::cvtColor(input, writeRGBBuffer_, cv::COLOR_BGRA2RGB);
         fn(writeRGBBuffer_);
+#ifndef __EMSCRIPTEN__
+    } else {
+        cv::cvtColor(input, writeRGBBuffer_, cv::COLOR_BGRA2RGB);
+        fn(writeRGBBuffer_);
+    }
+#endif
 }
 
 bool CLVAContext::hasContext() {
