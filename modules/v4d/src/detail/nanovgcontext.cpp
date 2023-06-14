@@ -11,7 +11,7 @@ namespace v4d {
 namespace detail {
 
 NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_(mainFbContext_.getWindow(), "NanoVG", fbContext), context_(
+        mainFbContext_(fbContext), nvgFbContext_("NanoVG", fbContext), context_(
                 nullptr) {
     UMat tmp(fbCtx().size(), CV_8UC4);
 

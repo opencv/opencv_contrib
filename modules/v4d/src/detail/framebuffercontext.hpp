@@ -154,10 +154,10 @@ public:
      * Create a FrameBufferContext with given size.
      * @param frameBufferSize The frame buffer size.
      */
-    FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
+    FrameBufferContext(const cv::Size& frameBufferSize, bool offscreen,
             const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
 
-    FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other);
+    FrameBufferContext(const string& title, const FrameBufferContext& other);
 
     /*!
      * Default destructor.
@@ -199,7 +199,6 @@ public:
     bool isClosed();
     bool isShared();
 protected:
-    V4D& getWindow();
     int getIndex();
     void setup(const cv::Size& sz);
     void teardown();

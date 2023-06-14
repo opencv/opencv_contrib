@@ -16,6 +16,10 @@
 namespace cv {
 namespace v4d {
 namespace detail {
+static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
+    nanogui::Vector2i d = p - w->absolute_position();
+    return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
+}
 
 void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
@@ -49,13 +53,9 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
-        mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, major_,
+        mainFbContext_ = new detail::FrameBufferContext(fbsize.empty() ? size : fbsize, offscreen, title_, major_,
                 minor_, compat_, samples_, debug_, nullptr, nullptr);
 
-        nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
-        nguiContext_ = new detail::NanoguiContext(*mainFbContext_);
-        clvaContext_ = new detail::CLVAContext(*mainFbContext_);
-        glContext_ = new detail::GLContext(*mainFbContext_);
         run_sync_on_main<21>([this](){
             this->makeCurrent();
             glfwSetWindowUserPointer(getGLFWWindow(), this);
@@ -175,6 +175,10 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
 //                        }
 //        #endif
                     });
+            nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
+            nguiContext_ = new detail::NanoguiContext(*mainFbContext_);
+            clvaContext_ = new detail::CLVAContext(*mainFbContext_);
+            glContext_ = new detail::GLContext(*mainFbContext_);
         });
 }
 
@@ -636,15 +640,15 @@ void V4D::swapContextBuffers() {
 #endif
     });
 
-//    run_sync_on_main<12>([this]() {
-//        FrameBufferContext::GLScope glScope(nguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-//        nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
-//#ifndef __EMSCRIPTEN__
-//        glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
-//#else
-//        emscripten_webgl_commit_frame();
-//#endif
-//    });
+    run_sync_on_main<12>([this]() {
+        FrameBufferContext::GLScope glScope(nguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
+        nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+#ifndef __EMSCRIPTEN__
+        glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
+#else
+        emscripten_webgl_commit_frame();
+#endif
+    });
 }
 
 bool V4D::display() {

@@ -39,6 +39,7 @@ public:
     void build(std::function<void(cv::v4d::FormHelper&)> fn);
     nanogui::Screen& screen();
     cv::v4d::FormHelper& form();
+    FrameBufferContext& fbCtx();
 };
 }
 }
