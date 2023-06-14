@@ -541,13 +541,14 @@ bool V4D::display() {
 #endif
         run_sync_on_main<6>([&, this](){
             {
-                    FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-                    fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isFrameBufferScaling());
+               FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
+               fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isFrameBufferScaling());
             }
 #ifndef __EMSCRIPTEN__
             nguiCtx().render(printFPS_, showFPS_);
 #endif
             fbCtx().makeCurrent();
+            GL_CHECK(glFinish());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
 #else

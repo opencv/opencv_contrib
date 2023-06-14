@@ -71,6 +71,7 @@ void NanoguiContext::render(bool print, bool graphical) {
             {
 #ifndef __EMSCRIPTEN__
                 mainFbContext_.makeCurrent();
+                GL_CHECK(glFinish());
                 GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
                 GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
                 glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -109,6 +110,8 @@ void NanoguiContext::render(bool print, bool graphical) {
             {
 #ifdef __EMSCRIPTEN__
                 FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+#else
+                GL_CHECK(glFinish());
 #endif
                 screen().draw_widgets();
             }

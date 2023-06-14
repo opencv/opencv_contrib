@@ -693,6 +693,7 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 }
 
 void FrameBufferContext::end() {
+    this->makeCurrent();
     GL_CHECK(glFlush());
 }
 
