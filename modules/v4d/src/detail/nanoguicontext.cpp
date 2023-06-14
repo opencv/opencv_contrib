@@ -13,7 +13,7 @@ namespace detail {
 NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), nguiFbContext_(fbContext.getV4D(), "NanoGUI", fbContext), context_(
                 nullptr), copyBuffer_(mainFbContext_.size(), CV_8UC4) {
-    run_sync_on_main<25>([this]() {
+    run_sync_on_main<25>([&, this]() {
         {
             //Workaround for first frame glitch
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
@@ -28,6 +28,8 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
 #endif
             screen_ = new nanogui::Screen();
             screen_->initialize(fbCtx().getGLFWWindow(), false);
+            Size winSize = fbContext.getV4D().getWindowSize();
+            screen_->set_size({int(winSize.width / fbContext.getV4D().pixelRatioX()), int(winSize.height / fbContext.getV4D().pixelRatioY())});
             fbCtx().setWindowSize(fbCtx().size());
             context_ = screen_->nvg_context();
             form_ = new cv::v4d::FormHelper(screen_);
@@ -89,21 +91,23 @@ void NanoguiContext::render(bool print, bool graphical) {
                     roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
                     fillColor(cv::Scalar(255, 255, 255, 180));
                     fill();
+#ifdef __EMSCRIPTEN__
+                    fbCtx().makeCurrent();
+#endif
+                    fontSize(30.0f);
+                    fontFace("mono");
+                    fillColor(cv::Scalar(90, 90, 90, 255));
+                    textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                    text(10, 20, txt.c_str(), nullptr);
+
+                    nvgEndFrame(context_);
+                    nvgRestore(context_);
                 }
             }
             {
 #ifdef __EMSCRIPTEN__
                 FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
 #endif
-                using namespace cv::v4d::nvg;
-                fontSize(30.0f);
-                fontFace("mono");
-                fillColor(cv::Scalar(90, 90, 90, 255));
-                textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                text(10, 20, txt.c_str(), nullptr);
-
-                nvgEndFrame(context_);
-                nvgRestore(context_);
                 screen().draw_widgets();
             }
 
