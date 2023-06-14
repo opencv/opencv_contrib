@@ -26,7 +26,7 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
 #else
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
 #endif
-            screen_ = new nanogui::Screen();
+            screen_ = new nanogui::Screen(true, true, false);
             screen_->initialize(fbCtx().getGLFWWindow(), false);
             Size winSize = fbContext.getV4D().getWindowSize();
 #ifndef __EMSCRIPTEN__

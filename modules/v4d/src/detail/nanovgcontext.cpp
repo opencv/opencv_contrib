@@ -23,7 +23,7 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
         }
         {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-            screen_ = new nanogui::Screen();
+            screen_ = new nanogui::Screen(true, true, false);
             screen_->initialize(fbCtx().getGLFWWindow(), false);
             context_ = screen_->nvg_context();
             form_ = new cv::v4d::FormHelper(screen_);
