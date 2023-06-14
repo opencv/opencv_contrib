@@ -121,7 +121,7 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 
     // lookup the sampler locations.
     image0_hdl = glGetUniformLocation(shader_program_hdl, "texture0");
-    dst.makeCurrent();
+//    dst.makeCurrent();
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
@@ -129,7 +129,6 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 
 void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 #ifdef __EMSCRIPTEN__
-    dst.makeCurrent();
     int width = dst.getWindowSize().width;
     int height = dst.getWindowSize().height;
     {
@@ -140,8 +139,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
                 false);
         emscripten_webgl_commit_frame();
     }
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     this->makeCurrent();
     GL_CHECK(glEnable(GL_BLEND));
     GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
@@ -175,8 +172,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
     }, dst.getIndex() - 1);
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT1));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, this->getFramebufferID()));
     glViewport(0, 0, width, height);
@@ -191,9 +186,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 
     GL_CHECK(glBindVertexArray(copyVao));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-    dst.makeCurrent();
     GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
@@ -201,7 +194,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 
 
 void FrameBufferContext::init() {
-#if !defined(OPENCV_V4D_USE_ES3)
+#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
     if(parent_ != nullptr) {
         textureID_ = parent_->textureID_;
         renderBufferID_ = parent_->renderBufferID_;
@@ -595,6 +588,9 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
         FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
         FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
         fn(framebuffer_);
+#ifndef __EMSCRIPTEN__
+        GL_CHECK(glFinish());
+#endif
     });
 }
 
@@ -661,7 +657,7 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
-    cerr << "bind: " << frameBufferID_ << endl;
+    GL_CHECK(glFinish());
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     if(frameBufferID_ > 0) {
         GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
@@ -683,15 +679,12 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 
 void FrameBufferContext::end() {
     GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     tmp.release();
 }
 
@@ -700,8 +693,6 @@ void FrameBufferContext::upload(const cv::UMat& m) {
     assert(tmp.data != nullptr);
     GL_CHECK(
             glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     tmp.release();
 }
 

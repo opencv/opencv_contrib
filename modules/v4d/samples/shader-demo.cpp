@@ -153,7 +153,7 @@ static void load_shader() {
     
             outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
         } else {
-            gl_FragDepth = -1.0;
+//            gl_FragDepth = -1.0;
             outColor = vec4(0,0,0,0);
         }
     }
@@ -214,7 +214,6 @@ static void render_scene() {
         zoom = 1.0 / pow(zoom_factor, 5.0f);
         glUniform1f(zoom_hdl, zoom);
     }
-
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
@@ -327,9 +326,8 @@ static bool iteration() {
     });
 #endif
 
-#ifndef __EMSCRIPTEN__
     window->write();
-#endif
+
     ++iterations;
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();

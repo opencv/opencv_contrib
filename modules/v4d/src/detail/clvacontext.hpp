@@ -19,14 +19,12 @@ namespace detail {
 class CLVAContext {
     friend class cv::v4d::V4D;
     CLExecContext_t context_;
-    FrameBufferContext& mainFbContext_;
-    FrameBufferContext clvaFbContext_;
     cv::UMat readFrame_;
     cv::UMat readRGBBuffer_;
     cv::UMat writeRGBBuffer_;
     bool hasContext_ = false;
+    FrameBufferContext& mainFbContext_;
     CLExecContext_t getCLExecContext();
-    FrameBufferContext& fbCtx();
 public:
     /*!
      * Create the CLVAContext
