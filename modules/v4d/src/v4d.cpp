@@ -557,11 +557,12 @@ bool V4D::display() {
 #ifndef __EMSCRIPTEN__
                 fbCtx().makeCurrent();
                 GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-#else
-                FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-#endif
+//#else
+//                FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+//#endif
                 GL_CHECK(glClearColor(0, 0, 0, 1));
                 GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+#endif
             }
 
             glfwPollEvents();
