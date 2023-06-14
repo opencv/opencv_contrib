@@ -103,10 +103,14 @@ CV_EXPORTS void gl_check_error(const std::filesystem::path& file, unsigned int l
 /*!
  * Convenience macro to check for OpenGL errors.
  */
+#ifndef NDEBUG
 #define GL_CHECK(expr)                            \
     expr;                                        \
     cv::v4d::gl_check_error(__FILE__, __LINE__, #expr);
-
+#else
+#define GL_CHECK(expr)                            \
+    expr;
+#endif
 CV_EXPORTS unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName);
 /*!
  * Returns the OpenGL Version information.
