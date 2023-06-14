@@ -107,8 +107,6 @@ void FrameBufferContext::loadBuffers() {
 
 void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 #ifdef __EMSCRIPTEN__
-    cerr << "init: " << dst.getFramebufferID() << endl;
-
     this->makeCurrent();
     GL_CHECK(glGenFramebuffers(1, &copyFramebuffer_));
     GL_CHECK(glGenTextures(1, &copyTexture_));
@@ -126,7 +124,6 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 
 void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 #ifdef __EMSCRIPTEN__
-    cerr << "copy: " << dst.getFramebufferID() << endl;
     int width = dst.getWindowSize().width;
     int height = dst.getWindowSize().height;
     {
@@ -170,8 +167,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
     }, dst.getIndex() - 1);
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT1));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, this->getFramebufferID()));
     glViewport(0, 0, width, height);
@@ -186,9 +181,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 
     GL_CHECK(glBindVertexArray(copyVao));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
-//    dst.makeCurrent();
     GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
@@ -464,7 +457,6 @@ cv::Size FrameBufferContext::size() {
 }
 
 void FrameBufferContext::copyTo(cv::UMat& dst) {
-    cerr << "copyTo:" << getFramebufferID() << endl;
     run_sync_on_main<7>([&,this](){
 #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
@@ -476,8 +468,6 @@ void FrameBufferContext::copyTo(cv::UMat& dst) {
 }
 
 void FrameBufferContext::copyFrom(const cv::UMat& src) {
-    cerr << "copyFrom:" << getFramebufferID() << endl;
-
     run_sync_on_main<18>([&,this](){
 #ifndef __EMSCRIPTEN__
         CLExecScope_t clExecScope(getCLExecContext());
@@ -496,6 +486,9 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
         FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
         FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
         fn(framebuffer_);
+#ifndef __EMSCRIPTEN__
+        GL_CHECK(glFinish());
+#endif
     });
 }
 
@@ -562,6 +555,7 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
+    GL_CHECK(glFinish());
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -576,15 +570,12 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 
 void FrameBufferContext::end() {
     GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
     cv::Mat tmp = m.getMat(cv::ACCESS_WRITE);
     assert(tmp.data != nullptr);
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     tmp.release();
 }
 
@@ -593,8 +584,6 @@ void FrameBufferContext::upload(const cv::UMat& m) {
     assert(tmp.data != nullptr);
     GL_CHECK(
             glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
-    GL_CHECK(glFlush());
-    GL_CHECK(glFinish());
     tmp.release();
 }
 

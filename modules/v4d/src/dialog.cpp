@@ -17,7 +17,8 @@ std::set<Dialog*, decltype(Dialog::v4dWin_Xcomparator)> Dialog::all_windows_xsor
         v4dWin_Xcomparator);
 
 Dialog::Dialog(nanogui::Screen* screen, int x, int y, const string& title) :
-        Window(screen, title), screen_(screen), lastDragPos_(x, y) {
+        Window(screen, title), screen_(screen), lastDragPos_(x, y), customTheme_(new CustomTheme(screen->nvg_context())) {
+    set_theme(customTheme_);
     all_windows_xsorted_.insert(this);
     oldLayout_ = new nanogui::AdvancedGridLayout( { 10, 0, 10, 0 }, { });
     oldLayout_->set_margin(10);

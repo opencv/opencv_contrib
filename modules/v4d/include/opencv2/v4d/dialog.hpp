@@ -6,6 +6,7 @@
 #ifndef SRC_OPENCV_V4D_DIALOG_HPP_
 #define SRC_OPENCV_V4D_DIALOG_HPP_
 
+#include <nanogui/theme.h>
 #include <nanogui/nanogui.h>
 #include <opencv2/core/cvdef.h>
 #include <opencv2/core/mat.hpp>
@@ -17,6 +18,16 @@ namespace cv {
 namespace v4d {
 
 using std::string;
+
+class CustomTheme : public nanogui::Theme {
+public:
+    CustomTheme(NVGcontext *ctx) : nanogui::Theme(ctx) {
+        m_window_drop_shadow_size = 0;
+    }
+
+    virtual ~CustomTheme() {
+    }
+};
 
 /*!
  * A class for light-weight dialog (a dialog renderered inside a window) derived from nanogui::Window.
@@ -34,6 +45,7 @@ private:
     nanogui::ref<nanogui::AdvancedGridLayout> oldLayout_;
     nanogui::ref<nanogui::AdvancedGridLayout> newLayout_;
     bool minimized_ = false;
+    nanogui::ref<CustomTheme> customTheme_;
     bool mouse_drag_event(const nanogui::Vector2i& p, const nanogui::Vector2i& rel, int button,
             int mods) override;
 public:
