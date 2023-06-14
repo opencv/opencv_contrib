@@ -9,7 +9,7 @@
 | Compatibility | OpenCV >= 4.7 |
 
 ## Render Hello World
-Draws "Hello World" to the screen.
+Draws "Hello World" to the screen using NanoVG. Demos some basic font options.
 
 \htmlinclude "../samples/example_v4d_font_rendering.html"
 

@@ -9,7 +9,7 @@
 | Compatibility | OpenCV >= 4.7 |
 
 ## Render a blue screen using OpenGL
-This example simply paints the screen blue using OpenGL without shaders for brevity.
+This example simply paints the screen blue using OpenGL without shaders for brevity. One important detail of this example is that states are being preserved between invocations of a context type (in this case the ```gl``` context).
 
 \htmlinclude "../samples/example_v4d_render_opengl.html"
 

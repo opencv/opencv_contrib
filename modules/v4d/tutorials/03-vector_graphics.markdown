@@ -9,7 +9,7 @@
 | Compatibility | OpenCV >= 4.7 |
 
 ## Vector graphics
-Through the nvg context javascript-canvas-like rendering is possible.
+Through the nvg context html5-canvas-like vector graphic rendering is possible.
 
 \htmlinclude "../samples/example_v4d_vector_graphics.html"
 
