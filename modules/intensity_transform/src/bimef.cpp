@@ -265,9 +265,13 @@ static Mat_<float> applyK(const Mat_<float>& I, float k, float a=-0.3293f, float
     float gamma = std::pow(k, a);
 
     Mat_<float> J(I.size());
-    pow(I, gamma, J);
-    J = J*beta;
-
+    CV_Assert(I.isContinuous());
+    size_t i, npix = I.total();
+    const float* Iptr = I.ptr<float>();
+    float* Jptr = J.ptr<float>();
+    for (i = 0; i < npix; i++) {
+        Jptr[i] = pow(Iptr[i], gamma)*beta;
+    }
     return J;
 }
 
@@ -293,15 +297,18 @@ static float entropy(const Mat_<float>& I)
     float range[] = { 0, 256 };
     const float* histRange = { range };
     calcHist(&I_uchar, 1, NULL, Mat(), hist, 1, &histSize, &histRange);
+    double histsum = cv::sum(hist)[0];
 
-    Mat_<float> hist_norm = hist / cv::sum(hist)[0];
+    Mat_<float> hist_norm = hist / histsum;
+    int i, nbins = (int)hist_norm.total();
 
     float E = 0;
-    for (int i = 0; i < hist_norm.rows; i++)
+    for (i = 0; i < nbins; i++)
     {
-        if (hist_norm(i,0) > 0)
+        float v = hist_norm(i);
+        if (v > 0)
         {
-            E += hist_norm(i,0) * std::log2(hist_norm(i,0));
+            E += v * std::log2(v);
         }
     }
 
@@ -345,7 +352,6 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
     double rat = 0.0, e = 0.0;
     double x = xf;
     double fx = -entropy(applyK(I, static_cast<float>(x)));
-    int num = 1;
     double fu = std::numeric_limits<double>::infinity();
 
     double ffulc = fx, fnfc = fx;
@@ -398,7 +404,6 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
         double si = sgn(rat) + (rat == 0);
         x = xf + si * std::max(std::abs(rat), tol1);
         fu = -entropy(applyK(I, static_cast<float>(x)));
-        num += 1;
 
         if (fu <= fx) {
             if (x >= xf) {
