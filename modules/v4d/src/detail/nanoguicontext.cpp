@@ -29,7 +29,9 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
             screen_ = new nanogui::Screen();
             screen_->initialize(fbCtx().getGLFWWindow(), false);
             Size winSize = fbContext.getV4D().getWindowSize();
+#ifndef __EMSCRIPTEN__
             screen_->set_size({int(winSize.width / fbContext.getV4D().pixelRatioX()), int(winSize.height / fbContext.getV4D().pixelRatioY())});
+#endif
             fbCtx().setWindowSize(fbCtx().size());
             context_ = screen_->nvg_context();
             form_ = new cv::v4d::FormHelper(screen_);
