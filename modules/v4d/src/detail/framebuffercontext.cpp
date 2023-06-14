@@ -78,11 +78,12 @@ void FrameBufferContext::loadShader() {
     out vec4 FragColor;
     
     uniform sampler2D texture0;
-    
+    uniform vec2 resolution;
+
     void main()
-    {         
-        vec4 texPos = gl_FragCoord / vec4(1280, 720, 1.0, 1.0);
-        texPos.y *= -1.0f;    
+    {      
+        //translate screen coordinates to texture coordinates and flip the y-axis.   
+        vec4 texPos = gl_FragCoord / vec4(resolution.x, resolution.y * -1.0f, 1.0, 1.0);
         vec4 texColor0 = texture(texture0, texPos.xy);
         FragColor = texColor0;
     }
@@ -121,7 +122,8 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
     loadBuffers();
 
     // lookup the sampler locations.
-    image0_hdl = glGetUniformLocation(shader_program_hdl, "texture0");
+    texture_hdl = glGetUniformLocation(shader_program_hdl, "texture0");
+    resolution_hdl = glGetUniformLocation(shader_program_hdl, "resolution");
 //    dst.makeCurrent();
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
@@ -179,8 +181,9 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
     GL_CHECK(glUseProgram(shader_program_hdl));
 
     // set which texture units to render with.
-    GL_CHECK(glUniform1i(image0_hdl, 0));  // texture unit 0
-
+    GL_CHECK(glUniform1i(texture_hdl, 0));  // texture unit 0
+    float res[2] = {float(width), float(height)};
+    GL_CHECK(glUniform2fv(resolution_hdl, 1, res));
     // Set each texture unit to use a particular texture.
     GL_CHECK(glActiveTexture(GL_TEXTURE0));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTexture_));

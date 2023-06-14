@@ -61,11 +61,6 @@ class FrameBufferContext {
     GLuint pboID_ = 0;
     GLint viewport_[4];
     GLint maxAttach_;
-#ifdef __EMSCRIPTEN__
-    UMat preFB_;
-    UMat fb_;
-    UMat postFB_;
-#endif
     double blitScaleX_ = 1;
     GLint blitOffsetX_;
     GLint blitOffsetY_;
@@ -79,7 +74,8 @@ class FrameBufferContext {
     const FrameBufferContext* parent_;
 
     //data and handles for webgl copying
-    GLint image0_hdl;
+    GLint texture_hdl;
+    GLint resolution_hdl;
 
     GLuint shader_program_hdl;
 
