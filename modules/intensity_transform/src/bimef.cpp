@@ -494,7 +494,7 @@ static void BIMEF_impl(InputArray input_, OutputArray output_, float mu, float *
     // t: scene illumination map
     Mat_<float> t_b(imgDouble.size());
     t_b.forEach(
-        [&](float &pixel, const int * position) -> void
+        [&](float &pixel, const int* position) -> void
         {
             pixel = std::max(std::max(imgDouble(position[0], position[1])[0],
                                       imgDouble(position[0], position[1])[1]),
