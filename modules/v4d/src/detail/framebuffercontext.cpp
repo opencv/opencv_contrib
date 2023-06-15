@@ -362,7 +362,7 @@ void FrameBufferContext::init() {
                     vp.width = fbsz.width;
                     vp.height = fbsz.height;
                     if(v4d->hasNguiCtx())
-                        v4d->nguiCtx().screen().set_size({int(v4d->getWindowSize().width / v4d->pixelRatioX()), int(v4d->getWindowSize().height / v4d->pixelRatioY())});
+                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width / v4d->pixelRatioX()), int(v4d->getWindowSize().height / v4d->pixelRatioY())});
                 });
             });
 
@@ -632,7 +632,13 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
             FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
             fn(framebuffer_);
         }
-        GL_CHECK(glFinish());
+
+        cl_int status = 0;
+        cl_command_queue q = (cl_command_queue) cv::ocl::Queue::getDefault().ptr();
+
+        status = clFinish(q);
+        if (status != CL_SUCCESS)
+            CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clFinish failed: %d", status));
 #endif
     });
 }
