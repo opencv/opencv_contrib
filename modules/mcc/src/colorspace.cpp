@@ -120,13 +120,14 @@ void RGBBase_::calM()
     XYZg = Mat(xyY2XYZ({ xg, yg }), true);
     XYZb = Mat(xyY2XYZ({ xb, yb }), true);
     merge(std::vector<Mat> { XYZr, XYZg, XYZb }, XYZ_rgbl);
-    XYZ_rgbl = XYZ_rgbl.reshape(1, XYZ_rgbl.rows);
+    XYZ_rgbl = XYZ_rgbl.reshape(1, (int)XYZ_rgbl.total());
     Mat XYZw = Mat(getIlluminants(io), true);
+    XYZw = XYZw.reshape(1, (int)XYZw.total());
     solve(XYZ_rgbl, XYZw, Srgb);
     merge(std::vector<Mat> { Srgb.at<double>(0) * XYZr, Srgb.at<double>(1) * XYZg,
                   Srgb.at<double>(2) * XYZb },
             M_to);
-    M_to = M_to.reshape(1, M_to.rows);
+    M_to = M_to.reshape(1, (int)M_to.total());
     M_from = M_to.inv();
 };
 
@@ -382,6 +383,8 @@ Mat XYZ::cam_(IO sio, IO dio, CAM method) const
     // Function from http://www.brucelindbloom.com/index.html?ColorCheckerRGB.html.
     Mat XYZws = Mat(getIlluminants(dio));
     Mat XYZWd = Mat(getIlluminants(sio));
+    XYZws = XYZws.reshape(1, (int)XYZws.total());
+    XYZWd = XYZWd.reshape(1, (int)XYZWd.total());
     Mat MA = MAs.at(method)[0];
     Mat MA_inv = MAs.at(method)[1];
     Mat M = MA_inv * Mat::diag((MA * XYZws) / (MA * XYZWd)) * MA;

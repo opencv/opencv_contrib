@@ -41,7 +41,7 @@ Mat testOilPainting(Mat imgSrc, int halfSize, int dynRatio, int colorSpace)
                 double maxVal = 0;
                 Point pMin, pMax;
                 minMaxLoc(hist, 0, &maxVal, &pMin, &pMax);
-                mask.setTo(0, lum != static_cast<int>(pMax.y));
+                mask.setTo(0, lum != static_cast<int>(pMax.x));
                 Scalar v = mean(imgSrc, mask);
                 *vDst = Vec3b(static_cast<uchar>(v[0]), static_cast<uchar>(v[1]), static_cast<uchar>(v[2]));
             }
@@ -65,7 +65,7 @@ Mat testOilPainting(Mat imgSrc, int halfSize, int dynRatio, int colorSpace)
                 double maxVal = 0;
                 Point pMin, pMax;
                 minMaxLoc(hist, 0, &maxVal, &pMin, &pMax);
-                mask.setTo(0, lum != static_cast<int>(pMax.y));
+                mask.setTo(0, lum != static_cast<int>(pMax.x));
                 Scalar v = mean(imgSrc, mask);
                 *vDst = static_cast<uchar>(v[0]);
             }
@@ -90,7 +90,8 @@ TEST(xphoto_oil_painting, regression)
         double maxVal;
         Point pIdx;
         minMaxLoc(p, NULL, &maxVal, NULL, &pIdx);
-        ASSERT_LE(p.at<uchar>(pIdx), 2);
+        int v = p.at<uchar>(pIdx);
+        ASSERT_LE(v, 2);
     }
     Mat orig2 = imread(folder + "exp1.png",IMREAD_GRAYSCALE);
     ASSERT_TRUE(!orig2.empty());
