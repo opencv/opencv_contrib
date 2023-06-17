@@ -68,6 +68,7 @@ bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* dat
     CUVIDSOURCEDATAPACKET packet;
     std::memset(&packet, 0, sizeof(CUVIDSOURCEDATAPACKET));
 
+    packet.flags = CUVID_PKT_TIMESTAMP;
     if (endOfStream)
         packet.flags |= CUVID_PKT_ENDOFSTREAM;
 
@@ -107,68 +108,69 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
 
     thiz->unparsedPackets_ = 0;
 
-    if (format->codec         != thiz->videoDecoder_->codec()       ||
-        format->coded_width   != thiz->videoDecoder_->frameWidth()  ||
-        format->coded_height  != thiz->videoDecoder_->frameHeight() ||
-        format->chroma_format != thiz->videoDecoder_->chromaFormat()||
-        format->bit_depth_luma_minus8 != thiz->videoDecoder_->nBitDepthMinus8() ||
-        format->min_num_decode_surfaces != thiz->videoDecoder_->nDecodeSurfaces())
+    FormatInfo newFormat;
+    newFormat.videoFullRangeFlag = format->video_signal_description.video_full_range_flag;
+    newFormat.codec = static_cast<Codec>(format->codec);
+    newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
+    newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
+    newFormat.nBitDepthChromaMinus8 = format->bit_depth_chroma_minus8;
+    newFormat.ulWidth = format->coded_width;
+    newFormat.ulHeight = format->coded_height;
+    newFormat.fps = format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator);
+    newFormat.targetSz = thiz->videoDecoder_->getTargetSz();
+    newFormat.srcRoi = thiz->videoDecoder_->getSrcRoi();
+    if (newFormat.srcRoi.empty()) {
+        newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
+        if (newFormat.targetSz.empty())
+            newFormat.targetSz = Size((format->display_area.right - format->display_area.left), (format->display_area.bottom - format->display_area.top));
+    }
+    else
+        newFormat.displayArea = newFormat.srcRoi;
+    newFormat.width = newFormat.targetSz.width ? newFormat.targetSz.width : format->coded_width;
+    newFormat.height = newFormat.targetSz.height ? newFormat.targetSz.height : format->coded_height;
+    newFormat.targetRoi = thiz->videoDecoder_->getTargetRoi();
+    newFormat.ulNumDecodeSurfaces = min(!thiz->allowFrameDrop_ ? max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
+        format->min_num_decode_surfaces * 2, 32);
+    if (format->progressive_sequence)
+        newFormat.deinterlaceMode = Weave;
+    else
+        newFormat.deinterlaceMode = Adaptive;
+    int maxW = 0, maxH = 0;
+    // AV1 has max width/height of sequence in sequence header
+    if (format->codec == cudaVideoCodec_AV1 && format->seqhdr_data_length > 0)
     {
-        FormatInfo newFormat;
-        newFormat.videoFullRangeFlag = format->video_signal_description.video_full_range_flag;
-        newFormat.codec = static_cast<Codec>(format->codec);
-        newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
-        newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
-        newFormat.ulWidth = format->coded_width;
-        newFormat.ulHeight = format->coded_height;
-        newFormat.fps = format->frame_rate.numerator / static_cast<float>(format->frame_rate.denominator);
-        newFormat.targetSz = thiz->videoDecoder_->getTargetSz();
-        newFormat.srcRoi = thiz->videoDecoder_->getSrcRoi();
-        if (newFormat.srcRoi.empty()) {
-            newFormat.displayArea = Rect(Point(format->display_area.left, format->display_area.top), Point(format->display_area.right, format->display_area.bottom));
-            if (newFormat.targetSz.empty())
-                newFormat.targetSz = Size((format->display_area.right - format->display_area.left), (format->display_area.bottom - format->display_area.top));
+        CUVIDEOFORMATEX* vidFormatEx = (CUVIDEOFORMATEX*)format;
+        maxW = vidFormatEx->av1.max_width;
+        maxH = vidFormatEx->av1.max_height;
+    }
+    if (maxW < (int)format->coded_width)
+        maxW = format->coded_width;
+    if (maxH < (int)format->coded_height)
+        maxH = format->coded_height;
+    newFormat.ulMaxWidth = maxW;
+    newFormat.ulMaxHeight = maxH;
+
+    thiz->frameQueue_->waitUntilEmpty();
+    int retVal = newFormat.ulNumDecodeSurfaces;
+    try
+    {
+        if (thiz->videoDecoder_->inited()) {
+            retVal = thiz->videoDecoder_->reconfigure(newFormat);
+            if (retVal > 1 && newFormat.ulNumDecodeSurfaces != thiz->frameQueue_->getMaxSz())
+                thiz->frameQueue_->resize(newFormat.ulNumDecodeSurfaces);
         }
-        else
-            newFormat.displayArea = newFormat.srcRoi;
-        newFormat.width = newFormat.targetSz.width ? newFormat.targetSz.width : format->coded_width;
-        newFormat.height = newFormat.targetSz.height ? newFormat.targetSz.height : format->coded_height;
-        newFormat.targetRoi = thiz->videoDecoder_->getTargetRoi();
-        newFormat.ulNumDecodeSurfaces = min(!thiz->allowFrameDrop_ ? max(thiz->videoDecoder_->nDecodeSurfaces(), static_cast<int>(format->min_num_decode_surfaces)) :
-            format->min_num_decode_surfaces * 2, 32);
-        if (format->progressive_sequence)
-            newFormat.deinterlaceMode = Weave;
-        else
-            newFormat.deinterlaceMode = Adaptive;
-        int maxW = 0, maxH = 0;
-        // AV1 has max width/height of sequence in sequence header
-        if (format->codec == cudaVideoCodec_AV1 && format->seqhdr_data_length > 0)
-        {
-            CUVIDEOFORMATEX* vidFormatEx = (CUVIDEOFORMATEX*)format;
-            maxW = vidFormatEx->av1.max_width;
-            maxH = vidFormatEx->av1.max_height;
-        }
-        if (maxW < (int)format->coded_width)
-            maxW = format->coded_width;
-        if (maxH < (int)format->coded_height)
-            maxH = format->coded_height;
-        newFormat.ulMaxWidth = maxW;
-        newFormat.ulMaxHeight = maxH;
-        thiz->frameQueue_->init(newFormat.ulNumDecodeSurfaces);
-        try
-        {
-            thiz->videoDecoder_->release();
+        else {
+            thiz->frameQueue_->init(newFormat.ulNumDecodeSurfaces);
             thiz->videoDecoder_->create(newFormat);
         }
-        catch (const cv::Exception&)
-        {
-            CV_LOG_ERROR(NULL, "Attempt to reconfigure Nvidia decoder failed!");
-            thiz->hasError_ = true;
-            return false;
-        }
     }
-
-    return thiz->videoDecoder_->nDecodeSurfaces();
+    catch (const cv::Exception&)
+    {
+        CV_LOG_ERROR(NULL, "Attempt to configure Nvidia decoder failed!");
+        thiz->hasError_ = true;
+        retVal = 0;
+    }
+    return retVal;
 }
 
 int CUDAAPI cv::cudacodec::detail::VideoParser::HandlePictureDecode(void* userData, CUVIDPICPARAMS* picParams)

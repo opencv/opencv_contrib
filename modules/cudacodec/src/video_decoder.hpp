@@ -68,9 +68,10 @@ public:
     }
 
     void create(const FormatInfo& videoFormat);
+    int reconfigure(const FormatInfo& videoFormat);
     void release();
 
-    // Get the code-type currently used.
+    // Get the codec-type currently used.
     cudaVideoCodec codec() const { return static_cast<cudaVideoCodec>(videoFormat_.codec); }
     int nDecodeSurfaces() const { return videoFormat_.ulNumDecodeSurfaces; }
     cv::Size getTargetSz() const { return videoFormat_.targetSz; }
@@ -83,6 +84,8 @@ public:
 
     unsigned long targetWidth() { return videoFormat_.width; }
     unsigned long targetHeight() { return videoFormat_.height; }
+
+    bool inited() { return inited_; }
 
     cudaVideoChromaFormat chromaFormat() const { return static_cast<cudaVideoChromaFormat>(videoFormat_.chromaFormat); }
     int nBitDepthMinus8() const { return videoFormat_.nBitDepthMinus8; }
@@ -114,6 +117,7 @@ private:
     CUvideodecoder        decoder_ = 0;
     FormatInfo videoFormat_ = {};
     Mutex mtx_;
+    bool inited_ = false;
 };
 
 }}}
