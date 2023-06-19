@@ -45,6 +45,15 @@ namespace opencv_test {
     namespace {
 
 #if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
+struct SetDevice : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    cv::cuda::DeviceInfo devInfo;
+    virtual void SetUp(){
+        devInfo = GetParam();
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
 PARAM_TEST_CASE(CheckSet, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -71,6 +80,14 @@ PARAM_TEST_CASE(ColorConversion, cv::cuda::DeviceInfo, cv::cudacodec::ColorForma
 {
 };
 
+struct ReconfigureDecoderWithScaling : SetDevice
+{
+};
+
+PARAM_TEST_CASE(ReconfigureDecoder, cv::cuda::DeviceInfo, int)
+{
+};
+
 PARAM_TEST_CASE(VideoReadRaw, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -87,16 +104,8 @@ PARAM_TEST_CASE(CheckInitParams, cv::cuda::DeviceInfo, std::string, bool, bool, 
 {
 };
 
-struct CheckParams : testing::TestWithParam<cv::cuda::DeviceInfo>
+struct CheckParams : SetDevice
 {
-    cv::cuda::DeviceInfo devInfo;
-
-    virtual void SetUp()
-    {
-        devInfo = GetParam();
-
-        cv::cuda::setDevice(devInfo.deviceID());
-    }
 };
 
 #if defined(HAVE_NVCUVID)
@@ -190,6 +199,14 @@ CUDA_TEST_P(CheckKeyFrame, Reader)
     }
 }
 
+void ForceAlignment(Rect& srcRoi, Rect& targetRoi, Size& targetSz) {
+    targetSz.width = targetSz.width - targetSz.width % 2; targetSz.height = targetSz.height - targetSz.height % 2;
+    srcRoi.x = srcRoi.x - srcRoi.x % 4; srcRoi.width = srcRoi.width - srcRoi.width % 4;
+    srcRoi.y = srcRoi.y - srcRoi.y % 2; srcRoi.height = srcRoi.height - srcRoi.height % 2;
+    targetRoi.x = targetRoi.x - targetRoi.x % 4; targetRoi.width = targetRoi.width - targetRoi.width % 4;
+    targetRoi.y = targetRoi.y - targetRoi.y % 2; targetRoi.height = targetRoi.height - targetRoi.height % 2;
+}
+
 CUDA_TEST_P(Scaling, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
@@ -211,18 +228,15 @@ CUDA_TEST_P(Scaling, Reader)
         static_cast<int>(frameOr.rows * srcRoiIn.height));
     params.targetRoi = Rect(static_cast<int>(params.targetSz.width * targetRoiIn.x), static_cast<int>(params.targetSz.height * targetRoiIn.y),
         static_cast<int>(params.targetSz.width * targetRoiIn.width), static_cast<int>(params.targetSz.height * targetRoiIn.height));
+
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
     ASSERT_TRUE(reader->set(cudacodec::ColorFormat::GRAY));
     GpuMat frame;
     ASSERT_TRUE(reader->nextFrame(frame));
     const cudacodec::FormatInfo format = reader->format();
-    Size targetSzOut;
-    targetSzOut.width = params.targetSz.width - params.targetSz.width % 2; targetSzOut.height = params.targetSz.height - params.targetSz.height % 2;
-    Rect srcRoiOut, targetRoiOut;
-    srcRoiOut.x = params.srcRoi.x - params.srcRoi.x % 4; srcRoiOut.width = params.srcRoi.width - params.srcRoi.width % 4;
-    srcRoiOut.y = params.srcRoi.y - params.srcRoi.y % 2; srcRoiOut.height = params.srcRoi.height - params.srcRoi.height % 2;
-    targetRoiOut.x = params.targetRoi.x - params.targetRoi.x % 4; targetRoiOut.width = params.targetRoi.width - params.targetRoi.width % 4;
-    targetRoiOut.y = params.targetRoi.y - params.targetRoi.y % 2; targetRoiOut.height = params.targetRoi.height - params.targetRoi.height % 2;
+    Size targetSzOut = params.targetSz;
+    Rect srcRoiOut = params.srcRoi, targetRoiOut = params.targetRoi;
+    ForceAlignment(srcRoiOut, targetRoiOut, targetSzOut);
     ASSERT_TRUE(format.valid && format.targetSz == targetSzOut && format.srcRoi == srcRoiOut && format.targetRoi == targetRoiOut);
     ASSERT_TRUE(frame.size() == targetSzOut);
     GpuMat frameGs;
@@ -237,8 +251,8 @@ CUDA_TEST_P(DisplayResolution, Reader)
     cv::cuda::setDevice(GetParam().deviceID());
     std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../cv/video/1920x1080.avi";
     const Rect displayArea(0, 0, 1920, 1080);
-    GpuMat frame;
 
+    GpuMat frame;
     {
         // verify the output frame is the diplay size (1920x1080) and not the coded size (1920x1088)
         cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
@@ -330,6 +344,82 @@ CUDA_TEST_P(ColorConversion, Reader)
             frameHostGs = frameHost;
         EXPECT_MAT_NEAR(frameHostGs, frameFromDevice, 2.0);
     }
+}
+
+CUDA_TEST_P(ReconfigureDecoderWithScaling, Reader)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny_multi_res.h264";
+
+    GpuMat frameOr;
+    {
+        cv::Ptr<cv::cudacodec::VideoReader> readerGs = cv::cudacodec::createVideoReader(inputFile);
+        ASSERT_TRUE(readerGs->nextFrame(frameOr));
+    }
+
+    cv::cudacodec::VideoReaderInitParams params;
+    const Size2f targetSzNew(0.8f, 0.9f);
+    const Rect2f srcRoiNew(0.25f, 0.25f, 0.5f, 0.5f);
+    const Rect2f targetRoiNew(0.2f, 0.3f, 0.6f, 0.7f);
+    params.targetSz = Size(static_cast<int>(frameOr.cols * targetSzNew.width), static_cast<int>(frameOr.rows * targetSzNew.height));
+    params.srcRoi = Rect(static_cast<int>(frameOr.cols * srcRoiNew.x), static_cast<int>(frameOr.rows * srcRoiNew.y), static_cast<int>(frameOr.cols * srcRoiNew.width),
+        static_cast<int>(frameOr.rows * srcRoiNew.height));
+    params.targetRoi = Rect(static_cast<int>(params.targetSz.width * targetRoiNew.x), static_cast<int>(params.targetSz.height * targetRoiNew.y),
+        static_cast<int>(params.targetSz.width * targetRoiNew.width), static_cast<int>(params.targetSz.height * targetRoiNew.height));
+
+    Size targetSzOut = params.targetSz;
+    Rect srcRoiOut = params.srcRoi, targetRoiOut = params.targetRoi;
+    ForceAlignment(srcRoiOut, targetRoiOut, targetSzOut);
+    GpuMat mask(targetSzOut, CV_8U, Scalar(255));
+    mask(targetRoiOut).setTo(0);
+
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
+    reader->set(cudacodec::ColorFormat::GRAY);
+    cv::cudacodec::FormatInfo fmt;
+    cv::cuda::GpuMat frame;
+    int nFrames = 0;
+    Size initialSize;
+    while (reader->nextFrame(frame))
+    {
+        ASSERT_TRUE(!frame.empty());
+        if (nFrames++ == 0)
+            initialSize = frame.size();
+        fmt = reader->format();
+        ASSERT_TRUE(fmt.valid && (frame.size() == initialSize));
+        ASSERT_TRUE((frame.size() == targetSzOut) && (fmt.targetSz == targetSzOut) && (fmt.srcRoi == srcRoiOut) && (fmt.targetRoi == targetRoiOut));
+        // simple check - zero borders, non zero contents
+        ASSERT_TRUE(!cuda::absSum(frame, mask)[0] && cuda::sum(frame)[0]);
+    }
+    ASSERT_TRUE(nFrames == 40);
+}
+
+CUDA_TEST_P(ReconfigureDecoder, Reader)
+{
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny_multi_res.h264";
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const int minNumDecodeSurfaces = GET_PARAM(1);
+    cv::cudacodec::VideoReaderInitParams params;
+    params.minNumDecodeSurfaces = minNumDecodeSurfaces;
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile, {}, params);
+    reader->set(cudacodec::ColorFormat::GRAY);
+    cv::cudacodec::FormatInfo fmt;
+    cv::cuda::GpuMat frame, mask;
+    int nFrames = 0;
+    Size initialSize, initialCodedSize;
+    while(reader->nextFrame(frame))
+    {
+        ASSERT_TRUE(!frame.empty());
+        fmt = reader->format();
+        if (nFrames++ == 0) {
+            initialSize = frame.size();
+            initialCodedSize = Size(fmt.ulWidth, fmt.ulHeight);
+        }
+        ASSERT_TRUE(fmt.valid && (frame.size() == initialSize));
+        ASSERT_TRUE(fmt.srcRoi.empty());
+        const bool resChanged = (initialCodedSize.width != fmt.ulWidth) || (initialCodedSize.height != fmt.ulHeight);
+        if (resChanged)
+            ASSERT_TRUE(fmt.targetRoi.empty());
+    }
+    ASSERT_TRUE(nFrames == 40);
 }
 
 CUDA_TEST_P(VideoReadRaw, Reader)
@@ -766,6 +856,11 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, ColorConversion, testing::Combine(
     ALL_DEVICES,
     testing::Values(VIDEO_COLOR_OUTPUTS),
     testing::ValuesIn(color_conversion_params)));
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ReconfigureDecoderWithScaling, ALL_DEVICES);
+
+#define N_DECODE_SURFACES testing::Values(0, 10)
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, ReconfigureDecoder, testing::Combine(ALL_DEVICES, N_DECODE_SURFACES));
 
 #define VIDEO_SRC_RW "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, VideoReadRaw, testing::Combine(
