@@ -160,9 +160,11 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     createInfo_.ulCreationFlags     = videoCreateFlags;
     createInfo_.vidLock = lock_;
     cuSafeCall(cuCtxPushCurrent(ctx_));
-    cuSafeCall(cuvidCreateDecoder(&decoder_, &createInfo_));
+    {
+        AutoLock autoLock(mtx_);
+        cuSafeCall(cuvidCreateDecoder(&decoder_, &createInfo_));
+    }
     cuSafeCall(cuCtxPopCurrent(NULL));
-    inited_ = true;
 }
 
 int cv::cudacodec::detail::VideoDecoder::reconfigure(const FormatInfo& videoFormat) {

@@ -67,14 +67,11 @@ void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int he
         outFrame.create(height, width, CV_8UC3);
         Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
         NppiSize oSizeROI = { width,height };
-#if (CUDART_VERSION < 9200)
-        CV_Error(Error::StsUnsupportedFormat, "ColorFormat::BGR is not supported until CUDA 9.2, use default ColorFormat::BGRA.");
-#elif (CUDART_VERSION < 10100)
+#if (CUDART_VERSION < 10100)
         cv::cuda::NppStreamHandler h(stream);
         if (videoFullRangeFlag)
             nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
         else {
-            CV_LOG_DEBUG(NULL, "Color reproduction may be inaccurate due CUDA version <= 11.0, for better results upgrade CUDA runtime or try ColorFormat::BGRA.");
             nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
         }
 #elif (CUDART_VERSION >= 10100)
@@ -85,7 +82,6 @@ void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int he
             nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
         else {
 #if (CUDART_VERSION < 11000)
-            CV_LOG_DEBUG(NULL, "Color reproduction may be inaccurate due CUDA version <= 11.0, for better results upgrade CUDA runtime or try ColorFormat::BGRA.");
             nppSafeCall(nppiNV12ToBGR_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
 #else
             nppSafeCall(nppiNV12ToBGR_709CSC_8u_P2C3R_Ctx(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI, nppStreamCtx));
@@ -137,6 +133,7 @@ namespace
 
     private:
         bool internalGrab(GpuMat& frame, Stream& stream);
+        void waitForDecoderInit();
 
         Ptr<VideoSource> videoSource_;
 
@@ -160,6 +157,15 @@ namespace
         return videoSource_->format();
     }
 
+    void VideoReaderImpl::waitForDecoderInit() {
+        for (;;) {
+            if (videoDecoder_->inited()) break;
+            if (videoParser_->hasError() || frameQueue_->isEndOfDecode())
+                CV_Error(Error::StsError, "Parsing/Decoding video source failed, check GPU memory is available and GPU supports hardware decoding.");
+            Thread::sleep(1);
+        }
+    }
+
     VideoReaderImpl::VideoReaderImpl(const Ptr<VideoSource>& source, const int minNumDecodeSurfaces, const bool allowFrameDrop, const bool udpSource,
         const Size targetSz, const Rect srcRoi, const Rect targetRoi) :
         videoSource_(source),
@@ -177,6 +183,8 @@ namespace
         videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_, allowFrameDrop, udpSource));
         videoSource_->setVideoParser(videoParser_);
         videoSource_->start();
+        waitForDecoderInit();
+        videoSource_->updateFormat(videoDecoder_->format());
     }
 
     VideoReaderImpl::~VideoReaderImpl()
@@ -307,6 +315,15 @@ namespace
 
     bool VideoReaderImpl::set(const ColorFormat colorFormat_) {
         if (!ValidColorFormat(colorFormat_)) return false;
+        if (colorFormat_ == ColorFormat::BGR) {
+#if (CUDART_VERSION < 9200)
+            CV_LOG_DEBUG(NULL, "ColorFormat::BGR is not supported until CUDA 9.2, use default ColorFormat::BGRA.");
+            return false;
+#elif (CUDART_VERSION < 11000)
+            if (!videoDecoder_->format().videoFullRangeFlag)
+                CV_LOG_INFO(NULL, "Color reproduction may be inaccurate due CUDA version <= 11.0, for better results upgrade CUDA runtime or try ColorFormat::BGRA.");
+#endif
+        }
         colorFormat = colorFormat_;
         return true;
     }
