@@ -199,7 +199,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 
 
 void FrameBufferContext::init() {
-#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
+#if !defined(__EMSCRIPTEN__)
     if(parent_ != nullptr) {
         textureID_ = parent_->textureID_;
         renderBufferID_ = parent_->renderBufferID_;
@@ -527,6 +527,10 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyBufferToImage failed: %d", status));
+
+    status = clFinish(q);
+    if (status != CL_SUCCESS)
+        CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clFinish failed: %d", status));
 #endif
 }
 
@@ -572,6 +576,10 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     if (status != CL_SUCCESS)
         CV_Error_(cv::Error::OpenCLApiCallError,
                 ("OpenCL: clEnqueueCopyImageToBuffer failed: %d", status));
+
+    status = clFinish(q);
+    if (status != CL_SUCCESS)
+        CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clFinish failed: %d", status));
 #endif
 }
 
@@ -632,13 +640,6 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
             FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
             fn(framebuffer_);
         }
-
-        cl_int status = 0;
-        cl_command_queue q = (cl_command_queue) cv::ocl::Queue::getDefault().ptr();
-
-        status = clFinish(q);
-        if (status != CL_SUCCESS)
-            CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clFinish failed: %d", status));
 #endif
     });
 }
