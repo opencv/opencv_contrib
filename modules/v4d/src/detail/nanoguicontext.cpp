@@ -107,12 +107,10 @@ void NanoguiContext::render(bool print, bool graphical) {
             {
 #ifdef __EMSCRIPTEN__
                 FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-#else
-                GL_CHECK(glFinish());
 #endif
                 screen().draw_widgets();
 #ifndef __EMSCRIPTEN__
-                GL_CHECK(glFlush());
+                GL_CHECK(glFinish());
 #endif
             }
 

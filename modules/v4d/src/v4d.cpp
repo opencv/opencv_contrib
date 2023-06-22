@@ -535,7 +535,7 @@ bool V4D::display() {
 
 //        swapContextBuffers();
 
-#if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
+#ifdef __EMSCRIPTEN__
         nguiCtx().render(printFPS_, showFPS_);
 #endif
         run_sync_on_main<6>([&, this](){
@@ -547,7 +547,6 @@ bool V4D::display() {
             nguiCtx().render(printFPS_, showFPS_);
 #endif
             fbCtx().makeCurrent();
-            GL_CHECK(glFinish());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
 #else
