@@ -665,14 +665,11 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     double hf = double(windowSize.height) / frameBufferSize_.height;
     double wf = double(windowSize.width) / frameBufferSize_.width;
     double f = std::min(hf, wf);
-    blitScaleX_ = f;
 
     double wn = frameBufferSize_.width * f;
     double hn = frameBufferSize_.height * f;
     double xn = windowSize.width - wn;
     double yn = windowSize.height - hn;
-    blitOffsetX_ = xn / 2.0;
-    blitOffsetY_ = yn / 2.0;
 
     GLint srcX0 = viewport.x;
     GLint srcY0 = viewport.y;
@@ -705,8 +702,8 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 }
 
 void FrameBufferContext::end() {
-    this->makeCurrent();
-    GL_CHECK(glFlush());
+//    this->makeCurrent();
+//    GL_CHECK(glFlush());
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
@@ -743,18 +740,6 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
     } else {
         upload(m);
     }
-}
-
-double FrameBufferContext::blitScale() {
-    return blitScaleX_;
-}
-
-GLint FrameBufferContext::blitOffsetX() {
-    return blitOffsetX_;
-}
-
-GLint FrameBufferContext::blitOffsetY() {
-    return blitOffsetY_;
 }
 
 cv::Vec2f FrameBufferContext::position() {

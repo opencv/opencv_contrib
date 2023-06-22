@@ -60,14 +60,10 @@ class FrameBufferContext {
     GLuint renderBufferID_ = 0;
     GLuint pboID_ = 0;
     GLint viewport_[4];
-    GLint maxAttach_;
-    double blitScaleX_ = 1;
-    GLint blitOffsetX_;
-    GLint blitOffsetY_;
-#ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTN__
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
-#endif
+ #endif
     cv::Size frameBufferSize_;
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
@@ -262,10 +258,6 @@ private:
     void releaseToGL(cv::UMat& m);
     void toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture);
     void fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::UMat& u);
-
-    double blitScale();
-    GLint blitOffsetX();
-    GLint blitOffsetY();
 
     cv::UMat framebuffer_;
     /*!
