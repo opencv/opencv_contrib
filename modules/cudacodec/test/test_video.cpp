@@ -814,19 +814,12 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, DisplayResolution, ALL_DEVICES);
 
-#ifdef _WIN32 // handle old FFmpeg backend - remove when windows shared library is updated
-#define VIDEO_SRC_R testing::Values("highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
-    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
-    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4")
-    //, "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
-    "cv/tracking/faceocc2/data/faceocc2.webm")
-#else
 #define VIDEO_SRC_R testing::Values("highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
     "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4")
     //, "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
     "cv/tracking/faceocc2/data/faceocc2.webm", "highgui/video/sample_322x242_15frames.yuv420p.mpeg2video.mp4", "highgui/video/sample_322x242_15frames.yuv420p.mjpeg.mp4")
-#endif
+
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(ALL_DEVICES,VIDEO_SRC_R));
 
 const color_conversion_params_t color_conversion_params[] =
