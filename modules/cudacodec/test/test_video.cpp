@@ -281,15 +281,11 @@ CUDA_TEST_P(DisplayResolution, Reader)
 CUDA_TEST_P(Video, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string relativeFilePath = GET_PARAM(1);
 
     // CUDA demuxer has to fall back to ffmpeg to process "cv/video/768x576.avi"
-    if (GET_PARAM(1) == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
-        throw SkipTestException("FFmpeg backend not found");
-
-#ifdef _WIN32  // handle old FFmpeg backend
-    if (GET_PARAM(1) == "/cv/tracking/faceocc2/data/faceocc2.webm")
-        throw SkipTestException("Feature not yet supported by Windows FFmpeg shared library!");
-#endif
+    if (relativeFilePath == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
+        throw SkipTestException("FFmpeg backend not found  - SKIP");
 
     const std::vector<std::pair< cudacodec::ColorFormat, int>> formatsToChannels = {
         {cudacodec::ColorFormat::GRAY,1},
@@ -298,7 +294,7 @@ CUDA_TEST_P(Video, Reader)
         {cudacodec::ColorFormat::NV_NV12,1}
     };
 
-    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + relativeFilePath;
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
     ASSERT_FALSE(reader->set(cudacodec::ColorFormat::RGB));
     cv::cudacodec::FormatInfo fmt = reader->format();
@@ -818,13 +814,20 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, DisplayResolution, ALL_DEVICES);
 
-#define VIDEO_SRC_R "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+#ifdef _WIN32 // handle old FFmpeg backend - remove when windows shared library is updated
+#define VIDEO_SRC_R testing::Values("highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
-    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4", "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
-    "cv/tracking/faceocc2/data/faceocc2.webm"
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
-    ALL_DEVICES,
-    testing::Values(VIDEO_SRC_R)));
+    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4")
+    //, "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
+    "cv/tracking/faceocc2/data/faceocc2.webm")
+#else
+#define VIDEO_SRC_R testing::Values("highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
+    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4")
+    //, "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
+    "cv/tracking/faceocc2/data/faceocc2.webm", "highgui/video/sample_322x242_15frames.yuv420p.mpeg2video.mp4", "highgui/video/sample_322x242_15frames.yuv420p.mjpeg.mp4")
+#endif
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(ALL_DEVICES,VIDEO_SRC_R));
 
 const color_conversion_params_t color_conversion_params[] =
 {
@@ -859,9 +862,11 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckExtraData, testing::Combine(
     ALL_DEVICES,
     testing::ValuesIn(check_extra_data_params)));
 
+#define VIDEO_SRC_KEY "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckKeyFrame, testing::Combine(
     ALL_DEVICES,
-    testing::Values(VIDEO_SRC_R)));
+    testing::Values(VIDEO_SRC_KEY)));
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckParams, ALL_DEVICES);
 
