@@ -97,10 +97,10 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
                             cudaVideoCodec_UYVY     == _codec;
 
 #if defined (HAVE_CUDA)
-#if (CUDART_VERSION >= 6500)
+#if (CUDART_VERSION >= 6050)
     codecSupported |=       cudaVideoCodec_HEVC     == _codec;
 #endif
-#if  ((CUDART_VERSION == 7500) || (CUDART_VERSION >= 9000))
+#if  ((CUDART_VERSION == 7050) || (CUDART_VERSION >= 9000))
     codecSupported |=       cudaVideoCodec_VP8      == _codec ||
                             cudaVideoCodec_VP9      == _codec ||
                             cudaVideoCodec_AV1      == _codec ||

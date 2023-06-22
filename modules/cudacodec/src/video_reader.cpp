@@ -67,14 +67,14 @@ void cvtFromNv12(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int he
         outFrame.create(height, width, CV_8UC3);
         Npp8u* pSrc[2] = { decodedFrame.data, &decodedFrame.data[decodedFrame.step * height] };
         NppiSize oSizeROI = { width,height };
-#if (CUDART_VERSION < 10100)
+#if (CUDART_VERSION < 10010)
         cv::cuda::NppStreamHandler h(stream);
         if (videoFullRangeFlag)
             nppSafeCall(nppiNV12ToBGR_709HDTV_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
         else {
             nppSafeCall(nppiNV12ToBGR_8u_P2C3R(pSrc, decodedFrame.step, outFrame.data, outFrame.step, oSizeROI));
         }
-#elif (CUDART_VERSION >= 10100)
+#elif (CUDART_VERSION >= 10010)
         NppStreamContext nppStreamCtx;
         nppSafeCall(nppGetStreamContext(&nppStreamCtx));
         nppStreamCtx.hStream = StreamAccessor::getStream(stream);
@@ -316,7 +316,7 @@ namespace
     bool VideoReaderImpl::set(const ColorFormat colorFormat_) {
         if (!ValidColorFormat(colorFormat_)) return false;
         if (colorFormat_ == ColorFormat::BGR) {
-#if (CUDART_VERSION < 9200)
+#if (CUDART_VERSION < 9020)
             CV_LOG_DEBUG(NULL, "ColorFormat::BGR is not supported until CUDA 9.2, use default ColorFormat::BGRA.");
             return false;
 #elif (CUDART_VERSION < 11000)
