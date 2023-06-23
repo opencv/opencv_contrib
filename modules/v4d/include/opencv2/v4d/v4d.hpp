@@ -104,8 +104,6 @@ class CV_EXPORTS V4D {
     friend class HTML5Capture;
     cv::Size initialSize_;
     const string& title_;
-    int major_;
-    int minor_;
     bool compat_;
     int samples_;
     bool debug_;
@@ -145,8 +143,7 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, int major = 3,
-            int minor = 2, bool compat = false, int samples = 0);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, bool compat = false, int samples = 0);
     /*!
      * Default destructor
      */
@@ -384,7 +381,7 @@ public:
     NanoguiContext& nguiCtx();
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
-            const string& title, bool offscreen, bool debug, int major, int minor, bool compat, int samples);
+            const string& title, bool offscreen, bool debug, bool compat, int samples);
 
     void init();
     void setDefaultKeyboardEventCallback();
