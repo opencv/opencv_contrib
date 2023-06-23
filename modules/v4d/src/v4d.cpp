@@ -32,23 +32,21 @@ cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     return dst;
 }
 
-cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int major,
-        int minor, bool compat, int samples) {
-    cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, major, minor, compat, samples);
+cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) {
+    cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, compat, samples);
     v4d->setVisible(!offscreen);
     return v4d;
 }
 
-V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int major, int minor,
-        bool compat, int samples) :
-        initialSize_(size), title_(title), major_(major), minor_(minor), compat_(
+V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) :
+        initialSize_(size), title_(title), compat_(
                 compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), zoomScale_(
                 1), mousePos_(0, 0), stretch_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
-        mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, major_,
-                minor_, compat_, samples_, debug_, nullptr, nullptr);
+        mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, 3,
+                2, compat_, samples_, debug_, nullptr, nullptr);
 
         nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
         nguiContext_ = new detail::NanoguiContext(*mainFbContext_);
