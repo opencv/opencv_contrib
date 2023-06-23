@@ -25,7 +25,7 @@ int main() {
 	});
 
 	window->run([&]() {
-		//Render the text at the center of the screen
+		//Render the text at the center of the screen using parameters from the GUI.
 		window->nvg([&](const Size& sz) {
 			using namespace cv::v4d::nvg;
 			clear();
@@ -36,7 +36,6 @@ int main() {
 			text(sz.width / 2.0, sz.height / 2.0, hw.c_str(), hw.c_str() + hw.size());
 		});
 
-		//Display the framebuffer in the native window
 		return window->display();
 	});
 }

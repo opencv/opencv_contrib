@@ -31,10 +31,11 @@ int main(int argc, char** argv) {
 #endif
 
     window->run([=]() {
-	    //Capture video from the Source
+	    //Capture video from the source
 		if(!window->capture())
 			return false; //end of input video
 
+		//Render on top of the video
 		window->nvg([=](const Size& sz) {
 			using namespace cv::v4d::nvg;
 
@@ -45,9 +46,10 @@ int main(int argc, char** argv) {
 			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
 		});
 
-		window->write(); //Write video to the Sink
+		//Write video to the sink (do nothing in case of WebAssembly)
+		window->write();
 
-		return window->display(); //Display the framebuffer in the native window
+		return window->display();
 	});
     } catch(std::exception& ex) {
         cerr << ex.what() << endl;

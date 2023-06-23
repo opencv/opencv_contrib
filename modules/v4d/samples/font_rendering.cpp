@@ -9,9 +9,8 @@ int main() {
     //The text to render
 	string hw = "Hello World";
 
-    //Display the framebuffer in the native window in an endless loop
     window->run([=](){
-        //Render the text at the center of the screen
+        //Render the text at the center of the screen. Note that you can load you own fonts.
         window->nvg([&](const Size& sz) {
             using namespace cv::v4d::nvg;
             clear();
