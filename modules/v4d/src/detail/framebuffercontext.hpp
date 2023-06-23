@@ -60,10 +60,10 @@ class FrameBufferContext {
     GLuint renderBufferID_ = 0;
     GLuint pboID_ = 0;
     GLint viewport_[4];
-#ifndef __EMSCRIPTN__
+#ifndef __EMSCRIPTEN__
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
- #endif
+#endif
     cv::Size frameBufferSize_;
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
