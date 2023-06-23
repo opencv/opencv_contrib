@@ -6,8 +6,7 @@ using namespace cv::v4d;
 int main(int argc, char** argv) {
     Ptr<V4D> window = V4D::make(cv::Size(1280, 720), cv::Size(), "Video Editing");
 
-    try {
-    //In case of emscripten
+    //In case of WebAssembly
     CV_UNUSED(argc);
     CV_UNUSED(argv);
 
@@ -26,7 +25,7 @@ int main(int argc, char** argv) {
 #else
     //Make a webcam Source
     Source src = makeCaptureSource(1280, 720, window);
-    //Attach web source
+    //Attach webcam source
     window->setSource(src);
 #endif
 
@@ -51,8 +50,5 @@ int main(int argc, char** argv) {
 
 		return window->display();
 	});
-    } catch(std::exception& ex) {
-        cerr << ex.what() << endl;
-    }
 }
 
