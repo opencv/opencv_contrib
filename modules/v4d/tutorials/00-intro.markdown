@@ -11,7 +11,7 @@
 V4D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
 # Why V4D?
-Please refer to the online demos in the \ref v4d_tutorials and \ref v4d_demos section to see at a glance what it can do for you. **Note**: The online demos are slower than native builds and are sometimes missing features. If you want full performance (including hardware acceleration) you should really create a native build and test it.
+Please refer to the online demos in the \ref v4d_tutorials and \ref v4d_demos section to see at a glance what it can do for you. **But note**: The online demos are slower than native builds and are sometimes missing features. If you want full performance (including hardware acceleration) you should really create a native build and test it.
 
 * **OpenGL**: Easy access to OpenGL.
 * **GUI**: Simple yet powerful user interfaces through NanoGUI.
@@ -55,7 +55,7 @@ v4d->gl([](const Size sz) {
 * [My NanoGUI fork](https://github.com/kallaballa/nanogui) which is included with V4D as a sub-repository (includes NanoVG).
 
 # Optional: Dependencies for demos
-* If you want CL-GL sharing on a recent Intel Platform (Gen8 - Gen12) you currently **need to build** [compute-runtime](https://github.com/intel/compute-runtime)
+* (At the time of writing) If you want CL-GL interop on a recent Intel Platform you might need to build [compute-runtime](https://github.com/intel/compute-runtime). The first version of compute-runtime shipping CL-GL interop is **23.13.26032**
 
 # Tutorials {#v4d_tutorials}
 The tutorials are designed to be read one after the other to give you a good overview over the key concepts of V4D. After that you can move on to the demos.
