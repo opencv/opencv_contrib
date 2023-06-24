@@ -128,37 +128,39 @@ static bool iteration() {
     static cv::UMat hueChannel;
 
     //we use frame count to calculated the current hue
-    float time = window->frameCount() / 60.0;
-    //nanovg hue fading between 0.0f and 255.0f
-    float hue = (sinf(time * 0.12f) + 1.0f) * 127.5;
+    float t = window->frameCount() / 60.0;
+    //nanovg hue fading depending t
+    float hue = (sinf(t * 0.12f) + 1.0f) * 127.5;
 
     if (!window->capture())
         return false;
 
+    //Acquire the framebuffer and convert it to RGB
     window->fb([&](cv::UMat &frameBuffer) {
         cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
     });
 
-    //Color-conversion from RGB to HSV. (OpenCL)
+    //Color-conversion from RGB to HSV
     cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
 
-    //split the channels
+    //Split the channels
     split(hsv,hsvChannels);
     //Set the current hue
     hsvChannels[0].setTo(hue);
-    //merge the channels back
+    //Merge the channels back
     merge(hsvChannels,hsv);
 
-    //Color-conversion from HSV to RGB. (OpenCL)
+    //Color-conversion from HSV to RGB
     cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
 
-    //Color-conversion from RGB to BGRA. (OpenCL)
+    //Acquire the framebuffer and convert the rgb into it
     window->fb([&](cv::UMat &frameBuffer) {
         cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
     });
 
     //Render using nanovg
     window->nvg([&](const cv::Size &sz) {
+    	//TODO automatically normalize hue between opencv and nanovg
         hue = ((170 + uint8_t(255 - hue))) % 255;
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });

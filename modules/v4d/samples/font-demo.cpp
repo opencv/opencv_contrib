@@ -15,7 +15,7 @@
 #include <emscripten.h>
 #endif
 
-/** Application parameters **/
+/** Demo parameters **/
 constexpr unsigned int WIDTH = 1280;
 constexpr unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
@@ -194,7 +194,6 @@ static bool iteration() {
     if(cnt > std::numeric_limits<size_t>().max() / 2.0)
         cnt = 0;
 
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();
 }
 

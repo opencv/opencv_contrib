@@ -8,11 +8,11 @@
 using std::cerr;
 using std::endl;
 
+/** Demo parameters **/
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
@@ -20,22 +20,23 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 
 cv::Ptr<cv::v4d::V4D> window;
 
-int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
-
 /** mandelbrot control parameters **/
+int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color base_color_val(0.2f, 0.6f, 1.0f, 1.0f);
 // Keep alpha separate for the GUI
 float alpha = 1.0f; //0.0-1.0
 //contrast boost
 int contrast_boost = 15; //0.0-255
+//max fractal iterations
 int max_iterations = 500;
+//center x coordinate
 float center_x = -0.119609;
+//center y coordinate
 float center_y = 0.13262;
 float zoom_factor = 1.0;
-float zoom = 1.0;
+float current_zoom = 1.0;
 float zoom_incr = 0.99;
-long iterations = 0;
 bool manual_navigation = false;
 
 /** GL uniform handles **/
@@ -44,9 +45,10 @@ GLint contrast_boost_hdl;
 GLint max_iterations_hdl;
 GLint center_x_hdl;
 GLint center_y_hdl;
-GLint zoom_hdl;
+GLint current_zoom_hdl;
+GLint resolution_hdl;
 
-/** shader and program handle **/
+/** shader program handle **/
 GLuint shader_program_hdl;
 
 //vertex array
@@ -64,8 +66,8 @@ unsigned int indices[] = {
 //  0'---3
         0, 1, 2, 0, 3, 1 };
 
+//Load objects and buffers
 static void load_buffer_data() {
-
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
@@ -113,14 +115,15 @@ static void load_shader() {
     uniform vec4 base_color;
     uniform int contrast_boost;
     uniform int max_iterations;
-    uniform float zoom;
+    uniform float current_zoom;
     uniform float center_x;
     uniform float center_y;
+	uniform vec2 resolution;
 
     int get_iterations()
     {
-        float pointr = (((gl_FragCoord.x / 720.0f) - 0.5f) * zoom + center_x) * 5.0f;
-        float pointi = (((gl_FragCoord.y / 720.0f) - 0.5f) * zoom + center_y) * 5.0f;
+        float pointr = (((gl_FragCoord.x / resolution[1]) - 0.5f) * current_zoom + center_x) * 5.0f;
+        float pointi = (((gl_FragCoord.y / resolution[1]) - 0.5f) * current_zoom + center_y) * 5.0f;
         const float four = 4.0f;
 
         int iterations = 0;
@@ -148,12 +151,10 @@ static void load_shader() {
         int iter = get_iterations();
         if (iter < max_iterations) {   
             float iterations = float(iter) / float(max_iterations);
-            //convert to float
             float cb = float(contrast_boost);
     
             outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
         } else {
-//            gl_FragDepth = -1.0;
             outColor = vec4(0,0,0,0);
         }
     }
@@ -163,19 +164,15 @@ static void load_shader() {
         determine_color();
     })";
 
-    cerr << "##### Vertex Shader #####" << endl;
-    cerr << vert << endl;
-
-    cerr << "##### Fragment Shader #####" << endl;
-    cerr << frag << endl;
-
     shader_program_hdl = cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
+//easing function for the automatic zoom
 static float easeInOutQuint(float x) {
     return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
 }
 
+//Initialize shaders, objects, buffers and uniforms
 static void init_scene(const cv::Size& sz) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -185,20 +182,20 @@ static void init_scene(const cv::Size& sz) {
     base_color_hdl = glGetUniformLocation(shader_program_hdl, "base_color");
     contrast_boost_hdl = glGetUniformLocation(shader_program_hdl, "contrast_boost");
     max_iterations_hdl = glGetUniformLocation(shader_program_hdl, "max_iterations");
-    zoom_hdl = glGetUniformLocation(shader_program_hdl, "zoom");
+    current_zoom_hdl = glGetUniformLocation(shader_program_hdl, "current_zoom");
     center_x_hdl = glGetUniformLocation(shader_program_hdl, "center_x");
     center_y_hdl = glGetUniformLocation(shader_program_hdl, "center_y");
-
+    resolution_hdl = glGetUniformLocation(shader_program_hdl, "resolution");
     glViewport(0, 0, sz.width, sz.height);
 }
 
-static void render_scene() {
-    if (zoom >= 1) {
+//Render the mandelbrot fractal on top of a video
+static void render_scene(const cv::Size& sz) {
+	//bungee zoom
+    if (current_zoom >= 1) {
         zoom_incr = -0.01;
-        iterations = 0;
-    } else if (zoom < 2.5e-06) {
+    } else if (current_zoom < 2.5e-06) {
         zoom_incr = +0.01;
-        iterations = 0;
     }
 
     glUseProgram(shader_program_hdl);
@@ -208,12 +205,15 @@ static void render_scene() {
     glUniform1f(center_y_hdl, center_y);
     glUniform1f(center_x_hdl, center_x);
     if (!manual_navigation) {
-        zoom += zoom_incr;
-        glUniform1f(zoom_hdl, easeInOutQuint(zoom));
+        current_zoom += zoom_incr;
+        glUniform1f(current_zoom_hdl, easeInOutQuint(current_zoom));
     } else {
-        zoom = 1.0 / pow(zoom_factor, 5.0f);
-        glUniform1f(zoom_hdl, zoom);
+        current_zoom = 1.0 / pow(zoom_factor, 5.0f);
+        glUniform1f(current_zoom_hdl, current_zoom);
     }
+    float res[2] = {float(window->framebufferSize().width), float(window->framebufferSize().height)};
+    glUniform2fv(resolution_hdl, 1, res);
+
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
@@ -226,23 +226,21 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
     cv::bitwise_not(src, dst);
 
-    //Resize for some extra performance
     cv::resize(dst, resize, cv::Size(), 0.5, 0.5);
-    //Cheap blur
     cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1, -1), true,
             cv::BORDER_REPLICATE);
-    //Back to original size
     cv::resize(resize, blur, src.size());
 
-    //Multiply the src image with a blurred version of itself
     cv::multiply(dst, blur, dst16, 1, CV_16U);
-    //Normalize and convert back to CV_8U
     cv::divide(dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
 
     cv::bitwise_not(dst, dst);
 }
 #endif
 
+//Setup the GUI using NanoGUI. A FormHelper implementation is provided for quick & simple GUIs but once you
+//have created a Dialog (using FormHelper::makeDialog) you can use NanoGUI directly to build more complex GUIs.
+//The variables passed to FormHelper e.g. via makeFormVariable are directly adjusted by the GUI.
 static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
     v4dMain->nanogui([](cv::v4d::FormHelper& form) {
         form.makeDialog(5, 30, "Fractal");
@@ -314,22 +312,16 @@ static bool iteration() {
     if(!window->capture())
         return false;
 
-    //Render using OpenGL
     window->gl(render_scene);
 
-//To slow for WASM but works
 #ifndef __EMSCRIPTEN__
-    //Aquire the frame buffer for use by OpenCL
     window->fb([](cv::UMat& frameBuffer) {
-        //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
 #endif
 
     window->write();
 
-    ++iterations;
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();
 }
 

@@ -3,6 +3,12 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
+/**
+ * Based on cube-demo. Only differs in two points:
+ * - Uses a source to read a video.
+ * - Doesn't clear the background so the cube is rendered on top of the video.
+ */
+
 #include <opencv2/v4d/v4d.hpp>
 
 constexpr long unsigned int WIDTH = 1280;
@@ -124,7 +130,6 @@ static void init_scene() {
     glVertexAttribPointer(colors_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(colors_index);
 
-    // Unbind to prevent accidental modification
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -166,17 +171,12 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
     cv::bitwise_not(src, dst);
 
-    //Resize for some extra performance
     cv::resize(dst, resize, cv::Size(), 0.5, 0.5);
-    //Cheap blur
     cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1, -1), true,
             cv::BORDER_REPLICATE);
-    //Back to original size
     cv::resize(resize, blur, src.size());
 
-    //Multiply the src image with a blurred version of itself
     cv::multiply(dst, blur, dst16, 1, CV_16U);
-    //Normalize and convert back to CV_8U
     cv::divide(dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
 
     cv::bitwise_not(dst, dst);
@@ -189,21 +189,16 @@ static bool iteration() {
     if(!window->capture())
         return false;
 
-    //Render using OpenGL
     window->gl(render_scene);
 
-//to slow for wasm
 #ifndef __EMSCRIPTEN__
-    //Aquire the frame buffer for use by OpenCL
     window->fb([&](cv::UMat& frameBuffer) {
-        //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
 #endif
 
     window->write();
 
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();
 }
 
@@ -221,6 +216,7 @@ int main() {
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
+    //Creates a source from a file or a device
     Source src = makeCaptureSource(argv[1]);
     window->setSource(src);
 
@@ -228,6 +224,7 @@ int main() {
             src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
+    //Creates a webcam source is available
     Source src = makeCaptureSource(WIDTH, HEIGHT, window);
     window->setSource(src);
 #endif

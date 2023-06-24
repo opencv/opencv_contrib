@@ -6,6 +6,7 @@
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
+//Demo Parameters
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
@@ -14,12 +15,12 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-
 const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;
 
+//OpenGL constants and variables
 const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
@@ -27,9 +28,13 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
+//The centrals V4D objects
 cv::Ptr<cv::v4d::V4D> window;
 
+//Simple transform and pass-through shaders
 static GLuint load_shader() {
+	//Shader version 330 and 300 es is very similar.
+	//If you are careful you can write the same code for both versions.
 #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
 #else
@@ -65,25 +70,29 @@ static GLuint load_shader() {
     }
 )";
 
+    //Initialize the shaders and returns the program
     return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
+//Initializes objects, buffers, shaders and uniforms
 static void init_scene(const cv::Size& sz) {
     glEnable (GL_DEPTH_TEST);
 
+    //Cube vertices, colors and indices
     float vertices[] = {
-    // Front face
+    		// Front face
             0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-
             // Back face
-            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, };
+            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5
+    };
 
-    float vertex_colors[] = { 1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
-
-    0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8, };
+    float vertex_colors[] = {
+    		1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
+			0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
+    };
 
     unsigned short triangle_indices[] = {
-    // Front
+    		// Front
             0, 1, 2, 2, 3, 0,
 
             // Right
@@ -99,7 +108,8 @@ static void init_scene(const cv::Size& sz) {
             4, 7, 6, 6, 5, 4,
 
             // Top
-            5, 1, 0, 0, 4, 5, };
+            5, 1, 0, 0, 4, 5
+    };
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -126,7 +136,6 @@ static void init_scene(const cv::Size& sz) {
     glVertexAttribPointer(colors_index, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(colors_index);
 
-    // Unbind to prevent accidental modification
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -136,12 +145,16 @@ static void init_scene(const cv::Size& sz) {
     glViewport(0,0, sz.width, sz.height);
 }
 
+//Renders a rotating rainbow-colored cube on a blueish background
 static void render_scene() {
+	//Clear the background
     glClearColor(0.1, 0.12, 0.2, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    //Use the prepared shader program
     glUseProgram(shader_program);
 
+    //Scale and rotate the cube depending on the current time.
     float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
     float scale = 0.25;
 
@@ -169,14 +182,18 @@ static void render_scene() {
             0.0, 0.0, 1.0, 0.0,
             0.0, 0.0, 0.0, 1.0);
 
+    //calculate the transform
     cv::Matx44f transform = scaleMat * rotXMat * rotYMat * rotZMat;
-
+    //set the corresponding uniform
     glUniformMatrix4fv(uniform_transform, 1, GL_FALSE, transform.val);
+    //Bind the prepared vertex array object
     glBindVertexArray(vao);
+    //Draw
     glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
 }
 
 #ifndef __EMSCRIPTEN__
+//applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
@@ -209,16 +226,15 @@ static bool iteration() {
 
     //To slow for WASM
 #ifndef __EMSCRIPTEN__
-    //Aquire the frame buffer for use by OpenCL
+    //Aquire the frame buffer for use by OpenCV
     window->fb([&](cv::UMat& frameBuffer) {
-        //Glow effect (OpenCL)
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
 #endif
 
+    //Ignored in WebAssmebly builds because there is no sink set.
     window->write();
 
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();
 }
 
@@ -232,6 +248,7 @@ int main() {
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
+    //Creates a writer sink using the VP9 codec (which might be hardware accelerated)
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
             cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
