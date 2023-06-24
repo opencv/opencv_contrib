@@ -5,6 +5,10 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
+using std::cerr;
+using std::endl;
+
+/** Demo parameters **/
 constexpr unsigned int WIDTH = 1280;
 constexpr unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
@@ -12,15 +16,11 @@ constexpr bool OFFSCREEN = false;
 constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";
 #endif
 
-using std::cerr;
-using std::endl;
-
 cv::Ptr<cv::v4d::V4D> window;
 
-static void draw_color_wheel(float x, float y, float w, float h, float hue) {
+static void draw_color_wheel(float x, float y, float w, float h, double hue) {
     //color wheel drawing code taken from https://github.com/memononen/nanovg/blob/master/example/demo.c
     using namespace cv::v4d::nvg;
-    clear({0,0,0,0});
     int i;
     float r0, r1, ax, ay, bx, by, cx, cy, aeps, r;
     Paint paint;
@@ -89,7 +89,7 @@ static void draw_color_wheel(float x, float y, float w, float h, float hue) {
     lineTo(ax, ay);
     lineTo(bx, by);
     closePath();
-    paint = linearGradient(r, 0, ax, ay, cv::v4d::colorConvert(cv::Scalar(hue, 128, 255, 255), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
+    paint = linearGradient(r, 0, ax, ay, cv::v4d::colorConvert(cv::Scalar(hue, 128.0, 255.0, 255.0), cv::COLOR_HLS2BGR_FULL), cv::Scalar(255, 255, 255, 255));
     fillPaint(paint);
     fill();
     paint = linearGradient((r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 255));
@@ -130,14 +130,14 @@ static bool iteration() {
     //we use frame count to calculate the current hue
     float t = window->frameCount() / 60.0;
     //nanovg hue fading depending on t
-    float hue = (sinf(t * 0.12f) + 1.0f) * 127.5;
+    double hue = (sinf(t * 0.12) + 1.0) * 127.5;
 
     if (!window->capture())
         return false;
 
     //Acquire the framebuffer and convert it to RGB
-    window->fb([&](cv::UMat &frameBuffer) {
-        cvtColor(frameBuffer, rgb, cv::COLOR_BGRA2RGB);
+    window->fb([&](cv::UMat &framebuffer) {
+        cvtColor(framebuffer, rgb, cv::COLOR_BGRA2RGB);
     });
 
     //Color-conversion from RGB to HSV
@@ -146,7 +146,7 @@ static bool iteration() {
     //Split the channels
     split(hsv,hsvChannels);
     //Set the current hue
-    hsvChannels[0].setTo(hue);
+    hsvChannels[0].setTo(std::round(hue));
     //Merge the channels back
     merge(hsvChannels,hsv);
 
@@ -154,14 +154,14 @@ static bool iteration() {
     cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
 
     //Acquire the framebuffer and convert the rgb into it
-    window->fb([&](cv::UMat &frameBuffer) {
-        cv::cvtColor(rgb, frameBuffer, cv::COLOR_RGB2BGRA);
+    window->fb([&](cv::UMat &framebuffer) {
+        cv::cvtColor(rgb, framebuffer, cv::COLOR_RGB2BGRA);
     });
 
     //Render using nanovg
     window->nvg([&](const cv::Size &sz) {
     	//TODO automatically normalize hue between opencv and nanovg
-        hue = ((170 + uint8_t(255 - hue))) % 255;
+        hue = fmod((170.0 + (255.0 - hue)),255.0);
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 
