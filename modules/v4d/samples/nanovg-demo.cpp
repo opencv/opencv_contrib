@@ -127,9 +127,9 @@ static bool iteration() {
     static cv::UMat hsv;
     static cv::UMat hueChannel;
 
-    //we use frame count to calculated the current hue
+    //we use frame count to calculate the current hue
     float t = window->frameCount() / 60.0;
-    //nanovg hue fading depending t
+    //nanovg hue fading depending on t
     float hue = (sinf(t * 0.12f) + 1.0f) * 127.5;
 
     if (!window->capture())
@@ -167,7 +167,6 @@ static bool iteration() {
 
     window->write();
 
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();
 }
 

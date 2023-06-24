@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-/**
+/*
  * Based on cube-demo. Only differs in two points:
  * - Uses a source to read a video.
  * - Doesn't clear the background so the cube is rendered on top of the video.
