@@ -125,9 +125,13 @@ static bool iteration() {
     static vector<vector<double>> boxes;
     //probability of detected object being a pedestrian - currently always set to 1.0
     static vector<double> probs;
-
+    //Faster tracking parameters
+    static cv::TrackerKCF::Params params;
+    params.desc_pca = cv::TrackerKCF::GRAY;
+    params.compress_feature = false;
+    params.compressed_size = 1;
     //KCF tracker used instead of continous detection
-    static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create();
+    static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(params);
     //The bounding rectangle of the currently tracked pedestrian
     static cv::Rect tracked(0,0,1,1);
     static bool trackerInit = false;
@@ -150,11 +154,11 @@ static bool iteration() {
     tracked = cv::Rect(0,0,1,1);
 
     //Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-    if (redetect || !tracker->update(videoFrameDown, tracked)) {
+    if (!trackerInit || redetect || !tracker->update(videoFrameDownGrey, tracked)) {
         redetect = false;
         tracked = cv::Rect(0,0,1,1);
         //Detect pedestrians
-        hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.025, 2.0, false);
+        hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.15, 2.0, false);
 
         if (!locations.empty()) {
             boxes.clear();
@@ -177,7 +181,7 @@ static bool iteration() {
 
             if(!trackerInit) {
             	//initialize the tracker once
-            	tracker->init(videoFrameDown, tracked);
+            	tracker->init(videoFrameDownGrey, tracked);
             	trackerInit = true;
             }
 
