@@ -12,7 +12,10 @@ int main() {
 	float size = 40.0f;
 	//The text
 	string hw = "hello world";
-	//Setup the GUI
+	//Setup the GUI. First thing you should do is create a light-weight dialog and add widgets as needed.
+	//Variables passed to the FormHelper (e.g. via makeFormVariable) will be directly modified by the GUI.
+	//Please note that you can build more complex GUIs if you use NanoGUI directly on the created dialog
+	//instead of creating widgets through FormHelper::make* calls.
 	window->nanogui([&](FormHelper& form) {
 		//Create a light-weight dialog
 		form.makeDialog(5, 30, "Settings");

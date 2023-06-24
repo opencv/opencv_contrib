@@ -20,10 +20,9 @@ int main() {
     resize(image, resized, window->framebufferSize());
     cvtColor(resized, converted, COLOR_RGB2BGRA);
 
-	//Display the framebuffer in the native window in an endless loop
 	window->run([=](){
 		//Create a fb context and copy the prepared image to the framebuffer. The fb context
-		//takes care of retrieving a storing the data on the graphics card (using CL-GL
+		//takes care of retrieving and storing the data on the graphics card (using CL-GL
 		//interop if available), ready for other contexts to use
 		window->fb([&](UMat& framebuffer){
 	        converted.copyTo(framebuffer);
