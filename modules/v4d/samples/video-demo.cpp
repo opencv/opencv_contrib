@@ -11,6 +11,10 @@
 
 #include <opencv2/v4d/v4d.hpp>
 
+using std::cerr;
+using std::endl;
+
+/** Demo parameters **/
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
@@ -21,9 +25,7 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 #endif
 
-using std::cerr;
-using std::endl;
-
+/**OpenGL contants and variables **/
 const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
@@ -197,6 +199,7 @@ static bool iteration() {
     });
 #endif
 
+    //Ignored in WebAssmebly builds because there is no sink set.
     window->write();
 
     return window->display();

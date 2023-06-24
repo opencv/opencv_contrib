@@ -6,7 +6,7 @@
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
-//Demo Parameters
+//** Demo Parameters **/
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 constexpr bool OFFSCREEN = false;
@@ -20,7 +20,7 @@ const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 :
 using std::cerr;
 using std::endl;
 
-//OpenGL constants and variables
+/** OpenGL constants and variables **/
 const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
@@ -28,12 +28,12 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-//The centrals V4D objects
+//The central V4D object
 cv::Ptr<cv::v4d::V4D> window;
 
-//Simple transform and pass-through shaders
+//Simple transform & pass-through shaders
 static GLuint load_shader() {
-	//Shader version 330 and 300 es is very similar.
+	//Shader versions "330" and "300 es" are very similar.
 	//If you are careful you can write the same code for both versions.
 #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
@@ -231,9 +231,6 @@ static bool iteration() {
         glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
     });
 #endif
-
-    //Ignored in WebAssmebly builds because there is no sink set.
-    window->write();
 
     return window->display();
 }
