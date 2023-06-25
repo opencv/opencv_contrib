@@ -1,9 +1,6 @@
 <!doctype html>
 <html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=2.0, user-scalable=no">
     <title>Font Demo</title>
     <style>
       body {
@@ -78,14 +75,6 @@
         width: 300px;
       }
 
-     /* #controls {
-        display: inline-block;
-        float: right;
-        vertical-align: top;
-        margin-top: 30px;
-        margin-right: 20px;
-      }*/
-
       #output {
         width: 100%;
         height: 200px;
@@ -103,127 +92,122 @@
       }
     </style>
   </head>
-  <body>
-      <span id='controls'>
-  <span><button id="fullscreenBtn">Fullscreen</button>
+<body>
+  <span id='controls'>
+  <span>
+    <button id="fullscreenBtn">Fullscreen</button>
   </span>
-</span>
-  		<canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
-  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
-		<video id="video" width="1280" height="720" autoplay style="display: none;"></video>
+  </span>
+  <canvas id="offscreenCanvas" width="960" height="540" style="display: none;"></canvas>
+  <div class="emscripten" id="status">Downloading...</div>
+  <div class="emscripten">
+    <progress value="0" max="100" id="progress" hidden=1></progress>
+  </div>
+  <div class="emscripten_border">
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+  </div>
 
-    <div class="emscripten" id="status">Downloading...</div>
+  <script type='text/javascript'>
+    var statusElement = document.getElementById('status');
+    var progressElement = document.getElementById('progress');
+    var fsButton = document.querySelector("#fullscreenBtn");
 
-    <div class="emscripten">
-      <progress value="0" max="100" id="progress" hidden=1></progress>
-    </div>
+    function fixCanvasSize() {
+        Module.canvas.style.width = ((960) / window.devicePixelRatio)+ "px";
+        Module.canvas.style.height = ((540) / window.devicePixelRatio) + "px";
+        Module.canvas.width = 960;
+        Module.canvas.height = 540;
+        console.log("fixed canvas size");
+    }
 
-
-    <div class="emscripten_border">
-      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
-    </div>
-    <script type='text/javascript'>
-      var statusElement = document.getElementById('status');
-      var progressElement = document.getElementById('progress');
-
-      function fixCanvasSize() {
-          Module.canvas.style.width = (1280 / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = (720 / window.devicePixelRatio) + "px";
-          Module.canvas.width = 1280;
-          Module.canvas.height = 720;
-      }
-
-      var Module = {
-        onRuntimeInitialized: function() {
-          fixCanvasSize();
-        },
-        preRun: [],
-        postRun: [],
-        print: (function() {
-          var element = document.getElementById('output');
-          if (element) element.value = ''; // clear browser cache
-          return function(text) {
-            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-            // These replacements are necessary if you render to raw HTML
-            //text = text.replace(/&/g, "&amp;");
-            //text = text.replace(/</g, "&lt;");
-            //text = text.replace(/>/g, "&gt;");
-            //text = text.replace('\n', '<br>', 'g');
-            console.log(text);
-            if (element) {
-              element.value += text + "\n";
-              element.scrollTop = element.scrollHeight; // focus on bottom
-            }
-          };
-        })(),
-        printErr: function(text) {
+    var Module = {
+      onRuntimeInitialized: function() {
+        fixCanvasSize();
+        Module._v4dInitCapture(960, 540);
+      },
+      preRun: [],
+      postRun: [],
+      print: (function() {
+        var element = document.getElementById('output');
+        if (element) element.value = ''; // clear browser cache
+        return function(text) {
           if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-          console.error(text);
-        },
-        canvas: (function() {
-          var canvas = document.getElementById('canvas');
-
-          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-          // application robust, you may want to override this behavior before shipping!
-          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
-
-          return canvas;
-        })(),
-        setStatus: function(text) {
-          if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
-          if (text === Module.setStatus.last.text) return;
-          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-          var now = Date.now();
-          if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
-          Module.setStatus.last.time = now;
-          Module.setStatus.last.text = text;
-          if (m) {
-            text = m[1];
-            progressElement.value = parseInt(m[2])*100;
-            progressElement.max = parseInt(m[4])*100;
-            progressElement.hidden = false;
-          } else {
-            progressElement.value = null;
-            progressElement.max = null;
-            progressElement.hidden = true;
+          // These replacements are necessary if you render to raw HTML
+          //text = text.replace(/&/g, "&amp;");
+          //text = text.replace(/</g, "&lt;");
+          //text = text.replace(/>/g, "&gt;");
+          //text = text.replace('\n', '<br>', 'g');
+          console.log(text);
+          if (element) {
+            element.value += text + "\n";
+            element.scrollTop = element.scrollHeight; // focus on bottom
           }
-          statusElement.innerHTML = text;
-        },
-        totalDependencies: 0,
-        monitorRunDependencies: function(left) {
-          this.totalDependencies = Math.max(this.totalDependencies, left);
-          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
-        }
-      };
-      Module.setStatus('Downloading...');
-
-      window.onerror = function(event) {
-        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
-        Module.setStatus('Exception thrown, see JavaScript console');
-        //spinnerElement.style.display = 'none';
-        Module.setStatus = function(text) {
-          if (text) Module.printErr('[post-exception status] ' + text);
         };
+      })(),
+      printErr: function(text) {
+        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+        console.error(text);
+      },
+      canvas: (function() {
+        var canvas = document.getElementById('canvas');
+
+        // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+        // application robust, you may want to override this behavior before shipping!
+        // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+        canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+        return canvas;
+      })(),
+      setStatus: function(text) {
+        if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+        if (text === Module.setStatus.last.text) return;
+        var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+        var now = Date.now();
+        if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+        Module.setStatus.last.time = now;
+        Module.setStatus.last.text = text;
+        if (m) {
+          text = m[1];
+          progressElement.value = parseInt(m[2])*100;
+          progressElement.max = parseInt(m[4])*100;
+          progressElement.hidden = false;
+        } else {
+          progressElement.value = null;
+          progressElement.max = null;
+          progressElement.hidden = true;
+        }
+        statusElement.innerHTML = text;
+      },
+      totalDependencies: 0,
+      monitorRunDependencies: function(left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+      }
+    };
+    Module.setStatus('Downloading...');
+
+    window.onerror = function(event) {
+      // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+      Module.setStatus('Exception thrown, see JavaScript console');
+      //spinnerElement.style.display = 'none';
+      Module.setStatus = function(text) {
+        if (text) Module.printErr('[post-exception status] ' + text);
       };
+    };
 
-      let fsButton = document.querySelector("#fullscreenBtn");
+    fsButton.addEventListener('click', async function () {
+      Module.requestFullscreen(false, false)
+    });
 
-      fsButton.addEventListener('click', async function () {
-        Module.requestFullscreen(false, false)
-      });
-
-       window.addEventListener('fullscreenchange', function (event) {
-          if (document.fullscreenElement) {
-              console.log(`Element: ${document.fullscreenElement.id} entered fullscreen mode.`);
-          } else {
-              fixCanvasSize()
-              console.log('Leaving fullscreen mode.');
-          }
-      });
-    </script>
-        <script async type="text/javascript" src="example_v4d_font-demo.js"></script>
-  </body>
+      window.addEventListener('fullscreenchange', function (event) {
+        if (document.fullscreenElement) {
+            console.log(`Element: ${document.fullscreenElement.id} entered fullscreen mode.`);
+        } else {
+            fixCanvasSize()
+            console.log('Leaving fullscreen mode.');
+        }
+    });
+  </script>
+  <script type="text/javascript" src="example_v4d_font-demo.js" defer></script>
+</body>
 </html>
-
-

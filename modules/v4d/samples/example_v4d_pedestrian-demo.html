@@ -1,10 +1,7 @@
 <!doctype html>
 <html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=2.0, user-scalable=no">
-    <title>Pedestrian Tracking Demo</title>
+    <title>Pedestrian Demo</title>
     <style>
       body {
         font-family: arial;
@@ -108,9 +105,9 @@
   <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
-        <canvas id="offscreenCanvas" width="1280" height="720" style="display: none;"></canvas>
-  		<canvas id="cameraCanvas" width="1280" height="720" style="display: none;"></canvas>
-		<video id="v4dVideoElement" width="1280" height="720" autoplay style="display: none;"></video>
+        <canvas id="offscreenCanvas" width="960" height="540" style="display: none;"></canvas>
+  		<canvas id="cameraCanvas" width="960" height="540" style="display: none;"></canvas>
+		<video id="v4dVideoElement" width="960" height="540" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -131,16 +128,16 @@
       var cameraCanvas = document.querySelector("#cameraCanvas");
 
       function fixCanvasSize() {
-          Module.canvas.style.width = (1280 / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = (720 / window.devicePixelRatio) + "px";
-          Module.canvas.width = 1280;
-          Module.canvas.height = 720;
+          Module.canvas.style.width = ((960) / window.devicePixelRatio)+ "px";
+          Module.canvas.style.height = ((540) / window.devicePixelRatio) + "px";
+          Module.canvas.width = 960;
+          Module.canvas.height = 540;
       }
 
       var Module = {
         onRuntimeInitialized: function() {
           fixCanvasSize();
-          Module._v4dInitCapture(1280, 720);
+          Module._v4dInitCapture(960, 540);
         },
         preRun: [],
         postRun: [],
@@ -162,8 +159,8 @@
           };
         })(),
         printErr: function(text) {
-          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-          console.error(text);
+            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+            console.error(text);
         },
         canvas: (function() {
           var canvas = document.getElementById('canvas');
@@ -212,7 +209,7 @@
       }
 
       captureBtn.addEventListener('click', async function() {
-          let stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } , audio: false });
+          let stream = await navigator.mediaDevices.getUserMedia({ video: { width: 960, height: 540 } , audio: false });
           videoElement.addEventListener(
             "playing",
             () => {
