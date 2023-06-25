@@ -18,14 +18,14 @@ using std::endl;
 using std::vector;
 using std::string;
 
-#ifdef __EMSCRIPTEN__
-//enables KCF tracking instead of continuous detection.
-#define USE_TRACKER 1;
+/* Demo parameters */
+#ifndef __EMSCRIPTEN__
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
 #endif
-
-/** Application parameters **/
-constexpr unsigned int WIDTH = 1280;
-constexpr unsigned int HEIGHT = 720;
 constexpr unsigned int DOWNSIZE_WIDTH = 320;
 constexpr unsigned int DOWNSIZE_HEIGHT = 180;
 constexpr bool OFFSCREEN = false;
@@ -34,28 +34,31 @@ constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-/** Effect parameters **/
+/* Visualization parameters */
 constexpr int BLUR_DIV = 1000;
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-float eyes_and_lips_saturation = 1.6f; //Saturation boost factor for eyes and lips
-float skin_saturation = 1.7f; //Saturation boost factor for skin
-float skin_contrast = 0.7f; //Contrast factor skin
+//Saturation boost factor for eyes and lips
+float eyes_and_lips_saturation = 1.6f;
+//Saturation boost factor for skin
+float skin_saturation = 1.7f;
+//Contrast factor skin
+float skin_contrast = 0.7f;
 #ifndef __EMSCRIPTEN__
-bool side_by_side = true; //Show input and output side by side
-bool stretch = true; //Stretch the video to the window size
+//Show input and output side by side
+bool side_by_side = true;
+//Stretch the video to the window size
+bool stretch = true;
 #else
 bool side_by_side = false;
 bool stretch = false;
 #endif
 
 cv::Ptr<cv::v4d::V4D> window;
-cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF(); //Face landmark detection
-cv::detail::MultiBandBlender blender(false, 5); //Blender (used to put the different face parts back together)
+//Face landmark detector
+cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
+//Blender (used to put the different face parts back together)
+cv::detail::MultiBandBlender blender(false, 5);
 
-
-#ifdef USE_TRACKER
-cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(); //Instead of continues face detection we can use a tracker
-#endif
 
 /*!
  * Data structure holding the points for all face landmarks
@@ -107,7 +110,7 @@ struct FaceFeatures {
             inside_lips_.push_back(shape[i] / scale);
     }
 
-    //concatinates all feature points
+    //Concatenates all feature points
     vector<cv::Point2f> points() const {
         vector<cv::Point2f> allPoints;
         allPoints.insert(allPoints.begin(), chin_.begin(), chin_.end());
@@ -123,7 +126,7 @@ struct FaceFeatures {
         return allPoints;
     }
 
-    //returns all face features points in fixed order
+    //Returns all face features points in fixed order
     vector<vector<cv::Point2f>> features() const {
         return {chin_,
             top_nose_,
@@ -141,7 +144,7 @@ struct FaceFeatures {
     }
 };
 
-//based on the detected FaceFeatures guesses a decent face oval and draws a mask.
+//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
 static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
     using namespace cv::v4d::nvg;
     clear();
@@ -197,7 +200,6 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
-//Setup the gui
 static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
     v->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
@@ -245,9 +247,6 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
 
 static bool iteration() {
     try {
-#ifdef USE_TRACKER
-        static bool trackerInitalized = false;
-#endif
         //Face detector
 #ifndef __EMSCRIPTEN__
         static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
@@ -287,31 +286,17 @@ static bool iteration() {
 
         shapes.clear();
         faceRects.clear();
-#ifdef USE_TRACKER
-        //Use the KCF tracker to track the face "on past experience"
-        if (trackerInitalized && tracker->update(down, trackedFace)) {
-            faceRects.push_back(trackedFace);
-        } else
-#endif
-        {
-            //Detect faces in the down-scaled image
-            detector->detect(down, faces);
 
-            //Collect face bounding rectangles though we will only use the first
-            for (int i = 0; i < faces.rows; i++) {
-                faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
-            }
-        }
+        //Detect faces in the down-scaled image
+		detector->detect(down, faces);
+
+		//Collect face bounding rectangles though we will only use the first
+		for (int i = 0; i < faces.rows; i++) {
+			faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
+		}
 
         //find landmarks if faces have been detected
         if (!faceRects.empty() && facemark->fit(down, faceRects, shapes)) {
-#ifdef USE_TRACKER
-            if(!trackerInitalized) {
-                //on first time init the tracker
-                tracker->init(down, faceRects[0]);
-                trackerInitalized = true;
-            }
-#endif
             featuresList.clear();
             //a FaceFeatures instance for each face
             for (size_t i = 0; i < faceRects.size(); ++i) {
@@ -390,11 +375,8 @@ static bool iteration() {
             });
         }
 
-#ifndef __EMSCRIPTEN__
         window->write();
-#endif
 
-        //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
         return window->display();
     } catch (std::exception &ex) {
         cerr << ex.what() << endl;

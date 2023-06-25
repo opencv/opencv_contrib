@@ -14,9 +14,14 @@ using std::endl;
 using std::vector;
 using std::string;
 
-/** Demo parameters **/
-constexpr unsigned int WIDTH = 1280;
-constexpr unsigned int HEIGHT = 720;
+/* Demo parameters */
+#ifndef __EMSCRIPTEN__
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
+#endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr unsigned int DOWNSIZE_WIDTH = 640;
 constexpr unsigned int DOWNSIZE_HEIGHT = 360;
@@ -134,7 +139,7 @@ static bool iteration() {
     static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(params);
     //The bounding rectangle of the currently tracked pedestrian
     static cv::Rect tracked(0,0,1,1);
-    static bool trackerInit = false;
+    static bool trackerInitialized = false;
     //If tracking fails re-detect
     static bool redetect = true;
 
@@ -154,7 +159,8 @@ static bool iteration() {
     tracked = cv::Rect(0,0,1,1);
 
     //Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-    if (!trackerInit || redetect || !tracker->update(videoFrameDownGrey, tracked)) {
+    if (!trackerInitialized || redetect || !tracker->update(videoFrameDownGrey, tracked)) {
+    	cerr << "detect" << endl;
         redetect = false;
         tracked = cv::Rect(0,0,1,1);
         //Detect pedestrians
@@ -179,17 +185,19 @@ static bool iteration() {
                 }
             }
 
-            if(!trackerInit) {
-            	//initialize the tracker once
+//            if(!trackerInitialized) {
+//            	initialize the tracker once
             	tracker->init(videoFrameDownGrey, tracked);
-            	trackerInit = true;
-            }
+            	trackerInitialized = true;
+//            }
 
             if(tracked.width == 1 && tracked.height == 1) {
                 //detection failed - re-detect
             	redetect = true;
             }
         }
+    } else {
+    	cerr << "track" << endl;
     }
 
     //Draw an ellipse around the tracked pedestrian

@@ -8,9 +8,14 @@
 using std::cerr;
 using std::endl;
 
-/** Demo parameters **/
+/* Demo parameters */
+#ifndef __EMSCRIPTEN__
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
+#endif
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 #ifndef __EMSCRIPTEN__
@@ -20,7 +25,7 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 
 cv::Ptr<cv::v4d::V4D> window;
 
-/** mandelbrot control parameters **/
+/* Mandelbrot control parameters */
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 nanogui::Color base_color_val(0.2f, 0.6f, 1.0f, 1.0f);
@@ -39,7 +44,7 @@ float current_zoom = 1.0;
 float zoom_incr = 0.99;
 bool manual_navigation = false;
 
-/** GL uniform handles **/
+/* GL uniform handles */
 GLint base_color_hdl;
 GLint contrast_boost_hdl;
 GLint max_iterations_hdl;
@@ -48,10 +53,10 @@ GLint center_y_hdl;
 GLint current_zoom_hdl;
 GLint resolution_hdl;
 
-/** shader program handle **/
+/* Shader program handle */
 GLuint shader_program_hdl;
 
-//vertex array
+/* Object handles */
 GLuint VAO;
 GLuint VBO, EBO;
 
@@ -167,7 +172,7 @@ static void load_shader() {
     shader_program_hdl = cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
 }
 
-//easing function for the automatic zoom
+//easing function for the bungee zoom
 static float easeInOutQuint(float x) {
     return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
 }

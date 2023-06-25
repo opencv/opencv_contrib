@@ -24,6 +24,27 @@ using std::vector;
 using std::string;
 using namespace std::literals::chrono_literals;
 
+
+/* Demo parameters */
+#ifndef __EMSCRIPTEN__
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
+#endif
+const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
+#ifndef __EMSCRIPTEN__
+constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
+#endif
+constexpr bool OFFSCREEN = false;
+
+cv::Ptr<cv::v4d::V4D> window;
+#ifndef __EMSCRIPTEN__
+cv::Ptr<cv::v4d::V4D> menuWindow;
+#endif
+
+/* Visualization parameters */
 enum BackgroundModes {
     GREY,
     COLOR,
@@ -36,23 +57,6 @@ enum PostProcModes {
     BLOOM,
     NONE
 };
-
-/** Application parameters **/
-
-constexpr unsigned int WIDTH = 1280;
-constexpr unsigned int HEIGHT = 720;
-const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-#ifndef __EMSCRIPTEN__
-constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
-#endif
-constexpr bool OFFSCREEN = false;
-
-cv::Ptr<cv::v4d::V4D> window;
-#ifndef __EMSCRIPTEN__
-cv::Ptr<cv::v4d::V4D> menuWindow;
-#endif
-
-/** Visualization parameters **/
 
 // Generate the foreground at this scale.
 #ifndef __EMSCRIPTEN__

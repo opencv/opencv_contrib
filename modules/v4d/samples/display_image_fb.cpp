@@ -6,7 +6,7 @@ using namespace cv::v4d;
 
 int main() {
     //Creates a V4D object
-    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Display image and FB");
+    Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "Display image and FB");
 
     //Loads an image as a UMat (just in case we have hardware acceleration available)
 #ifdef __EMSCRIPTEN__

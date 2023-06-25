@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main(int argc, char** argv) {
-    Ptr<V4D> window = V4D::make(cv::Size(1280, 720), cv::Size(), "Video Editing");
+    Ptr<V4D> window = V4D::make(cv::Size(960, 540), cv::Size(), "Video Editing");
 
     //In case of WebAssembly
     CV_UNUSED(argc);

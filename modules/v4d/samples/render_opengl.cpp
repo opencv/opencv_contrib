@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "GL Blue Screen");
+    Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "GL Blue Screen");
 
     window->gl([](){
         //Sets the clear color to blue

@@ -14,9 +14,14 @@
 using std::cerr;
 using std::endl;
 
-/** Demo parameters **/
+/* Demo Parameters */
+#ifndef __EMSCRIPTEN__
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
+#endif
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
@@ -25,7 +30,7 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 #endif
 
-/**OpenGL contants and variables **/
+/* OpenGL contants and variables */
 const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;

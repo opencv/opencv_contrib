@@ -8,7 +8,7 @@ int main() {
     //Creates a V4D window for on screen rendering with a window size of 720p and a framebuffer of the same size.
 	//Please note that while the window size may change the framebuffer size may not. If you need multiple framebuffer
 	//sizes you need multiple V4D objects
-    Ptr<V4D> window = V4D::make(Size(1280, 720), cv::Size(), "Display image");
+    Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "Display image");
 
     //Load an image
 #ifdef __EMSCRIPTEN__

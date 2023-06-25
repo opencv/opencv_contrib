@@ -8,9 +8,14 @@
 using std::cerr;
 using std::endl;
 
-/** Demo parameters **/
-constexpr unsigned int WIDTH = 1280;
-constexpr unsigned int HEIGHT = 720;
+/* Demo parameters */
+#ifndef __EMSCRIPTEN__
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
+#endif
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "nanovg-demo.mkv";

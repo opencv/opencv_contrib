@@ -6,9 +6,14 @@
 #include <opencv2/v4d/v4d.hpp>
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
-//** Demo Parameters **/
+/* Demo Parameters */
+#ifndef __EMSCRIPTEN__
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
+#else
+constexpr long unsigned int WIDTH = 960;
+constexpr long unsigned int HEIGHT = 540;
+#endif
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
@@ -20,7 +25,7 @@ const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 :
 using std::cerr;
 using std::endl;
 
-/** OpenGL constants and variables **/
+/* OpenGL constants and variables */
 const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
