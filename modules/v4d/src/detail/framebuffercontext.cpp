@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 #include "opencv2/v4d/v4d.hpp"
 #include "framebuffercontext.hpp"
-#include "opencv2/v4d/util.hpp"
+#include "../util.hpp"
 #include "glcontext.hpp"
 #include "nanovgcontext.hpp"
 #include "nanoguicontext.hpp"

@@ -31,7 +31,7 @@
 #include <string>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
-#include <opencv2/v4d/formhelper.hpp>
+#include "formhelper.hpp"
 #include "detail/threadpool.hpp"
 
 using std::cout;

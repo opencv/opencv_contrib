@@ -9,6 +9,7 @@
 
 #include <nanogui/screen.h>
 #include <nanogui/formhelper.h>
+#include <opencv2/core/cvdef.h>
 
 #include <string>
 

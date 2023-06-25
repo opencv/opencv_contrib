@@ -13,7 +13,7 @@
 //FIXME
 #include "opencv2/v4d/detail/cl.hpp"
 #include <opencv2/core/ocl.hpp>
-#include "opencv2/v4d/util.hpp"
+#include "../util.hpp"
 #include <iostream>
 
 #if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
