@@ -11,6 +11,7 @@
 #ifndef __ZXING_ZXING_HPP__
 #define __ZXING_ZXING_HPP__
 
+#include "opencv2/core/fast_math.hpp"
 
 #define COUNTER_TYPE short
 
@@ -54,14 +55,8 @@ typedef unsigned char boolean;
 #include <cmath>
 
 namespace zxing {
-inline bool isnan(float v) { 
-    union { float v; uint32_t x; } u = { v };
-    return (u.x & 0x7fffffffu) > 0x7f800000u;
-}
-inline bool isnan(double v) { 
-    union { double v; uint64_t x; } u = { v };
-    return (u.x & ~0x8000000000000000uLL) > 0x7ff0000000000000uLL;
-}
+inline bool isnan(float v) { return (bool)cvIsNaN(v); }
+inline bool isnan(double v) { return (bool)cvIsNaN(v); }
 inline float nan() { return std::numeric_limits<float>::quiet_NaN(); }
 }  // namespace zxing
 
