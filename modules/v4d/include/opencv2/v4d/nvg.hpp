@@ -6,8 +6,6 @@
 #ifndef SRC_OPENCV_V4D_NVG_HPP_
 #define SRC_OPENCV_V4D_NVG_HPP_
 
-//#include "v4d.hpp"
-
 #include <stdio.h>
 #include <opencv2/core.hpp>
 #include "nanovg.h"
@@ -17,7 +15,7 @@ struct NVGcontext;
 namespace cv {
 namespace v4d {
 /*!
- * In general please refere to https://github.com/memononen/nanovg/blob/master/src/nanovg.h for reference.
+ * In general please refer to https://github.com/memononen/nanovg/blob/master/src/nanovg.h for reference.
  */
 namespace nvg {
 /*!

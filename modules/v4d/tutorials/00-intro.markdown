@@ -114,6 +114,15 @@ make -j8
 sudo make install
 ```
 
+## Download models
+```bash
+mkdir assets
+cd assets
+wget https://github.com/kurnianggoro/GSOC2017/raw/master/data/lbfmodel.yaml
+wget https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
+cd ..
+```
+
 ## Download the example videos
 ```bash
 # big buck bunny video

@@ -22,6 +22,10 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
+void glfw_error_callback(int error, const char* description) {
+    fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
+}
+
 static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
     nanogui::Vector2i d = p - w->absolute_position();
     return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
@@ -211,7 +215,7 @@ void FrameBufferContext::init() {
 #endif
     if (glfwInit() != GLFW_TRUE)
            assert(false);
-    glfwSetErrorCallback(cv::v4d::glfw_error_callback);
+    glfwSetErrorCallback(cv::v4d::detail::glfw_error_callback);
 
     if (debug_)
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);

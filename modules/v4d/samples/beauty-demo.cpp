@@ -26,8 +26,8 @@ constexpr long unsigned int HEIGHT = 720;
 constexpr long unsigned int WIDTH = 960;
 constexpr long unsigned int HEIGHT = 540;
 #endif
-constexpr unsigned int DOWNSIZE_WIDTH = 320;
-constexpr unsigned int DOWNSIZE_HEIGHT = 180;
+constexpr unsigned int DOWNSIZE_WIDTH = 960;
+constexpr unsigned int DOWNSIZE_HEIGHT = 540;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
@@ -35,10 +35,10 @@ constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /* Visualization parameters */
-constexpr int BLUR_DIV = 1000;
+constexpr int BLUR_DIV = 500;
 int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
 //Saturation boost factor for eyes and lips
-float eyes_and_lips_saturation = 1.6f;
+float eyes_and_lips_saturation = 2.0f;
 //Saturation boost factor for skin
 float skin_saturation = 1.7f;
 //Contrast factor skin
@@ -46,11 +46,11 @@ float skin_contrast = 0.7f;
 #ifndef __EMSCRIPTEN__
 //Show input and output side by side
 bool side_by_side = true;
-//Stretch the video to the window size
-bool stretch = true;
+//Scale the video to the window size
+bool scale = true;
 #else
 bool side_by_side = false;
-bool stretch = false;
+bool scale = false;
 #endif
 
 cv::Ptr<cv::v4d::V4D> window;
@@ -126,7 +126,7 @@ struct FaceFeatures {
         return allPoints;
     }
 
-    //Returns all face features points in fixed order
+    //Returns all feature points in fixed order
     vector<vector<cv::Point2f>> features() const {
         return {chin_,
             top_nose_,
@@ -206,10 +206,10 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
 
         form.makeGroup("Display");
         form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
-        auto* stretchVar = form.makeFormVariable("Stretch", stretch, "Enable or disable stetching to the window size");
-        stretchVar->set_callback([=](const bool& b) {
-            v->setFrameBufferScaling(b);
-            stretch = b;
+        auto* scaleVar = form.makeFormVariable("Stretch", scale, "Enable or disable stetching to the window size");
+        scaleVar->set_callback([=](const bool& b) {
+            v->setScaling(b);
+            scale = b;
         });
 
 #ifndef __EMSCRIPTEN__
@@ -398,7 +398,7 @@ int main() {
     window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
     facemark->loadModel("assets/lbfmodel.yaml");
 
-    window->setFrameBufferScaling(stretch);
+    window->setScaling(scale);
 
     if (!OFFSCREEN) {
         setup_gui(window);

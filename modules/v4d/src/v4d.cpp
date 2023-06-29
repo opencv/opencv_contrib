@@ -15,11 +15,6 @@
 
 namespace cv {
 namespace v4d {
-namespace detail {
-void glfw_error_callback(int error, const char* description) {
-    fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
-}
-}
 
 cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
     cv::Mat tmpIn(1, 1, CV_8UC3);
@@ -464,11 +459,11 @@ void V4D::setVisible(bool v) {
     nguiCtx().screen().perform_layout();
 }
 
-void V4D::setFrameBufferScaling(bool s) {
+void V4D::setScaling(bool s) {
     stretch_ = s;
 }
 
-bool V4D::isFrameBufferScaling() {
+bool V4D::isScaling() {
     return stretch_;
 }
 
@@ -494,7 +489,7 @@ void V4D::setDefaultKeyboardEventCallback() {
 void V4D::swapContextBuffers() {
     run_sync_on_main<10>([this]() {
         FrameBufferContext::GLScope glScope(glCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isScaling());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
 #else
@@ -504,7 +499,7 @@ void V4D::swapContextBuffers() {
 
     run_sync_on_main<11>([this]() {
         FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isScaling());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 #else
@@ -514,7 +509,7 @@ void V4D::swapContextBuffers() {
 
     run_sync_on_main<12>([this]() {
         FrameBufferContext::GLScope glScope(nguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isFrameBufferScaling());
+        nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isScaling());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
 #else
@@ -539,7 +534,7 @@ bool V4D::display() {
         run_sync_on_main<6>([&, this](){
             {
                FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-               fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isFrameBufferScaling());
+               fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isScaling());
             }
 #ifndef __EMSCRIPTEN__
             nguiCtx().render(printFPS_, showFPS_);

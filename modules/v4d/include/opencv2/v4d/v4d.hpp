@@ -25,14 +25,18 @@
 #include "source.hpp"
 #include "sink.hpp"
 #include "util.hpp"
+#include "formhelper.hpp"
+#include "nvg.hpp"
+#include "detail/threadpool.hpp"
+
 #include <iostream>
 #include <future>
 #include <set>
 #include <string>
+
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
-#include "formhelper.hpp"
-#include "detail/threadpool.hpp"
+
 
 using std::cout;
 using std::cerr;
@@ -49,7 +53,7 @@ namespace nanogui {
  */
 namespace cv {
 /*!
- * Visualization namespace
+ * V4D namespace
  */
 namespace v4d {
 class FormHelper;
@@ -63,12 +67,6 @@ class GLContext;
 class NanoVGContext;
 class NanoguiContext;
 
-/*!
- * The GFLW error callback.
- * @param error Error number
- * @param description Error description
- */
-void glfw_error_callback(int error, const char* description);
 /*!
  * Find widgets that are of type T.
  * @tparam T The type of widget to find
@@ -96,10 +94,7 @@ CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCod
 
 using namespace cv::v4d::detail;
 
-class NVG;
-
 class CV_EXPORTS V4D {
-    friend class detail::NanoVGContext;
     friend class detail::FrameBufferContext;
     friend class HTML5Capture;
     cv::Size initialSize_;
@@ -347,12 +342,12 @@ public:
      * Enable/Disable scaling the framebuffer during blitting.
      * @param s if true enable scaling
      */
-    CV_EXPORTS void setFrameBufferScaling(bool s);
+    CV_EXPORTS void setScaling(bool s);
     /*!
      * Determine if framebuffer is scaled during blitting.
      * @return true if framebuffer is scaled during blitting.
      */
-    CV_EXPORTS bool isFrameBufferScaling();
+    CV_EXPORTS bool isScaling();
     /*!
      * Everytime a frame is displayed this count is incremented
      * @return the current frame count
@@ -378,15 +373,16 @@ public:
     CV_EXPORTS void printSystemInfo();
 
     CV_EXPORTS void makeCurrent();
-    NanoguiContext& nguiCtx();
+
+    void setDefaultKeyboardEventCallback();
+    void setKeyboardEventCallback(
+            std::function<bool(int key, int scancode, int action, int modifiers)> fn);
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, bool compat, int samples);
 
     void init();
-    void setDefaultKeyboardEventCallback();
-    void setKeyboardEventCallback(
-            std::function<bool(int key, int scancode, int action, int modifiers)> fn);
+
     void setMouseDrag(bool d);
     bool isMouseDrag();
     cv::Vec2f getMousePosition();
@@ -397,6 +393,7 @@ private:
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
     GLContext& glCtx();
+    NanoguiContext& nguiCtx();
 
     bool hasFbCtx();
     bool hasClvaCtx();
@@ -410,6 +407,5 @@ private:
 }
 } /* namespace kb */
 
-#include <opencv2/v4d/nvg.hpp>
 
 #endif /* SRC_OPENCV_V4D_V4D_HPP_ */

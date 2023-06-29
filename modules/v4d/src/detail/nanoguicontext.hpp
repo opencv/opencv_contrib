@@ -6,6 +6,7 @@
 #ifndef SRC_OPENCV_NANOGUICONTEXT_HPP_
 #define SRC_OPENCV_NANOGUICONTEXT_HPP_
 
+#include "opencv2/v4d/nvg.hpp"
 #include "framebuffercontext.hpp"
 
 

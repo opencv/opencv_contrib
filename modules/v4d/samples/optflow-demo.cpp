@@ -100,7 +100,7 @@ nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
 bool show_fps = true;
 //Stretch frame buffer to window size
-bool stretch = false;
+bool scale = false;
 //Use OpenCL or not
 bool use_acceleration = true;
 //The post processing mode
@@ -379,8 +379,8 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> main, cv::Ptr<cv::v4d::V4D> menu) {
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-        form.makeFormVariable("Stetch", stretch, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
-            main->setFrameBufferScaling(s);
+        form.makeFormVariable("Stetch", scale, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
+            main->setScaling(s);
         });
 
 #ifndef __EMSCRIPTEN__
