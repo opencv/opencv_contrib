@@ -64,7 +64,7 @@ class FrameBufferContext {
     cl_mem clImage_ = nullptr;
     CLExecContext_t context_;
 #endif
-    cv::Size frameBufferSize_;
+    cv::Size framebufferSize_;
     bool isShared_ = false;
     GLFWwindow* sharedWindow_;
     const FrameBufferContext* parent_;

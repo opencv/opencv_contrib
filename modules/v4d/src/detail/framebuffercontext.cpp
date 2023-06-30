@@ -33,13 +33,13 @@ static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
 
 int frameBufferContextCnt = 0;
 
-FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.frameBufferSize_, true, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
+FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.framebufferSize_, true, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
 }
 
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), frameBufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_(framebufferSize, CV_8UC4) {
+                minor), compat_(compat), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_(framebufferSize, CV_8UC4) {
     run_sync_on_main<1>([this](){ init(); });
     index_ = ++frameBufferContextCnt;
 }
@@ -253,7 +253,7 @@ void FrameBufferContext::init() {
 #endif
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
 
-    glfwWindow_ = glfwCreateWindow(frameBufferSize_.width, frameBufferSize_.height, title_.c_str(), nullptr,
+    glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
 
     if (glfwWindow_ == NULL) {
@@ -286,7 +286,7 @@ void FrameBufferContext::init() {
     context_ = CLExecContext_t::getCurrent();
 #endif
 
-    setup(frameBufferSize_);
+    setup(framebufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
@@ -418,7 +418,7 @@ int FrameBufferContext::getIndex() {
 }
 
 void FrameBufferContext::setup(const cv::Size& sz) {
-    frameBufferSize_ = sz;
+    framebufferSize_ = sz;
     this->makeCurrent();
 
     if(!isShared_) {
@@ -598,7 +598,7 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
 }
 
 cv::Size FrameBufferContext::size() {
-    return frameBufferSize_;
+    return framebufferSize_;
 }
 
 void FrameBufferContext::copyTo(cv::UMat& dst) {
@@ -675,20 +675,20 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
         const cv::Size& windowSize, bool scale, GLuint drawFramebufferID) {
     this->makeCurrent();
-
-    double hf = double(windowSize.height) / frameBufferSize_.height;
-    double wf = double(windowSize.width) / frameBufferSize_.width;
+    cerr << "winSize: " << windowSize << " fbSize: " << framebufferSize_ << endl;
+    double hf = double(windowSize.height) / framebufferSize_.height;
+    double wf = double(windowSize.width) / framebufferSize_.width;
     double f;
-    if (frameBufferSize_.width > frameBufferSize_.height)
+    if (framebufferSize_.width > framebufferSize_.height)
         f = wf;
     else
         f = hf;
 
-    double fbws = frameBufferSize_.width * f;
-    double fbhs = frameBufferSize_.height * f;
+    double fbws = framebufferSize_.width * f;
+    double fbhs = framebufferSize_.height * f;
 
-    double marginw = std::max((windowSize.width - frameBufferSize_.width) / 2.0, 0.0);
-    double marginh = std::max((windowSize.height - frameBufferSize_.height) / 2.0, 0.0);
+    double marginw = std::max((windowSize.width - framebufferSize_.width) / 2.0, 0.0);
+    double marginh = std::max((windowSize.height - framebufferSize_.height) / 2.0, 0.0);
     double marginws = std::max((windowSize.width - fbws) / 2.0, 0.0);
     double marginhs = std::max((windowSize.height - fbhs) / 2.0, 0.0);
 
@@ -698,8 +698,8 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint srcY1 = viewport.y + viewport.height;
     GLint dstX0 = scale ? marginws : marginw;
     GLint dstY0 = scale ? marginhs : marginh;
-    GLint dstX1 = scale ? marginws + fbws : marginw + frameBufferSize_.width;
-    GLint dstY1 = scale ? marginhs + fbhs : marginh + frameBufferSize_.height;
+    GLint dstX1 = scale ? marginws + fbws : marginw + framebufferSize_.width;
+    GLint dstY1 = scale ? marginhs + fbhs : marginh + framebufferSize_.height;
 
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
@@ -723,8 +723,8 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 }
 
 void FrameBufferContext::end() {
-//    this->makeCurrent();
-//    GL_CHECK(glFlush());
+    this->makeCurrent();
+    GL_CHECK(glFlush());
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
