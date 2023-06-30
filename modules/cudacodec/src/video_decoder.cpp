@@ -97,10 +97,10 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
                             cudaVideoCodec_UYVY     == _codec;
 
 #if defined (HAVE_CUDA)
-#if (CUDART_VERSION >= 6500)
+#if (CUDART_VERSION >= 6050)
     codecSupported |=       cudaVideoCodec_HEVC     == _codec;
 #endif
-#if  ((CUDART_VERSION == 7500) || (CUDART_VERSION >= 9000))
+#if  ((CUDART_VERSION == 7050) || (CUDART_VERSION >= 9000))
     codecSupported |=       cudaVideoCodec_VP8      == _codec ||
                             cudaVideoCodec_VP9      == _codec ||
                             cudaVideoCodec_AV1      == _codec ||
@@ -160,9 +160,11 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     createInfo_.ulCreationFlags     = videoCreateFlags;
     createInfo_.vidLock = lock_;
     cuSafeCall(cuCtxPushCurrent(ctx_));
-    cuSafeCall(cuvidCreateDecoder(&decoder_, &createInfo_));
+    {
+        AutoLock autoLock(mtx_);
+        cuSafeCall(cuvidCreateDecoder(&decoder_, &createInfo_));
+    }
     cuSafeCall(cuCtxPopCurrent(NULL));
-    inited_ = true;
 }
 
 int cv::cudacodec::detail::VideoDecoder::reconfigure(const FormatInfo& videoFormat) {
