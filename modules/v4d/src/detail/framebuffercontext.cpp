@@ -675,7 +675,6 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
         const cv::Size& windowSize, bool scale, GLuint drawFramebufferID) {
     this->makeCurrent();
-    cerr << "winSize: " << windowSize << " fbSize: " << framebufferSize_ << endl;
     double hf = double(windowSize.height) / framebufferSize_.height;
     double wf = double(windowSize.width) / framebufferSize_.width;
     double f;
