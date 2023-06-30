@@ -291,6 +291,11 @@ void FrameBufferContext::init() {
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+#ifdef __EMSCRIPTEN__
+        x *= v4d->pixelRatioX();
+        y *= v4d->pixelRatioY();
+#endif
+
         if(v4d->hasNguiCtx()) {
             v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
         }
@@ -365,14 +370,19 @@ void FrameBufferContext::init() {
                     vp.y = 0;
                     vp.width = fbsz.width;
                     vp.height = fbsz.height;
-                    if(v4d->hasNguiCtx())
+                    if(v4d->hasNguiCtx()) {
+#ifdef __EMSCRIPTEN__
+                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width), int(v4d->getWindowSize().height)});
+#else
                         dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width / v4d->pixelRatioX()), int(v4d->getWindowSize().height / v4d->pixelRatioY())});
+#endif
+                    }
                 });
             });
 
     glfwSetFramebufferSizeCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int width, int height) {
-                cerr << "glfwSetFramebufferSizeCallback: " << width << endl;
+//                cerr << "glfwSetFramebufferSizeCallback: " << width << endl;
 //                        run_sync_on_main<22>([glfwWin, width, height]() {
 //                            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
 ////                            v4d->makeCurrent();
@@ -808,6 +818,7 @@ void FrameBufferContext::setWindowSize(const cv::Size& sz) {
     glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
 }
 
+//FIXME cache window size
 cv::Size FrameBufferContext::getWindowSize() {
     makeCurrent();
     cv::Size sz;
