@@ -16,17 +16,6 @@
 namespace cv {
 namespace v4d {
 
-cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
-    cv::Mat tmpIn(1, 1, CV_8UC3);
-    cv::Mat tmpOut(1, 1, CV_8UC3);
-
-    tmpIn.at<cv::Vec3b>(0, 0) = cv::Vec3b(src[0], src[1], src[2]);
-    cvtColor(tmpIn, tmpOut, code);
-    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0, 0);
-    cv::Scalar dst(vdst[0], vdst[1], vdst[2], src[3]);
-    return dst;
-}
-
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) {
     cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, compat, samples);
     v4d->setVisible(!offscreen);
@@ -36,7 +25,7 @@ cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const strin
 V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) :
         initialSize_(size), title_(title), compat_(
                 compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), zoomScale_(
-                1), mousePos_(0, 0), stretch_(true), pool_(2) {
+                1), mousePos_(0, 0), scaling_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
@@ -460,11 +449,11 @@ void V4D::setVisible(bool v) {
 }
 
 void V4D::setScaling(bool s) {
-    stretch_ = s;
+    scaling_ = s;
 }
 
 bool V4D::isScaling() {
-    return stretch_;
+    return scaling_;
 }
 
 void V4D::setDefaultKeyboardEventCallback() {

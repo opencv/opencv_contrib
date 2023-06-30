@@ -46,6 +46,18 @@ size_t cnz(const cv::UMat& m) {
     return cv::countNonZero(grey);
 }
 }
+
+cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code) {
+    cv::Mat tmpIn(1, 1, CV_8UC3);
+    cv::Mat tmpOut(1, 1, CV_8UC3);
+
+    tmpIn.at<cv::Vec3b>(0, 0) = cv::Vec3b(src[0], src[1], src[2]);
+    cvtColor(tmpIn, tmpOut, code);
+    const cv::Vec3b& vdst = tmpOut.at<cv::Vec3b>(0, 0);
+    cv::Scalar dst(vdst[0], vdst[1], vdst[2], src[3]);
+    return dst;
+}
+
 #ifdef __EMSCRIPTEN__
 Mat read_embedded_image(const string &path) {
     SDL_Surface *loadedSurface = IMG_Load(path.c_str());

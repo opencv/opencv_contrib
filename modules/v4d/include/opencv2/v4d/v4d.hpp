@@ -84,14 +84,6 @@ template<typename T> void find_widgets(const nanogui::Widget* parent, std::vecto
 }
 }
 
-/*!
- * Convenience function to color convert from Scalar to Scalar
- * @param src The scalar to color convert
- * @param code The color converions code
- * @return The color converted scalar
- */
-CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
-
 using namespace cv::v4d::detail;
 
 class CV_EXPORTS V4D {
@@ -105,7 +97,7 @@ class CV_EXPORTS V4D {
     cv::Rect viewport_;
     float zoomScale_;
     cv::Vec2f mousePos_;
-    bool stretch_;
+    bool scaling_;
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     GLContext* glContext_ = nullptr;

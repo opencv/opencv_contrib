@@ -663,26 +663,33 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 #endif
 
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
-        const cv::Size& windowSize, bool stretch, GLuint drawFramebufferID) {
+        const cv::Size& windowSize, bool scale, GLuint drawFramebufferID) {
     this->makeCurrent();
 
     double hf = double(windowSize.height) / frameBufferSize_.height;
     double wf = double(windowSize.width) / frameBufferSize_.width;
-    double f = std::min(hf, wf);
+    double f;
+    if (frameBufferSize_.width > frameBufferSize_.height)
+        f = wf;
+    else
+        f = hf;
 
-    double wn = frameBufferSize_.width * f;
-    double hn = frameBufferSize_.height * f;
-    double xn = windowSize.width - wn;
-    double yn = windowSize.height - hn;
+    double fbws = frameBufferSize_.width * f;
+    double fbhs = frameBufferSize_.height * f;
+
+    double marginw = std::max((windowSize.width - frameBufferSize_.width) / 2.0, 0.0);
+    double marginh = std::max((windowSize.height - frameBufferSize_.height) / 2.0, 0.0);
+    double marginws = std::max((windowSize.width - fbws) / 2.0, 0.0);
+    double marginhs = std::max((windowSize.height - fbhs) / 2.0, 0.0);
 
     GLint srcX0 = viewport.x;
     GLint srcY0 = viewport.y;
     GLint srcX1 = viewport.x + viewport.width;
     GLint srcY1 = viewport.y + viewport.height;
-    GLint dstX0 = stretch ? xn : windowSize.width - frameBufferSize_.width;
-    GLint dstY0 = stretch ? yn : windowSize.height - frameBufferSize_.height;
-    GLint dstX1 = stretch ? wn : frameBufferSize_.width;
-    GLint dstY1 = stretch ? hn : frameBufferSize_.height;
+    GLint dstX0 = scale ? marginws : marginw;
+    GLint dstY0 = scale ? marginhs : marginh;
+    GLint dstX1 = scale ? marginws + fbws : marginw + frameBufferSize_.width;
+    GLint dstY1 = scale ? marginhs + fbhs : marginh + frameBufferSize_.height;
 
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,

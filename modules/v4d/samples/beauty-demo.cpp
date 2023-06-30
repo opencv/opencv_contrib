@@ -200,13 +200,14 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
+//Built the GUI
 static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
     v->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
 
         form.makeGroup("Display");
         form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
-        auto* scaleVar = form.makeFormVariable("Stretch", scale, "Enable or disable stetching to the window size");
+        auto* scaleVar = form.makeFormVariable("Scale", scale, "Enable or disable scaling to the window size");
         scaleVar->set_callback([=](const bool& b) {
             v->setScaling(b);
             scale = b;
@@ -277,11 +278,12 @@ static bool iteration() {
         if (!window->capture())
             return false;
 
+        //Save the video frame as BGR
         window->fb([&](cv::UMat &frameBuffer) {
             cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
         });
 
-        //Downscale the input for face detection
+        //Downscale the video frame for face detection
         cv::resize(input, down, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
 
         shapes.clear();
@@ -349,6 +351,7 @@ static bool iteration() {
             frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
 
             if (side_by_side) {
+                //create side-by-side view with a result
                 cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
                 cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
 
@@ -356,12 +359,9 @@ static bool iteration() {
                 lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
                 rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
             }
-
-            window->fb([&](cv::UMat &frameBuffer) {
-                cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
-            });
         } else {
             if (side_by_side) {
+                //create side-by-side view without a result (using the input image for both sides)
                 frameOut = cv::Scalar::all(0);
                 cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
                 lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
@@ -369,11 +369,12 @@ static bool iteration() {
             } else {
                 input.copyTo(frameOut);
             }
-
-            window->fb([&](cv::UMat &frameBuffer) {
-                cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
-            });
         }
+
+        //write the result to the framebuffer
+        window->fb([&](cv::UMat &frameBuffer) {
+            cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
+        });
 
         window->write();
 

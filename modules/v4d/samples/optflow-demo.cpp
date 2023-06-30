@@ -41,10 +41,13 @@ constexpr bool OFFSCREEN = false;
 
 cv::Ptr<cv::v4d::V4D> window;
 #ifndef __EMSCRIPTEN__
+//create a separate window in native builds. In WASM builds instead create a light-weight dialog
 cv::Ptr<cv::v4d::V4D> menuWindow;
 #endif
 
 /* Visualization parameters */
+
+//How the background will be visualized
 enum BackgroundModes {
     GREY,
     COLOR,
@@ -52,6 +55,7 @@ enum BackgroundModes {
     BLACK
 };
 
+//Post-processing modes for the foreground
 enum PostProcModes {
     GLOW,
     BLOOM,
@@ -59,12 +63,8 @@ enum PostProcModes {
 };
 
 // Generate the foreground at this scale.
-#ifndef __EMSCRIPTEN__
 float fg_scale = 0.5f;
-#else
-float fg_scale = 0.5f;
-#endif
-// On every frame the foreground loses on brightness. specifies the loss in percent.
+// On every frame the foreground loses on brightness. Specifies the loss in percent.
 #ifndef __EMSCRIPTEN__
 float fg_loss = 2.5;
 #else
@@ -116,15 +116,18 @@ int bloom_thresh = 210;
 //The intensity of the bloom filter
 float bloom_gain = 3;
 
+//Uses background subtraction to generate a "motion mask"
 static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
     static cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
     static int morph_size = 1;
     static cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
 
     bg_subtrator->apply(srcGrey, motionMaskGrey);
+    //Surpress speckles
     cv::morphologyEx(motionMaskGrey, motionMaskGrey, cv::MORPH_OPEN, element, cv::Point(element.cols >> 1, element.rows >> 1), 2, cv::BORDER_CONSTANT, cv::morphologyDefaultBorderValue());
 }
 
+//Detect points to track
 static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& points) {
     static cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
     static vector<cv::KeyPoint> tmpKeyPoints;
@@ -138,6 +141,7 @@ static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>
     }
 }
 
+//Detect extrem changes in scene content and report it
 static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
     static float last_movement = 0;
 
@@ -152,6 +156,7 @@ static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float t
     return result;
 }
 
+//Visualize the sparse optical flow
 static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, const vector<cv::Point2f> &detectedPoints, const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
     static vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
     static vector<cv::Point2f> upPrevPoints, upNextPoints;
@@ -160,25 +165,33 @@ static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UM
     static std::random_device rd;
     static std::mt19937 g(rd());
 
+    //less then 5 points is a degenerate case (e.g. the corners of a video frame)
     if (detectedPoints.size() > 4) {
         cv::convexHull(detectedPoints, hull);
         float area = cv::contourArea(hull);
+        //make sure the area of the point cloud is positive
         if (area > 0) {
             float density = (detectedPoints.size() / area);
+            //stroke size is biased by the area of the point cloud
             float strokeSize = maxStrokeSize * pow(area / (nextGrey.cols * nextGrey.rows), 0.33f);
+            //max points is biased by the densitiy of the point cloud
             size_t currentMaxPoints = ceil(density * maxPoints);
 
+            //lose a number of random points specified by pointLossPercent
             std::shuffle(prevPoints.begin(), prevPoints.end(), g);
             prevPoints.resize(ceil(prevPoints.size() * (1.0f - (pointLossPercent / 100.0f))));
 
+            //calculate how many newly detected points to add
             size_t copyn = std::min(detectedPoints.size(), (size_t(std::ceil(currentMaxPoints)) - prevPoints.size()));
             if (prevPoints.size() < currentMaxPoints) {
                 std::copy(detectedPoints.begin(), detectedPoints.begin() + copyn, std::back_inserter(prevPoints));
             }
 
+            //calculate the sparse optical flow
             cv::calcOpticalFlowPyrLK(prevGrey, nextGrey, prevPoints, nextPoints, status, err);
             newPoints.clear();
             if (prevPoints.size() > 1 && nextPoints.size() > 1) {
+                //scale the points to original size
                 upNextPoints.clear();
                 upPrevPoints.clear();
                 for (cv::Point2f pt : prevPoints) {
@@ -190,20 +203,29 @@ static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UM
                 }
 
                 using namespace cv::v4d::nvg;
+                //start drawing
                 beginPath();
                 strokeWidth(strokeSize);
                 strokeColor(color);
 
                 for (size_t i = 0; i < prevPoints.size(); i++) {
-                    if (status[i] == 1 && err[i] < (1.0 / density) && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor) {
+                    if (status[i] == 1 //point was found in prev and new set
+                            && err[i] < (1.0 / density) //with a higher density be more sensitive to the feature error
+                            && upNextPoints[i].y >= 0 && upNextPoints[i].x >= 0 //check bounds
+                            && upNextPoints[i].y < nextGrey.rows / scaleFactor && upNextPoints[i].x < nextGrey.cols / scaleFactor //check bounds
+                            ) {
                         float len = hypot(fabs(upPrevPoints[i].x - upNextPoints[i].x), fabs(upPrevPoints[i].y - upNextPoints[i].y));
+                        //upper and lower bound of the flow vector lengthss
                         if (len > 0 && len < sqrt(area)) {
+                            //collect new points
                             newPoints.push_back(nextPoints[i]);
+                            //the actual drawing operations
                             moveTo(upNextPoints[i].x, upNextPoints[i].y);
                             lineTo(upPrevPoints[i].x, upPrevPoints[i].y);
                         }
                     }
                 }
+                //end drawing
                 stroke();
             }
             prevPoints = newPoints;
@@ -211,6 +233,7 @@ static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UM
     }
 }
 
+//Bloom post-processing effect
 static void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
     static cv::UMat bgr;
     static cv::UMat hls;
@@ -219,21 +242,29 @@ static void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshV
     static cv::UMat blur;
     static std::vector<cv::UMat> hlsChannels;
 
+    //remove alpha channel
     cv::cvtColor(src, bgr, cv::COLOR_BGRA2RGB);
+    //convert to hls
     cv::cvtColor(bgr, hls, cv::COLOR_BGR2HLS);
+    //split channels
     cv::split(hls, hlsChannels);
+    //invert lightness
     cv::bitwise_not(hlsChannels[2], hlsChannels[2]);
-
+    //multiply lightness and saturation
     cv::multiply(hlsChannels[1], hlsChannels[2], ls16, 1, CV_16U);
+    //normalize
     cv::divide(ls16, cv::Scalar(255.0), ls, 1, CV_8U);
+    //binary threhold according to threshValue
     cv::threshold(ls, blur, threshValue, 255, cv::THRESH_BINARY);
-
+    //blur
     cv::boxFilter(blur, blur, -1, cv::Size(ksize, ksize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
+    //convert to BGRA
     cv::cvtColor(blur, blur, cv::COLOR_GRAY2BGRA);
-
+    //add src and the blurred L-S-product according to gain
     addWeighted(src, 1.0, blur, gain, 0, dst);
 }
 
+//Glow post-processing effect
 static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     static cv::UMat resize;
     static cv::UMat blur;
@@ -256,15 +287,19 @@ static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
     cv::bitwise_not(dst, dst);
 }
 
+//Compose the different layers into the final image
 static void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
     static cv::UMat tmp;
     static cv::UMat post;
     static cv::UMat backgroundGrey;
     static vector<cv::UMat> channels;
 
+    //Lose a bit of foreground brightness based on fgLossPercent
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
+    //Add foreground an the current framebuffer into foregound
     cv::add(foreground, frameBuffer, foreground);
 
+    //Dependin on bgMode prepare the background in different ways
     switch (bgMode) {
     case GREY:
         cv::cvtColor(background, backgroundGrey, cv::COLOR_BGRA2GRAY);
@@ -285,6 +320,7 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
         break;
     }
 
+    //Depending on ppMode perform post-processing
     switch (ppMode) {
     case GLOW:
         glow_effect(foreground, post, kernelSize);
@@ -299,9 +335,11 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
         break;
     }
 
+    //Add background and post-processed foreground into dst
     cv::add(background, post, dst);
 }
 
+//Build the GUI
 static void setup_gui(cv::Ptr<cv::v4d::V4D> main, cv::Ptr<cv::v4d::V4D> menu) {
     main->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effects");
@@ -379,7 +417,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> main, cv::Ptr<cv::v4d::V4D> menu) {
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-        form.makeFormVariable("Stetch", scale, "Stretch the frame buffer to the window size")->set_callback([=](const bool &s) {
+        form.makeFormVariable("Scale", scale, "Scale the frame buffer to the window size")->set_callback([=](const bool &s) {
             main->setScaling(s);
         });
 
@@ -409,7 +447,9 @@ static bool iteration() {
         return false;
 
     window->fb([&](cv::UMat& frameBuffer) {
+        //resize to foreground scale
         cv::resize(frameBuffer, down, cv::Size(window->framebufferSize().width * fg_scale, window->framebufferSize().height * fg_scale));
+        //save video background
         frameBuffer.copyTo(background);
     });
 

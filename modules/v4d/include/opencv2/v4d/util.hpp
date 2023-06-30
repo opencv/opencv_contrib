@@ -13,6 +13,8 @@
 #include <string>
 #include <iostream>
 #include <opencv2/core/ocl.hpp>
+#include <opencv2/imgproc.hpp>
+
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
 #  include <emscripten/bind.h>
@@ -89,6 +91,15 @@ CV_EXPORTS size_t cnz(const cv::UMat& m);
 }
 using std::string;
 class V4D;
+
+/*!
+ * Convenience function to color convert from Scalar to Scalar
+ * @param src The scalar to color convert
+ * @param code The color converions code
+ * @return The color converted scalar
+ */
+CV_EXPORTS cv::Scalar colorConvert(const cv::Scalar& src, cv::ColorConversionCodes code);
+
 #ifdef __EMSCRIPTEN__
 CV_EXPORTS Mat read_embedded_image(const string &path);
 #endif
