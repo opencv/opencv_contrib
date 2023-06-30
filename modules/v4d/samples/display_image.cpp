@@ -10,11 +10,11 @@ int main() {
 	//sizes you need multiple V4D objects
     Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "Display image");
 
-    //Load an image
+    //Loads an image as a UMat (just in case we have hardware acceleration available)
 #ifdef __EMSCRIPTEN__
-    Mat image = read_embedded_image("doc/lena.png");
+    UMat image = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
 #else
-	Mat image = imread(samples::findFile("lena.jpg"));
+	UMat image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);;
 #endif
 	//Display the framebuffer in the native window in an endless loop.
     //V4D::run() though it takes a functor is not a context. It is simply an abstraction
