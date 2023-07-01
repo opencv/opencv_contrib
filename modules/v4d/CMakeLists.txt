@@ -46,7 +46,7 @@ macro(add_emscripten_sample sample source assets)
 endmacro()
 
 macro(add_binary_sample sample source)
-##    add_executable(${sample} ${source})
+    add_executable(${sample} ${source})
     ocv_target_include_modules(${sample} opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann)
     ocv_target_link_libraries(${sample} LINK_PRIVATE opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn  opencv_flann nanogui)
     target_compile_features(${sample} PRIVATE cxx_std_20)
