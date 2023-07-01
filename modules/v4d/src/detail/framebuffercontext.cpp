@@ -237,7 +237,7 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
     glfwWindowHint(GLFW_OPENGL_PROFILE, compat_ ? GLFW_OPENGL_COMPAT_PROFILE : GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
 #endif
     glfwWindowHint(GLFW_SAMPLES, samples_);
