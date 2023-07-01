@@ -213,8 +213,10 @@ void FrameBufferContext::init() {
     isShared_ = false;
 
 #endif
-    if (glfwInit() != GLFW_TRUE)
-           assert(false);
+    if (glfwInit() != GLFW_TRUE) {
+	cerr << "Can't init GLFW" << endl;
+    	exit(1);
+    }
     glfwSetErrorCallback(cv::v4d::detail::glfw_error_callback);
 
     if (debug_)
