@@ -743,7 +743,12 @@ void FrameBufferContext::upload(const cv::UMat& m) {
 
 void FrameBufferContext::acquireFromGL(cv::UMat& m) {
     if (clglSharing_) {
-        GL_CHECK(fromGLTexture2D(getTexture2D(), m));
+        try {
+            GL_CHECK(fromGLTexture2D(getTexture2D(), m));
+        } catch(std::exception& ex) {
+            clglSharing_ = false;
+            download(m);
+        }
     } else {
         download(m);
     }
@@ -756,7 +761,12 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
     cv::flip(m, m, 0);
 
     if (clglSharing_) {
-        GL_CHECK(toGLTexture2D(m, getTexture2D()));
+        try {
+            GL_CHECK(toGLTexture2D(m, getTexture2D()));
+        } catch(std::exception& ex) {
+            clglSharing_ = false;
+            upload(m);
+        }
     } else {
         upload(m);
     }
