@@ -9,7 +9,6 @@
 #include "opencv2/v4d/nvg.hpp"
 #include "detail/framebuffercontext.hpp"
 
-
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
 #  include <emscripten/bind.h>

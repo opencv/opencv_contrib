@@ -4,11 +4,11 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/v4d.hpp"
-#include "detail/clvacontext.hpp"
 #include "detail/framebuffercontext.hpp"
-#include "detail/glcontext.hpp"
+#include "detail/clvacontext.hpp"
 #include "detail/nanovgcontext.hpp"
 #include "detail/nanoguicontext.hpp"
+#include "detail/glcontext.hpp"
 #include "opencv2/v4d/dialog.hpp"
 #include "opencv2/v4d/formhelper.hpp"
 #include <sstream>
@@ -35,13 +35,10 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
         nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
         nguiContext_ = new detail::NanoguiContext(*mainFbContext_);
         clvaContext_ = new detail::CLVAContext(*mainFbContext_);
-        glContext_ = new detail::GLContext(*mainFbContext_);
 }
 
 V4D::~V4D() {
     //don't delete form_. it is autmatically cleaned up by the base class (nanogui::Screen)
-    if (glContext_)
-        delete glContext_;
     if (nvgContext_)
         delete nvgContext_;
     if (nguiContext_)
@@ -50,6 +47,10 @@ V4D::~V4D() {
         delete clvaContext_;
     if (mainFbContext_)
         delete mainFbContext_;
+
+    for(auto& it : glContexts_) {
+        delete it.second;
+    }
 }
 
 cv::ogl::Texture2D& V4D::texture() {
@@ -88,9 +89,16 @@ NanoguiContext& V4D::nguiCtx() {
     return *nguiContext_;
 }
 
-GLContext& V4D::glCtx() {
-    assert(glContext_ != nullptr);
-    return *glContext_;
+GLContext& V4D::glCtx(uint32_t idx) {
+    auto it = glContexts_.find(idx);
+    if(it != glContexts_.end())
+        return *(*it).second;
+    else {
+        GLContext* ctx = new GLContext(*mainFbContext_);
+        glContexts_.insert({idx, ctx});
+        return *ctx;
+    }
+
 }
 
 bool V4D::hasFbCtx() {
@@ -109,20 +117,22 @@ bool V4D::hasNguiCtx() {
     return nguiContext_ != nullptr;
 }
 
-bool V4D::hasGlCtx() {
-    return glContext_ != nullptr;
+bool V4D::hasGlCtx(uint32_t idx) {
+    return glContexts_.find(idx) != glContexts_.end();
 }
 
-void V4D::gl(std::function<void()> fn) {
-    glCtx().render([=](const cv::Size& sz) {
+void V4D::gl(std::function<void()> fn, uint32_t idx) {
+    glCtx(idx).render([=](const cv::Size& sz) {
         CV_UNUSED(sz);
         fn();
     });
 }
 
-void V4D::gl(std::function<void(const cv::Size&)> fn) {
-    glCtx().render(fn);
+
+void V4D::gl(std::function<void(const cv::Size&)> fn, uint32_t idx) {
+    glCtx(idx).render(fn);
 }
+
 
 void V4D::fb(std::function<void(cv::UMat&)> fn) {
     fbCtx().execute(fn);

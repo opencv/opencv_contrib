@@ -4,6 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "glcontext.hpp"
+
 namespace cv {
 namespace v4d {
 namespace detail {

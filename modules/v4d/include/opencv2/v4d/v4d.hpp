@@ -32,6 +32,7 @@
 #include <iostream>
 #include <future>
 #include <set>
+#include <map>
 #include <string>
 
 #include <opencv2/imgproc.hpp>
@@ -63,9 +64,9 @@ class FormHelper;
 namespace detail {
 class FrameBufferContext;
 class CLVAContext;
-class GLContext;
 class NanoVGContext;
 class NanoguiContext;
+class GLContext;
 
 /*!
  * Find widgets that are of type T.
@@ -100,9 +101,9 @@ class CV_EXPORTS V4D {
     bool scaling_;
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
-    GLContext* glContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
     NanoguiContext* nguiContext_ = nullptr;
+    std::map<int64_t,GLContext*> glContexts_;
     bool closed_ = false;
     bool mouseDrag_ = false;
     Source source_;
@@ -145,8 +146,8 @@ public:
      * This is how all OpenGL operations should be executed.
      * @param fn A function object that is passed the size of the framebuffer
      */
-    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
-    CV_EXPORTS void gl(std::function<void()> fn);
+    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn, uint32_t idx = 0);
+    CV_EXPORTS void gl(std::function<void()> fn, uint32_t idx = 0);
     /*!
      * Execute function object fn inside a framebuffer context.
      * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -384,14 +385,14 @@ private:
     FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
-    GLContext& glCtx();
     NanoguiContext& nguiCtx();
+    GLContext& glCtx(uint32_t idx = 0);
 
     bool hasFbCtx();
     bool hasClvaCtx();
     bool hasNvgCtx();
     bool hasNguiCtx();
-    bool hasGlCtx();
+    bool hasGlCtx(uint32_t idx = 0);
 
     GLFWwindow* getGLFWWindow();
     void swapContextBuffers();

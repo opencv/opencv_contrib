@@ -4,6 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "nanovgcontext.hpp"
+
 #include "../nvg.hpp"
 
 namespace cv {
