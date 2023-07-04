@@ -8,7 +8,6 @@ else()
 endif()
 
 set(the_description "V4D Visualization Module")
-set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 
 macro(add_emscripten_sample sample source assets)
     ocv_add_executable(${sample} ${source})
@@ -175,19 +174,12 @@ else()
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
-#add_library(nanovg STATIC "third/nanogui/ext/nanovg/src/nanovg.c")
 target_compile_features(opencv_v4d PRIVATE cxx_std_20)
 target_compile_features(nanogui PRIVATE cxx_std_20)
-#target_compile_features(nanovg PRIVATE cxx_std_20)
-
 target_link_libraries(nanogui PRIVATE glfw)
 target_include_directories(nanogui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
-
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-enum-enum-conversion)
-#target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
-#target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
-#target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
-#target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}third/nanogui/ext/nanovg/src/")
+target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
 
 if(EMSCRIPTEN)
   ocv_target_link_libraries(${the_module} -lnanogui)
