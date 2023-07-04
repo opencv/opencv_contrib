@@ -90,8 +90,7 @@ cmake_policy(SET CMP0079 NEW)
 
    ocv_add_module(v4d opencv_core opencv_imgproc opencv_videoio opencv_video)
 
-#   ocv_glob_module_sources(([EXCLUDE_OPENCL] [EXCLUDE_CUDA] <extra sources&headers>)
-#                          or glob them manually and ocv_set_module_sources(...)
+   ocv_glob_module_sources("${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/src/detail/" "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d" "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail")
   ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/" "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/" "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/nanovg/src/")
   ocv_create_module()
 ocv_add_samples(opencv_v4d opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn opencv_flann)
