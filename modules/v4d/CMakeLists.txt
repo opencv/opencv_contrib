@@ -8,6 +8,7 @@ else()
 endif()
 
 set(the_description "V4D Visualization Module")
+set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 
 macro(add_emscripten_sample sample source assets)
     ocv_add_executable(${sample} ${source})
@@ -87,17 +88,19 @@ endif()
 
 cmake_policy(SET CMP0079 NEW)
 
-ocv_add_module(v4d opencv_core opencv_imgproc opencv_videoio opencv_video WRAP python)
-ocv_glob_module_sources()
-ocv_module_include_directories()
-ocv_create_module()
-ocv_add_samples(opencv_v4d opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn opencv_flann nanogui)
+   ocv_add_module(v4d opencv_core opencv_imgproc opencv_videoio opencv_video)
+
+#   ocv_glob_module_sources(([EXCLUDE_OPENCL] [EXCLUDE_CUDA] <extra sources&headers>)
+#                          or glob them manually and ocv_set_module_sources(...)
+  ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/" "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/" "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/nanovg/src/")
+  ocv_create_module()
+ocv_add_samples(opencv_v4d opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn opencv_flann)
 
 add_custom_command(
-  TARGET ${the_module} POST_BUILD
+ TARGET ${the_module} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
-    "${CMAKE_CURRENT_LIST_DIR}/doc/lena.png"
-    "${CMAKE_CURRENT_BINARY_DIR}/doc/lena.png")
+   "${CMAKE_CURRENT_LIST_DIR}/doc/lena.png"
+   "${CMAKE_CURRENT_BINARY_DIR}/doc/lena.png")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/include/")
@@ -171,7 +174,7 @@ else()
   set(NANOGUI_BUILD_GLFW OFF)
 endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
 #add_library(nanovg STATIC "third/nanogui/ext/nanovg/src/nanovg.c")
 target_compile_features(opencv_v4d PRIVATE cxx_std_20)
 target_compile_features(nanogui PRIVATE cxx_std_20)
@@ -181,10 +184,10 @@ target_link_libraries(nanogui PRIVATE glfw)
 target_include_directories(nanogui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-enum-enum-conversion)
-target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
-target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
-target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
-target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}third/nanogui/ext/nanovg/src/")
+#target_link_directories(${the_module} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
+#target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/opencv2/v4d/detail/")
+#target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
+#target_include_directories(${the_module} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}third/nanogui/ext/nanovg/src/")
 
 if(EMSCRIPTEN)
   ocv_target_link_libraries(${the_module} -lnanogui)
