@@ -8,6 +8,7 @@ else()
 endif()
 
 set(the_description "V4D Visualization Module")
+set(OPENCV_MODULE_IS_PART_OF_WORLD OFF)
 
 macro(add_emscripten_sample sample source assets)
     ocv_add_executable(${sample} ${source})
@@ -95,6 +96,7 @@ cmake_policy(SET CMP0079 NEW)
   ocv_create_module()
 ocv_add_samples(opencv_v4d opencv_core opencv_imgproc opencv_videoio opencv_video opencv_imgcodecs opencv_v4d opencv_face opencv_tracking opencv_objdetect opencv_stitching opencv_optflow opencv_imgcodecs opencv_features2d opencv_dnn opencv_flann)
 
+set_target_properties(${the_module} PROPERTIES LINKER_LANGUAGE CXX)
 add_custom_command(
  TARGET ${the_module} POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
@@ -174,7 +176,7 @@ else()
 endif()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui "${CMAKE_CURRENT_BINARY_DIR}/../../lib")
-target_compile_features(opencv_v4d PRIVATE cxx_std_20)
+target_compile_features(${the_module} PRIVATE cxx_std_20)
 target_compile_features(nanogui PRIVATE cxx_std_20)
 target_link_libraries(nanogui PRIVATE glfw)
 target_include_directories(nanogui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third/nanogui/ext/glad/include/")
