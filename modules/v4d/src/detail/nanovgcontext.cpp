@@ -5,7 +5,7 @@
 
 #include "nanovgcontext.hpp"
 
-#include "../nvg.hpp"
+#include "opencv2/v4d/nvg.hpp"
 
 namespace cv {
 namespace v4d {

@@ -7,7 +7,7 @@
 #define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
-#include "../formhelper.hpp"
+#include "opencv2/v4d/formhelper.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
