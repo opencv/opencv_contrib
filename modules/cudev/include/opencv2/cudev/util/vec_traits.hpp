@@ -188,7 +188,7 @@ template<> struct VecTraits<char4>
 
 namespace cv {
 
-#ifndef CV_32U
+#if !defined CV_32U
 template <> class DataType<uint>
 {
 public:
