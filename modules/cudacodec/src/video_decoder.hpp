@@ -68,9 +68,11 @@ public:
     }
 
     void create(const FormatInfo& videoFormat);
+    int reconfigure(const FormatInfo& videoFormat);
     void release();
+    bool inited() { AutoLock autoLock(mtx_); return decoder_; }
 
-    // Get the code-type currently used.
+    // Get the codec-type currently used.
     cudaVideoCodec codec() const { return static_cast<cudaVideoCodec>(videoFormat_.codec); }
     int nDecodeSurfaces() const { return videoFormat_.ulNumDecodeSurfaces; }
     cv::Size getTargetSz() const { return videoFormat_.targetSz; }
@@ -111,7 +113,7 @@ public:
 private:
     CUcontext ctx_ = 0;
     CUvideoctxlock lock_;
-    CUvideodecoder        decoder_ = 0;
+    CUvideodecoder decoder_ = 0;
     FormatInfo videoFormat_ = {};
     Mutex mtx_;
 };
