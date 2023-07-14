@@ -2,7 +2,6 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
-
 #include <opencv2/v4d/v4d.hpp>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
@@ -145,47 +144,44 @@ struct FaceFeatures {
 };
 
 //based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
-static void draw_face_oval_mask(const vector<FaceFeatures> &lm) {
+static void draw_face_oval_mask(FaceFeatures &ff) {
     using namespace cv::v4d::nvg;
     clear();
-    for (size_t i = 0; i < lm.size(); i++) {
-        vector<vector<cv::Point2f>> features = lm[i].features();
-        cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
 
-        beginPath();
-        fillColor(cv::Scalar(255, 255, 255, 255));
-        ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
-        rotate(rotRect.angle);
-        fill();
-    }
+    vector<vector<cv::Point2f>> features = ff.features();
+    cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
+
+    beginPath();
+    fillColor(cv::Scalar(255, 255, 255, 255));
+    ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
+    rotate(rotRect.angle);
+    fill();
 }
 
 //Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
-static void draw_face_eyes_and_lips_mask(const vector<FaceFeatures> &lm) {
+static void draw_face_eyes_and_lips_mask(FaceFeatures &ff) {
     using namespace cv::v4d::nvg;
     clear();
-    for (size_t i = 0; i < lm.size(); i++) {
-        vector<vector<cv::Point2f>> features = lm[i].features();
-        for (size_t j = 5; j < 8; ++j) {
-            beginPath();
-            fillColor(cv::Scalar(255, 255, 255, 255));
-            moveTo(features[j][0].x, features[j][0].y);
-            for (size_t k = 1; k < features[j].size(); ++k) {
-                lineTo(features[j][k].x, features[j][k].y);
-            }
-            closePath();
-            fill();
-        }
-
+    vector<vector<cv::Point2f>> features = ff.features();
+    for (size_t j = 5; j < 8; ++j) {
         beginPath();
-        fillColor(cv::Scalar(0, 0, 0, 255));
-        moveTo(features[8][0].x, features[8][0].y);
-        for (size_t k = 1; k < features[8].size(); ++k) {
-            lineTo(features[8][k].x, features[8][k].y);
+        fillColor(cv::Scalar(255, 255, 255, 255));
+        moveTo(features[j][0].x, features[j][0].y);
+        for (size_t k = 1; k < features[j].size(); ++k) {
+            lineTo(features[j][k].x, features[j][k].y);
         }
         closePath();
         fill();
     }
+
+    beginPath();
+    fillColor(cv::Scalar(0, 0, 0, 255));
+    moveTo(features[8][0].x, features[8][0].y);
+    for (size_t k = 1; k < features[8].size(); ++k) {
+        lineTo(features[8][k].x, features[8][k].y);
+    }
+    closePath();
+    fill();
 }
 
 //adjusts the saturation of a UMat
@@ -263,17 +259,8 @@ static bool iteration() {
         static cv::UMat faceSkinMaskGrey, eyesAndLipsMaskGrey, backgroundMaskGrey;
         //BGR-Float
         static cv::UMat frameOutFloat;
-
-        //detected faces
-        static cv::Mat faces;
-        //the rectangle of the tracked face
-        static cv::Rect trackedFace;
-        //rectangles of all faces found
-        static vector<cv::Rect> faceRects;
         //list all of shapes (face features) found
         static vector<vector<cv::Point2f>> shapes;
-        //FaceFeatures of all faces found
-        static vector<FaceFeatures> featuresList;
 
         if (!window->capture())
             return false;
@@ -287,27 +274,23 @@ static bool iteration() {
         cv::resize(input, down, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
 
         shapes.clear();
-        faceRects.clear();
-
+        cv::Mat faces;
         //Detect faces in the down-scaled image
-		detector->detect(down, faces);
+        detector->detect(down, faces);
 
-		//Collect face bounding rectangles though we will only use the first
-		for (int i = 0; i < faces.rows; i++) {
-			faceRects.push_back(cv::Rect(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))));
-		}
-
+        //Only add the first face
+		cv::Rect faceRect;
+		if(!faces.empty())
+		    faceRect = cv::Rect(int(faces.at<float>(0, 0)), int(faces.at<float>(0, 1)), int(faces.at<float>(0, 2)), int(faces.at<float>(0, 3)));
+		std::vector<cv::Rect>faceRects = {faceRect};
         //find landmarks if faces have been detected
-        if (!faceRects.empty() && facemark->fit(down, faceRects, shapes)) {
-            featuresList.clear();
+        if (!faceRect.empty() && facemark->fit(down, faceRects, shapes)) {
             //a FaceFeatures instance for each face
-            for (size_t i = 0; i < faceRects.size(); ++i) {
-                featuresList.push_back(FaceFeatures(faceRects[i], shapes[i], float(down.size().width) / WIDTH));
-            }
+            FaceFeatures features(faceRect, shapes[0], float(down.size().width) / WIDTH);
 
             window->nvg([&]() {
                 //Draw the face oval of the first face
-                draw_face_oval_mask(featuresList);
+                draw_face_oval_mask(features);
             });
 
             window->fb([&](cv::UMat &frameBuffer) {
@@ -317,7 +300,7 @@ static bool iteration() {
 
             window->nvg([&]() {
                 //Draw eyes eyes and lips areas of the first face
-                draw_face_eyes_and_lips_mask(featuresList);
+                draw_face_eyes_and_lips_mask(features);
             });
 
             window->fb([&](cv::UMat &frameBuffer) {
