@@ -194,6 +194,12 @@ public:
      */
     CV_EXPORTS void feed(cv::InputArray& in);
     /*!
+     * Fetches a copy of frambuffer
+     * @return a copy of the framebuffer
+     */
+    CV_EXPORTS InputOutputArray fetch();
+
+    /*!
      * Called to capture to the framebuffer from a #cv::viz::Source object provided via #V4D::setSource().
      * @return true if successful.
      */

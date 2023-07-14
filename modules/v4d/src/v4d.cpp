@@ -205,6 +205,15 @@ void V4D::feed(cv::InputArray& in) {
         });
 }
 
+InputOutputArray V4D::fetch() {
+        cv::UMat frame;
+
+        fb([frame](cv::UMat& framebuffer){
+            framebuffer.copyTo(frame);
+        });
+        return frame;
+}
+
 bool V4D::capture() {
     return this->capture([&](cv::UMat& videoFrame) {
         if (source_.isReady())
