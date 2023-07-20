@@ -22,15 +22,15 @@ class nvidiaopticalflow_test(NewOpenCVTests):
         cuMat1 = cv.cuda_GpuMat(npMat1)
         cuMat2 = cv.cuda_GpuMat(npMat2)
         try:
-            nvof = cv.cuda_NvidiaOpticalFlow_1_0.create(cuMat1.shape[1], cuMat1.shape[0], 5, False, False, False, 0)
-            flow = nvof.calc(cuMat1, cuMat2, None)
-            self.assertTrue(flow.shape[1] > 0 and flow.shape[0] > 0)
-            flowUpSampled = nvof.upSampler(flow[0], cuMat1.shape[1], cuMat1.shape[0], nvof.getGridSize(), None)
+            nvof = cv.cuda_NvidiaOpticalFlow_1_0.create((npMat1.shape[1], npMat1.shape[0]), 5, False, False, False, 0)
+            flow, cost = nvof.calc(cuMat1, cuMat2, None)
+            self.assertTrue(flow.size()[1] > 0 and flow.size()[0] > 0)
+            flowUpSampled = nvof.upSampler(flow, (npMat1.shape[1], npMat1.shape[0]), nvof.getGridSize(), None)
             nvof.collectGarbage()
+            self.assertTrue(flowUpSampled.size()[1] > 0 and flowUpSampled.size()[0] > 0)
         except cv.error as e:
             if e.code == cv.Error.StsBadFunc or e.code == cv.Error.StsBadArg or e.code == cv.Error.StsNullPtr:
                 self.skipTest("Algorithm is not supported in the current environment")
-        self.assertTrue(flowUpSampled.shape[1] > 0 and flowUpSampled.shape[0] > 0)
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()

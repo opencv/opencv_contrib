@@ -38,7 +38,7 @@ class cudacodec_test(NewOpenCVTests):
             # Pass VideoReaderInitParams to the decoder and initialization params to the source (cv::VideoCapture)
             params = cv.cudacodec.VideoReaderInitParams()
             params.rawMode = True
-            params.enableHistogramOutput = True
+            params.enableHistogram = False
             ms_gs = 1234
             post_processed_sz = (gpu_mat.size()[0]*2, gpu_mat.size()[1]*2)
             params.targetSz = post_processed_sz
@@ -48,14 +48,12 @@ class cudacodec_test(NewOpenCVTests):
             ret, raw_mode = reader.getVideoReaderProps(cv.cudacodec.VideoReaderProps_PROP_RAW_MODE)
             self.assertTrue(ret and raw_mode)
 
-            # Retrieve image histogram
+            # Retrieve image histogram. Not all GPUs support histogram. Just check the method is called correctly
             ret, gpu_mat, hist = reader.nextFrameWithHist()
-            self.assertTrue(ret and not gpu_mat.empty() and hist.size() == (256,1))
+            self.assertTrue(ret and not gpu_mat.empty())
             ret, gpu_mat_, hist_ = reader.nextFrameWithHist(gpu_mat, hist)
-            self.assertTrue(ret and not gpu_mat.empty() and hist.size() == (256,1))
-            self.assertTrue(gpu_mat_.cudaPtr() == gpu_mat.cudaPtr() and hist_.cudaPtr() == hist.cudaPtr())
-            hist_host = cv.cudacodec.MapHist(hist)
-            self.assertTrue(hist_host.shape == (1,256) and isinstance(hist_host, np.ndarray))
+            self.assertTrue(ret and not gpu_mat.empty())
+            self.assertTrue(gpu_mat_.cudaPtr() == gpu_mat.cudaPtr())
 
             # Check post processing applied
             self.assertTrue(gpu_mat.size() == post_processed_sz)
@@ -92,6 +90,12 @@ class cudacodec_test(NewOpenCVTests):
                 self.skipTest("GPU hardware video decoder is missing")
             else:
                 self.skipTest(e.err)
+
+    def test_map_histogram(self):
+        hist = cv.cuda_GpuMat((1,256), cv.CV_8UC1)
+        hist.setTo(1)
+        hist_host = cv.cudacodec.MapHist(hist)
+        self.assertTrue(hist_host.shape == (256, 1) and isinstance(hist_host, np.ndarray))
 
     def test_writer(self):
         # Test the functionality but not the results of the VideoWriter
