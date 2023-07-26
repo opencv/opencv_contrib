@@ -96,7 +96,7 @@ public:
         return cuvidDecodePicture(decoder_, picParams) == CUDA_SUCCESS;
     }
 
-    GpuMat mapFrame(int picIdx, CUVIDPROCPARAMS& videoProcParams)
+    cuda::GpuMat mapFrame(int picIdx, CUVIDPROCPARAMS& videoProcParams)
     {
         CUdeviceptr ptr;
         unsigned int pitch;
