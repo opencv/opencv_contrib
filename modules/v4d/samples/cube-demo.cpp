@@ -232,8 +232,8 @@ static bool iteration() {
     //To slow for WASM
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCV
-    window->fb([&](cv::UMat& frameBuffer) {
-        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+    window->fb([&](cv::UMat& framebuffer) {
+        glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE);
     });
 #endif
 

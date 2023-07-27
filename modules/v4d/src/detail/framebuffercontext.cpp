@@ -258,8 +258,15 @@ void FrameBufferContext::init() {
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
 
-    if (glfwWindow_ == NULL) {
-        assert(false);
+    if (glfwWindow_ == nullptr) {
+        //retry with native api
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+        glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
+                sharedWindow_);
+
+        if (glfwWindow_ == nullptr) {
+            throw std::runtime_error("Unable to initialize window.");
+        }
     }
     this->makeCurrent();
 #ifndef __EMSCRIPTEN__
@@ -292,33 +299,33 @@ void FrameBufferContext::init() {
     glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-#ifdef __EMSCRIPTEN__
-        x *= v4d->pixelRatioX();
-        y *= v4d->pixelRatioY();
-#endif
-
-        if(v4d->hasNguiCtx()) {
-            v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
-        }
-#ifndef __EMSCRIPTEN__
-        auto cursor = v4d->getMousePosition();
-        auto diff = cursor - cv::Vec2f(x, y);
-        if (v4d->isMouseDrag()) {
-            v4d->pan(diff[0], -diff[1]);
-        }
-#endif
-        v4d->setMousePosition(x, y);
+//        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//#ifdef __EMSCRIPTEN__
+//        x *= v4d->pixelRatioX();
+//        y *= v4d->pixelRatioY();
+//#endif
+//
+//        if(v4d->hasNguiCtx()) {
+//            v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
+//        }
+//#ifndef __EMSCRIPTEN__
+//        auto cursor = v4d->getMousePosition();
+//        auto diff = cursor - cv::Vec2f(x, y);
+//        if (v4d->isMouseDrag()) {
+//            v4d->pan(diff[0], -diff[1]);
+//        }
+//#endif
+//        v4d->setMousePosition(x, y);
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                if(v4d->hasNguiCtx())
-                    v4d->nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
-                if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-                    v4d->setMouseDrag(action == GLFW_PRESS);
-                }
+//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//                if(v4d->hasNguiCtx())
+//                    v4d->nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
+//                if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+//                    v4d->setMouseDrag(action == GLFW_PRESS);
+//                }
             }
     );
     glfwSetKeyCallback(getGLFWWindow(),
@@ -343,21 +350,21 @@ void FrameBufferContext::init() {
     );
     glfwSetScrollCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, double x, double y) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                std::vector<nanogui::Widget*> widgets;
-                if(v4d->hasNguiCtx()) {
-                    for (auto* w : v4d->nguiCtx().screen().children()) {
-                        auto pt = v4d->getMousePosition();
-                        auto mousePos = nanogui::Vector2i(pt[0], pt[1]);
-                        if(cv::v4d::detail::contains_absolute(w, mousePos)) {
-                            v4d->nguiCtx().screen().scroll_callback_event(x, y);
-                            return;
-                        }
-                    }
-                }
-#ifndef __EMSCRIPTEN__
-                v4d->zoom(y < 0 ? 1.1 : 0.9);
-#endif
+//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//                std::vector<nanogui::Widget*> widgets;
+//                if(v4d->hasNguiCtx()) {
+//                    for (auto* w : v4d->nguiCtx().screen().children()) {
+//                        auto pt = v4d->getMousePosition();
+//                        auto mousePos = nanogui::Vector2i(pt[0], pt[1]);
+//                        if(cv::v4d::detail::contains_absolute(w, mousePos)) {
+//                            v4d->nguiCtx().screen().scroll_callback_event(x, y);
+//                            return;
+//                        }
+//                    }
+//                }
+//#ifndef __EMSCRIPTEN__
+//                v4d->zoom(y < 0 ? 1.1 : 0.9);
+//#endif
             }
     );
 

@@ -276,8 +276,8 @@ static bool iteration() {
         shapes.clear();
         cv::Mat faces;
         //Detect faces in the down-scaled image
-        detector->detect(down, faces);
-
+        cv::Mat m = down.getMat(cv::ACCESS_RW);
+        detector->detect(m, faces);
         //Only add the first face
 		cv::Rect faceRect;
 		if(!faces.empty())
@@ -285,7 +285,6 @@ static bool iteration() {
 		std::vector<cv::Rect>faceRects = {faceRect};
         //find landmarks if faces have been detected
         if (!faceRect.empty() && facemark->fit(down, faceRects, shapes)) {
-            //a FaceFeatures instance for each face
             FaceFeatures features(faceRect, shapes[0], float(down.size().width) / WIDTH);
 
             window->nvg([&]() {
@@ -311,10 +310,10 @@ static bool iteration() {
             //Create the skin mask
             cv::subtract(faceOval, eyesAndLipsMaskGrey, faceSkinMaskGrey);
             //Create the background mask
-            cv::bitwise_not(eyesAndLipsMaskGrey,backgroundMaskGrey);
+            cv::bitwise_not(eyesAndLipsMaskGrey, backgroundMaskGrey);
 
             //boost saturation of eyes and lips
-            adjust_saturation(input,eyesAndLips, eyes_and_lips_saturation);
+            adjust_saturation(input,  eyesAndLips, eyes_and_lips_saturation);
             //reduce skin contrast
             multiply(input, cv::Scalar::all(skin_contrast), contrast);
             //fix skin brightness
@@ -322,7 +321,7 @@ static bool iteration() {
             //blur the skin
             cv::boxFilter(contrast, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
             //boost skin saturation
-            adjust_saturation(blurred,skin, skin_saturation);
+            adjust_saturation(blurred, skin, skin_saturation);
 
             blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
 

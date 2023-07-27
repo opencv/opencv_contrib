@@ -5,6 +5,7 @@
 
 #include "opencv2/v4d/v4d.hpp"
 #include "nanoguicontext.hpp"
+#include "timetracker.hpp"
 
 namespace cv {
 namespace v4d {
@@ -41,90 +42,111 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
     });
 }
 
-void NanoguiContext::render(bool print, bool graphical) {
-    if (!first_) {
-        tick_.stop();
+void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
+    tick_.stop();
 
-        if (tick_.getTimeMilli() > 100) {
-            if(print) {
-                cerr << "FPS : " << (fps_ = tick_.getFPS());
+    if (tick_.getTimeMilli() > 100) {
+        if(printFPS) {
+            cerr << "FPS : " << (fps_ = tick_.getFPS()) << endl;
 #ifndef __EMSCRIPTEN__
-                cerr << '\r';
+            cerr << '\r';
 #else
-                cerr << endl;
+            cerr << endl;
 #endif
+        }
+        tick_.reset();
+    }
+
+    run_sync_on_main<4>([this, showFPS, showTracking](){
+        string txt = "FPS: " + std::to_string(fps_);
+#ifndef __EMSCRIPTEN__
+        if(!fbCtx().isShared()) {
+            mainFbContext_.copyTo(copyBuffer_);
+            fbCtx().copyFrom(copyBuffer_);
+        }
+#endif
+        {
+#ifndef __EMSCRIPTEN__
+            mainFbContext_.makeCurrent();
+            GL_CHECK(glFinish());
+            GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+            GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+#else
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            GL_CHECK(glClearColor(0,0,0,0));
+            GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+            GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+#endif
+
+            float w = mainFbContext_.size().width;
+            float h = mainFbContext_.size().height;
+            float r = mainFbContext_.pixelRatioX();
+            if(showFPS || showTracking) {
+                nvgSave(context_);
+                nvgBeginFrame(context_, w, h, r);
+                cv::v4d::nvg::detail::NVG::initializeContext(context_);
             }
-            tick_.reset();
+
+            if (showFPS) {
+                using namespace cv::v4d::nvg;
+                beginPath();
+                roundedRect(3.75, 3.75, 10 * txt.size(), 22.5, 3.75);
+                fillColor(cv::Scalar(255, 255, 255, 180));
+                fill();
+#ifdef __EMSCRIPTEN__
+                fbCtx().makeCurrent();
+#endif
+                fontSize(20.0f);
+                fontFace("mono");
+                fillColor(cv::Scalar(90, 90, 90, 255));
+                textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+                text(7.5, 15, txt.c_str(), nullptr);
+
+                nvgEndFrame(context_);
+                nvgRestore(context_);
+            }
+
+            if(showTracking) {
+                using namespace cv::v4d::nvg;
+                std::stringstream ss;
+                auto& tiMap = TimeTracker::getInstance()->getMap();
+                size_t cnt = 0;
+                beginPath();
+                fontSize(20.0f);
+                fontFace("mono");
+                fillColor(cv::Scalar(200, 200, 200, 200));
+                textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
+
+                for (auto& it : tiMap) {
+                    ss.str("");
+                    ss << it.first << ": " << it.second << std::endl;
+                    text(7.5, 15 * (cnt + 3), ss.str().c_str(), nullptr);
+                    ++cnt;
+                }
+                nvgEndFrame(context_);
+                nvgRestore(context_);
+            }
+        }
+        {
+#ifdef __EMSCRIPTEN__
+            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+#endif
+            screen().draw_widgets();
+#ifndef __EMSCRIPTEN__
+            GL_CHECK(glFinish());
+#endif
         }
 
-        run_sync_on_main<4>([this, graphical](){
-            string txt = "FPS: " + std::to_string(fps_);
-#ifndef __EMSCRIPTEN__
-            if(!fbCtx().isShared()) {
-                mainFbContext_.copyTo(copyBuffer_);
-                fbCtx().copyFrom(copyBuffer_);
-            }
-#endif
-            {
-#ifndef __EMSCRIPTEN__
-                mainFbContext_.makeCurrent();
-                GL_CHECK(glFinish());
-                GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-                GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
-                glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        if(!fbCtx().isShared()) {
+#ifdef __EMSCRIPTEN__
+            mainFbContext_.doWebGLCopy(fbCtx());
 #else
-                FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-                GL_CHECK(glClearColor(0,0,0,0));
-                GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-                GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
+            fbCtx().copyTo(copyBuffer_);
+            mainFbContext_.copyFrom(copyBuffer_);
 #endif
-                if (graphical) {
-                    float w = mainFbContext_.size().width;
-                    float h = mainFbContext_.size().height;
-                    float r = mainFbContext_.pixelRatioX();
-
-                    nvgSave(context_);
-                    nvgBeginFrame(context_, w, h, r);
-                    cv::v4d::nvg::detail::NVG::initializeContext(context_);
-                    using namespace cv::v4d::nvg;
-                    beginPath();
-                    roundedRect(5, 5, 15 * txt.size() + 5, 30, 5);
-                    fillColor(cv::Scalar(255, 255, 255, 180));
-                    fill();
-#ifdef __EMSCRIPTEN__
-                    fbCtx().makeCurrent();
-#endif
-                    fontSize(30.0f);
-                    fontFace("mono");
-                    fillColor(cv::Scalar(90, 90, 90, 255));
-                    textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
-                    text(10, 20, txt.c_str(), nullptr);
-
-                    nvgEndFrame(context_);
-                    nvgRestore(context_);
-                }
-            }
-            {
-#ifdef __EMSCRIPTEN__
-                FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-#endif
-                screen().draw_widgets();
-#ifndef __EMSCRIPTEN__
-                GL_CHECK(glFinish());
-#endif
-            }
-
-            if(!fbCtx().isShared()) {
-#ifdef __EMSCRIPTEN__
-                mainFbContext_.doWebGLCopy(fbCtx());
-#else
-                fbCtx().copyTo(copyBuffer_);
-                mainFbContext_.copyFrom(copyBuffer_);
-#endif
-            }
-        });
-    }
-    first_ = false;
+        }
+    });
     tick_.start();
 }
 

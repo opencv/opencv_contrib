@@ -83,6 +83,19 @@ template<typename T> void find_widgets(const nanogui::Widget* parent, std::vecto
         }
     }
 }
+
+template<typename T> std::string int_to_hex( T i )
+{
+  std::stringstream stream;
+  stream << "0x"
+         << std::setfill ('0') << std::setw(sizeof(T) * 2)
+         << std::hex << i;
+  return stream.str();
+}
+
+template<typename T, typename... U> std::string func_id(std::function<T (U ...)> f) {
+    return int_to_hex((size_t) &f);
+}
 }
 
 using namespace cv::v4d::detail;
@@ -96,8 +109,6 @@ class CV_EXPORTS V4D {
     int samples_;
     bool debug_;
     cv::Rect viewport_;
-    float zoomScale_;
-    cv::Vec2f mousePos_;
     bool scaling_;
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
@@ -105,7 +116,6 @@ class CV_EXPORTS V4D {
     NanoguiContext* nguiContext_ = nullptr;
     std::map<int64_t,GLContext*> glContexts_;
     bool closed_ = false;
-    bool mouseDrag_ = false;
     Source source_;
     Sink sink_;
     concurrent::threadpool pool_;
@@ -118,6 +128,7 @@ class CV_EXPORTS V4D {
     uint64_t frameCnt_ = 0;
     bool showFPS_ = true;
     bool printFPS_ = true;
+    bool showTracking_ = true;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -192,12 +203,12 @@ public:
     /*!
      * Called to feed an image directly to the framebuffer
      */
-    CV_EXPORTS void feed(cv::InputArray& in);
+    CV_EXPORTS void feed(cv::InputArray in);
     /*!
      * Fetches a copy of frambuffer
      * @return a copy of the framebuffer
      */
-    CV_EXPORTS InputOutputArray fetch();
+    CV_EXPORTS _InputOutputArray fetch();
 
     /*!
      * Called to capture to the framebuffer from a #cv::viz::Source object provided via #V4D::setSource().
@@ -246,29 +257,13 @@ public:
      */
     CV_EXPORTS void showGui(bool s);
     /*!
-     * if zoomed in, move the content by x and y
-     * @param x The amount on the x-axis to move
-     * @param y The amount on the y-axis to move
-     */
-    CV_EXPORTS void pan(int x, int y);
-    /*!
-     * Zoom by factor.
-     * @param factor The zoom factor.
-     */
-    CV_EXPORTS void zoom(float factor);
-    /*!
      * Get the window position.
      * @return The window position.
      */
     CV_EXPORTS cv::Vec2f position();
     /*!
-     * Get current zoom scale.
-     * @return The zoom scale.
-     */
-    CV_EXPORTS float zoomScale();
-    /*!
-     * Get the current viewport.
-     * @return The current viewport.
+     * Get the current viewport reference.
+     * @return The current viewport reference.
      */
     CV_EXPORTS cv::Rect& viewport();
     /*!
@@ -310,6 +305,8 @@ public:
     CV_EXPORTS void setShowFPS(bool s);
     CV_EXPORTS bool getPrintFPS();
     CV_EXPORTS void setPrintFPS(bool p);
+    CV_EXPORTS bool getShowTracking();
+    CV_EXPORTS void setShowTracking(bool st);
 
     CV_EXPORTS bool isFullscreen();
     /*!
@@ -382,11 +379,7 @@ private:
 
     void init();
 
-    void setMouseDrag(bool d);
-    bool isMouseDrag();
-    cv::Vec2f getMousePosition();
     bool keyboard_event(int key, int scancode, int action, int modifiers);
-    void setMousePosition(int x, int y);
 
     FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();

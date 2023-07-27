@@ -32,11 +32,10 @@ class NanoguiContext {
     NVGcontext* context_;
     cv::TickMeter tick_;
     float fps_ = 0;
-    bool first_ = true;
     cv::UMat copyBuffer_;
 public:
     NanoguiContext(FrameBufferContext& fbContext);
-    void render(bool print, bool graphical);
+    void render(bool print, bool graphical, bool show);
     void build(std::function<void(cv::v4d::FormHelper&)> fn);
     nanogui::Screen& screen();
     cv::v4d::FormHelper& form();
