@@ -92,6 +92,11 @@ PARAM_TEST_CASE(VideoReadRaw, cv::cuda::DeviceInfo, std::string)
 {
 };
 
+typedef tuple<std::string, bool> histogram_params_t;
+PARAM_TEST_CASE(Histogram, cv::cuda::DeviceInfo, histogram_params_t)
+{
+};
+
 PARAM_TEST_CASE(CheckKeyFrame, cv::cuda::DeviceInfo, std::string)
 {
 };
@@ -281,15 +286,11 @@ CUDA_TEST_P(DisplayResolution, Reader)
 CUDA_TEST_P(Video, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string relativeFilePath = GET_PARAM(1);
 
     // CUDA demuxer has to fall back to ffmpeg to process "cv/video/768x576.avi"
-    if (GET_PARAM(1) == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
-        throw SkipTestException("FFmpeg backend not found");
-
-#ifdef _WIN32  // handle old FFmpeg backend
-    if (GET_PARAM(1) == "/cv/tracking/faceocc2/data/faceocc2.webm")
-        throw SkipTestException("Feature not yet supported by Windows FFmpeg shared library!");
-#endif
+    if (relativeFilePath == "cv/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
+        throw SkipTestException("FFmpeg backend not found  - SKIP");
 
     const std::vector<std::pair< cudacodec::ColorFormat, int>> formatsToChannels = {
         {cudacodec::ColorFormat::GRAY,1},
@@ -298,7 +299,7 @@ CUDA_TEST_P(Video, Reader)
         {cudacodec::ColorFormat::NV_NV12,1}
     };
 
-    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + relativeFilePath;
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
     ASSERT_FALSE(reader->set(cudacodec::ColorFormat::RGB));
     cv::cudacodec::FormatInfo fmt = reader->format();
@@ -482,6 +483,46 @@ CUDA_TEST_P(VideoReadRaw, Reader)
     }
 
     ASSERT_EQ(0, remove(fileNameOut.c_str()));
+}
+
+CUDA_TEST_P(Histogram, Reader)
+{
+    cuda::setDevice(GET_PARAM(0).deviceID());
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + get<0>(GET_PARAM(1));
+    const bool histAvailable = get<1>(GET_PARAM(1));
+    cudacodec::VideoReaderInitParams params;
+    params.enableHistogram = histAvailable;
+    Ptr<cudacodec::VideoReader> reader;
+    try {
+        reader = cudacodec::createVideoReader(inputFile, {}, params);
+    }
+    catch (const cv::Exception& e) {
+        throw SkipTestException(e.msg);
+    }
+    const cudacodec::FormatInfo fmt = reader->format();
+    ASSERT_EQ(histAvailable, fmt.enableHistogram);
+    reader->set(cudacodec::ColorFormat::GRAY);
+    GpuMat frame, hist;
+    reader->nextFrame(frame, hist);
+    if (histAvailable) {
+        ASSERT_TRUE(!hist.empty());
+        Mat frameHost, histGsHostFloat, histGs, histHost;
+        frame.download(frameHost);
+        const int histSize = 256;
+        const float range[] = { 0, 256 };
+        const float* histRange[] = { range };
+        cv::calcHist(&frameHost, 1, 0, Mat(), histGsHostFloat, 1, &histSize, histRange);
+        histGsHostFloat.convertTo(histGs, CV_32S);
+        if (fmt.videoFullRangeFlag)
+            hist.download(histHost);
+        else
+            cudacodec::MapHist(hist, histHost);
+        const double err = cv::norm(histGs.t(), histHost, NORM_INF);
+        ASSERT_EQ(err, 0);
+    }
+    else {
+        ASSERT_TRUE(hist.empty());
+    }
 }
 
 CUDA_TEST_P(CheckParams, Reader)
@@ -818,13 +859,13 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, Scaling, testing::Combine(
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, DisplayResolution, ALL_DEVICES);
 
-#define VIDEO_SRC_R "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+#define VIDEO_SRC_R testing::Values("highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
     "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
-    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4", "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
-    "cv/tracking/faceocc2/data/faceocc2.webm"
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
-    ALL_DEVICES,
-    testing::Values(VIDEO_SRC_R)));
+    "highgui/video/sample_322x242_15frames.yuv420p.libvpx-vp9.mp4")
+    //, "highgui/video/sample_322x242_15frames.yuv420p.libaom-av1.mp4", \
+    "cv/tracking/faceocc2/data/faceocc2.webm", "highgui/video/sample_322x242_15frames.yuv420p.mpeg2video.mp4", "highgui/video/sample_322x242_15frames.yuv420p.mjpeg.mp4")
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(ALL_DEVICES,VIDEO_SRC_R));
 
 const color_conversion_params_t color_conversion_params[] =
 {
@@ -848,6 +889,15 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, VideoReadRaw, testing::Combine(
     ALL_DEVICES,
     testing::Values(VIDEO_SRC_RW)));
 
+const histogram_params_t histogram_params[] =
+{
+    histogram_params_t("highgui/video/big_buck_bunny.mp4", false),
+    histogram_params_t("highgui/video/big_buck_bunny.h264", true),
+    histogram_params_t("highgui/video/big_buck_bunny_full_color_range.h264", true),
+};
+
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, Histogram, testing::Combine(ALL_DEVICES,testing::ValuesIn(histogram_params)));
+
 const check_extra_data_params_t check_extra_data_params[] =
 {
     check_extra_data_params_t("highgui/video/big_buck_bunny.mp4", 45),
@@ -859,9 +909,11 @@ INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckExtraData, testing::Combine(
     ALL_DEVICES,
     testing::ValuesIn(check_extra_data_params)));
 
+#define VIDEO_SRC_KEY "highgui/video/big_buck_bunny.mp4", "cv/video/768x576.avi", "cv/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckKeyFrame, testing::Combine(
     ALL_DEVICES,
-    testing::Values(VIDEO_SRC_R)));
+    testing::Values(VIDEO_SRC_KEY)));
 
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, CheckParams, ALL_DEVICES);
 

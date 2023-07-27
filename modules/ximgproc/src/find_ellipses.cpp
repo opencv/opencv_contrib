@@ -1272,9 +1272,9 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
 
     // buffer
     int *magBuffer[3];
-    void *buffer = malloc((imgSize.width + 2) * (imgSize.height + 2) +
-                          (imgSize.width + 2) * 3 * sizeof(int));
-    magBuffer[0] = (int *) buffer;
+    AutoBuffer<int> buffer((imgSize.width + 2) * (imgSize.height + 2) +
+                          (imgSize.width + 2) * 3);
+    magBuffer[0] = buffer.data();
     magBuffer[1] = magBuffer[0] + imgSize.width + 2;
     magBuffer[2] = magBuffer[1] + imgSize.width + 2;
     uchar *map = (uchar *) (magBuffer[2] + imgSize.width + 2);
@@ -1300,8 +1300,8 @@ void EllipseDetectorImpl::preProcessing(Mat1b &image, Mat1b &dp, Mat1b &dn) {
     // 2 - the pixel does belong to an edge
     for (int i = 0; i <= imgSize.height; i++) {
         int *tmpMag = magBuffer[(i > 0) + 1] + 1;
-        const short *tmpDx = (short *) (dx[i]);
-        const short *tmpDy = (short *) (dy[i]);
+        const short *tmpDx = dx.ptr<short>(i);
+        const short *tmpDy = dy.ptr<short>(i);
         uchar *tmpMap;
         int prevFlag = 0;
 
