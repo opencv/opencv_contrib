@@ -57,9 +57,21 @@ cv::ogl::Texture2D& V4D::texture() {
     return mainFbContext_->getTexture2D();
 }
 
+void V4D::setMouseButtonEventCallback(
+        std::function<void(int button, int action, int modifiers)> fn) {
+    mouseEventCb_ = fn;
+}
+
 void V4D::setKeyboardEventCallback(
         std::function<bool(int key, int scancode, int action, int modifiers)> fn) {
     keyEventCb_ = fn;
+}
+
+void V4D::mouse_button_event(int button, int action, int modifiers) {
+    if (mouseEventCb_)
+        return mouseEventCb_(button, action, modifiers);
+
+    return nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
 }
 
 bool V4D::keyboard_event(int key, int scancode, int action, int modifiers) {

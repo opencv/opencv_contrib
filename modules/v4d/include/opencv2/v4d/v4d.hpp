@@ -125,6 +125,7 @@ class CV_EXPORTS V4D {
     std::future<bool> futureReader_;
     std::future<void> futureWriter_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
+    std::function<void(int button, int action, int modifiers)> mouseEventCb_;
     cv::Point mousePos_;
     uint64_t frameCnt_ = 0;
     bool showFPS_ = true;
@@ -372,6 +373,8 @@ public:
     CV_EXPORTS void makeCurrent();
 
     void setDefaultKeyboardEventCallback();
+    void setMouseButtonEventCallback(
+            std::function<void(int button, int action, int modifiers)> fn);
     void setKeyboardEventCallback(
             std::function<bool(int key, int scancode, int action, int modifiers)> fn);
 private:
@@ -380,6 +383,7 @@ private:
 
     void init();
 
+    void mouse_button_event(int button, int action, int modifiers);
     bool keyboard_event(int key, int scancode, int action, int modifiers);
 
     cv::Point getMousePosition();
