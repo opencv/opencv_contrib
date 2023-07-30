@@ -69,6 +69,14 @@ bool V4D::keyboard_event(int key, int scancode, int action, int modifiers) {
     return nguiCtx().screen().keyboard_event(key, scancode, action, modifiers);
 }
 
+cv::Point V4D::getMousePosition() {
+    return mousePos_;
+}
+
+void V4D::setMousePosition(const cv::Point& pt) {
+    mousePos_ = pt;
+}
+
 FrameBufferContext& V4D::fbCtx() {
     assert(mainFbContext_ != nullptr);
     return *mainFbContext_;

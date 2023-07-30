@@ -309,6 +309,34 @@ Source makeVaSource(const string& inputFilename, const int vaDeviceIndex) {
         return !frame.empty();
     }, fps);
 }
+
+Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const float fps,
+        const cv::Size& frameSize) {
+    cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
+            fourcc, fps, frameSize, { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
+
+    if(writer->isOpened()) {
+        return Sink([=](const cv::UMat& frame) {
+            static cv::UMat resized;
+            cv::resize(frame, resized, frameSize);
+            (*writer) << resized;
+            return writer->isOpened();
+        });
+    } else {
+        return Sink();
+    }
+}
+
+Source makeAnyHWSource(const string& inputFilename) {
+    cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
+            cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
+    float fps = capture->get(cv::CAP_PROP_FPS);
+
+    return Source([=](cv::UMat& frame) {
+        (*capture) >> frame;
+        return !frame.empty();
+    }, fps);
+}
 #endif
 
 #ifndef __EMSCRIPTEN__
@@ -316,6 +344,11 @@ Sink makeWriterSink(const string& outputFilename, const int fourcc, const float 
         const cv::Size& frameSize) {
     if (isIntelVaSupported()) {
         return makeVaSink(outputFilename, fourcc, fps, frameSize, 0);
+    } else {
+        try {
+            return makeAnyHWSink(outputFilename, fourcc, fps, frameSize);
+        } catch(...) {
+        }
     }
 
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
@@ -336,6 +369,11 @@ Sink makeWriterSink(const string& outputFilename, const int fourcc, const float 
 Source makeCaptureSource(const string& inputFilename) {
     if (isIntelVaSupported()) {
         return makeVaSource(inputFilename, 0);
+    } else {
+        try {
+            return makeAnyHWSource(inputFilename);
+        } catch(...) {
+        }
     }
 
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
@@ -425,23 +463,7 @@ public:
 
             return true;
         }
-//        cerr << "not captured" << endl;
         return false;
-    }
-
-    void captureCPU() {
-        EM_ASM(
-            if(globalThis.doCapture) {
-                if(typeof globalThis.v4dCopyCanvasContext === 'undefined' || globalThis.v4dCopyCanvasContext === null)
-                    globalThis.v4dCopyCanvasContext = globalThis.v4dCopyCanvasElement.getContext('2d', { willReadFrequently: true });
-                if(typeof globalThis.v4dFrameData === 'undefined' || globalThis.v4dFrameData === null)
-                    globalThis.v4dFrameData = Module._malloc(width_ * height_ * 4);
-
-                globalThis.v4dCopyCanvasElement.drawImage(globalThis.v4dVideoElement, 0, 0, 1280, 720);
-                var cameraArrayBuffer = globalThis.v4dCopyCanvasContext.getImageData(0, 0, 1280, 720);
-                Module.HEAPU8.set(cameraArrayBuffer.data, globalThis.v4dFrameData);
-            }
-        );
     }
 };
 
