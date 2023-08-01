@@ -126,7 +126,7 @@ class CV_EXPORTS V4D {
     std::future<void> futureWriter_;
     std::function<bool(int key, int scancode, int action, int modifiers)> keyEventCb_;
     std::function<void(int button, int action, int modifiers)> mouseEventCb_;
-    cv::Point mousePos_;
+    cv::Point2f mousePos_;
     uint64_t frameCnt_ = 0;
     bool showFPS_ = true;
     bool printFPS_ = true;
@@ -386,8 +386,8 @@ private:
     void mouse_button_event(int button, int action, int modifiers);
     bool keyboard_event(int key, int scancode, int action, int modifiers);
 
-    cv::Point getMousePosition();
-    void setMousePosition(const cv::Point& pt);
+    cv::Point2f getMousePosition();
+    void setMousePosition(const cv::Point2f& pt);
 
     FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();

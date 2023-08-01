@@ -81,11 +81,11 @@ bool V4D::keyboard_event(int key, int scancode, int action, int modifiers) {
     return nguiCtx().screen().keyboard_event(key, scancode, action, modifiers);
 }
 
-cv::Point V4D::getMousePosition() {
+cv::Point2f V4D::getMousePosition() {
     return mousePos_;
 }
 
-void V4D::setMousePosition(const cv::Point& pt) {
+void V4D::setMousePosition(const cv::Point2f& pt) {
     mousePos_ = pt;
 }
 
@@ -118,7 +118,6 @@ GLContext& V4D::glCtx(uint32_t idx) {
         glContexts_.insert({idx, ctx});
         return *ctx;
     }
-
 }
 
 bool V4D::hasFbCtx() {
@@ -494,7 +493,7 @@ bool V4D::display() {
 //        swapContextBuffers();
 
 #ifdef __EMSCRIPTEN__
-        nguiCtx().render(printFPS_, showFPS_);
+        nguiCtx().render(printFPS_, showFPS_, showTracking_);
 #endif
         run_sync_on_main<6>([&, this](){
             {

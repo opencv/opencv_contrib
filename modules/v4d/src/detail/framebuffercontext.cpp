@@ -309,7 +309,7 @@ void FrameBufferContext::init() {
             v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
         }
 
-        v4d->setMousePosition(cv::Point{x, y});
+        v4d->setMousePosition(cv::Point2f(float(x), float(y)));
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(),
