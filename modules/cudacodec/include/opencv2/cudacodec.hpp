@@ -544,6 +544,14 @@ public:
     @return `true` unless the property is unset set or not supported.
      */
     virtual bool get(const int propertyId, double& propertyVal) const = 0;
+
+    /** @brief Retrieve the index of the first frame that will returned after construction.
+
+    @return index of the index of the first frame that will returned after construction.
+
+    @note To reduce the decoding overhead when initializing VideoReader to start its decoding from frame N, RawVideoSource should seek to the first valid key frame less than or equal to N and return that index here.
+     */
+    virtual int getFirstFrameIdx() const = 0;
 };
 
 /** @brief VideoReader initialization parameters
@@ -561,9 +569,10 @@ but it cannot go below the number determined by NVDEC.
 @param targetRoi Region of interest (x/width should be multiples of 4 and y/height multiples of 2) within the output frame to copy and resize the decoded frame to,
 defaults to the full frame.
 @param enableHistogram Request output of decoded luma histogram \a hist from VideoReader::nextFrame(GpuMat& frame, GpuMat& hist, Stream& stream), if hardware supported.
+@param firstFrameIdx Index of the first frame to seek to on initialization of the VideoReader.
 */
 struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
-    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0), enableHistogram(false){};
+    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0), enableHistogram(false), firstFrameIdx(0){};
     CV_PROP_RW bool udpSource;
     CV_PROP_RW bool allowFrameDrop;
     CV_PROP_RW int minNumDecodeSurfaces;
@@ -572,6 +581,7 @@ struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
     CV_PROP_RW cv::Rect srcRoi;
     CV_PROP_RW cv::Rect targetRoi;
     CV_PROP_RW bool enableHistogram;
+    CV_PROP_RW int firstFrameIdx;
 };
 
 /** @brief Creates video reader.
