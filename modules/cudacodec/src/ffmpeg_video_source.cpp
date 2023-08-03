@@ -56,7 +56,7 @@ static std::string fourccToString(int fourcc)
 {
     union {
         int u32;
-        unsigned char c[4];
+        char c[4];
     } i32_c;
     i32_c.u32 = fourcc;
     return cv::format("%c%c%c%c",
