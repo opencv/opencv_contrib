@@ -54,16 +54,12 @@ using namespace cv::cudacodec::detail;
 
 static std::string fourccToString(int fourcc)
 {
-    union {
-        int u32;
-        char c[4];
-    } i32_c;
-    i32_c.u32 = fourcc;
-    return cv::format("%c%c%c%c",
-        (i32_c.c[0] >= ' ' && i32_c.c[0] < 128) ? i32_c.c[0] : '?',
-        (i32_c.c[1] >= ' ' && i32_c.c[1] < 128) ? i32_c.c[1] : '?',
-        (i32_c.c[2] >= ' ' && i32_c.c[2] < 128) ? i32_c.c[2] : '?',
-        (i32_c.c[3] >= ' ' && i32_c.c[3] < 128) ? i32_c.c[3] : '?');
+    char str[5] = {'\0', '\0', '\0', '\0'};
+    for (int i = 0; i < 4; i++) {
+        char c = (char)(fourcc >> i*8); 
+        str[i] = ' ' <= c && c < 128 ? c : '?';
+    }
+    return std::string(str);
 }
 
 static
