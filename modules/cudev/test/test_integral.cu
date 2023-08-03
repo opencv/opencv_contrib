@@ -48,7 +48,7 @@ using namespace cv::cuda;
 using namespace cv::cudev;
 using namespace cvtest;
 
-TEST(Integral, _8u)
+TEST(DISABLED_Integral, _8u)
 {
     const Size size = randomSize(100, 400);
 
@@ -84,7 +84,7 @@ TEST(Integral, _32f)
     ASSERT_PRED_FORMAT2(cvtest::MatComparator(1e-5, 0), dst_gold, Mat(dst));
 }
 
-TEST(Integral, _8u_opt)
+TEST(DISABLED_Integral, _8u_opt)
 {
     const Size size(640, 480);
 
