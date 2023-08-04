@@ -56,7 +56,7 @@ static std::string fourccToString(int fourcc)
 {
     char str[5] = {'\0', '\0', '\0', '\0'};
     for (int i = 0; i < 4; i++) {
-        char c = (char)(fourcc >> i*8); 
+        char c = (char)(fourcc >> i*8);
         str[i] = ' ' <= c && c < 128 ? c : '?';
     }
     return std::string(str);
