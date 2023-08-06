@@ -166,10 +166,10 @@ namespace cv {
                 double alpha = 1.0;
                 switch( depth )
                 {
-                    case CV_8U:  alpha = 1.;             break;
-                    case CV_16U: alpha = 1. / 256.;      break;
-                    case CV_32F: alpha = 256. ;          break;
-                    case CV_64F: alpha = 256. ;          break;
+                    case CV_8U:  alpha = 1.;        break;
+                    case CV_16U: alpha = 1. / 257.; break; // 65535 / 255 = 257
+                    case CV_32F: alpha = 255. ;     break; // [0,1]->[0,255]
+                    case CV_64F: alpha = 255. ;     break; // [0,1]->[0,255]
                     default: CV_Error(Error::StsBadArg,"Unsupported Mat type"); break;
                 }
                 img.convertTo(img_converted, CV_32F, alpha );

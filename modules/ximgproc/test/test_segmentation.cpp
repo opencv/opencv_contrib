@@ -46,7 +46,7 @@ TEST(ximgproc_ImageSegmentation, createGraphSegmentation_issueC3544)
 
     // Try CV_16UC3
     Mat testImg_16UC3;
-    testImg.convertTo(testImg_16UC3, CV_16U, 256. , 0.0);
+    testImg.convertTo(testImg_16UC3, CV_16U, 257., 0.0);
     ASSERT_EQ(testImg_16UC3.type(), CV_16UC3 ) << "Input image is not CV_16UC3";
     ASSERT_NO_THROW( gs->processImage(testImg_16UC3, segImg) );
     ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
@@ -55,7 +55,7 @@ TEST(ximgproc_ImageSegmentation, createGraphSegmentation_issueC3544)
 
     // Try CV_32FC3
     Mat testImg_32FC3;
-    testImg.convertTo(testImg_32FC3, CV_32F, 1./256. , 0.0);
+    testImg.convertTo(testImg_32FC3, CV_32F, 1./255. , 0.0);
     ASSERT_EQ(testImg_32FC3.type(), CV_32FC3 ) << "Input image is not CV_32FC3";
     ASSERT_NO_THROW( gs->processImage(testImg_32FC3, segImg) );
     ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
@@ -64,7 +64,7 @@ TEST(ximgproc_ImageSegmentation, createGraphSegmentation_issueC3544)
 
     // Try CV_64FC3
     Mat testImg_64FC3;
-    testImg.convertTo(testImg_64FC3, CV_64F, 1./256. , 0.0);
+    testImg.convertTo(testImg_64FC3, CV_64F, 1./255. , 0.0);
     ASSERT_EQ(testImg_64FC3.type(), CV_64FC3 ) << "Input image is not CV_64FC3";
     ASSERT_NO_THROW( gs->processImage(testImg_64FC3, segImg) );
     ASSERT_NO_THROW( minMaxLoc(segImg, &min, &max) );
