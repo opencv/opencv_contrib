@@ -161,8 +161,18 @@ namespace cv {
 
                 Mat img_converted;
 
-                // Switch to float
-                img.convertTo(img_converted, CV_32F);
+                // Switch to [0,255] float
+                const int depth = CV_MAT_DEPTH( img.type() );
+                double alpha = 1.0;
+                switch( depth )
+                {
+                    case CV_8U:  alpha = 1.;             break;
+                    case CV_16U: alpha = 1. / 256.;      break;
+                    case CV_32F: alpha = 256. ;          break;
+                    case CV_64F: alpha = 256. ;          break;
+                    default: CV_Error(Error::StsBadArg,"Unsupported Mat type"); break;
+                }
+                img.convertTo(img_converted, CV_32F, alpha );
 
                 // Apply gaussian filter
                 GaussianBlur(img_converted, img_filtered, Size(0, 0), sigma, sigma);
