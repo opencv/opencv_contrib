@@ -115,7 +115,7 @@ namespace cv { namespace cuda { namespace device
             const float src_y = dst_y * a_y + b_y;
             const int ix = __float2int_rd(src_x);
             const int iy = __float2int_rd(src_y);
-            const float fx2 = src_x -ix;
+            const float fx2 = src_x - ix;
             const float fx1 = 1.f - fx2;
             const float fy2 = src_y - iy;
             const float fy1 = 1.f - fy2;
@@ -156,6 +156,42 @@ namespace cv { namespace cuda { namespace device
             dst(y, x) = src(y, x);
         }
     }
+
+    template <typename T> __global__ void resize_area_larger(const PtrStepSz<T> src, PtrStepSz<T> dst, float fy, float fx)
+    {
+        typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type work_type;
+
+        const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (dst_x < dst.cols && dst_y < dst.rows)
+        {
+            // cpu resize:
+            //      sx = cvFloor(dx*scale_x);
+            //      fx = (float)((dx+1) - (sx+1)*inv_scale_x);
+            //      fx = fx <= 0 ? 0.f : fx - cvFloor(fx);
+            const int src_x = __float2int_rd(dst_x * fx);
+            const int src_y = __float2int_rd(dst_y * fy);
+            float fx2 = dst_x + 1 - (src_x + 1) / fx;
+            fx2 = fx2 <= 0.f ? 0.f : fx2 - ::floor(fx2);
+            const float fx1 = 1.f - fx2;
+            float fy2 = dst_y + 1 - (src_y + 1) / fy;
+            fy2 = fy2 <= 0.f ? 0.f : fy2 - ::floor(fy2);
+            const float fy1 = 1.f - fy2;
+            const int ix1 = src_x;
+            const int ix2 = ::min(src_x + 1, src.cols - 1);
+            const int iy1 = src_y;
+            const int iy2 = ::min(src_y + 1, src.rows - 1);
+
+            work_type out = VecTraits<work_type>::all(0);
+            out = out + src(iy1, ix1) * (fy1 * fx1);
+            out = out + src(iy1, ix2) * (fy1 * fx2);
+            out = out + src(iy2, ix1) * (fy2 * fx1);
+            out = out + src(iy2, ix2) * (fy2 * fx2);
+            dst(dst_y, dst_x) = saturate_cast<T>(out);
+        }
+    }
+
 
     // callers for nearest interpolation
 
@@ -395,6 +431,12 @@ namespace cv { namespace cuda { namespace device
             const dim3 block(32, 8);
             const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
+            if (fy <= 1.f || fx <= 1.f)
+            {
+                resize_area_larger<<<grid, block, 0, stream>>>(src, dst, fy, fx);
+                return;
+            }
+
             if (std::abs(fx - iscale_x) < FLT_MIN && std::abs(fy - iscale_y) < FLT_MIN)
             {
                 BrdConstant<T> brd(src.rows, src.cols);
@@ -431,12 +473,6 @@ namespace cv { namespace cuda { namespace device
             ResizeCubicDispatcher<T>::call,
         };
 
-        // change to linear if area interpolation upscaling
-        if (interpolation == INTER_AREA && (fx <= 1.f || fy <= 1.f))
-        {
-            interpolation = INTER_LINEAR;
-            coordinate = INTER_ASYMMETRIC;
-        }
         if (interpolation == INTER_AREA)
         {
             ResizeAreaDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), fy, fx, stream);
