@@ -78,7 +78,7 @@ namespace cv
             b = 0.f;
         }
         else
-            CV_Error(Error::StsBadArg, "Unknown coordinate transformation mode");
+            CV_Error(Error::StsBadArg, format("Unknown coordinate transformation mode %d", coordinate));
     }
 }
 
@@ -201,7 +201,7 @@ namespace cv { namespace cuda { namespace device
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
-        // nearest use floor(x_org + 0.5), so b plus 0.5 here, to use __float2int_rd directly
+        // nearest use floor(x_org + 0.5), so b + 0.5 here, to use __float2int_rd directly
         resize_nearest<<<grid, block, 0, stream>>>(src, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
         cudaSafeCall( cudaGetLastError() );
 
@@ -248,12 +248,12 @@ namespace cv { namespace cuda { namespace device
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
-        // tex use 0.5-base coordinate, so b plus 0.5
+        // Here the texture is only used for holding memory and border clamp, and only its integer coordinates are visited in LinearFilter, so no b + 0.5
         if (srcWhole.data == src.data)
         {
             cudev::Texture<T> texSrc(src);
             LinearFilter<cudev::TexturePtr<T>> filteredSrc(texSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         else
         {
@@ -261,7 +261,7 @@ namespace cv { namespace cuda { namespace device
             BrdReplicate<T> brd(src.rows, src.cols);
             BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
             LinearFilter<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>> filteredSrc(brdSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         cudaSafeCall( cudaGetLastError() );
         cudaSafeCall( cudaDeviceSynchronize() );
@@ -291,12 +291,12 @@ namespace cv { namespace cuda { namespace device
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
-        // tex use 0.5-base coordinate, so b plus 0.5
+        // Here the texture is only used for holding memory and border clamp, and only its integer coordinates are used in CubicFilter, so no b + 0.5
         if (srcWhole.data == src.data)
         {
             cudev::Texture<T> texSrc(src);
             CubicFilter<cudev::TexturePtr<T>> filteredSrc(texSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         else
         {
@@ -304,7 +304,7 @@ namespace cv { namespace cuda { namespace device
             BrdReplicate<T> brd(src.rows, src.cols);
             BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
             CubicFilter<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>> filteredSrc(brdSrc);
-            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            resize<<<grid, block>>>(filteredSrc, dst, a_y, b_y, a_x, b_x);
         }
         cudaSafeCall( cudaGetLastError() );
         cudaSafeCall( cudaDeviceSynchronize() );
