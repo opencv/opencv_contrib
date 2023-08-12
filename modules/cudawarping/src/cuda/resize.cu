@@ -93,8 +93,8 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = dst_x * a_x + b_x;
-            const float src_y = dst_y * a_y + b_y;
+            const float src_x = ::fmaf((float)(dst_x), a_x, b_x);
+            const float src_y = ::fmaf((float)(dst_y), a_y, b_y);
             const float ix = ::min(::max(__float2int_rd(src_x), 0), src.cols - 1);
             const float iy = ::min(::max(__float2int_rd(src_y), 0), src.rows - 1);
 
@@ -111,8 +111,8 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = dst_x * a_x + b_x;
-            const float src_y = dst_y * a_y + b_y;
+            const float src_x = ::fmaf((float)(dst_x), a_x, b_x);
+            const float src_y = ::fmaf((float)(dst_y), a_y, b_y);
             const int ix = __float2int_rd(src_x);
             const int iy = __float2int_rd(src_y);
             const float fx2 = src_x - ix;
@@ -140,8 +140,8 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = dst_x * a_x + b_x;
-            const float src_y = dst_y * a_y + b_y;
+            const float src_x = ::fmaf((float)(dst_x), a_x, b_x);
+            const float src_y = ::fmaf((float)(dst_y), a_y, b_y);
             dst(dst_y, dst_x) = src(src_y, src_x);
         }
     }
