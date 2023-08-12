@@ -58,7 +58,7 @@ namespace
             || coordinate == INTER_HALF_PIXEL_PYTORCH)
         {
             a = scale;
-            b = 0.5f * (scale - 1.f);
+            b = 0.5f * scale - 0.5f;
             if (coordinate == INTER_HALF_PIXEL_SYMMETRIC)
                 b += 0.5f * (src - dst * scale);
             if (coordinate == INTER_HALF_PIXEL_PYTORCH && dst <= 1)
@@ -234,9 +234,9 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
     cv::resize(src, dst_gold, cv::Size(), coeff, coeff, interpolation, coordinate);
     cv::ipp::setUseIPP(use_ipp);
 
-    /* Can not do much with INTER_NEAREST. This test will fail more times when you try more scale factors, espacilly when dst.size is rounded from float number near X.5.
-    During computing coordinate on src, cpu use double but ocl / cuda use float.
-    When the src position near X.5, we may pick up pixels on different (adjacent) rows or cols due to the small float calculation errors from different data type and device environment, thus the result is unpredictable.
+    /* Can not do much with INTER_NEAREST + INTER_HALF_PIXEL*. (b != 0)
+    This test will fail more times when you try more scale factors.
+    When the src position near X.5, we may pick up pixels on different (adjacent) rows or cols due to the small float calculation errors on different devices, thus the result is unpredictable.
     Unlike linear or cubic, in which the values are interpolated and the gradients are smooth. */
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-2 : 1.0);
 }

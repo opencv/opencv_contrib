@@ -61,7 +61,7 @@ namespace cv
             || coordinate == INTER_HALF_PIXEL_PYTORCH)
         {
             a = scale;
-            b = 0.5f * (scale - 1.f);
+            b = 0.5f * scale - 0.5f;
             if (coordinate == INTER_HALF_PIXEL_SYMMETRIC)
                 b += 0.5f * (src - dst * scale);
             if (coordinate == INTER_HALF_PIXEL_PYTORCH && dst <= 1)
