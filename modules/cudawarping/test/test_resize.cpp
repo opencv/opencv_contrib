@@ -233,7 +233,7 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
 
     /* Can not do much with INTER_NEAREST. This test will fail more times when you try more scale factors, espacilly when dst.size is rounded from float number near X.5.
     During computing coordinate on src, cpu use double but ocl / cuda use float.
-    When the src position near X.5, we may pick up pixels on different (adjacent) rows or cols due to the small float calculation errors, thus the result is unpredictable.
+    When the src position near X.5, we may pick up pixels on different (adjacent) rows or cols due to the small float calculation errors from different data type and device environment, thus the result is unpredictable.
     Unlike linear or cubic, in which the values are interpolated and the gradients are smooth. */
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-2 : 1.0);
 }
