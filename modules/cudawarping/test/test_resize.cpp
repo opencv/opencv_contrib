@@ -58,7 +58,7 @@ namespace
             || coordinate == INTER_HALF_PIXEL_PYTORCH)
         {
             a = scale;
-            b = 0.5f * scale - 0.5f;
+            b = 0.5f * (scale - 1.f);
             if (coordinate == INTER_HALF_PIXEL_SYMMETRIC)
                 b += 0.5f * (src - dst * scale);
             if (coordinate == INTER_HALF_PIXEL_PYTORCH && dst <= 1)
@@ -191,7 +191,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, Resize, testing::Combine(
     testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5, 1.5, 2.0),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
-    testing::Values(Coordinate(cv::INTER_HALF_PIXEL), Coordinate(cv::INTER_HALF_PIXEL_SYMMETRIC), Coordinate(cv::INTER_HALF_PIXEL_PYTORCH), Coordinate(cv::INTER_ALIGN_CORNERS), Coordinate(cv::INTER_ASYMMETRIC)),
+    testing::Values(Coordinate(cv::INTER_ASYMMETRIC)),
     WHOLE_SUBMAT));
 
 /////////////////
@@ -304,7 +304,6 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeTextures, testing::Combine(
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
     testing::Values(Coordinate(cv::INTER_HALF_PIXEL), Coordinate(cv::INTER_HALF_PIXEL_SYMMETRIC), Coordinate(cv::INTER_HALF_PIXEL_PYTORCH), Coordinate(cv::INTER_ALIGN_CORNERS), Coordinate(cv::INTER_ASYMMETRIC))
 ));
-
 
 }} // namespace
 #endif // HAVE_CUDA

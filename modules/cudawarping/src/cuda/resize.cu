@@ -61,7 +61,7 @@ namespace cv
             || coordinate == INTER_HALF_PIXEL_PYTORCH)
         {
             a = scale;
-            b = 0.5f * scale - 0.5f;
+            b = 0.5f * (scale - 1.f);
             if (coordinate == INTER_HALF_PIXEL_SYMMETRIC)
                 b += 0.5f * (src - dst * scale);
             if (coordinate == INTER_HALF_PIXEL_PYTORCH && dst <= 1)
@@ -93,8 +93,8 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = ::fmaf(dst_x, a_x, b_x);
-            const float src_y = ::fmaf(dst_y, a_y, b_y);
+            const float src_x = dst_x * a_x + b_x;
+            const float src_y = dst_y * a_y + b_y;
             const float ix = ::min(::max(__float2int_rd(src_x), 0), src.cols - 1);
             const float iy = ::min(::max(__float2int_rd(src_y), 0), src.rows - 1);
 
@@ -111,8 +111,8 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = ::fmaf(dst_x, a_x, b_x);
-            const float src_y = ::fmaf(dst_y, a_y, b_y);
+            const float src_x = dst_x * a_x + b_x;
+            const float src_y = dst_y * a_y + b_y;
             const int ix = __float2int_rd(src_x);
             const int iy = __float2int_rd(src_y);
             const float fx2 = src_x - ix;
@@ -140,8 +140,8 @@ namespace cv { namespace cuda { namespace device
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = ::fmaf(dst_x, a_x, b_x);
-            const float src_y = ::fmaf(dst_y, a_y, b_y);
+            const float src_x = dst_x * a_x + b_x;
+            const float src_y = dst_y * a_y + b_y;
             dst(dst_y, dst_x) = src(src_y, src_x);
         }
     }
@@ -210,7 +210,7 @@ namespace cv { namespace cuda { namespace device
     }
 
     template <typename T>
-    void call_resize_nearest_tex(const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x)
+    void call_resize_nearest_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
@@ -218,7 +218,9 @@ namespace cv { namespace cuda { namespace device
         // cudaFilterModePoint: tex(x) = T[floor(x)], so with b + 0.5, we can use `resize` directly
         if (xoff || yoff) {
             cudev::TextureOff<T> texSrcWhole(srcWhole, yoff, xoff);
-            resize<cudev::TextureOffPtr<T>><<<grid, block>>>(texSrcWhole, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            BrdReplicate<T> brd(src.rows, src.cols);
+            BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
+            resize<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>><<<grid, block>>>(brdSrc, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
         }
         else {
             cudev::Texture<T> texSrcWhole(srcWhole);
@@ -331,7 +333,7 @@ namespace cv { namespace cuda { namespace device
                 if (a_x > 1 || a_y > 1)
                     call_resize_nearest_glob(src, dst, a_y, b_y, a_x, b_x, 0);
                 else
-                   call_resize_nearest_tex(srcWhole, yoff, xoff, dst, a_y, b_y, a_x, b_x);
+                   call_resize_nearest_tex(src, srcWhole, yoff, xoff, dst, a_y, b_y, a_x, b_x);
             }
         }
     };
