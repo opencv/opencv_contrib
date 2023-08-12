@@ -228,8 +228,11 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
     cv::cuda::GpuMat dst = createMat(cv::Size(cv::saturate_cast<int>(src.cols * coeff), cv::saturate_cast<int>(src.rows * coeff)), type, useRoi);
     cv::cuda::resize(loadMat(src, useRoi), dst, cv::Size(), coeff, coeff, interpolation, coordinate);
 
+    bool use_ipp = cv::ipp::useIPP();
+    cv::ipp::setUseIPP(false);
     cv::Mat dst_gold;
     cv::resize(src, dst_gold, cv::Size(), coeff, coeff, interpolation, coordinate);
+    cv::ipp::setUseIPP(use_ipp);
 
     /* Can not do much with INTER_NEAREST. This test will fail more times when you try more scale factors, espacilly when dst.size is rounded from float number near X.5.
     During computing coordinate on src, cpu use double but ocl / cuda use float.
