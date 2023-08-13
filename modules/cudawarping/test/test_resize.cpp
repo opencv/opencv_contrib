@@ -235,7 +235,7 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
     cv::ipp::setUseIPP(use_ipp);
 
     /* Can not do much with INTER_NEAREST + INTER_HALF_PIXEL*. (b != 0)
-    This test will fail when you try more scale factors, though it pass now by using fmaf to compute ax+b for coordiante in cpu resize.
+    This test maybe fail when you try more scale factors and more sizes, though it pass now by using fmaf to compute ax+b for coordiante in cpu resize.
     When the src position near X.5, we may pick up pixels on different (adjacent) rows or cols due to the small float calculation errors on different devices, thus the result is unpredictable.
     Unlike linear or cubic, in which the values are interpolated and the gradients are smooth. */
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-2 : 1.0);
