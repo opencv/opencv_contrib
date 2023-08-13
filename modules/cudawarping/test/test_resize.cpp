@@ -94,10 +94,10 @@ namespace
 
         for (int y = 0; y < dsize.height; ++y)
         {
-            float src_y = ::fmaf((float)(y), a_y, b_y);
+            float src_y = (float)(y * a_y + b_y);
             for (int x = 0; x < dsize.width; ++x)
             {
-                float src_x = ::fmaf((float)(x), a_x, b_x);
+                float src_x = (float)(x * a_x + b_x);
                 for (int c = 0; c < cn; ++c)
                     dst.at<T>(y, x * cn + c) = Interpolator<T>::getValue(src, src_y, src_x, c, cv::BORDER_REPLICATE);
             }
