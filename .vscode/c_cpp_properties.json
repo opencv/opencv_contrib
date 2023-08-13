@@ -1,9 +1,0 @@
-{
-	"configurations": [
-		{
-			"name": "cmake",
-			"compileCommands": "F:/Library/opencv-w64/compile_commands.json"
-		}
-	],
-	"version": 4
-}
