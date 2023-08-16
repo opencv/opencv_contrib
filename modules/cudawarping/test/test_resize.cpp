@@ -141,6 +141,8 @@ namespace
 
         static const func_t* funcs[] = {nearest_funcs, linear_funcs, cubic_funcs};
 
+        // make nearest same as before, a = ifx or ify, b = 0
+        if (interpolation == INTER_NEAREST) coordinate = INTER_ASYMMETRIC;
         funcs[interpolation][src.depth()](src, dst, fx, fy, coordinate);
     }
 }
@@ -191,19 +193,18 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, Resize, testing::Combine(
     testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5, 1.5, 2.0),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
-    testing::Values(Coordinate(cv::INTER_ASYMMETRIC)),
+    testing::Values(Coordinate(cv::INTER_HALF_PIXEL), Coordinate(cv::INTER_HALF_PIXEL_SYMMETRIC), Coordinate(cv::INTER_HALF_PIXEL_PYTORCH), Coordinate(cv::INTER_ALIGN_CORNERS), Coordinate(cv::INTER_ASYMMETRIC)),
     WHOLE_SUBMAT));
 
 /////////////////
 
-PARAM_TEST_CASE(ResizeSameAsHost, cv::cuda::DeviceInfo, cv::Size, MatType, double, Interpolation, Coordinate, UseRoi)
+PARAM_TEST_CASE(ResizeSameAsHost, cv::cuda::DeviceInfo, cv::Size, MatType, double, Interpolation, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
     double coeff;
     int interpolation;
     int type;
-    int coordinate;
     bool useRoi;
 
     virtual void SetUp()
@@ -213,8 +214,7 @@ PARAM_TEST_CASE(ResizeSameAsHost, cv::cuda::DeviceInfo, cv::Size, MatType, doubl
         type = GET_PARAM(2);
         coeff = GET_PARAM(3);
         interpolation = GET_PARAM(4);
-        coordinate = GET_PARAM(5),
-        useRoi = GET_PARAM(6);
+        useRoi = GET_PARAM(5);
 
         cv::cuda::setDevice(devInfo.deviceID());
     }
@@ -226,18 +226,11 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
     cv::Mat src = randomMat(size, type);
 
     cv::cuda::GpuMat dst = createMat(cv::Size(cv::saturate_cast<int>(src.cols * coeff), cv::saturate_cast<int>(src.rows * coeff)), type, useRoi);
-    cv::cuda::resize(loadMat(src, useRoi), dst, cv::Size(), coeff, coeff, interpolation, coordinate);
+    cv::cuda::resize(loadMat(src, useRoi), dst, cv::Size(), coeff, coeff, interpolation, INTER_HALF_PIXEL);
 
-    bool use_ipp = cv::ipp::useIPP();
-    cv::ipp::setUseIPP(false);
     cv::Mat dst_gold;
-    cv::resize(src, dst_gold, cv::Size(), coeff, coeff, interpolation, coordinate);
-    cv::ipp::setUseIPP(use_ipp);
+    cv::resize(src, dst_gold, cv::Size(), coeff, coeff, interpolation);
 
-    /* Can not do much with INTER_NEAREST + INTER_HALF_PIXEL*. (b != 0)
-    This test maybe fail when you try more scale factors and more sizes, though it pass now by using fmaf to compute ax+b for coordiante in cpu resize.
-    When the src position near X.5, we may pick up pixels on different (adjacent) rows or cols due to the small float calculation errors on different devices, thus the result is unpredictable.
-    Unlike linear or cubic, in which the values are interpolated and the gradients are smooth. */
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() == CV_32F ? 1e-2 : 1.0);
 }
 
@@ -246,8 +239,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeSameAsHost, testing::Combine(
     DIFFERENT_SIZES,
     testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
     testing::Values(0.3, 0.5),
-    testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_AREA)),
-    testing::Values(Coordinate(cv::INTER_HALF_PIXEL), Coordinate(cv::INTER_HALF_PIXEL_SYMMETRIC), Coordinate(cv::INTER_HALF_PIXEL_PYTORCH), Coordinate(cv::INTER_ALIGN_CORNERS), Coordinate(cv::INTER_ASYMMETRIC)),
+    testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_AREA), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
     WHOLE_SUBMAT));
 
 PARAM_TEST_CASE(ResizeTextures, cv::cuda::DeviceInfo, Interpolation, Coordinate)
@@ -305,7 +297,7 @@ CUDA_TEST_P(ResizeTextures, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeTextures, testing::Combine(
     ALL_DEVICES,
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
-    testing::Values(Coordinate(cv::INTER_HALF_PIXEL), Coordinate(cv::INTER_HALF_PIXEL_SYMMETRIC), Coordinate(cv::INTER_HALF_PIXEL_PYTORCH), Coordinate(cv::INTER_ALIGN_CORNERS), Coordinate(cv::INTER_ASYMMETRIC))
+    testing::Values(Coordinate(cv::INTER_HALF_PIXEL), Coordinate(cv::INTER_HALF_PIXEL_SYMMETRIC), Coordinate(cv::INTER_ALIGN_CORNERS), Coordinate(cv::INTER_ASYMMETRIC))
 ));
 
 }} // namespace

@@ -86,19 +86,17 @@ namespace cv { namespace cuda { namespace device
 {
     // kernels
 
-    template <typename T> __global__ void resize_nearest(const PtrStepSz<T> src, PtrStepSz<T> dst, const float a_y, const float b_y, const float a_x, const float b_x)
+    template <typename T> __global__ void resize_nearest(const PtrStep<T> src, PtrStepSz<T> dst, const float fy, const float fx)
     {
         const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
         const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
 
         if (dst_x < dst.cols && dst_y < dst.rows)
         {
-            const float src_x = ::fmaf((float)(dst_x), a_x, b_x);
-            const float src_y = ::fmaf((float)(dst_y), a_y, b_y);
-            const float ix = ::min(::max(__float2int_rd(src_x), 0), src.cols - 1);
-            const float iy = ::min(::max(__float2int_rd(src_y), 0), src.rows - 1);
+            const float src_x = dst_x * fx;
+            const float src_y = dst_y * fy;
 
-            dst(dst_y, dst_x) = src(iy, ix);
+            dst(dst_y, dst_x) = src(__float2int_rz(src_y), __float2int_rz(src_x));
         }
     }
 
@@ -132,6 +130,22 @@ namespace cv { namespace cuda { namespace device
             dst(dst_y, dst_x) = saturate_cast<T>(out);
         }
     }
+
+    template <class Ptr2D, typename T> __global__ void resize(Ptr2D src, PtrStepSz<T> dst, const float fy, const float fx)
+    {
+        const int dst_x = blockDim.x * blockIdx.x + threadIdx.x;
+        const int dst_y = blockDim.y * blockIdx.y + threadIdx.y;
+
+        if (dst_x < dst.cols && dst_y < dst.rows)
+        {
+            const float src_x = dst_x * fx;
+            const float src_y = dst_y * fy;
+
+            dst(dst_y, dst_x) = src(src_y, src_x);
+        }
+    }
+
+
 
     template <class Ptr2D, typename T> __global__ void resize(Ptr2D src, PtrStepSz<T> dst, const float a_y, const float b_y, const float a_x, const float b_x)
     {
@@ -196,13 +210,12 @@ namespace cv { namespace cuda { namespace device
     // callers for nearest interpolation
 
     template <typename T>
-    void call_resize_nearest_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
+    void call_resize_nearest_glob(const PtrStepSz<T>& src, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
-        // nearest use floor(x_org + 0.5), so b + 0.5 here, to use __float2int_rd directly
-        resize_nearest<<<grid, block, 0, stream>>>(src, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+        resize_nearest<<<grid, block, 0, stream>>>(src, dst, fy, fx);
         cudaSafeCall( cudaGetLastError() );
 
         if (stream == 0)
@@ -210,21 +223,17 @@ namespace cv { namespace cuda { namespace device
     }
 
     template <typename T>
-    void call_resize_nearest_tex(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x)
+    void call_resize_nearest_tex(const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx)
     {
         const dim3 block(32, 8);
         const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
-        // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#nearest-point-sampling
-        // cudaFilterModePoint: tex(x) = T[floor(x)], so with b + 0.5, we can use `resize` directly
         if (xoff || yoff) {
             cudev::TextureOff<T> texSrcWhole(srcWhole, yoff, xoff);
-            BrdReplicate<T> brd(src.rows, src.cols);
-            BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>> brdSrc(texSrcWhole, brd);
-            resize<BorderReader<cudev::TextureOffPtr<T>, BrdReplicate<T>>><<<grid, block>>>(brdSrc, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            resize<cudev::TextureOffPtr<T>><<<grid, block>>>(texSrcWhole, dst, fy, fx);
         }
         else {
             cudev::Texture<T> texSrcWhole(srcWhole);
-            resize<cudev::TexturePtr<T>><<<grid, block>>>(texSrcWhole, dst, a_y, b_y + 0.5f, a_x, b_x + 0.5f);
+            resize<cudev::TexturePtr<T>><<<grid, block>>>(texSrcWhole, dst, fy, fx);
         }
         cudaSafeCall( cudaGetLastError() );
         cudaSafeCall( cudaDeviceSynchronize() );
@@ -316,24 +325,24 @@ namespace cv { namespace cuda { namespace device
 
     template <typename T> struct ResizeNearestDispatcher
     {
-        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& /*srcWhole*/, int /*yoff*/, int /*xoff*/, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
         {
-            call_resize_nearest_glob(src, dst, a_y, b_y, a_x, b_x, stream);
+            call_resize_nearest_glob(src, dst, fy, fx, stream);
         }
     };
 
     template <typename T> struct SelectImplForNearest
     {
-        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream)
+        static void call(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float fy, float fx, cudaStream_t stream)
         {
             if (stream)
-                call_resize_nearest_glob(src, dst, a_y, b_y, a_x, b_x, stream);
+                call_resize_nearest_glob(src, dst, fy, fx, stream);
             else
             {
-                if (a_x > 1 || a_y > 1)
-                    call_resize_nearest_glob(src, dst, a_y, b_y, a_x, b_x, 0);
+                if (fx > 1 || fy > 1)
+                    call_resize_nearest_glob(src, dst, fy, fx, 0);
                 else
-                   call_resize_nearest_tex(src, srcWhole, yoff, xoff, dst, a_y, b_y, a_x, b_x);
+                   call_resize_nearest_tex(srcWhole, yoff, xoff, dst, fy, fx);
             }
         }
     };
@@ -467,17 +476,15 @@ namespace cv { namespace cuda { namespace device
 
     template <typename T> void resize(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream)
     {
-        typedef void (*func_t)(const PtrStepSz<T>& src, const PtrStepSz<T>& srcWhole, int yoff, int xoff, const PtrStepSz<T>& dst, float a_y, float b_y, float a_x, float b_x, cudaStream_t stream);
-        static const func_t funcs[3] =
-        {
-            ResizeNearestDispatcher<T>::call,
-            ResizeLinearDispatcher<T>::call,
-            ResizeCubicDispatcher<T>::call,
-        };
-
         if (interpolation == INTER_AREA)
         {
             ResizeAreaDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), fy, fx, stream);
+            return;
+        }
+
+        if (interpolation == INTER_NEAREST)
+        {
+            ResizeNearestDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), fy, fx, stream);
             return;
         }
 
@@ -485,7 +492,19 @@ namespace cv { namespace cuda { namespace device
         interpolateCoordinate(coordinate, dst.cols, src.cols, fx, a_x, b_x);
         interpolateCoordinate(coordinate, dst.rows, src.rows, fy, a_y, b_y);
 
-        funcs[interpolation](static_cast< PtrStepSz<T> >(src), static_cast< PtrStepSz<T> >(srcWhole), yoff, xoff, static_cast< PtrStepSz<T> >(dst), a_y, b_y, a_x, b_x, stream);
+        if (interpolation == INTER_LINEAR)
+        {
+            ResizeLinearDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), a_y, b_y, a_x, b_x, stream);
+            return;
+        }
+
+        if (interpolation == INTER_CUBIC)
+        {
+            ResizeCubicDispatcher<T>::call(static_cast<PtrStepSz<T>>(src), static_cast<PtrStepSz<T>>(srcWhole), yoff, xoff, static_cast<PtrStepSz<T>>(dst), a_y, b_y, a_x, b_x, stream);
+            return;
+        }
+
+        CV_Error(Error::StsBadArg, format("Unknown interpolation mode %d", interpolation));
     }
 
     template void resize<uchar >(const PtrStepSzb& src, const PtrStepSzb& srcWhole, int yoff, int xoff, const PtrStepSzb& dst, float fy, float fx, int interpolation, int coordinate, cudaStream_t stream);
