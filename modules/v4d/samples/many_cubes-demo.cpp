@@ -158,8 +158,7 @@ static void render_scene(const double& x, const double& y) {
 
     //Scale and rotate the cube depending on the current time.
     float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
-    float scale = 0.25;
-
+    double scale = 0.25;
     cv::Matx44f scaleMat(
             scale, 0.0, 0.0, 0.0,
             0.0, scale, 0.0, 0.0,
@@ -248,6 +247,8 @@ static bool iteration() {
         glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE);
     });
 #endif
+
+    window->write();
 
     return window->display();
 }
