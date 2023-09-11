@@ -59,8 +59,6 @@
 
 namespace cv { namespace cudacodec {
 
-using namespace cuda;  // Stream
-
 //! @addtogroup cudacodec
 //! @{
 
@@ -264,7 +262,7 @@ public:
 @param stream Stream for frame pre-processing.
 */
 CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const Codec codec = Codec::H264, const double fps = 25.0,
-    const ColorFormat colorFormat = ColorFormat::BGR, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
+    const ColorFormat colorFormat = ColorFormat::BGR, Ptr<EncoderCallback> encoderCallback = 0, const cuda::Stream& stream = cuda::Stream::Null());
 
 /** @brief Creates video writer.
 
@@ -278,7 +276,7 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileNam
 @param stream Stream for frame pre-processing.
 */
 CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const String& fileName, const Size frameSize, const Codec codec, const double fps,  const ColorFormat colorFormat,
-    const EncoderParams& params, Ptr<EncoderCallback> encoderCallback = 0, const Stream& stream = Stream::Null());
+    const EncoderParams& params, Ptr<EncoderCallback> encoderCallback = 0, const cuda::Stream& stream = cuda::Stream::Null());
 
 ////////////////////////////////// Video Decoding //////////////////////////////////////////
 
@@ -295,7 +293,7 @@ enum ChromaFormat
 
 /** @brief Deinterlacing mode used by decoder.
 * @param Weave Weave both fields (no deinterlacing). For progressive content and for content that doesn't need deinterlacing.
-* Bob Drop one field.
+* @param Bob Drop one field.
 * @param Adaptive Adaptive deinterlacing needs more video memory than other deinterlacing modes.
 * */
 enum DeinterlaceMode
@@ -305,12 +303,22 @@ enum DeinterlaceMode
     Adaptive = 2
 };
 
+/** @brief Utility function demonstrating how to map the luma histogram when FormatInfo::videoFullRangeFlag == false
+    @param hist Luma histogram \a hist returned from VideoReader::nextFrame(GpuMat& frame, GpuMat& hist, Stream& stream).
+    @param histFull Host histogram equivelent to downloading \a hist after calling cuda::calcHist(InputArray frame, OutputArray hist, Stream& stream).
+
+    @note
+    -   This function demonstrates how to map the luma histogram back so that it is equivalent to the result obtained from cuda::calcHist()
+    if the returned frame was colorFormat::GRAY.
+ */
+CV_EXPORTS_W void MapHist(const cuda::GpuMat& hist, CV_OUT Mat& histFull);
+
 /** @brief Struct providing information about video file format. :
  */
 struct CV_EXPORTS_W_SIMPLE FormatInfo
 {
-    CV_WRAP FormatInfo() : nBitDepthMinus8(-1), nBitDepthChromaMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
-        fps(0), ulNumDecodeSurfaces(0), videoFullRangeFlag(false) {};
+    CV_WRAP FormatInfo() : nBitDepthMinus8(-1), ulWidth(0), ulHeight(0), width(0), height(0), ulMaxWidth(0), ulMaxHeight(0), valid(false),
+        fps(0), ulNumDecodeSurfaces(0), videoFullRangeFlag(false), enableHistogram(false), nCounterBitDepth(0), nMaxHistogramBins(0){};
 
     CV_PROP_RW Codec codec;
     CV_PROP_RW ChromaFormat chromaFormat;
@@ -331,6 +339,9 @@ struct CV_EXPORTS_W_SIMPLE FormatInfo
     CV_PROP_RW cv::Rect srcRoi;//!< Region of interest decoded from video source.
     CV_PROP_RW cv::Rect targetRoi;//!< Region of interest in the output frame containing the decoded frame.
     CV_PROP_RW bool videoFullRangeFlag;//!< Output value indicating if the black level, luma and chroma of the source are represented using the full or limited range (AKA TV or "analogue" range) of values as defined in Annex E of the ITU-T Specification.  Internally the conversion from NV12 to BGR obeys ITU 709.
+    CV_PROP_RW bool enableHistogram;//!< Flag requesting histogram output if supported. Exception will be thrown when requested but not supported.
+    CV_PROP_RW int nCounterBitDepth;//!< Bit depth of histogram bins if histogram output is requested and supported.
+    CV_PROP_RW int nMaxHistogramBins;//!< Max number of histogram bins if histogram output is requested and supported.
 };
 
 /** @brief cv::cudacodec::VideoReader generic properties identifier.
@@ -374,7 +385,21 @@ public:
     If no frames have been grabbed (there are no more frames in video file), the methods return false.
     The method throws an Exception if error occurs.
      */
-    CV_WRAP virtual bool nextFrame(CV_OUT GpuMat& frame, Stream &stream = Stream::Null()) = 0;
+    CV_WRAP virtual bool nextFrame(CV_OUT cuda::GpuMat& frame, cuda::Stream &stream = cuda::Stream::Null()) = 0;
+
+    /** @brief Grabs, decodes and returns the next video frame and frame luma histogram.
+
+    @param [out] frame The video frame.
+    @param [out] histogram Histogram of the luma component of the encoded frame, see note.
+    @param stream Stream for the asynchronous version.
+    @return `false` if no frames have been grabbed.
+
+    If no frames have been grabbed (there are no more frames in video file), the methods return false.
+    The method throws an Exception if error occurs.
+
+    @note Histogram data is collected by NVDEC during the decoding process resulting in zero performance penalty. NVDEC computes the histogram data for only the luma component of decoded output, not on post-processed frame(i.e. when scaling, cropping, etc. applied).  If the source is encoded using a limited range of luma values (FormatInfo::videoFullRangeFlag == false) then the histogram bin values will correspond to to this limited range of values and will need to be mapped to contain the same output as cuda::calcHist().  The MapHist() utility function can be used to perform this mapping on the host if required.
+     */
+    CV_WRAP_AS(nextFrameWithHist) virtual bool nextFrame(CV_OUT cuda::GpuMat& frame, CV_OUT cuda::GpuMat& histogram, cuda::Stream& stream = cuda::Stream::Null()) = 0;
 
     /** @brief Returns information about video file format.
     */
@@ -391,7 +416,7 @@ public:
     The primary use of the function is for reading both the encoded and decoded video data when rawMode is enabled.  With rawMode enabled
     retrieve() can be called following grab() to retrieve all the data associated with the current video source since the last call to grab() or the creation of the VideoReader.
      */
-    CV_WRAP virtual bool grab(Stream& stream = Stream::Null()) = 0;
+    CV_WRAP virtual bool grab(cuda::Stream& stream = cuda::Stream::Null()) = 0;
 
     /** @brief Returns previously grabbed video data.
 
@@ -430,7 +455,7 @@ public:
     The method returns data associated with the current video source since the last call to grab(). If no data is present
     the method returns false and the function returns an empty image.
      */
-    CV_WRAP inline bool retrieve(CV_OUT GpuMat& frame) const {
+    CV_WRAP inline bool retrieve(CV_OUT cuda::GpuMat& frame) const {
         return retrieve(OutputArray(frame));
     }
 
@@ -535,9 +560,10 @@ but it cannot go below the number determined by NVDEC.
 @param srcRoi Region of interest (x/width should be multiples of 4 and y/height multiples of 2) decoded from video source, defaults to the full frame.
 @param targetRoi Region of interest (x/width should be multiples of 4 and y/height multiples of 2) within the output frame to copy and resize the decoded frame to,
 defaults to the full frame.
+@param enableHistogram Request output of decoded luma histogram \a hist from VideoReader::nextFrame(GpuMat& frame, GpuMat& hist, Stream& stream), if hardware supported.
 */
 struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
-    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0) {};
+    CV_WRAP VideoReaderInitParams() : udpSource(false), allowFrameDrop(false), minNumDecodeSurfaces(0), rawMode(0), enableHistogram(false){};
     CV_PROP_RW bool udpSource;
     CV_PROP_RW bool allowFrameDrop;
     CV_PROP_RW int minNumDecodeSurfaces;
@@ -545,6 +571,7 @@ struct CV_EXPORTS_W_SIMPLE VideoReaderInitParams {
     CV_PROP_RW cv::Size targetSz;
     CV_PROP_RW cv::Rect srcRoi;
     CV_PROP_RW cv::Rect targetRoi;
+    CV_PROP_RW bool enableHistogram;
 };
 
 /** @brief Creates video reader.

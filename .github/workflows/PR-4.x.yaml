@@ -12,6 +12,9 @@ jobs:
   Ubuntu2004-x64:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U20.yaml@main
 
+  Ubuntu2204-x64:
+    uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U22.yaml@main
+
   Ubuntu2004-x64-CUDA:
     uses: opencv/ci-gha-workflow/.github/workflows/OCV-Contrib-PR-4.x-U20-Cuda.yaml@main
 
