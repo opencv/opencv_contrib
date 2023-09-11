@@ -1,7 +1,7 @@
 # Cube-Demo {#v4d_cube}
 
 @prev_tutorial{v4d}
-@next_tutorial{v4d_video}
+@next_tutorial{v4d_many_cubes}
 
 |    |    |
 | -: | :- |
