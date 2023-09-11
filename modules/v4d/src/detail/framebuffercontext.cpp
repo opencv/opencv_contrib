@@ -39,7 +39,7 @@ FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const Fram
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
         const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_(framebufferSize, CV_8UC4) {
+                minor), compat_(compat), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_() {
     run_sync_on_main<1>([this](){ init(); });
     index_ = ++frameBufferContextCnt;
 }
@@ -254,7 +254,6 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 #endif
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
-
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
 
@@ -277,7 +276,7 @@ void FrameBufferContext::init() {
         throw std::runtime_error("Could not initialize GLAD!");
     glGetError(); // pull and ignore unhandled errors like GL_INVALID_ENUM
     try {
-        if (isClGlSharingSupported())
+        if (parent_ == nullptr && isClGlSharingSupported())
             cv::ogl::ocl::initializeContextFromGL();
         else
             clglSharing_ = false;
@@ -294,7 +293,7 @@ void FrameBufferContext::init() {
 #ifndef __EMSCRIPTEN__
     context_ = CLExecContext_t::getCurrent();
 #endif
-
+    framebuffer_.create(framebufferSize_, CV_8UC4);
     setup(framebufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
 
@@ -512,10 +511,10 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     using namespace cv::ocl;
 
     cl_int status = 0;
-    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
+    cl_command_queue q = (cl_command_queue) context_.getQueue().ptr();
 
     if (clImage_ == nullptr) {
-        Context& ctx = Context::getDefault();
+        Context& ctx = context_.getContext();
         cl_context context = (cl_context) ctx.ptr();
         clImage_ = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
@@ -560,11 +559,11 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
         u.create(texture.size(), textureType);
     }
 
-    cl_command_queue q = (cl_command_queue) Queue::getDefault().ptr();
+    cl_command_queue q = (cl_command_queue) context_.getQueue().ptr();
 
     cl_int status = 0;
     if (clImage_ == nullptr) {
-        Context& ctx = Context::getDefault();
+        Context& ctx = context_.getContext();
         cl_context context = (cl_context) ctx.ptr();
         clImage_ = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
