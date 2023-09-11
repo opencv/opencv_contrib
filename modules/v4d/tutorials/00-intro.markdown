@@ -40,6 +40,17 @@ v4d->gl([](const Size sz) {
 });
 @endcode
 
+# GPU Support
+* Intel Gen 8+
+Intel is best supported.
+* NVIDIA Ada Lovelace (Tested: GTX 4070 Ti)
+I tested the proprietary drivers (535.104.05) with CUDA toolkit (12.2). 
+NanoGUI (and the FPS display) flickers.
+Video writing is slow unless:
+1. You change the codec to H264
+2. Or even better: You create a gstreamer sink using nvenc.
+* I never tested AMD
+
 # Requirements
 * C++20 (at the moment)
 * OpenGL 3.2 Core (optionally Compat)/OpenGL ES 3.0/WebGL2
@@ -74,6 +85,7 @@ The tutorials are designed to be read one after the other to give you a good ove
 The goal of the demos is to show how to use V4D to the fullest. Also they show how to use V4D to create programs that run mostly (the part the matters) on the GPU (when driver capabilities allow). They are also a good starting point for your own applications because they touch many key aspects and algorithms of OpenCV.
 
 * \ref v4d_cube
+* \ref v4d_many_cubes
 * \ref v4d_video
 * \ref v4d_nanovg
 * \ref v4d_shader
