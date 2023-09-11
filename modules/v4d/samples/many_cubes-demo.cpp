@@ -18,7 +18,7 @@ constexpr long unsigned int HEIGHT = 540;
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
-constexpr const char* OUTPUT_FILENAME = "cube-demo.mkv";
+constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
@@ -259,7 +259,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Cube Demo", OFFSCREEN);
+    window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Many Cubes Demo", OFFSCREEN);
     window->printSystemInfo();
     window->setShowTracking(false);
     window->setShowFPS(false);
