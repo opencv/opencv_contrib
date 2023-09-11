@@ -261,8 +261,7 @@ int main() {
     using namespace cv::v4d;
     window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Many Cubes Demo", OFFSCREEN);
     window->printSystemInfo();
-    window->setShowTracking(false);
-    window->setShowFPS(false);
+
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink using the VP9 codec (which might be hardware accelerated)
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
