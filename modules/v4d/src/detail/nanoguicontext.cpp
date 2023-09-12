@@ -37,7 +37,7 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
                 throw std::runtime_error("Could not initialize NanoVG!");
        }
 #ifdef __EMSCRIPTEN__
-        mainFbContext_.initWebGLCopy(fbCtx());
+        mainFbContext_.initWebGLCopy(fbCtx().getIndex());
 #endif
     });
 }

@@ -10,7 +10,7 @@
 
 Renders 10 rainbow cubes on blueish background using OpenGL and applies a glow effect using OpenCV. The special thing about this demo is the each cube is renderered in a different OpenGL-context with its independent OpenGL-state.
 
-\htmlinclude "../samples/example_v4d_many-cubes-demo.html"
+\htmlinclude "../samples/example_v4d_many_cubes-demo.html"
 
 @include samples/many_cubes-demo.cpp
 

@@ -12,7 +12,7 @@ GLContext::GLContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), glFbContext_(fbContext.getV4D(), "OpenGL", fbContext) {
 #ifdef __EMSCRIPTEN__
     run_sync_on_main<19>([&,this](){
-        mainFbContext_.initWebGLCopy(fbCtx());
+        mainFbContext_.initWebGLCopy(fbCtx().getIndex());
     });
 #endif
 }

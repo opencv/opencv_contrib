@@ -15,6 +15,7 @@
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
 #include <iostream>
+#include <map>
 
 #if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
 #define GLFW_INCLUDE_ES3
@@ -70,31 +71,30 @@ class FrameBufferContext {
     const FrameBufferContext* parent_;
 
     //data and handles for webgl copying
-    GLint texture_hdl;
-    GLint resolution_hdl;
+    std::map<size_t, GLint> texture_hdls_;
+    std::map<size_t, GLint> resolution_hdls_;
 
-    GLuint shader_program_hdl;
+    std::map<size_t, GLuint> shader_program_hdls_;
 
-    //vertex array
-    GLuint copyVao;
-    GLuint copyVbo, copyEbo;
+    //gl object maps
+    std::map<size_t, GLuint> copyVaos, copyVbos, copyEbos;
 
     // vertex position, color
-    float copyVertices[12] = {
+    const float copyVertices[12] = {
     //    x      y      z
     -1.0f, -1.0f, -0.0f,
     1.0f, 1.0f, -0.0f,
     -1.0f, 1.0f, -0.0f,
     1.0f, -1.0f, -0.0f };
 
-    unsigned int copyIndices[6] = {
+    const unsigned int copyIndices[6] = {
     //  2---,1
     //  | .' |
     //  0'---3
             0, 1, 2, 0, 3, 1 };
 
-    GLuint copyFramebuffer_;
-    GLuint copyTexture_;
+    std::map<size_t, GLuint> copyFramebuffers_;
+    std::map<size_t, GLuint> copyTextures_;
     int index_;
 public:
     /*!
@@ -196,8 +196,8 @@ protected:
     int getIndex();
     void setup(const cv::Size& sz);
     void teardown();
-    void initWebGLCopy(FrameBufferContext& dst);
-    void doWebGLCopy(FrameBufferContext& dst);
+    void initWebGLCopy(const size_t& index);
+    void doWebGLCopy(FrameBufferContext& other);
     /*!
      * The UMat used to copy or bind (depending on cl-gl interop capability) the OpenGL framebuffer.
      */
@@ -225,8 +225,8 @@ protected:
     void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
             bool stretch = false, GLuint drawFramebufferID = 0);
 private:
-    void loadBuffers();
-    void loadShader();
+    void loadBuffers(const size_t& index);
+    void loadShader(const size_t& index);
     void init();
     /*!
      * Setup OpenGL states.

@@ -7,7 +7,7 @@
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
 /* Demo Parameters */
-constexpr size_t NUMBER_OF_CUBES = 2;
+constexpr size_t NUMBER_OF_CUBES = 10;
 #ifndef __EMSCRIPTEN__
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;

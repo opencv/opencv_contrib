@@ -57,7 +57,7 @@ GLuint FrameBufferContext::getTextureID() {
 }
 
 
-void FrameBufferContext::loadShader() {
+void FrameBufferContext::loadShader(const size_t& index) {
 #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
 #else
@@ -93,20 +93,20 @@ void FrameBufferContext::loadShader() {
     }
 )";
 
-    shader_program_hdl = cv::v4d::initShader(vert.c_str(), frag.c_str(), "FragColor");
+    shader_program_hdls_[index] = cv::v4d::initShader(vert.c_str(), frag.c_str(), "FragColor");
 }
 
-void FrameBufferContext::loadBuffers() {
-    glGenVertexArrays(1, &copyVao);
-    glBindVertexArray(copyVao);
+void FrameBufferContext::loadBuffers(const size_t& index) {
+    glGenVertexArrays(1, &copyVaos[index]);
+    glBindVertexArray(copyVaos[index]);
 
-    glGenBuffers(1, &copyVbo);
-    glGenBuffers(1, &copyEbo);
+    glGenBuffers(1, &copyVbos[index]);
+    glGenBuffers(1, &copyEbos[index]);
 
-    glBindBuffer(GL_ARRAY_BUFFER, copyVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, copyVbos[index]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(copyVertices), copyVertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, copyEbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, copyEbos[index]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(copyIndices), copyIndices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
@@ -116,83 +116,91 @@ void FrameBufferContext::loadBuffers() {
     glBindVertexArray(0);
 }
 
-void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
+void FrameBufferContext::initWebGLCopy(const size_t& index) {
 #ifdef __EMSCRIPTEN__
     this->makeCurrent();
-    GL_CHECK(glGenFramebuffers(1, &copyFramebuffer_));
-    GL_CHECK(glGenTextures(1, &copyTexture_));
-
-    loadShader();
-    loadBuffers();
+    GL_CHECK(glGenFramebuffers(1, &copyFramebuffers_[index]));
+    GL_CHECK(glGenTextures(1, &copyTextures_[index]));
+    cerr << index << ": " << copyFramebuffers_[index] << "/" << copyTextures_[index] << endl;
+    loadShader(index);
+    loadBuffers(index);
 
     // lookup the sampler locations.
-    texture_hdl = glGetUniformLocation(shader_program_hdl, "texture0");
-    resolution_hdl = glGetUniformLocation(shader_program_hdl, "resolution");
-//    dst.makeCurrent();
+    texture_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "texture0");
+    resolution_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "resolution");
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
 }
 
-void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
+void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
 #ifdef __EMSCRIPTEN__
+    size_t index = other.getIndex();
+    this->makeCurrent();
     int width = getWindowSize().width;
     int height = getWindowSize().height;
     {
-        FrameBufferContext::GLScope glScope(dst, GL_READ_FRAMEBUFFER);
-        dst.blitFrameBufferToScreen(
-                cv::Rect(0,0, dst.size().width, dst.size().height),
-                dst.getWindowSize(),
+        FrameBufferContext::GLScope glScope(*this, GL_READ_FRAMEBUFFER);
+        other.blitFrameBufferToScreen(
+                cv::Rect(0,0, other.size().width, other.size().height),
+                this->getWindowSize(),
                 false);
         emscripten_webgl_commit_frame();
     }
     this->makeCurrent();
     GL_CHECK(glEnable(GL_BLEND));
     GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, copyFramebuffer_));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTexture_));
+    cerr << index << ": " << copyFramebuffers_[index] << "/" << copyTextures_[index] << endl;
+    GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, copyFramebuffers_[index]));
+    GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTextures_[index]));
     GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
     GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     GL_CHECK(
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, copyTexture_, 0));
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, copyTextures_[index], 0));
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
     EM_ASM({
         var gl = Module.ctx;
-        var canvas = document.getElementById('canvas' + $0);
 
-        if(typeof Module.copyFramebuffer1 === 'undefined') {
-            Module.copyFramebuffer1 = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+        var canvas;
+        if($0 > 0)
+            canvas = document.getElementById('canvas' + $0);
+        else
+            canvas = document.getElementById('canvas');
+
+        if(typeof Module["copyFramebuffers" + $0] === 'undefined') {
+            Module["copyFramebuffers" + $0] = gl.getParameter(gl.FRAMEBUFFER_BINDING);
         }
 
-        if(typeof Module.copyTexture1 === 'undefined') {
-            Module.copyTexture1 = gl.getParameter(gl.TEXTURE_BINDING_2D);
+        if(typeof Module["copyTextures" + $0] === 'undefined') {
+            Module["copyTextures" + $0]= gl.getParameter(gl.TEXTURE_BINDING_2D);
         }
+        console.warn("index:" + ($0 + 1) + " fb:" + Module["copyFramebuffers" + $0] + " tex:" + Module["copyTextures" + $0] + " canvas:" + canvas);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, Module.copyFramebuffer1);
-        gl.bindTexture(gl.TEXTURE_2D, Module.copyTexture1);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, Module["copyFramebuffers" + $0]);
+        gl.bindTexture(gl.TEXTURE_2D, Module["copyTextures" + $0] );
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, Module.copyTexture1, 0);
-    }, dst.getIndex() - 1);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, Module["copyTextures" + $0] , 0);
+    }, index - 1);
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT1));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, this->getFramebufferID()));
     glViewport(0, 0, width, height);
-    GL_CHECK(glUseProgram(shader_program_hdl));
+    GL_CHECK(glUseProgram(shader_program_hdls_[index]));
 
     // set which texture units to render with.
-    GL_CHECK(glUniform1i(texture_hdl, 0));  // texture unit 0
+    GL_CHECK(glUniform1i(texture_hdls_[index], 0));  // texture unit 0
     float res[2] = {float(width), float(height)};
-    GL_CHECK(glUniform2fv(resolution_hdl, 1, res));
+    GL_CHECK(glUniform2fv(resolution_hdls_[index], 1, res));
     // Set each texture unit to use a particular texture.
     GL_CHECK(glActiveTexture(GL_TEXTURE0));
-    GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTexture_));
+    GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTextures_[index]));
 
-    GL_CHECK(glBindVertexArray(copyVao));
+    GL_CHECK(glBindVertexArray(copyVaos[index]));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     GL_CHECK(glDisable(GL_BLEND));
     GL_CHECK(glFlush());
