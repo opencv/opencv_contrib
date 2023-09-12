@@ -41,15 +41,9 @@ v4d->gl([](const Size sz) {
 @endcode
 
 # GPU Support
-* Intel Gen 8+
-Intel is best supported.
-* NVIDIA Ada Lovelace (Tested: GTX 4070 Ti)
-I tested the proprietary drivers (535.104.05) with CUDA toolkit (12.2). 
-NanoGUI (and the FPS display) flickers.
-Video writing is slow unless:
-1. You change the codec to H264
-2. Or even better: You create a gstreamer sink using nvenc.
-* I never tested AMD
+* Intel Gen 8+ (Tested: Gen 11 + Gen 13) is supported best
+* NVIDIA Ada Lovelace (Tested: GTX 4070 Ti) with proprietary drivers (535.104.05) and CUDA toolkit (12.2) works mostly (NanoGUI flickers) but video writing is very slow, unless: you change the codec to H264 or you create a gstreamer sink using nvenc.
+* AMD: never tested
 
 # Requirements
 * C++20 (at the moment)
