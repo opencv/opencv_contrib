@@ -40,7 +40,7 @@ int main() {
 	window->setSource(src);
 	window->setSink(sink);
 
-	window->run([=]() {
+	window->run([=](cv::Ptr<V4D> window) {
 		if(!window->capture())
 			return false;
 

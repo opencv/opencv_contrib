@@ -18,9 +18,9 @@ namespace cv {
 namespace v4d {
 
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) {
-    cv::Ptr<V4D> v4d = new V4D(size, fbsize, title, offscreen, debug, compat, samples);
+    V4D* v4d = new V4D(size, fbsize, title, offscreen, debug, compat, samples);
     v4d->setVisible(!offscreen);
-    return v4d;
+    return v4d->self();
 }
 
 V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) :
@@ -35,6 +35,7 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
         nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
         nguiContext_ = new detail::NanoguiContext(*mainFbContext_);
         clvaContext_ = new detail::CLVAContext(*mainFbContext_);
+        self_ = cv::Ptr<V4D>(this);
 }
 
 V4D::~V4D() {
@@ -212,10 +213,11 @@ static void do_frame(void* void_fn_ptr) {
  }
 #endif
 
-void V4D::run(std::function<bool()> fn) {
+void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
 #ifndef __EMSCRIPTEN__
-    while (keepRunning() && fn()) {
+    while (keepRunning() && fn(self())) {
     }
+    pool_.finish();
 #else
     emscripten_set_main_loop_arg(do_frame, &fn, -1, true);
 #endif
@@ -547,6 +549,10 @@ void V4D::printSystemInfo() {
 
 void V4D::makeCurrent() {
     fbCtx().makeCurrent();
+}
+
+cv::Ptr<V4D> V4D::self() {
+       return self_;
 }
 
 }

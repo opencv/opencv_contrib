@@ -103,6 +103,7 @@ using namespace cv::v4d::detail;
 class CV_EXPORTS V4D {
     friend class detail::FrameBufferContext;
     friend class HTML5Capture;
+    cv::Ptr<V4D> self_;
     cv::Size initialSize_;
     const string& title_;
     bool compat_;
@@ -201,7 +202,7 @@ public:
      * This function main purpose is to abstract the run loop for portability reasons.
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
-    CV_EXPORTS void run(std::function<bool()> fn);
+    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn);
     /*!
      * Called to feed an image directly to the framebuffer
      */
@@ -381,8 +382,7 @@ private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, bool compat, int samples);
 
-    void init();
-
+    cv::Ptr<V4D> self();
     void mouse_button_event(int button, int action, int modifiers);
     bool keyboard_event(int key, int scancode, int action, int modifiers);
 

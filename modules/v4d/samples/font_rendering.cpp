@@ -9,7 +9,7 @@ int main() {
     //The text to render
 	string hw = "Hello World";
 
-    window->run([=](){
+    window->run([=](Ptr<V4D> window){
         //Render the text at the center of the screen. Note that you can load you own fonts.
         window->nvg([&](const Size& sz) {
             using namespace cv::v4d::nvg;

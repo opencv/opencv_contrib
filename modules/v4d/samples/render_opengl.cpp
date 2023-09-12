@@ -10,7 +10,7 @@ int main() {
         //Sets the clear color to blue
         glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
     });
-    window->run([=]() {
+    window->run([=](Ptr<V4D> window) {
         window->gl([]() {
             //Clears the screen. The clear color and other GL-states are preserved between context-calls.
             glClear(GL_COLOR_BUFFER_BIT);

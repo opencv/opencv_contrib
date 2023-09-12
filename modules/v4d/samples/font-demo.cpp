@@ -50,13 +50,13 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-cv::Ptr<cv::v4d::V4D> window;
 vector<string> lines;
 bool update_stars = true;
 bool update_perspective = true;
 
-static void setup_gui(cv::Ptr<cv::v4d::V4D> main) {
-    main->nanogui([&](cv::v4d::FormHelper& form){
+using namespace cv::v4d;
+static void setup_gui(cv::Ptr<V4D> window) {
+    window->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
         form.makeGroup("Text Crawl");
         form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
@@ -101,16 +101,16 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> main) {
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
     #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            main->setFullscreen(!main->isFullscreen());
+            window->setFullscreen(!window->isFullscreen());
         });
     #endif
         form.makeButton("Offscreen", [=]() {
-            main->setVisible(!main->isVisible());
+            window->setVisible(!window->isVisible());
         });
     });
 }
 
-static bool iteration() {
+static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
     static cv::UMat stars, warped;
     //transformation matrix
@@ -204,8 +204,7 @@ static bool iteration() {
 
 int main() {
     try {
-        using namespace cv::v4d;
-        window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN, true);
+        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN, true);
         if(!OFFSCREEN) {
             setup_gui(window);
         }

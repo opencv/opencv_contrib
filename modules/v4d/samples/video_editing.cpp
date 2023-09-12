@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     window->setSource(src);
 #endif
 
-    window->run([=]() {
+    window->run([=](Ptr<V4D> window) {
 	    //Capture video from the source
 		if(!window->capture())
 			return false; //end of input video

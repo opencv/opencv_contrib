@@ -52,7 +52,6 @@ bool side_by_side = false;
 bool scale = false;
 #endif
 
-cv::Ptr<cv::v4d::V4D> window;
 //Face landmark detector
 cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
 //Blender (used to put the different face parts back together)
@@ -196,26 +195,28 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
     cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
 }
 
+using namespace cv::v4d;
+
 //Built the GUI
-static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
-    v->nanogui([&](cv::v4d::FormHelper& form){
+static void setup_gui(cv::Ptr<V4D> window) {
+    window->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effect");
 
         form.makeGroup("Display");
         form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
         auto* scaleVar = form.makeFormVariable("Scale", scale, "Enable or disable scaling to the window size");
         scaleVar->set_callback([=](const bool& b) {
-            v->setScaling(b);
+            window->setScaling(b);
             scale = b;
         });
 
 #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            v->setFullscreen(!v->isFullscreen());
+            window->setFullscreen(!window->isFullscreen());
         });
 #endif
         form.makeButton("Offscreen", [=]() {
-            v->setVisible(!v->isVisible());
+            window->setVisible(!window->isVisible());
         });
 
         form.makeGroup("Face Skin");
@@ -242,7 +243,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v) {
     });
 }
 
-static bool iteration() {
+static bool iteration(cv::Ptr<V4D> window) {
     try {
         //Face detector
 #ifndef __EMSCRIPTEN__
@@ -378,7 +379,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
     facemark->loadModel("assets/lbfmodel.yaml");
 
     window->setScaling(scale);

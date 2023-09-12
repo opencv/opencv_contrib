@@ -33,8 +33,6 @@ constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 #endif
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
-cv::Ptr<cv::v4d::V4D> window;
-
 //Descriptor used for pedestrian detection
 cv::HOGDescriptor hog;
 
@@ -116,7 +114,9 @@ static void composite_layers(const cv::UMat background, const cv::UMat foregroun
     cv::add(background, blur, dst);
 }
 
-static bool iteration() {
+using namespace cv::v4d;
+
+static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
     static cv::UMat background;
     //RGB
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     window->printSystemInfo();

@@ -7,8 +7,8 @@
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
 /* Demo Parameters */
+constexpr size_t NUMBER_OF_CUBES = 2;
 #ifndef __EMSCRIPTEN__
-constexpr size_t NUMBER_OF_CUBES = 10;
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
@@ -30,12 +30,10 @@ using std::endl;
 const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
-unsigned int shader_program;
-unsigned int vao;
-unsigned int uniform_transform;
 
-//The central V4D object
-cv::Ptr<cv::v4d::V4D> window;
+unsigned int shader_program[NUMBER_OF_CUBES];
+unsigned int vao[NUMBER_OF_CUBES];
+unsigned int uniform_transform[NUMBER_OF_CUBES];
 
 //Simple transform & pass-through shaders
 static GLuint load_shader() {
@@ -81,7 +79,7 @@ static GLuint load_shader() {
 }
 
 //Initializes objects, buffers, shaders and uniforms
-static void init_scene(const cv::Size& sz) {
+static void init_scene(const cv::Size& sz, const size_t& contextIdx) {
     glEnable (GL_DEPTH_TEST);
 
     //Cube vertices, colors and indices
@@ -117,8 +115,8 @@ static void init_scene(const cv::Size& sz) {
             5, 1, 0, 0, 4, 5
     };
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glGenVertexArrays(1, &vao[contextIdx]);
+    glBindVertexArray(vao[contextIdx]);
 
     unsigned int triangles_ebo;
     glGenBuffers(1, &triangles_ebo);
@@ -146,15 +144,15 @@ static void init_scene(const cv::Size& sz) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    shader_program = load_shader();
-    uniform_transform = glGetUniformLocation(shader_program, "transform");
+    shader_program[contextIdx] = load_shader();
+    uniform_transform[contextIdx] = glGetUniformLocation(shader_program[contextIdx], "transform");
     glViewport(0,0, sz.width, sz.height);
 }
 
 //Renders a rotating rainbow-colored cube on a blueish background
-static void render_scene(const double& x, const double& y) {
+static void render_scene(const double& x, const double& y, const size_t& contextIdx) {
     //Use the prepared shader program
-    glUseProgram(shader_program);
+    glUseProgram(shader_program[contextIdx]);
 
     //Scale and rotate the cube depending on the current time.
     float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
@@ -192,9 +190,9 @@ static void render_scene(const double& x, const double& y) {
     //calculate the transform
     cv::Matx44f transform = scaleMat * rotXMat * rotYMat * rotZMat * translateMat;
     //set the corresponding uniform
-    glUniformMatrix4fv(uniform_transform, 1, GL_FALSE, transform.val);
-    //Bind the prepared vertex array object
-    glBindVertexArray(vao);
+    glUniformMatrix4fv(uniform_transform[contextIdx], 1, GL_FALSE, transform.val);
+    //Bind our vertex array
+    glBindVertexArray(vao[contextIdx]);
     //Draw
     glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
 }
@@ -225,9 +223,9 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 }
 #endif
 
-static bool iteration() {
-    using namespace cv::v4d;
+using namespace cv::v4d;
 
+static bool iteration(cv::Ptr<V4D> window) {
     window->gl([=](){
         //Clear the background
         glClearColor(0.1, 0.12, 0.2, 1);
@@ -237,7 +235,8 @@ static bool iteration() {
     //Render using multiple OpenGL contexts
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
         window->gl([=](){
-            render_scene((((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES), (((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES));
+            double pos = (((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
+            render_scene(pos, pos, i);
         }, i);
     }
     //To slow for WASM
@@ -258,8 +257,7 @@ int main(int argc, char** argv) {
 #else
 int main() {
 #endif
-    using namespace cv::v4d;
-    window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Many Cubes Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Many Cubes Demo", OFFSCREEN);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
@@ -269,7 +267,7 @@ int main() {
     window->setSink(sink);
 #endif
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)
-        window->gl(init_scene, i);
+        window->gl([=](const cv::Size sz){ init_scene(sz, i); }, i);
     window->run(iteration);
 
     return 0;

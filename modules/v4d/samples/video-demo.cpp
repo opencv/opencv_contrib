@@ -38,8 +38,6 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
-cv::Ptr<cv::v4d::V4D> window;
-
 static GLuint load_shader() {
 #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
     const string shaderVersion = "330";
@@ -190,8 +188,8 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 }
 #endif
 
-static bool iteration() {
-    using namespace cv::v4d;
+using namespace cv::v4d;
+static bool iteration(cv::Ptr<V4D> window) {
 
     if(!window->capture())
         return false;
@@ -220,7 +218,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Video Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Video Demo", OFFSCREEN);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__

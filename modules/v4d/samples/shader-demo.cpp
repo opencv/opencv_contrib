@@ -23,8 +23,6 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
 
-cv::Ptr<cv::v4d::V4D> window;
-
 /* Mandelbrot control parameters */
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 // Red, green, blue and alpha. All from 0.0f to 1.0f
@@ -216,7 +214,7 @@ static void render_scene(const cv::Size& sz) {
         current_zoom = 1.0 / pow(zoom_factor, 5.0f);
         glUniform1f(current_zoom_hdl, current_zoom);
     }
-    float res[2] = {float(window->framebufferSize().width), float(window->framebufferSize().height)};
+    float res[2] = {float(sz.width), float(sz.height)};
     glUniform2fv(resolution_hdl, 1, res);
 
     glBindVertexArray(VAO);
@@ -243,11 +241,12 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 }
 #endif
 
+using namespace cv::v4d;
 //Setup the GUI using NanoGUI. A FormHelper implementation is provided for quick & simple GUIs but once you
 //have created a Dialog (using FormHelper::makeDialog) you can use NanoGUI directly to build more complex GUIs.
 //The variables passed to FormHelper e.g. via makeFormVariable are directly adjusted by the GUI.
-static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
-    v4dMain->nanogui([](cv::v4d::FormHelper& form) {
+static void setup_gui(cv::Ptr<V4D> window) {
+    window->nanogui([](cv::v4d::FormHelper& form) {
         form.makeDialog(5, 30, "Fractal");
 
         form.makeGroup("Navigation");
@@ -313,7 +312,7 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> v4dMain) {
     });
 }
 
-static bool iteration() {
+static bool iteration(cv::Ptr<V4D> window) {
     if(!window->capture())
         return false;
 
@@ -340,8 +339,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     try {
-        using namespace cv::v4d;
-        window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
+        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
 
         if (!OFFSCREEN) {
             setup_gui(window);

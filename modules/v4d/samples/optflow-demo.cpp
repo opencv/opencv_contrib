@@ -339,9 +339,11 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
     cv::add(background, post, dst);
 }
 
+using namespace cv::v4d;
+
 //Build the GUI
-static void setup_gui(cv::Ptr<cv::v4d::V4D> main, cv::Ptr<cv::v4d::V4D> menu) {
-    main->nanogui([&](cv::v4d::FormHelper& form){
+static void setup_gui(cv::Ptr<V4D> window, cv::Ptr<V4D> dialog) {
+    window->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effects");
 
         form.makeGroup("Foreground");
@@ -412,28 +414,28 @@ static void setup_gui(cv::Ptr<cv::v4d::V4D> main, cv::Ptr<cv::v4d::V4D> menu) {
         form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
     });
 
-    menu->nanogui([&](cv::v4d::FormHelper& form){
+    dialog->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(8, 16, "Display");
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
         form.makeFormVariable("Scale", scale, "Scale the frame buffer to the window size")->set_callback([=](const bool &s) {
-            main->setScaling(s);
+            window->setScaling(s);
         });
 
 #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            main->setFullscreen(!main->isFullscreen());
+            window->setFullscreen(!window->isFullscreen());
         });
 
         form.makeButton("Offscreen", [=]() {
-            main->setVisible(!main->isVisible());
+            window->setVisible(!window->isVisible());
         });
 #endif
     });
 }
 
-static bool iteration() {
+static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
     static cv::UMat background, down;
     static cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
@@ -503,8 +505,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     try {
-        using namespace cv::v4d;
-        window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
+        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
 #ifndef __EMSCRIPTEN__
         menuWindow = V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
 #endif

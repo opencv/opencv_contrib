@@ -38,15 +38,21 @@ public:
     threadpool & operator=(const threadpool &) = delete;
 
     ~threadpool() noexcept {
-        {
-            std::lock_guard<decltype(mtx)> lock(mtx);
-            alive = false;
-        }
+        finish();
+    }
 
-        cv.notify_all();
+    void finish() {
+        if(alive) {
+            {
+                std::lock_guard<decltype(mtx)> lock(mtx);
+                alive = false;
+            }
 
-        for (auto & worker : workers) {
-            worker.join();
+            cv.notify_all();
+
+            for (auto & worker : workers) {
+                worker.join();
+            }
         }
     }
 

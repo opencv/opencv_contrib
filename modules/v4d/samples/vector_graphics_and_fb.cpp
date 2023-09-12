@@ -7,7 +7,7 @@ using namespace cv::v4d;
 int main() {
     Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "Vector Graphics and Framebuffer");
 
-    window->run([=]() {
+    window->run([=](Ptr<V4D> window) {
         //Again creates a NanoVG context and draws googly eyes
         window->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context

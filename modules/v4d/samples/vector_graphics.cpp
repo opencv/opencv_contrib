@@ -6,7 +6,7 @@ using namespace cv::v4d;
 int main() {
     Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "Vector Graphics");
 
-    window->run([=]() {
+    window->run([=](Ptr<V4D> window) {
         //Creates a NanoVG context and draws googly eyes that occasionally blink.
         window->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context.

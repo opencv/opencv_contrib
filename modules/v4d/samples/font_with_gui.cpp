@@ -27,7 +27,7 @@ int main() {
 		form.makeColorPicker("Text Color", textColor, "The text color");
 	});
 
-	window->run([&]() {
+	window->run([&](Ptr<V4D> window) {
 		//Render the text at the center of the screen using parameters from the GUI.
 		window->nvg([&](const Size& sz) {
 			using namespace cv::v4d::nvg;
