@@ -33,7 +33,7 @@ static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
 
 int frameBufferContextCnt = 0;
 
-FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.framebufferSize_, true, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
+FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.framebufferSize_, !other.debug_, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
 }
 
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
@@ -136,12 +136,12 @@ void FrameBufferContext::initWebGLCopy(FrameBufferContext& dst) {
 
 void FrameBufferContext::doWebGLCopy(FrameBufferContext& dst) {
 #ifdef __EMSCRIPTEN__
-    int width = dst.getWindowSize().width;
-    int height = dst.getWindowSize().height;
+    int width = getWindowSize().width;
+    int height = getWindowSize().height;
     {
         FrameBufferContext::GLScope glScope(dst, GL_READ_FRAMEBUFFER);
         dst.blitFrameBufferToScreen(
-                cv::Rect(0,0, width, height),
+                cv::Rect(0,0, dst.size().width, dst.size().height),
                 dst.getWindowSize(),
                 false);
         emscripten_webgl_commit_frame();
@@ -253,7 +253,7 @@ void FrameBufferContext::init() {
 #else
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 #endif
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
 

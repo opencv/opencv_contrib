@@ -141,6 +141,11 @@ bool V4D::hasGlCtx(uint32_t idx) {
     return glContexts_.find(idx) != glContexts_.end();
 }
 
+size_t V4D::numGlCtx() {
+    return glContexts_.size();
+}
+
+
 void V4D::gl(std::function<void()> fn, uint32_t idx) {
     TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [&](){
         glCtx(idx).render([=](const cv::Size& sz) {
@@ -219,7 +224,10 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
     }
     pool_.finish();
 #else
-    emscripten_set_main_loop_arg(do_frame, &fn, -1, true);
+    std::function<bool()> fnFrame([=,this](){
+        return fn(self());
+    });
+    emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
 #endif
 }
 
@@ -454,13 +462,15 @@ void V4D::setDefaultKeyboardEventCallback() {
 
 void V4D::swapContextBuffers() {
     run_sync_on_main<10>([this]() {
-        FrameBufferContext::GLScope glScope(glCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        glCtx().fbCtx().blitFrameBufferToScreen(viewport(), glCtx().fbCtx().getWindowSize(), isScaling());
+        for(size_t i = 0; i < numGlCtx(); ++i) {
+            FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
+            glCtx(i).fbCtx().blitFrameBufferToScreen(viewport(), glCtx(i).fbCtx().getWindowSize(), isScaling());
 #ifndef __EMSCRIPTEN__
-        glfwSwapBuffers(glCtx().fbCtx().getGLFWWindow());
+            glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
 #else
-        emscripten_webgl_commit_frame();
+            emscripten_webgl_commit_frame();
 #endif
+        }
     });
 
     run_sync_on_main<11>([this]() {
@@ -492,7 +502,8 @@ bool V4D::display() {
     if (true) {
 #endif
 
-//        swapContextBuffers();
+        if(debug_)
+            swapContextBuffers();
 
 #ifdef __EMSCRIPTEN__
         nguiCtx().render(printFPS_, showFPS_, showTracking_);

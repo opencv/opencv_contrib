@@ -15,11 +15,11 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), nguiFbContext_(fbContext.getV4D(), "NanoGUI", fbContext), context_(
                 nullptr), copyBuffer_(mainFbContext_.size(), CV_8UC4) {
     run_sync_on_main<25>([&, this]() {
-        {
-            //Workaround for first frame glitch
-            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(fbCtx(), copyBuffer_);
-        }
+//        {
+//            //Workaround for first frame glitch
+//            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+//            FrameBufferContext::FrameBufferScope fbScope(fbCtx(), copyBuffer_);
+//        }
         {
 #ifndef __EMSCRIPTEN__
             mainFbContext_.makeCurrent();
@@ -66,21 +66,25 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
         }
 #endif
         {
+
 #ifndef __EMSCRIPTEN__
+            float w = mainFbContext_.getWindowSize().width;
+            float h = mainFbContext_.getWindowSize().height;
             mainFbContext_.makeCurrent();
             GL_CHECK(glFinish());
             GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-            GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
-            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            GL_CHECK(glViewport(0, 0, w, h));
+            GL_CHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 #else
+            float w = fbCtx().size().width;
+            float h = fbCtx().size().height;
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+            GL_CHECK(glViewport(0, 0, w, h));
             GL_CHECK(glClearColor(0,0,0,0));
             GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-            GL_CHECK(glViewport(0, 0, mainFbContext_.getWindowSize().width, mainFbContext_.getWindowSize().height));
 #endif
 
-            float w = mainFbContext_.size().width;
-            float h = mainFbContext_.size().height;
+
             float r = mainFbContext_.pixelRatioX();
             if(showFPS || showTracking) {
                 nvgSave(context_);
@@ -103,8 +107,6 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
                 textAlign(NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
                 text(7.5, 15, txt.c_str(), nullptr);
 
-                nvgEndFrame(context_);
-                nvgRestore(context_);
             }
 
             if(showTracking) {
@@ -112,7 +114,9 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
                 std::stringstream ss;
                 auto& tiMap = TimeTracker::getInstance()->getMap();
                 size_t cnt = 0;
-                beginPath();
+#ifdef __EMSCRIPTEN__
+                fbCtx().makeCurrent();
+#endif
                 fontSize(20.0f);
                 fontFace("mono");
                 fillColor(cv::Scalar(200, 200, 200, 200));
@@ -124,14 +128,13 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
                     text(7.5, 15 * (cnt + 3), ss.str().c_str(), nullptr);
                     ++cnt;
                 }
+
+            }
+
+            if(showFPS || showTracking) {
                 nvgEndFrame(context_);
                 nvgRestore(context_);
             }
-        }
-        {
-#ifdef __EMSCRIPTEN__
-            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-#endif
             screen().draw_widgets();
 #ifndef __EMSCRIPTEN__
             GL_CHECK(glFinish());

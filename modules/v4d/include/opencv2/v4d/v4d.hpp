@@ -400,6 +400,7 @@ private:
     bool hasNvgCtx();
     bool hasNguiCtx();
     bool hasGlCtx(uint32_t idx = 0);
+    size_t numGlCtx();
 
     GLFWwindow* getGLFWWindow();
     void swapContextBuffers();
