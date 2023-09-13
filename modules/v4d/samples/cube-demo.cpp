@@ -149,8 +149,8 @@ static void init_scene(const cv::Size& sz) {
 
 //Renders a rotating rainbow-colored cube on a blueish background
 static void render_scene() {
-	//Clear the background
-    glClearColor(0.1, 0.12, 0.2, 1);
+    //Clear the background
+    glClearColor(0.2, 0.24, 0.4, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
     //Use the prepared shader program
