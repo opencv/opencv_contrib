@@ -115,7 +115,8 @@ class CV_EXPORTS V4D {
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
     NanoguiContext* nguiContext_ = nullptr;
-    std::map<int64_t,GLContext*> glContexts_;
+    std::mutex glCtxMtx_;
+    std::map<int32_t,GLContext*> glContexts_;
     bool closed_ = false;
     Source source_;
     Sink sink_;
@@ -155,13 +156,16 @@ public:
      * @return The texture object.
      */
     CV_EXPORTS cv::ogl::Texture2D& texture();
+
+    CV_EXPORTS void gl(std::function<void()> fn);
+    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
     /*!
      * Execute function object fn inside an opengl context.
      * This is how all OpenGL operations should be executed.
      * @param fn A function object that is passed the size of the framebuffer
      */
-    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn, uint32_t idx = 0);
-    CV_EXPORTS void gl(std::function<void()> fn, uint32_t idx = 0);
+    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn, const uint32_t& idx);
+    CV_EXPORTS void gl(std::function<void()> fn, const uint32_t& idx);
     /*!
      * Execute function object fn inside a framebuffer context.
      * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -191,12 +195,12 @@ public:
      * Copy the framebuffer contents to an OutputArray.
      * @param arr The array to copy to.
      */
-    CV_EXPORTS void copyTo(cv::OutputArray arr);
+    CV_EXPORTS void copyTo(cv::UMat& arr);
     /*!
      * Copy the InputArray contents to the framebuffer.
      * @param arr The array to copy.
      */
-    CV_EXPORTS void copyFrom(cv::InputArray arr);
+    CV_EXPORTS void copyFrom(const cv::UMat& arr);
     /*!
      * Execute function object fn in a loop.
      * This function main purpose is to abstract the run loop for portability reasons.
@@ -206,12 +210,12 @@ public:
     /*!
      * Called to feed an image directly to the framebuffer
      */
-    CV_EXPORTS void feed(cv::InputArray in);
+    CV_EXPORTS void feed(const cv::UMat& in);
     /*!
      * Fetches a copy of frambuffer
      * @return a copy of the framebuffer
      */
-    CV_EXPORTS _InputOutputArray fetch();
+    CV_EXPORTS cv::UMat fetch();
 
     /*!
      * Called to capture to the framebuffer from a #cv::viz::Source object provided via #V4D::setSource().
@@ -393,7 +397,7 @@ private:
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
     NanoguiContext& nguiCtx();
-    GLContext& glCtx(uint32_t idx = 0);
+    GLContext& glCtx(int32_t idx = 0);
 
     bool hasFbCtx();
     bool hasClvaCtx();
