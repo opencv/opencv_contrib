@@ -77,6 +77,18 @@ TEST(TEST_CASE_NAME, compute_features)
     EXPECT_EQ(features.cols, 36);
 }
 
+// check empty method
+TEST(TEST_CASE_NAME, check_empty)
+{
+    auto ptr1 = create_brisque();
+    EXPECT_FALSE(ptr1->empty());
+
+    const auto model = cvtest::findDataFile(MODEL_FNAME, false);
+    const auto range = "some_wrong_range_name";
+    auto ptr2 = quality::QualityBRISQUE::create(model, range);
+    EXPECT_TRUE(ptr1->empty());
+}
+
 /*
 // internal a/b test
 TEST(TEST_CASE_NAME, performance)

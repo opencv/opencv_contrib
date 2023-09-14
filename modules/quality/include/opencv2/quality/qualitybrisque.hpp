@@ -62,6 +62,9 @@ public:
     */
     CV_WRAP static void computeFeatures(InputArray img, OutputArray features);
 
+    /** @brief Implements QualityBase::empty()  */
+    CV_WRAP bool empty() const CV_OVERRIDE { return _range.empty() || !_model || _model.empty(); }
+
 protected:
 
     cv::Ptr<cv::ml::SVM> _model = nullptr;
