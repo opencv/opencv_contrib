@@ -317,7 +317,7 @@ Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const float f
 
     if(writer->isOpened()) {
         return Sink([=](const cv::UMat& frame) {
-            static cv::UMat resized;
+            cv::UMat resized;
             cv::resize(frame, resized, frameSize);
             (*writer) << resized;
             return writer->isOpened();
@@ -356,7 +356,7 @@ Sink makeWriterSink(const string& outputFilename, const int fourcc, const float 
 
     if(writer->isOpened()) {
 		return Sink([=](const cv::UMat& frame) {
-			static cv::UMat resized;
+			cv::UMat resized;
 			cv::resize(frame, resized, frameSize);
 			(*writer) << resized;
 			return writer->isOpened();
@@ -404,11 +404,6 @@ public:
             globalThis.playing = false;
             globalThis.timeupdate = false;
             globalThis.v4dVideoElement = document.querySelector("#v4dVideoElement");
-            globalThis.v4dCopyCanvasElement = document.createElement("canvas");
-            globalThis.v4dCopyCanvasElement.id = "v4dCopyCanvasElement0";
-            globalThis.v4dCopyCanvasElement.width = $0;
-            globalThis.v4dCopyCanvasElement.height = $1;
-            globalThis.v4dCopyCanvasElement.style.display = "none";
         }, width, height);
     }
 
