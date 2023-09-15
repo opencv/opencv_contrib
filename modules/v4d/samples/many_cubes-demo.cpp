@@ -13,7 +13,7 @@ constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
 constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 540;
+constexpr long unsigned int HEIGHT = 960;
 #endif
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
@@ -150,12 +150,12 @@ static void init_scene(const cv::Size& sz, const size_t& contextIdx) {
 }
 
 //Renders a rotating rainbow-colored cube on a blueish background
-static void render_scene(const double& x, const double& y, const size_t& contextIdx) {
+static void render_scene(const double& x, const double& y, const double& angleMod, const size_t& contextIdx) {
     //Use the prepared shader program
     glUseProgram(shader_program[contextIdx]);
 
     //Scale and rotate the cube depending on the current time.
-    float angle = fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()), 2 * M_PI);
+    float angle =  fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()) + angleMod, 2 * M_PI);
     double scale = 0.25;
     cv::Matx44f scaleMat(
             scale, 0.0, 0.0, 0.0,
@@ -228,7 +228,7 @@ using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
     window->gl([=](){
         //Clear the background
-        glClearColor(0.1, 0.12, 0.2, 1);
+        glClearColor(0.2, 0.24, 0.4, 1);
         glClear(GL_COLOR_BUFFER_BIT);
     });
 
@@ -236,7 +236,8 @@ static bool iteration(cv::Ptr<V4D> window) {
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
         window->gl([=](){
             double pos = (((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
-            render_scene(pos, pos, i);
+            double angle = sin((double(i) / NUMBER_OF_CUBES) * 2 * M_PI);
+            render_scene(pos, pos, angle, i);
         }, i);
     }
     //To slow for WASM
