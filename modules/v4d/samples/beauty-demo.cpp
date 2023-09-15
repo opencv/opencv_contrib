@@ -23,7 +23,7 @@ constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
 constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 540;
+constexpr long unsigned int HEIGHT = 960;
 #endif
 constexpr unsigned int DOWNSIZE_WIDTH = 960;
 constexpr unsigned int DOWNSIZE_HEIGHT = 540;

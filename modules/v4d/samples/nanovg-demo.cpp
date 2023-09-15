@@ -14,7 +14,7 @@ constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
 constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 540;
+constexpr long unsigned int HEIGHT = 960;
 #endif
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
@@ -160,7 +160,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     //Acquire the framebuffer and convert the rgb into it
     window->fb([&](cv::UMat &framebuffer) {
-        cv::cvtColor(rgb, framebuffer, cv::COLOR_RGB2BGRA);
+        cv::cvtColor(rgb, framebuffer, cv::COLOR_BGR2BGRA);
     });
 
     //Render using nanovg

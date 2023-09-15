@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    Ptr<V4D> window = V4D::make(Size(960, 540), cv::Size(), "Font Rendering with GUI");
+    Ptr<V4D> window = V4D::make(Size(960, 960), cv::Size(), "Font Rendering with GUI");
 
     //The text color. NanoGUI uses rgba with floating point
 	nanogui::Color textColor = {0.0f, 0.0f, 1.0f, 1.0f};

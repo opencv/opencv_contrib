@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main(int argc, char** argv) {
-    Ptr<V4D> window = V4D::make(cv::Size(960, 540), cv::Size(), "Video Editing");
+    Ptr<V4D> window = V4D::make(cv::Size(960, 960), cv::Size(), "Video Editing");
 
     //In case of WebAssembly
     CV_UNUSED(argc);
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     window->setSink(sink);
 #else
     //Make a webcam Source
-    Source src = makeCaptureSource(1280, 720, window);
+    Source src = makeCaptureSource(960, 960, window);
     //Attach webcam source
     window->setSource(src);
 #endif

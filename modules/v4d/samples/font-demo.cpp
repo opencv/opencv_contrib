@@ -21,7 +21,7 @@ constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
 constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 540;
+constexpr long unsigned int HEIGHT = 960;
 #endif
 constexpr bool OFFSCREEN = false;
 #ifndef __EMSCRIPTEN__
@@ -204,7 +204,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
 int main() {
     try {
-        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN, true);
+        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Font Demo", OFFSCREEN);
         if(!OFFSCREEN) {
             setup_gui(window);
         }

@@ -26,12 +26,13 @@ using namespace std::literals::chrono_literals;
 
 
 /* Demo parameters */
+
 #ifndef __EMSCRIPTEN__
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
 constexpr long unsigned int WIDTH = 960;
-constexpr long unsigned int HEIGHT = 540;
+constexpr long unsigned int HEIGHT = 960;
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 #ifndef __EMSCRIPTEN__
@@ -342,8 +343,8 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
 using namespace cv::v4d;
 
 //Build the GUI
-static void setup_gui(cv::Ptr<V4D> window, cv::Ptr<V4D> dialog) {
-    window->nanogui([&](cv::v4d::FormHelper& form){
+static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
+    main->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(5, 30, "Effects");
 
         form.makeGroup("Foreground");
@@ -414,22 +415,22 @@ static void setup_gui(cv::Ptr<V4D> window, cv::Ptr<V4D> dialog) {
         form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
     });
 
-    dialog->nanogui([&](cv::v4d::FormHelper& form){
+    menu->nanogui([&](cv::v4d::FormHelper& form){
         form.makeDialog(8, 16, "Display");
 
         form.makeGroup("Display");
         form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
         form.makeFormVariable("Scale", scale, "Scale the frame buffer to the window size")->set_callback([=](const bool &s) {
-            window->setScaling(s);
+            main->setScaling(s);
         });
 
 #ifndef __EMSCRIPTEN__
         form.makeButton("Fullscreen", [=]() {
-            window->setFullscreen(!window->isFullscreen());
+            main->setFullscreen(!main->isFullscreen());
         });
 
         form.makeButton("Offscreen", [=]() {
-            window->setVisible(!window->isVisible());
+            main->setVisible(!main->isVisible());
         });
 #endif
     });
@@ -485,8 +486,8 @@ static bool iteration(cv::Ptr<V4D> window) {
 
 #ifndef __EMSCRIPTEN__
     window->write();
-
-    menuWindow->feed(menuFrame);
+//FIXME
+//    menuWindow->feed(menuFrame);
 
     if(!menuWindow->display())
         return false;
@@ -505,6 +506,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     try {
+        using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
 #ifndef __EMSCRIPTEN__
         menuWindow = V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
