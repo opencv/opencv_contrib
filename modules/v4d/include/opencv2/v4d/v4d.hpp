@@ -302,7 +302,7 @@ public:
      * Get the initial size.
      * @return The initial size.
      */
-    CV_EXPORTS cv::Size getWindowSize();
+    CV_EXPORTS cv::Size size();
     /*!
      * Get the frambuffer size.
      * @return The framebuffer size.
