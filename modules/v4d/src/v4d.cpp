@@ -530,7 +530,7 @@ bool V4D::display() {
 #else
     if (true) {
 #endif
-        if(debug)
+        if(debug_)
             swapContextBuffers();
 
 
