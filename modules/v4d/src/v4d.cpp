@@ -31,7 +31,9 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
 #endif
         mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, 3,
                 2, compat_, samples_, debug_, nullptr, nullptr);
-
+#ifndef __EMSCRIPTEN__
+        CLExecScope_t scope(mainFbContext_->getCLExecContext());
+#endif
         nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
         nguiContext_ = new detail::NanoguiContext(*mainFbContext_);
         clvaContext_ = new detail::CLVAContext(*mainFbContext_);
@@ -110,7 +112,7 @@ NanoguiContext& V4D::nguiCtx() {
     return *nguiContext_;
 }
 
-GLContext& V4D::glCtx(uint32_t idx) {
+GLContext& V4D::glCtx(int32_t idx) {
     auto it = glContexts_.find(idx);
     if(it != glContexts_.end())
         return *(*it).second;
@@ -142,12 +144,27 @@ bool V4D::hasGlCtx(uint32_t idx) {
 }
 
 size_t V4D::numGlCtx() {
-    return glContexts_.size();
+    return std::max(off_t(0), off_t(glContexts_.size()) - 1);
+}
+
+void V4D::gl(std::function<void()> fn) {
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [=](){
+        glCtx(-1).render([=](const cv::Size& sz) {
+            CV_UNUSED(sz);
+            fn();
+        });
+    });
 }
 
 
-void V4D::gl(std::function<void()> fn, uint32_t idx) {
-    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [&](){
+void V4D::gl(std::function<void(const cv::Size&)> fn) {
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [=](){
+        glCtx(-1).render(fn);
+    });
+}
+
+void V4D::gl(std::function<void()> fn, const uint32_t& idx) {
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [=](){
         glCtx(idx).render([=](const cv::Size& sz) {
             CV_UNUSED(sz);
             fn();
@@ -156,8 +173,8 @@ void V4D::gl(std::function<void()> fn, uint32_t idx) {
 }
 
 
-void V4D::gl(std::function<void(const cv::Size&)> fn, uint32_t idx) {
-    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [&](){
+void V4D::gl(std::function<void(const cv::Size&)> fn, const uint32_t& idx) {
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [=](){
         glCtx(idx).render(fn);
     });
 }
@@ -188,17 +205,15 @@ void V4D::nanogui(std::function<void(cv::v4d::FormHelper& form)> fn) {
     nguiCtx().build(fn);
 }
 
-void V4D::copyTo(cv::OutputArray m) {
+void V4D::copyTo(cv::UMat& m) {
     TimeTracker::getInstance()->execute("copyTo", [&](){
-        UMat um = m.getUMat();
-        fbCtx().copyTo(um);
+        fbCtx().copyTo(m);
     });
 }
 
-void V4D::copyFrom(cv::InputArray m) {
+void V4D::copyFrom(const cv::UMat& m) {
     TimeTracker::getInstance()->execute("copyTo", [&](){
-        UMat um = m.getUMat();
-        fbCtx().copyFrom(um);
+        fbCtx().copyFrom(m);
     });
 }
 
@@ -206,7 +221,7 @@ void V4D::copyFrom(cv::InputArray m) {
 bool first = true;
 static void do_frame(void* void_fn_ptr) {
      if(first) {
-         glfwSwapInterval(0);
+         glfwSwapInterval(1);
          first = false;
      }
      auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
@@ -220,7 +235,10 @@ static void do_frame(void* void_fn_ptr) {
 
 void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
 #ifndef __EMSCRIPTEN__
-    while (keepRunning() && fn(self())) {
+    bool success = true;
+    while (keepRunning() && success) {
+        CLExecScope_t scope(fbCtx().getCLExecContext());
+        success = fn(self());
     }
     pool_.finish();
 #else
@@ -232,12 +250,16 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
 }
 
 void V4D::setSource(const Source& src) {
-    if (!clvaCtx().hasContext())
-        clvaCtx().copyContext();
+    if (!clvaCtx().hasContext()) {
+        if(isIntelVaSupported()) {
+            clvaCtx().copyContext();
+        }
+    }
+
     source_ = src;
 }
 
-void V4D::feed(cv::InputArray in) {
+void V4D::feed(const cv::UMat& in) {
     TimeTracker::getInstance()->execute("feed", [&](){
         cv::UMat frame;
         clvaCtx().capture([&](cv::UMat& videoFrame) {
@@ -250,7 +272,7 @@ void V4D::feed(cv::InputArray in) {
     });
 }
 
-_InputOutputArray V4D::fetch() {
+cv::UMat V4D::fetch() {
     cv::UMat frame;
     TimeTracker::getInstance()->execute("copyTo", [&](){
         fb([frame](cv::UMat& framebuffer){
@@ -293,7 +315,7 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
                 return;
             }
         }
-        currentReaderFrame_ = nextReaderFrame_.clone();
+        nextReaderFrame_.copyTo(currentReaderFrame_);
         futureReader_ = pool_.enqueue(
             [](V4D* v, std::function<void(UMat&)> func, cv::UMat& frame) {
                 return v->clvaCtx().capture(func, frame);
@@ -311,8 +333,11 @@ bool V4D::isSourceReady() {
 }
 
 void V4D::setSink(const Sink& sink) {
-    if (!clvaCtx().hasContext())
-        clvaCtx().copyContext();
+    if (!clvaCtx().hasContext()) {
+        if(isIntelVaSupported()) {
+            clvaCtx().copyContext();
+        }
+    }
     sink_ = sink;
 }
 
@@ -333,6 +358,7 @@ void V4D::write(std::function<void(const cv::UMat&)> fn) {
 
         fb([this](cv::UMat& frameBuffer){
             frameBuffer.copyTo(currentWriterFrame_);
+            //            currentWriterFrame_ = frameBuffer;
         });
 
         futureWriter_ = pool_.enqueue([](V4D* v, std::function<void(const UMat&)> func, cv::UMat& frame) {
@@ -376,7 +402,7 @@ cv::Size V4D::initialSize() {
     return initialSize_;
 }
 
-cv::Size V4D::getWindowSize() {
+cv::Size V4D::size() {
     return fbCtx().getWindowSize();
 }
 
@@ -465,6 +491,7 @@ void V4D::swapContextBuffers() {
         for(size_t i = 0; i < numGlCtx(); ++i) {
             FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
             glCtx(i).fbCtx().blitFrameBufferToScreen(viewport(), glCtx(i).fbCtx().getWindowSize(), isScaling());
+//            GL_CHECK(glFinish());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
 #else
@@ -476,6 +503,7 @@ void V4D::swapContextBuffers() {
     run_sync_on_main<11>([this]() {
         FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isScaling());
+//        GL_CHECK(glFinish());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 #else
@@ -486,6 +514,7 @@ void V4D::swapContextBuffers() {
     run_sync_on_main<12>([this]() {
         FrameBufferContext::GLScope glScope(nguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         nguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), nguiCtx().fbCtx().getWindowSize(), isScaling());
+//        GL_CHECK(glFinish());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nguiCtx().fbCtx().getGLFWWindow());
 #else
@@ -501,9 +530,9 @@ bool V4D::display() {
 #else
     if (true) {
 #endif
-
-        if(debug_)
+        if(debug)
             swapContextBuffers();
+
 
 #ifdef __EMSCRIPTEN__
         nguiCtx().render(printFPS_, showFPS_, showTracking_);
@@ -516,6 +545,26 @@ bool V4D::display() {
 #ifndef __EMSCRIPTEN__
             nguiCtx().render(printFPS_, showFPS_, showTracking_);
 #endif
+
+//            {
+//                FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_FRAMEBUFFER);
+//                GL_CHECK(glFinish());
+//            }
+//            {
+//                FrameBufferContext::GLScope glScope(nguiCtx().fbCtx(), GL_FRAMEBUFFER);
+//                GL_CHECK(glFinish());
+//            }
+//            for(size_t i = 0; i < numGlCtx(); ++i) {
+//                {
+//                    FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_FRAMEBUFFER);
+//                    GL_CHECK(glFinish());
+//                }
+//            }
+//            {
+//                FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
+//                GL_CHECK(glFinish());
+//            }
+
             fbCtx().makeCurrent();
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
