@@ -89,6 +89,9 @@ void FrameBufferContext::loadShader(const size_t& index) {
         //translate screen coordinates to texture coordinates and flip the y-axis.   
         vec4 texPos = gl_FragCoord / vec4(resolution.x, resolution.y * -1.0f, 1.0, 1.0);
         vec4 texColor0 = texture(texture0, texPos.xy);
+//        if(texColor0.r == 1.0 && texColor0.g == 0.0 && texColor0.b == 0.0)
+//            discard;
+//        else
         FragColor = texColor0;
     }
 )";
@@ -121,7 +124,6 @@ void FrameBufferContext::initWebGLCopy(const size_t& index) {
     this->makeCurrent();
     GL_CHECK(glGenFramebuffers(1, &copyFramebuffers_[index]));
     GL_CHECK(glGenTextures(1, &copyTextures_[index]));
-    cerr << index << ": " << copyFramebuffers_[index] << "/" << copyTextures_[index] << endl;
     loadShader(index);
     loadBuffers(index);
 
@@ -150,7 +152,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
     this->makeCurrent();
     GL_CHECK(glEnable(GL_BLEND));
     GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-    cerr << index << ": " << copyFramebuffers_[index] << "/" << copyTextures_[index] << endl;
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, copyFramebuffers_[index]));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTextures_[index]));
     GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
@@ -177,7 +178,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
         if(typeof Module["copyTextures" + $0] === 'undefined') {
             Module["copyTextures" + $0]= gl.getParameter(gl.TEXTURE_BINDING_2D);
         }
-        console.warn("index:" + ($0 + 1) + " fb:" + Module["copyFramebuffers" + $0] + " tex:" + Module["copyTextures" + $0] + " canvas:" + canvas);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         gl.bindFramebuffer(gl.FRAMEBUFFER, Module["copyFramebuffers" + $0]);
@@ -203,7 +203,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
     GL_CHECK(glBindVertexArray(copyVaos[index]));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     GL_CHECK(glDisable(GL_BLEND));
-    GL_CHECK(glFlush());
 #else
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
@@ -301,16 +300,16 @@ void FrameBufferContext::init() {
 #ifndef __EMSCRIPTEN__
     context_ = CLExecContext_t::getCurrent();
 #endif
-    framebuffer_.create(framebufferSize_, CV_8UC4);
+
     setup(framebufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-#ifdef __EMSCRIPTEN__
-        x *= v4d->pixelRatioX();
-        y *= v4d->pixelRatioY();
-#endif
+//#ifdef __EMSCRIPTEN__
+//        x *= v4d->pixelRatioX();
+//        y *= v4d->pixelRatioY();
+//#endif
 
         if(v4d->hasNguiCtx()) {
             v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
@@ -376,11 +375,11 @@ void FrameBufferContext::init() {
                     vp.width = fbsz.width;
                     vp.height = fbsz.height;
                     if(v4d->hasNguiCtx()) {
-#ifdef __EMSCRIPTEN__
-                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width), int(v4d->getWindowSize().height)});
-#else
-                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width / v4d->pixelRatioX()), int(v4d->getWindowSize().height / v4d->pixelRatioY())});
-#endif
+//#ifdef __EMSCRIPTEN__
+//                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width), int(v4d->getWindowSize().height)});
+//#else
+                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->size().width / v4d->pixelRatioX()), int(v4d->size().height / v4d->pixelRatioY())});
+//#endif
                     }
                 });
             });
@@ -425,6 +424,10 @@ int FrameBufferContext::getIndex() {
 void FrameBufferContext::setup(const cv::Size& sz) {
     framebufferSize_ = sz;
     this->makeCurrent();
+#ifndef __EMSCRIPTEN__
+    CLExecScope_t clExecScope(getCLExecContext());
+#endif
+    framebuffer_.create(sz, CV_8UC4);
 
     if(!isShared_) {
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
@@ -470,6 +473,13 @@ void FrameBufferContext::setup(const cv::Size& sz) {
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glGetError();
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    glGetError();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glGetError();
+    GL_CHECK(glFinish());
 }
 
 
