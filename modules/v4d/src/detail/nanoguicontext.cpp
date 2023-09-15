@@ -15,11 +15,8 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
         mainFbContext_(fbContext), nguiFbContext_(fbContext.getV4D(), "NanoGUI", fbContext), context_(
                 nullptr), copyBuffer_(mainFbContext_.size(), CV_8UC4) {
     run_sync_on_main<25>([&, this]() {
-//        {
-//            //Workaround for first frame glitch
-//            FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-//            FrameBufferContext::FrameBufferScope fbScope(fbCtx(), copyBuffer_);
-//        }
+        fbCtx().makeCurrent();
+        GL_CHECK(glFinish());
         {
 #ifndef __EMSCRIPTEN__
             mainFbContext_.makeCurrent();
@@ -29,7 +26,7 @@ NanoguiContext::NanoguiContext(FrameBufferContext& fbContext) :
 #endif
             screen_ = new nanogui::Screen(true, true, false);
             screen_->initialize(fbCtx().getGLFWWindow(), false);
-            Size winSize = fbContext.getV4D().getWindowSize();
+            Size winSize = fbContext.getV4D().size();
             screen_->set_size({int(winSize.width / fbContext.getV4D().pixelRatioX()), int(winSize.height / fbContext.getV4D().pixelRatioY())});
             context_ = screen_->nvg_context();
             form_ = new cv::v4d::FormHelper(screen_);
@@ -46,8 +43,9 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
     tick_.stop();
 
     if (tick_.getTimeMilli() > 100) {
+        fps_ = tick_.getFPS();
         if(printFPS) {
-            cerr << "FPS : " << (fps_ = tick_.getFPS()) << endl;
+            cerr << "FPS : " << (fps_) << endl;
 #ifndef __EMSCRIPTEN__
             cerr << '\r';
 #else
@@ -136,9 +134,6 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
                 nvgRestore(context_);
             }
             screen().draw_widgets();
-#ifndef __EMSCRIPTEN__
-            GL_CHECK(glFinish());
-#endif
         }
 
         if(!fbCtx().isShared()) {
@@ -149,6 +144,7 @@ void NanoguiContext::render(bool printFPS, bool showFPS, bool showTracking) {
             mainFbContext_.copyFrom(copyBuffer_);
 #endif
         }
+        GL_CHECK(glFinish());
     });
     tick_.start();
 }
