@@ -19,14 +19,28 @@
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; \
     ImGui::StyleColorsDark(); \
     ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), install_hooks); \
-    ImGui_ImplOpenGL3_Init(); \
+    ImGui_ImplOpenGL3_Init("#version 330"); \
 })
+#else
+#   define V4D_INIT_PRIVATE(v4d, install_hooks) ({ \
+    FrameBufferContext::GLScope glScope(v4d->fbCtx(), GL_FRAMEBUFFER); \
+    IMGUI_CHECKVERSION(); \
+    ImGui::CreateContext();  \
+    ImGuiIO& io = ImGui::GetIO(); \
+    (void)io; \
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; \
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; \
+    ImGui::StyleColorsDark(); \
+    ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), install_hooks); \
+    ImGui_ImplOpenGL3_Init("#version 300 es"); \
+})
+#endif
 #   define V4D_INIT_MAIN(w, h, title, offscreen, debug, samples) ({ \
     cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(w, h), cv::Size(), title, offscreen, debug, samples); \
     V4D_INIT_PRIVATE(v4d, true); \
     v4d; \
     })
-#endif
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/threading.h>

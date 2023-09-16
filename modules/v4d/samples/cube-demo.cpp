@@ -251,7 +251,7 @@ int main() {
 
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink using the VP9 codec (which might be hardware accelerated)
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('H', '2', '6', '4'), FPS,
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
             cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif

@@ -5,14 +5,17 @@
 
 #include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/detail/imguicontext.hpp"
+
+
+#include <stdio.h>
+#if defined(OPENCV_V4D_USE_ES3) || defined(EMSCRIPTEN)
+#   define IMGUI_IMPL_OPENGL_ES3
+//#   include <GLES3/gl3.h>
+#endif
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-#include <stdio.h>
-#define GL_SILENCE_DEPRECATION
-#if defined(OPENCV_V4D_USE_ES3) || defined(EMSCRIPTEN)
-#include <GLES3/gl3.h>
-#endif
 #include <GLFW/glfw3.h>
 
 namespace cv {
@@ -27,7 +30,6 @@ ImGuiContext::ImGuiContext(FrameBufferContext& fbContext) :
     });
 #endif
 }
-
 
 void ImGuiContext::build(std::function<void(const cv::Size&)> fn) {
     renderCallback_ = fn;
@@ -46,7 +48,9 @@ void ImGuiContext::render() {
         {
             fbCtx().getV4D()->makeCurrent();
             GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+#if !defined(OPENCV_V4D_USE_ES3) && !defined(EMSCRIPTEN)
             GL_CHECK(glDrawBuffer(GL_BACK));
+#endif
             GL_CHECK(glViewport(0, 0, fbCtx().getV4D()->size().width, fbCtx().getV4D()->size().height));
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
