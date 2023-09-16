@@ -20,6 +20,7 @@ CV_EXPORTS class ImGuiContext {
     FrameBufferContext& mainFbContext_;
     FrameBufferContext glFbContext_;
     std::function<void(const cv::Size&)> renderCallback_;
+    bool firstFrame_ = true;
 public:
     CV_EXPORTS ImGuiContext(FrameBufferContext& fbContext);
     CV_EXPORTS FrameBufferContext& fbCtx();

@@ -204,7 +204,7 @@ public:
     bool isClosed();
     bool isShared();
 protected:
-    V4D& getV4D();
+    cv::Ptr<V4D> getV4D();
     int getIndex();
     void setup(const cv::Size& sz);
     void teardown();

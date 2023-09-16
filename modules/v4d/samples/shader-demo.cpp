@@ -339,7 +339,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     try {
-        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
+        cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Mandelbrot Shader Demo", false, false, 0);
 
 //        if (!OFFSCREEN) {
 //            setup_gui(window);

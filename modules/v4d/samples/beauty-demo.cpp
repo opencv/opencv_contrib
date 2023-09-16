@@ -379,7 +379,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Beauty Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Beautification Demo", false, false, 0);
     facemark->loadModel("assets/lbfmodel.yaml");
 
     window->setScaling(scale);

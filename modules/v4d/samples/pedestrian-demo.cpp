@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Pedestrian Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Pedestrian Demo", false, false, 0);
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     window->printSystemInfo();

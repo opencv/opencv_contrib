@@ -271,7 +271,7 @@ void FrameBufferContext::init() {
     }
     this->makeCurrent();
 #ifndef __EMSCRIPTEN__
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
 #endif
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
@@ -367,8 +367,8 @@ void FrameBufferContext::init() {
 //            });
 }
 
-V4D& FrameBufferContext::getV4D() {
-   return *v4d_;
+cv::Ptr<V4D> FrameBufferContext::getV4D() {
+   return v4d_->self();
 }
 
 int FrameBufferContext::getIndex() {

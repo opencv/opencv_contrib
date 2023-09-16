@@ -7,7 +7,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    Ptr<V4D> window = V4D::make(Size(960, 960), cv::Size(), "Custom Source/Sink");
+    Ptr<V4D> window = V4D_INIT_MAIN(960, 960, "Custom Source/Sink", false, false, 0);
 
     string hr = "Hello Rainbow!";
 	//Make a source that generates rainbow frames.

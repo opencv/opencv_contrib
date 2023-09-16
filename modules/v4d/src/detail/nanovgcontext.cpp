@@ -12,7 +12,7 @@ namespace v4d {
 namespace detail {
 
 NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_(fbContext.getV4D(), "NanoVG", fbContext), context_(
+        mainFbContext_(fbContext), nvgFbContext_(*fbContext.getV4D(), "NanoVG", fbContext), context_(
                 nullptr) {
     run_sync_on_main<13>([this]() {
         {

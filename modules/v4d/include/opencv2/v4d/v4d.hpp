@@ -6,9 +6,8 @@
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
-#   define V4D_INIT(w, h, title, offscreen, debug, samples) ({ \
-    cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(w, h), cv::Size(), title, offscreen, debug, samples); \
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))  \
+#   define V4D_INIT_PRIVATE(v4d, install_hooks) ({ \
+        if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))  \
         throw std::runtime_error("Could not initialize GLAD!");  \
     glGetError(); \
     FrameBufferContext::GLScope glScope(v4d->fbCtx(), GL_FRAMEBUFFER); \
@@ -19,8 +18,12 @@
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; \
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; \
     ImGui::StyleColorsDark(); \
-    ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), true); \
+    ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), install_hooks); \
     ImGui_ImplOpenGL3_Init(); \
+})
+#   define V4D_INIT_MAIN(w, h, title, offscreen, debug, samples) ({ \
+    cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(w, h), cv::Size(), title, offscreen, debug, samples); \
+    V4D_INIT_PRIVATE(v4d, true); \
     v4d; \
     })
 #endif
@@ -43,6 +46,7 @@
 #include <map>
 #include <string>
 
+#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
@@ -373,13 +377,12 @@ private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, int samples);
 
-    cv::Ptr<V4D> self();
-
-
     cv::Point2f getMousePosition();
     void setMousePosition(const cv::Point2f& pt);
 
     void swapContextBuffers();
+protected:
+    cv::Ptr<V4D> self();
 };
 }
 } /* namespace kb */

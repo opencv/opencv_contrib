@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    Ptr<V4D> window = V4D::make(Size(960, 960), cv::Size(), "Vector Graphics");
+    Ptr<V4D> window = V4D_INIT_MAIN(960, 960, "Vector Graphics", false, false, 0);
 
     window->run([=](Ptr<V4D> window) {
         //Creates a NanoVG context and draws googly eyes that occasionally blink.

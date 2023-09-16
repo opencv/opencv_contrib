@@ -25,15 +25,15 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
-        mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, 3,
+    self_ = cv::Ptr<V4D>(this);
+    mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, 3,
                 2, samples_, debug_, nullptr, nullptr);
 #ifndef __EMSCRIPTEN__
-        CLExecScope_t scope(mainFbContext_->getCLExecContext());
+    CLExecScope_t scope(mainFbContext_->getCLExecContext());
 #endif
-        nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
-        clvaContext_ = new detail::CLVAContext(*mainFbContext_);
-        imguiContext_ = new detail::ImGuiContext(*mainFbContext_);
-        self_ = cv::Ptr<V4D>(this);
+    nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
+    clvaContext_ = new detail::CLVAContext(*mainFbContext_);
+    imguiContext_ = new detail::ImGuiContext(*mainFbContext_);
 }
 
 V4D::~V4D() {
@@ -447,6 +447,7 @@ void V4D::swapContextBuffers() {
             FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
             glCtx(i).fbCtx().blitFrameBufferToScreen(viewport(), glCtx(i).fbCtx().getWindowSize(), isScaling());
 //            GL_CHECK(glFinish());
+            glfwSwapInterval(0);
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
 #else
@@ -459,6 +460,7 @@ void V4D::swapContextBuffers() {
         FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isScaling());
 //        GL_CHECK(glFinish());
+        glfwSwapInterval(0);
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 #else
@@ -469,6 +471,7 @@ void V4D::swapContextBuffers() {
         FrameBufferContext::GLScope glScope(imguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
         imguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), imguiCtx().fbCtx().getWindowSize(), isScaling());
 //        GL_CHECK(glFinish());
+        glfwSwapInterval(0);
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(imguiCtx().fbCtx().getGLFWWindow());
 #else
@@ -484,15 +487,13 @@ bool V4D::display() {
 #else
     if (true) {
 #endif
-
-        run_sync_on_main<6>([&, this](){
+        run_sync_on_main<6>([&, this]() {
             {
-               FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-               fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isScaling());
+                FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
+                fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isScaling());
             }
             imguiCtx().render();
-//            if(debug_)
-                swapContextBuffers();
+            swapContextBuffers();
             fbCtx().makeCurrent();
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
@@ -503,7 +504,7 @@ bool V4D::display() {
             result = !glfwWindowShouldClose(getGLFWWindow());
         });
     }
-    if(frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
+    if (frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
         frameCnt_ = 0;
     else
         ++frameCnt_;

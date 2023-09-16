@@ -19,7 +19,8 @@ namespace cv {
 namespace v4d {
 namespace detail {
 ImGuiContext::ImGuiContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), glFbContext_(fbContext.getV4D(), "ImGUI", fbContext) {
+        mainFbContext_(fbContext), glFbContext_(*fbContext.getV4D(), "ImGUI", fbContext) {
+    V4D_INIT_PRIVATE(mainFbContext_.getV4D(), false);
 #ifdef __EMSCRIPTEN__
     run_sync_on_main<24>([&,this](){
         mainFbContext_.initWebGLCopy(fbCtx().getIndex());
@@ -27,12 +28,12 @@ ImGuiContext::ImGuiContext(FrameBufferContext& fbContext) :
 #endif
 }
 
-bool show_demo_window = true;
 
 void ImGuiContext::build(std::function<void(const cv::Size&)> fn) {
     renderCallback_ = fn;
 }
 
+bool show_demo_window = true;
 void ImGuiContext::render() {
     run_sync_on_main<25>([&,this](){
 #ifndef __EMSCRIPTEN__
@@ -43,24 +44,19 @@ void ImGuiContext::render() {
         }
 #endif
         {
-            fbCtx().getV4D().makeCurrent();
+            fbCtx().getV4D()->makeCurrent();
             GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
             GL_CHECK(glDrawBuffer(GL_BACK));
-            GL_CHECK(glViewport(0, 0, fbCtx().getV4D().size().width, fbCtx().getV4D().size().height));
-
-//            GL_CHECK(glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-//#ifdef __EMSCRIPTEN__
-//            //Preserve the clear color state though it is a bit costly. We don't want to interfere.
-//            GLfloat cColor[4];
-//            GL_CHECK(glGetFloatv(GL_COLOR_CLEAR_VALUE, cColor));
-//            GL_CHECK(glClearColor(0,0,0,0));
-//            GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
-//            GL_CHECK(glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]));
-//#endif
+            GL_CHECK(glViewport(0, 0, fbCtx().getV4D()->size().width, fbCtx().getV4D()->size().height));
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
-            renderCallback_(fbCtx().getV4D().size());
+            ImGui::Begin("Display"); \
+            ImGuiIO& io = ImGui::GetIO(); \
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate); \
+            ImGui::End();
+            if(renderCallback_)
+                renderCallback_(fbCtx().getV4D()->size());
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }

@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Video Demo", OFFSCREEN, false);
+    cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Video Demo", false, false, 0);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__

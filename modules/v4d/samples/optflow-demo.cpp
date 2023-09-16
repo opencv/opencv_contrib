@@ -506,7 +506,7 @@ int main() {
 #endif
     try {
         using namespace cv::v4d;
-        cv::Ptr<V4D> window = V4D_INIT(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
+        cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
 
 #ifndef __EMSCRIPTEN__
         menuWindow = V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
