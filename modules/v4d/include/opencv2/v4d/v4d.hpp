@@ -5,28 +5,37 @@
 
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
-
-#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
-#include <glad/glad.h>
+#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
+#   define V4D_INIT(w, h, title, offscreen, debug, samples) ({ \
+    cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(w, h), cv::Size(), title, offscreen, debug, samples); \
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))  \
+        throw std::runtime_error("Could not initialize GLAD!");  \
+    glGetError(); \
+    FrameBufferContext::GLScope glScope(v4d->fbCtx(), GL_FRAMEBUFFER); \
+    IMGUI_CHECKVERSION(); \
+    ImGui::CreateContext();  \
+    ImGuiIO& io = ImGui::GetIO(); \
+    (void)io; \
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; \
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; \
+    ImGui::StyleColorsDark(); \
+    ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), true); \
+    ImGui_ImplOpenGL3_Init(); \
+    v4d; \
+    })
 #endif
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/threading.h>
 #endif
-
-#if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
-#define GLFW_INCLUDE_ES3
-#define GLFW_INCLUDE_GLEXT
-#endif
-
-#include <GLFW/glfw3.h>
 
 #include "source.hpp"
 #include "sink.hpp"
 #include "util.hpp"
 #include "nvg.hpp"
 #include "detail/threadpool.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "opencv2/v4d/detail/imguicontext.hpp"
 
 #include <iostream>
 #include <future>
@@ -37,6 +46,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
+#include "detail/gl.hpp"
 
 using std::cout;
 using std::cerr;
@@ -62,7 +72,7 @@ class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
 class GLContext;
-
+class ImGuiContext;
 template<typename T> std::string int_to_hex( T i )
 {
   std::stringstream stream;
@@ -85,7 +95,6 @@ class CV_EXPORTS V4D {
     cv::Ptr<V4D> self_;
     cv::Size initialSize_;
     const string& title_;
-    bool compat_;
     int samples_;
     bool debug_;
     cv::Rect viewport_;
@@ -93,6 +102,7 @@ class CV_EXPORTS V4D {
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
+    ImGuiContext* imguiContext_ = nullptr;
     std::mutex glCtxMtx_;
     std::map<int32_t,GLContext*> glContexts_;
     bool closed_ = false;
@@ -124,7 +134,7 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, bool compat = false, int samples = 0);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, int samples = 0);
     /*!
      * Default destructor
      */
@@ -161,6 +171,9 @@ public:
      */
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void nvg(std::function<void()> fn);
+    CV_EXPORTS void imgui(std::function<void(const cv::Size&)> fn);
+    CV_EXPORTS void imgui(std::function<void()> fn);
+
     /*!
      * Copy the framebuffer contents to an OutputArray.
      * @param arr The array to copy to.
@@ -342,9 +355,23 @@ public:
 
     CV_EXPORTS void makeCurrent();
 
+    CV_EXPORTS GLFWwindow* getGLFWWindow();
+
+    CV_EXPORTS FrameBufferContext& fbCtx();
+    CV_EXPORTS CLVAContext& clvaCtx();
+    CV_EXPORTS NanoVGContext& nvgCtx();
+    CV_EXPORTS ImGuiContext& imguiCtx();
+    CV_EXPORTS GLContext& glCtx(int32_t idx = 0);
+
+    CV_EXPORTS bool hasFbCtx();
+    CV_EXPORTS bool hasClvaCtx();
+    CV_EXPORTS bool hasNvgCtx();
+    CV_EXPORTS bool hasImguiCtx();
+    CV_EXPORTS bool hasGlCtx(uint32_t idx = 0);
+    CV_EXPORTS size_t numGlCtx();
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
-            const string& title, bool offscreen, bool debug, bool compat, int samples);
+            const string& title, bool offscreen, bool debug, int samples);
 
     cv::Ptr<V4D> self();
 
@@ -352,18 +379,6 @@ private:
     cv::Point2f getMousePosition();
     void setMousePosition(const cv::Point2f& pt);
 
-    FrameBufferContext& fbCtx();
-    CLVAContext& clvaCtx();
-    NanoVGContext& nvgCtx();
-    GLContext& glCtx(int32_t idx = 0);
-
-    bool hasFbCtx();
-    bool hasClvaCtx();
-    bool hasNvgCtx();
-    bool hasGlCtx(uint32_t idx = 0);
-    size_t numGlCtx();
-
-    GLFWwindow* getGLFWWindow();
     void swapContextBuffers();
 };
 }

@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
 #else
 int main() {
 #endif
-    cv::Ptr<V4D> window = cv::v4d::V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Many Cubes Demo", OFFSCREEN);
+    cv::Ptr<V4D> window = V4D_INIT(WIDTH, HEIGHT, "Many Cubes Demo", false, false, 0);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__

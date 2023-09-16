@@ -6,7 +6,7 @@
 #ifndef SRC_OPENCV_CLVACONTEXT_HPP_
 #define SRC_OPENCV_CLVACONTEXT_HPP_
 
-#include "framebuffercontext.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
 
 namespace cv {
 namespace v4d {

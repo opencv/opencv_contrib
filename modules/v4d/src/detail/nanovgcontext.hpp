@@ -6,7 +6,7 @@
 #ifndef SRC_OPENCV_NANOVGCONTEXT_HPP_
 #define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
-#include "framebuffercontext.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

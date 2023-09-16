@@ -15,7 +15,6 @@
 #include <vector>
 #include <set>
 #include <string>
-#include <thread>
 #include <random>
 
 using std::cerr;
@@ -97,7 +96,7 @@ int max_stroke = 10;
 float alpha = 0.1f;
 
 // Red, green, blue and alpha. All from 0.0f to 1.0f
-nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
+//nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
 //display on-screen FPS
 bool show_fps = true;
 //Stretch frame buffer to window size
@@ -343,98 +342,98 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
 using namespace cv::v4d;
 
 //Build the GUI
-static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
-    main->nanogui([&](cv::v4d::FormHelper& form){
-        form.makeDialog(5, 30, "Effects");
-
-        form.makeGroup("Foreground");
-        form.makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
-        form.makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
-
-        form.makeGroup("Background");
-        form.makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
-
-        form.makeGroup("Points");
-        form.makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
-        form.makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
-
-        form.makeGroup("Optical flow");
-        form.makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-        form.makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
-            effect_color[0] = c[0];
-            effect_color[1] = c[1];
-            effect_color[2] = c[2];
-        });
-        form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
-
-        form.makeDialog(220, 30, "Post Processing");
-        auto* postPocMode = form.makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
-        auto* kernelSize = form.makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
-        kernelSize->set_callback([=](const int& k) {
-            static int lastKernelSize = GLOW_KERNEL_SIZE;
-
-            if(k == lastKernelSize)
-                return;
-
-            if(k <= lastKernelSize) {
-                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-            } else if(k > lastKernelSize)
-                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-
-            lastKernelSize = k;
-            kernelSize->set_value(GLOW_KERNEL_SIZE);
-        });
-        auto* thresh = form.makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
-        auto* gain = form.makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
-        postPocMode->set_callback([=](const int& m) {
-            switch(m) {
-            case GLOW:
-                kernelSize->set_enabled(true);
-                thresh->set_enabled(false);
-                gain->set_enabled(false);
-            break;
-            case BLOOM:
-                kernelSize->set_enabled(true);
-                thresh->set_enabled(true);
-                gain->set_enabled(true);
-            break;
-            case NONE:
-                kernelSize->set_enabled(false);
-                thresh->set_enabled(false);
-                gain->set_enabled(false);
-            break;
-
-            }
-            postPocMode->set_selected_index(m);
-        });
-
-        form.makeDialog(220, 175, "Settings");
-
-        form.makeGroup("Scene Change Detection");
-        form.makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-        form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
-    });
-
-    menu->nanogui([&](cv::v4d::FormHelper& form){
-        form.makeDialog(8, 16, "Display");
-
-        form.makeGroup("Display");
-        form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-        form.makeFormVariable("Scale", scale, "Scale the frame buffer to the window size")->set_callback([=](const bool &s) {
-            main->setScaling(s);
-        });
-
-#ifndef __EMSCRIPTEN__
-        form.makeButton("Fullscreen", [=]() {
-            main->setFullscreen(!main->isFullscreen());
-        });
-
-        form.makeButton("Offscreen", [=]() {
-            main->setVisible(!main->isVisible());
-        });
-#endif
-    });
-}
+//static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
+//    main->nanogui([&](cv::v4d::FormHelper& form){
+//        form.makeDialog(5, 30, "Effects");
+//
+//        form.makeGroup("Foreground");
+//        form.makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
+//        form.makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
+//
+//        form.makeGroup("Background");
+//        form.makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
+//
+//        form.makeGroup("Points");
+//        form.makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
+//        form.makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
+//
+//        form.makeGroup("Optical flow");
+//        form.makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
+//        form.makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
+//            effect_color[0] = c[0];
+//            effect_color[1] = c[1];
+//            effect_color[2] = c[2];
+//        });
+//        form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
+//
+//        form.makeDialog(220, 30, "Post Processing");
+//        auto* postPocMode = form.makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
+//        auto* kernelSize = form.makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
+//        kernelSize->set_callback([=](const int& k) {
+//            static int lastKernelSize = GLOW_KERNEL_SIZE;
+//
+//            if(k == lastKernelSize)
+//                return;
+//
+//            if(k <= lastKernelSize) {
+//                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+//            } else if(k > lastKernelSize)
+//                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+//
+//            lastKernelSize = k;
+//            kernelSize->set_value(GLOW_KERNEL_SIZE);
+//        });
+//        auto* thresh = form.makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
+//        auto* gain = form.makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
+//        postPocMode->set_callback([=](const int& m) {
+//            switch(m) {
+//            case GLOW:
+//                kernelSize->set_enabled(true);
+//                thresh->set_enabled(false);
+//                gain->set_enabled(false);
+//            break;
+//            case BLOOM:
+//                kernelSize->set_enabled(true);
+//                thresh->set_enabled(true);
+//                gain->set_enabled(true);
+//            break;
+//            case NONE:
+//                kernelSize->set_enabled(false);
+//                thresh->set_enabled(false);
+//                gain->set_enabled(false);
+//            break;
+//
+//            }
+//            postPocMode->set_selected_index(m);
+//        });
+//
+//        form.makeDialog(220, 175, "Settings");
+//
+//        form.makeGroup("Scene Change Detection");
+//        form.makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
+//        form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
+//    });
+//
+//    menu->nanogui([&](cv::v4d::FormHelper& form){
+//        form.makeDialog(8, 16, "Display");
+//
+//        form.makeGroup("Display");
+//        form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
+//        form.makeFormVariable("Scale", scale, "Scale the frame buffer to the window size")->set_callback([=](const bool &s) {
+//            main->setScaling(s);
+//        });
+//
+//#ifndef __EMSCRIPTEN__
+//        form.makeButton("Fullscreen", [=]() {
+//            main->setFullscreen(!main->isFullscreen());
+//        });
+//
+//        form.makeButton("Offscreen", [=]() {
+//            main->setVisible(!main->isVisible());
+//        });
+//#endif
+//    });
+//}
 
 static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
@@ -468,7 +467,7 @@ static bool iteration(cv::Ptr<V4D> window) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
             if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                 //Visualize the sparse optical flow using nanovg
-                cv::Scalar color = cv::Scalar(effect_color.b() * 255.0f, effect_color.g() * 255.0f, effect_color.r() * 255.0f, alpha * 255.0f);
+                cv::Scalar color = cv::Scalar(255, 0, 0, 255);
                 visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
             }
         }
@@ -507,7 +506,8 @@ int main() {
 #endif
     try {
         using namespace cv::v4d;
-        cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Sparse Optical Flow Demo", OFFSCREEN);
+        cv::Ptr<V4D> window = V4D_INIT(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
+
 #ifndef __EMSCRIPTEN__
         menuWindow = V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
 #endif
@@ -516,10 +516,10 @@ int main() {
 
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
-            setup_gui(window, menuWindow);
+//            setup_gui(window, menuWindow);
             menuWindow->setResizable(false);
 #else
-            setup_gui(window, window);
+//            setup_gui(window, window);
 #endif
         }
 

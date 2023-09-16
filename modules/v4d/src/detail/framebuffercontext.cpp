@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 #include "opencv2/v4d/v4d.hpp"
-#include "framebuffercontext.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
 #include "opencv2/v4d/util.hpp"
 #include "glcontext.hpp"
 #include "nanovgcontext.hpp"
@@ -28,13 +28,13 @@ void glfw_error_callback(int error, const char* description) {
 
 int frameBufferContextCnt = 0;
 
-FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.framebufferSize_, !other.debug_, title, other.major_,  other.minor_, other.compat_, other.samples_, other.debug_, other.glfwWindow_, &other) {
+FrameBufferContext::FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other) : FrameBufferContext(v4d, other.framebufferSize_, !other.debug_, title, other.major_,  other.minor_, other.samples_, other.debug_, other.glfwWindow_, &other) {
 }
 
 FrameBufferContext::FrameBufferContext(V4D& v4d, const cv::Size& framebufferSize, bool offscreen,
-        const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
+        const string& title, int major, int minor, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent) :
         v4d_(&v4d), offscreen_(offscreen), title_(title), major_(major), minor_(
-                minor), compat_(compat), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_() {
+                minor), samples_(samples), debug_(debug), isVisible_(offscreen), viewport_(0, 0, framebufferSize.width, framebufferSize.height), framebufferSize_(framebufferSize), isShared_(false), sharedWindow_(sharedWindow), parent_(parent), framebuffer_() {
     run_sync_on_main<1>([this](){ init(); });
     index_ = ++frameBufferContextCnt;
 }
@@ -238,7 +238,7 @@ void FrameBufferContext::init() {
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major_);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor_);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, compat_ ? GLFW_OPENGL_COMPAT_PROFILE : GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API) ;
 #endif
@@ -271,7 +271,7 @@ void FrameBufferContext::init() {
     }
     this->makeCurrent();
 #ifndef __EMSCRIPTEN__
-    glfwSwapInterval(0);
+    glfwSwapInterval(1);
 #endif
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
@@ -297,74 +297,74 @@ void FrameBufferContext::init() {
 #endif
 
     setup(framebufferSize_);
-    glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
-
-    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        v4d->setMousePosition(cv::Point2f(float(x), float(y)));
-    }
-    );
-    glfwSetMouseButtonCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-            }
-    );
-    glfwSetKeyCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
-            }
-    );
-    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
-    }
-    );
-    glfwSetDropCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int count, const char** filenames) {
-            }
-    );
-    glfwSetScrollCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, double x, double y) {
-            }
-    );
-
-    glfwSetWindowSizeCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int width, int height) {
-                cerr << "glfwSetWindowSizeCallback: " << width << endl;
-                run_sync_on_main<23>([glfwWin, width, height]() {
-                    V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                    cv::Rect& vp = v4d->viewport();
-                    cv::Size fbsz = v4d->framebufferSize();
-                    vp.x = 0;
-                    vp.y = 0;
-                    vp.width = fbsz.width;
-                    vp.height = fbsz.height;
-                });
-            });
-
-    glfwSetFramebufferSizeCallback(getGLFWWindow(),
-            [](GLFWwindow* glfwWin, int width, int height) {
-//                cerr << "glfwSetFramebufferSizeCallback: " << width << endl;
-//                        run_sync_on_main<22>([glfwWin, width, height]() {
-//                            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-////                            v4d->makeCurrent();
-//                            cv::Rect& vp = v4d->viewport();
-//                            cv::Size fbsz = v4d->framebufferSize();
-//                            vp.x = 0;
-//                            vp.y = 0;
-//                            vp.width = fbsz.width;
-//                            vp.height = fbsz.height;
+//    glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
 //
-//                            if(v4d->hasNguiCtx())
-//                                v4d->nguiCtx().screen().resize_callback_event(width, height);
-//                        });
-//        #ifndef __EMSCRIPTEN__
-//                        if(v4d->isResizable()) {
-//                            v4d->nvgCtx().fbCtx().teardown();
-//                            v4d->glCtx().fbCtx().teardown();
-//                            v4d->fbCtx().teardown();
-//                            v4d->fbCtx().setup(cv::Size(width, height));
-//                            v4d->glCtx().fbCtx().setup(cv::Size(width, height));
-//                            v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
-//                        }
-//        #endif
-            });
+//    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
+//        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//        v4d->setMousePosition(cv::Point2f(float(x), float(y)));
+//    }
+//    );
+//    glfwSetMouseButtonCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+//            }
+//    );
+//    glfwSetKeyCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
+//            }
+//    );
+//    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
+//    }
+//    );
+//    glfwSetDropCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int count, const char** filenames) {
+//            }
+//    );
+//    glfwSetScrollCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, double x, double y) {
+//            }
+//    );
+//
+//    glfwSetWindowSizeCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int width, int height) {
+//                cerr << "glfwSetWindowSizeCallback: " << width << endl;
+//                run_sync_on_main<23>([glfwWin, width, height]() {
+//                    V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//                    cv::Rect& vp = v4d->viewport();
+//                    cv::Size fbsz = v4d->framebufferSize();
+//                    vp.x = 0;
+//                    vp.y = 0;
+//                    vp.width = fbsz.width;
+//                    vp.height = fbsz.height;
+//                });
+//            });
+//
+//    glfwSetFramebufferSizeCallback(getGLFWWindow(),
+//            [](GLFWwindow* glfwWin, int width, int height) {
+////                cerr << "glfwSetFramebufferSizeCallback: " << width << endl;
+////                        run_sync_on_main<22>([glfwWin, width, height]() {
+////                            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//////                            v4d->makeCurrent();
+////                            cv::Rect& vp = v4d->viewport();
+////                            cv::Size fbsz = v4d->framebufferSize();
+////                            vp.x = 0;
+////                            vp.y = 0;
+////                            vp.width = fbsz.width;
+////                            vp.height = fbsz.height;
+////
+////                            if(v4d->hasNguiCtx())
+////                                v4d->nguiCtx().screen().resize_callback_event(width, height);
+////                        });
+////        #ifndef __EMSCRIPTEN__
+////                        if(v4d->isResizable()) {
+////                            v4d->nvgCtx().fbCtx().teardown();
+////                            v4d->glCtx().fbCtx().teardown();
+////                            v4d->fbCtx().teardown();
+////                            v4d->fbCtx().setup(cv::Size(width, height));
+////                            v4d->glCtx().fbCtx().setup(cv::Size(width, height));
+////                            v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+////                        }
+////        #endif
+//            });
 }
 
 V4D& FrameBufferContext::getV4D() {
@@ -427,13 +427,13 @@ void FrameBufferContext::setup(const cv::Size& sz) {
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glGetError();
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    glGetError();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glGetError();
-    GL_CHECK(glFinish());
+//    glBindTexture(GL_TEXTURE_2D, 0);
+//    glGetError();
+//    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+//    glGetError();
+//    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//    glGetError();
+//    GL_CHECK(glFinish());
 }
 
 

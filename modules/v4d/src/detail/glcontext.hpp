@@ -6,12 +6,13 @@
 #ifndef SRC_OPENCV_GLCONTEXT_HPP_
 #define SRC_OPENCV_GLCONTEXT_HPP_
 
-#include "framebuffercontext.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
+struct NVGcontext;
 namespace cv {
 namespace v4d {
 namespace detail {

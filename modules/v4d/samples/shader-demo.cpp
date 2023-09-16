@@ -26,7 +26,7 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 /* Mandelbrot control parameters */
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 // Red, green, blue and alpha. All from 0.0f to 1.0f
-nanogui::Color base_color_val(0.2f, 0.6f, 1.0f, 1.0f);
+//nanogui::Color base_color_val(0.2f, 0.6f, 1.0f, 1.0f);
 // Keep alpha separate for the GUI
 float alpha = 1.0f; //0.0-1.0
 //contrast boost
@@ -202,7 +202,7 @@ static void render_scene(const cv::Size& sz) {
     }
 
     glUseProgram(shader_program_hdl);
-    glUniform4f(base_color_hdl, base_color_val[0], base_color_val[1], base_color_val[2], alpha);
+    glUniform4f(base_color_hdl, 255, 0, 0, 255);
     glUniform1i(contrast_boost_hdl, contrast_boost);
     glUniform1i(max_iterations_hdl, max_iterations);
     glUniform1f(center_y_hdl, center_y);
@@ -245,72 +245,72 @@ using namespace cv::v4d;
 //Setup the GUI using NanoGUI. A FormHelper implementation is provided for quick & simple GUIs but once you
 //have created a Dialog (using FormHelper::makeDialog) you can use NanoGUI directly to build more complex GUIs.
 //The variables passed to FormHelper e.g. via makeFormVariable are directly adjusted by the GUI.
-static void setup_gui(cv::Ptr<V4D> window) {
-    window->nanogui([](cv::v4d::FormHelper& form) {
-        form.makeDialog(5, 30, "Fractal");
-
-        form.makeGroup("Navigation");
-        form.makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "","How deeply to calculate the fractal." );
-        auto* cxVar = form.makeFormVariable("X", center_x, -1.0f, 1.0f, true, "",
-                "The x location from -1.0 to 1.0");
-        cxVar->number_format("%.7g");
-        cxVar->set_value_increment(0.0000001);
-        cxVar->set_callback([&, cxVar](const float& value) {
-            manual_navigation = true;
-            cxVar->set_value(value);
-            center_x = value;
-        });
-
-        auto* cyVar = form.makeFormVariable("Y", center_y, -1.0f, 1.0f, true, "",
-                "The y location from -1.0 to 1.0");
-        cyVar->number_format("%.7g");
-        cyVar->set_value_increment(0.0000001);
-        cyVar->set_callback([&, cyVar](const float& value) {
-            manual_navigation = true;
-            cyVar->set_value(value);
-            center_y = value;
-        });
-
-        auto* czVar = form.makeFormVariable("Zoom", zoom_factor, 1.0f, 1000000.0f, true, "",
-                "How much to zoom in on the fractal");
-        czVar->set_callback([&, czVar](const float& value) {
-            manual_navigation = true;
-            czVar->set_value(value);
-            zoom_factor = value;
-        });
-
-#ifndef __EMSCRIPTEN__
-        form.makeGroup("Glow");
-        auto* kernelSize = form.makeFormVariable("Kernel Size", glow_kernel_size, 1, 127, true, "",
-                "Intensity of glow defined by kernel size");
-        kernelSize->set_callback([=](const int& k) {
-            static int lastKernelSize = glow_kernel_size;
-
-            if (k == lastKernelSize)
-                return;
-
-            if (k <= lastKernelSize) {
-                glow_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-            } else if (k > lastKernelSize)
-                glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-
-            lastKernelSize = k;
-            kernelSize->set_value(glow_kernel_size);
-        });
-#endif
-        form.makeGroup("Color");
-        form.makeColorPicker("Color", base_color_val, "The base color of the fractal visualization",
-                [&](const nanogui::Color& c) {
-                    base_color_val[0] = c[0];
-                    base_color_val[1] = c[1];
-                    base_color_val[2] = c[2];
-                });
-        form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "",
-                "The opacity of the fractal visualization");
-        form.makeFormVariable("Contrast boost", contrast_boost, 1, 255, true, "",
-                "Boost contrast by this factor");
-    });
-}
+//static void setup_gui(cv::Ptr<V4D> window) {
+//    window->nanogui([](cv::v4d::FormHelper& form) {
+//        form.makeDialog(5, 30, "Fractal");
+//
+//        form.makeGroup("Navigation");
+//        form.makeFormVariable("Iterations", max_iterations, 3, 1000000, true, "","How deeply to calculate the fractal." );
+//        auto* cxVar = form.makeFormVariable("X", center_x, -1.0f, 1.0f, true, "",
+//                "The x location from -1.0 to 1.0");
+//        cxVar->number_format("%.7g");
+//        cxVar->set_value_increment(0.0000001);
+//        cxVar->set_callback([&, cxVar](const float& value) {
+//            manual_navigation = true;
+//            cxVar->set_value(value);
+//            center_x = value;
+//        });
+//
+//        auto* cyVar = form.makeFormVariable("Y", center_y, -1.0f, 1.0f, true, "",
+//                "The y location from -1.0 to 1.0");
+//        cyVar->number_format("%.7g");
+//        cyVar->set_value_increment(0.0000001);
+//        cyVar->set_callback([&, cyVar](const float& value) {
+//            manual_navigation = true;
+//            cyVar->set_value(value);
+//            center_y = value;
+//        });
+//
+//        auto* czVar = form.makeFormVariable("Zoom", zoom_factor, 1.0f, 1000000.0f, true, "",
+//                "How much to zoom in on the fractal");
+//        czVar->set_callback([&, czVar](const float& value) {
+//            manual_navigation = true;
+//            czVar->set_value(value);
+//            zoom_factor = value;
+//        });
+//
+//#ifndef __EMSCRIPTEN__
+//        form.makeGroup("Glow");
+//        auto* kernelSize = form.makeFormVariable("Kernel Size", glow_kernel_size, 1, 127, true, "",
+//                "Intensity of glow defined by kernel size");
+//        kernelSize->set_callback([=](const int& k) {
+//            static int lastKernelSize = glow_kernel_size;
+//
+//            if (k == lastKernelSize)
+//                return;
+//
+//            if (k <= lastKernelSize) {
+//                glow_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+//            } else if (k > lastKernelSize)
+//                glow_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+//
+//            lastKernelSize = k;
+//            kernelSize->set_value(glow_kernel_size);
+//        });
+//#endif
+//        form.makeGroup("Color");
+//        form.makeColorPicker("Color", base_color_val, "The base color of the fractal visualization",
+//                [&](const nanogui::Color& c) {
+//                    base_color_val[0] = c[0];
+//                    base_color_val[1] = c[1];
+//                    base_color_val[2] = c[2];
+//                });
+//        form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "",
+//                "The opacity of the fractal visualization");
+//        form.makeFormVariable("Contrast boost", contrast_boost, 1, 255, true, "",
+//                "Boost contrast by this factor");
+//    });
+//}
 
 static bool iteration(cv::Ptr<V4D> window) {
     if(!window->capture())
@@ -341,9 +341,9 @@ int main() {
     try {
         cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Shader Demo", OFFSCREEN);
 
-        if (!OFFSCREEN) {
-            setup_gui(window);
-        }
+//        if (!OFFSCREEN) {
+//            setup_gui(window);
+//        }
 
         window->printSystemInfo();
 

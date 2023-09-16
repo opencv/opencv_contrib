@@ -222,7 +222,7 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 
 using namespace cv::v4d;
-
+bool show_demo_window = true;
 static bool iteration(cv::Ptr<V4D> window) {
     //Render using OpenGL
     window->gl(render_scene);
@@ -245,7 +245,8 @@ int main(int argc, char** argv) {
 #else
 int main() {
 #endif
-    cv::Ptr<V4D> window = V4D::make(cv::Size(WIDTH, HEIGHT), cv::Size(), "Cube Demo", OFFSCREEN, true);
+    cv::Ptr<V4D> window = V4D_INIT(WIDTH, HEIGHT, "Cube Demo", false, false, 0);
+
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
@@ -255,6 +256,10 @@ int main() {
     window->setSink(sink);
 #endif
     window->gl(init_scene);
+    window->imgui([](){
+            if (show_demo_window)
+                ImGui::ShowDemoWindow(&show_demo_window);
+    });
     window->run(iteration);
 
     return 0;

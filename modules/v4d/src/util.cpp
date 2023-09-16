@@ -3,11 +3,13 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "opencv2/v4d/v4d.hpp"
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
 #include "opencv2/v4d/util.hpp"
 #include "opencv2/v4d/nvg.hpp"
-#include "detail/framebuffercontext.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "opencv2/v4d/detail/gl.hpp"
+
 
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
@@ -20,13 +22,15 @@
 #endif
 
 #include <csignal>
-#include <thread>
 #include <unistd.h>
 #include <chrono>
 #include <mutex>
 #include <functional>
 #include <iostream>
 #include <cmath>
+
+using std::cerr;
+using std::endl;
 
 namespace cv {
 namespace v4d {
@@ -175,30 +179,30 @@ std::string getGlInfo() {
 
 std::string getClInfo() {
     std::stringstream ss;
-#ifndef __EMSCRIPTEN__
-    std::vector<cv::ocl::PlatformInfo> plt_info;
-    cv::ocl::getPlatfomsInfo(plt_info);
-    const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
-    cv::ocl::Device current;
-    ss << endl;
-    for (const auto& info : plt_info) {
-        for (int i = 0; i < info.deviceNumber(); ++i) {
-            ss << "\t";
-            info.getDevice(current, i);
-            if (defaultDevice.name() == current.name())
-                ss << "* ";
-            else
-                ss << "  ";
-            ss << info.version() << " = " << info.name() << endl;
-            ss << "\t\t  GL sharing: "
-                    << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
-                    << endl;
-            ss << "\t\t  VAAPI media sharing: "
-                    << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
-                            "true" : "false") << endl;
-        }
-    }
-#endif
+//#ifndef __EMSCRIPTEN__
+//    std::vector<cv::ocl::PlatformInfo> plt_info;
+//    cv::ocl::getPlatfomsInfo(plt_info);
+//    const cv::ocl::Device& defaultDevice = cv::ocl::Device::getDefault();
+//    cv::ocl::Device current;
+//    ss << endl;
+//    for (const auto& info : plt_info) {
+//        for (int i = 0; i < info.deviceNumber(); ++i) {
+//            ss << "\t";
+//            info.getDevice(current, i);
+//            if (defaultDevice.name() == current.name())
+//                ss << "* ";
+//            else
+//                ss << "  ";
+//            ss << info.version() << " = " << info.name() << endl;
+//            ss << "\t\t  GL sharing: "
+//                    << (current.isExtensionSupported("cl_khr_gl_sharing") ? "true" : "false")
+//                    << endl;
+//            ss << "\t\t  VAAPI media sharing: "
+//                    << (current.isExtensionSupported("cl_intel_va_api_media_sharing") ?
+//                            "true" : "false") << endl;
+//        }
+//    }
+//#endif
     return ss.str();
 }
 

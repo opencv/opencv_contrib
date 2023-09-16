@@ -198,50 +198,50 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
 using namespace cv::v4d;
 
 //Built the GUI
-static void setup_gui(cv::Ptr<V4D> window) {
-    window->nanogui([&](cv::v4d::FormHelper& form){
-        form.makeDialog(5, 30, "Effect");
-
-        form.makeGroup("Display");
-        form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
-        auto* scaleVar = form.makeFormVariable("Scale", scale, "Enable or disable scaling to the window size");
-        scaleVar->set_callback([=](const bool& b) {
-            window->setScaling(b);
-            scale = b;
-        });
-
-#ifndef __EMSCRIPTEN__
-        form.makeButton("Fullscreen", [=]() {
-            window->setFullscreen(!window->isFullscreen());
-        });
-#endif
-        form.makeButton("Offscreen", [=]() {
-            window->setVisible(!window->isVisible());
-        });
-
-        form.makeGroup("Face Skin");
-        auto* kernelSize = form.makeFormVariable("Blur", blur_skin_kernel_size, 0, 256, true, "", "use this kernel size to blur the face skin");
-        kernelSize->set_callback([=](const int& k) {
-            static int lastKernelSize = blur_skin_kernel_size;
-
-            if(k == lastKernelSize)
-                return;
-
-            if(k <= lastKernelSize) {
-                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-            } else if(k > lastKernelSize)
-                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-
-            lastKernelSize = k;
-            kernelSize->set_value(blur_skin_kernel_size);
-        });
-        form.makeFormVariable("Saturation", skin_saturation, 0.0f, 100.0f, true, "", "adjust the skin saturation by this amount");
-        form.makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
-
-        form.makeGroup("Eyes and Lips");
-        form.makeFormVariable("Saturation", eyes_and_lips_saturation, 0.0f, 100.0f, true, "", "adjust the saturation of the eyes and the lips by this amount");
-    });
-}
+//static void setup_gui(cv::Ptr<V4D> window) {
+//    window->nanogui([&](cv::v4d::FormHelper& form){
+//        form.makeDialog(5, 30, "Effect");
+//
+//        form.makeGroup("Display");
+//        form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
+//        auto* scaleVar = form.makeFormVariable("Scale", scale, "Enable or disable scaling to the window size");
+//        scaleVar->set_callback([=](const bool& b) {
+//            window->setScaling(b);
+//            scale = b;
+//        });
+//
+//#ifndef __EMSCRIPTEN__
+//        form.makeButton("Fullscreen", [=]() {
+//            window->setFullscreen(!window->isFullscreen());
+//        });
+//#endif
+//        form.makeButton("Offscreen", [=]() {
+//            window->setVisible(!window->isVisible());
+//        });
+//
+//        form.makeGroup("Face Skin");
+//        auto* kernelSize = form.makeFormVariable("Blur", blur_skin_kernel_size, 0, 256, true, "", "use this kernel size to blur the face skin");
+//        kernelSize->set_callback([=](const int& k) {
+//            static int lastKernelSize = blur_skin_kernel_size;
+//
+//            if(k == lastKernelSize)
+//                return;
+//
+//            if(k <= lastKernelSize) {
+//                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
+//            } else if(k > lastKernelSize)
+//                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
+//
+//            lastKernelSize = k;
+//            kernelSize->set_value(blur_skin_kernel_size);
+//        });
+//        form.makeFormVariable("Saturation", skin_saturation, 0.0f, 100.0f, true, "", "adjust the skin saturation by this amount");
+//        form.makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
+//
+//        form.makeGroup("Eyes and Lips");
+//        form.makeFormVariable("Saturation", eyes_and_lips_saturation, 0.0f, 100.0f, true, "", "adjust the saturation of the eyes and the lips by this amount");
+//    });
+//}
 
 static bool iteration(cv::Ptr<V4D> window) {
     try {
@@ -384,9 +384,9 @@ int main() {
 
     window->setScaling(scale);
 
-    if (!OFFSCREEN) {
-        setup_gui(window);
-    }
+//    if (!OFFSCREEN) {
+//        setup_gui(window);
+//    }
 
     window->printSystemInfo();
 

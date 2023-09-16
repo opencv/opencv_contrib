@@ -4,7 +4,7 @@
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
 #include "opencv2/v4d/v4d.hpp"
-#include "detail/framebuffercontext.hpp"
+#include "opencv2/v4d/detail/framebuffercontext.hpp"
 #include "detail/clvacontext.hpp"
 #include "detail/nanovgcontext.hpp"
 #include "detail/glcontext.hpp"
@@ -14,29 +14,31 @@
 namespace cv {
 namespace v4d {
 
-cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) {
-    V4D* v4d = new V4D(size, fbsize, title, offscreen, debug, compat, samples);
+cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int samples) {
+    V4D* v4d = new V4D(size, fbsize, title, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
-    return v4d->self();
+    return v4d;
 }
 
-V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, bool compat, int samples) :
-        initialSize_(size), title_(title), compat_(
-                compat), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), scaling_(true), pool_(2) {
+V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int samples) :
+        initialSize_(size), title_(title), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), scaling_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
         mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, 3,
-                2, compat_, samples_, debug_, nullptr, nullptr);
+                2, samples_, debug_, nullptr, nullptr);
 #ifndef __EMSCRIPTEN__
         CLExecScope_t scope(mainFbContext_->getCLExecContext());
 #endif
         nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
         clvaContext_ = new detail::CLVAContext(*mainFbContext_);
+        imguiContext_ = new detail::ImGuiContext(*mainFbContext_);
         self_ = cv::Ptr<V4D>(this);
 }
 
 V4D::~V4D() {
+    if (imguiContext_)
+        delete imguiContext_;
     if (nvgContext_)
         delete nvgContext_;
     if (clvaContext_)
@@ -76,6 +78,11 @@ NanoVGContext& V4D::nvgCtx() {
     return *nvgContext_;
 }
 
+ImGuiContext& V4D::imguiCtx() {
+    assert(imguiContext_ != nullptr);
+    return *imguiContext_;
+}
+
 GLContext& V4D::glCtx(int32_t idx) {
     auto it = glContexts_.find(idx);
     if(it != glContexts_.end())
@@ -98,6 +105,11 @@ bool V4D::hasClvaCtx() {
 bool V4D::hasNvgCtx() {
     return nvgContext_ != nullptr;
 }
+
+bool V4D::hasImguiCtx() {
+    return imguiContext_ != nullptr;
+}
+
 
 bool V4D::hasGlCtx(uint32_t idx) {
     return glContexts_.find(idx) != glContexts_.end();
@@ -161,6 +173,20 @@ void V4D::nvg(std::function<void(const cv::Size&)> fn) {
     });
 }
 
+void V4D::imgui(std::function<void(const cv::Size&)> fn) {
+    TimeTracker::getInstance()->execute("imgui(" + detail::func_id(fn) + ")", [&](){
+        imguiCtx().build(fn);
+    });
+}
+
+void V4D::imgui(std::function<void()> fn) {
+    TimeTracker::getInstance()->execute("imgui(" + detail::func_id(fn) + ")", [&](){
+        imguiCtx().build([fn](const cv::Size& sz) {
+            CV_UNUSED(sz);
+            fn();
+        });
+    });
+}
 void V4D::copyTo(cv::UMat& m) {
     TimeTracker::getInstance()->execute("copyTo", [&](){
         fbCtx().copyTo(m);
@@ -439,6 +465,16 @@ void V4D::swapContextBuffers() {
         emscripten_webgl_commit_frame();
 #endif
     });
+    run_sync_on_main<26>([this]() {
+        FrameBufferContext::GLScope glScope(imguiCtx().fbCtx(), GL_READ_FRAMEBUFFER);
+        imguiCtx().fbCtx().blitFrameBufferToScreen(viewport(), imguiCtx().fbCtx().getWindowSize(), isScaling());
+//        GL_CHECK(glFinish());
+#ifndef __EMSCRIPTEN__
+        glfwSwapBuffers(imguiCtx().fbCtx().getGLFWWindow());
+#else
+        emscripten_webgl_commit_frame();
+#endif
+    });
 }
 
 bool V4D::display() {
@@ -448,16 +484,15 @@ bool V4D::display() {
 #else
     if (true) {
 #endif
-        if(debug_)
-            swapContextBuffers();
-
 
         run_sync_on_main<6>([&, this](){
             {
                FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
                fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isScaling());
             }
-
+            imguiCtx().render();
+//            if(debug_)
+                swapContextBuffers();
             fbCtx().makeCurrent();
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());

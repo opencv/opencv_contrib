@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <opencv2/core.hpp>
 #include "nanovg.h"
-
 struct NVGcontext;
 
 namespace cv {
