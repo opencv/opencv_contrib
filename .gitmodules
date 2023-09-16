@@ -1,0 +1,6 @@
+[submodule "modules/v4d/third/nanovg"]
+	path = modules/v4d/third/nanovg
+	url = git@github.com:kallaballa/nanovg.git
+[submodule "modules/v4d/third/imgui"]
+	path = modules/v4d/third/imgui
+	url = git@github.com:kallaballa/imgui.git
