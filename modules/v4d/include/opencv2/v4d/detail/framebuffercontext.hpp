@@ -11,18 +11,12 @@
 #endif
 
 //FIXME
+#include "opencv2/v4d/detail/gl.hpp"
 #include "opencv2/v4d/detail/cl.hpp"
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
 #include <iostream>
 #include <map>
-
-#if defined(__EMSCRIPTEN__) || defined(OPENCV_V4D_USE_ES3)
-#define GLFW_INCLUDE_ES3
-#define GLFW_INCLUDE_GLEXT
-#endif
-
-#include <GLFW/glfw3.h>
 
 struct GLFWwindow;
 namespace cv {
@@ -30,25 +24,44 @@ namespace v4d {
 class V4D;
 namespace detail {
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
-typedef cv::ocl::OpenCLExecutionContextScope CLExecScope_t;
+class CLExecScope_t
+{
+    CLExecContext_t ctx_;
+public:
+    inline CLExecScope_t(const CLExecContext_t& ctx)
+    {
+        if(ctx.empty())
+            return;
+        ctx_ = CLExecContext_t::getCurrentRef();
+        ctx.bind();
+    }
 
+    inline ~CLExecScope_t()
+    {
+        if (!ctx_.empty())
+        {
+            ctx_.bind();
+        }
+    }
+};
 /*!
  * The FrameBufferContext acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
  */
-class FrameBufferContext {
+CV_EXPORTS class FrameBufferContext {
     typedef unsigned int GLuint;
     typedef signed int GLint;
 
     friend class CLVAContext;
     friend class GLContext;
     friend class NanoVGContext;
+    friend class ImGuiContext;
     friend class cv::v4d::V4D;
+
     V4D* v4d_ = nullptr;
     bool offscreen_;
     string title_;
     int major_;
     int minor_;
-    bool compat_;
     int samples_;
     bool debug_;
     GLFWwindow* glfwWindow_ = nullptr;
@@ -99,7 +112,7 @@ public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.
      */
-    class FrameBufferScope {
+    CV_EXPORTS class FrameBufferScope {
         FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
@@ -108,14 +121,14 @@ public:
          * @param ctx The corresponding #FrameBufferContext.
          * @param m The UMat to bind the OpenGL framebuffer to.
          */
-        FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
+        CV_EXPORTS FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m) {
             ctx_.acquireFromGL(m_);
         }
         /*!
          * Releases the framebuffer via cl-gl sharing.
          */
-        ~FrameBufferScope() {
+        CV_EXPORTS ~FrameBufferScope() {
             ctx_.releaseToGL(m_);
         }
     };
@@ -123,21 +136,21 @@ public:
     /*!
      * Setups and tears-down OpenGL states.
      */
-    class GLScope {
+    CV_EXPORTS class GLScope {
         FrameBufferContext& ctx_;
     public:
         /*!
          * Setup OpenGL states.
          * @param ctx The corresponding #FrameBufferContext.
          */
-        GLScope(FrameBufferContext& ctx, GLenum framebufferTarget = GL_FRAMEBUFFER) :
+        CV_EXPORTS GLScope(FrameBufferContext& ctx, GLenum framebufferTarget = GL_FRAMEBUFFER) :
                 ctx_(ctx) {
             ctx_.begin(framebufferTarget);
         }
         /*!
          * Tear-down OpenGL states.
          */
-        ~GLScope() {
+        CV_EXPORTS ~GLScope() {
             ctx_.end();
         }
     };
@@ -147,7 +160,7 @@ public:
      * @param frameBufferSize The frame buffer size.
      */
     FrameBufferContext(V4D& v4d, const cv::Size& frameBufferSize, bool offscreen,
-            const string& title, int major, int minor, bool compat, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
+            const string& title, int major, int minor, int samples, bool debug, GLFWwindow* sharedWindow, const FrameBufferContext* parent);
 
     FrameBufferContext(V4D& v4d, const string& title, const FrameBufferContext& other);
 
@@ -230,11 +243,11 @@ private:
     /*!
      * Setup OpenGL states.
      */
-    void begin(GLenum framebufferTarget);
+    CV_EXPORTS void begin(GLenum framebufferTarget);
     /*!
      * Tear-down OpenGL states.
      */
-    void end();
+    CV_EXPORTS void end();
     /*!
      * Download the framebuffer to UMat m.
      * @param m The target UMat.
