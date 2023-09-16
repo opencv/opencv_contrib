@@ -24,12 +24,9 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
         }
         {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-            screen_ = new nanogui::Screen(true, true, false);
-            screen_->initialize(fbCtx().getGLFWWindow(), false);
-            context_ = screen_->nvg_context();
-            form_ = new cv::v4d::FormHelper(screen_);
-            if (!context_)
-                throw std::runtime_error("Could not initialize NanoVG!");
+//            context_ = screen_->nvg_context();
+//            if (!context_)
+//                throw std::runtime_error("Could not initialize NanoVG!");
        }
 #ifdef __EMSCRIPTEN__
         mainFbContext_.initWebGLCopy(fbCtx().getIndex());

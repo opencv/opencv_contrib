@@ -7,7 +7,6 @@
 #include "opencv2/v4d/util.hpp"
 #include "glcontext.hpp"
 #include "nanovgcontext.hpp"
-#include "nanoguicontext.hpp"
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/opengl.hpp"
 #include <exception>
@@ -26,10 +25,6 @@ void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
 }
 
-static bool contains_absolute(nanogui::Widget* w, const nanogui::Vector2i& p) {
-    nanogui::Vector2i d = p - w->absolute_position();
-    return d.x() >= 0 && d.y() >= 0 && d.x() < w->size().x() && d.y() < w->size().y();
-}
 
 int frameBufferContextCnt = 0;
 
@@ -306,60 +301,26 @@ void FrameBufferContext::init() {
 
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-//#ifdef __EMSCRIPTEN__
-//        x *= v4d->pixelRatioX();
-//        y *= v4d->pixelRatioY();
-//#endif
-
-        if(v4d->hasNguiCtx()) {
-            v4d->nguiCtx().screen().cursor_pos_callback_event(x, y);
-        }
-
         v4d->setMousePosition(cv::Point2f(float(x), float(y)));
     }
     );
     glfwSetMouseButtonCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                if(v4d->hasNguiCtx())
-                    v4d->nguiCtx().screen().mouse_button_callback_event(button, action, modifiers);
             }
     );
     glfwSetKeyCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                if(v4d->hasNguiCtx())
-                    v4d->nguiCtx().screen().key_callback_event(key, scancode, action, mods);
             }
     );
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
-        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        if(v4d->hasNguiCtx())
-            v4d->nguiCtx().screen().char_callback_event(codepoint);
     }
     );
     glfwSetDropCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, int count, const char** filenames) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                if(v4d->hasNguiCtx())
-                    v4d->nguiCtx().screen().drop_callback_event(count, filenames);
             }
     );
     glfwSetScrollCallback(getGLFWWindow(),
             [](GLFWwindow* glfwWin, double x, double y) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                std::vector<nanogui::Widget*> widgets;
-                if(v4d->hasNguiCtx()) {
-                    for (auto* w : v4d->nguiCtx().screen().children()) {
-                        auto pt = v4d->getMousePosition();
-                        auto mousePos = nanogui::Vector2i(pt.x, pt.y);
-                        if(cv::v4d::detail::contains_absolute(w, mousePos)) {
-                            v4d->nguiCtx().screen().scroll_callback_event(x, y);
-                            return;
-                        }
-                    }
-                }
-
             }
     );
 
@@ -374,13 +335,6 @@ void FrameBufferContext::init() {
                     vp.y = 0;
                     vp.width = fbsz.width;
                     vp.height = fbsz.height;
-                    if(v4d->hasNguiCtx()) {
-//#ifdef __EMSCRIPTEN__
-//                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->getWindowSize().width), int(v4d->getWindowSize().height)});
-//#else
-                        dynamic_cast<nanogui::Widget*>(&v4d->nguiCtx().screen())->set_size({int(v4d->size().width / v4d->pixelRatioX()), int(v4d->size().height / v4d->pixelRatioY())});
-//#endif
-                    }
                 });
             });
 

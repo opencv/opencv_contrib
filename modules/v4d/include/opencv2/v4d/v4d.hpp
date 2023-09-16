@@ -25,7 +25,6 @@
 #include "source.hpp"
 #include "sink.hpp"
 #include "util.hpp"
-#include "formhelper.hpp"
 #include "nvg.hpp"
 #include "detail/threadpool.hpp"
 
@@ -46,9 +45,6 @@ using std::string;
 
 struct GLFWwindow;
 
-namespace nanogui {
-    class Widget;
-}
 /*!
  * OpenCV namespace
  */
@@ -65,24 +61,7 @@ namespace detail {
 class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
-class NanoguiContext;
 class GLContext;
-
-/*!
- * Find widgets that are of type T.
- * @tparam T The type of widget to find
- * @param parent The parent widget
- * @param widgets A vector of widgets of type T to append newly found widgets to.
- */
-template<typename T> void find_widgets(const nanogui::Widget* parent, std::vector<T>& widgets) {
-    T w;
-    for (auto* child : parent->children()) {
-        find_widgets(child, widgets);
-        if ((w = dynamic_cast<T>(child)) != nullptr) {
-            widgets.push_back(w);
-        }
-    }
-}
 
 template<typename T> std::string int_to_hex( T i )
 {
@@ -114,7 +93,6 @@ class CV_EXPORTS V4D {
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
-    NanoguiContext* nguiContext_ = nullptr;
     std::mutex glCtxMtx_;
     std::map<int32_t,GLContext*> glContexts_;
     bool closed_ = false;
@@ -184,14 +162,6 @@ public:
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void nvg(std::function<void()> fn);
     /*!
-     * Execute function object fn inside a nanogui context.
-     * The context provides a #cv::viz::FormHelper instance to the function object
-     * which can be used to build a gui.
-     * @param fn A function that is passed the size of the framebuffer
-     * and performs drawing using cv::viz::nvg.
-     */
-    CV_EXPORTS void nanogui(std::function<void(FormHelper& form)> fn);
-    /*!
      * Copy the framebuffer contents to an OutputArray.
      * @param arr The array to copy to.
      */
@@ -258,11 +228,6 @@ public:
      * @return true if it is ready.
      */
     CV_EXPORTS bool isSinkReady();
-    /*!
-     * Shows or hides the GUI.
-     * @param s if true show the GUI.
-     */
-    CV_EXPORTS void showGui(bool s);
     /*!
      * Get the window position.
      * @return The window position.
@@ -377,18 +342,12 @@ public:
 
     CV_EXPORTS void makeCurrent();
 
-    void setDefaultKeyboardEventCallback();
-    void setMouseButtonEventCallback(
-            std::function<void(int button, int action, int modifiers)> fn);
-    void setKeyboardEventCallback(
-            std::function<bool(int key, int scancode, int action, int modifiers)> fn);
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
             const string& title, bool offscreen, bool debug, bool compat, int samples);
 
     cv::Ptr<V4D> self();
-    void mouse_button_event(int button, int action, int modifiers);
-    bool keyboard_event(int key, int scancode, int action, int modifiers);
+
 
     cv::Point2f getMousePosition();
     void setMousePosition(const cv::Point2f& pt);
@@ -396,13 +355,11 @@ private:
     FrameBufferContext& fbCtx();
     CLVAContext& clvaCtx();
     NanoVGContext& nvgCtx();
-    NanoguiContext& nguiCtx();
     GLContext& glCtx(int32_t idx = 0);
 
     bool hasFbCtx();
     bool hasClvaCtx();
     bool hasNvgCtx();
-    bool hasNguiCtx();
     bool hasGlCtx(uint32_t idx = 0);
     size_t numGlCtx();
 

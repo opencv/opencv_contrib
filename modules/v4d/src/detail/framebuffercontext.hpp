@@ -42,7 +42,6 @@ class FrameBufferContext {
     friend class CLVAContext;
     friend class GLContext;
     friend class NanoVGContext;
-    friend class NanoguiContext;
     friend class cv::v4d::V4D;
     V4D* v4d_ = nullptr;
     bool offscreen_;

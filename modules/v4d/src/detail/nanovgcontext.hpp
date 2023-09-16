@@ -7,15 +7,10 @@
 #define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
 #include "framebuffercontext.hpp"
-#include "opencv2/v4d/formhelper.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
-
-namespace nanogui {
-    class Screen;
-}
 
 struct NVGcontext;
 namespace cv {
@@ -25,8 +20,6 @@ namespace detail {
  * Used to setup a nanovg context
  */
 class NanoVGContext {
-    nanogui::Screen* screen_;
-    cv::v4d::FormHelper* form_;
     FrameBufferContext& mainFbContext_;
     FrameBufferContext nvgFbContext_;
     NVGcontext* context_;
