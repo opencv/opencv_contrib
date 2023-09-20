@@ -11,7 +11,6 @@
 #endif
 
 //FIXME
-#include "opencv2/v4d/detail/gl.hpp"
 #include "opencv2/v4d/detail/cl.hpp"
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
@@ -19,6 +18,9 @@
 #include <map>
 
 struct GLFWwindow;
+typedef unsigned int GLenum;
+#define GL_FRAMEBUFFER 0x8D40
+
 namespace cv {
 namespace v4d {
 class V4D;
@@ -47,14 +49,14 @@ public:
 /*!
  * The FrameBufferContext acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
  */
-CV_EXPORTS class FrameBufferContext {
+class CV_EXPORTS FrameBufferContext {
     typedef unsigned int GLuint;
     typedef signed int GLint;
 
     friend class CLVAContext;
     friend class GLContext;
     friend class NanoVGContext;
-    friend class ImGuiContext;
+    friend class ImGuiContextImpl;
     friend class cv::v4d::V4D;
 
     V4D* v4d_ = nullptr;
@@ -112,7 +114,7 @@ public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.
      */
-    CV_EXPORTS class FrameBufferScope {
+    class CV_EXPORTS FrameBufferScope {
         FrameBufferContext& ctx_;
         cv::UMat& m_;
     public:
@@ -136,7 +138,7 @@ public:
     /*!
      * Setups and tears-down OpenGL states.
      */
-    CV_EXPORTS class GLScope {
+    class CV_EXPORTS GLScope {
         FrameBufferContext& ctx_;
     public:
         /*!

@@ -29,13 +29,13 @@ int main(int argc, char** argv) {
     window->setSource(src);
 #endif
 
-    window->run([=](Ptr<V4D> window) {
+    window->run([hv](Ptr<V4D> win) {
 	    //Capture video from the source
-		if(!window->capture())
+		if(!win->capture())
 			return false; //end of input video
 
 		//Render on top of the video
-		window->nvg([=](const Size& sz) {
+		win->nvg([hv](const Size& sz) {
 			using namespace cv::v4d::nvg;
 
 			fontSize(40.0f);
@@ -46,9 +46,9 @@ int main(int argc, char** argv) {
 		});
 
 		//Write video to the sink (do nothing in case of WebAssembly)
-		window->write();
+		win->write();
 
-		return window->display();
+		return win->display();
 	});
 }
 

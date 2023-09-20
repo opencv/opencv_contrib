@@ -33,6 +33,7 @@ unsigned int shader_program;
 unsigned int vao;
 unsigned int uniform_transform;
 
+cv::Ptr<cv::v4d::V4D> global_v4d;
 //Simple transform & pass-through shaders
 static GLuint load_shader() {
 	//Shader versions "330" and "300 es" are very similar.
@@ -78,7 +79,7 @@ static GLuint load_shader() {
 
 //Initializes objects, buffers, shaders and uniforms
 static void init_scene(const cv::Size& sz) {
-    glEnable (GL_DEPTH_TEST);
+    GL_CHECK(glEnable (GL_DEPTH_TEST));
 
     //Cube vertices, colors and indices
     float vertices[] = {
@@ -240,26 +241,19 @@ static bool iteration(cv::Ptr<V4D> window) {
     return window->display();
 }
 
-#ifndef __EMSCRIPTEN__
-int main(int argc, char** argv) {
-#else
 int main() {
-#endif
     cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Cube Demo", false, false, 0);
-
     window->printSystemInfo();
-
+    cerr << "\n\t" << reinterpret_cast<const char*>(glGetString(GL_VERSION))
+            << "\n\t" << reinterpret_cast<const char*>(glGetString(GL_RENDERER)) << endl;
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink using the VP9 codec (which might be hardware accelerated)
     Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
             cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
+    cerr << glGetError() << endl;
     window->gl(init_scene);
-    window->imgui([](){
-            if (show_demo_window)
-                ImGui::ShowDemoWindow(&show_demo_window);
-    });
     window->run(iteration);
 
     return 0;

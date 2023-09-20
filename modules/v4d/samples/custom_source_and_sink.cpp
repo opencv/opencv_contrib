@@ -40,12 +40,12 @@ int main() {
 	window->setSource(src);
 	window->setSink(sink);
 
-	window->run([=](cv::Ptr<V4D> window) {
-		if(!window->capture())
+	window->run([hr](cv::Ptr<V4D> win) {
+		if(!win->capture())
 			return false;
 
 		//Render "Hello Rainbow!" over the video
-		window->nvg([=](const Size& sz) {
+		win->nvg([hr](const Size& sz) {
 			using namespace cv::v4d::nvg;
 
 			fontSize(40.0f);
@@ -55,9 +55,9 @@ int main() {
 			text(sz.width / 2.0, sz.height / 2.0, hr.c_str(), hr.c_str() + hr.size());
 		});
 
-		window->write();
+		win->write();
 
-		return window->display();
+		return win->display();
 	});
 }
 

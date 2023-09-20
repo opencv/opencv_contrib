@@ -6,9 +6,9 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/videoio.hpp>
 #include "opencv2/v4d/util.hpp"
+#include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/nvg.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
-#include "opencv2/v4d/detail/gl.hpp"
 
 
 #ifdef __EMSCRIPTEN__
@@ -31,7 +31,7 @@
 
 using std::cerr;
 using std::endl;
-
+using namespace cv::v4d::detail;
 namespace cv {
 namespace v4d {
 namespace detail {
@@ -314,7 +314,7 @@ Source makeVaSource(const string& inputFilename, const int vaDeviceIndex) {
     }, fps);
 }
 
-Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const float fps,
+static Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             fourcc, fps, frameSize, { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
@@ -331,7 +331,7 @@ Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const float f
     }
 }
 
-Source makeAnyHWSource(const string& inputFilename) {
+static Source makeAnyHWSource(const string& inputFilename) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
     float fps = capture->get(cv::CAP_PROP_FPS);

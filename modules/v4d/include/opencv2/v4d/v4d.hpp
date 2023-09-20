@@ -5,39 +5,9 @@
 
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
-#if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
-#   define V4D_INIT_PRIVATE(v4d, install_hooks) ({ \
-        if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))  \
-        throw std::runtime_error("Could not initialize GLAD!");  \
-    glGetError(); \
-    FrameBufferContext::GLScope glScope(v4d->fbCtx(), GL_FRAMEBUFFER); \
-    IMGUI_CHECKVERSION(); \
-    ImGui::CreateContext();  \
-    ImGuiIO& io = ImGui::GetIO(); \
-    (void)io; \
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; \
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; \
-    ImGui::StyleColorsDark(); \
-    ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), install_hooks); \
-    ImGui_ImplOpenGL3_Init("#version 330"); \
-})
-#else
-#   define V4D_INIT_PRIVATE(v4d, install_hooks) ({ \
-    FrameBufferContext::GLScope glScope(v4d->fbCtx(), GL_FRAMEBUFFER); \
-    IMGUI_CHECKVERSION(); \
-    ImGui::CreateContext();  \
-    ImGuiIO& io = ImGui::GetIO(); \
-    (void)io; \
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; \
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; \
-    ImGui::StyleColorsDark(); \
-    ImGui_ImplGlfw_InitForOpenGL(v4d->getGLFWWindow(), install_hooks); \
-    ImGui_ImplOpenGL3_Init("#version 300 es"); \
-})
-#endif
+
 #   define V4D_INIT_MAIN(w, h, title, offscreen, debug, samples) ({ \
     cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(w, h), cv::Size(), title, offscreen, debug, samples); \
-    V4D_INIT_PRIVATE(v4d, true); \
     v4d; \
     })
 
@@ -51,6 +21,7 @@
 #include "util.hpp"
 #include "nvg.hpp"
 #include "detail/threadpool.hpp"
+#include "opencv2/v4d/detail/gl.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
 #include "opencv2/v4d/detail/imguicontext.hpp"
 
@@ -63,8 +34,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
-
-#include "detail/gl.hpp"
 
 using std::cout;
 using std::cerr;
@@ -90,7 +59,7 @@ class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
 class GLContext;
-class ImGuiContext;
+class ImGuiContextImpl;
 template<typename T> std::string int_to_hex( T i )
 {
   std::stringstream stream;
@@ -120,7 +89,7 @@ class CV_EXPORTS V4D {
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
-    ImGuiContext* imguiContext_ = nullptr;
+    ImGuiContextImpl* imguiContext_ = nullptr;
     std::mutex glCtxMtx_;
     std::map<int32_t,GLContext*> glContexts_;
     bool closed_ = false;
@@ -190,7 +159,8 @@ public:
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void nvg(std::function<void()> fn);
     CV_EXPORTS void imgui(std::function<void(const cv::Size&)> fn);
-    CV_EXPORTS void imgui(std::function<void()> fn);
+    CV_EXPORTS void imgui(std::function<void(ImGuiContext* ctx)> fn);
+    CV_EXPORTS void imgui(std::function<void(cv::Ptr<V4D>)> fn);
 
     /*!
      * Copy the framebuffer contents to an OutputArray.
@@ -378,7 +348,7 @@ public:
     CV_EXPORTS FrameBufferContext& fbCtx();
     CV_EXPORTS CLVAContext& clvaCtx();
     CV_EXPORTS NanoVGContext& nvgCtx();
-    CV_EXPORTS ImGuiContext& imguiCtx();
+    CV_EXPORTS ImGuiContextImpl& imguiCtx();
     CV_EXPORTS GLContext& glCtx(int32_t idx = 0);
 
     CV_EXPORTS bool hasFbCtx();

@@ -39,12 +39,6 @@ constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
 
-cv::Ptr<cv::v4d::V4D> window;
-#ifndef __EMSCRIPTEN__
-//create a separate window in native builds. In WASM builds instead create a light-weight dialog
-cv::Ptr<cv::v4d::V4D> menuWindow;
-#endif
-
 /* Visualization parameters */
 
 //How the background will be visualized
@@ -439,8 +433,6 @@ static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
     static cv::UMat background, down;
     static cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
-    //RGB
-    static cv::UMat menuFrame;
     //GREY
     static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static vector<cv::Point2f> detectedPoints;
@@ -478,19 +470,9 @@ static bool iteration(cv::Ptr<V4D> window) {
     window->fb([&](cv::UMat& framebuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, framebuffer, framebuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
-#ifndef __EMSCRIPTEN__
-        cvtColor(framebuffer, menuFrame, cv::COLOR_BGRA2RGB);
-#endif
     });
 
-#ifndef __EMSCRIPTEN__
     window->write();
-//FIXME
-//    menuWindow->feed(menuFrame);
-
-    if(!menuWindow->display())
-        return false;
-#endif
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
     return window->display();
@@ -508,16 +490,11 @@ int main() {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
 
-#ifndef __EMSCRIPTEN__
-        menuWindow = V4D::make(cv::Size(240, 360), cv::Size(), "Display Settings", OFFSCREEN);
-#endif
-
         window->printSystemInfo();
 
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
 //            setup_gui(window, menuWindow);
-            menuWindow->setResizable(false);
 #else
 //            setup_gui(window, window);
 #endif

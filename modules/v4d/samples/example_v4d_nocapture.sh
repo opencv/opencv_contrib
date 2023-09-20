@@ -13,14 +13,13 @@ cat << EOF
         font-family: arial;
         margin: 0;
         padding: none;
-        background-color: black;
       }
 
       .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
       div.emscripten { text-align: center; }
       div.emscripten_border { border: 1px solid black; }
       /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-      canvas.emscripten { border: 0px none; background-color: black; }
+      canvas.emscripten { border: 0px none; }
 
       .spinner {
         height: 30px;
@@ -86,7 +85,6 @@ cat << EOF
         padding-left: 0px;
         padding-right: 0px;
         display: block;
-        background-color: black;
         color: white;
         font-family: 'Lucida Console', Monaco, monospace;
         outline: none;
@@ -103,6 +101,7 @@ cat << EOF
   <div class="emscripten">
     <progress value="0" max="100" id="progress" hidden=1></progress>
   </div>
+  <canvas id="v4dOffscreenCanvas" width="960" height="960" style="display:none;"></canvas>
   <div class="emscripten_border">
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
   </div>

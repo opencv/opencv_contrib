@@ -5,6 +5,7 @@
 
 #include "nanovgcontext.hpp"
 #include "opencv2/v4d/nvg.hpp"
+#include "opencv2/v4d/detail/gl.hpp"
 #include "nanovg_gl.h"
 
 namespace cv {
@@ -17,14 +18,18 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
     run_sync_on_main<13>([this]() {
         {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-#if defined(OPENCV_V4D_USE_ES3)
+//#ifdef __EMSCRIPTEN__
+//            glClearColor(0,1,0,0);
+//            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+//#endif
+#if defined(OPENCV_V4D_USE_ES3) || defined(EMSCRIPTEN)
             context_ = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 #else
-            context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+        context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 #endif
-            if (!context_)
-                throw std::runtime_error("Could not initialize NanoVG!");
-        }
+        if (!context_)
+            throw std::runtime_error("Could not initialize NanoVG!");
+    }
 #ifdef __EMSCRIPTEN__
         run_sync_on_main<12>([&,this](){
             mainFbContext_.initWebGLCopy(fbCtx().getIndex());
@@ -49,22 +54,20 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
             glClearColor(0,0,0,0);
             glClear(GL_COLOR_BUFFER_BIT);
 #endif
-        NanoVGContext::Scope nvgScope(*this);
-        cv::v4d::nvg::detail::NVG::initializeContext(context_);
-        fn(fbCtx().size());
-    }
-    {
+            NanoVGContext::Scope nvgScope(*this);
+            cv::v4d::nvg::detail::NVG::initializeContext(context_);
+            fn(fbCtx().size());
+        }
         if (!fbCtx().isShared()) {
 #ifdef __EMSCRIPTEN__
-                mainFbContext_.doWebGLCopy(fbCtx());
+            mainFbContext_.doWebGLCopy(fbCtx());
 #else
-        UMat tmp;
-        fbCtx().copyTo(tmp);
-        mainFbContext_.copyFrom(tmp);
+            UMat tmp;
+            fbCtx().copyTo(tmp);
+            mainFbContext_.copyFrom(tmp);
 #endif
-    }
-}
-}   );
+        }
+    });
 }
 
 void NanoVGContext::begin() {

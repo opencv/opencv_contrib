@@ -20,13 +20,13 @@ int main() {
     resize(image, resized, window->framebufferSize());
     cvtColor(resized, converted, COLOR_RGB2BGRA);
 
-    window->run([=](Ptr<V4D> window){
+    window->run([converted](Ptr<V4D> win){
 		//Create a fb context and copy the prepared image to the framebuffer. The fb context
 		//takes care of retrieving and storing the data on the graphics card (using CL-GL
 		//interop if available), ready for other contexts to use
-		window->fb([&](UMat& framebuffer){
+		win->fb([&](UMat& framebuffer){
 	        converted.copyTo(framebuffer);
 	    });
-		return window->display();
+		return win->display();
 	});
 }

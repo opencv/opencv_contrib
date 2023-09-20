@@ -21,7 +21,7 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-void glfw_error_callback(int error, const char* description) {
+static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
 }
 
@@ -84,10 +84,10 @@ void FrameBufferContext::loadShader(const size_t& index) {
         //translate screen coordinates to texture coordinates and flip the y-axis.   
         vec4 texPos = gl_FragCoord / vec4(resolution.x, resolution.y * -1.0f, 1.0, 1.0);
         vec4 texColor0 = texture(texture0, texPos.xy);
-//        if(texColor0.r == 1.0 && texColor0.g == 0.0 && texColor0.b == 0.0)
-//            discard;
-//        else
-        FragColor = texColor0;
+        if(texColor0.a == 0.0)
+            discard;
+        else
+            FragColor = texColor0;
     }
 )";
 
@@ -126,6 +126,7 @@ void FrameBufferContext::initWebGLCopy(const size_t& index) {
     texture_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "texture0");
     resolution_hdls_[index] = glGetUniformLocation(shader_program_hdls_[index], "resolution");
 #else
+    CV_UNUSED(index);
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
 }
@@ -142,20 +143,12 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
                 cv::Rect(0,0, other.size().width, other.size().height),
                 this->getWindowSize(),
                 false);
+        GL_CHECK(glFinish());
         emscripten_webgl_commit_frame();
     }
     this->makeCurrent();
-    GL_CHECK(glEnable(GL_BLEND));
-    GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
     GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, copyFramebuffers_[index]));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, copyTextures_[index]));
-    GL_CHECK(glPixelStorei(GL_UNPACK_ALIGNMENT, 1));
-    GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0));
-    GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-    GL_CHECK(
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, copyTextures_[index], 0));
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
     EM_ASM({
         var gl = Module.ctx;
@@ -180,6 +173,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, Module["copyTextures" + $0] , 0);
     }, index - 1);
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     GL_CHECK(glReadBuffer(GL_COLOR_ATTACHMENT1));
@@ -198,7 +192,9 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
     GL_CHECK(glBindVertexArray(copyVaos[index]));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     GL_CHECK(glDisable(GL_BLEND));
+    GL_CHECK(glFinish());
 #else
+    CV_UNUSED(other);
     throw std::runtime_error("WebGL not supported in none WASM builds");
 #endif
 }
@@ -213,9 +209,8 @@ void FrameBufferContext::init() {
     }
 #else
     isShared_ = false;
-
 #endif
-    if (glfwInit() != GLFW_TRUE) {
+    if (parent_ == nullptr && glfwInit() != GLFW_TRUE) {
 	cerr << "Can't init GLFW" << endl;
     	exit(1);
     }
@@ -256,6 +251,8 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 #endif
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
+//    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
 
@@ -274,9 +271,12 @@ void FrameBufferContext::init() {
     glfwSwapInterval(0);
 #endif
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress))
-        throw std::runtime_error("Could not initialize GLAD!");
-    glGetError(); // pull and ignore unhandled errors like GL_INVALID_ENUM
+    if (parent_ == nullptr) {
+        GLenum err = glewInit();
+        if (GLEW_OK != err) {
+            throw std::runtime_error("Could not initialize GLEW!");
+        }
+    }
     try {
         if (parent_ == nullptr && isClGlSharingSupported())
             cv::ogl::ocl::initializeContextFromGL();
@@ -668,7 +668,11 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint dstY0 = scale ? marginhs : marginh;
     GLint dstX1 = scale ? marginws + fbws : marginw + framebufferSize_.width;
     GLint dstY1 = scale ? marginhs + fbhs : marginh + framebufferSize_.height;
-
+    {
+        //FIXME WebGL2 workaround for webkit. without we have flickering
+        cv::UMat tmp;
+        FrameBufferContext::FrameBufferScope fbScope(*this, tmp);
+    }
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,
@@ -810,7 +814,7 @@ bool FrameBufferContext::isFullscreen() {
 }
 
 void FrameBufferContext::setFullscreen(bool f) {
-    makeCurrent();
+//    makeCurrent();
     auto monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     if (f) {

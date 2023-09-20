@@ -5,6 +5,7 @@
 
 #include "opencv2/v4d/nvg.hpp"
 #include "opencv2/v4d/v4d.hpp"
+
 namespace cv {
 namespace v4d {
 namespace nvg {

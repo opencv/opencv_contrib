@@ -6,9 +6,9 @@ using namespace cv::v4d;
 int main() {
     Ptr<V4D> window = V4D_INIT_MAIN(960, 960, "Vector Graphics", false, false, 0);
 
-    window->run([=](Ptr<V4D> window) {
+    window->run([](Ptr<V4D> win) {
         //Creates a NanoVG context and draws googly eyes that occasionally blink.
-        window->nvg([](const Size& sz) {
+        win->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context.
         	//Nvg calls work exactly like their c-funtion counterparts.
         	//Please refer to the NanoVG documentation for details.
@@ -93,7 +93,7 @@ int main() {
             fill();
         });
 
-        return window->display();
+        return win->display();
     });
 }
 

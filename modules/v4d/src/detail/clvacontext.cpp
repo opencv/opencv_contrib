@@ -14,7 +14,6 @@ CLVAContext::CLVAContext(FrameBufferContext& mainFbContext) : mainFbContext_(mai
 }
 
 bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
-    cv::Size fbSize = mainFbContext_.size();
 #ifndef __EMSCRIPTEN__
     if (hasContext()) {
         CLExecScope_t scope(getCLExecContext());

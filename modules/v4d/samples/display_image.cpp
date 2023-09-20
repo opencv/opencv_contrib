@@ -20,10 +20,10 @@ int main() {
     //V4D::run() though it takes a functor is not a context. It is simply an abstraction
     //of a run loop for portability reasons and executes the functor until the application
     //terminates or the functor returns false.
-	window->run([=](Ptr<V4D> window){
+	window->run([image](Ptr<V4D> win){
 	    //Feeds the image to the video pipeline
-	    window->feed(image);
+	    win->feed(image);
 	    //Displays the framebuffer in the window. Returns false if the windows has been closed.
-	    return window->display();
+	    return win->display();
     });
 }

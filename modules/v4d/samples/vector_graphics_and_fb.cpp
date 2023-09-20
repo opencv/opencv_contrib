@@ -7,9 +7,9 @@ using namespace cv::v4d;
 int main() {
     Ptr<V4D> window = V4D_INIT_MAIN(960, 960, "Vector Graphics and Framebuffer", false, false, 0);
 
-    window->run([=](Ptr<V4D> window) {
+    window->run([](Ptr<V4D> win) {
         //Again creates a NanoVG context and draws googly eyes
-        window->nvg([](const Size& sz) {
+        win->nvg([](const Size& sz) {
             //Calls from this namespace may only be used inside a nvg context
             using namespace cv::v4d::nvg;
             clear();
@@ -93,12 +93,12 @@ int main() {
         });
 
         //Provides the framebuffer as left-off by the nvg context.
-        window->fb([](UMat& framebuffer) {
+        win->fb([](UMat& framebuffer) {
             //Heavily blurs the eyes using a cheap boxFilter
             boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
         });
 
-        return window->display();
+        return win->display();
     });
 }
 

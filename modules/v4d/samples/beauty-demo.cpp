@@ -73,39 +73,39 @@ struct FaceFeatures {
     vector<cv::Point2f> outer_lips_;
     vector<cv::Point2f> inside_lips_;
 
-    FaceFeatures(const cv::Rect &faceRect, const vector<cv::Point2f> &shape, double scale) {
+    FaceFeatures(const cv::Rect &faceRect, const vector<cv::Point2f> &shape, double local_scale) {
         //calculate the face rectangle
-        faceRect_ = cv::Rect(faceRect.x / scale, faceRect.y / scale, faceRect.width / scale, faceRect.height / scale);
+        faceRect_ = cv::Rect(faceRect.x / local_scale, faceRect.y / local_scale, faceRect.width / local_scale, faceRect.height / local_scale);
 
         /** Copy all features **/
         size_t i = 0;
         // Around Chin. Ear to Ear
         for (i = 0; i <= 16; ++i)
-            chin_.push_back(shape[i] / scale);
+            chin_.push_back(shape[i] / local_scale);
         // left eyebrow
         for (; i <= 21; ++i)
-            left_eyebrow_.push_back(shape[i] / scale);
+            left_eyebrow_.push_back(shape[i] / local_scale);
         // Right eyebrow
         for (; i <= 26; ++i)
-            right_eyebrow_.push_back(shape[i] / scale);
+            right_eyebrow_.push_back(shape[i] / local_scale);
         // Line on top of nose
         for (; i <= 30; ++i)
-            top_nose_.push_back(shape[i] / scale);
+            top_nose_.push_back(shape[i] / local_scale);
         // Bottom part of the nose
         for (; i <= 35; ++i)
-            bottom_nose_.push_back(shape[i] / scale);
+            bottom_nose_.push_back(shape[i] / local_scale);
         // Left eye
         for (; i <= 41; ++i)
-            left_eye_.push_back(shape[i] / scale);
+            left_eye_.push_back(shape[i] / local_scale);
         // Right eye
         for (; i <= 47; ++i)
-            right_eye_.push_back(shape[i] / scale);
+            right_eye_.push_back(shape[i] / local_scale);
         // Lips outer part
         for (; i <= 59; ++i)
-            outer_lips_.push_back(shape[i] / scale);
+            outer_lips_.push_back(shape[i] / local_scale);
         // Lips inside part
         for (; i <= 67; ++i)
-            inside_lips_.push_back(shape[i] / scale);
+            inside_lips_.push_back(shape[i] / local_scale);
     }
 
     //Concatenates all feature points
@@ -196,52 +196,6 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
 }
 
 using namespace cv::v4d;
-
-//Built the GUI
-//static void setup_gui(cv::Ptr<V4D> window) {
-//    window->nanogui([&](cv::v4d::FormHelper& form){
-//        form.makeDialog(5, 30, "Effect");
-//
-//        form.makeGroup("Display");
-//        form.makeFormVariable("Side by side", side_by_side, "Enable or disable side by side view");
-//        auto* scaleVar = form.makeFormVariable("Scale", scale, "Enable or disable scaling to the window size");
-//        scaleVar->set_callback([=](const bool& b) {
-//            window->setScaling(b);
-//            scale = b;
-//        });
-//
-//#ifndef __EMSCRIPTEN__
-//        form.makeButton("Fullscreen", [=]() {
-//            window->setFullscreen(!window->isFullscreen());
-//        });
-//#endif
-//        form.makeButton("Offscreen", [=]() {
-//            window->setVisible(!window->isVisible());
-//        });
-//
-//        form.makeGroup("Face Skin");
-//        auto* kernelSize = form.makeFormVariable("Blur", blur_skin_kernel_size, 0, 256, true, "", "use this kernel size to blur the face skin");
-//        kernelSize->set_callback([=](const int& k) {
-//            static int lastKernelSize = blur_skin_kernel_size;
-//
-//            if(k == lastKernelSize)
-//                return;
-//
-//            if(k <= lastKernelSize) {
-//                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-//            } else if(k > lastKernelSize)
-//                blur_skin_kernel_size = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-//
-//            lastKernelSize = k;
-//            kernelSize->set_value(blur_skin_kernel_size);
-//        });
-//        form.makeFormVariable("Saturation", skin_saturation, 0.0f, 100.0f, true, "", "adjust the skin saturation by this amount");
-//        form.makeFormVariable("Contrast", skin_contrast, 0.0f, 1.0f, true, "", "contrast amount of the face skin");
-//
-//        form.makeGroup("Eyes and Lips");
-//        form.makeFormVariable("Saturation", eyes_and_lips_saturation, 0.0f, 100.0f, true, "", "adjust the saturation of the eyes and the lips by this amount");
-//    });
-//}
 
 static bool iteration(cv::Ptr<V4D> window) {
     try {
@@ -380,16 +334,42 @@ int main() {
 #endif
     using namespace cv::v4d;
     cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Beautification Demo", false, false, 0);
-    facemark->loadModel("assets/lbfmodel.yaml");
-
-    window->setScaling(scale);
-
-//    if (!OFFSCREEN) {
-//        setup_gui(window);
-//    }
-
     window->printSystemInfo();
 
+    facemark->loadModel("assets/lbfmodel.yaml");
+    window->setScaling(scale);
+
+    if (!OFFSCREEN) {
+        window->imgui([window](ImGuiContext* ctx){
+            using namespace ImGui;
+            SetCurrentContext(ctx);
+            Begin("Effect");
+            Text("Display");
+            Checkbox("Side by side", &side_by_side);
+            if(Checkbox("Scale", &scale)) {
+                window->setScaling(true);
+            } else
+                window->setScaling(false);
+
+    #ifndef __EMSCRIPTEN__
+            if(Button("Fullscreen")) {
+                window->setFullscreen(!window->isFullscreen());
+            };
+    #endif
+
+            if(Button("Offscreen")) {
+                window->setVisible(!window->isVisible());
+            };
+
+            Text("Face Skin");
+            SliderInt("Blur", &blur_skin_kernel_size, 0, 128);
+            SliderFloat("Saturation", &skin_saturation, 0.0f, 100.0f);
+            SliderFloat("Contrast", &skin_contrast, 0.0f, 1.0f);
+            Text("Eyes and Lips");
+            SliderFloat("Saturation", &eyes_and_lips_saturation, 0.0f, 100.0f);
+            End();
+        });
+    }
 #ifndef __EMSCRIPTEN__
     Source src = makeCaptureSource(argv[1]);
     window->setSource(src);

@@ -7,6 +7,7 @@
 #define SRC_OPENCV_IMGUIContext_HPP_
 
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "imgui.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -15,16 +16,15 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-CV_EXPORTS class ImGuiContext {
+class CV_EXPORTS ImGuiContextImpl {
     friend class cv::v4d::V4D;
     FrameBufferContext& mainFbContext_;
-    FrameBufferContext glFbContext_;
-    std::function<void(const cv::Size&)> renderCallback_;
+    ImGuiContext* context_;
+    std::function<void(ImGuiContext*)> renderCallback_;
     bool firstFrame_ = true;
 public:
-    CV_EXPORTS ImGuiContext(FrameBufferContext& fbContext);
-    CV_EXPORTS FrameBufferContext& fbCtx();
-    CV_EXPORTS void build(std::function<void(const cv::Size&)> fn);
+    CV_EXPORTS ImGuiContextImpl(FrameBufferContext& fbContext);
+    CV_EXPORTS void build(std::function<void(ImGuiContext*)> fn);
 protected:
     CV_EXPORTS void render();
 };
