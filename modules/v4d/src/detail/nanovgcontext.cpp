@@ -30,10 +30,11 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
         if (!context_)
             throw std::runtime_error("Could not initialize NanoVG!");
     }
+        int font = nvgCreateFont(context_, "icons", "assets/entypo.ttf");
+        font = nvgCreateFont(context_, "sans", "assets/Roboto-Regular.ttf");
+        font = nvgCreateFont(context_, "sans-bold", "assets/Roboto-Bold.ttf");
 #ifdef __EMSCRIPTEN__
-        run_sync_on_main<12>([&,this](){
             mainFbContext_.initWebGLCopy(fbCtx().getIndex());
-        });
 #endif
     });
 }

@@ -6,11 +6,6 @@
 #ifndef SRC_OPENCV_V4D_V4D_HPP_
 #define SRC_OPENCV_V4D_V4D_HPP_
 
-#   define V4D_INIT_MAIN(w, h, title, offscreen, debug, samples) ({ \
-    cv::Ptr<cv::v4d::V4D> v4d = cv::v4d::V4D::make(cv::Size(w, h), cv::Size(), title, offscreen, debug, samples); \
-    v4d; \
-    })
-
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/threading.h>
@@ -121,6 +116,7 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
+    CV_EXPORTS static cv::Ptr<V4D> make(int w, int h, const string& title, bool offscreen = false, bool debug = false, int samples = 0);
     CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, int samples = 0);
     /*!
      * Default destructor

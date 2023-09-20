@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    cv::Ptr<V4D> window = V4D_INIT_MAIN(960, 960, "Font Rendering", false, false, 0);
+    cv::Ptr<V4D> window = V4D::make(960, 960, "Font Rendering", false, false, 0);
 
     //The text to render
 	string hw = "Hello World";

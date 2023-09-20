@@ -242,7 +242,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 }
 
 int main() {
-    cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Cube Demo", false, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", false, false, 0);
     window->printSystemInfo();
     cerr << "\n\t" << reinterpret_cast<const char*>(glGetString(GL_VERSION))
             << "\n\t" << reinterpret_cast<const char*>(glGetString(GL_RENDERER)) << endl;

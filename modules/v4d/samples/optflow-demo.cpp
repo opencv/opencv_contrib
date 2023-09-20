@@ -488,8 +488,7 @@ int main() {
 #endif
     try {
         using namespace cv::v4d;
-        cv::Ptr<V4D> window = V4D_INIT_MAIN(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
-
+        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
         window->printSystemInfo();
 
         if (!OFFSCREEN) {

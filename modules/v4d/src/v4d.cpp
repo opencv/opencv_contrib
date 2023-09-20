@@ -14,10 +14,15 @@
 namespace cv {
 namespace v4d {
 
+cv::Ptr<V4D> V4D::make(int w, int h, const string& title, bool offscreen, bool debug, int samples) {
+    V4D* v4d = new V4D(cv::Size(w,h), cv::Size(), title, offscreen, debug, samples);
+    v4d->setVisible(!offscreen);
+    return v4d->self();
+}
+
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int samples) {
     V4D* v4d = new V4D(size, fbsize, title, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
-    v4d->printSystemInfo();
     return v4d->self();
 }
 
