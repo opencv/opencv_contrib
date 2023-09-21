@@ -188,6 +188,7 @@ template<> struct VecTraits<char4>
 
 namespace cv {
 
+#ifndef CV_32U
 template <> class DataType<uint>
 {
 public:
@@ -202,6 +203,7 @@ public:
            type         = CV_MAKE_TYPE(depth, channels)
          };
 };
+#endif
 
 #define CV_CUDEV_DATA_TYPE_INST(_depth_type, _channel_num) \
     template <> class DataType< _depth_type ## _channel_num > \

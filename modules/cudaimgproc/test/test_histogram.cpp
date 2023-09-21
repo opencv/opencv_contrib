@@ -80,7 +80,6 @@ CUDA_TEST_P(HistEven, Accuracy)
     int channels[] = {0};
     cv::calcHist(&src, 1, channels, cv::Mat(), hist_gold, 1, histSize, ranges);
 
-    hist_gold = hist_gold.t();
     hist_gold.convertTo(hist_gold, CV_32S);
 
     EXPECT_MAT_NEAR(hist_gold, hist, 0.0);
