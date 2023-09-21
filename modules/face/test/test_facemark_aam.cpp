@@ -108,7 +108,7 @@ TEST(CV_Face_FacemarkAAM, test_workflow) {
 
     Mat image;
     std::vector<Point2f> landmarks;
-    for(size_t i=0;i<images_train.size();i++)
+    for(size_t i = 0; i < images_train.size(); i++)
     {
         image = imread(images_train[i].c_str());
         EXPECT_TRUE(loadFacePoints(points_train[i].c_str(),landmarks));

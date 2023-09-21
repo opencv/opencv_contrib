@@ -536,7 +536,7 @@ void FacemarkLBFImpl::prepareTrainingData(Mat img, std::vector<Point2f> facePoin
     std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes)
 {
     Mat shape;
-    Mat _shape = Mat(facePoints).reshape(1);
+    Mat _shape = Mat(facePoints).reshape(1, (int)facePoints.size());
     Rect box = getBBox(img, _shape);
 
     if(img.channels()>1){
@@ -1359,7 +1359,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
     if(verbose) printf("Objective value = %lf\n", v);
     if(verbose) printf("nSV = %d\n",nSV);
 
-    return Mat(Mat(w).t()).clone();
+    return Mat(w).reshape(2, 1).clone();
 
 }//end
 

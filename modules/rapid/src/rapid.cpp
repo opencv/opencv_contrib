@@ -174,7 +174,7 @@ void extractLineBundle(int len, InputArray ctl2d, InputArray img, OutputArray bu
     CV_Assert(ctl2d.getMat().checkVector(2, CV_32F) > 0);
     Mat_<Point2f> contour = ctl2d.getMat();
 
-    const int N = contour.rows;
+    const int N = (int)contour.total();
     const int W = len * 2 + 1;
 
     srcLocations.create(N, W, CV_16SC2);
@@ -305,8 +305,8 @@ void convertCorrespondencies(InputArray _cols, InputArray _srcLocations, OutputA
     Mat opts3d;
     if(!_pts3d.empty())
     {
-        CV_Assert(_cols.rows() == _pts3d.rows());
-        pts3d = _pts3d.getMat();
+        pts3d = _pts3d.getMat().t();
+        CV_Assert(cols.rows == pts3d.rows);
         opts3d.create(0, 1, pts3d.type());
         opts3d.reserve(cols.rows);
     }

@@ -265,9 +265,13 @@ static Mat_<float> applyK(const Mat_<float>& I, float k, float a=-0.3293f, float
     float gamma = std::pow(k, a);
 
     Mat_<float> J(I.size());
-    pow(I, gamma, J);
-    J = J*beta;
-
+    CV_Assert(I.isContinuous());
+    size_t i, npix = I.total();
+    const float* Iptr = I.ptr<float>();
+    float* Jptr = J.ptr<float>();
+    for (i = 0; i < npix; i++) {
+        Jptr[i] = pow(Iptr[i], gamma)*beta;
+    }
     return J;
 }
 
@@ -293,15 +297,18 @@ static float entropy(const Mat_<float>& I)
     float range[] = { 0, 256 };
     const float* histRange = { range };
     calcHist(&I_uchar, 1, NULL, Mat(), hist, 1, &histSize, &histRange);
+    double histsum = cv::sum(hist)[0];
 
-    Mat_<float> hist_norm = hist / cv::sum(hist)[0];
+    Mat_<float> hist_norm = hist / histsum;
+    int i, nbins = (int)hist_norm.total();
 
     float E = 0;
-    for (int i = 0; i < hist_norm.rows; i++)
+    for (i = 0; i < nbins; i++)
     {
-        if (hist_norm(i,0) > 0)
+        float v = hist_norm(i);
+        if (v > 0)
         {
-            E += hist_norm(i,0) * std::log2(hist_norm(i,0));
+            E += v * std::log2(v);
         }
     }
 
@@ -487,7 +494,7 @@ static void BIMEF_impl(InputArray input_, OutputArray output_, float mu, float *
     // t: scene illumination map
     Mat_<float> t_b(imgDouble.size());
     t_b.forEach(
-        [&](float &pixel, const int * position) -> void
+        [&](float &pixel, const int* position) -> void
         {
             pixel = std::max(std::max(imgDouble(position[0], position[1])[0],
                                       imgDouble(position[0], position[1])[1]),

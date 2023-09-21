@@ -243,7 +243,7 @@ void FacemarkAAMImpl::training(void* parameters){
 
     /* get PCA Projection vectors */
     Mat S;
-    getProjection(M.t(),S,param_max_n);
+    getProjection(M.t(), S, param_max_n);
     /* Create similarity eig*/
     Mat shape_S,shape_Q;
     calcSimilarityEig(AAM.s0,S,AAM.Q,AAM.S);
@@ -259,7 +259,7 @@ void FacemarkAAMImpl::training(void* parameters){
 
         /*get the min and max of x and y coordinate*/
         double min_x, max_x, min_y, max_y;
-        s0_scaled_m = s0_scaled_m.reshape(1);
+        s0_scaled_m = s0_scaled_m.reshape(1, (int)s0_scaled_m.total());
         Mat s0_scaled_x = s0_scaled_m.col(0);
         Mat s0_scaled_y = s0_scaled_m.col(1);
         minMaxIdx(s0_scaled_x, &min_x, &max_x);
@@ -287,7 +287,7 @@ void FacemarkAAMImpl::training(void* parameters){
             if(params.verbose) printf("extract features from image #%i/%i\n", (int)(i+1), (int)images.size());
             warped = warpImage(images[i],base_shape, facePoints[i], AAM.triangles, AAM.textures[scale].resolution,AAM.textures[scale].textureIdx);
             feat = getFeature<uchar>(warped, AAM.textures[scale].ind1);
-            texture_feats.push_back(feat.t());
+            texture_feats.push_back(feat.reshape(feat.channels(), 1));
         }
         Mat T= texture_feats.t();
 
@@ -307,7 +307,7 @@ void FacemarkAAMImpl::training(void* parameters){
         for(int i =0;i<AAM.textures[scale].A.cols;i++){
             Mat c = AAM.textures[scale].A.col(i);
             ud = getFeature<float>(c,fe_map);
-            U_data.push_back(ud.t());
+            U_data.push_back(ud.reshape(ud.channels(), 1));
         }
         Mat U = U_data.t();
         AAM.textures[scale].AA = orthonormal(U);
@@ -413,7 +413,7 @@ bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks,
     Mat Wx_dp, Wy_dp;
     createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[scl],Wx_dp, Wy_dp, Tp);
 
-    std::vector<Point2f> s0_init = Mat(Mat(R*scale*AAM.scales[scl]*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2);
+    std::vector<Point2f> s0_init = Mat(Mat(R*scale*AAM.scales[scl]*Mat(Mat(s0).reshape(1, (int)s0.size())).t()).t()).reshape(2);
     std::vector<Point2f> curr_shape =  Mat(Mat(s0_init)+Scalar(T.x,T.y));
     curr_shape = Mat(1.0/scale*Mat(curr_shape)).reshape(2);
 
@@ -444,8 +444,8 @@ bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks,
                            AAM.textures[scl].resolution ,
                            AAM.textures[scl].textureIdx);
 
-        I = getFeature<uchar>(warped, AAM.textures[scl].ind1);
-        II = getFeature<uchar>(warped, AAM.textures[scl].ind2);
+        I = getFeature<uchar>(warped, AAM.textures[scl].ind1).t();
+        II = getFeature<uchar>(warped, AAM.textures[scl].ind2).t();
 
         if(t==0){
             c = A.t()*(I-AAM.textures[scl].A0); //little bit different to matlab, probably due to datatype
@@ -480,8 +480,8 @@ bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks,
         invert(Hfsic, iHfsic);
 
         /*compute dp dq and dc*/
-        Mat dqp = iHfsic*Jfsic.t()*(II-AAM.textures[scl].AA0);
-        dc = AA.t()*(II-Mat(Irec_vec)-J*dqp);
+        Mat dqp = iHfsic*Jfsic.t()*(II-AAM.textures[scl].AA0.t());
+        dc = AA.t()*(II-Mat(Irec_vec).t()-J*dqp);
         warpUpdate(curr_shape, dqp, s0,S, AAM.Q, AAM.triangles,Tp);
     }
     landmarks = Mat(scale*Mat(curr_shape)).reshape(2);
@@ -602,16 +602,17 @@ Mat FacemarkAAMImpl::procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, 
     reduce(Ys,sumYs, 0, REDUCE_SUM);
 
     //calculate the normrnd
-    double normX = sqrt(Mat(sumXs.reshape(1)).at<float>(0)+Mat(sumXs.reshape(1)).at<float>(1));
-    double normY = sqrt(Mat(sumYs.reshape(1)).at<float>(0)+Mat(sumYs.reshape(1)).at<float>(1));
+    Point2f sumXs0 = sumXs.at<Point2f>(0), sumYs0 = sumYs.at<Point2f>(0);
+    double normX = sqrt(sumXs0.x + sumXs0.y);
+    double normY = sqrt(sumYs0.x + sumYs0.y);
 
     //normalization
     X0 = X0/normX;
     Y0 = Y0/normY;
 
     //reshape, convert to 2D Matrix
-    Mat Xn=X0.reshape(1);
-    Mat Yn=Y0.reshape(1);
+    Mat Xn=X0.reshape(1, (int)X0.total());
+    Mat Yn=Y0.reshape(1, (int)Y0.total());
 
     //calculate the covariance matrix
     Mat M = Xn.t()*Yn;
@@ -634,7 +635,7 @@ Mat FacemarkAAMImpl::procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, 
     trans[1] = t.at<float>(1);
 
     // calculate the recovered form
-    Mat Qmat = Mat(Q).reshape(1);
+    Mat Qmat = Mat(Q).reshape(1, (int)Q.size());
 
     return Mat(scale*Qmat*rot+trans).clone();
 }
@@ -777,7 +778,7 @@ Mat FacemarkAAMImpl::orthonormal(Mat Mo){
     return O.colRange(0,k).clone();
 }
 
-void FacemarkAAMImpl::calcSimilarityEig(std::vector<Point2f> s0,Mat S, Mat & Q_orth, Mat & S_orth){
+void FacemarkAAMImpl::calcSimilarityEig(std::vector<Point2f> s0, Mat S, Mat & Q_orth, Mat & S_orth){
     int npts = (int)s0.size();
 
     Mat Q = Mat::zeros(2*npts,4,CV_32FC1);
@@ -792,7 +793,7 @@ void FacemarkAAMImpl::calcSimilarityEig(std::vector<Point2f> s0,Mat S, Mat & Q_o
     w.copyTo(c0);
 
     /*c1 = [-s0(npts:2*npts); s0(0:npts-1)]*/
-    Mat s0_mat = Mat(s0).reshape(1);
+    Mat s0_mat = Mat(s0).reshape(1, (int)s0.size());
     // s0_mat.convertTo(s0_mat, CV_64FC1);
     Mat swapper = Mat::zeros(2,npts,CV_32FC1);
     Mat s00 = s0_mat.col(0);
@@ -826,11 +827,15 @@ void FacemarkAAMImpl::calcSimilarityEig(std::vector<Point2f> s0,Mat S, Mat & Q_o
     Mat allOrth = orthonormal(all.t());
     Q_orth =  allOrth.colRange(0,4).clone();
     S_orth =  allOrth.colRange(4,allOrth.cols).clone();
-
 }
 
 inline Mat FacemarkAAMImpl::linearize(Mat s){ // all x values and then all y values
-    return Mat(s.reshape(1).t()).reshape(1,2*s.rows);
+    int npoints = s.rows;
+    if (s.channels() > 1) {
+        npoints = (int)s.total();
+        s = s.reshape(1, npoints);
+    }
+    return Mat(s.t()).reshape(1, 2*npoints);
 }
 inline Mat FacemarkAAMImpl::linearize(std::vector<Point2f> s){ // all x values and then all y values
     return linearize(Mat(s));
@@ -843,7 +848,7 @@ void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & tria
     std::vector<Vec6f> tp;
 
     double min_x, max_x, min_y, max_y;
-    Mat S = Mat(s).reshape(1);
+    Mat S = Mat(s).reshape(1, (int)s.size());
     Mat s_x = S.col(0);
     Mat s_y = S.col(1);
     minMaxIdx(s_x, &min_x, &max_x);
@@ -954,8 +959,8 @@ Mat FacemarkAAMImpl::warpImage(
         source[1] = curr_shape[triangles[i][1]];
         source[2] = curr_shape[triangles[i][2]];
 
-        Mat target_mtx = Mat(target).reshape(1)-1.0;
-        Mat source_mtx = Mat(source).reshape(1)-1.0;
+        Mat target_mtx = Mat(target).reshape(1,(int)target.size())-1.0;
+        Mat source_mtx = Mat(source).reshape(1,(int)source.size())-1.0;
         Mat U = target_mtx.col(0);
         Mat V = target_mtx.col(1);
         Mat X = source_mtx.col(0);
@@ -979,7 +984,7 @@ Mat FacemarkAAMImpl::warpImage(
         R=A.colRange(0,2);
         t=A.colRange(2,3);
 
-        Mat pts_ori = Mat(textureIdx[i]).reshape(1);
+        Mat pts_ori = Mat(textureIdx[i]).reshape(1, (int)textureIdx[i].size());
         Mat pts = pts_ori.t(); //matlab
         Mat bx = pts_ori.col(0);
         Mat by = pts_ori.col(1);
@@ -1081,8 +1086,9 @@ void FacemarkAAMImpl::warpUpdate(std::vector<Point2f> & shape, Mat delta, std::v
     Mat(ds0, Range((int)s0.size(),(int)s0.size()*2)).copyTo(c1);
 
     Mat s_new = computeWarpParts(shape,s0,ds0_mat, triangles, Tp);
+    s_new -= Mat(s0).reshape(1, (int)s0.size());
 
-    Mat diff =linearize(Mat(s_new - Mat(s0).reshape(1)));
+    Mat diff = linearize(s_new);
 
     Mat r = Q.t()*diff;
     Mat p = S.t()*diff;
@@ -1118,8 +1124,9 @@ Mat FacemarkAAMImpl::computeWarpParts(std::vector<Point2f> curr_shape,std::vecto
             source[2] = curr_shape[triangles[idx][2]];
 
             A = getAffineTransform(target,source);
+            Mat p_m = Mat(p).reshape(1, (int)p.size());
 
-            Mat(A*Mat(p)).reshape(2).copyTo(v);
+            Mat(A*p_m).reshape(2).copyTo(v);
             vx.push_back(v[0].x);
             vy.push_back(v[0].y);
         }// j
@@ -1134,7 +1141,7 @@ Mat FacemarkAAMImpl::computeWarpParts(std::vector<Point2f> curr_shape,std::vecto
         new_shape.push_back(Point2f(mx,my));
     } // s0.size()
 
-    return Mat(new_shape).reshape(1).clone();
+    return Mat(new_shape).reshape(1, (int)new_shape.size()).clone();
 }
 
 void FacemarkAAMImpl::gradient(const Mat M, Mat & gx, Mat & gy){
