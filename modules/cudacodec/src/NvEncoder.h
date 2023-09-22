@@ -15,6 +15,17 @@
 
 namespace cv { namespace cudacodec {
 
+#ifndef _WIN32
+#include <cstring>
+    static inline bool operator==(const GUID& guid1, const GUID& guid2) {
+        return !memcmp(&guid1, &guid2, sizeof(GUID));
+    }
+
+    static inline bool operator!=(const GUID& guid1, const GUID& guid2) {
+        return !(guid1 == guid2);
+    }
+#endif
+
 #define NVENC_THROW_ERROR( errorStr, errorCode ) \
 do \
 { \

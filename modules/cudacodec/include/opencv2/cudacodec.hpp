@@ -184,7 +184,7 @@ struct CV_EXPORTS_W_SIMPLE EncoderParams
 public:
     CV_WRAP EncoderParams() : nvPreset(ENC_PRESET_P3), tuningInfo(ENC_TUNING_INFO_HIGH_QUALITY), encodingProfile(ENC_CODEC_PROFILE_AUTOSELECT),
         rateControlMode(ENC_PARAMS_RC_VBR), multiPassEncoding(ENC_MULTI_PASS_DISABLED), constQp({ 0,0,0 }), averageBitRate(0), maxBitRate(0),
-        targetQuality(30), gopLength(0) {};
+        targetQuality(30), gopLength(0), idrPeriod(0) {};
 
     CV_PROP_RW EncodePreset nvPreset;
     CV_PROP_RW EncodeTuningInfo tuningInfo;
@@ -195,7 +195,8 @@ public:
     CV_PROP_RW int averageBitRate; //!< target bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CBR.
     CV_PROP_RW int maxBitRate; //!< upper bound on bitrate for ENC_PARAMS_RC_VBR and ENC_PARAMS_RC_CONSTQP.
     CV_PROP_RW uint8_t targetQuality; //!< value 0 - 51 where video quality decreases as targetQuality increases, used with ENC_PARAMS_RC_VBR.
-    CV_PROP_RW int gopLength;
+    CV_PROP_RW int gopLength; //!< the number of pictures in one GOP.
+    CV_PROP_RW int idrPeriod; //!< IDR interval, if not set, this is made equal to gopLength.
 };
 CV_EXPORTS bool operator==(const EncoderParams& lhs, const EncoderParams& rhs);
 

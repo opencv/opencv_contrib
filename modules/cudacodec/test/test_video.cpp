@@ -768,14 +768,13 @@ cv::cudacodec::ColorFormat::RGBA, cv::cudacodec::ColorFormat::GRAY
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Write, testing::Combine(ALL_DEVICES, testing::Values(DEVICE_SRC), testing::Values(CODEC), testing::Values(FPS),
     testing::Values(COLOR_FORMAT)));
 
-
-struct EncoderParams : testing::TestWithParam<cv::cuda::DeviceInfo>
+PARAM_TEST_CASE(EncoderParams, cv::cuda::DeviceInfo, int)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::cudacodec::EncoderParams params;
     virtual void SetUp()
     {
-        devInfo = GetParam();
+        devInfo = GET_PARAM(0);
         cv::cuda::setDevice(devInfo.deviceID());
         // Fixed params for CBR test
         params.nvPreset = cv::cudacodec::EncodePreset::ENC_PRESET_P7;
@@ -787,9 +786,9 @@ struct EncoderParams : testing::TestWithParam<cv::cuda::DeviceInfo>
         params.maxBitRate = 0;
         params.targetQuality = 0;
         params.gopLength = 5;
+        params.idrPeriod = GET_PARAM(1);
     }
 };
-
 
 CUDA_TEST_P(EncoderParams, Writer)
 {
@@ -799,7 +798,7 @@ CUDA_TEST_P(EncoderParams, Writer)
     const std::string ext = ".h264";
     const std::string outputFile = cv::tempfile(ext.c_str());
     Size frameSz;
-    constexpr int nFrames = 5;
+    const int nFrames = max(params.gopLength, params.idrPeriod);
     {
         cv::VideoCapture reader(inputFile);
         ASSERT_TRUE(reader.isOpened());
@@ -829,20 +828,39 @@ CUDA_TEST_P(EncoderParams, Writer)
         const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
-        const bool checkGop = videoio_registry::hasBackend(CAP_FFMPEG);
-        Mat frame;
+        const bool checkFrameType = videoio_registry::hasBackend(CAP_FFMPEG);
+        VideoCapture capRaw;
+        int idrPeriod = 0;
+        if (checkFrameType) {
+            capRaw.open(outputFile, CAP_FFMPEG, { CAP_PROP_FORMAT, -1 });
+            ASSERT_TRUE(capRaw.isOpened());
+            idrPeriod = params.idrPeriod == 0 ? params.gopLength : params.idrPeriod;
+        }
+        Mat frame, frameRaw;
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
             ASSERT_FALSE(frame.empty());
-            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73)) {
-                ASSERT_TRUE(i % params.gopLength == 0);
+            if (checkFrameType) {
+                capRaw >> frameRaw;
+                ASSERT_FALSE(frameRaw.empty());
+                const bool intraFrame = cap.get(CAP_PROP_FRAME_TYPE) == 73.0;
+                if (i % params.gopLength == 0)
+                    ASSERT_TRUE(intraFrame) << "Frame: " << i << ", is not an I frame";
+                else
+                    ASSERT_FALSE(intraFrame) << "Frame: " << i << ", is an I frame";
+                const bool keyFrame = capRaw.get(CAP_PROP_LRF_HAS_KEY_FRAME) == 1.0;
+                if (i % idrPeriod == 0)
+                    ASSERT_TRUE(keyFrame) << "Frame: " << i << ", is not a key frame";
+                else
+                    ASSERT_FALSE(keyFrame) << "Frame: " << i << ", is a key frame";
             }
         }
     }
     ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParams, ALL_DEVICES);
+#define IDR_PERIOD testing::Values(0,5,10)
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParams, testing::Combine(ALL_DEVICES, IDR_PERIOD));
 
 #endif // HAVE_NVCUVENC
 
