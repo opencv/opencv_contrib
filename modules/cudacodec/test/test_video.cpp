@@ -639,7 +639,13 @@ CUDA_TEST_P(TransCode, H264ToH265)
     constexpr cv::cudacodec::ColorFormat colorFormat = cv::cudacodec::ColorFormat::NV_NV12;
     constexpr double fps = 25;
     const cudacodec::Codec codec = cudacodec::Codec::HEVC;
-    const std::string ext = ".h265";
+    // required until PR for raw video encapsulation is merged and windows dll is updated
+#ifdef WIN32
+    const std::string ext = ".hevc";
+#else
+    // use this after update
+    const std::string ext = ".mp4";
+#endif
     const std::string outputFile = cv::tempfile(ext.c_str());
     constexpr int nFrames = 5;
     Size frameSz;
@@ -716,7 +722,13 @@ CUDA_TEST_P(Write, Writer)
     const cudacodec::Codec codec = GET_PARAM(2);
     const double fps = GET_PARAM(3);
     const cv::cudacodec::ColorFormat colorFormat = GET_PARAM(4);
+    // required until PR for raw video encapsulation is merged and windows dll is updated
+#ifdef WIN32
     const std::string ext = codec == cudacodec::Codec::H264 ? ".h264" : ".hevc";
+#else
+    // use this after update
+    const std::string ext = ".mp4";
+#endif
     const std::string outputFile = cv::tempfile(ext.c_str());
     constexpr int nFrames = 5;
     Size frameSz;
@@ -750,7 +762,7 @@ CUDA_TEST_P(Write, Writer)
         const int width = static_cast<int>(cap.get(CAP_PROP_FRAME_WIDTH));
         const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
-        ASSERT_TRUE(abs(fps - cap.get(CAP_PROP_FPS)) < 0.5);
+        ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
         Mat frame;
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
@@ -761,24 +773,22 @@ CUDA_TEST_P(Write, Writer)
 }
 
 #define DEVICE_SRC true, false
-#define FPS 10, 29.7
+#define FPS 10, 29
 #define CODEC cv::cudacodec::Codec::H264, cv::cudacodec::Codec::HEVC
 #define COLOR_FORMAT cv::cudacodec::ColorFormat::BGR, cv::cudacodec::ColorFormat::RGB, cv::cudacodec::ColorFormat::BGRA, \
 cv::cudacodec::ColorFormat::RGBA, cv::cudacodec::ColorFormat::GRAY
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Write, testing::Combine(ALL_DEVICES, testing::Values(DEVICE_SRC), testing::Values(CODEC), testing::Values(FPS),
     testing::Values(COLOR_FORMAT)));
 
-
-struct EncoderParams : testing::TestWithParam<cv::cuda::DeviceInfo>
+PARAM_TEST_CASE(EncoderParams, cv::cuda::DeviceInfo, int)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::cudacodec::EncoderParams params;
     virtual void SetUp()
     {
-        devInfo = GetParam();
+        devInfo = GET_PARAM(0);
         cv::cuda::setDevice(devInfo.deviceID());
         // Fixed params for CBR test
-        params.nvPreset = cv::cudacodec::EncodePreset::ENC_PRESET_P7;
         params.tuningInfo = cv::cudacodec::EncodeTuningInfo::ENC_TUNING_INFO_HIGH_QUALITY;
         params.encodingProfile = cv::cudacodec::EncodeProfile::ENC_H264_PROFILE_MAIN;
         params.rateControlMode = cv::cudacodec::EncodeParamsRcMode::ENC_PARAMS_RC_CBR;
@@ -787,19 +797,25 @@ struct EncoderParams : testing::TestWithParam<cv::cuda::DeviceInfo>
         params.maxBitRate = 0;
         params.targetQuality = 0;
         params.gopLength = 5;
+        params.idrPeriod = GET_PARAM(1);
     }
 };
-
 
 CUDA_TEST_P(EncoderParams, Writer)
 {
     const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../highgui/video/big_buck_bunny.mp4";
     constexpr double fps = 25.0;
     constexpr cudacodec::Codec codec = cudacodec::Codec::H264;
+    // required until PR for raw video encapsulation is merged and windows dll is updated
+#ifdef WIN32
     const std::string ext = ".h264";
+#else
+    // use this after update
+    const std::string ext = ".mp4";
+#endif
     const std::string outputFile = cv::tempfile(ext.c_str());
     Size frameSz;
-    constexpr int nFrames = 5;
+    const int nFrames = max(params.gopLength, params.idrPeriod) + 1;
     {
         cv::VideoCapture reader(inputFile);
         ASSERT_TRUE(reader.isOpened());
@@ -829,20 +845,36 @@ CUDA_TEST_P(EncoderParams, Writer)
         const int height = static_cast<int>(cap.get(CAP_PROP_FRAME_HEIGHT));
         ASSERT_EQ(frameSz, Size(width, height));
         ASSERT_EQ(fps, cap.get(CAP_PROP_FPS));
-        const bool checkGop = videoio_registry::hasBackend(CAP_FFMPEG);
-        Mat frame;
+        const bool checkFrameType = videoio_registry::hasBackend(CAP_FFMPEG);
+        VideoCapture capRaw;
+        int idrPeriod = 0;
+        if (checkFrameType) {
+            capRaw.open(outputFile, CAP_FFMPEG, { CAP_PROP_FORMAT, -1 });
+            ASSERT_TRUE(capRaw.isOpened());
+            idrPeriod = params.idrPeriod == 0 ? params.gopLength : params.idrPeriod;
+        }
+        const double frameTypeIAsciiCode = 73.0; // see CAP_PROP_FRAME_TYPE
+        Mat frame, frameRaw;
         for (int i = 0; i < nFrames; ++i) {
             cap >> frame;
             ASSERT_FALSE(frame.empty());
-            if (checkGop && (cap.get(CAP_PROP_FRAME_TYPE) == 73)) {
-                ASSERT_TRUE(i % params.gopLength == 0);
+            if (checkFrameType) {
+                capRaw >> frameRaw;
+                ASSERT_FALSE(frameRaw.empty());
+                const bool intraFrameReference = cap.get(CAP_PROP_FRAME_TYPE) == frameTypeIAsciiCode;
+                const bool intraFrameActual = i % params.gopLength == 0;
+                ASSERT_EQ(intraFrameActual, intraFrameReference);
+                const bool keyFrameActual = capRaw.get(CAP_PROP_LRF_HAS_KEY_FRAME) == 1.0;
+                const bool keyFrameReference = i % idrPeriod == 0;
+                ASSERT_EQ(keyFrameActual, keyFrameReference);
             }
         }
     }
     ASSERT_EQ(0, remove(outputFile.c_str()));
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParams, ALL_DEVICES);
+#define IDR_PERIOD testing::Values(5,10)
+INSTANTIATE_TEST_CASE_P(CUDA_Codec, EncoderParams, testing::Combine(ALL_DEVICES, IDR_PERIOD));
 
 #endif // HAVE_NVCUVENC
 
