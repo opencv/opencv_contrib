@@ -352,8 +352,7 @@ int main() {
 #ifndef __EMSCRIPTEN__
         Source src = makeCaptureSource(argv[1]);
         window->setSource(src);
-        Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
-                FPS, cv::Size(WIDTH, HEIGHT));
+        Sink sink = makeWriterSink(OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
         Source src = makeCaptureSource(WIDTH, HEIGHT, window);

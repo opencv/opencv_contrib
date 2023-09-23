@@ -17,8 +17,7 @@ int main(int argc, char** argv) {
     Source src = makeCaptureSource(argv[1]);
 
     //Make the video sink
-    Sink sink = makeWriterSink(argv[2], VideoWriter::fourcc('V', 'P', '9', '0'), src.fps(), window->framebufferSize());
-
+    Sink sink = makeWriterSink(argv[2], src.fps(), cv::Size(960, 960));
     //Attach source and sink
     window->setSource(src);
     window->setSink(sink);

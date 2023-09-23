@@ -39,6 +39,10 @@ constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
 
+#ifndef __EMSCRIPTEN__
+//the second window
+static cv::Ptr<cv::v4d::V4D> menuWindow;
+#endif
 /* Visualization parameters */
 
 //How the background will be visualized
@@ -86,11 +90,9 @@ float point_loss = 10;
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
 int max_stroke = 10;
-// Keep alpha separate for the GUI
-float alpha = 0.1f;
 
 // Red, green, blue and alpha. All from 0.0f to 1.0f
-//nanogui::Color effect_color(1.0f, 0.75f, 0.4f, 1.0f);
+float effect_color[4] = {1.0f, 0.75f, 0.4f, 1.0f};
 //display on-screen FPS
 bool show_fps = true;
 //Stretch frame buffer to window size
@@ -104,7 +106,7 @@ PostProcModes post_proc_mode = GLOW;
 PostProcModes post_proc_mode = NONE;
 #endif
 // Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
-int GLOW_KERNEL_SIZE = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
+int glow_kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 //The lightness selection threshold
 int bloom_thresh = 210;
 //The intensity of the bloom filter
@@ -336,103 +338,71 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
 using namespace cv::v4d;
 
 //Build the GUI
-//static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
-//    main->nanogui([&](cv::v4d::FormHelper& form){
-//        form.makeDialog(5, 30, "Effects");
-//
-//        form.makeGroup("Foreground");
-//        form.makeFormVariable("Scale", fg_scale, 0.1f, 4.0f, true, "", "Generate the foreground at this scale");
-//        form.makeFormVariable("Loss", fg_loss, 0.1f, 99.9f, true, "%", "On every frame the foreground loses on brightness");
-//
-//        form.makeGroup("Background");
-//        form.makeComboBox("Mode",background_mode, {"Grey", "Color", "Value", "Black"});
-//
-//        form.makeGroup("Points");
-//        form.makeFormVariable("Max. Points", max_points, 10, 1000000, true, "", "The theoretical maximum number of points to track which is scaled by the density of detected points and therefor is usually much smaller");
-//        form.makeFormVariable("Point Loss", point_loss, 0.0f, 100.0f, true, "%", "How many of the tracked points to lose intentionally");
-//
-//        form.makeGroup("Optical flow");
-//        form.makeFormVariable("Max. Stroke Size", max_stroke, 1, 100, true, "px", "The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull of tracked points and therefor is usually much smaller");
-//        form.makeColorPicker("Color", effect_color, "The primary effect color",[&](const nanogui::Color &c) {
-//            effect_color[0] = c[0];
-//            effect_color[1] = c[1];
-//            effect_color[2] = c[2];
-//        });
-//        form.makeFormVariable("Alpha", alpha, 0.0f, 1.0f, true, "", "The opacity of the effect");
-//
-//        form.makeDialog(220, 30, "Post Processing");
-//        auto* postPocMode = form.makeComboBox("Mode",post_proc_mode, {"Glow", "Bloom", "None"});
-//        auto* kernelSize = form.makeFormVariable("Kernel Size", GLOW_KERNEL_SIZE, 1, 63, true, "", "Intensity of glow defined by kernel size");
-//        kernelSize->set_callback([=](const int& k) {
-//            static int lastKernelSize = GLOW_KERNEL_SIZE;
-//
-//            if(k == lastKernelSize)
-//                return;
-//
-//            if(k <= lastKernelSize) {
-//                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k - 1 : k), 1);
-//            } else if(k > lastKernelSize)
-//                GLOW_KERNEL_SIZE = std::max(int(k % 2 == 0 ? k + 1 : k), 1);
-//
-//            lastKernelSize = k;
-//            kernelSize->set_value(GLOW_KERNEL_SIZE);
-//        });
-//        auto* thresh = form.makeFormVariable("Threshold", bloom_thresh, 1, 255, true, "", "The lightness selection threshold", true, false);
-//        auto* gain = form.makeFormVariable("Gain", bloom_gain, 0.1f, 20.0f, true, "", "Intensity of the effect defined by gain", true, false);
-//        postPocMode->set_callback([=](const int& m) {
-//            switch(m) {
-//            case GLOW:
-//                kernelSize->set_enabled(true);
-//                thresh->set_enabled(false);
-//                gain->set_enabled(false);
-//            break;
-//            case BLOOM:
-//                kernelSize->set_enabled(true);
-//                thresh->set_enabled(true);
-//                gain->set_enabled(true);
-//            break;
-//            case NONE:
-//                kernelSize->set_enabled(false);
-//                thresh->set_enabled(false);
-//                gain->set_enabled(false);
-//            break;
-//
-//            }
-//            postPocMode->set_selected_index(m);
-//        });
-//
-//        form.makeDialog(220, 175, "Settings");
-//
-//        form.makeGroup("Scene Change Detection");
-//        form.makeFormVariable("Threshold", scene_change_thresh, 0.1f, 1.0f, true, "", "Peak threshold. Lowering it makes detection more sensitive");
-//        form.makeFormVariable("Threshold Diff", scene_change_thresh_diff, 0.1f, 1.0f, true, "", "Difference of peak thresholds. Lowering it makes detection more sensitive");
-//    });
-//
-//    menu->nanogui([&](cv::v4d::FormHelper& form){
-//        form.makeDialog(8, 16, "Display");
-//
-//        form.makeGroup("Display");
-//        form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-//        form.makeFormVariable("Scale", scale, "Scale the frame buffer to the window size")->set_callback([=](const bool &s) {
-//            main->setScaling(s);
-//        });
-//
-//#ifndef __EMSCRIPTEN__
-//        form.makeButton("Fullscreen", [=]() {
-//            main->setFullscreen(!main->isFullscreen());
-//        });
-//
-//        form.makeButton("Offscreen", [=]() {
-//            main->setVisible(!main->isVisible());
-//        });
-//#endif
-//    });
-//}
+static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
+    main->imgui([main, menu](ImGuiContext* ctx){
+        using namespace ImGui;
+        SetCurrentContext(ctx);
+        Begin("Effects");
+        Text("Foreground");
+        SliderFloat("Scale", &fg_scale, 0.1f, 4.0f);
+        SliderFloat("Loss", &fg_loss, 0.1f, 99.9f);
+
+        Text("Background");
+        static const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
+        static int* bgm = (int*)&background_mode;
+        ListBox("Mode", bgm, bgm_items, 4, 4);
+
+        Text("Points");
+        SliderInt("Max. Points", &max_points, 10, 1000000);
+        SliderFloat("Point Loss", &point_loss, 0.0f, 100.0f);
+
+        Text("Optical flow");
+        SliderInt("Max. Stroke Size", &max_stroke, 1, 100);
+        ColorPicker4("Color", effect_color);
+        End();
+
+        Begin("Post Processing");
+        static const char* ppm_items[3] = {"Glow", "Bloom", "None"};
+        static int* ppm = (int*)&post_proc_mode;
+        ListBox("Effect",ppm, ppm_items, 3, 3);
+        SliderInt("Kernel Size",&glow_kernel_size, 1, 63);
+        SliderFloat("Gain", &bloom_gain, 0.1f, 20.0f);
+        End();
+
+        Begin("Settings");
+        Text("Scene Change Detection");
+        SliderFloat("Threshold", &scene_change_thresh, 0.1f, 1.0f);
+        SliderFloat("Threshold Diff", &scene_change_thresh_diff, 0.1f, 1.0f);
+        End();
+    });
+#ifndef __EMSCRIPTEN__
+    menu->imgui([main](ImGuiContext* ctx){
+        using namespace ImGui;
+        SetCurrentContext(ctx);
+        Begin("Display");
+        Checkbox("Show FPS", &show_fps);
+        if(Checkbox("Scale", &scale)) {
+            main->setScaling(scale);
+        }
+
+        if(Button("Fullscreen")) {
+            main->setFullscreen(!main->isFullscreen());
+        };
+
+        if(Button("Offscreen")) {
+            main->setVisible(!main->isVisible());
+        };
+        End();
+    });
+#endif
+}
 
 static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
     static cv::UMat background, down;
     static cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
+    //BGR
+    static cv::UMat menuFrame;
     //GREY
     static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static vector<cv::Point2f> detectedPoints;
@@ -459,7 +429,7 @@ static bool iteration(cv::Ptr<V4D> window) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
             if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
                 //Visualize the sparse optical flow using nanovg
-                cv::Scalar color = cv::Scalar(255, 0, 0, 255);
+                cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
                 visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
             }
         }
@@ -469,33 +439,47 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     window->fb([&](cv::UMat& framebuffer){
         //Put it all together (OpenCL)
-        composite_layers(background, foreground, framebuffer, framebuffer, GLOW_KERNEL_SIZE, fg_loss, background_mode, post_proc_mode);
+        composite_layers(background, foreground, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
+        cvtColor(framebuffer, menuFrame, cv::COLOR_BGRA2BGR);
     });
 
+#ifndef __EMSCRIPTEN__
+    menuWindow->feed(menuFrame.getMat(cv::ACCESS_READ));
+#endif
     window->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-    return window->display();
-}
 #ifndef __EMSCRIPTEN__
+    return menuWindow->display() && window->display();
+#else
+    return window->display();
+#endif
+}
+
 int main(int argc, char **argv) {
+    CV_UNUSED(argc);
+    CV_UNUSED(argv);
+
+#ifndef __EMSCRIPTEN__
     if (argc != 2) {
         std::cerr << "Usage: optflow <input-video-file>" << endl;
         exit(1);
     }
-#else
-int main() {
 #endif
+
     try {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
+#ifndef __EMSCRIPTEN__
+        menuWindow = V4D::make(240, 135, "Menu", false, false, 0);
+#endif
         window->printSystemInfo();
 
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
-//            setup_gui(window, menuWindow);
+            setup_gui(window, menuWindow);
 #else
-//            setup_gui(window, window);
+            setup_gui(window, window);
 #endif
         }
 
@@ -503,8 +487,8 @@ int main() {
         Source src = makeCaptureSource(argv[1]);
         window->setSource(src);
 
-        Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
-                src.fps(), cv::Size(WIDTH, HEIGHT));
+        //Creates a writer sink (which might be hardware accelerated)
+        Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT, window);

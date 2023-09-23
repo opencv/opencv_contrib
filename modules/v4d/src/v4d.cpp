@@ -241,7 +241,7 @@ void V4D::setSource(const Source& src) {
     source_ = src;
 }
 
-void V4D::feed(const cv::UMat& in) {
+void V4D::feed(cv::InputArray in) {
     TimeTracker::getInstance()->execute("feed", [&](){
         cv::UMat frame;
         clvaCtx().capture([&](cv::UMat& videoFrame) {
@@ -254,7 +254,7 @@ void V4D::feed(const cv::UMat& in) {
     });
 }
 
-cv::UMat V4D::fetch() {
+cv::_InputArray V4D::fetch() {
     cv::UMat frame;
     TimeTracker::getInstance()->execute("copyTo", [&](){
         fb([frame](cv::UMat& framebuffer){
@@ -528,6 +528,7 @@ void V4D::printSystemInfo() {
 
 void V4D::makeCurrent() {
     fbCtx().makeCurrent();
+    imguiCtx().makeCurrent();
 }
 
 cv::Ptr<V4D> V4D::self() {

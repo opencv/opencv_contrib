@@ -297,7 +297,7 @@ void FrameBufferContext::init() {
 #endif
 
     setup(framebufferSize_);
-//    glfwSetWindowUserPointer(getGLFWWindow(), &getV4D());
+    glfwSetWindowUserPointer(getGLFWWindow(), getV4D().get());
 //
 //    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
 //        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
@@ -365,6 +365,10 @@ void FrameBufferContext::init() {
 ////                        }
 ////        #endif
 //            });
+    glfwSetWindowFocusCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int i) {
+                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+                v4d->makeCurrent();
+    });
 }
 
 cv::Ptr<V4D> FrameBufferContext::getV4D() {
@@ -491,13 +495,11 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
         clImage_ = clCreateFromGLTexture(context, CL_MEM_WRITE_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
         if (status != CL_SUCCESS)
-            CV_Error_(cv::Error::OpenCLApiCallError,
-                    ("OpenCL: clCreateFromGLTexture failed: %d", status));
+            throw std::runtime_error("OpenCL: clCreateFromGLTexture failed: " + std::to_string(status));
 
         status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
         if (status != CL_SUCCESS)
-            CV_Error_(cv::Error::OpenCLApiCallError,
-                    ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
+            throw std::runtime_error("OpenCL: clEnqueueAcquireGLObjects failed: " + std::to_string(status));
     }
 
     cl_mem clBuffer = (cl_mem) u.handle(ACCESS_READ);
@@ -508,12 +510,11 @@ void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture)
     status = clEnqueueCopyBufferToImage(q, clBuffer, clImage_, offset, dst_origin, region, 0, NULL,
     NULL);
     if (status != CL_SUCCESS)
-        CV_Error_(cv::Error::OpenCLApiCallError,
-                ("OpenCL: clEnqueueCopyBufferToImage failed: %d", status));
+        throw std::runtime_error("OpenCL: clEnqueueCopyBufferToImage failed: " + std::to_string(status));
 
     status = clFinish(q);
     if (status != CL_SUCCESS)
-        CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clFinish failed: %d", status));
+        throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
 #endif
 }
 
@@ -540,13 +541,11 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
         clImage_ = clCreateFromGLTexture(context, CL_MEM_READ_ONLY, 0x0DE1, 0, texture.texId(),
                 &status);
         if (status != CL_SUCCESS)
-            CV_Error_(cv::Error::OpenCLApiCallError,
-                    ("OpenCL: clCreateFromGLTexture failed: %d", status));
+            throw std::runtime_error("OpenCL: clCreateFromGLTexture failed: " + std::to_string(status));
 
         status = clEnqueueAcquireGLObjects(q, 1, &clImage_, 0, NULL, NULL);
         if (status != CL_SUCCESS)
-            CV_Error_(cv::Error::OpenCLApiCallError,
-                    ("OpenCL: clEnqueueAcquireGLObjects failed: %d", status));
+            throw std::runtime_error("OpenCL: clEnqueueAcquireGLObjects failed: " + std::to_string(status));
     }
 
     cl_mem clBuffer = (cl_mem) u.handle(ACCESS_WRITE);
@@ -557,12 +556,11 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     status = clEnqueueCopyImageToBuffer(q, clImage_, clBuffer, src_origin, region, offset, 0, NULL,
     NULL);
     if (status != CL_SUCCESS)
-        CV_Error_(cv::Error::OpenCLApiCallError,
-                ("OpenCL: clEnqueueCopyImageToBuffer failed: %d", status));
+        throw std::runtime_error("OpenCL: clEnqueueCopyImageToBuffer failed: " + std::to_string(status));
 
     status = clFinish(q);
     if (status != CL_SUCCESS)
-        CV_Error_(cv::Error::OpenCLApiCallError, ("OpenCL: clFinish failed: %d", status));
+        throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
 #endif
 }
 
@@ -668,11 +666,13 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint dstY0 = scale ? marginhs : marginh;
     GLint dstX1 = scale ? marginws + fbws : marginw + framebufferSize_.width;
     GLint dstY1 = scale ? marginhs + fbhs : marginh + framebufferSize_.height;
-    {
-        //FIXME WebGL2 workaround for webkit. without we have flickering
-        cv::UMat tmp;
-        FrameBufferContext::FrameBufferScope fbScope(*this, tmp);
-    }
+//#ifdef __EMSCRIPTEN__
+//    {
+//        //FIXME WebGL2 workaround for webkit. without we have flickering
+//        cv::UMat tmp(size(), CV_8UC4);
+//        FrameBufferContext::FrameBufferScope fbScope(*this, tmp);
+//    }
+//#endif
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,

@@ -21,7 +21,7 @@ constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "many_cubes-demo.mkv";
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+const int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 
 using std::cerr;
 using std::endl;
@@ -244,7 +244,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCV
     window->fb([&](cv::UMat& framebuffer) {
-        glow_effect(framebuffer, framebuffer, GLOW_KERNEL_SIZE);
+        glow_effect(framebuffer, framebuffer, glow_kernel_size);
     });
 #endif
 
@@ -258,9 +258,8 @@ int main() {
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
-    //Creates a writer sink using the VP9 codec (which might be hardware accelerated)
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'), FPS,
-            cv::Size(WIDTH, HEIGHT));
+    //Creates a writer sink (which might be hardware accelerated)
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)

@@ -15,7 +15,7 @@ int main() {
 		static long cnt = 0;
 	    //The source is responsible for initializing the frame..
 		if(frame.empty())
-		    frame.create(Size(1280, 720), CV_8UC3);
+		    frame.create(Size(960, 960), CV_8UC3);
 	    frame = colorConvert(Scalar(++cnt % 180, 128, 128, 255), COLOR_HLS2BGR);
 	    return true;
 	}, 60.0f);

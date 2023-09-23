@@ -244,8 +244,7 @@ int main() {
     Source src = makeCaptureSource(argv[1]);
     window->setSource(src);
 
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
-            src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT, window);

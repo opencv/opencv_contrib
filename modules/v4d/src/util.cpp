@@ -170,6 +170,12 @@ unsigned int initShader(const char* vShader, const char* fShader, const char* ou
     return program;
 }
 
+std::string getGlVendor()  {
+    std::ostringstream oss;
+        oss << reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+        return oss.str();
+}
+
 std::string getGlInfo() {
     std::ostringstream oss;
     oss << "\n\t" << reinterpret_cast<const char*>(glGetString(GL_VERSION))
@@ -344,8 +350,20 @@ static Source makeAnyHWSource(const string& inputFilename) {
 #endif
 
 #ifndef __EMSCRIPTEN__
-Sink makeWriterSink(const string& outputFilename, const int fourcc, const float fps,
-        const cv::Size& frameSize) {
+Sink makeWriterSink(const string& outputFilename, const float fps, const cv::Size& frameSize) {
+    int fourcc = 0;
+    cerr << getGlVendor() << endl;
+    //FIXME find a cleverer way to guess a decent codec
+    if(getGlVendor() == "NVIDIA Corporation") {
+        fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
+    } else {
+        fourcc = cv::VideoWriter::fourcc('V', 'P', '9', '0');
+    }
+    return makeWriterSink(outputFilename, fps, frameSize, fourcc);
+}
+
+Sink makeWriterSink(const string& outputFilename, const float fps,
+        const cv::Size& frameSize, int fourcc) {
     if (isIntelVaSupported()) {
         return makeVaSink(outputFilename, fourcc, fps, frameSize, 0);
     } else {

@@ -120,6 +120,12 @@ CV_EXPORTS void gl_check_error(const std::filesystem::path& file, unsigned int l
     expr;
 #endif
 CV_EXPORTS unsigned int initShader(const char* vShader, const char* fShader, const char* outputAttributeName);
+
+/*!
+ * Returns the OpenGL vendor string
+ * @return a string object with the OpenGL vendor information
+ */
+CV_EXPORTS std::string getGlVendor();
 /*!
  * Returns the OpenGL Version information.
  * @return a string object with the OpenGL version information
@@ -178,8 +184,10 @@ CV_EXPORTS Source makeVaSource(const string& inputFilename, const int vaDeviceIn
  * @param frameSize The frame size of the target video.
   * @return A (optionally VAAPI enabled) VideoWriter sink object.
  */
-CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const int fourcc, const float fps,
+CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const float fps,
         const cv::Size& frameSize);
+CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const float fps,
+        const cv::Size& frameSize, const int fourcc);
 /*!
  * Creates a VideoCapture source object to use in conjunction with #V4D::setSource().
  * This function automatically determines if Intel VAAPI is available and enables it if so.

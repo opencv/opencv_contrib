@@ -24,7 +24,7 @@ constexpr long unsigned int HEIGHT = 960;
 #endif
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
-const int GLOW_KERNEL_SIZE = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
+const int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 : DIAG / 138), 1);
 #ifndef __EMSCRIPTEN__
 constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
@@ -198,7 +198,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
 #ifndef __EMSCRIPTEN__
     window->fb([&](cv::UMat& frameBuffer) {
-        glow_effect(frameBuffer, frameBuffer, GLOW_KERNEL_SIZE);
+        glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
 #endif
 
@@ -226,8 +226,7 @@ int main() {
     Source src = makeCaptureSource(argv[1]);
     window->setSource(src);
 
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, cv::VideoWriter::fourcc('V', 'P', '9', '0'),
-            src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
     //Creates a webcam source is available

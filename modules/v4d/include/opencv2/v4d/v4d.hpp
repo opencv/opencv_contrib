@@ -154,9 +154,7 @@ public:
      */
     CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void nvg(std::function<void()> fn);
-    CV_EXPORTS void imgui(std::function<void(const cv::Size&)> fn);
     CV_EXPORTS void imgui(std::function<void(ImGuiContext* ctx)> fn);
-    CV_EXPORTS void imgui(std::function<void(cv::Ptr<V4D>)> fn);
 
     /*!
      * Copy the framebuffer contents to an OutputArray.
@@ -177,12 +175,12 @@ public:
     /*!
      * Called to feed an image directly to the framebuffer
      */
-    CV_EXPORTS void feed(const cv::UMat& in);
+    CV_EXPORTS void feed(cv::InputArray in);
     /*!
      * Fetches a copy of frambuffer
      * @return a copy of the framebuffer
      */
-    CV_EXPORTS cv::UMat fetch();
+    CV_EXPORTS cv::_InputArray fetch();
 
     /*!
      * Called to capture to the framebuffer from a #cv::viz::Source object provided via #V4D::setSource().
