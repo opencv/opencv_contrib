@@ -518,6 +518,11 @@ bool V4D::display() {
 #endif
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());
+            {
+                FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
+                GL_CHECK(glClearColor(0,0,0,255));
+                GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
+            }
         });
     }
     if (frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
