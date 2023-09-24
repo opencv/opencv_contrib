@@ -13,7 +13,7 @@
       div.emscripten { text-align: center; }
       div.emscripten_border { border: 1px solid black; }
       /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-      canvas.emscripten { border: 0px none; }
+      canvas.emscripten { border: 0px none; background-color: black; }
 
       #emscripten_logo {
         display: inline-block;
@@ -103,8 +103,8 @@
   <span><button id="captureBtn">Start Capture</button><button id="fullscreenBtn">Fullscreen</button>
   </span>
 </span>
-    <canvas id="v4dOffscreenCanvas" width="960" height="960" style="display:none;"></canvas>
-    <video id="v4dVideoElement" width="960" height="960" autoplay style="display: none;"></video>
+    <canvas id="v4dOffscreenCanvas" style="display:none;"></canvas>
+    <video id="v4dVideoElement" autoplay style="display: none;"></video>
 
     <div class="emscripten" id="status">Downloading...</div>
 
@@ -122,18 +122,27 @@
       var fsButton = document.querySelector("#fullscreenBtn");
       var captureBtn = document.querySelector("#captureBtn");
       var videoElement = document.querySelector("#v4dVideoElement");
-
+      var offscreenCanvas = document.querySelector("#v4dOffscreenCanvas");
+      var width = 960;
+      var height = 960;
       function fixCanvasSize() {
-          Module.canvas.style.width = ((960) / window.devicePixelRatio)+ "px";
-          Module.canvas.style.height = ((960) / window.devicePixelRatio) + "px";
-          Module.canvas.width = 960;
-          Module.canvas.height = 960;
+          Module.canvas.style.width = (width / window.devicePixelRatio) + "px";
+          Module.canvas.style.height = (height / window.devicePixelRatio) + "px";
+          Module.canvas.width = width;
+          Module.canvas.height = height;
+          videoElement.style.width = (width / window.devicePixelRatio) + "px";
+          videoElement.style.height = (height / window.devicePixelRatio) + "px";
+          videoElement.width = width;
+          videoElement.height = height;
+          offscreenCanvas.style.width = (width / window.devicePixelRatio) + "px";
+          offscreenCanvas.style.height = (height / window.devicePixelRatio) + "px";
+          offscreenCanvas.width = width;
+          offscreenCanvas.height = height;
       }
 
       var Module = {
         onRuntimeInitialized: function() {
           fixCanvasSize();
-          Module._v4dInitCapture(960,960);
         },
         preRun: [],
         postRun: [],
@@ -205,7 +214,10 @@
       }
 
       captureBtn.addEventListener('click', async function() {
-          let stream = await navigator.mediaDevices.getUserMedia({ video: { width: 960, height: 960 } , audio: false });
+          let stream = await navigator.mediaDevices.getUserMedia({ video: { width: width, height: height } , audio: false });
+          var settings = stream.getVideoTracks()[0].getSettings();
+          var aspectRatio = settings.width / settings.height;
+          Module._v4dInitCapture(width, width / aspectRatio);
           videoElement.addEventListener(
             "playing",
             () => {

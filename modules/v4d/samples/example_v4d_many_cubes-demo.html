@@ -13,7 +13,7 @@
       div.emscripten { text-align: center; }
       div.emscripten_border { border: 1px solid black; }
       /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-      canvas.emscripten { border: 0px none; }
+      canvas.emscripten { border: 0px none; background-color: black; }
 
       .spinner {
         height: 30px;
@@ -95,7 +95,7 @@
   <div class="emscripten">
     <progress value="0" max="100" id="progress" hidden=1></progress>
   </div>
-  <canvas id="v4dOffscreenCanvas" width="960" height="960" style="display:none;"></canvas>
+  <canvas id="v4dOffscreenCanvas" style="display:none;"></canvas>
   <div class="emscripten_border">
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
   </div>
@@ -104,13 +104,19 @@
     var statusElement = document.getElementById('status');
     var progressElement = document.getElementById('progress');
     var fsButton = document.querySelector("#fullscreenBtn");
+    var offscreenCanvas = document.querySelector("#v4dOffscreenCanvas");
+    var width = 960;
+    var height = 960;
 
     function fixCanvasSize() {
-        Module.canvas.style.width = ((960) / window.devicePixelRatio)+ "px";
-        Module.canvas.style.height = ((960) / window.devicePixelRatio) + "px";
-        Module.canvas.width = 960;
-        Module.canvas.height = 960;
-        console.log("fixed canvas size");
+        Module.canvas.style.width = (width / window.devicePixelRatio) + "px";
+        Module.canvas.style.height = (height / window.devicePixelRatio) + "px";
+        Module.canvas.width = width;
+        Module.canvas.height = height;
+        offscreenCanvas.style.width = (width / window.devicePixelRatio) + "px";
+        offscreenCanvas.style.height = (height / window.devicePixelRatio) + "px";
+        offscreenCanvas.width = width;
+        offscreenCanvas.height = height;
     }
 
     var Module = {
