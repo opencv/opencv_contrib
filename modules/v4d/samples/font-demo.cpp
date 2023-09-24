@@ -166,7 +166,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         clear();
         fontSize(font_size);
         fontFace("sans-bold");
-        fillColor(cv::Scalar(100, 172, 255, 255));
+        fillColor(INITIAL_COLOR);
         textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
         /** only draw lines that are visible **/
