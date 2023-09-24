@@ -26,7 +26,8 @@ public:
     CV_EXPORTS ImGuiContextImpl(FrameBufferContext& fbContext);
     CV_EXPORTS void build(std::function<void(ImGuiContext*)> fn);
 protected:
-    CV_EXPORTS void render();
+    CV_EXPORTS void makeCurrent();
+    CV_EXPORTS void render(bool displayFPS);
 };
 }
 }
