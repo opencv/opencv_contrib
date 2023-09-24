@@ -513,9 +513,6 @@ bool V4D::display() {
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
 #else
-            GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-            GL_CHECK(glViewport(0, 0, size().width, size().height));
-            GL_CHECK(glFinish());
             emscripten_webgl_commit_frame();
 #endif
             glfwPollEvents();
