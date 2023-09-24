@@ -302,6 +302,7 @@ bool V4D::capture() {
 bool V4D::capture(std::function<void(cv::UMat&)> fn) {
     bool res = true;
     TimeTracker::getInstance()->execute("capture", [this, fn, &res](){
+        CV_UNUSED(res);
         if (!source_.isReady() || !source_.isOpen()) {
 #ifndef __EMSCRIPTEN__
             res = false;
