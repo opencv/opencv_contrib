@@ -19,9 +19,9 @@ constexpr long unsigned int HEIGHT = 960;
 constexpr bool OFFSCREEN = false;
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 #ifndef __EMSCRIPTEN__
-constexpr double FPS = 60;
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
+const cv::Scalar INITIAL_COLOR(31, 62, 255, 255);
 
 /* Mandelbrot control parameters */
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
@@ -202,7 +202,7 @@ static void render_scene(const cv::Size& sz) {
     }
 
     glUseProgram(shader_program_hdl);
-    glUniform4f(base_color_hdl, 255, 0, 0, 255);
+    glUniform4f(base_color_hdl, INITIAL_COLOR[0], INITIAL_COLOR[1], INITIAL_COLOR[2], INITIAL_COLOR[3]);
     glUniform1i(contrast_boost_hdl, contrast_boost);
     glUniform1i(max_iterations_hdl, max_iterations);
     glUniform1f(center_y_hdl, center_y);
@@ -352,7 +352,7 @@ int main() {
 #ifndef __EMSCRIPTEN__
         Source src = makeCaptureSource(argv[1]);
         window->setSource(src);
-        Sink sink = makeWriterSink(OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+        Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
         Source src = makeCaptureSource(WIDTH, HEIGHT, window);
