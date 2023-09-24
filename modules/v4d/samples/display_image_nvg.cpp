@@ -3,7 +3,13 @@
 
 using namespace cv;
 using namespace cv::v4d;
-using namespace cv::v4d::nvg;
+
+struct Image_t {
+    std::string filename_;
+    cv::v4d::nvg::Paint paint_;
+    int w_;
+    int h_;
+};
 
 int main() {
     cv::Ptr<V4D> window = V4D::make(960, 960, "Display Image using NanoVG", false, false, 0);
@@ -13,21 +19,23 @@ int main() {
 #else
     string filename = samples::findFile("lena.jpg");
 #endif
-	Paint imagePaint;
-    int w, h;
-	window->nvg([&imagePaint, &w, &h, filename](const cv::Size sz) {
-	    int img = createImage(filename.c_str(), NVG_IMAGE_NEAREST);
-	    CV_Assert(img > 0);
-	    imageSize(img, &w, &h);
-	    imagePaint = imagePattern(0, 0, w, h, 0.0f/180.0f*NVG_PI, img, 1.0);
+    Image_t image;
+
+	window->nvg([&image](const cv::Size sz) {
+	    using namespace cv::v4d::nvg;
+	    int res = createImage(image.filename_.c_str(), NVG_IMAGE_NEAREST);
+	    CV_Assert(res > 0);
+	    imageSize(res, &image.w_, &image.h_);
+	    image.paint_ = imagePattern(0, 0, image.w_, image.h_, 0.0f/180.0f*NVG_PI, res, 1.0);
 	});
 
-	window->run([&imagePaint, w, h](Ptr<V4D> win){
-	    win->nvg([&imagePaint, w, h](const cv::Size sz) {
+	window->run([&image](Ptr<V4D> win){
+	    win->nvg([&image](const cv::Size sz) {
+	        using namespace cv::v4d::nvg;
 	        beginPath();
-	        scale(double(sz.width)/w, double(sz.height)/h);
-	        roundedRect(0,0, w, h, 5);
-	        fillPaint(imagePaint);
+	        scale(double(sz.width)/image.w_, double(sz.height)/image.h_);
+	        roundedRect(0,0, image.w_, image.h_, 50);
+	        fillPaint(image.paint_);
 	        fill();
 	    });
 	    //Displays the framebuffer in the window. Returns false if the windows has been closed.
