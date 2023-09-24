@@ -110,6 +110,9 @@ class CV_EXPORTS FrameBufferContext {
     std::map<size_t, GLuint> copyFramebuffers_;
     std::map<size_t, GLuint> copyTextures_;
     int index_;
+
+    void* current_sync_object_ = 0;
+    bool first_sync_ = true;
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.
@@ -205,6 +208,8 @@ public:
     void close();
     bool isClosed();
     bool isShared();
+    void fence();
+    bool wait(uint64_t timeout = 0);
 protected:
     cv::Ptr<V4D> getV4D();
     int getIndex();

@@ -361,6 +361,8 @@ private:
     void swapContextBuffers();
 protected:
     cv::Ptr<V4D> self();
+    void fence();
+    bool wait(uint64_t timeout = 0);
 };
 }
 } /* namespace kb */

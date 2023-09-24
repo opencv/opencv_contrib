@@ -133,7 +133,6 @@ void FrameBufferContext::initWebGLCopy(const size_t& index) {
 
 void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
 #ifdef __EMSCRIPTEN__
-    GL_CHECK(glFinish());
     size_t index = other.getIndex();
     this->makeCurrent();
     int width = getWindowSize().width;
@@ -192,7 +191,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
     GL_CHECK(glBindVertexArray(copyVaos[index]));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     GL_CHECK(glDisable(GL_BLEND));
-    GL_CHECK(glFlush());
 #else
     CV_UNUSED(other);
     throw std::runtime_error("WebGL not supported in none WASM builds");
@@ -672,7 +670,7 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
-    GL_CHECK(glFinish());
+    CV_Assert(this->wait() == true);
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -687,7 +685,7 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 
 void FrameBufferContext::end() {
     this->makeCurrent();
-    GL_CHECK(glFlush());
+    this->fence();
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
@@ -855,7 +853,37 @@ bool FrameBufferContext::isShared() {
     return isShared_;
 }
 
+void FrameBufferContext::fence() {
+    CV_Assert(current_sync_object_ == 0);
+    current_sync_object_ = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    CV_Assert(current_sync_object_ != 0);
+}
 
+bool FrameBufferContext::wait(uint64_t timeout) {
+    if(first_sync_) {
+        current_sync_object_ = 0;
+        return true;
+    }
+    CV_Assert(current_sync_object_ != 0);
+    if (timeout > 0) {
+        GLuint ret = glClientWaitSync(static_cast<GLsync>(current_sync_object_),
+        GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+        GL_CHECK();
+        CV_Assert(GL_ALREADY_SIGNALED != ret);
+        CV_Assert(GL_WAIT_FAILED != ret);
+        if(GL_CONDITION_SATISFIED == ret) {
+            current_sync_object_ = 0;
+            return true;
+        } else {
+            current_sync_object_ = 0;
+            return false;
+        }
+    } else {
+        GL_CHECK(glWaitSync(static_cast<GLsync>(current_sync_object_), 0, GL_TIMEOUT_IGNORED));
+        current_sync_object_ = 0;
+        return true;
+    }
+}
 }
 }
 }
