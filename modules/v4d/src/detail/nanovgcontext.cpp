@@ -18,24 +18,20 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
     run_sync_on_main<13>([this]() {
         {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
-//#ifdef __EMSCRIPTEN__
-//            glClearColor(0,1,0,0);
-//            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-//#endif
 #if defined(OPENCV_V4D_USE_ES3) || defined(EMSCRIPTEN)
             context_ = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 #else
-        context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+            context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
 #endif
-        if (!context_)
-            throw std::runtime_error("Could not initialize NanoVG!");
-    }
-        int font = nvgCreateFont(context_, "icons", "assets/fonts/entypo.ttf");
-        font = nvgCreateFont(context_, "sans", "assets/fonts/Roboto-Regular.ttf");
-        font = nvgCreateFont(context_, "sans-bold", "assets/fonts/Roboto-Bold.ttf");
+            if (!context_)
+                throw std::runtime_error("Could not initialize NanoVG!");
+            nvgCreateFont(context_, "icons", "assets/fonts/entypo.ttf");
+            nvgCreateFont(context_, "sans", "assets/fonts/Roboto-Regular.ttf");
+            nvgCreateFont(context_, "sans-bold", "/assets/fonts/Roboto-Bold.ttf");
 #ifdef __EMSCRIPTEN__
             mainFbContext_.initWebGLCopy(fbCtx().getIndex());
 #endif
+        }
     });
 }
 

@@ -67,7 +67,8 @@ macro(add_emscripten_sample sample source models)
                 "${CMAKE_CURRENT_LIST_DIR}/samples/${sample}.html"
                 "${CMAKE_CURRENT_BINARY_DIR}/../../bin/${sample}.html")
     if(${models})
-      target_link_options(${sample} PRIVATE --preload-file "${CMAKE_BINARY_DIR}/assets/models/")
+      target_link_options(${sample} PRIVATE "SHELL:--preload-file ${CMAKE_CURRENT_BINARY_DIR}/assets/models/face_detection_yunet_2023mar.onnx")
+      target_link_options(${sample} PRIVATE "SHELL:--preload-file ${CMAKE_CURRENT_BINARY_DIR}/assets/models/lbfmodel.yaml")
     endif()
   endif()
 endmacro()
@@ -85,7 +86,7 @@ endmacro()
 
 # Configure emscripten build flags
 if(EMSCRIPTEN)
-  set(EM_LINKER_FLAGS "-sENVIRONMENT=web,worker -sWASM_BIGINT=1 -sOFFSCREENCANVAS_SUPPORT -sOFFSCREENCANVASES_TO_PTHREAD=#v4dOffscreenCanvas -sEXPORTED_FUNCTIONS=_main,_v4dInitCapture -sEXPORTED_RUNTIME_METHODS=ccall -sPROXY_TO_PTHREAD=1 --use-preload-plugins --preload-file \"${CMAKE_BINARY_DIR}/assets/fonts/\" --preload-file \"${CMAKE_CURRENT_BINARY_DIR}/doc/lena.png\" -sINITIAL_MEMORY=128MB -sALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 --bind")
+  set(EM_LINKER_FLAGS "-sENVIRONMENT=web,worker -sWASM_BIGINT=1 -sOFFSCREENCANVAS_SUPPORT -sOFFSCREENCANVASES_TO_PTHREAD=#v4dOffscreenCanvas -sEXPORTED_FUNCTIONS=_main,_v4dInitCapture -sEXPORTED_RUNTIME_METHODS=ccall -sPROXY_TO_PTHREAD=1 --use-preload-plugins --preload-file \"${CMAKE_CURRENT_BINARY_DIR}/assets/fonts/entypo.ttf\" --preload-file \"${CMAKE_CURRENT_BINARY_DIR}/assets/fonts/Roboto-Regular.ttf\" --preload-file \"${CMAKE_CURRENT_BINARY_DIR}/assets/fonts/Roboto-Bold.ttf\" --preload-file \"${CMAKE_CURRENT_BINARY_DIR}/doc/lena.png\" -sINITIAL_MEMORY=128MB -sALLOW_MEMORY_GROWTH=1 -sUSE_GLFW=3 -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 --bind")
 
   set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${EM_LINKER_FLAGS}")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${EM_LINKER_FLAGS}")
@@ -160,20 +161,20 @@ if(NOT (TARGET ${the_module}))
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-    "${CMAKE_CURRENT_BINARY_DIR}/../../assets")
+    "${CMAKE_CURRENT_BINARY_DIR}/assets")
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-    "${CMAKE_CURRENT_BINARY_DIR}/../../assets/models")
+    "${CMAKE_CURRENT_BINARY_DIR}/assets/models")
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-    "${CMAKE_CURRENT_BINARY_DIR}/../../assets/fonts")
+    "${CMAKE_CURRENT_BINARY_DIR}/assets/fonts")
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     "${CMAKE_CURRENT_SOURCE_DIR}/samples/fonts/*.ttf"
-    "${CMAKE_CURRENT_BINARY_DIR}/../../assets/fonts/")
+    "${CMAKE_CURRENT_BINARY_DIR}/assets/fonts/")
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
@@ -183,12 +184,12 @@ if(NOT (TARGET ${the_module}))
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     "${lbfmodel_SOURCE_DIR}/lbfmodel.yaml"
-    "${CMAKE_CURRENT_BINARY_DIR}/../../assets/models/")
+    "${CMAKE_CURRENT_BINARY_DIR}/assets/models/")
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
     "${yunet_SOURCE_DIR}/face_detection_yunet_2023mar.onnx"
-    "${CMAKE_CURRENT_BINARY_DIR}/../../assets/models/")
+    "${CMAKE_CURRENT_BINARY_DIR}/assets/models/")
 
   #Add sample targets
   if(BUILD_EXAMPLES)
