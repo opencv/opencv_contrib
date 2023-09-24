@@ -12,6 +12,8 @@
 #include <exception>
 #include <iostream>
 
+#include "imgui_impl_glfw.h"
+
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
 #  include <emscripten/bind.h>
@@ -295,30 +297,42 @@ void FrameBufferContext::init() {
 
     setup(framebufferSize_);
     glfwSetWindowUserPointer(getGLFWWindow(), getV4D().get());
-//
-//    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-//        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-//        v4d->setMousePosition(cv::Point2f(float(x), float(y)));
-//    }
-//    );
-//    glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+    glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        ImGui_ImplGlfw_CursorPosCallback(glfwWin, x, y);
+        if (!ImGui::GetIO().WantCaptureMouse) {
+            v4d->setMousePosition(cv::Point2f(float(x), float(y)));
+        }
+    });
+
+    glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+        ImGui_ImplGlfw_MouseButtonCallback(glfwWin, button, action, modifiers);
+
+        if (!ImGui::GetIO().WantCaptureMouse) {
+            // Pass event further
+        } else {
+            // Do nothing, since imgui already reacted to mouse click. It would be weird if unrelated things started happening when you click something on UI.
+        }
+    });
+
+    glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
+        ImGui_ImplGlfw_KeyCallback(glfwWin, key, scancode, action, mods);
+        if (!ImGui::GetIO().WantCaptureKeyboard) {
+            // Pass event further
+        } else {
+            // Do nothing, since imgui already reacted to mouse click. It would be weird if unrelated things started happening when you click something on UI.
+        }
+    });
+    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
+        ImGui_ImplGlfw_CharCallback(glfwWin, codepoint);
+    });
+//    glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int count, const char** filenames) {
 //        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
 //    });
-//    glfwSetKeyCallback(getGLFWWindow(),
-//            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
-//            }
-//    );
-//    glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
-//    }
-//    );
-//    glfwSetDropCallback(getGLFWWindow(),
-//            [](GLFWwindow* glfwWin, int count, const char** filenames) {
-//            }
-//    );
-//    glfwSetScrollCallback(getGLFWWindow(),
-//            [](GLFWwindow* glfwWin, double x, double y) {
-//            }
-//    );
+
+    glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
+        ImGui_ImplGlfw_ScrollCallback(glfwWin, x, y);
+    });
 //
 //    glfwSetWindowSizeCallback(getGLFWWindow(),
 //            [](GLFWwindow* glfwWin, int width, int height) {
@@ -361,10 +375,13 @@ void FrameBufferContext::init() {
 ////                        }
 ////        #endif
 //            });
-//    glfwSetWindowFocusCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int i) {
-//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-//                v4d->makeCurrent();
-//    });
+    glfwSetWindowFocusCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int i) {
+            V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+            if(v4d->getGLFWWindow() == glfwWin) {
+                v4d->setFocused(i == 1);
+                cerr << "FOCUSED: " << v4d->title() << endl;
+            }
+    });
 }
 
 cv::Ptr<V4D> FrameBufferContext::getV4D() {
@@ -629,12 +646,12 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 #endif
 
 void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
-        const cv::Size& windowSize, bool scale, GLuint drawFramebufferID) {
+        const cv::Size& windowSize, bool stretch, GLuint drawFramebufferID) {
     this->makeCurrent();
     double hf = double(windowSize.height) / framebufferSize_.height;
     double wf = double(windowSize.width) / framebufferSize_.width;
     double f;
-    if (framebufferSize_.width > framebufferSize_.height)
+    if (hf > wf)
         f = wf;
     else
         f = hf;
@@ -642,26 +659,19 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     double fbws = framebufferSize_.width * f;
     double fbhs = framebufferSize_.height * f;
 
-    double marginw = std::max((windowSize.width - framebufferSize_.width) / 2.0, 0.0);
-    double marginh = std::max((windowSize.height - framebufferSize_.height) / 2.0, 0.0);
-    double marginws = std::max((windowSize.width - fbws) / 2.0, 0.0);
-    double marginhs = std::max((windowSize.height - fbhs) / 2.0, 0.0);
+    double marginw = (windowSize.width - framebufferSize_.width) / 2.0;
+    double marginh = (windowSize.height - framebufferSize_.height) / 2.0;
+    double marginws = (windowSize.width - fbws) / 2.0;
+    double marginhs = (windowSize.height - fbhs) / 2.0;
 
     GLint srcX0 = viewport.x;
     GLint srcY0 = viewport.y;
     GLint srcX1 = viewport.x + viewport.width;
     GLint srcY1 = viewport.y + viewport.height;
-    GLint dstX0 = scale ? marginws : marginw;
-    GLint dstY0 = scale ? marginhs : marginh;
-    GLint dstX1 = scale ? marginws + fbws : marginw + framebufferSize_.width;
-    GLint dstY1 = scale ? marginhs + fbhs : marginh + framebufferSize_.height;
-//#ifdef __EMSCRIPTEN__
-//    {
-//        //FIXME WebGL2 workaround for webkit. without we have flickering
-//        cv::UMat tmp(size(), CV_8UC4);
-//        FrameBufferContext::FrameBufferScope fbScope(*this, tmp);
-//    }
-//#endif
+    GLint dstX0 = stretch ? marginws : marginw;
+    GLint dstY0 = stretch ? marginhs : marginh;
+    GLint dstX1 = stretch ? marginws + fbws : marginw + framebufferSize_.width;
+    GLint dstY1 = stretch ? marginhs + fbhs : marginh + framebufferSize_.height;
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,
