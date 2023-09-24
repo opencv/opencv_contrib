@@ -25,12 +25,15 @@ ImGuiContextImpl::ImGuiContextImpl(FrameBufferContext& fbContext) :
         IMGUI_CHECKVERSION();
         context_ = ImGui::CreateContext();
         ImGui::SetCurrentContext(context_);
+
         ImGuiIO& io = ImGui::GetIO();
         (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
         ImGui::StyleColorsDark();
-        ImGui_ImplGlfw_InitForOpenGL(mainFbContext_.getGLFWWindow(), true);
+
+        ImGui_ImplGlfw_InitForOpenGL(mainFbContext_.getGLFWWindow(), false);
+        ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
         ImGui_ImplOpenGL3_Init("#version 330");
 #else
@@ -43,7 +46,12 @@ void ImGuiContextImpl::build(std::function<void(ImGuiContext*)> fn) {
     renderCallback_ = fn;
 }
 
-void ImGuiContextImpl::render() {
+void ImGuiContextImpl::makeCurrent() {
+    ImGui::SetCurrentContext(context_);
+    cerr << "ImguiCtx: " << context_ << endl;
+}
+
+void ImGuiContextImpl::render(bool showFPS) {
     {
         mainFbContext_.makeCurrent();
         ImGui::SetCurrentContext(context_);
@@ -58,25 +66,26 @@ void ImGuiContextImpl::render() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        static bool open_ptr[1] = { true };
-        static ImGuiWindowFlags window_flags = 0;
-        window_flags |= ImGuiWindowFlags_NoBackground;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
-        window_flags |= ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
-        window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
-        window_flags |= ImGuiWindowFlags_NoSavedSettings;
-        window_flags |= ImGuiWindowFlags_NoFocusOnAppearing;
-        window_flags |= ImGuiWindowFlags_NoNav;
-        window_flags |= ImGuiWindowFlags_NoDecoration;
-        window_flags |= ImGuiWindowFlags_NoInputs;
-        static ImVec2 pos(0, 0);
-        ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
-        ImGui::Begin("Display", open_ptr, window_flags);
-        ImGuiIO& io = ImGui::GetIO();
-        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::End();
-
+        if (showFPS) {
+            static bool open_ptr[1] = { true };
+            static ImGuiWindowFlags window_flags = 0;
+            window_flags |= ImGuiWindowFlags_NoBackground;
+            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+            window_flags |= ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
+            window_flags |= ImGuiWindowFlags_AlwaysAutoResize;
+            window_flags |= ImGuiWindowFlags_NoSavedSettings;
+            window_flags |= ImGuiWindowFlags_NoFocusOnAppearing;
+            window_flags |= ImGuiWindowFlags_NoNav;
+            window_flags |= ImGuiWindowFlags_NoDecoration;
+            window_flags |= ImGuiWindowFlags_NoInputs;
+            static ImVec2 pos(0, 0);
+            ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
+            ImGui::Begin("Display", open_ptr, window_flags);
+            ImGuiIO& io = ImGui::GetIO();
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::End();
+        }
         if (renderCallback_)
             renderCallback_(context_);
         ImGui::Render();
