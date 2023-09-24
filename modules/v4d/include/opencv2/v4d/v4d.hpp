@@ -76,11 +76,10 @@ class CV_EXPORTS V4D {
     friend class HTML5Capture;
     cv::Ptr<V4D> self_;
     cv::Size initialSize_;
-    const string& title_;
-    int samples_;
     bool debug_;
     cv::Rect viewport_;
-    bool scaling_;
+    bool stretching_;
+    bool focused_ = false;
     FrameBufferContext* mainFbContext_ = nullptr;
     CLVAContext* clvaContext_ = nullptr;
     NanoVGContext* nvgContext_ = nullptr;
@@ -127,7 +126,7 @@ public:
      * @return The texture object.
      */
     CV_EXPORTS cv::ogl::Texture2D& texture();
-
+    CV_EXPORTS std::string title();
     CV_EXPORTS void gl(std::function<void()> fn);
     CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
     /*!
@@ -249,18 +248,18 @@ public:
      */
     CV_EXPORTS cv::Size initialSize();
     /*!
-     * Get the current size of the window
-     * @return The window size
+     * Get the current size of the window.
+     * @return The window size.
      */
     CV_EXPORTS cv::Size framebufferSize();
     /*!
-     * Determine if the window is in fullscreen mode.
-     * @return true if in fullscreen mode.
+     * Set the window size
+     * @param sz The future size of the window.
      */
-    CV_EXPORTS void setWindowSize(const cv::Size& sz);
+    CV_EXPORTS void setSize(const cv::Size& sz);
     /*!
-     * Get the initial size.
-     * @return The initial size.
+     * Get the window size.
+     * @return The window size.
      */
     CV_EXPORTS cv::Size size();
     /*!
@@ -303,17 +302,27 @@ public:
     CV_EXPORTS void setVisible(bool v);
     /*!
      * Enable/Disable scaling the framebuffer during blitting.
-     * @param s if true enable scaling
+     * @param s if true enable scaling.
      */
-    CV_EXPORTS void setScaling(bool s);
+    CV_EXPORTS void setStretching(bool s);
     /*!
      * Determine if framebuffer is scaled during blitting.
      * @return true if framebuffer is scaled during blitting.
      */
-    CV_EXPORTS bool isScaling();
+    CV_EXPORTS bool isStretching();
     /*!
-     * Everytime a frame is displayed this count is incremented
-     * @return the current frame count
+     * Determine if th V4D object is marked as focused.
+     * @return true if the V4D object is marked as focused.
+     */
+    CV_EXPORTS bool isFocused();
+    /*!
+     * Mark the V4D object as focused.
+     * @param s if true mark as focused.
+     */
+    CV_EXPORTS void setFocused(bool f);
+    /*!
+     * Everytime a frame is displayed this count is incremented-
+     * @return the current frame count-
      */
     CV_EXPORTS uint64_t frameCount();
     /*!
@@ -331,7 +340,7 @@ public:
      */
     CV_EXPORTS bool display();
     /*!
-     * Print basic system information to stderr
+     * Print basic system information to stderr.
      */
     CV_EXPORTS void printSystemInfo();
 
