@@ -39,7 +39,6 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
             GL_CHECK(glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]));
 #endif
             fn(fbCtx().size());
-            GL_CHECK(glFinish());
         }
         if(!fbCtx().isShared()) {
 #ifdef __EMSCRIPTEN__

@@ -82,7 +82,6 @@ void ImGuiContextImpl::render() {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
-    GL_CHECK(glFinish());
 }
 }
 }

@@ -133,6 +133,7 @@ void FrameBufferContext::initWebGLCopy(const size_t& index) {
 
 void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
 #ifdef __EMSCRIPTEN__
+    GL_CHECK(glFinish());
     size_t index = other.getIndex();
     this->makeCurrent();
     int width = getWindowSize().width;
@@ -143,7 +144,6 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
                 cv::Rect(0,0, other.size().width, other.size().height),
                 this->getWindowSize(),
                 false);
-        GL_CHECK(glFinish());
         emscripten_webgl_commit_frame();
     }
     this->makeCurrent();
@@ -192,7 +192,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
     GL_CHECK(glBindVertexArray(copyVaos[index]));
     GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
     GL_CHECK(glDisable(GL_BLEND));
-    GL_CHECK(glFinish());
+    GL_CHECK(glFlush());
 #else
     CV_UNUSED(other);
     throw std::runtime_error("WebGL not supported in none WASM builds");
@@ -429,13 +429,6 @@ void FrameBufferContext::setup(const cv::Size& sz) {
                 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBufferID_));
         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
-//    glBindTexture(GL_TEXTURE_2D, 0);
-//    glGetError();
-//    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-//    glGetError();
-//    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//    glGetError();
-//    GL_CHECK(glFinish());
 }
 
 
