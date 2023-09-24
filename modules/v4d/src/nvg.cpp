@@ -238,6 +238,30 @@ float NVG::radToDeg(float rad) {
     return nvgRadToDeg(rad);
 }
 
+int NVG::createImage(const char* filename, int imageFlags) {
+    return nvgCreateImage(getContext(), filename, imageFlags);
+}
+
+int NVG::createImageMem(int imageFlags, unsigned char* data, int ndata) {
+    return nvgCreateImageMem(getContext(), imageFlags, data, ndata);
+}
+
+int NVG::createImageRGBA(int w, int h, int imageFlags, const unsigned char* data) {
+    return nvgCreateImageRGBA(getContext(), w, h, imageFlags, data);
+}
+
+void NVG::updateImage(int image, const unsigned char* data) {
+    nvgUpdateImage(getContext(), image, data);
+}
+
+void NVG::imageSize(int image, int* w, int* h) {
+    nvgImageSize(getContext(), image, w, h);
+}
+
+void NVG::deleteImage(int image) {
+    nvgDeleteImage(getContext(), image);
+}
+
 void NVG::beginPath() {
     nvgBeginPath(getContext());
 }
@@ -557,6 +581,30 @@ float degToRad(float deg) {
 
 float radToDeg(float rad) {
     return detail::NVG::getCurrentContext()->radToDeg(rad);
+}
+
+int createImage(const char* filename, int imageFlags) {
+    return detail::NVG::getCurrentContext()->createImage(filename, imageFlags);
+}
+
+int createImageMem(int imageFlags, unsigned char* data, int ndata) {
+    return detail::NVG::getCurrentContext()->createImageMem(imageFlags, data, ndata);
+}
+
+int createImageRGBA(int w, int h, int imageFlags, const unsigned char* data) {
+    return detail::NVG::getCurrentContext()->createImageRGBA(w, h, imageFlags, data);
+}
+
+void updateImage(int image, const unsigned char* data) {
+    detail::NVG::getCurrentContext()->updateImage(image, data);
+}
+
+void imageSize(int image, int* w, int* h) {
+    detail::NVG::getCurrentContext()->imageSize(image, w, h);
+}
+
+void deleteImage(int image) {
+    detail::NVG::getCurrentContext()->deleteImage(image);
 }
 
 void beginPath() {

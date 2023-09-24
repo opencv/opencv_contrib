@@ -143,6 +143,13 @@ public:
     float degToRad(float deg);
     float radToDeg(float rad);
 
+    int createImage(const char* filename, int imageFlags);
+    int createImageMem(int imageFlags, unsigned char* data, int ndata);
+    int createImageRGBA(int w, int h, int imageFlags, const unsigned char* data);
+    void updateImage(int image, const unsigned char* data);
+    void imageSize(int image, int* w, int* h);
+    void deleteImage(int image);
+
     void beginPath();
     void moveTo(float x, float y);
     void lineTo(float x, float y);
@@ -387,6 +394,13 @@ CV_EXPORTS float degToRad(float deg);
  * A forward to nvgRadToDeg. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
  */
 CV_EXPORTS float radToDeg(float rad);
+
+CV_EXPORTS int createImage(const char* filename, int imageFlags);
+CV_EXPORTS int createImageMem(int imageFlags, unsigned char* data, int ndata);
+CV_EXPORTS int createImageRGBA(int w, int h, int imageFlags, const unsigned char* data);
+CV_EXPORTS void updateImage(int image, const unsigned char* data);
+CV_EXPORTS void imageSize(int image, int* w, int* h);
+CV_EXPORTS void deleteImage(int image);
 
 /*!
  * A forward to nvgBeginPath. See https://github.com/memononen/nanovg/blob/master/src/nanovg.h
