@@ -22,10 +22,10 @@ int main() {
 	    imagePaint = imagePattern(0, 0, w, h, 0.0f/180.0f*NVG_PI, img, 1.0);
 	});
 
-	window->run([&imagePaint](Ptr<V4D> win){
-	    win->nvg([&imagePaint](const cv::Size sz) {
+	window->run([&imagePaint, w, h](Ptr<V4D> win){
+	    win->nvg([&imagePaint, w, h](const cv::Size sz) {
 	        beginPath();
-	        scale(960.0/w, 960.0/h);
+	        scale(double(sz.width)/w, double(sz.height)/h);
 	        roundedRect(0,0, w, h, 5);
 	        fillPaint(imagePaint);
 	        fill();
