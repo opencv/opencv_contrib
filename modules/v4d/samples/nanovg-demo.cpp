@@ -165,8 +165,6 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     //Render using nanovg
     window->nvg([&](const cv::Size &sz) {
-    	//TODO automatically normalize hue between opencv and nanovg
-        hue = fmod((170.0 + (255.0 - hue)),255.0);
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 
