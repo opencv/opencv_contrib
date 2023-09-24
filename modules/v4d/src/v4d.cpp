@@ -261,8 +261,8 @@ void V4D::feed(cv::InputArray in) {
                 source.copyTo(videoFrame);
             }, frame);
 
-            fb([frame](cv::UMat& frameBuffer){
-                frame.copyTo(frameBuffer);
+            fb([frame](cv::UMat& framebuffer){
+                frame.copyTo(framebuffer);
             });
         });
     }
@@ -275,8 +275,8 @@ void V4D::feed(cv::InputArray in) {
                 source.copyTo(videoFrame);
             }, frame);
 
-            fb([frame](cv::UMat& frameBuffer){
-                frame.copyTo(frameBuffer);
+            fb([frame](cv::UMat& framebuffer){
+                frame.copyTo(framebuffer);
             });
         });
     }
