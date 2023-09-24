@@ -43,10 +43,6 @@ void ImGuiContextImpl::build(std::function<void(ImGuiContext*)> fn) {
     renderCallback_ = fn;
 }
 
-void ImGuiContextImpl::makeCurrent() {
-    ImGui::SetCurrentContext(context_);
-}
-
 void ImGuiContextImpl::render() {
     {
         mainFbContext_.makeCurrent();

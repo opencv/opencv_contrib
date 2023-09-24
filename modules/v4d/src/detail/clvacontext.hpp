@@ -24,7 +24,6 @@ class CLVAContext {
     cv::UMat writeRGBBuffer_;
     bool hasContext_ = false;
     FrameBufferContext& mainFbContext_;
-    CLExecContext_t getCLExecContext();
 public:
     /*!
      * Create the CLVAContext
@@ -49,6 +48,8 @@ public:
      */
     bool hasContext();
     void copyContext();
+protected:
+    CLExecContext_t getCLExecContext();
 };
 }
 }

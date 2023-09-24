@@ -75,13 +75,18 @@ make_function(T *t)
     return {t};
 }
 
+static bool sync_run = false;
 template<std::size_t Tid>
 void run_sync_on_main(std::function<void()> fn) {
+    if(sync_run)
+        throw std::runtime_error("Encountered nested run_sync_on_main");
+    sync_run = true;
 #ifdef __EMSCRIPTEN__
     emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
 #else
     fn();
 #endif
+    sync_run = false;
 }
 
 CV_EXPORTS size_t cnz(const cv::UMat& m);

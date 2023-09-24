@@ -41,8 +41,9 @@ constexpr bool OFFSCREEN = false;
 
 #ifndef __EMSCRIPTEN__
 //the second window
-static cv::Ptr<cv::v4d::V4D> menuWindow;
+static cv::Ptr<cv::v4d::V4D> miniWindow;
 #endif
+
 /* Visualization parameters */
 
 //How the background will be visualized
@@ -338,24 +339,22 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
 using namespace cv::v4d;
 
 //Build the GUI
-static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
-    main->imgui([main, menu](ImGuiContext* ctx){
+static void setup_gui(cv::Ptr<V4D> main) {
+    main->imgui([main](ImGuiContext* ctx){
         using namespace ImGui;
         SetCurrentContext(ctx);
+
         Begin("Effects");
         Text("Foreground");
         SliderFloat("Scale", &fg_scale, 0.1f, 4.0f);
         SliderFloat("Loss", &fg_loss, 0.1f, 99.9f);
-
         Text("Background");
         static const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
         static int* bgm = (int*)&background_mode;
         ListBox("Mode", bgm, bgm_items, 4, 4);
-
         Text("Points");
         SliderInt("Max. Points", &max_points, 10, 1000000);
         SliderFloat("Point Loss", &point_loss, 0.0f, 100.0f);
-
         Text("Optical flow");
         SliderInt("Max. Stroke Size", &max_stroke, 1, 100);
         ColorPicker4("Color", effect_color);
@@ -374,12 +373,8 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
         SliderFloat("Threshold", &scene_change_thresh, 0.1f, 1.0f);
         SliderFloat("Threshold Diff", &scene_change_thresh_diff, 0.1f, 1.0f);
         End();
-    });
-#ifndef __EMSCRIPTEN__
-    menu->imgui([main](ImGuiContext* ctx){
-        using namespace ImGui;
-        SetCurrentContext(ctx);
-        Begin("Display");
+
+        Begin("Window");
         Checkbox("Show FPS", &show_fps);
         if(Checkbox("Scale", &scale)) {
             main->setScaling(scale);
@@ -394,7 +389,6 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> menu) {
         };
         End();
     });
-#endif
 }
 
 static bool iteration(cv::Ptr<V4D> window) {
@@ -402,7 +396,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     static cv::UMat background, down;
     static cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
     //BGR
-    static cv::UMat menuFrame;
+    static cv::UMat miniFrame;
     //GREY
     static cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static vector<cv::Point2f> detectedPoints;
@@ -440,17 +434,17 @@ static bool iteration(cv::Ptr<V4D> window) {
     window->fb([&](cv::UMat& framebuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-        cvtColor(framebuffer, menuFrame, cv::COLOR_BGRA2BGR);
+        cvtColor(framebuffer, miniFrame, cv::COLOR_BGRA2BGR);
     });
 
 #ifndef __EMSCRIPTEN__
-    menuWindow->feed(menuFrame.getMat(cv::ACCESS_READ));
+    miniWindow->feed(miniFrame);
 #endif
     window->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
 #ifndef __EMSCRIPTEN__
-    return menuWindow->display() && window->display();
+    return window->display() && miniWindow->display();
 #else
     return window->display();
 #endif
@@ -471,15 +465,15 @@ int main(int argc, char **argv) {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
 #ifndef __EMSCRIPTEN__
-        menuWindow = V4D::make(240, 135, "Menu", false, false, 0);
+        miniWindow = V4D::make(240, 135, "Mini", false, false, 0);
 #endif
         window->printSystemInfo();
 
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
-            setup_gui(window, menuWindow);
+            setup_gui(window);
 #else
-            setup_gui(window, window);
+            setup_gui(window);
 #endif
         }
 

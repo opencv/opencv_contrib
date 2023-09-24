@@ -126,35 +126,35 @@ size_t V4D::numGlCtx() {
 }
 
 void V4D::gl(std::function<void()> fn) {
-//    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn](){
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn](){
         glCtx(-1).render([=](const cv::Size& sz) {
             CV_UNUSED(sz);
             fn();
         });
-//    });
+    });
 }
 
 
 void V4D::gl(std::function<void(const cv::Size&)> fn) {
-//    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn](){
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn](){
         glCtx(-1).render(fn);
-//    });
+    });
 }
 
 void V4D::gl(std::function<void()> fn, const uint32_t& idx) {
-//    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [this, fn, idx](){
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [this, fn, idx](){
         glCtx(idx).render([=](const cv::Size& sz) {
             CV_UNUSED(sz);
             fn();
         });
-//    });
+    });
 }
 
 
 void V4D::gl(std::function<void(const cv::Size&)> fn, const uint32_t& idx) {
-//    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [this, fn, idx](){
+    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [this, fn, idx](){
         glCtx(idx).render(fn);
-//    });
+    });
 }
 
 
@@ -242,21 +242,49 @@ void V4D::setSource(const Source& src) {
 }
 
 void V4D::feed(cv::InputArray in) {
-    TimeTracker::getInstance()->execute("feed", [&](){
-        cv::UMat frame;
-        clvaCtx().capture([&](cv::UMat& videoFrame) {
-            in.copyTo(videoFrame);
-        }, frame);
+    auto currentClExecCtx = CLExecContext_t::getCurrentRef();
+    auto clvaClExecCtx = clvaCtx().getCLExecContext();
+    //Check if we are dealing with diverging (or uninitialized) OpenCL contexts and make a CPU-roundtrip if so.
+    //Is there a better way to copy between contexts?
+    bool cpuRoundTrip = in.isUMat()
+            && (
+                    (currentClExecCtx.empty() || clvaClExecCtx.empty())
+                    || (currentClExecCtx.getContext().ptr() != clvaClExecCtx.getContext().ptr())
+            );
 
-        fb([frame](cv::UMat& frameBuffer){
-            frame.copyTo(frameBuffer);
+    if(cpuRoundTrip) {
+        cv::Mat source;
+        TimeTracker::getInstance()->execute("feed", [this, &in, &source](){
+            in.getUMat().getMat(ACCESS_READ).copyTo(source);
+            cv::UMat frame;
+            clvaCtx().capture([&](cv::UMat& videoFrame) {
+                source.copyTo(videoFrame);
+            }, frame);
+
+            fb([frame](cv::UMat& frameBuffer){
+                frame.copyTo(frameBuffer);
+            });
         });
-    });
+    }
+    else {
+        cv::UMat source;
+        TimeTracker::getInstance()->execute("feed", [this, &in, &source](){
+            in.copyTo(source);
+            cv::UMat frame;
+            clvaCtx().capture([&](cv::UMat& videoFrame) {
+                source.copyTo(videoFrame);
+            }, frame);
+
+            fb([frame](cv::UMat& frameBuffer){
+                frame.copyTo(frameBuffer);
+            });
+        });
+    }
 }
 
 cv::_InputArray V4D::fetch() {
     cv::UMat frame;
-    TimeTracker::getInstance()->execute("copyTo", [&](){
+    TimeTracker::getInstance()->execute("copyTo", [this, &frame](){
         fb([frame](cv::UMat& framebuffer){
             framebuffer.copyTo(frame);
         });
@@ -265,7 +293,7 @@ cv::_InputArray V4D::fetch() {
 }
 
 bool V4D::capture() {
-    return this->capture([&](cv::UMat& videoFrame) {
+    return this->capture([this](cv::UMat& videoFrame) {
         if (source_.isReady())
             source_().second.copyTo(videoFrame);
     });
@@ -273,7 +301,7 @@ bool V4D::capture() {
 
 bool V4D::capture(std::function<void(cv::UMat&)> fn) {
     bool res = true;
-    TimeTracker::getInstance()->execute("capture", [&, this](){
+    TimeTracker::getInstance()->execute("capture", [this, fn, &res](){
         if (!source_.isReady() || !source_.isOpen()) {
 #ifndef __EMSCRIPTEN__
             res = false;
@@ -331,7 +359,7 @@ void V4D::write() {
 }
 
 void V4D::write(std::function<void(const cv::UMat&)> fn) {
-    TimeTracker::getInstance()->execute("write", [&, this](){
+    TimeTracker::getInstance()->execute("write", [this, fn](){
         if (!sink_.isReady() || !sink_.isOpen())
             return;
 
@@ -528,7 +556,6 @@ void V4D::printSystemInfo() {
 
 void V4D::makeCurrent() {
     fbCtx().makeCurrent();
-    imguiCtx().makeCurrent();
 }
 
 cv::Ptr<V4D> V4D::self() {

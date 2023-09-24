@@ -251,7 +251,6 @@ void FrameBufferContext::init() {
     glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 #endif
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-//    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
     glfwWindow_ = glfwCreateWindow(framebufferSize_.width, framebufferSize_.height, title_.c_str(), nullptr,
             sharedWindow_);
@@ -304,10 +303,9 @@ void FrameBufferContext::init() {
 //        v4d->setMousePosition(cv::Point2f(float(x), float(y)));
 //    }
 //    );
-//    glfwSetMouseButtonCallback(getGLFWWindow(),
-//            [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-//            }
-//    );
+//    glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
+//        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//    });
 //    glfwSetKeyCallback(getGLFWWindow(),
 //            [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
 //            }
@@ -365,10 +363,10 @@ void FrameBufferContext::init() {
 ////                        }
 ////        #endif
 //            });
-    glfwSetWindowFocusCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int i) {
-                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-                v4d->makeCurrent();
-    });
+//    glfwSetWindowFocusCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int i) {
+//                V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+//                v4d->makeCurrent();
+//    });
 }
 
 cv::Ptr<V4D> FrameBufferContext::getV4D() {
