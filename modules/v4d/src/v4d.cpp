@@ -27,13 +27,13 @@ cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const strin
 }
 
 V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int samples) :
-        initialSize_(size), title_(title), samples_(samples), debug_(debug), viewport_(0, 0, size.width, size.height), scaling_(true), pool_(2) {
+        initialSize_(size), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
     self_ = cv::Ptr<V4D>(this);
-    mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title_, 3,
-                2, samples_, debug_, nullptr, nullptr);
+    mainFbContext_ = new detail::FrameBufferContext(*this, fbsize.empty() ? size : fbsize, offscreen, title, 3,
+                2, samples, debug, nullptr, nullptr);
 #ifndef __EMSCRIPTEN__
     CLExecScope_t scope(mainFbContext_->getCLExecContext());
 #endif
@@ -60,6 +60,11 @@ V4D::~V4D() {
 cv::ogl::Texture2D& V4D::texture() {
     return mainFbContext_->getTexture2D();
 }
+
+std::string V4D::title() {
+    return fbCtx().title_;
+}
+
 
 cv::Point2f V4D::getMousePosition() {
     return mousePos_;
@@ -409,32 +414,33 @@ cv::Size V4D::size() {
     return fbCtx().getWindowSize();
 }
 
-void V4D::setWindowSize(const cv::Size& sz) {
+void V4D::setSize(const cv::Size& sz) {
     fbCtx().setWindowSize(sz);
+}
+
+
+void V4D::setShowFPS(bool s) {
+    showFPS_ = s;
 }
 
 bool V4D::getShowFPS() {
     return showFPS_;
 }
 
-bool V4D::getPrintFPS() {
-    return printFPS_;
-}
-
-bool V4D::getShowTracking() {
-    return showTracking_;
-}
-
-void V4D::setShowFPS(bool s) {
-    showFPS_ = s;
-}
-
 void V4D::setPrintFPS(bool p) {
     printFPS_ = p;
 }
 
+bool V4D::getPrintFPS() {
+    return printFPS_;
+}
+
 void V4D::setShowTracking(bool st) {
     showTracking_ = st;
+}
+
+bool V4D::getShowTracking() {
+    return showTracking_;
 }
 
 bool V4D::isFullscreen() {
@@ -461,19 +467,27 @@ void V4D::setVisible(bool v) {
     fbCtx().setVisible(v);
 }
 
-void V4D::setScaling(bool s) {
-    scaling_ = s;
+void V4D::setStretching(bool s) {
+    stretching_ = s;
 }
 
-bool V4D::isScaling() {
-    return scaling_;
+bool V4D::isStretching() {
+    return stretching_;
+}
+
+void V4D::setFocused(bool f) {
+    focused_ = f;
+}
+
+bool V4D::isFocused() {
+    return focused_;
 }
 
 void V4D::swapContextBuffers() {
     run_sync_on_main<10>([this]() {
         for(size_t i = 0; i < numGlCtx(); ++i) {
             FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
-            glCtx(i).fbCtx().blitFrameBufferToScreen(viewport(), glCtx(i).fbCtx().getWindowSize(), isScaling());
+            glCtx(i).fbCtx().blitFrameBufferToScreen(viewport(), glCtx(i).fbCtx().getWindowSize(), isStretching());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
 #else
@@ -484,7 +498,7 @@ void V4D::swapContextBuffers() {
 
     run_sync_on_main<11>([this]() {
         FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isScaling());
+        nvgCtx().fbCtx().blitFrameBufferToScreen(viewport(), nvgCtx().fbCtx().getWindowSize(), isStretching());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 #else
@@ -503,9 +517,9 @@ bool V4D::display() {
         run_sync_on_main<6>([&, this]() {
             {
                 FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-                fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isScaling());
+                fbCtx().blitFrameBufferToScreen(viewport(), fbCtx().getWindowSize(), isStretching());
             }
-            imguiCtx().render();
+            imguiCtx().render(getShowFPS());
 #ifndef __EMSCRIPTEN__
             if(debug_)
                 swapContextBuffers();
@@ -518,11 +532,21 @@ bool V4D::display() {
 #endif
             glfwPollEvents();
             result = !glfwWindowShouldClose(getGLFWWindow());
+
             {
                 FrameBufferContext::GLScope glScope(fbCtx(), GL_DRAW_FRAMEBUFFER);
+                GL_CHECK(glViewport(0, 0, fbCtx().size().width, fbCtx().size().height));
                 GL_CHECK(glClearColor(0,0,0,255));
                 GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
             }
+#ifndef __EMSCRIPTEN__
+            {
+                GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+                GL_CHECK(glViewport(0, 0, size().width, size().height));
+                GL_CHECK(glClearColor(0,0,0,255));
+                GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
+            }
+#endif
         });
     }
     if (frameCnt_ == (std::numeric_limits<uint64_t>().max() - 1))
@@ -559,6 +583,7 @@ void V4D::printSystemInfo() {
 
 void V4D::makeCurrent() {
     fbCtx().makeCurrent();
+    imguiCtx().makeCurrent();
 }
 
 cv::Ptr<V4D> V4D::self() {
