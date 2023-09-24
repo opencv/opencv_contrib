@@ -21,8 +21,6 @@ using std::cerr;
 using std::endl;
 using std::vector;
 using std::string;
-using namespace std::literals::chrono_literals;
-
 
 /* Demo parameters */
 
@@ -97,7 +95,7 @@ float effect_color[4] = {1.0f, 0.75f, 0.4f, 1.0f};
 //display on-screen FPS
 bool show_fps = true;
 //Stretch frame buffer to window size
-bool scale = false;
+bool stretch = false;
 //Use OpenCL or not
 bool use_acceleration = true;
 //The post processing mode
@@ -339,7 +337,8 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
 using namespace cv::v4d;
 
 //Build the GUI
-static void setup_gui(cv::Ptr<V4D> main) {
+static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
+    CV_UNUSED(mini);
     main->imgui([main](ImGuiContext* ctx){
         using namespace ImGui;
         SetCurrentContext(ctx);
@@ -373,13 +372,24 @@ static void setup_gui(cv::Ptr<V4D> main) {
         SliderFloat("Threshold", &scene_change_thresh, 0.1f, 1.0f);
         SliderFloat("Threshold Diff", &scene_change_thresh_diff, 0.1f, 1.0f);
         End();
+#ifndef __EMSCRIPTEN__
+    });
 
+    mini->imgui([main, mini](ImGuiContext* ctx){
+        using namespace ImGui;
+        SetCurrentContext(ctx);
+#endif
         Begin("Window");
-        Checkbox("Show FPS", &show_fps);
-        if(Checkbox("Scale", &scale)) {
-            main->setScaling(scale);
+        if(Checkbox("Show FPS", &show_fps)) {
+            main->setShowFPS(show_fps);
+#ifndef __EMSCRIPTEN__
+            mini->setShowFPS(show_fps);
+#endif
         }
-
+        if(Checkbox("Stretch", &stretch)) {
+            main->setStretching(stretch);
+        }
+#ifndef __EMSCRIPTEN__
         if(Button("Fullscreen")) {
             main->setFullscreen(!main->isFullscreen());
         };
@@ -387,6 +397,7 @@ static void setup_gui(cv::Ptr<V4D> main) {
         if(Button("Offscreen")) {
             main->setVisible(!main->isVisible());
         };
+#endif
         End();
     });
 }
@@ -434,7 +445,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     window->fb([&](cv::UMat& framebuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-        cvtColor(framebuffer, miniFrame, cv::COLOR_BGRA2BGR);
+        cvtColor(framebuffer, miniFrame, cv::COLOR_BGRA2RGB);
     });
 
 #ifndef __EMSCRIPTEN__
@@ -444,7 +455,12 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
 #ifndef __EMSCRIPTEN__
-    return window->display() && miniWindow->display();
+    if(window->isFocused()) {
+        return window->display() && miniWindow->display();
+    }
+    else {
+        return miniWindow->display() && window->display();
+    }
 #else
     return window->display();
 #endif
@@ -465,15 +481,15 @@ int main(int argc, char **argv) {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
 #ifndef __EMSCRIPTEN__
-        miniWindow = V4D::make(240, 135, "Mini", false, false, 0);
+        miniWindow = V4D::make(270, 240, "Mini", false, false, 0);
 #endif
         window->printSystemInfo();
-
+//        window->setStretching(stretch);
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
-            setup_gui(window);
+            setup_gui(window, miniWindow);
 #else
-            setup_gui(window);
+            setup_gui(window, window);
 #endif
         }
 
