@@ -70,6 +70,8 @@ void ImGuiContextImpl::render() {
         window_flags |= ImGuiWindowFlags_NoNav;
         window_flags |= ImGuiWindowFlags_NoDecoration;
         window_flags |= ImGuiWindowFlags_NoInputs;
+        static ImVec2 pos(0, 0);
+        ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
         ImGui::Begin("Display", open_ptr, window_flags);
         ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
