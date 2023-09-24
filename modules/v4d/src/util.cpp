@@ -421,7 +421,7 @@ private:
     GLuint texture = 0;
 public:
     HTML5Capture(cv::Ptr<V4D> window, int width, int height) :
-        window_(window), width_(width), height_(height), fb_(cv::Size(width, height), CV_8UC4) {
+        window_(window), width_(width), height_(height), fb_(window->framebufferSize(), CV_8UC4) {
         EM_ASM({
             globalThis.playing = false;
             globalThis.timeupdate = false;
@@ -476,7 +476,12 @@ public:
             );
             FrameBufferContext::FrameBufferScope fbScope(window_->fbCtx(), fb_);
             flip(fb_, fb_, 0);
-            cvtColor(fb_, dst, COLOR_BGRA2RGB);
+            if(dst.empty())
+                dst.create(fb_.size(), CV_8UC3);
+
+            dst = cv::Scalar(0, 0, 0, 255);
+            cvtColor(fb_(cv::Rect(0, 0, width_, height_)), dst(cv::Rect((fb_.size().width - width_)/2.0, (fb_.size().height - height_)/2.0, width_, height_)), COLOR_BGRA2RGB);
+            cvtColor(dst, fb_, COLOR_RGB2BGRA);
 
             return true;
         }
