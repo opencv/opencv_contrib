@@ -8,13 +8,13 @@
 | Compatibility | OpenCV >= 4.7 |
 
 # What is V4D?
-V4D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [NanoGUI](https://github.com/mitsuba-renderer/nanogui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
+V4D offers a way of writing graphical (on- and offscreen) high performance applications with OpenCV. It is light-weight and unencumbered by QT or GTK licenses. It features vector graphics using [NanoVG](https://github.com/inniyah/nanovg) a GUI based on [ImGUI](https://github.com/ocornut/imgui) and (on supported systems) OpenCL/OpenGL and OpenCL/VAAPI interoperability. It should be included in [OpenCV-contrib](https://github.com/opencv/opencv_contrib) once it is ready.
 
 # Why V4D?
 Please refer to the online demos in the \ref v4d_tutorials and \ref v4d_demos section to see at a glance what it can do for you. **But note**: The online demos are slower than native builds and are sometimes missing features. If you want full performance (including hardware acceleration) you should really create a native build and test it.
 
 * **OpenGL**: Easy access to OpenGL.
-* **GUI**: Simple yet powerful user interfaces through NanoGUI.
+* **GUI**: Simple yet powerful user interfaces through ImGui.
 * **Vector graphics**: Elegant and fast vector graphics through NanoVG.
 * **Font rendering**: Loading of fonts and sophisticated rendering options.
 * **Video pipeline**: Through a simple source/sink system videos can be efficently read, displayed, edited and saved.
@@ -25,7 +25,7 @@ Please refer to the online demos in the \ref v4d_tutorials and \ref v4d_demos se
 # Design Notes
 * V4D is not thread safe. Though it is possible to have several V4D objects in one or more threads and synchronize them using ```V4D::makeCurrent()```. This is a limitation of GLFW3/EGL. That said, OpenCV algorithms are multi-threaded as usual.
 * V4D uses InputArray/OutputArray/InputOutputArray which gives you the option to work with Mat, std::vector and UMat. Anyway, you should prefer to use UMat whenever possible to automatically use hardware capabilities where available.
-* Access to different subsystems (opengl, framebuffer, nanovg and nanogui) is provided through "contexts". A context is simply a function that takes a functor, sets up the subsystem, executes the functor and tears-down the subsystem.
+* Access to different subsystems (opengl, framebuffer, nanovg and imgui) is provided through "contexts". A context is simply a function that takes a functor, sets up the subsystem, executes the functor and tears-down the subsystem.
 * ```V4D::run``` is not a context. It is an abstraction of a run loop that takes a functor and runs until the application terminates or the functor returns false. This is necessary for portability reasons.
 * Contexts ***may not*** be nested.
 
@@ -42,7 +42,7 @@ v4d->gl([](const Size sz) {
 
 # GPU Support
 * Intel Gen 8+ (Tested: Gen 11 + Gen 13) is supported best
-* NVIDIA Ada Lovelace (Tested: GTX 4070 Ti) with proprietary drivers (535.104.05) and CUDA toolkit (12.2) works mostly (NanoGUI flickers) but video writing is very slow, unless: you change the codec to H264 or you create a gstreamer sink using nvenc.
+* NVIDIA Ada Lovelace (Tested: GTX 4070 Ti) with proprietary drivers (535.104.05) and CUDA toolkit (12.2) works but video writing is very slow, unless: you change the codec to H264 or you create a gstreamer sink using nvenc.
 * AMD: never tested
 
 # Requirements
@@ -57,7 +57,8 @@ v4d->gl([](const Size sz) {
 * [My OpenCV 4.x fork](https://github.com/kallaballa/opencv) (It works with mainline OpenCV 4.x as well, but will miss some features)
 * GLEW
 * GLFW3
-* [My NanoGUI fork](https://github.com/kallaballa/nanogui) which is included with V4D as a sub-repository (includes NanoVG).
+* NanoVG (included as a sub-repo)
+* ImGui (included as a sub-repo)
 
 # Optional: Dependencies for demos
 * (At the time of writing) If you want CL-GL interop on a recent Intel Platform you might need to build [compute-runtime](https://github.com/intel/compute-runtime). The first version of compute-runtime shipping CL-GL interop is **23.13.26032**
@@ -128,15 +129,6 @@ sudo make install
 cpack DEB
 ```
 
-## Download models
-```bash
-mkdir assets
-cd assets
-wget https://github.com/kurnianggoro/GSOC2017/raw/master/data/lbfmodel.yaml
-wget https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
-cd ..
-```
-
 ## Download the example videos
 ```bash
 # big buck bunny video
@@ -162,6 +154,7 @@ bin/example_v4d_font_with_gui
 
 # Demos
 bin/example_v4d_cube-demo
+bin/example_v4d_many_cubes-demo
 bin/example_v4d_video-demo bunny.webm
 bin/example_v4d_nanovg-demo bunny.webm
 bin/example_v4d_shader-demo bunny.webm
@@ -177,3 +170,4 @@ bin/example_v4d_beauty-demo kristen.webm
 * The author of the dance video is **GNI Dance Company** ([Original video](https://www.youtube.com/watch?v=yg6LZtNeO_8)).
 * The author of the video used in the beauty-demo video is **Kristen Leanne** ([Original video](https://www.youtube.com/watch?v=hUAT8Jm_dvw&t=11s)).
 * The author of cxxpool is **Copyright (c) 2022 Christian Blume**: ([LICENSE](https://github.com/bloomen/cxxpool/blob/master/LICENSE))
+* The author of the roboto font family is **Google Inc.** ([LICENSE](https://github.com/googlefonts/roboto/blob/main/LICENSE))
