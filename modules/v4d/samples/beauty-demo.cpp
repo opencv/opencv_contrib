@@ -46,10 +46,10 @@ float skin_contrast = 0.7f;
 //Show input and output side by side
 bool side_by_side = true;
 //Scale the video to the window size
-bool scale = true;
+bool stretch = true;
 #else
 bool side_by_side = false;
-bool scale = false;
+bool stretch = false;
 #endif
 
 //Face landmark detector
@@ -337,7 +337,7 @@ int main() {
     window->printSystemInfo();
 
     facemark->loadModel("assets/models/lbfmodel.yaml");
-    window->setScaling(scale);
+    window->setStretching(stretch);
 
     if (!OFFSCREEN) {
         window->imgui([window](ImGuiContext* ctx){
@@ -346,10 +346,10 @@ int main() {
             Begin("Effect");
             Text("Display");
             Checkbox("Side by side", &side_by_side);
-            if(Checkbox("Scale", &scale)) {
-                window->setScaling(true);
+            if(Checkbox("Scale", &stretch)) {
+                window->setStretching(true);
             } else
-                window->setScaling(false);
+                window->setStretching(false);
 
     #ifndef __EMSCRIPTEN__
             if(Button("Fullscreen")) {
