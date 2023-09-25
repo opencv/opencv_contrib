@@ -21,7 +21,7 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 #ifndef __EMSCRIPTEN__
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
-const cv::Scalar INITIAL_COLOR(31, 62, 255, 255);
+const cv::Scalar INITIAL_COLOR(51, 153, 255, 255);
 
 /* Mandelbrot control parameters */
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
@@ -202,7 +202,7 @@ static void render_scene(const cv::Size& sz) {
     }
 
     glUseProgram(shader_program_hdl);
-    glUniform4f(base_color_hdl, INITIAL_COLOR[0], INITIAL_COLOR[1], INITIAL_COLOR[2], INITIAL_COLOR[3]);
+    glUniform4f(base_color_hdl, INITIAL_COLOR[0] / 255.0, INITIAL_COLOR[1] / 255.0, INITIAL_COLOR[2] / 255.0, INITIAL_COLOR[3] / 255.0);
     glUniform1i(contrast_boost_hdl, contrast_boost);
     glUniform1i(max_iterations_hdl, max_iterations);
     glUniform1f(center_y_hdl, center_y);
