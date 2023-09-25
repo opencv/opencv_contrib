@@ -87,8 +87,8 @@ class CV_EXPORTS V4D {
     std::mutex glCtxMtx_;
     std::map<int32_t,GLContext*> glContexts_;
     bool closed_ = false;
-    Source source_;
-    Sink sink_;
+    cv::Ptr<Source> source_;
+    cv::Ptr<Sink> sink_;
     concurrent::threadpool pool_;
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
@@ -102,6 +102,7 @@ class CV_EXPORTS V4D {
     bool showFPS_ = true;
     bool printFPS_ = true;
     bool showTracking_ = true;
+    uint64_t currentSeqNr_ = 0;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -208,7 +209,7 @@ public:
      * Set the current #cv::viz::Source object. Usually created using #makeCaptureSource().
      * @param src A #cv::viz::Source object.
      */
-    CV_EXPORTS void setSource(const Source& src);
+    CV_EXPORTS void setSource(Source& src);
     /*!
      * Checks if the current #cv::viz::Source is ready.
      * @return true if it is ready.
@@ -218,7 +219,7 @@ public:
      * Set the current #cv::viz::Sink object. Usually created using #makeWriterSink().
      * @param sink A #cv::viz::Sink object.
      */
-    CV_EXPORTS void setSink(const Sink& sink);
+    CV_EXPORTS void setSink(Sink& sink);
     /*!
      * Checks if the current #cv::viz::Sink is ready.
      * @return true if it is ready.
