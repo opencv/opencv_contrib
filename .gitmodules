@@ -6,4 +6,4 @@
 	url = https://github.com/kallaballa/imgui.git
 [submodule "modules/v4d/third/doxygen-bootstrapped"]
 	path = modules/v4d/third/doxygen-bootstrapped
-	url = https://github.com/Velron/doxygen-bootstrapped.git
+	url = https://github.com/kallaballa/doxygen-bootstrapped.git
