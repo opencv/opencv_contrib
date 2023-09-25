@@ -297,7 +297,7 @@ Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
 
     if(writer->isOpened()) {
-		return Sink([=](const cv::UMat& frame) {
+		return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
 			static cv::UMat resized;
 			cv::resize(frame, resized, frameSize);
 			(*writer) << resized;
@@ -326,7 +326,7 @@ static Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const 
             fourcc, fps, frameSize, { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
 
     if(writer->isOpened()) {
-        return Sink([=](const cv::UMat& frame) {
+        return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
             cv::UMat resized;
             cv::resize(frame, resized, frameSize);
             (*writer) << resized;
@@ -377,7 +377,7 @@ Sink makeWriterSink(const string& outputFilename, const float fps,
             fourcc, fps, frameSize);
 
     if(writer->isOpened()) {
-		return Sink([=](const cv::UMat& frame) {
+		return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
 			cv::UMat resized;
 			cv::resize(frame, resized, frameSize);
 			(*writer) << resized;
