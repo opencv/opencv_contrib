@@ -870,34 +870,34 @@ bool FrameBufferContext::isShared() {
 }
 
 void FrameBufferContext::fence() {
-    CV_Assert(current_sync_object_ == 0);
-    current_sync_object_ = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    CV_Assert(current_sync_object_ != 0);
+    CV_Assert(currentSyncObject_ == 0);
+    currentSyncObject_ = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    CV_Assert(currentSyncObject_ != 0);
 }
 
 bool FrameBufferContext::wait(const uint64_t& timeout) {
     if(first_sync_) {
-        current_sync_object_ = 0;
+        currentSyncObject_ = 0;
         first_sync_ = false;
         return true;
     }
-    CV_Assert(current_sync_object_ != 0);
+    CV_Assert(currentSyncObject_ != 0);
     if (timeout > 0) {
-        GLuint ret = glClientWaitSync(static_cast<GLsync>(current_sync_object_),
+        GLuint ret = glClientWaitSync(static_cast<GLsync>(currentSyncObject_),
         GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
         GL_CHECK();
         CV_Assert(GL_ALREADY_SIGNALED != ret);
         CV_Assert(GL_WAIT_FAILED != ret);
         if(GL_CONDITION_SATISFIED == ret) {
-            current_sync_object_ = 0;
+            currentSyncObject_ = 0;
             return true;
         } else {
-            current_sync_object_ = 0;
+            currentSyncObject_ = 0;
             return false;
         }
     } else {
-        GL_CHECK(glWaitSync(static_cast<GLsync>(current_sync_object_), 0, GL_TIMEOUT_IGNORED));
-        current_sync_object_ = 0;
+        GL_CHECK(glWaitSync(static_cast<GLsync>(currentSyncObject_), 0, GL_TIMEOUT_IGNORED));
+        currentSyncObject_ = 0;
         return true;
     }
 }
