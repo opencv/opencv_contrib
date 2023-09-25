@@ -7,6 +7,7 @@ set -e
 ./example_v4d_nocapture.sh "Custom Source and Sink" custom_source_and_sink > example_v4d_custom_source_and_sink.html
 ./example_v4d_nocapture.sh "Display an Image through the FB Context" display_image_fb > example_v4d_display_image_fb.html
 ./example_v4d_nocapture.sh "Display an Image through the Video-Pipeline" display_image > example_v4d_display_image.html
+./example_v4d_nocapture.sh "Display an Image through NanoVG" display_image_nvg > example_v4d_display_image_nvg.html
 ./example_v4d_nocapture.sh "Font Demo" font-demo > example_v4d_font-demo.html
 ./example_v4d_nocapture.sh "Font rendering with Form-based GUI" font_with_gui > example_v4d_font_with_gui.html
 ./example_v4d_nocapture.sh "Font rendering" font_rendering > example_v4d_font_rendering.html

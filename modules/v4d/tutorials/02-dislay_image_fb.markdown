@@ -1,7 +1,7 @@
 # Display an image using direct framebuffer access {#v4d_display_image_fb}
 
 @prev_tutorial{v4d_display_image_pipeline}
-@next_tutorial{v4d_vector_graphics}
+@next_tutorial{v4d_display_image_nvg}
 
 |    |    |
 | -: | :- |

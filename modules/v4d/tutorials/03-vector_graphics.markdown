@@ -1,6 +1,6 @@
 # Render vector graphics {#v4d_vector_graphics}
 
-@prev_tutorial{v4d_display_image_fb}
+@prev_tutorial{v4d_display_image_nvg}
 @next_tutorial{v4d_vector_graphics_and_fb}
 
 |    |    |
