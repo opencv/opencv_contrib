@@ -507,7 +507,7 @@ Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
             }
         }
         return true;
-    }, 0);
+    }, 0, false);
 }
 
 #endif

@@ -186,6 +186,7 @@ public:
      * @return true if successful.
      */
     CV_EXPORTS bool capture();
+
     /*!
      * Called to capture from a function object.
      * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.
@@ -193,6 +194,7 @@ public:
      * @return true if successful-
      */
     CV_EXPORTS bool capture(std::function<void(cv::UMat&)> fn);
+
     /*!
      * Called to write the framebuffer to a #cv::viz::Sink object provided via #V4D::setSink()
      */

@@ -23,6 +23,7 @@ class CV_EXPORTS Source {
     cv::UMat frame_;
     uint64_t count_ = 0;
     float fps_;
+    bool async_ = true;
 public:
     /*!
      * Constructs the Source object from a generator functor.
@@ -30,7 +31,7 @@ public:
      * that it manipulates. This is ultimatively used to provide video data to #cv::viz::V4D
      * @param fps The fps the Source object provides data with.
      */
-    CV_EXPORTS Source(std::function<bool(cv::UMat&)> generator, float fps);
+    CV_EXPORTS Source(std::function<bool(cv::UMat&)> generator, float fps, bool async = true);
     /*!
      * Constructs a null Source that is never open or ready.
      */
@@ -44,6 +45,7 @@ public:
      * @return true if the source is ready.
      */
     CV_EXPORTS bool isReady();
+    CV_EXPORTS bool isAsync();
     /*!
      * Determines if the source is open.
      * @return true if the source is open.

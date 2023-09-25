@@ -298,13 +298,23 @@ cv::_InputArray V4D::fetch() {
 }
 
 bool V4D::capture() {
-    return this->capture([this](cv::UMat& videoFrame) {
-        if (source_.isReady()) {
-            UMat& f = source_().second;
-            if(!f.empty())
-                f.copyTo(videoFrame);
+    if(source_.isAsync()) {
+        return this->capture([this](cv::UMat& videoFrame) {
+            if (source_.isReady())
+                source_().second.copyTo(videoFrame);
+        });
+    } else {
+        if(source_.fps() > 0) {
+            fb([this](cv::UMat& frameBuffer){
+                if (source_.isReady())
+                    source_().second.copyTo(frameBuffer);
+            });
+        } else {
+            source_();
         }
-    });
+
+        return true;
+    }
 }
 
 bool V4D::capture(std::function<void(cv::UMat&)> fn) {
@@ -337,7 +347,12 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
         nextReaderFrame_.copyTo(currentReaderFrame_);
         futureReader_ = pool_.enqueue(
             [](V4D* v, std::function<void(UMat&)> func, cv::UMat& frame) {
-                return v->clvaCtx().capture(func, frame);
+#ifndef __EMSCRIPTEN__
+            return v->clvaCtx().capture(func, frame);
+#else
+            v->clvaCtx().capture(func, frame);
+            return true;
+#endif
             }, this, fn, nextReaderFrame_);
 
         fb([this](cv::UMat& frameBuffer){

@@ -175,6 +175,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 int main() {
     try {
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", OFFSCREEN, false, 0);
+
         if(!OFFSCREEN) {
             setup_gui(window);
         }

@@ -8,8 +8,8 @@
 namespace cv {
 namespace v4d {
 
-Source::Source(std::function<bool(cv::UMat&)> generator, float fps) :
-        generator_(generator), fps_(fps) {
+Source::Source(std::function<bool(cv::UMat&)> generator, float fps, bool async) :
+        generator_(generator), fps_(fps), async_(async) {
 }
 
 Source::Source() :
@@ -30,6 +30,9 @@ bool Source::isOpen() {
     return open_;
 }
 
+bool Source::isAsync() {
+    return async_;
+}
 float Source::fps() {
     return fps_;
 }
