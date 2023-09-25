@@ -1,7 +1,7 @@
 # Beauty-Demo {#v4d_beauty}
 
 @prev_tutorial{v4d_optflow}
-
+@next_tutorial{v4d}
 |    |    |
 | -: | :- |
 | Original author | Amir Hassan (kallaballa) <amir@viel-zu.org> |

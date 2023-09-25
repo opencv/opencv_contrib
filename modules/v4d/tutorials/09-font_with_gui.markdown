@@ -1,7 +1,7 @@
 # Form based GUI {#v4d_font_with_gui}
 
 @prev_tutorial{v4d_custom_source_and_sink}
-
+@next_tutorial{v4d}
 |    |    |
 | -: | :- |
 | Original author | Amir Hassan (kallaballa) <amir@viel-zu.org> |
