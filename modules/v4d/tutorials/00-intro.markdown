@@ -68,6 +68,7 @@ The tutorials are designed to be read one after the other to give you a good ove
 
 * \ref v4d_display_image_pipeline
 * \ref v4d_display_image_fb
+* \ref v4d_display_image_nvg
 * \ref v4d_vector_graphics
 * \ref v4d_vector_graphics_and_fb
 * \ref v4d_render_opengl
