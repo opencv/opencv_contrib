@@ -21,11 +21,10 @@ int main() {
 	}, 60.0f);
 
 	//Make a sink the saves each frame to a PNG file (does nothing in case of WebAssembly).
-	Sink sink([](const cv::UMat& frame){
+	Sink sink([](const uint64_t& seq, const cv::UMat& frame){
 	    try {
 #ifndef __EMSCRIPTEN__
-			static long cnt = 0;
-			imwrite(std::to_string(cnt++) + ".png", frame);
+			imwrite(std::to_string(seq) + ".png", frame);
 #else
 	        CV_UNUSED(frame);
 #endif
