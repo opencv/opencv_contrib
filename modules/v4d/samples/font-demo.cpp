@@ -38,8 +38,7 @@ int max_star_count = 3000;
 float star_alpha = 0.3f;
 
 float font_size = 40.0f;
-//nanogui::Color text_color = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
-float text_alpha = 1.0;
+float text_color[4] = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
 float warp_ratio = 1.0f/3.0f;
 
 bool show_fps = true;
@@ -55,60 +54,31 @@ bool update_stars = true;
 bool update_perspective = true;
 
 using namespace cv::v4d;
-//static void setup_gui(cv::Ptr<V4D> window) {
-//    window->nanogui([&](cv::v4d::FormHelper& form){
-//        form.makeDialog(5, 30, "Effect");
-//        form.makeGroup("Text Crawl");
-//        form.makeFormVariable("Font Size", font_size, 1.0f, 100.0f, true, "pt", "Font size of the text crawl");
-//        form.makeFormVariable("Warp Ratio", warp_ratio, 0.1f, 1.0f, true, "", "The ratio of start width to end width of a crawling line")->set_callback([&](const float &w) {
-//            update_perspective = true;
-//            warp_ratio = w;
-//        });
-//
-//        form.makeColorPicker("Text Color", text_color, "The text color", [&](const nanogui::Color &c) {
-//            text_color[0] = c[0];
-//            text_color[1] = c[1];
-//            text_color[2] = c[2];
-//        });
-//
-//        form.makeFormVariable("Alpha", text_alpha, 0.0f, 1.0f, true, "", "The opacity of the text");
-//
-//        form.makeGroup("Stars");
-//        form.makeFormVariable("Min Star Size", min_star_size, 0.5f, 1.0f, true, "px", "Generate stars with this minimum size")->set_callback([&](const float &s) {
-//            update_stars = true;
-//            min_star_size = s;
-//        });
-//        form.makeFormVariable("Max Star Size", max_star_size, 1.0f, 10.0f, true, "px", "Generate stars with this maximum size")->set_callback([&](const float &s) {
-//            update_stars = true;
-//            max_star_size = s;
-//        });
-//        form.makeFormVariable("Min Star Count", min_star_count, 1, 1000, true, "", "Generate this minimum of stars")->set_callback([&](const int &cnt) {
-//            update_stars = true;
-//            min_star_count = cnt;
-//        });
-//        form.makeFormVariable("Max Star Count", max_star_count, 1000, 5000, true, "", "Generate this maximum of stars")->set_callback([&](const int &cnt) {
-//            update_stars = true;
-//            max_star_count = cnt;
-//        });
-//        form.makeFormVariable("Min Star Alpha", star_alpha, 0.2f, 1.0f, true, "", "Minimum opacity of stars")->set_callback([&](const float &a) {
-//            update_stars = true;
-//            star_alpha = a;
-//        });
-//
-//        form.makeDialog(8, 16, "Display");
-//
-//        form.makeGroup("Display");
-//        form.makeFormVariable("Show FPS", show_fps, "Enable or disable the On-screen FPS display");
-//    #ifndef __EMSCRIPTEN__
-//        form.makeButton("Fullscreen", [=]() {
-//            window->setFullscreen(!window->isFullscreen());
-//        });
-//    #endif
-//        form.makeButton("Offscreen", [=]() {
-//            window->setVisible(!window->isVisible());
-//        });
-//    });
-//}
+static void setup_gui(cv::Ptr<V4D> window) {
+    window->imgui([](ImGuiContext* ctx){
+        using namespace ImGui;
+        SetCurrentContext(ctx);
+        Begin("Effect");
+        Text("Text Crawl");
+        SliderFloat("Font Size", &font_size, 1.0f, 100.0f);
+        if(SliderFloat("Warp Ratio", &warp_ratio, 0.1f, 1.0f))
+            update_perspective = true;
+        ColorPicker4("Text Color", text_color);
+        Text("Stars");
+
+        if(SliderFloat("Min Star Size", &min_star_size, 0.5f, 1.0f))
+            update_stars = true;
+        if(SliderFloat("Max Star Size", &max_star_size, 1.0f, 10.0f))
+            update_stars = true;
+        if(SliderInt("Min Star Count", &min_star_count, 1, 1000))
+            update_stars = true;
+        if(SliderInt("Max Star Count", &max_star_count, 1000, 5000))
+            update_stars = true;
+        if(SliderFloat("Min Star Alpha", &star_alpha, 0.2f, 1.0f))
+            update_stars = true;
+        End();
+    });
+}
 
 static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
@@ -166,7 +136,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         clear();
         fontSize(font_size);
         fontFace("sans-bold");
-        fillColor(INITIAL_COLOR);
+        fillColor(cv::Scalar(text_color[2] * 255.0f, text_color[1] * 255.0f, text_color[0] * 255.0f, text_color[3] * 255.0f));
         textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
         /** only draw lines that are visible **/
@@ -204,10 +174,10 @@ static bool iteration(cv::Ptr<V4D> window) {
 
 int main() {
     try {
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", false, false, 0);
-//        if(!OFFSCREEN) {
-//            setup_gui(window);
-//        }
+        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", OFFSCREEN, false, 0);
+        if(!OFFSCREEN) {
+            setup_gui(window);
+        }
 
         window->printSystemInfo();
 
