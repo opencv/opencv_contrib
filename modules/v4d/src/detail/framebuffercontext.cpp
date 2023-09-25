@@ -272,7 +272,7 @@ void FrameBufferContext::init() {
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
     if (parent_ == nullptr) {
         GLenum err = glewInit();
-        if (GLEW_OK != err) {
+        if (err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY) {
             throw std::runtime_error("Could not initialize GLEW!");
         }
     }
@@ -872,6 +872,7 @@ void FrameBufferContext::fence() {
 bool FrameBufferContext::wait(uint64_t timeout) {
     if(first_sync_) {
         current_sync_object_ = 0;
+        first_sync_ = false;
         return true;
     }
     CV_Assert(current_sync_object_ != 0);
