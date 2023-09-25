@@ -26,8 +26,6 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 float base_color_val[4] = {0.2, 0.6, 1.0, 1.0};
-// Keep alpha separate for the GUI
-float alpha = 1.0f; //0.0-1.0
 //contrast boost
 int contrast_boost = 15; //0.0-255
 //max fractal iterations

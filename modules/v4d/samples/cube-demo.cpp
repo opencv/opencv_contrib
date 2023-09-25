@@ -241,7 +241,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 }
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", false, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", OFFSCREEN, false, 0);
     window->printSystemInfo();
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)

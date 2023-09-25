@@ -479,9 +479,9 @@ int main(int argc, char **argv) {
 
     try {
         using namespace cv::v4d;
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", false, false, 0);
+        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", OFFSCREEN, false, 0);
 #ifndef __EMSCRIPTEN__
-        miniWindow = V4D::make(270, 240, "Mini", false, false, 0);
+        miniWindow = V4D::make(270, 240, "Mini", OFFSCREEN, false, 0);
 #endif
         window->printSystemInfo();
         window->setStretching(stretch);

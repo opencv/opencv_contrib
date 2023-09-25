@@ -254,7 +254,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 }
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", false, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", OFFSCREEN, false, 0);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
