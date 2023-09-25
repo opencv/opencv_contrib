@@ -505,7 +505,7 @@ void V4D::swapContextBuffers() {
     run_sync_on_main<10>([this]() {
         for(size_t i = 0; i < numGlCtx(); ++i) {
             FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
-            glCtx(i).fbCtx().blitFrameBufferToFrameBuffer(viewport(), glCtx(i).fbCtx().getWindowSize(), isStretching());
+            glCtx(i).fbCtx().blitFrameBufferToFrameBuffer(viewport(), glCtx(i).fbCtx().getWindowSize(), 0, isStretching());
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
 #else
@@ -516,7 +516,7 @@ void V4D::swapContextBuffers() {
 
     run_sync_on_main<11>([this]() {
         FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        nvgCtx().fbCtx().blitFrameBufferToFrameBuffer(viewport(), nvgCtx().fbCtx().getWindowSize(), isStretching());
+        nvgCtx().fbCtx().blitFrameBufferToFrameBuffer(viewport(), nvgCtx().fbCtx().getWindowSize(), 0, isStretching());
 #ifndef __EMSCRIPTEN__
         glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
 #else
@@ -535,7 +535,7 @@ bool V4D::display() {
         run_sync_on_main<6>([&, this]() {
             {
                 FrameBufferContext::GLScope glScope(fbCtx(), GL_READ_FRAMEBUFFER);
-                fbCtx().blitFrameBufferToFrameBuffer(viewport(), fbCtx().getWindowSize(), isStretching());
+                fbCtx().blitFrameBufferToFrameBuffer(viewport(), fbCtx().getWindowSize(), 0, isStretching());
             }
             imguiCtx().render(getShowFPS());
 #ifndef __EMSCRIPTEN__

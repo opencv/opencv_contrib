@@ -209,15 +209,15 @@ public:
     bool isClosed();
     bool isShared();
     void fence();
-    bool wait(uint64_t timeout = 0);
+    bool wait(const uint64_t& timeout = 0);
     /*!
      * Blit the framebuffer to the screen
      * @param viewport ROI to blit
      * @param windowSize The size of the window to blit to
      * @param stretch if true stretch the framebuffer to window size
      */
-    void blitFrameBufferToFrameBuffer(const cv::Rect& viewport, const cv::Size& windowSize,
-            bool stretch = false, GLuint drawFramebufferID = 0, bool flipY = false);
+    void blitFrameBufferToFrameBuffer(const cv::Rect& srcViewport, const cv::Size& targetFbSize,
+            GLuint targetFramebufferID = 0, bool stretch = true, bool flipY = false);
 protected:
     cv::Ptr<V4D> getV4D();
     int getIndex();

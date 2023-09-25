@@ -144,7 +144,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
         other.blitFrameBufferToFrameBuffer(
                 cv::Rect(0,0, other.size().width, other.size().height),
                 this->getWindowSize(),
-                false);
+                0, false);
         emscripten_webgl_commit_frame();
     }
     this->makeCurrent();
@@ -379,7 +379,7 @@ void FrameBufferContext::init() {
             V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
             if(v4d->getGLFWWindow() == glfwWin) {
                 v4d->setFocused(i == 1);
-                cerr << "FOCUSED: " << v4d->title() << endl;
+//                cerr << "FOCUSED: " << v4d->title() << endl;
             }
     });
 }
@@ -645,11 +645,11 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 }
 #endif
 
-void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& viewport,
-        const cv::Size& windowSize, bool stretch, GLuint drawFramebufferID, bool flipY) {
+void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewport,
+        const cv::Size& targetFbSize, GLuint targetFramebufferID, bool stretch, bool flipY) {
     this->makeCurrent();
-    double hf = double(windowSize.height) / framebufferSize_.height;
-    double wf = double(windowSize.width) / framebufferSize_.width;
+    double hf = double(targetFbSize.height) / framebufferSize_.height;
+    double wf = double(targetFbSize.width) / framebufferSize_.width;
     double f;
     if (hf > wf)
         f = wf;
@@ -659,15 +659,15 @@ void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& viewport,
     double fbws = framebufferSize_.width * f;
     double fbhs = framebufferSize_.height * f;
 
-    double marginw = (windowSize.width - framebufferSize_.width) / 2.0;
-    double marginh = (windowSize.height - framebufferSize_.height) / 2.0;
-    double marginws = (windowSize.width - fbws) / 2.0;
-    double marginhs = (windowSize.height - fbhs) / 2.0;
+    double marginw = (targetFbSize.width - framebufferSize_.width) / 2.0;
+    double marginh = (targetFbSize.height - framebufferSize_.height) / 2.0;
+    double marginws = (targetFbSize.width - fbws) / 2.0;
+    double marginhs = (targetFbSize.height - fbhs) / 2.0;
 
-    GLint srcX0 = viewport.x;
-    GLint srcY0 = viewport.y;
-    GLint srcX1 = viewport.x + viewport.width;
-    GLint srcY1 = viewport.y + viewport.height;
+    GLint srcX0 = srcViewport.x;
+    GLint srcY0 = srcViewport.y;
+    GLint srcX1 = srcViewport.x + srcViewport.width;
+    GLint srcY1 = srcViewport.y + srcViewport.height;
     GLint dstX0 = stretch ? marginws : marginw;
     GLint dstY0 = stretch ? marginhs : marginh;
     GLint dstX1 = stretch ? marginws + fbws : marginw + framebufferSize_.width;
@@ -678,7 +678,7 @@ void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& viewport,
         dstY1 = tmp;
 
     }
-    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
+    GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,
             GL_COLOR_BUFFER_BIT, GL_NEAREST));
@@ -875,7 +875,7 @@ void FrameBufferContext::fence() {
     CV_Assert(current_sync_object_ != 0);
 }
 
-bool FrameBufferContext::wait(uint64_t timeout) {
+bool FrameBufferContext::wait(const uint64_t& timeout) {
     if(first_sync_) {
         current_sync_object_ = 0;
         first_sync_ = false;
