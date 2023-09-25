@@ -1,6 +1,9 @@
 [submodule "modules/v4d/third/nanovg"]
 	path = modules/v4d/third/nanovg
-	url = git@github.com:kallaballa/nanovg.git
+	url = https://github.com/kallaballa/nanovg.git
 [submodule "modules/v4d/third/imgui"]
 	path = modules/v4d/third/imgui
-	url = git@github.com:kallaballa/imgui.git
+	url = https://github.com/kallaballa/imgui.git
+[submodule "modules/v4d/third/doxygen-bootstrapped"]
+	path = modules/v4d/third/doxygen-bootstrapped
+	url = https://github.com/Velron/doxygen-bootstrapped.git
