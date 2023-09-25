@@ -33,13 +33,28 @@ bool Source::isOpen() {
 bool Source::isAsync() {
     return async_;
 }
+
+bool Source::isThreadSafe() {
+    return threadSafe_;
+}
+
+void Source::setThreadSafe(bool ts) {
+    threadSafe_ = ts;
+}
+
 float Source::fps() {
     return fps_;
 }
 
 std::pair<uint64_t, cv::UMat&> Source::operator()() {
-    open_ = generator_(frame_);
-    return {count_++, frame_};
+    if(threadSafe_) {
+        std::unique_lock<std::mutex> lock(mtx_);
+        open_ = generator_(frame_);
+        return {count_++, frame_};
+    } else {
+        open_ = generator_(frame_);
+        return {count_++, frame_};
+    }
 }
 } /* namespace v4d */
 } /* namespace kb */

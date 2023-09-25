@@ -9,6 +9,7 @@
 #include <functional>
 #include <opencv2/core/cvdef.h>
 #include <opencv2/core/mat.hpp>
+#include <mutex>
 
 namespace cv {
 namespace v4d {
@@ -18,12 +19,14 @@ namespace v4d {
  * a generator functor.
  */
 class CV_EXPORTS Source {
+    std::mutex mtx_;
     bool open_ = true;
     std::function<bool(cv::UMat&)> generator_;
     cv::UMat frame_;
     uint64_t count_ = 0;
     float fps_;
     bool async_ = true;
+    bool threadSafe_ = false;
 public:
     /*!
      * Constructs the Source object from a generator functor.
@@ -46,6 +49,10 @@ public:
      */
     CV_EXPORTS bool isReady();
     CV_EXPORTS bool isAsync();
+    CV_EXPORTS bool isThreadSafe();
+    CV_EXPORTS void setThreadSafe(bool ts);
+
+
     /*!
      * Determines if the source is open.
      * @return true if the source is open.

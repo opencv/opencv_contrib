@@ -9,6 +9,7 @@
 #include <functional>
 #include <opencv2/core/cvdef.h>
 #include <opencv2/core/mat.hpp>
+#include <mutex>
 
 namespace cv {
 namespace v4d {
@@ -17,14 +18,16 @@ namespace v4d {
  * A Sink object represents a way to write data produced by V4D (e.g. a video-file).
  */
 class CV_EXPORTS Sink {
+    std::mutex mtx_;
+    bool threadSafe_ = false;
     bool open_ = true;
-    std::function<bool(const cv::UMat&)> consumer_;
+    std::function<bool(const uint64_t&, const cv::UMat&)> consumer_;
 public:
     /*!
      * Consturcts the Sink object from a consumer functor.
      * @param consumer A function object that consumes a UMat frame (e.g. writes it to a video file).
      */
-    CV_EXPORTS Sink(std::function<bool(const cv::UMat&)> consumer);
+    CV_EXPORTS Sink(std::function<bool(const uint64_t&, const cv::UMat&)> consumer);
     /*!
      * Constucts a null Sink that is never open or ready
      */
@@ -43,11 +46,13 @@ public:
      * @return true if the sink is open.
      */
     CV_EXPORTS bool isOpen();
+    CV_EXPORTS bool isThreadSafe();
+    CV_EXPORTS void setThreadSafe(bool ts);
     /*!
      * The sink operator. It accepts a UMat frame to pass to the consumer
      * @param frame The frame to pass to the consumer. (e.g. VideoWriter)
      */
-    CV_EXPORTS void operator()(const cv::UMat& frame);
+    CV_EXPORTS void operator()(const uint64_t& seq, const cv::UMat& frame);
 };
 
 } /* namespace v4d */

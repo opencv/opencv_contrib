@@ -8,7 +8,7 @@
 namespace cv {
 namespace v4d {
 
-Sink::Sink(std::function<bool(const cv::UMat&)> consumer) :
+Sink::Sink(std::function<bool(const uint64_t&, const cv::UMat&)> consumer) :
         consumer_(consumer) {
 }
 
@@ -29,8 +29,17 @@ bool Sink::isOpen() {
     return open_;
 }
 
-void Sink::operator()(const cv::UMat& frame) {
-    open_ = consumer_(frame);
+bool Sink::isThreadSafe() {
+    return threadSafe_;
+}
+
+void Sink::setThreadSafe(bool ts) {
+    threadSafe_ = ts;
+}
+
+void Sink::operator()(const uint64_t& seq, const cv::UMat& frame) {
+    std::unique_lock<std::mutex> lock(mtx_);
+    open_ = consumer_(seq, frame);
 }
 } /* namespace v4d */
 } /* namespace kb */
