@@ -416,12 +416,11 @@ private:
     cv::Ptr<V4D> window_;
     int width_;
     int height_;
-    UMat fb_;
     GLuint framebuffer = 0;
     GLuint texture = 0;
 public:
     HTML5Capture(cv::Ptr<V4D> window, int width, int height) :
-        window_(window), width_(width), height_(height), fb_(window->framebufferSize(), CV_8UC4) {
+        window_(window), width_(width), height_(height) {
         EM_ASM({
             globalThis.playing = false;
             globalThis.timeupdate = false;
@@ -429,7 +428,7 @@ public:
         }, width, height);
     }
 
-    bool captureGPU(UMat& dst) {
+    bool captureGPU() {
         FrameBufferContext::GLScope scope(window_->fbCtx());
 
         int ret = EM_ASM_INT(
@@ -469,19 +468,8 @@ public:
                 );
             );
             GL_CHECK(glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
-            EM_ASM(
-                globalThis.gl.bindFramebuffer(globalThis.gl.DRAW_FRAMEBUFFER, globalThis.v4dMainFrameBuffer);
-                globalThis.gl.bindTexture(globalThis.gl.TEXTURE_2D, globalThis.v4dMainTexture);
-                globalThis.gl.framebufferTexture2D(globalThis.gl.DRAW_FRAMEBUFFER, globalThis.gl.COLOR_ATTACHMENT0, globalThis.gl.TEXTURE_2D, globalThis.v4dMainTexture, 0);
-            );
-            FrameBufferContext::FrameBufferScope fbScope(window_->fbCtx(), fb_);
-            flip(fb_, fb_, 0);
-            if(dst.empty())
-                dst.create(fb_.size(), CV_8UC3);
-
-            dst = cv::Scalar(0, 0, 0, 255);
-            cvtColor(fb_(cv::Rect(0, 0, width_, height_)), dst(cv::Rect((fb_.size().width - width_)/2.0, (fb_.size().height - height_)/2.0, width_, height_)), COLOR_BGRA2RGB);
-            cvtColor(dst, fb_, COLOR_RGB2BGRA);
+            cv::Size fbSz = window_->framebufferSize();
+            window_->fbCtx().blitFrameBufferToFrameBuffer(cv::Rect(0, 0, width_, height_), cv::Size(width_, height_), false, window_->fbCtx().getFramebufferID(), true);
 
             return true;
         }
@@ -509,13 +497,10 @@ Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
     return Source([=](cv::UMat& frame) {
         if(capture_width > 0 && capture_height > 0) {
             try {
-                if(frame.empty())
-                    frame.create(cv::Size(width, height), CV_8UC3);
-
-                run_sync_on_main<17>([&](){
+                run_sync_on_main<17>([&]() {
                     if(capture == nullptr)
                         capture = new HTML5Capture(window, capture_width, capture_height);
-                    capture->captureGPU(frame);
+                    capture->captureGPU();
                 });
             } catch(std::exception& ex) {
                 cerr << ex.what() << endl;
