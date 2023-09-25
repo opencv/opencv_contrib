@@ -210,6 +210,14 @@ public:
     bool isShared();
     void fence();
     bool wait(uint64_t timeout = 0);
+    /*!
+     * Blit the framebuffer to the screen
+     * @param viewport ROI to blit
+     * @param windowSize The size of the window to blit to
+     * @param stretch if true stretch the framebuffer to window size
+     */
+    void blitFrameBufferToFrameBuffer(const cv::Rect& viewport, const cv::Size& windowSize,
+            bool stretch = false, GLuint drawFramebufferID = 0, bool flipY = false);
 protected:
     cv::Ptr<V4D> getV4D();
     int getIndex();
@@ -235,14 +243,6 @@ protected:
      */
     CLExecContext_t& getCLExecContext();
 #endif
-    /*!
-     * Blit the framebuffer to the screen
-     * @param viewport ROI to blit
-     * @param windowSize The size of the window to blit to
-     * @param stretch if true stretch the framebuffer to window size
-     */
-    void blitFrameBufferToScreen(const cv::Rect& viewport, const cv::Size& windowSize,
-            bool stretch = false, GLuint drawFramebufferID = 0);
 private:
     void loadBuffers(const size_t& index);
     void loadShader(const size_t& index);

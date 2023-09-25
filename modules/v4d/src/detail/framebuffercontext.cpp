@@ -141,7 +141,7 @@ void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
     int height = getWindowSize().height;
     {
         FrameBufferContext::GLScope glScope(*this, GL_READ_FRAMEBUFFER);
-        other.blitFrameBufferToScreen(
+        other.blitFrameBufferToFrameBuffer(
                 cv::Rect(0,0, other.size().width, other.size().height),
                 this->getWindowSize(),
                 false);
@@ -645,8 +645,8 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 }
 #endif
 
-void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
-        const cv::Size& windowSize, bool stretch, GLuint drawFramebufferID) {
+void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& viewport,
+        const cv::Size& windowSize, bool stretch, GLuint drawFramebufferID, bool flipY) {
     this->makeCurrent();
     double hf = double(windowSize.height) / framebufferSize_.height;
     double wf = double(windowSize.width) / framebufferSize_.width;
@@ -672,6 +672,12 @@ void FrameBufferContext::blitFrameBufferToScreen(const cv::Rect& viewport,
     GLint dstY0 = stretch ? marginhs : marginh;
     GLint dstX1 = stretch ? marginws + fbws : marginw + framebufferSize_.width;
     GLint dstY1 = stretch ? marginhs + fbhs : marginh + framebufferSize_.height;
+    if(flipY) {
+        GLint tmp = dstY0;
+        dstY0 = dstY1;
+        dstY1 = tmp;
+
+    }
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
             dstX0, dstY0, dstX1, dstY1,
