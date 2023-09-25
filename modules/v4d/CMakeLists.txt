@@ -165,6 +165,10 @@ if(NOT (TARGET ${the_module}))
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
+    "${CMAKE_CURRENT_BINARY_DIR}/assets/doxygen")
+
+  add_custom_command(TARGET ${the_module} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
     "${CMAKE_CURRENT_BINARY_DIR}/assets/models")
 
   add_custom_command(TARGET ${the_module} PRE_BUILD
@@ -190,6 +194,23 @@ if(NOT (TARGET ${the_module}))
     COMMAND ${CMAKE_COMMAND} -E copy
     "${yunet_SOURCE_DIR}/face_detection_yunet_2023mar.onnx"
     "${CMAKE_CURRENT_BINARY_DIR}/assets/models/")
+
+  add_custom_command(TARGET ${the_module} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${CMAKE_CURRENT_SOURCE_DIR}/third/doxygen-bootstrapped/customdoxygen.css"
+    "${CMAKE_SOURCE_DIR}/doc/stylesheet.css")
+
+  add_custom_command(TARGET ${the_module} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${CMAKE_CURRENT_SOURCE_DIR}/third/doxygen-bootstrapped/example-site/header.html"
+    "${CMAKE_SOURCE_DIR}/doc/")
+
+  add_custom_command(TARGET ${the_module} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+    "${CMAKE_CURRENT_SOURCE_DIR}/third/doxygen-bootstrapped/example-site/footer.html"
+    "${CMAKE_SOURCE_DIR}/doc/")
+
+  list(APPEND CMAKE_DOXYGEN_HTML_FILES "${CMAKE_CURRENT_SOURCE_DIR}/third/doxygen-bootstrapped/doxy-boot.js")
 
   #Add sample targets
   if(BUILD_EXAMPLES)
