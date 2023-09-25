@@ -484,7 +484,7 @@ int main(int argc, char **argv) {
         miniWindow = V4D::make(270, 240, "Mini", false, false, 0);
 #endif
         window->printSystemInfo();
-//        window->setStretching(stretch);
+        window->setStretching(stretch);
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
             setup_gui(window, miniWindow);
