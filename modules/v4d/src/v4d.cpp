@@ -300,8 +300,8 @@ cv::_InputArray V4D::fetch() {
 }
 
 bool V4D::capture() {
-    if(source_) {
-        if(source_->isAsync()) {
+    if (source_) {
+        if (source_->isAsync()) {
             return this->capture([this](cv::UMat& videoFrame) {
                 if (source_->isReady()) {
                     auto p = source_->operator()();
@@ -310,17 +310,21 @@ bool V4D::capture() {
                 }
             });
         } else {
-            if(source_->fps() > 0) {
-                fb([this](cv::UMat& frameBuffer){
-                    if (source_->isReady()) {
-                        auto p = source_->operator()();
-                        currentSeqNr_ = p.first;
-                        p.second.copyTo(frameBuffer);
-                    }
-                });
+            if (source_->isReady()) {
+                if (source_->fps() > 0) {
+                    auto p = source_->operator()();
+                    currentSeqNr_ = p.first;
+                    feed(p.second);
+                } else {
+                    auto p = source_->operator()();
+                    currentSeqNr_ = p.first;
+                }
             } else {
-                auto p = source_->operator()();
-                currentSeqNr_ = p.first;
+#ifndef __EMSCRIPTEN__
+                return false;
+#else
+                return true;
+#endif
             }
 
             return true;

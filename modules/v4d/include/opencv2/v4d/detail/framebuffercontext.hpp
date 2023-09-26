@@ -111,8 +111,8 @@ class CV_EXPORTS FrameBufferContext {
     std::map<size_t, GLuint> copyTextures_;
     int index_;
 
-    void* current_sync_object_ = 0;
-    bool first_sync_ = true;
+    void* currentSyncObject_ = 0;
+    bool firstSync_ = true;
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.

@@ -686,7 +686,7 @@ void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewpor
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
-    CV_Assert(this->wait() == true);
+    CV_Assert(this->wait(1000000000) == true);
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -876,29 +876,22 @@ void FrameBufferContext::fence() {
 }
 
 bool FrameBufferContext::wait(const uint64_t& timeout) {
-    if(first_sync_) {
+    if(firstSync_) {
         currentSyncObject_ = 0;
-        first_sync_ = false;
+        firstSync_ = false;
         return true;
     }
     CV_Assert(currentSyncObject_ != 0);
-    if (timeout > 0) {
-        GLuint ret = glClientWaitSync(static_cast<GLsync>(currentSyncObject_),
-        GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
-        GL_CHECK();
-        CV_Assert(GL_ALREADY_SIGNALED != ret);
-        CV_Assert(GL_WAIT_FAILED != ret);
-        if(GL_CONDITION_SATISFIED == ret) {
-            currentSyncObject_ = 0;
-            return true;
-        } else {
-            currentSyncObject_ = 0;
-            return false;
-        }
-    } else {
-        GL_CHECK(glWaitSync(static_cast<GLsync>(currentSyncObject_), 0, GL_TIMEOUT_IGNORED));
+    GLuint ret = glClientWaitSync(static_cast<GLsync>(currentSyncObject_),
+    GL_SYNC_FLUSH_COMMANDS_BIT, timeout);
+    GL_CHECK();
+    CV_Assert(GL_WAIT_FAILED != ret);
+    if(GL_CONDITION_SATISFIED == ret || GL_ALREADY_SIGNALED == ret) {
         currentSyncObject_ = 0;
         return true;
+    } else {
+        currentSyncObject_ = 0;
+        return false;
     }
 }
 }
