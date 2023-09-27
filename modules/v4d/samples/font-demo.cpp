@@ -174,7 +174,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
 int main() {
     try {
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", OFFSCREEN, false, 0);
+        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", ALL, OFFSCREEN);
 
         if(!OFFSCREEN) {
             setup_gui(window);
@@ -192,7 +192,7 @@ int main() {
         }
 
 #ifndef __EMSCRIPTEN__
-        Sink sink = makeWriterSink(OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+        Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #endif
 

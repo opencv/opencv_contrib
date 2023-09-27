@@ -57,7 +57,7 @@ namespace detail {
 class NVG {
 private:
     friend class V4D;
-    static NVG* nvg_instance_;
+    static thread_local NVG* nvg_instance_;
     NVGcontext* ctx_ = nullptr;
     NVG(NVGcontext* ctx) :
             ctx_(ctx) {

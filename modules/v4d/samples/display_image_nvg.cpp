@@ -13,7 +13,7 @@ struct Image_t {
 };
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image using NanoVG", false, false, 0);
+    cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image using NanoVG");
     Image_t image;
     //Set the filename
 #ifdef __EMSCRIPTEN__

@@ -120,6 +120,7 @@ public:
     class CV_EXPORTS FrameBufferScope {
         FrameBufferContext& ctx_;
         cv::UMat& m_;
+        std::shared_ptr<ocl::OpenCLExecutionContext> pExecCtx;
     public:
         /*!
          * Aquires the framebuffer via cl-gl sharing.
@@ -127,13 +128,15 @@ public:
          * @param m The UMat to bind the OpenGL framebuffer to.
          */
         CV_EXPORTS FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
-                ctx_(ctx), m_(m) {
+                ctx_(ctx), m_(m), pExecCtx(std::static_pointer_cast<ocl::OpenCLExecutionContext>(m.u->allocatorContext)) {
+            ocl::OpenCLExecutionContextScope execScope(*pExecCtx.get());
             ctx_.acquireFromGL(m_);
         }
         /*!
          * Releases the framebuffer via cl-gl sharing.
          */
         CV_EXPORTS ~FrameBufferScope() {
+            ocl::OpenCLExecutionContextScope execScope(*pExecCtx.get());
             ctx_.releaseToGL(m_);
         }
     };

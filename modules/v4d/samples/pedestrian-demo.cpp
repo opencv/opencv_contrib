@@ -235,16 +235,16 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Pedestrian Demo", OFFSCREEN, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Pedestrian Demo", ALL, OFFSCREEN);
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
-    Source src = makeCaptureSource(argv[1]);
+    Source src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
 
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT, window);

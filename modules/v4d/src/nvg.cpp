@@ -12,7 +12,7 @@ namespace nvg {
 namespace detail {
 class NVG;
 
-NVG* NVG::nvg_instance_ = nullptr;
+thread_local NVG* NVG::nvg_instance_ = nullptr;
 
 void NVG::initializeContext(NVGcontext* ctx) {
     if (nvg_instance_ != nullptr)

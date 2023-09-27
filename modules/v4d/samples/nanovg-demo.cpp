@@ -182,12 +182,12 @@ int main(int argc, char **argv) {
 #else
 int main() {
 #endif
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Mandelbrot Shader Demo", OFFSCREEN, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "NanoVG Demo", NANOVG, OFFSCREEN);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
-    Source src = makeCaptureSource(argv[1]);
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+    Source src = makeCaptureSource(window, argv[1]);
+    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSource(src);
     window->setSink(sink);
 #else

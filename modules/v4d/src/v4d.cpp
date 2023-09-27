@@ -14,19 +14,19 @@
 namespace cv {
 namespace v4d {
 
-cv::Ptr<V4D> V4D::make(int w, int h, const string& title, bool offscreen, bool debug, int samples) {
-    V4D* v4d = new V4D(cv::Size(w,h), cv::Size(), title, offscreen, debug, samples);
+cv::Ptr<V4D> V4D::make(int w, int h, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
+    V4D* v4d = new V4D(cv::Size(w,h), cv::Size(), title, flags, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
     return v4d->self();
 }
 
-cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int samples) {
-    V4D* v4d = new V4D(size, fbsize, title, offscreen, debug, samples);
+cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
+    V4D* v4d = new V4D(size, fbsize, title, flags, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
     return v4d->self();
 }
 
-V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen, bool debug, int samples) :
+V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) :
         initialSize_(size), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true), pool_(2) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
@@ -37,9 +37,10 @@ V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, bool
 #ifndef __EMSCRIPTEN__
     CLExecScope_t scope(mainFbContext_->getCLExecContext());
 #endif
-    nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
+    if(flags & NANOVG)
+        nvgContext_ = new detail::NanoVGContext(*mainFbContext_);
     clvaContext_ = new detail::CLVAContext(*mainFbContext_);
-    if(!offscreen)
+    if(flags & IMGUI)
         imguiContext_ = new detail::ImGuiContextImpl(*mainFbContext_);
 }
 
@@ -221,8 +222,37 @@ static void do_frame(void* void_fn_ptr) {
  }
 #endif
 
-void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
+void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
 #ifndef __EMSCRIPTEN__
+    std::vector<std::thread*> threads;
+    for (size_t i = 0; i < workers; ++i) {
+        threads.push_back(
+                new std::thread(
+                        [this, fn, i] {
+                            cv::Ptr<cv::v4d::V4D> worker = V4D::make(
+                                    this->initialSize().width,
+                                    this->initialSize().height,
+                                    this->title() + "-worker-" + std::to_string(i),
+                                    NANOVG,
+                                    !this->debug_,
+                                    this->debug_,
+                                    0);
+                            if (this->hasSource()) {
+                                Source& src = this->getSource();
+                                src.setThreadSafe(true);
+                                worker->setSource(src);
+                            }
+                            if (this->hasSink()) {
+                                Sink& sink = this->getSink();
+                                sink.setThreadSafe(true);
+                                worker->setSink(sink);
+                            }
+                            worker->run(fn, 0);
+                        }
+                )
+        );
+    }
+
     this->makeCurrent();
     bool success = true;
     while (keepRunning() && success) {
@@ -230,6 +260,9 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
         success = fn(self());
     }
     pool_.finish();
+
+    for(auto& t : threads)
+        t->join();
 #else
     std::function<bool()> fnFrame([=,this](){
         return fn(self());
@@ -239,54 +272,32 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn) {
 }
 
 void V4D::setSource(Source& src) {
-    if (!clvaCtx().hasContext()) {
-        if(isIntelVaSupported()) {
-            clvaCtx().copyContext();
-        }
-    }
-
     source_ = &src;
 }
 
+Source& V4D::getSource() {
+    CV_Assert(source_ != nullptr);
+    return *source_;
+}
+
+bool V4D::hasSource() {
+    return source_ != nullptr;
+}
+
 void V4D::feed(cv::InputArray in) {
-    auto currentClExecCtx = CLExecContext_t::getCurrentRef();
-    auto clvaClExecCtx = clvaCtx().getCLExecContext();
-    //Check if we are dealing with diverging (or uninitialized) OpenCL contexts and make a CPU-roundtrip if so.
-    //Is there a better way to copy between contexts?
-    bool cpuRoundTrip = in.isUMat()
-            && (
-                    (currentClExecCtx.empty() || clvaClExecCtx.empty())
-                    || (currentClExecCtx.getContext().ptr() != clvaClExecCtx.getContext().ptr())
-            );
-
-    if(cpuRoundTrip) {
+    CLExecScope_t scope(fbCtx().getCLExecContext());
+    TimeTracker::getInstance()->execute("feed", [this, &in](){
         cv::Mat source;
-        TimeTracker::getInstance()->execute("feed", [this, &in, &source](){
-            in.getUMat().getMat(ACCESS_READ).copyTo(source);
-            cv::UMat frame;
-            clvaCtx().capture([&](cv::UMat& videoFrame) {
-                source.copyTo(videoFrame);
-            }, frame);
+        in.getUMat().getMat(ACCESS_READ).copyTo(source);
+        cv::UMat frame;
+        clvaCtx().capture([&](cv::UMat& videoFrame) {
+            source.copyTo(videoFrame);
+        }, frame);
 
-            fb([frame](cv::UMat& framebuffer){
-                frame.copyTo(framebuffer);
-            });
+        fb([&frame](cv::UMat& framebuffer){
+            frame.copyTo(framebuffer);
         });
-    }
-    else {
-        cv::UMat source;
-        TimeTracker::getInstance()->execute("feed", [this, &in, &source](){
-            in.copyTo(source);
-            cv::UMat frame;
-            clvaCtx().capture([&](cv::UMat& videoFrame) {
-                source.copyTo(videoFrame);
-            }, frame);
-
-            fb([frame](cv::UMat& framebuffer){
-                frame.copyTo(framebuffer);
-            });
-        });
-    }
+    });
 }
 
 cv::_InputArray V4D::fetch() {
@@ -300,42 +311,28 @@ cv::_InputArray V4D::fetch() {
 }
 
 bool V4D::capture() {
+    CLExecScope_t scope(fbCtx().getCLExecContext());
     if (source_) {
-        if (source_->isAsync()) {
-            return this->capture([this](cv::UMat& videoFrame) {
-                if (source_->isReady()) {
-                    auto p = source_->operator()();
-                    currentSeqNr_ = p.first;
+        return this->capture([this](cv::UMat& videoFrame) {
+            if (source_->isReady()) {
+                auto p = source_->operator()();
+                currentSeqNr_ = p.first;
+                if (source_->isThreadSafe()) {
+                    p.second.getMat(cv::ACCESS_READ).copyTo(videoFrame);
+                } else {
                     p.second.copyTo(videoFrame);
                 }
-            });
-        } else {
-            if (source_->isReady()) {
-                if (source_->fps() > 0) {
-                    auto p = source_->operator()();
-                    currentSeqNr_ = p.first;
-                    feed(p.second);
-                } else {
-                    auto p = source_->operator()();
-                    currentSeqNr_ = p.first;
-                }
-            } else {
-#ifndef __EMSCRIPTEN__
-                return false;
-#else
                 return true;
-#endif
             }
-
-            return true;
-        }
-    } else {
+            return false;
+        });
 #ifndef __EMSCRIPTEN__
         return false;
 #else
         return true;
 #endif
     }
+    return false;
 }
 
 bool V4D::capture(std::function<void(cv::UMat&)> fn) {
@@ -388,12 +385,16 @@ bool V4D::isSourceReady() {
 }
 
 void V4D::setSink(Sink& sink) {
-    if (!clvaCtx().hasContext()) {
-        if(isIntelVaSupported()) {
-            clvaCtx().copyContext();
-        }
-    }
     sink_ = &sink;
+}
+
+Sink& V4D::getSink() {
+    CV_Assert(sink_ != nullptr);
+    return *sink_;
+}
+
+bool V4D::hasSink() {
+    return sink_ != nullptr;
 }
 
 void V4D::write() {
@@ -560,10 +561,10 @@ bool V4D::display() {
             }
             if(hasImguiCtx())
                 imguiCtx().render(getShowFPS());
-#ifndef __EMSCRIPTEN__
-            if(debug_)
-                swapContextBuffers();
-#endif
+//#ifndef __EMSCRIPTEN__
+//            if(debug_)
+//                swapContextBuffers();
+//#endif
             fbCtx().makeCurrent();
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());

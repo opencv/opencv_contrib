@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    Ptr<V4D> window = V4D::make(960, 960, "Font Rendering with GUI", false, false, 0);
+    Ptr<V4D> window = V4D::make(960, 960, "Font Rendering with GUI");
 
 	//The font size
 	float size = 40.0f;

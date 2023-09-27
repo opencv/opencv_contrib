@@ -27,9 +27,9 @@ int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG 
 // Red, green, blue and alpha. All from 0.0f to 1.0f
 float base_color_val[4] = {0.2, 0.6, 1.0, 1.0};
 //contrast boost
-int contrast_boost = 15; //0.0-255
+int contrast_boost = 255; //0.0-255
 //max fractal iterations
-int max_iterations = 500;
+int max_iterations = 50000;
 //center x coordinate
 float center_x = -0.119609;
 //center y coordinate
@@ -220,9 +220,9 @@ static void render_scene(const cv::Size& sz) {
 
 #ifndef __EMSCRIPTEN__
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static cv::UMat resize;
-    static cv::UMat blur;
-    static cv::UMat dst16;
+    static thread_local cv::UMat resize;
+    static thread_local cv::UMat blur;
+    static thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -294,8 +294,7 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     try {
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Mandelbrot Shader Demo", OFFSCREEN, false, 0);
-
+        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Mandelbrot Shader Demo", IMGUI, OFFSCREEN, false, 0);
         if (!OFFSCREEN) {
             setup_gui(window);
         }
@@ -305,9 +304,9 @@ int main() {
         window->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
-        Source src = makeCaptureSource(argv[1]);
+        Source src = makeCaptureSource(window, argv[1]);
         window->setSource(src);
-        Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+        Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
         Source src = makeCaptureSource(WIDTH, HEIGHT, window);

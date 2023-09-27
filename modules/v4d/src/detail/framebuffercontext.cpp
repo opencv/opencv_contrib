@@ -299,39 +299,56 @@ void FrameBufferContext::init() {
     glfwSetWindowUserPointer(getGLFWWindow(), getV4D().get());
     glfwSetCursorPosCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
         V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
-        ImGui_ImplGlfw_CursorPosCallback(glfwWin, x, y);
-        if (!ImGui::GetIO().WantCaptureMouse) {
-            v4d->setMousePosition(cv::Point2f(float(x), float(y)));
+        if(v4d->hasImguiCtx()) {
+            ImGui_ImplGlfw_CursorPosCallback(glfwWin, x, y);
+            if (!ImGui::GetIO().WantCaptureMouse) {
+                v4d->setMousePosition(cv::Point2f(float(x), float(y)));
+            }
         }
     });
 
     glfwSetMouseButtonCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int button, int action, int modifiers) {
-        ImGui_ImplGlfw_MouseButtonCallback(glfwWin, button, action, modifiers);
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
 
-        if (!ImGui::GetIO().WantCaptureMouse) {
-            // Pass event further
-        } else {
-            // Do nothing, since imgui already reacted to mouse click. It would be weird if unrelated things started happening when you click something on UI.
+        if(v4d->hasImguiCtx()) {
+            ImGui_ImplGlfw_MouseButtonCallback(glfwWin, button, action, modifiers);
+
+            if (!ImGui::GetIO().WantCaptureMouse) {
+                // Pass event further
+            } else {
+                // Do nothing, since imgui already reacted to mouse click. It would be weird if unrelated things started happening when you click something on UI.
+            }
         }
     });
 
     glfwSetKeyCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int key, int scancode, int action, int mods) {
-        ImGui_ImplGlfw_KeyCallback(glfwWin, key, scancode, action, mods);
-        if (!ImGui::GetIO().WantCaptureKeyboard) {
-            // Pass event further
-        } else {
-            // Do nothing, since imgui already reacted to mouse click. It would be weird if unrelated things started happening when you click something on UI.
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+
+        if(v4d->hasImguiCtx()) {
+            ImGui_ImplGlfw_KeyCallback(glfwWin, key, scancode, action, mods);
+            if (!ImGui::GetIO().WantCaptureKeyboard) {
+                // Pass event further
+            } else {
+                // Do nothing, since imgui already reacted to mouse click. It would be weird if unrelated things started happening when you click something on UI.
+            }
         }
     });
     glfwSetCharCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, unsigned int codepoint) {
-        ImGui_ImplGlfw_CharCallback(glfwWin, codepoint);
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+
+        if(v4d->hasImguiCtx()) {
+            ImGui_ImplGlfw_CharCallback(glfwWin, codepoint);
+        }
     });
 //    glfwSetDropCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, int count, const char** filenames) {
 //        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
 //    });
 
     glfwSetScrollCallback(getGLFWWindow(), [](GLFWwindow* glfwWin, double x, double y) {
-        ImGui_ImplGlfw_ScrollCallback(glfwWin, x, y);
+        V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
+        if (v4d->hasImguiCtx()) {
+            ImGui_ImplGlfw_ScrollCallback(glfwWin, x, y);
+        }
     });
 //
 //    glfwSetWindowSizeCallback(getGLFWWindow(),
@@ -379,7 +396,6 @@ void FrameBufferContext::init() {
             V4D* v4d = reinterpret_cast<V4D*>(glfwGetWindowUserPointer(glfwWin));
             if(v4d->getGLFWWindow() == glfwWin) {
                 v4d->setFocused(i == 1);
-//                cerr << "FOCUSED: " << v4d->title() << endl;
             }
     });
 }
@@ -539,8 +555,12 @@ void FrameBufferContext::fromGLTexture2D(const cv::ogl::Texture2D& texture, cv::
     }
 
     cl_command_queue q = (cl_command_queue) context_.getQueue().ptr();
-
     cl_int status = 0;
+
+//    status = clFinish(q);
+//    if (status != CL_SUCCESS)
+//        throw std::runtime_error("OpenCL: clFinish failed: " + std::to_string(status));
+
     if (clImage_ == nullptr) {
         Context& ctx = context_.getContext();
         cl_context context = (cl_context) ctx.ptr();
@@ -676,7 +696,6 @@ void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewpor
         GLint tmp = dstY0;
         dstY0 = dstY1;
         dstY1 = tmp;
-
     }
     GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFramebufferID));
     GL_CHECK(glBlitFramebuffer( srcX0, srcY0, srcX1, srcY1,
@@ -686,7 +705,8 @@ void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewpor
 
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
-    CV_Assert(this->wait(1000000000) == true);
+//    CV_Assert(this->wait(1000000000) == true);
+    GL_CHECK(glFinish());
     GL_CHECK(glBindFramebuffer(framebufferTarget, frameBufferID_));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, textureID_));
     GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, renderBufferID_));
@@ -701,7 +721,8 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 
 void FrameBufferContext::end() {
     this->makeCurrent();
-    this->fence();
+    GL_CHECK(glFlush());
+    //    this->fence();
 }
 
 void FrameBufferContext::download(cv::UMat& m) {

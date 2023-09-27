@@ -48,7 +48,6 @@ public:
      */
     bool hasContext();
     void copyContext();
-protected:
     CLExecContext_t getCLExecContext();
 };
 }

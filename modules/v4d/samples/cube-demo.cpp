@@ -26,12 +26,12 @@ using std::cerr;
 using std::endl;
 
 /* OpenGL constants and variables */
-const unsigned int triangles = 12;
-const unsigned int vertices_index = 0;
-const unsigned int colors_index = 1;
-unsigned int shader_program;
-unsigned int vao;
-unsigned int uniform_transform;
+static thread_local const unsigned int triangles = 12;
+static thread_local const unsigned int vertices_index = 0;
+static thread_local const unsigned int colors_index = 1;
+static thread_local unsigned int shader_program;
+static thread_local unsigned int vao;
+static thread_local unsigned int uniform_transform;
 
 cv::Ptr<cv::v4d::V4D> global_v4d;
 //Simple transform & pass-through shaders
@@ -198,9 +198,9 @@ static void render_scene() {
 #ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static cv::UMat resize;
-    static cv::UMat blur;
-    static cv::UMat dst16;
+    static thread_local cv::UMat resize;
+    static thread_local cv::UMat blur;
+    static thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -241,11 +241,11 @@ static bool iteration(cv::Ptr<V4D> window) {
 }
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", OFFSCREEN, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", IMGUI, OFFSCREEN);
     window->printSystemInfo();
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
     window->gl(init_scene);

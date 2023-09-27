@@ -22,7 +22,6 @@ class CV_EXPORTS Source {
     std::mutex mtx_;
     bool open_ = true;
     std::function<bool(cv::UMat&)> generator_;
-    cv::UMat frame_;
     uint64_t count_ = 0;
     float fps_;
     bool async_ = true;
@@ -69,7 +68,7 @@ public:
      * (e.g. by VideoCapture)in a pair.
      * @return A pair containing the frame count and the frame generated.
      */
-    CV_EXPORTS std::pair<uint64_t, cv::UMat&> operator()();
+    CV_EXPORTS std::pair<uint64_t, cv::UMat> operator()();
 };
 
 } /* namespace v4d */

@@ -46,6 +46,12 @@ namespace cv {
  */
 namespace v4d {
 class FormHelper;
+enum AllocateFlags {
+    NONE = 0,
+    NANOVG = 1,
+    IMGUI = 2,
+    ALL = NANOVG | IMGUI
+};
 /*!
  * Private namespace
  */
@@ -116,8 +122,8 @@ public:
      * @param samples MSAA samples.
      * @param debug Create a debug OpenGL context.
      */
-    CV_EXPORTS static cv::Ptr<V4D> make(int w, int h, const string& title, bool offscreen = false, bool debug = false, int samples = 0);
-    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, bool offscreen = false, bool debug = false, int samples = 0);
+    CV_EXPORTS static cv::Ptr<V4D> make(int w, int h, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
+    CV_EXPORTS static cv::Ptr<V4D> make(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags = ALL, bool offscreen = false, bool debug = false, int samples = 0);
     /*!
      * Default destructor
      */
@@ -171,7 +177,7 @@ public:
      * This function main purpose is to abstract the run loop for portability reasons.
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
-    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn);
+    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
     /*!
      * Called to feed an image directly to the framebuffer
      */
@@ -210,6 +216,9 @@ public:
      * @param src A #cv::viz::Source object.
      */
     CV_EXPORTS void setSource(Source& src);
+    CV_EXPORTS Source& getSource();
+    CV_EXPORTS bool hasSource();
+
     /*!
      * Checks if the current #cv::viz::Source is ready.
      * @return true if it is ready.
@@ -220,6 +229,8 @@ public:
      * @param sink A #cv::viz::Sink object.
      */
     CV_EXPORTS void setSink(Sink& sink);
+    CV_EXPORTS Sink& getSink();
+    CV_EXPORTS bool hasSink();
     /*!
      * Checks if the current #cv::viz::Sink is ready.
      * @return true if it is ready.
@@ -365,7 +376,7 @@ public:
     CV_EXPORTS size_t numGlCtx();
 private:
     V4D(const cv::Size& size, const cv::Size& fbsize,
-            const string& title, bool offscreen, bool debug, int samples);
+            const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples);
 
     cv::Point2f getMousePosition();
     void setMousePosition(const cv::Point2f& pt);

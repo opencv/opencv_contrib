@@ -4,7 +4,7 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main(int argc, char** argv) {
-    Ptr<V4D> window = V4D::make(960, 960, "Video Editing", false, false, 0);
+    Ptr<V4D> window = V4D::make(960, 960, "Video Editing");
 
     //In case of WebAssembly
     CV_UNUSED(argc);
@@ -14,10 +14,10 @@ int main(int argc, char** argv) {
 
 #ifndef __EMSCRIPTEN__
     //Make the video source
-    Source src = makeCaptureSource(argv[1]);
+    Source src = makeCaptureSource(window, argv[1]);
 
     //Make the video sink
-    Sink sink = makeWriterSink(argv[2], src.fps(), cv::Size(960, 960));
+    Sink sink = makeWriterSink(window, argv[2], src.fps(), cv::Size(960, 960));
     //Attach source and sink
     window->setSource(src);
     window->setSink(sink);

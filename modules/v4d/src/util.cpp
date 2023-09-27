@@ -9,6 +9,8 @@
 #include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/nvg.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "detail/clvacontext.hpp"
+
 
 
 #ifdef __EMSCRIPTEN__
@@ -288,17 +290,21 @@ bool keepRunning() {
 }
 
 #ifndef __EMSCRIPTEN__
-Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
+Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             fourcc, fps, frameSize, {
                     cv::VIDEOWRITER_PROP_HW_DEVICE, vaDeviceIndex,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
+    if(isIntelVaSupported())
+        window->clvaCtx().copyContext();
 
+    cerr << "Using a VA sink" << endl;
     if(writer->isOpened()) {
 		return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
-			static cv::UMat resized;
+	        CLExecScope_t scope(window->clvaCtx().getCLExecContext());
+			static thread_local cv::UMat resized;
 			cv::resize(frame, resized, frameSize);
 			(*writer) << resized;
 			return writer->isOpened();
@@ -308,13 +314,17 @@ Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
     }
 }
 
-Source makeVaSource(const string& inputFilename, const int vaDeviceIndex) {
+Source makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION,
             cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
-
+    cerr << "Using a VA source" << endl;
+    if(isIntelVaSupported())
+        window->clvaCtx().copyContext();
+//    cv::Ptr<ocl::OpenCLExecutionContext> pExecCtx = &ocl::OpenCLExecutionContext::getCurrent();
     return Source([=](cv::UMat& frame) {
+        CLExecScope_t scope(window->clvaCtx().getCLExecContext());
         (*capture) >> frame;
         return !frame.empty();
     }, fps);
@@ -343,14 +353,23 @@ static Source makeAnyHWSource(const string& inputFilename) {
     float fps = capture->get(cv::CAP_PROP_FPS);
 
     return Source([=](cv::UMat& frame) {
-        (*capture) >> frame;
-        return !frame.empty();
+        cv::UMat tmp;
+        (*capture) >> tmp;
+
+        if(frame.empty())
+            frame.create(tmp.size(), tmp.type());
+        if(!tmp.empty()) {
+            tmp.copyTo(frame.getMat(cv::ACCESS_WRITE));
+            return true;
+        } else {
+            return false;
+        }
     }, fps);
 }
 #endif
 
 #ifndef __EMSCRIPTEN__
-Sink makeWriterSink(const string& outputFilename, const float fps, const cv::Size& frameSize) {
+Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps, const cv::Size& frameSize) {
     int fourcc = 0;
     cerr << getGlVendor() << endl;
     //FIXME find a cleverer way to guess a decent codec
@@ -359,17 +378,18 @@ Sink makeWriterSink(const string& outputFilename, const float fps, const cv::Siz
     } else {
         fourcc = cv::VideoWriter::fourcc('V', 'P', '9', '0');
     }
-    return makeWriterSink(outputFilename, fps, frameSize, fourcc);
+    return makeWriterSink(window, outputFilename, fps, frameSize, fourcc);
 }
 
-Sink makeWriterSink(const string& outputFilename, const float fps,
+Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
         const cv::Size& frameSize, int fourcc) {
     if (isIntelVaSupported()) {
-        return makeVaSink(outputFilename, fourcc, fps, frameSize, 0);
+        return makeVaSink(window, outputFilename, fourcc, fps, frameSize, 0);
     } else {
         try {
             return makeAnyHWSink(outputFilename, fourcc, fps, frameSize);
         } catch(...) {
+            cerr << "Failed creating hardware source" << endl;
         }
     }
 
@@ -388,13 +408,14 @@ Sink makeWriterSink(const string& outputFilename, const float fps,
     }
 }
 
-Source makeCaptureSource(const string& inputFilename) {
+Source makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename) {
     if (isIntelVaSupported()) {
-        return makeVaSource(inputFilename, 0);
+        return makeVaSource(window, inputFilename, 0);
     } else {
         try {
             return makeAnyHWSource(inputFilename);
         } catch(...) {
+            cerr << "Failed creating hardware source" << endl;
         }
     }
 

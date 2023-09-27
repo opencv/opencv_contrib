@@ -75,7 +75,7 @@ make_function(T *t)
     return {t};
 }
 
-static bool sync_run = false;
+static thread_local bool sync_run = false;
 template<std::size_t Tid>
 void run_sync_on_main(std::function<void()> fn) {
     if(sync_run)
@@ -170,7 +170,7 @@ CV_EXPORTS bool keepRunning();
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled sink object.
  */
-CV_EXPORTS Sink makeVaSink(const string& outputFilename, const int fourcc, const float fps,
+CV_EXPORTS Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex);
 /*!
  * Creates an Intel VAAPI enabled VideoCapture source object to use in conjunction with #V4D::setSource().
@@ -179,7 +179,7 @@ CV_EXPORTS Sink makeVaSink(const string& outputFilename, const int fourcc, const
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled source object.
  */
-CV_EXPORTS Source makeVaSource(const string& inputFilename, const int vaDeviceIndex);
+CV_EXPORTS Source makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, const int vaDeviceIndex);
 /*!
  * Creates a VideoWriter sink object to use in conjunction with #V4D::setSink().
  * This function automatically determines if Intel VAAPI is available and enables it if so.
@@ -189,9 +189,9 @@ CV_EXPORTS Source makeVaSource(const string& inputFilename, const int vaDeviceIn
  * @param frameSize The frame size of the target video.
   * @return A (optionally VAAPI enabled) VideoWriter sink object.
  */
-CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const float fps,
+CV_EXPORTS Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
         const cv::Size& frameSize);
-CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const float fps,
+CV_EXPORTS Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
         const cv::Size& frameSize, const int fourcc);
 /*!
  * Creates a VideoCapture source object to use in conjunction with #V4D::setSource().
@@ -199,7 +199,7 @@ CV_EXPORTS Sink makeWriterSink(const string& outputFilename, const float fps,
  * @param inputFilename The file to read from.
  * @return A (optionally VAAPI enabled) VideoCapture enabled source object.
  */
-CV_EXPORTS Source makeCaptureSource(const string& inputFilename);
+CV_EXPORTS Source makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename);
 #else
 /*!
  * Creates a WebCam source object to use in conjunction with #V4D::setSource().

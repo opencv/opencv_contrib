@@ -53,11 +53,11 @@ bool stretch = false;
 #endif
 
 //Face landmark detector
-cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
+static thread_local cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
 //Blender (used to put the different face parts back together)
-cv::detail::MultiBandBlender blender(false, 5);
+static thread_local cv::detail::MultiBandBlender blender(false, 5);
 
-
+static thread_local bool first = true;
 /*!
  * Data structure holding the points for all face landmarks
  */
@@ -185,8 +185,8 @@ static void draw_face_eyes_and_lips_mask(FaceFeatures &ff) {
 
 //adjusts the saturation of a UMat
 static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
-    static vector<cv::UMat> channels;
-    static cv::UMat hls;
+    static thread_local vector<cv::UMat> channels;
+    static thread_local cv::UMat hls;
 
     cvtColor(srcBGR, hls, cv::COLOR_BGR2HLS);
     split(hls, channels);
@@ -199,23 +199,31 @@ using namespace cv::v4d;
 
 static bool iteration(cv::Ptr<V4D> window) {
     try {
+        if (first) {
+#ifndef __EMSCRIPTEN__
+            facemark->loadModel("modules/v4d/assets/models/lbfmodel.yaml");
+#else
+            facemark->loadModel("assets/models/lbfmodel.yaml");
+#endif
+            first = false;
+        }
         //Face detector
 #ifndef __EMSCRIPTEN__
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+        static thread_local cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
 #else
-        static cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
+        static thread_local cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
 #endif
         //BGR
-        static cv::UMat input, down, blurred, contrast, faceOval, eyesAndLips, skin;
-        static cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
-        static cv::UMat lhalf(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
-        static cv::UMat rhalf(lhalf.size(), lhalf.type());
+        static thread_local cv::UMat input, down, blurred, contrast, faceOval, eyesAndLips, skin;
+        static thread_local cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
+        static thread_local cv::UMat lhalf(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
+        static thread_local cv::UMat rhalf(lhalf.size(), lhalf.type());
         //GREY
-        static cv::UMat faceSkinMaskGrey, eyesAndLipsMaskGrey, backgroundMaskGrey;
+        static thread_local cv::UMat faceSkinMaskGrey, eyesAndLipsMaskGrey, backgroundMaskGrey;
         //BGR-Float
-        static cv::UMat frameOutFloat;
+        static thread_local cv::UMat frameOutFloat;
         //list all of shapes (face features) found
-        static vector<vector<cv::Point2f>> shapes;
+        static thread_local vector<vector<cv::Point2f>> shapes;
 
         if (!window->capture())
             return false;
@@ -333,10 +341,8 @@ int main(int argc, char **argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Beautification Demo", OFFSCREEN, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Beautification Demo", ALL, OFFSCREEN);
     window->printSystemInfo();
-
-    facemark->loadModel("assets/models/lbfmodel.yaml");
     window->setStretching(stretch);
 
     if (!OFFSCREEN) {
@@ -371,9 +377,9 @@ int main() {
         });
     }
 #ifndef __EMSCRIPTEN__
-    Source src = makeCaptureSource(argv[1]);
+    Source src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT, window);

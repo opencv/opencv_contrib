@@ -218,15 +218,15 @@ int main(int argc, char** argv) {
 int main() {
 #endif
     using namespace cv::v4d;
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Video Demo", OFFSCREEN, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Video Demo", NONE, OFFSCREEN, false, 0);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     //Creates a source from a file or a device
-    Source src = makeCaptureSource(argv[1]);
+    Source src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
 
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
     //Creates a webcam source is available

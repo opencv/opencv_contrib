@@ -7,11 +7,13 @@
 //adapted from https://gitlab.com/wikibooks-opengl/modern-tutorials/-/blob/master/tut05_cube/cube.cpp
 
 /* Demo Parameters */
-constexpr size_t NUMBER_OF_CUBES = 10;
+
 #ifndef __EMSCRIPTEN__
+constexpr size_t NUMBER_OF_CUBES = 10;
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
+constexpr size_t NUMBER_OF_CUBES = 5;
 constexpr long unsigned int WIDTH = 960;
 constexpr long unsigned int HEIGHT = 960;
 #endif
@@ -31,9 +33,9 @@ const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
 
-unsigned int shader_program[NUMBER_OF_CUBES];
-unsigned int vao[NUMBER_OF_CUBES];
-unsigned int uniform_transform[NUMBER_OF_CUBES];
+static thread_local unsigned int shader_program[NUMBER_OF_CUBES];
+static thread_local unsigned int vao[NUMBER_OF_CUBES];
+static thread_local unsigned int uniform_transform[NUMBER_OF_CUBES];
 
 //Simple transform & pass-through shaders
 static GLuint load_shader() {
@@ -200,9 +202,9 @@ static void render_scene(const double& x, const double& y, const double& angleMo
 #ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static cv::UMat resize;
-    static cv::UMat blur;
-    static cv::UMat dst16;
+    static thread_local cv::UMat resize;
+    static thread_local cv::UMat blur;
+    static thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -254,12 +256,12 @@ static bool iteration(cv::Ptr<V4D> window) {
 }
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", OFFSCREEN, false, 0);
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)
-    Sink sink = makeWriterSink(OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)

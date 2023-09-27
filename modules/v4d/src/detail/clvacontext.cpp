@@ -25,11 +25,12 @@ bool CLVAContext::capture(std::function<void(cv::UMat&)> fn, cv::UMat& output) {
         cv::cvtColor(readRGBBuffer_, output, cv::COLOR_RGB2BGRA);
 #ifndef __EMSCRIPTEN__
     } else {
-        CLExecScope_t scope(mainFbContext_.getCLExecContext());
-        readFrame_ = cv::UMat();
         fn(readFrame_);
         if (readFrame_.empty())
             return false;
+        std::shared_ptr<ocl::OpenCLExecutionContext> pExecCtx = std::static_pointer_cast<ocl::OpenCLExecutionContext>(readFrame_.u->allocatorContext);
+        cv::ocl::OpenCLExecutionContextScope scope(*pExecCtx.get());
+
         resizePreserveAspectRatio(readFrame_, readRGBBuffer_, mainFbContext_.size());
         cv::cvtColor(readRGBBuffer_, output, cv::COLOR_RGB2BGRA);
     }
@@ -47,6 +48,8 @@ void CLVAContext::write(std::function<void(const cv::UMat&)> fn, cv::UMat& input
         fn(writeRGBBuffer_);
 #ifndef __EMSCRIPTEN__
     } else {
+        std::shared_ptr<ocl::OpenCLExecutionContext> pExecCtx = std::static_pointer_cast<ocl::OpenCLExecutionContext>(input.u->allocatorContext);
+        cv::ocl::OpenCLExecutionContextScope scope(*pExecCtx.get());
         cv::cvtColor(input, writeRGBBuffer_, cv::COLOR_BGRA2RGB);
         fn(writeRGBBuffer_);
     }
