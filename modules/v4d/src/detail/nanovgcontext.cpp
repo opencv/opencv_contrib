@@ -19,9 +19,9 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
         {
             FrameBufferContext::GLScope glScope(fbCtx(), GL_FRAMEBUFFER);
 #if defined(OPENCV_V4D_USE_ES3) || defined(EMSCRIPTEN)
-            context_ = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+            context_ = nvgCreateGLES3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #else
-            context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+            context_ = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 #endif
             if (!context_)
                 throw std::runtime_error("Could not initialize NanoVG!");

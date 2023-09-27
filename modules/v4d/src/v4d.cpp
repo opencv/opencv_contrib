@@ -287,11 +287,9 @@ bool V4D::hasSource() {
 void V4D::feed(cv::InputArray in) {
     CLExecScope_t scope(fbCtx().getCLExecContext());
     TimeTracker::getInstance()->execute("feed", [this, &in](){
-        cv::Mat source;
-        in.getUMat().getMat(ACCESS_READ).copyTo(source);
         cv::UMat frame;
         clvaCtx().capture([&](cv::UMat& videoFrame) {
-            source.copyTo(videoFrame);
+            in.copyTo(videoFrame);
         }, frame);
 
         fb([&frame](cv::UMat& framebuffer){
@@ -317,11 +315,7 @@ bool V4D::capture() {
             if (source_->isReady()) {
                 auto p = source_->operator()();
                 currentSeqNr_ = p.first;
-                if (source_->isThreadSafe()) {
-                    p.second.getMat(cv::ACCESS_READ).copyTo(videoFrame);
-                } else {
-                    p.second.copyTo(videoFrame);
-                }
+                p.second.copyTo(videoFrame);
                 return true;
             }
             return false;
@@ -524,27 +518,23 @@ bool V4D::isFocused() {
 }
 
 void V4D::swapContextBuffers() {
-    run_sync_on_main<10>([this]() {
-        for(size_t i = 0; i < numGlCtx(); ++i) {
-            FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
-            glCtx(i).fbCtx().blitFrameBufferToFrameBuffer(viewport(), glCtx(i).fbCtx().getWindowSize(), 0, isStretching());
+    for(size_t i = 0; i < numGlCtx(); ++i) {
+        FrameBufferContext::GLScope glScope(glCtx(i).fbCtx(), GL_READ_FRAMEBUFFER);
+        glCtx(i).fbCtx().blitFrameBufferToFrameBuffer(viewport(), glCtx(i).fbCtx().getWindowSize(), 0, isStretching());
 #ifndef __EMSCRIPTEN__
-            glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
-#else
-            emscripten_webgl_commit_frame();
-#endif
-        }
-    });
-
-    run_sync_on_main<11>([this]() {
-        FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
-        nvgCtx().fbCtx().blitFrameBufferToFrameBuffer(viewport(), nvgCtx().fbCtx().getWindowSize(), 0, isStretching());
-#ifndef __EMSCRIPTEN__
-        glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
+        glfwSwapBuffers(glCtx(i).fbCtx().getGLFWWindow());
 #else
         emscripten_webgl_commit_frame();
 #endif
-    });
+    }
+
+    FrameBufferContext::GLScope glScope(nvgCtx().fbCtx(), GL_READ_FRAMEBUFFER);
+    nvgCtx().fbCtx().blitFrameBufferToFrameBuffer(viewport(), nvgCtx().fbCtx().getWindowSize(), 0, isStretching());
+#ifndef __EMSCRIPTEN__
+    glfwSwapBuffers(nvgCtx().fbCtx().getGLFWWindow());
+#else
+    emscripten_webgl_commit_frame();
+#endif
 }
 
 bool V4D::display() {
@@ -561,10 +551,10 @@ bool V4D::display() {
             }
             if(hasImguiCtx())
                 imguiCtx().render(getShowFPS());
-//#ifndef __EMSCRIPTEN__
-//            if(debug_)
-//                swapContextBuffers();
-//#endif
+#ifndef __EMSCRIPTEN__
+            if(debug_)
+                swapContextBuffers();
+#endif
             fbCtx().makeCurrent();
 #ifndef __EMSCRIPTEN__
             glfwSwapBuffers(fbCtx().getGLFWWindow());
