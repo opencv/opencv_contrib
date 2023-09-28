@@ -39,7 +39,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners, 
     vector<Mat> markerCorners;
     _markerCorners.getMatVector(markerCorners);
 
-    detector.detectBoard(_image, _diamondCorners, _diamondIds, markerCorners, _markerIds.getMat());
+    detector.detectDiamonds(_image, _diamondCorners, _diamondIds, markerCorners, _markerIds.getMat());
 }
 
 
