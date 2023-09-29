@@ -392,6 +392,7 @@ bool V4D::capture() {
             auto p = source_->operator()();
             currentSeqNr_ = p.first;
         }
+        return true;
     });
 
     return true;
