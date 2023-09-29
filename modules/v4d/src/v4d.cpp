@@ -10,9 +10,14 @@
 #include "detail/glcontext.hpp"
 #include "detail/timetracker.hpp"
 #include <sstream>
+#include <algorithm>
 
 namespace cv {
 namespace v4d {
+
+const std::thread::id V4D::default_thread_id_;
+std::thread::id V4D::main_thread_id_;
+concurrent::threadpool V4D::thread_pool_(2);
 
 cv::Ptr<V4D> V4D::make(int w, int h, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
     V4D* v4d = new V4D(cv::Size(w,h), cv::Size(), title, flags, offscreen, debug, samples);
@@ -27,7 +32,7 @@ cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const strin
 }
 
 V4D::V4D(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) :
-        initialSize_(size), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true), pool_(2) {
+        initialSize_(size), debug_(debug), viewport_(0, 0, size.width, size.height), stretching_(true) {
 #ifdef __EMSCRIPTEN__
     printf(""); //makes sure we have FS as a dependency
 #endif
@@ -57,6 +62,21 @@ V4D::~V4D() {
     for(auto& it : glContexts_) {
         delete it.second;
     }
+}
+
+cv::Ptr<cv::UMat> V4D::get(const string& name) {
+    return umat_pool_[name];
+}
+
+
+cv::Ptr<cv::UMat> V4D::get(const string& name, cv::Size sz, int type) {
+    cv::Ptr<cv::UMat> u = umat_pool_[name];
+    u->create(sz, type);
+    return u;
+}
+
+bool V4D::isMain() const {
+        return main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id();
 }
 
 cv::ogl::Texture2D& V4D::texture() {
@@ -216,59 +236,87 @@ static void do_frame(void* void_fn_ptr) {
      auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
      if (fn_ptr) {
          auto& fn = *fn_ptr;
-         //FIXME cancel main loop
-         fn();
+             fn();
      }
  }
 #endif
 
-void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
-#ifndef __EMSCRIPTEN__
-    std::vector<std::thread*> threads;
-    for (size_t i = 0; i < workers; ++i) {
-        threads.push_back(
-                new std::thread(
-                        [this, fn, i] {
-                            cv::Ptr<cv::v4d::V4D> worker = V4D::make(
-                                    this->initialSize().width,
-                                    this->initialSize().height,
-                                    this->title() + "-worker-" + std::to_string(i),
-                                    NANOVG,
-                                    !this->debug_,
-                                    this->debug_,
-                                    0);
-                            if (this->hasSource()) {
-                                Source& src = this->getSource();
-                                src.setThreadSafe(true);
-                                worker->setSource(src);
-                            }
-                            if (this->hasSink()) {
-                                Sink& sink = this->getSink();
-                                sink.setThreadSafe(true);
-                                worker->setSink(sink);
-                            }
-                            worker->run(fn, 0);
-                        }
-                )
-        );
-    }
+static bool first_run = true;
 
+void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
+    std::vector<std::thread*> threads;
+    {
+        static std::mutex runMtx;
+
+        std::unique_lock<std::mutex> lock(runMtx);
+        if(first_run) {
+            main_thread_id_ = std::this_thread::get_id();
+            first_run = false;
+            cerr << "Starting with " << workers << " extra workers" << endl;
+        }
+
+        if(workers > 0  || !this->isMain()) {
+            cv::setNumThreads(0);
+            cerr << "Setting threads to 0" << endl;
+        }
+
+        if(this->isMain()) {
+            for (size_t i = 0; i < workers; ++i) {
+                threads.push_back(
+                        new std::thread(
+                                [this, fn, i] {
+                                    cv::Ptr<cv::v4d::V4D> worker = V4D::make(
+                                            this->initialSize().width,
+                                            this->initialSize().height,
+                                            this->title() + "-worker-" + std::to_string(i),
+                                            NANOVG,
+                                            !this->debug_,
+                                            this->debug_,
+                                            0);
+                                    if (this->hasSource()) {
+                                        Source& src = this->getSource();
+                                        src.setThreadSafe(true);
+                                        worker->setSource(src);
+                                    }
+                                    if (this->hasSink()) {
+                                        Sink& sink = this->getSink();
+                                        sink.setThreadSafe(true);
+                                        worker->setSink(sink);
+                                    }
+                                    worker->run(fn, 0);
+                                }
+                        )
+                );
+            }
+        }
+    }
     this->makeCurrent();
+#ifndef __EMSCRIPTEN__
     bool success = true;
     while (keepRunning() && success) {
         CLExecScope_t scope(fbCtx().getCLExecContext());
         success = fn(self());
     }
-    pool_.finish();
-
-    for(auto& t : threads)
-        t->join();
 #else
-    std::function<bool()> fnFrame([=,this](){
-        return fn(self());
-    });
-    emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
+    if(this->isMain()) {
+        std::function<bool()> fnFrame([=,this](){
+            return fn(self());
+        });
+
+        emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
+    } else {
+        while (true) {
+            fn(self());
+        }
+    }
 #endif
+
+    if(this->isMain()) {
+        thread_pool_.finish();
+
+        for(auto& t : threads)
+            t->join();
+    }
 }
 
 void V4D::setSource(Source& src) {
@@ -285,7 +333,10 @@ bool V4D::hasSource() {
 }
 
 void V4D::feed(cv::InputArray in) {
+#ifndef __EMSCRIPTEN__
     CLExecScope_t scope(fbCtx().getCLExecContext());
+#endif
+
     TimeTracker::getInstance()->execute("feed", [this, &in](){
         cv::UMat frame;
         clvaCtx().capture([&](cv::UMat& videoFrame) {
@@ -309,6 +360,7 @@ cv::_InputArray V4D::fetch() {
 }
 
 bool V4D::capture() {
+#ifndef __EMSCRIPTEN__
     CLExecScope_t scope(fbCtx().getCLExecContext());
     if (source_) {
         return this->capture([this](cv::UMat& videoFrame) {
@@ -320,13 +372,16 @@ bool V4D::capture() {
             }
             return false;
         });
-#ifndef __EMSCRIPTEN__
-        return false;
-#else
-        return true;
-#endif
     }
     return false;
+#else
+        if(source_ && source_->isReady()) {
+            auto p = source_->operator()();
+            currentSeqNr_ = p.first;
+        }
+
+        return true;
+#endif
 }
 
 bool V4D::capture(std::function<void(cv::UMat&)> fn) {
@@ -357,7 +412,7 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
             }
         }
         nextReaderFrame_.copyTo(currentReaderFrame_);
-        futureReader_ = pool_.enqueue(
+        futureReader_ = thread_pool_.enqueue(
             [](V4D* v, std::function<void(UMat&)> func, cv::UMat& frame) {
 #ifndef __EMSCRIPTEN__
             return v->clvaCtx().capture(func, frame);
@@ -410,7 +465,7 @@ void V4D::write(std::function<void(const cv::UMat&)> fn) {
             frameBuffer.copyTo(currentWriterFrame_);
         });
 
-        futureWriter_ = pool_.enqueue([](V4D* v, std::function<void(const UMat&)> func, cv::UMat& frame) {
+        futureWriter_ = thread_pool_.enqueue([](V4D* v, std::function<void(const UMat&)> func, cv::UMat& frame) {
             v->clvaCtx().write(func, frame);
         }, this, fn, currentWriterFrame_);
     });

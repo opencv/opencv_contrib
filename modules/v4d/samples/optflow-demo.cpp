@@ -38,7 +38,6 @@ constexpr const char* OUTPUT_FILENAME = "../optflow-demo.mkv";
 constexpr bool OFFSCREEN = false;
 
 #ifndef __EMSCRIPTEN__
-static std::thread::id main_thread_id;
 //the second window
 static cv::Ptr<cv::v4d::V4D> miniWindow;
 #endif
@@ -57,66 +56,67 @@ enum BackgroundModes {
 enum PostProcModes {
     GLOW,
     BLOOM,
-    NONE
+    DISABLED
 };
 
 // Generate the foreground at this scale.
-float fg_scale = 0.5f;
+static float fg_scale = 0.5f;
 // On every frame the foreground loses on brightness. Specifies the loss in percent.
 #ifndef __EMSCRIPTEN__
-float fg_loss = 2.5;
+static float fg_loss = 2.5;
 #else
-float fg_loss = 10.0;
+static float fg_loss = 10.0;
 #endif
 //Convert the background to greyscale
-BackgroundModes background_mode = GREY;
+static BackgroundModes background_mode = GREY;
 // Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
 // the default should be fine.
-float scene_change_thresh = 0.29f;
-float scene_change_thresh_diff = 0.1f;
+static float scene_change_thresh = 0.29f;
+static float scene_change_thresh_diff = 0.1f;
 // The theoretical maximum number of points to track which is scaled by the density of detected points
 // and therefor is usually much smaller.
 #ifndef __EMSCRIPTEN__
-int max_points = 250000;
+static int max_points = 250000;
 #else
-int max_points = 100000;
+static int max_points = 100000;
 #endif
 // How many of the tracked points to lose intentionally, in percent.
 #ifndef __EMSCRIPTEN__
-float point_loss = 25;
+static float point_loss = 25;
 #else
-float point_loss = 10;
+static float point_loss = 10;
 #endif
 // The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
 // of tracked points and therefor is usually much smaller.
-int max_stroke = 10;
+static int max_stroke = 10;
 
 // Red, green, blue and alpha. All from 0.0f to 1.0f
-float effect_color[4] = {1.0f, 0.75f, 0.4f, 1.0f};
+static float effect_color[4] = {1.0f, 0.75f, 0.4f, 1.0f};
 //display on-screen FPS
-bool show_fps = true;
+static bool show_fps = true;
 //Stretch frame buffer to window size
-bool stretch = false;
-//Use OpenCL or not
-bool use_acceleration = true;
+static bool stretch = false;
 //The post processing mode
 #ifndef __EMSCRIPTEN__
-PostProcModes post_proc_mode = GLOW;
+static PostProcModes post_proc_mode = GLOW;
 #else
-PostProcModes post_proc_mode = NONE;
+static PostProcModes post_proc_mode = DISABLED;
 #endif
 // Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
-int glow_kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
+static int glow_kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
 //The lightness selection threshold
-int bloom_thresh = 210;
+static int bloom_thresh = 210;
 //The intensity of the bloom filter
-float bloom_gain = 3;
+static float bloom_gain = 3;
+
+using namespace cv::v4d;
+
 
 //Uses background subtraction to generate a "motion mask"
 static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
-    static thread_local cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
-    static thread_local int morph_size = 1;
-    static thread_local cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+    thread_local cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
+    thread_local int morph_size = 1;
+    thread_local cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
 
     bg_subtrator->apply(srcGrey, motionMaskGrey);
     //Surpress speckles
@@ -125,8 +125,8 @@ static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGre
 
 //Detect points to track
 static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& points) {
-    static thread_local cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
-    static thread_local vector<cv::KeyPoint> tmpKeyPoints;
+    thread_local cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
+    thread_local vector<cv::KeyPoint> tmpKeyPoints;
 
     tmpKeyPoints.clear();
     detector->detect(srcMotionMaskGrey, tmpKeyPoints);
@@ -139,7 +139,7 @@ static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>
 
 //Detect extrem changes in scene content and report it
 static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
-    static thread_local float last_movement = 0;
+    thread_local float last_movement = 0;
 
     float movement = cv::countNonZero(srcMotionMaskGrey) / float(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
     float relation = movement > 0 && last_movement > 0 ? std::max(movement, last_movement) / std::min(movement, last_movement) : 0;
@@ -154,12 +154,12 @@ static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float t
 
 //Visualize the sparse optical flow
 static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, const vector<cv::Point2f> &detectedPoints, const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
-    static thread_local vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
-    static thread_local vector<cv::Point2f> upPrevPoints, upNextPoints;
-    static thread_local std::vector<uchar> status;
-    static thread_local std::vector<float> err;
-    static thread_local std::random_device rd;
-    static thread_local std::mt19937 g(rd());
+    thread_local vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
+    thread_local vector<cv::Point2f> upPrevPoints, upNextPoints;
+    thread_local std::vector<uchar> status;
+    thread_local std::vector<float> err;
+    thread_local std::random_device rd;
+    thread_local std::mt19937 g(rd());
 
     //less then 5 points is a degenerate case (e.g. the corners of a video frame)
     if (detectedPoints.size() > 4) {
@@ -231,12 +231,12 @@ static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UM
 
 //Bloom post-processing effect
 static void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
-    static thread_local cv::UMat bgr;
-    static thread_local cv::UMat hls;
-    static thread_local cv::UMat ls16;
-    static thread_local cv::UMat ls;
-    static thread_local cv::UMat blur;
-    static thread_local std::vector<cv::UMat> hlsChannels;
+    thread_local cv::UMat bgr;
+    thread_local cv::UMat hls;
+    thread_local cv::UMat ls16;
+    thread_local cv::UMat ls;
+    thread_local cv::UMat blur;
+    thread_local std::vector<cv::UMat> hlsChannels;
 
     //remove alpha channel
     cv::cvtColor(src, bgr, cv::COLOR_BGRA2RGB);
@@ -285,10 +285,10 @@ static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 
 //Compose the different layers into the final image
 static void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
-    static thread_local cv::UMat tmp;
-    static thread_local cv::UMat post;
-    static thread_local cv::UMat backgroundGrey;
-    static thread_local vector<cv::UMat> channels;
+    thread_local cv::UMat tmp;
+    thread_local cv::UMat post;
+    thread_local cv::UMat backgroundGrey;
+    thread_local vector<cv::UMat> channels;
 
     //Lose a bit of foreground brightness based on fgLossPercent
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
@@ -324,7 +324,7 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
     case BLOOM:
         bloom(foreground, post, kernelSize, bloom_thresh, bloom_gain);
         break;
-    case NONE:
+    case DISABLED:
         foreground.copyTo(post);
         break;
     default:
@@ -348,8 +348,8 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
         SliderFloat("Scale", &fg_scale, 0.1f, 4.0f);
         SliderFloat("Loss", &fg_loss, 0.1f, 99.9f);
         Text("Background");
-        static thread_local const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
-        static thread_local int* bgm = (int*)&background_mode;
+        thread_local const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
+        thread_local int* bgm = (int*)&background_mode;
         ListBox("Mode", bgm, bgm_items, 4, 4);
         Text("Points");
         SliderInt("Max. Points", &max_points, 10, 1000000);
@@ -360,8 +360,8 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
         End();
 
         Begin("Post Processing");
-        static thread_local const char* ppm_items[3] = {"Glow", "Bloom", "None"};
-        static thread_local int* ppm = (int*)&post_proc_mode;
+        thread_local const char* ppm_items[3] = {"Glow", "Bloom", "None"};
+        thread_local int* ppm = (int*)&post_proc_mode;
         ListBox("Effect",ppm, ppm_items, 3, 3);
         SliderInt("Kernel Size",&glow_kernel_size, 1, 63);
         SliderFloat("Gain", &bloom_gain, 0.1f, 20.0f);
@@ -407,13 +407,13 @@ static bool iteration(cv::Ptr<V4D> window) {
         return false;
 
     //BGRA
-    static thread_local cv::UMat background, down;
-    static thread_local cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
+    thread_local cv::UMat background, down;
+    thread_local cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
     //BGR
-    static thread_local cv::UMat miniFrame;
+    thread_local cv::UMat miniFrame;
     //GREY
-    static thread_local cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
-    static thread_local vector<cv::Point2f> detectedPoints;
+    thread_local cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
+    thread_local vector<cv::Point2f> detectedPoints;
 
     window->fb([&](cv::UMat& frameBuffer) {
         //resize to foreground scale
@@ -449,14 +449,14 @@ static bool iteration(cv::Ptr<V4D> window) {
     });
 
 #ifndef __EMSCRIPTEN__
-    if(main_thread_id == std::this_thread::get_id())
+    if(window->isMain())
         miniWindow->feed(miniFrame);
 #endif
     window->write();
 
     //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
 #ifndef __EMSCRIPTEN__
-    if(main_thread_id == std::this_thread::get_id()) {
+    if(window->isMain()) {
         if(window->isFocused()) {
             return window->display() && miniWindow->display();
         }
@@ -472,7 +472,6 @@ static bool iteration(cv::Ptr<V4D> window) {
 }
 
 int main(int argc, char **argv) {
-    main_thread_id = std::this_thread::get_id();
     CV_UNUSED(argc);
     CV_UNUSED(argv);
 

@@ -239,8 +239,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         shapes.clear();
         cv::Mat faces;
         //Detect faces in the down-scaled image
-        cv::Mat m = down.getMat(cv::ACCESS_RW);
-        detector->detect(m, faces);
+        detector->detect(down, faces);
         //Only add the first face
 		cv::Rect faceRect;
 		if(!faces.empty())
@@ -386,7 +385,7 @@ int main() {
     window->setSource(src);
 #endif
 
-    window->run(iteration);
+    window->run(iteration,3);
 
     return 0;
 }

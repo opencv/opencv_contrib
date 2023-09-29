@@ -415,7 +415,6 @@ void FrameBufferContext::setup(const cv::Size& sz) {
     CLExecScope_t clExecScope(getCLExecContext());
 #endif
     framebuffer_.create(sz, CV_8UC4);
-
     if(!isShared_) {
         GL_CHECK(glGenFramebuffers(1, &frameBufferID_));
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, frameBufferID_));
@@ -637,17 +636,16 @@ void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
 #ifndef __EMSCRIPTEN__
         if(!getCLExecContext().empty()) {
             CLExecScope_t clExecScope(getCLExecContext());
-#endif
             FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
             FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
             fn(framebuffer_);
-#ifndef __EMSCRIPTEN__
-        } else {
+        } else
+#endif
+        {
             FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
             FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
             fn(framebuffer_);
         }
-#endif
     });
 }
 
@@ -730,6 +728,7 @@ void FrameBufferContext::download(cv::UMat& m) {
     assert(tmp.data != nullptr);
     GL_CHECK(glReadPixels(0, 0, tmp.cols, tmp.rows, GL_RGBA, GL_UNSIGNED_BYTE, tmp.data));
     tmp.release();
+
 }
 
 void FrameBufferContext::upload(const cv::UMat& m) {

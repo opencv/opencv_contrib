@@ -238,6 +238,8 @@ bool isIntelVaSupported() {
 bool isClGlSharingSupported() {
 #ifndef __EMSCRIPTEN__
     try {
+        if(!cv::ocl::useOpenCL())
+            return false;
         std::vector<cv::ocl::PlatformInfo> plt_info;
         cv::ocl::getPlatfomsInfo(plt_info);
         cv::ocl::Device current;
@@ -353,17 +355,8 @@ static Source makeAnyHWSource(const string& inputFilename) {
     float fps = capture->get(cv::CAP_PROP_FPS);
 
     return Source([=](cv::UMat& frame) {
-        cv::UMat tmp;
-        (*capture) >> tmp;
-
-        if(frame.empty())
-            frame.create(tmp.size(), tmp.type());
-        if(!tmp.empty()) {
-            tmp.copyTo(frame.getMat(cv::ACCESS_WRITE));
-            return true;
-        } else {
-            return false;
-        }
+        (*capture) >> frame;
+        return !frame.empty();
     }, fps);
 }
 #endif
@@ -528,7 +521,7 @@ Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
             }
         }
         return true;
-    }, 0, false);
+    }, 0);
 }
 
 #endif

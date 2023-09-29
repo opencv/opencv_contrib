@@ -25,6 +25,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <memory>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -80,6 +81,11 @@ using namespace cv::v4d::detail;
 class CV_EXPORTS V4D {
     friend class detail::FrameBufferContext;
     friend class HTML5Capture;
+    static const std::thread::id default_thread_id_;
+    static std::thread::id main_thread_id_;
+    static concurrent::threadpool thread_pool_;
+    std::map<std::string, cv::Ptr<cv::UMat>> umat_pool_;
+    std::map<std::string, std::shared_ptr<void>> data_pool_;
     cv::Ptr<V4D> self_;
     cv::Size initialSize_;
     bool debug_;
@@ -95,7 +101,6 @@ class CV_EXPORTS V4D {
     bool closed_ = false;
     cv::Ptr<Source> source_;
     cv::Ptr<Sink> sink_;
-    concurrent::threadpool pool_;
     cv::UMat currentReaderFrame_;
     cv::UMat nextReaderFrame_;
     cv::UMat currentWriterFrame_;
@@ -128,6 +133,35 @@ public:
      * Default destructor
      */
     CV_EXPORTS virtual ~V4D();
+
+    template<typename T>
+    T& get(const string& name) {
+        auto it = data_pool_.find(name);
+        std::shared_ptr<void> p = std::make_shared<T>();
+        if(it == data_pool_.end()) {
+            data_pool_.insert({name, p });
+        }else
+            p = (*it).second;
+
+        return *(std::static_pointer_cast<T, void>(p).get());
+    }
+
+    template<typename T>
+    T& init(const string& name, std::function<std::shared_ptr<T>()> creatorFunc) {
+        auto it = data_pool_.find(name);
+        std::shared_ptr<void> p;
+        if(it == data_pool_.end())
+            data_pool_.insert({name, p = std::static_pointer_cast<void, T>(creatorFunc())});
+        else
+            p = (*it).second;
+
+        return *static_cast<T*>(p.get());
+    }
+
+    CV_EXPORTS cv::Ptr<cv::UMat> get(const string& name);
+    CV_EXPORTS cv::Ptr<cv::UMat> get(const string& name, cv::Size sz, int type);
+
+    CV_EXPORTS bool isMain() const;
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
@@ -177,7 +211,11 @@ public:
      * This function main purpose is to abstract the run loop for portability reasons.
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
+#ifndef __EMSCRIPTEN__
     CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
+#else
+    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
+#endif
     /*!
      * Called to feed an image directly to the framebuffer
      */
