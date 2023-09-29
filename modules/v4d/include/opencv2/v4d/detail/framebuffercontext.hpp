@@ -27,26 +27,6 @@ namespace cv {
 namespace v4d {
 class V4D;
 
-template <typename ... Args>
-class V4DAndArgsInFunctor : public std::function<void(cv::Ptr<V4D>, Args ...)> {
-public:
-    V4DAndArgsInFunctor(cv::Ptr<V4D> window, Args ... args) : std::function<void(cv::Ptr<V4D>, Args ...)>(window, args...) {
-    }
-};
-template <typename Tfn, typename ... Args>
-class V4DAndFbAndArgsInFunctor : public std::function<void(cv::Ptr<V4D>, cv::UMat&, Args& ...)> {
-public:
-    V4DAndFbAndArgsInFunctor(Tfn fn) : std::function<void(cv::Ptr<V4D>, cv::UMat&, Args& ...)>(fn) {
-    }
-};
-
-template <typename ... Args>
-class V4DAndSizeTAndArgsInFunctor : public std::function<void(cv::Ptr<V4D>, size_t&, Args ...)> {
-public:
-    V4DAndSizeTAndArgsInFunctor(std::function<void(cv::Ptr<V4D>, size_t&, Args ...)> fn) : std::function<void(cv::Ptr<V4D>, size_t&, Args ...)>(fn) {
-    }
-};
-
 namespace detail {
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
 class CLExecScope_t
