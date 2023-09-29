@@ -338,9 +338,9 @@ float EllipseDetectorImpl::getMedianSlope(std::vector<Point2f> &med, Point2f &ce
         slopes.push_back(num / den);
     }
 
-    nth_element(slopes.begin(), slopes.begin() + quarterSize, slopes.end());
-    nth_element(xx.begin(), xx.begin() + halfSize, xx.end());
-    nth_element(yy.begin(), yy.begin() + halfSize, yy.end());
+    std::nth_element(slopes.begin(), slopes.begin() + quarterSize, slopes.end());
+    std::nth_element(xx.begin(), xx.begin() + halfSize, xx.end());
+    std::nth_element(yy.begin(), yy.begin() + halfSize, yy.end());
     centers.x = xx[halfSize];
     centers.y = yy[halfSize];
 
@@ -390,7 +390,7 @@ void EllipseDetectorImpl::getFastCenter(std::vector<Point> &e1, std::vector<Poin
                 iIdx += iSzBin;
             }
         } else
-            iota(indexes.begin(), indexes.end(), hsize_2);
+            std::iota(indexes.begin(), indexes.end(), hsize_2);
 
         for (uint ii = 0; ii < minPoints; ii++) {
             uint i = indexes[ii];
@@ -483,7 +483,7 @@ void EllipseDetectorImpl::getFastCenter(std::vector<Point> &e1, std::vector<Poin
                 iIdx += iSzBin;
             }
         } else
-            iota(indexes.begin(), indexes.end(), hsize_1);
+            std::iota(indexes.begin(), indexes.end(), hsize_1);
 
 
         for (uint ii = 0; ii < minPoints; ii++) {
@@ -740,7 +740,7 @@ void EllipseDetectorImpl::detectEdges13(Mat1b &DP, VVP &points_1, VVP &points_3)
         }
 
         // order edge points of the same arc
-        sort(edgeSegment.begin(), edgeSegment.end(), sortPoint);
+        std::sort(edgeSegment.begin(), edgeSegment.end(), sortPoint);
         int edgeSegmentSize = unsigned(edgeSegment.size());
 
         // get extrema of the arc
@@ -788,7 +788,7 @@ void EllipseDetectorImpl::detectEdges24(Mat1b &DN, VVP &points_2, VVP &points_4)
         }
 
         // order edge points of the same arc
-        sort(edgeSegment.begin(), edgeSegment.end(), sortPoint);
+        std::sort(edgeSegment.begin(), edgeSegment.end(), sortPoint);
         int edgeSegmentSize = unsigned(edgeSegment.size());
 
         // get extrema of the arc
@@ -840,7 +840,7 @@ void EllipseDetectorImpl::getTriplets124(VVP &pi, VVP &pj, VVP &pk,
 
         // 1 -> reverse 1
         VP rev_i(edge_i.size());
-        reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
+        std::reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
 
         // for each edge j
         for (ushort j = 0; j < sz_j; ++j) {
@@ -936,7 +936,7 @@ void EllipseDetectorImpl::getTriplets231(VVP &pi, VVP &pj, VVP &pk,
 
         // 2 -> reverse 2
         VP rev_i(edge_i.size());
-        reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
+        std::reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
 
         // for each edge j
         for (ushort j = 0; j < sz_j; ++j) {
@@ -958,7 +958,7 @@ void EllipseDetectorImpl::getTriplets231(VVP &pi, VVP &pj, VVP &pk,
 
             // 3 -> reverse 3
             VP rev_j(edge_j.size());
-            reverse_copy(edge_j.begin(), edge_j.end(), rev_j.begin());
+            std::reverse_copy(edge_j.begin(), edge_j.end(), rev_j.begin());
 
             uint key_ij = generateKey(PAIR_23, i, j);
 
@@ -991,7 +991,7 @@ void EllipseDetectorImpl::getTriplets231(VVP &pi, VVP &pj, VVP &pk,
                 if (data.count(key_ik) == 0) {
                     // 1 -> reverse 1
                     VP rev_k(edge_k.size());
-                    reverse_copy(edge_k.begin(), edge_k.end(), rev_k.begin());
+                    std::reverse_copy(edge_k.begin(), edge_k.end(), rev_k.begin());
 
                     getFastCenter(edge_i, rev_k, data_ik);
                     data.insert(std::pair<uint, EllipseData>(key_ik, data_ik));
@@ -1038,7 +1038,7 @@ void EllipseDetectorImpl::getTriplets342(VVP &pi, VVP &pj, VVP &pk,
 
         // 3 -> reverse 3
         VP rev_i(edge_i.size());
-        reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
+        std::reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
 
         // for each edge j
         for (ushort j = 0; j < sz_j; ++j) {
@@ -1060,7 +1060,7 @@ void EllipseDetectorImpl::getTriplets342(VVP &pi, VVP &pj, VVP &pk,
 
             // 4 -> reverse 4
             VP rev_j(edge_j.size());
-            reverse_copy(edge_j.begin(), edge_j.end(), rev_j.begin());
+            std::reverse_copy(edge_j.begin(), edge_j.end(), rev_j.begin());
 
             uint key_ij = generateKey(PAIR_34, i, j);
 
@@ -1093,7 +1093,7 @@ void EllipseDetectorImpl::getTriplets342(VVP &pi, VVP &pj, VVP &pk,
                 if (data.count(key_ik) == 0) {
                     // 2 -> reverse 2
                     VP rev_k(edge_k.size());
-                    reverse_copy(edge_k.begin(), edge_k.end(), rev_k.begin());
+                    std::reverse_copy(edge_k.begin(), edge_k.end(), rev_k.begin());
 
                     getFastCenter(rev_i, rev_k, data_ik);
                     data.insert(std::pair<uint, EllipseData>(key_ik, data_ik));
@@ -1141,7 +1141,7 @@ void EllipseDetectorImpl::getTriplets413(VVP &pi, VVP &pj, VVP &pk,
 
         // 4 -> reverse 4
         VP rev_i(edge_i.size());
-        reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
+        std::reverse_copy(edge_i.begin(), edge_i.end(), rev_i.begin());
 
         // for each edge j
         for (ushort j = 0; j < sz_j; ++j) {
@@ -1507,8 +1507,8 @@ void EllipseDetectorImpl::detect(Mat1b &image, std::vector<Ellipse> &ellipses) {
     getTriplets342(points_3, points_4, points_2, centers, ellipses);
     getTriplets413(points_4, points_1, points_3, centers, ellipses);
 
-    // sort by score
-    sort(ellipses.begin(), ellipses.end());
+    // std::sort by score
+    std::sort(ellipses.begin(), ellipses.end());
 
     // free accumulator memory
     delete[]accN;
