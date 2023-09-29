@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "glcontext.hpp"
+#include "opencv2/v4d/detail/glcontext.hpp"
 #include "opencv2/v4d/detail/gl.hpp"
 
 namespace cv {
@@ -18,8 +18,8 @@ GLContext::GLContext(FrameBufferContext& fbContext) :
 #endif
 }
 
-void GLContext::render(std::function<void(const cv::Size&)> fn) {
-    run_sync_on_main<15>([&,this](){
+void GLContext::render(std::function<void()> fn) {
+    run_sync_on_main<15>([this, fn](){
 #ifndef __EMSCRIPTEN__
         if(!fbCtx().isShared()) {
             UMat tmp;
@@ -38,7 +38,7 @@ void GLContext::render(std::function<void(const cv::Size&)> fn) {
             GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
             GL_CHECK(glClearColor(cColor[0], cColor[1], cColor[2], cColor[3]));
 #endif
-            fn(fbCtx().size());
+            fn();
         }
         if(!fbCtx().isShared()) {
 #ifdef __EMSCRIPTEN__

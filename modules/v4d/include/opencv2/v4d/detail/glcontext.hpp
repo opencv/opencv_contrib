@@ -19,7 +19,7 @@ namespace detail {
 /*!
  * Used to setup a nanovg context
  */
-class GLContext {
+class CV_EXPORTS GLContext {
     FrameBufferContext& mainFbContext_;
     FrameBufferContext glFbContext_;
 public:
@@ -34,7 +34,7 @@ public:
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using opengl
      */
-    void render(std::function<void(const cv::Size&)> fn);
+    void render(std::function<void()> fn);
 
     FrameBufferContext& fbCtx();
 };

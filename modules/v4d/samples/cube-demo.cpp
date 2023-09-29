@@ -224,7 +224,7 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
-    window->once([=](){ window->gl(init_scene);});
+    window->once([=](){ window->gl(init_scene, window->fbSize());});
 
     //Render using OpenGL
     window->gl(render_scene);

@@ -34,15 +34,15 @@ int main(int argc, char** argv) {
 			return false; //end of input video
 
 		//Render on top of the video
-		win->nvg([hv](const Size& sz) {
+		win->nvg([](const Size& sz, const string& str) {
 			using namespace cv::v4d::nvg;
 
 			fontSize(40.0f);
 			fontFace("sans-bold");
 			fillColor(Scalar(255, 0, 0, 255));
 			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-			text(sz.width / 2.0, sz.height / 2.0, hv.c_str(), hv.c_str() + hv.size());
-		});
+			text(sz.width / 2.0, sz.height / 2.0, str.c_str(), str.c_str() + str.size());
+		}, win->fbSize(), hv);
 
 		//Write video to the sink (do nothing in case of WebAssembly)
 		win->write();

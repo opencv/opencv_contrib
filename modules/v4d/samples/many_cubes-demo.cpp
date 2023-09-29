@@ -230,7 +230,7 @@ using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
     window->once([=](){
         for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)
-            window->gl([=](const cv::Size sz){ init_scene(sz, i); }, i);
+            window->gl(i, [](const cv::Size& sz, const size_t& idx){ init_scene(sz, idx); }, window->fbSize(), i);
     });
 
     window->gl([](){
@@ -241,10 +241,10 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     //Render using multiple OpenGL contexts
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-        window->gl([i](){
-            double pos = (((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
-            double angle = sin((double(i) / NUMBER_OF_CUBES) * 2 * M_PI);
-            render_scene(pos, pos, angle, i);
+        window->gl(i, [](const size_t idx){
+            double pos = (((double(idx) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
+            double angle = sin((double(idx) / NUMBER_OF_CUBES) * 2 * M_PI);
+            render_scene(pos, pos, angle, idx);
         }, i);
     }
     //To slow for WASM

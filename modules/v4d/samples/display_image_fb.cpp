@@ -17,16 +17,16 @@ int main() {
     //We have to manually resize and color convert the image when using direct frambuffer access.
     UMat resized;
     UMat converted;
-    resize(image, resized, window->framebufferSize());
+    resize(image, resized, window->fbSize());
     cvtColor(resized, converted, COLOR_RGB2BGRA);
 
     window->run([converted](Ptr<V4D> win){
 		//Create a fb context and copy the prepared image to the framebuffer. The fb context
 		//takes care of retrieving and storing the data on the graphics card (using CL-GL
 		//interop if available), ready for other contexts to use
-		win->fb([&](UMat& framebuffer){
-	        converted.copyTo(framebuffer);
-	    });
+		win->fb([](UMat& framebuffer, const cv::UMat& c){
+	        c.copyTo(framebuffer);
+	    }, converted);
 		return win->display();
 	});
 }

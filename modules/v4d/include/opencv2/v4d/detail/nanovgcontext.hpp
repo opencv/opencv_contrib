@@ -19,7 +19,7 @@ namespace detail {
 /*!
  * Used to setup a nanovg context
  */
-class NanoVGContext {
+class CV_EXPORTS NanoVGContext {
     FrameBufferContext& mainFbContext_;
     FrameBufferContext nvgFbContext_;
     NVGcontext* context_;
@@ -61,7 +61,7 @@ public:
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using cv::viz::nvg
      */
-    void render(std::function<void(const cv::Size&)> fn);
+    void render(std::function<void()> fn);
 
     FrameBufferContext& fbCtx();
 private:

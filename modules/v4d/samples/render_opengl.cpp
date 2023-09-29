@@ -10,8 +10,8 @@ int main() {
     window->run([](Ptr<V4D> win) {
         win->once([=](){
             win->gl([]() {
-            //Sets the clear color to blue
-            glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+                //Sets the clear color to blue
+                glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
             });
         });
 

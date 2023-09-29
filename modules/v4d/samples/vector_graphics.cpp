@@ -91,7 +91,7 @@ int main() {
             ellipse(rx, ry, ex, ey);
             fillPaint(gloss);
             fill();
-        });
+        }, win->fbSize());
 
         return win->display();
     });

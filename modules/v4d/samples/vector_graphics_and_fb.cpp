@@ -90,7 +90,7 @@ int main() {
             ellipse(rx, ry, ex, ey);
             fillPaint(gloss);
             fill();
-        });
+        }, win->fbSize());
 
         //Provides the framebuffer as left-off by the nvg context.
         win->fb([](UMat& framebuffer) {

@@ -164,9 +164,9 @@ static bool iteration(cv::Ptr<V4D> window) {
     });
 
     //Render using nanovg
-    window->nvg([hue](const cv::Size &sz) {
-        draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
-    });
+    window->nvg([](const cv::Size &sz, const double& h) {
+        draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, h);
+    }, window->fbSize(), hue);
 
     window->write();
 

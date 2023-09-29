@@ -5,7 +5,7 @@
  *      Author: elchaschab
  */
 
-#include "timetracker.hpp"
+#include "opencv2/v4d/detail/timetracker.hpp"
 
 TimeTracker* TimeTracker::instance_;
 

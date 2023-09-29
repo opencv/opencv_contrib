@@ -26,33 +26,33 @@ int main() {
 	    //Execute only once
 	    win->once([win, &image]() {
 	        //Creates a NanoVG context. The wrapped C-functions of NanoVG are available in the namespace cv::v4d::nvg;
-	        win->nvg([&image](const cv::Size sz) {
+	        win->nvg([](Image_t& img) {
 	            using namespace cv::v4d::nvg;
 	            //Create the image and receive a handle.
-	            int handle = createImage(image.filename_.c_str(), NVG_IMAGE_NEAREST);
+	            int handle = createImage(img.filename_.c_str(), NVG_IMAGE_NEAREST);
 	            //Make sure it was created successfully
 	            CV_Assert(handle > 0);
 	            //Query the image size
-	            imageSize(handle, &image.w_, &image.h_);
+	            imageSize(handle, &img.w_, &img.h_);
 	            //Create a simple image pattern with the image dimensions
-	            image.paint_ = imagePattern(0, 0, image.w_, image.h_, 0.0f/180.0f*NVG_PI, handle, 1.0);
-	        });
+	            img.paint_ = imagePattern(0, 0, img.w_, img.h_, 0.0f/180.0f*NVG_PI, handle, 1.0);
+	        }, image);
 	    });
 
 	    //Creates a NanoVG context to draw the loaded image over again to the screen.
-	    win->nvg([&image](const cv::Size sz) {
+	    win->nvg([](const Image_t& img, const cv::Size& sz) {
 	        using namespace cv::v4d::nvg;
 	        beginPath();
 	        //Scale all further calls to window size
-	        scale(double(sz.width)/image.w_, double(sz.height)/image.h_);
+	        scale(double(sz.width)/img.w_, double(sz.height)/img.h_);
 	        //Create a rounded rectangle with the images dimensions.
 	        //Note that actually this rectangle will have the size of the window
 	        //because of the previous scale call.
-	        roundedRect(0,0, image.w_, image.h_, 50);
+	        roundedRect(0,0, img.w_, img.h_, 50);
 	        //Fill the rounded rectangle with our picture
-	        fillPaint(image.paint_);
+	        fillPaint(img.paint_);
 	        fill();
-	    });
+	    }, image, win->fbSize());
 	    //Displays the framebuffer in the window. Returns false if the windows has been closed.
 	    return win->display();
     });

@@ -212,12 +212,12 @@ static bool iteration(cv::Ptr<V4D> window) {
         float cy = tracked.y * HEIGHT_SCALE + (height / 2.0f);
         ellipse(cx, cy, width / 2.0f, height / 2.0f);
         stroke();
-    });
+    }, window->fbSize());
 
     //Put it all together
-    window->fb([](cv::UMat& frameBuffer){
-        composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
-    });
+    window->fb([](cv::UMat& frameBuffer, cv::UMat& bg){
+        composite_layers(bg, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
+    }, background);
 
     window->write();
 

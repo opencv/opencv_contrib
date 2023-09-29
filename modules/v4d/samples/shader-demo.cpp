@@ -268,12 +268,12 @@ static void setup_gui(cv::Ptr<V4D> window) {
 }
 
 static bool iteration(cv::Ptr<V4D> window) {
-    window->once([=](){ window->gl(init_scene);});
+    window->once([=](){ window->gl(init_scene, window->fbSize());});
 
     if(!window->capture())
         return false;
 
-    window->gl(render_scene);
+    window->gl(render_scene, window->fbSize());
 
 #ifndef __EMSCRIPTEN__
     window->fb([](cv::UMat& frameBuffer) {

@@ -6,11 +6,10 @@
 #include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
 #include "detail/clvacontext.hpp"
-#include "detail/nanovgcontext.hpp"
-#include "detail/glcontext.hpp"
-#include "detail/timetracker.hpp"
 #include <sstream>
 #include <algorithm>
+#include <opencv2/core.hpp>
+#include <vector>
 
 namespace cv {
 namespace v4d {
@@ -156,59 +155,6 @@ size_t V4D::numGlCtx() {
     return std::max(off_t(0), off_t(glContexts_.size()) - 1);
 }
 
-void V4D::gl(std::function<void()> fn) {
-    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn](){
-        glCtx(-1).render([=](const cv::Size& sz) {
-            CV_UNUSED(sz);
-            fn();
-        });
-    });
-}
-
-
-void V4D::gl(std::function<void(const cv::Size&)> fn) {
-    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn](){
-        glCtx(-1).render(fn);
-    });
-}
-
-void V4D::gl(std::function<void()> fn, const uint32_t& idx) {
-    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [this, fn, idx](){
-        glCtx(idx).render([=](const cv::Size& sz) {
-            CV_UNUSED(sz);
-            fn();
-        });
-    });
-}
-
-
-void V4D::gl(std::function<void(const cv::Size&)> fn, const uint32_t& idx) {
-    TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(idx), [this, fn, idx](){
-        glCtx(idx).render(fn);
-    });
-}
-
-
-void V4D::fb(std::function<void(cv::UMat&)> fn) {
-    TimeTracker::getInstance()->execute("fb(" + detail::func_id(fn) + ")", [this, fn](){
-        fbCtx().execute(fn);
-    });
-}
-
-void V4D::nvg(std::function<void()> fn) {
-    TimeTracker::getInstance()->execute("nvg(" + detail::func_id(fn) + ")", [this, fn](){
-        nvgCtx().render([fn](const cv::Size& sz) {
-            CV_UNUSED(sz);
-            fn();
-        });
-    });
-}
-
-void V4D::nvg(std::function<void(const cv::Size&)> fn) {
-    TimeTracker::getInstance()->execute("nvg(" + detail::func_id(fn) + ")", [this, fn](){
-        nvgCtx().render(fn);
-    });
-}
 
 void V4D::imgui(std::function<void(ImGuiContext* ctx)> fn) {
     TimeTracker::getInstance()->execute("imgui(" + detail::func_id(fn) + ")", [this, fn](){
@@ -355,18 +301,19 @@ void V4D::feed(cv::InputArray in) {
             in.copyTo(videoFrame);
         }, frame);
 
-        fb([&frame](cv::UMat& framebuffer){
-            frame.copyTo(framebuffer);
-        });
+        //V4DAndFbAndArgsInFunctor<cv::UMat&> fn();
+        fb([](cv::UMat& fb, cv::UMat& f) {
+            f.copyTo(fb);
+        }, frame);
     });
 }
 
 cv::_InputArray V4D::fetch() {
     cv::UMat frame;
     TimeTracker::getInstance()->execute("copyTo", [this, &frame](){
-        fb([frame](cv::UMat& framebuffer){
-            framebuffer.copyTo(frame);
-        });
+        fb([](cv::UMat& fb, cv::UMat& f) {
+            fb.copyTo(f);
+        }, frame);
     });
     return frame;
 }
@@ -426,9 +373,9 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
                 return v->clvaCtx().capture(func, frame);
             }, this, fn, nextReaderFrame_);
 
-        fb([this](cv::UMat& frameBuffer){
-            currentReaderFrame_.copyTo(frameBuffer);
-        });
+        fb([](cv::UMat& fb, cv::UMat& f){
+            f.copyTo(fb);
+        }, this->currentReaderFrame_);
     });
     return res;
 }
@@ -465,9 +412,9 @@ void V4D::write(std::function<void(const cv::UMat&)> fn) {
         if (futureWriter_.valid())
             futureWriter_.get();
 
-        fb([this](cv::UMat& frameBuffer){
-            frameBuffer.copyTo(currentWriterFrame_);
-        });
+        fb([](cv::UMat& fb, cv::UMat& f){
+            fb.copyTo(f);
+        }, currentWriterFrame_);
 
         futureWriter_ = thread_pool_.enqueue([](V4D* v, std::function<void(const UMat&)> func, cv::UMat& frame) {
             v->clvaCtx().write(func, frame);
@@ -495,7 +442,7 @@ float V4D::pixelRatioY() {
     return fbCtx().pixelRatioY();
 }
 
-cv::Size V4D::framebufferSize() {
+cv::Size V4D::fbSize() {
     return fbCtx().size();
 }
 

@@ -406,7 +406,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     if(!window->capture())
         return false;
 
-    static thread_local cv::Size fbSz = window->framebufferSize();
+    static thread_local cv::Size fbSz = window->fbSize();
     //BGRA
     static thread_local cv::UMat background, down;
     static thread_local cv::UMat foreground(fbSz, CV_8UC4, cv::Scalar::all(0));

@@ -12,10 +12,12 @@
 
 //FIXME
 #include "opencv2/v4d/detail/cl.hpp"
+#include <opencv2/core.hpp>
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
 #include <iostream>
 #include <map>
+#include <vector>
 
 struct GLFWwindow;
 typedef unsigned int GLenum;
@@ -24,6 +26,27 @@ typedef unsigned int GLenum;
 namespace cv {
 namespace v4d {
 class V4D;
+
+template <typename ... Args>
+class V4DAndArgsInFunctor : public std::function<void(cv::Ptr<V4D>, Args ...)> {
+public:
+    V4DAndArgsInFunctor(cv::Ptr<V4D> window, Args ... args) : std::function<void(cv::Ptr<V4D>, Args ...)>(window, args...) {
+    }
+};
+template <typename Tfn, typename ... Args>
+class V4DAndFbAndArgsInFunctor : public std::function<void(cv::Ptr<V4D>, cv::UMat&, Args& ...)> {
+public:
+    V4DAndFbAndArgsInFunctor(Tfn fn) : std::function<void(cv::Ptr<V4D>, cv::UMat&, Args& ...)>(fn) {
+    }
+};
+
+template <typename ... Args>
+class V4DAndSizeTAndArgsInFunctor : public std::function<void(cv::Ptr<V4D>, size_t&, Args ...)> {
+public:
+    V4DAndSizeTAndArgsInFunctor(std::function<void(cv::Ptr<V4D>, size_t&, Args ...)> fn) : std::function<void(cv::Ptr<V4D>, size_t&, Args ...)>(fn) {
+    }
+};
+
 namespace detail {
 typedef cv::ocl::OpenCLExecutionContext CLExecContext_t;
 class CLExecScope_t
@@ -217,7 +240,24 @@ public:
       * directly on the framebuffer.
       * @param fn A function object that is passed the framebuffer to be read/manipulated.
       */
-    void execute(std::function<void(cv::UMat&)> fn);
+    template <typename Tfn, typename ... Args>
+    void execute(Tfn fn, Args& ... args) {
+        run_sync_on_main<2>([this, fn, &args...](){
+    #ifndef __EMSCRIPTEN__
+            if(!getCLExecContext().empty()) {
+                CLExecScope_t clExecScope(getCLExecContext());
+                FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+                FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+                fn(framebuffer_, args...);
+            } else
+    #endif
+            {
+                FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
+                FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+                fn(framebuffer_, args...);
+            }
+        });
+    }
     cv::Vec2f position();
     float pixelRatioX();
     float pixelRatioY();

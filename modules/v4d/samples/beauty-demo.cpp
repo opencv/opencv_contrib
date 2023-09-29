@@ -249,25 +249,25 @@ static bool iteration(cv::Ptr<V4D> window) {
         if (!faceRect.empty() && facemark->fit(down, faceRects, shapes)) {
             FaceFeatures features(faceRect, shapes[0], float(down.size().width) / WIDTH);
 
-            window->nvg([&features]() {
+            window->nvg([](FaceFeatures& f) {
                 //Draw the face oval of the first face
-                draw_face_oval_mask(features);
-            });
+                draw_face_oval_mask(f);
+            }, features);
 
             window->fb([](cv::UMat &frameBuffer) {
                 //Convert/Copy the mask
                 cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
             });
 
-            window->nvg([&features]() {
+            window->nvg([](FaceFeatures& f) {
                 //Draw eyes eyes and lips areas of the first face
-                draw_face_eyes_and_lips_mask(features);
-            });
+                draw_face_eyes_and_lips_mask(f);
+            }, features);
 
-            window->fb([](cv::UMat &frameBuffer) {
+            window->fb([](cv::UMat &frameBuffer, cv::UMat& e) {
                 //Convert/Copy the mask
-                cvtColor(frameBuffer, eyesAndLipsMaskGrey, cv::COLOR_BGRA2GRAY);
-            });
+                cvtColor(frameBuffer, e, cv::COLOR_BGRA2GRAY);
+            }, eyesAndLipsMaskGrey);
 
             //Create the skin mask
             cv::subtract(faceOval, eyesAndLipsMaskGrey, faceSkinMaskGrey);
@@ -316,9 +316,9 @@ static bool iteration(cv::Ptr<V4D> window) {
         }
 
         //write the result to the framebuffer
-        window->fb([](cv::UMat &frameBuffer) {
-            cvtColor(frameOut, frameBuffer, cv::COLOR_BGR2BGRA);
-        });
+        window->fb([](cv::UMat &frameBuffer, cv::UMat& f) {
+            cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
+        }, frameOut);
 
         window->write();
 

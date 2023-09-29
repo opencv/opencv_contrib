@@ -110,11 +110,11 @@ static bool iteration(cv::Ptr<V4D> window) {
                 circle(rng.uniform(0, sz.width) , rng.uniform(0, sz.height), size / 2.0);
                 stroke();
             }
-        });
+        }, window->fbSize());
 
-        window->fb([](cv::UMat& frameBuffer){
-            frameBuffer.copyTo(stars);
-        });
+        window->fb([](cv::UMat& frameBuffer, cv::UMat& f){
+            frameBuffer.copyTo(f);
+        }, stars);
         update_stars = false;
     }
 
@@ -129,7 +129,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         update_perspective = false;
     }
 
-    window->nvg([translateY](const cv::Size& sz) {
+    window->nvg([](const cv::Size& sz, const int32_t& ty) {
         using namespace cv::v4d::nvg;
         clear();
         fontSize(font_size);
@@ -138,22 +138,22 @@ static bool iteration(cv::Ptr<V4D> window) {
         textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 
         /** only draw lines that are visible **/
-        translate(0, translateY);
+        translate(0, ty);
 
         for (size_t i = 0; i < lines.size(); ++i) {
             y = (i * font_size);
-            if (y + translateY < textHeight && y + translateY + font_size > 0) {
+            if (y + ty < textHeight && y + ty + font_size > 0) {
                 text(sz.width / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
             }
         }
-    });
+    }, window->fbSize(), translateY);
 
-    window->fb([](cv::UMat& framebuffer) {
+    window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t) {
         //Pseudo 3D text effect.
-        cv::warpPerspective(framebuffer, warped, tm, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+        cv::warpPerspective(framebuffer, w, t, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
-        cv::add(stars, warped, framebuffer);
-    });
+        cv::add(s, w, framebuffer);
+    }, warped, stars, tm);
 
     if(-translateY > textHeight) {
         //reset the scroll once the text is out of the picture

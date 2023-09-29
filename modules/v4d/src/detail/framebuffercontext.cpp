@@ -5,8 +5,6 @@
 #include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
 #include "opencv2/v4d/util.hpp"
-#include "glcontext.hpp"
-#include "nanovgcontext.hpp"
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/opengl.hpp"
 #include <exception>
@@ -628,24 +626,6 @@ void FrameBufferContext::copyFrom(const cv::UMat& src) {
             src.copyTo(framebuffer_);
         }
 #endif
-    });
-}
-
-void FrameBufferContext::execute(std::function<void(cv::UMat&)> fn) {
-    run_sync_on_main<2>([&,this](){
-#ifndef __EMSCRIPTEN__
-        if(!getCLExecContext().empty()) {
-            CLExecScope_t clExecScope(getCLExecContext());
-            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-            fn(framebuffer_);
-        } else
-#endif
-        {
-            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-            fn(framebuffer_);
-        }
     });
 }
 

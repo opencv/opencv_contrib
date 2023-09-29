@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 // Copyright Amir Hassan (kallaballa) <amir@viel-zu.org>
 
-#include "nanovgcontext.hpp"
+#include "opencv2/v4d/detail/nanovgcontext.hpp"
 #include "opencv2/v4d/nvg.hpp"
 #include "opencv2/v4d/detail/gl.hpp"
 #include "nanovg_gl.h"
@@ -41,7 +41,7 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
     });
 }
 
-void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
+void NanoVGContext::render(std::function<void()> fn) {
     run_sync_on_main<14>([this, fn]() {
 #ifndef __EMSCRIPTEN__
         if (!fbCtx().isShared()) {
@@ -59,7 +59,7 @@ void NanoVGContext::render(std::function<void(const cv::Size&)> fn) {
 #endif
             NanoVGContext::Scope nvgScope(*this);
             cv::v4d::nvg::detail::NVG::initializeContext(context_);
-            fn(fbCtx().size());
+            fn();
         }
         if (!fbCtx().isShared()) {
 #ifdef __EMSCRIPTEN__

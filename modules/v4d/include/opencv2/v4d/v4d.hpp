@@ -18,7 +18,11 @@
 #include "detail/threadpool.hpp"
 #include "opencv2/v4d/detail/gl.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "opencv2/v4d/detail/nanovgcontext.hpp"
 #include "opencv2/v4d/detail/imguicontext.hpp"
+#include "opencv2/v4d/detail/timetracker.hpp"
+#include "opencv2/v4d/detail/glcontext.hpp"
+
 
 #include <iostream>
 #include <future>
@@ -26,6 +30,8 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <vector>
+#include <type_traits>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -37,6 +43,7 @@ using std::endl;
 using std::string;
 
 struct GLFWwindow;
+
 
 /*!
  * OpenCV namespace
@@ -57,6 +64,24 @@ enum AllocateFlags {
  * Private namespace
  */
 namespace detail {
+
+//https://stackoverflow.com/questions/19961873/test-if-a-lambda-is-stateless#:~:text=As%20per%20the%20Standard%2C%20if,lambda%20is%20stateless%20or%20not.
+template <typename T, typename U>
+struct helper : helper<T, decltype(&U::operator())>
+{};
+
+template <typename T, typename C, typename R, typename... A>
+struct helper<T, R(C::*)(A...) const>
+{
+    static const bool value = std::is_convertible<T, R(*)(A...)>::value;
+};
+
+template<typename T>
+struct is_stateless
+{
+    static const bool value = helper<T,T>::value;
+};
+
 class FrameBufferContext;
 class CLVAContext;
 class NanoVGContext;
@@ -71,8 +96,8 @@ template<typename T> std::string int_to_hex( T i )
   return stream.str();
 }
 
-template<typename T, typename... U> std::string func_id(std::function<T (U ...)> f) {
-    return int_to_hex((size_t) &f);
+template<typename Tfn> std::string func_id(Tfn& fn) {
+    return int_to_hex((size_t) &fn);
 }
 }
 
@@ -181,15 +206,24 @@ public:
      */
     CV_EXPORTS cv::ogl::Texture2D& texture();
     CV_EXPORTS std::string title();
-    CV_EXPORTS void gl(std::function<void()> fn);
-    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn);
-    /*!
-     * Execute function object fn inside an opengl context.
-     * This is how all OpenGL operations should be executed.
-     * @param fn A function object that is passed the size of the framebuffer
-     */
-    CV_EXPORTS void gl(std::function<void(const cv::Size&)> fn, const uint32_t& idx);
-    CV_EXPORTS void gl(std::function<void()> fn, const uint32_t& idx);
+    template <typename Tfn, typename ... Args>
+    void gl(Tfn fn, Args&& ... args) {
+        TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn, &args...](){
+            glCtx(-1).render([=]() {
+                fn(args...);
+            });
+        });
+    }
+
+    template <typename Tfn, typename ... Args>
+    void gl(const size_t& idx, Tfn fn, Args&& ... args) {
+        TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn, idx, &args...](){
+            glCtx(idx).render([=]() {
+                fn(args...);
+            });
+        });
+    }
+
     /*!
      * Execute function object fn inside a framebuffer context.
      * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
@@ -197,7 +231,13 @@ public:
      * directly on the framebuffer.
      * @param fn A function object that is passed the framebuffer to be read/manipulated.
      */
-    CV_EXPORTS void fb(std::function<void(cv::UMat&)> fn);
+    template <typename Tfn, typename ... Args>
+    void fb(Tfn fn, Args& ... args) {
+        CV_Assert(detail::is_stateless<decltype(fn)>::value);
+        TimeTracker::getInstance()->execute("fb(" + detail::func_id(fn) + ")", [this, fn, &args...]{
+            fbCtx().execute(fn, args...);
+        });
+    }
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.
@@ -205,8 +245,15 @@ public:
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using cv::viz::nvg
      */
-    CV_EXPORTS void nvg(std::function<void(const cv::Size&)> fn);
-    CV_EXPORTS void nvg(std::function<void()> fn);
+    template <typename Tfn, typename ... Args>
+    void nvg(Tfn fn, Args&& ... args) {
+        TimeTracker::getInstance()->execute("nvg(" + detail::func_id(fn) + ")", [this, fn, &args...](){
+            nvgCtx().render([this, fn, &args...]() {
+                fn(args...);
+            });
+        });
+    }
+
     CV_EXPORTS void imgui(std::function<void(ImGuiContext* ctx)> fn);
 
     /*!
@@ -316,7 +363,7 @@ public:
      * Get the current size of the window.
      * @return The window size.
      */
-    CV_EXPORTS cv::Size framebufferSize();
+    CV_EXPORTS cv::Size fbSize();
     /*!
      * Set the window size
      * @param sz The future size of the window.

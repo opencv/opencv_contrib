@@ -8,6 +8,7 @@
 #include <ostream>
 #include <limits>
 #include <mutex>
+#include <opencv2/core/cvdef.h>
 
 using std::ostream;
 using std::stringstream;
@@ -16,7 +17,7 @@ using std::map;
 using std::chrono::microseconds;
 using std::mutex;
 
-struct TimeInfo {
+struct CV_EXPORTS TimeInfo {
     long totalCnt_ = 0;
     long totalTime_ = 0;
     long iterCnt_ = 0;
@@ -60,7 +61,7 @@ inline std::ostream& operator<<(ostream &os, TimeInfo &ti) {
     return os;
 }
 
-class TimeTracker {
+class CV_EXPORTS TimeTracker {
 private:
     static TimeTracker *instance_;
     mutex mapMtx_;
