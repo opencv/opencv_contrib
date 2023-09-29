@@ -31,12 +31,12 @@ constexpr const char* OUTPUT_FILENAME = "video-demo.mkv";
 #endif
 
 /* OpenGL contants and variables */
-const unsigned int triangles = 12;
-const unsigned int vertices_index = 0;
-const unsigned int colors_index = 1;
-unsigned int shader_program;
-unsigned int vao;
-unsigned int uniform_transform;
+static const unsigned int triangles = 12;
+static const unsigned int vertices_index = 0;
+static const unsigned int colors_index = 1;
+static thread_local unsigned int shader_program;
+static thread_local unsigned int vao;
+static thread_local unsigned int uniform_transform;
 
 static GLuint load_shader() {
 #if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
@@ -170,9 +170,9 @@ static void render_scene() {
 
 #ifndef __EMSCRIPTEN__
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static cv::UMat resize;
-    static cv::UMat blur;
-    static cv::UMat dst16;
+    static thread_local cv::UMat resize;
+    static thread_local cv::UMat blur;
+    static thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -188,8 +188,11 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 }
 #endif
 
+
+
 using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
+    window->once([=](){ window->gl(init_scene);});
 
     if(!window->capture())
         return false;
@@ -234,8 +237,6 @@ int main() {
     window->setSource(src);
 #endif
 
-
-    window->gl(init_scene);
     window->run(iteration);
 
     return 0;

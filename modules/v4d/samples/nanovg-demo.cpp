@@ -126,11 +126,11 @@ static void draw_color_wheel(float x, float y, float w, float h, double hue) {
 using namespace cv::v4d;
 
 static bool iteration(cv::Ptr<V4D> window) {
-    static std::vector<cv::UMat> hsvChannels;
-    static cv::UMat rgb;
-    static cv::UMat bgra;
-    static cv::UMat hsv;
-    static cv::UMat hueChannel;
+    static thread_local std::vector<cv::UMat> hsvChannels;
+    static thread_local cv::UMat rgb;
+    static thread_local cv::UMat bgra;
+    static thread_local cv::UMat hsv;
+    static thread_local cv::UMat hueChannel;
 
     //we use frame count to calculate the current hue
     float t = window->frameCount() / 60.0;

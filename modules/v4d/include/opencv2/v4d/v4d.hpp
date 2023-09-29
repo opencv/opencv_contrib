@@ -7,8 +7,8 @@
 #define SRC_OPENCV_V4D_V4D_HPP_
 
 #ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <emscripten/threading.h>
+#  include <emscripten.h>
+#  include <emscripten/threading.h>
 #endif
 
 #include "source.hpp"
@@ -114,6 +114,7 @@ class CV_EXPORTS V4D {
     bool printFPS_ = true;
     bool showTracking_ = true;
     uint64_t currentSeqNr_ = 0;
+    size_t numWorkers_ = 0;
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -134,6 +135,17 @@ public:
      */
     CV_EXPORTS virtual ~V4D();
 
+    template<typename T>
+    T once(std::function<T()> fn) {
+        static thread_local std::once_flag onceFlag;
+        std::call_once(onceFlag, fn);
+    }
+
+
+    void once(std::function<void()> fn) {
+        static thread_local std::once_flag onceFlag;
+        std::call_once(onceFlag, fn);
+    }
     template<typename T>
     T& get(const string& name) {
         auto it = data_pool_.find(name);
@@ -161,6 +173,7 @@ public:
     CV_EXPORTS cv::Ptr<cv::UMat> get(const string& name);
     CV_EXPORTS cv::Ptr<cv::UMat> get(const string& name, cv::Size sz, int type);
 
+    CV_EXPORTS size_t workers();
     CV_EXPORTS bool isMain() const;
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
@@ -211,11 +224,11 @@ public:
      * This function main purpose is to abstract the run loop for portability reasons.
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
+    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn
 #ifndef __EMSCRIPTEN__
-    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
-#else
-    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
+            , size_t workers = 0
 #endif
+    );
     /*!
      * Called to feed an image directly to the framebuffer
      */
@@ -428,5 +441,8 @@ protected:
 }
 } /* namespace kb */
 
+#ifdef __EMSCRIPTEN__
+#  define thread_local
+#endif
 
 #endif /* SRC_OPENCV_V4D_V4D_HPP_ */

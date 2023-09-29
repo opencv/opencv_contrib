@@ -83,7 +83,7 @@ void ImGuiContextImpl::render(bool showFPS) {
             ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
             ImGui::Begin("Display", open_ptr, window_flags);
             ImGuiIO& io = ImGui::GetIO();
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / io.Framerate) / (mainFbContext_.getV4D()->workers() + 1), io.Framerate * (mainFbContext_.getV4D()->workers() + 1));
             ImGui::End();
         }
         if (renderCallback_)

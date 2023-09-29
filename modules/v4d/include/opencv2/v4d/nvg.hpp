@@ -6,6 +6,7 @@
 #ifndef SRC_OPENCV_V4D_NVG_HPP_
 #define SRC_OPENCV_V4D_NVG_HPP_
 
+#include "opencv2/v4d/v4d.hpp"
 #include <stdio.h>
 #include <opencv2/core.hpp>
 #include "nanovg.h"

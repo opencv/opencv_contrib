@@ -385,7 +385,7 @@ int main() {
     window->setSource(src);
 #endif
 
-    window->run(iteration,3);
+    window->run(iteration);
 
     return 0;
 }

@@ -34,7 +34,7 @@ constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
 //Descriptor used for pedestrian detection
-cv::HOGDescriptor hog;
+static thread_local cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
 static inline bool pair_comparator(std::pair<double, size_t> l1, std::pair<double, size_t> l2) {
@@ -108,7 +108,7 @@ static std::vector<bool> non_maximal_suppression(std::vector<std::vector<double>
 
 //post process and add layers together
 static void composite_layers(const cv::UMat background, const cv::UMat foreground, cv::UMat dst, int blurKernelSize) {
-    static cv::UMat blur;
+    static thread_local cv::UMat blur;
 
     cv::boxFilter(foreground, blur, -1, cv::Size(blurKernelSize, blurKernelSize), cv::Point(-1,-1), true, cv::BORDER_REPLICATE);
     cv::add(background, blur, dst);
@@ -117,31 +117,33 @@ static void composite_layers(const cv::UMat background, const cv::UMat foregroun
 using namespace cv::v4d;
 
 static bool iteration(cv::Ptr<V4D> window) {
+    window->once([&](){
+        hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+    });
     //BGRA
-    static cv::UMat background;
+    static thread_local cv::UMat background;
     //RGB
-    static cv::UMat videoFrame, videoFrameDown;
+    static thread_local cv::UMat videoFrame, videoFrameDown;
     //GREY
-    static cv::UMat videoFrameDownGrey;
+    static thread_local cv::UMat videoFrameDownGrey;
 
     //detected pedestrian locations rectangles
-    static std::vector<cv::Rect> locations;
+    static thread_local std::vector<cv::Rect> locations;
     //detected pedestrian locations as boxes
-    static vector<vector<double>> boxes;
+    static thread_local vector<vector<double>> boxes;
     //probability of detected object being a pedestrian - currently always set to 1.0
-    static vector<double> probs;
+    static thread_local vector<double> probs;
     //Faster tracking parameters
-    static cv::TrackerKCF::Params params;
+    static thread_local cv::TrackerKCF::Params params;
     params.desc_pca = cv::TrackerKCF::GRAY;
     params.compress_feature = false;
     params.compressed_size = 1;
     //KCF tracker used instead of continous detection
-    static cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(params);
-    //The bounding rectangle of the currently tracked pedestrian
-    static cv::Rect tracked(0,0,1,1);
-    static bool trackerInitialized = false;
+    static thread_local cv::Ptr<cv::Tracker> tracker = cv::TrackerKCF::create(params);
+    static thread_local cv::Rect tracked(0,0,1,1);
+    static thread_local bool trackerInitialized = false;
     //If tracking fails re-detect
-    static bool redetect = true;
+    static thread_local bool redetect = true;
 
     if(!window->capture())
         return false;
@@ -156,13 +158,10 @@ static bool iteration(cv::Ptr<V4D> window) {
     cv::cvtColor(videoFrameDown, videoFrameDownGrey, cv::COLOR_RGB2GRAY);
     cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
 
-    tracked = cv::Rect(0,0,1,1);
-
     //Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-    if (!trackerInitialized || redetect || !tracker->update(videoFrameDownGrey, tracked)) {
+    if (!trackerInitialized || redetect) {
     	cerr << "detect" << endl;
         redetect = false;
-        tracked = cv::Rect(0,0,1,1);
         //Detect pedestrians
         hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.15, 2.0, false);
 
@@ -185,19 +184,19 @@ static bool iteration(cv::Ptr<V4D> window) {
                 }
             }
 
-//            if(!trackerInitialized) {
+            if(!trackerInitialized) {
 //            	initialize the tracker once
             	tracker->init(videoFrameDownGrey, tracked);
             	trackerInitialized = true;
-//            }
-
-            if(tracked.width == 1 && tracked.height == 1) {
-                //detection failed - re-detect
-            	redetect = true;
             }
         }
     } else {
-    	cerr << "track" << endl;
+        cerr << "track" << endl;
+        if(!tracker->update(videoFrameDownGrey, tracked)) {
+            //detection failed - re-detect
+            cerr << "fail2" << endl;
+            redetect = true;
+        }
     }
 
     //Draw an ellipse around the tracked pedestrian
@@ -236,7 +235,6 @@ int main() {
 #endif
     using namespace cv::v4d;
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Pedestrian Demo", ALL, OFFSCREEN);
-    hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
     window->printSystemInfo();
 

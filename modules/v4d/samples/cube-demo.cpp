@@ -224,6 +224,8 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
+    window->once([=](){ window->gl(init_scene);});
+
     //Render using OpenGL
     window->gl(render_scene);
 
@@ -248,7 +250,6 @@ int main() {
     Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    window->gl(init_scene);
     window->run(iteration);
 
     return 0;

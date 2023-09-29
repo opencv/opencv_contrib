@@ -23,44 +23,44 @@ constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
 
 /* Mandelbrot control parameters */
-int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
+static int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 // Red, green, blue and alpha. All from 0.0f to 1.0f
-float base_color_val[4] = {0.2, 0.6, 1.0, 1.0};
+static float base_color_val[4] = {0.2, 0.6, 1.0, 1.0};
 //contrast boost
-int contrast_boost = 255; //0.0-255
+static int contrast_boost = 50; //0.0-255
 //max fractal iterations
-int max_iterations = 50000;
+static int max_iterations = 1000;
 //center x coordinate
-float center_x = -0.119609;
+static float center_x = -0.119609;
 //center y coordinate
-float center_y = 0.13262;
-float zoom_factor = 1.0;
-float current_zoom = 1.0;
-float zoom_incr = 0.99;
-bool manual_navigation = false;
+static float center_y = 0.13262;
+static float zoom_factor = 1.0;
+static float current_zoom = 1.0;
+static float zoom_incr = 0.99;
+static bool manual_navigation = false;
 
 /* GL uniform handles */
-GLint base_color_hdl;
-GLint contrast_boost_hdl;
-GLint max_iterations_hdl;
-GLint center_x_hdl;
-GLint center_y_hdl;
-GLint current_zoom_hdl;
-GLint resolution_hdl;
+static thread_local GLint base_color_hdl;
+static thread_local GLint contrast_boost_hdl;
+static thread_local GLint max_iterations_hdl;
+static thread_local GLint center_x_hdl;
+static thread_local GLint center_y_hdl;
+static thread_local GLint current_zoom_hdl;
+static thread_local GLint resolution_hdl;
 
 /* Shader program handle */
-GLuint shader_program_hdl;
+static thread_local GLuint shader_program_hdl;
 
 /* Object handles */
-GLuint VAO;
-GLuint VBO, EBO;
+static thread_local GLuint VAO;
+static thread_local GLuint VBO, EBO;
 
 // vertex position, color
-float vertices[] = {
+static const float vertices[] = {
 //    x      y      z
         -1.0f, -1.0f, -0.0f, 1.0f, 1.0f, -0.0f, -1.0f, 1.0f, -0.0f, 1.0f, -1.0f, -0.0f };
 
-unsigned int indices[] = {
+static const unsigned int indices[] = {
 //  2---,1
 //  | .' |
 //  0'---3
@@ -268,6 +268,8 @@ static void setup_gui(cv::Ptr<V4D> window) {
 }
 
 static bool iteration(cv::Ptr<V4D> window) {
+    window->once([=](){ window->gl(init_scene);});
+
     if(!window->capture())
         return false;
 
@@ -300,8 +302,6 @@ int main() {
         }
 
         window->printSystemInfo();
-
-        window->gl(init_scene);
 
 #ifndef __EMSCRIPTEN__
         Source src = makeCaptureSource(window, argv[1]);

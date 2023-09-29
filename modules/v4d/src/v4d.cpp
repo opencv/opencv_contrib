@@ -75,6 +75,10 @@ cv::Ptr<cv::UMat> V4D::get(const string& name, cv::Size sz, int type) {
     return u;
 }
 
+size_t V4D::workers() {
+        return numWorkers_;
+}
+
 bool V4D::isMain() const {
         return main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id();
 }
@@ -244,6 +248,8 @@ static void do_frame(void* void_fn_ptr) {
 static bool first_run = true;
 
 void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
+#ifndef __EMSCRIPTEN__
+    numWorkers_ = workers;
     std::vector<std::thread*> threads;
     {
         static std::mutex runMtx;
@@ -290,6 +296,8 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
             }
         }
     }
+#endif
+
     this->makeCurrent();
 #ifndef __EMSCRIPTEN__
     bool success = true;
@@ -313,9 +321,10 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
 
     if(this->isMain()) {
         thread_pool_.finish();
-
+#ifndef __EMSCRIPTEN__
         for(auto& t : threads)
             t->join();
+#endif
     }
 }
 

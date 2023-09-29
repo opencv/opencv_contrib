@@ -228,6 +228,11 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 using namespace cv::v4d;
 
 static bool iteration(cv::Ptr<V4D> window) {
+    window->once([=](){
+        for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)
+            window->gl([=](const cv::Size sz){ init_scene(sz, i); }, i);
+    });
+
     window->gl([=](){
         //Clear the background
         glClearColor(0.2, 0.24, 0.4, 1);
@@ -264,8 +269,6 @@ int main() {
     Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)
-        window->gl([=](const cv::Size sz){ init_scene(sz, i); }, i);
     window->run(iteration);
 
     return 0;

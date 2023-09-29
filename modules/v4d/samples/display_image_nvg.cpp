@@ -21,22 +21,24 @@ int main() {
 #else
     image.filename_ = samples::findFile("lena.jpg");
 #endif
-
-    //Creates a NanoVG context. The wrapped C-functions of NanoVG are available in the namespace cv::v4d::nvg;
-	window->nvg([&image](const cv::Size sz) {
-	    using namespace cv::v4d::nvg;
-	    //Create the image and receive a handle.
-	    int handle = createImage(image.filename_.c_str(), NVG_IMAGE_NEAREST);
-	    //Make sure it was created successfully
-	    CV_Assert(handle > 0);
-	    //Query the image size
-	    imageSize(handle, &image.w_, &image.h_);
-	    //Create a simple image pattern with the image dimensions
-	    image.paint_ = imagePattern(0, 0, image.w_, image.h_, 0.0f/180.0f*NVG_PI, handle, 1.0);
-	});
-
 	//Create the run loop
 	window->run([&image](Ptr<V4D> win){
+	    //Execute only once
+	    win->once([win, &image]() {
+	        //Creates a NanoVG context. The wrapped C-functions of NanoVG are available in the namespace cv::v4d::nvg;
+	        win->nvg([&image](const cv::Size sz) {
+	            using namespace cv::v4d::nvg;
+	            //Create the image and receive a handle.
+	            int handle = createImage(image.filename_.c_str(), NVG_IMAGE_NEAREST);
+	            //Make sure it was created successfully
+	            CV_Assert(handle > 0);
+	            //Query the image size
+	            imageSize(handle, &image.w_, &image.h_);
+	            //Create a simple image pattern with the image dimensions
+	            image.paint_ = imagePattern(0, 0, image.w_, image.h_, 0.0f/180.0f*NVG_PI, handle, 1.0);
+	        });
+	    });
+
 	    //Creates a NanoVG context to draw the loaded image over again to the screen.
 	    win->nvg([&image](const cv::Size sz) {
 	        using namespace cv::v4d::nvg;

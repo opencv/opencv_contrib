@@ -31,17 +31,15 @@ constexpr double FPS = 60;
 const cv::Scalar_<float> INITIAL_COLOR = cv::v4d::colorConvert(cv::Scalar(0.15 * 180.0, 128, 255, 255), cv::COLOR_HLS2BGR);
 
 /* Visualization parameters */
-float min_star_size = 0.5f;
-float max_star_size = 1.5f;
-int min_star_count = 1000;
-int max_star_count = 3000;
-float star_alpha = 0.3f;
+static float min_star_size = 0.5f;
+static float max_star_size = 1.5f;
+static int min_star_count = 1000;
+static int max_star_count = 3000;
+static float star_alpha = 0.3f;
 
-float font_size = 40.0f;
-float text_color[4] = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
-float warp_ratio = 1.0f/3.0f;
-
-bool show_fps = true;
+static float font_size = 40.0f;
+static float text_color[4] = {INITIAL_COLOR[2] / 255.0f, INITIAL_COLOR[1] / 255.0f, INITIAL_COLOR[0] / 255.0f, INITIAL_COLOR[3] / 255.0f};
+static float warp_ratio = 1.0f/3.0f;
 
 using std::cerr;
 using std::endl;
@@ -49,9 +47,9 @@ using std::string;
 using std::vector;
 using std::istringstream;
 
-vector<string> lines;
-bool update_stars = true;
-bool update_perspective = true;
+static thread_local vector<string> lines;
+static thread_local bool update_stars = true;
+static thread_local bool update_perspective = true;
 
 using namespace cv::v4d;
 static void setup_gui(cv::Ptr<V4D> window) {
@@ -82,18 +80,18 @@ static void setup_gui(cv::Ptr<V4D> window) {
 
 static bool iteration(cv::Ptr<V4D> window) {
     //BGRA
-    static cv::UMat stars, warped;
+    static thread_local cv::UMat stars, warped;
     //transformation matrix
-    static cv::Mat tm;
-    static cv::RNG rng(cv::getTickCount());
+    static thread_local cv::Mat tm;
+    static thread_local cv::RNG rng(cv::getTickCount());
     //line count
-    static uint32_t cnt = 0;
+    static thread_local uint32_t cnt = 0;
     //Total number of lines in the text
-    static int32_t numLines = lines.size();
+    static thread_local int32_t numLines = lines.size();
     //Height of the text in pixels
-    static int32_t textHeight = (numLines * font_size);
+    static thread_local int32_t textHeight = (numLines * font_size);
     //y-value of the current line
-    static int32_t y = 0;
+    static thread_local int32_t y = 0;
     //How many pixels to translate the text up.
     int32_t translateY = HEIGHT - cnt;
 
