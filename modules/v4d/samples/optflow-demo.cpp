@@ -417,12 +417,12 @@ static bool iteration(cv::Ptr<V4D> window) {
     static thread_local vector<cv::Point2f> detectedPoints;
 
 
-    window->fb([](cv::UMat& frameBuffer) {
+    window->fb([](cv::UMat& frameBuffer, cv::UMat& d, cv::UMat& b) {
         //resize to foreground scale
-        cv::resize(frameBuffer, down, cv::Size(fbSz.width * fg_scale, fbSz.height * fg_scale));
+        cv::resize(frameBuffer, d, cv::Size(fbSz.width * fg_scale, fbSz.height * fg_scale));
         //save video background
-        frameBuffer.copyTo(background);
-    });
+        frameBuffer.copyTo(b);
+    }, down, background);
 
     cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
     //Subtract the background to create a motion mask
@@ -430,25 +430,25 @@ static bool iteration(cv::Ptr<V4D> window) {
     //Detect trackable points in the motion mask
     detect_points(downMotionMaskGrey, detectedPoints);
 
-    window->nvg([]() {
+    window->nvg([](cv::UMat& dmmg, cv::UMat& dpg, cv::UMat& dng, std::vector<cv::Point2f> dp) {
         cv::v4d::nvg::clear();
-        if (!downPrevGrey.empty()) {
+        if (!dpg.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-            if (!detect_scene_change(downMotionMaskGrey, scene_change_thresh, scene_change_thresh_diff)) {
+            if (!detect_scene_change(dmmg, scene_change_thresh, scene_change_thresh_diff)) {
                 //Visualize the sparse optical flow using nanovg
                 cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
-                visualize_sparse_optical_flow(downPrevGrey, downNextGrey, detectedPoints, fg_scale, max_stroke, color, max_points, point_loss);
+                visualize_sparse_optical_flow(dpg, dng, dp, fg_scale, max_stroke, color, max_points, point_loss);
             }
         }
-    });
+    }, downMotionMaskGrey, downPrevGrey, downNextGrey, detectedPoints);
 
     downPrevGrey = downNextGrey.clone();
 
-    window->fb([](cv::UMat& framebuffer){
+    window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& m){
         //Put it all together (OpenCL)
-        composite_layers(background, foreground, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-        cvtColor(framebuffer, miniFrame, cv::COLOR_BGRA2RGB);
-    });
+        composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
+        cvtColor(framebuffer, m, cv::COLOR_BGRA2RGB);
+    }, background, foreground, miniFrame);
 
 #ifndef __EMSCRIPTEN__
     if(window->isMain())
