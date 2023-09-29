@@ -233,7 +233,7 @@ static bool iteration(cv::Ptr<V4D> window) {
             window->gl([=](const cv::Size sz){ init_scene(sz, i); }, i);
     });
 
-    window->gl([=](){
+    window->gl([](){
         //Clear the background
         glClearColor(0.2, 0.24, 0.4, 1);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -241,7 +241,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     //Render using multiple OpenGL contexts
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-        window->gl([=](){
+        window->gl([i](){
             double pos = (((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
             double angle = sin((double(i) / NUMBER_OF_CUBES) * 2 * M_PI);
             render_scene(pos, pos, angle, i);
@@ -250,7 +250,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     //To slow for WASM
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCV
-    window->fb([&](cv::UMat& framebuffer) {
+    window->fb([](cv::UMat& framebuffer) {
         glow_effect(framebuffer, framebuffer, glow_kernel_size);
     });
 #endif

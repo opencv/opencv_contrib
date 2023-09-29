@@ -200,7 +200,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     window->gl(render_scene);
 
 #ifndef __EMSCRIPTEN__
-    window->fb([&](cv::UMat& frameBuffer) {
+    window->fb([](cv::UMat& frameBuffer) {
         glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
     });
 #endif

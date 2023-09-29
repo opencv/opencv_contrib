@@ -232,7 +232,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     //To slow for WASM
 #ifndef __EMSCRIPTEN__
     //Aquire the frame buffer for use by OpenCV
-    window->fb([&](cv::UMat& framebuffer) {
+    window->fb([](cv::UMat& framebuffer) {
         glow_effect(framebuffer, framebuffer, glow_kernel_size);
     });
 #endif

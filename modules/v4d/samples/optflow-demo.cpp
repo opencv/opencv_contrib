@@ -406,18 +406,20 @@ static bool iteration(cv::Ptr<V4D> window) {
     if(!window->capture())
         return false;
 
+    static thread_local cv::Size fbSz = window->framebufferSize();
     //BGRA
     static thread_local cv::UMat background, down;
-    static thread_local cv::UMat foreground(window->framebufferSize(), CV_8UC4, cv::Scalar::all(0));
+    static thread_local cv::UMat foreground(fbSz, CV_8UC4, cv::Scalar::all(0));
     //BGR
     static thread_local cv::UMat miniFrame;
     //GREY
     static thread_local cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
     static thread_local vector<cv::Point2f> detectedPoints;
 
-    window->fb([&](cv::UMat& frameBuffer) {
+
+    window->fb([](cv::UMat& frameBuffer) {
         //resize to foreground scale
-        cv::resize(frameBuffer, down, cv::Size(window->framebufferSize().width * fg_scale, window->framebufferSize().height * fg_scale));
+        cv::resize(frameBuffer, down, cv::Size(fbSz.width * fg_scale, fbSz.height * fg_scale));
         //save video background
         frameBuffer.copyTo(background);
     });
@@ -428,7 +430,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     //Detect trackable points in the motion mask
     detect_points(downMotionMaskGrey, detectedPoints);
 
-    window->nvg([&]() {
+    window->nvg([]() {
         cv::v4d::nvg::clear();
         if (!downPrevGrey.empty()) {
             //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
@@ -442,7 +444,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     downPrevGrey = downNextGrey.clone();
 
-    window->fb([&](cv::UMat& framebuffer){
+    window->fb([](cv::UMat& framebuffer){
         //Put it all together (OpenCL)
         composite_layers(background, foreground, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
         cvtColor(framebuffer, miniFrame, cv::COLOR_BGRA2RGB);

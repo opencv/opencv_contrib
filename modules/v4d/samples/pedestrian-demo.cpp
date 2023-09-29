@@ -148,7 +148,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     if(!window->capture())
         return false;
 
-    window->fb([&](cv::UMat& frameBuffer){
+    window->fb([](cv::UMat& frameBuffer){
     	//copy video frame
         cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
         //downsample video frame for hog detection
@@ -200,7 +200,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     }
 
     //Draw an ellipse around the tracked pedestrian
-    window->nvg([&](const cv::Size& sz) {
+    window->nvg([](const cv::Size& sz) {
         using namespace cv::v4d::nvg;
         clear();
         beginPath();
@@ -215,7 +215,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     });
 
     //Put it all together
-    window->fb([&](cv::UMat& frameBuffer){
+    window->fb([](cv::UMat& frameBuffer){
         composite_layers(background, frameBuffer, frameBuffer, BLUR_KERNEL_SIZE);
     });
 

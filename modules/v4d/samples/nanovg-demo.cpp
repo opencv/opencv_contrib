@@ -141,7 +141,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         return false;
 
     //Acquire the framebuffer and convert it to RGB
-    window->fb([&](cv::UMat &framebuffer) {
+    window->fb([](cv::UMat &framebuffer) {
         cvtColor(framebuffer, rgb, cv::COLOR_BGRA2RGB);
     });
 
@@ -159,12 +159,12 @@ static bool iteration(cv::Ptr<V4D> window) {
     cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
 
     //Acquire the framebuffer and convert the rgb into it
-    window->fb([&](cv::UMat &framebuffer) {
+    window->fb([](cv::UMat &framebuffer) {
         cv::cvtColor(rgb, framebuffer, cv::COLOR_BGR2BGRA);
     });
 
     //Render using nanovg
-    window->nvg([&](const cv::Size &sz) {
+    window->nvg([hue](const cv::Size &sz) {
         draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, hue);
     });
 

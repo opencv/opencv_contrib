@@ -96,7 +96,7 @@ static bool iteration(cv::Ptr<V4D> window) {
     int32_t translateY = HEIGHT - cnt;
 
     if(update_stars) {
-        window->nvg([&](const cv::Size& sz) {
+        window->nvg([](const cv::Size& sz) {
             using namespace cv::v4d::nvg;
             clear();
 
@@ -112,7 +112,7 @@ static bool iteration(cv::Ptr<V4D> window) {
             }
         });
 
-        window->fb([&](cv::UMat& frameBuffer){
+        window->fb([](cv::UMat& frameBuffer){
             frameBuffer.copyTo(stars);
         });
         update_stars = false;
@@ -129,7 +129,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         update_perspective = false;
     }
 
-    window->nvg([&](const cv::Size& sz) {
+    window->nvg([translateY](const cv::Size& sz) {
         using namespace cv::v4d::nvg;
         clear();
         fontSize(font_size);
@@ -148,7 +148,7 @@ static bool iteration(cv::Ptr<V4D> window) {
         }
     });
 
-    window->fb([&](cv::UMat& framebuffer) {
+    window->fb([](cv::UMat& framebuffer) {
         //Pseudo 3D text effect.
         cv::warpPerspective(framebuffer, warped, tm, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
         //Combine layers
