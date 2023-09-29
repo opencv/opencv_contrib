@@ -247,7 +247,11 @@ static void do_frame(void* void_fn_ptr) {
 
 static bool first_run = true;
 
-void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
+void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn
+#ifndef __EMSCRIPTEN__
+        , size_t workers
+#endif
+        ) {
 #ifndef __EMSCRIPTEN__
     numWorkers_ = workers;
     std::vector<std::thread*> threads;
@@ -345,7 +349,6 @@ void V4D::feed(cv::InputArray in) {
 #ifndef __EMSCRIPTEN__
     CLExecScope_t scope(fbCtx().getCLExecContext());
 #endif
-
     TimeTracker::getInstance()->execute("feed", [this, &in](){
         cv::UMat frame;
         clvaCtx().capture([&](cv::UMat& videoFrame) {
@@ -384,12 +387,14 @@ bool V4D::capture() {
     }
     return false;
 #else
+    this->capture([this](cv::UMat& videoFrame) {
         if(source_ && source_->isReady()) {
             auto p = source_->operator()();
             currentSeqNr_ = p.first;
         }
+    });
 
-        return true;
+    return true;
 #endif
 }
 
@@ -398,37 +403,26 @@ bool V4D::capture(std::function<void(cv::UMat&)> fn) {
     TimeTracker::getInstance()->execute("capture", [this, fn, &res](){
         CV_UNUSED(res);
         if (!source_ || !source_->isReady() || !source_->isOpen()) {
-#ifndef __EMSCRIPTEN__
             res = false;
-#endif
             return;
         }
         if (futureReader_.valid()) {
             if (!futureReader_.get()) {
-#ifndef __EMSCRIPTEN__
                 res = false;
-#endif
                 return;
             }
         }
 
         if(nextReaderFrame_.empty()) {
             if (!clvaCtx().capture(fn, nextReaderFrame_)) {
-#ifndef __EMSCRIPTEN__
                 res = false;
-#endif
                 return;
             }
         }
         nextReaderFrame_.copyTo(currentReaderFrame_);
         futureReader_ = thread_pool_.enqueue(
             [](V4D* v, std::function<void(UMat&)> func, cv::UMat& frame) {
-#ifndef __EMSCRIPTEN__
-            return v->clvaCtx().capture(func, frame);
-#else
-            v->clvaCtx().capture(func, frame);
-            return true;
-#endif
+                return v->clvaCtx().capture(func, frame);
             }, this, fn, nextReaderFrame_);
 
         fb([this](cv::UMat& frameBuffer){
