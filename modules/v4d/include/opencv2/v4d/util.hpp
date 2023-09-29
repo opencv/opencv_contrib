@@ -85,11 +85,7 @@ void run_sync_on_main(std::function<void()> fn) {
     sync_run = true;
 
 #ifdef __EMSCRIPTEN__
-    typedef void* function_t( void* ) ;
-    function_t* ptr_fun = fn.target<function_t>() ;
-    //Check that the function object wrapped something callable
-    CV_Assert( ptr_fun != nullptr );
-    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, ptr_fun);
+    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
 #else
     fn();
 #endif

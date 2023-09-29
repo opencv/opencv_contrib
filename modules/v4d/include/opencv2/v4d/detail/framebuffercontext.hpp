@@ -115,7 +115,7 @@ class CV_EXPORTS FrameBufferContext {
     int index_;
 
     void* currentSyncObject_ = 0;
-    bool firstSync_ = true;
+    static bool firstSync_;
 public:
     /*!
      * Acquires and releases the framebuffer from and to OpenGL.

@@ -271,11 +271,8 @@ public:
      * This function main purpose is to abstract the run loop for portability reasons.
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
-    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn
-#ifndef __EMSCRIPTEN__
-            , size_t workers = 0
-#endif
-    );
+
+    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
     /*!
      * Called to feed an image directly to the framebuffer
      */

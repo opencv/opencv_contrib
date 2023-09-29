@@ -482,7 +482,7 @@ public:
                 );
             );
             GL_CHECK(glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
-            cv::Size fbSz = window_->framebufferSize();
+            cv::Size fbSz = window_->fbSize();
             window_->fbCtx().blitFrameBufferToFrameBuffer(cv::Rect(0, 0, width_, height_), cv::Size(width_, height_), window_->fbCtx().getFramebufferID(), true, true);
 
             return true;

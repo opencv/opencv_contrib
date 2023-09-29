@@ -19,12 +19,14 @@
 
 namespace cv {
 namespace v4d {
+
 namespace detail {
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error: (%d) %s\n", error, description);
 }
 
+bool FrameBufferContext::firstSync_ = true;
 
 int frameBufferContextCnt = 0;
 
@@ -700,7 +702,7 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 void FrameBufferContext::end() {
     this->makeCurrent();
     GL_CHECK(glFlush());
-    //    this->fence();
+//    this->fence();
 }
 
 void FrameBufferContext::download(cv::UMat& m) {

@@ -26,12 +26,12 @@ using std::cerr;
 using std::endl;
 
 /* OpenGL constants and variables */
-static thread_local const unsigned int triangles = 12;
-static thread_local const unsigned int vertices_index = 0;
-static thread_local const unsigned int colors_index = 1;
-static thread_local unsigned int shader_program;
-static thread_local unsigned int vao;
-static thread_local unsigned int uniform_transform;
+static const unsigned int triangles = 12;
+static const unsigned int vertices_index = 0;
+static const unsigned int colors_index = 1;
+static unsigned int shader_program;
+static unsigned int vao;
+static unsigned int uniform_transform;
 
 cv::Ptr<cv::v4d::V4D> global_v4d;
 //Simple transform & pass-through shaders
@@ -198,9 +198,9 @@ static void render_scene() {
 #ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static thread_local cv::UMat resize;
-    static thread_local cv::UMat blur;
-    static thread_local cv::UMat dst16;
+    cv::UMat resize;
+    cv::UMat blur;
+    cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 

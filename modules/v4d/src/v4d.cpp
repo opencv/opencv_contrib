@@ -193,12 +193,7 @@ static void do_frame(void* void_fn_ptr) {
 
 static bool first_run = true;
 
-void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn
-#ifndef __EMSCRIPTEN__
-        , size_t workers
-#endif
-        ) {
-#ifndef __EMSCRIPTEN__
+void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers) {
     numWorkers_ = workers;
     std::vector<std::thread*> threads;
     {
@@ -246,7 +241,6 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn
             }
         }
     }
-#endif
 
     this->makeCurrent();
 #ifndef __EMSCRIPTEN__
@@ -271,10 +265,8 @@ void V4D::run(std::function<bool(cv::Ptr<V4D>)> fn
 
     if(this->isMain()) {
         thread_pool_.finish();
-#ifndef __EMSCRIPTEN__
         for(auto& t : threads)
             t->join();
-#endif
     }
 }
 
