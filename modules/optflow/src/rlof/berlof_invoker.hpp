@@ -296,7 +296,7 @@ public:
                             v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
                             v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
                             v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
-                            v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
+                            v_int16x8 vmask = v_mul(v_reinterpret_as_s16(v_load_expand(maskPtr + x)), vmax_val_16);
 
                             v_int32x4 t0, t1;
                             v_int16x8 t00, t01, t10, t11;
@@ -304,35 +304,35 @@ public:
                             v_zip(v10, v11, t10, t11);
 
                             //subpixel interpolation
-                            t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
-                            t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                            t0 = t0 >> (W_BITS - 5);
-                            t1 = t1 >> (W_BITS - 5);
+                            t0 = v_add(v_dotprod(t00, vqw0, vdelta), v_dotprod(t10, vqw1));
+                            t1 = v_add(v_dotprod(t01, vqw0, vdelta), v_dotprod(t11, vqw1));
+                            t0 = v_shr(t0, W_BITS - 5);
+                            t1 = v_shr(t1, W_BITS - 5);
                             diff0 = v_pack(t0, t1);
                             // I*gain.x + gain.x
                             v_int16x8 diff[4] =
                             {
-                                ((v11 << 5) - vI) & vmask,
-                                ((v01 << 5) - vI) & vmask,
-                                ((v10 << 5) - vI) & vmask,
-                                ((v00 << 5) - vI) & vmask
+                                v_and(v_sub(v_shl<5>(v11), vI), vmask),
+                                v_and(v_sub(v_shl<5>(v01), vI), vmask),
+                                v_and(v_sub(v_shl<5>(v10), vI), vmask),
+                                v_and(v_sub(v_shl<5>(v00), vI), vmask)
                             };
-                            diff0 = diff0 - vI;
-                            diff0 = diff0 & vmask;
+                            diff0 = v_sub(diff0, vI);
+                            diff0 = v_and(diff0, vmask);
 
-                            v_int16x8 vscale_diff_is_pos = diff0 > vscale;
-                            veta = veta + (vscale_diff_is_pos & v_setall_s16(2)) + v_setall_s16(-1);
+                            v_int16x8 vscale_diff_is_pos = v_gt(diff0, vscale);
+                            veta = v_add(v_add(veta, v_and(vscale_diff_is_pos, v_setall_s16(2))), v_setall_s16(-1));
                             // since there is no abs vor int16x8 we have to do this hack
                             v_int16x8 vabs_diff = v_reinterpret_as_s16(v_abs(diff0));
                             v_int16x8 vset2, vset1;
                             // |It| < sigma1 ?
-                            vset2 = vabs_diff < vparam1;
+                            vset2 = v_lt(vabs_diff, vparam1);
                             // It > 0 ?
-                            v_int16x8 vdiff_is_pos = diff0 > vzero;
+                            v_int16x8 vdiff_is_pos = v_gt(diff0, vzero);
                             // sigma0 < |It| < sigma1 ?
-                            vset1 = vset2 & (vabs_diff > vparam0);
+                            vset1 = v_and(vset2, v_gt(vabs_diff, vparam0));
                             // val = |It| -/+ sigma1
-                            v_int16x8 vtmp_param1 = diff0 + v_select(vdiff_is_pos, vneg_param1, vparam1);
+                            v_int16x8 vtmp_param1 = v_add(diff0, v_select(vdiff_is_pos, vneg_param1, vparam1));
 
                             v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
                             v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
@@ -342,7 +342,7 @@ public:
                             for (unsigned int mmi = 0; mmi < 4; mmi++)
                             {
                                 // It == 0     ? |It| > sigma13
-                                diff0 = vset2 & diff[mmi];
+                                diff0 = v_and(vset2, diff[mmi]);
                                 // It == val ? sigma0 < |It| < sigma1
                                 diff0 = v_select(vset1, vtmp_param1, diff0);
 
@@ -350,16 +350,16 @@ public:
                                 // diff = diff * sigma2
                                 v_int32x4 diff_int_0, diff_int_1;
                                 v_mul_expand(diff0, tale_, diff_int_0, diff_int_1);
-                                v_int32x4 diff0_0 = diff_int_0 >> s2bitShift;
-                                v_int32x4 diff0_1 = diff_int_1 >> s2bitShift;
+                                v_int32x4 diff0_0 = v_shr(diff_int_0, s2bitShift);
+                                v_int32x4 diff0_1 = v_shr(diff_int_1, s2bitShift);
                                 diff0 = v_pack(diff0_0, diff0_1);
                                 v_zip(diff0, diff0, diff2, diff1); // It0 It0 It1 It1 ...
 
                                 v_zip(vIxy_0, vIxy_1, v10, v11);
                                 v_zip(diff2, diff1, v00, v01);
 
-                                vqb0[mmi] += v_cvt_f32(v_dotprod(v00, v10));
-                                vqb1[mmi] += v_cvt_f32(v_dotprod(v01, v11));
+                                vqb0[mmi] = v_add(vqb0[mmi], v_cvt_f32(v_dotprod(v00, v10)));
+                                vqb1[mmi] = v_add(vqb1[mmi], v_cvt_f32(v_dotprod(v01, v11)));
                             }
                             if (j == 0)
                             {
@@ -387,8 +387,8 @@ public:
                                 v_float32x4 fx = v_cvt_f32(t1);
 
                                 // A11 - A22
-                                v_float32x4 fxtale = fx * vtale_0;
-                                v_float32x4 fytale = fy * vtale_0;
+                                v_float32x4 fxtale = v_mul(fx, vtale_0);
+                                v_float32x4 fytale = v_mul(fy, vtale_0);
 
                                 vAyy = v_muladd(fy, fytale, vAyy);
                                 vAxy = v_muladd(fx, fytale, vAxy);
@@ -402,8 +402,8 @@ public:
                                 fx = v_cvt_f32(t1);
 
                                 // A11 - A22
-                                fxtale = fx * vtale_1;
-                                fytale = fy * vtale_1;
+                                fxtale = v_mul(fx, vtale_1);
+                                fytale = v_mul(fy, vtale_1);
 
                                 vAyy = v_muladd(fy, fytale, vAyy);
                                 vAxy = v_muladd(fx, fytale, vAxy);
@@ -544,7 +544,7 @@ public:
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     for (int mmi = 0; mmi < 4; mmi++)
                     {
-                        v_store_aligned(bbuf, vqb0[mmi] + vqb1[mmi]);
+                        v_store_aligned(bbuf, v_add(vqb0[mmi], vqb1[mmi]));
                         _b0[mmi] = bbuf[0] + bbuf[2];
                         _b1[mmi] = bbuf[1] + bbuf[3];
                     }
@@ -960,7 +960,7 @@ public:
                             v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
                             v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
                             v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
-                            v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
+                            v_int16x8 vmask = v_mul(v_reinterpret_as_s16(v_load_expand(maskPtr + x)), vmax_val_16);
 
                             v_int32x4 t0, t1;
                             v_int16x8 t00, t01, t10, t11;
@@ -968,38 +968,38 @@ public:
                             v_zip(v10, v11, t10, t11);
 
                             //subpixel interpolation
-                            t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
-                            t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                            t0 = t0 >> (W_BITS - 5);
-                            t1 = t1 >> (W_BITS - 5);
+                            t0 = v_add(v_dotprod(t00, vqw0, vdelta), v_dotprod(t10, vqw1));
+                            t1 = v_add(v_dotprod(t01, vqw0, vdelta), v_dotprod(t11, vqw1));
+                            t0 = v_shr(t0, W_BITS - 5);
+                            t1 = v_shr(t1, W_BITS - 5);
                             diff0 = v_pack(t0, t1);
                             // I*gain.x + gain.x
                             v_mul_expand(vI, vgain_value, t0, t1);
-                            v_int16x8 diff_value = v_pack(t0 >> bitShift, t1 >> bitShift) + vconst_value - vI;
+                            v_int16x8 diff_value = v_sub(v_add(v_pack(v_shr(t0, bitShift), v_shr(t1, bitShift)), vconst_value), vI);
 
                             v_int16x8 diff[4] =
                             {
-                                ((v11 << 5) + diff_value) & vmask,
-                                ((v01 << 5) + diff_value) & vmask,
-                                ((v10 << 5) + diff_value) & vmask,
-                                ((v00 << 5) + diff_value) & vmask
+                                v_and(v_add(v_shl<5>(v11), diff_value), vmask),
+                                v_and(v_add(v_shl<5>(v01), diff_value), vmask),
+                                v_and(v_add(v_shl<5>(v10), diff_value), vmask),
+                                v_and(v_add(v_shl<5>(v00), diff_value), vmask)
                             };
-                            diff0 = diff0 + diff_value;
-                            diff0 = diff0 & vmask;
+                            diff0 = v_add(diff0, diff_value);
+                            diff0 = v_and(diff0, vmask);
 
-                            v_int16x8 vscale_diff_is_pos = diff0 > vscale;
-                            veta = veta + (vscale_diff_is_pos & v_setall_s16(2)) + v_setall_s16(-1);
+                            v_int16x8 vscale_diff_is_pos = v_gt(diff0, vscale);
+                            veta = v_add(v_add(veta, v_and(vscale_diff_is_pos, v_setall_s16(2))), v_setall_s16(-1));
                             // since there is no abs vor int16x8 we have to do this hack
                             v_int16x8 vabs_diff = v_reinterpret_as_s16(v_abs(diff0));
                             v_int16x8 vset2, vset1;
                             // |It| < sigma1 ?
-                            vset2 = vabs_diff < vparam1;
+                            vset2 = v_lt(vabs_diff, vparam1);
                             // It > 0 ?
-                            v_int16x8 vdiff_is_pos = diff0 > vzero;
+                            v_int16x8 vdiff_is_pos = v_gt(diff0, vzero);
                             // sigma0 < |It| < sigma1 ?
-                            vset1 = vset2 & (vabs_diff > vparam0);
+                            vset1 = v_and(vset2, v_gt(vabs_diff, vparam0));
                             // val = |It| -/+ sigma1
-                            v_int16x8 vtmp_param1 = diff0 + v_select(vdiff_is_pos, vneg_param1, vparam1);
+                            v_int16x8 vtmp_param1 = v_add(diff0, v_select(vdiff_is_pos, vneg_param1, vparam1));
 
                             v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
                             v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
@@ -1009,7 +1009,7 @@ public:
                             for (unsigned int mmi = 0; mmi < 4; mmi++)
                             {
                                 // It == 0     ? |It| > sigma13
-                                diff0 = vset2 & diff[mmi];
+                                diff0 = v_and(vset2, diff[mmi]);
                                 // It == val ? sigma0 < |It| < sigma1
                                 diff0 = v_select(vset1, vtmp_param1, diff0);
 
@@ -1017,22 +1017,22 @@ public:
                                 // diff = diff * sigma2
                                 v_int32x4 diff_int_0, diff_int_1;
                                 v_mul_expand(diff0, tale_, diff_int_0, diff_int_1);
-                                v_int32x4 diff0_0 = diff_int_0 >> s2bitShift;
-                                v_int32x4 diff0_1 = diff_int_1 >> s2bitShift;
+                                v_int32x4 diff0_0 = v_shr(diff_int_0, s2bitShift);
+                                v_int32x4 diff0_1 = v_shr(diff_int_1, s2bitShift);
                                 diff0 = v_pack(diff0_0, diff0_1);
                                 v_zip(diff0, diff0, diff2, diff1); // It0 It0 It1 It1 ...
 
                                 v_zip(vIxy_0, vIxy_1, v10, v11);
                                 v_zip(diff2, diff1, v00, v01);
 
-                                vqb0[mmi] += v_cvt_f32(v_dotprod(v00, v10));
-                                vqb1[mmi] += v_cvt_f32(v_dotprod(v01, v11));
+                                vqb0[mmi] = v_add(vqb0[mmi], v_cvt_f32(v_dotprod(v00, v10)));
+                                vqb1[mmi] = v_add(vqb1[mmi], v_cvt_f32(v_dotprod(v01, v11)));
 
-                                vqb2[mmi] += v_cvt_f32(diff0_0 * vI0);
-                                vqb2[mmi] += v_cvt_f32(diff0_1 * vI1);
+                                vqb2[mmi] = v_add(vqb2[mmi], v_cvt_f32(v_mul(diff0_0, vI0)));
+                                vqb2[mmi] = v_add(vqb2[mmi], v_cvt_f32(v_mul(diff0_1, vI1)));
 
-                                vqb3[mmi] += v_cvt_f32(diff0_0);
-                                vqb3[mmi] += v_cvt_f32(diff0_1);
+                                vqb3[mmi] = v_add(vqb3[mmi], v_cvt_f32(diff0_0));
+                                vqb3[mmi] = v_add(vqb3[mmi], v_cvt_f32(diff0_1));
                             }
                             if (j == 0)
                             {
@@ -1060,29 +1060,29 @@ public:
                                 v_float32x4 fx = v_cvt_f32(t1);
 
                                 // A11 - A22
-                                v_float32x4 fxtale = fx * vtale_0;
-                                v_float32x4 fytale = fy * vtale_0;
+                                v_float32x4 fxtale = v_mul(fx, vtale_0);
+                                v_float32x4 fytale = v_mul(fy, vtale_0);
 
                                 vAyy = v_muladd(fy, fytale, vAyy);
                                 vAxy = v_muladd(fx, fytale, vAxy);
                                 vAxx = v_muladd(fx, fxtale, vAxx);
 
                                 // sumIx und sumIy
-                                vsumIx += fxtale;
-                                vsumIy += fytale;
+                                vsumIx = v_add(vsumIx, fxtale);
+                                vsumIy = v_add(vsumIy, fytale);
 
-                                vsumW1 += vI_ps * fxtale;
-                                vsumW2 += vI_ps * fytale;
+                                vsumW1 = v_add(vsumW1, v_mul(vI_ps, fxtale));
+                                vsumW2 = v_add(vsumW2, v_mul(vI_ps, fytale));
 
                                 // sumI
-                                v_float32x4 vI_tale = vI_ps * vtale_0;
-                                vsumI += vI_tale;
+                                v_float32x4 vI_tale = v_mul(vI_ps, vtale_0);
+                                vsumI = v_add(vsumI, vI_tale);
 
                                 // sumW
-                                vsumW += vtale_0;
+                                vsumW = v_add(vsumW, vtale_0);
 
                                 // sumDI
-                                vsumDI += vI_ps * vI_tale;
+                                vsumDI = v_add(vsumDI, v_mul(vI_ps, vI_tale));
 
                                 v01 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(vIxy_1))));
                                 v_expand(v01, t1, t0);
@@ -1092,29 +1092,29 @@ public:
                                 fx = v_cvt_f32(t1);
 
                                 // A11 - A22
-                                fxtale = fx * vtale_1;
-                                fytale = fy * vtale_1;
+                                fxtale = v_mul(fx, vtale_1);
+                                fytale = v_mul(fy, vtale_1);
 
                                 vAyy = v_muladd(fy, fytale, vAyy);
                                 vAxy = v_muladd(fx, fytale, vAxy);
                                 vAxx = v_muladd(fx, fxtale, vAxx);
 
                                 // sumIx und sumIy
-                                vsumIx += fxtale;
-                                vsumIy += fytale;
+                                vsumIx = v_add(vsumIx, fxtale);
+                                vsumIy = v_add(vsumIy, fytale);
 
-                                vsumW1 += vI_ps * fxtale;
-                                vsumW2 += vI_ps * fytale;
+                                vsumW1 = v_add(vsumW1, v_mul(vI_ps, fxtale));
+                                vsumW2 = v_add(vsumW2, v_mul(vI_ps, fytale));
 
                                 // sumI
-                                vI_tale = vI_ps * vtale_1;
-                                vsumI += vI_tale;
+                                vI_tale = v_mul(vI_ps, vtale_1);
+                                vsumI = v_add(vsumI, vI_tale);
 
                                 // sumW
-                                vsumW += vtale_1;
+                                vsumW = v_add(vsumW, vtale_1);
 
                                 // sumDI
-                                vsumDI += vI_ps * vI_tale;
+                                vsumDI = v_add(vsumDI, v_mul(vI_ps, vI_tale));
                             }
                      }
 
@@ -1304,7 +1304,7 @@ public:
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 for(int mmi = 0; mmi < 4; mmi++)
                 {
-                    v_store_aligned(bbuf, vqb0[mmi] + vqb1[mmi]);
+                    v_store_aligned(bbuf, v_add(vqb0[mmi], vqb1[mmi]));
                     _b0[mmi] = bbuf[0] + bbuf[2];
                     _b1[mmi] = bbuf[1] + bbuf[3];
                     _b2[mmi] = v_reduce_sum(vqb2[mmi]);
@@ -1655,14 +1655,14 @@ public:
                             v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
                             v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
                             v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
-                            v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
+                            v_int16x8 vmask = v_mul(v_reinterpret_as_s16(v_load_expand(maskPtr + x)), vmax_val_16);
 
                             v_int16x8 diff[4] =
                             {
-                                ((v00 << 5) - vI) & vmask,
-                                ((v01 << 5) - vI) & vmask,
-                                ((v10 << 5) - vI) & vmask,
-                                ((v11 << 5) - vI) & vmask,
+                                v_and(v_sub(v_shl<5>(v00), vI), vmask),
+                                v_and(v_sub(v_shl<5>(v01), vI), vmask),
+                                v_and(v_sub(v_shl<5>(v10), vI), vmask),
+                                v_and(v_sub(v_shl<5>(v11), vI), vmask),
                             };
 
                             v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
@@ -1672,8 +1672,8 @@ public:
                                 v_zip(diff[mmi], diff[mmi], diff1, diff0);
                                 v_zip(vIxy_0, vIxy_1, v10, v11);
                                 v_zip(diff1, diff0, v00, v01);
-                                vqb0[mmi] += v_cvt_f32(v_dotprod(v00, v10));
-                                vqb1[mmi] += v_cvt_f32(v_dotprod(v01, v11));
+                                vqb0[mmi] = v_add(vqb0[mmi], v_cvt_f32(v_dotprod(v00, v10)));
+                                vqb1[mmi] = v_add(vqb1[mmi], v_cvt_f32(v_dotprod(v01, v11)));
                             }
                          }
 #else
@@ -1704,7 +1704,7 @@ public:
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     for (int mmi = 0; mmi < 4; mmi++)
                     {
-                        v_store_aligned(bbuf, vqb0[mmi] + vqb1[mmi]);
+                        v_store_aligned(bbuf, v_add(vqb0[mmi], vqb1[mmi]));
                         _b1[mmi] = bbuf[0] + bbuf[2];
                         _b2[mmi] = bbuf[1] + bbuf[3];
                     }
@@ -2071,7 +2071,7 @@ namespace radial {
                                 v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
                                 v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
                                 v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
-                                v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
+                                v_int16x8 vmask = v_mul(v_reinterpret_as_s16(v_load_expand(maskPtr + x)), vmax_val_16);
 
                                 v_int32x4 t0, t1;
                                 v_int16x8 t00, t01, t10, t11;
@@ -2079,21 +2079,21 @@ namespace radial {
                                 v_zip(v10, v11, t10, t11);
 
                                 //subpixel interpolation
-                                t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
-                                t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                                t0 = t0 >> (W_BITS - 5);
-                                t1 = t1 >> (W_BITS - 5);
+                                t0 = v_add(v_dotprod(t00, vqw0, vdelta), v_dotprod(t10, vqw1));
+                                t1 = v_add(v_dotprod(t01, vqw0, vdelta), v_dotprod(t11, vqw1));
+                                t0 = v_shr(t0, W_BITS - 5);
+                                t1 = v_shr(t1, W_BITS - 5);
                                 diff0 = v_pack(t0, t1);
                                 // I*gain.x + gain.x
                                 v_mul_expand(vI, vgain_value, t0, t1);
-                                v_int16x8 diff_value = v_pack(t0 >> bitShift, t1 >> bitShift) + vconst_value - vI;
+                                v_int16x8 diff_value = v_sub(v_add(v_pack(v_shr(t0, bitShift), v_shr(t1, bitShift)), vconst_value), vI);
 
                                 v_int16x8 diff[4] =
                                 {
-                                    ((v11 << 5) + diff_value) & vmask,
-                                    ((v01 << 5) + diff_value) & vmask,
-                                    ((v10 << 5) + diff_value) & vmask,
-                                    ((v00 << 5) + diff_value) & vmask
+                                    v_and(v_add(v_shl<5>(v11), diff_value), vmask),
+                                    v_and(v_add(v_shl<5>(v01), diff_value), vmask),
+                                    v_and(v_add(v_shl<5>(v10), diff_value), vmask),
+                                    v_and(v_add(v_shl<5>(v00), diff_value), vmask)
                                 };
                                 v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
                                 v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
@@ -2109,14 +2109,14 @@ namespace radial {
                                     v_zip(diff[mmi], diff[mmi], diff2, diff1);
 
                                     v_zip(diff2, diff1, v00, v01);
-                                    vqb0[mmi] += v_cvt_f32(v_dotprod(v00, v10));
-                                    vqb1[mmi] += v_cvt_f32(v_dotprod(v01, v11));
+                                    vqb0[mmi] = v_add(vqb0[mmi], v_cvt_f32(v_dotprod(v00, v10)));
+                                    vqb1[mmi] = v_add(vqb1[mmi], v_cvt_f32(v_dotprod(v01, v11)));
 
-                                    vqb2[mmi] += v_cvt_f32(diff0_0 * vI0);
-                                    vqb2[mmi] += v_cvt_f32(diff0_1 * vI1);
+                                    vqb2[mmi] = v_add(vqb2[mmi], v_cvt_f32(v_mul(diff0_0, vI0)));
+                                    vqb2[mmi] = v_add(vqb2[mmi], v_cvt_f32(v_mul(diff0_1, vI1)));
 
-                                    vqb3[mmi] += v_cvt_f32(diff0_0);
-                                    vqb3[mmi] += v_cvt_f32(diff0_1);
+                                    vqb3[mmi] = v_add(vqb3[mmi], v_cvt_f32(diff0_0));
+                                    vqb3[mmi] = v_add(vqb3[mmi], v_cvt_f32(diff0_1));
                                 }
                                 if (j == 0)
                                 {
@@ -2133,17 +2133,17 @@ namespace radial {
                                     vAxx = v_muladd(fx, fx, vAxx);
 
                                     // sumIx und sumIy
-                                    vsumIx += fx;
-                                    vsumIy += fy;
+                                    vsumIx = v_add(vsumIx, fx);
+                                    vsumIy = v_add(vsumIy, fy);
 
-                                    vsumW1 += vI_ps * fx;
-                                    vsumW2 += vI_ps * fy;
+                                    vsumW1 = v_add(vsumW1, v_mul(vI_ps, fx));
+                                    vsumW2 = v_add(vsumW2, v_mul(vI_ps, fy));
 
                                     // sumI
-                                    vsumI += vI_ps;
+                                    vsumI = v_add(vsumI, vI_ps);
 
                                     // sumDI
-                                    vsumDI += vI_ps * vI_ps;
+                                    vsumDI = v_add(vsumDI, v_mul(vI_ps, vI_ps));
 
                                     v01 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(vIxy_1))));
                                     v_expand(v01, t1, t0);
@@ -2158,17 +2158,17 @@ namespace radial {
                                     vAxx = v_muladd(fx, fx, vAxx);
 
                                     // sumIx und sumIy
-                                    vsumIx += fx;
-                                    vsumIy += fy;
+                                    vsumIx = v_add(vsumIx, fx);
+                                    vsumIy = v_add(vsumIy, fy);
 
-                                    vsumW1 += vI_ps * fx;
-                                    vsumW2 += vI_ps * fy;
+                                    vsumW1 = v_add(vsumW1, v_mul(vI_ps, fx));
+                                    vsumW2 = v_add(vsumW2, v_mul(vI_ps, fy));
 
                                     // sumI
-                                    vsumI += vI_ps;
+                                    vsumI = v_add(vsumI, vI_ps);
 
                                     // sumDI
-                                    vsumDI += vI_ps * vI_ps;
+                                    vsumDI = v_add(vsumDI, v_mul(vI_ps, vI_ps));
                                 }
                             }
 
@@ -2299,7 +2299,7 @@ namespace radial {
                         float CV_DECL_ALIGNED(16) bbuf[4];
                         for (int mmi = 0; mmi < 4; mmi++)
                         {
-                            v_store_aligned(bbuf, vqb0[mmi] + vqb1[mmi]);
+                            v_store_aligned(bbuf, v_add(vqb0[mmi], vqb1[mmi]));
                             _b0[mmi] = bbuf[0] + bbuf[2];
                             _b1[mmi] = bbuf[1] + bbuf[3];
                             _b2[mmi] = v_reduce_sum(vqb2[mmi]);
