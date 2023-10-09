@@ -442,7 +442,7 @@ public:
 			window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& r) {
 				//Put it all together (OpenCL)
 				composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-				framebuffer.copyTo(f);
+				framebuffer.copyTo(r);
 			}, background, foreground, result);
 
 			window->write([](cv::UMat& videoFrame, cv::UMat& r) {
