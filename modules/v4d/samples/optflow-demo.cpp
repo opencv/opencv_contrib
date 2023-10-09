@@ -16,6 +16,10 @@
 #include <set>
 #include <string>
 #include <random>
+#include <tuple>
+#include <array>
+#include <utility>
+
 
 using std::cerr;
 using std::endl;
@@ -25,8 +29,8 @@ using std::string;
 /* Demo parameters */
 
 #ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1280;
-constexpr long unsigned int HEIGHT = 720;
+constexpr long unsigned int WIDTH = 1920;
+constexpr long unsigned int HEIGHT = 1080;
 #else
 constexpr long unsigned int WIDTH = 960;
 constexpr long unsigned int HEIGHT = 960;
@@ -37,10 +41,6 @@ constexpr const char* OUTPUT_FILENAME = "../optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
 
-#ifndef __EMSCRIPTEN__
-//the second window
-static cv::Ptr<cv::v4d::V4D> miniWindow;
-#endif
 
 /* Visualization parameters */
 
@@ -114,9 +114,9 @@ using namespace cv::v4d;
 
 //Uses background subtraction to generate a "motion mask"
 static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
-    static thread_local cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
-    static thread_local int morph_size = 1;
-    static thread_local cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+	thread_local cv::Ptr<cv::BackgroundSubtractor> bg_subtrator = cv::createBackgroundSubtractorMOG2(100, 16.0, false);
+	thread_local int morph_size = 1;
+	thread_local cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
 
     bg_subtrator->apply(srcGrey, motionMaskGrey);
     //Surpress speckles
@@ -125,10 +125,9 @@ static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGre
 
 //Detect points to track
 static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>& points) {
-    static thread_local cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
-    static thread_local vector<cv::KeyPoint> tmpKeyPoints;
+	thread_local cv::Ptr<cv::FastFeatureDetector> detector = cv::FastFeatureDetector::create(1, false);
+	thread_local vector<cv::KeyPoint> tmpKeyPoints;
 
-    tmpKeyPoints.clear();
     detector->detect(srcMotionMaskGrey, tmpKeyPoints);
 
     points.clear();
@@ -139,7 +138,7 @@ static void detect_points(const cv::UMat& srcMotionMaskGrey, vector<cv::Point2f>
 
 //Detect extrem changes in scene content and report it
 static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float thresh, const float theshDiff) {
-    static thread_local float last_movement = 0;
+	thread_local float last_movement = 0;
 
     float movement = cv::countNonZero(srcMotionMaskGrey) / float(srcMotionMaskGrey.cols * srcMotionMaskGrey.rows);
     float relation = movement > 0 && last_movement > 0 ? std::max(movement, last_movement) / std::min(movement, last_movement) : 0;
@@ -154,12 +153,12 @@ static bool detect_scene_change(const cv::UMat& srcMotionMaskGrey, const float t
 
 //Visualize the sparse optical flow
 static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UMat &nextGrey, const vector<cv::Point2f> &detectedPoints, const float scaleFactor, const int maxStrokeSize, const cv::Scalar color, const int maxPoints, const float pointLossPercent) {
-    static thread_local vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
-    static thread_local vector<cv::Point2f> upPrevPoints, upNextPoints;
-    static thread_local std::vector<uchar> status;
-    static thread_local std::vector<float> err;
-    static thread_local std::random_device rd;
-    static thread_local std::mt19937 g(rd());
+	thread_local vector<cv::Point2f> hull, prevPoints, nextPoints, newPoints;
+	thread_local vector<cv::Point2f> upPrevPoints, upNextPoints;
+	thread_local std::vector<uchar> status;
+	thread_local std::vector<float> err;
+	thread_local std::random_device rd;
+	thread_local std::mt19937 g(rd());
 
     //less then 5 points is a degenerate case (e.g. the corners of a video frame)
     if (detectedPoints.size() > 4) {
@@ -231,12 +230,12 @@ static void visualize_sparse_optical_flow(const cv::UMat &prevGrey, const cv::UM
 
 //Bloom post-processing effect
 static void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshValue = 235, float gain = 4) {
-    static thread_local cv::UMat bgr;
-    static thread_local cv::UMat hls;
-    static thread_local cv::UMat ls16;
-    static thread_local cv::UMat ls;
-    static thread_local cv::UMat blur;
-    static thread_local std::vector<cv::UMat> hlsChannels;
+	thread_local cv::UMat bgr;
+	thread_local cv::UMat hls;
+	thread_local cv::UMat ls16;
+	thread_local cv::UMat ls;
+	thread_local cv::UMat blur;
+	thread_local std::vector<cv::UMat> hlsChannels;
 
     //remove alpha channel
     cv::cvtColor(src, bgr, cv::COLOR_BGRA2RGB);
@@ -262,9 +261,9 @@ static void bloom(const cv::UMat& src, cv::UMat &dst, int ksize = 3, int threshV
 
 //Glow post-processing effect
 static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
-    cv::UMat resize;
-    cv::UMat blur;
-    cv::UMat dst16;
+	thread_local cv::UMat resize;
+	thread_local cv::UMat blur;
+	thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -284,11 +283,11 @@ static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 //Compose the different layers into the final image
-static void composite_layers(cv::UMat& background, const cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
-    static thread_local cv::UMat tmp;
-    static thread_local cv::UMat post;
-    static thread_local cv::UMat backgroundGrey;
-    static thread_local vector<cv::UMat> channels;
+static void composite_layers(cv::UMat& background, cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
+    thread_local cv::UMat tmp;
+    thread_local cv::UMat post;
+    thread_local cv::UMat backgroundGrey;
+    thread_local vector<cv::UMat> channels;
 
     //Lose a bit of foreground brightness based on fgLossPercent
     cv::subtract(foreground, cv::Scalar::all(255.0f * (fgLossPercent / 100.0f)), foreground);
@@ -338,7 +337,7 @@ static void composite_layers(cv::UMat& background, const cv::UMat& foreground, c
 using namespace cv::v4d;
 
 //Build the GUI
-static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
+static void setup_gui(cv::Ptr<V4D> main) {
     main->imgui([main](ImGuiContext* ctx){
         using namespace ImGui;
         SetCurrentContext(ctx);
@@ -348,8 +347,8 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
         SliderFloat("Scale", &fg_scale, 0.1f, 4.0f);
         SliderFloat("Loss", &fg_loss, 0.1f, 99.9f);
         Text("Background");
-        static thread_local const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
-        static thread_local int* bgm = (int*)&background_mode;
+        thread_local const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
+        thread_local int* bgm = (int*)&background_mode;
         ListBox("Mode", bgm, bgm_items, 4, 4);
         Text("Points");
         SliderInt("Max. Points", &max_points, 10, 1000000);
@@ -360,8 +359,8 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
         End();
 
         Begin("Post Processing");
-        static thread_local const char* ppm_items[3] = {"Glow", "Bloom", "None"};
-        static thread_local int* ppm = (int*)&post_proc_mode;
+        thread_local const char* ppm_items[3] = {"Glow", "Bloom", "None"};
+        thread_local int* ppm = (int*)&post_proc_mode;
         ListBox("Effect",ppm, ppm_items, 3, 3);
         SliderInt("Kernel Size",&glow_kernel_size, 1, 63);
         SliderFloat("Gain", &bloom_gain, 0.1f, 20.0f);
@@ -372,106 +371,87 @@ static void setup_gui(cv::Ptr<V4D> main, cv::Ptr<V4D> mini) {
         SliderFloat("Threshold", &scene_change_thresh, 0.1f, 1.0f);
         SliderFloat("Threshold Diff", &scene_change_thresh_diff, 0.1f, 1.0f);
         End();
-#ifndef __EMSCRIPTEN__
-    });
 
-    mini->imgui([main, mini](ImGuiContext* ctx){
-        using namespace ImGui;
-        SetCurrentContext(ctx);
-#endif
-        Begin("Window");
-        if(Checkbox("Show FPS", &show_fps)) {
-            main->setShowFPS(show_fps);
+		Begin("Window");
+		if(Checkbox("Show FPS", &show_fps)) {
+			main->setShowFPS(show_fps);
+		}
+		if(Checkbox("Stretch", &stretch)) {
+			main->setStretching(stretch);
+		}
 #ifndef __EMSCRIPTEN__
-            mini->setShowFPS(show_fps);
-#endif
-        }
-        if(Checkbox("Stretch", &stretch)) {
-            main->setStretching(stretch);
-        }
-#ifndef __EMSCRIPTEN__
-        if(Button("Fullscreen")) {
-            main->setFullscreen(!main->isFullscreen());
-        };
+		if(Button("Fullscreen")) {
+			main->setFullscreen(!main->isFullscreen());
+		};
 
-        if(Button("Offscreen")) {
-            main->setVisible(!main->isVisible());
-        };
+		if(Button("Offscreen")) {
+			main->setVisible(!main->isVisible());
+		};
 #endif
-        End();
+		End();
     });
 }
 
-static bool iteration(cv::Ptr<V4D> window) {
-    if(!window->capture())
-        return false;
+class OptflowPlan : public Plan {
+	//BGRA
+	cv::UMat background, down;
+	//BGR
+	cv::UMat result;
+	cv::UMat foreground = cv::UMat(cv::Size(WIDTH, HEIGHT), CV_8UC4, cv::Scalar::all(0));
+	//GREY
+	cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
+	vector<cv::Point2f> detectedPoints;
+public:
+	virtual ~OptflowPlan() override {};
+	virtual void infere(cv::Ptr<V4D> window) override {
+		auto always = [](){ return true; };
 
-    static thread_local cv::Size fbSz = window->fbSize();
-    //BGRA
-    static thread_local cv::UMat background, down;
-    static thread_local cv::UMat foreground(fbSz, CV_8UC4, cv::Scalar::all(0));
-    //BGR
-    static thread_local cv::UMat miniFrame;
-    //GREY
-    static thread_local cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
-    static thread_local vector<cv::Point2f> detectedPoints;
+		window->graph(always);
+		{
+			window->capture([](const cv::UMat& videoFrame, cv::UMat& d, cv::UMat& b) {
+				//resize to foreground scale
+				cv::resize(videoFrame, d, cv::Size(videoFrame.size().width * fg_scale, videoFrame.size().height * fg_scale));
+				//save video background
+				videoFrame.copyTo(b);
+			}, down, background);
 
+			window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp){
+				cv::cvtColor(d, dng, cv::COLOR_RGBA2GRAY);
+				//Subtract the background to create a motion mask
+				prepare_motion_mask(dng, dmmg);
+				//Detect trackable points in the motion mask
+				detect_points(dmmg, dp);
+			}, down, downNextGrey, downMotionMaskGrey, detectedPoints);
 
-    window->fb([](cv::UMat& frameBuffer, cv::UMat& d, cv::UMat& b) {
-        //resize to foreground scale
-        cv::resize(frameBuffer, d, cv::Size(fbSz.width * fg_scale, fbSz.height * fg_scale));
-        //save video background
-        frameBuffer.copyTo(b);
-    }, down, background);
+			window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp) {
+				cv::v4d::nvg::clear();
+				if (!dpg.empty()) {
+					//We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+					if (!detect_scene_change(dmmg, scene_change_thresh, scene_change_thresh_diff)) {
+						//Visualize the sparse optical flow using nanovg
+						cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
+						visualize_sparse_optical_flow(dpg, dng, dp, fg_scale, max_stroke, color, max_points, point_loss);
+					}
+				}
+			}, downMotionMaskGrey, downPrevGrey, downNextGrey, detectedPoints);
 
-    cv::cvtColor(down, downNextGrey, cv::COLOR_RGBA2GRAY);
-    //Subtract the background to create a motion mask
-    prepare_motion_mask(downNextGrey, downMotionMaskGrey);
-    //Detect trackable points in the motion mask
-    detect_points(downMotionMaskGrey, detectedPoints);
+			window->parallel([](cv::UMat& dpg, const cv::UMat& dng) {
+				dpg = dng.clone();
+			}, downPrevGrey, downNextGrey);
 
-    window->nvg([](cv::UMat& dmmg, cv::UMat& dpg, cv::UMat& dng, std::vector<cv::Point2f> dp) {
-        cv::v4d::nvg::clear();
-        if (!dpg.empty()) {
-            //We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-            if (!detect_scene_change(dmmg, scene_change_thresh, scene_change_thresh_diff)) {
-                //Visualize the sparse optical flow using nanovg
-                cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
-                visualize_sparse_optical_flow(dpg, dng, dp, fg_scale, max_stroke, color, max_points, point_loss);
-            }
-        }
-    }, downMotionMaskGrey, downPrevGrey, downNextGrey, detectedPoints);
+			window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& r) {
+				//Put it all together (OpenCL)
+				composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
+				framebuffer.copyTo(f);
+			}, background, foreground, result);
 
-    downPrevGrey = downNextGrey.clone();
-
-    window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& m){
-        //Put it all together (OpenCL)
-        composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-        cvtColor(framebuffer, m, cv::COLOR_BGRA2RGB);
-    }, background, foreground, miniFrame);
-
-#ifndef __EMSCRIPTEN__
-    if(window->isMain())
-        miniWindow->feed(miniFrame);
-#endif
-    window->write();
-
-    //If onscreen rendering is enabled it displays the framebuffer in the native window. Returns false if the window was closed.
-#ifndef __EMSCRIPTEN__
-    if(window->isMain()) {
-        if(window->isFocused()) {
-            return window->display() && miniWindow->display();
-        }
-        else {
-            return miniWindow->display() && window->display();
-        }
-    } else {
-        return window->display();
-    }
-#else
-    return window->display();
-#endif
-}
+			window->write([](cv::UMat& videoFrame, cv::UMat& r) {
+				r.copyTo(videoFrame);
+			}, result);
+		}
+		window->endgraph(always);
+	}
+};
 
 int main(int argc, char **argv) {
     CV_UNUSED(argc);
@@ -487,30 +467,27 @@ int main(int argc, char **argv) {
     try {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", ALL, OFFSCREEN);
-#ifndef __EMSCRIPTEN__
-        miniWindow = V4D::make(270, 240, "Mini", IMGUI, OFFSCREEN);
-#endif
         window->printSystemInfo();
         window->setStretching(stretch);
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
-            setup_gui(window, miniWindow);
+            setup_gui(window);
 #else
-            setup_gui(window, window);
+            setup_gui(window);
 #endif
         }
 
 #ifndef __EMSCRIPTEN__
-        Source src = makeCaptureSource(window, argv[1]);
+        auto src = makeCaptureSource(window, argv[1]);
         window->setSource(src);
-        Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
-        Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+        cv::Ptr<Source> src = makeCaptureSource(WIDTH, HEIGHT, window);
         window->setSource(src);
 #endif
 
-        window->run(iteration);
+        window->run<OptflowPlan>(0);
     } catch (std::exception& ex) {
         cerr << ex.what() << endl;
     }

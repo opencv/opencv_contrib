@@ -18,12 +18,12 @@ namespace v4d {
 namespace detail {
 class CV_EXPORTS ImGuiContextImpl {
     friend class cv::v4d::V4D;
-    FrameBufferContext& mainFbContext_;
+    cv::Ptr<FrameBufferContext> mainFbContext_;
     ImGuiContext* context_;
     std::function<void(ImGuiContext*)> renderCallback_;
     bool firstFrame_ = true;
 public:
-    CV_EXPORTS ImGuiContextImpl(FrameBufferContext& fbContext);
+    CV_EXPORTS ImGuiContextImpl(cv::Ptr<FrameBufferContext> fbContext);
     CV_EXPORTS void build(std::function<void(ImGuiContext*)> fn);
 protected:
     CV_EXPORTS void makeCurrent();

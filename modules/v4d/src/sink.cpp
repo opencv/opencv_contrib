@@ -38,8 +38,12 @@ void Sink::setThreadSafe(bool ts) {
 }
 
 void Sink::operator()(const uint64_t& seq, const cv::UMat& frame) {
-    std::unique_lock<std::mutex> lock(mtx_);
-    open_ = consumer_(seq, frame);
+	if(isThreadSafe()) {
+		std::unique_lock<std::mutex> lock(mtx_);
+		open_ = consumer_(seq, frame);
+	} else {
+		open_ = consumer_(seq, frame);
+	}
 }
 } /* namespace v4d */
 } /* namespace kb */

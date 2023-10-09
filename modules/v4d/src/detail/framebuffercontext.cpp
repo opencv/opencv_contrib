@@ -383,12 +383,12 @@ void FrameBufferContext::init() {
 ////                        });
 ////        #ifndef __EMSCRIPTEN__
 ////                        if(v4d->isResizable()) {
-////                            v4d->nvgCtx().fbCtx().teardown();
-////                            v4d->glCtx().fbCtx().teardown();
-////                            v4d->fbCtx().teardown();
-////                            v4d->fbCtx().setup(cv::Size(width, height));
-////                            v4d->glCtx().fbCtx().setup(cv::Size(width, height));
-////                            v4d->nvgCtx().fbCtx().setup(cv::Size(width, height));
+////                            v4d->nvgCtx().fbCtx()->teardown();
+////                            v4d->glCtx().fbCtx()->teardown();
+////                            v4d->fbCtx()->teardown();
+////                            v4d->fbCtx()->setup(cv::Size(width, height));
+////                            v4d->glCtx().fbCtx()->setup(cv::Size(width, height));
+////                            v4d->nvgCtx().fbCtx()->setup(cv::Size(width, height));
 ////                        }
 ////        #endif
 //            });
@@ -410,7 +410,6 @@ int FrameBufferContext::getIndex() {
 
 void FrameBufferContext::setup(const cv::Size& sz) {
     framebufferSize_ = sz;
-    this->makeCurrent();
 #ifndef __EMSCRIPTEN__
     CLExecScope_t clExecScope(getCLExecContext());
 #endif
@@ -498,6 +497,7 @@ void FrameBufferContext::teardown() {
     GL_CHECK(glDeleteTextures(1, &textureID_));
     GL_CHECK(glDeleteRenderbuffers(1, &renderBufferID_));
     GL_CHECK(glDeleteFramebuffers(1, &frameBufferID_));
+    this->makeNoneCurrent();
 }
 
 void FrameBufferContext::toGLTexture2D(cv::UMat& u, cv::ogl::Texture2D& texture) {
@@ -599,13 +599,13 @@ void FrameBufferContext::copyTo(cv::UMat& dst) {
         if(!getCLExecContext().empty()) {
             CLExecScope_t clExecScope(getCLExecContext());
 #endif
-            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
             framebuffer_.copyTo(dst);
 #ifndef __EMSCRIPTEN__
         } else {
-            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
             framebuffer_.copyTo(dst);
         }
 #endif
@@ -618,13 +618,13 @@ void FrameBufferContext::copyFrom(const cv::UMat& src) {
         if(!getCLExecContext().empty()) {
             CLExecScope_t clExecScope(getCLExecContext());
 #endif
-            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
             src.copyTo(framebuffer_);
 #ifndef __EMSCRIPTEN__
         } else {
-            FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-            FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
+            FrameBufferContext::GLScope glScope(this, GL_FRAMEBUFFER);
+            FrameBufferContext::FrameBufferScope fbScope(this, framebuffer_);
             src.copyTo(framebuffer_);
         }
 #endif
@@ -647,7 +647,6 @@ CLExecContext_t& FrameBufferContext::getCLExecContext() {
 
 void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewport,
         const cv::Size& targetFbSize, GLuint targetFramebufferID, bool stretch, bool flipY) {
-    this->makeCurrent();
     double hf = double(targetFbSize.height) / framebufferSize_.height;
     double wf = double(targetFbSize.width) / framebufferSize_.width;
     double f;
@@ -683,6 +682,10 @@ void FrameBufferContext::blitFrameBufferToFrameBuffer(const cv::Rect& srcViewpor
             GL_COLOR_BUFFER_BIT, GL_NEAREST));
 }
 
+cv::UMat& FrameBufferContext::fb() {
+	return framebuffer_;
+}
+
 void FrameBufferContext::begin(GLenum framebufferTarget) {
     this->makeCurrent();
 //    CV_Assert(this->wait(1000000000) == true);
@@ -700,9 +703,9 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 }
 
 void FrameBufferContext::end() {
-    this->makeCurrent();
     GL_CHECK(glFlush());
-//    this->fence();
+    this->makeNoneCurrent();
+    //    this->fence();
 }
 
 void FrameBufferContext::download(cv::UMat& m) {
@@ -753,14 +756,12 @@ void FrameBufferContext::releaseToGL(cv::UMat& m) {
 }
 
 cv::Vec2f FrameBufferContext::position() {
-    makeCurrent();
     int x, y;
     glfwGetWindowPos(getGLFWWindow(), &x, &y);
     return cv::Vec2f(x, y);
 }
 
 float FrameBufferContext::pixelRatioX() {
-    makeCurrent();
 #ifdef __EMSCRIPTEN__
     float r = emscripten_get_device_pixel_ratio();
 
@@ -774,7 +775,6 @@ float FrameBufferContext::pixelRatioX() {
 }
 
 float FrameBufferContext::pixelRatioY() {
-    makeCurrent();
 #ifdef __EMSCRIPTEN__
     float r = emscripten_get_device_pixel_ratio();
 
@@ -792,36 +792,35 @@ void FrameBufferContext::makeCurrent() {
     glfwMakeContextCurrent(getGLFWWindow());
 }
 
+void FrameBufferContext::makeNoneCurrent() {
+    glfwMakeContextCurrent(nullptr);
+}
+
+
 bool FrameBufferContext::isResizable() {
-    makeCurrent();
     return glfwGetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE) == GLFW_TRUE;
 }
 
 void FrameBufferContext::setResizable(bool r) {
-    makeCurrent();
     glfwSetWindowAttrib(getGLFWWindow(), GLFW_RESIZABLE, r ? GLFW_TRUE : GLFW_FALSE);
 }
 
 void FrameBufferContext::setWindowSize(const cv::Size& sz) {
-    makeCurrent();
     glfwSetWindowSize(getGLFWWindow(), sz.width, sz.height);
 }
 
 //FIXME cache window size
 cv::Size FrameBufferContext::getWindowSize() {
-    makeCurrent();
     cv::Size sz;
     glfwGetWindowSize(getGLFWWindow(), &sz.width, &sz.height);
     return sz;
 }
 
 bool FrameBufferContext::isFullscreen() {
-    makeCurrent();
     return glfwGetWindowMonitor(getGLFWWindow()) != nullptr;
 }
 
 void FrameBufferContext::setFullscreen(bool f) {
-//    makeCurrent();
     auto monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
     if (f) {
@@ -836,7 +835,6 @@ void FrameBufferContext::setFullscreen(bool f) {
 }
 
 cv::Size FrameBufferContext::getNativeFrameBufferSize() {
-    makeCurrent();
     int w, h;
     glfwGetFramebufferSize(getGLFWWindow(), &w, &h);
     return cv::Size{w, h};
@@ -849,7 +847,6 @@ bool FrameBufferContext::isVisible() {
 
 void FrameBufferContext::setVisible(bool v) {
     isVisible_ = v;
-    makeCurrent();
     if (isVisible_)
         glfwShowWindow(getGLFWWindow());
     else
@@ -861,7 +858,6 @@ bool FrameBufferContext::isClosed() {
 }
 
 void FrameBufferContext::close() {
-    makeCurrent();
     teardown();
     glfwDestroyWindow(getGLFWWindow());
     glfwWindow_ = nullptr;

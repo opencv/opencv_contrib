@@ -15,13 +15,16 @@
 #include "sink.hpp"
 #include "util.hpp"
 #include "nvg.hpp"
+#include "detail/backend.hpp"
 #include "detail/threadpool.hpp"
-#include "opencv2/v4d/detail/gl.hpp"
-#include "opencv2/v4d/detail/framebuffercontext.hpp"
-#include "opencv2/v4d/detail/nanovgcontext.hpp"
-#include "opencv2/v4d/detail/imguicontext.hpp"
-#include "opencv2/v4d/detail/timetracker.hpp"
-#include "opencv2/v4d/detail/glcontext.hpp"
+#include "detail/gl.hpp"
+#include "detail/framebuffercontext.hpp"
+#include "detail/nanovgcontext.hpp"
+#include "detail/imguicontext.hpp"
+#include "detail/timetracker.hpp"
+#include "detail/glcontext.hpp"
+#include "detail/sourcecontext.hpp"
+#include "detail/sinkcontext.hpp"
 
 
 #include <iostream>
@@ -32,6 +35,9 @@
 #include <memory>
 #include <vector>
 #include <type_traits>
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+#include <stdio.h>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -53,17 +59,25 @@ namespace cv {
  * V4D namespace
  */
 namespace v4d {
-class FormHelper;
+
 enum AllocateFlags {
     NONE = 0,
     NANOVG = 1,
     IMGUI = 2,
     ALL = NANOVG | IMGUI
 };
+
+class Plan {
+public:
+	virtual ~Plan() {};
+	virtual void infere(cv::Ptr<V4D> window) {};
+};
 /*!
  * Private namespace
  */
 namespace detail {
+
+template <typename T> using static_not = std::integral_constant<bool, !T::value>;
 
 //https://stackoverflow.com/questions/19961873/test-if-a-lambda-is-stateless#:~:text=As%20per%20the%20Standard%2C%20if,lambda%20is%20stateless%20or%20not.
 template <typename T, typename U>
@@ -73,7 +87,7 @@ struct helper : helper<T, decltype(&U::operator())>
 template <typename T, typename C, typename R, typename... A>
 struct helper<T, R(C::*)(A...) const>
 {
-    static const bool value = std::is_convertible<T, R(*)(A...)>::value;
+	static const bool value = std::is_convertible<T, std::function<R(A...)>>::value || std::is_convertible<T, R(*)(A...)>::value;
 };
 
 template<typename T>
@@ -82,11 +96,6 @@ struct is_stateless
     static const bool value = helper<T,T>::value;
 };
 
-class FrameBufferContext;
-class CLVAContext;
-class NanoVGContext;
-class GLContext;
-class ImGuiContextImpl;
 template<typename T> std::string int_to_hex( T i )
 {
   std::stringstream stream;
@@ -96,19 +105,23 @@ template<typename T> std::string int_to_hex( T i )
   return stream.str();
 }
 
-template<typename Tfn> std::string func_id(Tfn& fn) {
-    return int_to_hex((size_t) &fn);
+//template<typename Tfn> std::string func_hex(Tfn& fn) {
+//    return int_to_hex((size_t) &fn);
+//}
+
+template<typename Tlamba> std::string lambda_ptr_hex(Tlamba&& l) {
+    return int_to_hex((size_t)Lambda::ptr(l));
 }
 }
 
 using namespace cv::v4d::detail;
 
 class CV_EXPORTS V4D {
-    friend class detail::FrameBufferContext;
+	friend class detail::FrameBufferContext;
     friend class HTML5Capture;
     static const std::thread::id default_thread_id_;
     static std::thread::id main_thread_id_;
-    static concurrent::threadpool thread_pool_;
+	static bool first_run_;
     std::map<std::string, cv::Ptr<cv::UMat>> umat_pool_;
     std::map<std::string, std::shared_ptr<void>> data_pool_;
     cv::Ptr<V4D> self_;
@@ -117,12 +130,15 @@ class CV_EXPORTS V4D {
     cv::Rect viewport_;
     bool stretching_;
     bool focused_ = false;
-    FrameBufferContext* mainFbContext_ = nullptr;
-    CLVAContext* clvaContext_ = nullptr;
-    NanoVGContext* nvgContext_ = nullptr;
-    ImGuiContextImpl* imguiContext_ = nullptr;
+    cv::Ptr<FrameBufferContext> mainFbContext_ = nullptr;
+    cv::Ptr<SourceContext> sourceContext_ = nullptr;
+    cv::Ptr<SinkContext> sinkContext_ = nullptr;
+    cv::Ptr<NanoVGContext> nvgContext_ = nullptr;
+    cv::Ptr<ImGuiContextImpl> imguiContext_ = nullptr;
+    cv::Ptr<SingleContext> singleContext_ = nullptr;
+    cv::Ptr<ParallelContext> parallelContext_ = nullptr;
     std::mutex glCtxMtx_;
-    std::map<int32_t,GLContext*> glContexts_;
+    std::map<int32_t,cv::Ptr<GLContext>> glContexts_;
     bool closed_ = false;
     cv::Ptr<Source> source_;
     cv::Ptr<Sink> sink_;
@@ -138,8 +154,10 @@ class CV_EXPORTS V4D {
     bool showFPS_ = true;
     bool printFPS_ = true;
     bool showTracking_ = true;
-    uint64_t currentSeqNr_ = 0;
     size_t numWorkers_ = 0;
+    std::vector<std::tuple<std::string,bool,long>> accesses_;
+    std::map<std::string, cv::Ptr<Transaction>> transactions_;
+
 public:
     /*!
      * Creates a V4D object which is the central object to perform visualizations with.
@@ -206,53 +224,323 @@ public:
      */
     CV_EXPORTS cv::ogl::Texture2D& texture();
     CV_EXPORTS std::string title();
+
+    struct Node {
+    	string name_;
+    	std::set<long> read_deps_;
+    	std::set<long> write_deps_;
+    	cv::Ptr<Transaction> tx_  = nullptr;
+    	bool initialized() {
+    		return tx_;
+    	}
+    };
+
+    std::vector<cv::Ptr<Node>> nodes_;
+
+    void findNode(const string& name, cv::Ptr<Node>& found) {
+    	CV_Assert(!name.empty());
+    	if(nodes_.empty())
+    		return;
+
+    	if(nodes_.back()->name_ == name)
+    		found = nodes_.back();
+
+    }
+
+    void makePlan() {
+    	cout << std::this_thread::get_id() << " ### MAKE PLAN ### " << endl;
+    	for(const auto& t : accesses_) {
+    		const string& name = std::get<0>(t);
+    		const bool& read = std::get<1>(t);
+    		const long& dep = std::get<2>(t);
+    		cv::Ptr<Node> n;
+    		findNode(name, n);
+
+    		if(!n) {
+    			n = new Node();
+    			n->name_ = name;
+    			n->tx_ = transactions_[name];
+    			CV_Assert(!n->name_.empty());
+    			CV_Assert(n->tx_);
+    			nodes_.push_back(n);
+        		cout << "make: " << std::this_thread::get_id() << " " << n->name_ << endl;
+    		}
+
+
+    		if(read) {
+    			n->read_deps_.insert(dep);
+    		} else {
+    			n->write_deps_.insert(dep);
+    		}
+    	}
+    }
+
+	void runPlan() {
+		cout << std::this_thread::get_id() << " ### RUN PLAN ### " << endl;
+		bool isEnabled = true;
+
+		for (auto& n : nodes_) {
+			if (n->tx_->hasCondition()) {
+				isEnabled = n->tx_->enabled();
+				cout << "cond: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
+			}
+
+			if (!(n->tx_->hasCondition()) && isEnabled) {
+				n->tx_->getContext()->execute([=]() {
+					cout << "run: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
+					n->tx_->perform();
+				});
+			}
+		}
+	}
+
+    template<typename Tenabled, typename T, typename ...Args>
+    typename std::enable_if<std::is_same<Tenabled, std::false_type>::value, void>::type
+	emit_access(const string& context, bool read, const T* tp) {
+    	//disabled
+    }
+
+    template<typename Tenabled, typename T, typename ...Args>
+    typename std::enable_if<std::is_same<Tenabled, std::true_type>::value, void>::type
+	emit_access(const string& context, bool read, const T* tp) {
+    	cout << "access: " << std::this_thread::get_id() << " " << context << string(read ? " <- " : " -> ") << demangle(typeid(std::remove_const_t<T>).name()) << "(" << (long)tp << ") " << endl;
+    	accesses_.push_back(std::make_tuple(context, read, (long)tp));
+    }
+
+    template<typename Tfn, typename ...Args>
+    void add_transaction(cv::Ptr<V4DContext> ctx, const string& invocation, Tfn fn, Args&& ...args) {
+    	auto it = transactions_.find(invocation);
+    	if(it == transactions_.end()) {
+    		auto tx = make_transaction(fn, std::forward<Args>(args)...);
+    		tx->setContext(ctx);
+    		transactions_.insert({invocation, tx});
+    	}
+    }
+
+//    template<typename Tfn, typename Tfb = cv::UMat&, typename ...Args>
+//    void add_transaction(const string& context, Tfn&& fn, cv::UMat&& fb, Args&& ...args) {
+//    	auto it = transactions_.find(context);
+//    	if(it == transactions_.end()) {
+//    		transactions_.insert({context, make_transaction<Tfn&&, Tfb&&>(std::forward<Tfn>(fn), std::forward<Tfb>(fb), std::forward<Args>(args)...)});
+//    	}
+//    }
+//
+//    template<typename Tfn, typename Tfb = const cv::UMat&&, typename ...Args>
+//    void add_transaction(const string& context, Tfn&& fn, const cv::UMat&& fb, Args&& ...args) {
+//    	auto it = transactions_.find(context);
+//    	if(it == transactions_.end()) {
+//    		transactions_.insert({context, make_transaction<Tfn&&, Tfb&&>(std::forward<Tfn>(fn), std::forward<Tfb>(fb), std::forward<Args>(args)...)});
+//    	}
+//    }
+
+    std::size_t index(const std::thread::id id)
+    {
+        static std::size_t nextindex = 0;
+        static std::mutex my_mutex;
+        static std::unordered_map<std::thread::id, std::size_t> ids;
+        std::lock_guard<std::mutex> lock(my_mutex);
+        auto iter = ids.find(id);
+        if(iter == ids.end())
+            return ids[id] = nextindex++;
+        return iter->second;
+    }
+
+
+    template<typename Tfn, typename Textra>
+    const string make_id(const string& name, Tfn&& fn, const Textra& extra) {
+    	stringstream ss;
+    	stringstream ssExtra;
+    	ssExtra << extra;
+    	if(ssExtra.str().empty()) {
+    		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")";
+    	}
+    	else {
+    		ss << name << "(" << index(std::this_thread::get_id()) << "-" << detail::lambda_ptr_hex(std::forward<Tfn>(fn)) << ")/" << ssExtra.str();
+    	}
+
+    	return ss.str();
+    }
+
+    template<typename Tfn>
+    const string make_id(const string& name, Tfn&& fn, const string& extra = "") {
+    	return make_id<Tfn, std::string>(name, fn, extra);
+    }
+
+
+    template<typename Tfn, typename Textra>
+    void print_id(const string& name, Tfn&& fn, const Textra& extra) {
+   		cerr << make_id<Tfn, Textra>(name, fn, extra) << endl;
+    }
+
+    template<typename Tfn>
+    void print_id(const string& name, Tfn&& fn, const string& extra = "") {
+   		cerr << make_id<Tfn, std::string>(name, fn, extra) << endl;
+    }
+
     template <typename Tfn, typename ... Args>
     void gl(Tfn fn, Args&& ... args) {
-        TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn, &args...](){
-            glCtx(-1).render([=]() {
-                fn(args...);
-            });
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("gl", fn, -1);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+            emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
+        	std::function<void((Args...))> functor(fn);
+            add_transaction(glCtx(-1), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
 
     template <typename Tfn, typename ... Args>
     void gl(const size_t& idx, Tfn fn, Args&& ... args) {
-        TimeTracker::getInstance()->execute("gl(" + detail::func_id(fn) + ")/" + std::to_string(-1), [this, fn, idx, &args...](){
-            glCtx(idx).render([=]() {
-                fn(args...);
-            });
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("gl", fn, idx);
+        TimeTracker::getInstance()->execute(id, [this, fn, idx, id, &args...](){
+            emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
+        	std::function<void((Args...))> functor(fn);
+            add_transaction(glCtx(idx), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
 
-    /*!
-     * Execute function object fn inside a framebuffer context.
-     * The context acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
-     * and provides it to the functon object. This is a good place to use OpenCL
-     * directly on the framebuffer.
-     * @param fn A function object that is passed the framebuffer to be read/manipulated.
-     */
-    template <typename Tfn, typename ... Args>
-    void fb(Tfn fn, Args& ... args) {
-        CV_Assert(detail::is_stateless<decltype(fn)>::value);
-        TimeTracker::getInstance()->execute("fb(" + detail::func_id(fn) + ")", [this, fn, &args...]{
-            fbCtx().execute(fn, args...);
+    template <typename Tfn>
+    void graph(Tfn fn) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("graph", fn);
+
+        TimeTracker::getInstance()->execute(id, [this, fn, id](){
+            std::function functor = fn;
+            emit_access<std::true_type, decltype(fn)>(id, true, &fn);
+            add_transaction(singleCtx(), id, functor);
         });
     }
+
+    template <typename Tfn, typename ... Args>
+    void graph(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("graph", fn);
+
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            std::function functor = fn;
+            add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
+        });
+    }
+
+    template <typename Tfn>
+    void endgraph(Tfn fn) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("endgraph", fn);
+
+        TimeTracker::getInstance()->execute(id, [this, fn, id] {
+            std::function functor = fn;
+            emit_access<std::true_type, decltype(fn)>(id, true, &fn);
+            add_transaction(singleCtx(), id, functor);
+        });
+    }
+
+    template <typename Tfn, typename ... Args>
+    void endgraph(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("endgraph", fn);
+
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            std::function functor = fn;
+            add_transaction(singleCtx(), id, functor, std::forward<Args>(args)...);
+        });
+    }
+
+    template <typename Tfn, typename ... Args>
+    void fb(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("fb", fn);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
+            using Tfb = typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type;
+            using Tfbbase = typename std::remove_cv<Tfb>::type;
+            using Tfbconst = std::add_const_t<Tfbbase>;
+
+            static_assert((std::is_same<Tfb, cv::UMat&>::value || std::is_same<Tfb, const cv::UMat&>::value) || !"The first argument must be eiter of type 'cv::UMat&' or 'const cv::UMat&'");
+            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &fbCtx()->fb());
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            emit_access<static_not<typename std::is_const<Tfbbase>::type>, cv::UMat, Tfb, Args...>(id, false, &fbCtx()->fb());
+        	std::function<void((Tfb,Args...))> functor(fn);
+            add_transaction<decltype(functor),Tfb>(fbCtx(),id, std::forward<decltype(functor)>(functor), fbCtx()->fb(), std::forward<Args>(args)...);
+        });
+    }
+
+    template <typename Tfn, typename ... Args>
+    void capture(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("capture", fn);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
+            using Tfb = typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type;
+
+            static_assert((std::is_same<Tfb,const cv::UMat&>::value) || !"The first argument must be of type 'const cv::UMat&'");
+            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sourceCtx()->sourceBuffer());
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+        	std::function<void((Tfb,Args...))> functor(fn);
+            add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sourceCtx()),id, std::forward<decltype(functor)>(functor), sourceCtx()->sourceBuffer(), std::forward<Args>(args)...);
+        });
+    }
+
+    template <typename Tfn, typename ... Args>
+    void write(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("write", fn);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
+            using Tfb = typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type;
+
+            static_assert((std::is_same<Tfb,cv::UMat&>::value) || !"The first argument must be of type 'cv::UMat&'");
+            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sinkCtx()->sinkBuffer());
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Tfb, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, false, &sinkCtx()->sinkBuffer());
+        	std::function<void((Tfb,Args...))> functor(fn);
+            add_transaction<decltype(functor),Tfb>(std::dynamic_pointer_cast<V4DContext>(sinkCtx()),id, std::forward<decltype(functor)>(functor), sinkCtx()->sinkBuffer(), std::forward<Args>(args)...);
+        });
+    }
+
     /*!
      * Execute function object fn inside a nanovg context.
      * The context takes care of setting up opengl and nanovg states.
      * A function object passed like that can use the functions in cv::viz::nvg.
      * @param fn A function that is passed the size of the framebuffer
-     * and performs drawing using cv::viz::nvg
+     * and performs drawing using cv::v4d::nvg
      */
     template <typename Tfn, typename ... Args>
-    void nvg(Tfn fn, Args&& ... args) {
-        TimeTracker::getInstance()->execute("nvg(" + detail::func_id(fn) + ")", [this, fn, &args...](){
-            nvgCtx().render([this, fn, &args...]() {
-                fn(args...);
-            });
+    void nvg(Tfn fn, Args&&... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("nvg", fn);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+            emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+            emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
+        	std::function<void((Args...))> functor(fn);
+            add_transaction<decltype(functor)>(nvgCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
+
+    template <typename Tfn, typename ... Args>
+    void single(Tfn fn, Args&&... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("single", fn);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+            (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+        	std::function<void((Args...))> functor(fn);
+            add_transaction<decltype(functor)>(singleCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+        });
+    }
+
+    template <typename Tfn, typename ... Args>
+     void parallel(Tfn fn, Args&&... args) {
+         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+         const string id = make_id("parallel", fn);
+         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+             std::function<void((Args...))> functor(fn);
+             add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+         });
+     }
 
     CV_EXPORTS void imgui(std::function<void(ImGuiContext* ctx)> fn);
 
@@ -272,8 +560,113 @@ public:
      * @param fn A functor that will be called repeatetly until the application terminates or the functor returns false
      */
 
-    CV_EXPORTS void run(std::function<bool(cv::Ptr<V4D>)> fn, size_t workers = 0);
-    /*!
+
+	#ifdef __EMSCRIPTEN__
+	bool first = true;
+	static void do_frame(void* void_fn_ptr) {
+		 if(first) {
+			 glfwSwapInterval(0);
+			 first = false;
+		 }
+		 auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
+		 if (fn_ptr) {
+			 auto& fn = *fn_ptr;
+				 fn();
+		 }
+	 }
+	#endif
+
+	template<typename Tplan>
+	void run(size_t workers) {
+		cv::Ptr<Tplan> plan = new Tplan();
+		std::vector<std::thread*> threads;
+		{
+			static std::mutex runMtx;
+			std::unique_lock<std::mutex> lock(runMtx);
+
+			numWorkers_ = workers;
+			if (this->hasSource()) {
+				this->getSource()->setThreadSafe(true);
+			}
+
+			if(first_run_) {
+				main_thread_id_ = std::this_thread::get_id();
+				first_run_ = false;
+				cerr << "Starting with " << workers << " extra workers" << endl;
+			}
+
+			if(workers > 0  || !this->isMain()) {
+				cv::setNumThreads(0);
+				cerr << "Setting threads to 0" << endl;
+			}
+
+			if(this->isMain()) {
+				int w = this->initialSize().width;
+				int h = this->initialSize().height;
+				const string title = this->title();
+				bool debug = this->debug_;
+				auto src = this->getSource();
+
+				for (size_t i = 0; i < workers; ++i) {
+					threads.push_back(
+							new std::thread(
+									[w,h,i,title,debug,src] {
+										cv::Ptr<cv::v4d::V4D> worker = V4D::make(
+												w,
+												h,
+												title + "-worker-" + std::to_string(i),
+												NANOVG,
+												!debug,
+												debug,
+												0);
+										if (src) {
+											src->setThreadSafe(true);
+											worker->setSource(src);
+										}
+//										if (this->hasSink()) {
+	//                                        Sink sink = this->getSink();
+	//                                        sink.setThreadSafe(true);
+	//                                        worker->setSink(sink);
+//										}
+										worker->run<Tplan>(0);
+								}
+							)
+					);
+				}
+			}
+		}
+
+	//	if(this->isMain())
+	//		this->makeCurrent();
+
+	#ifndef __EMSCRIPTEN__
+			bool success = true;
+			CLExecScope_t scope(this->fbCtx()->getCLExecContext());
+			plan->infere(self());
+			this->makePlan();
+			do {
+				this->runPlan();
+			} while(this->display());
+	#else
+		if(this->isMain()) {
+			std::function<bool()> fnFrame([=,this](){
+				return fn(self());
+			});
+
+			emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
+		} else {
+			while (true) {
+				fn(self());
+			}
+		}
+	#endif
+
+		if(this->isMain()) {
+			for(auto& t : threads)
+				t->join();
+		}
+	}
+/*!
      * Called to feed an image directly to the framebuffer
      */
     CV_EXPORTS void feed(cv::InputArray in);
@@ -284,34 +677,11 @@ public:
     CV_EXPORTS cv::_InputArray fetch();
 
     /*!
-     * Called to capture to the framebuffer from a #cv::viz::Source object provided via #V4D::setSource().
-     * @return true if successful.
-     */
-    CV_EXPORTS bool capture();
-
-    /*!
-     * Called to capture from a function object.
-     * The functor fn is passed a UMat which it writes to which in turn is captured to the framebuffer.
-     * @param fn The functor that provides the data.
-     * @return true if successful-
-     */
-    CV_EXPORTS bool capture(std::function<void(cv::UMat&)> fn);
-
-    /*!
-     * Called to write the framebuffer to a #cv::viz::Sink object provided via #V4D::setSink()
-     */
-    CV_EXPORTS void write();
-    /*!
-     * Called to pass the frambuffer to a functor which consumes it (e.g. writes to a video file).
-     * @param fn The functor that consumes the data,
-     */
-    CV_EXPORTS void write(std::function<void(const cv::UMat&)> fn);
-    /*!
      * Set the current #cv::viz::Source object. Usually created using #makeCaptureSource().
      * @param src A #cv::viz::Source object.
      */
-    CV_EXPORTS void setSource(Source& src);
-    CV_EXPORTS Source& getSource();
+    CV_EXPORTS void setSource(cv::Ptr<Source> src);
+    CV_EXPORTS cv::Ptr<Source> getSource();
     CV_EXPORTS bool hasSource();
 
     /*!
@@ -457,15 +827,21 @@ public:
 
     CV_EXPORTS GLFWwindow* getGLFWWindow();
 
-    CV_EXPORTS FrameBufferContext& fbCtx();
-    CV_EXPORTS CLVAContext& clvaCtx();
-    CV_EXPORTS NanoVGContext& nvgCtx();
-    CV_EXPORTS ImGuiContextImpl& imguiCtx();
-    CV_EXPORTS GLContext& glCtx(int32_t idx = 0);
+    CV_EXPORTS cv::Ptr<FrameBufferContext> fbCtx();
+    CV_EXPORTS cv::Ptr<SourceContext> sourceCtx();
+    CV_EXPORTS cv::Ptr<SinkContext> sinkCtx();
+    CV_EXPORTS cv::Ptr<NanoVGContext> nvgCtx();
+    CV_EXPORTS cv::Ptr<SingleContext> singleCtx();
+    CV_EXPORTS cv::Ptr<ParallelContext> parallelCtx();
+    CV_EXPORTS cv::Ptr<ImGuiContextImpl> imguiCtx();
+    CV_EXPORTS cv::Ptr<GLContext> glCtx(int32_t idx = 0);
 
     CV_EXPORTS bool hasFbCtx();
-    CV_EXPORTS bool hasClvaCtx();
+    CV_EXPORTS bool hasSourceCtx();
+    CV_EXPORTS bool hasSinkCtx();
     CV_EXPORTS bool hasNvgCtx();
+    CV_EXPORTS bool hasSingleCtx();
+    CV_EXPORTS bool hasParallelCtx();
     CV_EXPORTS bool hasImguiCtx();
     CV_EXPORTS bool hasGlCtx(uint32_t idx = 0);
     CV_EXPORTS size_t numGlCtx();
@@ -490,3 +866,4 @@ protected:
 #endif
 
 #endif /* SRC_OPENCV_V4D_V4D_HPP_ */
+

@@ -192,12 +192,18 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
-    window->once([=](){ window->gl(init_scene);});
+	window->once([=]() {
+		window->gl([]() {
+			init_scene();
+		});
+	});
 
-    if(!window->capture())
-        return false;
+	if (!window->capture())
+		return false;
 
-    window->gl(render_scene);
+	window->gl([]() {
+		render_scene();
+	});
 
 #ifndef __EMSCRIPTEN__
     window->fb([](cv::UMat& frameBuffer) {

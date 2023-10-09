@@ -35,29 +35,23 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
 /* Visualization parameters */
 constexpr int BLUR_DIV = 500;
-int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
+static int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
 //Saturation boost factor for eyes and lips
-float eyes_and_lips_saturation = 2.0f;
+static float eyes_and_lips_saturation = 2.0f;
 //Saturation boost factor for skin
-float skin_saturation = 1.7f;
+static float skin_saturation = 1.7f;
 //Contrast factor skin
-float skin_contrast = 0.7f;
+static float skin_contrast = 0.7f;
 #ifndef __EMSCRIPTEN__
 //Show input and output side by side
-bool side_by_side = true;
+static bool side_by_side = true;
 //Scale the video to the window size
-bool stretch = true;
+static bool stretch = true;
 #else
-bool side_by_side = false;
-bool stretch = false;
+static bool side_by_side = false;
+static bool stretch = false;
 #endif
 
-//Face landmark detector
-static thread_local cv::Ptr<cv::face::Facemark> facemark = cv::face::createFacemarkLBF();
-//Blender (used to put the different face parts back together)
-static thread_local cv::detail::MultiBandBlender blender(false, 5);
-
-static thread_local bool first = true;
 /*!
  * Data structure holding the points for all face landmarks
  */
@@ -72,7 +66,7 @@ struct FaceFeatures {
     vector<cv::Point2f> right_eye_;
     vector<cv::Point2f> outer_lips_;
     vector<cv::Point2f> inside_lips_;
-
+    FaceFeatures() {};
     FaceFeatures(const cv::Rect &faceRect, const vector<cv::Point2f> &shape, double local_scale) {
         //calculate the face rectangle
         faceRect_ = cv::Rect(faceRect.x / local_scale, faceRect.y / local_scale, faceRect.width / local_scale, faceRect.height / local_scale);
@@ -143,7 +137,7 @@ struct FaceFeatures {
 };
 
 //based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
-static void draw_face_oval_mask(FaceFeatures &ff) {
+static void draw_face_oval_mask(const FaceFeatures &ff) {
     using namespace cv::v4d::nvg;
     clear();
 
@@ -158,7 +152,7 @@ static void draw_face_oval_mask(FaceFeatures &ff) {
 }
 
 //Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
-static void draw_face_eyes_and_lips_mask(FaceFeatures &ff) {
+static void draw_face_eyes_and_lips_mask(const FaceFeatures &ff) {
     using namespace cv::v4d::nvg;
     clear();
     vector<vector<cv::Point2f>> features = ff.features();
@@ -185,8 +179,8 @@ static void draw_face_eyes_and_lips_mask(FaceFeatures &ff) {
 
 //adjusts the saturation of a UMat
 static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
-    static thread_local vector<cv::UMat> channels;
-    static thread_local cv::UMat hls;
+    thread_local vector<cv::UMat> channels;
+    thread_local cv::UMat hls;
 
     cvtColor(srcBGR, hls, cv::COLOR_BGR2HLS);
     split(hls, channels);
@@ -197,138 +191,179 @@ static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float fa
 
 using namespace cv::v4d;
 
-static bool iteration(cv::Ptr<V4D> window) {
-    try {
-        if (first) {
+class BeautyDemoPlan : public Plan {
+	cv::Ptr<cv::face::Facemark> facemark_ = cv::face::createFacemarkLBF();
+	//Blender (used to put the different face parts back together)
+	cv::Ptr<cv::detail::MultiBandBlender> blender_ = new cv::detail::MultiBandBlender(false, 5);
+	//Face detector
+	#ifndef __EMSCRIPTEN__
+	cv::Ptr<cv::FaceDetectorYN> detector_ = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
+	#else
+	cv::Ptr<cv::FaceDetectorYN> detector_ = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
+	#endif
+	//BGR
+	cv::UMat input_, down_, contrast_, faceOval_, eyesAndLips_, skin_;
+	cv::UMat lhalf_ = cv::UMat(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
+	cv::UMat rhalf_ = cv::UMat(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
+	cv::UMat frameOut_ = cv::UMat(HEIGHT, WIDTH, CV_8UC3);
+	//GREY
+	cv::UMat faceSkinMaskGrey_, eyesAndLipsMaskGrey_, backgroundMaskGrey_;
+	//BGR-Float
+	//list all of shapes (face features) found
+	vector<vector<cv::Point2f>> shapes_;
+	std::vector<cv::Rect> faceRects_;
+	bool faceFound_ = false;
+	FaceFeatures features_;
+public:
+	void infere(cv::Ptr<V4D> window) override {
+		auto always = [](){ return true; };
+		auto isTrue = [](bool& ff){ return ff; };
+		auto isFalse = [](bool& ff){ return !ff; };
+
+		//Face landmark detector
+	try {
 #ifndef __EMSCRIPTEN__
-            facemark->loadModel("modules/v4d/assets/models/lbfmodel.yaml");
+            facemark_->loadModel("modules/v4d/assets/models/lbfmodel.yaml");
 #else
-            facemark->loadModel("assets/models/lbfmodel.yaml");
+            facemark_->loadModel("assets/models/lbfmodel.yaml");
 #endif
-            first = false;
-        }
-        //Face detector
-#ifndef __EMSCRIPTEN__
-        static thread_local cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("modules/v4d/assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_OPENCL);
-#else
-        static thread_local cv::Ptr<cv::FaceDetectorYN> detector = cv::FaceDetectorYN::create("assets/models/face_detection_yunet_2023mar.onnx", "", cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT), 0.9, 0.3, 5000, cv::dnn::DNN_BACKEND_OPENCV, cv::dnn::DNN_TARGET_CPU);
-#endif
-        //BGR
-        static thread_local cv::UMat input, down, blurred, contrast, faceOval, eyesAndLips, skin;
-        static thread_local cv::UMat frameOut(HEIGHT, WIDTH, CV_8UC3);
-        static thread_local cv::UMat lhalf(DOWNSIZE_HEIGHT, DOWNSIZE_WIDTH, CV_8UC3);
-        static thread_local cv::UMat rhalf(lhalf.size(), lhalf.type());
-        //GREY
-        static thread_local cv::UMat faceSkinMaskGrey, eyesAndLipsMaskGrey, backgroundMaskGrey;
-        //BGR-Float
-        static thread_local cv::UMat frameOutFloat;
-        //list all of shapes (face features) found
-        static thread_local vector<vector<cv::Point2f>> shapes;
 
-        if (!window->capture())
-            return false;
+		window->graph(always);
+		{
+			//Save the video frame as BGR
+			window->capture([](const cv::UMat &videoFrame, cv::UMat& in, cv::UMat& d) {
+				cvtColor(videoFrame, in, cv::COLOR_BGRA2BGR);
+				//Downscale the video frame for face detection
+				cv::resize(in, d, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+			}, input_, down_);
 
-        //Save the video frame as BGR
-        window->fb([](cv::UMat &frameBuffer) {
-            cvtColor(frameBuffer, input, cv::COLOR_BGRA2BGR);
-        });
+			window->parallel([](cv::Ptr<cv::FaceDetectorYN>& de, cv::Ptr<cv::face::Facemark>& fm, vector<vector<cv::Point2f>>& sh, const cv::UMat& d, std::vector<cv::Rect>& fr, bool& ff, FaceFeatures& ft) {
+				sh.clear();
+				cv::Mat faces;
+				//Detect faces in the down-scaled image
+				de->detect(d, faces);
+				//Only add the first face
+				cv::Rect faceRect;
+				if(!faces.empty())
+					faceRect = cv::Rect(int(faces.at<float>(0, 0)), int(faces.at<float>(0, 1)), int(faces.at<float>(0, 2)), int(faces.at<float>(0, 3)));
+				fr = {faceRect};
+				//find landmarks if faces have been detected
+				ff = !faceRect.empty() && fm->fit(d, fr, sh);
+				if(ff)
+					ft = FaceFeatures(fr[0], sh[0], float(d.size().width) / WIDTH);
+			}, detector_, facemark_, shapes_, down_, faceRects_, faceFound_, features_);
+		}
+		window->endgraph(always);
 
-        //Downscale the video frame for face detection
-        cv::resize(input, down, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
+		window->graph(isTrue, faceFound_);
+		{
+			window->nvg([](const FaceFeatures& f) {
+				//Draw the face oval of the first face
+				draw_face_oval_mask(f);
+			}, features_);
 
-        shapes.clear();
-        cv::Mat faces;
-        //Detect faces in the down-scaled image
-        detector->detect(down, faces);
-        //Only add the first face
-		cv::Rect faceRect;
-		if(!faces.empty())
-		    faceRect = cv::Rect(int(faces.at<float>(0, 0)), int(faces.at<float>(0, 1)), int(faces.at<float>(0, 2)), int(faces.at<float>(0, 3)));
-		std::vector<cv::Rect>faceRects = {faceRect};
-        //find landmarks if faces have been detected
-        if (!faceRect.empty() && facemark->fit(down, faceRects, shapes)) {
-            FaceFeatures features(faceRect, shapes[0], float(down.size().width) / WIDTH);
+			window->fb([](const cv::UMat& frameBuffer, cv::UMat& fo) {
+				//Convert/Copy the mask
+				cvtColor(frameBuffer, fo, cv::COLOR_BGRA2GRAY);
+			}, faceOval_);
 
-            window->nvg([](FaceFeatures& f) {
-                //Draw the face oval of the first face
-                draw_face_oval_mask(f);
-            }, features);
+			window->nvg([](const FaceFeatures& f) {
+				//Draw eyes eyes and lips areas of the first face
+				draw_face_eyes_and_lips_mask(f);
+			}, features_);
 
-            window->fb([](cv::UMat &frameBuffer) {
-                //Convert/Copy the mask
-                cvtColor(frameBuffer, faceOval, cv::COLOR_BGRA2GRAY);
-            });
+			window->fb([](const cv::UMat &frameBuffer, cv::UMat& ealmg) {
+				//Convert/Copy the mask
+				cvtColor(frameBuffer, ealmg, cv::COLOR_BGRA2GRAY);
+			}, eyesAndLipsMaskGrey_);
 
-            window->nvg([](FaceFeatures& f) {
-                //Draw eyes eyes and lips areas of the first face
-                draw_face_eyes_and_lips_mask(f);
-            }, features);
+			window->parallel([](const cv::UMat& fo, const cv::UMat& ealmg, cv::UMat& fsmg, cv::UMat& bmg) {
+				//Create the skin mask
+				cv::subtract(fo, ealmg, fsmg);
+				//Create the background mask
+				cv::bitwise_not(ealmg, bmg);
+			}, faceOval_, eyesAndLipsMaskGrey_, faceSkinMaskGrey_, backgroundMaskGrey_);
 
-            window->fb([](cv::UMat &frameBuffer, cv::UMat& e) {
-                //Convert/Copy the mask
-                cvtColor(frameBuffer, e, cv::COLOR_BGRA2GRAY);
-            }, eyesAndLipsMaskGrey);
+			window->parallel([](const cv::UMat& in, cv::UMat& eal, float& eals,  cv::UMat& c, cv::UMat& s) {
+				//boost saturation of eyes and lips
+				adjust_saturation(in,  eal, eals);
+				//reduce skin contrast
+				multiply(in, cv::Scalar::all(skin_contrast), c);
+				//fix skin brightness
+				add(c, cv::Scalar::all((1.0 - skin_contrast) / 2.0) * 255.0, c);
+				//blur the skin_
+				cv::boxFilter(c, c, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+				//boost skin saturation
+				adjust_saturation(c, s, skin_saturation);
+			}, input_, eyesAndLips_, eyes_and_lips_saturation, contrast_, skin_);
 
-            //Create the skin mask
-            cv::subtract(faceOval, eyesAndLipsMaskGrey, faceSkinMaskGrey);
-            //Create the background mask
-            cv::bitwise_not(eyesAndLipsMaskGrey, backgroundMaskGrey);
 
-            //boost saturation of eyes and lips
-            adjust_saturation(input,  eyesAndLips, eyes_and_lips_saturation);
-            //reduce skin contrast
-            multiply(input, cv::Scalar::all(skin_contrast), contrast);
-            //fix skin brightness
-            add(contrast, cv::Scalar::all((1.0 - skin_contrast) / 2.0) * 255.0, contrast);
-            //blur the skin
-            cv::boxFilter(contrast, blurred, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
-            //boost skin saturation
-            adjust_saturation(blurred, skin, skin_saturation);
+			window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl,
+					const cv::UMat& s, const cv::UMat& fsmg,
+					const cv::UMat& in, const cv::UMat& bmg,
+					const cv::UMat& eal, const cv::UMat& ealmg,
+					cv::UMat& fout) {
+				cv:: UMat foFloat;
+				//FIXME do it once?
 
-            blender.prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+				CV_Assert(!s.empty());
+				CV_Assert(!in.empty());
+				CV_Assert(!eal.empty());
+				//piece it all together
+				//FIXME prepare only once?
+				bl->prepare(cv::Rect(0, 0, WIDTH, HEIGHT));
+				bl->feed(s, fsmg, cv::Point(0, 0));
+				bl->feed(in, bmg, cv::Point(0, 0));
+				bl->feed(eal, ealmg, cv::Point(0, 0));
+				bl->blend(foFloat, cv::UMat());
+				CV_Assert(!foFloat.empty());
+				foFloat.convertTo(fout, CV_8U, 1.0);
+			}, blender_, skin_, faceSkinMaskGrey_, input_, backgroundMaskGrey_, eyesAndLips_, eyesAndLipsMaskGrey_, frameOut_);
 
-            //piece it all together
-            blender.feed(skin, faceSkinMaskGrey, cv::Point(0, 0));
-            blender.feed(input, backgroundMaskGrey, cv::Point(0, 0));
-            blender.feed(eyesAndLips, eyesAndLipsMaskGrey, cv::Point(0, 0));
-            blender.blend(frameOutFloat, cv::UMat());
-            frameOutFloat.convertTo(frameOut, CV_8U, 1.0);
+			window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh, cv::UMat& rh) {
+				if (side_by_side) {
+					//create side-by-side view with a result
+					cv::resize(in, lh, cv::Size(0, 0), 0.5, 0.5);
+					cv::resize(fout, rh, cv::Size(0, 0), 0.5, 0.5);
 
-            if (side_by_side) {
-                //create side-by-side view with a result
-                cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
-                cv::resize(frameOut, rhalf, cv::Size(0, 0), 0.5, 0.5);
+					fout = cv::Scalar::all(0);
+					lh.copyTo(fout(cv::Rect(0, 0, lh.size().width, lh.size().height)));
+					rh.copyTo(fout(cv::Rect(rh.size().width, 0, rh.size().width, rh.size().height)));
+				}
+			}, frameOut_, input_, lhalf_, rhalf_);
+		}
+		window->endgraph(isTrue, faceFound_);
 
-                frameOut = cv::Scalar::all(0);
-                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-                rhalf.copyTo(frameOut(cv::Rect(rhalf.size().width, 0, rhalf.size().width, rhalf.size().height)));
-            }
-        } else {
-            if (side_by_side) {
-                //create side-by-side view without a result (using the input image for both sides)
-                frameOut = cv::Scalar::all(0);
-                cv::resize(input, lhalf, cv::Size(0, 0), 0.5, 0.5);
-                lhalf.copyTo(frameOut(cv::Rect(0, 0, lhalf.size().width, lhalf.size().height)));
-                lhalf.copyTo(frameOut(cv::Rect(lhalf.size().width, 0, lhalf.size().width, lhalf.size().height)));
-            } else {
-                input.copyTo(frameOut);
-            }
-        }
+		window->graph(isFalse, faceFound_);
+		{
+			window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh) {
+				if (side_by_side) {
+					//create side-by-side view without a result (using the input image for both sides)
+					fout = cv::Scalar::all(0);
+					cv::resize(in, lh, cv::Size(0, 0), 0.5, 0.5);
+					lh.copyTo(fout(cv::Rect(0, 0, lh.size().width, lh.size().height)));
+					lh.copyTo(fout(cv::Rect(lh.size().width, 0, lh.size().width, lh.size().height)));
+				} else {
+					in.copyTo(fout);
+				}
+			}, frameOut_, input_, lhalf_);
+		}
+		window->endgraph(isFalse, faceFound_);
 
-        //write the result to the framebuffer
-        window->fb([](cv::UMat &frameBuffer, cv::UMat& f) {
-            cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
-        }, frameOut);
+		window->graph(always);
+		{
+			//write the result to the framebuffer
+			window->fb([](cv::UMat &frameBuffer, const cv::UMat& f) {
+				cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
+			}, frameOut_);
+		}
+		window->endgraph(always);
 
-        window->write();
-
-        return window->display();
     } catch (std::exception &ex) {
         cerr << ex.what() << endl;
-        return false;
     }
-    return true;
 }
+};
 
 #ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
@@ -351,7 +386,7 @@ int main() {
             Begin("Effect");
             Text("Display");
             Checkbox("Side by side", &side_by_side);
-            if(Checkbox("Scale", &stretch)) {
+            if(Checkbox("Stetch", &stretch)) {
                 window->setStretching(true);
             } else
                 window->setStretching(false);
@@ -371,21 +406,21 @@ int main() {
             SliderFloat("Saturation", &skin_saturation, 0.0f, 100.0f);
             SliderFloat("Contrast", &skin_contrast, 0.0f, 1.0f);
             Text("Eyes and Lips");
-            SliderFloat("Saturation", &eyes_and_lips_saturation, 0.0f, 100.0f);
+            SliderFloat("Saturation ", &eyes_and_lips_saturation, 0.0f, 100.0f);
             End();
         });
     }
 #ifndef __EMSCRIPTEN__
-    Source src = makeCaptureSource(window, argv[1]);
+    auto src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
-    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
-    window->setSink(sink);
+//    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+//    window->setSink(sink);
 #else
     Source src = makeCaptureSource(WIDTH, HEIGHT, window);
     window->setSource(src);
 #endif
 
-    window->run(iteration);
+    window->run<BeautyDemoPlan>(2);
 
     return 0;
 }

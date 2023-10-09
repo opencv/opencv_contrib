@@ -29,9 +29,9 @@ using std::endl;
 static const unsigned int triangles = 12;
 static const unsigned int vertices_index = 0;
 static const unsigned int colors_index = 1;
-static unsigned int shader_program;
-static unsigned int vao;
-static unsigned int uniform_transform;
+thread_local unsigned int shader_program;
+thread_local unsigned int vao;
+thread_local unsigned int uniform_transform;
 
 cv::Ptr<cv::v4d::V4D> global_v4d;
 //Simple transform & pass-through shaders
@@ -198,9 +198,9 @@ static void render_scene() {
 #ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    cv::UMat resize;
-    cv::UMat blur;
-    cv::UMat dst16;
+    thread_local cv::UMat resize;
+    thread_local cv::UMat blur;
+    thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -224,10 +224,16 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 using namespace cv::v4d;
 static bool iteration(cv::Ptr<V4D> window) {
-    window->once([=](){ window->gl(init_scene, window->fbSize());});
+    window->once([=](){
+    	window->gl([](const cv::Size& sz){
+    		init_scene(sz);
+    	}, window->fbSize());
+    });
 
     //Render using OpenGL
-    window->gl(render_scene);
+    window->gl([](){
+    	render_scene();
+    });
 
     //To slow for WASM
 #ifndef __EMSCRIPTEN__
@@ -239,7 +245,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     window->write();
 
-    return window->display();
+    return window->display() && false;
 }
 
 int main() {

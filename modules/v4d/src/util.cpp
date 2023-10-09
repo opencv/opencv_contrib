@@ -6,10 +6,11 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/videoio.hpp>
 #include "opencv2/v4d/util.hpp"
+
+#include "../include/opencv2/v4d/detail/sourcecontext.hpp"
 #include "opencv2/v4d/v4d.hpp"
 #include "opencv2/v4d/nvg.hpp"
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
-#include "detail/clvacontext.hpp"
 
 
 
@@ -37,6 +38,17 @@ using namespace cv::v4d::detail;
 namespace cv {
 namespace v4d {
 namespace detail {
+
+thread_local std::mutex ThreadLocal::mtx_;
+thread_local bool ThreadLocal::sync_run_;
+std::mutex Global::mtx_;
+uint64_t Global::frame_cnt_ = 0;
+uint64_t Global::start_time_ = get_epoch_nanos();
+double Global::fps_ = 0;
+
+uint64_t get_epoch_nanos() {
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
 size_t cnz(const cv::UMat& m) {
     cv::UMat grey;
     if(m.channels() == 1) {
@@ -110,6 +122,10 @@ void gl_check_error(const std::filesystem::path& file, unsigned int line, const 
                 << expression << "\nError code:\n   " << errorCode;
         throw std::runtime_error(ss.str());
     }
+#else
+    CV_UNUSED(file);
+    CV_UNUSED(line);
+    CV_UNUSED(expression);
 #endif
 }
 
@@ -300,13 +316,14 @@ Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fou
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_VAAPI,
                     cv::VIDEOWRITER_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     if(isIntelVaSupported())
-        window->clvaCtx().copyContext();
+        window->sourceCtx()->copyContext();
 
     cerr << "Using a VA sink" << endl;
     if(writer->isOpened()) {
 		return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
-	        CLExecScope_t scope(window->clvaCtx().getCLExecContext());
-			static thread_local cv::UMat resized;
+	        CLExecScope_t scope(window->sourceCtx()->getCLExecContext());
+	        //FIXME cache it
+	        cv::UMat resized;
 			cv::resize(frame, resized, frameSize);
 			(*writer) << resized;
 			return writer->isOpened();
@@ -316,17 +333,17 @@ Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fou
     }
 }
 
-Source makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, const int vaDeviceIndex) {
+cv::Ptr<Source> makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_DEVICE, vaDeviceIndex, cv::CAP_PROP_HW_ACCELERATION,
             cv::VIDEO_ACCELERATION_VAAPI, cv::CAP_PROP_HW_ACCELERATION_USE_OPENCL, 1 });
     float fps = capture->get(cv::CAP_PROP_FPS);
     cerr << "Using a VA source" << endl;
     if(isIntelVaSupported())
-        window->clvaCtx().copyContext();
-//    cv::Ptr<ocl::OpenCLExecutionContext> pExecCtx = &ocl::OpenCLExecutionContext::getCurrent();
-    return Source([=](cv::UMat& frame) {
-        CLExecScope_t scope(window->clvaCtx().getCLExecContext());
+        window->sourceCtx()->copyContext();
+
+    return new Source([=](cv::UMat& frame) {
+        CLExecScope_t scope(window->sourceCtx()->getCLExecContext());
         (*capture) >> frame;
         return !frame.empty();
     }, fps);
@@ -349,12 +366,12 @@ static Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const 
     }
 }
 
-static Source makeAnyHWSource(const string& inputFilename) {
+static cv::Ptr<Source> makeAnyHWSource(const string& inputFilename) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG, {
             cv::CAP_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
     float fps = capture->get(cv::CAP_PROP_FPS);
 
-    return Source([=](cv::UMat& frame) {
+    return new Source([=](cv::UMat& frame) {
         (*capture) >> frame;
         return !frame.empty();
     }, fps);
@@ -401,7 +418,7 @@ Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const flo
     }
 }
 
-Source makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename) {
+cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename) {
     if (isIntelVaSupported()) {
         return makeVaSource(window, inputFilename, 0);
     } else {
@@ -415,7 +432,7 @@ Source makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename) {
     cv::Ptr<cv::VideoCapture> capture = new cv::VideoCapture(inputFilename, cv::CAP_FFMPEG);
     float fps = capture->get(cv::CAP_PROP_FPS);
 
-    return Source([=](cv::UMat& frame) {
+    return new Source([=](cv::UMat& frame) {
         (*capture) >> frame;
         return !frame.empty();
     }, fps);
@@ -483,7 +500,7 @@ public:
             );
             GL_CHECK(glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0));
             cv::Size fbSz = window_->fbSize();
-            window_->fbCtx().blitFrameBufferToFrameBuffer(cv::Rect(0, 0, width_, height_), cv::Size(width_, height_), window_->fbCtx().getFramebufferID(), true, true);
+            window_->fbCtx()->blitFrameBufferToFrameBuffer(cv::Rect(0, 0, width_, height_), cv::Size(fbSz.width, fbSz.height), window_->fbCtx()->getFramebufferID(), true, true);
 
             return true;
         }
@@ -505,10 +522,10 @@ void v4dInitCapture(int width, int height) {
 
 }
 
-Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
+cv::Ptr<Source> makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
     using namespace std;
 
-    return Source([=](cv::UMat& frame) {
+    return new Source([=](cv::UMat& frame) {
         if(capture_width > 0 && capture_height > 0) {
             try {
                 run_sync_on_main<17>([&]() {

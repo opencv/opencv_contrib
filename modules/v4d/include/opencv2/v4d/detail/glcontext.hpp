@@ -17,26 +17,27 @@ namespace cv {
 namespace v4d {
 namespace detail {
 /*!
- * Used to setup a nanovg context
+ * Used to setup an OpengLG context
  */
-class CV_EXPORTS GLContext {
-    FrameBufferContext& mainFbContext_;
-    FrameBufferContext glFbContext_;
+class CV_EXPORTS GLContext : public V4DContext {
+    cv::Ptr<FrameBufferContext> mainFbContext_;
+    cv::Ptr<FrameBufferContext> glFbContext_;
 public:
      /*!
      * Creates a OpenGL Context
      * @param fbContext The framebuffer context
      */
-    GLContext(FrameBufferContext& fbContext);
+    GLContext(cv::Ptr<FrameBufferContext> fbContext);
+    virtual ~GLContext() {};
     /*!
      * Execute function object fn inside a gl context.
      * The context takes care of setting up opengl states.
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using opengl
      */
-    void render(std::function<void()> fn);
+    virtual void execute(std::function<void()> fn) override;
 
-    FrameBufferContext& fbCtx();
+    cv::Ptr<FrameBufferContext> fbCtx();
 };
 }
 }

@@ -112,7 +112,7 @@ static bool iteration(cv::Ptr<V4D> window) {
             }
         }, window->fbSize());
 
-        window->fb([](cv::UMat& frameBuffer, cv::UMat& f){
+        window->fb([](const cv::UMat& frameBuffer, cv::UMat& f){
             frameBuffer.copyTo(f);
         }, stars);
         update_stars = false;

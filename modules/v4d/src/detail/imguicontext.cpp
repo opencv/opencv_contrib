@@ -18,7 +18,7 @@
 namespace cv {
 namespace v4d {
 namespace detail {
-ImGuiContextImpl::ImGuiContextImpl(FrameBufferContext& fbContext) :
+ImGuiContextImpl::ImGuiContextImpl(cv::Ptr<FrameBufferContext> fbContext) :
         mainFbContext_(fbContext) {
     run_sync_on_main<27>([&,this](){
         FrameBufferContext::GLScope glScope(mainFbContext_, GL_FRAMEBUFFER);
@@ -32,7 +32,7 @@ ImGuiContextImpl::ImGuiContextImpl(FrameBufferContext& fbContext) :
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
         ImGui::StyleColorsDark();
 
-        ImGui_ImplGlfw_InitForOpenGL(mainFbContext_.getGLFWWindow(), false);
+        ImGui_ImplGlfw_InitForOpenGL(mainFbContext_->getGLFWWindow(), false);
         ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
 #if !defined(OPENCV_V4D_USE_ES3) && !defined(__EMSCRIPTEN__)
         ImGui_ImplOpenGL3_Init("#version 330");
@@ -53,7 +53,7 @@ void ImGuiContextImpl::makeCurrent() {
 
 void ImGuiContextImpl::render(bool showFPS) {
     {
-        mainFbContext_.makeCurrent();
+        mainFbContext_->makeCurrent();
         ImGui::SetCurrentContext(context_);
 
         GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -61,8 +61,8 @@ void ImGuiContextImpl::render(bool showFPS) {
         GL_CHECK(glDrawBuffer(GL_BACK));
 #endif
         GL_CHECK(
-                glViewport(0, 0, mainFbContext_.getWindowSize().width,
-                        mainFbContext_.getWindowSize().height));
+                glViewport(0, 0, mainFbContext_->getWindowSize().width,
+                        mainFbContext_->getWindowSize().height));
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -83,13 +83,14 @@ void ImGuiContextImpl::render(bool showFPS) {
             ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
             ImGui::Begin("Display", open_ptr, window_flags);
             ImGuiIO& io = ImGui::GetIO();
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / io.Framerate) / (mainFbContext_.getV4D()->workers() + 1), io.Framerate * (mainFbContext_.getV4D()->workers() + 1));
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / Global::fps()) , Global::fps());
             ImGui::End();
         }
         if (renderCallback_)
             renderCallback_(context_);
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        mainFbContext_->makeNoneCurrent();
     }
 }
 }

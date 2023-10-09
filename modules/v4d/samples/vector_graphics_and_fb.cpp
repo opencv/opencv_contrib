@@ -98,8 +98,8 @@ int main() {
             boxFilter(framebuffer, framebuffer, -1, Size(15, 15), Point(-1,-1), true, BORDER_REPLICATE);
         });
 
-        return win->display();
-    });
+        return false;
+    }, 2);
 }
 
 

@@ -268,12 +268,18 @@ static void setup_gui(cv::Ptr<V4D> window) {
 }
 
 static bool iteration(cv::Ptr<V4D> window) {
-    window->once([=](){ window->gl(init_scene, window->fbSize());});
+	window->once([=]() {
+		window->gl([](const cv::Size &sz) {
+			init_scene(sz);
+		}, window->fbSize());
+	});
 
-    if(!window->capture())
-        return false;
+	if (!window->capture())
+		return false;
 
-    window->gl(render_scene, window->fbSize());
+	window->gl([](const cv::Size &sz) {
+		render_scene(sz);
+	}, window->fbSize());
 
 #ifndef __EMSCRIPTEN__
     window->fb([](cv::UMat& frameBuffer) {

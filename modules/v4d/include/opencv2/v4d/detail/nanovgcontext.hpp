@@ -6,7 +6,7 @@
 #ifndef SRC_OPENCV_NANOVGCONTEXT_HPP_
 #define SRC_OPENCV_NANOVGCONTEXT_HPP_
 
-#include "opencv2/v4d/detail/framebuffercontext.hpp"
+#include "framebuffercontext.hpp"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -19,9 +19,9 @@ namespace detail {
 /*!
  * Used to setup a nanovg context
  */
-class CV_EXPORTS NanoVGContext {
-    FrameBufferContext& mainFbContext_;
-    FrameBufferContext nvgFbContext_;
+class CV_EXPORTS NanoVGContext : public V4DContext {
+	cv::Ptr<FrameBufferContext> mainFbContext_;
+	cv::Ptr<FrameBufferContext> nvgFbContext_;
     NVGcontext* context_;
 public:
     /*!
@@ -52,7 +52,8 @@ public:
      * @param context The native NVGContext
      * @param fbContext The framebuffer context
      */
-    NanoVGContext(FrameBufferContext& fbContext);
+    NanoVGContext(cv::Ptr<FrameBufferContext> fbContext);
+    virtual ~NanoVGContext() {};
 
     /*!
      * Execute function object fn inside a nanovg context.
@@ -61,9 +62,10 @@ public:
      * @param fn A function that is passed the size of the framebuffer
      * and performs drawing using cv::viz::nvg
      */
-    void render(std::function<void()> fn);
+    virtual void execute(std::function<void()> fn) override;
 
-    FrameBufferContext& fbCtx();
+
+    cv::Ptr<FrameBufferContext> fbCtx();
 private:
     /*!
      * Setup NanoVG context

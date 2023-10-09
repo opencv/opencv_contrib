@@ -12,8 +12,8 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
-        mainFbContext_(fbContext), nvgFbContext_(*fbContext.getV4D(), "NanoVG", fbContext), context_(
+NanoVGContext::NanoVGContext(cv::Ptr<FrameBufferContext> fbContext) :
+        mainFbContext_(fbContext), nvgFbContext_(new FrameBufferContext(*fbContext->getV4D(), "NanoVG", *fbContext)), context_(
                 nullptr) {
     run_sync_on_main<13>([this]() {
         {
@@ -35,19 +35,19 @@ NanoVGContext::NanoVGContext(FrameBufferContext& fbContext) :
             nvgCreateFont(context_, "sans-bold", "modules/v4d/assets/fonts/Roboto-Bold.ttf");
 #endif
 #ifdef __EMSCRIPTEN__
-            mainFbContext_.initWebGLCopy(fbCtx().getIndex());
+            mainFbContext_.initWebGLCopy(fbCtx()->getIndex());
 #endif
         }
     });
 }
 
-void NanoVGContext::render(std::function<void()> fn) {
+void NanoVGContext::execute(std::function<void()> fn) {
     run_sync_on_main<14>([this, fn]() {
 #ifndef __EMSCRIPTEN__
-        if (!fbCtx().isShared()) {
+        if (!fbCtx()->isShared()) {
             UMat tmp;
-            mainFbContext_.copyTo(tmp);
-            fbCtx().copyFrom(tmp);
+            mainFbContext_->copyTo(tmp);
+            fbCtx()->copyFrom(tmp);
         }
 #endif
         {
@@ -61,22 +61,22 @@ void NanoVGContext::render(std::function<void()> fn) {
             cv::v4d::nvg::detail::NVG::initializeContext(context_);
             fn();
         }
-        if (!fbCtx().isShared()) {
+        if (!fbCtx()->isShared()) {
 #ifdef __EMSCRIPTEN__
             mainFbContext_.doWebGLCopy(fbCtx());
 #else
             UMat tmp;
-            fbCtx().copyTo(tmp);
-            mainFbContext_.copyFrom(tmp);
+            fbCtx()->copyTo(tmp);
+            mainFbContext_->copyFrom(tmp);
 #endif
         }
     });
 }
 
 void NanoVGContext::begin() {
-    float w = fbCtx().size().width;
-    float h = fbCtx().size().height;
-    float r = fbCtx().pixelRatioX();
+    float w = fbCtx()->size().width;
+    float h = fbCtx()->size().height;
+    float r = fbCtx()->pixelRatioX();
 
     nvgSave(context_);
     nvgBeginFrame(context_, w, h, r);
@@ -86,14 +86,13 @@ void NanoVGContext::begin() {
 }
 
 void NanoVGContext::end() {
-    fbCtx().makeCurrent();
     //FIXME make nvgCancelFrame possible
 
     nvgEndFrame(context_);
     nvgRestore(context_);
 }
 
-FrameBufferContext& NanoVGContext::fbCtx() {
+cv::Ptr<FrameBufferContext> NanoVGContext::fbCtx() {
     return nvgFbContext_;
 }
 }

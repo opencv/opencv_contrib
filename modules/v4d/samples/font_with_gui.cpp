@@ -9,7 +9,7 @@ int main() {
 	//The font size
 	float size = 40.0f;
 	//The text hue
-	float color[3] = {1.0f, 0.0f, 0.0f};
+	std::vector<float> color = {1.0f, 0.0f, 0.0f};
 	//The text
 	string hw = "hello world";
 	//Setup the GUI
@@ -18,13 +18,13 @@ int main() {
 	    SetCurrentContext(ctx);
 	    Begin("Settings");
 	    SliderFloat("Font Size", &size, 1.0f, 100.0f);
-		ColorPicker3("Text Color", color);
+		ColorPicker3("Text Color", color.data());
 		End();
 	});
 
 	window->run([&](Ptr<V4D> win) {
 		//Render the text at the center of the screen using parameters from the GUI.
-		win->nvg([](const Size& sz, const string& str, float s, float c[3]) {
+		win->nvg([](const Size& sz, const string& str, const float& s, const std::vector<float>& c) {
 			using namespace cv::v4d::nvg;
 			clear();
 			fontSize(s);

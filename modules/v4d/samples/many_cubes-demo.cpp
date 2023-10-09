@@ -33,9 +33,9 @@ const unsigned int triangles = 12;
 const unsigned int vertices_index = 0;
 const unsigned int colors_index = 1;
 
-static thread_local unsigned int shader_program[NUMBER_OF_CUBES];
-static thread_local unsigned int vao[NUMBER_OF_CUBES];
-static thread_local unsigned int uniform_transform[NUMBER_OF_CUBES];
+thread_local unsigned int shader_program[NUMBER_OF_CUBES];
+thread_local unsigned int vao[NUMBER_OF_CUBES];
+thread_local unsigned int uniform_transform[NUMBER_OF_CUBES];
 
 //Simple transform & pass-through shaders
 static GLuint load_shader() {
@@ -202,9 +202,9 @@ static void render_scene(const double& x, const double& y, const double& angleMo
 #ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static thread_local cv::UMat resize;
-    static thread_local cv::UMat blur;
-    static thread_local cv::UMat dst16;
+    thread_local cv::UMat resize;
+    thread_local cv::UMat blur;
+    thread_local cv::UMat dst16;
 
     cv::bitwise_not(src, dst);
 
@@ -241,7 +241,7 @@ static bool iteration(cv::Ptr<V4D> window) {
 
     //Render using multiple OpenGL contexts
     for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-        window->gl(i, [](const size_t idx){
+        window->gl(i, [](const size_t& idx){
             double pos = (((double(idx) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
             double angle = sin((double(idx) / NUMBER_OF_CUBES) * 2 * M_PI);
             render_scene(pos, pos, angle, idx);

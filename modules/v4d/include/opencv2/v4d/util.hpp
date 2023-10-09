@@ -11,6 +11,11 @@
 #include <filesystem>
 #include <string>
 #include <iostream>
+#ifdef __GNUG__
+#include <cstdlib>
+#include <memory>
+#include <cxxabi.h>
+#endif
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -29,6 +34,108 @@
 namespace cv {
 namespace v4d {
 namespace detail {
+
+using std::cout;
+using std::endl;
+
+class ThreadLocal {
+    static thread_local std::mutex mtx_;
+    static thread_local bool sync_run_;
+public:
+    static bool& sync_run() {
+    	return sync_run_;
+    }
+
+    static std::mutex& mutex() {
+    	return mtx_;
+    }
+};
+
+class Global {
+    static std::mutex mtx_;
+    static uint64_t frame_cnt_;
+    static uint64_t start_time_;
+    static double fps_;
+public:
+    static std::mutex& mutex() {
+    	return mtx_;
+    }
+
+    static uint64_t& frame_cnt() {
+    	return frame_cnt_;
+    }
+
+    static uint64_t& start_time() {
+        	return start_time_;
+    }
+
+    static double& fps() {
+    	return fps_;
+    }
+};
+
+uint64_t get_epoch_nanos();
+
+
+//https://stackoverflow.com/a/27885283/1884837
+template<class T>
+struct function_traits : function_traits<decltype(&T::operator())> {
+};
+
+// partial specialization for function type
+template<class R, class... Args>
+struct function_traits<R(Args...)> {
+    using result_type = R;
+    using argument_types = std::tuple<Args...>;
+};
+
+// partial specialization for function pointer
+template<class R, class... Args>
+struct function_traits<R (*)(Args...)> {
+    using result_type = R;
+    using argument_types = std::tuple<Args...>;
+};
+
+// partial specialization for std::function
+template<class R, class... Args>
+struct function_traits<std::function<R(Args...)>> {
+    using result_type = R;
+    using argument_types = std::tuple<Args...>;
+};
+
+// partial specialization for pointer-to-member-function (i.e., operator()'s)
+template<class T, class R, class... Args>
+struct function_traits<R (T::*)(Args...)> {
+    using result_type = R;
+    using argument_types = std::tuple<Args...>;
+};
+
+template<class T, class R, class... Args>
+struct function_traits<R (T::*)(Args...) const> {
+    using result_type = R;
+    using argument_types = std::tuple<Args...>;
+};
+
+
+//https://stackoverflow.com/questions/281818/unmangling-the-result-of-stdtype-infoname
+#ifdef __GNUG__
+static std::string demangle(const char* name) {
+    int status = -4; // some arbitrary value to eliminate the compiler warning
+    std::unique_ptr<char, void(*)(void*)> res {
+        abi::__cxa_demangle(name, NULL, NULL, &status),
+        std::free
+    };
+
+    return (status==0) ? res.get() : name ;
+}
+
+#else
+// does nothing if not g++
+static std::string demangle(const char* name) {
+    return name;
+}
+#endif
+
 template <const size_t _UniqueId, typename _Res, typename... _ArgTypes>
 struct fun_ptr_helper
 {
@@ -75,22 +182,46 @@ make_function(T *t)
     return {t};
 }
 
-static thread_local bool sync_run = false;
+//https://stackoverflow.com/a/33047781/1884837
+struct Lambda {
+    template<typename Tret, typename T>
+    static Tret lambda_ptr_exec() {
+        return (Tret) (*(T*)fn<T>());
+    }
+
+    template<typename Tret = void, typename Tfp = Tret(*)(), typename T>
+    static Tfp ptr(T& t) {
+        fn<T>(&t);
+        return (Tfp) lambda_ptr_exec<Tret, T>;
+    }
+
+    template<typename T>
+    static const void* fn(const void* new_fn = nullptr) {
+        thread_local const void* fn;
+        if (new_fn != nullptr)
+            fn = new_fn;
+        return fn;
+    }
+};
+
+
+
 template<std::size_t Tid>
 void run_sync_on_main(std::function<void()> fn) {
+	std::unique_lock<std::mutex> lock(ThreadLocal::mutex());
     CV_Assert(fn);
-
-    if(sync_run)
-        throw std::runtime_error("Encountered nested run_sync_on_main");
-    sync_run = true;
-
+    CV_Assert(!ThreadLocal::sync_run());
+    ThreadLocal::sync_run() = true;
+    try {
 #ifdef __EMSCRIPTEN__
-    emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
+		emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
 #else
-    fn();
+    	fn();
 #endif
+	} catch(...) {
 
-    sync_run = false;
+	}
+	ThreadLocal::sync_run() = false;
 }
 
 CV_EXPORTS size_t cnz(const cv::UMat& m);
@@ -183,7 +314,7 @@ CV_EXPORTS Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, co
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled source object.
  */
-CV_EXPORTS Source makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, const int vaDeviceIndex);
+CV_EXPORTS cv::Ptr<Source> makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, const int vaDeviceIndex);
 /*!
  * Creates a VideoWriter sink object to use in conjunction with #V4D::setSink().
  * This function automatically determines if Intel VAAPI is available and enables it if so.
@@ -203,7 +334,7 @@ CV_EXPORTS Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename
  * @param inputFilename The file to read from.
  * @return A (optionally VAAPI enabled) VideoCapture enabled source object.
  */
-CV_EXPORTS Source makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename);
+CV_EXPORTS cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window, const string& inputFilename);
 #else
 /*!
  * Creates a WebCam source object to use in conjunction with #V4D::setSource().
@@ -211,7 +342,7 @@ CV_EXPORTS Source makeCaptureSource(cv::Ptr<V4D> window, const string& inputFile
  * @param height The frame height to capture (usually the initial height of the V4D object)
  * @return A WebCam source object.
  */
-CV_EXPORTS Source makeCaptureSource(int width, int height, cv::Ptr<V4D> window);
+CV_EXPORTS cv::Ptr<Source> makeCaptureSource(int width, int height, cv::Ptr<V4D> window);
 #endif
 
 void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor = {0,0,0,255});

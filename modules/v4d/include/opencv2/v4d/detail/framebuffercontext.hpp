@@ -11,7 +11,8 @@
 #endif
 
 //FIXME
-#include "opencv2/v4d/detail/cl.hpp"
+#include "cl.hpp"
+#include "context.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/core/ocl.hpp>
 #include "opencv2/v4d/util.hpp"
@@ -52,16 +53,17 @@ public:
 /*!
  * The FrameBufferContext acquires the framebuffer from OpenGL (either by up-/download or by cl-gl sharing)
  */
-class CV_EXPORTS FrameBufferContext {
+class CV_EXPORTS FrameBufferContext : public V4DContext {
     typedef unsigned int GLuint;
     typedef signed int GLint;
 
-    friend class CLVAContext;
+    friend class SourceContext;
+    friend class SinkContext;
     friend class GLContext;
     friend class NanoVGContext;
     friend class ImGuiContextImpl;
     friend class cv::v4d::V4D;
-
+    cv::Ptr<FrameBufferContext> self_ = this;
     V4D* v4d_ = nullptr;
     bool offscreen_;
     string title_;
@@ -121,7 +123,7 @@ public:
      * Acquires and releases the framebuffer from and to OpenGL.
      */
     class CV_EXPORTS FrameBufferScope {
-        FrameBufferContext& ctx_;
+    	cv::Ptr<FrameBufferContext> ctx_;
         cv::UMat& m_;
 #ifndef __EMSCRIPTEN__
         std::shared_ptr<ocl::OpenCLExecutionContext> pExecCtx;
@@ -132,7 +134,7 @@ public:
          * @param ctx The corresponding #FrameBufferContext.
          * @param m The UMat to bind the OpenGL framebuffer to.
          */
-        CV_EXPORTS FrameBufferScope(FrameBufferContext& ctx, cv::UMat& m) :
+        CV_EXPORTS FrameBufferScope(cv::Ptr<FrameBufferContext> ctx, cv::UMat& m) :
                 ctx_(ctx), m_(m)
 #ifndef __EMSCRIPTEN__
         , pExecCtx(std::static_pointer_cast<ocl::OpenCLExecutionContext>(m.u->allocatorContext))
@@ -142,27 +144,27 @@ public:
 #ifndef __EMSCRIPTEN__
             if(pExecCtx) {
                 CLExecScope_t execScope(*pExecCtx.get());
-                ctx_.acquireFromGL(m_);
+                ctx_->acquireFromGL(m_);
             } else
 #endif
             {
-                ctx_.acquireFromGL(m_);
+                ctx_->acquireFromGL(m_);
             }
         }
         /*!
          * Releases the framebuffer via cl-gl sharing.
          */
-        CV_EXPORTS ~FrameBufferScope() {
+        CV_EXPORTS virtual ~FrameBufferScope() {
 #ifndef __EMSCRIPTEN__
 
             if (pExecCtx) {
                 CLExecScope_t execScope(*pExecCtx.get());
-                ctx_.releaseToGL(m_);
+                ctx_->releaseToGL(m_);
             }
             else
 #endif
             {
-                ctx_.releaseToGL(m_);
+                ctx_->releaseToGL(m_);
             }
         }
     };
@@ -171,21 +173,21 @@ public:
      * Setups and tears-down OpenGL states.
      */
     class CV_EXPORTS GLScope {
-        FrameBufferContext& ctx_;
+    	cv::Ptr<FrameBufferContext> ctx_;
     public:
         /*!
          * Setup OpenGL states.
          * @param ctx The corresponding #FrameBufferContext.
          */
-        CV_EXPORTS GLScope(FrameBufferContext& ctx, GLenum framebufferTarget = GL_FRAMEBUFFER) :
+        CV_EXPORTS GLScope(cv::Ptr<FrameBufferContext> ctx, GLenum framebufferTarget = GL_FRAMEBUFFER) :
                 ctx_(ctx) {
-            ctx_.begin(framebufferTarget);
+            ctx_->begin(framebufferTarget);
         }
         /*!
          * Tear-down OpenGL states.
          */
         CV_EXPORTS ~GLScope() {
-            ctx_.end();
+            ctx_->end();
         }
     };
 
@@ -202,6 +204,10 @@ public:
      * Default destructor.
      */
     virtual ~FrameBufferContext();
+
+    cv::Ptr<FrameBufferContext> self() {
+    	return self_;
+    }
 
     GLuint getFramebufferID();
     GLuint getTextureID();
@@ -220,21 +226,20 @@ public:
       * directly on the framebuffer.
       * @param fn A function object that is passed the framebuffer to be read/manipulated.
       */
-    template <typename Tfn, typename ... Args>
-    void execute(Tfn fn, Args& ... args) {
-        run_sync_on_main<2>([this, fn, &args...](){
+    virtual void execute(std::function<void()> fn) override {
+        run_sync_on_main<2>([this,fn](){
     #ifndef __EMSCRIPTEN__
             if(!getCLExecContext().empty()) {
                 CLExecScope_t clExecScope(getCLExecContext());
-                FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-                FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-                fn(framebuffer_, args...);
+                FrameBufferContext::GLScope glScope(self(), GL_FRAMEBUFFER);
+                FrameBufferContext::FrameBufferScope fbScope(self(), framebuffer_);
+                fn();
             } else
     #endif
             {
-                FrameBufferContext::GLScope glScope(*this, GL_FRAMEBUFFER);
-                FrameBufferContext::FrameBufferScope fbScope(*this, framebuffer_);
-                fn(framebuffer_, args...);
+                FrameBufferContext::GLScope glScope(self(), GL_FRAMEBUFFER);
+                FrameBufferContext::FrameBufferScope fbScope(self(), framebuffer_);
+                fn();
             }
         });
     }
@@ -242,6 +247,7 @@ public:
     float pixelRatioX();
     float pixelRatioY();
     void makeCurrent();
+    void makeNoneCurrent();
     bool isResizable();
     void setResizable(bool r);
     void setWindowSize(const cv::Size& sz);
@@ -264,6 +270,16 @@ public:
      */
     void blitFrameBufferToFrameBuffer(const cv::Rect& srcViewport, const cv::Size& targetFbSize,
             GLuint targetFramebufferID = 0, bool stretch = true, bool flipY = false);
+
+//FIXME make it protected again
+#ifndef __EMSCRIPTEN__
+    /*!
+     * Get the current OpenCLExecutionContext
+     * @return The current OpenCLExecutionContext
+     */
+    CLExecContext_t& getCLExecContext();
+#endif
+
 protected:
     cv::Ptr<V4D> getV4D();
     int getIndex();
@@ -281,18 +297,11 @@ protected:
     cv::ogl::Texture2D& getTexture2D();
 
     GLFWwindow* getGLFWWindow();
-
-#ifndef __EMSCRIPTEN__
-    /*!
-     * Get the current OpenCLExecutionContext
-     * @return The current OpenCLExecutionContext
-     */
-    CLExecContext_t& getCLExecContext();
-#endif
 private:
     void loadBuffers(const size_t& index);
     void loadShader(const size_t& index);
     void init();
+    CV_EXPORTS cv::UMat& fb();
     /*!
      * Setup OpenGL states.
      */
