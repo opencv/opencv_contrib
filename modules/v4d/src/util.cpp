@@ -308,7 +308,7 @@ bool keepRunning() {
 }
 
 #ifndef __EMSCRIPTEN__
-Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fourcc, const float fps,
+cv::Ptr<Sink> makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             fourcc, fps, frameSize, {
@@ -320,7 +320,7 @@ Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fou
 
     cerr << "Using a VA sink" << endl;
     if(writer->isOpened()) {
-		return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
+		return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
 	        CLExecScope_t scope(window->sourceCtx()->getCLExecContext());
 	        //FIXME cache it
 	        cv::UMat resized;
@@ -329,7 +329,7 @@ Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fou
 			return writer->isOpened();
 		});
     } else {
-    	return Sink();
+    	return new Sink();
     }
 }
 
@@ -349,20 +349,20 @@ cv::Ptr<Source> makeVaSource(cv::Ptr<V4D> window, const string& inputFilename, c
     }, fps);
 }
 
-static Sink makeAnyHWSink(const string& outputFilename, const int fourcc, const float fps,
+static cv::Ptr<Sink> makeAnyHWSink(const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize) {
     cv::Ptr<cv::VideoWriter> writer = new cv::VideoWriter(outputFilename, cv::CAP_FFMPEG,
             fourcc, fps, frameSize, { cv::VIDEOWRITER_PROP_HW_ACCELERATION, cv::VIDEO_ACCELERATION_ANY });
 
     if(writer->isOpened()) {
-        return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
+        return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
             cv::UMat resized;
             cv::resize(frame, resized, frameSize);
             (*writer) << resized;
             return writer->isOpened();
         });
     } else {
-        return Sink();
+        return new Sink();
     }
 }
 
@@ -379,7 +379,7 @@ static cv::Ptr<Source> makeAnyHWSource(const string& inputFilename) {
 #endif
 
 #ifndef __EMSCRIPTEN__
-Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps, const cv::Size& frameSize) {
+cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps, const cv::Size& frameSize) {
     int fourcc = 0;
     cerr << getGlVendor() << endl;
     //FIXME find a cleverer way to guess a decent codec
@@ -391,7 +391,7 @@ Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const flo
     return makeWriterSink(window, outputFilename, fps, frameSize, fourcc);
 }
 
-Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
+cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
         const cv::Size& frameSize, int fourcc) {
     if (isIntelVaSupported()) {
         return makeVaSink(window, outputFilename, fourcc, fps, frameSize, 0);
@@ -407,14 +407,14 @@ Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const flo
             fourcc, fps, frameSize);
 
     if(writer->isOpened()) {
-		return Sink([=](const uint64_t& seq, const cv::UMat& frame) {
+		return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
 			cv::UMat resized;
 			cv::resize(frame, resized, frameSize);
 			(*writer) << resized;
 			return writer->isOpened();
 		});
     } else {
-    	return Sink();
+    	return new Sink();
     }
 }
 

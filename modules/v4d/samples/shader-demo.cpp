@@ -267,30 +267,32 @@ static void setup_gui(cv::Ptr<V4D> window) {
     });
 }
 
-static bool iteration(cv::Ptr<V4D> window) {
-	window->once([=]() {
-		window->gl([](const cv::Size &sz) {
-			init_scene(sz);
-		}, window->fbSize());
-	});
+class ShaderDemoPlan : public Plan {
+cv::UMat frame_;
+public:
+void setup(cv::Ptr<V4D> window) override {
+	window->gl([](const cv::Size &sz) {
+		init_scene(sz);
+	}, window->fbSize());
+}
 
-	if (!window->capture())
-		return false;
+void infere(cv::Ptr<V4D> window) override {
+	window->capture(frame_);
 
 	window->gl([](const cv::Size &sz) {
 		render_scene(sz);
 	}, window->fbSize());
 
 #ifndef __EMSCRIPTEN__
-    window->fb([](cv::UMat& frameBuffer) {
-        glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
-    });
+    window->fb([](cv::UMat& framebuffer, cv::UMat& f) {
+        glow_effect(framebuffer, framebuffer, glow_kernel_size);
+        framebuffer.copyTo(f);
+    }, frame_);
 #endif
 
-    window->write();
-
-    return window->display();
+	window->write(frame_);
 }
+};
 
 #ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
@@ -310,16 +312,16 @@ int main() {
         window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
-        Source src = makeCaptureSource(window, argv[1]);
+        auto src = makeCaptureSource(window, argv[1]);
         window->setSource(src);
-        Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+        auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
         Source src = makeCaptureSource(WIDTH, HEIGHT, window);
         window->setSource(src);
 #endif
 
-        window->run(iteration);
+        window->run<ShaderDemoPlan>(3);
     } catch (std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

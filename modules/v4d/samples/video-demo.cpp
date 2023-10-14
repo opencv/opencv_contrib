@@ -188,34 +188,31 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 }
 #endif
 
-
-
 using namespace cv::v4d;
-static bool iteration(cv::Ptr<V4D> window) {
-	window->once([=]() {
+class VideoDemoPlan: public Plan {
+cv::UMat frame_;
+public:
+	void setup(cv::Ptr<V4D> window) override {
 		window->gl([]() {
 			init_scene();
 		});
-	});
+	}
+	void infere(cv::Ptr<V4D> window) override {
+		window->capture(frame_);
 
-	if (!window->capture())
-		return false;
+		window->gl([]() {
+			render_scene();
+		});
 
-	window->gl([]() {
-		render_scene();
-	});
+		window->fb([](cv::UMat &framebuffer, cv::UMat& f) {
+			glow_effect(framebuffer, framebuffer, glow_kernel_size);
+			framebuffer.copyTo(f);
+		}, frame_);
 
-#ifndef __EMSCRIPTEN__
-    window->fb([](cv::UMat& frameBuffer) {
-        glow_effect(frameBuffer, frameBuffer, glow_kernel_size);
-    });
-#endif
-
-    //Ignored in WebAssmebly builds because there is no sink set.
-    window->write();
-
-    return window->display();
-}
+		//Ignored in WebAssmebly builds because there is no sink set.
+		window->write(frame_);
+	}
+};
 
 #ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
@@ -232,18 +229,18 @@ int main() {
 
 #ifndef __EMSCRIPTEN__
     //Creates a source from a file or a device
-    Source src = makeCaptureSource(window, argv[1]);
+    auto src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
 
-    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #else
     //Creates a webcam source is available
-    Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+    auto src = makeCaptureSource(WIDTH, HEIGHT, window);
     window->setSource(src);
 #endif
 
-    window->run(iteration);
+    window->run<VideoDemoPlan>(0);
 
     return 0;
 }

@@ -78,98 +78,118 @@ static void setup_gui(cv::Ptr<V4D> window) {
     });
 }
 
-static bool iteration(cv::Ptr<V4D> window) {
+class FontDemoPlan : public Plan {
     //BGRA
-    static thread_local cv::UMat stars, warped;
+    cv::UMat stars_, warped_, frame_;
     //transformation matrix
-    static thread_local cv::Mat tm;
-    static thread_local cv::RNG rng(cv::getTickCount());
+    cv::Mat tm_;
+    cv::RNG rng_ = cv::getTickCount();
     //line count
-    static thread_local uint32_t cnt = 0;
+    uint32_t cnt_ = 0;
     //Total number of lines in the text
-    static thread_local int32_t numLines = lines.size();
+    int32_t numLines_ = lines.size();
     //Height of the text in pixels
-    static thread_local int32_t textHeight = (numLines * font_size);
+    int32_t textHeight_ = (numLines_ * font_size);
     //y-value of the current line
-    static thread_local int32_t y = 0;
-    //How many pixels to translate the text up.
-    int32_t translateY = HEIGHT - cnt;
+    int32_t y_ = 0;
 
-    if(update_stars) {
-        window->nvg([](const cv::Size& sz) {
-            using namespace cv::v4d::nvg;
-            clear();
+    int32_t translateY_;
+public:
+    void infere(cv::Ptr<V4D> window) override {
+    	auto always = []() { return true; };
+    	auto isTrue = [](const bool& b) { return b; };
 
-            //draw stars
-            int numStars = rng.uniform(min_star_count, max_star_count);
-            for(int i = 0; i < numStars; ++i) {
-                beginPath();
-                const auto& size = rng.uniform(min_star_size, max_star_size);
-                strokeWidth(size);
-                strokeColor(cv::Scalar(255, 255, 255, star_alpha * 255.0f));
-                circle(rng.uniform(0, sz.width) , rng.uniform(0, sz.height), size / 2.0);
-                stroke();
-            }
-        }, window->fbSize());
+		window->graph(isTrue, update_stars);
+		{
+			window->nvg([](const cv::Size& sz, cv::RNG& rng) {
+				using namespace cv::v4d::nvg;
+				clear();
 
-        window->fb([](const cv::UMat& frameBuffer, cv::UMat& f){
-            frameBuffer.copyTo(f);
-        }, stars);
-        update_stars = false;
+				//draw stars
+				int numStars = rng.uniform(min_star_count, max_star_count);
+				for(int i = 0; i < numStars; ++i) {
+					beginPath();
+					const auto& size = rng.uniform(min_star_size, max_star_size);
+					strokeWidth(size);
+					strokeColor(cv::Scalar(255, 255, 255, star_alpha * 255.0f));
+					circle(rng.uniform(0, sz.width) , rng.uniform(0, sz.height), size / 2.0);
+					stroke();
+				}
+			}, window->fbSize(), rng_);
+
+			window->fb([](const cv::UMat& frameBuffer, cv::UMat& f){
+				frameBuffer.copyTo(f);
+			}, stars_);
+		}
+		window->endgraph(isTrue, update_stars);
+
+		window->graph(isTrue, update_perspective);
+		{
+			window->parallel([](cv::Mat& tm){
+				//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
+				vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
+				float l = (WIDTH - (WIDTH * warp_ratio)) / 2.0;
+				float r = WIDTH - l;
+
+				vector<cv::Point2f> quad2 = {{l, 0.0f},{r, 0.0f},{WIDTH,HEIGHT},{0,HEIGHT}};
+				tm = cv::getPerspectiveTransform(quad1, quad2);
+			}, tm_);
+		}
+		window->endgraph(isTrue, update_perspective);
+
+		window->graph(always);
+		{
+			window->nvg([](const cv::Size& sz, int32_t& ty, const int32_t& cnt, int32_t& y, const int32_t& textHeight) {
+				//How many pixels to translate the text up.
+		    	ty = HEIGHT - cnt;
+				using namespace cv::v4d::nvg;
+				clear();
+				fontSize(font_size);
+				fontFace("sans-bold");
+				fillColor(cv::Scalar(text_color[2] * 255.0f, text_color[1] * 255.0f, text_color[0] * 255.0f, text_color[3] * 255.0f));
+				textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+
+				/** only draw lines that are visible **/
+				translate(0, ty);
+
+				for (size_t i = 0; i < lines.size(); ++i) {
+					y = (i * font_size);
+					if (y + ty < textHeight && y + ty + font_size > 0) {
+						text(sz.width / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
+					}
+				}
+			}, window->fbSize(), translateY_, cnt_, y_, textHeight_);
+
+			window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t, cv::UMat& f) {
+				//Pseudo 3D text effect.
+				cv::warpPerspective(framebuffer, w, t, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
+				//Combine layers
+				cv::add(s, w, framebuffer);
+				framebuffer.copyTo(f);
+			}, warped_, stars_, tm_, frame_);
+
+			window->parallel([](const int32_t& translateY, const int32_t& textHeight, uint32_t& cnt) {
+				if(-translateY > textHeight) {
+					//reset the scroll once the text is out of the picture
+					cnt = 0;
+				}
+
+				++cnt;
+				//Wrap the cnt around if it becomes to big.
+				if(cnt > std::numeric_limits<uint32_t>().max() / 2.0)
+					cnt = 0;
+			}, translateY_, textHeight_, cnt_);
+
+			window->write([](cv::UMat& outputFrame, cv::UMat& f){
+				f.copyTo(outputFrame);
+				update_perspective = false;
+				update_stars = false;
+			}, frame_);
+		}
+		window->endgraph(always);
+
     }
-
-    if(update_perspective) {
-        //Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
-        vector<cv::Point2f> quad1 = {{0,0},{WIDTH,0},{WIDTH,HEIGHT},{0,HEIGHT}};
-        float l = (WIDTH - (WIDTH * warp_ratio)) / 2.0;
-        float r = WIDTH - l;
-
-        vector<cv::Point2f> quad2 = {{l, 0.0f},{r, 0.0f},{WIDTH,HEIGHT},{0,HEIGHT}};
-        tm = cv::getPerspectiveTransform(quad1, quad2);
-        update_perspective = false;
-    }
-
-    window->nvg([](const cv::Size& sz, const int32_t& ty) {
-        using namespace cv::v4d::nvg;
-        clear();
-        fontSize(font_size);
-        fontFace("sans-bold");
-        fillColor(cv::Scalar(text_color[2] * 255.0f, text_color[1] * 255.0f, text_color[0] * 255.0f, text_color[3] * 255.0f));
-        textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-
-        /** only draw lines that are visible **/
-        translate(0, ty);
-
-        for (size_t i = 0; i < lines.size(); ++i) {
-            y = (i * font_size);
-            if (y + ty < textHeight && y + ty + font_size > 0) {
-                text(sz.width / 2.0, y, lines[i].c_str(), lines[i].c_str() + lines[i].size());
-            }
-        }
-    }, window->fbSize(), translateY);
-
-    window->fb([](cv::UMat& framebuffer, cv::UMat& w, cv::UMat& s, cv::Mat& t) {
-        //Pseudo 3D text effect.
-        cv::warpPerspective(framebuffer, w, t, framebuffer.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar());
-        //Combine layers
-        cv::add(s, w, framebuffer);
-    }, warped, stars, tm);
-
-    if(-translateY > textHeight) {
-        //reset the scroll once the text is out of the picture
-        cnt = 0;
-    }
-
-    window->write();
-
-    ++cnt;
-    //Wrap the cnt around if it becomes to big.
-    if(cnt > std::numeric_limits<size_t>().max() / 2.0)
-        cnt = 0;
-
-    return window->display();
-}
-
+};
 int main() {
     try {
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Font Demo", ALL, OFFSCREEN);
@@ -190,11 +210,11 @@ int main() {
         }
 
 #ifndef __EMSCRIPTEN__
-        Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+        auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #endif
 
-        window->run(iteration);
+        window->run<FontDemoPlan>(0);
     } catch(std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

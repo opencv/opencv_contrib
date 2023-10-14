@@ -125,53 +125,58 @@ static void draw_color_wheel(float x, float y, float w, float h, double hue) {
 
 using namespace cv::v4d;
 
-static bool iteration(cv::Ptr<V4D> window) {
-    static thread_local std::vector<cv::UMat> hsvChannels;
-    static thread_local cv::UMat rgb;
-    static thread_local cv::UMat bgra;
-    static thread_local cv::UMat hsv;
-    static thread_local cv::UMat hueChannel;
+class NanoVGDemoPlan : public Plan {
+	std::vector<cv::UMat> hsvChannels_;
+	cv::UMat rgb_;
+	cv::UMat bgra_;
+	cv::UMat hsv_;
+	cv::UMat hueChannel_;
+	double hue_;
+public:
+	void infere(cv::Ptr<V4D> window) override {
 
-    //we use frame count to calculate the current hue
-    float t = window->frameCount() / 60.0;
-    //nanovg hue fading depending on t
-    double hue = (sinf(t * 0.12) + 1.0) * 127.5;
+		window->parallel([](const uint64_t& frameCount, double& hue){
+			//we use frame count to calculate the current hue
+			float t = frameCount / 60.0;
+			//nanovg hue fading depending on t
+			hue = (sinf(t * 0.12) + 1.0) * 127.5;
+		},  window->frameCount(), hue_);
 
-    if (!window->capture())
-        return false;
+		window->capture();
 
-    //Acquire the framebuffer and convert it to RGB
-    window->fb([](cv::UMat &framebuffer) {
-        cvtColor(framebuffer, rgb, cv::COLOR_BGRA2RGB);
-    });
+		//Acquire the framebuffer and convert it to RGB
+		window->fb([](const cv::UMat &framebuffer, cv::UMat& rgb) {
+			cvtColor(framebuffer, rgb, cv::COLOR_BGRA2RGB);
+		}, rgb_);
 
-    //Color-conversion from RGB to HSV
-    cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
+		window->parallel([](cv::UMat& rgb, cv::UMat& hsv, std::vector<cv::UMat>& hsvChannels, double hue){
+			//Color-conversion from RGB to HSV
+			cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
 
-    //Split the channels
-    split(hsv,hsvChannels);
-    //Set the current hue
-    hsvChannels[0].setTo(std::round(hue));
-    //Merge the channels back
-    merge(hsvChannels,hsv);
+			//Split the channels
+			split(hsv,hsvChannels);
+			//Set the current hue
+			hsvChannels[0].setTo(std::round(hue));
+			//Merge the channels back
+			merge(hsvChannels,hsv);
 
-    //Color-conversion from HSV to RGB
-    cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+			//Color-conversion from HSV to RGB
+			cv::cvtColor(hsv, rgb, cv::COLOR_HSV2RGB_FULL);
+		}, rgb_, hsv_, hsvChannels_, hue_);
 
-    //Acquire the framebuffer and convert the rgb into it
-    window->fb([](cv::UMat &framebuffer) {
-        cv::cvtColor(rgb, framebuffer, cv::COLOR_BGR2BGRA);
-    });
+		//Acquire the framebuffer and convert the rgb_ into it
+		window->fb([](cv::UMat &framebuffer, const cv::UMat& rgb) {
+			cv::cvtColor(rgb, framebuffer, cv::COLOR_BGR2BGRA);
+		}, rgb_);
 
-    //Render using nanovg
-    window->nvg([](const cv::Size &sz, const double& h) {
-        draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, h);
-    }, window->fbSize(), hue);
+		//Render using nanovg
+		window->nvg([](const cv::Size &sz, const double& h) {
+			draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, h);
+		}, window->fbSize(), hue_);
 
-    window->write();
-
-    return window->display();
-}
+		window->write();
+	}
+};
 
 #ifndef __EMSCRIPTEN__
 int main(int argc, char **argv) {
@@ -186,8 +191,8 @@ int main() {
     window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
-    Source src = makeCaptureSource(window, argv[1]);
-    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
+    auto src = makeCaptureSource(window, argv[1]);
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
     window->setSource(src);
     window->setSink(sink);
 #else
@@ -195,7 +200,7 @@ int main() {
     window->setSource(src);
 #endif
 
-    window->run(iteration);
+    window->run<NanoVGDemoPlan>(0);
 
     return 0;
 }

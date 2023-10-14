@@ -237,8 +237,8 @@ bool V4D::isSourceReady() {
     return source_ && source_->isReady();
 }
 
-void V4D::setSink(Sink& sink) {
-    sink_ = &sink;
+void V4D::setSink(cv::Ptr<Sink> sink) {
+    sink_ = sink;
 }
 
 Sink& V4D::getSink() {
@@ -361,13 +361,15 @@ void V4D::swapContextBuffers() {
 #endif
     }
 
-    FrameBufferContext::GLScope glScope(nvgCtx()->fbCtx(), GL_READ_FRAMEBUFFER);
-    nvgCtx()->fbCtx()->blitFrameBufferToFrameBuffer(viewport(), nvgCtx()->fbCtx()->getWindowSize(), 0, isStretching());
+    if(hasNvgCtx()) {
+		FrameBufferContext::GLScope glScope(nvgCtx()->fbCtx(), GL_READ_FRAMEBUFFER);
+		nvgCtx()->fbCtx()->blitFrameBufferToFrameBuffer(viewport(), nvgCtx()->fbCtx()->getWindowSize(), 0, isStretching());
 #ifndef __EMSCRIPTEN__
-    glfwSwapBuffers(nvgCtx()->fbCtx()->getGLFWWindow());
+		glfwSwapBuffers(nvgCtx()->fbCtx()->getGLFWWindow());
 #else
-    emscripten_webgl_commit_frame();
+		emscripten_webgl_commit_frame();
 #endif
+    }
 }
 
 bool V4D::display() {

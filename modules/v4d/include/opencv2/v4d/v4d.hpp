@@ -70,7 +70,9 @@ enum AllocateFlags {
 class Plan {
 public:
 	virtual ~Plan() {};
-	virtual void infere(cv::Ptr<V4D> window) {};
+	virtual void setup(cv::Ptr<V4D> window) {};
+	virtual void infere(cv::Ptr<V4D> window) = 0;
+	virtual void teardown(cv::Ptr<V4D> window) {};
 };
 /*!
  * Private namespace
@@ -294,6 +296,11 @@ public:
 		}
 	}
 
+	void clearPlan() {
+		nodes_.clear();
+		accesses_.clear();
+	}
+
     template<typename Tenabled, typename T, typename ...Args>
     typename std::enable_if<std::is_same<Tenabled, std::false_type>::value, void>::type
 	emit_access(const string& context, bool read, const T* tp) {
@@ -385,7 +392,7 @@ public:
             emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
             emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function<void((Args...))> functor(fn);
+        	std::function functor(fn);
             add_transaction(glCtx(-1), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
@@ -398,7 +405,7 @@ public:
             emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
             emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function<void((Args...))> functor(fn);
+        	std::function functor(fn);
             add_transaction(glCtx(idx), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
@@ -456,7 +463,7 @@ public:
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("fb", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
-            using Tfb = typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type;
+            using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
             using Tfbbase = typename std::remove_cv<Tfb>::type;
             using Tfbconst = std::add_const_t<Tfbbase>;
 
@@ -469,12 +476,27 @@ public:
         });
     }
 
+    void capture(cv::UMat& frame) {
+    	capture([](const cv::UMat& inputFrame, cv::UMat& f){
+    		inputFrame.copyTo(f);
+    	}, frame);
+
+        fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
+            f.copyTo(frameBuffer);
+        }, frame);
+    }
+
+    void capture() {
+    	cv::UMat tmp;
+    	capture(tmp);
+    }
+
     template <typename Tfn, typename ... Args>
     void capture(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("capture", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
-            using Tfb = typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type;
+            using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
             static_assert((std::is_same<Tfb,const cv::UMat&>::value) || !"The first argument must be of type 'const cv::UMat&'");
             emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sourceCtx()->sourceBuffer());
@@ -484,12 +506,30 @@ public:
         });
     }
 
+    void write() {
+    	cv::UMat frame;
+
+        fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
+            f.copyTo(frameBuffer);
+        }, frame);
+
+    	write([](cv::UMat& outputFrame, const cv::UMat& f){
+    		f.copyTo(outputFrame);
+    	}, frame);
+    }
+
+    void write(const cv::UMat& frame) {
+    	write([](cv::UMat& outputFrame, const cv::UMat& f){
+    		f.copyTo(outputFrame);
+    	}, frame);
+    }
+
     template <typename Tfn, typename ... Args>
     void write(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
         const string id = make_id("write", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...]{
-            using Tfb = typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type;
+            using Tfb = std::add_lvalue_reference_t<typename std::tuple_element<0, typename function_traits<Tfn>::argument_types>::type>;
 
             static_assert((std::is_same<Tfb,cv::UMat&>::value) || !"The first argument must be of type 'cv::UMat&'");
             emit_access<std::true_type, cv::UMat, Tfb, Args...>(id, true, &sinkCtx()->sinkBuffer());
@@ -515,7 +555,7 @@ public:
             emit_access<std::true_type, cv::UMat, Args...>(id, true, &fbCtx()->fb());
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
             emit_access<std::true_type, cv::UMat, Args...>(id, false, &fbCtx()->fb());
-        	std::function<void((Args...))> functor(fn);
+        	std::function functor(fn);
             add_transaction<decltype(functor)>(nvgCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
@@ -526,7 +566,7 @@ public:
         const string id = make_id("single", fn);
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-        	std::function<void((Args...))> functor(fn);
+        	std::function functor(fn);
             add_transaction<decltype(functor)>(singleCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
@@ -537,8 +577,9 @@ public:
          const string id = make_id("parallel", fn);
          TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
              (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-             std::function<void((Args...))> functor(fn);
-             add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+             std::function functor(fn);
+             typename detail::function_traits<decltype(fn)>::argument_types t = std::make_tuple(args...);
+             std::apply([=](auto &&... Targs) { add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<std::add_lvalue_reference_t<decltype(Targs)>>(Targs)...); }, t);
          });
      }
 
@@ -642,11 +683,21 @@ public:
 	#ifndef __EMSCRIPTEN__
 			bool success = true;
 			CLExecScope_t scope(this->fbCtx()->getCLExecContext());
+			plan->setup(self());
+			this->makePlan();
+			this->runPlan();
+			this->display();
+			this->clearPlan();
 			plan->infere(self());
 			this->makePlan();
 			do {
 				this->runPlan();
 			} while(this->display());
+			plan->teardown(self());
+			this->makePlan();
+			this->runPlan();
+			this->display();
+			this->clearPlan();
 	#else
 		if(this->isMain()) {
 			std::function<bool()> fnFrame([=,this](){
@@ -693,7 +744,7 @@ public:
      * Set the current #cv::viz::Sink object. Usually created using #makeWriterSink().
      * @param sink A #cv::viz::Sink object.
      */
-    CV_EXPORTS void setSink(Sink& sink);
+    CV_EXPORTS void setSink(cv::Ptr<Sink> sink);
     CV_EXPORTS Sink& getSink();
     CV_EXPORTS bool hasSink();
     /*!

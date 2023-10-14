@@ -9,9 +9,8 @@ using namespace cv::v4d;
 int main() {
     Ptr<V4D> window = V4D::make(960, 960, "Custom Source/Sink");
 
-    string hr = "Hello Rainbow!";
 	//Make a source that generates rainbow frames.
-	Source src([](cv::UMat& frame){
+	cv::Ptr<Source> src = new Source([](cv::UMat& frame){
 		static long cnt = 0;
 	    //The source is responsible for initializing the frame..
 		if(frame.empty())
@@ -21,7 +20,7 @@ int main() {
 	}, 60.0f);
 
 	//Make a sink the saves each frame to a PNG file (does nothing in case of WebAssembly).
-	Sink sink([](const uint64_t& seq, const cv::UMat& frame){
+	cv::Ptr<Sink> sink = new Sink([](const uint64_t& seq, const cv::UMat& frame){
 	    try {
 #ifndef __EMSCRIPTEN__
 			imwrite(std::to_string(seq) + ".png", frame);
@@ -39,24 +38,25 @@ int main() {
 	window->setSource(src);
 	window->setSink(sink);
 
-	window->run([hr](cv::Ptr<V4D> win) {
-		if(!win->capture())
-			return false;
+	class CustomSourceAndSinkPlan : public Plan {
+	    string hr_ = "Hello Rainbow!";
 
-		//Render "Hello Rainbow!" over the video
-		win->nvg([](const Size& sz, const string& str) {
-			using namespace cv::v4d::nvg;
+		void infere(cv::Ptr<V4D> win) override {
+			win->capture();
 
-			fontSize(40.0f);
-			fontFace("sans-bold");
-			fillColor(Scalar(255, 0, 0, 255));
-			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-			text(sz.width / 2.0, sz.height / 2.0, str.c_str(), str.c_str() + str.size());
-		}, win->fbSize(), hr);
+			//Render "Hello Rainbow!" over the video
+			win->nvg([](const Size& sz, const string& str) {
+				using namespace cv::v4d::nvg;
 
-		win->write();
+				fontSize(40.0f);
+				fontFace("sans-bold");
+				fillColor(Scalar(255, 0, 0, 255));
+				textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+				text(sz.width / 2.0, sz.height / 2.0, str.c_str(), str.c_str() + str.size());
+			}, win->fbSize(), hr_);
 
-		return win->display();
-	});
+			win->write();
+		}
+	};
 }
 

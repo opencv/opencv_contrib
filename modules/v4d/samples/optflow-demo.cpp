@@ -404,52 +404,46 @@ class OptflowPlan : public Plan {
 public:
 	virtual ~OptflowPlan() override {};
 	virtual void infere(cv::Ptr<V4D> window) override {
-		auto always = [](){ return true; };
+		window->capture([](const cv::UMat& videoFrame, cv::UMat& d, cv::UMat& b) {
+			//resize to foreground scale
+			cv::resize(videoFrame, d, cv::Size(videoFrame.size().width * fg_scale, videoFrame.size().height * fg_scale));
+			//save video background
+			videoFrame.copyTo(b);
+		}, down, background);
 
-		window->graph(always);
-		{
-			window->capture([](const cv::UMat& videoFrame, cv::UMat& d, cv::UMat& b) {
-				//resize to foreground scale
-				cv::resize(videoFrame, d, cv::Size(videoFrame.size().width * fg_scale, videoFrame.size().height * fg_scale));
-				//save video background
-				videoFrame.copyTo(b);
-			}, down, background);
+		window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp){
+			cv::cvtColor(d, dng, cv::COLOR_RGBA2GRAY);
+			//Subtract the background to create a motion mask
+			prepare_motion_mask(dng, dmmg);
+			//Detect trackable points in the motion mask
+			detect_points(dmmg, dp);
+		}, down, downNextGrey, downMotionMaskGrey, detectedPoints);
 
-			window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp){
-				cv::cvtColor(d, dng, cv::COLOR_RGBA2GRAY);
-				//Subtract the background to create a motion mask
-				prepare_motion_mask(dng, dmmg);
-				//Detect trackable points in the motion mask
-				detect_points(dmmg, dp);
-			}, down, downNextGrey, downMotionMaskGrey, detectedPoints);
-
-			window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp) {
-				cv::v4d::nvg::clear();
-				if (!dpg.empty()) {
-					//We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-					if (!detect_scene_change(dmmg, scene_change_thresh, scene_change_thresh_diff)) {
-						//Visualize the sparse optical flow using nanovg
-						cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
-						visualize_sparse_optical_flow(dpg, dng, dp, fg_scale, max_stroke, color, max_points, point_loss);
-					}
+		window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp) {
+			cv::v4d::nvg::clear();
+			if (!dpg.empty()) {
+				//We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
+				if (!detect_scene_change(dmmg, scene_change_thresh, scene_change_thresh_diff)) {
+					//Visualize the sparse optical flow using nanovg
+					cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
+					visualize_sparse_optical_flow(dpg, dng, dp, fg_scale, max_stroke, color, max_points, point_loss);
 				}
-			}, downMotionMaskGrey, downPrevGrey, downNextGrey, detectedPoints);
+			}
+		}, downMotionMaskGrey, downPrevGrey, downNextGrey, detectedPoints);
 
-			window->parallel([](cv::UMat& dpg, const cv::UMat& dng) {
-				dpg = dng.clone();
-			}, downPrevGrey, downNextGrey);
+		window->parallel([](cv::UMat& dpg, const cv::UMat& dng) {
+			dpg = dng.clone();
+		}, downPrevGrey, downNextGrey);
 
-			window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& r) {
-				//Put it all together (OpenCL)
-				composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-				framebuffer.copyTo(r);
-			}, background, foreground, result);
+		window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& r) {
+			//Put it all together (OpenCL)
+			composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
+			framebuffer.copyTo(r);
+		}, background, foreground, result);
 
-			window->write([](cv::UMat& videoFrame, cv::UMat& r) {
-				r.copyTo(videoFrame);
-			}, result);
-		}
-		window->endgraph(always);
+		window->write([](cv::UMat& videoFrame, cv::UMat& r) {
+			r.copyTo(videoFrame);
+		}, result);
 	}
 };
 

@@ -102,7 +102,6 @@ using namespace cv::v4d;
 
 int main() {
     Ptr<V4D> window = V4D::make(960, 960, "Vector Graphics");
-
-    window->run<VectorGraphicsPlan>(2);
+    window->run<VectorGraphicsPlan>(0);
 }
 

@@ -29,14 +29,42 @@ using std::cerr;
 using std::endl;
 
 /* OpenGL constants and variables */
-const unsigned int triangles = 12;
-const unsigned int vertices_index = 0;
-const unsigned int colors_index = 1;
+const GLuint triangles = 12;
+const GLuint vertices_index = 0;
+const GLuint colors_index = 1;
 
-thread_local unsigned int shader_program[NUMBER_OF_CUBES];
-thread_local unsigned int vao[NUMBER_OF_CUBES];
-thread_local unsigned int uniform_transform[NUMBER_OF_CUBES];
+//Cube vertices, colors and indices
+const float vertices[] = {
+		// Front face
+        0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
+        // Back face
+        0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5
+};
 
+const float vertex_colors[] = {
+		1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
+		0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
+};
+
+const unsigned short triangle_indices[] = {
+		// Front
+        0, 1, 2, 2, 3, 0,
+
+        // Right
+        0, 3, 7, 7, 4, 0,
+
+        // Bottom
+        2, 6, 7, 7, 3, 2,
+
+        // Left
+        1, 5, 6, 6, 2, 1,
+
+        // Back
+        4, 7, 6, 6, 5, 4,
+
+        // Top
+        5, 1, 0, 0, 4, 5
+};
 //Simple transform & pass-through shaders
 static GLuint load_shader() {
 	//Shader versions "330" and "300 es" are very similar.
@@ -81,44 +109,11 @@ static GLuint load_shader() {
 }
 
 //Initializes objects, buffers, shaders and uniforms
-static void init_scene(const cv::Size& sz, const size_t& contextIdx) {
+static void init_scene(const cv::Size& sz, GLuint& vao, GLuint& shaderProgram, GLuint& uniformTransform) {
     glEnable (GL_DEPTH_TEST);
 
-    //Cube vertices, colors and indices
-    float vertices[] = {
-    		// Front face
-            0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5,
-            // Back face
-            0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5
-    };
-
-    float vertex_colors[] = {
-    		1.0, 0.4, 0.6, 1.0, 0.9, 0.2, 0.7, 0.3, 0.8, 0.5, 0.3, 1.0,
-			0.2, 0.6, 1.0, 0.6, 1.0, 0.4, 0.6, 0.8, 0.8, 0.4, 0.8, 0.8
-    };
-
-    unsigned short triangle_indices[] = {
-    		// Front
-            0, 1, 2, 2, 3, 0,
-
-            // Right
-            0, 3, 7, 7, 4, 0,
-
-            // Bottom
-            2, 6, 7, 7, 3, 2,
-
-            // Left
-            1, 5, 6, 6, 2, 1,
-
-            // Back
-            4, 7, 6, 6, 5, 4,
-
-            // Top
-            5, 1, 0, 0, 4, 5
-    };
-
-    glGenVertexArrays(1, &vao[contextIdx]);
-    glBindVertexArray(vao[contextIdx]);
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
     unsigned int triangles_ebo;
     glGenBuffers(1, &triangles_ebo);
@@ -146,15 +141,15 @@ static void init_scene(const cv::Size& sz, const size_t& contextIdx) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    shader_program[contextIdx] = load_shader();
-    uniform_transform[contextIdx] = glGetUniformLocation(shader_program[contextIdx], "transform");
+    shaderProgram = load_shader();
+    uniformTransform = glGetUniformLocation(shaderProgram, "transform");
     glViewport(0,0, sz.width, sz.height);
 }
 
 //Renders a rotating rainbow-colored cube on a blueish background
-static void render_scene(const double& x, const double& y, const double& angleMod, const size_t& contextIdx) {
+static void render_scene(const double& x, const double& y, const double& angleMod, GLuint& vao, GLuint& shaderProgram, GLuint& uniformTransform) {
     //Use the prepared shader program
-    glUseProgram(shader_program[contextIdx]);
+    glUseProgram(shaderProgram);
 
     //Scale and rotate the cube depending on the current time.
     float angle =  fmod(double(cv::getTickCount()) / double(cv::getTickFrequency()) + angleMod, 2 * M_PI);
@@ -192,14 +187,13 @@ static void render_scene(const double& x, const double& y, const double& angleMo
     //calculate the transform
     cv::Matx44f transform = scaleMat * rotXMat * rotYMat * rotZMat * translateMat;
     //set the corresponding uniform
-    glUniformMatrix4fv(uniform_transform[contextIdx], 1, GL_FALSE, transform.val);
+    glUniformMatrix4fv(uniformTransform, 1, GL_FALSE, transform.val);
     //Bind our vertex array
-    glBindVertexArray(vao[contextIdx]);
+    glBindVertexArray(vao);
     //Draw
     glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
 }
 
-#ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
     thread_local cv::UMat resize;
@@ -223,42 +217,48 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
     cv::bitwise_not(dst, dst);
 }
-#endif
 
 using namespace cv::v4d;
+class ManyCubesDemoPlan : public Plan {
+	cv::UMat frame_;
+	GLuint vao[NUMBER_OF_CUBES];
+	GLuint shaderProgram[NUMBER_OF_CUBES];
+	GLuint uniformTransform[NUMBER_OF_CUBES];
+public:
+	void setup(cv::Ptr<V4D> window) {
+		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
+				window->gl(i, [](const cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
+					init_scene(sz, v, sp, ut);
+				}, window->fbSize(), vao[i], shaderProgram[i], uniformTransform[i]);
+		}
+	}
+	void infere(cv::Ptr<V4D> window) {
+		window->gl([](){
+			//Clear the background
+			glClearColor(0.2, 0.24, 0.4, 1);
+			glClear(GL_COLOR_BUFFER_BIT);
+		});
 
-static bool iteration(cv::Ptr<V4D> window) {
-    window->once([=](){
-        for(size_t i = 0; i < NUMBER_OF_CUBES; ++i)
-            window->gl(i, [](const cv::Size& sz, const size_t& idx){ init_scene(sz, idx); }, window->fbSize(), i);
-    });
+		//Render using multiple OpenGL contexts
+		for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
+			window->gl(i, [i](GLuint& v, GLuint& sp, GLuint& ut){
+				double pos = (((double(i) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
+				double angle = sin((double(i) / NUMBER_OF_CUBES) * 2 * M_PI);
+				render_scene(pos, pos, angle, v, sp, ut);
+			}, vao[i], shaderProgram[i], uniformTransform[i]);
+		}
 
-    window->gl([](){
-        //Clear the background
-        glClearColor(0.2, 0.24, 0.4, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
-    });
+		//Aquire the frame buffer for use by OpenCV
+		window->fb([](cv::UMat& framebuffer, cv::UMat& f) {
+			glow_effect(framebuffer, framebuffer, glow_kernel_size);
+			framebuffer.copyTo(f);
+		}, frame_);
 
-    //Render using multiple OpenGL contexts
-    for(size_t i = 0; i < NUMBER_OF_CUBES; ++i) {
-        window->gl(i, [](const size_t& idx){
-            double pos = (((double(idx) / NUMBER_OF_CUBES) * 2.0) - 1) + (1.0 / NUMBER_OF_CUBES);
-            double angle = sin((double(idx) / NUMBER_OF_CUBES) * 2 * M_PI);
-            render_scene(pos, pos, angle, idx);
-        }, i);
-    }
-    //To slow for WASM
-#ifndef __EMSCRIPTEN__
-    //Aquire the frame buffer for use by OpenCV
-    window->fb([](cv::UMat& framebuffer) {
-        glow_effect(framebuffer, framebuffer, glow_kernel_size);
-    });
-#endif
-
-    window->write();
-
-    return window->display();
-}
+		window->write([](cv::UMat& outputFrame, const cv::UMat& f){
+			f.copyTo(outputFrame);
+		}, frame_);
+	}
+};
 
 int main() {
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
@@ -266,10 +266,10 @@ int main() {
 
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)
-    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    window->run(iteration);
+    window->run<ManyCubesDemoPlan>(9);
 
     return 0;
 }

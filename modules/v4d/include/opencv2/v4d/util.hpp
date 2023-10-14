@@ -86,34 +86,34 @@ struct function_traits : function_traits<decltype(&T::operator())> {
 template<class R, class... Args>
 struct function_traits<R(Args...)> {
     using result_type = R;
-    using argument_types = std::tuple<Args...>;
+    using argument_types = std::tuple<std::remove_reference_t<Args>...>;
 };
 
 // partial specialization for function pointer
 template<class R, class... Args>
 struct function_traits<R (*)(Args...)> {
     using result_type = R;
-    using argument_types = std::tuple<Args...>;
+    using argument_types = std::tuple<std::remove_reference_t<Args>...>;
 };
 
 // partial specialization for std::function
 template<class R, class... Args>
 struct function_traits<std::function<R(Args...)>> {
     using result_type = R;
-    using argument_types = std::tuple<Args...>;
+    using argument_types = std::tuple<std::remove_reference_t<Args>...>;
 };
 
 // partial specialization for pointer-to-member-function (i.e., operator()'s)
 template<class T, class R, class... Args>
 struct function_traits<R (T::*)(Args...)> {
     using result_type = R;
-    using argument_types = std::tuple<Args...>;
+    using argument_types = std::tuple<std::remove_reference_t<Args>...>;
 };
 
 template<class T, class R, class... Args>
 struct function_traits<R (T::*)(Args...) const> {
     using result_type = R;
-    using argument_types = std::tuple<Args...>;
+    using argument_types = std::tuple<std::remove_reference_t<Args>...>;
 };
 
 
@@ -305,7 +305,7 @@ CV_EXPORTS bool keepRunning();
  * @param vaDeviceIndex The VAAPI device index to use.
  * @return A VAAPI enabled sink object.
  */
-CV_EXPORTS Sink makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fourcc, const float fps,
+CV_EXPORTS cv::Ptr<Sink> makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, const int fourcc, const float fps,
         const cv::Size& frameSize, const int vaDeviceIndex);
 /*!
  * Creates an Intel VAAPI enabled VideoCapture source object to use in conjunction with #V4D::setSource().
@@ -324,9 +324,9 @@ CV_EXPORTS cv::Ptr<Source> makeVaSource(cv::Ptr<V4D> window, const string& input
  * @param frameSize The frame size of the target video.
   * @return A (optionally VAAPI enabled) VideoWriter sink object.
  */
-CV_EXPORTS Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
+CV_EXPORTS cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
         const cv::Size& frameSize);
-CV_EXPORTS Sink makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
+CV_EXPORTS cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps,
         const cv::Size& frameSize, const int fourcc);
 /*!
  * Creates a VideoCapture source object to use in conjunction with #V4D::setSource().
