@@ -232,7 +232,7 @@ public:
 				}, window->fbSize(), vao[i], shaderProgram[i], uniformTransform[i]);
 		}
 	}
-	void infere(cv::Ptr<V4D> window) {
+	void infer(cv::Ptr<V4D> window) {
 		window->gl([](){
 			//Clear the background
 			glClearColor(0.2, 0.24, 0.4, 1);

@@ -41,7 +41,7 @@ int main() {
 	class CustomSourceAndSinkPlan : public Plan {
 	    string hr_ = "Hello Rainbow!";
 
-		void infere(cv::Ptr<V4D> win) override {
+		void infer(cv::Ptr<V4D> win) override {
 			win->capture();
 
 			//Render "Hello Rainbow!" over the video

@@ -71,7 +71,7 @@ class Plan {
 public:
 	virtual ~Plan() {};
 	virtual void setup(cv::Ptr<V4D> window) {};
-	virtual void infere(cv::Ptr<V4D> window) = 0;
+	virtual void infer(cv::Ptr<V4D> window) = 0;
 	virtual void teardown(cv::Ptr<V4D> window) {};
 };
 /*!
@@ -487,7 +487,7 @@ public:
     }
 
     void capture() {
-    	cv::UMat tmp;
+    	static thread_local cv::UMat tmp(fbSize(), CV_8UC3);
     	capture(tmp);
     }
 
@@ -507,10 +507,10 @@ public:
     }
 
     void write() {
-    	cv::UMat frame;
+    	static thread_local cv::UMat frame(fbSize(), CV_8UC3);
 
-        fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
-            f.copyTo(frameBuffer);
+        fb([](const cv::UMat& frameBuffer, cv::UMat& f) {
+            frameBuffer.copyTo(f);
         }, frame);
 
     	write([](cv::UMat& outputFrame, const cv::UMat& f){
@@ -540,13 +540,6 @@ public:
         });
     }
 
-    /*!
-     * Execute function object fn inside a nanovg context.
-     * The context takes care of setting up opengl and nanovg states.
-     * A function object passed like that can use the functions in cv::viz::nvg.
-     * @param fn A function that is passed the size of the framebuffer
-     * and performs drawing using cv::v4d::nvg
-     */
     template <typename Tfn, typename ... Args>
     void nvg(Tfn fn, Args&&... args) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
@@ -572,17 +565,15 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
-     void parallel(Tfn fn, Args&&... args) {
-         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-         const string id = make_id("parallel", fn);
-         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
-             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
-             std::function functor(fn);
-             typename detail::function_traits<decltype(fn)>::argument_types t = std::make_tuple(args...);
-             std::apply([=](auto &&... Targs) { add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<std::add_lvalue_reference_t<decltype(Targs)>>(Targs)...); }, t);
-         });
-     }
-
+    void parallel(Tfn fn, Args&&... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+        const string id = make_id("parallel", fn);
+        TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
+        	(emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
+        	std::function functor(fn);
+            add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
+        });
+    }
     CV_EXPORTS void imgui(std::function<void(ImGuiContext* ctx)> fn);
 
     /*!
@@ -688,7 +679,7 @@ public:
 			this->runPlan();
 			this->display();
 			this->clearPlan();
-			plan->infere(self());
+			plan->infer(self());
 			this->makePlan();
 			do {
 				this->runPlan();

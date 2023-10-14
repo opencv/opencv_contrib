@@ -25,7 +25,7 @@ int main() {
 		//The text
 		string hw_ = "hello world";
 	public:
-		void infere(Ptr<V4D> win) override {
+		void infer(Ptr<V4D> win) override {
 			//Render the text at the center of the screen using parameters from the GUI.
 			win->nvg([](const Size& sz, const string& str, const float& s, const std::vector<float>& c) {
 				using namespace cv::v4d::nvg;

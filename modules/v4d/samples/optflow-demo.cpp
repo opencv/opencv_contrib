@@ -403,7 +403,7 @@ class OptflowPlan : public Plan {
 	vector<cv::Point2f> detectedPoints;
 public:
 	virtual ~OptflowPlan() override {};
-	virtual void infere(cv::Ptr<V4D> window) override {
+	virtual void infer(cv::Ptr<V4D> window) override {
 		window->capture([](const cv::UMat& videoFrame, cv::UMat& d, cv::UMat& b) {
 			//resize to foreground scale
 			cv::resize(videoFrame, d, cv::Size(videoFrame.size().width * fg_scale, videoFrame.size().height * fg_scale));

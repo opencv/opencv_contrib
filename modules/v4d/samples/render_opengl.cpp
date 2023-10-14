@@ -15,7 +15,7 @@ int main() {
 				glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 			});
     	}
-    	void infere(Ptr<V4D> win) override {
+    	void infer(Ptr<V4D> win) override {
 			win->gl([]() {
 				//Clears the screen. The clear color and other GL-states are preserved between context-calls.
 				glClear(GL_COLOR_BUFFER_BIT);

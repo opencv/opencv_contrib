@@ -219,7 +219,7 @@ public:
 			init_scene(sz, v, sp, ut);
 		}, window->fbSize(), vao, shaderProgram, uniformTransform);
 	}
-	void infere(cv::Ptr<V4D> window) {
+	void infer(cv::Ptr<V4D> window) {
 		window->gl([](){
 			//Clear the background
 			glClearColor(0.2, 0.24, 0.4, 1);

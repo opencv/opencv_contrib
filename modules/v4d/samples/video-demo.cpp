@@ -197,7 +197,7 @@ public:
 			init_scene();
 		});
 	}
-	void infere(cv::Ptr<V4D> window) override {
+	void infer(cv::Ptr<V4D> window) override {
 		window->capture(frame_);
 
 		window->gl([]() {

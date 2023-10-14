@@ -21,7 +21,7 @@ int main() {
 #endif
     	}
 		//Display the framebuffer in the native window in an endless loop.
-		void infere(Ptr<V4D> win) override {
+		void infer(Ptr<V4D> win) override {
 			//Feeds the image to the video pipeline
 			win->feed(image_);
 		}

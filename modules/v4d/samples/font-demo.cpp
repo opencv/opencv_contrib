@@ -95,7 +95,7 @@ class FontDemoPlan : public Plan {
 
     int32_t translateY_;
 public:
-    void infere(cv::Ptr<V4D> window) override {
+    void infer(cv::Ptr<V4D> window) override {
     	auto always = []() { return true; };
     	auto isTrue = [](const bool& b) { return b; };
 

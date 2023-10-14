@@ -5,7 +5,7 @@ using namespace cv::v4d;
 
 	class VectorGraphicsPlan: public Plan {
 	public:
-		void infere(Ptr<V4D> win) override {
+		void infer(Ptr<V4D> win) override {
 			//Creates a NanoVG context and draws googly eyes that occasionally blink.
 			win->nvg([](const Size &sz) {
 				//Calls from this namespace may only be used inside a nvg context.

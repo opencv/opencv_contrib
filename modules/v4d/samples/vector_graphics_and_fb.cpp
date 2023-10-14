@@ -9,7 +9,7 @@ int main() {
 
     class VectorGraphicsAndFBPlan : public Plan {
     public:
-		void infere(Ptr<V4D> win) override {
+		void infer(Ptr<V4D> win) override {
 			//Again creates a NanoVG context and draws googly eyes
 			win->nvg([](const Size& sz) {
 				//Calls from this namespace may only be used inside a nvg context

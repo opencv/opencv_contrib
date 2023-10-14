@@ -133,7 +133,7 @@ class NanoVGDemoPlan : public Plan {
 	cv::UMat hueChannel_;
 	double hue_;
 public:
-	void infere(cv::Ptr<V4D> window) override {
+	void infer(cv::Ptr<V4D> window) override {
 
 		window->parallel([](const uint64_t& frameCount, double& hue){
 			//we use frame count to calculate the current hue

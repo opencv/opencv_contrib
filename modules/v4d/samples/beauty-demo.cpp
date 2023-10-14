@@ -215,7 +215,7 @@ class BeautyDemoPlan : public Plan {
 	bool faceFound_ = false;
 	FaceFeatures features_;
 public:
-	void infere(cv::Ptr<V4D> window) override {
+	void infer(cv::Ptr<V4D> window) override {
 		auto always = [](){ return true; };
 		auto isTrue = [](bool& ff){ return ff; };
 		auto isFalse = [](bool& ff){ return !ff; };

@@ -33,8 +33,6 @@ constexpr const char* OUTPUT_FILENAME = "pedestrian-demo.mkv";
 #endif
 const int BLUR_KERNEL_SIZE = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
 
-//Descriptor used for pedestrian detection
-static thread_local cv::HOGDescriptor hog;
 
 //adapted from cv::dnn_objdetect::InferBbox
 static inline bool pair_comparator(std::pair<double, size_t> l1, std::pair<double, size_t> l2) {
@@ -138,16 +136,20 @@ class PedestrianDemoPlan : public Plan {
     bool trackerInitialized_ = false;
     //If tracking fails re-detect
     bool redetect_ = true;
+    //Descriptor used for pedestrian detection
+    cv::HOGDescriptor hog_;
 public:
 	void setup(cv::Ptr<V4D> window) override {
-	    params_.desc_pca = cv::TrackerKCF::GRAY;
-	    params_.compress_feature = false;
-	    params_.compressed_size = 1;
-	    tracker_ = cv::TrackerKCF::create(params_);
-		hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+		window->parallel([](cv::TrackerKCF::Params& params, cv::Ptr<cv::Tracker>& tracker, cv::HOGDescriptor& hog){
+			params.desc_pca = cv::TrackerKCF::GRAY;
+			params.compress_feature = false;
+			params.compressed_size = 1;
+			tracker = cv::TrackerKCF::create(params);
+			hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+		}, params_, tracker_, hog_);
 	}
 
-	void infere(cv::Ptr<V4D> window) override {
+	void infer(cv::Ptr<V4D> window) override {
 		static auto always = [](){ return true; };
 		static auto doRedect = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
 		static auto dontRedect = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
@@ -156,11 +158,11 @@ public:
 		{
 			window->capture();
 
-			window->fb([&](const cv::UMat& frameBuffer){
+			window->fb([](const cv::UMat& frameBuffer, cv::UMat& videoFrame){
 				//copy video frame
-				cvtColor(frameBuffer,videoFrame_,cv::COLOR_BGRA2RGB);
-				//downsample video frame for hog detection
-			});
+				cvtColor(frameBuffer,videoFrame,cv::COLOR_BGRA2RGB);
+				//downsample video frame for hog_ detection
+			}, videoFrame_);
 
 			window->parallel([](const cv::UMat& videoFrame, cv::UMat& videoFrameDown, cv::UMat& videoFrameDownGrey, cv::UMat& background){
 				cv::resize(videoFrame, videoFrameDown, cv::Size(DOWNSIZE_WIDTH, DOWNSIZE_HEIGHT));
@@ -173,7 +175,7 @@ public:
 		//Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
 		window->graph(doRedect, trackerInitialized_, redetect_);
 		{
-			window->parallel([](bool& redetect, cv::UMat& videoFrameDownGrey, std::vector<cv::Rect>& locations, vector<vector<double>>& boxes, vector<double>& probs, cv::Ptr<cv::TrackerKCF>& tracker, cv::Rect& tracked, bool& trackerInitialized){
+			window->parallel([](cv::HOGDescriptor& hog, bool& redetect, cv::UMat& videoFrameDownGrey, std::vector<cv::Rect>& locations, vector<vector<double>>& boxes, vector<double>& probs, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked, bool& trackerInitialized){
 				redetect = false;
 				//Detect pedestrians
 				hog.detectMultiScale(videoFrameDownGrey, locations, 0, cv::Size(), cv::Size(), 1.15, 2.0, false);
@@ -203,12 +205,12 @@ public:
 						trackerInitialized = true;
 					}
 				}
-			}, redetect_, videoFrameDownGrey_, locations_, boxes_, probs_, tracker_, tracked_, trackerInitialized_);
+			}, hog_, redetect_, videoFrameDownGrey_, locations_, boxes_, probs_, tracker_, tracked_, trackerInitialized_);
 		}
 		window->endgraph(doRedect, trackerInitialized_, redetect_);
 		window->graph(dontRedect, trackerInitialized_, redetect_);
 		{
-			window->parallel([](bool& redetect, const cv::UMat& videoFrameDownGrey, cv::Ptr<cv::TrackerKCF>& tracker, cv::Rect& tracked){
+			window->parallel([](bool& redetect, cv::UMat& videoFrameDownGrey, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked){
 				if(!tracker->update(videoFrameDownGrey, tracked)) {
 					//detection failed - re-detect
 					redetect = true;
@@ -269,7 +271,7 @@ int main(int argc, char **argv) {
     window->setSource(src);
 #endif
 
-    window->run<PedestrianDemoPlan>(0);
+    window->run<PedestrianDemoPlan>(2);
 
     return 0;
 }

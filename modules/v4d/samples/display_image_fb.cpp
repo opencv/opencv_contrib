@@ -27,7 +27,7 @@ int main() {
 			}, image_, resized_, converted_, win->fbSize());
 		}
 
-		void infere(Ptr<V4D> win) override {
+		void infer(Ptr<V4D> win) override {
 			//Create a fb context and copy the prepared image to the framebuffer. The fb context
 			//takes care of retrieving and storing the data on the graphics card (using CL-GL
 			//interop if available), ready for other contexts to use

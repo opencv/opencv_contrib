@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     	cv::UMat frame_;
         const string hv_ = "Hello Video!";
     public:
-    	void infere(Ptr<V4D> win) override {
+    	void infer(Ptr<V4D> win) override {
     	    //Capture video from the source
     		win->capture();
 

@@ -276,7 +276,7 @@ void setup(cv::Ptr<V4D> window) override {
 	}, window->fbSize());
 }
 
-void infere(cv::Ptr<V4D> window) override {
+void infer(cv::Ptr<V4D> window) override {
 	window->capture(frame_);
 
 	window->gl([](const cv::Size &sz) {

@@ -40,7 +40,7 @@ public:
 			}, image_);
         }
 
-        void infere(Ptr<V4D> win) override{
+        void infer(Ptr<V4D> win) override{
 			//Creates a NanoVG context to draw the loaded image_ over again to the screen.
 			win->nvg([](const Image_t& img, const cv::Size& sz) {
 				using namespace cv::v4d::nvg;

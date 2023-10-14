@@ -10,7 +10,7 @@ int main() {
 		//The text to render
 		string hw_ = "Hello World";
 	public:
-		void infere(Ptr<V4D> win) override {
+		void infer(Ptr<V4D> win) override {
 			//Render the text at the center of the screen. Note that you can load you own fonts.
 			win->nvg([](const Size &sz, const string &str) {
 				using namespace cv::v4d::nvg;
