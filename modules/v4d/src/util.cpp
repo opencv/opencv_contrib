@@ -39,8 +39,6 @@ namespace cv {
 namespace v4d {
 namespace detail {
 
-thread_local std::mutex ThreadLocal::mtx_;
-thread_local bool ThreadLocal::sync_run_;
 std::mutex Global::mtx_;
 uint64_t Global::frame_cnt_ = 0;
 uint64_t Global::start_time_ = get_epoch_nanos();
@@ -509,8 +507,8 @@ public:
 };
 
 cv::Ptr<HTML5Capture> capture = nullptr;
-int capture_width = 0;
-int capture_height = 0;
+static thread_local int capture_width = 0;
+static thread_local int capture_height = 0;
 
 extern "C" {
 
@@ -522,10 +520,10 @@ void v4dInitCapture(int width, int height) {
 
 }
 
-cv::Ptr<Source> makeCaptureSource(int width, int height, cv::Ptr<V4D> window) {
+cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window) {
     using namespace std;
 
-    return new Source([=](cv::UMat& frame) {
+    return new Source([window](cv::UMat& frame) {
         if(capture_width > 0 && capture_height > 0) {
             try {
                 run_sync_on_main<17>([&]() {

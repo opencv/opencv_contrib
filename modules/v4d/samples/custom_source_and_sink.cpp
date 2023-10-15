@@ -40,7 +40,7 @@ int main() {
 
 	class CustomSourceAndSinkPlan : public Plan {
 	    string hr_ = "Hello Rainbow!";
-
+public:
 		void infer(cv::Ptr<V4D> win) override {
 			win->capture();
 
@@ -58,5 +58,7 @@ int main() {
 			win->write();
 		}
 	};
+
+	window->run<CustomSourceAndSinkPlan>(0);
 }
 

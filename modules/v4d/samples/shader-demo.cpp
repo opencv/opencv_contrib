@@ -268,7 +268,6 @@ static void setup_gui(cv::Ptr<V4D> window) {
 }
 
 class ShaderDemoPlan : public Plan {
-cv::UMat frame_;
 public:
 void setup(cv::Ptr<V4D> window) override {
 	window->gl([](const cv::Size &sz) {
@@ -277,20 +276,19 @@ void setup(cv::Ptr<V4D> window) override {
 }
 
 void infer(cv::Ptr<V4D> window) override {
-	window->capture(frame_);
+	window->capture();
 
 	window->gl([](const cv::Size &sz) {
 		render_scene(sz);
 	}, window->fbSize());
 
 #ifndef __EMSCRIPTEN__
-    window->fb([](cv::UMat& framebuffer, cv::UMat& f) {
+    window->fb([](cv::UMat& framebuffer) {
         glow_effect(framebuffer, framebuffer, glow_kernel_size);
-        framebuffer.copyTo(f);
-    }, frame_);
+    });
 #endif
 
-	window->write(frame_);
+	window->write();
 }
 };
 
@@ -309,7 +307,6 @@ int main() {
             setup_gui(window);
         }
 
-        window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
         auto src = makeCaptureSource(window, argv[1]);
@@ -317,11 +314,11 @@ int main() {
         auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
-        Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+        auto src = makeCaptureSource(window);
         window->setSource(src);
 #endif
 
-        window->run<ShaderDemoPlan>(3);
+        window->run<ShaderDemoPlan>(0);
     } catch (std::exception& ex) {
         cerr << "Exception: " << ex.what() << endl;
     }

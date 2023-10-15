@@ -198,7 +198,7 @@ int main() {
             setup_gui(window);
         }
 
-        window->printSystemInfo();
+//        window->printSystemInfo();
 
         //The text to display
         string txt = cv::getBuildInformation();

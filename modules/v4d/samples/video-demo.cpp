@@ -190,7 +190,6 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 using namespace cv::v4d;
 class VideoDemoPlan: public Plan {
-cv::UMat frame_;
 public:
 	void setup(cv::Ptr<V4D> window) override {
 		window->gl([]() {
@@ -198,19 +197,21 @@ public:
 		});
 	}
 	void infer(cv::Ptr<V4D> window) override {
-		window->capture(frame_);
+		window->capture();
 
 		window->gl([]() {
 			render_scene();
 		});
 
-		window->fb([](cv::UMat &framebuffer, cv::UMat& f) {
+#ifndef __EMSCRIPTEN__
+		window->fb([](cv::UMat &framebuffer) {
 			glow_effect(framebuffer, framebuffer, glow_kernel_size);
-			framebuffer.copyTo(f);
-		}, frame_);
+
+		});
+#endif
 
 		//Ignored in WebAssmebly builds because there is no sink set.
-		window->write(frame_);
+		window->write();
 	}
 };
 
@@ -225,7 +226,6 @@ int main() {
 #endif
     using namespace cv::v4d;
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Video Demo", NONE, OFFSCREEN, false, 0);
-    window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     //Creates a source from a file or a device
@@ -236,7 +236,7 @@ int main() {
     window->setSink(sink);
 #else
     //Creates a webcam source is available
-    auto src = makeCaptureSource(WIDTH, HEIGHT, window);
+    auto src = makeCaptureSource(window);
     window->setSource(src);
 #endif
 

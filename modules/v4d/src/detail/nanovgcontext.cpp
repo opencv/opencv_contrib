@@ -35,7 +35,7 @@ NanoVGContext::NanoVGContext(cv::Ptr<FrameBufferContext> fbContext) :
             nvgCreateFont(context_, "sans-bold", "modules/v4d/assets/fonts/Roboto-Bold.ttf");
 #endif
 #ifdef __EMSCRIPTEN__
-            mainFbContext_.initWebGLCopy(fbCtx()->getIndex());
+            mainFbContext_->initWebGLCopy(fbCtx()->getIndex());
 #endif
         }
     });
@@ -63,7 +63,7 @@ void NanoVGContext::execute(std::function<void()> fn) {
         }
         if (!fbCtx()->isShared()) {
 #ifdef __EMSCRIPTEN__
-            mainFbContext_.doWebGLCopy(fbCtx());
+            mainFbContext_->doWebGLCopy(fbCtx());
 #else
             UMat tmp;
             fbCtx()->copyTo(tmp);

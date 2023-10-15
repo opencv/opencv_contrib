@@ -5,8 +5,6 @@ using namespace cv;
 using namespace cv::v4d;
 
 int main() {
-    Ptr<V4D> window = V4D::make(960, 960, "GL Blue Screen");
-
     class RenderOpenGLPlan : public Plan {
     public:
     	void setup(Ptr<V4D> win) override {
@@ -23,6 +21,7 @@ int main() {
     	}
     };
 
+    Ptr<V4D> window = V4D::make(960, 960, "GL Blue Screen");
     window->run<RenderOpenGLPlan>(0);
 }
 

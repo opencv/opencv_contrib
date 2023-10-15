@@ -13,7 +13,7 @@ GLContext::GLContext(cv::Ptr<FrameBufferContext> fbContext) :
         mainFbContext_(fbContext), glFbContext_(new FrameBufferContext(*fbContext->getV4D(), "OpenGL", *fbContext)) {
 #ifdef __EMSCRIPTEN__
     run_sync_on_main<19>([&,this](){
-        mainFbContext_.initWebGLCopy(fbCtx()->getIndex());
+        mainFbContext_->initWebGLCopy(fbCtx()->getIndex());
     });
 #endif
 }
@@ -42,7 +42,7 @@ void GLContext::execute(std::function<void()> fn) {
         }
         if(!fbCtx()->isShared()) {
 #ifdef __EMSCRIPTEN__
-            mainFbContext_.doWebGLCopy(fbCtx());
+            mainFbContext_->doWebGLCopy(fbCtx());
 #else
             UMat tmp;
             fbCtx()->copyTo(tmp);

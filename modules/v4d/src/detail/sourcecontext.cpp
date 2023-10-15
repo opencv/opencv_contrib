@@ -23,20 +23,36 @@ void SourceContext::execute(std::function<void()> fn) {
         CLExecScope_t scope(getCLExecContext());
 #endif
         if (mainFbContext_->getV4D()->hasSource()) {
-            auto p = mainFbContext_->getV4D()->getSource()->operator ()();
-            currentSeqNr_ = p.first;
-            resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
-            cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);
+        	auto src = mainFbContext_->getV4D()->getSource();
+
+        	if(src->isOpen()) {
+				auto p = src->operator ()();
+				currentSeqNr_ = p.first;
+
+				if(p.second.empty())
+					p.second.create(mainFbContext_->size(), CV_8UC3);
+
+				resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
+				cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);
+        	}
         }
         fn();
 
 #ifndef __EMSCRIPTEN__
     } else {
         if (mainFbContext_->getV4D()->hasSource()) {
-            auto p = mainFbContext_->getV4D()->getSource()->operator ()();
-            currentSeqNr_ = p.first;
-            resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
-            cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);
+        	auto src = mainFbContext_->getV4D()->getSource();
+
+        	if(src->isOpen()) {
+				auto p = src->operator ()();
+				currentSeqNr_ = p.first;
+
+				if(p.second.empty())
+					p.second.create(mainFbContext_->size(), CV_8UC3);
+
+				resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
+				cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);
+        	}
         }
         fn();
     }

@@ -477,17 +477,22 @@ public:
     }
 
     void capture(cv::UMat& frame) {
+    	auto isTrue = [](const bool& b){ return b; };
     	capture([](const cv::UMat& inputFrame, cv::UMat& f){
-    		inputFrame.copyTo(f);
+    		if(!inputFrame.empty())
+    			inputFrame.copyTo(f);
     	}, frame);
 
+    	graph(isTrue, frame.empty());
         fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
-            f.copyTo(frameBuffer);
+        	if(!f.empty())
+        		f.copyTo(frameBuffer);
         }, frame);
+    	endgraph(isTrue, frame.empty());
     }
 
     void capture() {
-    	static thread_local cv::UMat tmp(fbSize(), CV_8UC3);
+    	static thread_local cv::UMat tmp;
     	capture(tmp);
     }
 
@@ -507,7 +512,7 @@ public:
     }
 
     void write() {
-    	static thread_local cv::UMat frame(fbSize(), CV_8UC3);
+    	static thread_local cv::UMat frame(fbSize(), CV_8UC4);
 
         fb([](const cv::UMat& frameBuffer, cv::UMat& f) {
             frameBuffer.copyTo(f);
@@ -594,12 +599,9 @@ public:
 
 
 	#ifdef __EMSCRIPTEN__
-	bool first = true;
 	static void do_frame(void* void_fn_ptr) {
-		 if(first) {
-			 glfwSwapInterval(0);
-			 first = false;
-		 }
+		glfwSwapInterval(0);
+
 		 auto* fn_ptr = reinterpret_cast<std::function<bool()>*>(void_fn_ptr);
 		 if (fn_ptr) {
 			 auto& fn = *fn_ptr;
@@ -671,37 +673,41 @@ public:
 	//	if(this->isMain())
 	//		this->makeCurrent();
 
-	#ifndef __EMSCRIPTEN__
-			bool success = true;
-			CLExecScope_t scope(this->fbCtx()->getCLExecContext());
-			plan->setup(self());
-			this->makePlan();
+#ifndef __EMSCRIPTEN__
+		CLExecScope_t scope(this->fbCtx()->getCLExecContext());
+#endif
+		plan->setup(self());
+		this->makePlan();
+		this->runPlan();
+		this->clearPlan();
+		plan->infer(self());
+		this->makePlan();
+#ifndef __EMSCRIPTEN__
+		if(this->isMain())
+			this->printSystemInfo();
+		do {
 			this->runPlan();
-			this->display();
-			this->clearPlan();
-			plan->infer(self());
-			this->makePlan();
+		} while(this->display());
+#else
+		if(this->isMain()) {
+			std::function<bool()> fnFrame([this](){
+			    this->printSystemInfo();
+				do {
+					this->runPlan();
+				} while(this->display());
+				return false;
+			});
+			emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
+		} else {
 			do {
 				this->runPlan();
 			} while(this->display());
-			plan->teardown(self());
-			this->makePlan();
-			this->runPlan();
-			this->display();
-			this->clearPlan();
-	#else
-		if(this->isMain()) {
-			std::function<bool()> fnFrame([=,this](){
-				return fn(self());
-			});
-
-			emscripten_set_main_loop_arg(do_frame, &fnFrame, -1, true);
-		} else {
-			while (true) {
-				fn(self());
-			}
 		}
-	#endif
+#endif
+		plan->teardown(self());
+		this->makePlan();
+		this->runPlan();
+		this->clearPlan();
 
 		if(this->isMain()) {
 			for(auto& t : threads)
@@ -711,12 +717,12 @@ public:
 /*!
      * Called to feed an image directly to the framebuffer
      */
-    CV_EXPORTS void feed(cv::InputArray in);
+	void feed(cv::UMat& in);
     /*!
      * Fetches a copy of frambuffer
      * @return a copy of the framebuffer
      */
-    CV_EXPORTS cv::_InputArray fetch();
+    CV_EXPORTS cv::UMat fetch();
 
     /*!
      * Set the current #cv::viz::Source object. Usually created using #makeCaptureSource().
@@ -864,8 +870,6 @@ public:
      * Print basic system information to stderr.
      */
     CV_EXPORTS void printSystemInfo();
-
-    CV_EXPORTS void makeCurrent();
 
     CV_EXPORTS GLFWwindow* getGLFWWindow();
 

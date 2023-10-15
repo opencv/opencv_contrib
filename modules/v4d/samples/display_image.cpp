@@ -11,14 +11,16 @@ int main() {
     cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image");
 
     class DisplayImagePlan : public Plan {
-    	UMat image_ = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
-
+    	UMat image_;
+public:
     	void setup(Ptr<V4D> win) override {
+    		win->parallel([](cv::UMat& image){
 #ifdef __EMSCRIPTEN__
-    		image_ = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
+    		image = read_embedded_image("doc/lena.png").getUMat(ACCESS_READ);
 #else
-    		image_ = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
+    		image = imread(samples::findFile("lena.jpg")).getUMat(ACCESS_READ);
 #endif
+    		}, image_);
     	}
 		//Display the framebuffer in the native window in an endless loop.
 		void infer(Ptr<V4D> win) override {
@@ -26,4 +28,6 @@ int main() {
 			win->feed(image_);
 		}
     };
+
+    window->run<DisplayImagePlan>(0);
 }

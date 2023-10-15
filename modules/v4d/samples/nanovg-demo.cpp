@@ -131,16 +131,17 @@ class NanoVGDemoPlan : public Plan {
 	cv::UMat bgra_;
 	cv::UMat hsv_;
 	cv::UMat hueChannel_;
+	long cnt_ = 0;
 	double hue_;
 public:
 	void infer(cv::Ptr<V4D> window) override {
 
-		window->parallel([](const uint64_t& frameCount, double& hue){
+		window->parallel([](long& cnt, double& hue){
 			//we use frame count to calculate the current hue
-			float t = frameCount / 60.0;
+			double t = ++cnt / 60.0;
 			//nanovg hue fading depending on t
 			hue = (sinf(t * 0.12) + 1.0) * 127.5;
-		},  window->frameCount(), hue_);
+		},  cnt_, hue_);
 
 		window->capture();
 
@@ -149,7 +150,7 @@ public:
 			cvtColor(framebuffer, rgb, cv::COLOR_BGRA2RGB);
 		}, rgb_);
 
-		window->parallel([](cv::UMat& rgb, cv::UMat& hsv, std::vector<cv::UMat>& hsvChannels, double hue){
+		window->parallel([](cv::UMat& rgb, cv::UMat& hsv, std::vector<cv::UMat>& hsvChannels, double& hue){
 			//Color-conversion from RGB to HSV
 			cv::cvtColor(rgb, hsv, cv::COLOR_RGB2HSV_FULL);
 
@@ -171,6 +172,7 @@ public:
 
 		//Render using nanovg
 		window->nvg([](const cv::Size &sz, const double& h) {
+			cerr << "HUE: " << h << endl;
 			draw_color_wheel(sz.width - 300, sz.height - 300, 250.0f, 250.0f, h);
 		}, window->fbSize(), hue_);
 
@@ -196,7 +198,7 @@ int main() {
     window->setSource(src);
     window->setSink(sink);
 #else
-    Source src = makeCaptureSource(WIDTH, HEIGHT, window);
+    auto src = makeCaptureSource(window);
     window->setSource(src);
 #endif
 

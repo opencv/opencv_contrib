@@ -286,7 +286,7 @@ protected:
     void setup(const cv::Size& sz);
     void teardown();
     void initWebGLCopy(const size_t& index);
-    void doWebGLCopy(FrameBufferContext& other);
+    void doWebGLCopy(cv::Ptr<FrameBufferContext> other);
     /*!
      * The UMat used to copy or bind (depending on cl-gl interop capability) the OpenGL framebuffer.
      */

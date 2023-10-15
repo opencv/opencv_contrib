@@ -194,6 +194,7 @@ static void render_scene(const double& x, const double& y, const double& angleMo
     glDrawElements(GL_TRIANGLES, triangles * 3, GL_UNSIGNED_SHORT, NULL);
 }
 
+#ifndef __EMSCRIPTEN__
 //applies a glow effect to an image
 static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
     thread_local cv::UMat resize;
@@ -217,6 +218,7 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
     cv::bitwise_not(dst, dst);
 }
+#endif
 
 using namespace cv::v4d;
 class ManyCubesDemoPlan : public Plan {
@@ -250,7 +252,9 @@ public:
 
 		//Aquire the frame buffer for use by OpenCV
 		window->fb([](cv::UMat& framebuffer, cv::UMat& f) {
+#ifndef __EMSCRIPTEN__
 			glow_effect(framebuffer, framebuffer, glow_kernel_size);
+#endif
 			framebuffer.copyTo(f);
 		}, frame_);
 
@@ -262,14 +266,13 @@ public:
 
 int main() {
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
-    window->printSystemInfo();
 
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
     window->setSink(sink);
 #endif
-    window->run<ManyCubesDemoPlan>(9);
+    window->run<ManyCubesDemoPlan>(0);
 
     return 0;
 }

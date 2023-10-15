@@ -133,16 +133,17 @@ void FrameBufferContext::initWebGLCopy(const size_t& index) {
 #endif
 }
 
-void FrameBufferContext::doWebGLCopy(FrameBufferContext& other) {
+void FrameBufferContext::doWebGLCopy(cv::Ptr<FrameBufferContext> other) {
 #ifdef __EMSCRIPTEN__
-    size_t index = other.getIndex();
+	cerr << "do copy" << endl;
+    size_t index = other->getIndex();
     this->makeCurrent();
     int width = getWindowSize().width;
     int height = getWindowSize().height;
     {
-        FrameBufferContext::GLScope glScope(*this, GL_READ_FRAMEBUFFER);
-        other.blitFrameBufferToFrameBuffer(
-                cv::Rect(0,0, other.size().width, other.size().height),
+        FrameBufferContext::GLScope glScope(self(), GL_READ_FRAMEBUFFER);
+        other->blitFrameBufferToFrameBuffer(
+                cv::Rect(0,0, other->size().width, other->size().height),
                 this->getWindowSize(),
                 0, false);
         emscripten_webgl_commit_frame();
@@ -703,7 +704,7 @@ void FrameBufferContext::begin(GLenum framebufferTarget) {
 }
 
 void FrameBufferContext::end() {
-    GL_CHECK(glFlush());
+    GL_CHECK(glFinish());
     this->makeNoneCurrent();
     //    this->fence();
 }
@@ -793,7 +794,9 @@ void FrameBufferContext::makeCurrent() {
 }
 
 void FrameBufferContext::makeNoneCurrent() {
-    glfwMakeContextCurrent(nullptr);
+#ifndef __EMSCRIPTEN__
+	glfwMakeContextCurrent(nullptr);
+#endif
 }
 
 

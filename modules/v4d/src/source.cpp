@@ -19,15 +19,8 @@ Source::Source() :
 Source::~Source() {
 }
 
-bool Source::isReady() {
-    if (generator_)
-        return true;
-    else
-        return false;
-}
-
 bool Source::isOpen() {
-    return open_;
+    return generator_ && open_;
 }
 
 bool Source::isAsync() {

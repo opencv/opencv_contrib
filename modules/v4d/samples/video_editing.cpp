@@ -13,7 +13,12 @@ int main(int argc, char** argv) {
     class VideoEditingPlan : public Plan {
     	cv::UMat frame_;
         const string hv_ = "Hello Video!";
+        cv::Size fbSz_;
     public:
+    	void setup(Ptr<V4D> win) override {
+    		fbSz_ = win->fbSize();
+    	}
+
     	void infer(Ptr<V4D> win) override {
     	    //Capture video from the source
     		win->capture();
@@ -27,7 +32,7 @@ int main(int argc, char** argv) {
     			fillColor(Scalar(255, 0, 0, 255));
     			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
     			text(sz.width / 2.0, sz.height / 2.0, str.c_str(), str.c_str() + str.size());
-    		}, win->fbSize(), hv_);
+    		}, fbSz_, hv_);
 
     		//Write video to the sink (do nothing in case of WebAssembly)
     		win->write();
@@ -45,7 +50,7 @@ int main(int argc, char** argv) {
     window->setSink(sink);
 #else
     //Make a webcam Source
-    Source src = makeCaptureSource(960, 960, window);
+    auto src = makeCaptureSource(window);
     //Attach webcam source
     window->setSource(src);
 #endif

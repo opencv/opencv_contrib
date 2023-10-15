@@ -404,11 +404,13 @@ class OptflowPlan : public Plan {
 public:
 	virtual ~OptflowPlan() override {};
 	virtual void infer(cv::Ptr<V4D> window) override {
-		window->capture([](const cv::UMat& videoFrame, cv::UMat& d, cv::UMat& b) {
+		window->capture();
+
+		window->fb([](const cv::UMat& framebuffer, cv::UMat& d, cv::UMat& b) {
 			//resize to foreground scale
-			cv::resize(videoFrame, d, cv::Size(videoFrame.size().width * fg_scale, videoFrame.size().height * fg_scale));
+			cv::resize(framebuffer, d, cv::Size(framebuffer.size().width * fg_scale, framebuffer.size().height * fg_scale));
 			//save video background
-			videoFrame.copyTo(b);
+			framebuffer.copyTo(b);
 		}, down, background);
 
 		window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp){
@@ -435,15 +437,12 @@ public:
 			dpg = dng.clone();
 		}, downPrevGrey, downNextGrey);
 
-		window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, cv::UMat& r) {
+		window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f) {
 			//Put it all together (OpenCL)
 			composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-			framebuffer.copyTo(r);
-		}, background, foreground, result);
+		}, background, foreground);
 
-		window->write([](cv::UMat& videoFrame, cv::UMat& r) {
-			r.copyTo(videoFrame);
-		}, result);
+		window->write();
 	}
 };
 
@@ -461,7 +460,6 @@ int main(int argc, char **argv) {
     try {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", ALL, OFFSCREEN);
-        window->printSystemInfo();
         window->setStretching(stretch);
         if (!OFFSCREEN) {
 #ifndef __EMSCRIPTEN__
@@ -477,7 +475,7 @@ int main(int argc, char **argv) {
         auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
         window->setSink(sink);
 #else
-        cv::Ptr<Source> src = makeCaptureSource(WIDTH, HEIGHT, window);
+        cv::Ptr<Source> src = makeCaptureSource(window);
         window->setSource(src);
 #endif
 

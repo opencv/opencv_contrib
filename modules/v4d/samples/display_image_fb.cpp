@@ -8,11 +8,11 @@ int main() {
     //Creates a V4D object
     Ptr<V4D> window = V4D::make(960, 960, "Display an Image through direct FB access");
 
-    class DislayImageFB : public Plan {
+    class DisplayImageFB : public Plan {
 		UMat image_;
 		UMat resized_;
 		UMat converted_;
-
+public:
 		void setup(cv::Ptr<V4D> win) {
 			win->parallel([](cv::UMat& image, cv::UMat& resized, cv::UMat& converted, const cv::Size& sz){
 				//Loads an image as a UMat (just in case we have hardware acceleration available)
@@ -36,4 +36,6 @@ int main() {
 			}, converted_);
 		}
     };
+
+    window->run<DisplayImageFB>(0);
 }

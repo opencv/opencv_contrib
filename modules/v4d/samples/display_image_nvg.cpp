@@ -13,7 +13,7 @@ struct Image_t {
 };
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image using NanoVG");
+    cv::Ptr<V4D> window = V4D::make(960, 960, "Display an Image using NanoVG", ALL, false, true);
 
     class DisplayImageNVG : public Plan {
         Image_t image_;

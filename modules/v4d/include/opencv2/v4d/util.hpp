@@ -38,9 +38,10 @@ namespace detail {
 using std::cout;
 using std::endl;
 
+static thread_local std::mutex mtx_;
+static thread_local bool sync_run_ = false;
+
 class ThreadLocal {
-    static thread_local std::mutex mtx_;
-    static thread_local bool sync_run_;
 public:
     static bool& sync_run() {
     	return sync_run_;
@@ -342,7 +343,7 @@ CV_EXPORTS cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window, const string& 
  * @param height The frame height to capture (usually the initial height of the V4D object)
  * @return A WebCam source object.
  */
-CV_EXPORTS cv::Ptr<Source> makeCaptureSource(int width, int height, cv::Ptr<V4D> window);
+CV_EXPORTS cv::Ptr<Source> makeCaptureSource(cv::Ptr<V4D> window);
 #endif
 
 void resizePreserveAspectRatio(const cv::UMat& src, cv::UMat& output, const cv::Size& dstSize, const cv::Scalar& bgcolor = {0,0,0,255});

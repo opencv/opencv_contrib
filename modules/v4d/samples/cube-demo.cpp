@@ -12,7 +12,6 @@
 constexpr long unsigned int WIDTH = 1280;
 constexpr long unsigned int HEIGHT = 720;
 #else
-constexpr size_t NUMBER_OF_CUBES = 5;
 constexpr long unsigned int WIDTH = 960;
 constexpr long unsigned int HEIGHT = 960;
 #endif
@@ -210,30 +209,32 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 using namespace cv::v4d;
 class CubeDemoPlan : public Plan {
 	cv::UMat frame_;
-	GLuint vao;
-	GLuint shaderProgram;
-	GLuint uniformTransform;
+	GLuint vao_;
+	GLuint shaderProgram_;
+	GLuint uniformTransform_;
 public:
 	void setup(cv::Ptr<V4D> window) {
 		window->gl([](const cv::Size& sz, GLuint& v, GLuint& sp, GLuint& ut){
 			init_scene(sz, v, sp, ut);
-		}, window->fbSize(), vao, shaderProgram, uniformTransform);
+		}, window->fbSize(), vao_, shaderProgram_, uniformTransform_);
 	}
 	void infer(cv::Ptr<V4D> window) {
 		window->gl([](){
 			//Clear the background
-			glClearColor(0.2, 0.24, 0.4, 1);
+			glClearColor(0.2f, 0.24f, 0.4f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 		});
 
 		//Render using multiple OpenGL contexts
 		window->gl([](GLuint& v, GLuint& sp, GLuint& ut){
 			render_scene(v, sp, ut);
-		}, vao, shaderProgram, uniformTransform);
+		}, vao_, shaderProgram_, uniformTransform_);
 
 		//Aquire the frame buffer for use by OpenCV
 		window->fb([](cv::UMat& framebuffer, cv::UMat& f) {
+#ifndef __EMSCRIPTEN__
 			glow_effect(framebuffer, framebuffer, glow_kernel_size);
+#endif
 			framebuffer.copyTo(f);
 		}, frame_);
 
@@ -244,9 +245,7 @@ public:
 };
 
 int main() {
-    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Many Cubes Demo", IMGUI, OFFSCREEN);
-    window->printSystemInfo();
-
+    cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Cube Demo", ALL, OFFSCREEN);
 #ifndef __EMSCRIPTEN__
     //Creates a writer sink (which might be hardware accelerated)
     auto sink = makeWriterSink(window, OUTPUT_FILENAME, FPS, cv::Size(WIDTH, HEIGHT));
