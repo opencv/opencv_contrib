@@ -221,6 +221,7 @@ public:
 	    GL_CHECK(glViewport(0, 0, sz.width, sz.height));
 	}
 
+	//Free OpenGL resources
 	static void destroy_scene(Handles& handles) {
 		glDeleteShader(handles.shaderHdl_);
 		glDeleteBuffers(1, &handles.vbo_);
