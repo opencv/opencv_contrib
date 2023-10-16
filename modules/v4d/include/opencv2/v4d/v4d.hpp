@@ -636,6 +636,12 @@ public:
 #ifndef __EMSCRIPTEN__
 		CLExecScope_t scope(this->fbCtx()->getCLExecContext());
 #endif
+		this->fbCtx()->makeCurrent();
+#ifndef __EMSCRIPTEN__
+		if(Global::is_main()) {
+			this->printSystemInfo();
+		}
+#endif
 		if(Global::is_main()) {
 			plan->gui(self());
 		}
@@ -646,9 +652,6 @@ public:
 		plan->infer(self());
 		this->makePlan();
 #ifndef __EMSCRIPTEN__
-		if(Global::is_main()) {
-			this->printSystemInfo();
-		}
 		do {
 			this->runPlan();
 		} while(this->display());
