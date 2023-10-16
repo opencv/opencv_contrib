@@ -6,6 +6,27 @@
 using namespace cv;
 using namespace cv::v4d;
 
+class CustomSourceAndSinkPlan : public Plan {
+	string hr_ = "Hello Rainbow!";
+public:
+	void infer(cv::Ptr<V4D> win) override {
+		win->capture();
+
+		//Render "Hello Rainbow!" over the video
+		win->nvg([](const Size& sz, const string& str) {
+			using namespace cv::v4d::nvg;
+
+			fontSize(40.0f);
+			fontFace("sans-bold");
+			fillColor(Scalar(255, 0, 0, 255));
+			textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
+			text(sz.width / 2.0, sz.height / 2.0, str.c_str(), str.c_str() + str.size());
+		}, win->fbSize(), hr_);
+
+		win->write();
+	}
+};
+
 int main() {
     Ptr<V4D> window = V4D::make(960, 960, "Custom Source/Sink");
 
@@ -37,27 +58,6 @@ int main() {
 	//Attach source and sink
 	window->setSource(src);
 	window->setSink(sink);
-
-	class CustomSourceAndSinkPlan : public Plan {
-	    string hr_ = "Hello Rainbow!";
-public:
-		void infer(cv::Ptr<V4D> win) override {
-			win->capture();
-
-			//Render "Hello Rainbow!" over the video
-			win->nvg([](const Size& sz, const string& str) {
-				using namespace cv::v4d::nvg;
-
-				fontSize(40.0f);
-				fontFace("sans-bold");
-				fillColor(Scalar(255, 0, 0, 255));
-				textAlign(NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
-				text(sz.width / 2.0, sz.height / 2.0, str.c_str(), str.c_str() + str.size());
-			}, win->fbSize(), hr_);
-
-			win->write();
-		}
-	};
 
 	window->run<CustomSourceAndSinkPlan>(0);
 }
