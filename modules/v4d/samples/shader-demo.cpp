@@ -221,6 +221,13 @@ public:
 	    GL_CHECK(glViewport(0, 0, sz.width, sz.height));
 	}
 
+	static void destroy_scene(Handles& handles) {
+		glDeleteShader(handles.shaderHdl_);
+		glDeleteBuffers(1, &handles.vbo_);
+		glDeleteBuffers(1, &handles.ebo_);
+		glDeleteVertexArrays(1, &handles.vao_);
+	}
+
 	//Render the mandelbrot fractal on top of a video
 	static void render_scene(const cv::Size& sz, Params& params, Handles& handles) {
 		//bungee zoom
@@ -297,6 +304,12 @@ public:
 	#endif
 
 		window->write();
+	}
+
+	void teardown(cv::Ptr<V4D> window) override {
+		window->gl([](Handles& handles) {
+			destroy_scene(handles);
+		}, handles_);
 	}
 };
 
