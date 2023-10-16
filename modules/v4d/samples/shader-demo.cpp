@@ -38,26 +38,6 @@ static float easeInOutQuint(float x) {
     return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
 }
 
-#ifndef __EMSCRIPTEN__
-static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
-    static thread_local cv::UMat resize;
-    static thread_local cv::UMat blur;
-    static thread_local cv::UMat dst16;
-
-    cv::bitwise_not(src, dst);
-
-    cv::resize(dst, resize, cv::Size(), 0.5, 0.5);
-    cv::boxFilter(resize, resize, -1, cv::Size(ksize, ksize), cv::Point(-1, -1), true,
-            cv::BORDER_REPLICATE);
-    cv::resize(resize, blur, src.size());
-
-    cv::multiply(dst, blur, dst16, 1, CV_16U);
-    cv::divide(dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
-
-    cv::bitwise_not(dst, dst);
-}
-#endif
-
 using namespace cv::v4d;
 
 class ShaderDemoPlan : public Plan {
@@ -98,8 +78,30 @@ class ShaderDemoPlan : public Plan {
 		GLuint vbo_, ebo_;
 	} handles_;
 
+	struct Cache {
+		cv::UMat down;
+		cv::UMat up;
+		cv::UMat blur;
+		cv::UMat dst16;
+	} cache_;
+
 	cv::Size sz_;
 public:
+#ifndef __EMSCRIPTEN__
+	static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize, Cache& cache) {
+		cv::bitwise_not(src, dst);
+
+		cv::resize(dst, cache.down, cv::Size(), 0.5, 0.5);
+		cv::boxFilter(cache.down, cache.blur, -1, cv::Size(ksize, ksize), cv::Point(-1, -1), true,
+				cv::BORDER_REPLICATE);
+		cv::resize(cache.blur, cache.up, src.size());
+
+		cv::multiply(dst, cache.up, cache.dst16, 1, CV_16U);
+		cv::divide(cache.dst16, cv::Scalar::all(255.0), dst, 1, CV_8U);
+
+		cv::bitwise_not(dst, dst);
+	}
+#endif
 
 	//Load objects and buffers
 	static void load_buffers(Handles& handles) {
@@ -203,7 +205,7 @@ public:
 	}
 
 	//Initialize shaders, objects, buffers and uniforms
-	static void initScene(const cv::Size& sz, Handles& handles) {
+	static void init_scene(const cv::Size& sz, Handles& handles) {
 	    GL_CHECK(glEnable(GL_BLEND));
 	    GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 	    handles.shaderHdl_ = load_shader();
@@ -220,7 +222,7 @@ public:
 	}
 
 	//Render the mandelbrot fractal on top of a video
-	static void renderScene(const cv::Size& sz, Params& params, Handles& handles) {
+	static void render_scene(const cv::Size& sz, Params& params, Handles& handles) {
 		//bungee zoom
 	    if (params.currentZoom_ >= 1) {
 	    	params.zoomIncr_ = -0.01;
@@ -277,7 +279,7 @@ public:
 	void setup(cv::Ptr<V4D> window) override {
 		sz_ = window->fbSize();
 		window->gl([](const cv::Size &sz, Handles& handles) {
-			initScene(sz, handles);
+			init_scene(sz, handles);
 		}, sz_, handles_);
 	}
 
@@ -285,13 +287,13 @@ public:
 		window->capture();
 
 		window->gl([](const cv::Size &sz, Params& params, Handles& handles) {
-			renderScene(sz, params, handles);
+			render_scene(sz, params, handles);
 		}, sz_, params_, handles_);
 
 	#ifndef __EMSCRIPTEN__
-		window->fb([](cv::UMat& framebuffer, const Params& params) {
-			glow_effect(framebuffer, framebuffer, params.glowKernelSize_);
-		}, params_);
+		window->fb([](cv::UMat& framebuffer, const Params& params, Cache& cache) {
+			glow_effect(framebuffer, framebuffer, params.glowKernelSize_, cache);
+		}, params_, cache_);
 	#endif
 
 		window->write();
