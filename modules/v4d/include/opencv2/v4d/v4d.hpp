@@ -368,9 +368,9 @@ public:
     }
 
     template <typename Tfn>
-    void graph(Tfn fn) {
+    void branch(Tfn fn) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("graph", fn);
+        const string id = make_id("branch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id](){
             std::function functor = fn;
@@ -380,9 +380,9 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
-    void graph(Tfn fn, Args&& ... args) {
+    void branch(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("graph", fn);
+        const string id = make_id("branch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -392,9 +392,9 @@ public:
     }
 
     template <typename Tfn>
-    void endgraph(Tfn fn) {
+    void endbranch(Tfn fn) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("endgraph", fn);
+        const string id = make_id("endbranch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id] {
             std::function functor = fn;
@@ -404,9 +404,9 @@ public:
     }
 
     template <typename Tfn, typename ... Args>
-    void endgraph(Tfn fn, Args&& ... args) {
+    void endbranch(Tfn fn, Args&& ... args) {
         CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
-        const string id = make_id("endgraph", fn);
+        const string id = make_id("endbranch", fn);
 
         TimeTracker::getInstance()->execute(id, [this, fn, id, &args...](){
             (emit_access<std::true_type, std::remove_reference_t<Args>, Args...>(id, std::is_const_v<std::remove_reference_t<Args>>, &args),...);
@@ -440,12 +440,12 @@ public:
     			inputFrame.copyTo(f);
     	}, frame);
 
-    	graph(isTrue, frame.empty());
+    	branch(isTrue, frame.empty());
         fb([](cv::UMat& frameBuffer, const cv::UMat& f) {
         	if(!f.empty())
         		f.copyTo(frameBuffer);
         }, frame);
-    	endgraph(isTrue, frame.empty());
+    	endbranch(isTrue, frame.empty());
     }
 
     void capture() {

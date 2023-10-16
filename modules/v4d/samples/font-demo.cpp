@@ -114,7 +114,7 @@ public:
     	auto always = []() { return true; };
     	auto isTrue = [](const bool& b) { return b; };
 
-		window->graph(isTrue, updateStars_);
+		window->branch(isTrue, updateStars_);
 		{
 			window->nvg([](const cv::Size& sz, cv::RNG& rng, const Params& params) {
 				using namespace cv::v4d::nvg;
@@ -136,9 +136,9 @@ public:
 				frameBuffer.copyTo(f);
 			}, stars_);
 		}
-		window->endgraph(isTrue, updateStars_);
+		window->endbranch(isTrue, updateStars_);
 
-		window->graph(isTrue, updatePerspective_);
+		window->branch(isTrue, updatePerspective_);
 		{
 			window->parallel([](cv::Mat& tm, const Params& params){
 				//Derive the transformation matrix tm for the pseudo 3D effect from quad1 and quad2.
@@ -150,9 +150,9 @@ public:
 				tm = cv::getPerspectiveTransform(quad1, quad2);
 			}, tm_, params_);
 		}
-		window->endgraph(isTrue, updatePerspective_);
+		window->endbranch(isTrue, updatePerspective_);
 
-		window->graph(always);
+		window->branch(always);
 		{
 			window->nvg([](const cv::Size& sz, int32_t& ty, const int32_t& cnt, int32_t& y, const int32_t& textHeight, const std::vector<std::string> lines, const Params& params) {
 				//How many pixels to translate the text up.
@@ -200,8 +200,7 @@ public:
 				updateStars = false;
 			}, frame_, updatePerspective_, updateStars_);
 		}
-		window->endgraph(always);
-
+		window->endbranch(always);
     }
 };
 int main() {
