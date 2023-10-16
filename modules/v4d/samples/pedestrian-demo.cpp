@@ -154,7 +154,7 @@ public:
 		static auto doRedect = [](const bool& trackerInit, const bool& redetect){ return !trackerInit || redetect; };
 		static auto dontRedect = [](const bool& trackerInit, const bool& redetect){ return trackerInit && !redetect; };
 
-		window->graph(always);
+		window->branch(always);
 		{
 			window->capture();
 
@@ -170,10 +170,10 @@ public:
 				cv::cvtColor(videoFrame, background, cv::COLOR_RGB2BGRA);
 			}, videoFrame_, videoFrameDown_, videoFrameDownGrey_, background_);
 		}
-		window->endgraph(always);
+		window->endbranch(always);
 
 		//Try to track the pedestrian (if we currently are tracking one), else re-detect using HOG descriptor
-		window->graph(doRedect, trackerInitialized_, redetect_);
+		window->branch(doRedect, trackerInitialized_, redetect_);
 		{
 			window->parallel([](cv::HOGDescriptor& hog, bool& redetect, cv::UMat& videoFrameDownGrey, std::vector<cv::Rect>& locations, vector<vector<double>>& boxes, vector<double>& probs, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked, bool& trackerInitialized){
 				redetect = false;
@@ -207,8 +207,8 @@ public:
 				}
 			}, hog_, redetect_, videoFrameDownGrey_, locations_, boxes_, probs_, tracker_, tracked_, trackerInitialized_);
 		}
-		window->endgraph(doRedect, trackerInitialized_, redetect_);
-		window->graph(dontRedect, trackerInitialized_, redetect_);
+		window->endbranch(doRedect, trackerInitialized_, redetect_);
+		window->branch(dontRedect, trackerInitialized_, redetect_);
 		{
 			window->parallel([](bool& redetect, cv::UMat& videoFrameDownGrey, cv::Ptr<cv::Tracker>& tracker, cv::Rect& tracked){
 				if(!tracker->update(videoFrameDownGrey, tracked)) {
@@ -217,9 +217,9 @@ public:
 				}
 			}, redetect_, videoFrameDownGrey_, tracker_, tracked_);
 		}
-		window->endgraph(dontRedect, trackerInitialized_, redetect_);
+		window->endbranch(dontRedect, trackerInitialized_, redetect_);
 
-		window->graph(always);
+		window->branch(always);
 		{
 		//Draw an ellipse around the tracked pedestrian
 			window->nvg([](const cv::Size& sz, cv::Rect& tracked) {
@@ -243,7 +243,7 @@ public:
 
 			window->write();
 		}
-		window->endgraph(always);
+		window->endbranch(always);
 	}
 };
 int main(int argc, char **argv) {

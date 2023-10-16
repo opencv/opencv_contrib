@@ -231,7 +231,7 @@ public:
 		auto isFalse = [](bool& ff){ return !ff; };
 
 		try {
-			window->graph(always);
+			window->branch(always);
 			{
 				window->capture();
 
@@ -258,9 +258,9 @@ public:
 						ft = FaceFeatures(fr[0], sh[0], float(d.size().width) / WIDTH);
 				}, detector_, facemark_, shapes_, down_, faceRects_, faceFound_, features_);
 			}
-			window->endgraph(always);
+			window->endbranch(always);
 
-			window->graph(isTrue, faceFound_);
+			window->branch(isTrue, faceFound_);
 			{
 				window->nvg([](const FaceFeatures& f) {
 					//Draw the face oval of the first face
@@ -337,9 +337,9 @@ public:
 					}
 				}, frameOut_, input_, lhalf_, rhalf_);
 			}
-			window->endgraph(isTrue, faceFound_);
+			window->endbranch(isTrue, faceFound_);
 
-			window->graph(isFalse, faceFound_);
+			window->branch(isFalse, faceFound_);
 			{
 				window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh) {
 					if (side_by_side) {
@@ -353,16 +353,16 @@ public:
 					}
 				}, frameOut_, input_, lhalf_);
 			}
-			window->endgraph(isFalse, faceFound_);
+			window->endbranch(isFalse, faceFound_);
 
-			window->graph(always);
+			window->branch(always);
 			{
 				//write the result to the framebuffer
 				window->fb([](cv::UMat &frameBuffer, const cv::UMat& f) {
 					cvtColor(f, frameBuffer, cv::COLOR_BGR2BGRA);
 				}, frameOut_);
 			}
-			window->endgraph(always);
+			window->endbranch(always);
 
 		} catch (std::exception &ex) {
 			cerr << ex.what() << endl;

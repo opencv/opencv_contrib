@@ -26,7 +26,7 @@ const int glow_kernel_size = std::max(int(DIAG / 138 % 2 == 0 ? DIAG / 138 + 1 :
 using std::cerr;
 using std::endl;
 
-/* OpenGL constants and variables */
+/* OpenGL constants */
 const GLuint triangles = 12;
 const GLuint vertices_index = 0;
 const GLuint colors_index = 1;
