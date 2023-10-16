@@ -22,39 +22,6 @@ const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 constexpr const char* OUTPUT_FILENAME = "shader-demo.mkv";
 #endif
 
-/* Mandelbrot control parameters */
-static int glow_kernel_size = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
-// Red, green, blue and alpha. All from 0.0f to 1.0f
-static float base_color_val[4] = {0.2, 0.6, 1.0, 1.0};
-//contrast boost
-static int contrast_boost = 50; //0.0-255
-//max fractal iterations
-static int max_iterations = 1000;
-//center x coordinate
-static float center_x = -0.119609;
-//center y coordinate
-static float center_y = 0.13262;
-static float zoom_factor = 1.0;
-static float current_zoom = 1.0;
-static float zoom_incr = 0.99;
-static bool manual_navigation = false;
-
-/* GL uniform handles */
-static thread_local GLint base_color_hdl;
-static thread_local GLint contrast_boost_hdl;
-static thread_local GLint max_iterations_hdl;
-static thread_local GLint center_x_hdl;
-static thread_local GLint center_y_hdl;
-static thread_local GLint current_zoom_hdl;
-static thread_local GLint resolution_hdl;
-
-/* Shader program handle */
-static thread_local GLuint shader_program_hdl;
-
-/* Object handles */
-static thread_local GLuint VAO;
-static thread_local GLuint VBO, EBO;
-
 // vertex position, color
 static const float vertices[] = {
 //    x      y      z
@@ -66,156 +33,9 @@ static const unsigned int indices[] = {
 //  0'---3
         0, 1, 2, 0, 3, 1 };
 
-//Load objects and buffers
-static void load_buffer_data() {
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-//mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
-static void load_shader() {
-#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
-    const string shaderVersion = "330";
-#else
-    const string shaderVersion = "300 es";
-#endif
-
-    const string vert =
-            "    #version " + shaderVersion
-                    + R"(
-    in vec4 position;
-    
-    void main()
-    {
-        gl_Position = vec4(position.xyz, 1.0);
-    })";
-
-    const string frag =
-            "    #version " + shaderVersion
-                    + R"(
-    precision lowp float;
-
-    out vec4 outColor;
-    
-    uniform vec4 base_color;
-    uniform int contrast_boost;
-    uniform int max_iterations;
-    uniform float current_zoom;
-    uniform float center_x;
-    uniform float center_y;
-	uniform vec2 resolution;
-
-    int get_iterations()
-    {
-        float pointr = (((gl_FragCoord.x / resolution[1]) - 0.5f) * current_zoom + center_x) * 5.0f;
-        float pointi = (((gl_FragCoord.y / resolution[1]) - 0.5f) * current_zoom + center_y) * 5.0f;
-        const float four = 4.0f;
-
-        int iterations = 0;
-        float zi = 0.0f;
-        float zr = 0.0f;
-        float zrsqr = 0.0f;
-        float zisqr = 0.0f;
-
-        while (iterations < max_iterations && zrsqr + zisqr < four) {
-           //equals following line as a consequence of binomial expansion: zi = (((zr + zi)*(zr + zi)) - zrsqr) - zisqr
-            zi = (zr + zr) * zi;
-
-            zi += pointi;
-            zr = (zrsqr - zisqr) + pointr;
-    
-            zrsqr = zr * zr;
-            zisqr = zi * zi;
-            ++iterations;
-        }
-        return iterations;
-    }
-     
-    void determine_color()
-    {
-        int iter = get_iterations();
-        if (iter < max_iterations) {   
-            float iterations = float(iter) / float(max_iterations);
-            float cb = float(contrast_boost);
-    
-            outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
-        } else {
-            outColor = vec4(0,0,0,0);
-        }
-    }
-
-    void main()
-    {
-        determine_color();
-    })";
-
-    shader_program_hdl = cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
-}
-
 //easing function for the bungee zoom
 static float easeInOutQuint(float x) {
     return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - std::pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
-}
-
-//Initialize shaders, objects, buffers and uniforms
-static void init_scene(const cv::Size& sz) {
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    load_shader();
-    load_buffer_data();
-
-    base_color_hdl = glGetUniformLocation(shader_program_hdl, "base_color");
-    contrast_boost_hdl = glGetUniformLocation(shader_program_hdl, "contrast_boost");
-    max_iterations_hdl = glGetUniformLocation(shader_program_hdl, "max_iterations");
-    current_zoom_hdl = glGetUniformLocation(shader_program_hdl, "current_zoom");
-    center_x_hdl = glGetUniformLocation(shader_program_hdl, "center_x");
-    center_y_hdl = glGetUniformLocation(shader_program_hdl, "center_y");
-    resolution_hdl = glGetUniformLocation(shader_program_hdl, "resolution");
-    glViewport(0, 0, sz.width, sz.height);
-}
-
-//Render the mandelbrot fractal on top of a video
-static void render_scene(const cv::Size& sz) {
-	//bungee zoom
-    if (current_zoom >= 1) {
-        zoom_incr = -0.01;
-    } else if (current_zoom < 2.5e-06) {
-        zoom_incr = +0.01;
-    }
-
-    glUseProgram(shader_program_hdl);
-    glUniform4f(base_color_hdl, base_color_val[0], base_color_val[1], base_color_val[2], base_color_val[3]);
-    glUniform1i(contrast_boost_hdl, contrast_boost);
-    glUniform1i(max_iterations_hdl, max_iterations);
-    glUniform1f(center_y_hdl, center_y);
-    glUniform1f(center_x_hdl, center_x);
-    if (!manual_navigation) {
-        current_zoom += zoom_incr;
-        glUniform1f(current_zoom_hdl, easeInOutQuint(current_zoom));
-    } else {
-        current_zoom = 1.0 / pow(zoom_factor, 5.0f);
-        glUniform1f(current_zoom_hdl, current_zoom);
-    }
-    float res[2] = {float(sz.width), float(sz.height)};
-    glUniform2fv(resolution_hdl, 1, res);
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 #ifndef __EMSCRIPTEN__
@@ -240,73 +60,256 @@ static void glow_effect(const cv::UMat& src, cv::UMat& dst, const int ksize) {
 
 using namespace cv::v4d;
 
-//Setup the GUI using ImGUI.
-static void setup_gui(cv::Ptr<V4D> window) {
-    window->imgui([](ImGuiContext* ctx) {
-        using namespace ImGui;
-        SetCurrentContext(ctx);
-        Begin("Fractal");
-        Text("Navigation");
-        SliderInt("Iterations", &max_iterations, 3, 50000);
-        if(SliderFloat("X", &center_x, -1.0f, 1.0f))
-            manual_navigation = true;
-
-        if(SliderFloat("Y", &center_y, -1.0f, 1.0f))
-            manual_navigation = true;
-
-        if(SliderFloat("Zoom", &zoom_factor, 1.0f, 100.0f))
-            manual_navigation = true;
-#ifndef __EMSCRIPTEN__
-        Text("Glow");
-        SliderInt("Kernel Size", &glow_kernel_size, 1, 127);
-#endif
-        Text("Color");
-        ColorPicker4("Color", base_color_val);
-        SliderInt("Contrast boost", &contrast_boost, 1, 255);
-        End();
-    });
-}
-
 class ShaderDemoPlan : public Plan {
+	struct Params {
+		/* Mandelbrot control parameters */
+		int glowKernelSize_ = std::max(int(DIAG / 200 % 2 == 0 ? DIAG / 200 + 1 : DIAG / 200), 1);
+		// Red, green, blue and alpha. All from 0.0f to 1.0f
+		float baseColorVal_[4] = {0.2, 0.6, 1.0, 1.0};
+		//contrast boost
+		int contrastBoost_ = 50; //0.0-255
+		//max fractal iterations
+		int maxIterations_ = 1000;
+		//center x coordinate
+		float centerX_ = -0.119609;
+		//center y coordinate
+		float centerY_ = 0.13262;
+		float zoomFactor_ = 1.0;
+		float currentZoom_ = 1.0;
+		float zoomIncr_ = 0.99;
+		bool manualNavigation_ = false;
+	} params_;
+
+	struct Handles {
+		/* GL uniform handles */
+		GLint baseColorHdl_;
+		GLint contrastBoostHdl_;
+		GLint maxIterationsHdl_;
+		GLint centerXHdl_;
+		GLint centerYHdl_;
+		GLint currentZoomHdl_;
+		GLint resolutionHdl_;
+
+		/* Shader program handle */
+		GLuint shaderHdl_;
+
+		/* Object handles */
+		GLuint vao_;
+		GLuint vbo_, ebo_;
+	} handles_;
+
+	cv::Size sz_;
 public:
-void setup(cv::Ptr<V4D> window) override {
-	window->gl([](const cv::Size &sz) {
-		init_scene(sz);
-	}, window->fbSize());
-}
 
-void infer(cv::Ptr<V4D> window) override {
-	window->capture();
+	//Load objects and buffers
+	static void load_buffers(Handles& handles) {
+	    GL_CHECK(glGenVertexArrays(1, &handles.vao_));
+	    GL_CHECK(glBindVertexArray(handles.vao_));
 
-	window->gl([](const cv::Size &sz) {
-		render_scene(sz);
-	}, window->fbSize());
+	    GL_CHECK(glGenBuffers(1, &handles.vbo_));
+	    GL_CHECK(glGenBuffers(1, &handles.ebo_));
 
-#ifndef __EMSCRIPTEN__
-    window->fb([](cv::UMat& framebuffer) {
-        glow_effect(framebuffer, framebuffer, glow_kernel_size);
-    });
-#endif
+	    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, handles.vbo_));
+	    GL_CHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
 
-	window->write();
-}
+	    GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, handles.ebo_));
+	    GL_CHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
+
+	    GL_CHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0));
+	    GL_CHECK(glEnableVertexAttribArray(0));
+
+	    GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	    GL_CHECK(glBindVertexArray(0));
+	}
+
+	//mandelbrot shader code adapted from my own project: https://github.com/kallaballa/FractalDive#after
+	static GLuint load_shader() {
+	#if !defined(__EMSCRIPTEN__) && !defined(OPENCV_V4D_USE_ES3)
+	    const string shaderVersion = "330";
+	#else
+	    const string shaderVersion = "300 es";
+	#endif
+
+	    const string vert =
+	            "    #version " + shaderVersion
+	                    + R"(
+	    in vec4 position;
+	    
+	    void main()
+	    {
+	        gl_Position = vec4(position.xyz, 1.0);
+	    })";
+
+	    const string frag =
+	            "    #version " + shaderVersion
+	                    + R"(
+	    precision lowp float;
+
+	    out vec4 outColor;
+	    
+	    uniform vec4 base_color;
+	    uniform int contrast_boost;
+	    uniform int max_iterations;
+	    uniform float current_zoom;
+	    uniform float center_y;
+	    uniform float center_x;
+		uniform vec2 resolution;
+
+	    int get_iterations()
+	    {
+	        float pointr = (((gl_FragCoord.x / resolution[1]) - 0.5f) * current_zoom + center_x) * 5.0f;
+	        float pointi = (((gl_FragCoord.y / resolution[1]) - 0.5f) * current_zoom + center_y) * 5.0f;
+	        const float four = 4.0f;
+
+	        int iterations = 0;
+	        float zi = 0.0f;
+	        float zr = 0.0f;
+	        float zrsqr = 0.0f;
+	        float zisqr = 0.0f;
+
+	        while (iterations < max_iterations && zrsqr + zisqr < four) {
+	           //equals following line as a consequence of binomial expansion: zi = (((zr + zi)*(zr + zi)) - zrsqr) - zisqr
+	            zi = (zr + zr) * zi;
+
+	            zi += pointi;
+	            zr = (zrsqr - zisqr) + pointr;
+	    
+	            zrsqr = zr * zr;
+	            zisqr = zi * zi;
+	            ++iterations;
+	        }
+	        return iterations;
+	    }
+	     
+	    void determine_color()
+	    {
+	        int iter = get_iterations();
+	        if (iter < max_iterations) {   
+	            float iterations = float(iter) / float(max_iterations);
+	            float cb = float(contrast_boost);
+	    
+	            outColor = vec4(base_color[0] * iterations * cb, base_color[1] * iterations * cb, base_color[2] * iterations * cb, base_color[3]);
+	        } else {
+	            outColor = vec4(0,0,0,0);
+	        }
+	    }
+
+	    void main()
+	    {
+	        determine_color();
+	    })";
+
+	    return cv::v4d::initShader(vert.c_str(), frag.c_str(), "fragColor");
+	}
+
+	//Initialize shaders, objects, buffers and uniforms
+	static void initScene(const cv::Size& sz, Handles& handles) {
+	    GL_CHECK(glEnable(GL_BLEND));
+	    GL_CHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+	    handles.shaderHdl_ = load_shader();
+	    load_buffers(handles);
+
+	    handles.baseColorHdl_ = glGetUniformLocation(handles.shaderHdl_, "base_color");
+	    handles.contrastBoostHdl_ = glGetUniformLocation(handles.shaderHdl_, "contrast_boost");
+	    handles.maxIterationsHdl_ = glGetUniformLocation(handles.shaderHdl_, "max_iterations");
+	    handles.currentZoomHdl_ = glGetUniformLocation(handles.shaderHdl_, "current_zoom");
+	    handles.centerXHdl_ = glGetUniformLocation(handles.shaderHdl_, "center_x");
+	    handles.centerYHdl_ = glGetUniformLocation(handles.shaderHdl_, "center_y");
+	    handles.resolutionHdl_ = glGetUniformLocation(handles.shaderHdl_, "resolution");
+	    GL_CHECK(glViewport(0, 0, sz.width, sz.height));
+	}
+
+	//Render the mandelbrot fractal on top of a video
+	static void renderScene(const cv::Size& sz, Params& params, Handles& handles) {
+		//bungee zoom
+	    if (params.currentZoom_ >= 1) {
+	    	params.zoomIncr_ = -0.01;
+	    } else if (params.currentZoom_ < 2.5e-06) {
+	    	params.zoomIncr_ = +0.01;
+	    }
+
+	    GL_CHECK(glUseProgram(handles.shaderHdl_));
+	    GL_CHECK(glUniform4f(handles.baseColorHdl_, params.baseColorVal_[0], params.baseColorVal_[1], params.baseColorVal_[2], params.baseColorVal_[3]));
+	    GL_CHECK(glUniform1i(handles.contrastBoostHdl_, params.contrastBoost_));
+	    GL_CHECK(glUniform1i(handles.maxIterationsHdl_, params.maxIterations_));
+	    GL_CHECK(glUniform1f(handles.centerYHdl_, params.centerY_));
+	    GL_CHECK(glUniform1f(handles.centerXHdl_, params.centerX_));
+	    if (!params.manualNavigation_) {
+	    	params.currentZoom_ += params.zoomIncr_;
+	        GL_CHECK(glUniform1f(handles.currentZoomHdl_, easeInOutQuint(params.currentZoom_)));
+	    } else {
+	    	params.currentZoom_ = 1.0 / pow(params.zoomFactor_, 5.0f);
+	        GL_CHECK(glUniform1f(handles.currentZoomHdl_, params.currentZoom_));
+	    }
+	    float res[2] = {float(sz.width), float(sz.height)};
+	    GL_CHECK(glUniform2fv(handles.resolutionHdl_, 1, res));
+
+	    GL_CHECK(glBindVertexArray(handles.vao_));
+	    GL_CHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0));
+	}
+
+	void gui(cv::Ptr<V4D> window) override {
+		window->imgui([this](cv::Ptr<V4D> window, ImGuiContext* ctx) {
+			using namespace ImGui;
+			SetCurrentContext(ctx);
+			Begin("Fractal");
+			Text("Navigation");
+			SliderInt("Iterations", &params_.maxIterations_, 3, 50000);
+			if(SliderFloat("X", &params_.centerX_, -1.0f, 1.0f))
+				params_.manualNavigation_ = true;
+
+			if(SliderFloat("Y", &params_.centerY_, -1.0f, 1.0f))
+				params_.manualNavigation_ = true;
+
+			if(SliderFloat("Zoom", &params_.zoomFactor_, 1.0f, 100.0f))
+				params_.manualNavigation_ = true;
+	#ifndef __EMSCRIPTEN__
+			Text("Glow");
+			SliderInt("Kernel Size", &params_.glowKernelSize_, 1, 127);
+	#endif
+			Text("Color");
+			ColorPicker4("Color", params_.baseColorVal_);
+			SliderInt("Contrast boost", &params_.contrastBoost_, 1, 255);
+			End();
+		});
+	}
+
+	void setup(cv::Ptr<V4D> window) override {
+		sz_ = window->fbSize();
+		window->gl([](const cv::Size &sz, Handles& handles) {
+			initScene(sz, handles);
+		}, sz_, handles_);
+	}
+
+	void infer(cv::Ptr<V4D> window) override {
+		window->capture();
+
+		window->gl([](const cv::Size &sz, Params& params, Handles& handles) {
+			renderScene(sz, params, handles);
+		}, sz_, params_, handles_);
+
+	#ifndef __EMSCRIPTEN__
+		window->fb([](cv::UMat& framebuffer, const Params& params) {
+			glow_effect(framebuffer, framebuffer, params.glowKernelSize_);
+		}, params_);
+	#endif
+
+		window->write();
+	}
 };
 
-#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv) {
-    if (argc != 2) {
+#ifndef __EMSCRIPTEN__
+	if (argc != 2) {
         cerr << "Usage: shader-demo <video-file>" << endl;
         exit(1);
     }
 #else
-int main() {
+	CV_UNUSED(args);
+	CV_UNUSED(argv);
 #endif
     try {
-        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Mandelbrot Shader Demo", IMGUI, OFFSCREEN, false, 0);
-        if (!OFFSCREEN) {
-            setup_gui(window);
-        }
-
+        cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Mandelbrot Shader Demo", IMGUI, OFFSCREEN);
 
 #ifndef __EMSCRIPTEN__
         auto src = makeCaptureSource(window, argv[1]);
