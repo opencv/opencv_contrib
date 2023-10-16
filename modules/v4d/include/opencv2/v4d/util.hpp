@@ -30,6 +30,7 @@
 #include <functional>
 #include <iostream>
 #include <cmath>
+#include <thread>
 
 namespace cv {
 namespace v4d {
@@ -38,45 +39,63 @@ namespace detail {
 using std::cout;
 using std::endl;
 
+inline uint64_t get_epoch_nanos() {
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
 static thread_local std::mutex mtx_;
 static thread_local bool sync_run_ = false;
 
-class ThreadLocal {
+class CV_EXPORTS ThreadLocal {
 public:
-    static bool& sync_run() {
+	CV_EXPORTS static bool& sync_run() {
     	return sync_run_;
     }
 
-    static std::mutex& mutex() {
+	CV_EXPORTS static std::mutex& mutex() {
     	return mtx_;
     }
 };
 
-class Global {
-    static std::mutex mtx_;
-    static uint64_t frame_cnt_;
-    static uint64_t start_time_;
-    static double fps_;
+class CV_EXPORTS Global {
+	inline static std::mutex mtx_;
+	inline static uint64_t frame_cnt_ = 0;
+	inline static uint64_t start_time_ = get_epoch_nanos();
+	inline static bool first_run_ = true;
+	inline static double fps_ = 0;
+	inline static const std::thread::id default_thread_id_;
+	inline static std::thread::id main_thread_id_;
 public:
-    static std::mutex& mutex() {
+	CV_EXPORTS static std::mutex& mutex() {
     	return mtx_;
     }
 
-    static uint64_t& frame_cnt() {
+	CV_EXPORTS static uint64_t& frame_cnt() {
     	return frame_cnt_;
     }
 
-    static uint64_t& start_time() {
-        	return start_time_;
+	CV_EXPORTS static uint64_t& start_time() {
+        return start_time_;
     }
 
-    static double& fps() {
+	CV_EXPORTS static bool& first_run() {
+    	return first_run_;
+    }
+
+	CV_EXPORTS static double& fps() {
     	return fps_;
     }
+
+	CV_EXPORTS static const std::thread::id& default_id() {
+    	return default_thread_id_;
+    }
+	CV_EXPORTS static std::thread::id& main_id() {
+    	return main_thread_id_;
+    }
+
+	CV_EXPORTS static bool is_main() {
+		return  main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id();
+	}
 };
-
-uint64_t get_epoch_nanos();
-
 
 //https://stackoverflow.com/a/27885283/1884837
 template<class T>
@@ -213,15 +232,12 @@ void run_sync_on_main(std::function<void()> fn) {
     CV_Assert(fn);
     CV_Assert(!ThreadLocal::sync_run());
     ThreadLocal::sync_run() = true;
-    try {
 #ifdef __EMSCRIPTEN__
 		emscripten_sync_run_in_main_runtime_thread(EM_FUNC_SIG_V, cv::v4d::detail::get_fn_ptr<Tid>(fn));
 #else
     	fn();
 #endif
-	} catch(...) {
 
-	}
 	ThreadLocal::sync_run() = false;
 }
 

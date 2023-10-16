@@ -129,8 +129,8 @@ void NVG::strokePaint(Paint paint) {
     nvgStrokePaint(getContext(), np);
 }
 
-void NVG::fillColor(const cv::Scalar& bgra) {
-    nvgFillColor(getContext(), nvgRGBA(bgra[2], bgra[1], bgra[0], bgra[3]));
+void NVG::fillColor(const cv::Scalar& rgba) {
+    nvgFillColor(getContext(), nvgRGBA(rgba[0], rgba[1], rgba[2], rgba[3]));
 }
 
 void NVG::fillPaint(Paint paint) {

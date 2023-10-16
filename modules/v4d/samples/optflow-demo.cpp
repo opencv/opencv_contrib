@@ -29,20 +29,17 @@ using std::string;
 /* Demo parameters */
 
 #ifndef __EMSCRIPTEN__
-constexpr long unsigned int WIDTH = 1920;
-constexpr long unsigned int HEIGHT = 1080;
+constexpr long unsigned int WIDTH = 1280;
+constexpr long unsigned int HEIGHT = 720;
 #else
 constexpr long unsigned int WIDTH = 960;
 constexpr long unsigned int HEIGHT = 960;
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 #ifndef __EMSCRIPTEN__
-constexpr const char* OUTPUT_FILENAME = "../optflow-demo.mkv";
+constexpr const char* OUTPUT_FILENAME = "optflow-demo.mkv";
 #endif
 constexpr bool OFFSCREEN = false;
-
-
-/* Visualization parameters */
 
 //How the background will be visualized
 enum BackgroundModes {
@@ -58,59 +55,6 @@ enum PostProcModes {
     BLOOM,
     DISABLED
 };
-
-// Generate the foreground at this scale.
-static float fg_scale = 0.5f;
-// On every frame the foreground loses on brightness. Specifies the loss in percent.
-#ifndef __EMSCRIPTEN__
-static float fg_loss = 2.5;
-#else
-static float fg_loss = 10.0;
-#endif
-//Convert the background to greyscale
-static BackgroundModes background_mode = GREY;
-// Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
-// the default should be fine.
-static float scene_change_thresh = 0.29f;
-static float scene_change_thresh_diff = 0.1f;
-// The theoretical maximum number of points to track which is scaled by the density of detected points
-// and therefor is usually much smaller.
-#ifndef __EMSCRIPTEN__
-static int max_points = 250000;
-#else
-static int max_points = 100000;
-#endif
-// How many of the tracked points to lose intentionally, in percent.
-#ifndef __EMSCRIPTEN__
-static float point_loss = 25;
-#else
-static float point_loss = 10;
-#endif
-// The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
-// of tracked points and therefor is usually much smaller.
-static int max_stroke = 10;
-
-// Red, green, blue and alpha. All from 0.0f to 1.0f
-static float effect_color[4] = {1.0f, 0.75f, 0.4f, 1.0f};
-//display on-screen FPS
-static bool show_fps = true;
-//Stretch frame buffer to window size
-static bool stretch = false;
-//The post processing mode
-#ifndef __EMSCRIPTEN__
-static PostProcModes post_proc_mode = GLOW;
-#else
-static PostProcModes post_proc_mode = DISABLED;
-#endif
-// Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
-static int glow_kernel_size = std::max(int(DIAG / 100 % 2 == 0 ? DIAG / 100 + 1 : DIAG / 100), 1);
-//The lightness selection threshold
-static int bloom_thresh = 210;
-//The intensity of the bloom filter
-static float bloom_gain = 3;
-
-using namespace cv::v4d;
-
 
 //Uses background subtraction to generate a "motion mask"
 static void prepare_motion_mask(const cv::UMat& srcGrey, cv::UMat& motionMaskGrey) {
@@ -283,7 +227,7 @@ static void glow_effect(const cv::UMat &src, cv::UMat &dst, const int ksize) {
 }
 
 //Compose the different layers into the final image
-static void composite_layers(cv::UMat& background, cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode) {
+static void composite_layers(cv::UMat& background, cv::UMat& foreground, const cv::UMat& frameBuffer, cv::UMat& dst, int kernelSize, float fgLossPercent, BackgroundModes bgMode, PostProcModes ppMode, int bloomThresh, float bloomGain) {
     thread_local cv::UMat tmp;
     thread_local cv::UMat post;
     thread_local cv::UMat backgroundGrey;
@@ -321,7 +265,7 @@ static void composite_layers(cv::UMat& background, cv::UMat& foreground, const c
         glow_effect(foreground, post, kernelSize);
         break;
     case BLOOM:
-        bloom(foreground, post, kernelSize, bloom_thresh, bloom_gain);
+        bloom(foreground, post, kernelSize, bloomThresh, bloomGain);
         break;
     case DISABLED:
         foreground.copyTo(post);
@@ -336,82 +280,125 @@ static void composite_layers(cv::UMat& background, cv::UMat& foreground, const c
 
 using namespace cv::v4d;
 
-//Build the GUI
-static void setup_gui(cv::Ptr<V4D> main) {
-    main->imgui([main](ImGuiContext* ctx){
-        using namespace ImGui;
-        SetCurrentContext(ctx);
-
-        Begin("Effects");
-        Text("Foreground");
-        SliderFloat("Scale", &fg_scale, 0.1f, 4.0f);
-        SliderFloat("Loss", &fg_loss, 0.1f, 99.9f);
-        Text("Background");
-        thread_local const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
-        thread_local int* bgm = (int*)&background_mode;
-        ListBox("Mode", bgm, bgm_items, 4, 4);
-        Text("Points");
-        SliderInt("Max. Points", &max_points, 10, 1000000);
-        SliderFloat("Point Loss", &point_loss, 0.0f, 100.0f);
-        Text("Optical flow");
-        SliderInt("Max. Stroke Size", &max_stroke, 1, 100);
-        ColorPicker4("Color", effect_color);
-        End();
-
-        Begin("Post Processing");
-        thread_local const char* ppm_items[3] = {"Glow", "Bloom", "None"};
-        thread_local int* ppm = (int*)&post_proc_mode;
-        ListBox("Effect",ppm, ppm_items, 3, 3);
-        SliderInt("Kernel Size",&glow_kernel_size, 1, 63);
-        SliderFloat("Gain", &bloom_gain, 0.1f, 20.0f);
-        End();
-
-        Begin("Settings");
-        Text("Scene Change Detection");
-        SliderFloat("Threshold", &scene_change_thresh, 0.1f, 1.0f);
-        SliderFloat("Threshold Diff", &scene_change_thresh_diff, 0.1f, 1.0f);
-        End();
-
-		Begin("Window");
-		if(Checkbox("Show FPS", &show_fps)) {
-			main->setShowFPS(show_fps);
-		}
-		if(Checkbox("Stretch", &stretch)) {
-			main->setStretching(stretch);
-		}
-#ifndef __EMSCRIPTEN__
-		if(Button("Fullscreen")) {
-			main->setFullscreen(!main->isFullscreen());
-		};
-
-		if(Button("Offscreen")) {
-			main->setVisible(!main->isVisible());
-		};
-#endif
-		End();
-    });
-}
-
 class OptflowPlan : public Plan {
+	struct Params {
+		// Generate the foreground at this scale.
+		float fgScale = 0.5f;
+		// On every frame the foreground loses on brightness. Specifies the loss in percent.
+		float fgLoss_ = 1;
+		//Convert the background to greyscale
+		BackgroundModes backgroundMode_ = GREY;
+		// Peak thresholds for the scene change detection. Lowering them makes the detection more sensitive but
+		// the default should be fine.
+		float sceneChangeThresh = 0.29f;
+		float sceneChangeThreshDiff = 0.1f;
+		// The theoretical maximum number of points to track which is scaled by the density of detected points
+		// and therefor is usually much smaller.
+		int maxPoints = 300000;
+		// How many of the tracked points to lose intentionally, in percent.
+		float pointLoss = 20;
+		// The theoretical maximum size of the drawing stroke which is scaled by the area of the convex hull
+		// of tracked points and therefor is usually much smaller.
+		int maxStroke = 6;
+		// Red, green, blue and alpha. All from 0.0f to 1.0f
+		float effectColor[4] = {1.0f, 0.75f, 0.4f, 0.15f};
+		//display on-screen FPS
+		bool showFps = true;
+		//Stretch frame buffer to window size
+		bool stretch_ = false;
+		//The post processing mode
+#ifndef __EMSCRIPTEN__
+		PostProcModes postProcMode_ = GLOW;
+#else
+		PostProcModes postProcMode_ = DISABLED;
+#endif
+		// Intensity of glow or bloom defined by kernel size. The default scales with the image diagonal.
+		int glowKernelSize_ = std::max(int(DIAG / 150 % 2 == 0 ? DIAG / 150 + 1 : DIAG / 150), 1);
+		//The lightness selection threshold
+		int bloomThresh_ = 210;
+		//The intensity of the bloom filter
+		float bloomGain_ = 3;
+	} params_;
+
 	//BGRA
-	cv::UMat background, down;
+	cv::UMat background_, down_;
 	//BGR
-	cv::UMat result;
-	cv::UMat foreground = cv::UMat(cv::Size(WIDTH, HEIGHT), CV_8UC4, cv::Scalar::all(0));
+	cv::UMat result_;
+	cv::UMat foreground_ = cv::UMat(cv::Size(WIDTH, HEIGHT), CV_8UC4, cv::Scalar::all(0));
 	//GREY
-	cv::UMat downPrevGrey, downNextGrey, downMotionMaskGrey;
-	vector<cv::Point2f> detectedPoints;
+	cv::UMat downPrevGrey_, downNextGrey_, downMotionMaskGrey_;
+	vector<cv::Point2f> detectedPoints_;
 public:
 	virtual ~OptflowPlan() override {};
+	virtual void gui(cv::Ptr<V4D> window) override {
+		window->imgui([this](cv::Ptr<V4D> win, ImGuiContext* ctx){
+	        using namespace ImGui;
+	        SetCurrentContext(ctx);
+
+	        Begin("Effects");
+	        Text("Foreground");
+	        SliderFloat("Scale", &params_.fgScale, 0.1f, 4.0f);
+	        SliderFloat("Loss", &params_.fgLoss_, 0.1f, 99.9f);
+	        Text("Background");
+	        thread_local const char* bgm_items[4] = {"Grey", "Color", "Value", "Black"};
+	        thread_local int* bgm = (int*)&params_.backgroundMode_;
+	        ListBox("Mode", bgm, bgm_items, 4, 4);
+	        Text("Points");
+	        SliderInt("Max. Points", &params_.maxPoints, 10, 1000000);
+	        SliderFloat("Point Loss", &params_.pointLoss, 0.0f, 100.0f);
+	        Text("Optical flow");
+	        SliderInt("Max. Stroke Size", &params_.maxStroke, 1, 100);
+	        ColorPicker4("Color", params_.effectColor);
+	        End();
+
+	        Begin("Post Processing");
+	        thread_local const char* ppm_items[3] = {"Glow", "Bloom", "None"};
+	        thread_local int* ppm = (int*)&params_.postProcMode_;
+	        ListBox("Effect",ppm, ppm_items, 3, 3);
+	        SliderInt("Kernel Size",&params_.glowKernelSize_, 1, 63);
+	        SliderFloat("Gain", &params_.bloomGain_, 0.1f, 20.0f);
+	        End();
+
+	        Begin("Settings");
+	        Text("Scene Change Detection");
+	        SliderFloat("Threshold", &params_.sceneChangeThresh, 0.1f, 1.0f);
+	        SliderFloat("Threshold Diff", &params_.sceneChangeThreshDiff, 0.1f, 1.0f);
+	        End();
+
+			Begin("Window");
+			if(Checkbox("Show FPS", &params_.showFps)) {
+				win->setShowFPS(params_.showFps);
+			}
+			if(Checkbox("Stretch", &params_.stretch_)) {
+				win->setStretching(params_.stretch_);
+			}
+	#ifndef __EMSCRIPTEN__
+			if(Button("Fullscreen")) {
+				win->setFullscreen(!win->isFullscreen());
+			};
+
+			if(Button("Offscreen")) {
+				win->setVisible(!win->isVisible());
+			};
+	#endif
+			End();
+	    });
+	}
+
+	virtual void setup(cv::Ptr<V4D> window) override {
+		window->setStretching(params_.stretch_);
+		params_.effectColor[3] /= pow(window->workers() + 1.0, 0.33);
+	}
+
 	virtual void infer(cv::Ptr<V4D> window) override {
 		window->capture();
 
-		window->fb([](const cv::UMat& framebuffer, cv::UMat& d, cv::UMat& b) {
+		window->fb([](const cv::UMat& framebuffer, cv::UMat& d, cv::UMat& b, const Params& params) {
 			//resize to foreground scale
-			cv::resize(framebuffer, d, cv::Size(framebuffer.size().width * fg_scale, framebuffer.size().height * fg_scale));
+			cv::resize(framebuffer, d, cv::Size(framebuffer.size().width * params.fgScale, framebuffer.size().height * params.fgScale));
 			//save video background
 			framebuffer.copyTo(b);
-		}, down, background);
+		}, down_, background_, params_);
 
 		window->parallel([](const cv::UMat& d, cv::UMat& dng, cv::UMat& dmmg, std::vector<cv::Point2f>& dp){
 			cv::cvtColor(d, dng, cv::COLOR_RGBA2GRAY);
@@ -419,28 +406,28 @@ public:
 			prepare_motion_mask(dng, dmmg);
 			//Detect trackable points in the motion mask
 			detect_points(dmmg, dp);
-		}, down, downNextGrey, downMotionMaskGrey, detectedPoints);
+		}, down_, downNextGrey_, downMotionMaskGrey_, detectedPoints_);
 
-		window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp) {
+		window->nvg([](const cv::UMat& dmmg, const cv::UMat& dpg, const cv::UMat& dng, const std::vector<cv::Point2f>& dp, const Params& params) {
 			cv::v4d::nvg::clear();
 			if (!dpg.empty()) {
 				//We don't want the algorithm to get out of hand when there is a scene change, so we suppress it when we detect one.
-				if (!detect_scene_change(dmmg, scene_change_thresh, scene_change_thresh_diff)) {
+				if (!detect_scene_change(dmmg, params.sceneChangeThresh, params.sceneChangeThreshDiff)) {
 					//Visualize the sparse optical flow using nanovg
-					cv::Scalar color = cv::Scalar(effect_color[2] * 255, effect_color[1] * 255, effect_color[0] * 255, effect_color[3] * 255);
-					visualize_sparse_optical_flow(dpg, dng, dp, fg_scale, max_stroke, color, max_points, point_loss);
+					cv::Scalar color = cv::Scalar(params.effectColor[2] * 255, params.effectColor[1] * 255, params.effectColor[0] * 255, params.effectColor[3] * 255);
+					visualize_sparse_optical_flow(dpg, dng, dp, params.fgScale, params.maxStroke, color, params.maxPoints, params.pointLoss);
 				}
 			}
-		}, downMotionMaskGrey, downPrevGrey, downNextGrey, detectedPoints);
+		}, downMotionMaskGrey_, downPrevGrey_, downNextGrey_, detectedPoints_, params_);
 
 		window->parallel([](cv::UMat& dpg, const cv::UMat& dng) {
 			dpg = dng.clone();
-		}, downPrevGrey, downNextGrey);
+		}, downPrevGrey_, downNextGrey_);
 
-		window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f) {
+		window->fb([](cv::UMat& framebuffer, cv::UMat& b, cv::UMat& f, const Params& params) {
 			//Put it all together (OpenCL)
-			composite_layers(b, f, framebuffer, framebuffer, glow_kernel_size, fg_loss, background_mode, post_proc_mode);
-		}, background, foreground);
+			composite_layers(b, f, framebuffer, framebuffer, params.glowKernelSize_, params.fgLoss_, params.backgroundMode_, params.postProcMode_, params.bloomThresh_, params.bloomGain_);
+		}, background_, foreground_, params_);
 
 		window->write();
 	}
@@ -456,19 +443,9 @@ int main(int argc, char **argv) {
         exit(1);
     }
 #endif
-
     try {
         using namespace cv::v4d;
         cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Sparse Optical Flow Demo", ALL, OFFSCREEN);
-        window->setStretching(stretch);
-        if (!OFFSCREEN) {
-#ifndef __EMSCRIPTEN__
-            setup_gui(window);
-#else
-            setup_gui(window);
-#endif
-        }
-
 #ifndef __EMSCRIPTEN__
         auto src = makeCaptureSource(window, argv[1]);
         window->setSource(src);
@@ -479,7 +456,7 @@ int main(int argc, char **argv) {
         window->setSource(src);
 #endif
 
-        window->run<OptflowPlan>(0);
+        window->run<OptflowPlan>(6);
     } catch (std::exception& ex) {
         cerr << ex.what() << endl;
     }

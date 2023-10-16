@@ -12,19 +12,18 @@
 
 namespace cv {
 namespace v4d {
-const std::thread::id V4D::default_thread_id_;
-std::thread::id V4D::main_thread_id_;
-bool V4D::first_run_;
 
 cv::Ptr<V4D> V4D::make(int w, int h, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
     V4D* v4d = new V4D(cv::Size(w,h), cv::Size(), title, flags, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
+    v4d->fbCtx()->makeCurrent();
     return v4d->self();
 }
 
 cv::Ptr<V4D> V4D::make(const cv::Size& size, const cv::Size& fbsize, const string& title, AllocateFlags flags, bool offscreen, bool debug, int samples) {
     V4D* v4d = new V4D(size, fbsize, title, flags, offscreen, debug, samples);
     v4d->setVisible(!offscreen);
+    v4d->fbCtx()->makeCurrent();
     return v4d->self();
 }
 
@@ -53,23 +52,8 @@ V4D::~V4D() {
 
 }
 
-cv::Ptr<cv::UMat> V4D::get(const string& name) {
-    return umat_pool_[name];
-}
-
-
-cv::Ptr<cv::UMat> V4D::get(const string& name, cv::Size sz, int type) {
-    cv::Ptr<cv::UMat> u = umat_pool_[name];
-    u->create(sz, type);
-    return u;
-}
-
 size_t V4D::workers() {
-        return numWorkers_;
-}
-
-bool V4D::isMain() const {
-        return main_thread_id_ == default_thread_id_ || main_thread_id_ == std::this_thread::get_id();
+	return numWorkers_;
 }
 
 cv::ogl::Texture2D& V4D::texture() {
@@ -172,13 +156,11 @@ size_t V4D::numGlCtx() {
     return std::max(off_t(0), off_t(glContexts_.size()) - 1);
 }
 
-
-void V4D::imgui(std::function<void(ImGuiContext* ctx)> fn) {
-    TimeTracker::getInstance()->execute("imgui", [this, fn](){
-        imguiCtx()->build([fn](ImGuiContext* ctx) {
-            fn(ctx);
+void V4D::imgui(std::function<void(cv::Ptr<V4D>, ImGuiContext*)> fn) {
+    	auto s = self();
+    	imguiCtx()->build([s, fn](ImGuiContext* ctx) {
+            fn(s, ctx);
         });
-    });
 }
 
 void V4D::copyTo(cv::UMat& m) {
@@ -228,25 +210,17 @@ cv::UMat V4D::fetch() {
 }
 
 
-bool V4D::isSourceReady() {
-    return source_ && source_->isReady();
-}
-
 void V4D::setSink(cv::Ptr<Sink> sink) {
     sink_ = sink;
 }
 
-Sink& V4D::getSink() {
+cv::Ptr<Sink> V4D::getSink() {
     CV_Assert(sink_ != nullptr);
-    return *sink_;
+    return sink_;
 }
 
 bool V4D::hasSink() {
     return sink_ != nullptr;
-}
-
-bool V4D::isSinkReady() {
-    return sink_ && sink_->isReady();
 }
 
 cv::Vec2f V4D::position() {
@@ -390,7 +364,7 @@ bool V4D::display() {
     if (true) {
 #endif
         run_sync_on_main<6>([&, this]() {
-            if(this->isMain()) {
+            if(Global::is_main()) {
             	auto start = Global::start_time();
             	auto now = get_epoch_nanos();
 
@@ -401,7 +375,8 @@ bool V4D::display() {
             	}
 
             	Global::fps() = (fcnt / diff_seconds);
-            	cerr << "\rFPS:" << Global::fps() << endl;
+            	if(getPrintFPS())
+            		cerr << "\rFPS:" << Global::fps() << endl;
             }
 #ifndef __EMSCRIPTEN__
             if(debug_) {

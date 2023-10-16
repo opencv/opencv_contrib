@@ -9,6 +9,17 @@
 #include "opencv2/v4d/detail/framebuffercontext.hpp"
 #include "imgui.h"
 
+#include "opencv2/v4d/detail/imguicontext.hpp"
+
+#if defined(OPENCV_V4D_USE_ES3) || defined(EMSCRIPTEN)
+#   define IMGUI_IMPL_OPENGL_ES3
+#endif
+
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif

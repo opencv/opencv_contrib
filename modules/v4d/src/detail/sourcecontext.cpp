@@ -29,8 +29,13 @@ void SourceContext::execute(std::function<void()> fn) {
 				auto p = src->operator ()();
 				currentSeqNr_ = p.first;
 
-				if(p.second.empty())
+				if(p.second.empty()) {
+#ifndef __EMSCRIPTEN__
+					throw std::runtime_error("End of stream");
+#else
 					p.second.create(mainFbContext_->size(), CV_8UC3);
+#endif
+				}
 
 				resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
 				cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);
@@ -47,9 +52,13 @@ void SourceContext::execute(std::function<void()> fn) {
 				auto p = src->operator ()();
 				currentSeqNr_ = p.first;
 
-				if(p.second.empty())
+				if(p.second.empty()) {
+#ifndef __EMSCRIPTEN__
+					throw std::runtime_error("End of stream");
+#else
 					p.second.create(mainFbContext_->size(), CV_8UC3);
-
+#endif
+				}
 				resizePreserveAspectRatio(p.second, captureBufferRGB_, mainFbContext_->size());
 				cv::cvtColor(captureBufferRGB_, sourceBuffer(), cv::COLOR_RGB2BGRA);
         	}

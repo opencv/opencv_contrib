@@ -34,19 +34,11 @@
 
 using std::cerr;
 using std::endl;
-using namespace cv::v4d::detail;
+
 namespace cv {
 namespace v4d {
 namespace detail {
 
-std::mutex Global::mtx_;
-uint64_t Global::frame_cnt_ = 0;
-uint64_t Global::start_time_ = get_epoch_nanos();
-double Global::fps_ = 0;
-
-uint64_t get_epoch_nanos() {
-	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-}
 size_t cnz(const cv::UMat& m) {
     cv::UMat grey;
     if(m.channels() == 1) {
@@ -321,9 +313,10 @@ cv::Ptr<Sink> makeVaSink(cv::Ptr<V4D> window, const string& outputFilename, cons
 		return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
 	        CLExecScope_t scope(window->sourceCtx()->getCLExecContext());
 	        //FIXME cache it
-	        cv::UMat resized;
-			cv::resize(frame, resized, frameSize);
-			(*writer) << resized;
+            cv::UMat converted;
+            cv::resize(frame, converted, frameSize);
+            cvtColor(converted, converted, cv::COLOR_BGRA2RGB);
+            (*writer) << converted;
 			return writer->isOpened();
 		});
     } else {
@@ -354,9 +347,10 @@ static cv::Ptr<Sink> makeAnyHWSink(const string& outputFilename, const int fourc
 
     if(writer->isOpened()) {
         return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
-            cv::UMat resized;
-            cv::resize(frame, resized, frameSize);
-            (*writer) << resized;
+            cv::UMat converted;
+            cv::resize(frame, converted, frameSize);
+            cvtColor(converted, converted, cv::COLOR_BGRA2RGB);
+            (*writer) << converted;
             return writer->isOpened();
         });
     } else {
@@ -379,7 +373,6 @@ static cv::Ptr<Source> makeAnyHWSource(const string& inputFilename) {
 #ifndef __EMSCRIPTEN__
 cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, const float fps, const cv::Size& frameSize) {
     int fourcc = 0;
-    cerr << getGlVendor() << endl;
     //FIXME find a cleverer way to guess a decent codec
     if(getGlVendor() == "NVIDIA Corporation") {
         fourcc = cv::VideoWriter::fourcc('H', '2', '6', '4');
@@ -406,9 +399,10 @@ cv::Ptr<Sink> makeWriterSink(cv::Ptr<V4D> window, const string& outputFilename, 
 
     if(writer->isOpened()) {
 		return new Sink([=](const uint64_t& seq, const cv::UMat& frame) {
-			cv::UMat resized;
-			cv::resize(frame, resized, frameSize);
-			(*writer) << resized;
+            cv::UMat converted;
+            cv::resize(frame, converted, frameSize);
+            cvtColor(converted, converted, cv::COLOR_BGRA2RGB);
+            (*writer) << converted;
 			return writer->isOpened();
 		});
     } else {

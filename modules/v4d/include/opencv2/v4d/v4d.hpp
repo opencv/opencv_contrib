@@ -70,6 +70,7 @@ enum AllocateFlags {
 class Plan {
 public:
 	virtual ~Plan() {};
+	virtual void gui(cv::Ptr<V4D> window) {};
 	virtual void setup(cv::Ptr<V4D> window) {};
 	virtual void infer(cv::Ptr<V4D> window) = 0;
 	virtual void teardown(cv::Ptr<V4D> window) {};
@@ -121,11 +122,6 @@ using namespace cv::v4d::detail;
 class CV_EXPORTS V4D {
 	friend class detail::FrameBufferContext;
     friend class HTML5Capture;
-    static const std::thread::id default_thread_id_;
-    static std::thread::id main_thread_id_;
-	static bool first_run_;
-    std::map<std::string, cv::Ptr<cv::UMat>> umat_pool_;
-    std::map<std::string, std::shared_ptr<void>> data_pool_;
     cv::Ptr<V4D> self_;
     cv::Size initialSize_;
     bool debug_;
@@ -154,7 +150,7 @@ class CV_EXPORTS V4D {
     cv::Point2f mousePos_;
     uint64_t frameCnt_ = 0;
     bool showFPS_ = true;
-    bool printFPS_ = true;
+    bool printFPS_ = false;
     bool showTracking_ = true;
     size_t numWorkers_ = 0;
     std::vector<std::tuple<std::string,bool,long>> accesses_;
@@ -180,46 +176,7 @@ public:
      */
     CV_EXPORTS virtual ~V4D();
 
-    template<typename T>
-    T once(std::function<T()> fn) {
-        static thread_local std::once_flag onceFlag;
-        std::call_once(onceFlag, fn);
-    }
-
-
-    void once(std::function<void()> fn) {
-        static thread_local std::once_flag onceFlag;
-        std::call_once(onceFlag, fn);
-    }
-    template<typename T>
-    T& get(const string& name) {
-        auto it = data_pool_.find(name);
-        std::shared_ptr<void> p = std::make_shared<T>();
-        if(it == data_pool_.end()) {
-            data_pool_.insert({name, p });
-        }else
-            p = (*it).second;
-
-        return *(std::static_pointer_cast<T, void>(p).get());
-    }
-
-    template<typename T>
-    T& init(const string& name, std::function<std::shared_ptr<T>()> creatorFunc) {
-        auto it = data_pool_.find(name);
-        std::shared_ptr<void> p;
-        if(it == data_pool_.end())
-            data_pool_.insert({name, p = std::static_pointer_cast<void, T>(creatorFunc())});
-        else
-            p = (*it).second;
-
-        return *static_cast<T*>(p.get());
-    }
-
-    CV_EXPORTS cv::Ptr<cv::UMat> get(const string& name);
-    CV_EXPORTS cv::Ptr<cv::UMat> get(const string& name, cv::Size sz, int type);
-
     CV_EXPORTS size_t workers();
-    CV_EXPORTS bool isMain() const;
     /*!
      * The internal framebuffer exposed as OpenGL Texture2D.
      * @return The texture object.
@@ -250,7 +207,7 @@ public:
     }
 
     void makePlan() {
-    	cout << std::this_thread::get_id() << " ### MAKE PLAN ### " << endl;
+//    	cout << std::this_thread::get_id() << " ### MAKE PLAN ### " << endl;
     	for(const auto& t : accesses_) {
     		const string& name = std::get<0>(t);
     		const bool& read = std::get<1>(t);
@@ -265,7 +222,7 @@ public:
     			CV_Assert(!n->name_.empty());
     			CV_Assert(n->tx_);
     			nodes_.push_back(n);
-        		cout << "make: " << std::this_thread::get_id() << " " << n->name_ << endl;
+//        		cout << "make: " << std::this_thread::get_id() << " " << n->name_ << endl;
     		}
 
 
@@ -278,18 +235,18 @@ public:
     }
 
 	void runPlan() {
-		cout << std::this_thread::get_id() << " ### RUN PLAN ### " << endl;
+//		cout << std::this_thread::get_id() << " ### RUN PLAN ### " << endl;
 		bool isEnabled = true;
 
 		for (auto& n : nodes_) {
 			if (n->tx_->hasCondition()) {
 				isEnabled = n->tx_->enabled();
-				cout << "cond: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
+//				cout << "cond: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
 			}
 
 			if (!(n->tx_->hasCondition()) && isEnabled) {
 				n->tx_->getContext()->execute([=]() {
-					cout << "run: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
+//					cout << "run: " << std::this_thread::get_id() << " " << n->name_ << ": " << isEnabled << endl;
 					n->tx_->perform();
 				});
 			}
@@ -579,7 +536,8 @@ public:
             add_transaction<decltype(functor)>(parallelCtx(), id, std::forward<decltype(functor)>(fn), std::forward<Args>(args)...);
         });
     }
-    CV_EXPORTS void imgui(std::function<void(ImGuiContext* ctx)> fn);
+
+    CV_EXPORTS void imgui(std::function<void(cv::Ptr<V4D>, ImGuiContext*)> fn);
 
     /*!
      * Copy the framebuffer contents to an OutputArray.
@@ -623,28 +581,33 @@ public:
 				this->getSource()->setThreadSafe(true);
 			}
 
-			if(first_run_) {
-				main_thread_id_ = std::this_thread::get_id();
-				first_run_ = false;
+			if (this->hasSink()) {
+				this->getSink()->setThreadSafe(true);
+			}
+
+			if(Global::first_run()) {
+				Global::first_run() = false;
+				Global::main_id() = std::this_thread::get_id();
 				cerr << "Starting with " << workers << " extra workers" << endl;
 			}
 
-			if(workers > 0  || !this->isMain()) {
+			if(workers > 0  || !Global::is_main()) {
 				cv::setNumThreads(0);
 				cerr << "Setting threads to 0" << endl;
 			}
 
-			if(this->isMain()) {
+			if(Global::is_main()) {
 				int w = this->initialSize().width;
 				int h = this->initialSize().height;
 				const string title = this->title();
 				bool debug = this->debug_;
 				auto src = this->getSource();
+				auto sink = this->getSink();
 
 				for (size_t i = 0; i < workers; ++i) {
 					threads.push_back(
 							new std::thread(
-									[w,h,i,title,debug,src] {
+									[w,h,i,title,debug,src, sink] {
 										cv::Ptr<cv::v4d::V4D> worker = V4D::make(
 												w,
 												h,
@@ -657,11 +620,11 @@ public:
 											src->setThreadSafe(true);
 											worker->setSource(src);
 										}
-//										if (this->hasSink()) {
-	//                                        Sink sink = this->getSink();
-	//                                        sink.setThreadSafe(true);
-	//                                        worker->setSink(sink);
-//										}
+										if (sink) {
+											sink->setThreadSafe(true);
+											worker->setSink(sink);
+										}
+
 										worker->run<Tplan>(0);
 								}
 							)
@@ -670,12 +633,12 @@ public:
 			}
 		}
 
-	//	if(this->isMain())
-	//		this->makeCurrent();
-
 #ifndef __EMSCRIPTEN__
 		CLExecScope_t scope(this->fbCtx()->getCLExecContext());
 #endif
+		if(Global::is_main()) {
+			plan->gui(self());
+		}
 		plan->setup(self());
 		this->makePlan();
 		this->runPlan();
@@ -683,13 +646,14 @@ public:
 		plan->infer(self());
 		this->makePlan();
 #ifndef __EMSCRIPTEN__
-		if(this->isMain())
+		if(Global::is_main()) {
 			this->printSystemInfo();
+		}
 		do {
 			this->runPlan();
 		} while(this->display());
 #else
-		if(this->isMain()) {
+		if(Global::is_main()) {
 			std::function<bool()> fnFrame([this](){
 			    this->printSystemInfo();
 				do {
@@ -709,7 +673,7 @@ public:
 		this->runPlan();
 		this->clearPlan();
 
-		if(this->isMain()) {
+		if(Global::is_main()) {
 			for(auto& t : threads)
 				t->join();
 		}
@@ -733,22 +697,12 @@ public:
     CV_EXPORTS bool hasSource();
 
     /*!
-     * Checks if the current #cv::viz::Source is ready.
-     * @return true if it is ready.
-     */
-    CV_EXPORTS bool isSourceReady();
-    /*!
      * Set the current #cv::viz::Sink object. Usually created using #makeWriterSink().
      * @param sink A #cv::viz::Sink object.
      */
     CV_EXPORTS void setSink(cv::Ptr<Sink> sink);
-    CV_EXPORTS Sink& getSink();
+    CV_EXPORTS cv::Ptr<Sink> getSink();
     CV_EXPORTS bool hasSink();
-    /*!
-     * Checks if the current #cv::viz::Sink is ready.
-     * @return true if it is ready.
-     */
-    CV_EXPORTS bool isSinkReady();
     /*!
      * Get the window position.
      * @return The window position.
