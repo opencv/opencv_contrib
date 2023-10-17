@@ -33,24 +33,7 @@ constexpr const char *OUTPUT_FILENAME = "beauty-demo.mkv";
 #endif
 const unsigned long DIAG = hypot(double(WIDTH), double(HEIGHT));
 
-/* Visualization parameters */
 constexpr int BLUR_DIV = 500;
-static int blur_skin_kernel_size = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
-//Saturation boost factor for eyes and lips
-static float eyes_and_lips_saturation = 2.0f;
-//Saturation boost factor for skin
-static float skin_saturation = 1.7f;
-//Contrast factor skin
-static float skin_contrast = 0.7f;
-#ifndef __EMSCRIPTEN__
-//Show input and output side by side
-static bool side_by_side = true;
-//Scale the video to the window size
-static bool stretch = true;
-#else
-static bool side_by_side = false;
-static bool stretch = false;
-#endif
 
 /*!
  * Data structure holding the points for all face landmarks
@@ -136,62 +119,33 @@ struct FaceFeatures {
     }
 };
 
-//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
-static void draw_face_oval_mask(const FaceFeatures &ff) {
-    using namespace cv::v4d::nvg;
-    clear();
-
-    vector<vector<cv::Point2f>> features = ff.features();
-    cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
-
-    beginPath();
-    fillColor(cv::Scalar(255, 255, 255, 255));
-    ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
-    rotate(rotRect.angle);
-    fill();
-}
-
-//Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
-static void draw_face_eyes_and_lips_mask(const FaceFeatures &ff) {
-    using namespace cv::v4d::nvg;
-    clear();
-    vector<vector<cv::Point2f>> features = ff.features();
-    for (size_t j = 5; j < 8; ++j) {
-        beginPath();
-        fillColor(cv::Scalar(255, 255, 255, 255));
-        moveTo(features[j][0].x, features[j][0].y);
-        for (size_t k = 1; k < features[j].size(); ++k) {
-            lineTo(features[j][k].x, features[j][k].y);
-        }
-        closePath();
-        fill();
-    }
-
-    beginPath();
-    fillColor(cv::Scalar(0, 0, 0, 255));
-    moveTo(features[8][0].x, features[8][0].y);
-    for (size_t k = 1; k < features[8].size(); ++k) {
-        lineTo(features[8][k].x, features[8][k].y);
-    }
-    closePath();
-    fill();
-}
-
-//adjusts the saturation of a UMat
-static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor) {
-    thread_local vector<cv::UMat> channels;
-    thread_local cv::UMat hls;
-
-    cvtColor(srcBGR, hls, cv::COLOR_BGR2HLS);
-    split(hls, channels);
-    cv::multiply(channels[2], factor, channels[2]);
-    merge(channels, hls);
-    cvtColor(hls, dstBGR, cv::COLOR_HLS2BGR);
-}
-
 using namespace cv::v4d;
 
 class BeautyDemoPlan : public Plan {
+	struct Params {
+		int blurSkinKernelSize_ = std::max(int(DIAG / BLUR_DIV % 2 == 0 ? DIAG / BLUR_DIV + 1 : DIAG / BLUR_DIV), 1);
+		//Saturation boost factor for eyes and lips
+		float eyesAndLipsSaturation_ = 2.0f;
+		//Saturation boost factor for skin
+		float skinSaturation_ = 1.7f;
+		//Contrast factor skin
+		float skinContrast_ = 0.7f;
+#ifndef __EMSCRIPTEN__
+		//Show input and output side by side
+		bool sideBySide_ = true;
+		//Scale the video to the window size
+		bool stretch_ = true;
+#else
+		bool sideBySide_ = false;
+		bool stretch_ = false;
+#endif
+	} params_;
+
+	struct Cache {
+	    vector<cv::UMat> channels_;
+	    cv::UMat hls_;
+	} cache_;
+
 	cv::Ptr<cv::face::Facemark> facemark_ = cv::face::createFacemarkLBF();
 	//Blender (used to put the different face parts back together)
 	cv::Ptr<cv::detail::MultiBandBlender> blender_ = new cv::detail::MultiBandBlender(false, 5);
@@ -215,7 +169,89 @@ class BeautyDemoPlan : public Plan {
 	bool faceFound_ = false;
 	FaceFeatures features_;
 public:
+	//based on the detected FaceFeatures it guesses a decent face oval and draws a mask for it.
+	static void draw_face_oval_mask(const FaceFeatures &ff) {
+	    using namespace cv::v4d::nvg;
+	    clear();
+
+	    vector<vector<cv::Point2f>> features = ff.features();
+	    cv::RotatedRect rotRect = cv::fitEllipse(features[0]);
+
+	    beginPath();
+	    fillColor(cv::Scalar(255, 255, 255, 255));
+	    ellipse(rotRect.center.x, rotRect.center.y * 1, rotRect.size.width / 2, rotRect.size.height / 2.5);
+	    rotate(rotRect.angle);
+	    fill();
+	}
+
+	//Draws a mask consisting of eyes and lips areas (deduced from FaceFeatures)
+	static void draw_face_eyes_and_lips_mask(const FaceFeatures &ff) {
+	    using namespace cv::v4d::nvg;
+	    clear();
+	    vector<vector<cv::Point2f>> features = ff.features();
+	    for (size_t j = 5; j < 8; ++j) {
+	        beginPath();
+	        fillColor(cv::Scalar(255, 255, 255, 255));
+	        moveTo(features[j][0].x, features[j][0].y);
+	        for (size_t k = 1; k < features[j].size(); ++k) {
+	            lineTo(features[j][k].x, features[j][k].y);
+	        }
+	        closePath();
+	        fill();
+	    }
+
+	    beginPath();
+	    fillColor(cv::Scalar(0, 0, 0, 255));
+	    moveTo(features[8][0].x, features[8][0].y);
+	    for (size_t k = 1; k < features[8].size(); ++k) {
+	        lineTo(features[8][k].x, features[8][k].y);
+	    }
+	    closePath();
+	    fill();
+	}
+
+	//adjusts the saturation of a UMat
+	static void adjust_saturation(const cv::UMat &srcBGR, cv::UMat &dstBGR, float factor, Cache& cache) {
+	    cvtColor(srcBGR, cache.hls_, cv::COLOR_BGR2HLS);
+	    split(cache.hls_, cache.channels_);
+	    cv::multiply(cache.channels_[2], factor, cache.channels_[2]);
+	    merge(cache.channels_, cache.hls_);
+	    cvtColor(cache.hls_, dstBGR, cv::COLOR_HLS2BGR);
+	}
+
+	void gui(cv::Ptr<V4D> window) override {
+		window->imgui([this](cv::Ptr<V4D> window, ImGuiContext* ctx){
+			using namespace ImGui;
+			SetCurrentContext(ctx);
+			Begin("Effect");
+			Text("Display");
+			Checkbox("Side by side", &params_.sideBySide_);
+			if(Checkbox("Stetch", &params_.stretch_)) {
+				window->setStretching(true);
+			} else
+				window->setStretching(false);
+
+#ifndef __EMSCRIPTEN__
+			if(Button("Fullscreen")) {
+				window->setFullscreen(!window->isFullscreen());
+			};
+#endif
+
+			if(Button("Offscreen")) {
+				window->setVisible(!window->isVisible());
+			};
+
+			Text("Face Skin");
+			SliderInt("Blur", &params_.blurSkinKernelSize_, 0, 128);
+			SliderFloat("Saturation", &params_.skinSaturation_, 0.0f, 100.0f);
+			SliderFloat("Contrast", &params_.skinContrast_, 0.0f, 1.0f);
+			Text("Eyes and Lips");
+			SliderFloat("Saturation ", &params_.eyesAndLipsSaturation_, 0.0f, 100.0f);
+			End();
+		});
+	}
 	void setup(cv::Ptr<V4D> window) override {
+		window->setStretching(params_.stretch_);
 		window->parallel([](cv::Ptr<cv::face::Facemark>& facemark){
 #ifndef __EMSCRIPTEN__
 			facemark->loadModel("modules/v4d/assets/models/lbfmodel.yaml");
@@ -289,19 +325,18 @@ public:
 					cv::bitwise_not(ealmg, bmg);
 				}, faceOval_, eyesAndLipsMaskGrey_, faceSkinMaskGrey_, backgroundMaskGrey_);
 
-				window->parallel([](const cv::UMat& in, cv::UMat& eal, float& eals,  cv::UMat& c, cv::UMat& s) {
+				window->parallel([](const cv::UMat& in, cv::UMat& eal, cv::UMat& c, cv::UMat& s, Params& params, Cache& cache) {
 					//boost saturation of eyes and lips
-					adjust_saturation(in,  eal, eals);
+					adjust_saturation(in,  eal, params.eyesAndLipsSaturation_, cache);
 					//reduce skin contrast
-					multiply(in, cv::Scalar::all(skin_contrast), c);
+					multiply(in, cv::Scalar::all(params.skinContrast_), c);
 					//fix skin brightness
-					add(c, cv::Scalar::all((1.0 - skin_contrast) / 2.0) * 255.0, c);
+					add(c, cv::Scalar::all((1.0 - params.skinContrast_) / 2.0) * 255.0, c);
 					//blur the skin_
-					cv::boxFilter(c, c, -1, cv::Size(blur_skin_kernel_size, blur_skin_kernel_size), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
+					cv::boxFilter(c, c, -1, cv::Size(params.blurSkinKernelSize_, params.blurSkinKernelSize_), cv::Point(-1, -1), true, cv::BORDER_REPLICATE);
 					//boost skin saturation
-					adjust_saturation(c, s, skin_saturation);
-				}, input_, eyesAndLips_, eyes_and_lips_saturation, contrast_, skin_);
-
+					adjust_saturation(c, s, params.skinSaturation_, cache);
+				}, input_, eyesAndLips_, contrast_, skin_, params_, cache_);
 
 				window->parallel([](cv::Ptr<cv::detail::MultiBandBlender>& bl,
 						const cv::UMat& s, const cv::UMat& fsmg,
@@ -325,8 +360,8 @@ public:
 					foFloat.convertTo(fout, CV_8U, 1.0);
 				}, blender_, skin_, faceSkinMaskGrey_, input_, backgroundMaskGrey_, eyesAndLips_, eyesAndLipsMaskGrey_, frameOut_);
 
-				window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh, cv::UMat& rh) {
-					if (side_by_side) {
+				window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh, cv::UMat& rh, const Params& params) {
+					if (params.sideBySide_) {
 						//create side-by-side view with a result
 						cv::resize(in, lh, cv::Size(0, 0), 0.5, 0.5);
 						cv::resize(fout, rh, cv::Size(0, 0), 0.5, 0.5);
@@ -335,14 +370,14 @@ public:
 						lh.copyTo(fout(cv::Rect(0, 0, lh.size().width, lh.size().height)));
 						rh.copyTo(fout(cv::Rect(rh.size().width, 0, rh.size().width, rh.size().height)));
 					}
-				}, frameOut_, input_, lhalf_, rhalf_);
+				}, frameOut_, input_, lhalf_, rhalf_, params_);
 			}
 			window->endbranch(isTrue, faceFound_);
 
 			window->branch(isFalse, faceFound_);
 			{
-				window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh) {
-					if (side_by_side) {
+				window->parallel([](cv::UMat& fout, const cv::UMat& in, cv::UMat& lh, const Params& params) {
+					if (params.sideBySide_) {
 						//create side-by-side view without a result (using the input image for both sides)
 						fout = cv::Scalar::all(0);
 						cv::resize(in, lh, cv::Size(0, 0), 0.5, 0.5);
@@ -351,7 +386,7 @@ public:
 					} else {
 						in.copyTo(fout);
 					}
-				}, frameOut_, input_, lhalf_);
+				}, frameOut_, input_, lhalf_, params_);
 			}
 			window->endbranch(isFalse, faceFound_);
 
@@ -381,45 +416,11 @@ int main() {
 #endif
     using namespace cv::v4d;
     cv::Ptr<V4D> window = V4D::make(WIDTH, HEIGHT, "Beautification Demo", ALL, OFFSCREEN);
-//    window->printSystemInfo();
-    window->setStretching(stretch);
-
-//    if (!OFFSCREEN) {
-//        window->imgui([window](ImGuiContext* ctx){
-//            using namespace ImGui;
-//            SetCurrentContext(ctx);
-//            Begin("Effect");
-//            Text("Display");
-//            Checkbox("Side by side", &side_by_side);
-//            if(Checkbox("Stetch", &stretch)) {
-//                window->setStretching(true);
-//            } else
-//                window->setStretching(false);
-//
-//    #ifndef __EMSCRIPTEN__
-//            if(Button("Fullscreen")) {
-//                window->setFullscreen(!window->isFullscreen());
-//            };
-//    #endif
-//
-//            if(Button("Offscreen")) {
-//                window->setVisible(!window->isVisible());
-//            };
-//
-//            Text("Face Skin");
-//            SliderInt("Blur", &blur_skin_kernel_size, 0, 128);
-//            SliderFloat("Saturation", &skin_saturation, 0.0f, 100.0f);
-//            SliderFloat("Contrast", &skin_contrast, 0.0f, 1.0f);
-//            Text("Eyes and Lips");
-//            SliderFloat("Saturation ", &eyes_and_lips_saturation, 0.0f, 100.0f);
-//            End();
-//        });
-//    }
 #ifndef __EMSCRIPTEN__
     auto src = makeCaptureSource(window, argv[1]);
     window->setSource(src);
-//    Sink sink = makeWriterSink(window, OUTPUT_FILENAME, src.fps(), cv::Size(WIDTH, HEIGHT));
-//    window->setSink(sink);
+    auto sink = makeWriterSink(window, OUTPUT_FILENAME, src->fps(), cv::Size(WIDTH, HEIGHT));
+    window->setSink(sink);
 #else
     auto src = makeCaptureSource(window);
     window->setSource(src);
