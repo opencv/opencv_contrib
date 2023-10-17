@@ -220,13 +220,13 @@ public:
 	}
 
 	void gui(cv::Ptr<V4D> window) override {
-		window->imgui([this](cv::Ptr<V4D> window, ImGuiContext* ctx){
+		window->imgui([](cv::Ptr<V4D> window, ImGuiContext* ctx, Params& params){
 			using namespace ImGui;
 			SetCurrentContext(ctx);
 			Begin("Effect");
 			Text("Display");
-			Checkbox("Side by side", &params_.sideBySide_);
-			if(Checkbox("Stetch", &params_.stretch_)) {
+			Checkbox("Side by side", &params.sideBySide_);
+			if(Checkbox("Stetch", &params.stretch_)) {
 				window->setStretching(true);
 			} else
 				window->setStretching(false);
@@ -242,13 +242,13 @@ public:
 			};
 
 			Text("Face Skin");
-			SliderInt("Blur", &params_.blurSkinKernelSize_, 0, 128);
-			SliderFloat("Saturation", &params_.skinSaturation_, 0.0f, 100.0f);
-			SliderFloat("Contrast", &params_.skinContrast_, 0.0f, 1.0f);
+			SliderInt("Blur", &params.blurSkinKernelSize_, 0, 128);
+			SliderFloat("Saturation", &params.skinSaturation_, 0.0f, 100.0f);
+			SliderFloat("Contrast", &params.skinContrast_, 0.0f, 1.0f);
 			Text("Eyes and Lips");
-			SliderFloat("Saturation ", &params_.eyesAndLipsSaturation_, 0.0f, 100.0f);
+			SliderFloat("Saturation ", &params.eyesAndLipsSaturation_, 0.0f, 100.0f);
 			End();
-		});
+		}, params_);
 	}
 	void setup(cv::Ptr<V4D> window) override {
 		window->setStretching(params_.stretch_);
