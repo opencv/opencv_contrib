@@ -59,7 +59,7 @@ void ImGuiContextImpl::render(bool showFPS) {
         if (showFPS) {
             static bool open_ptr[1] = { true };
             static ImGuiWindowFlags window_flags = 0;
-            window_flags |= ImGuiWindowFlags_NoBackground;
+//            window_flags |= ImGuiWindowFlags_NoBackground;
             window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
             window_flags |= ImGuiWindowFlags_NoMove;
             window_flags |= ImGuiWindowFlags_NoScrollWithMouse;
@@ -71,10 +71,13 @@ void ImGuiContextImpl::render(bool showFPS) {
             window_flags |= ImGuiWindowFlags_NoInputs;
             static ImVec2 pos(0, 0);
             ImGui::SetNextWindowPos(pos, ImGuiCond_Once);
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
             ImGui::Begin("Display", open_ptr, window_flags);
             ImGuiIO& io = ImGui::GetIO();
             ImGui::Text("%.3f ms/frame (%.1f FPS)", (1000.0f / Global::fps()) , Global::fps());
             ImGui::End();
+            ImGui::PopStyleColor(1);
+
         }
         if (renderCallback_)
             renderCallback_(context_);
