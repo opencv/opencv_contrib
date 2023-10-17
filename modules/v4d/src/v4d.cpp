@@ -156,13 +156,6 @@ size_t V4D::numGlCtx() {
     return std::max(off_t(0), off_t(glContexts_.size()) - 1);
 }
 
-void V4D::imgui(std::function<void(cv::Ptr<V4D>, ImGuiContext*)> fn) {
-    	auto s = self();
-    	imguiCtx()->build([s, fn](ImGuiContext* ctx) {
-            fn(s, ctx);
-        });
-}
-
 void V4D::copyTo(cv::UMat& m) {
     TimeTracker::getInstance()->execute("copyTo", [this, &m](){
         fbCtx()->copyTo(m);
@@ -215,7 +208,6 @@ void V4D::setSink(cv::Ptr<Sink> sink) {
 }
 
 cv::Ptr<Sink> V4D::getSink() {
-    CV_Assert(sink_ != nullptr);
     return sink_;
 }
 

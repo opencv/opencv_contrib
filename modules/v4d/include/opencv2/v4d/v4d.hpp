@@ -537,8 +537,14 @@ public:
         });
     }
 
-    CV_EXPORTS void imgui(std::function<void(cv::Ptr<V4D>, ImGuiContext*)> fn);
-
+    template<typename Tfn, typename ... Args>
+    void imgui(Tfn fn, Args&& ... args) {
+        CV_Assert(detail::is_stateless<std::remove_cv_t<std::remove_reference_t<decltype(fn)>>>::value);
+		auto s = self();
+		imguiCtx()->build([s, fn, &args...](ImGuiContext* ctx) {
+			fn(s, ctx, args...);
+		});
+    }
     /*!
      * Copy the framebuffer contents to an OutputArray.
      * @param arr The array to copy to.
